@@ -62,6 +62,9 @@ export class DefaultCreateNewSamAppWizardContext extends WizardContext implement
     private readonly schemasRegions: Region[]
     private readonly samCliVersion: string
 
+    private readonly totalSteps: number = 4
+    private additionalSteps: number = 0
+
     public constructor(currentCredentials: Credentials | undefined, schemasRegions: Region[], samCliVersion: string) {
         super()
         this.currentCredentials = currentCredentials
@@ -73,6 +76,8 @@ export class DefaultCreateNewSamAppWizardContext extends WizardContext implement
         const quickPick = createRuntimeQuickPick({
             buttons: [this.helpButton],
             currRuntime,
+            step: 1,
+            totalSteps: this.totalSteps,
         })
 
         const choices = await picker.promptUser({
@@ -94,12 +99,16 @@ export class DefaultCreateNewSamAppWizardContext extends WizardContext implement
         currRuntime: Runtime,
         currTemplate?: SamTemplate
     ): Promise<SamTemplate | undefined> {
+        // last common step; reset additionalSteps to 0
+        this.additionalSteps = 0
         const templates = getSamTemplateWizardOption(currRuntime, this.samCliVersion)
         const quickPick = picker.createQuickPick<vscode.QuickPickItem>({
             options: {
                 ignoreFocusOut: true,
                 title: localize('AWS.samcli.initWizard.template.prompt', 'Select a SAM Application Template'),
                 value: currTemplate,
+                step: 2,
+                totalSteps: this.totalSteps,
             },
             buttons: [this.helpButton, vscode.QuickInputButtons.Back],
             items: templates.toArray().map(template => ({
@@ -143,11 +152,15 @@ export class DefaultCreateNewSamAppWizardContext extends WizardContext implement
     }
 
     public async promptUserForRegion(currRegion?: string): Promise<string | undefined> {
+        // start of longer path; set additionalSteps to 3
+        this.additionalSteps = 3
         const quickPick = picker.createQuickPick<vscode.QuickPickItem>({
             options: {
                 ignoreFocusOut: true,
                 title: localize('AWS.samcli.initWizard.schemas.region.prompt', 'Select an EventBridge Schemas Region'),
                 value: currRegion ? currRegion : '',
+                step: 3,
+                totalSteps: this.totalSteps + this.additionalSteps,
             },
             buttons: [this.helpButton, vscode.QuickInputButtons.Back],
             items: this.schemasRegions.map(region => ({
@@ -195,6 +208,8 @@ export class DefaultCreateNewSamAppWizardContext extends WizardContext implement
                 ignoreFocusOut: true,
                 title: localize('AWS.samcli.initWizard.schemas.registry.prompt', 'Select a Registry'),
                 value: currRegistry ? currRegistry : '',
+                step: 4,
+                totalSteps: this.totalSteps + this.additionalSteps,
             },
             buttons: [this.helpButton, vscode.QuickInputButtons.Back],
             items: registryNames!.map(registry => ({
@@ -258,6 +273,8 @@ export class DefaultCreateNewSamAppWizardContext extends WizardContext implement
                 ignoreFocusOut: true,
                 title: localize('AWS.samcli.initWizard.schemas.schema.prompt', 'Select a Schema'),
                 value: currSchema ? currSchema : '',
+                step: 4,
+                totalSteps: this.totalSteps + this.additionalSteps,
             },
             buttons: [this.helpButton, vscode.QuickInputButtons.Back],
             items: schemas!.map(schema => ({
@@ -284,7 +301,11 @@ export class DefaultCreateNewSamAppWizardContext extends WizardContext implement
     }
 
     public async promptUserForLocation(): Promise<vscode.Uri | undefined> {
-        return promptUserForLocation(this, { helpButton: { button: this.helpButton, url: samInitDocUrl } })
+        return promptUserForLocation(this, {
+            helpButton: { button: this.helpButton, url: samInitDocUrl },
+            step: 3 + this.additionalSteps,
+            totalSteps: this.totalSteps + this.additionalSteps,
+        })
     }
 
     public async promptUserForName(defaultValue: string): Promise<string | undefined> {
@@ -292,6 +313,8 @@ export class DefaultCreateNewSamAppWizardContext extends WizardContext implement
             options: {
                 title: localize('AWS.samcli.initWizard.name.prompt', 'Enter a name for your new application'),
                 ignoreFocusOut: true,
+                step: 4 + this.additionalSteps,
+                totalSteps: this.totalSteps + this.additionalSteps,
             },
             buttons: [this.helpButton, vscode.QuickInputButtons.Back],
         })

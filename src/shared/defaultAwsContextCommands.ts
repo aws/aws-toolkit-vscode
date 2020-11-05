@@ -88,7 +88,8 @@ export class DefaultAWSContextCommands {
         const explorerRegions = new Set(await this._awsContext.getExplorerRegions())
         const newRegion = await this.promptForFilteredRegion(
             candidateRegion => !explorerRegions.has(candidateRegion.id),
-            TITLE_SHOW_REGION
+            TITLE_SHOW_REGION,
+            { step: 1, totalSteps: 1 }
         )
 
         if (newRegion) {
@@ -99,7 +100,11 @@ export class DefaultAWSContextCommands {
 
     public async onCommandHideRegion(regionCode?: string) {
         const region =
-            regionCode || (await this.promptForRegion(await this._awsContext.getExplorerRegions(), TITLE_HIDE_REGION))
+            regionCode ||
+            (await this.promptForRegion(await this._awsContext.getExplorerRegions(), TITLE_HIDE_REGION, {
+                step: 1,
+                totalSteps: 1,
+            }))
         if (region) {
             await this._awsContext.removeExplorerRegion(region)
             this.refresh()
@@ -258,13 +263,14 @@ export class DefaultAWSContextCommands {
      */
     private async promptForFilteredRegion(
         filter: (region: Region) => boolean,
-        title?: string
+        title?: string,
+        params?: { step: number; totalSteps: number }
     ): Promise<string | undefined> {
         const partitionRegions = getRegionsForActiveCredentials(this._awsContext, this._regionProvider)
 
         const regionsToShow = partitionRegions.filter(filter).map(r => r.id)
 
-        return this.promptForRegion(regionsToShow, title)
+        return this.promptForRegion(regionsToShow, title, params)
     }
 
     /**
@@ -273,7 +279,11 @@ export class DefaultAWSContextCommands {
      * @param regions (Optional) The regions to show the user. If none provided, all available
      * regions are shown. Regions provided must exist in the available regions to be shown.
      */
-    private async promptForRegion(regions?: string[], title?: string): Promise<string | undefined> {
+    private async promptForRegion(
+        regions?: string[],
+        title?: string,
+        params?: { step?: number; totalSteps?: number }
+    ): Promise<string | undefined> {
         const partitionRegions = getRegionsForActiveCredentials(this._awsContext, this._regionProvider)
 
         const regionsToShow = partitionRegions
@@ -294,6 +304,8 @@ export class DefaultAWSContextCommands {
                 placeHolder: localize('AWS.message.selectRegion', 'Select an AWS region'),
                 title: title,
                 matchOnDetail: true,
+                step: params?.step,
+                totalSteps: params?.totalSteps,
             },
             items: regionsToShow,
         })

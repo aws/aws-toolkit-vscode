@@ -107,6 +107,7 @@ describe('publishSSMDocument', async () => {
                 PublishSsmDocAction: 'Create',
                 name: 'testName',
                 documentType: 'Command',
+                region: '',
             })
         )
 
@@ -121,6 +122,7 @@ describe('publishSSMDocument', async () => {
             Promise.resolve({
                 PublishSsmDocAction: 'Update',
                 name: 'testName',
+                region: '',
             })
         )
         sandbox.stub(ssmUtils, 'showConfirmationMessage').returns(Promise.resolve(false))
@@ -175,6 +177,7 @@ describe('publishDocument', async () => {
             PublishSsmDocAction: 'Update',
             name: 'test',
             documentType: 'Automation',
+            region: '',
         }
         textDocument = { ...mockDoc }
         result = {
@@ -206,7 +209,7 @@ describe('publishDocument', async () => {
                 undefined
             )
             const createSpy = sandbox.spy(client, 'createDocument')
-            await publish.createDocument(wizardResponse, textDocument, 'us-east-1', client)
+            await publish.createDocument(wizardResponse, textDocument, client)
             assert(createSpy.calledOnce)
             assert(createSpy.calledWith(fakeCreateRequest))
         })
@@ -228,7 +231,7 @@ describe('publishDocument', async () => {
                 undefined
             )
             const createErrorSpy = sandbox.spy(vscode.window, 'showErrorMessage')
-            await publish.createDocument(wizardResponse, textDocument, 'us-east-1', client)
+            await publish.createDocument(wizardResponse, textDocument, client)
             assert(createErrorSpy.calledOnce)
             assert(
                 createErrorSpy.getCall(0).args[0],
@@ -255,7 +258,7 @@ describe('publishDocument', async () => {
             )
             const updateSpy = sandbox.spy(client, 'updateDocument')
             sandbox.stub(ssmUtils, 'showConfirmationMessage').returns(Promise.resolve(false))
-            await publish.updateDocument(wizardResponse, textDocument, 'us-east-1', client)
+            await publish.updateDocument(wizardResponse, textDocument, client)
             assert(updateSpy.calledOnce)
             assert(updateSpy.calledWith(fakeUpdateRequest))
         })
@@ -277,7 +280,7 @@ describe('publishDocument', async () => {
             )
             const updateErrorSpy = sandbox.spy(vscode.window, 'showErrorMessage')
             sandbox.stub(ssmUtils, 'showConfirmationMessage').returns(Promise.resolve(false))
-            await publish.updateDocument(wizardResponse, textDocument, 'us-east-1', client)
+            await publish.updateDocument(wizardResponse, textDocument, client)
             assert(updateErrorSpy.calledOnce)
             assert(
                 updateErrorSpy.getCall(0).args[0],
