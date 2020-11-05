@@ -3,11 +3,10 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
-import * as del from 'del'
-import * as fs from 'fs'
 import * as vscode from 'vscode'
 import { makeTemporaryToolkitFolder } from '../filesystemUtilities'
-import { getLogger, Logger } from '../logger'
+import { removeSync } from 'fs-extra'
+import { getLogger } from '../logger'
 
 export class DisposableFiles implements vscode.Disposable {
     private _disposed: boolean = false
@@ -31,35 +30,21 @@ export class DisposableFiles implements vscode.Disposable {
     }
 
     public dispose(): void {
-        const logger: Logger = getLogger()
-        if (!this._disposed) {
-            try {
-                del.sync([...this._filePaths], {
-                    absolute: true,
-                    force: true,
-                    nobrace: false,
-                    nodir: true,
-                    noext: true,
-                    noglobstar: true,
-                })
+        if (this._disposed) {
+            return
+        }
 
-                this._folderPaths.forEach(folder => {
-                    if (fs.existsSync(folder)) {
-                        del.sync(folder, {
-                            absolute: true,
-                            force: true,
-                            nobrace: false,
-                            nodir: false,
-                            noext: true,
-                            noglobstar: true,
-                        })
-                    }
-                })
-            } catch (err) {
-                logger.error('Error during DisposableFiles dispose: %O', err as Error)
-            } finally {
-                this._disposed = true
-            }
+        try {
+            this._filePaths.forEach(file => {
+                removeSync(file)
+            })
+            this._folderPaths.forEach(folder => {
+                removeSync(folder)
+            })
+        } catch (err) {
+            getLogger().error('Error during DisposableFiles dispose: %O', err as Error)
+        } finally {
+            this._disposed = true
         }
     }
 }

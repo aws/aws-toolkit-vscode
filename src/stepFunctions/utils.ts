@@ -6,11 +6,10 @@ import * as nls from 'vscode-nls'
 const localize = nls.loadMessageBundle()
 
 import { IAM, StepFunctions } from 'aws-sdk'
-import { writeFile } from 'fs-extra'
+import { mkdir, writeFile } from 'fs-extra'
 import * as vscode from 'vscode'
 import { StepFunctionsClient } from '../shared/clients/stepFunctionsClient'
 import { ext } from '../shared/extensionGlobals'
-import { mkdir } from '../shared/filesystem'
 import { fileExists } from '../shared/filesystemUtilities'
 import { getLogger, Logger } from '../shared/logger'
 import {

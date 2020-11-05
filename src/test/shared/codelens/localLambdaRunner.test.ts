@@ -4,8 +4,8 @@
  */
 
 import * as assert from 'assert'
-import * as del from 'del'
 import * as vscode from 'vscode'
+import * as fs from 'fs-extra'
 import * as fsUtils from '../../../shared/filesystemUtilities'
 import { SamCliBuildInvocation, SamCliBuildInvocationArguments } from '../../../shared/sam/cli/samCliBuild'
 import * as localLambdaRunner from '../../../shared/sam/localLambdaRunner'
@@ -26,7 +26,7 @@ describe('localLambdaRunner', async () => {
     })
 
     afterEach(async () => {
-        await del(tempDir, { force: true })
+        await fs.remove(tempDir)
     })
 
     describe('attachDebugger', async () => {

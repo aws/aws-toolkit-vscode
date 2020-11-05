@@ -5,13 +5,12 @@
 
 // Use jsonc-parser.parse instead of JSON.parse, as JSONC can handle comments. VS Code uses jsonc-parser
 // under the hood to provide symbols for JSON documents, so this will keep us consistent with VS code.
-import { access, writeFile } from 'fs-extra'
+import { access, writeFile, ensureDir } from 'fs-extra'
 import * as jsonParser from 'jsonc-parser'
 import * as os from 'os'
 import * as _path from 'path'
 import * as vscode from 'vscode'
 import * as nls from 'vscode-nls'
-import { mkdir } from '../../shared/filesystem'
 import * as fsUtils from '../../shared/filesystemUtilities'
 import { getLogger, Logger } from '../../shared/logger'
 import { ReadonlyJsonObject } from '../../shared/sam/debugger/awsSamDebugConfiguration'
@@ -200,12 +199,7 @@ export function showTemplatesConfigurationError(
 }
 
 export async function ensureTemplatesConfigFileExists(path: string): Promise<void> {
-    try {
-        await access(_path.dirname(path))
-    } catch {
-        await mkdir(_path.dirname(path), { recursive: true })
-    }
-
+    ensureDir(_path.dirname(path))
     try {
         await access(path)
     } catch {

@@ -4,11 +4,9 @@
  */
 
 import * as assert from 'assert'
-import * as del from 'del'
-import { writeFile } from 'fs-extra'
+import { writeFile, remove, mkdir } from 'fs-extra'
 import * as path from 'path'
 import * as vscode from 'vscode'
-import { mkdir } from '../../../shared/filesystem'
 import { fileExists, makeTemporaryToolkitFolder } from '../../../shared/filesystemUtilities'
 import { DisposableFiles, ExtensionDisposableFiles } from '../../../shared/utilities/disposableFiles'
 import { TestExtensionDisposableFiles } from '../../fakeExtensionContext'
@@ -23,7 +21,7 @@ describe('DisposableFiles', async () => {
     })
 
     afterEach(async () => {
-        await del([tempFolder], { force: true })
+        await remove(tempFolder)
     })
 
     it('deletes file on dispose', async () => {
