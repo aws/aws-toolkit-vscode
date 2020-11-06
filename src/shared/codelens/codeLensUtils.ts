@@ -141,6 +141,8 @@ export async function pickAddSamDebugConfiguration(
                 'AWS.pickDebugConfig.prompt',
                 'Create a Debug Configuration from a CloudFormation Template'
             ),
+            step: 1,
+            totalSteps: 1,
         },
         items: [
             ...templateItems,
@@ -161,7 +163,7 @@ export async function pickAddSamDebugConfiguration(
         return undefined
     }
     if (val.label === noTemplate) {
-        await addSamDebugConfiguration(codeConfig, CODE_TARGET_TYPE)
+        await addSamDebugConfiguration(codeConfig, CODE_TARGET_TYPE, { step: 2, totalSteps: 2 })
     } else {
         const templateItem = templateItemsMap.get(val.label)
         if (!templateItem) {
