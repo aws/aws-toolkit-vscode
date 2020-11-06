@@ -100,9 +100,9 @@ describe('CloudFormation Template Registry Manager', async () => {
         await fs.mkdirp(samBuild)
         await fs.mkdirp(nestedSamBuild)
 
-        await strToYamlFile(makeSampleSamTemplateYaml(false), path.join(testDir, 'test.yml'))
-        await strToYamlFile(makeSampleSamTemplateYaml(false), path.join(samBuild, 'test.yaml'))
-        await strToYamlFile(makeSampleSamTemplateYaml(false), path.join(nestedSamBuild, 'test.yml'))
+        await strToYamlFile(makeSampleSamTemplateYaml(false), path.join(testDir, 'template.yml'))
+        await strToYamlFile(makeSampleSamTemplateYaml(false), path.join(samBuild, 'template.yaml'))
+        await strToYamlFile(makeSampleSamTemplateYaml(false), path.join(nestedSamBuild, 'template.yml'))
 
         await registryHasTargetNumberOfFiles(registry, 1)
     })
