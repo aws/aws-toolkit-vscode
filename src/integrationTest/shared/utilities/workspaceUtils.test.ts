@@ -4,12 +4,11 @@
  */
 
 import * as assert from 'assert'
-import { writeFile } from 'fs-extra'
+import { writeFile, mkdir, mkdirp, remove } from 'fs-extra'
 import * as path from 'path'
 import * as vscode from 'vscode'
 import { findParentProjectFile, getWorkspaceRelativePath } from '../../../shared/utilities/workspaceUtils'
 import { getTestWorkspaceFolder } from '../../integrationTestsUtilities'
-import { mkdir, rmrf } from '../../../shared/filesystem'
 
 describe('findParentProjectFile', async () => {
     const workspaceDir = getTestWorkspaceFolder()
@@ -66,18 +65,18 @@ describe('findParentProjectFile', async () => {
     ]
 
     before(async () => {
-        await mkdir(path.join(workspaceDir, 'someproject', 'src'), { recursive: true })
+        await mkdirp(path.join(workspaceDir, 'someproject', 'src'))
         await mkdir(path.join(workspaceDir, 'someotherproject'))
     })
 
     after(async () => {
-        rmrf(path.join(workspaceDir, 'someproject'))
-        rmrf(path.join(workspaceDir, 'someotherproject'))
+        remove(path.join(workspaceDir, 'someproject'))
+        remove(path.join(workspaceDir, 'someotherproject'))
     })
 
     afterEach(async () => {
         for (const file of filesToDelete) {
-            rmrf(file.fsPath)
+            remove(file.fsPath)
         }
         filesToDelete = []
     })

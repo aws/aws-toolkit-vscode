@@ -4,7 +4,6 @@
  */
 
 import * as assert from 'assert'
-import del = require('del')
 import * as fs from 'fs-extra'
 import { join } from 'path'
 import { makeTemporaryToolkitFolder } from '../../../shared/filesystemUtilities'
@@ -17,8 +16,8 @@ describe('FileResourceFetcher', async () => {
         tempFolder = await makeTemporaryToolkitFolder()
     })
 
-    afterEach(() => {
-        del.sync([tempFolder], { force: true })
+    afterEach(async () => {
+        await fs.remove(tempFolder)
     })
 
     it('loads the contents of a file', async () => {

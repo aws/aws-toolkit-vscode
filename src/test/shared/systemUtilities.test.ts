@@ -4,12 +4,11 @@
  */
 
 import * as assert from 'assert'
-import * as fs from 'fs'
+import * as fs from 'fs-extra'
 import * as os from 'os'
 import * as path from 'path'
 
 import { EnvironmentVariables } from '../../shared/environmentVariables'
-import { rmrf } from '../../shared/filesystem'
 import { makeTemporaryToolkitFolder } from '../../shared/filesystemUtilities'
 import { SystemUtilities } from '../../shared/systemUtilities'
 
@@ -23,7 +22,7 @@ describe('SystemUtilities', () => {
     })
 
     after(async () => {
-        await rmrf(tempFolder)
+        await fs.remove(tempFolder)
     })
 
     describe('getHomeDirectory', () => {
