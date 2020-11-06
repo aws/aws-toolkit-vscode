@@ -1,0 +1,4 @@
+{
+  "type" : "bugfix",
+  "description" : "Significantly speed up loading the list of S3 buckets (#2174)"
+}

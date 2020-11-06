@@ -3,6 +3,10 @@
 package software.aws.toolkits.jetbrains.services.s3.resources
 
 import com.intellij.openapi.project.Project
+import kotlinx.coroutines.async
+import kotlinx.coroutines.awaitAll
+import kotlinx.coroutines.runBlocking
+import kotlinx.coroutines.withContext
 import org.slf4j.event.Level
 import software.amazon.awssdk.services.s3.S3Client
 import software.amazon.awssdk.services.s3.model.Bucket
@@ -16,6 +20,7 @@ import software.aws.toolkits.jetbrains.core.credentials.AwsConnectionManager
 import software.aws.toolkits.jetbrains.core.filter
 import software.aws.toolkits.jetbrains.core.map
 import software.aws.toolkits.jetbrains.core.region.AwsRegionProvider
+import software.aws.toolkits.jetbrains.utils.ApplicationThreadPoolScope
 import java.time.Instant
 import java.time.LocalDateTime
 import java.time.ZoneId
@@ -26,20 +31,25 @@ object S3Resources {
     private val regions by lazy { AwsRegionProvider.getInstance().allRegions() }
 
     val LIST_REGIONALIZED_BUCKETS = ClientBackedCachedResource(S3Client::class, "s3.list_buckets") {
-        listBuckets().buckets().mapNotNull { bucket ->
-            LOG.tryOrNull("Cannot determine region for ${bucket.name()}", level = Level.WARN) {
-                regionForBucket(bucket.name())
-            }?.let { regions[it] }?.let {
-                RegionalizedBucket(bucket, it)
+        val buckets = listBuckets().buckets()
+        // TODO when the resource cache is coroutine based, remove the runBlocking and withContext
+        runBlocking {
+            // withContext is needed to put this on a thread pool
+            withContext(ApplicationThreadPoolScope("ListRegionalizedBuckets").coroutineContext) {
+                buckets.map { bucket ->
+                    async {
+                        LOG.tryOrNull("Cannot determine region for ${bucket.name()}", level = Level.WARN) {
+                            regionForBucket(bucket.name())
+                        }?.let { regions[it] }?.let {
+                            RegionalizedBucket(bucket, it)
+                        }
+                    }
+                }.awaitAll().filterNotNull()
             }
         }
     }
 
     val LIST_BUCKETS: Resource<List<Bucket>> = LIST_REGIONALIZED_BUCKETS.map { it.bucket }
-
-    fun bucketRegion(bucketName: String): Resource<AwsRegion?> = Resource.View(LIST_REGIONALIZED_BUCKETS) {
-        find { it.bucket.name() == bucketName }?.region
-    }
 
     fun listBucketsByActiveRegion(project: Project): Resource<List<Bucket>> {
         val activeRegion = AwsConnectionManager.getInstance(project).activeRegion
