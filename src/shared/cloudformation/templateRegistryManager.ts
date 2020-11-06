@@ -11,7 +11,7 @@ export class CloudFormationTemplateRegistryManager implements vscode.Disposable 
     private readonly disposables: vscode.Disposable[] = []
     private _isDisposed: boolean = false
     private readonly globs: vscode.GlobPattern[] = []
-    private readonly bannedFilePatterns: RegExp[] = []
+    private readonly excludedFilePatterns: RegExp[] = []
 
     public constructor(private readonly registry: CloudFormationTemplateRegistry) {
         this.disposables.push(
@@ -42,11 +42,11 @@ export class CloudFormationTemplateRegistryManager implements vscode.Disposable 
     /**
      * Adds a regex pattern to ignore paths containing the pattern
      */
-    public async addBannedPattern(pattern: RegExp): Promise<void> {
+    public async addExcludedPattern(pattern: RegExp): Promise<void> {
         if (this._isDisposed) {
             throw new Error('Manager has already been disposed!')
         }
-        this.bannedFilePatterns.push(pattern)
+        this.excludedFilePatterns.push(pattern)
 
         await this.rebuildRegistry()
     }
@@ -62,7 +62,7 @@ export class CloudFormationTemplateRegistryManager implements vscode.Disposable 
     }
 
     private async addTemplateToRegistry(templateUri: vscode.Uri, quiet?: boolean): Promise<void> {
-        const banned = this.bannedFilePatterns.find(pattern => templateUri.fsPath.match(pattern))
+        const banned = this.excludedFilePatterns.find(pattern => templateUri.fsPath.match(pattern))
         if (banned) {
             getLogger().verbose(`Manager did not add template ${templateUri.fsPath} matching banned pattern ${banned}`)
             return

@@ -18,7 +18,7 @@ export const TEMPLATE_FILE_GLOB_PATTERN = '**/template.{yaml,yml}'
  * a '/' or '\' followed by any number of characters or end of a string (so it
  * matches both /.aws-sam or /.aws-sam/<any number of characters>)
  */
-export const TEMPLATE_FILE_BANNED_PATTERN = /.*[/\\]\.aws-sam([/\\].*|$)/
+export const TEMPLATE_FILE_EXCLUDE_PATTERN = /.*[/\\]\.aws-sam([/\\].*|$)/
 
 /**
  * Creates a CloudFormationTemplateRegistry which retains the state of CloudFormation templates in a workspace.
@@ -30,7 +30,7 @@ export async function activate(extensionContext: vscode.ExtensionContext): Promi
     try {
         const registry = CloudFormationTemplateRegistry.getRegistry()
         const manager = new CloudFormationTemplateRegistryManager(registry)
-        await manager.addBannedPattern(TEMPLATE_FILE_BANNED_PATTERN)
+        await manager.addExcludedPattern(TEMPLATE_FILE_EXCLUDE_PATTERN)
         await manager.addTemplateGlob(TEMPLATE_FILE_GLOB_PATTERN)
         extensionContext.subscriptions.push(manager)
     } catch (e) {
