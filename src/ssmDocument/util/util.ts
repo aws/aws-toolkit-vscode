@@ -10,7 +10,10 @@ import * as vscode from 'vscode'
 import * as picker from '../../shared/ui/picker'
 import { Window } from '../../shared/vscode/window'
 
-export async function promptUserForDocumentFormat(formats: string[]): Promise<string | undefined> {
+export async function promptUserForDocumentFormat(
+    formats: string[],
+    params?: { step?: number; totalSteps?: number }
+): Promise<string | undefined> {
     // Prompt user to pick document format
     const quickPickItems: vscode.QuickPickItem[] = formats.map(format => {
         return {
@@ -23,6 +26,8 @@ export async function promptUserForDocumentFormat(formats: string[]): Promise<st
         options: {
             ignoreFocusOut: true,
             title: localize('AWS.message.prompt.selectSsmDocumentFormat.placeholder', 'Select a document format'),
+            step: params?.step,
+            totalSteps: params?.totalSteps,
         },
         items: quickPickItems,
     })

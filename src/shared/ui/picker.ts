@@ -17,6 +17,8 @@ import { IteratorTransformer } from '../utilities/collectionUtils'
 export interface AdditionalQuickPickOptions {
     title?: string
     value?: string
+    step?: number
+    totalSteps?: number
 }
 
 /**
@@ -56,6 +58,8 @@ export function createQuickPick<T extends vscode.QuickPickItem>({
         if (options.ignoreFocusOut !== undefined) {
             picker.ignoreFocusOut = options.ignoreFocusOut
         }
+        picker.step = options.step
+        picker.totalSteps = options.totalSteps
 
         // TODO : Apply more options as they are needed in the future, and add corresponding tests
     }

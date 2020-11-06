@@ -4,8 +4,7 @@
  */
 
 import * as assert from 'assert'
-import * as del from 'del'
-import * as fs from 'fs'
+import * as fs from 'fs-extra'
 import * as path from 'path'
 import * as vscode from 'vscode'
 import {
@@ -149,7 +148,7 @@ describe('deploySamApplication', async () => {
     })
 
     afterEach(async () => {
-        await del([tempToolkitFolder], { force: true })
+        await fs.remove(tempToolkitFolder)
     })
 
     it('deploys with the happy path', async () => {

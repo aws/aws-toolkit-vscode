@@ -20,7 +20,13 @@ import { createHelpButton } from '../../shared/ui/buttons'
 import * as input from '../../shared/ui/input'
 import * as picker from '../../shared/ui/picker'
 import { difference, filter } from '../../shared/utilities/collectionUtils'
-import { MultiStepWizard, WizardStep } from '../../shared/wizards/multiStepWizard'
+import {
+    MultiStepWizard,
+    WIZARD_GOBACK,
+    WIZARD_TERMINATE,
+    wizardContinue,
+    WizardStep,
+} from '../../shared/wizards/multiStepWizard'
 import { configureParameterOverrides } from '../config/configureParameterOverrides'
 import { getOverriddenParameters, getParameters } from '../utilities/parameterUtils'
 import { CloudFormationTemplateRegistry } from '../../shared/cloudformation/templateRegistry'
@@ -126,6 +132,9 @@ export class DefaultSamDeployWizardContext implements SamDeployWizardContext {
     public readonly getOverriddenParameters = getOverriddenParameters
     private readonly helpButton = createHelpButton(localize('AWS.command.help', 'View Toolkit Documentation'))
 
+    private readonly totalSteps: number = 4
+    private additionalSteps: number = 0
+
     public constructor(private readonly regionProvider: RegionProvider, private readonly awsContext: AwsContext) {}
 
     public get workspaceFolders(): vscode.Uri[] | undefined {
@@ -138,6 +147,8 @@ export class DefaultSamDeployWizardContext implements SamDeployWizardContext {
      * @returns vscode.Uri of a Sam Template. undefined represents cancel.
      */
     public async promptUserForSamTemplate(initialValue?: vscode.Uri): Promise<vscode.Uri | undefined> {
+        // set steps back to 0 since the next step determines if additional steps are needed
+        this.additionalSteps = 0
         const workspaceFolders = this.workspaceFolders || []
 
         const quickPick = picker.createQuickPick<SamTemplateQuickPickItem>({
@@ -147,6 +158,8 @@ export class DefaultSamDeployWizardContext implements SamDeployWizardContext {
                     'AWS.samcli.deploy.template.prompt',
                     'Which SAM Template would you like to deploy to AWS?'
                 ),
+                step: 1,
+                totalSteps: this.totalSteps,
             },
             buttons: [this.helpButton, vscode.QuickInputButtons.Back],
             items: await getTemplateChoices(...workspaceFolders),
@@ -174,6 +187,7 @@ export class DefaultSamDeployWizardContext implements SamDeployWizardContext {
         templateUri: vscode.Uri
         missingParameters?: Set<string>
     }): Promise<ParameterPromptResult> {
+        this.additionalSteps = 1
         if (missingParameters.size < 1) {
             const prompt = localize(
                 'AWS.samcli.deploy.parameters.optionalPrompt.message',
@@ -185,6 +199,8 @@ export class DefaultSamDeployWizardContext implements SamDeployWizardContext {
                 options: {
                     ignoreFocusOut: true,
                     title: prompt,
+                    step: 2,
+                    totalSteps: this.totalSteps + this.additionalSteps,
                 },
                 buttons: [this.helpButton, vscode.QuickInputButtons.Back],
                 items: [{ label: localizedText.yes }, { label: localizedText.no }],
@@ -224,6 +240,7 @@ export class DefaultSamDeployWizardContext implements SamDeployWizardContext {
             )
             const responseCancel = localize('AWS.samcli.deploy.parameters.mandatoryPrompt.responseCancel', 'Cancel')
 
+            // no step number needed since this is a dead end?
             const quickPick = picker.createQuickPick<vscode.QuickPickItem>({
                 options: {
                     ignoreFocusOut: true,
@@ -264,6 +281,8 @@ export class DefaultSamDeployWizardContext implements SamDeployWizardContext {
                 value: initialRegionCode,
                 matchOnDetail: true,
                 ignoreFocusOut: true,
+                step: 2 + this.additionalSteps,
+                totalSteps: this.totalSteps + this.additionalSteps,
             },
             items: partitionRegions.map(region => ({
                 label: region.name,
@@ -323,6 +342,8 @@ export class DefaultSamDeployWizardContext implements SamDeployWizardContext {
                 value: initialValue,
                 matchOnDetail: true,
                 ignoreFocusOut: true,
+                step: 3 + this.additionalSteps,
+                totalSteps: this.totalSteps + this.additionalSteps,
             },
             items: [
                 {
@@ -377,6 +398,8 @@ export class DefaultSamDeployWizardContext implements SamDeployWizardContext {
             options: {
                 title: localize('AWS.samcli.deploy.stackName.prompt', 'Enter the name to use for the deployed stack'),
                 ignoreFocusOut: true,
+                step: 4 + this.additionalSteps,
+                totalSteps: this.totalSteps + this.additionalSteps,
             },
         })
 
@@ -437,28 +460,25 @@ export class SamDeployWizard extends MultiStepWizard<SamDeployWizardResponse> {
     private readonly TEMPLATE: WizardStep = async () => {
         this.response.template = await this.context.promptUserForSamTemplate(this.response.template)
 
-        return this.response.template ? this.PARAMETER_OVERRIDES : undefined
-    }
+        if (!this.response.template) {
+            return WIZARD_TERMINATE
+        }
 
-    private readonly PARAMETER_OVERRIDES: WizardStep = async () => {
+        // also ask user to setup CFN parameters if they haven't already done so
         const getNextStep = (result: ParameterPromptResult) => {
             switch (result) {
                 case ParameterPromptResult.Cancel:
-                    return undefined
+                    return WIZARD_TERMINATE
                 case ParameterPromptResult.Continue:
-                    return this.skipOrPromptRegion(this.S3_BUCKET)
+                    return wizardContinue(this.skipOrPromptRegion(this.S3_BUCKET))
             }
-        }
-
-        if (!this.response.template) {
-            throw new Error('Unexpected state: TEMPLATE step is complete, but no template was selected')
         }
 
         const parameters = await this.context.getParameters(this.response.template)
         if (parameters.size < 1) {
             this.response.parameterOverrides = new Map<string, string>()
 
-            return this.skipOrPromptRegion(this.S3_BUCKET)
+            return wizardContinue(this.skipOrPromptRegion(this.S3_BUCKET))
         }
 
         const requiredParameterNames = new Set<string>(
@@ -491,21 +511,19 @@ export class SamDeployWizard extends MultiStepWizard<SamDeployWizardResponse> {
 
         this.response.parameterOverrides = overriddenParameters
 
-        return this.skipOrPromptRegion(this.S3_BUCKET)
+        return wizardContinue(this.skipOrPromptRegion(this.S3_BUCKET))
     }
 
     private readonly REGION: WizardStep = async () => {
         this.response.region = await this.context.promptUserForRegion(this.response.region)
 
-        // The PARAMETER_OVERRIDES step is part of the TEMPLATE step from the user's perspective,
-        // so we go back to the TEMPLATE step instead of PARAMETER_OVERRIDES.
-        return this.response.region ? this.S3_BUCKET : this.TEMPLATE
+        return this.response.region ? wizardContinue(this.S3_BUCKET) : WIZARD_GOBACK
     }
 
     private readonly S3_BUCKET: WizardStep = async () => {
         this.response.s3Bucket = await this.context.promptUserForS3Bucket(this.response.region, this.response.s3Bucket)
 
-        return this.response.s3Bucket ? this.STACK_NAME : this.skipOrPromptRegion(this.TEMPLATE)
+        return this.response.s3Bucket ? wizardContinue(this.STACK_NAME) : WIZARD_GOBACK
     }
 
     private readonly STACK_NAME: WizardStep = async () => {
@@ -514,10 +532,10 @@ export class SamDeployWizard extends MultiStepWizard<SamDeployWizardResponse> {
             validateInput: validateStackName,
         })
 
-        return this.response.stackName ? undefined : this.S3_BUCKET
+        return this.response.stackName ? WIZARD_TERMINATE : WIZARD_GOBACK
     }
 
-    private skipOrPromptRegion(skipToStep: WizardStep | undefined): WizardStep | undefined {
+    private skipOrPromptRegion(skipToStep: WizardStep): WizardStep {
         return this.regionNode ? skipToStep : this.REGION
     }
 }

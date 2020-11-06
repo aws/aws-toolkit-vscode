@@ -8,6 +8,7 @@ import * as path from 'path'
 import * as pathutils from '../../../shared/utilities/pathUtils'
 import * as testutil from '../../testUtil'
 import * as vscode from 'vscode'
+import * as fs from 'fs-extra'
 import { FakeExtensionContext } from '../../fakeExtensionContext'
 import { addInitialLaunchConfiguration } from '../../../lambda/commands/createNewSamApp'
 import { LaunchConfiguration } from '../../../shared/debug/launchConfiguration'
@@ -15,7 +16,6 @@ import { anything, capture, instance, mock, when } from 'ts-mockito'
 import { makeSampleSamTemplateYaml } from '../../shared/cloudformation/cloudformationTestUtils'
 import { makeTemporaryToolkitFolder } from '../../../shared/filesystemUtilities'
 import { CloudFormationTemplateRegistry } from '../../../shared/cloudformation/templateRegistry'
-import { rmrf } from '../../../shared/filesystem'
 import { ExtContext } from '../../../shared/extensions'
 import { TemplateTargetProperties } from '../../../shared/sam/debugger/awsSamDebugConfiguration'
 
@@ -55,8 +55,7 @@ describe('addInitialLaunchConfiguration', function() {
     })
 
     afterEach(async () => {
-        await rmrf(tempFolder)
-        registry.reset()
+        await fs.remove(tempFolder)
     })
 
     it('produces and returns initial launch configurations', async () => {

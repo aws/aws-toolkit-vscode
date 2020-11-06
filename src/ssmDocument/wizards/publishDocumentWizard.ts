@@ -6,13 +6,22 @@
 import { SSM } from 'aws-sdk'
 import * as vscode from 'vscode'
 import * as nls from 'vscode-nls'
+import { AwsContext } from '../../shared/awsContext'
 
-import { SsmDocumentClient } from '../../shared/clients/ssmDocumentClient'
 import { ext } from '../../shared/extensionGlobals'
+import { RegionProvider } from '../../shared/regions/regionProvider'
+import { getRegionsForActiveCredentials } from '../../shared/regions/regionUtilities'
 import * as input from '../../shared/ui/input'
 import * as picker from '../../shared/ui/picker'
 import { toArrayAsync } from '../../shared/utilities/collectionUtils'
-import { MultiStepWizard, WizardContext, WizardStep } from '../../shared/wizards/multiStepWizard'
+import {
+    MultiStepWizard,
+    WIZARD_GOBACK,
+    WIZARD_TERMINATE,
+    WizardContext,
+    wizardContinue,
+    WizardStep,
+} from '../../shared/wizards/multiStepWizard'
 import { validateDocumentName } from '../util/validateDocumentName'
 const localize = nls.loadMessageBundle()
 
@@ -20,6 +29,7 @@ export interface PublishSSMDocumentWizardResponse {
     PublishSsmDocAction: string
     name: string
     documentType?: SSM.DocumentType
+    region: string
 }
 
 export enum PublishSSMDocumentAction {
@@ -29,28 +39,34 @@ export enum PublishSSMDocumentAction {
 
 export interface PublishSSMDocumentWizardContext {
     promptUserForPublishAction(
+        region: string,
         publishAction: PublishSSMDocumentAction | undefined
     ): Promise<PublishSSMDocumentAction | undefined>
+    promptUserForRegion(initialRegionCode?: string): Promise<string | undefined>
     promptUserForDocumentName(): Promise<string | undefined>
-    promptUserForDocumentToUpdate(): Promise<string | undefined>
+    promptUserForDocumentToUpdate(region: string): Promise<string | undefined>
     promptUserForDocumentType(): Promise<SSM.DocumentType | undefined>
-    loadSSMDocument(documentType?: SSM.Types.DocumentType): Promise<void>
+    loadSSMDocument(region: string, documentType?: SSM.Types.DocumentType): Promise<void>
 }
 
 export class PublishSSMDocumentWizard extends MultiStepWizard<PublishSSMDocumentWizardResponse> {
     private name?: string
     private publishAction?: PublishSSMDocumentAction
     private documentType?: SSM.DocumentType
+    private region: string | undefined
 
     public constructor(private readonly context: PublishSSMDocumentWizardContext) {
         super()
     }
 
     protected get startStep() {
-        return this.PUBLISH_ACTION
+        return this.REGION
     }
 
     protected getResult(): PublishSSMDocumentWizardResponse | undefined {
+        if (!this.region) {
+            return undefined
+        }
         switch (this.publishAction) {
             case PublishSSMDocumentAction.QuickCreate: {
                 if (!this.name || !this.documentType) {
@@ -61,6 +77,7 @@ export class PublishSSMDocumentWizard extends MultiStepWizard<PublishSSMDocument
                     PublishSsmDocAction: 'Create',
                     name: this.name,
                     documentType: this.documentType,
+                    region: this.region,
                 }
             }
 
@@ -72,6 +89,7 @@ export class PublishSSMDocumentWizard extends MultiStepWizard<PublishSSMDocument
                 return {
                     PublishSsmDocAction: 'Update',
                     name: this.name,
+                    region: this.region,
                 }
             }
 
@@ -81,20 +99,26 @@ export class PublishSSMDocumentWizard extends MultiStepWizard<PublishSSMDocument
         }
     }
 
+    private readonly REGION: WizardStep = async () => {
+        this.region = await this.context.promptUserForRegion(this.region)
+
+        return this.region ? wizardContinue(this.PUBLISH_ACTION) : WIZARD_TERMINATE
+    }
+
     private readonly PUBLISH_ACTION: WizardStep = async () => {
-        this.publishAction = await this.context.promptUserForPublishAction(this.publishAction)
+        this.publishAction = await this.context.promptUserForPublishAction(this.region ?? '', this.publishAction)
 
         switch (this.publishAction) {
             case PublishSSMDocumentAction.QuickCreate: {
-                return this.NEW_SSM_DOCUMENT_NAME
+                return wizardContinue(this.NEW_SSM_DOCUMENT_NAME)
             }
 
             case PublishSSMDocumentAction.QuickUpdate: {
-                return this.EXISTING_SSM_DOCUMENT_NAME
+                return wizardContinue(this.EXISTING_SSM_DOCUMENT_NAME)
             }
 
             default: {
-                return undefined
+                return WIZARD_GOBACK
             }
         }
     }
@@ -102,21 +126,22 @@ export class PublishSSMDocumentWizard extends MultiStepWizard<PublishSSMDocument
     private readonly NEW_SSM_DOCUMENT_TYPE: WizardStep = async () => {
         this.documentType = await this.context.promptUserForDocumentType()
 
-        return this.documentType ? undefined : this.PUBLISH_ACTION
+        return this.documentType ? WIZARD_TERMINATE : WIZARD_GOBACK
     }
 
     private readonly NEW_SSM_DOCUMENT_NAME: WizardStep = async () => {
         this.name = await this.context.promptUserForDocumentName()
 
-        return this.name ? this.NEW_SSM_DOCUMENT_TYPE : this.PUBLISH_ACTION
+        return this.name ? wizardContinue(this.NEW_SSM_DOCUMENT_TYPE) : WIZARD_GOBACK
     }
 
     private readonly EXISTING_SSM_DOCUMENT_NAME: WizardStep = async () => {
         this.documentType = await this.context.promptUserForDocumentType()
-        await this.context.loadSSMDocument(this.documentType)
-        this.name = await this.context.promptUserForDocumentToUpdate()
+        // TODO: make this return and pass the return value to the next step, otherwise the values here will never readjust.
+        await this.context.loadSSMDocument(this.region ?? '', this.documentType)
+        this.name = await this.context.promptUserForDocumentToUpdate(this.region ?? '')
 
-        return this.name ? undefined : this.PUBLISH_ACTION
+        return this.name ? WIZARD_TERMINATE : WIZARD_GOBACK
     }
 }
 
@@ -144,14 +169,56 @@ export interface UpdateDocumentQuickPickItem {
 
 export class DefaultPublishSSMDocumentWizardContext extends WizardContext implements PublishSSMDocumentWizardContext {
     private documents: SSM.Types.DocumentIdentifierList | undefined
-    private readonly ssmDocumentClient: SsmDocumentClient
 
-    public constructor(private readonly defaultRegion: string) {
+    private readonly totalSteps: number = 3
+
+    public constructor(private readonly awsContext: AwsContext, private readonly regionProvider: RegionProvider) {
         super()
-        this.ssmDocumentClient = ext.toolkitClientBuilder.createSsmClient(this.defaultRegion)
     }
 
-    public async loadSSMDocument(documentType?: SSM.Types.DocumentType): Promise<void> {
+    public async promptUserForRegion(initialRegionCode?: string): Promise<string | undefined> {
+        const partitionRegions = getRegionsForActiveCredentials(this.awsContext, this.regionProvider)
+
+        const quickPick = picker.createQuickPick<vscode.QuickPickItem>({
+            options: {
+                title: localize(
+                    'AWS.message.prompt.ssmDocument.publishDocument.region',
+                    'Which AWS Region would you like to publish to?'
+                ),
+                value: initialRegionCode,
+                matchOnDetail: true,
+                ignoreFocusOut: true,
+                step: 1,
+                totalSteps: this.totalSteps,
+            },
+            items: partitionRegions.map(region => ({
+                label: region.name,
+                detail: region.id,
+                // this is the only way to get this to show on going back
+                // this will make it so it always shows even when searching for something else
+                alwaysShow: region.id === initialRegionCode,
+                description:
+                    region.id === initialRegionCode
+                        ? localize('AWS.wizard.selectedPreviously', 'Selected Previously')
+                        : '',
+            })),
+            buttons: [vscode.QuickInputButtons.Back],
+        })
+
+        const choices = await picker.promptUser<vscode.QuickPickItem>({
+            picker: quickPick,
+            onDidTriggerButton: (button, resolve, reject) => {
+                if (button === vscode.QuickInputButtons.Back) {
+                    resolve(undefined)
+                }
+            },
+        })
+        const val = picker.verifySinglePickerOutput(choices)
+
+        return val?.detail
+    }
+
+    public async loadSSMDocument(region: string, documentType?: SSM.Types.DocumentType): Promise<void> {
         if (!this.documents) {
             let filters: SSM.Types.DocumentKeyValuesFilterList = [
                 {
@@ -165,8 +232,9 @@ export class DefaultPublishSSMDocumentWizardContext extends WizardContext implem
                     Values: [documentType],
                 })
             }
+            const client = ext.toolkitClientBuilder.createSsmClient(region)
             this.documents = await toArrayAsync(
-                this.ssmDocumentClient.listDocuments({
+                client.listDocuments({
                     Filters: filters,
                 })
             )
@@ -174,6 +242,8 @@ export class DefaultPublishSSMDocumentWizardContext extends WizardContext implem
     }
 
     // TODO: Uncomment code when supporting more document types in future
+    // TODO: Add step numbers and update this.totalSteps if this gets added back in!
+    //       Note: This will likely use the "this.additionalStep" pattern we're using elsewhere since this makes one branch longer than the other.
     public async promptUserForDocumentType(): Promise<SSM.DocumentType | undefined> {
         // const documentTypeItems: DocumentTypeQuickPickItem[] = [
         //     {
@@ -210,17 +280,24 @@ export class DefaultPublishSSMDocumentWizardContext extends WizardContext implem
             options: {
                 title: localize('AWS.ssmDocument.publishWizard.ssmDocumentName.title', 'Name your document'),
                 ignoreFocusOut: true,
+                step: 3,
+                totalSteps: this.totalSteps,
             },
             buttons: [vscode.QuickInputButtons.Back],
         })
 
         return await input.promptUser({
             inputBox: inputBox,
+            onDidTriggerButton: (button, resolve, reject) => {
+                if (button === vscode.QuickInputButtons.Back) {
+                    resolve(undefined)
+                }
+            },
             onValidateInput: validateDocumentName,
         })
     }
 
-    public async promptUserForDocumentToUpdate(): Promise<string | undefined> {
+    public async promptUserForDocumentToUpdate(region: string): Promise<string | undefined> {
         let documentItems: UpdateDocumentQuickPickItem[]
         if (!this.documents || !this.documents.length) {
             vscode.window.showErrorMessage(
@@ -245,8 +322,10 @@ export class DefaultPublishSSMDocumentWizardContext extends WizardContext implem
                 title: localize(
                     'AWS.ssmDocument.publishWizard.ssmDocumentToUpdate.title',
                     'Select a document to update ({0})',
-                    this.defaultRegion
+                    region
                 ),
+                step: 3,
+                totalSteps: this.totalSteps,
             },
             buttons: [vscode.QuickInputButtons.Back],
             items: documentItems,
@@ -266,6 +345,7 @@ export class DefaultPublishSSMDocumentWizardContext extends WizardContext implem
     }
 
     public async promptUserForPublishAction(
+        region: string,
         currentAction: PublishSSMDocumentAction | undefined
     ): Promise<PublishSSMDocumentAction | undefined> {
         const publishItems: PublishActionQuickPickItem[] = [
@@ -299,8 +379,10 @@ export class DefaultPublishSSMDocumentWizardContext extends WizardContext implem
                 title: localize(
                     'AWS.ssmDocument.publishWizard.publishAction.title',
                     'Publish to AWS Systems Manager Document ({0})',
-                    this.defaultRegion
+                    region
                 ),
+                step: 2,
+                totalSteps: this.totalSteps,
             },
             buttons: [vscode.QuickInputButtons.Back],
             items: publishItems,

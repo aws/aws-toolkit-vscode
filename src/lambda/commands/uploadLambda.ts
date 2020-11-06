@@ -13,7 +13,7 @@ import * as fs from 'fs'
 import * as path from 'path'
 import { showConfirmationMessage } from '../../s3/util/messages'
 import { ext } from '../../shared/extensionGlobals'
-import { fileExists, makeTemporaryToolkitFolder } from '../../shared/filesystemUtilities'
+import { fileExists, makeTemporaryToolkitFolder, tryRemoveFolder } from '../../shared/filesystemUtilities'
 import * as localizedText from '../../shared/localizedText'
 import { getLogger } from '../../shared/logger'
 import { SamCliBuildInvocation } from '../../shared/sam/cli/samCliBuild'
@@ -21,7 +21,6 @@ import { getSamCliContext } from '../../shared/sam/cli/samCliContext'
 import * as telemetry from '../../shared/telemetry/telemetry'
 import { SamTemplateGenerator } from '../../shared/templates/sam/samTemplateGenerator'
 import { createQuickPick, promptUser, verifySinglePickerOutput } from '../../shared/ui/picker'
-import { ExtensionDisposableFiles } from '../../shared/utilities/disposableFiles'
 import { Window } from '../../shared/vscode/window'
 import { LambdaFunctionNode } from '../explorer/lambdaFunctionNode'
 import { addCodiconToString } from '../../shared/utilities/textUtilities'
@@ -214,11 +213,11 @@ async function runUploadLambdaWithSamBuild(
             cancellable: false,
         },
         async progress => {
+            let tempDir: string | undefined
             try {
                 const invoker = getSamCliContext().invoker
 
-                const tempDir = await makeTemporaryToolkitFolder()
-                ExtensionDisposableFiles.getInstance().addFolder(tempDir)
+                tempDir = await makeTemporaryToolkitFolder()
                 const templatePath = path.join(tempDir, 'template.yaml')
                 const resourceName = 'tempResource'
 
@@ -262,6 +261,8 @@ async function runUploadLambdaWithSamBuild(
                 getLogger().error('runUploadLambdaWithSamBuild failed: ', err.message)
 
                 return 'Failed'
+            } finally {
+                await tryRemoveFolder(tempDir)
             }
         }
     )
