@@ -11,8 +11,9 @@ import { CloudFormationTemplateRegistry } from './templateRegistry'
 import { CloudFormationTemplateRegistryManager } from './templateRegistryManager'
 
 /**
- * VSCode glob doesn't expand the first ** to more than one directory deep, so it also needs a second ** 
- * to find nested templates
+ * VSCode glob doesn't recursively expand the first **, so it also needs a second ** 
+ * to find nested templates. This shouldn't be needed but is safe on any globbing implementation
+ * since ** can match to empty
  */
 export const TEMPLATE_FILE_GLOB_PATTERN = '{!(.aws-sam),**}/**/template.{yaml,yml}'
 
