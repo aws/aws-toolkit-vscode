@@ -6,26 +6,14 @@ package software.aws.toolkits.jetbrains.ui
 import com.intellij.openapi.fileChooser.FileChooserDescriptor
 import com.intellij.openapi.project.Project
 import com.intellij.openapi.project.guessProjectDir
-import com.intellij.openapi.ui.ComponentWithBrowseButton
-import com.intellij.openapi.ui.TextComponentAccessor
+import com.intellij.openapi.ui.TextBrowseFolderListener
 import com.intellij.openapi.vfs.VirtualFile
-import javax.swing.JComponent
 
-class ProjectFileBrowseListener<T : JComponent> @JvmOverloads constructor(
+class ProjectFileBrowseListener @JvmOverloads constructor(
     project: Project,
-    textField: ComponentWithBrowseButton<T>,
     chooserDescriptor: FileChooserDescriptor,
-    accessor: TextComponentAccessor<T>,
     private val onChosen: ((VirtualFile) -> Unit)? = null
-) : ComponentWithBrowseButton.BrowseFolderActionListener<T>(
-    null,
-    null,
-    textField,
-    project,
-    chooserDescriptor,
-    accessor
-) {
-
+) : TextBrowseFolderListener(chooserDescriptor, project) {
     override fun getInitialFile(): VirtualFile? {
         val text = componentText
         if (text.isEmpty()) {

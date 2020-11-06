@@ -6,7 +6,6 @@ import com.intellij.openapi.application.runInEdt
 import com.intellij.openapi.fileChooser.FileChooserDescriptorFactory
 import com.intellij.openapi.project.Project
 import com.intellij.openapi.ui.ComboBox
-import com.intellij.openapi.ui.TextComponentAccessor
 import com.intellij.openapi.ui.TextFieldWithBrowseButton
 import com.intellij.ui.IdeBorderFactory
 import com.intellij.ui.SortedComboBoxModel
@@ -73,9 +72,7 @@ class LocalLambdaRunSettingsEditorPanel(private val project: Project) {
         templateFile.addActionListener(
             ProjectFileBrowseListener(
                 project,
-                templateFile,
-                FileChooserDescriptorFactory.createSingleFileDescriptor(YAMLFileType.YML),
-                TextComponentAccessor.TEXT_FIELD_WHOLE_TEXT
+                FileChooserDescriptorFactory.createSingleFileDescriptor(YAMLFileType.YML)
             ) {
                 setTemplateFile(it.canonicalPath)
             }

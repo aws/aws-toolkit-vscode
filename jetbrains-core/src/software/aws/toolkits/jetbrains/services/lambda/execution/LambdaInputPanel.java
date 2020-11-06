@@ -19,7 +19,6 @@ import com.intellij.openapi.fileChooser.FileChooserDescriptorFactory;
 import com.intellij.openapi.project.Project;
 import com.intellij.openapi.ui.ComboBox;
 import com.intellij.openapi.ui.Messages;
-import com.intellij.openapi.ui.TextComponentAccessor;
 import com.intellij.openapi.ui.TextFieldWithBrowseButton;
 import com.intellij.openapi.util.text.StringUtil;
 import com.intellij.openapi.vfs.VfsUtil;
@@ -99,12 +98,9 @@ public class LambdaInputPanel {
         addQuickSelect(inputTemplates.getButton(), useInputText, this::updateComponents);
         addQuickSelect(inputText.getComponent(), useInputText, this::updateComponents);
 
-        inputFile.addActionListener(new ProjectFileBrowseListener<>(
-            project,
-            inputFile,
-            FileChooserDescriptorFactory.createSingleFileDescriptor(JsonFileType.INSTANCE),
-            TextComponentAccessor.TEXT_FIELD_WHOLE_TEXT
-        ));
+        inputFile.addBrowseFolderListener(
+            new ProjectFileBrowseListener(project, FileChooserDescriptorFactory.createSingleFileDescriptor(JsonFileType.INSTANCE))
+        );
 
         LambdaSampleEventProvider eventProvider = new LambdaSampleEventProvider(RemoteResourceResolverProvider.Companion.getInstance().get());
 
@@ -114,11 +110,9 @@ public class LambdaInputPanel {
             return null;
         }));
 
-        inputTemplates.addActionListener(new ProjectFileBrowseListener<>(
+        inputTemplates.addActionListener(new ProjectFileBrowseListener(
             project,
-            inputTemplates,
             FileChooserDescriptorFactory.createSingleFileDescriptor(JsonFileType.INSTANCE),
-            TextComponentAccessor.STRING_COMBOBOX_WHOLE_TEXT,
             chosenFile -> {
                 try {
                     String contents = VfsUtil.loadText(chosenFile);
@@ -133,7 +127,6 @@ public class LambdaInputPanel {
                 return null; // Required since lambda is defined in Kotlin
             }
         ));
-
 
         updateComponents();
     }

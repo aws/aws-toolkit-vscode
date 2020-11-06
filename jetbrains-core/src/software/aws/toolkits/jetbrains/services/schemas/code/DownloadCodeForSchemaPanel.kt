@@ -6,7 +6,6 @@ package software.aws.toolkits.jetbrains.services.schemas.code
 import com.intellij.openapi.fileChooser.FileChooserDescriptorFactory
 import com.intellij.openapi.project.Project
 import com.intellij.openapi.ui.ComboBox
-import com.intellij.openapi.ui.TextComponentAccessor
 import com.intellij.openapi.ui.TextFieldWithBrowseButton
 import com.intellij.ui.SortedComboBoxModel
 import software.aws.toolkits.jetbrains.services.schemas.SchemaCodeLangs
@@ -37,9 +36,7 @@ class DownloadCodeForSchemaPanel(project: Project) {
         location.addActionListener(
             ProjectFileBrowseListener(
                 project,
-                location,
-                FileChooserDescriptorFactory.createSingleFolderDescriptor(),
-                TextComponentAccessor.TEXT_FIELD_WHOLE_TEXT
+                FileChooserDescriptorFactory.createSingleFolderDescriptor()
             )
         )
     }
