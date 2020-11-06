@@ -59,6 +59,16 @@ describe('CloudFormation Template Registry Manager', async () => {
         await registryHasTargetNumberOfFiles(registry, 2)
     })
 
+    it('Ignores templates matching banned patterns', async () => {
+        await manager.addTemplateGlob('**/test.{yaml,yml}')
+        await manager.addBannedPattern(/.*nested.*/)
+
+        await strToYamlFile(makeSampleSamTemplateYaml(false), path.join(testDir, 'test.yml'))
+        await strToYamlFile(makeSampleSamTemplateYaml(true), path.join(testDirNested, 'test.yaml'))
+
+        await registryHasTargetNumberOfFiles(registry, 1)
+    })
+
     it('can handle changed files', async () => {
         const filepath = path.join(testDir, 'changeMe.yml')
         await strToYamlFile(makeSampleSamTemplateYaml(false), filepath)

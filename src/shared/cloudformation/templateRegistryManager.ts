@@ -11,6 +11,7 @@ export class CloudFormationTemplateRegistryManager implements vscode.Disposable 
     private readonly disposables: vscode.Disposable[] = []
     private _isDisposed: boolean = false
     private readonly globs: vscode.GlobPattern[] = []
+    private readonly bannedFilePatterns: RegExp[] = []
 
     public constructor(private readonly registry: CloudFormationTemplateRegistry) {
         this.disposables.push(
@@ -39,6 +40,18 @@ export class CloudFormationTemplateRegistryManager implements vscode.Disposable 
     }
 
     /**
+     * Adds a regex pattern to ignore paths containing the pattern
+     */
+    public async addBannedPattern(pattern: RegExp): Promise<void> {
+        if (this._isDisposed) {
+            throw new Error('Manager has already been disposed!')
+        }
+        this.bannedFilePatterns.push(pattern)
+
+        await this.rebuildRegistry()
+    }
+
+    /**
      * Disposes CloudFormationTemplateRegistryManager and marks as disposed.
      */
     public dispose(): void {
@@ -46,6 +59,15 @@ export class CloudFormationTemplateRegistryManager implements vscode.Disposable 
             this.disposeDisposables()
             this._isDisposed = true
         }
+    }
+
+    private async addTemplateToRegistry(templateUri: vscode.Uri): Promise<void> {
+        const banned = this.bannedFilePatterns.find(pattern => templateUri.fsPath.match(pattern))
+        if (banned) {
+            getLogger().verbose(`Manager did not add template ${templateUri.fsPath} matching banned pattern ${banned}`)
+            return
+        }
+        await this.registry.addTemplateToRegistry(templateUri)
     }
 
     /**
@@ -56,7 +78,9 @@ export class CloudFormationTemplateRegistryManager implements vscode.Disposable 
         this.registry.reset()
         for (const glob of this.globs) {
             const templateUris = await vscode.workspace.findFiles(glob)
-            await this.registry.addTemplatesToRegistry(templateUris)
+            for (const template of templateUris) {
+                await this.addTemplateToRegistry(template)
+            }
         }
     }
 
@@ -81,11 +105,11 @@ export class CloudFormationTemplateRegistryManager implements vscode.Disposable 
             watcher,
             watcher.onDidChange(async uri => {
                 getLogger().verbose(`Manager detected a change to template file: ${uri.fsPath}`)
-                await this.registry.addTemplateToRegistry(uri)
+                this.addTemplateToRegistry(uri)
             }),
             watcher.onDidCreate(async uri => {
                 getLogger().verbose(`Manager detected a new template file: ${uri.fsPath}`)
-                await this.registry.addTemplateToRegistry(uri)
+                this.addTemplateToRegistry(uri)
             }),
             watcher.onDidDelete(async uri => {
                 getLogger().verbose(`Manager detected a deleted template file: ${uri.fsPath}`)
