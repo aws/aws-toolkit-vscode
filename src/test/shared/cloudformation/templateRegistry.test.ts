@@ -60,38 +60,6 @@ describe('CloudFormation Template Registry', async () => {
             })
         })
 
-        describe('addTemplatesToRegistry', async () => {
-            it("adds data from multiple templates to the registry and can receive the templates' data", async () => {
-                const filename = vscode.Uri.file(path.join(tempFolder, 'template.yaml'))
-                await strToYamlFile(goodYaml1, filename.fsPath)
-                const filename2 = vscode.Uri.file(path.join(tempFolder, 'template2.yaml'))
-                await strToYamlFile(goodYaml2, filename2.fsPath)
-                await testRegistry.addTemplatesToRegistry([filename, filename2])
-
-                assert.strictEqual(testRegistry.registeredTemplates.length, 2)
-
-                const data = testRegistry.getRegisteredTemplate(filename.fsPath)
-                const data2 = testRegistry.getRegisteredTemplate(filename2.fsPath)
-
-                assertValidTestTemplate(data, filename.fsPath)
-                assertValidTestTemplate(data2, filename2.fsPath)
-            })
-
-            it('swallows errors if a template is not parseable while still parsing valid YAML', async () => {
-                const filename = vscode.Uri.file(path.join(tempFolder, 'template.yaml'))
-                await strToYamlFile(goodYaml1, filename.fsPath)
-                const badFilename = vscode.Uri.file(path.join(tempFolder, 'template2.yaml'))
-                await strToYamlFile(badYaml, badFilename.fsPath)
-                await testRegistry.addTemplatesToRegistry([filename, badFilename])
-
-                assert.strictEqual(testRegistry.registeredTemplates.length, 1)
-
-                const data = testRegistry.getRegisteredTemplate(filename.fsPath)
-
-                assertValidTestTemplate(data, filename.fsPath)
-            })
-        })
-
         // other get cases are tested in the add section
         describe('registeredTemplates', async () => {
             it('returns an empty array if the registry has no registered templates', () => {

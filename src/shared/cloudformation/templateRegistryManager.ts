@@ -61,13 +61,13 @@ export class CloudFormationTemplateRegistryManager implements vscode.Disposable 
         }
     }
 
-    private async addTemplateToRegistry(templateUri: vscode.Uri): Promise<void> {
+    private async addTemplateToRegistry(templateUri: vscode.Uri, quiet?: boolean): Promise<void> {
         const banned = this.bannedFilePatterns.find(pattern => templateUri.fsPath.match(pattern))
         if (banned) {
             getLogger().verbose(`Manager did not add template ${templateUri.fsPath} matching banned pattern ${banned}`)
             return
         }
-        await this.registry.addTemplateToRegistry(templateUri)
+        await this.registry.addTemplateToRegistry(templateUri, quiet)
     }
 
     /**
@@ -79,7 +79,7 @@ export class CloudFormationTemplateRegistryManager implements vscode.Disposable 
         for (const glob of this.globs) {
             const templateUris = await vscode.workspace.findFiles(glob)
             for (const template of templateUris) {
-                await this.addTemplateToRegistry(template)
+                await this.addTemplateToRegistry(template, true)
             }
         }
     }
@@ -105,11 +105,11 @@ export class CloudFormationTemplateRegistryManager implements vscode.Disposable 
             watcher,
             watcher.onDidChange(async uri => {
                 getLogger().verbose(`Manager detected a change to template file: ${uri.fsPath}`)
-                this.addTemplateToRegistry(uri)
+                await this.addTemplateToRegistry(uri)
             }),
             watcher.onDidCreate(async uri => {
                 getLogger().verbose(`Manager detected a new template file: ${uri.fsPath}`)
-                this.addTemplateToRegistry(uri)
+                await this.addTemplateToRegistry(uri)
             }),
             watcher.onDidDelete(async uri => {
                 getLogger().verbose(`Manager detected a deleted template file: ${uri.fsPath}`)
