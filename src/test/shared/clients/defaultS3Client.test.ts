@@ -358,6 +358,33 @@ describe('DefaultS3Client', () => {
             })
         })
 
+        it('Filters buckets with no name', async () => {
+            when(mockS3.listBuckets()).thenReturn(
+                success({ Buckets: [{ Name: undefined }, { Name: outOfRegionBucketName }] })
+            )
+            when(mockS3.headBucket(deepEqual({ Bucket: bucketName }))).thenReturn(
+                success({ $response: { httpResponse: { headers: { 'x-amz-bucket-region': region } } } })
+            )
+
+            const response = await createClient().listBuckets()
+            assert.deepStrictEqual(response, {
+                buckets: [],
+            })
+        })
+
+        it(`Filters buckets when it can't get region`, async () => {
+            const mockResponse: Request<any, AWSError> = mock()
+            when(mockS3.listBuckets()).thenReturn(success({ Buckets: [{ Name: bucketName }] }))
+            // eslint-disable-next-line @typescript-eslint/unbound-method
+            when(mockResponse.promise).thenReject((undefined as any) as Error)
+            when(mockS3.headBucket(anything())).thenReturn(mockResponse)
+
+            const response = await createClient().listBuckets()
+            assert.deepStrictEqual(response, {
+                buckets: [],
+            })
+        })
+
         it('throws an Error on listBuckets failure', async () => {
             when(mockS3.listBuckets()).thenReturn(failure())
 
