@@ -6,6 +6,7 @@ import com.intellij.icons.AllIcons
 import com.intellij.ide.HelpTooltip
 import com.intellij.openapi.project.Project
 import com.intellij.ui.IdeBorderFactory
+import com.intellij.ui.SimpleListCellRenderer
 import software.amazon.awssdk.services.sns.model.Topic
 import software.aws.toolkits.jetbrains.services.sns.resources.SnsResources
 import software.aws.toolkits.jetbrains.services.sns.resources.getName
@@ -31,7 +32,7 @@ class SubscribeSnsPanel(private val project: Project) {
     private fun createUIComponents() {
         topicSelector = ResourceSelector.builder()
             .resource(SnsResources.LIST_TOPICS)
-            .customRenderer { value, component -> component.append(value.getName()); component }
+            .customRenderer(SimpleListCellRenderer.create { label, value, _ -> label.text = value.getName() })
             .awsConnection(project)
             .build()
     }

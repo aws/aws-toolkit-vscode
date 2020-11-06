@@ -16,6 +16,7 @@ import com.intellij.openapi.application.runInEdt
 import com.intellij.openapi.project.DumbAwareAction
 import com.intellij.openapi.project.Project
 import com.intellij.openapi.ui.popup.JBPopupFactory
+import com.intellij.ui.SimpleListCellRenderer
 import com.intellij.ui.SimpleTextAttributes
 import com.intellij.ui.components.JBLabel
 import com.intellij.ui.components.JBLoadingPanel
@@ -84,21 +85,23 @@ class EcsCloudDebugSettingsEditorPanel(private val project: Project) : Disposabl
 
         clusterSelector = ResourceSelector.builder()
             .resource(EcsResources.LIST_CLUSTER_ARNS)
-            .customRenderer { value, component -> component.append(EcsUtils.clusterArnToName(value)); component }
+            .customRenderer(SimpleListCellRenderer.create { label, value, _ -> label.text = EcsUtils.clusterArnToName(value) })
             .disableAutomaticLoading()
             .awsConnection { credentialSettingsRef.get() ?: throw IllegalStateException("clusterSelector.reload() called before region/credentials set") }
             .build()
 
         clusterSelector.addActionListener { this.onClusterSelectionChange() }
 
-        serviceSelector = ResourceSelector.builder().resource {
-            val selectedCluster = selectedCluster
-            if (selectedCluster != null) {
-                EcsResources.listServiceArns(selectedCluster).filter { EcsUtils.isInstrumented(it) }
-            } else {
-                null
+        serviceSelector = ResourceSelector.builder()
+            .resource {
+                val selectedCluster = selectedCluster
+                if (selectedCluster != null) {
+                    EcsResources.listServiceArns(selectedCluster).filter { EcsUtils.isInstrumented(it) }
+                } else {
+                    null
+                }
             }
-        }.customRenderer { value, component -> component.append(EcsUtils.serviceArnToName(value)); component }
+            .customRenderer(SimpleListCellRenderer.create { label, value, _ -> label.text = EcsUtils.serviceArnToName(value) })
             .disableAutomaticLoading()
             .awsConnection { credentialSettingsRef.get() ?: throw IllegalStateException("serviceSelector.reload() called before region/credentials set") }
             .build()

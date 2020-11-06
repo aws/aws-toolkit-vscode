@@ -6,6 +6,7 @@ import com.intellij.icons.AllIcons
 import com.intellij.ide.HelpTooltip
 import com.intellij.openapi.project.Project
 import com.intellij.ui.IdeBorderFactory
+import com.intellij.ui.SimpleListCellRenderer
 import software.amazon.awssdk.services.lambda.model.FunctionConfiguration
 import software.aws.toolkits.jetbrains.services.lambda.resources.LambdaResources
 import software.aws.toolkits.jetbrains.ui.ResourceSelector
@@ -30,7 +31,7 @@ class ConfigureLambdaPanel(private val project: Project) {
     private fun createUIComponents() {
         lambdaFunction = ResourceSelector.builder()
             .resource(LambdaResources.LIST_FUNCTIONS)
-            .customRenderer { value, component -> component.append(value.functionName()); component }
+            .customRenderer(SimpleListCellRenderer.create { label, value, _ -> label.text = value.functionName() })
             .awsConnection(project)
             .build()
     }

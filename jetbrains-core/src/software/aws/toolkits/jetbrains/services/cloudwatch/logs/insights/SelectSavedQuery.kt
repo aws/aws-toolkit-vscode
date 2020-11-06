@@ -3,6 +3,7 @@
 package software.aws.toolkits.jetbrains.services.cloudwatch.logs.insights
 
 import com.intellij.icons.AllIcons
+import com.intellij.ui.SimpleListCellRenderer
 import software.amazon.awssdk.services.cloudwatchlogs.model.QueryDefinition
 import software.aws.toolkits.jetbrains.core.credentials.ConnectionSettings
 import software.aws.toolkits.jetbrains.services.cloudwatch.logs.resources.CloudWatchResources
@@ -25,7 +26,7 @@ class SelectSavedQuery(
         resourceSelector = ResourceSelector.builder()
             .resource { CloudWatchResources.DESCRIBE_QUERY_DEFINITIONS }
             .awsConnection { connectionSettings }
-            .customRenderer { entry, renderer -> renderer.append(entry.name()); renderer }
+            .customRenderer(SimpleListCellRenderer.create { label, value, _ -> label.text = value.name() })
             .build()
 
         // select the first entry, if applicable

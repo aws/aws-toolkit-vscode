@@ -9,7 +9,6 @@ import com.intellij.openapi.project.Project
 import com.intellij.openapi.ui.ComboBox
 import com.intellij.openapi.ui.ComponentValidator
 import com.intellij.openapi.ui.ValidationInfo
-import com.intellij.ui.ColoredListCellRenderer
 import com.intellij.ui.MutableCollectionComboBoxModel
 import com.intellij.util.ExceptionUtil
 import org.jetbrains.annotations.TestOnly
@@ -25,7 +24,7 @@ import software.aws.toolkits.jetbrains.utils.ui.find
 import software.aws.toolkits.resources.message
 import java.util.concurrent.CancellationException
 import java.util.concurrent.CompletableFuture
-import javax.swing.JList
+import javax.swing.ListCellRenderer
 
 private typealias Selector<T> = Either<Any?, (T) -> Boolean>
 
@@ -35,7 +34,7 @@ typealias ConnectionSettingsSupplier = () -> ConnectionSettings?
 class ResourceSelector<T> private constructor(
     private val resourceType: () -> Resource<out Collection<T>>?,
     comboBoxModel: MutableCollectionComboBoxModel<T>,
-    customRenderer: ColoredListCellRenderer<T>?,
+    customRenderer: ListCellRenderer<T>?,
     loadOnCreate: Boolean,
     private val sortOnLoad: Boolean,
     private val connectionSettingsSupplier: ConnectionSettingsSupplier
@@ -213,42 +212,15 @@ class ResourceSelector<T> private constructor(
         private var loadOnCreate = true
         private var sortOnLoad = true
         private var comboBoxModel: MutableCollectionComboBoxModel<T> = MutableCollectionComboBoxModel<T>()
-        private var customRendererFunction: ((T, ColoredListCellRenderer<T>) -> ColoredListCellRenderer<T>)? = null
-        private var customRenderer: ColoredListCellRenderer<T>? = null
+        private var customRenderer: ListCellRenderer<T>? = null
         private lateinit var connectionSettings: ConnectionSettingsSupplier
 
         fun comboBoxModel(comboBoxModel: MutableCollectionComboBoxModel<T>): ResourceBuilderOptions<T> = also {
             it.comboBoxModel = comboBoxModel
         }
 
-        fun customRenderer(customRenderer: (T, ColoredListCellRenderer<T>) -> ColoredListCellRenderer<T>): ResourceBuilderOptions<T> = also {
-            if (it.customRenderer != null) {
-                throw IllegalStateException("Please specify either of the customRenderer factory methods, but not both")
-            }
-            it.customRendererFunction = customRenderer
-        }
-
-        fun customRenderer(customRenderer: ColoredListCellRenderer<T>): ResourceBuilderOptions<T> = also {
-            if (it.customRendererFunction != null) {
-                throw IllegalStateException("Please specify either of the customRenderer factory methods, but not both")
-            }
+        fun customRenderer(customRenderer: ListCellRenderer<T>): ResourceBuilderOptions<T> = also {
             it.customRenderer = customRenderer
-        }
-
-        private fun resolveCustomRenderer(): ColoredListCellRenderer<T>? = customRenderer ?: customRendererFunction?.let { renderer ->
-            object : ColoredListCellRenderer<T>() {
-                override fun customizeCellRenderer(
-                    list: JList<out T>,
-                    value: T?,
-                    index: Int,
-                    selected: Boolean,
-                    hasFocus: Boolean
-                ) {
-                    value?.let {
-                        renderer.invoke(it, this)
-                    }
-                }
-            }
         }
 
         fun disableAutomaticLoading(): ResourceBuilderOptions<T> = also { it.loadOnCreate = false }
@@ -266,7 +238,7 @@ class ResourceSelector<T> private constructor(
         fun build() = ResourceSelector(
             resource,
             comboBoxModel,
-            resolveCustomRenderer(),
+            customRenderer,
             loadOnCreate,
             sortOnLoad,
             connectionSettings

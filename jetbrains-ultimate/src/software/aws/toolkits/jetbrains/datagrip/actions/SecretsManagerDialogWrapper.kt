@@ -10,6 +10,7 @@ import com.intellij.openapi.progress.ProgressIndicator
 import com.intellij.openapi.progress.Task.Backgroundable
 import com.intellij.openapi.ui.DialogWrapper
 import com.intellij.openapi.ui.Messages
+import com.intellij.ui.SimpleListCellRenderer
 import software.amazon.awssdk.services.secretsmanager.model.SecretListEntry
 import software.aws.toolkits.jetbrains.core.explorer.nodes.AwsExplorerNode
 import software.aws.toolkits.jetbrains.datagrip.DatabaseSecret
@@ -39,7 +40,7 @@ class SecretsManagerDialogWrapper(private val selected: AwsExplorerNode<*>) : Di
     override fun createCenterPanel(): JComponent? {
         secrets = ResourceSelector.builder()
             .resource(SecretsManagerResources.secrets)
-            .customRenderer { entry, renderer -> renderer.append(entry.name()); renderer }
+            .customRenderer(SimpleListCellRenderer.create { label, value, _ -> label.text = value.name() })
             .awsConnection(selected.nodeProject)
             .build().also {
                 // When it is changed, make sure the OK button is re-enabled
