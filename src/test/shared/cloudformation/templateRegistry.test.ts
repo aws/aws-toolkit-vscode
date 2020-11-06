@@ -22,7 +22,6 @@ import { CloudFormation } from '../../../shared/cloudformation/cloudformation'
 
 describe('CloudFormation Template Registry', async () => {
     const goodYaml1 = makeSampleSamTemplateYaml(false)
-    const goodYaml2 = makeSampleSamTemplateYaml(true)
 
     describe('CloudFormationTemplateRegistry', async () => {
         let testRegistry: CloudFormationTemplateRegistry
