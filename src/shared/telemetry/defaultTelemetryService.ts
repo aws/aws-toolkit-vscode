@@ -6,7 +6,7 @@
 import * as fs from 'fs'
 import { writeFile } from 'fs-extra'
 import * as path from 'path'
-import uuidv4 = require('uuid/v4')
+import { v4 as uuidv4 } from 'uuid'
 import { ExtensionContext } from 'vscode'
 import { AwsContext } from '../awsContext'
 import { getComputeRegion } from '../extensionUtilities'

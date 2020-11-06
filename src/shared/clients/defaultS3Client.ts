@@ -221,17 +221,27 @@ export class DefaultS3Client implements S3Client {
         }
 
         // S3#ListBuckets returns buckets across all regions
-        const allBucketPromises: Promise<Bucket>[] = s3Buckets.map(
-            async s3Bucket =>
-                new DefaultBucket({
-                    partitionId: this.partitionId,
-                    region: await this.lookupRegion(s3Bucket.Name!, s3),
-                    name: s3Bucket.Name!,
-                })
-        )
+        const allBucketPromises: Promise<Bucket | undefined>[] = s3Buckets.map(async s3Bucket => {
+            const bucketName = s3Bucket.Name
+            if (!bucketName) {
+                return undefined
+            }
+            const region = await this.lookupRegion(bucketName, s3)
+            if (!region) {
+                return undefined
+            }
+            return new DefaultBucket({
+                partitionId: this.partitionId,
+                region: region,
+                name: bucketName,
+            })
+        })
 
         const allBuckets = await Promise.all(allBucketPromises)
         const bucketsInRegion = _(allBuckets)
+            .reject(bucket => bucket === undefined)
+            // we don't have a filerNotNull so we can filter then cast
+            .map(bucket => bucket as Bucket)
             .reject(bucket => bucket.region !== this.regionCode)
             .value()
 
@@ -405,7 +415,7 @@ export class DefaultS3Client implements S3Client {
      * Note that although there is an S3#GetBucketLocation API,
      * this is the suggested method of obtaining the region.
      */
-    private async lookupRegion(bucketName: string, s3: S3): Promise<string> {
+    private async lookupRegion(bucketName: string, s3: S3): Promise<string | undefined> {
         getLogger().debug('LookupRegion called for bucketName: %s', bucketName)
 
         try {
@@ -414,6 +424,7 @@ export class DefaultS3Client implements S3Client {
             getLogger().debug('LookupRegion returned region: %s', region)
             return region
         } catch (e) {
+            // Try to recover region from the error
             return (e as AWSError).region
         }
     }
@@ -471,10 +482,7 @@ export class DefaultFolder implements Folder {
     public constructor({ partitionId, bucketName, path }: { partitionId: string; bucketName: string; path: string }) {
         this.path = path
         this.arn = buildArn({ partitionId, bucketName, key: path })
-        this.name = _(this.path)
-            .split(DEFAULT_DELIMITER)
-            .dropRight()!
-            .last()!
+        this.name = _(this.path).split(DEFAULT_DELIMITER).dropRight()!.last()!
     }
 
     public [inspect.custom](): string {
@@ -502,9 +510,7 @@ export class DefaultFile implements File {
         lastModified: Date | undefined
         sizeBytes: number | undefined
     }) {
-        this.name = _(key)
-            .split(DEFAULT_DELIMITER)
-            .last()!
+        this.name = _(key).split(DEFAULT_DELIMITER).last()!
         this.key = key
         this.arn = buildArn({ partitionId, bucketName, key })
         this.lastModified = lastModified
