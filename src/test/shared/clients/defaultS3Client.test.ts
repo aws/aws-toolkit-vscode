@@ -358,6 +358,20 @@ describe('DefaultS3Client', () => {
             })
         })
 
+        it('Filters buckets with no name', async () => {
+            when(mockS3.listBuckets()).thenReturn(
+                success({ Buckets: [{ Name: undefined }, { Name: outOfRegionBucketName }] })
+            )
+            when(mockS3.headBucket(deepEqual({ Bucket: bucketName }))).thenReturn(
+                success({ $response: { httpResponse: { headers: { 'x-amz-bucket-region': region } } } })
+            )
+
+            const response = await createClient().listBuckets()
+            assert.deepStrictEqual(response, {
+                buckets: [],
+            })
+        })
+
         it('throws an Error on listBuckets failure', async () => {
             when(mockS3.listBuckets()).thenReturn(failure())
 
