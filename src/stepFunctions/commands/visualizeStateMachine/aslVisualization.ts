@@ -111,6 +111,7 @@ export class AslVisualization {
             panel.webview.asWebviewUri(ext.visualizationResourcePaths.visualizationLibraryScript),
             panel.webview.asWebviewUri(ext.visualizationResourcePaths.visualizationLibraryCSS),
             panel.webview.asWebviewUri(ext.visualizationResourcePaths.stateMachineCustomThemeCSS),
+            panel.webview.cspSource,
             {
                 inSync: localize(
                     'AWS.stepFunctions.graph.status.inSync',
@@ -236,6 +237,7 @@ export class AslVisualization {
         graphStateMachineLibrary: vscode.Uri,
         vsCodeCustomStyling: vscode.Uri,
         graphStateMachineDefaultStyles: vscode.Uri,
+        cspSource: string,
         statusTexts: {
             syncing: string
             notInSync: string
@@ -246,6 +248,12 @@ export class AslVisualization {
     <!DOCTYPE html>
     <html>
         <head>
+            <meta http-equiv="Content-Security-Policy"
+            content="default-src 'none';
+            img-src ${cspSource} https: data:;
+            script-src ${cspSource} 'self' 'unsafe-eval';
+            style-src ${cspSource};"
+            >
             <meta charset="UTF-8">
             <link rel="stylesheet" href='${graphStateMachineDefaultStyles}'>
             <link rel="stylesheet" href='${vsCodeCustomStyling}'>
