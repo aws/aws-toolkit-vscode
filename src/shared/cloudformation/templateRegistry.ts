@@ -140,16 +140,18 @@ export function getResourcesForHandler(
     unfilteredTemplates: TemplateDatum[] = CloudFormationTemplateRegistry.getRegistry().registeredTemplates
 ): { templateDatum: TemplateDatum; name: string; resourceData: CloudFormation.Resource }[] {
     // TODO: Array.flat and Array.flatMap not introduced until >= Node11.x -- migrate when VS Code updates Node ver
-    return unfilteredTemplates
-        .map(templateDatum => {
-            return getResourcesForHandlerFromTemplateDatum(filepath, handler, templateDatum).map(resource => {
-                return {
-                    ...resource,
-                    templateDatum,
-                }
-            })
+    const o = unfilteredTemplates.map(templateDatum => {
+        return getResourcesForHandlerFromTemplateDatum(filepath, handler, templateDatum).map(resource => {
+            return {
+                ...resource,
+                templateDatum,
+            }
         })
-        .reduce((acc, cur) => [...acc, ...cur])
+    })
+    if (o.length === 0) {
+        return []
+    }
+    return o.reduce((acc, cur) => [...acc, ...cur])
 }
 
 /**
