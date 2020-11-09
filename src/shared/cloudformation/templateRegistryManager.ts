@@ -62,9 +62,9 @@ export class CloudFormationTemplateRegistryManager implements vscode.Disposable 
     }
 
     private async addTemplateToRegistry(templateUri: vscode.Uri, quiet?: boolean): Promise<void> {
-        const banned = this.excludedFilePatterns.find(pattern => templateUri.fsPath.match(pattern))
-        if (banned) {
-            getLogger().verbose(`Manager did not add template ${templateUri.fsPath} matching banned pattern ${banned}`)
+        const excluded = this.excludedFilePatterns.find(pattern => templateUri.fsPath.match(pattern))
+        if (excluded) {
+            getLogger().verbose(`Manager did not add template ${templateUri.fsPath} matching excluded pattern ${excluded}`)
             return
         }
         await this.registry.addTemplateToRegistry(templateUri, quiet)
