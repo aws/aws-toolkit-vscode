@@ -59,10 +59,22 @@ async function selectUploadTypeAndRunUpload(functionNode: LambdaFunctionNode): P
             canPickMany: false,
             ignoreFocusOut: true,
             title: localize('AWS.lambda.upload.title', 'Select Upload Type'),
+            step: 1,
+            totalSteps: 1,
         },
         items: [uploadZipItem, uploadDirItem],
+        buttons: [vscode.QuickInputButtons.Back],
     })
-    const response = verifySinglePickerOutput(await promptUser({ picker: picker }))
+    const response = verifySinglePickerOutput(
+        await promptUser({
+            picker: picker,
+            onDidTriggerButton: (button, resolve, reject) => {
+                if (button === vscode.QuickInputButtons.Back) {
+                    resolve(undefined)
+                }
+            },
+        })
+    )
 
     if (!response) {
         return 'Cancelled'
@@ -87,7 +99,7 @@ async function runUploadDirectory(
     const parentDir = await selectFolderForUpload()
 
     if (!parentDir) {
-        return 'Cancelled'
+        return await selectUploadTypeAndRunUpload(functionNode)
     }
 
     const zipDirItem: vscode.QuickPickItem = {
@@ -111,13 +123,25 @@ async function runUploadDirectory(
             canPickMany: false,
             ignoreFocusOut: true,
             title: localize('AWS.lambda.upload.buildDirectory.title', 'Build directory?'),
+            step: 2,
+            totalSteps: 2,
         },
         items: [zipDirItem, buildDirItem],
+        buttons: [vscode.QuickInputButtons.Back],
     })
-    const response = verifySinglePickerOutput(await promptUser({ picker: picker }))
+    const response = verifySinglePickerOutput(
+        await promptUser({
+            picker: picker,
+            onDidTriggerButton: (button, resolve, reject) => {
+                if (button === vscode.QuickInputButtons.Back) {
+                    resolve(undefined)
+                }
+            },
+        })
+    )
 
     if (!response) {
-        return 'Cancelled'
+        return await selectUploadTypeAndRunUpload(functionNode)
     }
 
     if (!(await confirmLambdaDeployment(functionNode))) {
