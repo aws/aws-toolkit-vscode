@@ -51,6 +51,7 @@ export interface SelectLogStreamWizardContext {
 }
 
 export class DefaultSelectLogStreamWizardContext implements SelectLogStreamWizardContext {
+    private readonly totalSteps = 1
     public constructor(private readonly regionCode: string, private readonly logGroupName: string) {}
 
     public async pickLogStream(): Promise<string | undefined> {
@@ -65,6 +66,8 @@ export class DefaultSelectLogStreamWizardContext implements SelectLogStreamWizar
         const qp = picker.createQuickPick({
             options: {
                 title: localize('aws.cloudWatchLogs.viewLogStream.workflow.prompt', 'Select a log stream'),
+                step: 1,
+                totalSteps: this.totalSteps,
             },
         })
         const populator = new IteratorTransformer(

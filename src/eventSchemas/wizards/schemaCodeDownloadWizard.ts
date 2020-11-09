@@ -42,6 +42,7 @@ export interface SchemaCodeDownloadWizardContext {
 export class DefaultSchemaCodeDownloadWizardContext extends WizardContext implements SchemaCodeDownloadWizardContext {
     public readonly schemaLangs = codeLang.schemaCodeLangs
     private readonly helpButton = createHelpButton(localize('AWS.command.help', 'View Toolkit Documentation'))
+    private readonly totalSteps = 3
     public constructor(private readonly node: SchemaItemNode) {
         super()
         this.node = node
@@ -58,6 +59,8 @@ export class DefaultSchemaCodeDownloadWizardContext extends WizardContext implem
                     'Select a code binding language'
                 ),
                 value: currLanguage ? currLanguage : '',
+                step: 2,
+                totalSteps: this.totalSteps,
             },
             buttons: [this.helpButton, vscode.QuickInputButtons.Back],
             items: this.schemaLangs.toArray().map(language => ({
@@ -95,6 +98,8 @@ export class DefaultSchemaCodeDownloadWizardContext extends WizardContext implem
                     this.node.schemaName
                 ),
                 value: currSchemaVersion ? currSchemaVersion : '',
+                step: 1,
+                totalSteps: this.totalSteps,
             },
             buttons: [this.helpButton, vscode.QuickInputButtons.Back],
             items: versions!.map(schemaVersion => ({
@@ -135,6 +140,8 @@ export class DefaultSchemaCodeDownloadWizardContext extends WizardContext implem
                     'Select a workspace folder to download code bindings'
                 ),
             },
+            step: 3,
+            totalSteps: this.totalSteps,
         })
     }
 }
