@@ -81,6 +81,9 @@ export class DefaultPublishStateMachineWizardContext extends WizardContext imple
     private readonly iamClient: IamClient
     private readonly stepFunctionsClient: StepFunctionsClient
 
+    private readonly totalSteps = 2
+    private additionalSteps: number = 0
+
     public constructor(private readonly defaultRegion: string) {
         super()
         this.stepFunctionsClient = ext.toolkitClientBuilder.createStepFunctionsClient(this.defaultRegion)
@@ -90,6 +93,7 @@ export class DefaultPublishStateMachineWizardContext extends WizardContext imple
     public async promptUserForPublishAction(
         currPublishAction: PublishStateMachineAction | undefined
     ): Promise<PublishStateMachineAction | undefined> {
+        this.additionalSteps = 0
         const publishItems: PublishActionQuickPickItem[] = [
             {
                 label: localize('AWS.stepFunctions.publishWizard.publishAction.quickCreate.label', 'Quick Create'),
@@ -123,6 +127,8 @@ export class DefaultPublishStateMachineWizardContext extends WizardContext imple
                     'Publish to AWS Step Functions ({0})',
                     this.defaultRegion
                 ),
+                step: 1,
+                totalSteps: this.totalSteps,
             },
             buttons: [this.helpButton, vscode.QuickInputButtons.Back],
             items: publishItems,
@@ -148,6 +154,8 @@ export class DefaultPublishStateMachineWizardContext extends WizardContext imple
             options: {
                 title: localize('AWS.stepFunctions.publishWizard.stateMachineName.title', 'Name your state machine'),
                 ignoreFocusOut: true,
+                step: 3,
+                totalSteps: this.totalSteps + this.additionalSteps,
             },
             buttons: [this.helpButton, vscode.QuickInputButtons.Back],
         })
@@ -181,6 +189,7 @@ export class DefaultPublishStateMachineWizardContext extends WizardContext imple
     }
 
     public async promptUserForIamRole(currRoleArn?: string): Promise<string | undefined> {
+        this.additionalSteps = 1
         let roles: AwsResourceQuickPickItem[]
         if (!this.iamRoles || this.iamRoles.length === 0) {
             roles = [
@@ -215,6 +224,8 @@ export class DefaultPublishStateMachineWizardContext extends WizardContext imple
                     this.defaultRegion
                 ),
                 value: currRoleArn ? currRoleArn : '',
+                step: 2,
+                totalSteps: this.totalSteps + this.additionalSteps,
             },
             buttons: [this.helpButton, vscode.QuickInputButtons.Back],
             items: roles,
@@ -275,6 +286,8 @@ export class DefaultPublishStateMachineWizardContext extends WizardContext imple
                     'Select state machine to update ({0})',
                     this.defaultRegion
                 ),
+                step: 2,
+                totalSteps: this.totalSteps,
             },
             buttons: [this.helpButton, vscode.QuickInputButtons.Back],
             items: stateMachines,

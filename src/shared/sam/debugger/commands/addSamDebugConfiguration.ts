@@ -39,7 +39,8 @@ export interface AddSamDebugConfigurationInput {
  */
 export async function addSamDebugConfiguration(
     { resourceName, rootUri, runtimeFamily }: AddSamDebugConfigurationInput,
-    type: typeof CODE_TARGET_TYPE | typeof TEMPLATE_TARGET_TYPE | typeof API_TARGET_TYPE
+    type: typeof CODE_TARGET_TYPE | typeof TEMPLATE_TARGET_TYPE | typeof API_TARGET_TYPE,
+    step?: { step: number; totalSteps: number }
 ): Promise<void> {
     // tslint:disable-next-line: no-floating-promises
     emitCommandTelemetry()
@@ -100,6 +101,8 @@ export async function addSamDebugConfiguration(
     } else if (type === CODE_TARGET_TYPE) {
         const quickPick = createRuntimeQuickPick({
             runtimeFamily,
+            step: step?.step,
+            totalSteps: step?.totalSteps,
         })
 
         const choices = await picker.promptUser({

@@ -24,9 +24,6 @@ import { Window } from '../../shared/vscode/window'
 import { promptUserForLocation, WizardContext } from '../../shared/wizards/multiStepWizard'
 import { getLambdaDetails } from '../utils'
 
-// TODO: Move off of deprecated `request` to `got`?
-// const pipeline = promisify(Stream.pipeline)
-
 export async function importLambdaCommand(functionNode: LambdaFunctionNode) {
     const result = await runImportLambda(functionNode)
 
@@ -46,7 +43,7 @@ async function runImportLambda(functionNode: LambdaFunctionNode, window = Window
         )
         return 'Cancelled'
     }
-    const selectedUri = await promptUserForLocation(new WizardContext())
+    const selectedUri = await promptUserForLocation(new WizardContext(), { step: 1, totalSteps: 1 })
     if (!selectedUri) {
         return 'Cancelled'
     }
