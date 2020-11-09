@@ -221,6 +221,14 @@ describe('CloudFormation Template Registry', async () => {
     }
 
     describe('getResourcesForHandler', () => {
+        it('handles empty input', () => {
+            // Empty `unfilteredTemplates` input:
+            assert.deepStrictEqual(
+                getResourcesForHandler(path.join(rootPath, nestedPath, 'index.js'), 'handler', []),
+                []
+            )
+        })
+
         it('returns an array containing resources that contain references to the handler in question', () => {
             const val = getResourcesForHandler(path.join(rootPath, nestedPath, 'index.js'), 'handler', [
                 nonParentTemplate,
