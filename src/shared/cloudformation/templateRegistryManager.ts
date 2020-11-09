@@ -71,7 +71,7 @@ export class CloudFormationTemplateRegistryManager implements vscode.Disposable 
     }
 
     /**
-     * Clears and rebuilds registry using existing glob
+     * Rebuilds registry using current glob and exclusion patterns.
      * All functionality is currently internal to class, but can be made public if we want a manual "refresh" button
      */
     private async rebuildRegistry(): Promise<void> {
