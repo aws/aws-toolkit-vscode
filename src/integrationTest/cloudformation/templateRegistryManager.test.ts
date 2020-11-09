@@ -59,7 +59,7 @@ describe('CloudFormation Template Registry Manager', async () => {
         await registryHasTargetNumberOfFiles(registry, 2)
     })
 
-    it('Ignores templates matching banned patterns', async () => {
+    it('Ignores templates matching excluded patterns', async () => {
         await manager.addTemplateGlob('**/test.{yaml,yml}')
         await manager.addExcludedPattern(/.*nested.*/)
 
