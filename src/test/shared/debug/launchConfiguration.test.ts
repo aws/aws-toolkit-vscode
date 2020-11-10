@@ -17,9 +17,8 @@ import { AwsSamDebuggerConfiguration } from '../../../shared/sam/debugger/awsSam
 import { AwsSamDebugConfigurationValidator } from '../../../shared/sam/debugger/awsSamDebugConfigurationValidator'
 import * as pathutils from '../../../shared/utilities/pathUtils'
 import * as testutil from '../../testUtil'
-import { CloudFormationTemplateRegistry } from '../../../shared/cloudformation/templateRegistry'
-import { CloudFormationTemplateRegistryManager } from '../../../shared/cloudformation/templateRegistryManager'
 import { TEMPLATE_FILE_GLOB_PATTERN } from '../../../shared/cloudformation/activation'
+import { ext } from '../../../shared/extensionGlobals'
 
 const samDebugConfiguration: AwsSamDebuggerConfiguration = {
     type: 'aws-sam',
@@ -93,6 +92,7 @@ const templateUri = vscode.Uri.file('/template.yaml')
 describe('LaunchConfiguration', () => {
     let mockConfigSource: DebugConfigurationSource
     let mockSamValidator: AwsSamDebugConfigurationValidator
+
     /** Test workspace. */
     const workspace = vscode.workspace.workspaceFolders![0]
     const testLaunchJson = vscode.Uri.file(path.join(workspace.uri.fsPath, '.vscode/launch.json'))
@@ -105,18 +105,17 @@ describe('LaunchConfiguration', () => {
     const templateUriCsharp = vscode.Uri.file(path.join(workspace.uri.fsPath, 'csharp2.1-plain-sam-app/template.yaml'))
 
     beforeEach(async () => {
-        // Ensure that template.yaml file(s) in src/testFixtures/ is tracked by
-        // our inotify thing.
-        const registry = CloudFormationTemplateRegistry.getRegistry()
-        // TODO: can registry and registry-manager be combined?
-        const manager = new CloudFormationTemplateRegistryManager(registry)
-        await manager.addTemplateGlob(TEMPLATE_FILE_GLOB_PATTERN)
+        await ext.templateRegistry.addTemplateGlob(TEMPLATE_FILE_GLOB_PATTERN)
 
         // TODO: remove mocks in favor of testing src/testFixtures/ data.
         mockConfigSource = mock()
         mockSamValidator = mock()
         when(mockConfigSource.getDebugConfigurations()).thenReturn(debugConfigurations)
         when(mockSamValidator.validate(deepEqual(samDebugConfiguration))).thenReturn({ isValid: true })
+    })
+
+    afterEach(() => {
+        ext.templateRegistry.reset()
     })
 
     it('getConfigsMappedToTemplates(type=api)', async () => {
