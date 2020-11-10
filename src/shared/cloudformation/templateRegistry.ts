@@ -32,22 +32,6 @@ export class CloudFormationTemplateRegistry {
     }
 
     /**
-     * Adds multiple templates to the registry.
-     * Invalid templates will have a message logged but otherwise will not report a failure.
-     * @param templateUris Array of vscode.Uris containing templates to remove
-     */
-    public async addTemplatesToRegistry(templateUris: vscode.Uri[]) {
-        for (const templateUri of templateUris) {
-            try {
-                await this.addTemplateToRegistry(templateUri)
-            } catch (e) {
-                const err = e as Error
-                getLogger().verbose(`Template ${templateUri} is malformed: ${err.message}`)
-            }
-        }
-    }
-
-    /**
      * Adds template to registry. Wipes any existing template in its place with newly-parsed copy of the data.
      * @param templateUri vscode.Uri containing the template to load in
      */
@@ -61,7 +45,7 @@ export class CloudFormationTemplateRegistry {
             if (!quiet) {
                 throw e
             }
-            getLogger().verbose(`CloudFormationTemplateRegistry: invalid CFN template: ${e}`)
+            getLogger().verbose(`Template ${templateUri} is malformed: ${e}`)
         }
     }
 
@@ -140,16 +124,18 @@ export function getResourcesForHandler(
     unfilteredTemplates: TemplateDatum[] = CloudFormationTemplateRegistry.getRegistry().registeredTemplates
 ): { templateDatum: TemplateDatum; name: string; resourceData: CloudFormation.Resource }[] {
     // TODO: Array.flat and Array.flatMap not introduced until >= Node11.x -- migrate when VS Code updates Node ver
-    return unfilteredTemplates
-        .map(templateDatum => {
-            return getResourcesForHandlerFromTemplateDatum(filepath, handler, templateDatum).map(resource => {
-                return {
-                    ...resource,
-                    templateDatum,
-                }
-            })
+    const o = unfilteredTemplates.map(templateDatum => {
+        return getResourcesForHandlerFromTemplateDatum(filepath, handler, templateDatum).map(resource => {
+            return {
+                ...resource,
+                templateDatum,
+            }
         })
-        .reduce((acc, cur) => [...acc, ...cur])
+    })
+    if (o.length === 0) {
+        return []
+    }
+    return o.reduce((acc, cur) => [...acc, ...cur])
 }
 
 /**

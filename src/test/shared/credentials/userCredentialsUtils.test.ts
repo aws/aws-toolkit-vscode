@@ -4,10 +4,8 @@
  */
 
 import * as assert from 'assert'
-import * as del from 'del'
-import * as fs from 'fs'
+import * as fs from 'fs-extra'
 import * as path from 'path'
-import { promisify } from 'util'
 
 import { loadSharedConfigFiles, SharedConfigFiles } from '../../../shared/credentials/credentialsFile'
 import { UserCredentialsUtils } from '../../../shared/credentials/userCredentialsUtils'
@@ -30,7 +28,7 @@ describe('UserCredentialsUtils', () => {
     })
 
     after(async () => {
-        del.sync([tempFolder], { force: true })
+        await fs.remove(tempFolder)
     })
 
     describe('findExistingCredentialsFilenames', () => {
@@ -128,9 +126,8 @@ describe('UserCredentialsUtils', () => {
                 creds.secretKey,
                 `creds.secretKey: "${profiles[profileName].aws_access_key_id}" !== "${creds.secretKey}"`
             )
-            const access = promisify(fs.access)
-            await access(credentialsFilename, fs.constants.R_OK).catch(err => assert(false, 'Should be readable'))
-            await access(credentialsFilename, fs.constants.W_OK).catch(err => assert(false, 'Should be writeable'))
+            await fs.access(credentialsFilename, fs.constants.R_OK).catch(_err => assert(false, 'Should be readable'))
+            await fs.access(credentialsFilename, fs.constants.W_OK).catch(_err => assert(false, 'Should be writeable'))
         })
     })
 

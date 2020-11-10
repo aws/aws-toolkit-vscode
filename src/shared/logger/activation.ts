@@ -8,10 +8,9 @@ import * as os from 'os'
 import * as path from 'path'
 import * as vscode from 'vscode'
 import * as nls from 'vscode-nls'
+import * as fs from 'fs-extra'
 import { Logger, LogLevel, getLogger } from '.'
 import { extensionSettingsPrefix } from '../constants'
-import { mkdir } from '../filesystem'
-import { fileExists } from '../filesystemUtilities'
 import { DefaultSettingsConfiguration, SettingsConfiguration } from '../settingsConfiguration'
 import { recordVscodeViewLogs } from '../telemetry/telemetry'
 import { setLogger } from './logger'
@@ -31,7 +30,7 @@ export async function activate(extensionContext: vscode.ExtensionContext): Promi
     const logPath = LOG_PATH
     const logLevel = getLogLevel()
 
-    await ensureLogFolderExists(path.dirname(logPath))
+    await fs.ensureDir(path.dirname(logPath))
     setLogger(makeLogger(logLevel, logPath, outputChannel, extensionContext.subscriptions))
     await registerLoggerCommands(extensionContext)
     getLogger().info(`log level: ${logLevel}`)
@@ -88,12 +87,6 @@ function makeLogFilename(): string {
     const datetime = `${date}T${time}`
 
     return `aws_toolkit_${datetime}.log`
-}
-
-async function ensureLogFolderExists(logFolder: string): Promise<void> {
-    if (!(await fileExists(logFolder))) {
-        await mkdir(logFolder, { recursive: true })
-    }
 }
 
 async function registerLoggerCommands(context: vscode.ExtensionContext): Promise<void> {

@@ -78,7 +78,6 @@ export interface SamLaunchRequestArgs extends AwsSamDebuggerConfiguration {
      *  - provider-specific heuristic (last resort)
      */
     codeRoot: string
-    outFilePath?: string
 
     /** Path to (generated) directory used as a working/staging area for SAM. */
     baseBuildDir?: string

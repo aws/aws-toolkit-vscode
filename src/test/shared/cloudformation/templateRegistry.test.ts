@@ -6,6 +6,7 @@
 import * as assert from 'assert'
 import * as path from 'path'
 import * as vscode from 'vscode'
+import * as fs from 'fs-extra'
 
 import {
     CloudFormationTemplateRegistry,
@@ -13,7 +14,6 @@ import {
     getResourcesForHandlerFromTemplateDatum,
     TemplateDatum,
 } from '../../../shared/cloudformation/templateRegistry'
-import { rmrf } from '../../../shared/filesystem'
 import { makeTemporaryToolkitFolder } from '../../../shared/filesystemUtilities'
 import { assertThrowsError } from '../utilities/assertUtils'
 import { badYaml, makeSampleSamTemplateYaml, strToYamlFile } from './cloudformationTestUtils'
@@ -22,7 +22,6 @@ import { CloudFormation } from '../../../shared/cloudformation/cloudformation'
 
 describe('CloudFormation Template Registry', async () => {
     const goodYaml1 = makeSampleSamTemplateYaml(false)
-    const goodYaml2 = makeSampleSamTemplateYaml(true)
 
     describe('CloudFormationTemplateRegistry', async () => {
         let testRegistry: CloudFormationTemplateRegistry
@@ -34,7 +33,7 @@ describe('CloudFormation Template Registry', async () => {
         })
 
         afterEach(async () => {
-            await rmrf(tempFolder)
+            await fs.remove(tempFolder)
         })
 
         describe('addTemplateToRegistry', async () => {
@@ -57,38 +56,6 @@ describe('CloudFormation Template Registry', async () => {
                 await assertThrowsError(
                     async () => await testRegistry.addTemplateToRegistry(vscode.Uri.file(filename.fsPath))
                 )
-            })
-        })
-
-        describe('addTemplatesToRegistry', async () => {
-            it("adds data from multiple templates to the registry and can receive the templates' data", async () => {
-                const filename = vscode.Uri.file(path.join(tempFolder, 'template.yaml'))
-                await strToYamlFile(goodYaml1, filename.fsPath)
-                const filename2 = vscode.Uri.file(path.join(tempFolder, 'template2.yaml'))
-                await strToYamlFile(goodYaml2, filename2.fsPath)
-                await testRegistry.addTemplatesToRegistry([filename, filename2])
-
-                assert.strictEqual(testRegistry.registeredTemplates.length, 2)
-
-                const data = testRegistry.getRegisteredTemplate(filename.fsPath)
-                const data2 = testRegistry.getRegisteredTemplate(filename2.fsPath)
-
-                assertValidTestTemplate(data, filename.fsPath)
-                assertValidTestTemplate(data2, filename2.fsPath)
-            })
-
-            it('swallows errors if a template is not parseable while still parsing valid YAML', async () => {
-                const filename = vscode.Uri.file(path.join(tempFolder, 'template.yaml'))
-                await strToYamlFile(goodYaml1, filename.fsPath)
-                const badFilename = vscode.Uri.file(path.join(tempFolder, 'template2.yaml'))
-                await strToYamlFile(badYaml, badFilename.fsPath)
-                await testRegistry.addTemplatesToRegistry([filename, badFilename])
-
-                assert.strictEqual(testRegistry.registeredTemplates.length, 1)
-
-                const data = testRegistry.getRegisteredTemplate(filename.fsPath)
-
-                assertValidTestTemplate(data, filename.fsPath)
             })
         })
 
@@ -221,6 +188,14 @@ describe('CloudFormation Template Registry', async () => {
     }
 
     describe('getResourcesForHandler', () => {
+        it('handles empty input', () => {
+            // Empty `unfilteredTemplates` input:
+            assert.deepStrictEqual(
+                getResourcesForHandler(path.join(rootPath, nestedPath, 'index.js'), 'handler', []),
+                []
+            )
+        })
+
         it('returns an array containing resources that contain references to the handler in question', () => {
             const val = getResourcesForHandler(path.join(rootPath, nestedPath, 'index.js'), 'handler', [
                 nonParentTemplate,

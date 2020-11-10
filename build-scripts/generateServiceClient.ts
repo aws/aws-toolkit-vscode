@@ -4,8 +4,7 @@
  */
 
 import * as child_process from 'child_process'
-import * as del from 'del'
-import * as fs from 'fs'
+import * as fs from 'fs-extra'
 import * as os from 'os'
 import * as path from 'path'
 
@@ -35,8 +34,7 @@ async function generateServiceClients(serviceClientDefinitions: ServiceClientDef
 
         console.log('Done generating service client(s)')
     } finally {
-        // Clean up the temp path
-        del.sync([tempJsSdkPath], { force: true })
+        await fs.remove(tempJsSdkPath)
     }
 }
 

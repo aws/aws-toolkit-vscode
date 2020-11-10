@@ -1,0 +1,4 @@
+{
+	"type": "Bug Fix",
+	"description": "Fix showing templates from .aws-sam in Sam Deploy (#1380)"
+}

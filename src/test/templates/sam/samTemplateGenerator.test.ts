@@ -4,7 +4,7 @@
  */
 
 import * as assert from 'assert'
-import * as del from 'del'
+import * as fs from 'fs-extra'
 import * as path from 'path'
 import { CloudFormation } from '../../../shared/cloudformation/cloudformation'
 import { makeTemporaryToolkitFolder } from '../../../shared/filesystemUtilities'
@@ -28,7 +28,7 @@ describe('SamTemplateGenerator', () => {
     })
 
     afterEach(async () => {
-        await del([tempFolder], { force: true })
+        await fs.remove(tempFolder)
     })
 
     function makeMinimalTemplate(): SamTemplateGenerator {
