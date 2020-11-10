@@ -79,6 +79,7 @@ describe('DefaultAwsSamDebugConfigurationValidator', () => {
     let validator: DefaultAwsSamDebugConfigurationValidator
 
     let savedRegistry: CloudFormationTemplateRegistry
+
     before(() => {
         savedRegistry = ext.templateRegistry
     })

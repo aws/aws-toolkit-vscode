@@ -147,6 +147,7 @@ export class CloudFormationTemplateRegistry implements vscode.Disposable {
             this._isDisposed = true
         }
     }
+
     /**
      * Rebuilds registry using current glob and exclusion patterns.
      * All functionality is currently internal to class, but can be made public if we want a manual "refresh" button
