@@ -13,7 +13,7 @@ import { getSHA1StringHash } from '../../shared/utilities/textUtilities'
 import { getLogger } from '../../shared/logger'
 
 export class DiskCache implements SsoCache {
-    private cacheDir: string = join(homedir(), '.aws', 'sso', 'cache')
+    public constructor(private cacheDir: string = join(homedir(), '.aws', 'sso', 'cache')) {}
 
     // Treat the token or client registration as expired if within 15 minutes of expiration.
     private TOKEN_EXPIRATION_BUFFER_MS = 900000
