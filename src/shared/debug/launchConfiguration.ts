@@ -6,7 +6,6 @@
 import * as _ from 'lodash'
 import * as path from 'path'
 import * as vscode from 'vscode'
-import { CloudFormationTemplateRegistry } from '../cloudformation/templateRegistry'
 import {
     AwsSamDebuggerConfiguration,
     CodeTargetProperties,
@@ -46,7 +45,6 @@ export class LaunchConfiguration {
         public readonly scopedResource: vscode.Uri,
         private readonly configSource: DebugConfigurationSource = new DefaultDebugConfigSource(scopedResource),
         private readonly samValidator: AwsSamDebugConfigurationValidator = new DefaultAwsSamDebugConfigurationValidator(
-            CloudFormationTemplateRegistry.getRegistry(),
             vscode.workspace.getWorkspaceFolder(scopedResource)
         )
     ) {
