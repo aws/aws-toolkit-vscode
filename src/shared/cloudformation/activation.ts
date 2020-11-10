@@ -8,7 +8,7 @@ import { getLogger } from '../logger'
 import { localize } from '../utilities/vsCodeUtils'
 
 import { CloudFormationTemplateRegistry } from './templateRegistry'
-import { CloudFormationTemplateRegistryManager } from './templateRegistryManager'
+import { ext } from '../extensionGlobals'
 
 export const TEMPLATE_FILE_GLOB_PATTERN = '**/template.{yaml,yml}'
 
@@ -28,11 +28,11 @@ export const TEMPLATE_FILE_EXCLUDE_PATTERN = /.*[/\\]\.aws-sam([/\\].*|$)/
  */
 export async function activate(extensionContext: vscode.ExtensionContext): Promise<void> {
     try {
-        const registry = CloudFormationTemplateRegistry.getRegistry()
-        const manager = new CloudFormationTemplateRegistryManager(registry)
-        await manager.addExcludedPattern(TEMPLATE_FILE_EXCLUDE_PATTERN)
-        await manager.addTemplateGlob(TEMPLATE_FILE_GLOB_PATTERN)
-        extensionContext.subscriptions.push(manager)
+        const registry = new CloudFormationTemplateRegistry()
+        await registry.addExcludedPattern(TEMPLATE_FILE_EXCLUDE_PATTERN)
+        await registry.addTemplateGlob(TEMPLATE_FILE_GLOB_PATTERN)
+        extensionContext.subscriptions.push(registry)
+        ext.templateRegistry = registry
     } catch (e) {
         vscode.window.showErrorMessage(
             localize(

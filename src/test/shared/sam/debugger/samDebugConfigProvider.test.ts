@@ -44,6 +44,7 @@ import { Credentials } from 'aws-sdk'
 import { ExtContext } from '../../../../shared/extensions'
 import { CredentialsProvider } from '../../../../credentials/providers/credentialsProvider'
 import { mkdir, remove } from 'fs-extra'
+import { ext } from '../../../../shared/extensionGlobals'
 
 /**
  * Asserts the contents of a "launch config" (the result of `makeConfig()` or
@@ -99,7 +100,6 @@ function assertEqualLaunchConfigs(actual: SamLaunchRequestArgs, expected: SamLau
 
 describe('SamDebugConfigurationProvider', async () => {
     let debugConfigProvider: SamDebugConfigProvider
-    let registry: CloudFormationTemplateRegistry
     let tempFolder: string
     let tempFolderSimilarName: string | undefined
     let tempFile: vscode.Uri
@@ -111,7 +111,6 @@ describe('SamDebugConfigurationProvider', async () => {
 
     beforeEach(async () => {
         fakeContext = await FakeExtensionContext.getFakeExtContext()
-        registry = CloudFormationTemplateRegistry.getRegistry()
         debugConfigProvider = new SamDebugConfigProvider(fakeContext)
         sandbox = sinon.createSandbox()
 
@@ -126,6 +125,7 @@ describe('SamDebugConfigurationProvider', async () => {
         if (tempFolderSimilarName) {
             await remove(tempFolderSimilarName)
         }
+        ext.templateRegistry.reset()
         sandbox.restore()
     })
 
@@ -138,7 +138,7 @@ describe('SamDebugConfigurationProvider', async () => {
 
             // Malformed template.yaml:
             testutil.toFile('bogus', tempFile.fsPath)
-            await registry.addTemplateToRegistry(tempFile)
+            await ext.templateRegistry.addTemplateToRegistry(tempFile)
             assert.deepStrictEqual(await debugConfigProvider.provideDebugConfigurations(fakeWorkspaceFolder), [])
         })
 
@@ -146,14 +146,14 @@ describe('SamDebugConfigurationProvider', async () => {
             const bigYamlStr = `${makeSampleSamTemplateYaml(true)}\nTestResource2:\n .   Type: AWS::Serverless::Api`
 
             testutil.toFile(bigYamlStr, tempFile.fsPath)
-            await registry.addTemplateToRegistry(tempFile)
+            await ext.templateRegistry.addTemplateToRegistry(tempFile)
             const provided = await debugConfigProvider.provideDebugConfigurations(fakeWorkspaceFolder)
             assert.strictEqual(provided!.length, 1)
         })
 
         it('returns one item if a template with one resource is in the workspace', async () => {
             testutil.toFile(makeSampleSamTemplateYaml(true), tempFile.fsPath)
-            await registry.addTemplateToRegistry(tempFile)
+            await ext.templateRegistry.addTemplateToRegistry(tempFile)
             const provided = await debugConfigProvider.provideDebugConfigurations(fakeWorkspaceFolder)
             assert.notStrictEqual(provided, undefined)
             assert.strictEqual(provided!.length, 1)
@@ -169,7 +169,7 @@ describe('SamDebugConfigurationProvider', async () => {
                 resourceName: resources[0],
             })}\n${makeSampleYamlResource({ resourceName: resources[1] })}`
             testutil.toFile(bigYamlStr, tempFile.fsPath)
-            await registry.addTemplateToRegistry(tempFile)
+            await ext.templateRegistry.addTemplateToRegistry(tempFile)
             const provided = await debugConfigProvider.provideDebugConfigurations(fakeWorkspaceFolder)
             assert.notStrictEqual(provided, undefined)
             if (provided) {
@@ -195,9 +195,9 @@ describe('SamDebugConfigurationProvider', async () => {
             testutil.toFile(makeSampleSamTemplateYaml(true, { resourceName: resources[1] }), nestedYaml.fsPath)
             testutil.toFile(makeSampleSamTemplateYaml(true, { resourceName: badResourceName }), similarNameYaml.fsPath)
 
-            await registry.addTemplateToRegistry(tempFile)
-            await registry.addTemplateToRegistry(nestedYaml)
-            await registry.addTemplateToRegistry(similarNameYaml)
+            await ext.templateRegistry.addTemplateToRegistry(tempFile)
+            await ext.templateRegistry.addTemplateToRegistry(nestedYaml)
+            await ext.templateRegistry.addTemplateToRegistry(similarNameYaml)
 
             const provided = await debugConfigProvider.provideDebugConfigurations(fakeWorkspaceFolder)
             assert.notStrictEqual(provided, undefined)
@@ -220,7 +220,7 @@ describe('SamDebugConfigurationProvider', async () => {
             console.log(bigYamlStr)
 
             testutil.toFile(bigYamlStr, tempFile.fsPath)
-            await registry.addTemplateToRegistry(tempFile)
+            await ext.templateRegistry.addTemplateToRegistry(tempFile)
             const provided = await debugConfigProvider.provideDebugConfigurations(fakeWorkspaceFolder)
             assert.strictEqual(provided!.length, 2)
             assert.strictEqual(provided![1].invokeTarget.target, API_TARGET_TYPE)
@@ -236,7 +236,7 @@ describe('SamDebugConfigurationProvider', async () => {
             console.log(bigYamlStr)
 
             testutil.toFile(bigYamlStr, tempFile.fsPath)
-            await registry.addTemplateToRegistry(tempFile)
+            await ext.templateRegistry.addTemplateToRegistry(tempFile)
             const provided = await debugConfigProvider.provideDebugConfigurations(fakeWorkspaceFolder)
             assert.strictEqual(provided!.length, 1)
         })
@@ -246,7 +246,7 @@ describe('SamDebugConfigurationProvider', async () => {
         it('failure modes', async () => {
             const config = await getConfig(
                 debugConfigProvider,
-                registry,
+                ext.templateRegistry,
                 'testFixtures/workspaceFolder/csharp2.1-plain-sam-app/'
             )
 
@@ -334,7 +334,7 @@ describe('SamDebugConfigurationProvider', async () => {
         })
 
         it("returns undefined when resolving template debug configurations with a template that doesn't have the set resource", async () => {
-            await createAndRegisterYaml({}, tempFile, registry)
+            await createAndRegisterYaml({}, tempFile, ext.templateRegistry)
             const resolved = await debugConfigProvider.makeConfig(
                 undefined,
                 createFakeConfig({ templatePath: tempFile.fsPath })
@@ -343,7 +343,11 @@ describe('SamDebugConfigurationProvider', async () => {
         })
 
         it('returns undefined when resolving template debug configurations with a resource that has an invalid runtime in template', async () => {
-            await createAndRegisterYaml({ resourceName, runtime: 'moreLikeRanOutOfTime' }, tempFile, registry)
+            await createAndRegisterYaml(
+                { resourceName, runtime: 'moreLikeRanOutOfTime' },
+                tempFile,
+                ext.templateRegistry
+            )
             const resolved = await debugConfigProvider.makeConfig(
                 undefined,
                 createFakeConfig({
@@ -359,7 +363,7 @@ describe('SamDebugConfigurationProvider', async () => {
                 makeSampleSamTemplateYaml(true, { resourceName, runtime: 'moreLikeRanOutOfTime' }),
                 tempFile.fsPath
             )
-            await registry.addTemplateToRegistry(tempFile)
+            await ext.templateRegistry.addTemplateToRegistry(tempFile)
             const resolved = await debugConfigProvider.makeConfig(undefined, {
                 type: AWS_SAM_DEBUG_TYPE,
                 name: 'whats in a name',
@@ -386,7 +390,7 @@ describe('SamDebugConfigurationProvider', async () => {
         it('supports workspace-relative template path ("./foo.yaml")', async () => {
             testutil.toFile(makeSampleSamTemplateYaml(true, { runtime: 'nodejs12.x' }), tempFile.fsPath)
             // Register with *full* path.
-            await registry.addTemplateToRegistry(tempFile)
+            await ext.templateRegistry.addTemplateToRegistry(tempFile)
             // Simulates launch.json:
             //     "invokeTarget": {
             //         "target": "./test.yaml",
@@ -559,7 +563,7 @@ describe('SamDebugConfigurationProvider', async () => {
                 },
             }
             const templatePath = vscode.Uri.file(path.join(appDir, 'template.yaml'))
-            await registry.addTemplateToRegistry(templatePath)
+            await ext.templateRegistry.addTemplateToRegistry(templatePath)
             const actual = (await debugConfigProvider.makeConfig(folder, input))!
 
             const expected: SamLaunchRequestArgs = {
@@ -804,7 +808,7 @@ describe('SamDebugConfigurationProvider', async () => {
                 },
             }
             const templatePath = vscode.Uri.file(path.join(appDir, 'template.yaml'))
-            await registry.addTemplateToRegistry(templatePath)
+            await ext.templateRegistry.addTemplateToRegistry(templatePath)
             const actual = (await debugConfigProvider.makeConfig(folder, input))! as DotNetCoreDebugConfiguration
             const codeRoot = `${appDir}/src/HelloWorld`
             const expectedCodeRoot = (actual.baseBuildDir ?? 'fail') + '/input'
@@ -1084,7 +1088,7 @@ Outputs:
                 },
             }
             const templatePath = vscode.Uri.file(path.join(appDir, 'python3.7-plain-sam-app/template.yaml'))
-            await registry.addTemplateToRegistry(templatePath)
+            await ext.templateRegistry.addTemplateToRegistry(templatePath)
 
             // Invoke with noDebug=false (the default).
             const actual = (await debugConfigProvider.makeConfig(folder, input))!
@@ -1266,7 +1270,7 @@ Outputs:
                 }),
                 tempFile.fsPath
             )
-            await registry.addTemplateToRegistry(tempFile)
+            await ext.templateRegistry.addTemplateToRegistry(tempFile)
             const actual = (await debugConfigProvider.makeConfig(folder, input))!
             const tempDir = path.dirname(actual.codeRoot)
 
@@ -1409,7 +1413,7 @@ Resources:
                 }),
                 tempFile.fsPath
             )
-            await registry.addTemplateToRegistry(tempFile)
+            await ext.templateRegistry.addTemplateToRegistry(tempFile)
             const actual = (await debugConfigProviderMockCredentials.makeConfig(folder, input))!
             const tempDir = path.dirname(actual.codeRoot)
 
@@ -1662,18 +1666,17 @@ describe('createApiAwsSamDebugConfig', () => {
 })
 
 describe('debugConfiguration', () => {
-    let registry: CloudFormationTemplateRegistry
     let tempFolder: string
     let tempFile: vscode.Uri
 
     beforeEach(async () => {
         tempFolder = await makeTemporaryToolkitFolder()
         tempFile = vscode.Uri.file(path.join(tempFolder, 'test.yaml'))
-        registry = CloudFormationTemplateRegistry.getRegistry()
     })
 
     afterEach(async () => {
         await remove(tempFolder)
+        ext.templateRegistry.reset()
     })
 
     it('getCodeRoot(), getHandlerName() with invokeTarget=code', async () => {
@@ -1734,13 +1737,13 @@ describe('debugConfiguration', () => {
 
         // Template with relative path:
         testutil.toFile(makeSampleSamTemplateYaml(true, { codeUri: relativePath }), tempFile.fsPath)
-        await registry.addTemplateToRegistry(tempFile)
+        await ext.templateRegistry.addTemplateToRegistry(tempFile)
         assert.strictEqual(debugConfiguration.getCodeRoot(folder, config), fullPath)
         assert.strictEqual(debugConfiguration.getHandlerName(folder, config), 'handler')
 
         // Template with absolute path:
         testutil.toFile(makeSampleSamTemplateYaml(true, { codeUri: fullPath }), tempFile.fsPath)
-        await registry.addTemplateToRegistry(tempFile)
+        await ext.templateRegistry.addTemplateToRegistry(tempFile)
         assert.strictEqual(debugConfiguration.getCodeRoot(folder, config), fullPath)
 
         // Template with refs that don't override:
@@ -1759,7 +1762,7 @@ describe('debugConfiguration', () => {
             },
         })
         testutil.toFile(makeSampleSamTemplateYaml(true, { codeUri: fullPath }, paramStr), tempFileRefs.fsPath)
-        await registry.addTemplateToRegistry(tempFileRefs)
+        await ext.templateRegistry.addTemplateToRegistry(tempFileRefs)
         assert.strictEqual(debugConfiguration.getCodeRoot(folder, fileRefsConfig), fullPath)
         assert.strictEqual(debugConfiguration.getHandlerName(folder, fileRefsConfig), 'handler')
 
@@ -1786,7 +1789,7 @@ describe('debugConfiguration', () => {
             ),
             tempFileDefaultRefs.fsPath
         )
-        await registry.addTemplateToRegistry(tempFileDefaultRefs)
+        await ext.templateRegistry.addTemplateToRegistry(tempFileDefaultRefs)
         assert.strictEqual(debugConfiguration.getCodeRoot(folder, fileDefaultRefsConfig), fullPath)
         assert.strictEqual(debugConfiguration.getHandlerName(folder, fileDefaultRefsConfig), 'thisWillOverride')
 
@@ -1808,7 +1811,7 @@ describe('debugConfiguration', () => {
             makeSampleSamTemplateYaml(true, { codeUri: fullPath, handler: '!Ref override' }, paramStrNoDefaultOverride),
             tempFileOverrideRef.fsPath
         )
-        await registry.addTemplateToRegistry(tempFileOverrideRef)
+        await ext.templateRegistry.addTemplateToRegistry(tempFileOverrideRef)
         assert.strictEqual(debugConfiguration.getCodeRoot(folder, fileOverrideRefConfig), fullPath)
         assert.strictEqual(debugConfiguration.getHandlerName(folder, fileOverrideRefConfig), 'override')
     })
