@@ -3,6 +3,8 @@
 
 package software.aws.toolkits.jetbrains.services.lambda.java
 
+import com.intellij.openapi.application.WriteAction
+import com.intellij.openapi.projectRoots.ProjectJdkTable
 import com.intellij.openapi.projectRoots.Sdk
 import com.intellij.openapi.roots.ModuleRootModificationUtil
 import com.intellij.pom.java.LanguageLevel
@@ -22,7 +24,6 @@ class JavaRuntimeGroupTest(
     private val sdk: () -> Sdk,
     private val expectedRuntime: Runtime?
 ) {
-
     @Rule
     @JvmField
     val projectRule = JavaCodeInsightTestFixtureRule()
@@ -33,7 +34,11 @@ class JavaRuntimeGroupTest(
     fun sdkResultsInExpectedRuntime() {
         val module = projectRule.module
 
-        ModuleRootModificationUtil.setModuleSdk(module, sdk())
+        WriteAction.computeAndWait<Unit, Throwable> {
+            val sdk = sdk()
+            ProjectJdkTable.getInstance().addJdk(sdk, projectRule.fixture.testRootDisposable)
+            ModuleRootModificationUtil.setModuleSdk(module, sdk)
+        }
 
         assertThat(sut.determineRuntime(module)).isEqualTo(expectedRuntime)
     }
