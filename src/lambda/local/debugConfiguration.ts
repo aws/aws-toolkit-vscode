@@ -6,7 +6,6 @@
 import * as path from 'path'
 import * as vscode from 'vscode'
 import { CloudFormation } from '../../shared/cloudformation/cloudformation'
-import { CloudFormationTemplateRegistry } from '../../shared/cloudformation/templateRegistry'
 import {
     AwsSamDebuggerConfiguration,
     AWS_SAM_DEBUG_TARGET_TYPES,
@@ -18,6 +17,7 @@ import { localize } from '../../shared/utilities/vsCodeUtils'
 import { tryGetAbsolutePath } from '../../shared/utilities/workspaceUtils'
 import { RuntimeFamily } from '../models/samLambdaRuntime'
 import { SamLaunchRequestArgs } from '../../shared/sam/debugger/awsSamDebugger'
+import { ext } from '../../shared/extensionGlobals'
 
 export const DOTNET_CORE_DEBUGGER_PATH = '/tmp/lambci_debug_files/vsdbg'
 
@@ -155,9 +155,8 @@ export function getTemplate(
         return undefined
     }
     const templateInvoke = config.invokeTarget as TemplateTargetProperties
-    const cftRegistry = CloudFormationTemplateRegistry.getRegistry()
     const fullPath = tryGetAbsolutePath(folder, templateInvoke.templatePath)
-    const cfnTemplate = cftRegistry.getRegisteredTemplate(fullPath)?.template
+    const cfnTemplate = ext.templateRegistry.getRegisteredTemplate(fullPath)?.template
     return cfnTemplate
 }
 
