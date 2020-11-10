@@ -17,8 +17,8 @@ import { AwsSamDebuggerConfiguration } from '../../../shared/sam/debugger/awsSam
 import { AwsSamDebugConfigurationValidator } from '../../../shared/sam/debugger/awsSamDebugConfigurationValidator'
 import * as pathutils from '../../../shared/utilities/pathUtils'
 import * as testutil from '../../testUtil'
-import { CloudFormationTemplateRegistry } from '../../../shared/cloudformation/templateRegistry'
 import { TEMPLATE_FILE_GLOB_PATTERN } from '../../../shared/cloudformation/activation'
+import { ext } from '../../../shared/extensionGlobals'
 
 const samDebugConfiguration: AwsSamDebuggerConfiguration = {
     type: 'aws-sam',
@@ -92,7 +92,6 @@ const templateUri = vscode.Uri.file('/template.yaml')
 describe('LaunchConfiguration', () => {
     let mockConfigSource: DebugConfigurationSource
     let mockSamValidator: AwsSamDebugConfigurationValidator
-    let registry: CloudFormationTemplateRegistry
 
     /** Test workspace. */
     const workspace = vscode.workspace.workspaceFolders![0]
@@ -106,8 +105,7 @@ describe('LaunchConfiguration', () => {
     const templateUriCsharp = vscode.Uri.file(path.join(workspace.uri.fsPath, 'csharp2.1-plain-sam-app/template.yaml'))
 
     beforeEach(async () => {
-        registry = CloudFormationTemplateRegistry.getRegistry()
-        await registry.addTemplateGlob(TEMPLATE_FILE_GLOB_PATTERN)
+        await ext.templateRegistry.addTemplateGlob(TEMPLATE_FILE_GLOB_PATTERN)
 
         // TODO: remove mocks in favor of testing src/testFixtures/ data.
         mockConfigSource = mock()
@@ -117,7 +115,7 @@ describe('LaunchConfiguration', () => {
     })
 
     afterEach(() => {
-        registry.reset()
+        ext.templateRegistry.reset()
     })
 
     it('getConfigsMappedToTemplates(type=api)', async () => {

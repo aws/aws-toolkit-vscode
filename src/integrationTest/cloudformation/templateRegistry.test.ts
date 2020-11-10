@@ -29,7 +29,7 @@ describe('CloudFormation Template Registry', async () => {
         testDir = path.join(workspaceDir, dir.toString())
         testDirNested = path.join(testDir, 'nested')
         await fs.mkdirp(testDirNested)
-        registry = CloudFormationTemplateRegistry.getRegistry()
+        registry = new CloudFormationTemplateRegistry()
     })
 
     afterEach(async () => {

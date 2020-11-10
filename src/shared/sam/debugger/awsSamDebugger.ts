@@ -17,7 +17,6 @@ import {
     getTemplate,
 } from '../../../lambda/local/debugConfiguration'
 import { getDefaultRuntime, getFamily, getRuntimeFamily, RuntimeFamily } from '../../../lambda/models/samLambdaRuntime'
-import { CloudFormationTemplateRegistry } from '../../cloudformation/templateRegistry'
 import { Timeout } from '../../utilities/timeoutUtils'
 import { ChannelLogger } from '../../utilities/vsCodeUtils'
 import * as csharpDebug from './csharpSamDebug'
@@ -48,6 +47,7 @@ import { notifyUserInvalidCredentials } from '../../../credentials/credentialsUt
 import { Credentials } from 'aws-sdk/lib/credentials'
 import { CloudFormation } from '../../cloudformation/cloudformation'
 import { getSamCliContext, getSamCliVersion } from '../cli/samCliContext'
+import { ext } from '../../extensionGlobals'
 
 const localize = nls.loadMessageBundle()
 
@@ -165,12 +165,11 @@ export class SamDebugConfigProvider implements vscode.DebugConfigurationProvider
         if (token?.isCancellationRequested) {
             return undefined
         }
-        const cftRegistry = CloudFormationTemplateRegistry.getRegistry()
 
         const configs: AwsSamDebuggerConfiguration[] = []
         if (folder) {
             const folderPath = folder.uri.fsPath
-            const templates = cftRegistry.registeredTemplates
+            const templates = ext.templateRegistry.registeredTemplates
 
             for (const templateDatum of templates) {
                 if (isInDirectory(folderPath, templateDatum.path)) {

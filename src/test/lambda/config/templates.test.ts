@@ -6,6 +6,7 @@
 import * as assert from 'assert'
 import { mkdir, remove, writeFile } from 'fs-extra'
 import * as path from 'path'
+import { ext } from '../../../shared/extensionGlobals'
 import * as vscode from 'vscode'
 import {
     getExistingConfiguration,
@@ -14,7 +15,6 @@ import {
     LoadTemplatesConfigContext,
     TemplatesConfigPopulator,
 } from '../../../lambda/config/templates'
-import { CloudFormationTemplateRegistry } from '../../../shared/cloudformation/templateRegistry'
 import { makeTemporaryToolkitFolder } from '../../../shared/filesystemUtilities'
 import { makeSampleSamTemplateYaml } from '../../shared/cloudformation/cloudformationTestUtils'
 
@@ -764,7 +764,6 @@ describe('TemplatesConfigPopulator', async () => {
 })
 
 describe('getExistingConfiguration', async () => {
-    let registry: CloudFormationTemplateRegistry
     let tempFolder: string
     let tempTemplateFile: vscode.Uri
     let tempConfigFile: string
@@ -775,7 +774,6 @@ describe('getExistingConfiguration', async () => {
     beforeEach(async () => {
         tempFolder = await makeTemporaryToolkitFolder()
         tempTemplateFile = vscode.Uri.file(path.join(tempFolder, 'test.yaml'))
-        registry = CloudFormationTemplateRegistry.getRegistry()
         fakeWorkspaceFolder = {
             uri: vscode.Uri.file(tempFolder),
             name: 'workspaceFolderMimic',
@@ -788,7 +786,7 @@ describe('getExistingConfiguration', async () => {
 
     afterEach(async () => {
         await remove(tempFolder)
-        registry.reset()
+        ext.templateRegistry.reset()
     })
 
     it("returns undefined if the legacy config file doesn't exist", async () => {
@@ -799,7 +797,7 @@ describe('getExistingConfiguration', async () => {
     it('returns undefined if the legacy config file is not valid JSON', async () => {
         await writeFile(tempTemplateFile.fsPath, makeSampleSamTemplateYaml(true, { handler: matchedHandler }), 'utf8')
         await writeFile(tempConfigFile, makeSampleSamTemplateYaml(true, { handler: matchedHandler }), 'utf8')
-        await registry.addTemplateToRegistry(tempTemplateFile)
+        await ext.templateRegistry.addTemplateToRegistry(tempTemplateFile)
         const val = await getExistingConfiguration(fakeWorkspaceFolder, matchedHandler, tempTemplateFile)
         assert.strictEqual(val, undefined)
     })
@@ -820,7 +818,7 @@ describe('getExistingConfiguration', async () => {
             },
         }
         await writeFile(tempConfigFile, JSON.stringify(configData), 'utf8')
-        await registry.addTemplateToRegistry(tempTemplateFile)
+        await ext.templateRegistry.addTemplateToRegistry(tempTemplateFile)
         const val = await getExistingConfiguration(fakeWorkspaceFolder, matchedHandler, tempTemplateFile)
         assert.ok(val)
         if (val) {
