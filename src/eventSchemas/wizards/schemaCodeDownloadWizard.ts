@@ -12,7 +12,15 @@ import * as vscode from 'vscode'
 import { eventBridgeSchemasDocUrl } from '../../shared/constants'
 import { createHelpButton } from '../../shared/ui/buttons'
 import * as picker from '../../shared/ui/picker'
-import { MultiStepWizard, promptUserForLocation, WizardContext, WizardStep } from '../../shared/wizards/multiStepWizard'
+import {
+    MultiStepWizard,
+    promptUserForLocation,
+    WIZARD_GOBACK,
+    WIZARD_TERMINATE,
+    WizardContext,
+    wizardContinue,
+    WizardStep,
+} from '../../shared/wizards/multiStepWizard'
 
 import * as codeLang from '../models/schemaCodeLangs'
 
@@ -165,18 +173,18 @@ export class SchemaCodeDownloadWizard extends MultiStepWizard<SchemaCodeDownload
     private readonly SCHEMA_VERSION: WizardStep = async () => {
         this.schemaVersion = await this.context.promptUserForVersion(this.schemaVersion)
 
-        return this.schemaVersion ? this.LANGUAGE : undefined
+        return this.schemaVersion ? wizardContinue(this.LANGUAGE) : WIZARD_TERMINATE
     }
 
     private readonly LANGUAGE: WizardStep = async () => {
         this.language = await this.context.promptUserForLanguage(this.language)
 
-        return this.language ? this.LOCATION : this.SCHEMA_VERSION
+        return this.language ? wizardContinue(this.LOCATION) : WIZARD_GOBACK
     }
 
     private readonly LOCATION: WizardStep = async () => {
         this.location = await this.context.promptUserForLocation()
 
-        return this.location ? undefined : this.LANGUAGE
+        return this.location ? WIZARD_TERMINATE : WIZARD_GOBACK
     }
 }
