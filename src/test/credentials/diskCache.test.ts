@@ -7,10 +7,9 @@ import * as assert from 'assert'
 import * as path from 'path'
 import * as fs from 'fs'
 import { fstatSync, writeFileSync } from 'fs-extra'
-import { fileExists, makeTemporaryToolkitFolder } from '../../shared/filesystemUtilities'
+import { fileExists, makeTemporaryToolkitFolder, tryRemoveFolder } from '../../shared/filesystemUtilities'
 import { DiskCache } from '../../credentials/sso/diskCache'
 import { SsoClientRegistration } from '../../credentials/sso/ssoClientRegistration'
-import { rmrf } from '../../shared/filesystem'
 import { SsoAccessToken } from '../../credentials/sso/ssoAccessToken'
 
 describe('SSO diskCache', () => {
@@ -45,7 +44,7 @@ describe('SSO diskCache', () => {
     })
 
     afterEach(async () => {
-        await rmrf(tempFolder)
+        await tryRemoveFolder(tempFolder)
     })
 
     describe('loadClientRegistration', () => {
