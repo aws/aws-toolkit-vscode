@@ -234,6 +234,7 @@
     "AWS.log.invalidLevel": "Invalid log level: {0}",
     "AWS.message.loading": "Loading...",
     "AWS.message.credentials.error": "There was an issue trying to use credentials profile {0}: {1}",
+    "AWS.message.credentials.sso.error": "Failed to load SSO credentials. Try logging in again.",
     "AWS.message.credentials.invalid": "Invalid Credentials {0}, see logs for more information.",
     "AWS.message.credentials.invalid.help": "Get Help...",
     "AWS.message.credentials.invalid.logs": "View Logs...",

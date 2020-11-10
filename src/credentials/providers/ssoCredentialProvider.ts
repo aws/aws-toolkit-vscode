@@ -7,19 +7,17 @@ import * as vscode from 'vscode'
 import { Credentials, SSO } from 'aws-sdk'
 import { getLogger } from '../../shared/logger'
 import { SsoAccessTokenProvider } from '../sso/ssoAccessTokenProvider'
+import * as nls from 'vscode-nls'
+
+const localize = nls.loadMessageBundle()
 
 export class SsoCredentialProvider {
-    private ssoAccount: string
-    private ssoRole: string
-    private ssoClient: SSO
-    private ssoAccessTokenProvider: SsoAccessTokenProvider
-
-    constructor(ssoAccount: string, ssoRole: string, ssoClient: SSO, ssoAccessTokenProvider: SsoAccessTokenProvider) {
-        this.ssoAccount = ssoAccount
-        this.ssoRole = ssoRole
-        this.ssoClient = ssoClient
-        this.ssoAccessTokenProvider = ssoAccessTokenProvider
-    }
+    public constructor(
+        private ssoAccount: string,
+        private ssoRole: string,
+        private ssoClient: SSO,
+        private ssoAccessTokenProvider: SsoAccessTokenProvider
+    ) {}
 
     public async refreshCredentials(): Promise<Credentials> {
         try {
@@ -42,7 +40,7 @@ export class SsoCredentialProvider {
                 this.ssoAccessTokenProvider.invalidate()
             }
             vscode.window.showErrorMessage(
-                'Something went wrong loading your SSO credentials, please re-initiate login.'
+                localize('AWS.message.credentials.sso.error', 'Failed to load SSO credentials. Try logging in again.')
             )
             getLogger().error(err)
             throw err

@@ -12,7 +12,7 @@ import { StartDeviceAuthorizationResponse } from 'aws-sdk/clients/ssooidc'
 import { openSsoPortalLink } from './ssoSupport'
 
 const CLIENT_REGISTRATION_TYPE = 'public'
-const CLIENT_NAME = `aws-toolkit-vscode`
+const CLIENT_NAME = 'aws-toolkit-vscode'
 // According to Spec 'SSO Login Token Flow' the grant type must be the following string
 const GRANT_TYPE = 'urn:ietf:params:oauth:grant-type:device_code'
 // Used to convert seconds to milliseconds
@@ -20,17 +20,12 @@ const MILLISECONDS_PER_SECOND = 1000
 const BACKOFF_DELAY_MS = 5000
 
 export class SsoAccessTokenProvider {
-    private ssoRegion: string
-    private ssoUrl: string
-    private ssoOidcClient: SSOOIDC
-    private cache: DiskCache
-
-    constructor(ssoRegion: string, ssoUrl: string, ssoOidcClient: SSOOIDC, cache: DiskCache) {
-        this.ssoRegion = ssoRegion
-        this.ssoOidcClient = ssoOidcClient
-        this.cache = cache
-        this.ssoUrl = ssoUrl
-    }
+    public constructor(
+        private ssoRegion: string,
+        private ssoUrl: string,
+        private ssoOidcClient: SSOOIDC,
+        private cache: DiskCache
+    ) {}
 
     public async accessToken(): Promise<SsoAccessToken> {
         const accessToken = this.cache.loadAccessToken(this.ssoUrl)
@@ -52,7 +47,7 @@ export class SsoAccessTokenProvider {
         registration: SsoClientRegistration,
         authorization: StartDeviceAuthorizationResponse
     ): Promise<SsoAccessToken> {
-        // Calculate the device code expirtation in milliseconds
+        // Calculate the device code expiration in milliseconds
         const deviceCodeExpiration = this.currentTimePlusSecondsInMs(authorization.expiresIn!)
 
         getLogger().info(

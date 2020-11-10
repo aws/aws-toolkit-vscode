@@ -13,7 +13,7 @@ const SSO_PROFILE_PROPERTIES = ['sso_start_url', 'sso_region', 'sso_account_id',
 export function validateSsoProfile(profile: Profile, profileName: string): string | undefined {
     const missingProperties = []
 
-    for (let propertyName of SSO_PROFILE_PROPERTIES) {
+    for (const propertyName of SSO_PROFILE_PROPERTIES) {
         if (!hasProfileProperty(profile, propertyName)) {
             missingProperties.push(propertyName)
         }
