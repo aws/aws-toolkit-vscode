@@ -65,7 +65,7 @@ abstract class LambdaBuilder {
         val buildDir = getBuildDirectory(module)
         Files.createDirectories(buildDir)
 
-        val customTemplate = getBuildDirectory(module).resolve("template.yaml")
+        val customTemplate = createTempDir().resolve("template.yaml").toPath()
 
         val logicalId = "Function"
         SamTemplateUtils.writeDummySamTemplate(customTemplate, logicalId, runtime, baseDir, handler, timeout, memorySize, envVars)

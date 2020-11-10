@@ -74,7 +74,7 @@ fun GeneralCommandLine.samBuildCommand(
     samOptions: SamOptions
 ) = this.apply {
     withEnvironment(environmentVariables)
-    withWorkDirectory(templatePath.parent.toAbsolutePath().toString())
+    withWorkDirectory(templatePath.toAbsolutePath().parent.toString())
 
     addParameter("build")
 
