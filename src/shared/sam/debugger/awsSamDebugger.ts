@@ -276,15 +276,11 @@ export class SamDebugConfigProvider implements vscode.DebugConfigurationProvider
             )
             return undefined
         }
-        const cftRegistry = CloudFormationTemplateRegistry.getRegistry()
 
         // If "request" field is missing this means launch.json does not exist.
         // User/vscode expects us to dynamically decide defaults if possible.
         const hasLaunchJson = !!config.request
-        const configValidator: AwsSamDebugConfigurationValidator = new DefaultAwsSamDebugConfigurationValidator(
-            cftRegistry,
-            folder
-        )
+        const configValidator: AwsSamDebugConfigurationValidator = new DefaultAwsSamDebugConfigurationValidator(folder)
 
         if (!hasLaunchJson) {
             vscode.window

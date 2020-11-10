@@ -8,7 +8,6 @@ import * as vscode from 'vscode'
 import { Runtime } from 'aws-sdk/clients/lambda'
 import { getExistingConfiguration } from '../../../../lambda/config/templates'
 import { createRuntimeQuickPick, getDefaultRuntime, RuntimeFamily } from '../../../../lambda/models/samLambdaRuntime'
-import { CloudFormationTemplateRegistry } from '../../../cloudformation/templateRegistry'
 import { LaunchConfiguration } from '../../../debug/launchConfiguration'
 import * as picker from '../../../ui/picker'
 import { localize } from '../../../utilities/vsCodeUtils'
@@ -22,6 +21,7 @@ import {
     TEMPLATE_TARGET_TYPE,
 } from '../awsSamDebugConfiguration'
 import { CloudFormation } from '../../../cloudformation/cloudformation'
+import { ext } from '../../../extensionGlobals'
 
 /**
  * Holds information required to create a launch config
@@ -53,8 +53,7 @@ export async function addSamDebugConfiguration(
         let preloadedConfig = undefined
 
         if (workspaceFolder) {
-            const registry = CloudFormationTemplateRegistry.getRegistry()
-            const templateDatum = registry.getRegisteredTemplate(rootUri.fsPath)
+            const templateDatum = ext.templateRegistry.getRegisteredTemplate(rootUri.fsPath)
             if (templateDatum) {
                 const resource = templateDatum.template.Resources![resourceName]
                 if (resource && resource.Properties) {

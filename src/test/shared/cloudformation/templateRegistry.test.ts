@@ -29,7 +29,7 @@ describe('CloudFormation Template Registry', async () => {
 
         beforeEach(async () => {
             tempFolder = await makeTemporaryToolkitFolder()
-            testRegistry = new CloudFormationTemplateRegistry()
+            testRegistry = CloudFormationTemplateRegistry.getRegistry()
         })
 
         afterEach(async () => {

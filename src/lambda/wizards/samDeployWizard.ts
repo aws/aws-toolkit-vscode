@@ -29,7 +29,6 @@ import {
 } from '../../shared/wizards/multiStepWizard'
 import { configureParameterOverrides } from '../config/configureParameterOverrides'
 import { getOverriddenParameters, getParameters } from '../utilities/parameterUtils'
-import { CloudFormationTemplateRegistry } from '../../shared/cloudformation/templateRegistry'
 import { ext } from '../../shared/extensionGlobals'
 
 export interface SamDeployWizardResponse {
@@ -620,8 +619,7 @@ function validateStackName(value: string): string | undefined {
 }
 
 async function getTemplateChoices(...workspaceFolders: vscode.Uri[]): Promise<SamTemplateQuickPickItem[]> {
-    const cfnRegistry = CloudFormationTemplateRegistry.getRegistry()
-    const templateUris = cfnRegistry.registeredTemplates.map(o => vscode.Uri.file(o.path))
+    const templateUris = ext.templateRegistry.registeredTemplates.map(o => vscode.Uri.file(o.path))
     const uriToLabel: Map<vscode.Uri, string> = new Map<vscode.Uri, string>()
     const labelCounts: Map<string, number> = new Map()
 

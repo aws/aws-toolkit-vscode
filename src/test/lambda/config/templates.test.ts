@@ -775,7 +775,7 @@ describe('getExistingConfiguration', async () => {
     beforeEach(async () => {
         tempFolder = await makeTemporaryToolkitFolder()
         tempTemplateFile = vscode.Uri.file(path.join(tempFolder, 'test.yaml'))
-        registry = new CloudFormationTemplateRegistry()
+        registry = CloudFormationTemplateRegistry.getRegistry()
         fakeWorkspaceFolder = {
             uri: vscode.Uri.file(tempFolder),
             name: 'workspaceFolderMimic',
@@ -788,6 +788,7 @@ describe('getExistingConfiguration', async () => {
 
     afterEach(async () => {
         await remove(tempFolder)
+        registry.reset()
     })
 
     it("returns undefined if the legacy config file doesn't exist", async () => {
