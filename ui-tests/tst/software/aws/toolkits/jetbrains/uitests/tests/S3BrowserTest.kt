@@ -11,12 +11,13 @@ import com.intellij.remoterobot.stepsProcessing.log
 import com.intellij.remoterobot.stepsProcessing.step
 import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.AfterAll
+import org.junit.jupiter.api.BeforeAll
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.TestInstance
 import org.junit.jupiter.api.TestInstance.Lifecycle
 import org.junit.jupiter.api.io.TempDir
 import software.amazon.awssdk.services.s3.S3Client
-import software.amazon.awssdk.services.s3.model.S3Exception
+import software.amazon.awssdk.services.s3.model.NoSuchBucketException
 import software.aws.toolkits.jetbrains.uitests.CoreTest
 import software.aws.toolkits.jetbrains.uitests.extensions.uiTest
 import software.aws.toolkits.jetbrains.uitests.fixtures.JTreeFixture
@@ -58,6 +59,12 @@ class S3BrowserTest {
 
     @TempDir
     lateinit var tempDir: Path
+    lateinit var s3Client: S3Client
+
+    @BeforeAll
+    fun setUp() {
+        s3Client = S3Client.create()
+    }
 
     @Test
     @CoreTest
@@ -173,69 +180,41 @@ class S3BrowserTest {
                 // Find the title bar
                 assertThat(findAll<ComponentFixture>(byXpath("//div[@accessiblename='$newJsonName']"))).isNotEmpty
             }
+
+            step("Delete bucket named $bucket") {
+                showAwsExplorer()
+                awsExplorer {
+                    openExplorerActionMenu(S3, bucket)
+                }
+                findAndClick("//div[@text='$deleteBucketText']")
+                fillSingleTextField(bucket)
+                pressOk()
+                waitForS3BucketDeletion()
+            }
         }
     }
 
     @AfterAll
     fun cleanup() {
-        step("Delete bucket named $bucket") {
-            uiTest {
-                idea {
-                    showAwsExplorer()
-                    awsExplorer {
-                        openExplorerActionMenu(S3, bucket)
-                    }
-                    findAndClick("//div[@text='$deleteBucketText']")
-                    fillSingleTextField(bucket)
-                    pressOk()
-                    waitForS3BucketDeletion()
-                }
+        try {
+            s3Client.deleteBucket { it.bucket(bucket) }
+            waitForS3BucketDeletion()
+        } catch (e: Exception) {
+            if (e is NoSuchBucketException) {
+                return
             }
+            log.error("Delete bucket stack threw an exception", e)
+        } finally {
+            s3Client.close()
         }
     }
 
     private fun waitForS3BucketDeletion() {
-        retryableS3 { client ->
-            try {
-                client.headBucket { it.bucket(bucket) }
-                log.info("The S3 bucket is not deleted yet, retrying")
-                false
-            } catch (e: S3Exception) {
-                log.info("The S3 bucket was deleted successfully")
-                true
-            }
-        }
+        s3Client.waiter().waitUntilBucketNotExists { it.bucket(bucket) }
     }
 
     private fun waitForS3BucketCreation() {
-        retryableS3 { client ->
-            try {
-                client.headBucket { it.bucket(bucket) }
-                log.info("The S3 bucket was created successfully")
-                true
-            } catch (e: S3Exception) {
-                log.info("The S3 bucket does not exist yet, checking again")
-                false
-            }
-        }
-    }
-
-    // TODO when the Java SDK v2 supports waiters this can be removed
-    private fun retryableS3(block: (S3Client) -> Boolean) {
-        var client: S3Client? = null
-        try {
-            client = S3Client.create()
-            for (i in 1..15) {
-                if (block(client)) {
-                    break
-                }
-                Thread.sleep(250)
-            }
-        } catch (e: Exception) {
-            log.error("Unable to verify the S3 bucket was created, continuing!", e)
-        } finally {
-            client?.close()
-        }
+        s3Client.waiter().waitUntilBucketExists { it.bucket(bucket) }
     }
 
     private fun RemoteRobot.s3Tree(func: (JTreeFixture.() -> Unit)) {

@@ -6,8 +6,6 @@ package software.aws.toolkits.jetbrains.uitests.tests
 import com.intellij.remoterobot.stepsProcessing.log
 import com.intellij.remoterobot.stepsProcessing.step
 import com.intellij.remoterobot.utils.attempt
-import com.intellij.remoterobot.utils.waitFor
-import com.intellij.remoterobot.utils.waitForIgnoringError
 import org.assertj.core.api.AbstractStringAssert
 import org.assertj.core.api.Assertions.assertThat
 import org.assertj.swing.core.MouseButton
@@ -18,8 +16,6 @@ import org.junit.jupiter.api.TestInstance
 import org.junit.jupiter.api.TestInstance.Lifecycle
 import org.junit.jupiter.api.io.TempDir
 import software.amazon.awssdk.services.cloudformation.CloudFormationClient
-import software.amazon.awssdk.services.cloudformation.model.CloudFormationException
-import software.amazon.awssdk.services.cloudformation.model.StackStatus
 import software.aws.toolkits.jetbrains.uitests.CoreTest
 import software.aws.toolkits.jetbrains.uitests.extensions.uiTest
 import software.aws.toolkits.jetbrains.uitests.fixtures.IdeaFrame
@@ -42,7 +38,7 @@ class CloudFormationBrowserTest {
     private val templateFile: Path = Paths.get(System.getProperty("testDataPath")).resolve("testFiles").resolve(templateFileName)
     private val stack = "uitest-${UUID.randomUUID()}"
 
-    private val CloudFormation = "CloudFormation"
+    private val cloudFormation = "CloudFormation"
     private val queueName = "SQSQueue"
     private val deleteStackText = "Delete Stack..."
 
@@ -55,9 +51,7 @@ class CloudFormationBrowserTest {
         log.info("Deploying stack $stack before the test run")
         cloudFormationClient = CloudFormationClient.create()
         cloudFormationClient.createStack { it.templateBody(templateFile.toFile().readText()).stackName(stack) }
-        waitForIgnoringError(Duration.ofSeconds(120), Duration.ofSeconds(5)) {
-            cloudFormationClient.describeStacks { it.stackName(stack) }.hasStacks()
-        }
+        cloudFormationClient.waiter().waitUntilStackCreateComplete { it.stackName(stack) }
         log.info("Successfully deployed $stack")
     }
 
@@ -74,8 +68,8 @@ class CloudFormationBrowserTest {
         idea {
             step("Open stack") {
                 awsExplorer {
-                    expandExplorerNode(CloudFormation)
-                    doubleClickExplorer(CloudFormation, stack)
+                    expandExplorerNode(cloudFormation)
+                    doubleClickExplorer(cloudFormation, stack)
                 }
             }
             step("Can copy IDs from tree") {
@@ -152,7 +146,7 @@ class CloudFormationBrowserTest {
             step("Delete stack $stack") {
                 showAwsExplorer()
                 awsExplorer {
-                    openExplorerActionMenu(CloudFormation, stack)
+                    openExplorerActionMenu(cloudFormation, stack)
                 }
                 findAndClick("//div[@text='$deleteStackText']")
                 fillSingleTextField(stack)
@@ -174,10 +168,12 @@ class CloudFormationBrowserTest {
         // Make sure that we delete the stack even if it fails in the UIs
         try {
             cloudFormationClient.deleteStack { it.stackName(stack) }
+            waitForStackDeletion()
         } catch (e: Exception) {
             log.error("Delete stack threw an exception", e)
+        } finally {
+            cloudFormationClient.close()
         }
-        waitForStackDeletion()
     }
 
     private fun assertClipboardContents(): AbstractStringAssert<*> =
@@ -189,14 +185,7 @@ class CloudFormationBrowserTest {
 
     private fun waitForStackDeletion() {
         log.info("Waiting for the deletion of stack $stack")
-        waitFor(duration = Duration.ofSeconds(180), interval = Duration.ofSeconds(5)) {
-            // wait until the stack is gone
-            try {
-                cloudFormationClient.describeStacks { it.stackName(stack) }.stacks().first().stackStatus() == StackStatus.DELETE_COMPLETE
-            } catch (e: Exception) {
-                e is CloudFormationException && e.awsErrorDetails().errorCode() == "ValidationError"
-            }
-        }
+        cloudFormationClient.waiter().waitUntilStackDeleteComplete { it.stackName(stack) }
         log.info("Finished deleting stack $stack")
     }
 }

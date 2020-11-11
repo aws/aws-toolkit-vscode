@@ -19,10 +19,6 @@ plugins {
 }
 
 dependencies {
-    // This is just for the waiter, TODO remove when the Java SDK v2 adds waiters
-    testImplementation(project(":jetbrains-core"))
-    testImplementation("org.jetbrains.kotlinx:kotlinx-coroutines-core:$coroutinesVersion")
-    // end todo
     testImplementation(gradleApi())
     testImplementation("org.junit.jupiter:junit-jupiter-api:$junit5Version")
     testImplementation("com.intellij.remoterobot:remote-robot:$remoteRobotVersion")
