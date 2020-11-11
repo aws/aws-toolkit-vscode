@@ -225,19 +225,24 @@ export function setMostRecentVersion(context: vscode.ExtensionContext): void {
 
 /**
  * Shows a message with a link to the quickstart page.
+ * In cloud9, directly opens quickstart instead
  */
-async function showQuickstartPrompt(): Promise<void> {
-    const view = localize('AWS.command.quickStart', 'View Quick Start')
-    const prompt = await vscode.window.showInformationMessage(
-        localize(
-            'AWS.message.prompt.quickStart.toastMessage',
-            'You are now using AWS Toolkit version {0}',
-            pluginVersion
-        ),
-        view
-    )
-    if (prompt === view) {
+async function showOrPromptQuickstart(): Promise<void> {
+    if (isCloud9()) {
         vscode.commands.executeCommand('aws.quickStart')
+    } else {
+        const view = localize('AWS.command.quickStart', 'View Quick Start')
+        const prompt = await vscode.window.showInformationMessage(
+            localize(
+                'AWS.message.prompt.quickStart.toastMessage',
+                'You are now using AWS Toolkit version {0}',
+                pluginVersion
+            ),
+            view
+        )
+        if (prompt === view) {
+            vscode.commands.executeCommand('aws.quickStart')
+        }
     }
 }
 
@@ -262,13 +267,12 @@ export function showWelcomeMessage(context: vscode.ExtensionContext): void {
         )
         return
     }
-
     try {
         if (isDifferentVersion(context)) {
             setMostRecentVersion(context)
             // the welcome toast should be nonblocking.
             // tslint:disable-next-line: no-floating-promises
-            showQuickstartPrompt()
+            showOrPromptQuickstart()
         }
     } catch (err) {
         // swallow error and don't block extension load

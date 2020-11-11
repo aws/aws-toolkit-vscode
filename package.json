@@ -690,10 +690,6 @@
                 {
                     "command": "aws.stepfunctions.publishStateMachine",
                     "when": "!isCloud9"
-                },
-                {
-                    "command": "aws.quickStart",
-                    "when": "!isCloud9"
                 }
             ],
             "editor/title": [
@@ -758,7 +754,7 @@
                 },
                 {
                     "command": "aws.quickStart",
-                    "when": "view == aws.explorer && !isCloud9",
+                    "when": "view == aws.explorer",
                     "group": "y_quickStart@1"
                 },
                 {

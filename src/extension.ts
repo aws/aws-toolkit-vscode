@@ -232,9 +232,7 @@ export async function activate(context: vscode.ExtensionContext) {
             })
         }
 
-        if (!isCloud9()) {
-            showWelcomeMessage(context)
-        }
+        showWelcomeMessage(context)
 
         await loginWithMostRecentCredentials(toolkitSettings, loginManager)
 

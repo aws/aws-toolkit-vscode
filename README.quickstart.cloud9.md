@@ -10,6 +10,7 @@ See [Setup](#additional-setup-steps) for installation requirements, or [Get help
 -   [AWS Explorer](#ui-components-aws-expl)
     -   CloudFormation stacks
     -   Lambda functions
+    -   S3 explorer
 -   [AWS Serverless Applications (SAM)](#sam-and-lambda)
 -   [`AWS:` Commands](#aws-commands)
 
