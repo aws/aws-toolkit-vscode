@@ -4,6 +4,7 @@
  */
 
 import { Loggable, Logger, LogLevel } from '../shared/logger'
+import { compareLogLevel } from '../shared/logger/logger'
 
 /**
  * In-memory Logger implementation suitable for use by tests.
@@ -13,6 +14,8 @@ export class TestLogger implements Logger {
         logLevel: LogLevel
         entry: Loggable
     }[] = []
+
+    public constructor(private logLevel: LogLevel = 'debug') {}
 
     public debug(...message: Loggable[]): void {
         this.addLoggedEntries('debug', message)
@@ -47,5 +50,14 @@ export class TestLogger implements Logger {
                 entry,
             })
         })
+    }
+
+    public setLogLevel(logLevel: LogLevel) {
+        this.logLevel = logLevel
+    }
+
+    public logLevelEnabled(logLevel: LogLevel): boolean {
+        const currentLevel = this.logLevel as LogLevel
+        return compareLogLevel(currentLevel, logLevel) >= 0
     }
 }
