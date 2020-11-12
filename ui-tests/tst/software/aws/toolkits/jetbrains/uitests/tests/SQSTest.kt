@@ -51,8 +51,8 @@ class SQSTest {
     private val deleteQueueText = "Delete Queue..."
     private val purgeQueueText = "Purge Queue..."
     private val subscribeToSnsText = "Subscribe to SNS topic..."
-    private val editQueueAttributesAction = "Edit Queue Attributes..."
-    private val editQueueAttributesTitle = "Edit Queue Attributes"
+    private val editQueueAttributesAction = "Edit Queue Parameters..."
+    private val editQueueAttributesTitle = "Edit Queue Parameters"
 
     private val queueName = "uitest-${UUID.randomUUID()}"
     private val snsTopicName = "uitest-${UUID.randomUUID()}"
@@ -138,8 +138,8 @@ class SQSTest {
                 }
             }
             closeToolWindowTab()
-            step("Edit queue attributes") {
-                step("Open queue attributes and change visibility to a different value") {
+            step("Edit queue parameters") {
+                step("Open queue parameters and change visibility to a different value") {
                     awsExplorer { openExplorerActionMenu(sqsNodeLabel, queueName) }
                     findAndClick("//div[@text='$editQueueAttributesAction']")
                     dialog(editQueueAttributesTitle) {
@@ -149,7 +149,7 @@ class SQSTest {
                         }
                     }
                 }
-                assertThat(findToast().hasText { it.text.contains("Updated queue attributes") })
+                assertThat(findToast().hasText { it.text.contains("Updated queue parameters") })
                 step("Reopen the dialog to make sure the new value was saved") {
                     awsExplorer { openExplorerActionMenu(sqsNodeLabel, queueName) }
                     findAndClick("//div[@text='$editQueueAttributesAction']")

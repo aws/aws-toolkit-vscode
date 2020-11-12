@@ -77,7 +77,7 @@ class EditAttributesDialogTest {
     }
 
     @Test
-    fun `Editing queue attributes succeeds`() {
+    fun `Editing queue parameters succeeds`() {
         val attributesCaptor = argumentCaptor<SetQueueAttributesRequest>()
         client.stub {
             on { setQueueAttributes(attributesCaptor.capture()) } doReturn SetQueueAttributesResponse.builder().build()
@@ -96,7 +96,7 @@ class EditAttributesDialogTest {
     }
 
     @Test
-    fun `Error editing queue attributes`() {
+    fun `Error editing queue parameters`() {
         val message = "Internal error"
 
         client.stub {
