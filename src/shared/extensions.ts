@@ -14,6 +14,8 @@ import { CredentialsStore } from '../credentials/credentialsStore'
 export const VSCODE_EXTENSION_ID = {
     awstoolkit: 'amazonwebservices.aws-toolkit-vscode',
     python: 'ms-python.python',
+    // python depends on jupyter plugin
+    jupyter: 'ms-toolsai.jupyter',
     yaml: 'redhat.vscode-yaml',
 }
 
