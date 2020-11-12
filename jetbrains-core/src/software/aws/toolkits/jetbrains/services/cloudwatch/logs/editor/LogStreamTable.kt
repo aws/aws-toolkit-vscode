@@ -7,7 +7,6 @@ import com.intellij.openapi.Disposable
 import com.intellij.openapi.actionSystem.ActionManager
 import com.intellij.openapi.actionSystem.ActionPlaces
 import com.intellij.openapi.actionSystem.DefaultActionGroup
-import com.intellij.openapi.actionSystem.Separator
 import com.intellij.openapi.project.Project
 import com.intellij.openapi.util.Disposer
 import com.intellij.ui.PopupHandler
@@ -23,7 +22,6 @@ import software.aws.toolkits.jetbrains.services.cloudwatch.logs.CloudWatchLogsAc
 import software.aws.toolkits.jetbrains.services.cloudwatch.logs.LogStreamEntry
 import software.aws.toolkits.jetbrains.services.cloudwatch.logs.LogStreamFilterActor
 import software.aws.toolkits.jetbrains.services.cloudwatch.logs.LogStreamListActor
-import software.aws.toolkits.jetbrains.services.cloudwatch.logs.actions.CopyFromTableAction
 import software.aws.toolkits.jetbrains.services.cloudwatch.logs.actions.ShowLogsAroundActionGroup
 import software.aws.toolkits.jetbrains.utils.ApplicationThreadPoolScope
 import software.aws.toolkits.jetbrains.utils.ui.bottomReached
@@ -103,8 +101,6 @@ class LogStreamTable(
 
     private fun addActionsToTable() {
         val actionGroup = DefaultActionGroup().apply {
-            add(CopyFromTableAction(logsTable))
-            add(Separator())
             add(ShowLogsAroundActionGroup(project, logGroup, logStream, logsTable))
         }
         PopupHandler.installPopupHandler(

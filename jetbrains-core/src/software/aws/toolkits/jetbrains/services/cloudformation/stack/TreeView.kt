@@ -90,18 +90,8 @@ internal class TreeViewImpl(private val project: Project, stackName: String) : T
         val rootNode = DefaultMutableTreeNode(descriptor, true)
         model = DefaultTreeModel(rootNode)
         tree = Tree(model).also { it.name = "$stackName.tree" }
-        tree.addMouseListener(ResourceActionPopup(this::selected))
         tree.setPaintBusy(true)
         component = JBScrollPane(tree)
-    }
-
-    private fun selected(): SelectedResource? {
-        val node = tree.selectionPaths ?: return null
-        if (node.size != 1) {
-            return null
-        }
-        val selectedNode = (node.first().lastPathComponent as? DefaultMutableTreeNode)?.userObject as? StackNodeDescriptor ?: return null
-        return SelectedResource(selectedNode.name, selectedNode.physicalId)
     }
 
     override fun getIconsAndUpdaters() =

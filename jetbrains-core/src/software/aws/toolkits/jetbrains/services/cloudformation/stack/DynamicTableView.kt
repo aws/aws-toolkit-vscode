@@ -18,6 +18,7 @@ class DynamicTableView<T>(private vararg val fields: Field<T>) : View {
     private val table = JBTable(model).apply {
         autoCreateRowSorter = true
         autoscrolls = true
+        cellSelectionEnabled = true
         setShowColumns(true)
         setPaintBusy(true)
         fields.forEach { field ->

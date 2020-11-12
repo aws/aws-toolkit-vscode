@@ -25,17 +25,6 @@ class ResourceTableView : View, ResourceListener, Disposable {
         ) { it.resourceStatusReason() }
     ).apply { component.border = JBUI.Borders.empty() }
 
-    init {
-        table.addMouseListener(ResourceActionPopup(this::selected))
-    }
-
-    private fun selected(): SelectedResource? {
-        val row = table.selectedRow() ?: return null
-        val logicalId = row[logicalId] as? String ?: return null
-        val physicalId = row[physicalId] as? String
-        return SelectedResource(logicalId, physicalId?.takeIf { it.isNotBlank() })
-    }
-
     override val component: JComponent = table.component
 
     override fun updatedResources(resources: List<StackResource>) = table.updateItems(resources, clearExisting = true)

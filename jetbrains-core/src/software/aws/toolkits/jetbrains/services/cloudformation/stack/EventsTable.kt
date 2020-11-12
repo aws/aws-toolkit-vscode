@@ -55,17 +55,6 @@ internal class EventsTableImpl : EventsTable, Disposable {
         ) { e -> e.resourceStatusReason() ?: "" }
     ).apply { component.border = IdeBorderFactory.createBorder(SideBorder.BOTTOM) }
 
-    init {
-        table.addMouseListener(ResourceActionPopup(this::selected))
-    }
-
-    private fun selected(): SelectedResource? {
-        val row = table.selectedRow() ?: return null
-        val logicalId = row[logicalId] as? String ?: return null
-        val physicalId = row[physicalId] as? String
-        return SelectedResource(logicalId, physicalId?.takeIf { it.isNotBlank() })
-    }
-
     override val component: JComponent = table.component
 
     override fun showBusyIcon() {
