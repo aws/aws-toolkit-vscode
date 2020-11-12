@@ -6,7 +6,7 @@
 import * as vscode from 'vscode'
 import * as winston from 'winston'
 import { ConsoleLogTransport } from './consoleLogTransport'
-import { Logger, LogLevel } from './logger'
+import { Logger, LogLevel, compareLogLevel } from './logger'
 import { OutputChannelTransport } from './outputChannelTransport'
 import { isError } from 'util'
 
@@ -35,6 +35,11 @@ export class WinstonToolkitLogger implements Logger, vscode.Disposable {
         this.logger.log(this.logger.level, `Setting log level to: ${logLevel}`)
         this.logger.level = logLevel
         this.logger.log(this.logger.level, `Log level is now: ${this.logger.level}`)
+    }
+
+    public logLevelEnabled(logLevel: LogLevel): boolean {
+        const currentLevel = this.logger.level as LogLevel
+        return compareLogLevel(currentLevel, logLevel) >= 0
     }
 
     public logToFile(logPath: string): void {
