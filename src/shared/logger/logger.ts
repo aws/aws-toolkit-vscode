@@ -3,8 +3,6 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
-import { WinstonToolkitLogger } from './winstonToolkitLogger'
-
 let toolkitLogger: Logger | undefined
 
 export interface Logger {
@@ -18,6 +16,7 @@ export interface Logger {
     warn(error: Error): void
     error(message: string, ...meta: any[]): void
     error(error: Error): void
+    setLogLevel(logLevel: LogLevel): void
     /** Returns true if the given log level is being logged.  */
     logLevelEnabled(logLevel: LogLevel): boolean
 }
@@ -71,14 +70,4 @@ export function getLogger(): Logger {
  */
 export function setLogger(logger: Logger | undefined) {
     toolkitLogger = logger
-}
-
-export function setMaxLogging() {
-    if (getLogger() instanceof WinstonToolkitLogger) {
-        const logger = getLogger() as WinstonToolkitLogger
-        logger.setLogLevel('debug')
-        logger.logToConsole()
-    } else {
-        throw Error('getLogger() is not a WinstonToolkitLogger')
-    }
 }

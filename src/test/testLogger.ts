@@ -52,6 +52,10 @@ export class TestLogger implements Logger {
         })
     }
 
+    public setLogLevel(logLevel: LogLevel) {
+        this.logLevel = logLevel
+    }
+
     public logLevelEnabled(logLevel: LogLevel): boolean {
         const currentLevel = this.logLevel as LogLevel
         return compareLogLevel(currentLevel, logLevel) >= 0
