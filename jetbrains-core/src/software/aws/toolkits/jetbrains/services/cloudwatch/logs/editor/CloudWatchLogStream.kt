@@ -50,7 +50,9 @@ class CloudWatchLogStream(
     private val edtContext = getCoroutineUiContext(disposable = this)
 
     private val client: CloudWatchLogsClient = project.awsClient()
-    private val logStreamTable: LogStreamTable = LogStreamTable(project, client, logGroup, logStream, LogStreamTable.TableType.LIST)
+    private val logStreamTable: LogStreamTable = LogStreamTable(project, client, logGroup, logStream, LogStreamTable.TableType.LIST).also {
+        Disposer.register(this@CloudWatchLogStream, it)
+    }
     private var searchStreamTable: LogStreamTable? = null
 
     private fun createUIComponents() {
@@ -67,8 +69,6 @@ class CloudWatchLogStream(
         locationInformation.crumbs = locationCrumbs.crumbs
         breadcrumbHolder.border = locationCrumbs.border
         locationInformation.installClickListener()
-
-        Disposer.register(this, logStreamTable)
 
         addActionToolbar()
         addSearchListener()

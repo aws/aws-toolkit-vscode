@@ -4,6 +4,7 @@ package software.aws.toolkits.jetbrains.services.cloudformation.stack
 
 import com.intellij.notification.NotificationGroup
 import com.intellij.notification.NotificationType
+import com.intellij.openapi.Disposable
 import com.intellij.openapi.actionSystem.AnActionEvent
 import com.intellij.openapi.actionSystem.LangDataKeys
 import com.intellij.openapi.components.ServiceManager
@@ -56,9 +57,14 @@ class OpenStackUiAction : SingleResourceNodeAction<CloudFormationStackNode>(mess
     }
 }
 
-private class StackUI(private val project: Project, private val stackName: String, stackId: String, toolWindow: ToolkitToolWindow) : UpdateListener {
+private class StackUI(
+    private val project: Project,
+    private val stackName: String,
+    stackId: String,
+    toolWindow: ToolkitToolWindow
+) : UpdateListener, Disposable {
 
-    internal val toolWindowTab: ToolkitToolWindowTab
+    val toolWindowTab: ToolkitToolWindowTab
     private val animator: IconAnimator
     private val updater: Updater
     private val notificationGroup: NotificationGroup
@@ -150,8 +156,8 @@ private class StackUI(private val project: Project, private val stackName: Strin
             setPagesAvailable = pageButtons::setPagesAvailable
         )
 
-        toolWindowTab = toolWindow.addTab(stackName, mainPanel, id = stackId)
-        listOf(tree, updater, animator, eventsTable, outputsTable, resourcesTable, pageButtons).forEach { Disposer.register(toolWindowTab, it) }
+        toolWindowTab = toolWindow.addTab(stackName, mainPanel, id = stackId, disposable = this)
+        listOf(tree, updater, animator, eventsTable, outputsTable, resourcesTable, pageButtons).forEach { Disposer.register(this, it) }
     }
 
     fun start() {
@@ -183,5 +189,8 @@ private class StackUI(private val project: Project, private val stackName: Strin
         // To prevent double click, we disable buttons. They will be enabled by Updater when data fetched
         pageButtons.setPagesAvailable(emptySet())
         updater.switchPage(page)
+    }
+
+    override fun dispose() {
     }
 }

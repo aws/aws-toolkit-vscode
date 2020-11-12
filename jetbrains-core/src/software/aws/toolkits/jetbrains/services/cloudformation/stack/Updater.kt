@@ -143,5 +143,6 @@ class Updater(
 
     private data class Stack(val status: StackStatus, val resources: List<StackResource>, val outputs: List<Output>)
 
-    override fun dispose() {}
+    override fun dispose() {
+    }
 }
