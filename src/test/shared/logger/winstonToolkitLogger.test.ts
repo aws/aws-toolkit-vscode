@@ -24,6 +24,29 @@ describe('WinstonToolkitLogger', () => {
         }
     })
 
+    it('logLevelEnabled()', () => {
+        const logger = new WinstonToolkitLogger('info')
+        assert.strictEqual(true, logger.logLevelEnabled('error'))
+        assert.strictEqual(true, logger.logLevelEnabled('warn'))
+        assert.strictEqual(true, logger.logLevelEnabled('info'))
+        assert.strictEqual(false, logger.logLevelEnabled('verbose'))
+        assert.strictEqual(false, logger.logLevelEnabled('debug'))
+
+        logger.setLogLevel('error')
+        assert.strictEqual(true, logger.logLevelEnabled('error'))
+        assert.strictEqual(false, logger.logLevelEnabled('warn'))
+        assert.strictEqual(false, logger.logLevelEnabled('info'))
+        assert.strictEqual(false, logger.logLevelEnabled('verbose'))
+        assert.strictEqual(false, logger.logLevelEnabled('debug'))
+
+        logger.setLogLevel('debug')
+        assert.strictEqual(true, logger.logLevelEnabled('error'))
+        assert.strictEqual(true, logger.logLevelEnabled('warn'))
+        assert.strictEqual(true, logger.logLevelEnabled('info'))
+        assert.strictEqual(true, logger.logLevelEnabled('verbose'))
+        assert.strictEqual(true, logger.logLevelEnabled('debug'))
+    })
+
     it('creates an object', () => {
         assert.notStrictEqual(new WinstonToolkitLogger('info'), undefined)
     })
