@@ -5,12 +5,10 @@
 
 import * as child_process from 'child_process'
 import { pushIf } from '../../utilities/collectionUtils'
-import * as vscode from 'vscode'
 import * as nls from 'vscode-nls'
 import { fileExists } from '../../filesystemUtilities'
 import { getLogger, Logger } from '../../logger'
 import { ChildProcess } from '../../utilities/childProcess'
-import { removeAnsi } from '../../utilities/textUtilities'
 import { Timeout } from '../../utilities/timeoutUtils'
 import { ChannelLogger } from '../../utilities/vsCodeUtils'
 import { DefaultSamCliProcessInvokerContext, SamCliProcessInvokerContext } from './samCliInvoker'
@@ -59,13 +57,13 @@ export class DefaultSamLocalInvokeCommand implements SamLocalInvokeCommand {
 
             await childProcess.start({
                 onStdout: (text: string): void => {
-                    this.emitMessage(text)
+                    this.channelLogger.emitMessage(text)
                     // If we have a timeout (as we do on debug) refresh the timeout as we receive text
                     params.timeout?.refresh()
                     this.logger.verbose(`stdout: ${text}`)
                 },
                 onStderr: (text: string): void => {
-                    this.emitMessage(text)
+                    this.channelLogger.emitMessage(text)
                     // If we have a timeout (as we do on debug) refresh the timeout as we receive text
                     params.timeout?.refresh()
                     this.logger.verbose(`stderr: ${text}`)
@@ -134,13 +132,6 @@ export class DefaultSamLocalInvokeCommand implements SamLocalInvokeCommand {
                 throw err
             }
         })
-    }
-
-    private emitMessage(text: string): void {
-        // From VS Code API: If no debug session is active, output sent to the debug console is not shown.
-        // We send text to output channel and debug console to ensure no text is lost.
-        this.channelLogger.channel.append(removeAnsi(text))
-        vscode.debug.activeDebugConsole.append(text)
     }
 }
 
