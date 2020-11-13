@@ -106,13 +106,11 @@ export class SamCliBuildInvocation {
             ...this.args.environmentVariables,
         }
 
-        const childProcessResult = await this.args.invoker.invoke(
-            {
-                spawnOptions: { env },
-                arguments: invokeArgs,
-            },
-            getChannelLogger(ext.outputChannel)
-        )
+        const childProcessResult = await this.args.invoker.invoke({
+            spawnOptions: { env },
+            arguments: invokeArgs,
+            channelLogger: getChannelLogger(ext.outputChannel),
+        })
 
         logAndThrowIfUnexpectedExitCode(childProcessResult, 0)
 
