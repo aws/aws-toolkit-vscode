@@ -14,7 +14,6 @@ import {
     SamCliProcessInvoker,
 } from './samCliInvokerUtils'
 import { DefaultSamCliLocationProvider } from './samCliLocator'
-import { ChannelLogger } from '../../utilities/vsCodeUtils'
 
 export interface SamCliProcessInvokerContext {
     cliConfig: SamCliConfiguration
@@ -40,10 +39,7 @@ export function resolveSamCliProcessInvokerContext(
 export class DefaultSamCliProcessInvoker implements SamCliProcessInvoker {
     public constructor(private readonly context: SamCliProcessInvokerContext = resolveSamCliProcessInvokerContext()) {}
 
-    public async invoke(
-        options?: SamCliProcessInvokeOptions,
-        channelLogger?: ChannelLogger
-    ): Promise<ChildProcessResult> {
+    public async invoke(options?: SamCliProcessInvokeOptions): Promise<ChildProcessResult> {
         const invokeOptions = makeRequiredSamCliProcessInvokeOptions(options)
         const logger = getLogger()
 
@@ -61,15 +57,15 @@ export class DefaultSamCliProcessInvoker implements SamCliProcessInvoker {
             ...invokeOptions.arguments
         )
 
-        channelLogger?.info('AWS.running.command', 'Running command: {0}', `${childProcess}`)
+        options?.channelLogger?.info('AWS.running.command', 'Running command: {0}', `${childProcess}`)
         logger.verbose(`running: ${childProcess}`)
         return await childProcess.run(
             (text: string) => {
-                channelLogger?.emitMessage(text)
+                options?.channelLogger?.emitMessage(text)
                 logger.verbose(`stdout: ${text}`)
             },
             (text: string) => {
-                channelLogger?.emitMessage(text)
+                options?.channelLogger?.emitMessage(text)
                 logger.verbose(`stderr: ${text}`)
             }
         )

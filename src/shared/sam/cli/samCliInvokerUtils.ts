@@ -11,11 +11,13 @@ import { ChannelLogger } from '../../utilities/vsCodeUtils'
 export interface SamCliProcessInvokeOptions {
     spawnOptions?: SpawnOptions
     arguments?: string[]
+    /** Optionally log stdout and stderr to the specified logger */
+    channelLogger?: ChannelLogger
 }
 
 export function makeRequiredSamCliProcessInvokeOptions(
     options?: SamCliProcessInvokeOptions
-): Required<SamCliProcessInvokeOptions> {
+): Required<Omit<SamCliProcessInvokeOptions, 'channelLogger'>> {
     options = options || {}
 
     return {
