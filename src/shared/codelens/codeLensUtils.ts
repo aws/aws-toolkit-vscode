@@ -10,7 +10,7 @@ import { CloudFormation } from '../cloudformation/cloudformation'
 import { getResourcesForHandler } from '../cloudformation/templateRegistry'
 import { LambdaHandlerCandidate } from '../lambdaHandlerSearch'
 import { getLogger } from '../logger'
-import { CODE_TARGET_TYPE, TEMPLATE_TARGET_TYPE } from '../sam/debugger/awsSamDebugConfiguration'
+import { API_TARGET_TYPE, CODE_TARGET_TYPE, TEMPLATE_TARGET_TYPE } from '../sam/debugger/awsSamDebugConfiguration'
 import {
     addSamDebugConfiguration,
     AddSamDebugConfigurationInput,
@@ -106,9 +106,8 @@ function makeAddCodeSamDebugCodeLens(
 }
 
 /**
- * Wraps the addSamDebugConfiguration logic in a picker that lets the user choose
- * to create a code-type debug config or a template-type debug config using a selected template
- * TODO: Add way to create API Gateway launch config
+ * Wraps the addSamDebugConfiguration logic in a picker that lets the user choose to create
+ * a code-type debug config, template-type debug config, or an api-type debug config using a selected template
  * TODO: Dedupe? Call out dupes at the quick pick level?
  * @param codeConfig
  * @param templateConfigs
@@ -124,13 +123,18 @@ export async function pickAddSamDebugConfiguration(
     }
 
     const templateItemsMap = new Map<string, AddSamDebugConfigurationInput>()
-    const templateItems: vscode.QuickPickItem[] = templateConfigs.map(templateConfig => {
+    const templateItems: vscode.QuickPickItem[] = []
+    const WITH_API_CONFIG = ' (API configuration)'
+    templateConfigs.forEach(templateConfig => {
         const label = `${getWorkspaceRelativePath(templateConfig.rootUri.fsPath) ?? templateConfig.rootUri.fsPath}:${
             templateConfig.resourceName
         }`
         templateItemsMap.set(label, templateConfig)
-        return { label }
+        templateItemsMap.set(`${label}${WITH_API_CONFIG}`, templateConfig)
+        templateItems.push({ label: label })
+        templateItems.push({ label: `${templateItems[templateItems.length - 1].label}${WITH_API_CONFIG}` })
     })
+
     const noTemplate = localize('AWS.pickDebugConfig.noTemplate', 'No Template')
     const picker = createQuickPick<vscode.QuickPickItem>({
         options: {
@@ -169,7 +173,11 @@ export async function pickAddSamDebugConfiguration(
         if (!templateItem) {
             return undefined
         }
-        await addSamDebugConfiguration(templateItem, TEMPLATE_TARGET_TYPE)
+        if (val.label.endsWith(WITH_API_CONFIG)) {
+            await addSamDebugConfiguration(templateItem, API_TARGET_TYPE)
+        } else {
+            await addSamDebugConfiguration(templateItem, TEMPLATE_TARGET_TYPE)
+        }
     }
 }
 
