@@ -13,9 +13,10 @@ import { S3FolderNode } from '../explorer/s3FolderNode'
 import { Commands } from '../../shared/vscode/commands'
 import { Window } from '../../shared/vscode/window'
 import * as telemetry from '../../shared/telemetry/telemetry'
-import { readablePath, showErrorWithLogs, showOutputMessage } from '../util/messages'
+import { readablePath } from '../util/util'
 import { progressReporter } from '../util/progressReporter'
 import { localize } from '../../shared/utilities/vsCodeUtils'
+import { showErrorWithLogs, showOutputMessage } from '../../shared/utilities/messages'
 
 export interface FileSizeBytes {
     /**

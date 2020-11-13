@@ -4,7 +4,7 @@
  */
 
 import * as assert from 'assert'
-import { readablePath, showConfirmationMessage, showErrorWithLogs, showOutputMessage } from '../../../s3/util/messages'
+import { showConfirmationMessage, showErrorWithLogs, showOutputMessage } from '../../../shared/utilities/messages'
 import { MockOutputChannel } from '../../mockOutputChannel'
 import { FakeWindow } from '../../shared/vscode/fakeWindow'
 
@@ -40,24 +40,6 @@ describe('messages', () => {
 
             assert.strictEqual(window.message.warning, prompt)
             assert.strictEqual(isConfirmed, false)
-        })
-    })
-
-    describe('readablePath', () => {
-        const bucketName = 'bucket-name'
-        const bucketPath = ''
-        const objectPath = 'path/to/object'
-
-        it('creates a readable path for an S3 bucket', () => {
-            const path = readablePath({ bucket: { name: bucketName }, path: bucketPath })
-
-            assert.strictEqual(path, 's3://bucket-name')
-        })
-
-        it('creates a readable path for an object in an S3 bucket', () => {
-            const path = readablePath({ bucket: { name: bucketName }, path: objectPath })
-
-            assert.strictEqual(path, 's3://bucket-name/path/to/object')
         })
     })
 
