@@ -244,6 +244,7 @@
         <explorer.serviceNode implementation="software.aws.toolkits.jetbrains.core.explorer.nodes.CloudWatchRootNode"/>
         <explorer.serviceNode implementation="software.aws.toolkits.jetbrains.core.explorer.nodes.LambdaExplorerRootNode"/>
         <explorer.serviceNode implementation="software.aws.toolkits.jetbrains.core.explorer.nodes.S3ExplorerRootNode"/>
+        <explorer.serviceNode implementation="software.aws.toolkits.jetbrains.core.explorer.nodes.EcrExplorerRootNode"/>
         <explorer.serviceNode implementation="software.aws.toolkits.jetbrains.core.explorer.nodes.EcsExplorerRootNode"/>
         <explorer.serviceNode implementation="software.aws.toolkits.jetbrains.core.explorer.nodes.SchemasExplorerRootNode"/>
         <!--TODO uncomment to enable SQS-->
@@ -252,6 +253,16 @@
     </extensions>
 
     <actions>
+        <group id="aws.toolkit.explorer.ecr" popup="true" compact="false">
+            <action id="ecr.repository.create" class="software.aws.toolkits.jetbrains.services.ecr.actions.CreateRepositoryAction"/>
+        </group>
+
+        <group id="aws.toolkit.explorer.ecr.repository" popup="true" compact="false">
+            <action id="ecr.repository.copyUri" class="software.aws.toolkits.jetbrains.services.ecr.actions.CopyRepositoryUriAction"/>
+            <separator/>
+            <action id="ecr.repository.delete" class="software.aws.toolkits.jetbrains.services.ecr.actions.DeleteRepositoryAction"/>
+        </group>
+
         <group id="aws.toolkit.explorer.ecs.cluster" popup="true" compact="false">
             <action id="ecs.service.showLogGroup" class="software.aws.toolkits.jetbrains.services.ecs.actions.EcsLogGroupAction"/>
             <separator/>

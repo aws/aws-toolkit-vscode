@@ -81,6 +81,7 @@ dependencies {
     api("software.amazon.awssdk:s3:$awsSdkVersion")
     api("software.amazon.awssdk:lambda:$awsSdkVersion")
     api("software.amazon.awssdk:iam:$awsSdkVersion")
+    api("software.amazon.awssdk:ecr:$awsSdkVersion")
     api("software.amazon.awssdk:ecs:$awsSdkVersion")
     api("software.amazon.awssdk:cloudformation:$awsSdkVersion")
     api("software.amazon.awssdk:schemas:$awsSdkVersion")

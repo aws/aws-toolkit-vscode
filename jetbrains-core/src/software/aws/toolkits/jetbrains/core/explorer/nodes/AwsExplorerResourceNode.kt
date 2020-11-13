@@ -13,7 +13,7 @@ abstract class AwsExplorerResourceNode<T>(
     project: Project,
     val serviceId: String,
     value: T,
-    awsIcon: Icon
+    awsIcon: Icon? = null
 ) : AwsExplorerNode<T>(project, value, awsIcon),
     ResourceActionNode {
     override fun actionGroupName() = "aws.toolkit.explorer.$serviceId.${resourceType()}"
