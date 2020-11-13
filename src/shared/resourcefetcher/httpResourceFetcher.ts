@@ -21,7 +21,7 @@ export class HttpResourceFetcher implements ResourceFetcher {
      * @param params Additional params for the fetcher
      * @param {boolean} params.showUrl Whether or not to the URL in log statements.
      * @param {string} params.friendlyName If URL is not shown, replaces the URL with this text.
-     * @param {string} params.pipeLocation If provided, pipes output to file designated here. 
+     * @param {string} params.pipeLocation If provided, pipes output to file designated here.
      * If this is selected, the function will not return a value.
      */
     public constructor(

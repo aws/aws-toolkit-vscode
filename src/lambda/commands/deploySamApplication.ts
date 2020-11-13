@@ -19,6 +19,7 @@ import { runSamCliPackage } from '../../shared/sam/cli/samCliPackage'
 import { throwAndNotifyIfInvalid } from '../../shared/sam/cli/samCliValidationUtils'
 import { recordSamDeploy, Result } from '../../shared/telemetry/telemetry'
 import { makeCheckLogsMessage } from '../../shared/utilities/messages'
+import { addCodiconToString } from '../../shared/utilities/textUtilities'
 import { ChannelLogger } from '../../shared/utilities/vsCodeUtils'
 import { SamDeployWizardResponse } from '../wizards/samDeployWizard'
 
@@ -98,10 +99,13 @@ export async function deploySamApplication(
         })
 
         window.setStatusBarMessage(
-            localize(
-                'AWS.samcli.deploy.statusbar.message',
-                '$(cloud-upload) Deploying SAM Application to {0}...',
-                deployWizardResponse.stackName
+            addCodiconToString(
+                'cloud-upload',
+                localize(
+                    'AWS.samcli.deploy.statusbar.message',
+                    'Deploying SAM Application to {0}...',
+                    deployWizardResponse.stackName
+                )
             ),
             deployApplicationPromise
         )

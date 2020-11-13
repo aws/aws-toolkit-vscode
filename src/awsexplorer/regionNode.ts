@@ -10,6 +10,7 @@ import { CloudFormationNode } from '../lambda/explorer/cloudFormationNodes'
 import { CloudWatchLogsNode } from '../cloudWatchLogs/explorer/cloudWatchLogsNode'
 import { LambdaNode } from '../lambda/explorer/lambdaNodes'
 import { S3Node } from '../s3/explorer/s3Nodes'
+import { isCloud9 } from '../shared/extensionUtilities'
 import { ext } from '../shared/extensionGlobals'
 import { Region } from '../shared/regions/endpoints'
 import { RegionProvider } from '../shared/regions/regionProvider'
@@ -17,7 +18,6 @@ import { AWSTreeNodeBase } from '../shared/treeview/nodes/awsTreeNodeBase'
 import { StepFunctionsNode } from '../stepFunctions/explorer/stepFunctionsNodes'
 import { DEFAULT_PARTITION } from '../shared/regions/regionUtilities'
 import { SsmDocumentNode } from '../ssmDocument/explorer/ssmDocumentNode'
-import * as featureToggle from '../shared/featureToggle'
 
 /**
  * An AWS Explorer node representing a region.
@@ -48,16 +48,17 @@ export class RegionNode extends AWSTreeNodeBase {
         //  This interface exists so we can add additional nodes to the array (otherwise Typescript types the array to what's already in the array at creation)
         const partitionId = regionProvider.getPartitionId(this.regionCode) ?? DEFAULT_PARTITION
         const serviceCandidates = [
-            ...(featureToggle.disableApigw
-                ? []
-                : [{ serviceId: 'apigateway', createFn: () => new ApiGatewayNode(partitionId, this.regionCode) }]),
+            { serviceId: 'apigateway', createFn: () => new ApiGatewayNode(partitionId, this.regionCode) },
             { serviceId: 'cloudformation', createFn: () => new CloudFormationNode(this.regionCode) },
-            { serviceId: 'logs', createFn: () => new CloudWatchLogsNode(this.regionCode) },
             { serviceId: 'lambda', createFn: () => new LambdaNode(this.regionCode) },
-            { serviceId: 's3', createFn: () => new S3Node(ext.toolkitClientBuilder.createS3Client(this.regionCode)) },
-            { serviceId: 'schemas', createFn: () => new SchemasNode(this.regionCode) },
-            { serviceId: 'states', createFn: () => new StepFunctionsNode(this.regionCode) },
-            { serviceId: 'ssm', createFn: () => new SsmDocumentNode(this.regionCode) },
+            ...(isCloud9() ? [] : [{ serviceId: 'logs', createFn: () => new CloudWatchLogsNode(this.regionCode) }]),
+            {
+                serviceId: 's3',
+                createFn: () => new S3Node(ext.toolkitClientBuilder.createS3Client(this.regionCode)),
+            },
+            ...(isCloud9() ? [] : [{ serviceId: 'schemas', createFn: () => new SchemasNode(this.regionCode) }]),
+            ...(isCloud9() ? [] : [{ serviceId: 'states', createFn: () => new StepFunctionsNode(this.regionCode) }]),
+            ...(isCloud9() ? [] : [{ serviceId: 'ssm', createFn: () => new SsmDocumentNode(this.regionCode) }]),
         ]
 
         for (const serviceCandidate of serviceCandidates) {

@@ -5,6 +5,7 @@
 
 import { getLogger } from '../../shared/logger'
 import * as telemetry from '../../shared/telemetry/telemetry'
+import { addCodiconToString } from '../../shared/utilities/textUtilities'
 import { localize } from '../../shared/utilities/vsCodeUtils'
 import { Commands } from '../../shared/vscode/commands'
 import { Window } from '../../shared/vscode/window'
@@ -52,7 +53,7 @@ export async function deleteFileCommand(
 
         getLogger().info(`Successfully deleted file ${filePath}`)
         window.setStatusBarMessage(
-            localize('AWS.deleteFile.success', '$(trash) Deleted {0}', node.file.name),
+            addCodiconToString('trash', localize('AWS.deleteFile.success', 'Deleted {0}', node.file.name)),
             DELETE_FILE_DISPLAY_TIMEOUT_MS
         )
         telemetry.recordS3DeleteObject({ result: 'Succeeded' })

@@ -5,7 +5,6 @@
 
 import * as vscode from 'vscode'
 import { ext } from '../shared/extensionGlobals'
-import { ActiveFeatureKeys, FeatureToggle } from '../shared/featureToggle'
 import { deleteLambda } from './commands/deleteLambda'
 import { invokeLambda } from './commands/invokeLambda'
 import { uploadLambdaCommand } from './commands/uploadLambda'
@@ -39,6 +38,13 @@ export async function activate(extensionContext: vscode.ExtensionContext): Promi
                     outputChannel,
                 })
         ),
+        vscode.commands.registerCommand(
+            'aws.importLambda',
+            async (node: LambdaFunctionNode) => await importLambdaCommand(node)
+        ),
+        vscode.commands.registerCommand('aws.uploadLambda', async (node: LambdaFunctionNode) => {
+            await uploadLambdaCommand(node)
+        }),
         // Capture debug finished events, and delete the base build dir if it exists
         vscode.debug.onDidTerminateDebugSession(async session => {
             // if it has a base build dir, then we remove it. We can't find out the type easily since
@@ -49,25 +55,4 @@ export async function activate(extensionContext: vscode.ExtensionContext): Promi
             }
         })
     )
-
-    if (FeatureToggle.getFeatureToggle().isFeatureActive(ActiveFeatureKeys.LambdaImport)) {
-        vscode.commands.executeCommand('setContext', 'aws-toolkit-vscode:LambdaImport', true)
-
-        extensionContext.subscriptions.push(
-            vscode.commands.registerCommand(
-                'aws.importLambda',
-                async (node: LambdaFunctionNode) => await importLambdaCommand(node)
-            )
-        )
-    }
-
-    if (FeatureToggle.getFeatureToggle().isFeatureActive(ActiveFeatureKeys.LambdaUpload)) {
-        vscode.commands.executeCommand('setContext', 'aws-toolkit-vscode:LambdaUpload', true)
-
-        extensionContext.subscriptions.push(
-            vscode.commands.registerCommand('aws.uploadLambda', async (node: LambdaFunctionNode) => {
-                await uploadLambdaCommand(node)
-            })
-        )
-    }
 }

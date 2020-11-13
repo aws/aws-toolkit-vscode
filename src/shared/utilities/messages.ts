@@ -4,6 +4,7 @@
  */
 
 import * as vscode from 'vscode'
+import { getIdeProperties } from '../extensionUtilities'
 import { getLogger, showLogOutputChannel } from '../../shared/logger'
 import { localize } from '../../shared/utilities/vsCodeUtils'
 import { Window } from '../../shared/vscode/window'
@@ -12,8 +13,9 @@ export function makeCheckLogsMessage(): string {
     const commandName = localize('AWS.command.viewLogs', 'View AWS Toolkit Logs')
     const message = localize(
         'AWS.error.check.logs',
-        'Check the logs for more information by running the "{0}" command from the Command Palette.',
-        commandName
+        'Check the logs for more information by running the "{0}" command from the {1}.',
+        commandName,
+        getIdeProperties().commandPalette
     )
 
     return message

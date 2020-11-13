@@ -10,6 +10,7 @@ import * as vscode from 'vscode'
 import { Runtime } from 'aws-sdk/clients/lambda'
 import { Map as ImmutableMap, Set as ImmutableSet } from 'immutable'
 import * as picker from '../../shared/ui/picker'
+import { isCloud9 } from '../../shared/extensionUtilities'
 
 export enum RuntimeFamily {
     Unknown,
@@ -42,9 +43,10 @@ export const samLambdaRuntimes: ImmutableSet<Runtime> = ImmutableSet.union([
 export const samLambdaImportableRuntimes: ImmutableSet<Runtime> = ImmutableSet.union([nodeJsRuntimes, pythonRuntimes])
 
 // Filter out node8 until local debugging is no longer supported, and it can be removed from samLambdaRuntimes
-export const samLambdaCreatableRuntimes: ImmutableSet<Runtime> = samLambdaRuntimes.filter(
-    runtime => runtime !== 'nodejs8.10'
-)
+// Doesn't include dotNetRuntimes if Cloud9.
+export const samLambdaCreatableRuntimes: ImmutableSet<Runtime> = isCloud9()
+    ? samLambdaImportableRuntimes.filter((runtime: string) => runtime !== 'nodejs8.10')
+    : samLambdaRuntimes.filter((runtime: string) => runtime !== 'nodejs8.10')
 
 export type DependencyManager = 'cli-package' | 'mod' | 'gradle' | 'pip' | 'npm' | 'maven' | 'bundler'
 

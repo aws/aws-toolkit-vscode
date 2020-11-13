@@ -9,6 +9,7 @@ import * as path from 'path'
 import { v4 as uuidv4 } from 'uuid'
 import { ExtensionContext } from 'vscode'
 import { AwsContext } from '../awsContext'
+import { getComputeRegion } from '../extensionUtilities'
 import { getLogger } from '../logger'
 import { MetricDatum } from './clienttelemetry'
 import { DefaultTelemetryClient } from './defaultTelemetryClient'
@@ -17,7 +18,7 @@ import { recordSessionEnd, recordSessionStart } from './telemetry'
 import { TelemetryFeedback } from './telemetryFeedback'
 import { TelemetryPublisher } from './telemetryPublisher'
 import { TelemetryService } from './telemetryService'
-import { ACCOUNT_METADATA_KEY, AccountStatus } from './telemetryTypes'
+import { ACCOUNT_METADATA_KEY, AccountStatus, COMPUTE_REGION_KEY } from './telemetryTypes'
 
 export class DefaultTelemetryService implements TelemetryService {
     public static readonly TELEMETRY_COGNITO_ID_KEY = 'telemetryId'
@@ -116,8 +117,8 @@ export class DefaultTelemetryService implements TelemetryService {
     public record(event: MetricDatum, awsContext?: AwsContext): void {
         if (this.telemetryEnabled) {
             const actualAwsContext = awsContext || this.awsContext
-            const eventWithAccountMetadata = this.injectAccountMetadata(event, actualAwsContext)
-            this._eventQueue.push(eventWithAccountMetadata)
+            const eventWithCommonMetadata = this.injectCommonMetadata(event, actualAwsContext)
+            this._eventQueue.push(eventWithCommonMetadata)
         }
     }
 
@@ -205,7 +206,7 @@ export class DefaultTelemetryService implements TelemetryService {
         }
     }
 
-    private injectAccountMetadata(event: MetricDatum, awsContext: AwsContext): MetricDatum {
+    private injectCommonMetadata(event: MetricDatum, awsContext: AwsContext): MetricDatum {
         let accountValue: string | AccountStatus
         // The AWS account ID is not set on session start. This matches JetBrains' functionality.
         if (event.MetricName === 'session_end' || event.MetricName === 'session_start') {
@@ -229,10 +230,16 @@ export class DefaultTelemetryService implements TelemetryService {
             }
         }
 
+        const commonMetadata = [{ Key: ACCOUNT_METADATA_KEY, Value: accountValue }]
+        const computeRegion = getComputeRegion()
+        if (computeRegion) {
+            commonMetadata.push({ Key: COMPUTE_REGION_KEY, Value: computeRegion })
+        }
+
         if (event.Metadata) {
-            event.Metadata.push({ Key: ACCOUNT_METADATA_KEY, Value: accountValue })
+            event.Metadata.push(...commonMetadata)
         } else {
-            event.Metadata = [{ Key: ACCOUNT_METADATA_KEY, Value: accountValue }]
+            event.Metadata = commonMetadata
         }
 
         return event

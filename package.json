@@ -641,11 +641,11 @@
                 },
                 {
                     "command": "aws.copyLogStreamName",
-                    "when": "resourceScheme == awsCloudWatchLogs"
+                    "when": "resourceScheme == awsCloudWatchLogs && !isCloud9"
                 },
                 {
                     "command": "aws.saveCurrentLogStreamContent",
-                    "when": "resourceScheme == awsCloudWatchLogs"
+                    "when": "resourceScheme == awsCloudWatchLogs && !isCloud9"
                 },
                 {
                     "command": "aws.cloudWatchLogs.viewLogStream",
@@ -682,17 +682,25 @@
                 {
                     "command": "aws.s3.uploadFileToParent",
                     "when": "false"
+                },
+                {
+                    "command": "aws.stepfunctions.createStateMachineFromTemplate",
+                    "when": "!isCloud9"
+                },
+                {
+                    "command": "aws.stepfunctions.publishStateMachine",
+                    "when": "!isCloud9"
                 }
             ],
             "editor/title": [
                 {
                     "command": "aws.previewStateMachine",
-                    "when": "editorLangId == asl",
+                    "when": "editorLangId == asl && !isCloud9",
                     "group": "navigation"
                 },
                 {
                     "command": "aws.saveCurrentLogStreamContent",
-                    "when": "resourceScheme == awsCloudWatchLogs",
+                    "when": "resourceScheme == awsCloudWatchLogs && !isCloud9",
                     "group": "navigation"
                 },
                 {
@@ -704,7 +712,7 @@
             "editor/title/context": [
                 {
                     "command": "aws.copyLogStreamName",
-                    "when": "resourceScheme == awsCloudWatchLogs",
+                    "when": "resourceScheme == awsCloudWatchLogs && !isCloud9",
                     "group": "1_cutcopypaste@1"
                 }
             ],
@@ -838,12 +846,12 @@
                 },
                 {
                     "command": "aws.importLambda",
-                    "when": "view == aws.explorer && viewItem =~ /^(awsRegionFunctionNode|awsRegionFunctionNodeImportable)$/ && aws-toolkit-vscode:LambdaImport",
+                    "when": "view == aws.explorer && viewItem =~ /^(awsRegionFunctionNode|awsRegionFunctionNodeImportable)$/",
                     "group": "0@2"
                 },
                 {
                     "command": "aws.uploadLambda",
-                    "when": "view == aws.explorer && viewItem =~ /^(awsRegionFunctionNode|awsRegionFunctionNodeImportable)$/ && aws-toolkit-vscode:LambdaUpload",
+                    "when": "view == aws.explorer && viewItem =~ /^(awsRegionFunctionNode|awsRegionFunctionNodeImportable)$/",
                     "group": "1@1"
                 },
                 {
@@ -858,27 +866,27 @@
                 },
                 {
                     "command": "aws.searchSchema",
-                    "when": "view == aws.explorer && viewItem == awsSchemasNode",
+                    "when": "view == aws.explorer && viewItem == awsSchemasNode && !isCloud9",
                     "group": "0@1"
                 },
                 {
                     "command": "aws.searchSchemaPerRegistry",
-                    "when": "view == aws.explorer && viewItem == awsRegistryItemNode",
+                    "when": "view == aws.explorer && viewItem == awsRegistryItemNode && !isCloud9",
                     "group": "0@1"
                 },
                 {
                     "command": "aws.viewSchemaItem",
-                    "when": "view == aws.explorer && viewItem == awsSchemaItemNode",
+                    "when": "view == aws.explorer && viewItem == awsSchemaItemNode && !isCloud9",
                     "group": "0@1"
                 },
                 {
                     "command": "aws.downloadStateMachineDefinition",
-                    "when": "view == aws.explorer && viewItem == awsStateMachineNode",
+                    "when": "view == aws.explorer && viewItem == awsStateMachineNode && !isCloud9",
                     "group": "0@1"
                 },
                 {
                     "command": "aws.executeStateMachine",
-                    "when": "view == aws.explorer && viewItem == awsStateMachineNode",
+                    "when": "view == aws.explorer && viewItem == awsStateMachineNode && !isCloud9",
                     "group": "0@2"
                 },
                 {
@@ -938,7 +946,7 @@
                 },
                 {
                     "command": "aws.downloadSchemaItemCode",
-                    "when": "view == aws.explorer && viewItem == awsSchemaItemNode",
+                    "when": "view == aws.explorer && viewItem == awsSchemaItemNode && !isCloud9",
                     "group": "1@1"
                 },
                 {
@@ -954,7 +962,7 @@
                 {
                     "command": "aws.cloudWatchLogs.viewLogStream",
                     "group": "0@1",
-                    "when": "view == aws.explorer && viewItem == awsCloudWatchLogNode"
+                    "when": "view == aws.explorer && viewItem == awsCloudWatchLogNode && !isCloud9"
                 },
                 {
                     "command": "aws.ssmDocument.openLocalDocumentYaml",
@@ -1335,7 +1343,7 @@
                 "command": "aws.previewStateMachine",
                 "key": "ctrl+shift+v",
                 "mac": "cmd+shift+v",
-                "when": "editorTextFocus && editorLangId == asl"
+                "when": "editorTextFocus && editorLangId == asl && !isCloud9"
             }
         ],
         "grammars": [
