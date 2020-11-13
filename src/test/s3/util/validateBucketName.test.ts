@@ -4,7 +4,7 @@
  */
 
 import * as assert from 'assert'
-import { validateBucketName } from '../../../s3/util/validateBucketName'
+import { validateBucketName } from '../../../s3/util'
 
 describe('validateBucketName', () => {
     const invalidErrors: { bucketNames: string[]; error: string }[] = [
