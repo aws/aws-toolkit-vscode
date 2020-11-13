@@ -1,6 +1,6 @@
-using System;
 using System.Collections.Generic;
 using System.Linq;
+using AWS.Toolkit.Rider.Model;
 using JetBrains.Application;
 using JetBrains.Application.Progress;
 using JetBrains.Application.Threading;
@@ -15,7 +15,6 @@ using JetBrains.ReSharper.Psi;
 using JetBrains.ReSharper.Psi.Caches;
 using JetBrains.ReSharper.Psi.Modules;
 using JetBrains.ReSharper.Resources.Shell;
-using JetBrains.Rider.Model;
 using JetBrains.Util;
 
 namespace AWS.Psi.Lambda

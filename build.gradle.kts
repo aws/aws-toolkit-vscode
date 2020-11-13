@@ -30,7 +30,7 @@ buildscript {
     val ideaPluginVersion: String by project
     dependencies {
         classpath("org.jetbrains.kotlin:kotlin-gradle-plugin:$kotlinVersion")
-        classpath("gradle.plugin.org.jetbrains.intellij.plugins:gradle-intellij-plugin:$ideaPluginVersion")
+        classpath("org.jetbrains.intellij.plugins:gradle-intellij-plugin:$ideaPluginVersion")
         classpath("com.adarshr:gradle-test-logger-plugin:2.1.0")
     }
 }
@@ -153,8 +153,8 @@ subprojects {
     }
 
     dependencies {
-        implementation("org.jetbrains.kotlin:kotlin-stdlib-jdk8:$kotlinVersion")
-        implementation("org.jetbrains.kotlin:kotlin-reflect:$kotlinVersion")
+        compileOnly("org.jetbrains.kotlin:kotlin-stdlib-jdk8:$kotlinVersion")
+        compileOnly("org.jetbrains.kotlin:kotlin-reflect:$kotlinVersion")
         testImplementation("com.nhaarman.mockitokotlin2:mockito-kotlin:$mockitoKotlinVersion")
         testImplementation("org.mockito:mockito-core:$mockitoVersion")
         testImplementation("org.assertj:assertj-core:$assertjVersion")
@@ -248,6 +248,7 @@ subprojects {
 
     tasks.withType<KotlinCompile>().all {
         kotlinOptions.jvmTarget = "1.8"
+        kotlinOptions.apiVersion = "1.3"
     }
 
     // Force us to compile the integration tests even during check even though we don't run them

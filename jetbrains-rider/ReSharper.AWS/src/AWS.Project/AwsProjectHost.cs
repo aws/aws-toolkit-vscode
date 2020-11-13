@@ -1,6 +1,6 @@
-﻿using JetBrains.ProjectModel;
+﻿using AWS.Toolkit.Rider.Model;
+using JetBrains.ProjectModel;
 using JetBrains.ReSharper.Host.Features;
-using JetBrains.Rider.Model;
 using JetBrains.Rd.Tasks;
 using JetBrains.ReSharper.Resources.Shell;
 using JetBrains.Util;

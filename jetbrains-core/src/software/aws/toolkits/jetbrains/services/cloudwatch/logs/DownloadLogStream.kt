@@ -16,6 +16,7 @@ import com.intellij.openapi.progress.Task
 import com.intellij.openapi.project.Project
 import com.intellij.openapi.ui.Messages
 import com.intellij.openapi.util.io.FileUtilRt
+import com.intellij.openapi.vfs.VirtualFile
 import com.intellij.openapi.vfs.VirtualFileWrapper
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.runBlocking
@@ -140,7 +141,7 @@ class LogStreamDownloadToFileTask(
         val descriptor = FileSaverDescriptor(message("cloudwatch.logs.download"), message("cloudwatch.logs.download.description"))
         val saveLocation = withContext(edt) {
             val destination = FileChooserFactory.getInstance().createSaveFileDialog(descriptor, project)
-            destination.save(null, logStream)
+            destination.save(null as VirtualFile?, logStream)
         }
         if (saveLocation != null) {
             streamLogStreamToFile(indicator, request, saveLocation.file, buffer)

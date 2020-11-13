@@ -6,7 +6,6 @@ package software.aws.toolkits.jetbrains.services.s3.objectActions
 import com.intellij.openapi.actionSystem.ActionPlaces
 import com.intellij.openapi.actionSystem.AnActionEvent
 import com.intellij.openapi.actionSystem.DataContext
-import com.intellij.openapi.ui.Messages
 import com.intellij.openapi.ui.TestDialog
 import com.intellij.testFramework.DisposableRule
 import com.intellij.testFramework.ProjectRule
@@ -33,6 +32,7 @@ import software.aws.toolkits.jetbrains.services.s3.editor.S3TreeObjectNode
 import software.aws.toolkits.jetbrains.services.s3.editor.S3TreeTable
 import software.aws.toolkits.jetbrains.services.s3.editor.S3VirtualBucket
 import software.aws.toolkits.jetbrains.services.s3.objectActions.DownloadObjectAction.ConflictResolution
+import software.aws.toolkits.jetbrains.ui.TestDialogService
 import software.aws.toolkits.jetbrains.utils.createMockFileChooser
 import java.io.ByteArrayInputStream
 import java.time.Instant
@@ -58,7 +58,7 @@ class DownloadObjectActionTest {
 
     @After
     fun tearDown() {
-        Messages.setTestDialog(TestDialog.DEFAULT)
+        TestDialogService.setTestDialog(TestDialog.DEFAULT)
     }
 
     @Test
@@ -278,9 +278,11 @@ class DownloadObjectActionTest {
         val (s3Client, countDownLatch) = setUpS3Mock(0)
         val s3TreeTable = setUpS3TreeTable(s3Client, "testFile-1")
 
-        Messages.setTestDialog {
-            -1 // Means cancel (esc)
-        }
+        TestDialogService.setTestDialog(
+            TestDialog {
+                -1 // Means cancel (esc)
+            }
+        )
 
         val action = DownloadObjectAction(projectRule.project, s3TreeTable)
         action.actionPerformed(AnActionEvent.createFromDataContext(ActionPlaces.UNKNOWN, null, DataContext.EMPTY_CONTEXT))
@@ -292,9 +294,11 @@ class DownloadObjectActionTest {
 
     private fun setUpConflictResolutionResponses(choices: List<ConflictResolution>, vararg responses: ConflictResolution) {
         var responseNum = 0
-        Messages.setTestDialog {
-            choices.indexOf(responses.get(responseNum++))
-        }
+        TestDialogService.setTestDialog(
+            TestDialog {
+                choices.indexOf(responses.get(responseNum++))
+            }
+        )
     }
 
     private fun setUpS3TreeTable(s3Client: S3Client, vararg selectedFiles: String): S3TreeTable {

@@ -11,7 +11,6 @@ import com.intellij.remoterobot.fixtures.JTextFieldFixture
 import com.intellij.remoterobot.search.locators.byXpath
 import com.intellij.remoterobot.stepsProcessing.step
 import com.intellij.remoterobot.utils.keyboard
-import org.intellij.lang.annotations.Language
 import java.time.Duration
 
 fun ComponentFixture.rightClick() = step("Right click") {
@@ -23,8 +22,8 @@ fun ContainerFixture.pressDelete() = findAndClick("//div[@text='Delete']")
 fun ContainerFixture.pressCancel() = findAndClick("//div[@text='Cancel']")
 fun ContainerFixture.pressClose() = findAndClick("//div[@text='Close']")
 
-fun ContainerFixture.findAndClick(@Language("XPath") xPath: String) = findByXpath(xPath).click()
-fun ContainerFixture.findByXpath(@Language("XPath") xPath: String) = find<ComponentFixture>(byXpath(xPath), Duration.ofSeconds(5))
+fun ContainerFixture.findAndClick(xPath: String) = findByXpath(xPath).click()
+fun ContainerFixture.findByXpath(xPath: String) = find<ComponentFixture>(byXpath(xPath), Duration.ofSeconds(5))
 
 fun ContainerFixture.fillSingleTextField(text: String) = step("Fill single text field with $text") {
     find<JTextFieldFixture>(byXpath("//div[@class='JTextField']"), Duration.ofSeconds(5)).text = text

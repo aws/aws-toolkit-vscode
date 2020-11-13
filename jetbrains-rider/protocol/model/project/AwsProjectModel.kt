@@ -50,6 +50,9 @@ object AwsProjectModel : Ext(SolutionModel.Solution) {
     }
 
     init {
+        setting(Kotlin11Generator.Namespace, "software.aws.toolkits.jetbrains.protocol")
+        setting(CSharp50Generator.Namespace, "AWS.Toolkit.Rider.Model")
+
         setting(GeneratorBase.AcceptsGenerator) { generator ->
             generator == AwsProjectKotlinGenerator.generator ||
                 generator == AwsProjectCSharpGenerator.generator

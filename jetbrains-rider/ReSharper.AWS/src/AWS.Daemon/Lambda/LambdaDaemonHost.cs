@@ -1,6 +1,6 @@
+using AWS.Toolkit.Rider.Model;
 using JetBrains.ProjectModel;
 using JetBrains.ReSharper.Host.Features;
-using JetBrains.Rider.Model;
 
 namespace AWS.Daemon.Lambda
 {

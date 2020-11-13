@@ -9,7 +9,6 @@ import com.intellij.openapi.progress.ProgressManager
 import com.intellij.openapi.progress.Task
 import com.intellij.openapi.project.DumbAwareAction
 import com.intellij.openapi.project.Project
-import com.intellij.openapi.ui.MessageDialogBuilder
 import com.intellij.openapi.ui.Messages
 import kotlinx.coroutines.runBlocking
 import software.amazon.awssdk.services.sqs.SqsClient
@@ -46,13 +45,14 @@ class PurgeQueueAction(
                 override fun run(indicator: ProgressIndicator) {
                     val numMessages = client.approximateNumberOfMessages(queue.queueUrl) ?: 0
                     val response = runBlocking(edtContext) {
-                        MessageDialogBuilder
-                            .yesNo(
-                                message("sqs.purge_queue.confirm.title"),
-                                message("sqs.purge_queue.confirm", queue.queueName, numMessages)
-                            )
-                            .icon(Messages.getWarningIcon())
-                            .show()
+                        Messages.showOkCancelDialog(
+                            project,
+                            message("sqs.purge_queue.confirm", queue.queueName, numMessages),
+                            message("sqs.purge_queue.confirm.title"),
+                            Messages.YES_BUTTON,
+                            Messages.NO_BUTTON,
+                            Messages.getWarningIcon()
+                        )
                     }
                     if (response != Messages.YES) {
                         SqsTelemetry.purgeQueue(project, Result.Cancelled, queue.telemetryType())

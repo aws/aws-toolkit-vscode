@@ -68,8 +68,6 @@ abstract class AwsReuseSolutionTestBase : BaseTestWithSolutionBase() {
 
         useCachedTemplates = false
 
-        myProject = openSolution(solutionDirName, params) { notification ->
-            notificationList.add(notification)
-        }
+        myProject = openSolution(solutionDirName, params)
     }
 }

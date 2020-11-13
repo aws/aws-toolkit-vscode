@@ -7,13 +7,13 @@ import com.intellij.openapi.project.Project
 import com.intellij.openapi.util.io.FileUtil
 import com.jetbrains.rd.framework.RdTaskResult
 import com.jetbrains.rdclient.protocol.IPermittedModalities
-import com.jetbrains.rider.model.AwsProjectOutputRequest
-import com.jetbrains.rider.model.awsProjectModel
 import com.jetbrains.rider.projectView.solution
 import com.jetbrains.rider.util.idea.lifetime
 import software.aws.toolkits.core.utils.getLogger
 import software.aws.toolkits.core.utils.info
 import software.aws.toolkits.core.utils.warn
+import software.aws.toolkits.jetbrains.protocol.AwsProjectOutputRequest
+import software.aws.toolkits.jetbrains.protocol.awsProjectModel
 import software.aws.toolkits.jetbrains.services.ecs.execution.ArtifactMapping
 import java.io.File
 

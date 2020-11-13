@@ -3,6 +3,8 @@
 
 import de.undercouch.gradle.tasks.download.Download
 
+val kotlinVersion: String by project
+
 plugins {
     id("de.undercouch.download")
 }
@@ -11,6 +13,10 @@ sourceSets {
     main {
         resources.srcDir("$buildDir/downloaded-resources")
     }
+}
+
+dependencies {
+    testImplementation("org.jetbrains.kotlin:kotlin-stdlib-jdk8:$kotlinVersion")
 }
 
 val download = tasks.register<Download>("downloadResources") {

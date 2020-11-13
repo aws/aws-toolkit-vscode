@@ -17,8 +17,8 @@ import com.intellij.openapi.actionSystem.impl.SimpleDataContext
 import com.intellij.openapi.project.Project
 import com.intellij.psi.SmartPointerManager
 import com.jetbrains.rdclient.util.idea.LifetimedProjectComponent
-import com.jetbrains.rider.model.lambdaDaemonModel
 import com.jetbrains.rider.projectView.solution
+import software.aws.toolkits.jetbrains.protocol.lambdaDaemonModel
 import software.aws.toolkits.jetbrains.services.lambda.dotnet.DotNetLambdaHandlerResolver
 import software.aws.toolkits.jetbrains.services.lambda.dotnet.element.RiderLambdaHandlerFakePsiElement
 import software.aws.toolkits.jetbrains.services.lambda.execution.LambdaRunConfigurationType

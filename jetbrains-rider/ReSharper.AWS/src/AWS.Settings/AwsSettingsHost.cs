@@ -1,4 +1,5 @@
 ﻿using AWS.Daemon.Settings;
+using AWS.Toolkit.Rider.Model;
 using JetBrains.Annotations;
 using JetBrains.Application.Settings;
 using JetBrains.Lifetimes;
@@ -6,7 +7,6 @@ using JetBrains.ProjectModel;
 using JetBrains.ProjectModel.DataContext;
 using JetBrains.ReSharper.Daemon.Impl;
 using JetBrains.ReSharper.Host.Features;
-using JetBrains.Rider.Model;
 
 namespace AWS.Settings
 {

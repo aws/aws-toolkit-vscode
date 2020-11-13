@@ -5,8 +5,8 @@ package software.aws.toolkits.jetbrains.project
 
 import com.intellij.openapi.project.Project
 import com.jetbrains.rdclient.util.idea.LifetimedProjectComponent
-import com.jetbrains.rider.model.awsProjectModel
 import com.jetbrains.rider.projectView.solution
+import software.aws.toolkits.jetbrains.protocol.awsProjectModel
 
 @Suppress("ComponentNotRegistered")
 class AwsProjectHost(project: Project) : LifetimedProjectComponent(project) {

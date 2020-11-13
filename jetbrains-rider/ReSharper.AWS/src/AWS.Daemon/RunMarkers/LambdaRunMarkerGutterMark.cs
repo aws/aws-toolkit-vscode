@@ -12,13 +12,18 @@ using JetBrains.RiderTutorials.Utils;
 using JetBrains.TextControl.DocumentMarkup;
 using JetBrains.UI.Icons;
 using JetBrains.UI.RichText;
-using JetBrains.UI.ThemedIcons;
 using JetBrains.Util;
 using JetBrains.Util.Logging;
 
+#if !PROFILE_2020_3 // TODO: Remove preprocessor conditions FIX_WHEN_MIN_IS_203
+using IconGutterMarkType = JetBrains.TextControl.DocumentMarkup.IconGutterMark;
+#else 
+using IconGutterMarkType = JetBrains.TextControl.DocumentMarkup.IconGutterMarkType;
+#endif
+
 namespace AWS.Daemon.RunMarkers
 {
-    public abstract class LambdaRunMarkerGutterMark : IconGutterMark
+    public abstract class LambdaRunMarkerGutterMark : IconGutterMarkType
     {
         private static readonly ILogger ourLogger = Logger.GetLogger<LambdaRunMarkerGutterMark>();
 

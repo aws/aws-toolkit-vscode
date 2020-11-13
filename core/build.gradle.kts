@@ -4,6 +4,7 @@
 val awsSdkVersion: String by project
 val jacksonVersion: String by project
 val coroutinesVersion: String by project
+val kotlinVersion: String by project
 
 dependencies {
     api(project(":resources"))
@@ -18,7 +19,11 @@ dependencies {
     api("software.amazon.awssdk:ssooidc:$awsSdkVersion")
     api("software.amazon.awssdk:sts:$awsSdkVersion")
 
+    compileOnly("org.jetbrains.kotlin:kotlin-stdlib-jdk8:$kotlinVersion")
+    compileOnly("org.jetbrains.kotlin:kotlin-reflect:$kotlinVersion")
     compileOnly("org.jetbrains.kotlinx:kotlinx-coroutines-core:$coroutinesVersion")
 
+    testImplementation("org.jetbrains.kotlin:kotlin-stdlib-jdk8:$kotlinVersion")
+    testImplementation("org.jetbrains.kotlin:kotlin-reflect:$kotlinVersion")
     testImplementation("org.jetbrains.kotlinx:kotlinx-coroutines-core:$coroutinesVersion")
 }

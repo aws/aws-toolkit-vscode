@@ -5,8 +5,8 @@ package software.aws.toolkits.jetbrains.settings
 
 import com.intellij.openapi.project.Project
 import com.intellij.util.messages.MessageBus
-import com.jetbrains.rider.model.awsSettingModel
 import com.jetbrains.rider.projectView.solution
+import software.aws.toolkits.jetbrains.protocol.awsSettingModel
 
 class LambdaGutterMarkSettings(project: Project, messageBus: MessageBus) {
 

@@ -1,7 +1,7 @@
 using AWS.Daemon.RunMarkers;
 using JetBrains.TextControl.DocumentMarkup;
 
-#if !PROFILE_2020_2 // TODO: Remove preprocessor conditions FIX_WHEN_MIN_IS_202
+#if PROFILE_2020_1 // TODO: Remove preprocessor conditions FIX_WHEN_MIN_IS_202
 [assembly:
     RegisterHighlighter(
         LambdaRunMarkerAttributeIds.LAMBDA_RUN_METHOD_MARKER_ID,
@@ -14,9 +14,9 @@ using JetBrains.TextControl.DocumentMarkup;
 
 namespace AWS.Daemon.RunMarkers
 {
-#if PROFILE_2020_2 // TODO: Remove preprocessor conditions FIX_WHEN_MIN_IS_202
+#if !PROFILE_2020_1 // TODO: Remove preprocessor conditions FIX_WHEN_MIN_IS_202
     [RegisterHighlighter(
-        LambdaRunMarkerAttributeIds.LAMBDA_RUN_METHOD_MARKER_ID,
+        LAMBDA_RUN_METHOD_MARKER_ID,
         GutterMarkType = typeof(LambdaMethodRunMarkerGutterMark),
         EffectType = EffectType.GUTTER_MARK,
         Layer = HighlighterLayer.SYNTAX + 1

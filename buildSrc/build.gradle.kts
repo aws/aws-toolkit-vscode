@@ -1,7 +1,6 @@
 // Copyright 2020 Amazon.com, Inc. or its affiliates. All Rights Reserved.
 // SPDX-License-Identifier: Apache-2.0
 
-
 val jacksonVersion: String by project
 val kotlinVersion: String by project
 val awsSdkVersion: String by project
@@ -41,13 +40,12 @@ sourceSets {
 }
 
 dependencies {
-    api("com.fasterxml.jackson.datatype:jackson-datatype-jsr310:$jacksonVersion")
-    api("com.fasterxml.jackson.module:jackson-module-kotlin:$jacksonVersion")
-    api("org.eclipse.jgit:org.eclipse.jgit:5.0.2.201807311906-r")
-    api("com.atlassian.commonmark:commonmark:0.15.2")
-    api("software.amazon.awssdk:codegen:$awsSdkVersion")
-
-    implementation("gradle.plugin.org.jetbrains.intellij.plugins:gradle-intellij-plugin:$ideaPluginVersion")
+    implementation("com.fasterxml.jackson.datatype:jackson-datatype-jsr310:$jacksonVersion")
+    implementation("com.fasterxml.jackson.module:jackson-module-kotlin:$jacksonVersion")
+    implementation("org.eclipse.jgit:org.eclipse.jgit:5.0.2.201807311906-r")
+    implementation("com.atlassian.commonmark:commonmark:0.15.2")
+    implementation("software.amazon.awssdk:codegen:$awsSdkVersion")
+    implementation("org.jetbrains.intellij.plugins:gradle-intellij-plugin:$ideaPluginVersion")
 
     testImplementation("org.assertj:assertj-core:$assertjVersion")
     testImplementation("junit:junit:$junitVersion")

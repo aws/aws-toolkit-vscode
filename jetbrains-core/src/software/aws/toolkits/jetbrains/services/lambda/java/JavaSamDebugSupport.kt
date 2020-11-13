@@ -30,12 +30,12 @@ class JavaSamDebugSupport : SamDebugSupport {
 
         return object : XDebugProcessStarter() {
             override fun start(session: XDebugSession): XDebugProcess {
-                if (debuggerSession is XDebugSessionImpl) {
+                if (session is XDebugSessionImpl) {
                     val debugProcess = debuggerSession.process
                     val executionResult = debugProcess.executionResult
-                    debuggerSession.addExtraActions(*executionResult.actions)
+                    session.addExtraActions(*executionResult.actions)
                     if (executionResult is DefaultExecutionResult) {
-                        debuggerSession.addRestartActions(*executionResult.restartActions)
+                        session.addRestartActions(*executionResult.restartActions)
                     }
                 }
 

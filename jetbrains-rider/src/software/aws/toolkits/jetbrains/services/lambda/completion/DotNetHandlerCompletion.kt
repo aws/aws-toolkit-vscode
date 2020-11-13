@@ -10,9 +10,9 @@ import com.intellij.codeInsight.lookup.LookupElementBuilder
 import com.intellij.openapi.project.Project
 import com.jetbrains.rd.framework.impl.RpcTimeouts
 import com.jetbrains.rdclient.icons.FrontendIconHost
-import com.jetbrains.rider.model.HandlerCompletionItem
-import com.jetbrains.rider.model.lambdaPsiModel
 import com.jetbrains.rider.projectView.solution
+import software.aws.toolkits.jetbrains.protocol.HandlerCompletionItem
+import software.aws.toolkits.jetbrains.protocol.lambdaPsiModel
 
 class DotNetHandlerCompletion : HandlerCompletion {
 

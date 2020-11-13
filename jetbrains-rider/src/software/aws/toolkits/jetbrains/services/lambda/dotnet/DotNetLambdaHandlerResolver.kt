@@ -9,14 +9,14 @@ import com.intellij.psi.NavigatablePsiElement
 import com.intellij.psi.PsiElement
 import com.intellij.psi.search.GlobalSearchScope
 import com.jetbrains.rd.framework.impl.RpcTimeouts
-import com.jetbrains.rider.model.HandlerExistRequest
 import com.jetbrains.rider.model.MethodExistingRequest
 import com.jetbrains.rider.model.backendPsiHelperModel
-import com.jetbrains.rider.model.lambdaPsiModel
 import com.jetbrains.rider.model.publishableProjectsModel
 import com.jetbrains.rider.projectView.ProjectModelViewHost
 import com.jetbrains.rider.projectView.solution
 import com.jetbrains.rider.run.configurations.method.getProjectModeId
+import software.aws.toolkits.jetbrains.protocol.HandlerExistRequest
+import software.aws.toolkits.jetbrains.protocol.lambdaPsiModel
 import software.aws.toolkits.jetbrains.services.lambda.LambdaHandlerResolver
 import software.aws.toolkits.jetbrains.services.lambda.dotnet.element.RiderLambdaHandlerFakePsiElement
 

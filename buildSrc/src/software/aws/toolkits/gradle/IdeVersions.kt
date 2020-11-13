@@ -27,8 +27,7 @@ object IdeVersions {
                 "com.intellij.database",
                 "Pythonid:201.6668.31"
             ),
-            riderSdkOverride = "RD-2020.1.0",
-            rdGenVersion = "0.201.69",
+            rdGenVersion = "0.203.161",
             nugetVersion = "2020.1.0"
         ),
         Profile(
@@ -46,8 +45,28 @@ object IdeVersions {
                 "com.intellij.database",
                 "Pythonid:202.6397.98"
             ),
-            rdGenVersion = "0.202.113",
+            rdGenVersion = "0.203.161",
             nugetVersion = "2020.2.0"
+        ),
+        Profile(
+            name = "2020.3",
+            communityPlugins = listOf(
+                "java",
+                "com.intellij.gradle",
+                "org.jetbrains.idea.maven",
+                "PythonCore:203.5784.10",
+                "Docker:203.5784.10"
+            ),
+            ultimatePlugins = listOf(
+                "JavaScript",
+                "JavaScriptDebugger",
+                "com.intellij.database",
+                "Pythonid:203.5784.10"
+            ),
+            ijSdkOverride = "203.5784.10-EAP-SNAPSHOT",
+            riderSdkOverride = "2020.3-SNAPSHOT",
+            rdGenVersion = "0.203.161",
+            nugetVersion = "2020.3.0-eap04"
         )
     ).associateBy { it.name }
 
@@ -77,19 +96,20 @@ class Profile(
     val untilVersion: String = "$sinceVersion.*",
     communityPlugins: List<String>,
     ultimatePlugins: List<String>,
+    ijSdkOverride: String? = null,
     riderSdkOverride: String? = null,
-    rdGenVersion: String,
-    nugetVersion: String
+    rdGenVersion: String, // https://www.myget.org/feed/rd-snapshots/package/maven/com.jetbrains.rd/rd-gen
+    nugetVersion: String // https://www.nuget.org/packages/JetBrains.Rider.SDK/
 ) {
     private val commonPlugins = arrayOf(
         "org.jetbrains.plugins.terminal",
         "org.jetbrains.plugins.yaml"
     )
 
-    val community: ProductProfile = ProductProfile(sdkVersion = "IC-$name", plugins = commonPlugins + communityPlugins)
-    val ultimate: ProductProfile = ProductProfile(sdkVersion = "IU-$name", plugins = commonPlugins + ultimatePlugins)
+    val community: ProductProfile = ProductProfile(sdkVersion = "IC-${ijSdkOverride ?: name}", plugins = commonPlugins + communityPlugins)
+    val ultimate: ProductProfile = ProductProfile(sdkVersion = "IU-${ijSdkOverride ?: name}", plugins = commonPlugins + ultimatePlugins)
     val rider: RiderProfile = RiderProfile(
-        sdkVersion = riderSdkOverride ?: "RD-$name",
+        sdkVersion = "RD-${riderSdkOverride ?: name}",
         plugins = arrayOf("org.jetbrains.plugins.yaml"),
         rdGenVersion = rdGenVersion,
         nugetVersion = nugetVersion
