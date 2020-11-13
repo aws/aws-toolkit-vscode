@@ -11,7 +11,7 @@ import { Commands } from '../../shared/vscode/commands'
 import { Window } from '../../shared/vscode/window'
 import { S3BucketNode } from '../explorer/s3BucketNode'
 import { S3Node } from '../explorer/s3Nodes'
-import { showErrorWithLogs } from '../util/messages'
+import { showErrorWithLogs } from '../../shared/utilities/messages'
 
 /**
  * Deletes the bucket represented by the given node.
