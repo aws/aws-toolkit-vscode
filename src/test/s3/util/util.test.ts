@@ -4,7 +4,7 @@
  */
 
 import * as assert from 'assert'
-import { readablePath } from '../../../s3/util/util'
+import { readablePath } from '../../../s3/util'
 
 describe('messages', () => {
     describe('readablePath', () => {

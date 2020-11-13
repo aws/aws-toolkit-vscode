@@ -11,7 +11,7 @@ import { Window } from '../../shared/vscode/window'
 import { S3BucketNode } from '../explorer/s3BucketNode'
 import { S3FileNode } from '../explorer/s3FileNode'
 import { S3FolderNode } from '../explorer/s3FolderNode'
-import { readablePath } from '../util/util'
+import { readablePath } from '../util'
 import { showErrorWithLogs, showConfirmationMessage } from '../../shared/utilities/messages'
 
 const DELETE_FILE_DISPLAY_TIMEOUT_MS = 2000

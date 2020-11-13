@@ -5,7 +5,7 @@
 
 import * as assert from 'assert'
 import * as vscode from 'vscode'
-import { progressReporter } from '../../../s3/util/progressReporter'
+import { progressReporter } from '../../../s3/progressReporter'
 import { deepEqual, mock, verify, anyNumber, instance } from '../../utilities/mockito'
 
 describe('progressReporter', () => {

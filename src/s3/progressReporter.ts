@@ -4,7 +4,7 @@
  */
 
 import * as vscode from 'vscode'
-import { getLogger } from '../../shared/logger'
+import { getLogger } from '../shared/logger'
 import { inspect } from 'util'
 import { throttle } from 'lodash'
 
