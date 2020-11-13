@@ -14,6 +14,7 @@ import {
     SamCliProcessInvoker,
 } from './samCliInvokerUtils'
 import { DefaultSamCliLocationProvider } from './samCliLocator'
+import { ChannelLogger } from '../../utilities/vsCodeUtils'
 
 export interface SamCliProcessInvokerContext {
     cliConfig: SamCliConfiguration
@@ -39,14 +40,18 @@ export function resolveSamCliProcessInvokerContext(
 export class DefaultSamCliProcessInvoker implements SamCliProcessInvoker {
     public constructor(private readonly context: SamCliProcessInvokerContext = resolveSamCliProcessInvokerContext()) {}
 
-    public async invoke(options?: SamCliProcessInvokeOptions): Promise<ChildProcessResult> {
+    public async invoke(
+        options?: SamCliProcessInvokeOptions,
+        channelLogger?: ChannelLogger
+    ): Promise<ChildProcessResult> {
         const invokeOptions = makeRequiredSamCliProcessInvokeOptions(options)
+        const logger = getLogger()
 
         const sam = await this.context.cliConfig.getOrDetectSamCli()
         if (!sam.path) {
-            getLogger().warn('SAM CLI not found and not configured')
+            logger.warn('SAM CLI not found and not configured')
         } else if (sam.autoDetected) {
-            getLogger().info('SAM CLI not configured, using SAM found at: %O', sam.path)
+            logger.info('SAM CLI not configured, using SAM found at: %O', sam.path)
         }
 
         const samCommand = sam.path ? sam.path : 'sam'
@@ -56,6 +61,17 @@ export class DefaultSamCliProcessInvoker implements SamCliProcessInvoker {
             ...invokeOptions.arguments
         )
 
-        return await childProcess.run()
+        channelLogger?.info('AWS.running.command', 'Running command: {0}', `${childProcess}`)
+        logger.verbose(`running: ${childProcess}`)
+        return await childProcess.run(
+            (text: string) => {
+                channelLogger?.emitMessage(text)
+                logger.verbose(`stdout: ${text}`)
+            },
+            (text: string) => {
+                channelLogger?.emitMessage(text)
+                logger.verbose(`stderr: ${text}`)
+            }
+        )
     }
 }
