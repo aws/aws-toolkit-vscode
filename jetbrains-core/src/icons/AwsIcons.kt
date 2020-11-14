@@ -31,6 +31,7 @@ object AwsIcons {
             @JvmField val LOGS_TOOL_WINDOW = IconLoader.getIcon("/icons/resources/cloudwatchlogs/CloudWatchLogsToolWindow.svg") // 13x13
             @JvmField val LOG_GROUP = IconLoader.getIcon("/icons/resources/cloudwatchlogs/CloudWatchLogsGroup.svg") // 16x16
         }
+        @JvmField val ECR_REPOSITORY = IconLoader.getIcon("/icons/resources/ECRRepository.svg") // 16x16
         @JvmField val LAMBDA_FUNCTION = IconLoader.getIcon("/icons/resources/LambdaFunction.svg") // 16x16
         @JvmField val SCHEMA_REGISTRY = IconLoader.getIcon("/icons/resources/SchemaRegistry.svg") // 16x16
         @JvmField val SCHEMA = IconLoader.getIcon("/icons/resources/Schema.svg") // 16x16

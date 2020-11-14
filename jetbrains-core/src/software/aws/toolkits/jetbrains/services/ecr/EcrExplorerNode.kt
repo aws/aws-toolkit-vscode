@@ -4,6 +4,7 @@
 package software.aws.toolkits.jetbrains.services.ecr
 
 import com.intellij.openapi.project.Project
+import icons.AwsIcons
 import software.amazon.awssdk.services.ecr.EcrClient
 import software.aws.toolkits.jetbrains.core.explorer.nodes.AwsExplorerNode
 import software.aws.toolkits.jetbrains.core.explorer.nodes.AwsExplorerResourceNode
@@ -19,7 +20,7 @@ class EcrServiceNode(project: Project, service: AwsExplorerServiceNode) : AwsExp
 }
 
 class EcrRepositoryNode(project: Project, val repository: Repository) :
-    AwsExplorerResourceNode<String>(project, EcrClient.SERVICE_NAME, repository.repositoryName) {
+    AwsExplorerResourceNode<String>(project, EcrClient.SERVICE_NAME, repository.repositoryName, AwsIcons.Resources.ECR_REPOSITORY) {
 
     override fun resourceType(): String = "repository"
 
