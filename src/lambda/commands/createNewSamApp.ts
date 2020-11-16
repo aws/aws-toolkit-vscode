@@ -47,6 +47,8 @@ import { isTemplateTargetProperties } from '../../shared/sam/debugger/awsSamDebu
 import { TemplateTargetProperties } from '../../shared/sam/debugger/awsSamDebugConfiguration'
 import * as pathutils from '../../shared/utilities/pathUtils'
 import { openLaunchJsonFile } from '../../shared/sam/debugger/commands/addSamDebugConfiguration'
+import { waitUntil } from '../../shared/utilities/timeoutUtils'
+import { launchConfigDocUrl } from '../../shared/constants'
 
 export async function resumeCreateNewSamApp(
     extContext: ExtContext,
@@ -201,18 +203,52 @@ export async function createNewSamApplication(
             true
         )
 
-        const newLaunchConfigs = await addInitialLaunchConfiguration(
-            extContext,
-            vscode.workspace.getWorkspaceFolder(uri)!,
-            uri
-        )
-        await vscode.window.showTextDocument(uri)
-        if (newLaunchConfigs && newLaunchConfigs.length > 0) {
-            showCompletionNotification(config.name, `"${newLaunchConfigs.map(config => config.name).join('", "')}"`)
-        }
-        activationLaunchPath.clearLaunchPath()
+        // Race condition where SAM app is created but template doesn't register in time.
+        // Poll for 5 seconds, otherwise direct user to codelens.
+        const isTemplateRegistered = await waitUntil(async () => {
+            return ext.templateRegistry.getRegisteredTemplate(uri.fsPath)
+        })
+        try {
+            if (isTemplateRegistered) {
+                const newLaunchConfigs = await addInitialLaunchConfiguration(
+                    extContext,
+                    vscode.workspace.getWorkspaceFolder(uri)!,
+                    uri
+                )
+                await vscode.window.showTextDocument(uri)
+                if (newLaunchConfigs && newLaunchConfigs.length > 0) {
+                    showCompletionNotification(
+                        config.name,
+                        `"${newLaunchConfigs.map(config => config.name).join('", "')}"`
+                    )
+                }
+                activationLaunchPath.clearLaunchPath()
 
-        reason = 'complete'
+                reason = 'complete'
+            } else {
+                throw new Error()
+            }
+        } catch (err) {
+            // catch block occurs if template not registered or if there is a failure in the launch config generation process.
+            createResult = 'Failed'
+            reason = 'fileNotFound'
+
+            const helpText = localize('AWS.generic.message.getHelp', 'Get Help...')
+            vscode.window
+                .showWarningMessage(
+                    localize(
+                        'AWS.samcli.initWizard.launchConfigFail',
+                        'Created SAM application "{0}" but was not able to automatically generate launch configurations. You can generate these via CodeLens in the template or handler file.',
+                        config.name
+                    ),
+                    helpText
+                )
+                .then(async buttonText => {
+                    if (buttonText === helpText) {
+                        vscode.env.openExternal(vscode.Uri.parse(launchConfigDocUrl))
+                    }
+                })
+        }
     } catch (err) {
         createResult = 'Failed'
         reason = 'error'

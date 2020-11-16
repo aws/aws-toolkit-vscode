@@ -103,6 +103,7 @@ class DefaultDebugConfigSource implements DebugConfigurationSource {
         } catch (e) {
             getLogger().error('setDebugConfigurations failed: %O', e as Error)
             window.Window.vscode().showErrorMessage(makeFailedWriteMessage('launch.json'))
+            throw e
         }
     }
 }
