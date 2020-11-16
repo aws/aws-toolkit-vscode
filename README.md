@@ -1,38 +1,32 @@
 # AWS Toolkit for Visual Studio Code
 
-| System                                                                                                  | Status                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                           |
-| ------------------------------------------------------------------------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| Build ([master](https://github.com/aws/aws-toolkit-vscode/tree/master) branch)                          | [![TravisCI Build Status - master branch](https://travis-ci.org/aws/aws-toolkit-vscode.svg?branch=master)](https://travis-ci.org/aws/aws-toolkit-vscode) ![CodeBuild Build Status - master branch](https://codebuild.us-west-2.amazonaws.com/badges?uuid=eyJlbmNyeXB0ZWREYXRhIjoiMlluaDRTMnZLdmMvcFREQVQ4RjFoK0FUSTZPdlRVcWJlQ2gwRElLT2gxZDhMeno5MThZZnlXdURDVFFjOWdqSEQ5QjVBYm0xSURoU3E1RTVHejltcnZrPSIsIml2UGFyYW1ldGVyU3BlYyI6IkY3SE9CaG1oMHhJUmsyakkiLCJtYXRlcmlhbFNldFNlcmlhbCI6MX0%3D&branch=master) [![Coverage](https://img.shields.io/codecov/c/github/aws/aws-toolkit-vscode/master.svg)](https://codecov.io/gh/aws/aws-toolkit-vscode/branch/master) [![LGTM Grade](https://img.shields.io/lgtm/grade/javascript/github/aws/aws-toolkit-vscode)](https://lgtm.com/projects/g/aws/aws-toolkit-vscode/) |
-| [Marketplace](https://marketplace.visualstudio.com/items?itemName=AmazonWebServices.aws-toolkit-vscode) | [![Marketplace Version](https://img.shields.io/vscode-marketplace/v/AmazonWebServices.aws-toolkit-vscode.svg) ![Marketplace Downloads](https://img.shields.io/vscode-marketplace/d/AmazonWebServices.aws-toolkit-vscode.svg)](https://marketplace.visualstudio.com/items?itemName=AmazonWebServices.aws-toolkit-vscode)                                                                                                                                                                                                                                                                                                                                                                                                                                                                                          |
+| System                                                                                                  | Status                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                           |
+| ------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| Build ([main branch](https://github.com/aws/aws-toolkit-vscode/commits/master))                         | [![GitHub CI status](https://github.com/aws/aws-toolkit-vscode/workflows/CI/badge.svg)](https://github.com/aws/aws-toolkit-vscode/actions) ![CodeBuild Build Status - main branch](https://codebuild.us-west-2.amazonaws.com/badges?uuid=eyJlbmNyeXB0ZWREYXRhIjoiMlluaDRTMnZLdmMvcFREQVQ4RjFoK0FUSTZPdlRVcWJlQ2gwRElLT2gxZDhMeno5MThZZnlXdURDVFFjOWdqSEQ5QjVBYm0xSURoU3E1RTVHejltcnZrPSIsIml2UGFyYW1ldGVyU3BlYyI6IkY3SE9CaG1oMHhJUmsyakkiLCJtYXRlcmlhbFNldFNlcmlhbCI6MX0%3D&branch=master) [![Coverage](https://img.shields.io/codecov/c/github/aws/aws-toolkit-vscode/master.svg)](https://codecov.io/gh/aws/aws-toolkit-vscode/branch/master) [![LGTM Grade](https://img.shields.io/lgtm/grade/javascript/github/aws/aws-toolkit-vscode)](https://lgtm.com/projects/g/aws/aws-toolkit-vscode/) |
+| [Marketplace](https://marketplace.visualstudio.com/items?itemName=AmazonWebServices.aws-toolkit-vscode) | [![Marketplace Version](https://img.shields.io/vscode-marketplace/v/AmazonWebServices.aws-toolkit-vscode.svg) ![Marketplace Downloads](https://img.shields.io/vscode-marketplace/d/AmazonWebServices.aws-toolkit-vscode.svg)](https://marketplace.visualstudio.com/items?itemName=AmazonWebServices.aws-toolkit-vscode)                                                                                                                                                                                                                                                                                                                                                                                                                                                                          |
 
 The AWS Toolkit for Visual Studio Code is an extension for working with AWS services such as AWS Lambda.
 
 The Toolkit is available from the [Visual Studio Marketplace](https://marketplace.visualstudio.com/itemdetails?itemName=AmazonWebServices.aws-toolkit-vscode).
 
-This is an open source project because we want you to be involved. We love issues, feature requests, code reviews, pull 
-requests or any positive contribution. See [CONTRIBUTING](CONTRIBUTING.md) for how to help.
+This is an open source project because we want you to be involved. We love issues, feature requests, code reviews, pull
+requests or any positive contribution. See [CONTRIBUTING.md](CONTRIBUTING.md).
 
 ## Documentation
 
--   The [Quick Start Guide](extension-readme.md) provides a summary of the Toolkit and the most common tasks.
--   The [User Guide](https://docs.aws.amazon.com/console/toolkit-for-vscode/welcome) contains detailed instructions for getting up and running with the Toolkit.
+-   The [Quick Start Guide](README.quickstart.vscode.md) provides an overview
+    of common Toolkit tasks.
+-   The [User Guide](https://docs.aws.amazon.com/console/toolkit-for-vscode/welcome)
+    contains detailed instructions for getting up and running with the Toolkit.
 
 ## Feedback
 
 We want your feedback!
 
-- Upvote 👍 [feature requests](https://github.com/aws/aws-toolkit-vscode/issues?q=is%3Aissue+is%3Aopen+label%3Afeature-request+sort%3Areactions-%2B1-desc)
-- [Ask a question](https://github.com/aws/aws-toolkit-vscode/issues/new?labels=guidance&template=guidance_request.md)
-- [Request a new feature](https://github.com/aws/aws-toolkit-vscode/issues/new?labels=feature-request&template=feature_request.md)
-- [File an issue](https://github.com/aws/aws-toolkit-vscode/issues/new?labels=bug&template=bug_report.md)
-
-## Debugging from the Debug panel
-
-CodeLenses appear above Serverless Application Lambda Functions, allowing you to locally debug the Function. If you would like [more control](https://code.visualstudio.com/docs/editor/debugging#_launch-configurations) over the debugging experience, the following links can help you set up debug configurations for your project.
-
--   [Debugging NodeJS Lambda Functions](docs/debugging-nodejs-lambda-functions.md)
--   [Debugging Python Lambda Functions](docs/debugging-python-lambda-functions.md)
--   [Debugging .NET Core Lambda Functions](docs/debugging-dotnet-lambda-functions.md)
+-   Upvote 👍 [feature requests](https://github.com/aws/aws-toolkit-vscode/issues?q=is%3Aissue+is%3Aopen+label%3Afeature-request+sort%3Areactions-%2B1-desc)
+-   [Ask a question](https://github.com/aws/aws-toolkit-vscode/issues/new?labels=guidance&template=guidance_request.md)
+-   [Request a new feature](https://github.com/aws/aws-toolkit-vscode/issues/new?labels=feature-request&template=feature_request.md)
+-   [File an issue](https://github.com/aws/aws-toolkit-vscode/issues/new?labels=bug&template=bug_report.md)
 
 ## License
 
