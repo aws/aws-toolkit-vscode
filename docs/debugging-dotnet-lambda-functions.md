@@ -10,8 +10,8 @@ You can debug your Serverless Application's AWS Lambda function locally using th
 1. Open the folder that contains `template.yaml`.
 1. Open a terminal in the folder containing `template.yaml` and set up the debugger by running the following commands:
 
-    * Replace `<CODE_URI>` (in two places) with the *absolute path that corresponds to* the `CodeUri` property (not the `CodeUri` property itself) from `template.yaml` for the resource that you wish to debug.
-    * If appropriate, replace `dotnetcore2.1` with the framework identifier for the runtime that you are targeting.
+    - Replace `<CODE_URI>` (in two places) with the _absolute path that corresponds to_ the `CodeUri` property (not the `CodeUri` property itself) from `template.yaml` for the resource that you wish to debug.
+    - If appropriate, replace `dotnetcore2.1` with the framework identifier for the runtime that you are targeting.
 
     ```bash
     mkdir <CODE_URI>/.vsdbg
@@ -22,7 +22,7 @@ You can debug your Serverless Application's AWS Lambda function locally using th
 
 1. Open `<workspace folder root>/.vscode/launch.json` (create a new file if it does not already exist), and add the following contents:
 
-    * If desired, replace `5679` with the port that you wish to use for debugging.
+    - If desired, replace `5679` with the port that you wish to use for debugging.
 
     ```jsonc
     {
@@ -35,20 +35,14 @@ You can debug your Serverless Application's AWS Lambda function locally using th
                 "processId": "1",
                 "pipeTransport": {
                     "pipeProgram": "sh",
-                    "pipeArgs": [
-                        "-c",
-                        "docker exec -i $(docker ps -q -f publish=5679) ${debuggerCommand}"
-                    ],
+                    "pipeArgs": ["-c", "docker exec -i $(docker ps -q -f publish=5679) ${debuggerCommand}"],
                     "debuggerPath": "/tmp/lambci_debug_files/vsdbg",
                     "pipeCwd": "<CODE_URI>"
                 },
                 "windows": {
                     "pipeTransport": {
                         "pipeProgram": "powershell",
-                        "pipeArgs": [
-                            "-c",
-                            "docker exec -i $(docker ps -q -f publish=5679) ${debuggerCommand}"
-                        ],
+                        "pipeArgs": ["-c", "docker exec -i $(docker ps -q -f publish=5679) ${debuggerCommand}"],
                         "debuggerPath": "/tmp/lambci_debug_files/vsdbg",
                         "pipeCwd": "<CODE_URI>"
                     }
@@ -73,8 +67,8 @@ You can debug your Serverless Application's AWS Lambda function locally using th
 1. Set a breakpoint anywhere in your lambda handler.
 2. Open a terminal in the folder containing `template.yaml`, and run the following commands. The SAM CLI will invoke your lambda handler, and wait for a debugger to attach to it.
 
-    * Replace `HelloWorldFunction` with the name of the function that you want to invoke.
-    * Replace `5679` with the port that you specified in `launch.json`.
+    - Replace `HelloWorldFunction` with the name of the function that you want to invoke.
+    - Replace `5679` with the port that you specified in `launch.json`.
 
     ```bash
     # Bash
@@ -99,7 +93,7 @@ With the above steps, you need to manually invoke SAM CLI from the command line,
 1. Open `<sam app root>/.vscode/tasks.json` (create a new file if it does not already exist).
 2. Add the following contents to `tasks.json`:
 
-    * Replace `HelloWorldFunction` with the function that you wish to debug.
+    - Replace `HelloWorldFunction` with the function that you wish to debug.
 
     ```jsonc
     {
