@@ -1,33 +1,29 @@
 ![Build Status](https://codebuild.eu-west-1.amazonaws.com/badges?uuid=eyJlbmNyeXB0ZWREYXRhIjoiekhxeERIMmNLSkNYUktnUFJzUVJucmJqWnFLMGlpNXJiNE1LLzVWV3B1QUpSSkhCS04veHZmUGxZZ0ZmZlRzYjJ3T1VtVEs1b3JxbWNVOHFOeFJDOTAwPSIsIml2UGFyYW1ldGVyU3BlYyI6ImZXNW5KaytDRGNLdjZuZDgiLCJtYXRlcmlhbFNldFNlcmlhbCI6MX0%3D&branch=master) 
 [![Coverage](https://img.shields.io/codecov/c/github/aws/aws-toolkit-jetbrains/master.svg)](https://codecov.io/gh/aws/aws-toolkit-jetbrains/branch/master) 
-[![Gitter](https://badges.gitter.im/aws/aws-toolkit-jetbrains.svg)](https://gitter.im/aws/aws-toolkit-jetbrains?utm_source=badge&utm_medium=badge&utm_campaign=pr-badge)
 [![Downloads](https://img.shields.io/jetbrains/plugin/d/11349-aws-toolkit.svg)](https://plugins.jetbrains.com/plugin/11349-aws-toolkit) 
 [![Version](https://img.shields.io/jetbrains/plugin/v/11349.svg?label=version)](https://plugins.jetbrains.com/plugin/11349-aws-toolkit)
 [![Quality Gate Status](https://sonarcloud.io/api/project_badges/measure?project=aws_aws-toolkit-jetbrains&metric=alert_status)](https://sonarcloud.io/dashboard?id=aws_aws-toolkit-jetbrains)
  
 # AWS Toolkit for JetBrains
 
-AWS Toolkit for JetBrains - a plugin for interacting with AWS from JetBrains IDEs. The plugin includes features that 
-make it easier to write applications on [Amazon Web Services](https://aws.amazon.com/) using a JetBrains IDE.
+AWS Toolkit for JetBrains is a plugin for JetBrains IDEs that 
+make it easier to write applications built on [Amazon Web Services](https://aws.amazon.com/)
 
-This is an open source project because we want you to be involved. We love issues, feature requests, code reviews, pull 
-requests or any positive contribution. See [CONTRIBUTING](CONTRIBUTING.md) for how to help.
+The AWS Toolkit for JetBrains is open source because we want you to be involved. We appreciate issues, feature requests, pull 
+requests, code reviews or any other contributions.
 
 ## Feedback
 
 We want your feedback!
 
-- Upvote 👍 [feature requests](https://github.com/aws/aws-toolkit-jetbrains/issues?q=is%3Aissue+is%3Aopen+label%3Afeature-request+sort%3Areactions-%2B1-desc)
-- [Ask a question](https://github.com/aws/aws-toolkit-jetbrains/issues/new?labels=guidance&template=guidance_request.md)
+- Vote on [feature requests](https://github.com/aws/aws-toolkit-jetbrains/issues?q=is%3Aissue+is%3Aopen+label%3Afeature-request+sort%3Areactions-%2B1-desc). Votes help us drive prioritization of features 
 - [Request a new feature](https://github.com/aws/aws-toolkit-jetbrains/issues/new?labels=feature-request&template=feature_request.md)
+- [Ask a question](https://github.com/aws/aws-toolkit-jetbrains/issues/new?labels=guidance&template=guidance_request.md)
 - [File an issue](https://github.com/aws/aws-toolkit-jetbrains/issues/new?labels=bug&template=bug_report.md)
+- Code contributions. See [our contributing guide](CONTRIBUTING.md) for how to get started.
 
-## Requirements
-Supported IDEs:
-* IntelliJ Community/Ultimate 2019.2+
-* PyCharm Community/Professional 2019.2+
-* Rider 2019.2+
-* WebStorm 2019.2+
+## Supported IDEs
+All JetBrains IDEs 2020.1+
 
 ## Installation
 
@@ -35,7 +31,7 @@ See [Installing the AWS Toolkit for JetBrains](https://docs.aws.amazon.com/conso
 
 To use this AWS Toolkit, you will first need an AWS account, a user within that account, and an access key for that 
 user. To use the AWS Toolkit to do AWS serverless application development and to run/debug AWS Lambda functions locally,
-you will also need to install the AWS CLI, Docker, and the AWS SAM CLI. The preceding link covers setting up all of 
+you will also need to install the AWS CLI, Docker, and the AWS SAM CLI. The installation guide covers setting up all of 
 these prerequisites.
 
 ### EAP Builds
@@ -46,27 +42,26 @@ In order to opt-in:
 going to **Plugins->Gear Icon->Manage Plugin Repositories** and adding the URL to the list
 * Check for updates.
 
-### From Source
+### Installing From Source
 Please see [CONTRIBUTING](CONTRIBUTING.md#building-from-source) for instructions.
 
 ## Features
 
 ### General
 
-Features that don't relate to a specific AWS service.
-
-* **Credential management** - the ability to select how you want to authenticate with AWS, management of several 
-credential types and the ability to easily switch between profiles. 
-[Learn More](https://docs.aws.amazon.com/console/toolkit-for-jetbrains/credentials)
-* **Region management** - the ability to switch between viewing resources in different AWS regions.
-[Learn More](https://docs.aws.amazon.com/console/toolkit-for-jetbrains/regions)
 * **AWS Resource Explorer** - tree-view of AWS resources available in your 
 selected account/region. This does not represent all resources available in your account, only a sub-set of those 
 resource types supported by the plugin.
 [Learn More](https://docs.aws.amazon.com/console/toolkit-for-jetbrains/aws-explorer)
+* **Authentication** - Connect to AWS using static credentials, credential process, or AWS SSO. [Learn more about
+authentication options](https://docs.aws.amazon.com/console/toolkit-for-jetbrains/credentials)
 
 ### Services
 
+#### ![CloudFormation][cloudformation-icon] AWS CloudFormation
+* View events, resources, and outputs for your CloudFormation stacks
+#### ![CloudWatch Logs][cloudwatch-logs-icon] CloudWatch Logs 
+* View and search your CloudWatch log streams
 #### ![AWS Lambda][lambda-icon] AWS Lambda
 
 Many of these features require the [AWS SAM CLI](https://github.com/awslabs/aws-sam-cli) to be installed, see the 
@@ -75,8 +70,6 @@ installation of the SAM CLI.
 
 **SAM features support Java, Python, Node.js, and .NET Core**
 
-* **New Project Wizard** - Get started quickly by using one of the quickstart serverless application templates.
-[Learn More](https://docs.aws.amazon.com/console/toolkit-for-jetbrains/new-project)
 * **Run/Debug Local Lambda Functions** - Locally test and step-through debug functions in a Lambda-like execution 
 environment provided by the SAM CLI.
 [Learn More](https://docs.aws.amazon.com/console/toolkit-for-jetbrains/lambda-local)
@@ -87,27 +80,24 @@ environment provided by the SAM CLI.
 * **Deploy SAM-based Applications** - Package, deploy & track SAM-based applications
 [Learn More](https://docs.aws.amazon.com/console/toolkit-for-jetbrains/sam-deploy)
 
-*NB: Python-only features are available in both PyCharm and IntelliJ with the 
+*Note: Python features are available in both PyCharm and IntelliJ with the 
 [Python Plugin](https://www.jetbrains.com/help/idea/plugin-overview.html) installed.*
 
-## Roadmap
+#### ![Amazon Redshift][redshift-icon] Amazon RDS/Redshift
+* Connect to RDS/Redshift databases using temporary credentials with IAM/SecretsManager, no copy paste required
 
-The best view of our long-term road-map is by looking the upcoming Release 
-[Milestones](https://github.com/aws/aws-toolkit-jetbrains/milestones). 
-
-In addition to GitHub's built-in [Projects](https://github.com/aws/aws-toolkit-jetbrains/projects) and 
-[Milestones](https://github.com/aws/aws-toolkit-jetbrains/milestones) we use [ZenHub](https://www.zenhub.com) to help:
-* manage our back-log
-* prioritize features
-* estimate issues
-* create sprint-boards
-
-To enable these enhanced views can sign-up for ZenHub (using your GitHub account - it's free), install 
-the ZenHub [extension](https://www.zenhub.com/extension) for your browser and then navigate to the 
-[ZebHub](https://github.com/aws/aws-toolkit-jetbrains#zenhub) tab in the toolkit repository. 
+*Note: database features require using a paid JetBrains product*
+#### ![Amazon S3][s3-icon] Amazon S3
+* View and manage your S3 buckets
+* Upload/Download to from buckets
+* [Learn more](https://docs.aws.amazon.com/console/toolkit-for-jetbrains/s3-tasks)
 
 ## Licensing
 
 The plugin is distributed according to the terms outlined in our [LICENSE](LICENSE).
 
 [lambda-icon]: jetbrains-core/resources/icons/resources/LambdaFunction.svg
+[s3-icon]: jetbrains-core/resources/icons/resources/S3Bucket.svg
+[cloudwatch-logs-icon]: jetbrains-core/resources/icons/resources/cloudwatchlogs/CloudWatchLogs.svg
+[cloudformation-icon]: jetbrains-core/resources/icons/resources/CloudFormationStack.svg
+[redshift-icon]: jetbrains-core/resources/icons/resources/Redshift.svg

@@ -8,58 +8,46 @@
 
     <description><![CDATA[
 <p>
-    The AWS Toolkit is an open-source plug-in for JetBrains IDEs that makes it easier to develop applications built on
-    AWS. The toolkit helps you create, test, and debug serverless applications built using the AWS Serverless
-    Application Model (<a href="https://aws.amazon.com/serverless/sam/">SAM</a>).</p>
-<br/>
-<p>
-    See <a href="https://docs.aws.amazon.com/console/toolkit-for-jetbrains/install">Installing the AWS Toolkit for
-    JetBrains</a> in the AWS Toolkit for JetBrains User Guide.
-</p>
-<br/>
-<p>To use this AWS Toolkit, you will first need an AWS account, a user within that account, and an access key for that
-    user.
-</p>
-<br/>
-<p>To use the AWS Toolkit to do AWS serverless application development and to run/debug AWS Lambda functions locally,
-    you will also need to install the AWS CLI, Docker, and the AWS SAM CLI. The preceding link covers setting up all of
-    these prerequisites.
+    The AWS Toolkit for JetBrains makes it easier to write applications built on <a href="https://aws.amazon.com/">Amazon Web Services</a>.
+If you come across bugs with the toolkit or have feature requests, please raise an
+<a href="https://github.com/aws/aws-toolkit-jetbrains/issues">issue</a> on our GitHub repository.
 </p>
 <br/>
 <p>
-    If you come across bugs with the toolkit or have feature requests, please raise an <a
-        href="https://github.com/aws/aws-toolkit-jetbrains/issues">issue</a>.
+See the <a href="https://docs.aws.amazon.com/console/toolkit-for-jetbrains/">user guide</a> for how to get started, along
+with what features/services are supported.
 </p>
 
-<p><h2><strong>Features</strong></h2></p>
-
-<p><strong>SAM features support Java, Python, Node.js, and .NET Core</strong></p>
+<p><h2><strong>Features:</strong></h2></p>
 
 <ul>
     <li>
-        <strong>New Project Wizard</strong> - Get started quickly by using one of the quickstart serverless application
-        templates <a href="https://docs.aws.amazon.com/console/toolkit-for-jetbrains/new-project">Learn More</a>
+       <a href="https://docs.aws.amazon.com/console/toolkit-for-jetbrains/credentials">Authentication</a> - Connect to AWS using static credentials, credential process, or AWS SSO.
     </li>
 
     <li>
-        <strong>Run/Debug Local Lambda Functions</strong> - Locally test and step-through debug functions in a
-        Lambda-like execution environment provided by the AWS SAM CLI
-        <a href="https://docs.aws.amazon.com/console/toolkit-for-jetbrains/lambda-local">Learn More</a>
+        <a href="https://docs.aws.amazon.com/console/toolkit-for-jetbrains/aws-explorer">Resource Explorer</a> - View and manage AWS resources
     </li>
 
     <li>
-        <strong>Resource Explorer</strong> - View your AWS Lambda remote functions & related CloudFormation stacks
-        <a href="https://docs.aws.amazon.com/console/toolkit-for-jetbrains/aws-explorer">Learn More</a>
+        <a href="https://docs.aws.amazon.com/console/toolkit-for-jetbrains/lambda-local">Run/Debug Local Lambda Functions</a> - Locally test and step-through debug functions in a
+        Lambda-like execution environment provided by the AWS SAM CLI. Supports Java, Python, Node.js, and .NET Core.
     </li>
 
     <li>
-        <strong>Invoke Remote Lambda Functions</strong> - Invoke remote functions using a sharable run-configuration
-        <a href="https://docs.aws.amazon.com/console/toolkit-for-jetbrains/lambda-remote">Learn More</a>
+       <a href="https://docs.aws.amazon.com/console/toolkit-for-jetbrains/sam-deploy">Deploy SAM-based Applications</a> - Package, deploy & track SAM-based applications
     </li>
 
     <li>
-        <strong>Deploy SAM-based Applications</strong> - Package, deploy & track SAM-based applications
-        <a href="https://docs.aws.amazon.com/console/toolkit-for-jetbrains/sam-deploy">Learn More</a>
+        <a href="https://docs.aws.amazon.com/console/toolkit-for-jetbrains/cwl-tasks">CloudWatch Logs</a> - View and search CloudWatch log streams
+    </li>
+
+    <li>
+        <a href="https://docs.aws.amazon.com/console/toolkit-for-jetbrains/s3-tasks">S3 Explorer</a> - Manage S3 buckets, and upload to/download from S3 buckets
+    </li>
+
+    <li>
+        <a href="https://docs.aws.amazon.com/console/toolkit-for-jetbrains/services">See the user guide</a> for a full list of services and features supported
     </li>
 </ul>
     ]]></description>
