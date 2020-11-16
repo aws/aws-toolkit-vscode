@@ -14,10 +14,10 @@ You can debug your Serverless Application's AWS Lambda function locally using th
 
 Throughout these instructions, replace the following:
 
-|Name|Replace With|
-|-|-|
-|`<sam app root>`|The root of your SAM app (typically this is the directory containing `template.yaml`)|
-|`<python project root>`|The root of your Python source code (typically this is the directory containing `requirements.txt`)|
+| Name                    | Replace With                                                                                        |
+| ----------------------- | --------------------------------------------------------------------------------------------------- |
+| `<sam app root>`        | The root of your SAM app (typically this is the directory containing `template.yaml`)               |
+| `<python project root>` | The root of your Python source code (typically this is the directory containing `requirements.txt`) |
 
 1. Add the line `ptvsd==4.2.4` to `<python project root>/requirements.txt`
 2. Open a terminal in `<sam app root>`, then run:
@@ -50,8 +50,8 @@ Throughout these instructions, replace the following:
 
 1. Open `<sam app root>/.vscode/launch.json` (create a new file if it does not already exist), and add the following contents.
 
-    * Due to a bug in how VS Code handles path mappings, Windows users must provide an absolute path for `localRoot`. If you use a path relative to `${workspaceFolder}`, the path mappings will not work.
-    * If desired, replace `5678` with the port that you wish to use for debugging.
+    - Due to a bug in how VS Code handles path mappings, Windows users must provide an absolute path for `localRoot`. If you use a path relative to `${workspaceFolder}`, the path mappings will not work.
+    - If desired, replace `5678` with the port that you wish to use for debugging.
 
     ```jsonc
     {
