@@ -215,21 +215,18 @@ export async function createNewSamApplication(
                     vscode.workspace.getWorkspaceFolder(uri)!,
                     uri
                 )
-                await vscode.window.showTextDocument(uri)
                 if (newLaunchConfigs && newLaunchConfigs.length > 0) {
                     showCompletionNotification(
                         config.name,
                         `"${newLaunchConfigs.map(config => config.name).join('", "')}"`
                     )
                 }
-                activationLaunchPath.clearLaunchPath()
-
                 reason = 'complete'
             } else {
                 throw new Error()
             }
         } catch (err) {
-            // catch block occurs if template not registered or if there is a failure in the launch config generation process.
+            // catch block occurs if template not registered or if there is a failure in the launch config generation process, e.g. dirty launch config.
             createResult = 'Failed'
             reason = 'fileNotFound'
 
@@ -248,6 +245,9 @@ export async function createNewSamApplication(
                         vscode.env.openExternal(vscode.Uri.parse(launchConfigDocUrl))
                     }
                 })
+        } finally {
+            activationLaunchPath.clearLaunchPath()
+            await vscode.window.showTextDocument(uri)
         }
     } catch (err) {
         createResult = 'Failed'
