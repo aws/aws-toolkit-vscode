@@ -86,7 +86,14 @@ export class SamCliBuildInvocation {
     public async execute(): Promise<number> {
         await this.validate()
 
-        const invokeArgs: string[] = ['build', '--build-dir', this.args.buildDir, '--template', this.args.templatePath]
+        const invokeArgs: string[] = [
+            'build',
+            ...(getLogger().logLevelEnabled('debug') ? ['--debug'] : []),
+            '--build-dir',
+            this.args.buildDir,
+            '--template',
+            this.args.templatePath,
+        ]
 
         pushIf(invokeArgs, !!this.args.baseDir, '--base-dir', this.args.baseDir!)
         pushIf(invokeArgs, !!this.args.dockerNetwork, '--docker-network', this.args.dockerNetwork!)
