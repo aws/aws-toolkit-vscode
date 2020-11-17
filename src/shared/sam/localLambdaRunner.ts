@@ -294,6 +294,7 @@ export async function attachDebugger({
     retryDelayMillis = ATTACH_DEBUGGER_RETRY_DELAY_MILLIS,
     onStartDebugging = vscode.debug.startDebugging,
     onWillRetry = async (): Promise<void> => {
+        getLogger().debug('attachDebugger: retrying...')
         await new Promise<void>(resolve => {
             setTimeout(resolve, retryDelayMillis)
         })

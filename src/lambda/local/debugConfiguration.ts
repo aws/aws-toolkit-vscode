@@ -19,6 +19,10 @@ import { RuntimeFamily } from '../models/samLambdaRuntime'
 import { SamLaunchRequestArgs } from '../../shared/sam/debugger/awsSamDebugger'
 import { ext } from '../../shared/extensionGlobals'
 
+/**
+ * Magic path on the Docker image.
+ * https://github.com/aws/aws-sam-cli/blob/2201b17bff0a438b934abbb53f6c76eff9ccfa6d/samcli/local/docker/lambda_container.py#L25
+ */
 export const DOTNET_CORE_DEBUGGER_PATH = '/tmp/lambci_debug_files/vsdbg'
 
 export interface NodejsDebugConfiguration extends SamLaunchRequestArgs {
@@ -38,10 +42,27 @@ export interface PythonPathMapping {
 
 export interface PythonDebugConfiguration extends SamLaunchRequestArgs {
     readonly runtimeFamily: RuntimeFamily.Python
+    /** Passed to "sam build --manifest …" */
+    readonly manifestPath: string | undefined
+
+    // Fields expected by the VSCode ptvsd adapter.
     readonly host: string
     readonly port: number
     readonly pathMappings: PythonPathMapping[]
+}
+
+/** Alternative (Cloud9) Python debugger: ikp3db */
+export interface PythonCloud9DebugConfiguration extends SamLaunchRequestArgs {
+    readonly runtimeFamily: RuntimeFamily.Python
+    /** Passed to "sam build --manifest …" */
     readonly manifestPath: string | undefined
+
+    // Fields expected by the Cloud9 debug adapter.
+    // (Cloud9 sourcefile: debugger-vscode-mainthread-adapter.ts)
+    readonly port: number
+    readonly address: string
+    readonly localRoot: string
+    readonly remoteRoot: string
 }
 
 export interface DotNetCoreDebugConfiguration extends SamLaunchRequestArgs {
