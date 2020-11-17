@@ -128,7 +128,7 @@ export async function makePythonDebugConfig(
             //           For https://github.com/cmorisse/vscode-ikp3db
             //           Requires ikp3db 1.5 (unreleased): https://github.com/cmorisse/ikp3db/pull/12
             config.debugArgs = [
-                `-u -m ikp3db --ikpdb-address=0.0.0.0 --ikpdb-port=${config.debugPort} -ik_ccwd=${ccwd} -ik_cwd=/var/task ${logArg}`,
+                `-m ikp3db --ikpdb-address=0.0.0.0 --ikpdb-port=${config.debugPort} -ik_ccwd=${ccwd} -ik_cwd=/var/task ${logArg}`,
             ]
         }
 

@@ -1288,7 +1288,7 @@ Outputs:
                 eventPayloadFile: `${actual.baseBuildDir}/event.json`,
                 codeRoot: pathutil.normalize(path.join(appDir, 'hello_world')),
                 debugArgs: [
-                    `-u -m ikp3db --ikpdb-address=0.0.0.0 --ikpdb-port=${actual.debugPort} -ik_ccwd=hello_world -ik_cwd=/var/task --ikpdb-log=BEXFPG`,
+                    `-m ikp3db --ikpdb-address=0.0.0.0 --ikpdb-port=${actual.debugPort} -ik_ccwd=hello_world -ik_cwd=/var/task --ikpdb-log=BEXFPG`,
                 ],
                 debugPort: actual.debugPort,
                 documentUri: vscode.Uri.file(''), // TODO: remove or test.
@@ -1395,7 +1395,7 @@ Outputs:
                 eventPayloadFile: `${actual.baseBuildDir}/event.json`,
                 codeRoot: pathutil.normalize(path.join(appDir, 'python3.7-plain-sam-app/hello_world')),
                 debugArgs: [
-                    `-u -m ikp3db --ikpdb-address=0.0.0.0 --ikpdb-port=${actual.debugPort} -ik_ccwd=python3.7-plain-sam-app/hello_world -ik_cwd=/var/task --ikpdb-log=BEXFPG`,
+                    `-m ikp3db --ikpdb-address=0.0.0.0 --ikpdb-port=${actual.debugPort} -ik_ccwd=python3.7-plain-sam-app/hello_world -ik_cwd=/var/task --ikpdb-log=BEXFPG`,
                 ],
                 debugPort: actual.debugPort,
                 documentUri: vscode.Uri.file(''), // TODO: remove or test.
