@@ -4,6 +4,7 @@
  */
 
 import { fileExists } from '../../filesystemUtilities'
+import { getLogger } from '../../logger'
 import { pushIf } from '../../utilities/collectionUtils'
 
 export interface SamCliStartApiArguments {
@@ -57,6 +58,7 @@ export async function buildSamCliStartApiArguments(args: SamCliStartApiArguments
     const invokeArgs = [
         'local',
         'start-api',
+        ...(getLogger().logLevelEnabled('debug') ? ['--debug'] : []),
         '--template',
         args.templatePath,
         '--env-vars',
