@@ -9,6 +9,7 @@ import * as yaml from 'js-yaml'
 import * as filesystemUtilities from '../filesystemUtilities'
 import { SystemUtilities } from '../systemUtilities'
 import { getLogger } from '../logger'
+import { APIGatewayProperties } from '../sam/debugger/awsSamDebugConfiguration'
 
 export namespace CloudFormation {
     export const SERVERLESS_API_TYPE = 'AWS::Serverless::Api'
@@ -63,6 +64,7 @@ export namespace CloudFormation {
     export interface ApiEventProperties {
         Path?: string
         Method?: 'delete' | 'get' | 'head' | 'options' | 'patch' | 'post' | 'put' | 'any'
+        Payload?: APIGatewayProperties['payload']
     }
 
     export interface Event {

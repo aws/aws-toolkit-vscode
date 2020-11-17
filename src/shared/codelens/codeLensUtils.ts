@@ -28,6 +28,13 @@ import { ExtContext } from '../extensions'
 
 export type Language = 'python' | 'javascript' | 'csharp'
 
+interface SamDebugCodeLensInput {
+    resourceName: string
+    rootUri: vscode.Uri
+    apiEvents?: CloudFormation.Event[]
+    runtimeFamily?: RuntimeFamily
+}
+
 export async function makeCodeLenses({
     document,
     token,
@@ -58,25 +65,25 @@ export async function makeCodeLenses({
 
         try {
             const associatedResources = getResourcesForHandler(handler.filename, handler.handlerName)
-            const templateConfigs: AddSamDebugConfigurationInput[] = []
+            const templateConfigs: SamDebugCodeLensInput[] = []
 
             if (associatedResources.length > 0) {
                 for (const resource of associatedResources) {
-                    let hasApiEvent = false
+                    const apiEvents: CloudFormation.Event[] = []
                     const events = resource.resourceData.Properties?.Events
                     if (events) {
                         // Check for api events
                         for (const key in events) {
                             const value = events[key]
                             if (value.Type === 'Api') {
-                                hasApiEvent = true
+                                apiEvents.push(value)
                             }
                         }
                     }
                     templateConfigs.push({
                         resourceName: resource.name,
                         rootUri: vscode.Uri.file(resource.templateDatum.path),
-                        hasApiEventSource: hasApiEvent,
+                        apiEvents: apiEvents,
                     })
                 }
             }
@@ -104,7 +111,7 @@ export function getInvokeCmdKey(language: Language) {
 function makeAddCodeSamDebugCodeLens(
     range: vscode.Range,
     codeConfig: AddSamDebugConfigurationInput,
-    templateConfigs: AddSamDebugConfigurationInput[]
+    templateConfigs: SamDebugCodeLensInput[]
 ): vscode.CodeLens {
     const command: vscode.Command = {
         title: localize('AWS.command.addSamDebugConfiguration', 'Add Debug Configuration'),
@@ -126,7 +133,7 @@ function makeAddCodeSamDebugCodeLens(
  */
 export async function pickAddSamDebugConfiguration(
     codeConfig: AddSamDebugConfigurationInput,
-    templateConfigs: AddSamDebugConfigurationInput[]
+    templateConfigs: SamDebugCodeLensInput[]
 ): Promise<void> {
     if (templateConfigs.length === 0) {
         await addSamDebugConfiguration(codeConfig, CODE_TARGET_TYPE)
@@ -136,7 +143,7 @@ export async function pickAddSamDebugConfiguration(
 
     const templateItemsMap = new Map<string, AddSamDebugConfigurationInput>()
     const templateItems: vscode.QuickPickItem[] = []
-    const WITH_API_CONFIG = ' (API)'
+    const WITH_API_CONFIG = '(API)'
     templateConfigs.forEach(templateConfig => {
         const label = `${getWorkspaceRelativePath(templateConfig.rootUri.fsPath) ?? templateConfig.rootUri.fsPath}:${
             templateConfig.resourceName
@@ -144,10 +151,17 @@ export async function pickAddSamDebugConfiguration(
         templateItemsMap.set(label, templateConfig)
         templateItems.push({ label: label })
 
-        if (templateConfig.hasApiEventSource) {
-            const apiLabel = `${label}${WITH_API_CONFIG}`
-            templateItemsMap.set(apiLabel, templateConfig)
-            templateItems.push({ label: apiLabel })
+        if (templateConfig.apiEvents && templateConfig.apiEvents.length > 0) {
+            for (const apiEvent of templateConfig.apiEvents) {
+                const apiLabel = `${label} ${WITH_API_CONFIG} ${apiEvent.Properties?.Method} ${apiEvent.Properties?.Path}`
+                templateItemsMap.set(apiLabel, {
+                    resourceName: templateConfig.resourceName,
+                    rootUri: templateConfig.rootUri,
+                    apiEvent: apiEvent,
+                    runtimeFamily: templateConfig.runtimeFamily ?? undefined,
+                })
+                templateItems.push({ label: apiLabel })
+            }
         }
     })
 
@@ -189,7 +203,7 @@ export async function pickAddSamDebugConfiguration(
         if (!templateItem) {
             return undefined
         }
-        if (val.label.endsWith(WITH_API_CONFIG)) {
+        if (templateItem.apiEvent) {
             await addSamDebugConfiguration(templateItem, API_TARGET_TYPE)
         } else {
             await addSamDebugConfiguration(templateItem, TEMPLATE_TARGET_TYPE)
