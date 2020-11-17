@@ -462,7 +462,7 @@
     "AWS.samcli.initWizard.source.error.notFound": "Project created successfully, but main source code file not found: {0}",
     "AWS.samcli.initWizard.source.error.notInWorkspace": "Could not open file '{0}'. If this file exists on disk, try adding it to your workspace.",
     "AWS.samcli.initWizard.completionMessage": "Created SAM application \"{0}\" and added launch configurations to launch.json: {1}",
-    "AWS.samcli.initWizard.launchConfigFail": "Created SAM application \"{0}\" but was not able to automatically generate launch configurations. You can generate these via CodeLens in the template or handler file.",
+    "AWS.samcli.initWizard.launchConfigFail": "Created SAM application \"{0}\" but failed to generate launch configurations. You can generate these via CodeLens in the template or handler file.",
     "AWS.pickDebugConfig.prompt": "Create a Debug Configuration from a CloudFormation Template",
     "AWS.pickDebugConfig.noTemplate": "No Template",
     "AWS.pickDebugConfig.noTemplate.detail": "Launch config will execute function in isolation, without referencing a CloudFormation template",
