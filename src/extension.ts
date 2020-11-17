@@ -248,8 +248,12 @@ export async function deactivate() {
 }
 
 function initializeIconPaths(context: vscode.ExtensionContext) {
-    ext.iconPaths.dark.help = context.asAbsolutePath('resources/dark/help.svg')
-    ext.iconPaths.light.help = context.asAbsolutePath('resources/light/help.svg')
+    ext.iconPaths.dark.help = isCloud9()
+        ? context.asAbsolutePath('resources/dark/cloud9/help.svg')
+        : context.asAbsolutePath('resources/dark/help.svg')
+    ext.iconPaths.light.help = isCloud9()
+        ? context.asAbsolutePath('resources/light/cloud9/help.svg')
+        : context.asAbsolutePath('resources/light/help.svg')
 
     ext.iconPaths.dark.cloudFormation = context.asAbsolutePath('resources/dark/cloudformation.svg')
     ext.iconPaths.light.cloudFormation = context.asAbsolutePath('resources/light/cloudformation.svg')
