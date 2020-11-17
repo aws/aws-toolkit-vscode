@@ -386,7 +386,10 @@ export class SamDebugConfigProvider implements vscode.DebugConfigurationProvider
         }
 
         if (config.api) {
-            config.api.headers = ['Content-Type: application/json', ...(config.api.headers ? config.api.headers : [])]
+            config.api.headers = {
+                'content-type': 'application/json',
+                ...(config.api.headers ? config.api.headers : {}),
+            }
         }
 
         let parameterOverrideArr: string[] | undefined
