@@ -32,17 +32,18 @@ describe('SamCliStartApi', async () => {
         const invokeArgs = await buildSamCliStartApiArguments({
             templatePath: placeholderTemplateFile,
             environmentVariablePath: nonRelevantArg,
-            extraArgs: ['--debug', '--build-dir', 'my/build/dir/'],
+            extraArgs: ['--build-dir', 'my/build/dir/'],
         })
 
         assert.ok(invokeArgs.length >= 2, 'Expected args to be present')
         assert.strictEqual(invokeArgs[0], 'local')
         assert.strictEqual(invokeArgs[1], 'start-api')
-        assert.strictEqual(invokeArgs[2], '--template')
-        assert.strictEqual(invokeArgs[4], '--env-vars')
+        // --debug is present because tests run with "debug" log-level. #1403
+        assert.strictEqual(invokeArgs[2], '--debug')
+        assert.strictEqual(invokeArgs[3], '--template')
+        assert.strictEqual(invokeArgs[5], '--env-vars')
 
         // `extraArgs` are appended to the end.
-        assert.strictEqual(invokeArgs[6], '--debug')
         assert.strictEqual(invokeArgs[7], '--build-dir')
         assert.strictEqual(invokeArgs[8], 'my/build/dir/')
     })
