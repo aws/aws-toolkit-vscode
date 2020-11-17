@@ -535,7 +535,7 @@ export class SamDeployWizard extends MultiStepWizard<SamDeployWizardResponse> {
     }
 
     private skipOrPromptRegion(skipToStep: WizardStep): WizardStep {
-        return this.regionNode ? skipToStep : this.REGION
+        return this.regionNode && this.regionNode.hasOwnProperty('regionCode') ? skipToStep : this.REGION
     }
 }
 
