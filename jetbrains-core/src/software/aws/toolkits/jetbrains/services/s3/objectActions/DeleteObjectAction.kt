@@ -36,7 +36,7 @@ private fun deleteNodes(project: Project, treeTable: S3TreeTable, nodes: List<S3
         project,
         message("s3.delete.object.description", nodes.size),
         message("s3.delete.object.action"),
-        message("s3.delete.object.delete"),
+        message("general.delete"),
         message("s3.delete.object.cancel"),
         Messages.getWarningIcon()
     )
