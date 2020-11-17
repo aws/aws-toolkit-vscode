@@ -11,12 +11,14 @@ import { detectCdkProjects } from '../../cdk/explorer/detectCdkProjects'
 import { makeTemporaryToolkitFolder } from '../../shared/filesystemUtilities'
 import { saveCdkJson } from './utilities/treeTestUtils'
 import { createTestWorkspaceFolder } from '../testUtil'
+import { FakeExtensionContext } from '../fakeExtensionContext'
 
 describe('detectCdkProjects', () => {
     const workspacePaths: string[] = []
     const workspaceFolders: vscode.WorkspaceFolder[] = []
 
     beforeEach(async () => {
+        await FakeExtensionContext.getFakeExtContext()
         const workspaceFolder = await createTestWorkspaceFolder('vsctk-cdk')
 
         workspacePaths.push(workspaceFolder.uri.path)
