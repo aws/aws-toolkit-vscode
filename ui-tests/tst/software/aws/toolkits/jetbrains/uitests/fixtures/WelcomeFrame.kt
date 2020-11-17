@@ -31,7 +31,7 @@ class WelcomeFrame(remoteRobot: RemoteRobot, remoteComponent: RemoteComponent) :
         } else {
             selectTab("Projects")
             // This can match two things: If no previous projects, its a SVG icon, else a jbutton
-            findAll<ComponentFixture>(byXpath("//div[@accessiblename='New Project']")).first().click()
+            findAll<ComponentFixture>(byXpath("//div[contains(@accessiblename, 'New Project') and (@class='MainButton 'or @class='JButton')]")).first().click()
         }
     }
 
@@ -74,7 +74,7 @@ class WelcomeFrame(remoteRobot: RemoteRobot, remoteComponent: RemoteComponent) :
             actionLink(ActionLinkFixture.byTextContains("Open")).click()
         } else {
             selectTab("Projects")
-            findAll<ComponentFixture>(byXpath("//div[@accessiblename='Open']")).first().click()
+            findAll<ComponentFixture>(byXpath("//div[contains(@accessiblename, 'Open') and (@class='MainButton 'or @class='JButton')]")).first().click()
         }
         fileBrowser("Open") {
             selectFile(path)
