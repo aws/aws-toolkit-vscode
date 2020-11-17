@@ -8,6 +8,7 @@ import com.intellij.remoterobot.data.RemoteComponent
 import com.intellij.remoterobot.fixtures.ContainerFixture
 import com.intellij.remoterobot.fixtures.FixtureName
 import com.intellij.remoterobot.stepsProcessing.step
+import com.intellij.remoterobot.utils.keyboard
 import java.nio.file.Path
 import java.time.Duration
 
@@ -38,7 +39,7 @@ class FileBrowserFixture(
         // Wait for file explorer to load
         Thread.sleep(1000)
         step("Fill file explorer with ${path.toAbsolutePath()}") {
-            fillSingleTextField(path.toAbsolutePath().toString())
+            keyboard { enterText(path.toAbsolutePath().toString(), delayBetweenCharsInMs = 0) } // path text box is already focused on open
         }
         val file = path.fileName.toString()
         step("Refresh file explorer to make sure the file $file is loaded") {

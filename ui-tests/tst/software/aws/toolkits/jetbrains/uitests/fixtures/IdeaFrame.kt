@@ -18,9 +18,9 @@ import java.awt.event.KeyEvent
 import java.time.Duration
 
 fun RemoteRobot.idea(function: IdeaFrame.() -> Unit) {
-    val frame = find<IdeaFrame>()
+    val frame = find<IdeaFrame>(timeout = Duration.ofSeconds(10))
     // FIX_WHEN_MIN_IS_203 remove this and set the system property "ide.show.tips.on.startup.default.value"
-    frame.apply { tryCloseTips() }
+    frame.apply { dumbAware { tryCloseTips() } }
     frame.apply(function)
 }
 
@@ -80,9 +80,14 @@ class IdeaFrame(remoteRobot: RemoteRobot, remoteComponent: RemoteComponent) : Co
 
     // Tips sometimes open when running, close it if it opens
     fun tryCloseTips() {
-        try {
-            pressClose()
-        } catch (e: Exception) {
+        step("Close Tip of the Day if it appears") {
+            try {
+                val fixture = find<DialogFixture>(DialogFixture.byTitleContains("Tip"))
+                while (fixture.isShowing) {
+                    fixture.pressClose()
+                }
+            } catch (e: Exception) {
+            }
         }
     }
 

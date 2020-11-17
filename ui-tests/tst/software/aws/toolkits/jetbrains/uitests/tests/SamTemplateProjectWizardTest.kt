@@ -51,6 +51,8 @@ class SamTemplateProjectWizardTest {
 
                         pressOk()
                     }
+
+                    selectTab("Projects")
                 }
             }
         }

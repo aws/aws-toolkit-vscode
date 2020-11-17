@@ -25,31 +25,57 @@ fun RemoteRobot.welcomeFrame(function: WelcomeFrame.() -> Unit) {
 @DefaultXpath("type", "//div[@class='FlatWelcomeFrame' and @visible='true']")
 class WelcomeFrame(remoteRobot: RemoteRobot, remoteComponent: RemoteComponent) : CommonContainerFixture(remoteRobot, remoteComponent) {
     fun openNewProjectWizard() {
-        actionLink(ActionLinkFixture.byTextContains("New Project")).click()
+        // TODO: Remove FIX_WHEN_MIN_IS_203
+        if (remoteRobot.ideMajorVersion() <= 202) {
+            actionLink(ActionLinkFixture.byTextContains("New Project")).click()
+        } else {
+            selectTab("Projects")
+            // This can match two things: If no previous projects, its a SVG icon, else a jbutton
+            findAll<ComponentFixture>(byXpath("//div[@accessiblename='New Project']")).first().click()
+        }
     }
 
     fun openPreferences() = step("Opening preferences dialog") {
-        actionLink("Configure").click()
+        // TODO: Remove FIX_WHEN_MIN_IS_203
+        if (remoteRobot.ideMajorVersion() <= 202) {
+            actionLink("Configure").click()
 
-        // MyList finds both the list of actions and the most recently used file list, so get all candidates
-        val found = findAll(ComponentFixture::class.java, byXpath("//div[@class='MyList']"))
-            .any {
-                try {
-                    it.findText(remoteRobot.preferencesTitle()).click()
-                    true
-                } catch (e: NoSuchElementException) {
-                    false
+            // MyList finds both the list of actions and the most recently used file list, so get all candidates
+            val found = findAll(ComponentFixture::class.java, byXpath("//div[@class='MyList']"))
+                .any {
+                    try {
+                        it.findText(remoteRobot.preferencesTitle()).click()
+                        true
+                    } catch (e: NoSuchElementException) {
+                        false
+                    }
                 }
-            }
 
-        if (!found) {
-            throw IllegalStateException("Unable to find ${remoteRobot.preferencesTitle()} in the configure menu")
+            if (!found) {
+                throw IllegalStateException("Unable to find ${remoteRobot.preferencesTitle()} in the configure menu")
+            }
+        } else {
+            selectTab("Customize")
+            findAndClick("//div[@accessiblename='All settings…']")
         }
+
         log.info("Successfully opened the preferences dialog")
     }
 
+    fun selectTab(tabName: String) {
+        // TODO: Remove FIX_WHEN_MIN_IS_203
+        if (remoteRobot.ideMajorVersion() <= 202) return
+        jList(byXpath("//div[@accessiblename='Welcome screen categories']")).selectItem(tabName)
+    }
+
     fun openFolder(path: Path) {
-        actionLink(ActionLinkFixture.byTextContains("Open")).click()
+        // TODO: Remove FIX_WHEN_MIN_IS_203
+        if (remoteRobot.ideMajorVersion() <= 202) {
+            actionLink(ActionLinkFixture.byTextContains("Open")).click()
+        } else {
+            selectTab("Projects")
+            findAll<ComponentFixture>(byXpath("//div[@accessiblename='Open']")).first().click()
+        }
         fileBrowser("Open") {
             selectFile(path)
         }

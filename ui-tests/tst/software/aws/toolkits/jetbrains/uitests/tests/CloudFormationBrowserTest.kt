@@ -58,8 +58,7 @@ class CloudFormationBrowserTest {
         idea {
             waitForBackgroundTasks()
             showAwsExplorer()
-        }
-        idea {
+
             step("Open stack") {
                 awsExplorer {
                     expandExplorerNode(cloudFormation)
