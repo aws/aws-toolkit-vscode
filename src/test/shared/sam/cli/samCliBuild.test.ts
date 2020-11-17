@@ -62,13 +62,14 @@ describe('SamCliBuildInvocation', async () => {
         const processInvoker: SamCliProcessInvoker = new ExtendedTestSamCliProcessInvoker((args: any[]) => {
             assert.ok(args.length >= 2, 'Expected args to be present')
             assert.strictEqual(args[0], 'build')
-            assert.strictEqual(args[3], '--template')
-            assert.strictEqual(args[5], '--base-dir')
+            // --debug is present because tests run with "debug" log-level. #1403
+            assert.strictEqual(args[1], '--debug')
+            assert.strictEqual(args[4], '--template')
+            assert.strictEqual(args[6], '--base-dir')
 
             // `extraArgs` are appended to the end.
-            assert.strictEqual(args[7], '--parameter-overrides')
-            assert.strictEqual(args[8], 'math=math')
-            assert.strictEqual(args[9], '--debug')
+            assert.strictEqual(args[8], '--parameter-overrides')
+            assert.strictEqual(args[9], 'math=math')
             assert.strictEqual(args[10], '--build-dir')
             assert.strictEqual(args[11], 'my/build/dir/')
         })
@@ -78,7 +79,7 @@ describe('SamCliBuildInvocation', async () => {
             baseDir: nonRelevantArg,
             templatePath: placeholderTemplateFile,
             invoker: processInvoker,
-            extraArgs: ['--debug', '--build-dir', 'my/build/dir/'],
+            extraArgs: ['--build-dir', 'my/build/dir/'],
             parameterOverrides: ['math=math'],
         }).execute()
     })
