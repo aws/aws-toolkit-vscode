@@ -42,4 +42,6 @@ class S3TreeCellRenderer(private val speedSearchTarget: JComponent) : ColoredTre
 
         SpeedSearchUtil.applySpeedSearchHighlighting(speedSearchTarget, this, true, selected)
     }
+
+    override fun calcFocusedState(): Boolean = speedSearchTarget.hasFocus()
 }
