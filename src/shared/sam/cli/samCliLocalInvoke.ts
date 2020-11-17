@@ -220,6 +220,7 @@ export class SamCliLocalInvokeInvocation {
         const invokeArgs = [
             'local',
             'invoke',
+            ...(getLogger().logLevelEnabled('debug') ? ['--debug'] : []),
             this.args.templateResourceName,
             '--template',
             this.args.templatePath,
