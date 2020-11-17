@@ -62,9 +62,21 @@ export async function makeCodeLenses({
 
             if (associatedResources.length > 0) {
                 for (const resource of associatedResources) {
+                    let hasApiEvent = false
+                    const events = resource.resourceData.Properties?.Events
+                    if (events) {
+                        // Check for api events
+                        for (const key in events) {
+                            const value = events[key]
+                            if (value.Type === 'Api') {
+                                hasApiEvent = true
+                            }
+                        }
+                    }
                     templateConfigs.push({
                         resourceName: resource.name,
                         rootUri: vscode.Uri.file(resource.templateDatum.path),
+                        hasApiEventSource: hasApiEvent,
                     })
                 }
             }
@@ -124,15 +136,19 @@ export async function pickAddSamDebugConfiguration(
 
     const templateItemsMap = new Map<string, AddSamDebugConfigurationInput>()
     const templateItems: vscode.QuickPickItem[] = []
-    const WITH_API_CONFIG = ' (API configuration)'
+    const WITH_API_CONFIG = ' (API)'
     templateConfigs.forEach(templateConfig => {
         const label = `${getWorkspaceRelativePath(templateConfig.rootUri.fsPath) ?? templateConfig.rootUri.fsPath}:${
             templateConfig.resourceName
         }`
         templateItemsMap.set(label, templateConfig)
-        templateItemsMap.set(`${label}${WITH_API_CONFIG}`, templateConfig)
         templateItems.push({ label: label })
-        templateItems.push({ label: `${templateItems[templateItems.length - 1].label}${WITH_API_CONFIG}` })
+
+        if (templateConfig.hasApiEventSource) {
+            const apiLabel = `${label}${WITH_API_CONFIG}`
+            templateItemsMap.set(apiLabel, templateConfig)
+            templateItems.push({ label: apiLabel })
+        }
     })
 
     const noTemplate = localize('AWS.pickDebugConfig.noTemplate', 'No Template')

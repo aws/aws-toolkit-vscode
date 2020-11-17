@@ -31,6 +31,7 @@ import { ext } from '../../../extensionGlobals'
 export interface AddSamDebugConfigurationInput {
     resourceName: string
     rootUri: vscode.Uri
+    hasApiEventSource?: boolean
     runtimeFamily?: RuntimeFamily
 }
 
