@@ -235,7 +235,7 @@ export async function createNewSamApplication(
                 .showWarningMessage(
                     localize(
                         'AWS.samcli.initWizard.launchConfigFail',
-                        'Created SAM application "{0}" but was not able to automatically generate launch configurations. You can generate these via CodeLens in the template or handler file.',
+                        'Created SAM application "{0}" but failed to generate launch configurations. You can generate these via CodeLens in the template or handler file.',
                         config.name
                     ),
                     helpText
