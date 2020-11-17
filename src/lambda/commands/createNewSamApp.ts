@@ -208,25 +208,18 @@ export async function createNewSamApplication(
         const isTemplateRegistered = await waitUntil(async () => {
             return ext.templateRegistry.getRegisteredTemplate(uri.fsPath)
         })
-        try {
-            if (isTemplateRegistered) {
-                const newLaunchConfigs = await addInitialLaunchConfiguration(
-                    extContext,
-                    vscode.workspace.getWorkspaceFolder(uri)!,
-                    uri
-                )
-                if (newLaunchConfigs && newLaunchConfigs.length > 0) {
-                    showCompletionNotification(
-                        config.name,
-                        `"${newLaunchConfigs.map(config => config.name).join('", "')}"`
-                    )
-                }
-                reason = 'complete'
-            } else {
-                throw new Error()
+
+        if (isTemplateRegistered) {
+            const newLaunchConfigs = await addInitialLaunchConfiguration(
+                extContext,
+                vscode.workspace.getWorkspaceFolder(uri)!,
+                uri
+            )
+            if (newLaunchConfigs && newLaunchConfigs.length > 0) {
+                showCompletionNotification(config.name, `"${newLaunchConfigs.map(config => config.name).join('", "')}"`)
             }
-        } catch (err) {
-            // catch block occurs if template not registered or if there is a failure in the launch config generation process, e.g. dirty launch config.
+            reason = 'complete'
+        } else {
             createResult = 'Failed'
             reason = 'fileNotFound'
 
@@ -245,10 +238,10 @@ export async function createNewSamApplication(
                         vscode.env.openExternal(vscode.Uri.parse(launchConfigDocUrl))
                     }
                 })
-        } finally {
-            activationLaunchPath.clearLaunchPath()
-            await vscode.window.showTextDocument(uri)
         }
+
+        activationLaunchPath.clearLaunchPath()
+        await vscode.window.showTextDocument(uri)
     } catch (err) {
         createResult = 'Failed'
         reason = 'error'
