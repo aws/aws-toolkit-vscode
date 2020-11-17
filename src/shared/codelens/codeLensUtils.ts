@@ -31,7 +31,7 @@ export type Language = 'python' | 'javascript' | 'csharp'
 interface SamDebugCodeLensInput {
     resourceName: string
     rootUri: vscode.Uri
-    apiEvents?: CloudFormation.Event[]
+    apiEvents?: Map<string, CloudFormation.Event>
     runtimeFamily?: RuntimeFamily
 }
 
@@ -69,14 +69,14 @@ export async function makeCodeLenses({
 
             if (associatedResources.length > 0) {
                 for (const resource of associatedResources) {
-                    const apiEvents: CloudFormation.Event[] = []
+                    const apiEvents = new Map<string, CloudFormation.Event>()
                     const events = resource.resourceData.Properties?.Events
                     if (events) {
                         // Check for api events
                         for (const key in events) {
                             const value = events[key]
                             if (value.Type === 'Api') {
-                                apiEvents.push(value)
+                                apiEvents.set(key, value)
                             }
                         }
                     }
@@ -143,7 +143,7 @@ export async function pickAddSamDebugConfiguration(
 
     const templateItemsMap = new Map<string, AddSamDebugConfigurationInput>()
     const templateItems: vscode.QuickPickItem[] = []
-    const WITH_API_CONFIG = '(API)'
+    const API_LABEL = '(API)'
     templateConfigs.forEach(templateConfig => {
         const label = `${getWorkspaceRelativePath(templateConfig.rootUri.fsPath) ?? templateConfig.rootUri.fsPath}:${
             templateConfig.resourceName
@@ -151,13 +151,13 @@ export async function pickAddSamDebugConfiguration(
         templateItemsMap.set(label, templateConfig)
         templateItems.push({ label: label })
 
-        if (templateConfig.apiEvents && templateConfig.apiEvents.length > 0) {
-            for (const apiEvent of templateConfig.apiEvents) {
-                const apiLabel = `${label} ${WITH_API_CONFIG} ${apiEvent.Properties?.Method} ${apiEvent.Properties?.Path}`
+        if (templateConfig.apiEvents) {
+            for (const apiEvent of templateConfig.apiEvents.keys()) {
+                const apiLabel = `${label} ${API_LABEL} ${apiEvent}`
                 templateItemsMap.set(apiLabel, {
                     resourceName: templateConfig.resourceName,
                     rootUri: templateConfig.rootUri,
-                    apiEvent: apiEvent,
+                    apiEvent: templateConfig.apiEvents.get(apiEvent),
                     runtimeFamily: templateConfig.runtimeFamily ?? undefined,
                 })
                 templateItems.push({ label: apiLabel })
