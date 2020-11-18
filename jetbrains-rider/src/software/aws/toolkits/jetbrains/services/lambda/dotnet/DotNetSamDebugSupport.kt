@@ -9,6 +9,7 @@ import com.intellij.execution.process.OSProcessHandler
 import com.intellij.execution.process.ProcessAdapter
 import com.intellij.execution.process.ProcessEvent
 import com.intellij.execution.process.ProcessHandlerFactory
+import com.intellij.execution.process.ProcessOutput
 import com.intellij.execution.runners.ExecutionEnvironment
 import com.intellij.execution.util.ExecUtil
 import com.intellij.openapi.application.ExpirableExecutor
@@ -37,16 +38,18 @@ import com.jetbrains.rider.model.debuggerWorkerConnectionHelperModel
 import com.jetbrains.rider.projectView.solution
 import com.jetbrains.rider.run.IDebuggerOutputListener
 import com.jetbrains.rider.run.bindToSettings
+import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 import org.jetbrains.concurrency.AsyncPromise
 import org.jetbrains.concurrency.Promise
+import software.aws.toolkits.core.utils.getLogger
+import software.aws.toolkits.core.utils.warn
 import software.aws.toolkits.jetbrains.services.lambda.execution.local.SamDebugSupport
 import software.aws.toolkits.jetbrains.services.lambda.execution.local.SamRunningState
 import software.aws.toolkits.jetbrains.utils.ApplicationThreadPoolScope
 import software.aws.toolkits.jetbrains.utils.DotNetDebuggerUtils
 import software.aws.toolkits.jetbrains.utils.getCoroutineUiContext
-import software.aws.toolkits.jetbrains.utils.spinUntilResult
 import software.aws.toolkits.resources.message
 import java.net.InetAddress
 import java.time.Duration
@@ -66,14 +69,15 @@ import kotlin.concurrent.schedule
  * 4. Send the command to the worker to attach to the correct PID.
  */
 class DotNetSamDebugSupport : SamDebugSupport {
-    companion object {
-        private const val DEBUGGER_MODE = "server"
+    private companion object {
+        val LOG = getLogger<DotNetSamDebugSupport>()
+        const val DEBUGGER_MODE = "server"
 
-        private const val REMOTE_DEBUGGER_DIR = "/tmp/lambci_debug_files"
-        private const val REMOTE_NETCORE_CLI_PATH = "/var/lang/bin/dotnet"
-        private const val NUMBER_OF_DEBUG_PORTS = 2
+        const val REMOTE_DEBUGGER_DIR = "/tmp/lambci_debug_files"
+        const val REMOTE_NETCORE_CLI_PATH = "/var/lang/bin/dotnet"
+        const val NUMBER_OF_DEBUG_PORTS = 2
 
-        private const val FIND_PID_SCRIPT =
+        const val FIND_PID_SCRIPT =
             """
                 for i in `ls /proc/*/exe` ; do
                     symlink=`readlink  ${'$'}i 2>/dev/null`;
@@ -214,6 +218,7 @@ class DotNetSamDebugSupport : SamDebugSupport {
                     }
                 }
             } catch (t: Throwable) {
+                LOG.warn(t) { "Failed to start debugger" }
                 debuggerLifetimeDefinition.terminate(true)
                 promise.setError(t)
             }
@@ -235,31 +240,52 @@ class DotNetSamDebugSupport : SamDebugSupport {
         return promise
     }
 
-    private suspend fun findDockerContainer(frontendPort: Int): String = spinUntilResult(Duration.ofSeconds(30)) {
-        ExecUtil.execAndGetOutput(
-            GeneralCommandLine(
-                "docker",
-                "ps",
-                "-q",
-                "-f",
-                "publish=$frontendPort"
-            )
-        ).stdout.trim().nullize()
+    private suspend fun findDockerContainer(frontendPort: Int): String = runProcessUntil(
+        duration = Duration.ofSeconds(30),
+        cmd = GeneralCommandLine(
+            "docker",
+            "ps",
+            "-q",
+            "-f",
+            "publish=$frontendPort"
+        )
+    ) {
+        it.stdout.trim().nullize()
     }
 
-    private suspend fun findDotnetPid(dockerContainer: String): Int = spinUntilResult(Duration.ofSeconds(30)) {
-        ExecUtil.execAndGetOutput(
-            GeneralCommandLine(
-                "docker",
-                "exec",
-                "-i",
-                dockerContainer,
-                "/bin/sh",
-                "-c",
-                FIND_PID_SCRIPT
-            )
-        ).stdout.trim().nullize()
-    }.toInt()
+    private suspend fun findDotnetPid(dockerContainer: String): Int = runProcessUntil(
+        duration = Duration.ofSeconds(30),
+        cmd = GeneralCommandLine(
+            "docker",
+            "exec",
+            "-i",
+            dockerContainer,
+            "/bin/sh",
+            "-c",
+            FIND_PID_SCRIPT
+        )
+    ) {
+        it.stdout.trim().nullize()?.toIntOrNull()
+    }
+
+    private suspend fun <T> runProcessUntil(duration: Duration, cmd: GeneralCommandLine, resultChecker: (ProcessOutput) -> T?): T {
+        val start = System.nanoTime()
+        var lastAttemptOutput: ProcessOutput? = null
+        while (System.nanoTime() - start <= duration.toNanos()) {
+            lastAttemptOutput = ExecUtil.execAndGetOutput(cmd, timeoutInMilliseconds = duration.toMillis().toInt())
+
+            resultChecker(lastAttemptOutput)?.let {
+                return it
+            }
+
+            delay(100)
+        }
+
+        throw IllegalStateException(
+            "Command did not return expected result within $duration, last attempt; cmd: '${cmd.commandLineString}', " +
+                "exitCode: ${lastAttemptOutput?.exitCode}, stdOut: '${lastAttemptOutput?.stdout?.trim()}', stdErr: '${lastAttemptOutput?.stderr?.trim()}'"
+        )
+    }
 
     private fun startDebugWorker(dockerContainer: String, backendPort: Int, frontendPort: Int): OSProcessHandler {
         val runDebuggerCommand = GeneralCommandLine(
