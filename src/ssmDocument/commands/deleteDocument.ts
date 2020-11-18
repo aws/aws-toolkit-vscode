@@ -11,6 +11,7 @@ import { getLogger, Logger } from '../../shared/logger'
 import { DocumentItemNodeWriteable } from '../explorer/documentItemNodeWriteable'
 import { RegistryItemNode } from '../explorer/registryItemNode'
 import { showConfirmationMessage } from '../util/util'
+import * as localizedText from '../../shared/localizedText'
 import * as telemetry from '../../shared/telemetry/telemetry'
 import { Window } from '../../shared/vscode/window'
 import { Commands } from '../../shared/vscode/commands'
@@ -30,8 +31,8 @@ export async function deleteDocument(
                 'Are you sure you want to delete document {0}?',
                 node.documentName
             ),
-            confirm: localize('AWS.ssmDocument.deleteDocument.confirm', 'Delete'),
-            cancel: localize('AWS.ssmDocument.deleteDocument.cancel', 'Cancel'),
+            confirm: localizedText.localizedDelete,
+            cancel: localizedText.cancel,
         },
         window
     )

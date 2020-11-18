@@ -3,6 +3,7 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
+import * as localizedText from '../../shared/localizedText'
 import { getLogger } from '../../shared/logger'
 import * as telemetry from '../../shared/telemetry/telemetry'
 import { localize } from '../../shared/utilities/vsCodeUtils'
@@ -35,8 +36,8 @@ export async function deleteFileCommand(
     const isConfirmed = await showConfirmationMessage(
         {
             prompt: localize('AWS.s3.deleteFile.prompt', 'Are you sure you want to delete file {0}?', filePath),
-            confirm: localize('AWS.s3.deleteFile.confirm', 'Delete'),
-            cancel: localize('AWS.s3.deleteFile.cancel', 'Cancel'),
+            confirm: localizedText.localizedDelete,
+            cancel: localizedText.cancel,
         },
         window
     )

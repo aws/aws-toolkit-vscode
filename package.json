@@ -1073,12 +1073,12 @@
             },
             {
                 "command": "aws.s3.deleteBucket",
-                "title": "%AWS.command.s3.deleteBucket%",
+                "title": "%AWS.generic.promptDelete%",
                 "category": "AWS"
             },
             {
                 "command": "aws.s3.deleteFile",
-                "title": "%AWS.command.s3.deleteFile%",
+                "title": "%AWS.generic.promptDelete%",
                 "category": "AWS"
             },
             {
@@ -1100,7 +1100,7 @@
             },
             {
                 "command": "aws.deleteLambda",
-                "title": "%AWS.command.deleteLambda%",
+                "title": "%AWS.generic.promptDelete%",
                 "category": "AWS"
             },
             {
