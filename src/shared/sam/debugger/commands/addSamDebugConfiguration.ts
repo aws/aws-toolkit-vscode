@@ -129,15 +129,14 @@ export async function addSamDebugConfiguration(
         }
     } else if (type === API_TARGET_TYPE) {
         let preloadedConfig = undefined
-        if (apiEvents && apiEvents.size === 1) {
-            for (const event of apiEvents.values()) {
-                preloadedConfig = {
-                    path: event.Properties?.Path,
-                    httpMethod: event.Properties?.Method,
-                    payload: event.Properties?.Payload,
-                }
-            }
+        // If the event has no properties, the default will be used
+        const event = apiEvents?.values().next().value
+        preloadedConfig = {
+            path: event.Properties?.Path,
+            httpMethod: event.Properties?.Method,
+            payload: event.Properties?.Payload,
         }
+
         samDebugConfig = createApiAwsSamDebugConfig(
             workspaceFolder,
             runtimeName,

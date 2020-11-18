@@ -144,19 +144,17 @@ export async function pickAddSamDebugConfiguration(
         templateItemsMap.set(label, templateConfig)
         templateItems.push({ label: label })
 
-        if (templateConfig.apiEvents) {
-            for (const apiEvent of templateConfig.apiEvents.keys()) {
-                const apiLabel = `${label} ${API_LABEL} Event: ${apiEvent}`
-                const apiEventMap = new Map<string, CloudFormation.Event>()
-                apiEventMap.set(apiEvent, templateConfig.apiEvents.get(apiEvent)!)
-                templateItemsMap.set(apiLabel, {
-                    resourceName: templateConfig.resourceName,
-                    rootUri: templateConfig.rootUri,
-                    apiEvents: apiEventMap,
-                    runtimeFamily: templateConfig.runtimeFamily ?? undefined,
-                })
-                templateItems.push({ label: apiLabel })
-            }
+        for (const apiEvent of templateConfig.apiEvents?.keys() ?? []) {
+            const apiLabel = `${label} ${API_LABEL} Event: ${apiEvent}`
+            const apiEventMap = new Map<string, CloudFormation.Event>()
+            apiEventMap.set(apiEvent, templateConfig.apiEvents?.get(apiEvent)!)
+            templateItemsMap.set(apiLabel, {
+                resourceName: templateConfig.resourceName,
+                rootUri: templateConfig.rootUri,
+                apiEvents: apiEventMap,
+                runtimeFamily: templateConfig.runtimeFamily ?? undefined,
+            })
+            templateItems.push({ label: apiLabel })
         }
     })
 
