@@ -17,7 +17,11 @@ const localize = nls.loadMessageBundle()
  */
 const confirm = async (message: string): Promise<boolean> => {
     // TODO: Re-use `confirm` throughout package (rather than cutting and pasting logic).
-    const response = await vscode.window.showWarningMessage(message, localizedText.yes, localizedText.no)
+    const response = await vscode.window.showWarningMessage(
+        message,
+        localize('AWS.generic.delete', 'Delete'),
+        localize('AWS.generic.cancel', 'Cancel')
+    )
 
     return response === localizedText.yes
 }

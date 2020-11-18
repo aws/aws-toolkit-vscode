@@ -30,8 +30,8 @@ export async function deleteDocument(
                 'Are you sure you want to delete document {0}?',
                 node.documentName
             ),
-            confirm: localize('AWS.ssmDocument.deleteDocument.confirm', 'Delete'),
-            cancel: localize('AWS.ssmDocument.deleteDocument.cancel', 'Cancel'),
+            confirm: localize('AWS.generic.delete', 'Delete'),
+            cancel: localize('AWS.generic.cancel', 'Cancel'),
         },
         window
     )

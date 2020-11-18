@@ -237,7 +237,7 @@ export class DefaultSamDeployWizardContext implements SamDeployWizardContext {
                 'AWS.samcli.deploy.parameters.mandatoryPrompt.responseConfigure',
                 'Configure'
             )
-            const responseCancel = localize('AWS.samcli.deploy.parameters.mandatoryPrompt.responseCancel', 'Cancel')
+            const responseCancel = localize('AWS.generic.cancel', 'Cancel')
 
             // no step number needed since this is a dead end?
             const quickPick = picker.createQuickPick<vscode.QuickPickItem>({

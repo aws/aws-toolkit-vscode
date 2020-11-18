@@ -35,8 +35,8 @@ export async function deleteFileCommand(
     const isConfirmed = await showConfirmationMessage(
         {
             prompt: localize('AWS.s3.deleteFile.prompt', 'Are you sure you want to delete file {0}?', filePath),
-            confirm: localize('AWS.s3.deleteFile.confirm', 'Delete'),
-            cancel: localize('AWS.s3.deleteFile.cancel', 'Cancel'),
+            confirm: localize('AWS.generic.delete', 'Delete'),
+            cancel: localize('AWS.generic.cancel', 'Cancel'),
         },
         window
     )

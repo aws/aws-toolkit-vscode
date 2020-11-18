@@ -31,10 +31,10 @@ export async function deleteCloudFormation(refresh: () => void, node?: CloudForm
             return
         }
 
-        const userResponse = await vscode.window.showInformationMessage(
+        const userResponse = await vscode.window.showWarningMessage(
             localize('AWS.message.prompt.deleteCloudFormation', 'Are you sure you want to delete {0}?', stackName),
-            localizedText.yes,
-            localizedText.no
+            localize('AWS.generic.delete', 'Delete'),
+            localize('AWS.generic.cancel', 'Cancel')
         )
 
         if (userResponse === localizedText.yes) {
