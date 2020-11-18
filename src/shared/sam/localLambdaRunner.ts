@@ -5,7 +5,7 @@
 
 import { copyFile, unlink, readFile, writeFile } from 'fs-extra'
 import * as path from 'path'
-import * as got from 'got'
+import * as request from 'request'
 import * as tcpPortUsed from 'tcp-port-used'
 import * as vscode from 'vscode'
 import { getTemplate, getTemplateResource } from '../../lambda/local/debugConfiguration'
@@ -394,56 +394,59 @@ function stopApi(config: SamLaunchRequestArgs) {
  */
 function requestLocalApi(ctx: ExtContext, api: APIGatewayProperties, apiPort: number, payload: any): Promise<void> {
     return new Promise((resolve, reject) => {
-        const reqMethod = api?.httpMethod ?? 'get'
+        const reqMethod = api?.httpMethod?.toUpperCase() ?? 'GET'
         let reqOpts = {
             // Sets body to JSON value and adds Content-type: application/json header.
-            json: payload,
-            url: `http://127.0.0.1:${apiPort}${api?.path}`,
+            json: true,
+            uri: `http://127.0.0.1:${apiPort}${api?.path}`,
             method: reqMethod,
             timeout: 4000,
             headers: api?.headers,
-            searchParams: api?.querystring,
+            body: payload,
+            qs: api?.querystring,
             // TODO: api?.stageVariables,
         }
-        ctx.chanLogger.info('AWS.sam.localApi.request', `Sending request to local API: ${reqOpts.url}`)
+        ctx.chanLogger.info('AWS.sam.localApi.request', `Sending request to local API: ${reqOpts.uri}`)
 
         async function retryRequest(retries: number, retriesRemaining: number) {
             if (retriesRemaining !== retries) {
                 await new Promise<void>(r => setTimeout(r, 200))
             }
-            try {
-                // await got.default(reqOpts.url, {searchParams})
-                const resp = await got.default(reqOpts)
-                getLogger().debug('Local API response: %s : %O', reqOpts.url, JSON.stringify(resp))
-                if (resp.statusCode === 403) {
-                    const msg = `Local API failed to respond to path: ${api?.path}`
-                    getLogger().error(msg)
-                    reject(msg)
-                } else {
+            request(reqOpts)
+                .on('response', resp => {
+                    getLogger().debug('Local API response: %s : %O', reqOpts.uri, JSON.stringify(resp))
+                    if (resp.statusCode === 403) {
+                        const msg = `Local API failed to respond to path: ${api?.path}`
+                        getLogger().error(msg)
+                        reject(msg)
+                    } else {
+                        resolve()
+                    }
+                })
+                .on('complete', () => {
                     resolve()
-                }
-            } catch (e) {
-                const requestErr = e as got.RequestError
-                const code = requestErr.code
-                if (code === 'ESOCKETTIMEDOUT' || code === undefined) {
-                    // HACK: request timeout (as opposed to ECONNREFUSED)
-                    // is a hint that debugger is attached, so we can stop requesting now.
-                    getLogger().info('Local API is alive (code: %s): %s', code, reqOpts.url)
-                    resolve()
-                    return
-                }
-                getLogger().debug(
-                    `Local API: retry (${retries - retriesRemaining} of ${retries}): ${reqOpts.url}: ${requestErr.name}`
-                )
-                if (retriesRemaining > 0) {
-                    retryRequest(retries, retriesRemaining - 1)
-                } else {
-                    // Timeout: local APIGW took too long to respond.
-                    const msg = `Local API failed to respond (${code}) at "${api?.path}" after ${retries} retries: ${requestErr.message}`
-                    getLogger().error(msg)
-                    reject(msg)
-                }
-            }
+                })
+                .on('error', e => {
+                    const code = (e as any).code
+                    if (code === 'ESOCKETTIMEDOUT') {
+                        // HACK: request timeout (as opposed to ECONNREFUSED)
+                        // is a hint that debugger is attached, so we can stop requesting now.
+                        getLogger().info('Local API is alive (code: %s): %s', code, reqOpts.uri)
+                        resolve()
+                        return
+                    }
+                    getLogger().debug(
+                        `Local API: retry (${retries - retriesRemaining} of ${retries}): ${reqOpts.uri}: ${e.name}`
+                    )
+                    if (retriesRemaining > 0) {
+                        retryRequest(retries, retriesRemaining - 1)
+                    } else {
+                        // Timeout: local APIGW took too long to respond.
+                        const msg = `Local API failed to respond (${code}) after ${retries} retries, path: ${api?.path}`
+                        getLogger().error(msg)
+                        reject(msg)
+                    }
+                })
         }
         retryRequest(30, 30)
     })
