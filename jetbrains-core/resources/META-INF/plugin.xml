@@ -148,7 +148,7 @@ with what features/services are supported.
                         serviceImplementation="software.aws.toolkits.jetbrains.core.credentials.DefaultCredentialsRegionHandler"
                         testServiceImplementation="software.aws.toolkits.jetbrains.core.credentials.MockCredentialsRegionHandler"/>
 
-        <statusBarWidgetProvider implementation="software.aws.toolkits.jetbrains.core.credentials.AwsSettingsPanelInstaller"/>
+        <statusBarWidgetFactory implementation="software.aws.toolkits.jetbrains.core.credentials.AwsSettingsPanelInstaller"/>
 
         <postStartupActivity implementation="software.aws.toolkits.jetbrains.core.AwsTelemetryPrompter"/>
         <postStartupActivity implementation="software.aws.toolkits.jetbrains.core.notification.NoticeStartupActivity"/>

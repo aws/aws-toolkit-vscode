@@ -13,17 +13,33 @@ import com.intellij.openapi.project.DumbAware
 import com.intellij.openapi.project.Project
 import com.intellij.openapi.ui.popup.JBPopupFactory
 import com.intellij.openapi.ui.popup.ListPopup
+import com.intellij.openapi.util.Disposer
 import com.intellij.openapi.wm.StatusBar
 import com.intellij.openapi.wm.StatusBarWidget
-import com.intellij.openapi.wm.StatusBarWidgetProvider
+import com.intellij.openapi.wm.StatusBarWidgetFactory
 import com.intellij.util.Consumer
 import software.aws.toolkits.jetbrains.core.credentials.ChangeAccountSettingsMode.BOTH
+import software.aws.toolkits.jetbrains.core.credentials.SettingsSelector.Companion.tooltipText
 import software.aws.toolkits.resources.message
 import java.awt.Component
 import java.awt.event.MouseEvent
 
-class AwsSettingsPanelInstaller : StatusBarWidgetProvider {
-    override fun getWidget(project: Project): StatusBarWidget = AwsSettingsPanel(project)
+private const val ID = "AwsSettingsPanel"
+
+class AwsSettingsPanelInstaller : StatusBarWidgetFactory {
+    override fun getId(): String = ID
+
+    override fun getDisplayName(): String = tooltipText
+
+    override fun isAvailable(project: Project): Boolean = true
+
+    override fun createWidget(project: Project): StatusBarWidget = AwsSettingsPanel(project)
+
+    override fun disposeWidget(widget: StatusBarWidget) {
+        Disposer.dispose(widget)
+    }
+
+    override fun canBeEnabledOn(statusBar: StatusBar): Boolean = true
 }
 
 private class AwsSettingsPanel(private val project: Project) :
@@ -35,7 +51,9 @@ private class AwsSettingsPanel(private val project: Project) :
     private lateinit var statusBar: StatusBar
 
     @Suppress("FunctionName")
-    override fun ID(): String = "AwsSettingsPanel"
+    override fun ID(): String = ID
+
+    override fun getPresentation(): StatusBarWidget.WidgetPresentation? = this
 
     override fun getTooltipText() = "${SettingsSelector.tooltipText} [${accountSettingsManager.connectionState.displayMessage}]"
 
@@ -44,8 +62,6 @@ private class AwsSettingsPanel(private val project: Project) :
     override fun getPopupStep() = settingsSelector.settingsPopup(statusBar.component)
 
     override fun getClickConsumer(): Consumer<MouseEvent>? = null
-
-    override fun getPresentation(type: StatusBarWidget.PlatformType) = this
 
     override fun install(statusBar: StatusBar) {
         this.statusBar = statusBar
