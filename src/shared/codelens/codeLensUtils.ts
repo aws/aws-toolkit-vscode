@@ -136,7 +136,6 @@ export async function pickAddSamDebugConfiguration(
 
     const templateItemsMap = new Map<string, AddSamDebugConfigurationInput>()
     const templateItems: vscode.QuickPickItem[] = []
-    const API_LABEL = '(API)'
     templateConfigs.forEach(templateConfig => {
         const label = `${getWorkspaceRelativePath(templateConfig.rootUri.fsPath) ?? templateConfig.rootUri.fsPath}:${
             templateConfig.resourceName
@@ -144,17 +143,20 @@ export async function pickAddSamDebugConfiguration(
         templateItemsMap.set(label, templateConfig)
         templateItems.push({ label: label })
 
-        for (const apiEvent of templateConfig.apiEvents?.keys() ?? []) {
-            const apiLabel = `${label} ${API_LABEL} Event: ${apiEvent}`
+        for (const [apiEventName, eventProperties] of templateConfig.apiEvents?.entries() ?? []) {
+            const apiLabel = `${label} (API Event: ${apiEventName})`
+            const eventDetail = `${eventProperties.Properties?.Method?.toUpperCase()} ${
+                eventProperties.Properties?.Path
+            }`
             const apiEventMap = new Map<string, CloudFormation.Event>()
-            apiEventMap.set(apiEvent, templateConfig.apiEvents?.get(apiEvent)!)
+            apiEventMap.set(apiEventName, templateConfig.apiEvents?.get(apiEventName)!)
             templateItemsMap.set(apiLabel, {
                 resourceName: templateConfig.resourceName,
                 rootUri: templateConfig.rootUri,
                 apiEvents: apiEventMap,
                 runtimeFamily: templateConfig.runtimeFamily ?? undefined,
             })
-            templateItems.push({ label: apiLabel })
+            templateItems.push({ label: apiLabel, detail: eventDetail })
         }
     })
 
