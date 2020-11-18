@@ -12,7 +12,6 @@ import com.intellij.openapi.vfs.VfsUtil
 import com.intellij.openapi.vfs.VirtualFile
 import com.intellij.psi.NavigatablePsiElement
 import com.intellij.psi.search.GlobalSearchScope
-import software.amazon.awssdk.services.lambda.model.CreateFunctionResponse
 import software.amazon.awssdk.services.lambda.model.FunctionConfiguration
 import software.amazon.awssdk.services.lambda.model.Runtime
 import software.amazon.awssdk.services.lambda.model.TracingMode
@@ -99,21 +98,6 @@ data class LambdaFunction(
 )
 
 fun FunctionConfiguration.toDataClass() = LambdaFunction(
-    name = this.functionName(),
-    description = this.description(),
-    arn = this.functionArn(),
-    lastModified = this.lastModified(),
-    handler = this.handler(),
-    runtime = this.runtime(),
-    envVariables = this.environment()?.variables(),
-    timeout = this.timeout(),
-    memorySize = this.memorySize(),
-    // TODO: make non-nullable when available in all partitions
-    xrayEnabled = this.tracingConfig()?.mode() == TracingMode.ACTIVE,
-    role = IamRole(this.role())
-)
-
-fun CreateFunctionResponse.toDataClass() = LambdaFunction(
     name = this.functionName(),
     description = this.description(),
     arn = this.functionArn(),
