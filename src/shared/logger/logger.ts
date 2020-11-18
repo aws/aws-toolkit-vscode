@@ -3,8 +3,6 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
-import { WinstonToolkitLogger } from './winstonToolkitLogger'
-
 let toolkitLogger: Logger | undefined
 
 export interface Logger {
@@ -18,9 +16,39 @@ export interface Logger {
     warn(error: Error): void
     error(message: string, ...meta: any[]): void
     error(error: Error): void
+    setLogLevel(logLevel: LogLevel): void
+    /** Returns true if the given log level is being logged.  */
+    logLevelEnabled(logLevel: LogLevel): boolean
 }
 
-export type LogLevel = keyof Logger
+/**
+ * Log levels ordered for comparison.
+ *
+ * See https://github.com/winstonjs/winston#logging-levels :
+ * > RFC5424: severity of levels is numerically ascending from most important
+ * > to least important.
+ */
+const logLevels = new Map<LogLevel, number>([
+    ['error', 1],
+    ['warn', 2],
+    ['info', 3],
+    ['verbose', 4],
+    ['debug', 5],
+])
+
+export type LogLevel = 'error' | 'warn' | 'info' | 'verbose' | 'debug'
+
+/**
+ * Compares log levels.
+ *
+ * @returns
+ * - Zero if the log levels are equal
+ * - Negative if `l1` is less than `l2`
+ * - Positive if `l1` is greater than `l2`
+ */
+export function compareLogLevel(l1: LogLevel, l2: LogLevel): number {
+    return logLevels.get(l1)! - logLevels.get(l2)!
+}
 
 /**
  * Gets the logger if it has been initialized
@@ -42,14 +70,4 @@ export function getLogger(): Logger {
  */
 export function setLogger(logger: Logger | undefined) {
     toolkitLogger = logger
-}
-
-export function setMaxLogging() {
-    if (getLogger() instanceof WinstonToolkitLogger) {
-        const logger = getLogger() as WinstonToolkitLogger
-        logger.setLogLevel('debug')
-        logger.logToConsole()
-    } else {
-        throw Error('getLogger() is not a WinstonToolkitLogger')
-    }
 }

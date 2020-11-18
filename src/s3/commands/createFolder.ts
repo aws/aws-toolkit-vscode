@@ -11,7 +11,8 @@ import { S3FolderNode } from '../explorer/s3FolderNode'
 import { Commands } from '../../shared/vscode/commands'
 import { Window } from '../../shared/vscode/window'
 import { localize } from '../../shared/utilities/vsCodeUtils'
-import { readablePath, showErrorWithLogs } from '../util/messages'
+import { readablePath } from '../util'
+import { showErrorWithLogs } from '../../shared/utilities/messages'
 
 /**
  * Creates a subfolder in the bucket or folder represented by the given node.

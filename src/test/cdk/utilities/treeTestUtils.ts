@@ -4,26 +4,7 @@
  */
 
 import { writeFile } from 'fs-extra'
-import * as path from 'path'
-import { Uri, WorkspaceFolder } from 'vscode'
 import { ConstructTree, ConstructTreeEntity } from '../../../cdk/explorer/tree/types'
-import { makeTemporaryToolkitFolder } from '../../../shared/filesystemUtilities'
-
-export async function createWorkspaceFolder(
-    prefix: string
-): Promise<{
-    workspaceFolder: WorkspaceFolder
-}> {
-    const workspacePath = await makeTemporaryToolkitFolder(prefix)
-
-    return {
-        workspaceFolder: {
-            uri: Uri.file(workspacePath),
-            name: path.basename(workspacePath),
-            index: 0,
-        },
-    }
-}
 
 export async function saveCdkJson(cdkJsonPath: string) {
     const cdkJsonContent = '{ "app": "npx ts-node bin/demo-nov7.ts"}'
