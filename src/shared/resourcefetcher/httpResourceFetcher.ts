@@ -4,14 +4,11 @@
  */
 
 import * as fs from 'fs'
-import { default as got, Response } from 'got'
-import * as stream from 'stream'
-import { promisify } from 'util'
+// TODO: Move off of deprecated `request` to `got` or similar modern library.
+import * as request from 'request'
 import { getLogger, Logger } from '../logger'
 import { ResourceFetcher } from './resourcefetcher'
-const pipeline = promisify(stream.pipeline)
 
-// TODO pipe to file needs to be split out, and it needs to allow the caller to handle errors better
 export class HttpResourceFetcher implements ResourceFetcher {
     private readonly logger: Logger = getLogger()
 
@@ -21,8 +18,7 @@ export class HttpResourceFetcher implements ResourceFetcher {
      * @param params Additional params for the fetcher
      * @param {boolean} params.showUrl Whether or not to the URL in log statements.
      * @param {string} params.friendlyName If URL is not shown, replaces the URL with this text.
-     * @param {string} params.pipeLocation If provided, pipes output to file designated here. 
-     * If this is selected, the function will not return a value.
+     * @param {string} params.pipeLocation If provided, pipes output to file designated here.
      */
     public constructor(
         private readonly url: string,
@@ -30,25 +26,19 @@ export class HttpResourceFetcher implements ResourceFetcher {
     ) {}
 
     /**
-     * Returns the contents of the resource, or undefined if the resource could not be retrieved or if it
-     * is piped somewhere else
+     * Returns the contents of the resource, or undefined if the resource could not be retrieved.
      */
     public async get(): Promise<string | undefined> {
         try {
             this.logger.verbose(`Loading ${this.logText()}`)
 
-            let response: Response<string> | undefined
-            if (this.params.pipeLocation) {
-                await pipeline(got.stream(this.url), fs.createWriteStream(this.params.pipeLocation))
-            } else {
-                response = await got(this.url)
-            }
+            const contents = (await this.getResponseFromGetRequest()).body
+
             this.logger.verbose(`Finished loading ${this.logText()}`)
-            return response?.body
+
+            return contents
         } catch (err) {
-            // only get the code as to keep the url private. Some AWS APIs use presigned links
-            // which we don't want to print to output
-            this.logger.error(`Error loading ${this.logText()}: %O`, err?.response?.statusCode)
+            this.logger.error(`Error loading ${this.logText()}: %O`, err as Error)
 
             return undefined
         }
@@ -56,5 +46,22 @@ export class HttpResourceFetcher implements ResourceFetcher {
 
     private logText(): string {
         return this.params.showUrl ? this.url : this.params.friendlyName ?? 'resource from URL'
+    }
+
+    private async getResponseFromGetRequest(): Promise<request.Response> {
+        return new Promise<request.Response>((resolve, reject) => {
+            const call = request(this.url, (err, response, body) => {
+                if (err) {
+                    // swallow error to keep URL private
+                    // some AWS APIs use presigned links (e.g. Lambda.getFunction); showing these represent a securty concern.
+                    reject({ code: err.code })
+                }
+                resolve(response)
+            })
+
+            if (this.params.pipeLocation) {
+                call.pipe(fs.createWriteStream(this.params.pipeLocation))
+            }
+        })
     }
 }
