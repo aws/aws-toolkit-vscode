@@ -3,6 +3,7 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
+import * as localizedText from '../../shared/localizedText'
 import { getLogger } from '../../shared/logger'
 import * as telemetry from '../../shared/telemetry/telemetry'
 import { localize } from '../../shared/utilities/vsCodeUtils'

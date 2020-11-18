@@ -13,6 +13,8 @@ import * as localizedText from '../../shared/localizedText'
 import { getLogger, Logger } from '../../shared/logger'
 import { recordCloudformationDelete, Result } from '../../shared/telemetry/telemetry'
 import { CloudFormationStackNode } from '../explorer/cloudFormationNodes'
+import { showConfirmationMessage } from '../../shared/utilities/messages'
+import { Window } from '../../shared/vscode/window'
 
 export async function deleteCloudFormation(refresh: () => void, node?: CloudFormationStackNode) {
     const logger: Logger = getLogger()
@@ -31,13 +33,20 @@ export async function deleteCloudFormation(refresh: () => void, node?: CloudForm
             return
         }
 
-        const userResponse = await vscode.window.showWarningMessage(
-            localize('AWS.message.prompt.deleteCloudFormation', 'Are you sure you want to delete {0}?', stackName),
-            localizedText.localizedDelete,
-            localizedText.cancel
+        const userResponse = await showConfirmationMessage(
+            {
+                prompt: localize(
+                    'AWS.message.prompt.deleteCloudFormation',
+                    'Are you sure you want to delete {0}?',
+                    stackName
+                ),
+                confirm: localizedText.localizedDelete,
+                cancel: localizedText.cancel,
+            },
+            Window.vscode()
         )
 
-        if (userResponse === localizedText.yes) {
+        if (userResponse) {
             const client: CloudFormationClient = ext.toolkitClientBuilder.createCloudFormationClient(node.regionCode)
 
             await client.deleteStack(stackName)
