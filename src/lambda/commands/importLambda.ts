@@ -13,6 +13,7 @@ import { showConfirmationMessage } from '../../shared/utilities/messages'
 import { LaunchConfiguration, getReferencedHandlerPaths } from '../../shared/debug/launchConfiguration'
 import { ext } from '../../shared/extensionGlobals'
 import { makeTemporaryToolkitFolder, fileExists, tryRemoveFolder } from '../../shared/filesystemUtilities'
+import * as localizedText from '../../shared/localizedText'
 import { getLogger } from '../../shared/logger'
 import { HttpResourceFetcher } from '../../shared/resourcefetcher/httpResourceFetcher'
 import { createCodeAwsSamDebugConfig } from '../../shared/sam/debugger/awsSamDebugConfiguration'
@@ -62,7 +63,7 @@ async function runImportLambda(functionNode: LambdaFunctionNode, window = Window
                     importLocationName
                 ),
                 confirm: localize('AWS.lambda.import.import', 'Import'),
-                cancel: localize('AWS.generic.cancel', 'Cancel'),
+                cancel: localizedText.cancel,
             },
             window
         )
