@@ -146,7 +146,6 @@
     "AWS.command.s3.copyPath": "Copy Path",
     "AWS.command.s3.createBucket": "Create Bucket...",
     "AWS.command.s3.createFolder": "Create Folder...",
-    "AWS.generic.promptDelete": "Delete...",
     "AWS.command.s3.uploadFile": "Upload File...",
     "AWS.command.s3.uploadFileToParent": "Upload to Parent...",
     "AWS.command.stepFunctions.createStateMachineFromTemplate": "Create a new Step Functions state machine",
