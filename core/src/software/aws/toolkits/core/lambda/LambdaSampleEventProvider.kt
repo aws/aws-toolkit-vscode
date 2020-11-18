@@ -59,8 +59,7 @@ internal val LambdaSampleEventManifestResource = LambdaSampleEventResource("mani
 
 internal data class LambdaSampleEventResource(val filename: String) : RemoteResource {
     override val urls: List<String> = listOf(
-        "http://vstoolkit.amazonwebservices.com/LambdaSampleFunctions/SampleRequests/$filename",
-        "https://s3.amazonaws.com/aws-vs-toolkit/LambdaSampleFunctions/SampleRequests/$filename"
+        "https://aws-vs-toolkit.s3.amazonaws.com/LambdaSampleFunctions/SampleRequests/$filename"
     )
 
     override val name: String = "lambda-sample-event-$filename"
