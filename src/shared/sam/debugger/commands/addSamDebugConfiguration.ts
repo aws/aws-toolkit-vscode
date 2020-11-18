@@ -128,7 +128,6 @@ export async function addSamDebugConfiguration(
             return
         }
     } else if (type === API_TARGET_TYPE) {
-        let preloadedConfig = undefined
         // If the event has no properties, the default will be used
         const event = apiEvents?.values().next().value
         const preloadedConfig = {
