@@ -53,6 +53,13 @@ export async function activate(extensionContext: vscode.ExtensionContext): Promi
             if (session.configuration?.baseBuildDir !== undefined) {
                 await tryRemoveFolder(session.configuration.baseBuildDir)
             }
+        }),
+        vscode.commands.registerCommand(
+            'aws.importLambda',
+            async (node: LambdaFunctionNode) => await importLambdaCommand(node)
+        ),
+        vscode.commands.registerCommand('aws.uploadLambda', async (node: LambdaFunctionNode) => {
+            await uploadLambdaCommand(node)
         })
     )
 }

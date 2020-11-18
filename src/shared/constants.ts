@@ -24,6 +24,8 @@ export const credentialHelpUrl: string =
 
 // URLs for samInitWizard
 export const samInitDocUrl: string = 'https://docs.aws.amazon.com/toolkit-for-vscode/latest/userguide/create-sam.html'
+export const launchConfigDocUrl: string =
+    'https://docs.aws.amazon.com/toolkit-for-vscode/latest/userguide/run-debug-sam-app.html'
 // URLs for samDeployWizard
 // tslint:disable-next-line:max-line-length
 export const samDeployDocUrl: string =
