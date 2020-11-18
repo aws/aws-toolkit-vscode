@@ -105,7 +105,7 @@ class LogStreamDownloadTask(project: Project, val client: CloudWatchLogsClient, 
             message("cloudwatch.logs.stream_too_big_message", logStream),
             message("cloudwatch.logs.stream_too_big"),
             message("cloudwatch.logs.stream_save_to_file", logStream),
-            Messages.CANCEL_BUTTON,
+            Messages.getCancelButton(),
             AllIcons.General.QuestionDialog
         )
     }

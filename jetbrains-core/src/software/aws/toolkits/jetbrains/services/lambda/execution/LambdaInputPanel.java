@@ -4,8 +4,6 @@
 package software.aws.toolkits.jetbrains.services.lambda.execution;
 
 import static com.intellij.openapi.application.ActionsKt.runInEdt;
-import static com.intellij.openapi.ui.Messages.CANCEL_BUTTON;
-import static com.intellij.openapi.ui.Messages.OK_BUTTON;
 import static software.aws.toolkits.jetbrains.utils.ui.UiUtils.addQuickSelect;
 import static software.aws.toolkits.jetbrains.utils.ui.UiUtils.formatAndSet;
 import static software.aws.toolkits.resources.Localization.message;
@@ -69,8 +67,8 @@ public class LambdaInputPanel {
                     int result = Messages.showOkCancelDialog(project,
                                                              message("lambda.run_configuration.input.samples.confirm"),
                                                              message("lambda.run_configuration.input.samples.confirm.title"),
-                                                             OK_BUTTON,
-                                                             CANCEL_BUTTON,
+                                                             Messages.getOkButton(),
+                                                             Messages.getCancelButton(),
                                                              AllIcons.General.WarningDialog);
                     if (result == Messages.CANCEL) {
                         eventComboBoxModel.setSelectedItem(selected);
@@ -184,7 +182,7 @@ public class LambdaInputPanel {
         return StringUtil.nullize(inputText.getText().trim(), true);
     }
 
-    private class LocalLambdaSampleEvent extends LambdaSampleEvent {
+    private static class LocalLambdaSampleEvent extends LambdaSampleEvent {
         LocalLambdaSampleEvent(@NotNull String name, @NotNull String content) {
             super(name, () -> CompletableFuture.completedFuture(content));
         }

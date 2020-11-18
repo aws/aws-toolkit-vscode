@@ -28,7 +28,7 @@ object SsoPrompt : SsoLoginCallback {
                 message("credentials.sso.login.message", authorization.verificationUri, authorization.userCode),
                 message("credentials.sso.login.title"),
                 message("credentials.sso.login.open_browser"),
-                Messages.CANCEL_BUTTON,
+                Messages.getCancelButton(),
                 null
             )
 

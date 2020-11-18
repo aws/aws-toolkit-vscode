@@ -85,7 +85,7 @@ class CreateOrUpdateCredentialProfilesAction @TestOnly constructor(
         message("configure.toolkit.upsert_credentials.confirm_file_create", file),
         message("configure.toolkit.upsert_credentials.confirm_file_create.title"),
         message("configure.toolkit.upsert_credentials.confirm_file_create.okay"),
-        Messages.CANCEL_BUTTON,
+        Messages.getCancelButton(),
         AllIcons.General.QuestionDialog,
         null
     ) == Messages.OK
