@@ -131,7 +131,7 @@ export async function addSamDebugConfiguration(
         let preloadedConfig = undefined
         // If the event has no properties, the default will be used
         const event = apiEvents?.values().next().value
-        preloadedConfig = {
+        const preloadedConfig = {
             path: event.Properties?.Path,
             httpMethod: event.Properties?.Method,
             payload: event.Properties?.Payload,
