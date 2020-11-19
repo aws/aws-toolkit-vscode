@@ -31,7 +31,7 @@ import { ext } from '../../../extensionGlobals'
 export interface AddSamDebugConfigurationInput {
     resourceName: string
     rootUri: vscode.Uri
-    apiEvents?: Map<string, CloudFormation.Event>
+    apiEvent?: { name: string; event: CloudFormation.Event }
     runtimeFamily?: RuntimeFamily
 }
 
@@ -39,7 +39,7 @@ export interface AddSamDebugConfigurationInput {
  * Adds a new debug configuration for the given sam function resource and template.
  */
 export async function addSamDebugConfiguration(
-    { resourceName, rootUri, apiEvents, runtimeFamily }: AddSamDebugConfigurationInput,
+    { resourceName, rootUri, apiEvent, runtimeFamily }: AddSamDebugConfigurationInput,
     type: typeof CODE_TARGET_TYPE | typeof TEMPLATE_TARGET_TYPE | typeof API_TARGET_TYPE,
     step?: { step: number; totalSteps: number }
 ): Promise<void> {
@@ -129,11 +129,10 @@ export async function addSamDebugConfiguration(
         }
     } else if (type === API_TARGET_TYPE) {
         // If the event has no properties, the default will be used
-        const event = apiEvents?.values().next().value
         const preloadedConfig = {
-            path: event.Properties?.Path,
-            httpMethod: event.Properties?.Method,
-            payload: event.Properties?.Payload,
+            path: apiEvent?.event.Properties?.Path,
+            httpMethod: apiEvent?.event.Properties?.Method,
+            payload: apiEvent?.event.Properties?.Payload,
         }
 
         samDebugConfig = createApiAwsSamDebugConfig(

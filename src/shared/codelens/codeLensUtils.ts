@@ -62,22 +62,24 @@ export async function makeCodeLenses({
 
             if (associatedResources.length > 0) {
                 for (const resource of associatedResources) {
-                    const apiEvents = new Map<string, CloudFormation.Event>()
+                    templateConfigs.push({
+                        resourceName: resource.name,
+                        rootUri: vscode.Uri.file(resource.templateDatum.path),
+                    })
                     const events = resource.resourceData.Properties?.Events
                     if (events) {
                         // Check for api events
                         for (const key in events) {
                             const value = events[key]
                             if (value.Type === 'Api') {
-                                apiEvents.set(key, value)
+                                templateConfigs.push({
+                                    resourceName: resource.name,
+                                    rootUri: vscode.Uri.file(resource.templateDatum.path),
+                                    apiEvent: { name: key, event: value },
+                                })
                             }
                         }
                     }
-                    templateConfigs.push({
-                        resourceName: resource.name,
-                        rootUri: vscode.Uri.file(resource.templateDatum.path),
-                        apiEvents: apiEvents,
-                    })
                 }
             }
             const codeConfig: AddSamDebugConfigurationInput = {
@@ -140,23 +142,17 @@ export async function pickAddSamDebugConfiguration(
         const label = `${getWorkspaceRelativePath(templateConfig.rootUri.fsPath) ?? templateConfig.rootUri.fsPath}:${
             templateConfig.resourceName
         }`
-        templateItemsMap.set(label, templateConfig)
-        templateItems.push({ label: label })
 
-        for (const [apiEventName, eventProperties] of templateConfig.apiEvents?.entries() ?? []) {
-            const apiLabel = `${label} (API Event: ${apiEventName})`
-            const eventDetail = `${eventProperties.Properties?.Method?.toUpperCase()} ${
-                eventProperties.Properties?.Path
+        if (templateConfig.apiEvent) {
+            const apiLabel = `${label} (API Event: ${templateConfig.apiEvent.name})`
+            const eventDetail = `${templateConfig.apiEvent.event.Properties?.Method?.toUpperCase()} ${
+                templateConfig.apiEvent.event.Properties?.Path
             }`
-            const apiEventMap = new Map<string, CloudFormation.Event>()
-            apiEventMap.set(apiEventName, templateConfig.apiEvents?.get(apiEventName)!)
-            templateItemsMap.set(apiLabel, {
-                resourceName: templateConfig.resourceName,
-                rootUri: templateConfig.rootUri,
-                apiEvents: apiEventMap,
-                runtimeFamily: templateConfig.runtimeFamily ?? undefined,
-            })
             templateItems.push({ label: apiLabel, detail: eventDetail })
+            templateItemsMap.set(apiLabel, templateConfig)
+        } else {
+            templateItems.push({ label: label })
+            templateItemsMap.set(label, templateConfig)
         }
     })
 
@@ -198,7 +194,7 @@ export async function pickAddSamDebugConfiguration(
         if (!templateItem) {
             return undefined
         }
-        if (templateItem.apiEvents) {
+        if (templateItem.apiEvent) {
             await addSamDebugConfiguration(templateItem, API_TARGET_TYPE)
         } else {
             await addSamDebugConfiguration(templateItem, TEMPLATE_TARGET_TYPE)
