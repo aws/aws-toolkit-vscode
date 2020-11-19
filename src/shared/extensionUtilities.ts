@@ -9,7 +9,6 @@ import * as path from 'path'
 import * as vscode from 'vscode'
 import * as nls from 'vscode-nls'
 import { ext } from '../shared/extensionGlobals'
-import { mostRecentVersionKey, pluginVersion } from './constants'
 import { readFileAsString } from './filesystemUtilities'
 import { getLogger } from './logger'
 import { VSCODE_EXTENSION_ID, EXTENSION_ALPHA_VERSION } from './extensions'
@@ -18,6 +17,16 @@ const localize = nls.loadMessageBundle()
 
 const VSCODE_APPNAME = 'Visual Studio Code'
 const CLOUD9_APPNAME = 'AWS Cloud9'
+
+export const mostRecentVersionKey: string = 'awsToolkitMostRecentVersion'
+// This is a hack to get around webpack messing everything up in unit test mode, it's also a very obvious
+// bad version if something goes wrong while building it
+let pluginVersion = 'testPluginVersion'
+try {
+    pluginVersion = PLUGINVERSION
+} catch (e) {}
+
+export { pluginVersion }
 
 export enum IDE {
     vscode,

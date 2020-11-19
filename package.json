@@ -683,6 +683,22 @@
                 {
                     "command": "aws.stepfunctions.publishStateMachine",
                     "when": "!isCloud9"
+                },
+                {
+                    "command": "aws.ssmDocument.createLocalDocument",
+                    "when": "!isCloud9"
+                },
+                {
+                    "command": "aws.ssmDocument.publishDocument",
+                    "when": "!isCloud9"
+                },
+                {
+                    "command": "aws.previewStateMachine",
+                    "when": "!isCloud9"
+                },
+                {
+                    "command": "aws.cdk.help",
+                    "when": "!isCloud9"
                 }
             ],
             "editor/title": [

@@ -6,7 +6,7 @@
 import { Credentials, Service } from 'aws-sdk'
 import * as os from 'os'
 import * as vscode from 'vscode'
-import { pluginVersion } from '../constants'
+import { pluginVersion } from '../extensionUtilities'
 import { ext } from '../extensionGlobals'
 import { getLogger } from '../logger'
 import * as ClientTelemetry from './clienttelemetry'
