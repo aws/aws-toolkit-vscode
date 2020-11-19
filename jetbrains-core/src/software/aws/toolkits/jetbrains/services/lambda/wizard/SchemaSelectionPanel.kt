@@ -85,7 +85,7 @@ class SchemaSelectionPanel : WizardFragment {
 
     fun schemaInfo() = schemaSelector.buildSchemaTemplateParameters()
 
-    private fun RuntimeGroup.toSchemaCodeLang(): SchemaCodeLangs = when (val id = this.id) {
+    private fun RuntimeGroup.toSchemaCodeLang(): SchemaCodeLangs = when (this.id) {
         BuiltInRuntimeGroups.Java -> SchemaCodeLangs.JAVA8
         BuiltInRuntimeGroups.Python -> SchemaCodeLangs.PYTHON3_6
         BuiltInRuntimeGroups.NodeJs -> SchemaCodeLangs.TYPESCRIPT

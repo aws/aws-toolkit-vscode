@@ -5,12 +5,10 @@ package software.aws.toolkits.jetbrains.core.explorer
 
 import com.intellij.openapi.application.runInEdt
 import com.intellij.openapi.project.Project
-import software.aws.toolkits.jetbrains.core.AwsResourceCache
 import software.aws.toolkits.jetbrains.core.Resource
 import software.aws.toolkits.jetbrains.core.clearResourceForCurrentConnection
 
 fun Project.refreshAwsTree(resource: Resource<*>? = null) {
-    val cache = AwsResourceCache.getInstance()
     if (resource == null) {
         this.clearResourceForCurrentConnection()
     } else {
