@@ -6,6 +6,7 @@
 import * as nls from 'vscode-nls'
 const localize = nls.loadMessageBundle()
 
+import * as path from 'path'
 import * as vscode from 'vscode'
 import { createNewSamApplication, resumeCreateNewSamApp } from '../../lambda/commands/createNewSamApp'
 import { deploySamApplication, SamDeployWizardResponseProvider } from '../../lambda/commands/deploySamApplication'
@@ -115,8 +116,8 @@ async function registerServerlessCommands(ctx: ExtContext): Promise<void> {
 }
 
 class RootRegistry extends WorkspaceFileRegistry<string> {
-    protected async load(path: string): Promise<string> {
-        return path
+    protected async load(p: string): Promise<string> {
+        return path.basename(p)
     }
 }
 
@@ -173,7 +174,9 @@ async function activateCodeLensProviders(
     )
 
     const registry = new RootRegistry()
-    await registry.addWatchPattern('')
+    await registry.addWatchPattern('**/requirements.txt')
+    await registry.addWatchPattern('**/package.json')
+    await registry.addWatchPattern('**/*.csproj')
     context.extensionContext.subscriptions.push(registry)
     ext.codelensRootRegistry = registry
 
