@@ -45,6 +45,8 @@ describe('makeCoreCLRDebugConfiguration', async () => {
             runtime: 'fakedotnet',
             handlerName: 'fakehandlername',
             noDebug: false,
+            apiPort: 4242,
+            debugPort: 4243,
 
             baseBuildDir: '/fake/build/dir/',
             envFile: '/fake/build/dir/env-vars.json',

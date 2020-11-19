@@ -36,10 +36,10 @@ interface TestScenario {
 const scenarios: TestScenario[] = [
     { runtime: 'nodejs10.x', path: 'hello-world/app.js', debugSessionType: 'pwa-node', language: 'javascript' },
     { runtime: 'nodejs12.x', path: 'hello-world/app.js', debugSessionType: 'pwa-node', language: 'javascript' },
-    { runtime: 'python2.7', path: 'hello_world/app.py', debugSessionType: 'python', language: 'python' },
-    { runtime: 'python3.6', path: 'hello_world/app.py', debugSessionType: 'python', language: 'python' },
-    { runtime: 'python3.7', path: 'hello_world/app.py', debugSessionType: 'python', language: 'python' },
-    { runtime: 'python3.8', path: 'hello_world/app.py', debugSessionType: 'python', language: 'python' },
+    // { runtime: 'python2.7', path: 'hello_world/app.py', debugSessionType: 'python', language: 'python' },
+    // { runtime: 'python3.6', path: 'hello_world/app.py', debugSessionType: 'python', language: 'python' },
+    // { runtime: 'python3.7', path: 'hello_world/app.py', debugSessionType: 'python', language: 'python' },
+    // { runtime: 'python3.8', path: 'hello_world/app.py', debugSessionType: 'python', language: 'python' },
     // { runtime: 'dotnetcore2.1', path: 'src/HelloWorld/Function.cs', debugSessionType: 'coreclr', language: 'csharp' },
 ]
 
@@ -120,7 +120,7 @@ function runtimeNeedsWorkaround(lang: Language) {
     return vscode.version.startsWith('1.42') || lang === 'csharp' || lang === 'python'
 }
 
-describe('SAM Integration Tests', async function() {
+describe('SAM Integration Tests', async function () {
     const samApplicationName = 'testProject'
     /**
      * Breadcrumbs from each process, printed at end of all scenarios to give
@@ -129,7 +129,7 @@ describe('SAM Integration Tests', async function() {
     const sessionLog: string[] = []
     let testSuiteRoot: string
 
-    before(async function() {
+    before(async function () {
         await activateExtensions()
         await configureAwsToolkitExtension()
         await configurePythonExtension()
@@ -139,7 +139,7 @@ describe('SAM Integration Tests', async function() {
         mkdirpSync(testSuiteRoot)
     })
 
-    after(async function() {
+    after(async function () {
         tryRemoveFolder(testSuiteRoot)
         // Print a summary of session that were seen by `onDidStartDebugSession`.
         const sessionReport = sessionLog.map(x => `    ${x}`).join('\n')
@@ -149,16 +149,16 @@ describe('SAM Integration Tests', async function() {
     for (let scenarioIndex = 0; scenarioIndex < scenarios.length; scenarioIndex++) {
         const scenario = scenarios[scenarioIndex]
 
-        describe(`SAM Application Runtime: ${scenario.runtime}`, async function() {
+        describe(`SAM Application Runtime: ${scenario.runtime}`, async function () {
             let runtimeTestRoot: string
 
-            before(async function() {
+            before(async function () {
                 runtimeTestRoot = path.join(testSuiteRoot, scenario.runtime)
                 console.log('runtimeTestRoot: ', runtimeTestRoot)
                 mkdirpSync(runtimeTestRoot)
             })
 
-            after(async function() {
+            after(async function () {
                 tryRemoveFolder(runtimeTestRoot)
             })
 
@@ -169,19 +169,19 @@ describe('SAM Integration Tests', async function() {
             /**
              * This suite cleans up at the end of each test.
              */
-            describe('Starting from scratch', async function() {
+            describe('Starting from scratch', async function () {
                 let testDir: string
 
-                beforeEach(async function() {
+                beforeEach(async function () {
                     testDir = await mkdtemp(path.join(runtimeTestRoot, 'test-'))
                     log(`testDir: ${testDir}`)
                 })
 
-                afterEach(async function() {
+                afterEach(async function () {
                     tryRemoveFolder(testDir)
                 })
 
-                it('creates a new SAM Application (happy path)', async function() {
+                it('creates a new SAM Application (happy path)', async function () {
                     await createSamApplication(testDir)
 
                     // Check for readme file
@@ -194,7 +194,7 @@ describe('SAM Integration Tests', async function() {
              * This suite makes a sam app that all tests operate on.
              * Cleanup happens at the end of the suite.
              */
-            describe(`Starting with a newly created ${scenario.runtime} SAM Application...`, async function() {
+            describe(`Starting with a newly created ${scenario.runtime} SAM Application...`, async function () {
                 let testDisposables: vscode.Disposable[]
 
                 let testDir: string
@@ -202,7 +202,7 @@ describe('SAM Integration Tests', async function() {
                 let appPath: string
                 let cfnTemplatePath: string
 
-                before(async function() {
+                before(async function () {
                     testDir = await mkdtemp(path.join(runtimeTestRoot, 'samapp-'))
                     log(`testDir: ${testDir}`)
 
@@ -212,32 +212,32 @@ describe('SAM Integration Tests', async function() {
                     samAppCodeUri = await openSamAppFile(appPath)
                 })
 
-                beforeEach(async function() {
+                beforeEach(async function () {
                     testDisposables = []
                     await closeAllEditors()
                 })
 
-                afterEach(async function() {
+                afterEach(async function () {
                     // tslint:disable-next-line: no-unsafe-any
                     testDisposables.forEach(d => d.dispose())
                     await stopDebugger()
                 })
 
-                after(async function() {
+                after(async function () {
                     tryRemoveFolder(testDir)
                 })
 
-                it('the SAM Template contains the expected runtime', async function() {
+                it('the SAM Template contains the expected runtime', async function () {
                     const fileContents = readFileSync(cfnTemplatePath).toString()
                     assert.ok(fileContents.includes(`Runtime: ${scenario.runtime}`))
                 })
 
-                it('produces an error when creating a SAM Application to the same location', async function() {
+                it('produces an error when creating a SAM Application to the same location', async function () {
                     const err = await assertThrowsError(async () => await createSamApplication(testDir))
                     assert(err.message.includes('directory already exists'))
                 })
 
-                it('produces an Add Debug Configuration codelens', async function() {
+                it('produces an Add Debug Configuration codelens', async function () {
                     setTestTimeout(this.test?.fullTitle(), 60000)
                     const codeLens = await getAddConfigCodeLens(samAppCodeUri)
                     assert.ok(codeLens)
@@ -262,11 +262,11 @@ describe('SAM Integration Tests', async function() {
                     assertCodeLensReferencesHasSameRoot(codeLens, projectRoot!)
                 })
 
-                it('invokes and attaches on debug request (F5)', async function() {
+                it('invokes and attaches on debug request (F5)', async function () {
                     setTestTimeout(this.test?.fullTitle(), 60000)
                     // Allow previous sessions to go away.
                     await waitUntil(
-                        async function() {
+                        async function () {
                             return vscode.debug.activeDebugSession === undefined
                         },
                         { timeout: 100, interval: 300 }
