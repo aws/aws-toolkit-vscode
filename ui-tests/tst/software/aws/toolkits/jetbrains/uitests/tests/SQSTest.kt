@@ -3,13 +3,15 @@
 
 package software.aws.toolkits.jetbrains.uitests.tests
 
-/* TODO uncomment to enable SQS
 import com.intellij.remoterobot.RemoteRobot
 import com.intellij.remoterobot.fixtures.ComponentFixture
 import com.intellij.remoterobot.fixtures.JTextFieldFixture
 import com.intellij.remoterobot.search.locators.byXpath
 import com.intellij.remoterobot.stepsProcessing.log
 import com.intellij.remoterobot.stepsProcessing.step
+import kotlinx.coroutines.delay
+import kotlinx.coroutines.runBlocking
+import kotlinx.coroutines.withTimeout
 import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.AfterAll
 import org.junit.jupiter.api.Test
@@ -19,7 +21,6 @@ import software.amazon.awssdk.services.sns.SnsClient
 import software.amazon.awssdk.services.sqs.SqsClient
 import software.amazon.awssdk.services.sqs.model.QueueDoesNotExistException
 import software.amazon.awssdk.services.sqs.model.SendMessageBatchRequestEntry
-import software.aws.toolkits.core.utils.Waiters.waitUntilBlocking
 import software.aws.toolkits.jetbrains.uitests.CoreTest
 import software.aws.toolkits.jetbrains.uitests.extensions.uiTest
 import software.aws.toolkits.jetbrains.uitests.fixtures.JTreeFixture
@@ -286,31 +287,44 @@ class SQSTest {
         waitForDeletion(queueName)
     }
 
-    private fun SqsClient.waitForDeletion(queueName: String) {
+    private fun SqsClient.waitForDeletion(queueName: String) = runBlocking {
         try {
-            waitUntilBlocking(exceptionsToStopOn = setOf(QueueDoesNotExistException::class)) {
-                getQueueUrl { it.queueName(queueName) }
+            withTimeout(Duration.ofMinutes(5).toMillis()) {
+                while (true) {
+                    delay(2000)
+                    try {
+                        getQueueUrl { it.queueName(queueName) }
+                    } catch (e: QueueDoesNotExistException) {
+                        return@withTimeout
+                    } catch (e: Exception) {
+                    }
+                }
             }
             log.info("Verified $queueName is deleted")
         } catch (e: Exception) {
-            log.error("Unknown exception thrown by waitForDeletion", e)
+            log.error("Exception thrown by waitForDeletion", e)
         }
     }
 
-    private fun SqsClient.waitForCreation(queueName: String) {
+    private fun SqsClient.waitForCreation(queueName: String) = runBlocking {
         try {
             // getQueueUrl can get before list works, so we can't use it to check if it exists.
             // So, use getQueuesPaginator instead. This can also take more than 1 minute sometimes,
             // so give it a 5 min timeout
-            waitUntilBlocking(succeedOn = { it }, maxDuration = Duration.ofMinutes(5)) {
-                listQueuesPaginator().queueUrls().toList().any {
-                    it.contains(queueName)
+            withTimeout(Duration.ofMinutes(5).toMillis()) {
+                while (true) {
+                    delay(2000)
+                    try {
+                        if (listQueuesPaginator().queueUrls().toList().any { it.contains(queueName) }) {
+                            return@withTimeout
+                        }
+                    } catch (e: Exception) {
+                    }
                 }
             }
             log.info("Verified $queueName is created")
         } catch (e: Exception) {
-            log.error("Unknown exception thrown by waitForDeletion", e)
+            log.error("Exception thrown by waitForDeletion", e)
         }
     }
 }
-*/
