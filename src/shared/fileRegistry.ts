@@ -25,10 +25,14 @@ export abstract class WorkspaceFileRegistry<T> implements vscode.Disposable {
     private readonly registryData: Map<string, T> = new Map<string, T>()
 
     /**
-     * Load in filesystem items or throw
+     * Load in filesystem items, doing any parsing/validaton as required. If it fails, throws
      * @param path A string with the absolute path to the detected file
      */
     protected abstract load(path: string): Promise<T>
+    /**
+     * Registry name for logs
+     */
+    protected abstract registryName: string
 
     public constructor() {
         this.disposables.push(
@@ -45,7 +49,7 @@ export abstract class WorkspaceFileRegistry<T> implements vscode.Disposable {
      */
     public async addWatchPattern(glob: vscode.GlobPattern): Promise<void> {
         if (this._isDisposed) {
-            throw new Error('Manager has already been disposed!')
+            throw new Error(`${this.registryName}: manager has already been disposed!`)
         }
         this.globs.push(glob)
 
@@ -60,7 +64,7 @@ export abstract class WorkspaceFileRegistry<T> implements vscode.Disposable {
      */
     public async addExcludedPattern(pattern: RegExp): Promise<void> {
         if (this._isDisposed) {
-            throw new Error('Manager has already been disposed!')
+            throw new Error(`${this.registryName}: manager has already been disposed!`)
         }
         this.excludedFilePatterns.push(pattern)
 
@@ -74,7 +78,9 @@ export abstract class WorkspaceFileRegistry<T> implements vscode.Disposable {
     public async addItemToRegistry(uri: vscode.Uri, quiet?: boolean): Promise<void> {
         const excluded = this.excludedFilePatterns.find(pattern => uri.fsPath.match(pattern))
         if (excluded) {
-            getLogger().verbose(`Manager did not add template ${uri.fsPath} matching excluded pattern ${excluded}`)
+            getLogger().verbose(
+                `${this.registryName}: manager did not add item ${uri.fsPath} matching excluded pattern ${excluded}`
+            )
             return
         }
         const pathAsString = pathutils.normalize(uri.fsPath)
@@ -86,7 +92,7 @@ export abstract class WorkspaceFileRegistry<T> implements vscode.Disposable {
             if (!quiet) {
                 throw e
             }
-            getLogger().verbose(`Item ${uri} is malformed: ${e}`)
+            getLogger().verbose(`${this.registryName}: item ${uri} is malformed: ${e}`)
         }
     }
 
@@ -177,15 +183,15 @@ export abstract class WorkspaceFileRegistry<T> implements vscode.Disposable {
         this.disposables.push(
             watcher,
             watcher.onDidChange(async uri => {
-                getLogger().verbose(`Manager detected a change to tracked file: ${uri.fsPath}`)
+                getLogger().verbose(`${this.registryName}: manager detected a change to tracked file: ${uri.fsPath}`)
                 await this.addItemToRegistry(uri)
             }),
             watcher.onDidCreate(async uri => {
-                getLogger().verbose(`Manager detected a new file: ${uri.fsPath}`)
+                getLogger().verbose(`${this.registryName}: manager detected a new file: ${uri.fsPath}`)
                 await this.addItemToRegistry(uri)
             }),
             watcher.onDidDelete(async uri => {
-                getLogger().verbose(`Manager detected a deleted template file: ${uri.fsPath}`)
+                getLogger().verbose(`${this.registryName}: ,anager detected a deleted file: ${uri.fsPath}`)
                 this.removeItemFromRegistry(uri)
             })
         )
@@ -193,7 +199,7 @@ export abstract class WorkspaceFileRegistry<T> implements vscode.Disposable {
 
     private assertAbsolute(p: string) {
         if (!path.isAbsolute(p)) {
-            throw Error(`FileRegistry: path is relative: ${p}`)
+            throw Error(`FileRegistry: path is relative when it should be absolute: ${p}`)
         }
     }
 }

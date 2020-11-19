@@ -18,6 +18,7 @@ export interface TemplateDatum {
 }
 
 export class CloudFormationTemplateRegistry extends WorkspaceFileRegistry<CloudFormation.Template> {
+    protected registryName: string = 'CloudFormationTemplateRegistry'
     protected async load(path: string): Promise<CloudFormation.Template> {
         return await CloudFormation.load(path)
     }

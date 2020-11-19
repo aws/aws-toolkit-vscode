@@ -16,6 +16,7 @@ import { WorkspaceFileRegistry } from '../fileRegistry'
  * is valid for each codelense
  */
 export class CodelensRootRegistry extends WorkspaceFileRegistry<string> {
+    protected registryName: string = 'CodelensRootRegistry'
     protected async load(p: string): Promise<string> {
         return path.basename(p)
     }

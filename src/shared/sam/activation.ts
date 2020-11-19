@@ -33,7 +33,7 @@ import { detectSamCli } from './cli/samCliDetection'
 import { SamDebugConfigProvider } from './debugger/awsSamDebugger'
 import { addSamDebugConfiguration } from './debugger/commands/addSamDebugConfiguration'
 import { AWS_SAM_DEBUG_TYPE } from './debugger/awsSamDebugConfiguration'
-import { CodelensRootRegistry } from './rootRegistry'
+import { CodelensRootRegistry } from './codelensRootRegistry'
 
 const STATE_NAME_SUPPRESS_YAML_PROMPT = 'aws.sam.suppressYamlPrompt'
 

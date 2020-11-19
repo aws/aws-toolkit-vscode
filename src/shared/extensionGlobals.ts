@@ -8,7 +8,7 @@ import { AWSClientBuilder } from './awsClientBuilder'
 import { AWSContextCommands } from './awsContextCommands'
 import { ToolkitClientBuilder } from './clients/toolkitClientBuilder'
 import { CloudFormationTemplateRegistry } from './cloudformation/templateRegistry'
-import { CodelensRootRegistry } from './sam/rootRegistry'
+import { CodelensRootRegistry } from './sam/codelensRootRegistry'
 import { TelemetryService } from './telemetry/telemetryService'
 
 /**
