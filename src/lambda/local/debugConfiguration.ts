@@ -84,14 +84,6 @@ export interface PipeTransport {
     pipeCwd: string
 }
 
-export function assertTargetKind(config: SamLaunchRequestArgs, expectedTarget: 'code' | 'template'): void {
-    if (config.invokeTarget.target !== expectedTarget) {
-        throw Error(
-            `SAM debug: invalid config (expected target: ${expectedTarget}): ${JSON.stringify(config, undefined, 2)}`
-        )
-    }
-}
-
 /**
  * Gets the "code root" as an absolute path.
  *
@@ -107,6 +99,7 @@ export function getCodeRoot(
             const codeInvoke = config.invokeTarget as CodeTargetProperties
             return pathutil.normalize(tryGetAbsolutePath(folder, codeInvoke.projectRoot))
         }
+        case 'api':
         case 'template': {
             const templateInvoke = config.invokeTarget as TemplateTargetProperties
             const template = getTemplate(folder, config)
@@ -140,6 +133,7 @@ export function getHandlerName(
             const codeInvoke = config.invokeTarget as CodeTargetProperties
             return codeInvoke.lambdaHandler
         }
+        case 'api':
         case 'template': {
             const template = getTemplate(folder, config)
             if (!template) {
@@ -172,7 +166,7 @@ export function getTemplate(
     folder: vscode.WorkspaceFolder | undefined,
     config: AwsSamDebuggerConfiguration
 ): CloudFormation.Template | undefined {
-    if (config.invokeTarget.target !== 'template') {
+    if (!['api', 'template'].includes(config.invokeTarget.target)) {
         return undefined
     }
     const templateInvoke = config.invokeTarget as TemplateTargetProperties
@@ -183,13 +177,13 @@ export function getTemplate(
 
 /**
  * Gets the template resources object specified by the `logicalId`
- * field (if the config has `invokeTarget.target=template`).
+ * field (if the config has `target=template` or `target=api`).
  */
 export function getTemplateResource(
     folder: vscode.WorkspaceFolder | undefined,
     config: AwsSamDebuggerConfiguration
 ): CloudFormation.Resource | undefined {
-    if (config.invokeTarget.target !== 'template') {
+    if (!['api', 'template'].includes(config.invokeTarget.target)) {
         return undefined
     }
     const templateInvoke = config.invokeTarget as TemplateTargetProperties

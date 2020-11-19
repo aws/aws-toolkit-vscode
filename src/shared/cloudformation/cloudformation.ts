@@ -63,6 +63,11 @@ export namespace CloudFormation {
     export interface ApiEventProperties {
         Path?: string
         Method?: 'delete' | 'get' | 'head' | 'options' | 'patch' | 'post' | 'put' | 'any'
+        Payload?: {
+            json?: {
+                [k: string]: string | number | boolean
+            }
+        }
     }
 
     export interface Event {
@@ -431,9 +436,13 @@ export namespace CloudFormation {
     }
 
     /**
-     * Gets a number from a Ref.
-     * Throws an error if the value is not specifically a number.
-     * Returns undefined if ref does not have a default value but is a number.
+     * Gets a value (string or number) from a Ref.
+     *
+     * If `thingType == number`...
+     * - it is an error if the resolved value is not a number.
+     * - returns undefined if the Ref does not have a default value but is
+     *   a number.
+     *
      * @param ref Ref to pull a number from
      * @param template Template to parse through
      * @param thingType Type to validate against

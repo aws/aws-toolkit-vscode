@@ -13,11 +13,13 @@ import { showConfirmationMessage } from '../../shared/utilities/messages'
 import { LaunchConfiguration, getReferencedHandlerPaths } from '../../shared/debug/launchConfiguration'
 import { ext } from '../../shared/extensionGlobals'
 import { makeTemporaryToolkitFolder, fileExists, tryRemoveFolder } from '../../shared/filesystemUtilities'
+import * as localizedText from '../../shared/localizedText'
 import { getLogger } from '../../shared/logger'
 import { HttpResourceFetcher } from '../../shared/resourcefetcher/httpResourceFetcher'
 import { createCodeAwsSamDebugConfig } from '../../shared/sam/debugger/awsSamDebugConfiguration'
 import * as telemetry from '../../shared/telemetry/telemetry'
 import * as pathutils from '../../shared/utilities/pathUtils'
+import { waitUntil } from '../../shared/utilities/timeoutUtils'
 import { localize } from '../../shared/utilities/vsCodeUtils'
 import { addFolderToWorkspace } from '../../shared/utilities/workspaceUtils'
 import { Window } from '../../shared/vscode/window'
@@ -61,7 +63,7 @@ async function runImportLambda(functionNode: LambdaFunctionNode, window = Window
                     importLocationName
                 ),
                 confirm: localize('AWS.lambda.import.import', 'Import'),
-                cancel: localize('AWS.generic.cancel', 'Cancel'),
+                cancel: localizedText.cancel,
             },
             window
         )
@@ -146,15 +148,34 @@ async function downloadAndUnzipLambda(
 
         progress.report({ increment: 70 })
 
-        await new Promise(resolve => {
-            new AdmZip(downloadLocation).extractAllToAsync(importLocation, true, err => {
-                if (err) {
-                    throw err
+        // HACK: `request` (currently implemented by the `fetcher.get()` call) doesn't necessarily close the pipe before returning.
+        // Brings up issues in less performant systems.
+        // keep attempting the unzip until the zip is fully built or fail after 5 seconds
+        let zipErr: Error | undefined
+        const val = await waitUntil(async () => {
+            return await new Promise<boolean>(resolve => {
+                try {
+                    new AdmZip(downloadLocation).extractAllToAsync(importLocation, true, err => {
+                        if (err) {
+                            // err unzipping
+                            zipErr = err
+                            resolve(undefined)
+                        } else {
+                            progress.report({ increment: 10 })
+                            resolve(true)
+                        }
+                    })
+                } catch (err) {
+                    // err loading zip into AdmZip, prior to attempting an unzip
+                    zipErr = err
+                    resolve(undefined)
                 }
-                progress.report({ increment: 10 })
-                resolve()
             })
         })
+
+        if (!val) {
+            throw zipErr
+        }
     } catch (e) {
         const err = e as Error
         getLogger().error(err)

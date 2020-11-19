@@ -11,7 +11,7 @@ import * as pathutil from '../../../shared/utilities/pathUtils'
 import { ExtContext } from '../../extensions'
 import { findParentProjectFile } from '../../utilities/workspaceUtils'
 import { DefaultSamLocalInvokeCommand, WAIT_FOR_DEBUGGER_MESSAGES } from '../cli/samCliLocalInvoke'
-import { invokeLambdaFunction, makeInputTemplate, waitForDebugPort } from '../localLambdaRunner'
+import { invokeLambdaFunction, makeInputTemplate, waitForPort } from '../localLambdaRunner'
 import { SamLaunchRequestArgs } from './awsSamDebugger'
 
 /**
@@ -23,7 +23,7 @@ export async function invokeTypescriptLambda(
 ): Promise<NodejsDebugConfiguration> {
     config.samLocalInvokeCommand = new DefaultSamLocalInvokeCommand(ctx.chanLogger, [WAIT_FOR_DEBUGGER_MESSAGES.NODEJS])
     // eslint-disable-next-line @typescript-eslint/unbound-method
-    config.onWillAttachDebugger = waitForDebugPort
+    config.onWillAttachDebugger = waitForPort
     const c = (await invokeLambdaFunction(ctx, config, async () => {})) as NodejsDebugConfiguration
     return c
 }
