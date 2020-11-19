@@ -1,0 +1,4 @@
+{
+  "type" : "feature",
+  "description" : "Add the ability to search CloudWatch Logs using CloudWatch Logs Insights"
+}

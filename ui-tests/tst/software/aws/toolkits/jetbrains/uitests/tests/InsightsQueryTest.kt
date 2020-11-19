@@ -3,7 +3,6 @@
 
 package software.aws.toolkits.jetbrains.uitests.tests
 
-/* TODO uncomment to enable Logs Insights
 import com.intellij.remoterobot.RemoteRobot
 import com.intellij.remoterobot.fixtures.ComboBoxFixture
 import com.intellij.remoterobot.fixtures.ComponentFixture
@@ -25,7 +24,6 @@ import org.junit.jupiter.api.io.TempDir
 import software.amazon.awssdk.services.cloudwatchlogs.CloudWatchLogsClient
 import software.amazon.awssdk.services.cloudwatchlogs.model.QueryStatus
 import software.amazon.awssdk.services.cloudwatchlogs.model.ResourceNotFoundException
-import software.aws.toolkits.jetbrains.services.cloudwatch.logs.insights.DEFAULT_INSIGHTS_QUERY_STRING
 import software.aws.toolkits.jetbrains.uitests.CoreTest
 import software.aws.toolkits.jetbrains.uitests.extensions.uiTest
 import software.aws.toolkits.jetbrains.uitests.fixtures.JTreeFixture
@@ -34,7 +32,6 @@ import software.aws.toolkits.jetbrains.uitests.fixtures.findAndClick
 import software.aws.toolkits.jetbrains.uitests.fixtures.idea
 import software.aws.toolkits.jetbrains.uitests.fixtures.rightClick
 import software.aws.toolkits.jetbrains.uitests.fixtures.welcomeFrame
-import java.lang.IllegalStateException
 import java.nio.file.Path
 import java.time.Duration
 import java.time.Instant
@@ -54,6 +51,16 @@ class InsightsQueryTest {
     private val logGroupName = "uitest-${UUID.randomUUID()}"
     private val logStreamName1 = "uitest-${UUID.randomUUID()}"
     private val logStreamName2 = "uitest-${UUID.randomUUID()}"
+
+    /**
+     * We can't reach into jetbrains-core by design, so copy the default string out of
+     * QueryEditorUtils.kt . If the string changes it needs to change in both places
+     */
+    private val DEFAULT_INSIGHTS_QUERY_STRING =
+        """fields @timestamp, @message
+        | sort @timestamp desc
+        | limit 20
+        """
 
     @BeforeAll
     fun setup() {
@@ -109,8 +116,6 @@ class InsightsQueryTest {
         idea {
             waitForBackgroundTasks()
             showAwsExplorer()
-        }
-        idea {
             step("Expand log groups node") {
                 awsExplorer {
                     expandExplorerNode(cloudWatchExplorerLabel)
@@ -129,8 +134,19 @@ class InsightsQueryTest {
                 }
             }
             step("Revising query from current results") {
-                val currentTab = find<JLabelFixture>(byXpath("//div[@class='ContentTabLabel']"))
-                val currentQueryId = find<JLabelFixture>(byXpath("//div[@class='ContentTabLabel']")).findAllText().first().text
+                // Find query ID. Query ID is a GUID with dashes, which makes it 36 characters long.
+                val currentQueryId = findAll<JLabelFixture>(byXpath("//div[@class='ContentTabLabel']"))
+                    .first {
+                        try {
+                            it.findAllText().firstOrNull()?.text?.length == 36
+                        } catch (e: Exception) {
+                            false
+                        }
+                    }
+                    .findAllText()
+                    .first()
+                    .text
+                val currentTab = find<JLabelFixture>(byXpath("//div[@class='ContentTabLabel' and contains(@accessiblename, '$currentQueryId')]"))
                 openInsightsQueryDialogFromResults()
                 step("Change relative time values") {
                     find<JTextFieldFixture>(byXpath("//div[@class='JFormattedTextField' and @visible_text='$defaultRelativeTimeAmount']")).text =
@@ -238,4 +254,3 @@ class InsightsQueryTest {
         }
     }
 }
-*/
