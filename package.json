@@ -156,7 +156,7 @@
                     "default": 5000,
                     "description": "%AWS.ssmDocument.ssm.maxItemsComputed.desc%"
                 },
-                "aws.cloudWatchLogs.limit": {
+                "aws.cloudwatchLogs.limit": {
                     "type": "number",
                     "default": 10000,
                     "description": "%aws.cloudWatchLogs.limit.desc%",
