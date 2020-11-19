@@ -32,6 +32,7 @@ import { detectSamCli } from './cli/samCliDetection'
 import { SamDebugConfigProvider } from './debugger/awsSamDebugger'
 import { addSamDebugConfiguration } from './debugger/commands/addSamDebugConfiguration'
 import { AWS_SAM_DEBUG_TYPE } from './debugger/awsSamDebugConfiguration'
+import { WorkspaceFileRegistry } from '../fileRegistry'
 
 const STATE_NAME_SUPPRESS_YAML_PROMPT = 'aws.sam.suppressYamlPrompt'
 
@@ -113,6 +114,12 @@ async function registerServerlessCommands(ctx: ExtContext): Promise<void> {
     // TODO : Register CodeLens commands from here instead of in xxxCodeLensProvider.ts::initialize
 }
 
+class RootRegistry extends WorkspaceFileRegistry<string> {
+    protected async load(path: string): Promise<string> {
+        return path
+    }
+}
+
 async function activateCodeLensProviders(
     context: ExtContext,
     configuration: SettingsConfiguration,
@@ -164,6 +171,11 @@ async function activateCodeLensProviders(
             await codelensUtils.makeCSharpCodeLensProvider()
         )
     )
+
+    const registry = new RootRegistry()
+    await registry.addWatchPattern('')
+    context.extensionContext.subscriptions.push(registry)
+    ext.codelensRootRegistry = registry
 
     return disposables
 }
