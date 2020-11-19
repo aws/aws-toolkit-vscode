@@ -63,6 +63,11 @@ export namespace CloudFormation {
     export interface ApiEventProperties {
         Path?: string
         Method?: 'delete' | 'get' | 'head' | 'options' | 'patch' | 'post' | 'put' | 'any'
+        Payload?: {
+            json?: {
+                [k: string]: string | number | boolean
+            }
+        }
     }
 
     export interface Event {

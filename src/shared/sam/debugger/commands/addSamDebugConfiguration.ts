@@ -31,6 +31,7 @@ import { ext } from '../../../extensionGlobals'
 export interface AddSamDebugConfigurationInput {
     resourceName: string
     rootUri: vscode.Uri
+    apiEvent?: { name: string; event: CloudFormation.Event }
     runtimeFamily?: RuntimeFamily
 }
 
@@ -38,7 +39,7 @@ export interface AddSamDebugConfigurationInput {
  * Adds a new debug configuration for the given sam function resource and template.
  */
 export async function addSamDebugConfiguration(
-    { resourceName, rootUri, runtimeFamily }: AddSamDebugConfigurationInput,
+    { resourceName, rootUri, apiEvent, runtimeFamily }: AddSamDebugConfigurationInput,
     type: typeof CODE_TARGET_TYPE | typeof TEMPLATE_TARGET_TYPE | typeof API_TARGET_TYPE,
     step?: { step: number; totalSteps: number }
 ): Promise<void> {
@@ -127,7 +128,20 @@ export async function addSamDebugConfiguration(
             return
         }
     } else if (type === API_TARGET_TYPE) {
-        samDebugConfig = createApiAwsSamDebugConfig(workspaceFolder, runtimeName, resourceName, rootUri.fsPath)
+        // If the event has no properties, the default will be used
+        const preloadedConfig = {
+            path: apiEvent?.event.Properties?.Path,
+            httpMethod: apiEvent?.event.Properties?.Method,
+            payload: apiEvent?.event.Properties?.Payload,
+        }
+
+        samDebugConfig = createApiAwsSamDebugConfig(
+            workspaceFolder,
+            runtimeName,
+            resourceName,
+            rootUri.fsPath,
+            preloadedConfig
+        )
     } else {
         throw new Error('Unrecognized debug target type')
     }
