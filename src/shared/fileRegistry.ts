@@ -22,7 +22,7 @@ export abstract class WorkspaceFileRegistry<T> implements vscode.Disposable {
     private _isDisposed: boolean = false
     private readonly globs: vscode.GlobPattern[] = []
     private readonly excludedFilePatterns: RegExp[] = []
-    private readonly templateRegistryData: Map<string, T> = new Map<string, T>()
+    private readonly registryData: Map<string, T> = new Map<string, T>()
 
     /**
      * Load in filesystem items or throw
@@ -81,23 +81,23 @@ export abstract class WorkspaceFileRegistry<T> implements vscode.Disposable {
         this.assertAbsolute(pathAsString)
         try {
             const template = await this.load(pathAsString)
-            this.templateRegistryData.set(pathAsString, template)
+            this.registryData.set(pathAsString, template)
         } catch (e) {
             if (!quiet) {
                 throw e
             }
-            getLogger().verbose(`Template ${uri} is malformed: ${e}`)
+            getLogger().verbose(`Item ${uri} is malformed: ${e}`)
         }
     }
 
     /**
-     * Get a specific template's data
-     * @param path Path to template of interest
+     * Get a specific item's data
+     * @param path Absolute path to template of interest
      */
-    public getRegisteredTemplate(path: string): WorkspaceItem<T> | undefined {
+    public getRegisteredItem(path: string): WorkspaceItem<T> | undefined {
         const normalizedPath = pathutils.normalize(path)
         this.assertAbsolute(normalizedPath)
-        const item = this.templateRegistryData.get(normalizedPath)
+        const item = this.registryData.get(normalizedPath)
         if (!item) {
             return undefined
         }
@@ -108,13 +108,13 @@ export abstract class WorkspaceFileRegistry<T> implements vscode.Disposable {
     }
 
     /**
-     * Returns the registry's data as an array of T objects
+     * Returns the registry's data as an array of paths to type T objects
      */
     public get registeredItems(): WorkspaceItem<T>[] {
         const arr: WorkspaceItem<T>[] = []
 
-        for (const templatePath of this.templateRegistryData.keys()) {
-            const template = this.getRegisteredTemplate(templatePath)
+        for (const templatePath of this.registryData.keys()) {
+            const template = this.getRegisteredItem(templatePath)
             if (template) {
                 arr.push(template)
             }
@@ -124,17 +124,17 @@ export abstract class WorkspaceFileRegistry<T> implements vscode.Disposable {
     }
 
     /**
-     * Removes a template from the registry.
-     * @param templateUri vscode.Uri containing template to remove
+     * Removes an item from the registry.
+     * @param templateUri vscode.Uri containing the uri of the item to remove
      */
-    public removeTemplateFromRegistry(templateUri: vscode.Uri): void {
+    public removeItemFromRegistry(templateUri: vscode.Uri): void {
         const pathAsString = pathutils.normalize(templateUri.fsPath)
         this.assertAbsolute(pathAsString)
-        this.templateRegistryData.delete(pathAsString)
+        this.registryData.delete(pathAsString)
     }
 
     /**
-     * Disposes CloudFormationTemplateRegistryManager and marks as disposed.
+     * Disposes FileRegistry and marks as disposed.
      */
     public dispose(): void {
         if (!this._isDisposed) {
@@ -163,10 +163,10 @@ export abstract class WorkspaceFileRegistry<T> implements vscode.Disposable {
     }
 
     /**
-     * Removes all templates from the registry.
+     * Removes all items from the registry.
      */
     public reset() {
-        this.templateRegistryData.clear()
+        this.registryData.clear()
     }
 
     /**
@@ -186,7 +186,7 @@ export abstract class WorkspaceFileRegistry<T> implements vscode.Disposable {
             }),
             watcher.onDidDelete(async uri => {
                 getLogger().verbose(`Manager detected a deleted template file: ${uri.fsPath}`)
-                this.removeTemplateFromRegistry(uri)
+                this.removeItemFromRegistry(uri)
             })
         )
     }

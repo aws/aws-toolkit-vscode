@@ -16,6 +16,8 @@ export const PYTHON_ALLFILES: vscode.DocumentFilter[] = [
     },
 ]
 
+export const PYTHON_BASE_PATTERN = '**/requirements.txt'
+
 export async function getLambdaHandlerCandidates(uri: vscode.Uri): Promise<LambdaHandlerCandidate[]> {
     const requirementsFile = await findParentProjectFile(uri, 'requirements.txt')
     if (!requirementsFile) {

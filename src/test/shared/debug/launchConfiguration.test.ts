@@ -105,7 +105,7 @@ describe('LaunchConfiguration', () => {
     const templateUriCsharp = vscode.Uri.file(path.join(workspace.uri.fsPath, 'csharp2.1-plain-sam-app/template.yaml'))
 
     beforeEach(async () => {
-        await ext.templateRegistry.addTemplateGlob(TEMPLATE_FILE_GLOB_PATTERN)
+        await ext.templateRegistry.addWatchPattern(TEMPLATE_FILE_GLOB_PATTERN)
 
         // TODO: remove mocks in favor of testing src/testFixtures/ data.
         mockConfigSource = mock()

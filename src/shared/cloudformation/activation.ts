@@ -30,7 +30,7 @@ export async function activate(extensionContext: vscode.ExtensionContext): Promi
     try {
         const registry = new CloudFormationTemplateRegistry()
         await registry.addExcludedPattern(TEMPLATE_FILE_EXCLUDE_PATTERN)
-        await registry.addTemplateGlob(TEMPLATE_FILE_GLOB_PATTERN)
+        await registry.addWatchPattern(TEMPLATE_FILE_GLOB_PATTERN)
         extensionContext.subscriptions.push(registry)
         ext.templateRegistry = registry
     } catch (e) {

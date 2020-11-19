@@ -6,7 +6,6 @@
 import * as nls from 'vscode-nls'
 const localize = nls.loadMessageBundle()
 
-import * as path from 'path'
 import * as vscode from 'vscode'
 import { createNewSamApplication, resumeCreateNewSamApp } from '../../lambda/commands/createNewSamApp'
 import { deploySamApplication, SamDeployWizardResponseProvider } from '../../lambda/commands/deploySamApplication'
@@ -20,6 +19,7 @@ import {
 import * as codelensUtils from '../codelens/codeLensUtils'
 import * as csLensProvider from '../codelens/csharpCodeLensProvider'
 import * as pyLensProvider from '../codelens/pythonCodeLensProvider'
+import * as jsLensProvider from '../codelens/typescriptCodeLensProvider'
 import { SamTemplateCodeLensProvider } from '../codelens/samTemplateCodeLensProvider'
 import { ext } from '../extensionGlobals'
 import { ExtContext, VSCODE_EXTENSION_ID } from '../extensions'
@@ -33,7 +33,7 @@ import { detectSamCli } from './cli/samCliDetection'
 import { SamDebugConfigProvider } from './debugger/awsSamDebugger'
 import { addSamDebugConfiguration } from './debugger/commands/addSamDebugConfiguration'
 import { AWS_SAM_DEBUG_TYPE } from './debugger/awsSamDebugConfiguration'
-import { WorkspaceFileRegistry } from '../fileRegistry'
+import { CodelensRootRegistry } from './rootRegistry'
 
 const STATE_NAME_SUPPRESS_YAML_PROMPT = 'aws.sam.suppressYamlPrompt'
 
@@ -115,12 +115,6 @@ async function registerServerlessCommands(ctx: ExtContext): Promise<void> {
     // TODO : Register CodeLens commands from here instead of in xxxCodeLensProvider.ts::initialize
 }
 
-class RootRegistry extends WorkspaceFileRegistry<string> {
-    protected async load(p: string): Promise<string> {
-        return path.basename(p)
-    }
-}
-
 async function activateCodeLensProviders(
     context: ExtContext,
     configuration: SettingsConfiguration,
@@ -146,13 +140,7 @@ async function activateCodeLensProviders(
 
     disposables.push(
         vscode.languages.registerCodeLensProvider(
-            // TODO : Turn into a constant to be consistent with Python, C#
-            [
-                {
-                    language: 'javascript',
-                    scheme: 'file',
-                },
-            ],
+            jsLensProvider.JAVASCRIPT_ALL_FILES,
             codelensUtils.makeTypescriptCodeLensProvider()
         )
     )
@@ -173,12 +161,25 @@ async function activateCodeLensProviders(
         )
     )
 
-    const registry = new RootRegistry()
-    await registry.addWatchPattern('**/requirements.txt')
-    await registry.addWatchPattern('**/package.json')
-    await registry.addWatchPattern('**/*.csproj')
-    context.extensionContext.subscriptions.push(registry)
-    ext.codelensRootRegistry = registry
+    try {
+        const registry = new CodelensRootRegistry()
+
+        await registry.addWatchPattern(pyLensProvider.PYTHON_BASE_PATTERN)
+        await registry.addWatchPattern(jsLensProvider.JAVASCRIPT_BASE_PATTERN)
+        await registry.addWatchPattern(csLensProvider.CSHARP_BASE_PATTERN)
+
+        context.extensionContext.subscriptions.push(registry)
+
+        ext.codelensRootRegistry = registry
+    } catch (e) {
+        vscode.window.showErrorMessage(
+            localize(
+                'AWS.codelens.failToInitialize',
+                'Failed to activate template registry. CodeLenses will not appear on SAM template files.'
+            )
+        )
+        getLogger().error('Failed to activate template registry', e)
+    }
 
     return disposables
 }

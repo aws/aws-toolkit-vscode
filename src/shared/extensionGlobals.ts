@@ -8,7 +8,7 @@ import { AWSClientBuilder } from './awsClientBuilder'
 import { AWSContextCommands } from './awsContextCommands'
 import { ToolkitClientBuilder } from './clients/toolkitClientBuilder'
 import { CloudFormationTemplateRegistry } from './cloudformation/templateRegistry'
-import { WorkspaceFileRegistry } from './fileRegistry'
+import { CodelensRootRegistry } from './sam/rootRegistry'
 import { TelemetryService } from './telemetry/telemetryService'
 
 /**
@@ -23,7 +23,7 @@ export namespace ext {
     export let toolkitClientBuilder: ToolkitClientBuilder
     export let telemetry: TelemetryService
     export let templateRegistry: CloudFormationTemplateRegistry
-    export let codelensRootRegistry: WorkspaceFileRegistry<string>
+    export let codelensRootRegistry: CodelensRootRegistry
 
     export namespace iconPaths {
         export const dark: IconPaths = makeIconPathsObject()

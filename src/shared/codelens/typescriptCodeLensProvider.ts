@@ -10,6 +10,17 @@ import { TypescriptLambdaHandlerSearch } from '../typescriptLambdaHandlerSearch'
 import { normalizeSeparator } from '../utilities/pathUtils'
 import { findParentProjectFile } from '../utilities/workspaceUtils'
 
+export const JAVASCRIPT_LANGUAGE = 'javascript'
+
+export const JAVASCRIPT_ALL_FILES: vscode.DocumentFilter[] = [
+    {
+        language: JAVASCRIPT_LANGUAGE,
+        scheme: 'file',
+    },
+]
+
+export const JAVASCRIPT_BASE_PATTERN = '**/package.json'
+
 export async function getLambdaHandlerCandidates(document: vscode.TextDocument): Promise<LambdaHandlerCandidate[]> {
     const packageJsonFile = await findParentProjectFile(document.uri, 'package.json')
 
