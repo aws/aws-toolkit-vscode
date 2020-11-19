@@ -34,7 +34,7 @@ export async function getLambdaHandlerCandidates(document: vscode.TextDocument):
 
     // TODO : Perform an XPATH parse on the project file
     // If Project/PropertyGroup/AssemblyName exists, use that. Otherwise use the file name.
-    const assemblyUri = await findParentProjectFile(document.uri, '*.csproj')
+    const assemblyUri = await findParentProjectFile(document.uri, /^.*\.csproj$/)
     if (!assemblyUri) {
         return []
     }

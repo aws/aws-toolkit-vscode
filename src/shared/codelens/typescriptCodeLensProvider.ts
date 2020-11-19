@@ -22,7 +22,7 @@ export const JAVASCRIPT_ALL_FILES: vscode.DocumentFilter[] = [
 export const JAVASCRIPT_BASE_PATTERN = '**/package.json'
 
 export async function getLambdaHandlerCandidates(document: vscode.TextDocument): Promise<LambdaHandlerCandidate[]> {
-    const packageJsonFile = await findParentProjectFile(document.uri, 'package.json')
+    const packageJsonFile = await findParentProjectFile(document.uri, /^package\.json$/)
 
     if (!packageJsonFile) {
         return []

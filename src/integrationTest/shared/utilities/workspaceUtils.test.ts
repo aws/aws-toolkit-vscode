@@ -87,7 +87,7 @@ describe('findParentProjectFile', async () => {
             for (const file of test.filesToUse) {
                 await writeFile(file.fsPath, '')
             }
-            const projectFile = await findParentProjectFile(sourceCodeUri, '*.csproj')
+            const projectFile = await findParentProjectFile(sourceCodeUri, /^.*\.csproj$/)
             if (test.expectedResult) {
                 // doesn't do a deepStrictEqual because VS Code sets a hidden field to `undefined` when returning instead of `null` (when it's created)
                 // for all intents and purposes, if this matches, it's good enough for us.

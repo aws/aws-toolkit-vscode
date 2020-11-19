@@ -177,7 +177,7 @@ export abstract class WorkspaceFileRegistry<T> implements vscode.Disposable {
         this.disposables.push(
             watcher,
             watcher.onDidChange(async uri => {
-                getLogger().verbose(`Manager detected a change to template file: ${uri.fsPath}`)
+                getLogger().verbose(`Manager detected a change to tracked file: ${uri.fsPath}`)
                 await this.addItemToRegistry(uri)
             }),
             watcher.onDidCreate(async uri => {

@@ -91,7 +91,7 @@ export async function addFolderToWorkspace(
  */
 export async function findParentProjectFile(
     sourceCodeUri: vscode.Uri,
-    projectFile: string
+    projectFile: RegExp
 ): Promise<vscode.Uri | undefined> {
     const workspaceFolder = vscode.workspace.getWorkspaceFolder(sourceCodeUri)
     if (!workspaceFolder) {
