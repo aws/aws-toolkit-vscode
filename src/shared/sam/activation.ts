@@ -172,9 +172,11 @@ async function activateCodeLensProviders(
         ext.codelensRootRegistry = registry
     } catch (e) {
         vscode.window.showErrorMessage(
-            localize('AWS.codelens.failToInitializeCode', "Failed to activate Lambda handler CodeLesns's")
+            localize('AWS.codelens.failToInitializeCode', 'Failed to activate Lambda handler CodeLenses')
         )
-        getLogger().error('Failed to activate template registry', e)
+        getLogger().error('Failed to activate codelens registry', e)
+        // This prevents us from breaking for any reason later if it fails to load. Since
+        // Noop watcher is always empty, we will get back empty arrays with no issues.
         ext.codelensRootRegistry = (new NoopWatcher() as unknown) as CodelensRootRegistry
     }
     context.extensionContext.subscriptions.push(ext.codelensRootRegistry)
