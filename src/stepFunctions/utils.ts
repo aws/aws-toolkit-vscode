@@ -169,7 +169,7 @@ export async function* listStateMachines(
     try {
         yield* client.listStateMachines()
     } finally {
-        if (!!status) {
+        if (status) {
             status.dispose()
         }
     }

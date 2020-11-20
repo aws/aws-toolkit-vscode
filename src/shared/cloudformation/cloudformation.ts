@@ -231,7 +231,7 @@ export namespace CloudFormation {
         if (!resource.Type) {
             throw new Error('Missing or invalid value in Template for key: Type')
         }
-        if (!!resource.Properties) {
+        if (resource.Properties) {
             if (
                 !resource.Properties.Handler ||
                 !validatePropertyType(resource.Properties.Handler, template, 'string')

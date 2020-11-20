@@ -49,8 +49,6 @@ module.exports = {
         // TODO rennable this rule (by removing this off)
         'no-prototype-builtins': 'off',
         // TODO rennable this rule (by removing this off)
-        'no-extra-boolean-cast': 'off',
-        // TODO rennable this rule (by removing this off)
         '@typescript-eslint/no-use-before-define': 'off',
         // TODO rennable this rule (by removing this off)
         '@typescript-eslint/camelcase': 'off',
