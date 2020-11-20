@@ -49,6 +49,7 @@ import * as pathutils from '../../shared/utilities/pathUtils'
 import { openLaunchJsonFile } from '../../shared/sam/debugger/commands/addSamDebugConfiguration'
 import { waitUntil } from '../../shared/utilities/timeoutUtils'
 import { launchConfigDocUrl } from '../../shared/constants'
+import { isCloud9 } from '../../shared/extensionUtilities'
 
 export async function resumeCreateNewSamApp(
     extContext: ExtContext,
@@ -226,11 +227,17 @@ export async function createNewSamApplication(
             const helpText = localize('AWS.generic.message.getHelp', 'Get Help...')
             vscode.window
                 .showWarningMessage(
-                    localize(
-                        'AWS.samcli.initWizard.launchConfigFail',
-                        'Created SAM application "{0}" but failed to generate launch configurations. You can generate these via CodeLens in the template or handler file.',
-                        config.name
-                    ),
+                    isCloud9()
+                        ? localize(
+                              'AWS.samcli.initWizard.launchConfigFail',
+                              'Created SAM application "{0}" but failed to generate launch configurations. You can generate these via CodeLens in the template or handler file.',
+                              config.name
+                          )
+                        : localize(
+                              'AWS.samcli.initWizard.launchConfigFail.c9',
+                              'Created SAM application "{0}" but failed to generate launch configurations. You can generate these via Inline Action in the template or handler file.',
+                              config.name
+                          ),
                     helpText
                 )
                 .then(async buttonText => {

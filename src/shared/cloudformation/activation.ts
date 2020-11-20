@@ -9,6 +9,7 @@ import { localize } from '../utilities/vsCodeUtils'
 
 import { CloudFormationTemplateRegistry } from './templateRegistry'
 import { ext } from '../extensionGlobals'
+import { isCloud9 } from '../extensionUtilities'
 
 export const TEMPLATE_FILE_GLOB_PATTERN = '**/template.{yaml,yml}'
 
@@ -35,10 +36,15 @@ export async function activate(extensionContext: vscode.ExtensionContext): Promi
         ext.templateRegistry = registry
     } catch (e) {
         vscode.window.showErrorMessage(
-            localize(
-                'AWS.codelens.failToInitialize',
-                'Failed to activate template registry. CodeLenses will not appear on SAM template files.'
-            )
+            isCloud9()
+                ? localize(
+                      'AWS.codelens.failToInitialize',
+                      'Failed to activate template registry. CodeLenses will not appear on SAM template files.'
+                  )
+                : localize(
+                      'AWS.codelens.failToInitialize.c9',
+                      'Failed to activate template registry. Inline Actions will not appear on SAM template files.'
+                  )
         )
         getLogger().error('Failed to activate template registry', e)
     }
