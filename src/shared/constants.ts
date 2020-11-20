@@ -29,9 +29,8 @@ export const credentialHelpUrl: string =
 export const samInitDocUrl: string = isCloud9()
     ? 'https://docs.aws.amazon.com/cloud9/latest/user-guide/latest/user-guide/create-sam.html'
     : 'https://docs.aws.amazon.com/toolkit-for-vscode/latest/userguide/create-sam.html'
-// TODO: Different Cloud9 link for this?
 export const launchConfigDocUrl: string = isCloud9()
-    ? 'https://docs.aws.amazon.com/cloud9/latest/user-guide/latest/user-guide/create-sam.html'
+    ? 'https://docs.aws.amazon.com/cloud9/latest/user-guide/run-debug-sam-app.html'
     : 'https://docs.aws.amazon.com/toolkit-for-vscode/latest/userguide/run-debug-sam-app.html'
 // URLs for samDeployWizard
 // tslint:disable-next-line:max-line-length
