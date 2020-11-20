@@ -277,7 +277,7 @@ export function filterTelemetryCacheEvents(input: any): MetricDatum[] {
 
             return true
         })
-        .filter((item: Object) => {
+        .filter((item: any) => {
             // Only accept objects that have the required telemetry data
             if (
                 !item.hasOwnProperty('Value') ||
