@@ -48,10 +48,11 @@ export function normalizeSeparator(p: string) {
     return normalized
 }
 
-export function dirnameWithTrailingSlash(path: string): string {
-    let dirname = _path.dirname(path)
-    if (!dirname.endsWith(_path.sep)) {
-        dirname += _path.sep
+export function normalizedDirnameWithTrailingSlash(path: string): string {
+    const dir = normalize(path)
+    let dirname = _path.dirname(dir)
+    if (!dirname.endsWith('/')) {
+        dirname += '/'
     }
 
     return dirname

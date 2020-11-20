@@ -62,7 +62,7 @@ describe('addInitialLaunchConfiguration', function () {
 
         testutil.toFile(makeSampleSamTemplateYaml(true), tempTemplate.fsPath)
 
-        await ext.templateRegistry.addTemplateToRegistry(tempTemplate)
+        await ext.templateRegistry.addItemToRegistry(tempTemplate)
         const launchConfigs = await addInitialLaunchConfiguration(
             fakeContext,
             fakeWorkspaceFolder,
@@ -96,7 +96,7 @@ describe('addInitialLaunchConfiguration', function () {
 
         testutil.toFile(makeSampleSamTemplateYaml(true), tempTemplate.fsPath)
 
-        await ext.templateRegistry.addTemplateToRegistry(tempTemplate)
+        await ext.templateRegistry.addItemToRegistry(tempTemplate)
         const launchConfigs = await addInitialLaunchConfiguration(
             fakeContext,
             fakeWorkspaceFolder,
