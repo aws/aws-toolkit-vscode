@@ -42,13 +42,13 @@ describe('CloudFormation Template Registry', async () => {
         await strToYamlFile(makeSampleSamTemplateYaml(true), path.join(testDir, 'test.yaml'))
         await strToYamlFile(makeSampleSamTemplateYaml(false), path.join(testDirNested, 'test.yml'))
 
-        await registry.addTemplateGlob('**/test.{yaml,yml}')
+        await registry.addWatchPattern('**/test.{yaml,yml}')
 
         await registryHasTargetNumberOfFiles(registry, 2)
     })
 
     it('adds dynamically-added template files with yaml and yml extensions at various nesting levels', async () => {
-        await registry.addTemplateGlob('**/test.{yaml,yml}')
+        await registry.addWatchPattern('**/test.{yaml,yml}')
 
         await strToYamlFile(makeSampleSamTemplateYaml(false), path.join(testDir, 'test.yml'))
         await strToYamlFile(makeSampleSamTemplateYaml(true), path.join(testDirNested, 'test.yaml'))
@@ -57,7 +57,7 @@ describe('CloudFormation Template Registry', async () => {
     })
 
     it('Ignores templates matching excluded patterns', async () => {
-        await registry.addTemplateGlob('**/test.{yaml,yml}')
+        await registry.addWatchPattern('**/test.{yaml,yml}')
         await registry.addExcludedPattern(/.*nested.*/)
 
         await strToYamlFile(makeSampleSamTemplateYaml(false), path.join(testDir, 'test.yml'))
@@ -70,7 +70,7 @@ describe('CloudFormation Template Registry', async () => {
         const filepath = path.join(testDir, 'changeMe.yml')
         await strToYamlFile(makeSampleSamTemplateYaml(false), filepath)
 
-        await registry.addTemplateGlob('**/changeMe.yml')
+        await registry.addWatchPattern('**/changeMe.yml')
 
         await registryHasTargetNumberOfFiles(registry, 1)
 
@@ -82,7 +82,7 @@ describe('CloudFormation Template Registry', async () => {
     })
 
     it('can handle deleted files', async () => {
-        await registry.addTemplateGlob('**/deleteMe.yml')
+        await registry.addWatchPattern('**/deleteMe.yml')
 
         // Specifically creating the file after the watcher is added
         // Otherwise, it seems the file is deleted before the file watcher realizes the file exists
@@ -99,7 +99,7 @@ describe('CloudFormation Template Registry', async () => {
 })
 
 async function registryHasTargetNumberOfFiles(registry: CloudFormationTemplateRegistry, target: number) {
-    while (registry.registeredTemplates.length !== target) {
+    while (registry.registeredItems.length !== target) {
         await new Promise(resolve => setTimeout(resolve, 20))
     }
 }
@@ -112,9 +112,9 @@ async function queryRegistryForFileWithGlobalsKeyStatus(
     let foundMatch = false
     while (!foundMatch) {
         await new Promise(resolve => setTimeout(resolve, 20))
-        const obj = registry.getRegisteredTemplate(filepath)
+        const obj = registry.getRegisteredItem(filepath)
         if (obj) {
-            foundMatch = Object.keys(obj.template).includes('Globals') === hasGlobals
+            foundMatch = Object.keys(obj.item).includes('Globals') === hasGlobals
         }
     }
 }
