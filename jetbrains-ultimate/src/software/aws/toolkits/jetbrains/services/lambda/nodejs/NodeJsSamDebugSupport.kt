@@ -32,7 +32,7 @@ class NodeJsSamDebugSupport : SamDebugSupport {
     ): XDebugProcessStarter? = object : XDebugProcessStarter() {
         override fun start(session: XDebugSession): XDebugProcess {
             val mappings = createBiMapMappings(state.builtLambda.mappings)
-            val fileFinder = RemoteDebuggingFileFinder(mappings, LocalFileSystemFileFinder(false))
+            val fileFinder = RemoteDebuggingFileFinder(mappings, LocalFileSystemFileFinder())
 
             val connection = WipLocalVmConnection()
             val executionResult = state.execute(environment.executor, environment.runner)
