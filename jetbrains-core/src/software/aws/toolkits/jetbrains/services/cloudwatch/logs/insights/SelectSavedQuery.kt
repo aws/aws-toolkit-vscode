@@ -26,7 +26,7 @@ class SelectSavedQuery(
         resourceSelector = ResourceSelector.builder()
             .resource { CloudWatchResources.DESCRIBE_QUERY_DEFINITIONS }
             .awsConnection { connectionSettings }
-            .customRenderer(SimpleListCellRenderer.create { label, value, _ -> label.text = value.name() })
+            .customRenderer(SimpleListCellRenderer.create("") { it.name() })
             .build()
 
         // select the first entry, if applicable

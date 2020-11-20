@@ -85,7 +85,7 @@ class EcsCloudDebugSettingsEditorPanel(private val project: Project) : Disposabl
 
         clusterSelector = ResourceSelector.builder()
             .resource(EcsResources.LIST_CLUSTER_ARNS)
-            .customRenderer(SimpleListCellRenderer.create { label, value, _ -> label.text = EcsUtils.clusterArnToName(value) })
+            .customRenderer(SimpleListCellRenderer.create("") { EcsUtils.clusterArnToName(it) })
             .disableAutomaticLoading()
             .awsConnection { credentialSettingsRef.get() ?: throw IllegalStateException("clusterSelector.reload() called before region/credentials set") }
             .build()
@@ -101,7 +101,7 @@ class EcsCloudDebugSettingsEditorPanel(private val project: Project) : Disposabl
                     null
                 }
             }
-            .customRenderer(SimpleListCellRenderer.create { label, value, _ -> label.text = EcsUtils.serviceArnToName(value) })
+            .customRenderer(SimpleListCellRenderer.create("") { EcsUtils.serviceArnToName(it) })
             .disableAutomaticLoading()
             .awsConnection { credentialSettingsRef.get() ?: throw IllegalStateException("serviceSelector.reload() called before region/credentials set") }
             .build()

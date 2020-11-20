@@ -5,7 +5,6 @@ package software.aws.toolkits.jetbrains.services.sqs
 import com.intellij.icons.AllIcons
 import com.intellij.ide.HelpTooltip
 import com.intellij.openapi.project.Project
-import com.intellij.ui.IdeBorderFactory
 import com.intellij.ui.SimpleListCellRenderer
 import software.amazon.awssdk.services.lambda.model.FunctionConfiguration
 import software.aws.toolkits.jetbrains.services.lambda.resources.LambdaResources
@@ -20,7 +19,6 @@ class ConfigureLambdaPanel(private val project: Project) {
     lateinit var functionContextHelp: JLabel
 
     init {
-        component.border = IdeBorderFactory.createTitledBorder(message("sqs.configure.lambda.select"))
         functionContextHelp.icon = AllIcons.General.ContextHelp
         HelpTooltip().apply {
             setDescription(message("sqs.configure.lambda.tooltip"))
@@ -31,7 +29,7 @@ class ConfigureLambdaPanel(private val project: Project) {
     private fun createUIComponents() {
         lambdaFunction = ResourceSelector.builder()
             .resource(LambdaResources.LIST_FUNCTIONS)
-            .customRenderer(SimpleListCellRenderer.create { label, value, _ -> label.text = value.functionName() })
+            .customRenderer(SimpleListCellRenderer.create("") { it.functionName() })
             .awsConnection(project)
             .build()
     }
