@@ -14,7 +14,7 @@
     "AWS.channel.aws.toolkit": "AWS Toolkit",
     "AWS.channel.aws.toolkit.activation.error": "Error Activating AWS Toolkit",
     "AWS.codelens.failToInitialize": "Failed to activate template registry. CodeLenses will not appear on SAM template files.",
-    "AWS.codelens.failToInitializeCode": "Failed to activate Lambda handler CodeLesns's",
+    "AWS.codelens.failToInitializeCode": "Failed to activate Lambda handler CodeLenses",
     "AWS.codelens.lambda.invoke": "Run Locally",
     "AWS.codelens.lambda.invoke.debug": "Debug Locally",
     "AWS.configuration.title": "AWS Configuration",
