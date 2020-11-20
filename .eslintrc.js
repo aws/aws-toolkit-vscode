@@ -27,8 +27,6 @@ module.exports = {
         // TODO reenable this rule (by removing this off)
         '@typescript-eslint/prefer-regexp-exec': 'off',
         // TODO reenable this rule (by removing this off)
-        'no-empty-pattern': 'off',
-        // TODO reenable this rule (by removing this off)
         'no-async-promise-executors': 'off',
         // TODO reenable this rule (by removing this off)
         '@typescript-eslint/consistent-type-assertions': 'off',
