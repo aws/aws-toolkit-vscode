@@ -25,7 +25,7 @@ describe('pathUtils', async () => {
     })
 
     it('normalizedDirnameWithTrailingSlash()', async () => {
-        const expectedResult = path.join('src', 'processors') + '/'
+        const expectedResult = 'src/processors/'
         const input = path.join(expectedResult, 'app.js')
         const actualResult = normalizedDirnameWithTrailingSlash(input)
         assert.strictEqual(actualResult, expectedResult, 'Expected path to contain trailing slash')
