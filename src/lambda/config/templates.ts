@@ -182,7 +182,6 @@ export function showTemplatesConfigurationError(
     showErrorMessage(
         localize(
             'AWS.lambda.configure.error.fieldtype',
-            // tslint:disable-next-line:max-line-length
             'Your templates.json file has an issue. {0} was detected as {1} instead of one of the following: [{2}]. Please change or remove this field, and try again.',
             error.jsonPath.join('.'),
             error.actualType,
@@ -190,7 +189,6 @@ export function showTemplatesConfigurationError(
         )
     )
 
-    // tslint:disable-next-line:max-line-length
     logger.error(
         `Error detected in templates.json: ${error.message}. Field: ${error.jsonPath.join(
             '.'

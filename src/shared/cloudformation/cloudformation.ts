@@ -97,7 +97,6 @@ export namespace CloudFormation {
     }
 
     // TODO: Can we automatically detect changes to the CFN spec and apply them here?
-    // tslint:disable-next-line:max-line-length
     // https://docs.aws.amazon.com/AWSCloudFormation/latest/UserGuide/parameters-section-structure.html#parameters-section-structure-properties
     export type ParameterType =
         | 'String'
@@ -107,7 +106,6 @@ export namespace CloudFormation {
         | AWSSpecificParameterType
         | SSMParameterType
 
-    // tslint:disable-next-line:max-line-length
     // https://docs.aws.amazon.com/AWSCloudFormation/latest/UserGuide/parameters-section-structure.html#aws-specific-parameter-types
     type AWSSpecificParameterType =
         | 'AWS::EC2::AvailabilityZone::Name'
@@ -129,7 +127,6 @@ export namespace CloudFormation {
         | 'List<AWS::EC2::VPC::Id>'
         | 'List<AWS::Route53::HostedZone::Id>'
 
-    // tslint:disable-next-line:max-line-length
     // https://docs.aws.amazon.com/AWSCloudFormation/latest/UserGuide/parameters-section-structure.html#aws-ssm-parameter-types
     type SSMParameterType =
         | 'AWS::SSM::Parameter::Name'

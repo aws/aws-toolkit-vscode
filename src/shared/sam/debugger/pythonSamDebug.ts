@@ -169,7 +169,6 @@ export async function waitForPythonDebugAdapter(debugPort: number, timeout: Time
     if (!debugServerAvailable) {
         channelLogger.warn(
             'AWS.sam.local.invoke.python.server.not.available',
-            // tslint:disable-next-line:max-line-length
             'Unable to communicate with the Python Debug Adapter. The debugger might not succeed when attaching to your SAM Application.'
         )
     }

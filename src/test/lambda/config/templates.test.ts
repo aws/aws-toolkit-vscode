@@ -139,7 +139,6 @@ describe('templates', async () => {
                 assert.ok(err)
                 assert.strictEqual(
                     String(err),
-                    // tslint:disable-next-line:max-line-length
                     'Error: Could not load .aws/templates.json: Error: Could not parse .aws/templates.json: close brace expected at offset 1, length 0'
                 )
 

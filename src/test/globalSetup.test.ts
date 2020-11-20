@@ -55,7 +55,6 @@ beforeEach(async function () {
 
 afterEach(async function () {
     // Prevent other tests from using the same TestLogger instance
-    // tslint:disable-next-line: no-unsafe-any, no-invalid-this
     teardownTestLogger(this.currentTest?.fullTitle() as string)
     testLogger = undefined
 })

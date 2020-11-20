@@ -68,7 +68,6 @@ describe('ChildProcess', async () => {
 
                 // We want to verify that the error is thrown even if the first
                 // invocation is still in progress, so we don't await the promise.
-                // tslint:disable-next-line:no-floating-promises
                 childProcess.run()
 
                 try {
@@ -103,7 +102,6 @@ describe('ChildProcess', async () => {
 
                 // We want to verify that the error is thrown even if the first
                 // invocation is still in progress, so we don't await the promise.
-                // tslint:disable-next-line:no-floating-promises
                 childProcess.run()
 
                 try {
@@ -221,7 +219,6 @@ describe('ChildProcess', async () => {
 
                 // We want to verify that the error is thrown even if the first
                 // invocation is still in progress, so we don't await the promise.
-                // tslint:disable-next-line:no-floating-promises
                 childProcess.start({})
 
                 try {
@@ -252,7 +249,6 @@ describe('ChildProcess', async () => {
 
                 // We want to verify that the error is thrown even if the first
                 // invocation is still in progress, so we don't await the promise.
-                // tslint:disable-next-line:no-floating-promises
                 childProcess.start({})
 
                 try {
@@ -302,7 +298,6 @@ describe('ChildProcess', async () => {
 
     describe('stop()', async () => {
         if (process.platform === 'win32') {
-            // tslint:disable-next-line:max-line-length
             it('detects running processes and successfully stops a running process - Windows', async () => {
                 const batchFile = path.join(tempFolder, 'test-script.bat')
                 writeBatchFileWithDelays(batchFile)
@@ -310,7 +305,6 @@ describe('ChildProcess', async () => {
                 const childProcess = new ChildProcess(batchFile)
 
                 // `await` is intentionally not used, we want to check the process while it runs.
-                // tslint:disable-next-line: no-floating-promises
                 childProcess.run()
 
                 assert.strictEqual(childProcess.stopped, false)
@@ -331,7 +325,6 @@ describe('ChildProcess', async () => {
                 const childProcess = new ChildProcess(batchFile)
 
                 // `await` is intentionally not used, we want to check the process while it runs.
-                // tslint:disable-next-line: no-floating-promises
                 childProcess.run()
 
                 childProcess.stop()
@@ -349,7 +342,6 @@ describe('ChildProcess', async () => {
         } // END Windows-only tests
 
         if (process.platform !== 'win32') {
-            // tslint:disable-next-line:max-line-length
             it('detects running processes and successfully stops a running process - Unix', async () => {
                 const scriptFile = path.join(tempFolder, 'test-script.sh')
                 writeShellFileWithDelays(scriptFile)
@@ -357,7 +349,6 @@ describe('ChildProcess', async () => {
                 const childProcess = new ChildProcess('sh', {}, scriptFile)
 
                 // `await` is intentionally not used, we want to check the process while it runs.
-                // tslint:disable-next-line: no-floating-promises
                 childProcess.run()
 
                 assert.strictEqual(childProcess.stopped, false)
@@ -378,7 +369,6 @@ describe('ChildProcess', async () => {
                 const childProcess = new ChildProcess(scriptFile)
 
                 // `await` is intentionally not used, we want to check the process while it runs.
-                // tslint:disable-next-line: no-floating-promises
                 childProcess.run()
 
                 childProcess.stop()

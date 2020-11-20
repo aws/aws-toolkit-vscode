@@ -250,7 +250,6 @@ export class DefaultTelemetryService implements TelemetryService {
 
             return events
         } catch (error) {
-            // tslint:disable-next-line: no-unsafe-any
             getLogger().error(error)
 
             return []
