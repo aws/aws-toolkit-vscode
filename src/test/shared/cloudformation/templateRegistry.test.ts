@@ -18,8 +18,9 @@ import { assertThrowsError } from '../utilities/assertUtils'
 import { badYaml, makeSampleSamTemplateYaml, strToYamlFile } from './cloudformationTestUtils'
 import { assertEqualPaths } from '../../testUtil'
 import { CloudFormation } from '../../../shared/cloudformation/cloudformation'
-import { WorkspaceItem } from '../../../shared/fileRegistry'
+import { WatchedItem } from '../../../shared/watchedFiles'
 
+// TODO almost all of these tests should be moved to test WatchedFiles instead
 describe('CloudFormation Template Registry', async () => {
     const goodYaml1 = makeSampleSamTemplateYaml(false)
 
@@ -88,7 +89,7 @@ describe('CloudFormation Template Registry', async () => {
                 await testRegistry.addItemToRegistry(vscode.Uri.file(filename.fsPath))
                 assert.strictEqual(testRegistry.registeredItems.length, 1)
 
-                testRegistry.removeItemFromRegistry(vscode.Uri.file(filename.fsPath))
+                testRegistry.remove(vscode.Uri.file(filename.fsPath))
                 assert.strictEqual(testRegistry.registeredItems.length, 0)
             })
 
@@ -98,7 +99,7 @@ describe('CloudFormation Template Registry', async () => {
                 await testRegistry.addItemToRegistry(vscode.Uri.file(filename.fsPath))
                 assert.strictEqual(testRegistry.registeredItems.length, 1)
 
-                testRegistry.removeItemFromRegistry(vscode.Uri.file(path.join(tempFolder, 'wrong-template.yaml')))
+                testRegistry.remove(vscode.Uri.file(path.join(tempFolder, 'wrong-template.yaml')))
                 assert.strictEqual(testRegistry.registeredItems.length, 1)
             })
         })
@@ -330,7 +331,7 @@ describe('CloudFormation Template Registry', async () => {
     })
 })
 
-function assertValidTestTemplate(data: WorkspaceItem<CloudFormation.Template> | undefined, filename: string): void {
+function assertValidTestTemplate(data: WatchedItem<CloudFormation.Template> | undefined, filename: string): void {
     assert.ok(data)
     if (data) {
         assertEqualPaths(data.path, filename)

@@ -4,7 +4,7 @@
  */
 
 import * as path from 'path'
-import { WorkspaceFileRegistry } from '../fileRegistry'
+import { WatchedFiles } from '../watchedFiles'
 
 /**
  * CodelensRootRegistry stores the locations of files that we consider as candidates for
@@ -15,8 +15,8 @@ import { WorkspaceFileRegistry } from '../fileRegistry'
  * The type it stores it the basename of the path, so we can figure out if the candidate
  * is valid for each codelense
  */
-export class CodelensRootRegistry extends WorkspaceFileRegistry<string> {
-    protected registryName: string = 'CodelensRootRegistry'
+export class CodelensRootRegistry extends WatchedFiles<string> {
+    protected name: string = 'CodelensRootRegistry'
     protected async load(p: string): Promise<string> {
         return path.basename(p)
     }

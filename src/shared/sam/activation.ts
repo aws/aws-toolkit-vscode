@@ -34,6 +34,7 @@ import { SamDebugConfigProvider } from './debugger/awsSamDebugger'
 import { addSamDebugConfiguration } from './debugger/commands/addSamDebugConfiguration'
 import { AWS_SAM_DEBUG_TYPE } from './debugger/awsSamDebugConfiguration'
 import { CodelensRootRegistry } from './codelensRootRegistry'
+import { NoopWatcher } from '../watchedFiles'
 
 const STATE_NAME_SUPPRESS_YAML_PROMPT = 'aws.sam.suppressYamlPrompt'
 
@@ -168,18 +169,15 @@ async function activateCodeLensProviders(
         await registry.addWatchPattern(jsLensProvider.JAVASCRIPT_BASE_PATTERN)
         await registry.addWatchPattern(csLensProvider.CSHARP_BASE_PATTERN)
 
-        context.extensionContext.subscriptions.push(registry)
-
         ext.codelensRootRegistry = registry
     } catch (e) {
         vscode.window.showErrorMessage(
-            localize(
-                'AWS.codelens.failToInitialize',
-                'Failed to activate template registry. CodeLenses will not appear on SAM template files.'
-            )
+            localize('AWS.codelens.failToInitializeCode', "Failed to activate Lambda handler CodeLesns's")
         )
         getLogger().error('Failed to activate template registry', e)
+        ext.codelensRootRegistry = (new NoopWatcher() as unknown) as CodelensRootRegistry
     }
+    context.extensionContext.subscriptions.push(ext.codelensRootRegistry)
 
     return disposables
 }

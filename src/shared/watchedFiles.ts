@@ -8,16 +8,24 @@ import { getLogger } from './logger/logger'
 import * as pathutils from './utilities/pathUtils'
 import * as path from 'path'
 
-export interface WorkspaceItem<T> {
+export interface WatchedItem<T> {
+    /**
+     * The absolute path to the file
+     */
     path: string
+    /**
+     * An item based on the file and type of WatchedFiles
+     */
     item: T
 }
 
 /**
- * WorkspaceFileRegistry lets us index files in the current registry. It is used
- * for CFN templates among other things
+ * WatchedFiles lets us index files in the current registry. It is used
+ * for CFN templates among other things. WatchedFiles holds a list of pairs of
+ * the absolute path to the file along with a transform of it that is useful for
+ * where it is used. For example, for templates, it parses the template and stores it.
  */
-export abstract class WorkspaceFileRegistry<T> implements vscode.Disposable {
+export abstract class WatchedFiles<T> implements vscode.Disposable {
     private readonly disposables: vscode.Disposable[] = []
     private _isDisposed: boolean = false
     private readonly globs: vscode.GlobPattern[] = []
@@ -30,14 +38,14 @@ export abstract class WorkspaceFileRegistry<T> implements vscode.Disposable {
      */
     protected abstract load(path: string): Promise<T>
     /**
-     * Registry name for logs
+     * Name for logs
      */
-    protected abstract registryName: string
+    protected abstract name: string
 
     public constructor() {
         this.disposables.push(
             vscode.workspace.onDidChangeWorkspaceFolders(async () => {
-                await this.rebuildRegistry()
+                await this.rebuild()
             })
         )
     }
@@ -49,14 +57,14 @@ export abstract class WorkspaceFileRegistry<T> implements vscode.Disposable {
      */
     public async addWatchPattern(glob: vscode.GlobPattern): Promise<void> {
         if (this._isDisposed) {
-            throw new Error(`${this.registryName}: manager has already been disposed!`)
+            throw new Error(`${this.name}: manager has already been disposed!`)
         }
         this.globs.push(glob)
 
         const watcher = vscode.workspace.createFileSystemWatcher(glob)
         this.addWatcher(watcher)
 
-        await this.rebuildRegistry()
+        await this.rebuild()
     }
 
     /**
@@ -64,11 +72,11 @@ export abstract class WorkspaceFileRegistry<T> implements vscode.Disposable {
      */
     public async addExcludedPattern(pattern: RegExp): Promise<void> {
         if (this._isDisposed) {
-            throw new Error(`${this.registryName}: manager has already been disposed!`)
+            throw new Error(`${this.name}: manager has already been disposed!`)
         }
         this.excludedFilePatterns.push(pattern)
 
-        await this.rebuildRegistry()
+        await this.rebuild()
     }
 
     /**
@@ -79,7 +87,7 @@ export abstract class WorkspaceFileRegistry<T> implements vscode.Disposable {
         const excluded = this.excludedFilePatterns.find(pattern => uri.fsPath.match(pattern))
         if (excluded) {
             getLogger().verbose(
-                `${this.registryName}: manager did not add item ${uri.fsPath} matching excluded pattern ${excluded}`
+                `${this.name}: manager did not add item ${uri.fsPath} matching excluded pattern ${excluded}`
             )
             return
         }
@@ -92,7 +100,7 @@ export abstract class WorkspaceFileRegistry<T> implements vscode.Disposable {
             if (!quiet) {
                 throw e
             }
-            getLogger().verbose(`${this.registryName}: item ${uri} is malformed: ${e}`)
+            getLogger().verbose(`${this.name}: item ${uri} is malformed: ${e}`)
         }
     }
 
@@ -100,7 +108,7 @@ export abstract class WorkspaceFileRegistry<T> implements vscode.Disposable {
      * Get a specific item's data
      * @param path Absolute path to template of interest
      */
-    public getRegisteredItem(path: string): WorkspaceItem<T> | undefined {
+    public getRegisteredItem(path: string): WatchedItem<T> | undefined {
         const normalizedPath = pathutils.normalize(path)
         this.assertAbsolute(normalizedPath)
         const item = this.registryData.get(normalizedPath)
@@ -116,8 +124,8 @@ export abstract class WorkspaceFileRegistry<T> implements vscode.Disposable {
     /**
      * Returns the registry's data as an array of paths to type T objects
      */
-    public get registeredItems(): WorkspaceItem<T>[] {
-        const arr: WorkspaceItem<T>[] = []
+    public get registeredItems(): WatchedItem<T>[] {
+        const arr: WatchedItem<T>[] = []
 
         for (const templatePath of this.registryData.keys()) {
             const template = this.getRegisteredItem(templatePath)
@@ -131,12 +139,16 @@ export abstract class WorkspaceFileRegistry<T> implements vscode.Disposable {
 
     /**
      * Removes an item from the registry.
-     * @param templateUri vscode.Uri containing the uri of the item to remove
+     * @param absolutePath The absolute path to the item or a vscode.Uri to the item
      */
-    public removeItemFromRegistry(templateUri: vscode.Uri): void {
-        const pathAsString = pathutils.normalize(templateUri.fsPath)
-        this.assertAbsolute(pathAsString)
-        this.registryData.delete(pathAsString)
+    public remove(path: string | vscode.Uri): void {
+        if (typeof path === 'string') {
+            this.registryData.delete(path)
+        } else {
+            const pathAsString = pathutils.normalize(path.fsPath)
+            this.assertAbsolute(pathAsString)
+            this.registryData.delete(pathAsString)
+        }
     }
 
     /**
@@ -158,7 +170,7 @@ export abstract class WorkspaceFileRegistry<T> implements vscode.Disposable {
      * Rebuilds registry using current glob and exclusion patterns.
      * All functionality is currently internal to class, but can be made public if we want a manual "refresh" button
      */
-    private async rebuildRegistry(): Promise<void> {
+    private async rebuild(): Promise<void> {
         this.reset()
         for (const glob of this.globs) {
             const templateUris = await vscode.workspace.findFiles(glob)
@@ -183,16 +195,16 @@ export abstract class WorkspaceFileRegistry<T> implements vscode.Disposable {
         this.disposables.push(
             watcher,
             watcher.onDidChange(async uri => {
-                getLogger().verbose(`${this.registryName}: manager detected a change to tracked file: ${uri.fsPath}`)
+                getLogger().verbose(`${this.name}: manager detected a change to tracked file: ${uri.fsPath}`)
                 await this.addItemToRegistry(uri)
             }),
             watcher.onDidCreate(async uri => {
-                getLogger().verbose(`${this.registryName}: manager detected a new file: ${uri.fsPath}`)
+                getLogger().verbose(`${this.name}: manager detected a new file: ${uri.fsPath}`)
                 await this.addItemToRegistry(uri)
             }),
             watcher.onDidDelete(async uri => {
-                getLogger().verbose(`${this.registryName}: ,anager detected a deleted file: ${uri.fsPath}`)
-                this.removeItemFromRegistry(uri)
+                getLogger().verbose(`${this.name}: ,anager detected a deleted file: ${uri.fsPath}`)
+                this.remove(uri)
             })
         )
     }
@@ -202,4 +214,11 @@ export abstract class WorkspaceFileRegistry<T> implements vscode.Disposable {
             throw Error(`FileRegistry: path is relative when it should be absolute: ${p}`)
         }
     }
+}
+
+export class NoopWatcher extends WatchedFiles<any> {
+    protected async load(path: string): Promise<any> {
+        throw new Error(`Attempted to add a file to the NoopWatcher: ${path}`)
+    }
+    protected name: string = 'NoOp'
 }

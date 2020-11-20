@@ -16,7 +16,7 @@ import {
 import { DefaultAwsSamDebugConfigurationValidator } from '../../../../shared/sam/debugger/awsSamDebugConfigurationValidator'
 import { createBaseTemplate } from '../../cloudformation/cloudformationTestUtils'
 import { ext } from '../../../../shared/extensionGlobals'
-import { WorkspaceItem } from '../../../../shared/fileRegistry'
+import { WatchedItem } from '../../../../shared/watchedFiles'
 
 function createTemplateConfig(): AwsSamDebuggerConfiguration {
     return {
@@ -61,7 +61,7 @@ function createApiConfig(): AwsSamDebuggerConfiguration {
     }
 }
 
-function createTemplateData(): WorkspaceItem<CloudFormation.Template> {
+function createTemplateData(): WatchedItem<CloudFormation.Template> {
     return {
         path: '/',
         item: createBaseTemplate(),

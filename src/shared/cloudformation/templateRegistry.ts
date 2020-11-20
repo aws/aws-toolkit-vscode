@@ -10,15 +10,15 @@ import { isInDirectory } from '../filesystemUtilities'
 import { dotNetRuntimes } from '../../lambda/models/samLambdaRuntime'
 import { getLambdaDetails } from '../../lambda/utils'
 import { ext } from '../extensionGlobals'
-import { WorkspaceFileRegistry, WorkspaceItem } from '../fileRegistry'
+import { WatchedFiles, WatchedItem } from '../watchedFiles'
 
 export interface TemplateDatum {
     path: string
     template: CloudFormation.Template
 }
 
-export class CloudFormationTemplateRegistry extends WorkspaceFileRegistry<CloudFormation.Template> {
-    protected registryName: string = 'CloudFormationTemplateRegistry'
+export class CloudFormationTemplateRegistry extends WatchedFiles<CloudFormation.Template> {
+    protected name: string = 'CloudFormationTemplateRegistry'
     protected async load(path: string): Promise<CloudFormation.Template> {
         return await CloudFormation.load(path)
     }
@@ -34,8 +34,8 @@ export class CloudFormationTemplateRegistry extends WorkspaceFileRegistry<CloudF
 export function getResourcesForHandler(
     filepath: string,
     handler: string,
-    unfilteredTemplates: WorkspaceItem<CloudFormation.Template>[] = ext.templateRegistry.registeredItems
-): { templateDatum: WorkspaceItem<CloudFormation.Template>; name: string; resourceData: CloudFormation.Resource }[] {
+    unfilteredTemplates: WatchedItem<CloudFormation.Template>[] = ext.templateRegistry.registeredItems
+): { templateDatum: WatchedItem<CloudFormation.Template>; name: string; resourceData: CloudFormation.Resource }[] {
     // TODO: Array.flat and Array.flatMap not introduced until >= Node11.x -- migrate when VS Code updates Node ver
     const o = unfilteredTemplates.map(templateDatum => {
         return getResourcesForHandlerFromTemplateDatum(filepath, handler, templateDatum).map(resource => {
@@ -60,7 +60,7 @@ export function getResourcesForHandler(
 export function getResourcesForHandlerFromTemplateDatum(
     filepath: string,
     handler: string,
-    templateDatum: WorkspaceItem<CloudFormation.Template>
+    templateDatum: WatchedItem<CloudFormation.Template>
 ): { name: string; resourceData: CloudFormation.Resource }[] {
     const matchingResources: { name: string; resourceData: CloudFormation.Resource }[] = []
     const templateDirname = path.dirname(templateDatum.path)
