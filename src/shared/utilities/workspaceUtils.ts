@@ -7,7 +7,7 @@ import * as vscode from 'vscode'
 import * as path from 'path'
 import { getLogger } from '../logger'
 import { isInDirectory } from '../filesystemUtilities'
-import { dirnameWithTrailingSlash } from './pathUtils'
+import { normalizedDirnameWithTrailingSlash, normalize } from './pathUtils'
 import { ext } from '../extensionGlobals'
 
 /**
@@ -105,9 +105,9 @@ export async function findParentProjectFile(
     // Use the project file "closest" in the parent chain to sourceCodeUri
     const parentProjectFiles = workspaceProjectFiles
         .filter(uri => {
-            const dirname = dirnameWithTrailingSlash(uri)
+            const dirname = normalizedDirnameWithTrailingSlash(uri)
 
-            return sourceCodeUri.fsPath.startsWith(dirname)
+            return normalize(sourceCodeUri.fsPath).startsWith(dirname)
         })
         .sort((a, b) => {
             if (isInDirectory(path.parse(a).dir, path.parse(b).dir)) {
