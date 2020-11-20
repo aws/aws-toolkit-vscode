@@ -31,8 +31,6 @@ module.exports = {
         // TODO reenable this rule (by removing this off)
         '@typescript-eslint/consistent-type-assertions': 'off',
         // TODO reenable this rule (by removing this off)
-        'no-case-declarations': 'off',
-        // TODO reenable this rule (by removing this off)
         '@typescript-eslint/ban-ts-ignore': 'off',
         // TODO reenable this rule (by removing this off)
         'prefer-const': 'off',
