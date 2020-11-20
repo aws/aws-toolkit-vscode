@@ -6,6 +6,7 @@ import com.intellij.icons.AllIcons
 import com.intellij.ide.HelpTooltip
 import com.intellij.ui.IdeBorderFactory
 import com.intellij.ui.JBColor
+import com.intellij.ui.SideBorder
 import software.aws.toolkits.resources.message
 import java.awt.BorderLayout
 import javax.swing.JLabel
@@ -48,12 +49,12 @@ class CreateQueuePanel {
 
     private fun setFields() {
         queueName.apply {
-            border = IdeBorderFactory.createBorder(0)
+            border = IdeBorderFactory.createBorder(SideBorder.TOP or SideBorder.BOTTOM or SideBorder.LEFT)
         }
         fifoSuffix.apply {
             background = queueName.background
             layout = BorderLayout()
-            border = IdeBorderFactory.createBorder(0)
+            border = IdeBorderFactory.createBorder(SideBorder.TOP or SideBorder.BOTTOM or SideBorder.RIGHT)
             add(fifoSuffixLabel, BorderLayout.WEST)
         }
     }
