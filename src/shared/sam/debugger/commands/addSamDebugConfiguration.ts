@@ -54,14 +54,11 @@ export async function addSamDebugConfiguration(
         let preloadedConfig = undefined
 
         if (workspaceFolder) {
-            const templateDatum = ext.templateRegistry.getRegisteredTemplate(rootUri.fsPath)
+            const templateDatum = ext.templateRegistry.getRegisteredItem(rootUri.fsPath)
             if (templateDatum) {
-                const resource = templateDatum.template.Resources![resourceName]
+                const resource = templateDatum.item.Resources![resourceName]
                 if (resource && resource.Properties) {
-                    const handler = CloudFormation.getStringForProperty(
-                        resource.Properties.Handler,
-                        templateDatum.template
-                    )
+                    const handler = CloudFormation.getStringForProperty(resource.Properties.Handler, templateDatum.item)
                     const existingConfig = await getExistingConfiguration(workspaceFolder, handler ?? '', rootUri)
                     if (existingConfig) {
                         const responseMigrate: string = localize(

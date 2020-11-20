@@ -169,22 +169,22 @@ export class SamDebugConfigProvider implements vscode.DebugConfigurationProvider
         const configs: AwsSamDebuggerConfiguration[] = []
         if (folder) {
             const folderPath = folder.uri.fsPath
-            const templates = ext.templateRegistry.registeredTemplates
+            const templates = ext.templateRegistry.registeredItems
 
             for (const templateDatum of templates) {
                 if (isInDirectory(folderPath, templateDatum.path)) {
-                    if (!templateDatum.template.Resources) {
+                    if (!templateDatum.item.Resources) {
                         getLogger().error(`provideDebugConfigurations: invalid template: ${templateDatum.path}`)
                         continue
                     }
-                    for (const resourceKey of Object.keys(templateDatum.template.Resources)) {
-                        const resource = templateDatum.template.Resources[resourceKey]
+                    for (const resourceKey of Object.keys(templateDatum.item.Resources)) {
+                        const resource = templateDatum.item.Resources[resourceKey]
                         if (resource) {
                             const runtimeName = resource.Properties?.Runtime
                             configs.push(
                                 createTemplateAwsSamDebugConfig(
                                     folder,
-                                    CloudFormation.getStringForProperty(runtimeName, templateDatum.template),
+                                    CloudFormation.getStringForProperty(runtimeName, templateDatum.item),
                                     resourceKey,
                                     templateDatum.path
                                 )
@@ -199,10 +199,7 @@ export class SamDebugConfigProvider implements vscode.DebugConfigurationProvider
                                         configs.push(
                                             createApiAwsSamDebugConfig(
                                                 folder,
-                                                CloudFormation.getStringForProperty(
-                                                    runtimeName,
-                                                    templateDatum.template
-                                                ),
+                                                CloudFormation.getStringForProperty(runtimeName, templateDatum.item),
                                                 resourceKey,
                                                 templateDatum.path,
                                                 {

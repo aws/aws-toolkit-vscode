@@ -619,7 +619,7 @@ function validateStackName(value: string): string | undefined {
 }
 
 async function getTemplateChoices(...workspaceFolders: vscode.Uri[]): Promise<SamTemplateQuickPickItem[]> {
-    const templateUris = ext.templateRegistry.registeredTemplates.map(o => vscode.Uri.file(o.path))
+    const templateUris = ext.templateRegistry.registeredItems.map(o => vscode.Uri.file(o.path))
     const uriToLabel: Map<vscode.Uri, string> = new Map<vscode.Uri, string>()
     const labelCounts: Map<string, number> = new Map()
 
