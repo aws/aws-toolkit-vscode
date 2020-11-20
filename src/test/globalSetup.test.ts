@@ -9,6 +9,7 @@
 import * as assert from 'assert'
 import { appendFileSync, mkdirpSync, remove } from 'fs-extra'
 import { join } from 'path'
+import { CodelensRootRegistry } from '../shared/sam/codelensRootRegistry'
 import { CloudFormationTemplateRegistry } from '../shared/cloudformation/templateRegistry'
 import { ext } from '../shared/extensionGlobals'
 import { getLogger } from '../shared/logger'
@@ -44,6 +45,7 @@ before(async () => {
     const service = new DefaultTelemetryService(mockContext, mockAws, mockPublisher)
     ext.telemetry = service
     ext.templateRegistry = new CloudFormationTemplateRegistry()
+    ext.codelensRootRegistry = new CodelensRootRegistry()
 })
 
 beforeEach(async function () {

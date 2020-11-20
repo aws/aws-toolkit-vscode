@@ -7,7 +7,8 @@ import * as vscode from 'vscode'
 import * as path from 'path'
 import { getLogger } from '../logger'
 import { isInDirectory } from '../filesystemUtilities'
-import { dirnameWithTrailingSlash } from './pathUtils'
+import { normalizedDirnameWithTrailingSlash, normalize } from './pathUtils'
+import { ext } from '../extensionGlobals'
 
 /**
  * Resolves `relPath` against parent `workspaceFolder`, or returns `relPath` if
@@ -90,33 +91,37 @@ export async function addFolderToWorkspace(
  */
 export async function findParentProjectFile(
     sourceCodeUri: vscode.Uri,
-    projectFile: string
+    projectFile: RegExp
 ): Promise<vscode.Uri | undefined> {
     const workspaceFolder = vscode.workspace.getWorkspaceFolder(sourceCodeUri)
     if (!workspaceFolder) {
         return undefined
     }
 
-    const workspaceProjectFiles: vscode.Uri[] = await vscode.workspace.findFiles(
-        new vscode.RelativePattern(workspaceFolder, path.join('**', projectFile))
-    )
+    const workspaceProjectFiles = ext.codelensRootRegistry.registeredItems
+        .filter(item => item.item.match(projectFile))
+        .map(item => item.path)
 
     // Use the project file "closest" in the parent chain to sourceCodeUri
-    let parentProjectFiles = workspaceProjectFiles
+    const parentProjectFiles = workspaceProjectFiles
         .filter(uri => {
-            const dirname = dirnameWithTrailingSlash(uri.fsPath)
+            const dirname = normalizedDirnameWithTrailingSlash(uri)
 
-            return sourceCodeUri.fsPath.startsWith(dirname)
+            return normalize(sourceCodeUri.fsPath).startsWith(dirname)
         })
         .sort((a, b) => {
-            if (isInDirectory(path.parse(a.fsPath).dir, path.parse(b.fsPath).dir)) {
+            if (isInDirectory(path.parse(a).dir, path.parse(b).dir)) {
                 return 1
             }
 
             return -1
         })
 
-    return parentProjectFiles[0]
+    if (parentProjectFiles.length === 0) {
+        return undefined
+    }
+
+    return vscode.Uri.parse(parentProjectFiles[0])
 }
 
 /**
