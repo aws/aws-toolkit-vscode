@@ -103,7 +103,7 @@ export async function findParentProjectFile(
         .map(item => item.path)
 
     // Use the project file "closest" in the parent chain to sourceCodeUri
-    let parentProjectFiles = workspaceProjectFiles
+    const parentProjectFiles = workspaceProjectFiles
         .filter(uri => {
             const dirname = dirnameWithTrailingSlash(uri)
 
