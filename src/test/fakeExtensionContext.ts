@@ -86,7 +86,7 @@ export class FakeExtensionContext implements vscode.ExtensionContext {
         const outputChannel = new MockOutputChannel()
         const channelLogger = new FakeChannelLogger()
         const fakeTelemetryPublisher = new FakeTelemetryPublisher()
-        const telemetryService = new DefaultTelemetryService(ctx, awsContext, fakeTelemetryPublisher)
+        const telemetryService = new DefaultTelemetryService(ctx, awsContext, undefined, fakeTelemetryPublisher)
         return {
             extensionContext: ctx,
             awsContext: awsContext,

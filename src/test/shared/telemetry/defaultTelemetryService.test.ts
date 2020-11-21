@@ -33,7 +33,7 @@ beforeEach(() => {
     mockContext = new FakeExtensionContext()
     mockAws = new FakeAwsContext()
     mockPublisher = new FakeTelemetryPublisher()
-    service = new DefaultTelemetryService(mockContext, mockAws, mockPublisher)
+    service = new DefaultTelemetryService(mockContext, mockAws, undefined, mockPublisher)
     ext.telemetry = service
 })
 
@@ -85,7 +85,7 @@ describe('DefaultTelemetryService', () => {
 
     it('events automatically inject the active account id into the metadata', async () => {
         const mockAwsWithIds = makeFakeAwsContextWithPlaceholderIds(({} as any) as AWS.Credentials)
-        service = new DefaultTelemetryService(mockContext, mockAwsWithIds, mockPublisher)
+        service = new DefaultTelemetryService(mockContext, mockAwsWithIds, undefined, mockPublisher)
         ext.telemetry = service
         service.clearRecords()
         service.telemetryEnabled = true
@@ -124,7 +124,7 @@ describe('DefaultTelemetryService', () => {
         const mockAwsBad = ({
             getCredentialAccountId: () => 'this is bad!',
         } as any) as AwsContext
-        service = new DefaultTelemetryService(mockContext, mockAwsBad, mockPublisher)
+        service = new DefaultTelemetryService(mockContext, mockAwsBad, undefined, mockPublisher)
         ext.telemetry = service
         service.clearRecords()
         service.telemetryEnabled = true

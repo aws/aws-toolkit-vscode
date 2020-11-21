@@ -9,7 +9,6 @@ import * as path from 'path'
 import { v4 as uuidv4 } from 'uuid'
 import { ExtensionContext } from 'vscode'
 import { AwsContext } from '../awsContext'
-import { getComputeRegion } from '../extensionUtilities'
 import { getLogger } from '../logger'
 import { MetricDatum } from './clienttelemetry'
 import { DefaultTelemetryClient } from './defaultTelemetryClient'
@@ -38,6 +37,7 @@ export class DefaultTelemetryService implements TelemetryService {
     public constructor(
         private readonly context: ExtensionContext,
         private readonly awsContext: AwsContext,
+        private readonly computeRegion?: string,
         publisher?: TelemetryPublisher
     ) {
         const persistPath = context.globalStoragePath
@@ -231,9 +231,8 @@ export class DefaultTelemetryService implements TelemetryService {
         }
 
         const commonMetadata = [{ Key: ACCOUNT_METADATA_KEY, Value: accountValue }]
-        const computeRegion = getComputeRegion()
-        if (computeRegion) {
-            commonMetadata.push({ Key: COMPUTE_REGION_KEY, Value: computeRegion })
+        if (this.computeRegion) {
+            commonMetadata.push({ Key: COMPUTE_REGION_KEY, Value: this.computeRegion })
         }
 
         if (event.Metadata) {
