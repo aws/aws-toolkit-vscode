@@ -12,10 +12,26 @@ class JTreeFixture(
     remoteRobot: RemoteRobot,
     remoteComponent: RemoteComponent
 ) : ComponentFixture(remoteRobot, remoteComponent) {
+    var separator: String = "/"
+
     fun clickPath(vararg paths: String) = runJsPathMethod("clickPath", *paths)
     fun expandPath(vararg paths: String) = runJsPathMethod("expandPath", *paths)
     fun rightClickPath(vararg paths: String) = runJsPathMethod("rightClickPath", *paths)
     fun doubleClickPath(vararg paths: String) = runJsPathMethod("doubleClickPath", *paths)
+
+    fun requireSelection(vararg paths: String) {
+        val path = paths.joinToString(separator)
+        step("requireSelection $path") {
+            runJs(
+                """
+                const jTreeFixture = JTreeFixture(robot, component);
+                jTreeFixture.replaceSeparator('$separator')
+                // Have to disambiguate int[] vs string[]
+                jTreeFixture['requireSelection(java.lang.String[])'](['$path']) 
+                """.trimIndent()
+            )
+        }
+    }
 
     fun clickRow(row: Int) = runJsRowMethod("clickRow", row)
     fun expandRow(row: Int) = runJsRowMethod("expandRow", row)
@@ -26,6 +42,7 @@ class JTreeFixture(
             runJs(
                 """
                 const jTreeFixture = JTreeFixture(robot, component);
+                jTreeFixture.replaceSeparator('$separator')
                 jTreeFixture.$name('$path') 
                 """.trimIndent()
             )
@@ -37,6 +54,7 @@ class JTreeFixture(
             runJs(
                 """
                 const jTreeFixture = JTreeFixture(robot, component);
+                jTreeFixture.replaceSeparator('$separator')
                 jTreeFixture.$name($row) 
                 """.trimIndent()
             )

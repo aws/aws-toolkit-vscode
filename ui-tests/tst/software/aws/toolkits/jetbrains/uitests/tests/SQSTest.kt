@@ -24,6 +24,7 @@ import software.amazon.awssdk.services.sqs.model.SendMessageBatchRequestEntry
 import software.aws.toolkits.jetbrains.uitests.CoreTest
 import software.aws.toolkits.jetbrains.uitests.extensions.uiTest
 import software.aws.toolkits.jetbrains.uitests.fixtures.JTreeFixture
+import software.aws.toolkits.jetbrains.uitests.fixtures.actionMenuItem
 import software.aws.toolkits.jetbrains.uitests.fixtures.awsExplorer
 import software.aws.toolkits.jetbrains.uitests.fixtures.dialog
 import software.aws.toolkits.jetbrains.uitests.fixtures.fillAllJBTextFields
@@ -38,6 +39,8 @@ import software.aws.toolkits.jetbrains.uitests.fixtures.pressSave
 import software.aws.toolkits.jetbrains.uitests.fixtures.pressYes
 import software.aws.toolkits.jetbrains.uitests.fixtures.rightClick
 import software.aws.toolkits.jetbrains.uitests.fixtures.welcomeFrame
+import software.aws.toolkits.jetbrains.uitests.utils.reattemptAssert
+import software.aws.toolkits.jetbrains.uitests.utils.recheckAssert
 import java.nio.file.Path
 import java.time.Duration
 import java.util.UUID
@@ -79,7 +82,7 @@ class SQSTest {
                     awsExplorer {
                         openExplorerActionMenu(sqsNodeLabel)
                     }
-                    find<ComponentFixture>(byXpath("//div[@text='$createQueueText']")).click()
+                    actionMenuItem(createQueueText).click()
                     fillSingleTextField(queueName)
                     find<ComponentFixture>(byXpath("//div[@accessiblename='Standard']")).click()
                     pressCreate()
@@ -89,7 +92,7 @@ class SQSTest {
                     awsExplorer {
                         openExplorerActionMenu(sqsNodeLabel)
                     }
-                    find<ComponentFixture>(byXpath("//div[@text='$createQueueText']")).click()
+                    actionMenuItem(createQueueText).click()
                     fillSingleTextField(fifoQueueName.substringBefore(".fifo"))
                     find<ComponentFixture>(byXpath("//div[@accessiblename='FIFO']")).click()
                     pressCreate()
@@ -118,10 +121,10 @@ class SQSTest {
                 openPollMessagePane(queueName)
                 step("View messages") {
                     findAndClick("//div[@accessiblename='View Messages' and @class='JButton']")
-                    // Wait for the table to be populated (It's very fast for small queues)
-                    Thread.sleep(1000)
-                    assertThat(find<JTreeFixture>(byXpath("//div[@class='TableView']")).findAllText()).anySatisfy {
-                        assertThat(it.text).contains("bmessage")
+                    recheckAssert(timeout = Duration.ofSeconds(10)) {
+                        assertThat(find<JTreeFixture>(byXpath("//div[@class='TableView']")).findAllText()).anySatisfy {
+                            assertThat(it.text).contains("bmessage")
+                        }
                     }
                 }
             }
@@ -141,8 +144,10 @@ class SQSTest {
             closeToolWindowTab()
             step("Edit queue parameters") {
                 step("Open queue parameters and change visibility to a different value") {
-                    awsExplorer { openExplorerActionMenu(sqsNodeLabel, queueName) }
-                    findAndClick("//div[@text='$editQueueAttributesAction']")
+                    awsExplorer {
+                        openExplorerActionMenu(sqsNodeLabel, queueName)
+                    }
+                    actionMenuItem(editQueueAttributesAction).click()
                     dialog(editQueueAttributesTitle) {
                         step("change visibility") {
                             find<JTextFieldFixture>(byXpath("//div[@class='JTextField' and @visible_text='30']")).text = "24"
@@ -150,10 +155,14 @@ class SQSTest {
                         }
                     }
                 }
-                assertThat(findToast().hasText { it.text.contains("Updated queue parameters") })
+                assertThat(findToastText()).anySatisfy {
+                    assertThat(it).contains("Updated queue parameters")
+                }
                 step("Reopen the dialog to make sure the new value was saved") {
-                    awsExplorer { openExplorerActionMenu(sqsNodeLabel, queueName) }
-                    findAndClick("//div[@text='$editQueueAttributesAction']")
+                    awsExplorer {
+                        openExplorerActionMenu(sqsNodeLabel, queueName)
+                    }
+                    actionMenuItem(editQueueAttributesAction).click()
                     dialog(editQueueAttributesTitle) {
                         find<JTextFieldFixture>(byXpath("//div[@class='JTextField' and @visible_text='24']"))
                         close()
@@ -164,21 +173,29 @@ class SQSTest {
                 awsExplorer {
                     openExplorerActionMenu(sqsNodeLabel, queueName)
                 }
-                findAndClick("//div[@text='$purgeQueueText']")
+                actionMenuItem(purgeQueueText).click()
                 pressYes()
-                assertThat(findToast().hasText { it.text.contains("Started purging queue") })
+                reattemptAssert {
+                    assertThat(findToastText()).anySatisfy {
+                        assertThat(it).contains("Started purging queue")
+                    }
+                }
                 awsExplorer {
                     openExplorerActionMenu(sqsNodeLabel, queueName)
                 }
-                findAndClick("//div[@text='$purgeQueueText']")
+                actionMenuItem(purgeQueueText).click()
                 pressYes()
-                assertThat(findToast().hasText { it.text.contains("Purge queue request already in progress for queue") })
+                reattemptAssert {
+                    assertThat(findToastText()).anySatisfy {
+                        assertThat(it).contains("Purge queue request already in progress for queue")
+                    }
+                }
             }
             step("Subscribe queue to sns topic") {
                 awsExplorer {
                     openExplorerActionMenu(sqsNodeLabel, queueName)
                 }
-                findAndClick("//div[@text='$subscribeToSnsText']")
+                actionMenuItem(subscribeToSnsText).click()
                 // Wait for the resource selector to load, we don't have a visual cue for this
                 Thread.sleep(2000)
                 comboBox(byXpath("//div[@class='ResourceSelector']")).selectItemContains(snsTopicName)
@@ -188,17 +205,25 @@ class SQSTest {
                 step("Add the policy") {
                     findAndClick("//div[@class='JButton' and @text='Add Policy']")
                 }
-                assertThat(findToast().hasText { it.text.contains("Subscribed successfully to topic") })
+                reattemptAssert {
+                    assertThat(findToastText()).anySatisfy {
+                        assertThat(it).contains("Subscribed successfully to topic")
+                    }
+                }
                 step("Subscribe again, policy should not show again") {
                     awsExplorer {
                         openExplorerActionMenu(sqsNodeLabel, queueName)
                     }
-                    findAndClick("//div[@text='$subscribeToSnsText']")
+                    actionMenuItem(subscribeToSnsText).click()
                     comboBox(byXpath("//div[@class='ResourceSelector']")).selectItemContains(snsTopicName)
                     step("Press subscribe") {
                         findAndClick("//div[@class='JButton' and @text='Subscribe']")
                     }
-                    assertThat(findToast().hasText { it.text.contains("Subscribed successfully to topic") })
+                    reattemptAssert {
+                        assertThat(findToastText()).anySatisfy {
+                            assertThat(it).contains("Subscribed successfully to topic")
+                        }
+                    }
                 }
             }
             step("Delete queues") {
@@ -206,7 +231,7 @@ class SQSTest {
                     awsExplorer {
                         openExplorerActionMenu(sqsNodeLabel, queueName)
                     }
-                    findAndClick("//div[@accessiblename='$deleteQueueText']")
+                    actionMenuItem(deleteQueueText).click()
                     fillSingleTextField(queueName)
                     pressOk()
                     client.waitForDeletion(queueName)
@@ -215,7 +240,7 @@ class SQSTest {
                     awsExplorer {
                         openExplorerActionMenu(sqsNodeLabel, fifoQueueName)
                     }
-                    findAndClick("//div[@accessiblename='$deleteQueueText']")
+                    actionMenuItem(deleteQueueText).click()
                     fillSingleTextField(fifoQueueName)
                     pressOk()
                     client.waitForDeletion(fifoQueueName)
@@ -248,22 +273,22 @@ class SQSTest {
     private fun RemoteRobot.openSendMessagePane(queueName: String) = step("Open send message pane") {
         awsExplorer {
             openExplorerActionMenu(sqsNodeLabel, queueName)
+            actionMenuItem("Send a Message").click()
         }
-        find<ComponentFixture>(byXpath("//div[@accessiblename='Send a Message']")).click()
     }
 
     // If we don't do this, it fails to find the entry in the explorer
     private fun RemoteRobot.closeToolWindowTab() = step("Close tool window so the robot can see the queues in the explorer") {
         val firstTab = findAll(ComponentFixture::class.java, byXpath("//div[contains(@accessiblename, 'uitest') and @class='ContentTabLabel']")).first()
         firstTab.rightClick()
-        find<ComponentFixture>(byXpath("//div[@accessiblename='Close Tab' and @class='ActionMenuItem' and @text='Close Tab']")).click()
+        actionMenuItem("Close Tab").click()
     }
 
     private fun RemoteRobot.openPollMessagePane(queueName: String) = step("Open view message pane") {
         awsExplorer {
             openExplorerActionMenu(sqsNodeLabel, queueName)
         }
-        find<ComponentFixture>(byXpath("//div[@accessiblename='View Messages']")).click()
+        actionMenuItem("View Messages").click()
     }
 
     private fun SqsClient.verifyDeleted(queueName: String) {

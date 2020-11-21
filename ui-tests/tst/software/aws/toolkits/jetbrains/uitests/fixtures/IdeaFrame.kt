@@ -104,4 +104,5 @@ class IdeaFrame(remoteRobot: RemoteRobot, remoteComponent: RemoteComponent) : Co
     }
 
     fun findToast(timeout: Duration = Duration.ofSeconds(5)): ComponentFixture = find(byXpath("//div[@class='StatusPanel']"), timeout)
+    fun findToastText(timeout: Duration = Duration.ofSeconds(5)): List<String> = findToast(timeout).findAllText().map { it.text }
 }
