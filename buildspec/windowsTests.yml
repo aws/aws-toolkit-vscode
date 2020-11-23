@@ -9,13 +9,13 @@ phases:
   install:
     runtime-versions:
       java: openjdk11
-      dotnet: 2.2
 
     commands:
       - |
         if(-Not($Env:CODE_COV_TOKEN -eq $null)) {
             choco install -y --no-progress codecov
         }
+      - dotnet --list-sdks
 
   build:
     commands:

@@ -4,11 +4,17 @@
 package software.aws.toolkits.jetbrains.services.lambda.completion
 
 import base.allowCustomDotnetRoots
+import base.msBuild
 import com.intellij.openapi.util.IconLoader
+import com.intellij.openapi.util.SystemInfo
 import com.jetbrains.rdclient.icons.toIdeaIcon
 import com.jetbrains.rider.test.annotations.TestEnvironment
 import com.jetbrains.rider.test.base.BaseTestWithSolution
+import com.jetbrains.rider.test.base.PrepareTestEnvironment
+import com.jetbrains.rider.test.scriptingApi.setUpCustomToolset
+import com.jetbrains.rider.test.scriptingApi.setUpDotNetCoreCliPath
 import org.assertj.core.api.Assertions.assertThat
+import org.testng.annotations.BeforeClass
 import org.testng.annotations.BeforeSuite
 import org.testng.annotations.Test
 import software.aws.toolkits.jetbrains.rider.compatability.IconModel
@@ -23,6 +29,15 @@ class DotNetHandlerCompletionTest : BaseTestWithSolution() {
     @BeforeSuite
     fun allowDotnetRoots() {
         allowCustomDotnetRoots()
+    }
+
+    @BeforeClass
+    fun setUpBuildToolPath() {
+        if (SystemInfo.isWindows) {
+            PrepareTestEnvironment.dotnetCoreCliPath = "C:\\Program Files\\dotnet\\dotnet.exe"
+            setUpDotNetCoreCliPath(PrepareTestEnvironment.dotnetCoreCliPath)
+            setUpCustomToolset(msBuild)
+        }
     }
 
     @Test(description = "Check a single handler is show in lookup when one is defined in a project.")

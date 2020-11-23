@@ -5,7 +5,11 @@ package base
 
 import com.intellij.ide.GeneralSettings
 import com.intellij.openapi.project.Project
+import com.intellij.openapi.util.SystemInfo
 import com.jetbrains.rider.test.base.BaseTestWithSolutionBase
+import com.jetbrains.rider.test.base.PrepareTestEnvironment
+import com.jetbrains.rider.test.scriptingApi.setUpCustomToolset
+import com.jetbrains.rider.test.scriptingApi.setUpDotNetCoreCliPath
 import com.jetbrains.rider.test.scriptingApi.useCachedTemplates
 import org.testng.annotations.AfterClass
 import org.testng.annotations.BeforeClass
@@ -40,6 +44,15 @@ abstract class AwsReuseSolutionTestBase : BaseTestWithSolutionBase() {
     @BeforeClass
     fun allowDotnetRoots() {
         allowCustomDotnetRoots()
+    }
+
+    @BeforeClass
+    fun setUpBuildToolPath() {
+        if (SystemInfo.isWindows) {
+            PrepareTestEnvironment.dotnetCoreCliPath = "C:\\Program Files\\dotnet\\dotnet.exe"
+            setUpDotNetCoreCliPath(PrepareTestEnvironment.dotnetCoreCliPath)
+            setUpCustomToolset(msBuild)
+        }
     }
 
     @BeforeClass(alwaysRun = true)
