@@ -196,7 +196,12 @@ export async function invokeLambdaFunction(
     }
 
     try {
-        await new SamCliBuildInvocation(samCliArgs).execute()
+        const samBuild = new SamCliBuildInvocation(samCliArgs)
+        await samBuild.execute()
+        if (samBuild.failure()) {
+            ctx.chanLogger.emitMessage(samBuild.failure()!)
+            throw new Error(samBuild.failure())
+        }
     } finally {
         // always delete temp template.
         await unlink(config.templatePath)

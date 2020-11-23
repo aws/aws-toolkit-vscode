@@ -362,6 +362,7 @@
     "AWS.s3.validateBucketName.error.invalidStart": "Bucket name must start with a lowercase letter or number",
     "AWS.s3.validateBucketName.error.misusedPeriods": "Periods in bucket name must be surrounded by a lowercase letter or number",
     "AWS.s3.validateBucketName.error.resemblesIpAddress": "Bucket name must not resemble an IP address",
+    "AWS.sam.build.failure.diskSpace": "\"sam build\" failed. Check system disk space.",
     "AWS.sam.debugger.invalidRequest": "Debug Configuration has an unsupported request type. Supported types: {0}",
     "AWS.sam.debugger.invalidTarget": "Debug Configuration has an unsupported target type. Supported types: {0}",
     "AWS.sam.debugger.invalidRuntime": "AWS SAM debug: unknown runtime: {0}",
