@@ -6,7 +6,6 @@
 import * as child_process from 'child_process'
 import * as fs from 'fs-extra'
 import { join } from 'path'
-// tslint:disable-next-line:no-implicit-dependencies
 import * as readlineSync from 'readline-sync'
 import { v4 as uuid } from 'uuid'
 
@@ -48,7 +47,7 @@ const type = promptForType()
 const description = promptForChange()
 const contents: NewChange = {
     type: type,
-    description: description
+    description: description,
 }
 const fileName = `${type}-${uuid()}.json`
 const path = join(directory, fileName)

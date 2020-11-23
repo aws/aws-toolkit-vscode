@@ -36,7 +36,7 @@ export async function* listLambdaFunctions(client: LambdaClient): AsyncIterableI
     try {
         yield* client.listFunctions()
     } finally {
-        if (!!status) {
+        if (status) {
             status.dispose()
         }
     }

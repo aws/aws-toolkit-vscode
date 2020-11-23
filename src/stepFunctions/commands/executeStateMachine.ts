@@ -82,7 +82,7 @@ function createMessageReceivedFunc({
 
     return async (message: CommandMessage) => {
         switch (message.command) {
-            case 'executeStateMachine':
+            case 'executeStateMachine': {
                 let executeResult: Result = 'Succeeded'
                 logger.info('Starting Step Functions State Machine execution')
 
@@ -130,6 +130,7 @@ function createMessageReceivedFunc({
                 }
 
                 return
+            }
         }
     }
 }

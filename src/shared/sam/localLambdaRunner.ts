@@ -343,7 +343,6 @@ export async function attachDebugger({
     } else {
         channelLogger.error(
             'AWS.output.sam.local.attach.failure',
-            // tslint:disable-next-line:max-line-length
             'Unable to attach Debugger. Check the Terminal tab for output. If it took longer than expected to successfully start, you may still attach to it.'
         )
     }
@@ -367,7 +366,6 @@ export async function waitForDebugPort(
 
         channelLogger.warn(
             'AWS.samcli.local.invoke.port.not.open',
-            // tslint:disable-next-line:max-line-length
             "The debug port doesn't appear to be open. The debugger might not succeed when attaching to your SAM Application."
         )
     }
