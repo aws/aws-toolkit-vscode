@@ -218,7 +218,6 @@ describe('SAM Integration Tests', async function () {
                 })
 
                 afterEach(async function () {
-                    // tslint:disable-next-line: no-unsafe-any
                     testDisposables.forEach(d => d.dispose())
                     await stopDebugger()
                 })

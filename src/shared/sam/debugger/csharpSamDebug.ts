@@ -196,7 +196,7 @@ export async function makeCoreCLRDebugConfiguration(
     config: SamLaunchRequestArgs,
     codeUri: string
 ): Promise<DotNetCoreDebugConfiguration> {
-    if (!!config.noDebug) {
+    if (config.noDebug) {
         throw Error(`SAM debug: invalid config ${config}`)
     }
     config.debugPort = config.debugPort ?? (await getStartPort())

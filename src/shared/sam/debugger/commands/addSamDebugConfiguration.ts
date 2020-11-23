@@ -43,7 +43,7 @@ export async function addSamDebugConfiguration(
     type: typeof CODE_TARGET_TYPE | typeof TEMPLATE_TARGET_TYPE | typeof API_TARGET_TYPE,
     step?: { step: number; totalSteps: number }
 ): Promise<void> {
-    // tslint:disable-next-line: no-floating-promises
+    // emit without waiting
     emitCommandTelemetry()
 
     let samDebugConfig: AwsSamDebuggerConfiguration

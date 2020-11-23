@@ -37,7 +37,6 @@ export function throwAndNotifyIfInvalid(validationResult: SamCliValidatorResult)
     } catch (err) {
         if (err instanceof InvalidSamCliError) {
             // Calling code does not wait for the notification to complete
-            // tslint:disable-next-line:no-floating-promises
             notifySamCliValidation(err)
         }
 

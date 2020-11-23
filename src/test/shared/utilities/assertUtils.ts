@@ -15,7 +15,7 @@ export async function assertRejects(action: () => Promise<any>) {
     } finally {
         // Use assert.throws here instead of assert.ok(!!error) for a more appropriate error message.
         assert.throws(() => {
-            if (!!error) {
+            if (error) {
                 throw error
             }
         })
@@ -35,7 +35,7 @@ export async function assertThrowsError(
     } finally {
         // Test that an error was caught
         assert.throws(() => {
-            if (!!error) {
+            if (error) {
                 throw error
             }
         }, message)

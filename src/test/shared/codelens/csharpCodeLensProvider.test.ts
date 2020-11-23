@@ -281,7 +281,6 @@ describe('isPublicMethodSymbol', async () => {
         const beforeFunctionText = params.beforeFunctionName ? os.EOL : ''
         const afterSignatureText = params.afterSignature ? os.EOL : ''
 
-        // tslint:disable-next-line:max-line-length
         return `${params.access} APIGatewayProxyResponse ${beforeFunctionText}${functionHandler}${afterSignatureText}`
     }
 

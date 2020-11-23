@@ -239,7 +239,6 @@ describe('SamDeployWizard', async () => {
                 assert.strictEqual(result!.parameterOverrides.size, 0)
             })
 
-            // tslint:disable-next-line:max-line-length
             it('skips configuring overrides and continues wizard if parameterOverrides is undefined and user declines prompt', async () => {
                 const context = makeFakeContext({
                     getParameters: async () =>
@@ -255,7 +254,6 @@ describe('SamDeployWizard', async () => {
                 assert.strictEqual(result!.parameterOverrides.size, 0)
             })
 
-            // tslint:disable-next-line:max-line-length
             it('configures overrides and cancels wizard if parameterOverrides is undefined and user accepts prompt', async () => {
                 const configureParameterOverridesArgs: {
                     templateUri: vscode.Uri
@@ -283,7 +281,6 @@ describe('SamDeployWizard', async () => {
         })
 
         describe('SAM template has required parameters', async () => {
-            // tslint:disable-next-line:max-line-length
             it('configures overrides and cancels wizard if overrides are not defined', async () => {
                 const configureParameterOverridesArgs: {
                     templateUri: vscode.Uri
@@ -310,7 +307,6 @@ describe('SamDeployWizard', async () => {
                 assert.strictEqual(configureParameterOverridesArgs[0].missingParameters!.has('myParam'), true)
             })
 
-            // tslint:disable-next-line:max-line-length
             it('configures overrides and cancels wizard if there are missing overrides', async () => {
                 const configureParameterOverridesArgs: {
                     templateUri: vscode.Uri
@@ -337,7 +333,6 @@ describe('SamDeployWizard', async () => {
                 assert.strictEqual(configureParameterOverridesArgs[0].missingParameters!.has('myParam'), true)
             })
 
-            // tslint:disable-next-line:max-line-length
             it('stores existing overrides and continues without configuring overrides if there are no missing overrides', async () => {
                 const configureParameterOverridesArgs: {
                     templateUri: vscode.Uri
@@ -573,10 +568,7 @@ describe('DefaultSamDeployWizardContext', async () => {
         })
 
         it('returns undefined on receiving undefined from the picker (back button)', async () => {
-            sandbox
-                .stub(picker, 'promptUser')
-                .onFirstCall()
-                .returns(Promise.resolve(undefined))
+            sandbox.stub(picker, 'promptUser').onFirstCall().returns(Promise.resolve(undefined))
             const output = await context.promptUserForS3Bucket('us-weast-1')
             assert.strictEqual(output, undefined)
         })

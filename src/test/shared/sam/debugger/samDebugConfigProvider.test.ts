@@ -706,7 +706,6 @@ describe('SamDebugConfigurationProvider', async () => {
                 processName: 'dotnet',
                 pipeTransport: {
                     debuggerPath: '/tmp/lambci_debug_files/vsdbg',
-                    // tslint:disable-next-line: no-invalid-template-strings
                     pipeArgs: [
                         '-c',
                         `docker exec -i $(docker ps -q -f publish=${actual.debugPort}) \${debuggerCommand}`,
@@ -720,7 +719,6 @@ describe('SamDebugConfigurationProvider', async () => {
                 windows: {
                     pipeTransport: {
                         debuggerPath: '/tmp/lambci_debug_files/vsdbg',
-                        // tslint:disable-next-line: no-invalid-template-strings
                         pipeArgs: [
                             '-c',
                             `docker exec -i $(docker ps -q -f publish=${actual.debugPort}) \${debuggerCommand}`,
@@ -846,7 +844,6 @@ describe('SamDebugConfigurationProvider', async () => {
                 processName: 'dotnet',
                 pipeTransport: {
                     debuggerPath: '/tmp/lambci_debug_files/vsdbg',
-                    // tslint:disable-next-line: no-invalid-template-strings
                     pipeArgs: [
                         '-c',
                         `docker exec -i $(docker ps -q -f publish=${actual.debugPort}) \${debuggerCommand}`,
@@ -860,7 +857,6 @@ describe('SamDebugConfigurationProvider', async () => {
                 windows: {
                     pipeTransport: {
                         debuggerPath: '/tmp/lambci_debug_files/vsdbg',
-                        // tslint:disable-next-line: no-invalid-template-strings
                         pipeArgs: [
                             '-c',
                             `docker exec -i $(docker ps -q -f publish=${actual.debugPort}) \${debuggerCommand}`,
