@@ -5,6 +5,7 @@ package software.aws.toolkits.jetbrains.services.cloudwatch.logs.insights
 
 import com.intellij.openapi.components.ServiceManager
 import com.intellij.openapi.project.Project
+import icons.AwsIcons
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.withContext
 import software.amazon.awssdk.services.cloudwatchlogs.CloudWatchLogsClient
@@ -54,7 +55,8 @@ class QueryResultsWindow(private val project: Project) : CoroutineScope by Appli
     companion object {
         internal val INSIGHTS_RESULTS_TOOL_WINDOW = ToolkitToolWindowType(
             "AWS.InsightsResultsTable",
-            message("cloudwatch.logs.results_window_title")
+            message("cloudwatch.logs.results_window_title"),
+            AwsIcons.Resources.CloudWatch.LOGS_TOOL_WINDOW
         )
         fun getInstance(project: Project) = ServiceManager.getService(project, QueryResultsWindow::class.java)
     }
