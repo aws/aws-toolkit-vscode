@@ -34,7 +34,6 @@ describe('submitFeedbackListener', () => {
     it('submits feedback and posts failure message on failure', async () => {
         const error = 'Expected failure'
 
-        // tslint:disable-next-line: no-unsafe-any
         when(mockTelemetry.postFeedback(anything())).thenThrow(new Error(error))
 
         const listener = submitFeedbackListener(instance(mockPanel), instance(mockWindow), instance(mockTelemetry))

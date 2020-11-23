@@ -117,7 +117,7 @@ class DefaultFakeStatusBar implements FakeStatusBar {
         return new vscode.Disposable(() => undefined)
     }
 
-    public constructor({}: StatusBarOptions = {}) {}
+    public constructor(_options: StatusBarOptions = {}) {}
 }
 
 export interface InputBoxOptions {
@@ -334,7 +334,7 @@ class DefaultFakeProgress implements FakeProgress {
         return task(reporter, token)
     }
 
-    public constructor({}: ProgressOptions = {}) {}
+    public constructor(_options: ProgressOptions = {}) {}
 }
 
 export interface DialogOptions {

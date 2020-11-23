@@ -217,7 +217,6 @@ describe('CollectionUtils', async () => {
                 }
             }
 
-            // tslint:disable-next-line:no-floating-promises
             await assertRejects(async () => {
                 await toMapAsync<string, { key: string }>(
                     asyncGenerator([{ key: 'a' }, { key: 'b' }, { key: 'b' }, { key: 'c' }]),

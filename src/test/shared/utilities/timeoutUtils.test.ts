@@ -4,7 +4,6 @@
  */
 
 import * as assert from 'assert'
-// tslint:disable-next-line:no-implicit-dependencies
 import * as lolex from 'lolex'
 import * as timeoutUtils from '../../../shared/utilities/timeoutUtils'
 

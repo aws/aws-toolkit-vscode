@@ -18,12 +18,12 @@ export class DefaultStepFunctionsClient implements StepFunctionsClient {
         do {
             const response: StepFunctions.ListStateMachinesOutput = await client.listStateMachines(request).promise()
 
-            if (!!response.stateMachines) {
+            if (response.stateMachines) {
                 yield* response.stateMachines
             }
 
             request.nextToken = response.nextToken
-        } while (!!request.nextToken)
+        } while (request.nextToken)
     }
 
     public async getStateMachineDetails(arn: string): Promise<StepFunctions.DescribeStateMachineOutput> {

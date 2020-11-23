@@ -22,7 +22,7 @@ export class DefaultLambdaClient implements LambdaClient {
             })
             .promise()
 
-        if (!!response.$response.error) {
+        if (response.$response.error) {
             throw response.$response.error
         }
     }
@@ -48,12 +48,12 @@ export class DefaultLambdaClient implements LambdaClient {
         do {
             const response: Lambda.ListFunctionsResponse = await client.listFunctions(request).promise()
 
-            if (!!response.Functions) {
+            if (response.Functions) {
                 yield* response.Functions
             }
 
             request.Marker = response.NextMarker
-        } while (!!request.Marker)
+        } while (request.Marker)
     }
 
     public async getFunction(name: string): Promise<Lambda.GetFunctionResponse> {

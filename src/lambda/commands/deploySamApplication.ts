@@ -248,11 +248,9 @@ function enhanceAwsCloudFormationInstructions(
     message: string,
     deployParameters: DeploySamApplicationParameters
 ): string {
-    // tslint:disable-next-line:max-line-length
     // detect error message from https://github.com/aws/aws-cli/blob/4ff0cbacbac69a21d4dd701921fe0759cf7852ed/awscli/customizations/cloudformation/exceptions.py#L42
     // and append region to assist in troubleshooting the error
     // (command uses CLI configured value--users that don't know this and omit region won't see error)
-    // tslint:disable-next-line:max-line-length
     if (
         message.includes(
             `aws cloudformation describe-stack-events --stack-name ${deployParameters.destinationStackName}`

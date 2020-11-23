@@ -33,7 +33,7 @@ export interface SamLocalInvokeCommandArgs {
  * Represents and manages the SAM CLI command that is run to locally invoke SAM Applications.
  */
 export interface SamLocalInvokeCommand {
-    invoke({}: SamLocalInvokeCommandArgs): Promise<void>
+    invoke(items: SamLocalInvokeCommandArgs): Promise<void>
 }
 
 export class DefaultSamLocalInvokeCommand implements SamLocalInvokeCommand {
