@@ -73,7 +73,6 @@ function notifyUserSamCliNotDetected(samCliConfig: SamCliConfiguration): void {
         .showErrorMessage(
             localize(
                 'AWS.samcli.error.notFound',
-                // tslint:disable-next-line:max-line-length
                 'Cannot find SAM CLI, which is required to create new Serverless Applications and debug them locally. If you have already installed the SAM CLI, update your User Settings by locating it.'
             ),
             learnMore,

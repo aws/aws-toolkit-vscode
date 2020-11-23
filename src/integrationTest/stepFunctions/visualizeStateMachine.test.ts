@@ -96,8 +96,7 @@ async function waitUntilWebviewIsVisible(webviewPanel: vscode.WebviewPanel | und
 }
 
 describe('visualizeStateMachine', async () => {
-    before(async function() {
-        // tslint:disable-next-line:no-invalid-this
+    before(async function () {
         this.timeout(600000)
     })
 

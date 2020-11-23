@@ -169,7 +169,7 @@ export async function* listStateMachines(
     try {
         yield* client.listStateMachines()
     } finally {
-        if (!!status) {
+        if (status) {
             status.dispose()
         }
     }
@@ -192,7 +192,6 @@ export async function isDocumentValid(text: string, textDocument?: vscode.TextDo
     }
 
     const doc = ASLTextDocument.create(textDocument.uri.path, textDocument.languageId, textDocument.version, text)
-    // tslint:disable-next-line: no-inferred-empty-object-type
     const jsonDocument = languageService.parseJSONDocument(doc)
     const diagnostics = await languageService.doValidation(doc, jsonDocument, documentSettings)
     const isValid = !diagnostics.some(diagnostic => diagnostic.severity === DiagnosticSeverity.Error)

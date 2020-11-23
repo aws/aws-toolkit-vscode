@@ -197,7 +197,6 @@ ${fileContents}
 
 // ---------------------------------------------------------------------------------------------------------------------
 
-// tslint:disable-next-line:no-floating-promises
 ;(async () => {
     const serviceClientDefinitions: ServiceClientDefinition[] = [
         {

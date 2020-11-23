@@ -151,7 +151,6 @@ export async function activate(extensionContext: ExtensionContext) {
         updateFormatterRegistration()
         const disposableFunc = { dispose: () => rangeFormatting?.dispose() as void }
         toDispose.push(disposableFunc)
-        // tslint:disable: no-unsafe-any
         toDispose.push(
             workspace.onDidChangeConfiguration(
                 e => e.affectsConfiguration('html.format.enable') && updateFormatterRegistration()

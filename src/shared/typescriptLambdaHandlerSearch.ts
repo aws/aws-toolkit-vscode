@@ -303,7 +303,6 @@ export class TypescriptLambdaHandlerSearch implements LambdaHandlerSearch {
     private static isNodeExported(node: ts.Node): boolean {
         const flags: ts.ModifierFlags = ts.getCombinedModifierFlags(node as ts.Declaration)
 
-        // tslint:disable-next-line:no-bitwise
         return (flags & ts.ModifierFlags.Export) === ts.ModifierFlags.Export
     }
 
