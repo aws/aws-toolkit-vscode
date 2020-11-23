@@ -1497,7 +1497,7 @@
     },
     "husky": {
         "hooks": {
-            "pre-commit": "(git secrets --pre_commit_hook -- \"$@\" || echo 'Please install git-secrets https://github.com/awslabs/git-secrets to check for accidentally commited secrets!') && pretty-quick --staged"
+            "pre-commit": "(git secrets --register-aws || (echo 'Please install git-secrets https://github.com/awslabs/git-secrets to check for accidentally commited secrets!' && exit 1)) && git secrets --pre_commit_hook -- \"$@\" && pretty-quick --staged"
         }
     }
 }
