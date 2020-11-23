@@ -133,6 +133,7 @@ We appreciate contributions via pull requests! Before sending a pull request, en
 1. You are working against the latest source on the _master_ branch.
 2. You check existing open, and recently merged, pull requests to make sure someone else hasn't addressed the problem already.
 3. You open an issue to discuss any significant work - we would hate for your time to be wasted.
+4. You have installed the [AWS `git secrets`](https://github.com/awslabs/git-secrets) hook, which will ensure you aren't accidentally commiting AWS access or secret keys. This is enforced on commit.
 
 To send us a pull request, please:
 
