@@ -23,8 +23,6 @@ module.exports = {
         // TODO reenable this rule (by removing this off)
         '@typescript-eslint/no-misused-promises': 'off',
         // TODO reenable this rule (by removing this off)
-        'no-ex-assign': 'off',
-        // TODO reenable this rule (by removing this off)
         '@typescript-eslint/prefer-regexp-exec': 'off',
         // TODO reenable this rule (by removing this off)
         'no-async-promise-executors': 'off',
