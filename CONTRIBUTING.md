@@ -18,6 +18,7 @@ Before you start, install the following dependencies.
     -   NPM version: 6.4.1 or higher
 -   [Typescript](https://www.typescriptlang.org/)
 -   [Git](https://git-scm.com/downloads)
+-   [AWS `git secrets`](https://github.com/awslabs/git-secrets)
 
 Then clone the repository and install npm dependencies:
 
