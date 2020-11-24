@@ -41,8 +41,12 @@ export namespace ext {
     }
 
     export namespace manifestPaths {
-        export const endpoints: string = ''
-        export const lambdaSampleRequests: string = ''
+        // TODO this is a good example of why we need to remove namespaces,
+        // eslint can't detemrine that these are assigned to later
+        // eslint-disable-next-line prefer-const
+        export let endpoints: string = ''
+        // eslint-disable-next-line prefer-const
+        export let lambdaSampleRequests: string = ''
     }
 }
 
