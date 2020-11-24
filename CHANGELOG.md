@@ -1,3 +1,13 @@
+# _1.21_ (2020-11-24)
+- **(Breaking Change)** Remove support for 2019.3, 2020.1 is the new minimum version
+- **(Feature)** Add copy Logical/Physical ID actions to Stack View [#2165](https://github.com/aws/aws-toolkit-jetbrains/issues/2165)
+- **(Feature)** Add SQS AWS Explorer node and the ability to send/poll for messages
+- **(Feature)** Add the ability to search CloudWatch Logs using CloudWatch Logs Insights
+- **(Feature)** Add copy actions to CloudFormation outputs ([#2179](https://github.com/aws/aws-toolkit-jetbrains/issues/2179))
+- **(Feature)** Support for the 2020.3 family of IDEs
+- **(Feature)** Add an AWS Explorer ECR node
+- **(Bug Fix)** Significantly speed up loading the list of S3 buckets ([#2174](https://github.com/aws/aws-toolkit-jetbrains/issues/2174))
+
 # _1.20_ (2020-10-22)
 - **(Feature)** Add support for `+` in AWS profile names
 - **(Bug Fix)** Fix being unable to use a SSO profile in a credential chain

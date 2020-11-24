@@ -1,4 +1,0 @@
-{
-  "type" : "breaking",
-  "description" : "Remove support for 2019.3, 2020.1 is the new minimum version"
-}

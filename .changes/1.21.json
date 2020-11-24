@@ -1,0 +1,29 @@
+{
+  "date" : "2020-11-24",
+  "version" : "1.21",
+  "entries" : [ {
+    "type" : "breaking",
+    "description" : "Remove support for 2019.3, 2020.1 is the new minimum version"
+  }, {
+    "type" : "feature",
+    "description" : "Add copy Logical/Physical ID actions to Stack View #2165"
+  }, {
+    "type" : "feature",
+    "description" : "Add SQS AWS Explorer node and the ability to send/poll for messages"
+  }, {
+    "type" : "feature",
+    "description" : "Add the ability to search CloudWatch Logs using CloudWatch Logs Insights"
+  }, {
+    "type" : "feature",
+    "description" : "Add copy actions to CloudFormation outputs (#2179)"
+  }, {
+    "type" : "feature",
+    "description" : "Support for the 2020.3 family of IDEs"
+  }, {
+    "type" : "feature",
+    "description" : "Add an AWS Explorer ECR node"
+  }, {
+    "type" : "bugfix",
+    "description" : "Significantly speed up loading the list of S3 buckets (#2174)"
+  } ]
+}

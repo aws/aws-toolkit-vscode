@@ -1,4 +1,0 @@
-{
-  "type" : "feature",
-  "description" : "Add SQS AWS Explorer node and the ability to send/poll for messages"
-}
