@@ -220,7 +220,7 @@ export class DefaultPublishSSMDocumentWizardContext extends WizardContext implem
 
     public async loadSSMDocument(region: string, documentType?: SSM.Types.DocumentType): Promise<void> {
         if (!this.documents) {
-            let filters: SSM.Types.DocumentKeyValuesFilterList = [
+            const filters: SSM.Types.DocumentKeyValuesFilterList = [
                 {
                     Key: 'Owner',
                     Values: ['Self'],

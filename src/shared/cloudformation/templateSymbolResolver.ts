@@ -55,7 +55,7 @@ export class TemplateSymbolResolver {
         // For each Function symbol, find its Api descendants, keeping
         // track of the associated resource (Function) name.
         const apiSymbols: TemplateFunctionResource[] = []
-        for (let funSymbol of funSymbols) {
+        for (const funSymbol of funSymbols) {
             const found = this.findDescendants([funSymbol], 'Events', vscode.SymbolKind.Module).filter(r =>
                 this.isCfnType('Api', r)
             )
@@ -81,7 +81,7 @@ export class TemplateSymbolResolver {
         kind: vscode.SymbolKind
     ): vscode.DocumentSymbol[] {
         const found = symbols.filter(v => v.name === name && v.kind === kind)
-        for (let s of symbols) {
+        for (const s of symbols) {
             found.push(...this.findDescendants(s.children, name, kind))
         }
         return found
@@ -119,7 +119,7 @@ export class TemplateSymbolResolver {
 export class TemplateSymbolProvider {
     public async getSymbols(document: vscode.TextDocument, waitForSymbols: boolean): Promise<vscode.DocumentSymbol[]> {
         const symbols = await waitUntil(
-            async function() {
+            async function () {
                 return await vscode.commands.executeCommand<vscode.DocumentSymbol[]>(
                     'vscode.executeDocumentSymbolProvider',
                     document.uri

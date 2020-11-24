@@ -17,7 +17,7 @@ describe('deleteDocument', async () => {
     let ssmClient: SsmDocumentClient
     let node: DocumentItemNodeWriteable
     let parentNode: RegistryItemNode
-    let fakeName: string = 'testDocument'
+    const fakeName: string = 'testDocument'
 
     const fakeDoc: SSM.Types.DocumentIdentifier = {
         Name: fakeName,

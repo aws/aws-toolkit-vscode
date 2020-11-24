@@ -26,7 +26,7 @@ export type SamTemplate =
     | 'REQUIRES_AWS_CREDENTIALS_REPROMPT_USER_FOR_TEMPLATE'
 
 export function getSamTemplateWizardOption(runtime: Runtime, samCliVersion: string): ImmutableSet<SamTemplate> {
-    let templateOptions: Array<SamTemplate> = Array<SamTemplate>(helloWorldTemplate)
+    const templateOptions: Array<SamTemplate> = Array<SamTemplate>(helloWorldTemplate)
 
     if (supportsEventBridgeTemplates(runtime)) {
         templateOptions.push(eventBridgeHelloWorldTemplate, eventBridgeStarterAppTemplate)

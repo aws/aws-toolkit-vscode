@@ -41,8 +41,8 @@ export namespace ext {
     }
 
     export namespace manifestPaths {
-        export let endpoints: string = ''
-        export let lambdaSampleRequests: string = ''
+        export const endpoints: string = ''
+        export const lambdaSampleRequests: string = ''
     }
 }
 

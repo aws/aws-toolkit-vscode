@@ -22,7 +22,7 @@ export async function updateDocumentVersion(node: DocumentItemNodeWriteable, aws
     try {
         if (node.documentOwner === awsContext.getCredentialAccountId()) {
             const versions = await node.listSchemaVersion()
-            let documentVersion: string | undefined = await promptUserforDocumentVersion(versions)
+            const documentVersion: string | undefined = await promptUserforDocumentVersion(versions)
             if (!documentVersion) {
                 result = 'Cancelled'
             } else {

@@ -1468,7 +1468,7 @@ Resources:
 })
 
 it('ensureRelativePaths', () => {
-    let workspace: vscode.WorkspaceFolder = {
+    const workspace: vscode.WorkspaceFolder = {
         uri: vscode.Uri.file('/test1/'),
         name: 'test workspace',
         index: 0,

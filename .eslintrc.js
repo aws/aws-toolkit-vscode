@@ -30,18 +30,12 @@ module.exports = {
         '@typescript-eslint/consistent-type-assertions': 'off',
         // TODO reenable this rule (by removing this off)
         '@typescript-eslint/ban-ts-ignore': 'off',
-        // TODO reenable this rule (by removing this off)
-        'prefer-const': 'off',
         // TODO rennable this rule (by removing this off)
         '@typescript-eslint/class-name-casing': 'off',
         // TODO rennable this rule (by removing this off)
         '@typescript-eslint/no-inferrable-types': 'off',
         // TODO rennable this rule (by removing this off)
-        '@typescript-eslint/no-namespace': 'off',
-        // TODO rennable this rule (by removing this off)
         '@typescript-eslint/no-unnecessary-type-assertion': 'off',
-        // TODO rennable this rule (by removing this off)
-        //'no-prototype-builtins': 'off',
         // TODO rennable this rule (by removing this off)
         // this is another troublesome one, producing ~600 issues
         '@typescript-eslint/no-use-before-define': 'off',
@@ -60,7 +54,10 @@ module.exports = {
         // TODO reenable this rule, tests mostly break this one (by changing off to error)
         // This currently produces 700 non fixable by --fix errors
         'sort-imports': 'off',
-        // We use this quite a bit with namespaces
+        // TODO rennable this rule (by removing this off)
+        // namespaces are not great and we should stop using them
+        '@typescript-eslint/no-namespace': 'off',
+        // Turn this on by removing off when we fix namespaces
         'no-inner-declarations': 'off',
         // This is off because prettier takes care of it
         'no-extra-semi': 'off',
