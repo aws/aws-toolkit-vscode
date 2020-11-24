@@ -279,10 +279,10 @@ export function filterTelemetryCacheEvents(input: any): MetricDatum[] {
         .filter((item: any) => {
             // Only accept objects that have the required telemetry data
             if (
-                !item.hasOwnProperty('Value') ||
-                !item.hasOwnProperty('MetricName') ||
-                !item.hasOwnProperty('EpochTimestamp') ||
-                !item.hasOwnProperty('Unit')
+                !Object.prototype.hasOwnProperty.call(item, 'Value') ||
+                !Object.prototype.hasOwnProperty.call(item, 'MetricName') ||
+                !Object.prototype.hasOwnProperty.call(item, 'EpochTimestamp') ||
+                !Object.prototype.hasOwnProperty.call(item, 'Unit')
             ) {
                 getLogger().warn(`skipping invalid item in telemetry cache: ${JSON.stringify(item)}\n`)
 
