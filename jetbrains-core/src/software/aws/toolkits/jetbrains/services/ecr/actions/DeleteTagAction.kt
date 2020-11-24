@@ -9,6 +9,7 @@ import com.intellij.openapi.actionSystem.LangDataKeys
 import com.intellij.openapi.progress.ProgressIndicator
 import com.intellij.openapi.progress.ProgressManager
 import com.intellij.openapi.progress.Task
+import com.intellij.openapi.project.DumbAware
 import com.intellij.openapi.ui.Messages
 import software.amazon.awssdk.services.ecr.EcrClient
 import software.amazon.awssdk.services.ecr.model.ImageIdentifier
@@ -25,7 +26,7 @@ import software.aws.toolkits.resources.message
 import software.aws.toolkits.telemetry.EcrTelemetry
 import software.aws.toolkits.telemetry.Result
 
-class DeleteTagAction : ExplorerNodeAction<EcrTagNode>(message("ecr.delete.tag.action", 0), null, AllIcons.Actions.Cancel) {
+class DeleteTagAction : ExplorerNodeAction<EcrTagNode>(message("ecr.delete.tag.action", 0), null, AllIcons.Actions.Cancel), DumbAware {
     override fun update(selected: List<EcrTagNode>, e: AnActionEvent) {
         // Only show up if the selected are part of one repository
         e.presentation.isVisible = selected.map { it.repository.repositoryName }.toSet().size == 1
