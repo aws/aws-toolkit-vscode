@@ -150,7 +150,11 @@ async function loadTemplatesConfig(
 
         return loadTemplatesConfigFromJson(raw)
     } catch (err) {
-        throw new Error(`Could not load .aws/templates.json: ${JSON.stringify(err)}`)
+        if (Array.isArray(err) && (err as any[]).length === 1) {
+            throw new Error(`Could not load .aws/templates.json: ${(err as any[])[0]}`)
+        }
+
+        throw new Error(`Could not load .aws/templates.json: ${err}`)
     }
 }
 
