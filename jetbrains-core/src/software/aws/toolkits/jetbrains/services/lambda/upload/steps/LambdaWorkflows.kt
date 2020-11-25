@@ -26,11 +26,12 @@ fun createLambdaWorkflow(
 ): StepWorkflow {
     val (dummyTemplate, dummyLogicalId) = createTemporaryTemplate(buildDir, codeDetails)
     val packagedTemplate = buildDir.resolve("packaged-temp-template.yaml")
+    val builtTemplate = buildDir.resolve("template.yaml")
     val envVars = createAwsEnvVars(project)
 
     return StepWorkflow(
         BuildLambda(dummyTemplate, buildDir, buildEnvVars, samOptions),
-        PackageLambda(dummyTemplate, packagedTemplate, dummyLogicalId, codeStorageLocation, envVars),
+        PackageLambda(builtTemplate, packagedTemplate, dummyLogicalId, codeStorageLocation, envVars),
         CreateLambda(project.awsClient(), functionDetails)
     )
 }
@@ -52,11 +53,12 @@ fun updateLambdaCodeWorkflow(
 ): StepWorkflow {
     val (dummyTemplate, dummyLogicalId) = createTemporaryTemplate(buildDir, codeDetails)
     val packagedTemplate = buildDir.resolve("packaged-temp-template.yaml")
+    val builtTemplate = buildDir.resolve("template.yaml")
     val envVars = createAwsEnvVars(project)
 
     return StepWorkflow(
         BuildLambda(dummyTemplate, buildDir, buildEnvVars, samOptions),
-        PackageLambda(dummyTemplate, packagedTemplate, dummyLogicalId, codeStorageLocation, envVars),
+        PackageLambda(builtTemplate, packagedTemplate, dummyLogicalId, codeStorageLocation, envVars),
         UpdateLambdaCode(project.awsClient(), functionName, updatedHandler)
     )
 }
