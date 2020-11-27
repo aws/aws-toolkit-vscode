@@ -11,6 +11,7 @@ import { getTemplate, getTemplateResource } from '../../lambda/local/debugConfig
 import { getFamily, RuntimeFamily } from '../../lambda/models/samLambdaRuntime'
 import { ExtContext } from '../extensions'
 import { makeTemporaryToolkitFolder } from '../filesystemUtilities'
+import * as pathutils from '../../shared/utilities/pathUtils'
 import { getLogger } from '../logger'
 import { SettingsConfiguration } from '../settingsConfiguration'
 import { recordLambdaInvokeLocal, Result, Runtime, recordSamAttachDebugger } from '../telemetry/telemetry'
@@ -64,13 +65,6 @@ const SAM_LOCAL_PORT_CHECK_RETRY_TIMEOUT_MILLIS_DEFAULT: number = 30000
 const MAX_DEBUGGER_RETRIES_DEFAULT: number = 30
 const ATTACH_DEBUGGER_RETRY_DELAY_MILLIS: number = 200
 
-export const makeBuildDir = async (): Promise<string> => {
-    const buildDir = await makeTemporaryToolkitFolder()
-    ExtensionDisposableFiles.getInstance().addFolder(buildDir)
-
-    return pathutil.normalize(buildDir)
-}
-
 export function getRelativeFunctionHandler(params: {
     handlerName: string
     runtime: string
@@ -92,8 +86,7 @@ export async function makeInputTemplate(config: SamLaunchRequestArgs): Promise<s
     let inputTemplatePath: string
     const resourceName = makeResourceName(config)
 
-    // use existing template to create a temporary template with a resource that has an overridden handler name.
-    // this is necessary for Python, which overrides the handler name due to the debug file.
+    // use existing template to create a temporary template
     if (config.invokeTarget.target === 'template') {
         const template = getTemplate(config.workspaceFolder, config)
         const templateResource = getTemplateResource(config.workspaceFolder, config)
@@ -102,23 +95,18 @@ export async function makeInputTemplate(config: SamLaunchRequestArgs): Promise<s
             throw new Error('Resource not found in base template')
         }
 
-        const resourceWithOverriddenHandler = {
-            ...templateResource,
-            Properties: {
-                ...templateResource.Properties!,
-                Handler: config.handlerName,
-            },
-        }
+        // We make a copy as to not mutate the template registry version
+        // TODO remove the template registry? make it return non-mutatable things?
+        const templateClone = { ...template }
 
-        newTemplate = new SamTemplateGenerator(template).withTemplateResources({
-            [resourceName]: resourceWithOverriddenHandler,
-        })
+        // TODO fix this API, withTemplateResources is required (with a runtime error), but if we pass in a template why do we need it?
+        newTemplate = new SamTemplateGenerator(templateClone).withTemplateResources(templateClone.Resources!)
 
         // template type uses the template dir and a throwaway template name so we can use existing relative paths
         // clean this one up manually; we don't want to accidentally delete the workspace dir
         inputTemplatePath = path.join(path.dirname(config.templatePath), 'app___vsctk___template.yaml')
-        // code type - generate ephemeral SAM template
     } else {
+        // code type - generate ephemeral SAM template
         newTemplate = new SamTemplateGenerator()
             .withFunctionHandler(config.handlerName)
             .withResourceName(resourceName)
@@ -232,12 +220,11 @@ export async function invokeLambdaFunction(
         dockerNetwork: config.sam?.dockerNetwork,
         debugPort: !config.noDebug ? config.debugPort?.toString() : undefined,
         debuggerPath: config.debuggerPath,
+        debugArgs: config.debugArgs,
         extraArgs: config.sam?.localArguments,
         parameterOverrides: config.parameterOverrides,
         skipPullImage: config.sam?.skipNewImageCheck,
     }
-
-    delete config.invokeTarget // Must not be used beyond this point.
 
     const command = new SamCliLocalInvokeInvocation(localInvokeArgs)
 
@@ -255,13 +242,6 @@ export async function invokeLambdaFunction(
             runtime: config.runtime as Runtime,
             debug: !config.noDebug,
         })
-        if (config.outFilePath) {
-            try {
-                await unlink(config.outFilePath)
-            } catch (err) {
-                getLogger().warn(err as Error)
-            }
-        }
     }
 
     if (!config.noDebug) {
@@ -363,7 +343,6 @@ export async function attachDebugger({
     } else {
         channelLogger.error(
             'AWS.output.sam.local.attach.failure',
-            // tslint:disable-next-line:max-line-length
             'Unable to attach Debugger. Check the Terminal tab for output. If it took longer than expected to successfully start, you may still attach to it.'
         )
     }
@@ -387,7 +366,6 @@ export async function waitForDebugPort(
 
         channelLogger.warn(
             'AWS.samcli.local.invoke.port.not.open',
-            // tslint:disable-next-line:max-line-length
             "The debug port doesn't appear to be open. The debugger might not succeed when attaching to your SAM Application."
         )
     }
@@ -474,7 +452,8 @@ function messageUserWaitingToAttach(channelLogger: ChannelLogger) {
  * @param config
  */
 export async function makeConfig(config: SamLaunchRequestArgs): Promise<void> {
-    config.baseBuildDir = await makeBuildDir()
+    // TODO is this normalize actually needed for any platform?
+    config.baseBuildDir = pathutils.normalize(await makeTemporaryToolkitFolder())
     config.eventPayloadFile = path.join(config.baseBuildDir!, 'event.json')
     config.envFile = path.join(config.baseBuildDir!, 'env-vars.json')
 

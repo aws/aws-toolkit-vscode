@@ -11,7 +11,6 @@ const path = require('path')
 const webpack = require('webpack')
 const fs = require('fs')
 const TerserPlugin = require('terser-webpack-plugin')
-const FileManagerPlugin = require('filemanager-webpack-plugin')
 const { NLSBundlePlugin } = require('vscode-nls-dev/lib/webpack-bundler')
 const CircularDependencyPlugin = require('circular-dependency-plugin')
 const packageJsonFile = path.join(__dirname, 'package.json')
@@ -23,7 +22,7 @@ const config = {
     target: 'node',
     entry: {
         extension: './src/extension.ts',
-        aslServer: './src/stepFunctions/asl/aslServer.ts',
+        'src/stepFunctions/asl/aslServer': './src/stepFunctions/asl/aslServer.ts',
     },
     output: {
         path: path.resolve(__dirname, 'dist'),
@@ -78,28 +77,6 @@ const config = {
         new NLSBundlePlugin(packageId),
         new webpack.DefinePlugin({
             PLUGINVERSION: JSON.stringify(packageJson.version),
-        }),
-        // @ts-ignore
-        new FileManagerPlugin({
-            onStart: {
-                mkdir: [path.resolve(__dirname, 'dist/src/stepFunctions/asl/')],
-            },
-            onEnd: {
-                move: [
-                    {
-                        source: path.resolve(__dirname, 'dist/aslServer.js'),
-                        destination: path.resolve(__dirname, 'dist/src/stepFunctions/asl/aslServer.js'),
-                    },
-                    {
-                        source: path.resolve(__dirname, 'dist/aslServer.js.LICENSE.txt'),
-                        destination: path.resolve(__dirname, 'dist/src/stepFunctions/asl/aslServer.js.LICENSE.txt'),
-                    },
-                    {
-                        source: path.resolve(__dirname, 'dist/aslServer.js.map'),
-                        destination: path.resolve(__dirname, 'dist/src/stepFunctions/asl/aslServer.js.map'),
-                    },
-                ],
-            },
         }),
         new CircularDependencyPlugin({
             exclude: /node_modules/,

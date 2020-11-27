@@ -18,7 +18,6 @@ export function formatError(message: string, err: any): string {
     } else if (typeof err === 'string') {
         return `${message}: ${err}`
     } else if (err) {
-        // tslint:disable-next-line: no-unsafe-any
         return `${message}: ${err.toString()}`
     }
 

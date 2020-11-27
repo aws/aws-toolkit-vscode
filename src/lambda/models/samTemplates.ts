@@ -7,7 +7,7 @@ const localize = nls.loadMessageBundle()
 
 import * as semver from 'semver'
 import { Runtime } from 'aws-sdk/clients/lambda'
-import { Set } from 'immutable'
+import { Set as ImmutableSet } from 'immutable'
 import { supportsEventBridgeTemplates } from '../../../src/eventSchemas/models/schemaCodeLangs'
 
 export const helloWorldTemplate = 'AWS SAM Hello World'
@@ -25,7 +25,7 @@ export type SamTemplate =
     | 'AWS Step Functions Sample App'
     | 'REQUIRES_AWS_CREDENTIALS_REPROMPT_USER_FOR_TEMPLATE'
 
-export function getSamTemplateWizardOption(runtime: Runtime, samCliVersion: string): Set<SamTemplate> {
+export function getSamTemplateWizardOption(runtime: Runtime, samCliVersion: string): ImmutableSet<SamTemplate> {
     let templateOptions: Array<SamTemplate> = Array<SamTemplate>(helloWorldTemplate)
 
     if (supportsEventBridgeTemplates(runtime)) {
@@ -36,7 +36,7 @@ export function getSamTemplateWizardOption(runtime: Runtime, samCliVersion: stri
         templateOptions.push(stepFunctionsSampleApp)
     }
 
-    return Set<SamTemplate>(templateOptions)
+    return ImmutableSet<SamTemplate>(templateOptions)
 }
 
 export function getSamCliTemplateParameter(templateSelected: SamTemplate): string {

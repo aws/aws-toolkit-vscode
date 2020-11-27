@@ -7,7 +7,7 @@ import * as assert from 'assert'
 import * as os from 'os'
 import * as path from 'path'
 import {
-    dirnameWithTrailingSlash,
+    normalizedDirnameWithTrailingSlash,
     getNormalizedRelativePath,
     normalizeSeparator,
     normalize,
@@ -24,10 +24,10 @@ describe('pathUtils', async () => {
         assert.strictEqual(relativePath, expectedRelativePath.replace(path.sep, path.posix.sep))
     })
 
-    it('dirnameWithTrailingSlash()', async () => {
-        const expectedResult = path.join('src', 'processors') + path.sep
+    it('normalizedDirnameWithTrailingSlash()', async () => {
+        const expectedResult = 'src/processors/'
         const input = path.join(expectedResult, 'app.js')
-        const actualResult = dirnameWithTrailingSlash(input)
+        const actualResult = normalizedDirnameWithTrailingSlash(input)
         assert.strictEqual(actualResult, expectedResult, 'Expected path to contain trailing slash')
     })
 

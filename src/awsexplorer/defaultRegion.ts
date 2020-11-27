@@ -113,31 +113,31 @@ export async function checkExplorerForDefaultRegion(
 
     const regionHiddenResponse = response[0].label
 
-    switch (regionHiddenResponse) {
-        case DefaultRegionMissingPromptItems.add:
-        case DefaultRegionMissingPromptItems.alwaysAdd:
-            await awsContext.addExplorerRegion(profileRegion)
-            awsExplorer.refresh()
-            break
+    if (
+        regionHiddenResponse === DefaultRegionMissingPromptItems.add ||
+        regionHiddenResponse === DefaultRegionMissingPromptItems.alwaysAdd
+    ) {
+        await awsContext.addExplorerRegion(profileRegion)
+        awsExplorer.refresh()
     }
 
-    switch (regionHiddenResponse) {
-        case DefaultRegionMissingPromptItems.alwaysAdd:
-        case DefaultRegionMissingPromptItems.alwaysIgnore:
-            // User does not want to be prompted anymore
-            const action =
-                regionHiddenResponse === DefaultRegionMissingPromptItems.alwaysAdd
-                    ? OnDefaultRegionMissingOperation.Add
-                    : OnDefaultRegionMissingOperation.Ignore
-            await config.update('onDefaultRegionMissing', action, vscode.ConfigurationTarget.Global)
-            vscode.window.showInformationMessage(
-                localize(
-                    'AWS.message.prompt.defaultRegionHidden.suppressed',
-                    // prettier-ignore
-                    "You will no longer be asked what to do when the current profile's default region is hidden from the Explorer. This behavior can be changed by modifying the '{0}' setting.",
-                    'aws.onDefaultRegionMissing'
-                )
+    if (
+        regionHiddenResponse === DefaultRegionMissingPromptItems.alwaysAdd ||
+        regionHiddenResponse === DefaultRegionMissingPromptItems.alwaysIgnore
+    ) {
+        // User does not want to be prompted anymore
+        const action =
+            regionHiddenResponse === DefaultRegionMissingPromptItems.alwaysAdd
+                ? OnDefaultRegionMissingOperation.Add
+                : OnDefaultRegionMissingOperation.Ignore
+        await config.update('onDefaultRegionMissing', action, vscode.ConfigurationTarget.Global)
+        vscode.window.showInformationMessage(
+            localize(
+                'AWS.message.prompt.defaultRegionHidden.suppressed',
+                // prettier-ignore
+                "You will no longer be asked what to do when the current profile's default region is hidden from the Explorer. This behavior can be changed by modifying the '{0}' setting.",
+                'aws.onDefaultRegionMissing'
             )
-            break
+        )
     }
 }

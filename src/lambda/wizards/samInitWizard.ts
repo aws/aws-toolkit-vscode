@@ -4,11 +4,9 @@
  */
 
 import * as nls from 'vscode-nls'
-const localize = nls.loadMessageBundle()
-
 import { Credentials } from 'aws-sdk'
 import { Runtime } from 'aws-sdk/clients/lambda'
-import { Set } from 'immutable'
+import { Set as ImmutableSet } from 'immutable'
 import * as path from 'path'
 import * as vscode from 'vscode'
 import { SchemasDataProvider } from '../../eventSchemas/providers/schemasDataProvider'
@@ -19,7 +17,16 @@ import { Region } from '../../shared/regions/endpoints'
 import { createHelpButton } from '../../shared/ui/buttons'
 import * as input from '../../shared/ui/input'
 import * as picker from '../../shared/ui/picker'
-import { MultiStepWizard, promptUserForLocation, WizardContext, WizardStep } from '../../shared/wizards/multiStepWizard'
+import {
+    MultiStepWizard,
+    promptUserForLocation,
+    WIZARD_GOBACK,
+    WIZARD_RETRY,
+    WIZARD_TERMINATE,
+    WizardContext,
+    wizardContinue,
+    WizardStep,
+} from '../../shared/wizards/multiStepWizard'
 import { createRuntimeQuickPick, samLambdaCreatableRuntimes } from '../models/samLambdaRuntime'
 import {
     eventBridgeStarterAppTemplate,
@@ -29,8 +36,10 @@ import {
     SamTemplate,
 } from '../models/samTemplates'
 
+const localize = nls.loadMessageBundle()
+
 export interface CreateNewSamAppWizardContext {
-    readonly lambdaRuntimes: Set<Runtime>
+    readonly lambdaRuntimes: ImmutableSet<Runtime>
     readonly workspaceFolders: readonly vscode.WorkspaceFolder[] | undefined
 
     promptUserForRuntime(currRuntime?: Runtime): Promise<Runtime | undefined>
@@ -53,6 +62,9 @@ export class DefaultCreateNewSamAppWizardContext extends WizardContext implement
     private readonly schemasRegions: Region[]
     private readonly samCliVersion: string
 
+    private readonly totalSteps: number = 4
+    private additionalSteps: number = 0
+
     public constructor(currentCredentials: Credentials | undefined, schemasRegions: Region[], samCliVersion: string) {
         super()
         this.currentCredentials = currentCredentials
@@ -64,6 +76,8 @@ export class DefaultCreateNewSamAppWizardContext extends WizardContext implement
         const quickPick = createRuntimeQuickPick({
             buttons: [this.helpButton],
             currRuntime,
+            step: 1,
+            totalSteps: this.totalSteps,
         })
 
         const choices = await picker.promptUser({
@@ -85,12 +99,16 @@ export class DefaultCreateNewSamAppWizardContext extends WizardContext implement
         currRuntime: Runtime,
         currTemplate?: SamTemplate
     ): Promise<SamTemplate | undefined> {
+        // last common step; reset additionalSteps to 0
+        this.additionalSteps = 0
         const templates = getSamTemplateWizardOption(currRuntime, this.samCliVersion)
         const quickPick = picker.createQuickPick<vscode.QuickPickItem>({
             options: {
                 ignoreFocusOut: true,
                 title: localize('AWS.samcli.initWizard.template.prompt', 'Select a SAM Application Template'),
                 value: currTemplate,
+                step: 2,
+                totalSteps: this.totalSteps,
             },
             buttons: [this.helpButton, vscode.QuickInputButtons.Back],
             items: templates.toArray().map(template => ({
@@ -134,11 +152,15 @@ export class DefaultCreateNewSamAppWizardContext extends WizardContext implement
     }
 
     public async promptUserForRegion(currRegion?: string): Promise<string | undefined> {
+        // start of longer path; set additionalSteps to 3
+        this.additionalSteps = 3
         const quickPick = picker.createQuickPick<vscode.QuickPickItem>({
             options: {
                 ignoreFocusOut: true,
                 title: localize('AWS.samcli.initWizard.schemas.region.prompt', 'Select an EventBridge Schemas Region'),
                 value: currRegion ? currRegion : '',
+                step: 3,
+                totalSteps: this.totalSteps + this.additionalSteps,
             },
             buttons: [this.helpButton, vscode.QuickInputButtons.Back],
             items: this.schemasRegions.map(region => ({
@@ -186,6 +208,8 @@ export class DefaultCreateNewSamAppWizardContext extends WizardContext implement
                 ignoreFocusOut: true,
                 title: localize('AWS.samcli.initWizard.schemas.registry.prompt', 'Select a Registry'),
                 value: currRegistry ? currRegistry : '',
+                step: 4,
+                totalSteps: this.totalSteps + this.additionalSteps,
             },
             buttons: [this.helpButton, vscode.QuickInputButtons.Back],
             items: registryNames!.map(registry => ({
@@ -249,6 +273,8 @@ export class DefaultCreateNewSamAppWizardContext extends WizardContext implement
                 ignoreFocusOut: true,
                 title: localize('AWS.samcli.initWizard.schemas.schema.prompt', 'Select a Schema'),
                 value: currSchema ? currSchema : '',
+                step: 4,
+                totalSteps: this.totalSteps + this.additionalSteps,
             },
             buttons: [this.helpButton, vscode.QuickInputButtons.Back],
             items: schemas!.map(schema => ({
@@ -275,7 +301,11 @@ export class DefaultCreateNewSamAppWizardContext extends WizardContext implement
     }
 
     public async promptUserForLocation(): Promise<vscode.Uri | undefined> {
-        return promptUserForLocation(this, { helpButton: { button: this.helpButton, url: samInitDocUrl } })
+        return promptUserForLocation(this, {
+            helpButton: { button: this.helpButton, url: samInitDocUrl },
+            step: 3 + this.additionalSteps,
+            totalSteps: this.totalSteps + this.additionalSteps,
+        })
     }
 
     public async promptUserForName(defaultValue: string): Promise<string | undefined> {
@@ -283,6 +313,8 @@ export class DefaultCreateNewSamAppWizardContext extends WizardContext implement
             options: {
                 title: localize('AWS.samcli.initWizard.name.prompt', 'Enter a name for your new application'),
                 ignoreFocusOut: true,
+                step: 4 + this.additionalSteps,
+                totalSteps: this.totalSteps + this.additionalSteps,
             },
             buttons: [this.helpButton, vscode.QuickInputButtons.Back],
         })
@@ -368,52 +400,44 @@ export class CreateNewSamAppWizard extends MultiStepWizard<CreateNewSamAppWizard
     private readonly RUNTIME: WizardStep = async () => {
         this.runtime = await this.context.promptUserForRuntime(this.runtime)
 
-        return this.runtime ? this.TEMPLATE : undefined
+        return this.runtime ? wizardContinue(this.TEMPLATE) : WIZARD_TERMINATE
     }
 
     private readonly TEMPLATE: WizardStep = async () => {
         this.template = await this.context.promptUserForTemplate(this.runtime!)
 
         if (this.template === repromptUserForTemplate) {
-            return this.TEMPLATE
+            return WIZARD_RETRY
         }
         if (this.template === eventBridgeStarterAppTemplate) {
-            return this.REGION
+            return wizardContinue(this.REGION)
         }
 
-        return this.template ? this.LOCATION : this.RUNTIME
+        return this.template ? wizardContinue(this.LOCATION) : WIZARD_GOBACK
     }
 
     private readonly REGION: WizardStep = async () => {
         this.region = await this.context.promptUserForRegion()
 
-        return this.region ? this.REGISTRY : this.TEMPLATE
+        return this.region ? wizardContinue(this.REGISTRY) : WIZARD_GOBACK
     }
 
     private readonly REGISTRY: WizardStep = async () => {
         this.registryName = await this.context.promptUserForRegistry(this.region!)
 
-        return this.registryName ? this.SCHEMA : this.REGION
+        return this.registryName ? wizardContinue(this.SCHEMA) : WIZARD_GOBACK
     }
 
     private readonly SCHEMA: WizardStep = async () => {
         this.schemaName = await this.context.promptUserForSchema(this.region!, this.registryName!)
 
-        return this.schemaName ? this.LOCATION : this.REGISTRY
+        return this.schemaName ? wizardContinue(this.LOCATION) : WIZARD_GOBACK
     }
 
     private readonly LOCATION: WizardStep = async () => {
         this.location = await this.context.promptUserForLocation()
 
-        if (!this.location) {
-            if (this.template === eventBridgeStarterAppTemplate) {
-                return this.SCHEMA
-            }
-
-            return this.TEMPLATE
-        }
-
-        return this.NAME
+        return this.location ? wizardContinue(this.NAME) : WIZARD_GOBACK
     }
 
     private readonly NAME: WizardStep = async () => {
@@ -421,6 +445,6 @@ export class CreateNewSamAppWizard extends MultiStepWizard<CreateNewSamAppWizard
             this.name ?? (this.location ? path.basename(this.location.path) : '')
         )
 
-        return this.name ? undefined : this.LOCATION
+        return this.name ? WIZARD_TERMINATE : WIZARD_GOBACK
     }
 }

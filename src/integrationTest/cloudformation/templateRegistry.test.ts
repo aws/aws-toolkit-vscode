@@ -4,10 +4,9 @@
  */
 
 import * as path from 'path'
+import * as fs from 'fs-extra'
 
 import { CloudFormationTemplateRegistry } from '../../shared/cloudformation/templateRegistry'
-import { CloudFormationTemplateRegistryManager } from '../../shared/cloudformation/templateRegistryManager'
-import { mkdir, rmrf } from '../../shared/filesystem'
 import { makeSampleSamTemplateYaml, strToYamlFile } from '../../test/shared/cloudformation/cloudformationTestUtils'
 import { getTestWorkspaceFolder } from '../integrationTestsUtilities'
 
@@ -15,9 +14,8 @@ import { getTestWorkspaceFolder } from '../integrationTestsUtilities'
  * Note: these tests are pretty shallow right now. They do not test the following:
  * * Adding/removing workspace folders
  */
-describe('CloudFormation Template Registry Manager', async () => {
+describe('CloudFormation Template Registry', async () => {
     let registry: CloudFormationTemplateRegistry
-    let manager: CloudFormationTemplateRegistryManager
     let workspaceDir: string
     let testDir: string
     let testDirNested: string
@@ -30,14 +28,13 @@ describe('CloudFormation Template Registry Manager', async () => {
     beforeEach(async () => {
         testDir = path.join(workspaceDir, dir.toString())
         testDirNested = path.join(testDir, 'nested')
-        await mkdir(testDirNested, { recursive: true })
+        await fs.mkdirp(testDirNested)
         registry = new CloudFormationTemplateRegistry()
-        manager = new CloudFormationTemplateRegistryManager(registry)
     })
 
     afterEach(async () => {
-        manager.dispose()
-        await rmrf(testDir)
+        registry.dispose()
+        await fs.remove(testDir)
         dir++
     })
 
@@ -45,13 +42,13 @@ describe('CloudFormation Template Registry Manager', async () => {
         await strToYamlFile(makeSampleSamTemplateYaml(true), path.join(testDir, 'test.yaml'))
         await strToYamlFile(makeSampleSamTemplateYaml(false), path.join(testDirNested, 'test.yml'))
 
-        await manager.addTemplateGlob('**/test.{yaml,yml}')
+        await registry.addWatchPattern('**/test.{yaml,yml}')
 
         await registryHasTargetNumberOfFiles(registry, 2)
     })
 
     it('adds dynamically-added template files with yaml and yml extensions at various nesting levels', async () => {
-        await manager.addTemplateGlob('**/test.{yaml,yml}')
+        await registry.addWatchPattern('**/test.{yaml,yml}')
 
         await strToYamlFile(makeSampleSamTemplateYaml(false), path.join(testDir, 'test.yml'))
         await strToYamlFile(makeSampleSamTemplateYaml(true), path.join(testDirNested, 'test.yaml'))
@@ -59,11 +56,21 @@ describe('CloudFormation Template Registry Manager', async () => {
         await registryHasTargetNumberOfFiles(registry, 2)
     })
 
+    it('Ignores templates matching excluded patterns', async () => {
+        await registry.addWatchPattern('**/test.{yaml,yml}')
+        await registry.addExcludedPattern(/.*nested.*/)
+
+        await strToYamlFile(makeSampleSamTemplateYaml(false), path.join(testDir, 'test.yml'))
+        await strToYamlFile(makeSampleSamTemplateYaml(true), path.join(testDirNested, 'test.yaml'))
+
+        await registryHasTargetNumberOfFiles(registry, 1)
+    })
+
     it('can handle changed files', async () => {
         const filepath = path.join(testDir, 'changeMe.yml')
         await strToYamlFile(makeSampleSamTemplateYaml(false), filepath)
 
-        await manager.addTemplateGlob('**/changeMe.yml')
+        await registry.addWatchPattern('**/changeMe.yml')
 
         await registryHasTargetNumberOfFiles(registry, 1)
 
@@ -75,7 +82,7 @@ describe('CloudFormation Template Registry Manager', async () => {
     })
 
     it('can handle deleted files', async () => {
-        await manager.addTemplateGlob('**/deleteMe.yml')
+        await registry.addWatchPattern('**/deleteMe.yml')
 
         // Specifically creating the file after the watcher is added
         // Otherwise, it seems the file is deleted before the file watcher realizes the file exists
@@ -85,14 +92,14 @@ describe('CloudFormation Template Registry Manager', async () => {
 
         await registryHasTargetNumberOfFiles(registry, 1)
 
-        await rmrf(filepath)
+        await fs.remove(filepath)
 
         await registryHasTargetNumberOfFiles(registry, 0)
     })
 })
 
 async function registryHasTargetNumberOfFiles(registry: CloudFormationTemplateRegistry, target: number) {
-    while (registry.registeredTemplates.length !== target) {
+    while (registry.registeredItems.length !== target) {
         await new Promise(resolve => setTimeout(resolve, 20))
     }
 }
@@ -105,9 +112,9 @@ async function queryRegistryForFileWithGlobalsKeyStatus(
     let foundMatch = false
     while (!foundMatch) {
         await new Promise(resolve => setTimeout(resolve, 20))
-        const obj = registry.getRegisteredTemplate(filepath)
+        const obj = registry.getRegisteredItem(filepath)
         if (obj) {
-            foundMatch = Object.keys(obj.template).includes('Globals') === hasGlobals
+            foundMatch = Object.keys(obj.item).includes('Globals') === hasGlobals
         }
     }
 }

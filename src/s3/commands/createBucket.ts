@@ -9,8 +9,8 @@ import { localize } from '../../shared/utilities/vsCodeUtils'
 import { Commands } from '../../shared/vscode/commands'
 import { Window } from '../../shared/vscode/window'
 import { S3Node } from '../explorer/s3Nodes'
-import { showErrorWithLogs } from '../util/messages'
-import { validateBucketName } from '../util/validateBucketName'
+import { showErrorWithLogs } from '../../shared/utilities/messages'
+import { validateBucketName } from '../util'
 
 /**
  * Creates a bucket in the s3 region represented by the given node.

@@ -6,20 +6,28 @@
 import * as nls from 'vscode-nls'
 const localize = nls.loadMessageBundle()
 
-import { Set } from 'immutable'
+import { Set as ImmutableSet } from 'immutable'
 import * as vscode from 'vscode'
 
 import { eventBridgeSchemasDocUrl } from '../../shared/constants'
 import { createHelpButton } from '../../shared/ui/buttons'
 import * as picker from '../../shared/ui/picker'
-import { MultiStepWizard, promptUserForLocation, WizardContext, WizardStep } from '../../shared/wizards/multiStepWizard'
+import {
+    MultiStepWizard,
+    promptUserForLocation,
+    WIZARD_GOBACK,
+    WIZARD_TERMINATE,
+    WizardContext,
+    wizardContinue,
+    WizardStep,
+} from '../../shared/wizards/multiStepWizard'
 
 import * as codeLang from '../models/schemaCodeLangs'
 
 import { SchemaItemNode } from '../explorer/schemaItemNode'
 
 export interface SchemaCodeDownloadWizardContext {
-    readonly schemaLangs: Set<codeLang.SchemaCodeLangs>
+    readonly schemaLangs: ImmutableSet<codeLang.SchemaCodeLangs>
     readonly workspaceFolders: readonly vscode.WorkspaceFolder[] | undefined
 
     promptUserForVersion(currSchemaVersion?: string): Promise<string | undefined>
@@ -34,6 +42,7 @@ export interface SchemaCodeDownloadWizardContext {
 export class DefaultSchemaCodeDownloadWizardContext extends WizardContext implements SchemaCodeDownloadWizardContext {
     public readonly schemaLangs = codeLang.schemaCodeLangs
     private readonly helpButton = createHelpButton(localize('AWS.command.help', 'View Toolkit Documentation'))
+    private readonly totalSteps = 3
     public constructor(private readonly node: SchemaItemNode) {
         super()
         this.node = node
@@ -50,6 +59,8 @@ export class DefaultSchemaCodeDownloadWizardContext extends WizardContext implem
                     'Select a code binding language'
                 ),
                 value: currLanguage ? currLanguage : '',
+                step: 2,
+                totalSteps: this.totalSteps,
             },
             buttons: [this.helpButton, vscode.QuickInputButtons.Back],
             items: this.schemaLangs.toArray().map(language => ({
@@ -87,6 +98,8 @@ export class DefaultSchemaCodeDownloadWizardContext extends WizardContext implem
                     this.node.schemaName
                 ),
                 value: currSchemaVersion ? currSchemaVersion : '',
+                step: 1,
+                totalSteps: this.totalSteps,
             },
             buttons: [this.helpButton, vscode.QuickInputButtons.Back],
             items: versions!.map(schemaVersion => ({
@@ -127,6 +140,8 @@ export class DefaultSchemaCodeDownloadWizardContext extends WizardContext implem
                     'Select a workspace folder to download code bindings'
                 ),
             },
+            step: 3,
+            totalSteps: this.totalSteps,
         })
     }
 }
@@ -165,18 +180,18 @@ export class SchemaCodeDownloadWizard extends MultiStepWizard<SchemaCodeDownload
     private readonly SCHEMA_VERSION: WizardStep = async () => {
         this.schemaVersion = await this.context.promptUserForVersion(this.schemaVersion)
 
-        return this.schemaVersion ? this.LANGUAGE : undefined
+        return this.schemaVersion ? wizardContinue(this.LANGUAGE) : WIZARD_TERMINATE
     }
 
     private readonly LANGUAGE: WizardStep = async () => {
         this.language = await this.context.promptUserForLanguage(this.language)
 
-        return this.language ? this.LOCATION : this.SCHEMA_VERSION
+        return this.language ? wizardContinue(this.LOCATION) : WIZARD_GOBACK
     }
 
     private readonly LOCATION: WizardStep = async () => {
         this.location = await this.context.promptUserForLocation()
 
-        return this.location ? undefined : this.LANGUAGE
+        return this.location ? WIZARD_TERMINATE : WIZARD_GOBACK
     }
 }

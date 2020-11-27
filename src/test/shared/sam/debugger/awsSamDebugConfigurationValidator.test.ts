@@ -8,13 +8,15 @@ import * as vscode from 'vscode'
 import { instance, mock, when } from 'ts-mockito'
 
 import { CloudFormation } from '../../../../shared/cloudformation/cloudformation'
-import { CloudFormationTemplateRegistry, TemplateDatum } from '../../../../shared/cloudformation/templateRegistry'
+import { CloudFormationTemplateRegistry } from '../../../../shared/cloudformation/templateRegistry'
 import {
     AwsSamDebuggerConfiguration,
     TemplateTargetProperties,
 } from '../../../../shared/sam/debugger/awsSamDebugConfiguration'
 import { DefaultAwsSamDebugConfigurationValidator } from '../../../../shared/sam/debugger/awsSamDebugConfigurationValidator'
 import { createBaseTemplate } from '../../cloudformation/cloudformationTestUtils'
+import { ext } from '../../../../shared/extensionGlobals'
+import { WatchedItem } from '../../../../shared/watchedFiles'
 
 function createTemplateConfig(): AwsSamDebuggerConfiguration {
     return {
@@ -59,10 +61,10 @@ function createApiConfig(): AwsSamDebuggerConfiguration {
     }
 }
 
-function createTemplateData(): TemplateDatum {
+function createTemplateData(): WatchedItem<CloudFormation.Template> {
     return {
         path: '/',
-        template: createBaseTemplate(),
+        item: createBaseTemplate(),
     }
 }
 
@@ -77,10 +79,22 @@ describe('DefaultAwsSamDebugConfigurationValidator', () => {
 
     let validator: DefaultAwsSamDebugConfigurationValidator
 
-    beforeEach(() => {
-        when(mockRegistry.getRegisteredTemplate('/')).thenReturn(templateData)
+    let savedRegistry: CloudFormationTemplateRegistry
 
-        validator = new DefaultAwsSamDebugConfigurationValidator(instance(mockRegistry), instance(mockFolder))
+    before(() => {
+        savedRegistry = ext.templateRegistry
+    })
+
+    after(() => {
+        ext.templateRegistry = savedRegistry
+    })
+
+    beforeEach(() => {
+        when(mockRegistry.getRegisteredItem('/')).thenReturn(templateData)
+
+        ext.templateRegistry = mockRegistry
+
+        validator = new DefaultAwsSamDebugConfigurationValidator(instance(mockFolder))
     })
 
     it('returns invalid when resolving debug configurations with an invalid request type', () => {
@@ -99,9 +113,9 @@ describe('DefaultAwsSamDebugConfigurationValidator', () => {
 
     it("returns invalid when resolving template debug configurations with a template that isn't in the registry", () => {
         const mockEmptyRegistry: CloudFormationTemplateRegistry = mock()
-        when(mockEmptyRegistry.getRegisteredTemplate('/')).thenReturn(undefined)
+        when(mockEmptyRegistry.getRegisteredItem('/')).thenReturn(undefined)
 
-        validator = new DefaultAwsSamDebugConfigurationValidator(instance(mockEmptyRegistry), instance(mockFolder))
+        validator = new DefaultAwsSamDebugConfigurationValidator(instance(mockFolder))
 
         const result = validator.validate(templateConfig)
         assert.strictEqual(result.isValid, false)
@@ -124,8 +138,7 @@ describe('DefaultAwsSamDebugConfigurationValidator', () => {
     })
 
     it('returns undefined when resolving template debug configurations with a resource that has an invalid runtime in template', () => {
-        const properties = templateData.template.Resources?.TestResource
-            ?.Properties as CloudFormation.ResourceProperties
+        const properties = templateData.item.Resources?.TestResource?.Properties as CloudFormation.ResourceProperties
         properties.Runtime = 'invalid'
 
         const result = validator.validate(templateConfig)

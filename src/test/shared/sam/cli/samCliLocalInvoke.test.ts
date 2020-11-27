@@ -4,8 +4,7 @@
  */
 
 import * as assert from 'assert'
-import * as del from 'del'
-import { writeFile } from 'fs-extra'
+import { writeFile, remove } from 'fs-extra'
 import * as path from 'path'
 import { makeTemporaryToolkitFolder } from '../../../../shared/filesystemUtilities'
 import {
@@ -38,7 +37,7 @@ describe('SamCliLocalInvokeInvocation', async () => {
     })
 
     afterEach(async () => {
-        await del([tempFolder], { force: true })
+        await remove(tempFolder)
     })
 
     it('invokes `sam local` with args', async () => {
@@ -47,12 +46,13 @@ describe('SamCliLocalInvokeInvocation', async () => {
                 assert.ok(invokeArgs.args.length >= 2, 'Expected args to be present')
                 assert.strictEqual(invokeArgs.args[0], 'local')
                 assert.strictEqual(invokeArgs.args[1], 'invoke')
-                assert.strictEqual(invokeArgs.args[3], '--template')
-                assert.strictEqual(invokeArgs.args[5], '--event')
-                assert.strictEqual(invokeArgs.args[7], '--env-vars')
+                // --debug is present because tests run with "debug" log-level. #1403
+                assert.strictEqual(invokeArgs.args[2], '--debug')
+                assert.strictEqual(invokeArgs.args[4], '--template')
+                assert.strictEqual(invokeArgs.args[6], '--event')
+                assert.strictEqual(invokeArgs.args[8], '--env-vars')
 
                 // `extraArgs` are appended to the end.
-                assert.strictEqual(invokeArgs.args[9], '--debug')
                 assert.strictEqual(invokeArgs.args[10], '--build-dir')
                 assert.strictEqual(invokeArgs.args[11], 'my/build/dir/')
             }
@@ -64,7 +64,7 @@ describe('SamCliLocalInvokeInvocation', async () => {
             eventPath: placeholderEventFile,
             environmentVariablePath: nonRelevantArg,
             invoker: taskInvoker,
-            extraArgs: ['--debug', '--build-dir', 'my/build/dir/'],
+            extraArgs: ['--build-dir', 'my/build/dir/'],
         }).execute()
     })
 

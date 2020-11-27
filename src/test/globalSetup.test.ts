@@ -7,10 +7,11 @@
  * Before/After hooks for all "unit" tests
  */
 import * as assert from 'assert'
-import { appendFileSync, mkdirpSync } from 'fs-extra'
+import { appendFileSync, mkdirpSync, remove } from 'fs-extra'
 import { join } from 'path'
+import { CodelensRootRegistry } from '../shared/sam/codelensRootRegistry'
+import { CloudFormationTemplateRegistry } from '../shared/cloudformation/templateRegistry'
 import { ext } from '../shared/extensionGlobals'
-import { rmrf } from '../shared/filesystem'
 import { getLogger } from '../shared/logger'
 import { setLogger } from '../shared/logger/logger'
 import { DefaultTelemetryService } from '../shared/telemetry/defaultTelemetryService'
@@ -29,7 +30,7 @@ let testLogger: TestLogger | undefined
 before(async () => {
     // Clean up and set up test logs
     try {
-        await rmrf(testLogOutput)
+        await remove(testLogOutput)
     } catch (e) {}
     mkdirpSync(testReportDir)
     // Set up global telemetry client
@@ -43,16 +44,17 @@ before(async () => {
     }
     const service = new DefaultTelemetryService(mockContext, mockAws, mockPublisher)
     ext.telemetry = service
+    ext.templateRegistry = new CloudFormationTemplateRegistry()
+    ext.codelensRootRegistry = new CodelensRootRegistry()
 })
 
-beforeEach(async function() {
+beforeEach(async function () {
     // Set every test up so that TestLogger is the logger used by toolkit code
     testLogger = setupTestLogger()
 })
 
-afterEach(async function() {
+afterEach(async function () {
     // Prevent other tests from using the same TestLogger instance
-    // tslint:disable-next-line: no-unsafe-any, no-invalid-this
     teardownTestLogger(this.currentTest?.fullTitle() as string)
     testLogger = undefined
 })

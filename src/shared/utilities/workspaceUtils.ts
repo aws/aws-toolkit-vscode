@@ -7,7 +7,8 @@ import * as vscode from 'vscode'
 import * as path from 'path'
 import { getLogger } from '../logger'
 import { isInDirectory } from '../filesystemUtilities'
-import { dirnameWithTrailingSlash } from './pathUtils'
+import { normalizedDirnameWithTrailingSlash, normalize } from './pathUtils'
+import { ext } from '../extensionGlobals'
 
 /**
  * Resolves `relPath` against parent `workspaceFolder`, or returns `relPath` if
@@ -90,33 +91,37 @@ export async function addFolderToWorkspace(
  */
 export async function findParentProjectFile(
     sourceCodeUri: vscode.Uri,
-    projectFile: string
+    projectFile: RegExp
 ): Promise<vscode.Uri | undefined> {
     const workspaceFolder = vscode.workspace.getWorkspaceFolder(sourceCodeUri)
     if (!workspaceFolder) {
         return undefined
     }
 
-    const workspaceProjectFiles: vscode.Uri[] = await vscode.workspace.findFiles(
-        new vscode.RelativePattern(workspaceFolder, path.join('**', projectFile))
-    )
+    const workspaceProjectFiles = ext.codelensRootRegistry.registeredItems
+        .filter(item => item.item.match(projectFile))
+        .map(item => item.path)
 
     // Use the project file "closest" in the parent chain to sourceCodeUri
-    let parentProjectFiles = workspaceProjectFiles
+    const parentProjectFiles = workspaceProjectFiles
         .filter(uri => {
-            const dirname = dirnameWithTrailingSlash(uri.fsPath)
+            const dirname = normalizedDirnameWithTrailingSlash(uri)
 
-            return sourceCodeUri.fsPath.startsWith(dirname)
+            return normalize(sourceCodeUri.fsPath).startsWith(dirname)
         })
         .sort((a, b) => {
-            if (isInDirectory(path.parse(a.fsPath).dir, path.parse(b.fsPath).dir)) {
+            if (isInDirectory(path.parse(a).dir, path.parse(b).dir)) {
                 return 1
             }
 
             return -1
         })
 
-    return parentProjectFiles[0]
+    if (parentProjectFiles.length === 0) {
+        return undefined
+    }
+
+    return vscode.Uri.parse(parentProjectFiles[0])
 }
 
 /**
@@ -133,4 +138,27 @@ export async function openTextDocument(filenameGlob: vscode.GlobPattern): Promis
     await vscode.commands.executeCommand('vscode.open', found[0])
     const textDocument = vscode.workspace.textDocuments.find(o => o.uri.fsPath.includes(found[0].fsPath))
     return textDocument
+}
+
+/**
+ * Returns a path relative to the first workspace folder found that is a parent of the defined path.
+ * Returns undefined if there are no applicable workspace folders.
+ * @param childPath Path to derive relative path from
+ */
+export function getWorkspaceRelativePath(
+    childPath: string,
+    override: {
+        workspaceFolders: vscode.WorkspaceFolder[] | undefined
+    } = {
+        workspaceFolders: vscode.workspace.workspaceFolders,
+    }
+): string | undefined {
+    if (!override.workspaceFolders) {
+        return
+    }
+    for (const folder of override.workspaceFolders) {
+        if (isInDirectory(folder.uri.fsPath, childPath)) {
+            return path.relative(folder.uri.fsPath, childPath)
+        }
+    }
 }

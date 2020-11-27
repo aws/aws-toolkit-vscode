@@ -158,6 +158,23 @@ describe('DefaultS3Client', () => {
             })
         })
 
+        it('removes the region code for us-east-1', async () => {
+            when(
+                mockS3.createBucket(
+                    deepEqual({
+                        Bucket: bucketName,
+                        CreateBucketConfiguration: undefined,
+                    })
+                )
+            ).thenReturn(success())
+
+            const response = await createClient({ regionCode: 'us-east-1' }).createBucket({ bucketName })
+
+            assert.deepStrictEqual(response, {
+                bucket: new DefaultBucket({ partitionId: partition, region: 'us-east-1', name: bucketName }),
+            })
+        })
+
         it('throws an Error on failure', async () => {
             when(mockS3.createBucket(anything())).thenReturn(failure())
 
@@ -338,6 +355,33 @@ describe('DefaultS3Client', () => {
                         name: bucketName,
                     }),
                 ],
+            })
+        })
+
+        it('Filters buckets with no name', async () => {
+            when(mockS3.listBuckets()).thenReturn(
+                success({ Buckets: [{ Name: undefined }, { Name: outOfRegionBucketName }] })
+            )
+            when(mockS3.headBucket(deepEqual({ Bucket: bucketName }))).thenReturn(
+                success({ $response: { httpResponse: { headers: { 'x-amz-bucket-region': region } } } })
+            )
+
+            const response = await createClient().listBuckets()
+            assert.deepStrictEqual(response, {
+                buckets: [],
+            })
+        })
+
+        it(`Filters buckets when it can't get region`, async () => {
+            const mockResponse: Request<any, AWSError> = mock()
+            when(mockS3.listBuckets()).thenReturn(success({ Buckets: [{ Name: bucketName }] }))
+            // eslint-disable-next-line @typescript-eslint/unbound-method
+            when(mockResponse.promise).thenReject((undefined as any) as Error)
+            when(mockS3.headBucket(anything())).thenReturn(mockResponse)
+
+            const response = await createClient().listBuckets()
+            assert.deepStrictEqual(response, {
+                buckets: [],
             })
         })
 

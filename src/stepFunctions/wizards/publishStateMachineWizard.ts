@@ -19,7 +19,14 @@ import { createHelpButton } from '../../shared/ui/buttons'
 import * as input from '../../shared/ui/input'
 import * as picker from '../../shared/ui/picker'
 import { toArrayAsync } from '../../shared/utilities/collectionUtils'
-import { MultiStepWizard, WizardContext, WizardStep } from '../../shared/wizards/multiStepWizard'
+import {
+    MultiStepWizard,
+    WIZARD_GOBACK,
+    WIZARD_TERMINATE,
+    WizardContext,
+    wizardContinue,
+    WizardStep,
+} from '../../shared/wizards/multiStepWizard'
 import { isStepFunctionsRole } from '../utils'
 const localize = nls.loadMessageBundle()
 
@@ -74,6 +81,9 @@ export class DefaultPublishStateMachineWizardContext extends WizardContext imple
     private readonly iamClient: IamClient
     private readonly stepFunctionsClient: StepFunctionsClient
 
+    private readonly totalSteps = 2
+    private additionalSteps: number = 0
+
     public constructor(private readonly defaultRegion: string) {
         super()
         this.stepFunctionsClient = ext.toolkitClientBuilder.createStepFunctionsClient(this.defaultRegion)
@@ -83,6 +93,7 @@ export class DefaultPublishStateMachineWizardContext extends WizardContext imple
     public async promptUserForPublishAction(
         currPublishAction: PublishStateMachineAction | undefined
     ): Promise<PublishStateMachineAction | undefined> {
+        this.additionalSteps = 0
         const publishItems: PublishActionQuickPickItem[] = [
             {
                 label: localize('AWS.stepFunctions.publishWizard.publishAction.quickCreate.label', 'Quick Create'),
@@ -116,6 +127,8 @@ export class DefaultPublishStateMachineWizardContext extends WizardContext imple
                     'Publish to AWS Step Functions ({0})',
                     this.defaultRegion
                 ),
+                step: 1,
+                totalSteps: this.totalSteps,
             },
             buttons: [this.helpButton, vscode.QuickInputButtons.Back],
             items: publishItems,
@@ -141,6 +154,8 @@ export class DefaultPublishStateMachineWizardContext extends WizardContext imple
             options: {
                 title: localize('AWS.stepFunctions.publishWizard.stateMachineName.title', 'Name your state machine'),
                 ignoreFocusOut: true,
+                step: 3,
+                totalSteps: this.totalSteps + this.additionalSteps,
             },
             buttons: [this.helpButton, vscode.QuickInputButtons.Back],
         })
@@ -174,6 +189,7 @@ export class DefaultPublishStateMachineWizardContext extends WizardContext imple
     }
 
     public async promptUserForIamRole(currRoleArn?: string): Promise<string | undefined> {
+        this.additionalSteps = 1
         let roles: AwsResourceQuickPickItem[]
         if (!this.iamRoles || this.iamRoles.length === 0) {
             roles = [
@@ -208,6 +224,8 @@ export class DefaultPublishStateMachineWizardContext extends WizardContext imple
                     this.defaultRegion
                 ),
                 value: currRoleArn ? currRoleArn : '',
+                step: 2,
+                totalSteps: this.totalSteps + this.additionalSteps,
             },
             buttons: [this.helpButton, vscode.QuickInputButtons.Back],
             items: roles,
@@ -268,6 +286,8 @@ export class DefaultPublishStateMachineWizardContext extends WizardContext imple
                     'Select state machine to update ({0})',
                     this.defaultRegion
                 ),
+                step: 2,
+                totalSteps: this.totalSteps,
             },
             buttons: [this.helpButton, vscode.QuickInputButtons.Back],
             items: stateMachines,
@@ -337,13 +357,13 @@ export class PublishStateMachineWizard extends MultiStepWizard<PublishStateMachi
 
         switch (this.publishAction) {
             case PublishStateMachineAction.QuickCreate:
-                return this.ROLE_ARN
+                return wizardContinue(this.ROLE_ARN)
 
             case PublishStateMachineAction.QuickUpdate:
-                return this.EXISTING_STATE_MACHINE_ARN
+                return wizardContinue(this.EXISTING_STATE_MACHINE_ARN)
 
             default:
-                return undefined
+                return WIZARD_TERMINATE
         }
     }
 
@@ -351,19 +371,19 @@ export class PublishStateMachineWizard extends MultiStepWizard<PublishStateMachi
         await this.context.loadIamRoles()
         this.roleArn = await this.context.promptUserForIamRole(this.roleArn)
 
-        return this.roleArn ? this.NEW_STATE_MACHINE_NAME : this.PUBLISH_ACTION
+        return this.roleArn ? wizardContinue(this.NEW_STATE_MACHINE_NAME) : WIZARD_GOBACK
     }
 
     private readonly NEW_STATE_MACHINE_NAME: WizardStep = async () => {
         this.name = await this.context.promptUserForStateMachineName()
 
-        return this.name ? undefined : this.ROLE_ARN
+        return this.name ? WIZARD_TERMINATE : WIZARD_GOBACK
     }
 
     private readonly EXISTING_STATE_MACHINE_ARN: WizardStep = async () => {
         await this.context.loadStateMachines()
         this.stateMachineArn = await this.context.promptUserForStateMachineToUpdate()
 
-        return this.stateMachineArn ? undefined : this.PUBLISH_ACTION
+        return this.stateMachineArn ? WIZARD_TERMINATE : WIZARD_GOBACK
     }
 }

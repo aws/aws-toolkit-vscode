@@ -79,7 +79,7 @@ export class Timeout {
 }
 
 /**
- * Invokes `fn()` until it returns a truthy value.
+ * Invokes `fn()` until it returns a non-undefined value.
  *
  * @param fn  Function whose result is checked
  * @param opt.timeout  Timeout in ms (default: 5000)

@@ -7,7 +7,6 @@ import * as nls from 'vscode-nls'
 const localize = nls.loadMessageBundle()
 
 import { CloudFormation, Lambda } from 'aws-sdk'
-import * as _ from 'lodash'
 import * as vscode from 'vscode'
 import { CloudFormationClient } from '../shared/clients/cloudFormationClient'
 import { LambdaClient } from '../shared/clients/lambdaClient'
@@ -37,18 +36,23 @@ export async function* listLambdaFunctions(client: LambdaClient): AsyncIterableI
     try {
         yield* client.listFunctions()
     } finally {
-        if (!!status) {
+        if (status) {
             status.dispose()
         }
     }
 }
 
 /**
- * Converts Lambda handler into a filename by stripping the function name and appending the correct file extension.
+ * Returns filename and function name corresponding to a Lambda.FunctionConfiguration
  * Only works for supported languages (Python/JS)
  * @param configuration Lambda configuration object from getFunction
  */
-export function getLambdaFileNameFromHandler(configuration: Lambda.FunctionConfiguration): string {
+export function getLambdaDetails(
+    configuration: Lambda.FunctionConfiguration
+): {
+    fileName: string
+    functionName: string
+} {
     let runtimeExtension: string
     switch (getFamily(configuration.Runtime!)) {
         case RuntimeFamily.Python:
@@ -61,10 +65,10 @@ export function getLambdaFileNameFromHandler(configuration: Lambda.FunctionConfi
             throw new Error(`Toolkit does not currently support imports for runtime: ${configuration.Runtime}`)
     }
 
-    const fileName = _(configuration.Handler!)
-        .split('.')
-        .initial()
-        .join('.')
+    const handlerArr = configuration.Handler!.split('.')
 
-    return `${fileName}.${runtimeExtension}`
+    return {
+        fileName: `${handlerArr.slice(0, handlerArr.length - 1).join('.')}.${runtimeExtension}`,
+        functionName: handlerArr[handlerArr.length - 1]!,
+    }
 }

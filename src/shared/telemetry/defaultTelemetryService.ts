@@ -6,7 +6,7 @@
 import * as fs from 'fs'
 import { writeFile } from 'fs-extra'
 import * as path from 'path'
-import uuidv4 = require('uuid/v4')
+import { v4 as uuidv4 } from 'uuid'
 import { ExtensionContext } from 'vscode'
 import { AwsContext } from '../awsContext'
 import { getLogger } from '../logger'
@@ -250,7 +250,6 @@ export class DefaultTelemetryService implements TelemetryService {
 
             return events
         } catch (error) {
-            // tslint:disable-next-line: no-unsafe-any
             getLogger().error(error)
 
             return []
@@ -277,7 +276,7 @@ export function filterTelemetryCacheEvents(input: any): MetricDatum[] {
 
             return true
         })
-        .filter((item: Object) => {
+        .filter((item: any) => {
             // Only accept objects that have the required telemetry data
             if (
                 !item.hasOwnProperty('Value') ||

@@ -4,7 +4,7 @@
  */
 
 import * as vscode from 'vscode'
-import * as del from 'del'
+import * as fs from 'fs-extra'
 import { CredentialsStore } from '../credentials/credentialsStore'
 import { DefaultSettingsConfiguration } from '../shared/settingsConfiguration'
 import { DefaultTelemetryService } from '../shared/telemetry/defaultTelemetryService'
@@ -111,7 +111,7 @@ export class TestExtensionDisposableFiles extends ExtensionDisposableFiles {
         const instance = ExtensionDisposableFiles.INSTANCE
         ExtensionDisposableFiles.INSTANCE = undefined
         if (instance) {
-            del.sync([instance.toolkitTempFolder], { force: true })
+            fs.removeSync(instance.toolkitTempFolder)
             instance.dispose()
         }
     }

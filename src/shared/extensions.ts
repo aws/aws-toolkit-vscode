@@ -14,6 +14,8 @@ import { CredentialsStore } from '../credentials/credentialsStore'
 export const VSCODE_EXTENSION_ID = {
     awstoolkit: 'amazonwebservices.aws-toolkit-vscode',
     python: 'ms-python.python',
+    // python depends on jupyter plugin
+    jupyter: 'ms-toolsai.jupyter',
     yaml: 'redhat.vscode-yaml',
 }
 
@@ -32,6 +34,6 @@ export interface ExtContext {
 }
 
 /**
- * Version of the .vsix produced by the `packageAlpha` script.
+ * Version of the .vsix produced by the `packageDebug` script.
  */
 export const EXTENSION_ALPHA_VERSION = '1.99.0-SNAPSHOT'

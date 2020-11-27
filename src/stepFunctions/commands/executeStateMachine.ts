@@ -36,8 +36,8 @@ export async function executeStateMachine(params: {
 
     try {
         const view = vscode.window.createWebviewPanel('html', 'Start Execution', vscode.ViewColumn.One, {
-            // Enable scripts in the webview
             enableScripts: true,
+            retainContextWhenHidden: true,
         })
 
         const baseTemplateFn = _.template(BaseTemplates.SIMPLE_HTML)
@@ -82,7 +82,7 @@ function createMessageReceivedFunc({
 
     return async (message: CommandMessage) => {
         switch (message.command) {
-            case 'executeStateMachine':
+            case 'executeStateMachine': {
                 let executeResult: Result = 'Succeeded'
                 logger.info('Starting Step Functions State Machine execution')
 
@@ -130,6 +130,7 @@ function createMessageReceivedFunc({
                 }
 
                 return
+            }
         }
     }
 }

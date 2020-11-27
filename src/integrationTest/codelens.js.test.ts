@@ -16,8 +16,7 @@ const workspaceFolder = getTestWorkspaceFolder()
 
 describe('SAM Local CodeLenses (JS)', async () => {
     // TODO : Extend this test suite out to work for different projects with different file configurations
-    before(async function() {
-        // tslint:disable-next-line:no-invalid-this
+    before(async function () {
         this.timeout(ACTIVATE_EXTENSION_TIMEOUT_MILLIS)
     })
 
@@ -81,7 +80,7 @@ describe('SAM Local CodeLenses (JS)', async () => {
         return codeLenses.filter(
             codeLens =>
                 codeLens.command &&
-                codeLens.command.command === 'aws.addSamDebugConfiguration' &&
+                codeLens.command.command === 'aws.pickAddSamDebugConfiguration' &&
                 codeLens.command.arguments &&
                 codeLens.command.arguments.length === 2
         )

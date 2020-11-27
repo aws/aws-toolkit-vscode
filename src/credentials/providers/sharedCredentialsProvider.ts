@@ -138,7 +138,7 @@ export class SharedCredentialsProvider implements CredentialsProvider {
 
         let profile = this.profile
 
-        while (!!profile[SHARED_CREDENTIAL_PROPERTIES.SOURCE_PROFILE]) {
+        while (profile[SHARED_CREDENTIAL_PROPERTIES.SOURCE_PROFILE]) {
             const profileName = profile[SHARED_CREDENTIAL_PROPERTIES.SOURCE_PROFILE]!
 
             // Cycle

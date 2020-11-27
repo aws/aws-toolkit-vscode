@@ -5,12 +5,10 @@
 
 import * as child_process from 'child_process'
 import { pushIf } from '../../utilities/collectionUtils'
-import * as vscode from 'vscode'
 import * as nls from 'vscode-nls'
 import { fileExists } from '../../filesystemUtilities'
 import { getLogger, Logger } from '../../logger'
 import { ChildProcess } from '../../utilities/childProcess'
-import { removeAnsi } from '../../utilities/textUtilities'
 import { Timeout } from '../../utilities/timeoutUtils'
 import { ChannelLogger } from '../../utilities/vsCodeUtils'
 import { DefaultSamCliProcessInvokerContext, SamCliProcessInvokerContext } from './samCliInvoker'
@@ -18,7 +16,7 @@ import { DefaultSamCliProcessInvokerContext, SamCliProcessInvokerContext } from 
 const localize = nls.loadMessageBundle()
 
 export const WAIT_FOR_DEBUGGER_MESSAGES = {
-    PYTHON: 'Waiting for debugger to attach...',
+    PYTHON: 'Starting debugger',
     NODEJS: 'Debugger listening on',
     DOTNET: 'Waiting for the debugger to attach...',
 }
@@ -35,7 +33,7 @@ export interface SamLocalInvokeCommandArgs {
  * Represents and manages the SAM CLI command that is run to locally invoke SAM Applications.
  */
 export interface SamLocalInvokeCommand {
-    invoke({}: SamLocalInvokeCommandArgs): Promise<void>
+    invoke(items: SamLocalInvokeCommandArgs): Promise<void>
 }
 
 export class DefaultSamLocalInvokeCommand implements SamLocalInvokeCommand {
@@ -59,14 +57,16 @@ export class DefaultSamLocalInvokeCommand implements SamLocalInvokeCommand {
 
             await childProcess.start({
                 onStdout: (text: string): void => {
-                    this.emitMessage(text)
+                    this.channelLogger.emitMessage(text)
                     // If we have a timeout (as we do on debug) refresh the timeout as we receive text
                     params.timeout?.refresh()
+                    this.logger.verbose(`stdout: ${text}`)
                 },
                 onStderr: (text: string): void => {
-                    this.emitMessage(text)
+                    this.channelLogger.emitMessage(text)
                     // If we have a timeout (as we do on debug) refresh the timeout as we receive text
                     params.timeout?.refresh()
+                    this.logger.verbose(`stderr: ${text}`)
                     if (checkForDebuggerAttachCue) {
                         // Look for messages like "Waiting for debugger to attach" before returning back to caller
                         if (this.debuggerAttachCues.some(cue => text.includes(cue))) {
@@ -126,19 +126,12 @@ export class DefaultSamLocalInvokeCommand implements SamLocalInvokeCommand {
                     'The SAM process did not make the debugger available within the time limit',
                     err
                 )
-                if (!childProcess.killed) {
-                    childProcess.kill()
+                if (!childProcess.stopped) {
+                    childProcess.stop()
                 }
                 throw err
             }
         })
-    }
-
-    private emitMessage(text: string): void {
-        // From VS Code API: If no debug session is active, output sent to the debug console is not shown.
-        // We send text to output channel and debug console to ensure no text is lost.
-        this.channelLogger.channel.append(removeAnsi(text))
-        vscode.debug.activeDebugConsole.append(text)
     }
 }
 
@@ -187,6 +180,10 @@ export interface SamCliLocalInvokeInvocationArguments {
      */
     debuggerPath?: string
     /**
+     * Passed to be executed as the root process in the Lambda container
+     */
+    debugArgs?: string[]
+    /**
      * parameter overrides specified in the `sam.template.parameters` field
      */
     parameterOverrides?: string[]
@@ -221,6 +218,7 @@ export class SamCliLocalInvokeInvocation {
         const invokeArgs = [
             'local',
             'invoke',
+            ...(getLogger().logLevelEnabled('debug') ? ['--debug'] : []),
             this.args.templateResourceName,
             '--template',
             this.args.templatePath,
@@ -234,6 +232,7 @@ export class SamCliLocalInvokeInvocation {
         pushIf(invokeArgs, !!this.args.dockerNetwork, '--docker-network', this.args.dockerNetwork!)
         pushIf(invokeArgs, !!this.args.skipPullImage, '--skip-pull-image')
         pushIf(invokeArgs, !!this.args.debuggerPath, '--debugger-path', this.args.debuggerPath!)
+        pushIf(invokeArgs, !!this.args.debugArgs, '--debug-args', ...(this.args.debugArgs ?? []))
         pushIf(
             invokeArgs,
             !!this.args.parameterOverrides && this.args.parameterOverrides.length > 0,

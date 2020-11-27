@@ -8,6 +8,8 @@ import { getLogger, Logger } from '../../logger'
 import { logAndThrowIfUnexpectedExitCode, SamCliProcessInvoker } from './samCliInvokerUtils'
 import { DefaultSamCliProcessInvoker } from './samCliInvoker'
 import { pushIf } from '../../utilities/collectionUtils'
+import { ext } from '../../extensionGlobals'
+import { getChannelLogger } from '../../utilities/vsCodeUtils'
 
 export interface SamCliBuildInvocationArguments {
     /**
@@ -84,7 +86,14 @@ export class SamCliBuildInvocation {
     public async execute(): Promise<number> {
         await this.validate()
 
-        const invokeArgs: string[] = ['build', '--build-dir', this.args.buildDir, '--template', this.args.templatePath]
+        const invokeArgs: string[] = [
+            'build',
+            ...(getLogger().logLevelEnabled('debug') ? ['--debug'] : []),
+            '--build-dir',
+            this.args.buildDir,
+            '--template',
+            this.args.templatePath,
+        ]
 
         pushIf(invokeArgs, !!this.args.baseDir, '--base-dir', this.args.baseDir!)
         pushIf(invokeArgs, !!this.args.dockerNetwork, '--docker-network', this.args.dockerNetwork!)
@@ -107,6 +116,7 @@ export class SamCliBuildInvocation {
         const childProcessResult = await this.args.invoker.invoke({
             spawnOptions: { env },
             arguments: invokeArgs,
+            channelLogger: getChannelLogger(ext.outputChannel),
         })
 
         logAndThrowIfUnexpectedExitCode(childProcessResult, 0)

@@ -4,7 +4,7 @@
  */
 
 import * as assert from 'assert'
-import * as del from 'del'
+import * as fs from 'fs-extra'
 import * as path from 'path'
 import { CloudFormation } from '../../../shared/cloudformation/cloudformation'
 import { makeTemporaryToolkitFolder } from '../../../shared/filesystemUtilities'
@@ -28,7 +28,7 @@ describe('SamTemplateGenerator', () => {
     })
 
     afterEach(async () => {
-        await del([tempFolder], { force: true })
+        await fs.remove(tempFolder)
     })
 
     function makeMinimalTemplate(): SamTemplateGenerator {
@@ -56,9 +56,7 @@ describe('SamTemplateGenerator', () => {
     })
 
     it('Produces a template containing MemorySize', async () => {
-        await makeMinimalTemplate()
-            .withMemorySize(sampleMemorySize)
-            .generate(templateFilename)
+        await makeMinimalTemplate().withMemorySize(sampleMemorySize).generate(templateFilename)
 
         assert.strictEqual(await SystemUtilities.fileExists(templateFilename), true)
 
@@ -72,9 +70,7 @@ describe('SamTemplateGenerator', () => {
     })
 
     it('Produces a template containing Timeout', async () => {
-        await makeMinimalTemplate()
-            .withTimeout(sampleTimeout)
-            .generate(templateFilename)
+        await makeMinimalTemplate().withTimeout(sampleTimeout).generate(templateFilename)
 
         assert.strictEqual(await SystemUtilities.fileExists(templateFilename), true)
 
@@ -88,9 +84,7 @@ describe('SamTemplateGenerator', () => {
     })
 
     it('Produces a template containing Environment', async () => {
-        await makeMinimalTemplate()
-            .withEnvironment(sampleEnvironment)
-            .generate(templateFilename)
+        await makeMinimalTemplate().withEnvironment(sampleEnvironment).generate(templateFilename)
 
         assert.strictEqual(await SystemUtilities.fileExists(templateFilename), true)
 
@@ -116,7 +110,6 @@ describe('SamTemplateGenerator', () => {
 
         const template: CloudFormation.Template = await CloudFormation.load(templateFilename)
         assert.ok(template.Globals, 'Expected loaded template to have a Globals section')
-        // tslint:disable:no-unsafe-any -- we don't care about the schema of globals for the test
         const globals = template.Globals!
         assert.notStrictEqual(Object.keys(globals).length, 0, 'Expected Template Globals to be not empty')
 
@@ -125,7 +118,6 @@ describe('SamTemplateGenerator', () => {
         assert.ok(globals[functionKey], 'Expected Globals to contain Function')
         assert.ok(globals[functionKey][timeoutKey], 'Expected Globals.Function to contain Timeout')
         assert.strictEqual(globals[functionKey][timeoutKey], 5, 'Unexpected Globals.Function.Timeout value')
-        // tslint:enable:no-unsafe-any
     })
 
     it('errs if resource name is missing', async () => {

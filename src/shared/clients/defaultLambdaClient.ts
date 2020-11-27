@@ -22,7 +22,7 @@ export class DefaultLambdaClient implements LambdaClient {
             })
             .promise()
 
-        if (!!response.$response.error) {
+        if (response.$response.error) {
             throw response.$response.error
         }
     }
@@ -48,12 +48,12 @@ export class DefaultLambdaClient implements LambdaClient {
         do {
             const response: Lambda.ListFunctionsResponse = await client.listFunctions(request).promise()
 
-            if (!!response.Functions) {
+            if (response.Functions) {
                 yield* response.Functions
             }
 
             request.Marker = response.NextMarker
-        } while (!!request.Marker)
+        } while (request.Marker)
     }
 
     public async getFunction(name: string): Promise<Lambda.GetFunctionResponse> {
@@ -62,7 +62,11 @@ export class DefaultLambdaClient implements LambdaClient {
 
         try {
             const response = await client.getFunction({ FunctionName: name }).promise()
-            getLogger().debug('GetFunction returned response: %O', response)
+            // prune `Code` from logs so we don't reveal a signed link to customer resources.
+            getLogger().debug('GetFunction returned response (code section pruned): %O', {
+                ...response,
+                Code: 'Pruned',
+            })
             return response
         } catch (e) {
             getLogger().error('Failed to get function: %O', e)

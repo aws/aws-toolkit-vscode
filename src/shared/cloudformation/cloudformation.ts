@@ -49,6 +49,7 @@ export namespace CloudFormation {
         Timeout?: number | Ref
         Environment?: Environment
         Events?: Events
+        [key: string]: any
     }
 
     export interface Ref {
@@ -62,6 +63,11 @@ export namespace CloudFormation {
     export interface ApiEventProperties {
         Path?: string
         Method?: 'delete' | 'get' | 'head' | 'options' | 'patch' | 'post' | 'put' | 'any'
+        Payload?: {
+            json?: {
+                [k: string]: string | number | boolean
+            }
+        }
     }
 
     export interface Event {
@@ -81,14 +87,16 @@ export namespace CloudFormation {
         | typeof LAMBDA_FUNCTION_TYPE
         | typeof SERVERLESS_FUNCTION_TYPE
         | typeof SERVERLESS_API_TYPE
+        | string
 
     export interface Resource {
         Type: ResourceType
         Properties?: ResourceProperties
+        // Any other properties are fine to have, we just copy them transparently
+        [key: string]: any
     }
 
     // TODO: Can we automatically detect changes to the CFN spec and apply them here?
-    // tslint:disable-next-line:max-line-length
     // https://docs.aws.amazon.com/AWSCloudFormation/latest/UserGuide/parameters-section-structure.html#parameters-section-structure-properties
     export type ParameterType =
         | 'String'
@@ -98,7 +106,6 @@ export namespace CloudFormation {
         | AWSSpecificParameterType
         | SSMParameterType
 
-    // tslint:disable-next-line:max-line-length
     // https://docs.aws.amazon.com/AWSCloudFormation/latest/UserGuide/parameters-section-structure.html#aws-specific-parameter-types
     type AWSSpecificParameterType =
         | 'AWS::EC2::AvailabilityZone::Name'
@@ -120,7 +127,6 @@ export namespace CloudFormation {
         | 'List<AWS::EC2::VPC::Id>'
         | 'List<AWS::Route53::HostedZone::Id>'
 
-    // tslint:disable-next-line:max-line-length
     // https://docs.aws.amazon.com/AWSCloudFormation/latest/UserGuide/parameters-section-structure.html#aws-ssm-parameter-types
     type SSMParameterType =
         | 'AWS::SSM::Parameter::Name'
@@ -225,7 +231,7 @@ export namespace CloudFormation {
         if (!resource.Type) {
             throw new Error('Missing or invalid value in Template for key: Type')
         }
-        if (!!resource.Properties) {
+        if (resource.Properties) {
             if (
                 !resource.Properties.Handler ||
                 !validatePropertyType(resource.Properties.Handler, template, 'string')

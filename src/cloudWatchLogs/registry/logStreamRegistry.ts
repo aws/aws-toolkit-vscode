@@ -14,6 +14,7 @@ import { CloudWatchLogsClient } from '../../shared/clients/cloudWatchLogsClient'
 import { ext } from '../../shared/extensionGlobals'
 import { getLogger } from '../../shared/logger'
 import { INSIGHTS_TIMESTAMP_FORMAT } from '../../shared/constants'
+import { SettingsConfiguration } from '../../shared/settingsConfiguration'
 
 // TODO: Add debug logging statements
 
@@ -24,6 +25,7 @@ export class LogStreamRegistry {
     private readonly _onDidChange: vscode.EventEmitter<vscode.Uri> = new vscode.EventEmitter<vscode.Uri>()
 
     public constructor(
+        private readonly configuration: SettingsConfiguration,
         private readonly activeStreams: Map<string, CloudWatchLogStreamData> = new Map<
             string,
             CloudWatchLogStreamData
@@ -54,7 +56,7 @@ export class LogStreamRegistry {
         parseCloudWatchLogsUri(uri)
         if (!this.hasLog(uri)) {
             this.setLog(uri, new CloudWatchLogStreamData())
-            await this.updateLog(uri, 'tail', getLogEventsFromUriComponentsFn)
+            await this.updateLog(uri, 'tail', this.configuration, getLogEventsFromUriComponentsFn)
         }
     }
 
@@ -113,14 +115,15 @@ export class LogStreamRegistry {
     public async updateLog(
         uri: vscode.Uri,
         headOrTail: 'head' | 'tail' = 'tail',
-        getLogEventsFromUriComponentsFn: (
+        configuration: SettingsConfiguration,
+        getLogEventsFromUriComponentsFn?: (
             logGroupInfo: {
                 groupName: string
                 streamName: string
                 regionName: string
             },
             nextToken?: string
-        ) => Promise<CloudWatchLogs.GetLogEventsResponse> = getLogEventsFromUriComponents
+        ) => Promise<CloudWatchLogs.GetLogEventsResponse>
     ): Promise<void> {
         const stream = this.getLog(uri)
         if (!stream) {
@@ -131,7 +134,9 @@ export class LogStreamRegistry {
         const logGroupInfo = parseCloudWatchLogsUri(uri)
         try {
             // TODO: Consider getPaginatedAwsCallIter? Would need a way to differentiate between head/tail...
-            const logEvents = await getLogEventsFromUriComponentsFn(logGroupInfo, nextToken)
+            const logEvents = getLogEventsFromUriComponentsFn
+                ? await getLogEventsFromUriComponentsFn(logGroupInfo, nextToken)
+                : await this.getLogEventsFromUriComponents(logGroupInfo, nextToken)
             const newData =
                 headOrTail === 'head'
                     ? (logEvents.events ?? []).concat(stream.data)
@@ -201,6 +206,26 @@ export class LogStreamRegistry {
     private getLog(uri: vscode.Uri): CloudWatchLogStreamData | undefined {
         return this.activeStreams.get(uri.path)
     }
+
+    private async getLogEventsFromUriComponents(
+        logGroupInfo: {
+            groupName: string
+            streamName: string
+            regionName: string
+        },
+        nextToken?: string
+    ): Promise<CloudWatchLogs.GetLogEventsResponse> {
+        const client: CloudWatchLogsClient = ext.toolkitClientBuilder.createCloudWatchLogsClient(
+            logGroupInfo.regionName
+        )
+
+        return await client.getLogEvents({
+            logGroupName: logGroupInfo.groupName,
+            logStreamName: logGroupInfo.streamName,
+            nextToken,
+            limit: this.configuration.readSetting('cloudWatchLogs.limit', 1000),
+        })
+    }
 }
 
 export class CloudWatchLogStreamData {
@@ -212,21 +237,4 @@ export class CloudWatchLogStreamData {
         token: CloudWatchLogs.NextToken
     }
     busy: boolean = false
-}
-
-async function getLogEventsFromUriComponents(
-    logGroupInfo: {
-        groupName: string
-        streamName: string
-        regionName: string
-    },
-    nextToken?: string
-): Promise<CloudWatchLogs.GetLogEventsResponse> {
-    const client: CloudWatchLogsClient = ext.toolkitClientBuilder.createCloudWatchLogsClient(logGroupInfo.regionName)
-
-    return await client.getLogEvents({
-        logGroupName: logGroupInfo.groupName,
-        logStreamName: logGroupInfo.streamName,
-        nextToken,
-    })
 }

@@ -4,26 +4,31 @@
  */
 
 import * as assert from 'assert'
-import * as del from 'del'
 import * as path from 'path'
 import * as vscode from 'vscode'
+import * as fs from 'fs-extra'
 import { detectCdkProjects } from '../../cdk/explorer/detectCdkProjects'
 import { makeTemporaryToolkitFolder } from '../../shared/filesystemUtilities'
-import { createWorkspaceFolder, saveCdkJson } from './utilities/treeTestUtils'
+import { saveCdkJson } from './utilities/treeTestUtils'
+import { createTestWorkspaceFolder } from '../testUtil'
+import { FakeExtensionContext } from '../fakeExtensionContext'
 
 describe('detectCdkProjects', () => {
     const workspacePaths: string[] = []
     const workspaceFolders: vscode.WorkspaceFolder[] = []
 
     beforeEach(async () => {
-        const { workspaceFolder } = await createWorkspaceFolder('vsctk-cdk')
+        await FakeExtensionContext.getFakeExtContext()
+        const workspaceFolder = await createTestWorkspaceFolder('vsctk-cdk')
 
         workspacePaths.push(workspaceFolder.uri.path)
         workspaceFolders.push(workspaceFolder)
     })
 
     afterEach(async () => {
-        await del(workspacePaths, { force: true })
+        for (const path of workspacePaths) {
+            await fs.remove(path)
+        }
 
         workspacePaths.length = 0
         workspaceFolders.length = 0

@@ -4,7 +4,6 @@
  */
 
 import * as assert from 'assert'
-import * as del from 'del'
 import * as fs from 'fs-extra'
 import * as path from 'path'
 import * as vscode from 'vscode'
@@ -97,8 +96,7 @@ async function waitUntilWebviewIsVisible(webviewPanel: vscode.WebviewPanel | und
 }
 
 describe('visualizeStateMachine', async () => {
-    before(async function() {
-        // tslint:disable-next-line:no-invalid-this
+    before(async function () {
         this.timeout(600000)
     })
 
@@ -108,7 +106,7 @@ describe('visualizeStateMachine', async () => {
     })
 
     afterEach(async () => {
-        await del([tempFolder], { force: true })
+        await fs.remove(tempFolder)
     })
 
     after(async () => {

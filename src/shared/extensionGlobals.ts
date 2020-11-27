@@ -7,6 +7,8 @@ import { ExtensionContext, OutputChannel, Uri } from 'vscode'
 import { AWSClientBuilder } from './awsClientBuilder'
 import { AWSContextCommands } from './awsContextCommands'
 import { ToolkitClientBuilder } from './clients/toolkitClientBuilder'
+import { CloudFormationTemplateRegistry } from './cloudformation/templateRegistry'
+import { CodelensRootRegistry } from './sam/codelensRootRegistry'
 import { TelemetryService } from './telemetry/telemetryService'
 
 /**
@@ -20,6 +22,8 @@ export namespace ext {
     export let sdkClientBuilder: AWSClientBuilder
     export let toolkitClientBuilder: ToolkitClientBuilder
     export let telemetry: TelemetryService
+    export let templateRegistry: CloudFormationTemplateRegistry
+    export let codelensRootRegistry: CodelensRootRegistry
 
     export namespace iconPaths {
         export const dark: IconPaths = makeIconPathsObject()

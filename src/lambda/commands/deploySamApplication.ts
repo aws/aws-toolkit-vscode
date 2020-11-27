@@ -3,14 +3,13 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
-import * as del from 'del'
 import * as path from 'path'
 import * as vscode from 'vscode'
 import * as nls from 'vscode-nls'
 
 import { asEnvironmentVariables } from '../../credentials/credentialsUtilities'
 import { AwsContext, NoActiveCredentialError } from '../../shared/awsContext'
-import { makeTemporaryToolkitFolder } from '../../shared/filesystemUtilities'
+import { makeTemporaryToolkitFolder, tryRemoveFolder } from '../../shared/filesystemUtilities'
 import { getLogger } from '../../shared/logger'
 import { SamCliBuildInvocation } from '../../shared/sam/cli/samCliBuild'
 import { getSamCliContext, SamCliContext } from '../../shared/sam/cli/samCliContext'
@@ -64,6 +63,7 @@ export async function deploySamApplication(
     }
 ): Promise<void> {
     let deployResult: Result = 'Succeeded'
+    let deployFolder: string | undefined
     try {
         const credentials = await awsContext.getCredentials()
         if (!credentials) {
@@ -78,8 +78,10 @@ export async function deploySamApplication(
             return
         }
 
+        deployFolder = await makeTemporaryToolkitFolder('samDeploy')
+
         const deployParameters: DeploySamApplicationParameters = {
-            deployRootFolder: await makeTemporaryToolkitFolder('samDeploy'),
+            deployRootFolder: deployFolder,
             destinationStackName: deployWizardResponse.stackName,
             packageBucketName: deployWizardResponse.s3Bucket,
             parameterOverrides: deployWizardResponse.parameterOverrides,
@@ -93,14 +95,7 @@ export async function deploySamApplication(
             channelLogger,
             invoker: samCliContext.invoker,
             window,
-        }).then(
-            async () =>
-                // The parent method will exit shortly, and the status bar will run this promise
-                // Cleanup has to be chained into the promise as a result.
-                await del(deployParameters.deployRootFolder, {
-                    force: true,
-                })
-        )
+        })
 
         window.setStatusBarMessage(
             localize(
@@ -110,10 +105,13 @@ export async function deploySamApplication(
             ),
             deployApplicationPromise
         )
+
+        await deployApplicationPromise
     } catch (err) {
         deployResult = 'Failed'
         outputDeployError(err as Error, channelLogger)
     } finally {
+        await tryRemoveFolder(deployFolder)
         recordSamDeploy({ result: deployResult })
     }
 }
@@ -250,11 +248,9 @@ function enhanceAwsCloudFormationInstructions(
     message: string,
     deployParameters: DeploySamApplicationParameters
 ): string {
-    // tslint:disable-next-line:max-line-length
     // detect error message from https://github.com/aws/aws-cli/blob/4ff0cbacbac69a21d4dd701921fe0759cf7852ed/awscli/customizations/cloudformation/exceptions.py#L42
     // and append region to assist in troubleshooting the error
     // (command uses CLI configured value--users that don't know this and omit region won't see error)
-    // tslint:disable-next-line:max-line-length
     if (
         message.includes(
             `aws cloudformation describe-stack-events --stack-name ${deployParameters.destinationStackName}`

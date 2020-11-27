@@ -6,12 +6,10 @@ import * as nls from 'vscode-nls'
 const localize = nls.loadMessageBundle()
 
 import { IAM, StepFunctions } from 'aws-sdk'
-import { writeFile } from 'fs-extra'
-import * as request from 'request'
+import { mkdir, writeFile } from 'fs-extra'
 import * as vscode from 'vscode'
 import { StepFunctionsClient } from '../shared/clients/stepFunctionsClient'
 import { ext } from '../shared/extensionGlobals'
-import { mkdir } from '../shared/filesystem'
 import { fileExists } from '../shared/filesystemUtilities'
 import { getLogger, Logger } from '../shared/logger'
 import {
@@ -20,6 +18,7 @@ import {
     getLanguageService,
     TextDocument as ASLTextDocument,
 } from 'amazon-states-language-service'
+import { HttpResourceFetcher } from '../shared/resourcefetcher/httpResourceFetcher'
 
 const documentSettings: DocumentLanguageSettings = { comments: 'error', trailingCommas: 'error' }
 const languageService = getLanguageService({})
@@ -146,19 +145,18 @@ export class StateMachineGraphCache {
 
 async function httpsGetRequestWrapper(url: string): Promise<string> {
     const logger = getLogger()
-    logger.verbose(`Step Functions is getting content from ${url}`)
+    logger.verbose('Step Functions is getting content...')
 
-    return new Promise((resolve, reject) => {
-        request.get(url, function(error, response) {
-            logger.verbose(`Step Functions finished getting content from ${url}`)
-            if (error) {
-                logger.verbose(`Step Functions was unable to get content from ${url}: %O`, error as Error)
-                reject(error)
-            } else {
-                resolve(response.body as string)
-            }
-        })
-    })
+    const fetcher = new HttpResourceFetcher(url, { showUrl: true })
+    const val = await fetcher.get()
+
+    if (!val) {
+        const message = 'Step Functions was unable to get content.'
+        logger.verbose(message)
+        throw new Error(message)
+    }
+
+    return val
 }
 
 export async function* listStateMachines(
@@ -171,7 +169,7 @@ export async function* listStateMachines(
     try {
         yield* client.listStateMachines()
     } finally {
-        if (!!status) {
+        if (status) {
             status.dispose()
         }
     }
@@ -194,7 +192,6 @@ export async function isDocumentValid(text: string, textDocument?: vscode.TextDo
     }
 
     const doc = ASLTextDocument.create(textDocument.uri.path, textDocument.languageId, textDocument.version, text)
-    // tslint:disable-next-line: no-inferred-empty-object-type
     const jsonDocument = languageService.parseJSONDocument(doc)
     const diagnostics = await languageService.doValidation(doc, jsonDocument, documentSettings)
     const isValid = !diagnostics.some(diagnostic => diagnostic.severity === DiagnosticSeverity.Error)

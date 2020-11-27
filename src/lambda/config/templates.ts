@@ -5,13 +5,12 @@
 
 // Use jsonc-parser.parse instead of JSON.parse, as JSONC can handle comments. VS Code uses jsonc-parser
 // under the hood to provide symbols for JSON documents, so this will keep us consistent with VS code.
-import { access, writeFile } from 'fs-extra'
+import { access, writeFile, ensureDir } from 'fs-extra'
 import * as jsonParser from 'jsonc-parser'
 import * as os from 'os'
 import * as _path from 'path'
 import * as vscode from 'vscode'
 import * as nls from 'vscode-nls'
-import { mkdir } from '../../shared/filesystem'
 import * as fsUtils from '../../shared/filesystemUtilities'
 import { getLogger, Logger } from '../../shared/logger'
 import { ReadonlyJsonObject } from '../../shared/sam/debugger/awsSamDebugConfiguration'
@@ -183,7 +182,6 @@ export function showTemplatesConfigurationError(
     showErrorMessage(
         localize(
             'AWS.lambda.configure.error.fieldtype',
-            // tslint:disable-next-line:max-line-length
             'Your templates.json file has an issue. {0} was detected as {1} instead of one of the following: [{2}]. Please change or remove this field, and try again.',
             error.jsonPath.join('.'),
             error.actualType,
@@ -191,7 +189,6 @@ export function showTemplatesConfigurationError(
         )
     )
 
-    // tslint:disable-next-line:max-line-length
     logger.error(
         `Error detected in templates.json: ${error.message}. Field: ${error.jsonPath.join(
             '.'
@@ -200,12 +197,7 @@ export function showTemplatesConfigurationError(
 }
 
 export async function ensureTemplatesConfigFileExists(path: string): Promise<void> {
-    try {
-        await access(_path.dirname(path))
-    } catch {
-        await mkdir(_path.dirname(path), { recursive: true })
-    }
-
+    ensureDir(_path.dirname(path))
     try {
         await access(path)
     } catch {

@@ -4,9 +4,9 @@
  */
 
 import * as assert from 'assert'
-import * as del from 'del'
 import * as path from 'path'
 import * as filesystemUtilities from '../../../shared/filesystemUtilities'
+import * as fs from 'fs-extra'
 import { WinstonToolkitLogger } from '../../../shared/logger/winstonToolkitLogger'
 import { MockOutputChannel } from '../../mockOutputChannel'
 import { assertThrowsError } from '../utilities/assertUtils'
@@ -20,8 +20,31 @@ describe('WinstonToolkitLogger', () => {
 
     after(async () => {
         if (await filesystemUtilities.fileExists(tempFolder)) {
-            await del(tempFolder, { force: true })
+            await fs.remove(tempFolder)
         }
+    })
+
+    it('logLevelEnabled()', () => {
+        const logger = new WinstonToolkitLogger('info')
+        assert.strictEqual(true, logger.logLevelEnabled('error'))
+        assert.strictEqual(true, logger.logLevelEnabled('warn'))
+        assert.strictEqual(true, logger.logLevelEnabled('info'))
+        assert.strictEqual(false, logger.logLevelEnabled('verbose'))
+        assert.strictEqual(false, logger.logLevelEnabled('debug'))
+
+        logger.setLogLevel('error')
+        assert.strictEqual(true, logger.logLevelEnabled('error'))
+        assert.strictEqual(false, logger.logLevelEnabled('warn'))
+        assert.strictEqual(false, logger.logLevelEnabled('info'))
+        assert.strictEqual(false, logger.logLevelEnabled('verbose'))
+        assert.strictEqual(false, logger.logLevelEnabled('debug'))
+
+        logger.setLogLevel('debug')
+        assert.strictEqual(true, logger.logLevelEnabled('error'))
+        assert.strictEqual(true, logger.logLevelEnabled('warn'))
+        assert.strictEqual(true, logger.logLevelEnabled('info'))
+        assert.strictEqual(true, logger.logLevelEnabled('verbose'))
+        assert.strictEqual(true, logger.logLevelEnabled('debug'))
     })
 
     it('creates an object', () => {

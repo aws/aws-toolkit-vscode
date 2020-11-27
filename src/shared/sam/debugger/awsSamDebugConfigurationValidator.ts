@@ -7,7 +7,6 @@ import * as vscode from 'vscode'
 import * as fs from 'fs'
 import { samLambdaRuntimes } from '../../../lambda/models/samLambdaRuntime'
 import { CloudFormation } from '../../cloudformation/cloudformation'
-import { CloudFormationTemplateRegistry } from '../../cloudformation/templateRegistry'
 import { localize } from '../../utilities/vsCodeUtils'
 import {
     AWS_SAM_DEBUG_REQUEST_TYPES,
@@ -19,6 +18,7 @@ import {
     API_TARGET_TYPE,
 } from './awsSamDebugConfiguration'
 import { tryGetAbsolutePath } from '../../utilities/workspaceUtils'
+import { ext } from '../../extensionGlobals'
 
 export interface ValidationResult {
     isValid: boolean
@@ -30,10 +30,7 @@ export interface AwsSamDebugConfigurationValidator {
 }
 
 export class DefaultAwsSamDebugConfigurationValidator implements AwsSamDebugConfigurationValidator {
-    public constructor(
-        private readonly cftRegistry = CloudFormationTemplateRegistry.getRegistry(),
-        private readonly workspaceFolder: vscode.WorkspaceFolder | undefined
-    ) {}
+    public constructor(private readonly workspaceFolder: vscode.WorkspaceFolder | undefined) {}
 
     /**
      * Validates debug configuration properties.
@@ -67,7 +64,7 @@ export class DefaultAwsSamDebugConfigurationValidator implements AwsSamDebugConf
                 const fullpath = tryGetAbsolutePath(this.workspaceFolder, config.invokeTarget.templatePath)
                 // Normalize to absolute path for use in the runner.
                 config.invokeTarget.templatePath = fullpath
-                cfnTemplate = this.cftRegistry.getRegisteredTemplate(fullpath)?.template
+                cfnTemplate = ext.templateRegistry.getRegisteredItem(fullpath)?.item
             }
             rv = this.validateTemplateConfig(config, config.invokeTarget.templatePath, cfnTemplate)
         } else if (config.invokeTarget.target === CODE_TARGET_TYPE) {

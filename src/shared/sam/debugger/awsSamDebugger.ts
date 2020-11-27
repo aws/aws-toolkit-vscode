@@ -17,7 +17,6 @@ import {
     getTemplate,
 } from '../../../lambda/local/debugConfiguration'
 import { getDefaultRuntime, getFamily, getRuntimeFamily, RuntimeFamily } from '../../../lambda/models/samLambdaRuntime'
-import { CloudFormationTemplateRegistry, getResourcesFromTemplateDatum } from '../../cloudformation/templateRegistry'
 import { Timeout } from '../../utilities/timeoutUtils'
 import { ChannelLogger } from '../../utilities/vsCodeUtils'
 import * as csharpDebug from './csharpSamDebug'
@@ -48,6 +47,7 @@ import { notifyUserInvalidCredentials } from '../../../credentials/credentialsUt
 import { Credentials } from 'aws-sdk/lib/credentials'
 import { CloudFormation } from '../../cloudformation/cloudformation'
 import { getSamCliContext, getSamCliVersion } from '../cli/samCliContext'
+import { ext } from '../../extensionGlobals'
 
 const localize = nls.loadMessageBundle()
 
@@ -78,7 +78,6 @@ export interface SamLaunchRequestArgs extends AwsSamDebuggerConfiguration {
      *  - provider-specific heuristic (last resort)
      */
     codeRoot: string
-    outFilePath?: string
 
     /** Path to (generated) directory used as a working/staging area for SAM. */
     baseBuildDir?: string
@@ -118,6 +117,7 @@ export interface SamLaunchRequestArgs extends AwsSamDebuggerConfiguration {
     /** vscode implicit field, set if user invokes "Run (Start Without Debugging)". */
     noDebug?: boolean
     debuggerPath?: string
+    debugArgs?: string[]
     debugPort?: number
 
     /**
@@ -165,55 +165,51 @@ export class SamDebugConfigProvider implements vscode.DebugConfigurationProvider
         if (token?.isCancellationRequested) {
             return undefined
         }
-        const cftRegistry = CloudFormationTemplateRegistry.getRegistry()
 
         const configs: AwsSamDebuggerConfiguration[] = []
         if (folder) {
             const folderPath = folder.uri.fsPath
-            const templates = cftRegistry.registeredTemplates
+            const templates = ext.templateRegistry.registeredItems
 
             for (const templateDatum of templates) {
                 if (isInDirectory(folderPath, templateDatum.path)) {
-                    if (!templateDatum.template.Resources) {
+                    if (!templateDatum.item.Resources) {
                         getLogger().error(`provideDebugConfigurations: invalid template: ${templateDatum.path}`)
                         continue
                     }
-                    const resources = getResourcesFromTemplateDatum(templateDatum, [
-                        CloudFormation.LAMBDA_FUNCTION_TYPE,
-                        CloudFormation.SERVERLESS_FUNCTION_TYPE,
-                    ])
-                    for (const resourceKey of resources.keys()) {
-                        const resource = resources.get(resourceKey)
-                        const runtimeName = resource?.Properties?.Runtime
-                        configs.push(
-                            createTemplateAwsSamDebugConfig(
-                                folder,
-                                CloudFormation.getStringForProperty(runtimeName, templateDatum.template),
-                                resourceKey,
-                                templateDatum.path
-                            )
-                        )
-                        const events = resource?.Properties?.Events
-                        if (!events) {
-                            continue
-                        }
-                        // Check for api resources to add
-                        for (const key in events) {
-                            const value = events[key]
-                            if (value.Type === 'Api') {
-                                const properties = value.Properties as CloudFormation.ApiEventProperties
-                                configs.push(
-                                    createApiAwsSamDebugConfig(
-                                        folder,
-                                        CloudFormation.getStringForProperty(runtimeName, templateDatum.template),
-                                        resourceKey,
-                                        templateDatum.path,
-                                        {
-                                            path: properties?.Path,
-                                            httpMethod: properties?.Method,
-                                        }
-                                    )
+                    for (const resourceKey of Object.keys(templateDatum.item.Resources)) {
+                        const resource = templateDatum.item.Resources[resourceKey]
+                        if (resource) {
+                            const runtimeName = resource.Properties?.Runtime
+                            configs.push(
+                                createTemplateAwsSamDebugConfig(
+                                    folder,
+                                    CloudFormation.getStringForProperty(runtimeName, templateDatum.item),
+                                    resourceKey,
+                                    templateDatum.path
                                 )
+                            )
+                            const events = resource?.Properties?.Events
+                            if (events) {
+                                // Check for api resources to add
+                                for (const key in events) {
+                                    const value = events[key]
+                                    if (value.Type === 'Api') {
+                                        const properties = value.Properties as CloudFormation.ApiEventProperties
+                                        configs.push(
+                                            createApiAwsSamDebugConfig(
+                                                folder,
+                                                CloudFormation.getStringForProperty(runtimeName, templateDatum.item),
+                                                resourceKey,
+                                                templateDatum.path,
+                                                {
+                                                    path: properties?.Path,
+                                                    httpMethod: properties?.Method,
+                                                }
+                                            )
+                                        )
+                                    }
+                                }
                             }
                         }
                     }
@@ -276,15 +272,11 @@ export class SamDebugConfigProvider implements vscode.DebugConfigurationProvider
             )
             return undefined
         }
-        const cftRegistry = CloudFormationTemplateRegistry.getRegistry()
 
         // If "request" field is missing this means launch.json does not exist.
         // User/vscode expects us to dynamically decide defaults if possible.
         const hasLaunchJson = !!config.request
-        const configValidator: AwsSamDebugConfigurationValidator = new DefaultAwsSamDebugConfigurationValidator(
-            cftRegistry,
-            folder
-        )
+        const configValidator: AwsSamDebugConfigurationValidator = new DefaultAwsSamDebugConfigurationValidator(folder)
 
         if (!hasLaunchJson) {
             vscode.window

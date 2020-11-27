@@ -4,9 +4,9 @@
  */
 
 import * as assert from 'assert'
-import * as del from 'del'
 import * as os from 'os'
 import * as path from 'path'
+import * as fs from 'fs-extra'
 import * as vscode from 'vscode'
 import * as sampleDotNetSamProgram from './sampleDotNetSamProgram'
 
@@ -31,7 +31,7 @@ describe('getLambdaHandlerComponents', async () => {
     })
 
     afterEach(async () => {
-        await del(tempFolder, { force: true })
+        await fs.remove(tempFolder)
     })
 
     it('Detects a public function symbol', async () => {
@@ -281,7 +281,6 @@ describe('isPublicMethodSymbol', async () => {
         const beforeFunctionText = params.beforeFunctionName ? os.EOL : ''
         const afterSignatureText = params.afterSignature ? os.EOL : ''
 
-        // tslint:disable-next-line:max-line-length
         return `${params.access} APIGatewayProxyResponse ${beforeFunctionText}${functionHandler}${afterSignatureText}`
     }
 

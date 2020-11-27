@@ -18,7 +18,6 @@ async function setupVSCode(): Promise<string> {
     return vsCodeExecutablePath
 }
 
-// tslint:disable-next-line: no-floating-promises
 ;(async () => {
     try {
         console.log('Running Integration test suite...')
@@ -31,7 +30,7 @@ async function setupVSCode(): Promise<string> {
         process.env.AWS_TOOLKIT_IGNORE_WEBPACK_BUNDLE = 'true'
 
         const disableExtensions = await getCliArgsToDisableExtensions(vsCodeExecutablePath, {
-            except: [VSCODE_EXTENSION_ID.python, VSCODE_EXTENSION_ID.yaml],
+            except: [VSCODE_EXTENSION_ID.python, VSCODE_EXTENSION_ID.yaml, VSCODE_EXTENSION_ID.jupyter],
         })
         const args = {
             vscodeExecutablePath: vsCodeExecutablePath,

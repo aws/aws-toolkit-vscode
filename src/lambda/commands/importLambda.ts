@@ -7,26 +7,24 @@ import * as AdmZip from 'adm-zip'
 import * as fs from 'fs-extra'
 import * as _ from 'lodash'
 import * as path from 'path'
-import * as request from 'request'
 import * as vscode from 'vscode'
+import { LambdaFunctionNode } from '../explorer/lambdaFunctionNode'
+import { showConfirmationMessage } from '../../shared/utilities/messages'
 import { LaunchConfiguration, getReferencedHandlerPaths } from '../../shared/debug/launchConfiguration'
 import { ext } from '../../shared/extensionGlobals'
-import { makeTemporaryToolkitFolder, fileExists } from '../../shared/filesystemUtilities'
+import { makeTemporaryToolkitFolder, fileExists, tryRemoveFolder } from '../../shared/filesystemUtilities'
+import * as localizedText from '../../shared/localizedText'
 import { getLogger } from '../../shared/logger'
+import { HttpResourceFetcher } from '../../shared/resourcefetcher/httpResourceFetcher'
 import { createCodeAwsSamDebugConfig } from '../../shared/sam/debugger/awsSamDebugConfiguration'
 import * as telemetry from '../../shared/telemetry/telemetry'
-import { ExtensionDisposableFiles } from '../../shared/utilities/disposableFiles'
 import * as pathutils from '../../shared/utilities/pathUtils'
+import { waitUntil } from '../../shared/utilities/timeoutUtils'
 import { localize } from '../../shared/utilities/vsCodeUtils'
-import { Window } from '../../shared/vscode/window'
-import { LambdaFunctionNode } from '../explorer/lambdaFunctionNode'
-import { showConfirmationMessage } from '../../s3/util/messages'
 import { addFolderToWorkspace } from '../../shared/utilities/workspaceUtils'
+import { Window } from '../../shared/vscode/window'
 import { promptUserForLocation, WizardContext } from '../../shared/wizards/multiStepWizard'
-import { getLambdaFileNameFromHandler } from '../utils'
-
-// TODO: Move off of deprecated `request` to `got`?
-// const pipeline = promisify(Stream.pipeline)
+import { getLambdaDetails } from '../utils'
 
 export async function importLambdaCommand(functionNode: LambdaFunctionNode) {
     const result = await runImportLambda(functionNode)
@@ -47,7 +45,7 @@ async function runImportLambda(functionNode: LambdaFunctionNode, window = Window
         )
         return 'Cancelled'
     }
-    const selectedUri = await promptUserForLocation(new WizardContext())
+    const selectedUri = await promptUserForLocation(new WizardContext(), { step: 1, totalSteps: 1 })
     if (!selectedUri) {
         return 'Cancelled'
     }
@@ -65,7 +63,7 @@ async function runImportLambda(functionNode: LambdaFunctionNode, window = Window
                     importLocationName
                 ),
                 confirm: localize('AWS.lambda.import.import', 'Import'),
-                cancel: localize('AWS.generic.cancel', 'Cancel'),
+                cancel: localizedText.cancel,
             },
             window
         )
@@ -75,15 +73,6 @@ async function runImportLambda(functionNode: LambdaFunctionNode, window = Window
             return 'Cancelled'
         }
     }
-
-    if (
-        workspaceFolders.filter(val => {
-            return selectedUri === val.uri
-        }).length === 0
-    ) {
-        await addFolderToWorkspace({ uri: selectedUri! }, true)
-    }
-    const workspaceFolder = vscode.workspace.getWorkspaceFolder(vscode.Uri.file(importLocation))!
 
     return await window.withProgress<telemetry.Result>(
         {
@@ -97,10 +86,20 @@ async function runImportLambda(functionNode: LambdaFunctionNode, window = Window
             ),
         },
         async progress => {
-            const lambdaLocation = path.join(importLocation, getLambdaFileNameFromHandler(functionNode.configuration))
+            const lambdaLocation = path.join(importLocation, getLambdaDetails(functionNode.configuration).fileName)
             try {
                 await downloadAndUnzipLambda(progress, functionNode, importLocation)
                 await openLambdaFile(lambdaLocation)
+
+                if (
+                    workspaceFolders.filter(val => {
+                        return selectedUri === val.uri
+                    }).length === 0
+                ) {
+                    await addFolderToWorkspace({ uri: selectedUri! }, true)
+                }
+                const workspaceFolder = vscode.workspace.getWorkspaceFolder(vscode.Uri.file(importLocation))!
+
                 await addLaunchConfigEntry(lambdaLocation, functionNode, workspaceFolder)
 
                 return 'Succeeded'
@@ -129,10 +128,10 @@ async function downloadAndUnzipLambda(
     lambda = ext.toolkitClientBuilder.createLambdaClient(functionNode.regionCode)
 ): Promise<void> {
     const functionArn = functionNode.configuration.FunctionArn!
+    let tempDir: string | undefined
     try {
-        const tempFolder = await makeTemporaryToolkitFolder()
-        ExtensionDisposableFiles.getInstance().addFolder(tempFolder)
-        const downloadLocation = path.join(tempFolder, 'function.zip')
+        tempDir = await makeTemporaryToolkitFolder()
+        const downloadLocation = path.join(tempDir, 'function.zip')
 
         const response = await lambda.getFunction(functionArn)
         const codeLocation = response.Code?.Location!
@@ -140,37 +139,43 @@ async function downloadAndUnzipLambda(
         // arbitrary increments since there's no "busy" state for progress bars
         progress.report({ increment: 10 })
 
-        // TODO: Move off of deprecated `request` to `got`?
-        // await pipeline(got.stream(codeLocation), fs.createWriteStream(downloadLocation))
-
-        await new Promise(resolve => {
-            getLogger().debug('Starting Lambda download...')
-            request
-                .get(codeLocation)
-                .on('response', () => {
-                    getLogger().debug('Established Lambda download')
-                })
-                .on('complete', () => {
-                    getLogger().debug('Lambda download complete')
-                    resolve()
-                })
-                .on('error', err => {
-                    throw err
-                })
-                .pipe(fs.createWriteStream(downloadLocation))
+        const fetcher = new HttpResourceFetcher(codeLocation, {
+            pipeLocation: downloadLocation,
+            showUrl: false,
+            friendlyName: 'Lambda Function .zip file',
         })
+        await fetcher.get()
 
         progress.report({ increment: 70 })
 
-        await new Promise(resolve => {
-            new AdmZip(downloadLocation).extractAllToAsync(importLocation, true, err => {
-                if (err) {
-                    throw err
+        // HACK: `request` (currently implemented by the `fetcher.get()` call) doesn't necessarily close the pipe before returning.
+        // Brings up issues in less performant systems.
+        // keep attempting the unzip until the zip is fully built or fail after 5 seconds
+        let zipErr: Error | undefined
+        const val = await waitUntil(async () => {
+            return await new Promise<boolean>(resolve => {
+                try {
+                    new AdmZip(downloadLocation).extractAllToAsync(importLocation, true, err => {
+                        if (err) {
+                            // err unzipping
+                            zipErr = err
+                            resolve(undefined)
+                        } else {
+                            progress.report({ increment: 10 })
+                            resolve(true)
+                        }
+                    })
+                } catch (err) {
+                    // err loading zip into AdmZip, prior to attempting an unzip
+                    zipErr = err
+                    resolve(undefined)
                 }
-                progress.report({ increment: 10 })
-                resolve()
             })
         })
+
+        if (!val) {
+            throw zipErr
+        }
     } catch (e) {
         const err = e as Error
         getLogger().error(err)
@@ -184,6 +189,8 @@ async function downloadAndUnzipLambda(
         )
 
         throw new ImportError()
+    } finally {
+        tryRemoveFolder(tempDir)
     }
 }
 
