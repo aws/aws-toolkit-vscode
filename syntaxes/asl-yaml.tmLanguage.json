@@ -3,7 +3,7 @@
         "This file has been converted from https://github.com/textmate/yaml.tmbundle/blob/master/Syntaxes/YAML.tmLanguage"
     ],
     "version": "1.0",
-    "name": "YASL (YAML Amazon States Language)",
+    "name": "Amazon States Language (YAML)",
     "scopeName": "source.asl.yaml",
     "patterns": [
         {

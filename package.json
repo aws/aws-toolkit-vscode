@@ -58,7 +58,7 @@
         "onCommand:aws.aboutToolkit",
         "onCommand:aws.cloudWatchLogs.viewLogStream",
         "onLanguage:asl",
-        "onLanguage:yasl",
+        "onLanguage:asl-yaml",
         "onLanguage:ssm-json",
         "onLanguage:ssm-yaml",
         "onCommand:aws.ssmDocument.createLocalDocument",
@@ -682,7 +682,7 @@
             "editor/title": [
                 {
                     "command": "aws.previewStateMachine",
-                    "when": "editorLangId == asl || editorLangId == yasl",
+                    "when": "editorLangId == asl || editorLangId == asl-yaml",
                     "group": "navigation"
                 },
                 {
@@ -1296,16 +1296,14 @@
                 ]
             },
             {
-                "id": "yasl",
+                "id": "asl-yaml",
                 "aliases": [
-                    "YASL",
-                    "YAML Amazon States Language"
+                    "Amazon States Language (YAML)"
                 ],
                 "extensions": [
-                    "asl.yml",
-                    "asl.yaml"
-                ],
-                "configuration": "./language-configuration.json"
+                    ".asl.yml",
+                    ".asl.yaml"
+                ]
             },
             {
                 "id": "ssm-json",
@@ -1332,7 +1330,7 @@
                 "command": "aws.previewStateMachine",
                 "key": "ctrl+shift+v",
                 "mac": "cmd+shift+v",
-                "when": "editorTextFocus && (editorLangId == asl || editorLangId == yasl)"
+                "when": "editorTextFocus && (editorLangId == asl || editorLangId == asl-yaml)"
             }
         ],
         "grammars": [
@@ -1342,9 +1340,9 @@
                 "path": "./syntaxes/ASL.tmLanguage"
             },
             {
-                "language": "yasl",
+                "language": "asl-yaml",
                 "scopeName": "source.asl.yaml",
-                "path": "./syntaxes/yasl.tmLanguage.json"
+                "path": "./syntaxes/asl-yaml.tmLanguage.json"
             },
             {
                 "language": "ssm-json",

@@ -20,7 +20,6 @@ import {
     TextDocument,
 } from 'amazon-states-language-service'
 import {
-    CompletionItemKind,
     createConnection,
     Diagnostic,
     Disposable,
@@ -35,7 +34,6 @@ import {
     TextDocumentSyncKind,
 } from 'vscode-languageserver'
 
-import { safeDump, safeLoad } from 'js-yaml'
 import { posix } from 'path'
 import { clearTimeout, setTimeout } from 'timers'
 import * as URL from 'url'
@@ -220,7 +218,7 @@ connection.onDidChangeConfiguration(change => {
         if (enableFormatter) {
             if (!formatterRegistration) {
                 formatterRegistration = connection.client.register(DocumentRangeFormattingRequest.type, {
-                    documentSelector: [{ language: 'asl' }, { language: 'yasl' }],
+                    documentSelector: [{ language: 'asl' }, { language: 'asl-yaml' }],
                 })
             }
         } else if (formatterRegistration) {
@@ -282,7 +280,7 @@ function triggerValidation(textDocument: TextDocument): void {
 
 // sets language service depending on document language
 function getLanguageService(langId: string): LanguageService {
-    if (langId === 'yasl') {
+    if (langId === 'asl-yaml') {
         return aslYamlLanguageService
     } else {
         return aslJsonLanguageService
@@ -361,25 +359,6 @@ connection.onCompletion((textDocumentPosition, token) => {
                     textDocumentPosition.position,
                     jsonDocument
                 )
-                // the snippets need to be overwritten each time in the correct language
-                completions?.items.forEach(completion => {
-                    if (completion.kind === CompletionItemKind.Snippet) {
-                        if (document.languageId === 'yasl') {
-                            if (completion.insertText) {
-                                completion.insertText = safeDump(safeLoad(completion.insertText))
-                                // convert single quotes to double quotes for consistency with auto-completions
-                                completion.insertText = completion.insertText.replace(/[']/g, '"')
-                            }
-                        } else {
-                            if (completion.insertText) {
-                                // convert to json snippets by converting yaml to a json string and removing the surrounding curly braces
-                                completion.insertText = JSON.stringify(safeLoad(completion.insertText), undefined, '\t')
-                                    .replace(/^\{/, '')
-                                    .replace(/\}$/, '')
-                            }
-                        }
-                    }
-                })
                 return completions
             }
 

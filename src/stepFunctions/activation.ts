@@ -126,7 +126,7 @@ function initializeCodeLens(context: vscode.ExtensionContext) {
         }
     }
 
-    const docSelector = [{ language: 'asl' }, { language: 'yasl' }]
+    const docSelector = [{ language: 'asl' }, { language: 'asl-yaml' }]
 
     const codeLensProviderDisposable = vscode.languages.registerCodeLensProvider(
         docSelector,
