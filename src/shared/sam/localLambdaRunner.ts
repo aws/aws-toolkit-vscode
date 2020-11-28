@@ -481,15 +481,14 @@ export async function attachDebugger({
         )}`
     )
 
-    let isDebuggerAttached: boolean | undefined
+    let isDebuggerAttached = false
     let retries = 0
 
     channelLogger.info('AWS.output.sam.local.attaching', 'Attaching debugger to SAM application...')
 
     do {
         isDebuggerAttached = await onStartDebugging(undefined, params.debugConfig)
-
-        if (isDebuggerAttached === undefined) {
+        if (!isDebuggerAttached) {
             if (retries < params.maxRetries) {
                 if (onWillRetry) {
                     await onWillRetry()
@@ -500,11 +499,10 @@ export async function attachDebugger({
                     'AWS.output.sam.local.attach.retry.limit.exceeded',
                     'Retry limit reached while trying to attach the debugger.'
                 )
-
-                isDebuggerAttached = false
+                break
             }
         }
-    } while (isDebuggerAttached === undefined)
+    } while (!isDebuggerAttached)
 
     if (params.onRecordAttachDebuggerMetric) {
         params.onRecordAttachDebuggerMetric(isDebuggerAttached, retries + 1)
