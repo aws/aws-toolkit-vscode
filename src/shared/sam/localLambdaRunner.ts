@@ -317,19 +317,24 @@ export async function invokeLambdaFunction(
     }
 
     if (!config.noDebug) {
+        if (config.invokeTarget.target === 'api') {
+            const payload = JSON.parse(await readFile(config.eventPayloadFile, { encoding: 'utf-8' }))
+            await requestLocalApi(ctx, config.api!, config.apiPort!, payload).finally(() => {
+                stopApi(config)
+            })
+        }
+
         if (config.onWillAttachDebugger) {
             ctx.chanLogger.info('AWS.output.sam.local.waiting', 'Waiting for SAM application to start...')
             config.onWillAttachDebugger(config.debugPort!, timer, ctx.chanLogger)
         }
-    }
-    // HACK: remove non-serializable properties before attaching.
-    // TODO: revisit this :)
-    // eslint-disable-next-line @typescript-eslint/unbound-method
-    config.onWillAttachDebugger = undefined
-    config.samLocalInvokeCommand = undefined
+        // HACK: remove non-serializable properties before attaching.
+        // TODO: revisit this :)
+        // eslint-disable-next-line @typescript-eslint/unbound-method
+        config.onWillAttachDebugger = undefined
+        config.samLocalInvokeCommand = undefined
 
-    if (!config.noDebug) {
-        const tryAttach = attachDebugger({
+        await attachDebugger({
             debugConfig: config,
             maxRetries,
             retryDelayMillis: ATTACH_DEBUGGER_RETRY_DELAY_MILLIS,
@@ -353,18 +358,6 @@ export async function invokeLambdaFunction(
                 getLogger().error(`Failed to debug: ${e}`)
                 ctx.chanLogger.channel.appendLine(`Failed to debug: ${e}`)
             })
-
-        if (config.invokeTarget.target !== 'api') {
-            await tryAttach
-        } else {
-            const payload = JSON.parse(await readFile(config.eventPayloadFile, { encoding: 'utf-8' }))
-            await requestLocalApi(ctx, config.api!, config.apiPort!, payload).finally(() => {
-                stopApi(config)
-            })
-            const timer2 = createInvokeTimer(ctx.settings)
-            await waitForPort(config.apiPort!, timer2, ctx.chanLogger, false)
-            await tryAttach
-        }
     }
 
     return config
