@@ -401,7 +401,7 @@ export class SamDebugConfigProvider implements vscode.DebugConfigurationProvider
         // TODO: Let the OS (or SAM CLI) assign the port, then we need to
         // scrape SAM CLI to find the port that was actually used?
         const apiPort = config.invokeTarget.target === 'api' ? await getStartPort() : undefined
-        const debugPort = config.noDebug ? undefined : (apiPort ?? (await getStartPort())) + 1
+        const debugPort = config.noDebug ? undefined : await getStartPort(apiPort ? apiPort + 1 : undefined)
         let launchConfig: SamLaunchRequestArgs = {
             ...config,
             request: 'attach',

@@ -15,7 +15,6 @@ import { makeTemporaryToolkitFolder } from '../filesystemUtilities'
 import * as pathutils from '../../shared/utilities/pathUtils'
 import { getLogger } from '../logger'
 import { SettingsConfiguration } from '../settingsConfiguration'
-import { recordLambdaInvokeLocal, Result, Runtime, recordSamAttachDebugger } from '../telemetry/telemetry'
 import * as telemetry from '../telemetry/telemetry'
 import { TelemetryService } from '../telemetry/telemetryService'
 import { SamTemplateGenerator } from '../templates/sam/samTemplateGenerator'
@@ -240,10 +239,10 @@ export async function invokeLambdaFunction(
             extraArgs: config.sam?.localArguments,
         })
 
-        function recordApigwTelemetry(result: telemetry.Result) {
+        const recordApigwTelemetry = (result: telemetry.Result) => {
             telemetry.recordApigatewayInvokeLocal({
                 result: result,
-                runtime: config.runtime as Runtime,
+                runtime: config.runtime as telemetry.Runtime,
                 debug: !config.noDebug,
                 httpMethod: config.api?.httpMethod,
             })
@@ -298,7 +297,7 @@ export async function invokeLambdaFunction(
 
         // sam local invoke ...
         const command = new SamCliLocalInvokeInvocation(localInvokeArgs)
-        let invokeResult: Result = 'Failed'
+        let invokeResult: telemetry.Result = 'Failed'
         try {
             await command.execute(timer)
             invokeResult = 'Succeeded'
@@ -309,9 +308,9 @@ export async function invokeLambdaFunction(
                 err as Error
             )
         } finally {
-            recordLambdaInvokeLocal({
+            telemetry.recordLambdaInvokeLocal({
                 result: invokeResult,
-                runtime: config.runtime as Runtime,
+                runtime: config.runtime as telemetry.Runtime,
                 debug: !config.noDebug,
             })
         }
@@ -408,7 +407,7 @@ function requestLocalApi(ctx: ExtContext, api: APIGatewayProperties, apiPort: nu
         }
         ctx.chanLogger.info('AWS.sam.localApi.request', `Sending request to local API: ${reqOpts.uri}`)
 
-        async function retryRequest(retries: number, retriesRemaining: number) {
+        const retryRequest = async (retries: number, retriesRemaining: number) => {
             if (retriesRemaining !== retries) {
                 await new Promise<void>(r => setTimeout(r, 200))
             }
@@ -566,8 +565,8 @@ export interface RecordAttachDebuggerMetricContext {
 }
 
 function recordAttachDebuggerMetric(params: RecordAttachDebuggerMetricContext) {
-    recordSamAttachDebugger({
-        runtime: params.runtime as Runtime,
+    telemetry.recordSamAttachDebugger({
+        runtime: params.runtime as telemetry.Runtime,
         result: params.result ? 'Succeeded' : 'Failed',
         attempts: params.attempts,
         duration: params.durationMillis,
