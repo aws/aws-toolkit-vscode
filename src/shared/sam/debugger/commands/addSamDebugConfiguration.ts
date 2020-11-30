@@ -54,7 +54,7 @@ export async function addSamDebugConfiguration(
         let preloadedConfig = undefined
 
         if (workspaceFolder) {
-            const templateDatum = ext.templateRegistry.getRegisteredItem(rootUri.fsPath)
+            const templateDatum = ext.templateRegistry.getRegisteredItem(rootUri)
             if (templateDatum) {
                 const resource = templateDatum.item.Resources![resourceName]
                 if (resource && resource.Properties) {
