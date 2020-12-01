@@ -3,16 +3,17 @@
 
 package software.aws.toolkits.gradle.changelog
 
+import org.gradle.api.logging.Logger
 import java.io.File
 import java.time.LocalDate
 
-class ReleaseCreator(private val unreleasedFiles: Collection<File>, private val nextReleaseFile: File) {
+class ReleaseCreator(private val unreleasedFiles: Collection<File>, private val nextReleaseFile: File, logger: Logger) {
     init {
         if (nextReleaseFile.exists()) {
             throw RuntimeException("Release file $nextReleaseFile already exists!")
         }
         if (unreleasedFiles.isEmpty()) {
-            throw RuntimeException("No unreleased changes!")
+            logger.warn("Release created without any unreleased change files, this will yield an empty changelog")
         }
     }
 

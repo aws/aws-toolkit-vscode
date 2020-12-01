@@ -3,6 +3,7 @@
 
 package software.aws.toolkits.gradle.changelog
 
+import com.nhaarman.mockitokotlin2.mock
 import org.assertj.core.api.Assertions.assertThat
 import org.junit.Rule
 import org.junit.Test
@@ -45,7 +46,7 @@ class ReleaseCreatorTest {
             )
         }
 
-        val sut = ReleaseCreator(listOf(firstFile, secondFile), nextReleaseFile)
+        val sut = ReleaseCreator(listOf(firstFile, secondFile), nextReleaseFile, mock())
 
         sut.create("2.0.0", date)
 
@@ -73,12 +74,6 @@ class ReleaseCreatorTest {
     fun exitingReleaseVersionThrows() {
         val nextReleaseFile = folder.newFolder().resolve("2.0.0.json")
         nextReleaseFile.createNewFile()
-        ReleaseCreator(listOf(folder.newFile()), nextReleaseFile)
-    }
-
-    @Test(expected = RuntimeException::class)
-    fun noChangesThrows() {
-        val nextReleaseFile = folder.newFolder().resolve("2.0.0.json")
-        ReleaseCreator(listOf(), nextReleaseFile)
+        ReleaseCreator(listOf(folder.newFile()), nextReleaseFile, mock())
     }
 }
