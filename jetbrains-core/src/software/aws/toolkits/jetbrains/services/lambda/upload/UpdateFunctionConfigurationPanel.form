@@ -51,7 +51,7 @@
           <grid row="3" column="0" row-span="1" col-span="1" vsize-policy="6" hsize-policy="1" anchor="0" fill="2" indent="0" use-parent-layout="false"/>
         </constraints>
       </vspacer>
-      <nested-form id="56c02" form-file="software/aws/toolkits/jetbrains/services/lambda/upload/LambdaConfigurationPanel.form" binding="configSettings" custom-create="true">
+      <nested-form id="56c02" form-file="software/aws/toolkits/jetbrains/services/lambda/upload/LambdaConfigPanel.form" binding="configSettings" custom-create="true">
         <constraints>
           <grid row="2" column="0" row-span="1" col-span="2" vsize-policy="3" hsize-policy="3" anchor="0" fill="1" indent="0" use-parent-layout="false"/>
         </constraints>

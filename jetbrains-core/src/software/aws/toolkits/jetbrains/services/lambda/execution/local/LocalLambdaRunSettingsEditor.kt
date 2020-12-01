@@ -6,13 +6,9 @@ package software.aws.toolkits.jetbrains.services.lambda.execution.local
 import com.intellij.openapi.components.service
 import com.intellij.openapi.options.SettingsEditor
 import com.intellij.openapi.project.Project
-import com.intellij.util.messages.MessageBus
-import com.intellij.util.text.SemVer
-import software.aws.toolkits.jetbrains.services.lambda.LambdaBuilder
-import software.aws.toolkits.jetbrains.services.lambda.RuntimeGroup
-import software.aws.toolkits.jetbrains.services.lambda.validation.LambdaHandlerEvaluationListener
+import com.intellij.util.PathMappingSettings
+import software.aws.toolkits.jetbrains.services.lambda.execution.registerConfigValidationListeners
 import software.aws.toolkits.jetbrains.services.lambda.validation.LambdaHandlerValidator
-import software.aws.toolkits.jetbrains.services.lambda.validation.SamCliVersionEvaluationListener
 import software.aws.toolkits.jetbrains.utils.ui.selected
 import javax.swing.JComponent
 
@@ -24,34 +20,29 @@ class LocalLambdaRunSettingsEditor(project: Project) : SettingsEditor<LocalLambd
         // information that might appears after updating document (e.g. updating handler name).
         // This code is executed once when run configuration form is opened.
         project.service<LambdaHandlerValidator>().clearRequests()
-
-        val supported = LambdaBuilder.supportedRuntimeGroups().flatMap { it.runtimes }.sorted()
-        val selected = RuntimeGroup.determineRuntime(project)?.let { if (it in supported) it else null }
         view = LocalLambdaRunSettingsEditorPanel(project)
-
-        view.setRuntimes(supported)
-        view.runtime.selectedItem = selected
-
-        invalidateOnProfileValidationFinished(project.messageBus)
+        registerConfigValidationListeners(project.messageBus, this) { view.invalidateConfiguration() }
     }
 
     override fun createEditor(): JComponent = view.panel
 
     override fun resetEditorFrom(configuration: LocalLambdaRunConfiguration) {
-        view.useTemplate.isSelected = configuration.isUsingTemplate()
-        if (configuration.isUsingTemplate()) {
-            view.runtime.isEnabled = false
-            view.setTemplateFile(configuration.templateFile())
-            view.selectFunction(configuration.logicalId())
+        val useTemplate = configuration.isUsingTemplate()
+        view.useTemplate = useTemplate
+        if (useTemplate) {
+            view.templateSettings.setTemplateFile(configuration.templateFile())
+            view.templateSettings.selectFunction(configuration.logicalId())
+            if (view.templateSettings.isImage) {
+                view.templateSettings.runtime.selectedItem = configuration.runtime()
+                view.templateSettings.pathMappingsTable.setMappingSettings(PathMappingSettings(configuration.pathMappings))
+            }
         } else {
-            view.setTemplateFile(null) // Also clears the functions selector
-            view.runtime.model.selectedItem = configuration.runtime()
-            view.handlerPanel.handler.text = configuration.handler() ?: ""
+            view.rawSettings.runtime.model.selectedItem = configuration.runtime()
+            view.rawSettings.handlerPanel.handler.text = configuration.handler() ?: ""
+            view.rawSettings.timeoutSlider.value = configuration.timeout()
+            view.rawSettings.memorySlider.value = configuration.memorySize()
+            view.rawSettings.environmentVariables.envVars = configuration.environmentVariables()
         }
-
-        view.timeoutSlider.value = configuration.timeout()
-        view.memorySlider.value = configuration.memorySize()
-        view.environmentVariables.envVars = configuration.environmentVariables()
 
         if (configuration.isUsingInputFile()) {
             view.lambdaInput.inputFile = configuration.inputSource()
@@ -61,40 +52,24 @@ class LocalLambdaRunSettingsEditor(project: Project) : SettingsEditor<LocalLambd
     }
 
     override fun applyEditorTo(configuration: LocalLambdaRunConfiguration) {
-        if (view.useTemplate.isSelected) {
-            configuration.useTemplate(view.templateFile.text, view.function.selected()?.logicalName)
+        if (view.useTemplate) {
+            configuration.useTemplate(view.templateSettings.templateFile.text, view.templateSettings.function.selected()?.logicalName)
+            configuration.isImage = view.templateSettings.isImage
+            if (view.templateSettings.isImage) {
+                configuration.runtime(view.templateSettings.runtime.selected())
+                configuration.pathMappings = view.templateSettings.pathMappingsTable.mappingSettings.pathMappings
+            }
         } else {
-            configuration.useHandler(view.runtime.selected(), view.handlerPanel.handler.text)
+            configuration.useHandler(view.rawSettings.runtime.selected(), view.rawSettings.handlerPanel.handler.text)
+            configuration.timeout(view.rawSettings.timeoutSlider.value)
+            configuration.memorySize(view.rawSettings.memorySlider.value)
+            configuration.environmentVariables(view.rawSettings.environmentVariables.envVars)
         }
 
-        configuration.timeout(view.timeoutSlider.value)
-        configuration.memorySize(view.memorySlider.value)
-        configuration.environmentVariables(view.environmentVariables.envVars)
         if (view.lambdaInput.isUsingFile) {
             configuration.useInputFile(view.lambdaInput.inputFile)
         } else {
             configuration.useInputText(view.lambdaInput.inputText)
         }
-    }
-
-    private fun invalidateOnProfileValidationFinished(messageBus: MessageBus) {
-        val connect = messageBus.connect(this)
-        connect.subscribe(
-            LambdaHandlerEvaluationListener.TOPIC,
-            object : LambdaHandlerEvaluationListener {
-                override fun handlerValidationFinished(handlerName: String, isHandlerExists: Boolean) {
-                    view.invalidateConfiguration()
-                }
-            }
-        )
-
-        connect.subscribe(
-            SamCliVersionEvaluationListener.TOPIC,
-            object : SamCliVersionEvaluationListener {
-                override fun samVersionValidationFinished(path: String, version: SemVer) {
-                    view.invalidateConfiguration()
-                }
-            }
-        )
     }
 }

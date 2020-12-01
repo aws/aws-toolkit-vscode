@@ -8,6 +8,7 @@ import com.intellij.openapi.actionSystem.PlatformDataKeys
 import com.intellij.openapi.application.ApplicationManager
 import com.intellij.openapi.project.Project
 import software.amazon.awssdk.services.lambda.LambdaClient
+import software.amazon.awssdk.services.lambda.model.PackageType
 import software.aws.toolkits.jetbrains.core.awsClient
 import software.aws.toolkits.jetbrains.core.explorer.actions.SingleResourceNodeAction
 import software.aws.toolkits.jetbrains.services.lambda.LambdaBuilder
@@ -61,7 +62,10 @@ class UpdateFunctionConfigurationAction : UpdateFunctionAction(message("lambda.f
 
 class UpdateFunctionCodeAction : UpdateFunctionAction(message("lambda.function.updateCode.action")) {
     override fun update(selected: LambdaFunctionNode, e: AnActionEvent) {
-        if (selected.value.runtime.runtimeGroup?.let { LambdaBuilder.getInstanceOrNull(it) } != null) {
+        if (selected.value.packageType == PackageType.IMAGE) {
+            return
+        }
+        if (selected.value.runtime?.runtimeGroup?.let { LambdaBuilder.getInstanceOrNull(it) } != null) {
             return
         }
         e.presentation.isVisible = false

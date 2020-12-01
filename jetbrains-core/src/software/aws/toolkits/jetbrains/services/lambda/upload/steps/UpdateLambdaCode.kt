@@ -14,12 +14,19 @@ class UpdateLambdaCode(private val lambdaClient: LambdaClient, private val funct
     override val stepName = message("lambda.create.step.update_lambda")
 
     override fun execute(context: Context, messageEmitter: MessageEmitter, ignoreCancellation: Boolean) {
-        val codeLocation = context.getRequiredAttribute(UPLOADED_CODE_LOCATION)
         lambdaClient.updateFunctionCode {
             it.functionName(functionName)
-            it.s3Bucket(codeLocation.bucket)
-            it.s3Key(codeLocation.key)
-            it.s3ObjectVersion(codeLocation.version)
+
+            when (val codeLocation = context.getRequiredAttribute(UPLOADED_CODE_LOCATION)) {
+                is UploadedS3Code -> {
+                    it.s3Bucket(codeLocation.bucket)
+                    it.s3Key(codeLocation.key)
+                    it.s3ObjectVersion(codeLocation.version)
+                }
+                is UploadedEcrCode -> {
+                    it.imageUri(codeLocation.imageUri)
+                }
+            }
         }
 
         updatedHandler?.let { _ ->

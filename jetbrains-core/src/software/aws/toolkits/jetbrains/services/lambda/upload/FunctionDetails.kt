@@ -4,6 +4,7 @@
 package software.aws.toolkits.jetbrains.services.lambda.upload
 
 import software.amazon.awssdk.services.lambda.LambdaClient
+import software.amazon.awssdk.services.lambda.model.PackageType
 import software.amazon.awssdk.services.lambda.model.Runtime
 import software.amazon.awssdk.services.lambda.model.TracingMode
 import software.amazon.awssdk.services.lambda.model.UpdateFunctionConfigurationResponse
@@ -11,10 +12,11 @@ import software.aws.toolkits.jetbrains.services.iam.IamRole
 
 data class FunctionDetails(
     val name: String,
-    val handler: String,
-    val iamRole: IamRole,
-    val runtime: Runtime,
     val description: String?,
+    val packageType: PackageType,
+    val handler: String?,
+    val iamRole: IamRole,
+    val runtime: Runtime?,
     val envVars: Map<String, String>,
     val timeout: Int,
     val memorySize: Int,
@@ -31,9 +33,12 @@ data class FunctionDetails(
 fun LambdaClient.updateFunctionConfiguration(config: FunctionDetails): UpdateFunctionConfigurationResponse = this.updateFunctionConfiguration {
     it.functionName(config.name)
     it.description(config.description)
-    it.handler(config.handler)
+    it.packageType(config.packageType)
+    if (config.packageType == PackageType.ZIP) {
+        it.runtime(config.runtime)
+        it.handler(config.handler)
+    }
     it.role(config.iamRole.arn)
-    it.runtime(config.runtime)
     it.timeout(config.timeout)
     it.memorySize(config.memorySize)
     it.environment { env ->

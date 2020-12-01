@@ -22,8 +22,6 @@ import software.aws.toolkits.jetbrains.core.credentials.CredentialManager
 import software.aws.toolkits.jetbrains.core.region.AwsRegionProvider
 
 open class AwsClientManager : ToolkitClientManager(), Disposable {
-    private val regionProvider = AwsRegionProvider.getInstance()
-
     init {
         val busConnection = ApplicationManager.getApplication().messageBus.connect(this)
         busConnection.subscribe(
@@ -45,7 +43,7 @@ open class AwsClientManager : ToolkitClientManager(), Disposable {
 
     override val userAgent = AwsClientManager.userAgent
 
-    override fun getRegionProvider(): ToolkitRegionProvider = regionProvider
+    override fun getRegionProvider(): ToolkitRegionProvider = AwsRegionProvider.getInstance()
 
     companion object {
         @JvmStatic

@@ -53,7 +53,7 @@ class CreateQueueDialog(
         if (!isOKActionEnabled) {
             return
         }
-        setOKButtonText(message("sqs.create.queue.in_progress"))
+        setOKButtonText(message("general.create_in_progress"))
         isOKActionEnabled = false
 
         launch {

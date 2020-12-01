@@ -15,22 +15,21 @@ import com.intellij.openapi.vfs.VirtualFile
 import org.jetbrains.idea.maven.project.MavenProjectsManager
 import org.jetbrains.plugins.gradle.settings.GradleProjectSettings
 import org.jetbrains.plugins.gradle.util.GradleConstants
+import software.amazon.awssdk.services.lambda.model.PackageType
 import software.amazon.awssdk.services.lambda.model.Runtime
 import software.aws.toolkits.core.utils.getLogger
 import software.aws.toolkits.core.utils.logWhenNull
 import software.aws.toolkits.jetbrains.services.lambda.BuiltInRuntimeGroups
-import software.aws.toolkits.jetbrains.services.lambda.wizard.AppBasedTemplate
 import software.aws.toolkits.jetbrains.services.lambda.wizard.IntelliJSdkSelectionPanel
+import software.aws.toolkits.jetbrains.services.lambda.wizard.SamAppTemplateBased
 import software.aws.toolkits.jetbrains.services.lambda.wizard.SamNewProjectSettings
 import software.aws.toolkits.jetbrains.services.lambda.wizard.SamProjectTemplate
 import software.aws.toolkits.jetbrains.services.lambda.wizard.SamProjectWizard
 import software.aws.toolkits.jetbrains.services.lambda.wizard.SdkSelector
-import software.aws.toolkits.jetbrains.services.lambda.wizard.TemplateParameters
 import software.aws.toolkits.resources.message
 
 class JavaSamProjectWizard : SamProjectWizard {
-    override fun createSdkSelectionPanel(projectLocation: TextFieldWithBrowseButton?): SdkSelector? =
-        IntelliJSdkSelectionPanel(BuiltInRuntimeGroups.Java)
+    override fun createSdkSelectionPanel(projectLocation: TextFieldWithBrowseButton?): SdkSelector? = IntelliJSdkSelectionPanel(BuiltInRuntimeGroups.Java)
 
     override fun listTemplates(): Collection<SamProjectTemplate> = listOf(
         SamHelloWorldMaven(),
@@ -42,7 +41,7 @@ class JavaSamProjectWizard : SamProjectWizard {
     )
 }
 
-abstract class JavaSamProjectTemplate : SamProjectTemplate() {
+abstract class JavaSamProjectTemplate : SamAppTemplateBased() {
     override fun supportedRuntimes() = setOf(Runtime.JAVA8, Runtime.JAVA8_AL2, Runtime.JAVA11)
 
     // Helper method to locate the build file, such as pom.xml in the project content root.
@@ -67,6 +66,8 @@ abstract class JavaSamProjectTemplate : SamProjectTemplate() {
 }
 
 abstract class JavaMavenSamProjectTemplate : JavaSamProjectTemplate() {
+    override val dependencyManager: String = "maven"
+
     override fun postCreationAction(
         settings: SamNewProjectSettings,
         contentRoot: VirtualFile,
@@ -83,6 +84,8 @@ abstract class JavaMavenSamProjectTemplate : JavaSamProjectTemplate() {
 }
 
 abstract class JavaGradleSamProjectTemplate : JavaSamProjectTemplate() {
+    override val dependencyManager: String = "gradle"
+
     override fun postCreationAction(
         settings: SamNewProjectSettings,
         contentRoot: VirtualFile,
@@ -108,12 +111,9 @@ class SamHelloWorldMaven : JavaMavenSamProjectTemplate() {
 
     override fun description() = message("sam.init.template.hello_world.description")
 
-    override fun templateParameters(projectName: String, runtime: Runtime): TemplateParameters = AppBasedTemplate(
-        projectName,
-        runtime,
-        "hello-world",
-        "maven"
-    )
+    override fun supportedPackagingTypes(): Set<PackageType> = setOf(PackageType.IMAGE, PackageType.ZIP)
+
+    override val appTemplateName: String = "hello-world"
 }
 
 class SamHelloWorldGradle : JavaGradleSamProjectTemplate() {
@@ -121,12 +121,9 @@ class SamHelloWorldGradle : JavaGradleSamProjectTemplate() {
 
     override fun description() = message("sam.init.template.hello_world.description")
 
-    override fun templateParameters(projectName: String, runtime: Runtime): TemplateParameters = AppBasedTemplate(
-        projectName,
-        runtime,
-        "hello-world",
-        "gradle"
-    )
+    override fun supportedPackagingTypes(): Set<PackageType> = setOf(PackageType.IMAGE, PackageType.ZIP)
+
+    override val appTemplateName: String = "hello-world"
 }
 
 class SamEventBridgeStarterAppGradle : JavaGradleSamProjectTemplate() {
@@ -134,12 +131,7 @@ class SamEventBridgeStarterAppGradle : JavaGradleSamProjectTemplate() {
 
     override fun description() = message("sam.init.template.event_bridge_starter_app.description")
 
-    override fun templateParameters(projectName: String, runtime: Runtime): TemplateParameters = AppBasedTemplate(
-        projectName,
-        runtime,
-        "eventBridge-schema-app",
-        "gradle"
-    )
+    override val appTemplateName: String = "eventBridge-schema-app"
 
     override fun supportsDynamicSchemas(): Boolean = true
 }
@@ -149,12 +141,7 @@ class SamEventBridgeStarterAppMaven : JavaMavenSamProjectTemplate() {
 
     override fun description() = message("sam.init.template.event_bridge_starter_app.description")
 
-    override fun templateParameters(projectName: String, runtime: Runtime): TemplateParameters = AppBasedTemplate(
-        projectName,
-        runtime,
-        "eventBridge-schema-app",
-        "maven"
-    )
+    override val appTemplateName: String = "eventBridge-schema-app"
 
     override fun supportsDynamicSchemas(): Boolean = true
 }
@@ -164,12 +151,7 @@ class SamEventBridgeHelloWorldGradle : JavaGradleSamProjectTemplate() {
 
     override fun description() = message("sam.init.template.event_bridge_hello_world.description")
 
-    override fun templateParameters(projectName: String, runtime: Runtime): TemplateParameters = AppBasedTemplate(
-        projectName,
-        runtime,
-        "eventBridge-hello-world",
-        "gradle"
-    )
+    override val appTemplateName: String = "eventBridge-hello-world"
 }
 
 class SamEventBridgeHelloWorldMaven : JavaMavenSamProjectTemplate() {
@@ -177,10 +159,5 @@ class SamEventBridgeHelloWorldMaven : JavaMavenSamProjectTemplate() {
 
     override fun description() = message("sam.init.template.event_bridge_hello_world.description")
 
-    override fun templateParameters(projectName: String, runtime: Runtime): TemplateParameters = AppBasedTemplate(
-        projectName,
-        runtime,
-        "eventBridge-hello-world",
-        "maven"
-    )
+    override val appTemplateName: String = "eventBridge-hello-world"
 }

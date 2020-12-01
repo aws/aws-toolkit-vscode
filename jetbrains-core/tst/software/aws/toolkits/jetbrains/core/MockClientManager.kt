@@ -3,13 +3,19 @@
 
 package software.aws.toolkits.jetbrains.core
 
+import com.intellij.openapi.Disposable
+import com.intellij.openapi.application.ApplicationManager
 import com.intellij.openapi.components.service
+import com.intellij.openapi.util.Disposer
+import com.intellij.testFramework.replaceService
 import org.junit.rules.ExternalResource
 import software.amazon.awssdk.core.SdkClient
 import software.aws.toolkits.core.ToolkitClientManager
 import software.aws.toolkits.core.credentials.ToolkitCredentialsProvider
 import software.aws.toolkits.core.region.AwsRegion
+import software.aws.toolkits.core.region.ToolkitRegionProvider
 import software.aws.toolkits.core.utils.delegateMock
+import software.aws.toolkits.jetbrains.core.region.AwsRegionProvider
 import kotlin.reflect.KClass
 
 class MockClientManager : AwsClientManager() {
@@ -47,6 +53,27 @@ class MockClientManager : AwsClientManager() {
     fun reset() {
         super.clear()
         mockClients.clear()
+    }
+
+    companion object {
+        /**
+         * Replaces all required test services with the real version for the life of the [Disposable] to allow calls to AWS to succeed
+         */
+        fun useRealImplementations(disposable: Disposable) {
+            val clientManager = AwsClientManager()
+            Disposer.register(disposable, clientManager)
+            ApplicationManager.getApplication().replaceService(ToolkitClientManager::class.java, clientManager, disposable)
+
+            // Need to use real region provider to know about global services
+            val regionProvider = AwsRegionProvider()
+            ApplicationManager.getApplication().replaceService(ToolkitRegionProvider::class.java, regionProvider, disposable)
+
+            // Make a new http client that is scoped to the disposable and replace the global one with it, otherwise the apache connection reaper thread
+            // is detected as leaking threads and fails the tests
+            val httpClient = AwsSdkClient()
+            Disposer.register(disposable, httpClient)
+            ApplicationManager.getApplication().replaceService(AwsSdkClient::class.java, httpClient, disposable)
+        }
     }
 }
 

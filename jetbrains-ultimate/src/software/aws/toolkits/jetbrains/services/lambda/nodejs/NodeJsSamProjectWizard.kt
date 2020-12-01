@@ -12,12 +12,12 @@ import com.intellij.openapi.project.ProjectManager
 import com.intellij.openapi.roots.ModifiableRootModel
 import com.intellij.openapi.ui.TextFieldWithBrowseButton
 import com.intellij.openapi.ui.ValidationInfo
+import software.amazon.awssdk.services.lambda.model.PackageType
 import software.amazon.awssdk.services.lambda.model.Runtime
-import software.aws.toolkits.jetbrains.services.lambda.wizard.AppBasedTemplate
+import software.aws.toolkits.jetbrains.services.lambda.wizard.SamAppTemplateBased
 import software.aws.toolkits.jetbrains.services.lambda.wizard.SamProjectTemplate
 import software.aws.toolkits.jetbrains.services.lambda.wizard.SamProjectWizard
 import software.aws.toolkits.jetbrains.services.lambda.wizard.SdkSelector
-import software.aws.toolkits.jetbrains.services.lambda.wizard.TemplateParameters
 import software.aws.toolkits.jetbrains.utils.ui.validationInfo
 import software.aws.toolkits.resources.message
 import javax.swing.JComponent
@@ -55,19 +55,16 @@ class NodeJsSdkSelectionPanel : SdkSelector {
     }
 }
 
-abstract class SamNodeJsProjectTemplate : SamProjectTemplate() {
-    override fun supportedRuntimes(): Set<Runtime> = setOf(Runtime.NODEJS10_X, Runtime.NODEJS12_X)
-}
-
-class SamHelloWorldNodeJs : SamNodeJsProjectTemplate() {
+class SamHelloWorldNodeJs : SamAppTemplateBased() {
     override fun displayName() = message("sam.init.template.hello_world.name")
 
     override fun description() = message("sam.init.template.hello_world.description")
 
-    override fun templateParameters(projectName: String, runtime: Runtime): TemplateParameters = AppBasedTemplate(
-        projectName,
-        runtime,
-        "hello-world",
-        "npm"
-    )
+    override fun supportedRuntimes(): Set<Runtime> = setOf(Runtime.NODEJS10_X, Runtime.NODEJS12_X)
+
+    override fun supportedPackagingTypes(): Set<PackageType> = setOf(PackageType.IMAGE, PackageType.ZIP)
+
+    override val appTemplateName: String = "hello-world"
+
+    override val dependencyManager: String = "npm"
 }

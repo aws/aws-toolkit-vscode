@@ -43,10 +43,12 @@ import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 import org.jetbrains.concurrency.AsyncPromise
 import org.jetbrains.concurrency.Promise
+import software.amazon.awssdk.services.lambda.model.PackageType
+import software.amazon.awssdk.services.lambda.model.Runtime
 import software.aws.toolkits.core.utils.getLogger
 import software.aws.toolkits.core.utils.warn
-import software.aws.toolkits.jetbrains.services.lambda.execution.local.SamDebugSupport
-import software.aws.toolkits.jetbrains.services.lambda.execution.local.SamRunningState
+import software.aws.toolkits.jetbrains.services.lambda.execution.sam.SamDebugSupport
+import software.aws.toolkits.jetbrains.services.lambda.execution.sam.SamRunningState
 import software.aws.toolkits.jetbrains.utils.ApplicationThreadPoolScope
 import software.aws.toolkits.jetbrains.utils.DotNetDebuggerUtils
 import software.aws.toolkits.jetbrains.utils.getCoroutineUiContext
@@ -90,11 +92,18 @@ class DotNetSamDebugSupport : SamDebugSupport {
 
     override fun getDebugPorts(): List<Int> = NetUtils.findAvailableSocketPorts(NUMBER_OF_DEBUG_PORTS).toList()
 
-    override fun patchCommandLine(debugPorts: List<Int>, commandLine: GeneralCommandLine) {
-        commandLine.withParameters("--debugger-path")
-            .withParameters(DotNetDebuggerUtils.debuggerBinDir.path)
+    override fun samArguments(runtime: Runtime, packageType: PackageType, debugPorts: List<Int>): List<String> = listOf(
+        "--debugger-path",
+        DotNetDebuggerUtils.debuggerBinDir.path
+    )
 
-        super.patchCommandLine(debugPorts, commandLine)
+    override fun containerEnvVars(runtime: Runtime, packageType: PackageType, debugPorts: List<Int>): Map<String, String> {
+        if (packageType != PackageType.IMAGE) {
+            return mapOf()
+        }
+        return mapOf(
+            "_AWS_LAMBDA_DOTNET_DEBUGGING" to "1"
+        )
     }
 
     override fun createDebugProcess(

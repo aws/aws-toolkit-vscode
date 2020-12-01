@@ -44,8 +44,8 @@ class PythonLambdaBuilderTest {
         LambdaBuilderTestUtils.verifyPathMappings(
             module,
             builtLambda,
-            "%PROJECT_ROOT%" to "/",
-            "%BUILD_ROOT%" to "/"
+            "%PROJECT_ROOT%" to "/var/task/",
+            "%BUILD_ROOT%" to "/var/task/"
         )
     }
 
@@ -66,8 +66,8 @@ class PythonLambdaBuilderTest {
         LambdaBuilderTestUtils.verifyPathMappings(
             module,
             builtLambda,
-            "%PROJECT_ROOT%/src" to "/",
-            "%BUILD_ROOT%" to "/"
+            "%PROJECT_ROOT%/src" to "/var/task/",
+            "%BUILD_ROOT%" to "/var/task/"
         )
     }
 
@@ -86,8 +86,8 @@ class PythonLambdaBuilderTest {
         LambdaBuilderTestUtils.verifyPathMappings(
             module,
             builtLambda,
-            "%PROJECT_ROOT%/src" to "/",
-            "%BUILD_ROOT%" to "/"
+            "%PROJECT_ROOT%/src" to "/var/task/",
+            "%BUILD_ROOT%" to "/var/task/"
         )
     }
 
@@ -106,8 +106,8 @@ class PythonLambdaBuilderTest {
         LambdaBuilderTestUtils.verifyPathMappings(
             module,
             builtLambda,
-            "%PROJECT_ROOT%" to "/",
-            "%BUILD_ROOT%" to "/"
+            "%PROJECT_ROOT%" to "/var/task/",
+            "%BUILD_ROOT%" to "/var/task/"
         )
     }
 
@@ -140,8 +140,8 @@ class PythonLambdaBuilderTest {
         LambdaBuilderTestUtils.verifyPathMappings(
             module,
             builtLambda,
-            "%PROJECT_ROOT%/hello_world" to "/",
-            "%BUILD_ROOT%" to "/"
+            "%PROJECT_ROOT%/hello_world" to "/var/task/",
+            "%BUILD_ROOT%" to "/var/task/"
         )
     }
 
@@ -159,8 +159,8 @@ class PythonLambdaBuilderTest {
         LambdaBuilderTestUtils.verifyPathMappings(
             module,
             builtLambda,
-            "%PROJECT_ROOT%" to "/",
-            "%BUILD_ROOT%" to "/"
+            "%PROJECT_ROOT%" to "/var/task/",
+            "%BUILD_ROOT%" to "/var/task/"
         )
     }
 

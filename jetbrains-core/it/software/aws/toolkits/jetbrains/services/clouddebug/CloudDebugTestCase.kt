@@ -30,6 +30,7 @@ import software.aws.toolkits.jetbrains.services.ecs.resources.EcsResources
 import software.aws.toolkits.jetbrains.services.ecs.waitForServicesInactive
 import software.aws.toolkits.jetbrains.services.ecs.waitForServicesStable
 import software.aws.toolkits.jetbrains.utils.rules.CloudFormationLazyInitRule
+import java.nio.file.Paths
 import java.util.concurrent.CountDownLatch
 import java.util.concurrent.TimeUnit
 
@@ -40,7 +41,7 @@ abstract class CloudDebugTestCase(private val taskDefName: String) {
 
     private val cfnRule = CloudFormationLazyInitRule(
         "CloudDebugTestCluster",
-        CloudDebugTestCase::class.java.getResource("/cloudDebugTestCluster.yaml").readText(),
+        Paths.get(System.getProperty("testDataPath"), "testFiles", "cloudDebugTestCluster.yaml").toFile().readText(),
         emptyList(),
         cloudFormationClient
     )

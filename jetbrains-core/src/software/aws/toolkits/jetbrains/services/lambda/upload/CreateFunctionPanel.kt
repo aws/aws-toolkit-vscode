@@ -34,8 +34,14 @@ class CreateFunctionPanel(private val project: Project) {
     }
 
     private fun createUIComponents() {
-        configSettings = LambdaConfigPanel(project)
+        configSettings = LambdaConfigPanel(project, isUpdate = false)
         codeStorage = CodeStoragePanel(project)
+
+        configSettings.packageZip.addChangeListener {
+            val packageType = configSettings.packageType()
+            codeStorage.packagingType = packageType
+            buildSettings.packagingType = packageType
+        }
     }
 
     fun validatePanel(): ValidationInfo? {
@@ -50,6 +56,6 @@ class CreateFunctionPanel(private val project: Project) {
             return name.validationInfo(message("lambda.upload_validation.function_name_too_long", 64))
         }
 
-        return configSettings.validatePanel(handlerMustExist = true) ?: codeStorage.validatePanel()
+        return configSettings.validatePanel() ?: codeStorage.validatePanel()
     }
 }

@@ -4,6 +4,7 @@
 package software.aws.toolkits.jetbrains.services.lambda.upload.steps
 
 import software.amazon.awssdk.services.lambda.LambdaClient
+import software.amazon.awssdk.services.lambda.model.PackageType
 import software.aws.toolkits.core.utils.AttributeBagKey
 import software.aws.toolkits.jetbrains.services.lambda.upload.FunctionDetails
 import software.aws.toolkits.jetbrains.services.lambda.upload.steps.PackageLambda.Companion.UPLOADED_CODE_LOCATION
@@ -17,21 +18,31 @@ class CreateLambda(private val lambdaClient: LambdaClient, private val details: 
     override val stepName = message("lambda.create.step.create_lambda")
 
     override fun execute(context: Context, messageEmitter: MessageEmitter, ignoreCancellation: Boolean) {
-        val codeLocation = context.getRequiredAttribute(UPLOADED_CODE_LOCATION)
-
         lambdaClient.createFunction {
             it.functionName(details.name)
             it.description(details.description)
-            it.handler(details.handler)
             it.role(details.iamRole.arn)
-            it.runtime(details.runtime)
             it.timeout(details.timeout)
             it.memorySize(details.memorySize)
+
             it.code { code ->
-                code.s3Bucket(codeLocation.bucket)
-                code.s3Key(codeLocation.key)
-                code.s3ObjectVersion(codeLocation.version)
+                when (val codeLocation = context.getRequiredAttribute(UPLOADED_CODE_LOCATION)) {
+                    is UploadedS3Code -> {
+                        it.packageType(PackageType.ZIP)
+                        it.handler(details.handler)
+                        it.runtime(details.runtime)
+
+                        code.s3Bucket(codeLocation.bucket)
+                        code.s3Key(codeLocation.key)
+                        code.s3ObjectVersion(codeLocation.version)
+                    }
+                    is UploadedEcrCode -> {
+                        it.packageType(PackageType.IMAGE)
+                        code.imageUri(codeLocation.imageUri)
+                    }
+                }
             }
+
             it.environment { env ->
                 env.variables(details.envVars)
             }
@@ -42,6 +53,9 @@ class CreateLambda(private val lambdaClient: LambdaClient, private val details: 
 
         messageEmitter.emitMessage(message("lambda.workflow.update_code.wait_for_stable"), isError = false)
         val response = lambdaClient.waiter().waitUntilFunctionExists() { it.functionName(details.name) }.response()
+
+        // Also wait for it to become active
+        lambdaClient.waiter().waitUntilFunctionActive { it.functionName(details.name) }
 
         context.putAttribute(FUNCTION_ARN, response.configuration().functionArn())
     }

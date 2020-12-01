@@ -3,17 +3,25 @@
 package software.aws.toolkits.jetbrains.services.lambda.upload
 
 import com.intellij.ui.IdeBorderFactory
+import software.amazon.awssdk.services.lambda.model.PackageType
 import software.aws.toolkits.resources.message
 import java.awt.BorderLayout
 import javax.swing.JCheckBox
 import javax.swing.JPanel
+import kotlin.properties.Delegates
 
 class BuildSettingsPanel : JPanel(BorderLayout()) {
     lateinit var content: JPanel
     lateinit var buildInContainerCheckbox: JCheckBox
 
+    var packagingType: PackageType by Delegates.observable(PackageType.ZIP) { _, _, _ -> updateComponents() }
+
     init {
         content.border = IdeBorderFactory.createTitledBorder(message("lambda.upload.build_settings"), false)
         add(content, BorderLayout.CENTER)
+    }
+
+    private fun updateComponents() {
+        content.isVisible = packagingType == PackageType.ZIP
     }
 }

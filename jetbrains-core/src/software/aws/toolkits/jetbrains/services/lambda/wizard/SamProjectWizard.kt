@@ -10,6 +10,7 @@ import com.intellij.openapi.roots.ModifiableRootModel
 import com.intellij.openapi.ui.TextFieldWithBrowseButton
 import com.intellij.openapi.vfs.VfsUtilCore
 import com.intellij.openapi.vfs.VirtualFile
+import software.amazon.awssdk.services.lambda.model.PackageType
 import software.amazon.awssdk.services.lambda.model.Runtime
 import software.aws.toolkits.jetbrains.services.lambda.RuntimeGroup
 import software.aws.toolkits.jetbrains.services.lambda.RuntimeGroupExtensionPointObject
@@ -34,8 +35,9 @@ interface SamProjectWizard {
 }
 
 data class SamNewProjectSettings(
+    val template: SamProjectTemplate,
     val runtime: Runtime,
-    val template: SamProjectTemplate
+    val packagingType: PackageType
 )
 
 abstract class SamProjectTemplate {
@@ -45,13 +47,15 @@ abstract class SamProjectTemplate {
 
     override fun toString() = displayName()
 
-    abstract fun templateParameters(projectName: String, runtime: Runtime): TemplateParameters
-
     abstract fun supportedRuntimes(): Set<Runtime>
+
+    open fun supportedPackagingTypes(): Set<PackageType> = setOf(PackageType.ZIP)
 
     // Gradual opt-in for Schema support on a template by-template basis.
     // All SAM templates should support schema selection, but for launch include only EventBridge for most optimal customer experience
     open fun supportsDynamicSchemas(): Boolean = false
+
+    abstract fun templateParameters(projectName: String, runtime: Runtime, packagingType: PackageType): TemplateParameters
 
     open fun postCreationAction(
         settings: SamNewProjectSettings,
@@ -89,5 +93,25 @@ abstract class SamProjectTemplate {
         fun supportedTemplates() = SamProjectWizard.supportedRuntimeGroups().flatMap {
             SamProjectWizard.getInstance(it).listTemplates()
         }
+    }
+}
+
+abstract class SamAppTemplateBased : SamProjectTemplate() {
+    abstract val dependencyManager: String
+    abstract val appTemplateName: String
+
+    override fun templateParameters(projectName: String, runtime: Runtime, packagingType: PackageType): TemplateParameters = when (packagingType) {
+        PackageType.IMAGE -> AppBasedImageTemplate(
+            name = projectName,
+            baseImage = "amazon/$runtime-base",
+            dependencyManager = dependencyManager
+        )
+        PackageType.ZIP -> AppBasedZipTemplate(
+            name = projectName,
+            runtime = runtime,
+            dependencyManager = dependencyManager,
+            appTemplate = appTemplateName
+        )
+        else -> throw IllegalStateException("Unknown packaging type: $packagingType")
     }
 }

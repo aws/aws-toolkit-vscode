@@ -22,6 +22,7 @@ class NodeJsRuntimeGroup : SdkBasedRuntimeGroup() {
         JavascriptLanguage.INSTANCE.id,
         JavaScriptSupportLoader.ECMA_SCRIPT_6.id
     )
+    override val supportsPathMappings: Boolean = true
 
     override val supportedRuntimes = listOf(
         RuntimeInfo(Runtime.NODEJS10_X),

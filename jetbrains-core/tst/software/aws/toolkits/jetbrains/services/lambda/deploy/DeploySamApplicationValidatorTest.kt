@@ -13,6 +13,7 @@ import org.junit.Before
 import org.junit.Rule
 import org.junit.Test
 import software.aws.toolkits.jetbrains.services.cloudformation.Parameter
+import software.aws.toolkits.jetbrains.services.ecr.resources.Repository
 import software.aws.toolkits.jetbrains.utils.rules.JavaCodeInsightTestFixtureRule
 import software.aws.toolkits.resources.message
 
@@ -48,11 +49,21 @@ class DeploySamApplicationValidatorTest {
         view.s3Bucket.model = MutableCollectionComboBoxModel(listOf("bucket123")).also { it.selectedItem = "bucket123" }
         view.s3Bucket.forceLoaded()
 
-        sut = DeploySamApplicationValidator(view)
+        val repo = Repository("repoName", "arn", "repositoryuri")
+        view.ecrRepo.model = MutableCollectionComboBoxModel(listOf(repo)).also { it.selectedItem = repo }
+        view.ecrRepo.forceLoaded()
+
+        sut = DeploySamApplicationValidator(view, hasImageFunctions = false)
     }
 
     @Test
     fun validInputsReturnsNull() {
+        assertThat(sut.validateSettings()).isNull()
+    }
+
+    @Test
+    fun validInputsNoRepoReturnsNull() {
+        view.ecrRepo.selectedItem = null
         assertThat(sut.validateSettings()).isNull()
     }
 
@@ -66,6 +77,12 @@ class DeploySamApplicationValidatorTest {
         assertThat(sut.validateSettings()).isNull()
 
         view.newStackName.text = "n1"
+        assertThat(sut.validateSettings()).isNull()
+    }
+
+    @Test
+    fun validInputsWithImageReturnsNull() {
+        sut = DeploySamApplicationValidator(view, hasImageFunctions = true)
         assertThat(sut.validateSettings()).isNull()
     }
 
@@ -148,6 +165,13 @@ class DeploySamApplicationValidatorTest {
     fun s3BucketMustBeSpecified() {
         view.s3Bucket.selectedItem = null
         assertThat(sut.validateSettings()?.message).contains(message("serverless.application.deploy.validation.s3.bucket.empty"))
+    }
+
+    @Test
+    fun ecrReoMustBeSpecifiedWithImages() {
+        sut = DeploySamApplicationValidator(view, hasImageFunctions = true)
+        view.ecrRepo.selectedItem = null
+        assertThat(sut.validateSettings()?.message).contains(message("serverless.application.deploy.validation.ecr.repo.empty"))
     }
 
     private class TestParameter(

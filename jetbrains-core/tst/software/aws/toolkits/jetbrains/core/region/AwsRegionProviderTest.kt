@@ -3,6 +3,10 @@
 
 package software.aws.toolkits.jetbrains.core.region
 
+import com.intellij.openapi.application.ApplicationManager
+import com.intellij.testFramework.ApplicationRule
+import com.intellij.testFramework.DisposableRule
+import com.intellij.testFramework.replaceService
 import org.assertj.core.api.Assertions.assertThat
 import org.assertj.core.api.Assertions.assertThatThrownBy
 import org.junit.Before
@@ -22,11 +26,19 @@ import java.util.concurrent.CompletionStage
 class AwsRegionProviderTest {
     @Rule
     @JvmField
+    val applicationRule = ApplicationRule()
+
+    @Rule
+    @JvmField
     val systemPropertyHelper = SystemPropertyHelper()
 
     @Rule
     @JvmField
     val environmentVariableHelper = EnvironmentVariableHelper()
+
+    @Rule
+    @JvmField
+    val disposableRule = DisposableRule()
 
     @Before
     fun setUp() {
@@ -39,7 +51,7 @@ class AwsRegionProviderTest {
 
     @Test
     fun correctRegionDataIsFiltered() {
-        val regionProvider = createRegionDataProvider(
+        createRegionDataProvider(
             """
             {
                 "partitions": [
@@ -83,13 +95,13 @@ class AwsRegionProviderTest {
             """.trimIndent()
         )
 
-        val awsRegionProvider = AwsRegionProvider(regionProvider)
+        val awsRegionProvider = AwsRegionProvider()
         assertThat(awsRegionProvider.regions("aws")).doesNotContainKey("cn-north-1").containsKey("us-west-2")
     }
 
     @Test
     fun allRegionsWorks() {
-        val regionProvider = createRegionDataProvider(
+        createRegionDataProvider(
             """
             {
                 "partitions": [
@@ -133,7 +145,7 @@ class AwsRegionProviderTest {
             """.trimIndent()
         )
 
-        val awsRegionProvider = AwsRegionProvider(regionProvider)
+        val awsRegionProvider = AwsRegionProvider()
         assertThat(awsRegionProvider.allRegions())
             .containsKey("cn-north-1")
             .containsKey("us-west-2")
@@ -141,7 +153,7 @@ class AwsRegionProviderTest {
 
     @Test
     fun noDefaultRegionFallsBackToUsEast1() {
-        val regionProvider = createRegionDataProvider(
+        createRegionDataProvider(
             """
             {
                 "partitions": [
@@ -168,13 +180,13 @@ class AwsRegionProviderTest {
             """.trimIndent()
         )
 
-        val awsRegionProvider = AwsRegionProvider(regionProvider)
+        val awsRegionProvider = AwsRegionProvider()
         assertThat(awsRegionProvider.defaultRegion().id).isEqualTo("us-east-1")
     }
 
     @Test
     fun noUsEast1FallbackToFirstRegionInMetadata() {
-        val regionProvider = createRegionDataProvider(
+        createRegionDataProvider(
             """
             {
                 "partitions": [
@@ -201,15 +213,15 @@ class AwsRegionProviderTest {
             """.trimIndent()
         )
 
-        val awsRegionProvider = AwsRegionProvider(regionProvider)
+        val awsRegionProvider = AwsRegionProvider()
         assertThat(awsRegionProvider.defaultRegion().id).isEqualTo("us-region-1")
     }
 
     @Test
     fun emptyRegionsCantHaveADefaultDueToError() {
-        val regionProvider = createRegionDataProvider("")
+        createRegionDataProvider("")
 
-        val awsRegionProvider = AwsRegionProvider(regionProvider)
+        val awsRegionProvider = AwsRegionProvider()
 
         assertThatThrownBy { awsRegionProvider.defaultRegion() }.isInstanceOf(IllegalStateException::class.java)
     }
@@ -227,7 +239,7 @@ class AwsRegionProviderTest {
             """.trimIndent()
         )
 
-        val regionProvider = createRegionDataProvider(
+        createRegionDataProvider(
             """
             {
                 "partitions": [
@@ -254,13 +266,13 @@ class AwsRegionProviderTest {
             """.trimIndent()
         )
 
-        val awsRegionProvider = AwsRegionProvider(regionProvider)
+        val awsRegionProvider = AwsRegionProvider()
         assertThat(awsRegionProvider.defaultRegion().id).isEqualTo("us-west-2001")
     }
 
     @Test
     fun testGlobalServices() {
-        val regionProvider = createRegionDataProvider(
+        createRegionDataProvider(
             """
             {
                 "partitions": [
@@ -321,7 +333,7 @@ class AwsRegionProviderTest {
             """.trimIndent()
         )
 
-        val awsRegionProvider = AwsRegionProvider(regionProvider)
+        val awsRegionProvider = AwsRegionProvider()
         val usEast1 = awsRegionProvider.regions("aws")["us-east-1"] ?: throw IllegalStateException("Bad test data")
 
         assertThat(awsRegionProvider.isServiceGlobal(usEast1, "dynamodb")).isFalse()
@@ -343,7 +355,7 @@ class AwsRegionProviderTest {
             """.trimIndent()
         )
 
-        val regionProvider = createRegionDataProvider(
+        createRegionDataProvider(
             """
             {
                 "partitions": [
@@ -387,22 +399,25 @@ class AwsRegionProviderTest {
             """.trimIndent()
         )
 
-        val awsRegionProvider = AwsRegionProvider(regionProvider)
+        val awsRegionProvider = AwsRegionProvider()
 
         assertThat(awsRegionProvider.defaultPartition()).satisfies {
             assertThat(it.id).isEqualTo("moon")
         }
     }
 
-    private fun createRegionDataProvider(endpointsData: String) = object : RemoteResourceResolverProvider {
-        override fun get() = object : RemoteResourceResolver {
-            override fun resolve(resource: RemoteResource): CompletionStage<Path> = CompletableFuture<Path>().apply {
-                complete(
-                    Files.createTempFile("endpointData", ".json").apply {
-                        writeText(endpointsData)
-                    }
-                )
+    private fun createRegionDataProvider(endpointsData: String) {
+        val mockRemoteResource = object : RemoteResourceResolverProvider {
+            override fun get() = object : RemoteResourceResolver {
+                override fun resolve(resource: RemoteResource): CompletionStage<Path> = CompletableFuture<Path>().apply {
+                    complete(
+                        Files.createTempFile("endpointData", ".json").apply {
+                            writeText(endpointsData)
+                        }
+                    )
+                }
             }
         }
+        ApplicationManager.getApplication().replaceService(RemoteResourceResolverProvider::class.java, mockRemoteResource, disposableRule.disposable)
     }
 }

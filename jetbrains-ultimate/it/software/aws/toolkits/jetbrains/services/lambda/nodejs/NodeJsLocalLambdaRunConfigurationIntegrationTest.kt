@@ -14,6 +14,7 @@ import org.junit.runner.RunWith
 import org.junit.runners.Parameterized
 import software.amazon.awssdk.auth.credentials.AwsBasicCredentials
 import software.amazon.awssdk.services.lambda.model.Runtime
+import software.aws.toolkits.core.utils.RuleUtils
 import software.aws.toolkits.jetbrains.core.credentials.MockCredentialsManager
 import software.aws.toolkits.jetbrains.services.lambda.execution.local.createHandlerBasedRunConfiguration
 import software.aws.toolkits.jetbrains.services.lambda.execution.local.createTemplateRunConfiguration
@@ -23,6 +24,7 @@ import software.aws.toolkits.jetbrains.utils.checkBreakPointHit
 import software.aws.toolkits.jetbrains.utils.executeRunConfiguration
 import software.aws.toolkits.jetbrains.utils.rules.NodeJsCodeInsightTestFixtureRule
 import software.aws.toolkits.jetbrains.utils.rules.addPackageJsonFile
+import software.aws.toolkits.jetbrains.utils.samImageRunDebugTest
 import software.aws.toolkits.jetbrains.utils.setSamExecutableFromEnvironment
 
 @RunWith(Parameterized::class)
@@ -40,6 +42,7 @@ class NodeJsLocalLambdaRunConfigurationIntegrationTest(private val runtime: Runt
     @JvmField
     val projectRule = NodeJsCodeInsightTestFixtureRule()
 
+    private val input = RuleUtils.randomName()
     private val mockId = "MockCredsId"
     private val mockCreds = AwsBasicCredentials.create("Access", "ItsASecret")
     private val fileContents =
@@ -208,4 +211,27 @@ class NodeJsLocalLambdaRunConfigurationIntegrationTest(private val runtime: Runt
 
         assertThat(debuggerIsHit.get()).isTrue()
     }
+
+    @Test
+    fun samIsExecutedImage(): Unit = samImageRunDebugTest(
+        projectRule = projectRule,
+        relativePath = "samProjects/image/$runtime",
+        sourceFileName = "app.js",
+        runtime = runtime,
+        mockCredentialsId = mockId,
+        input = input,
+        expectedOutput = input.toUpperCase()
+    )
+
+    @Test
+    fun samIsExecutedWithDebuggerImage(): Unit = samImageRunDebugTest(
+        projectRule = projectRule,
+        relativePath = "samProjects/image/$runtime",
+        sourceFileName = "app.js",
+        runtime = runtime,
+        mockCredentialsId = mockId,
+        input = input,
+        expectedOutput = input.toUpperCase(),
+        addBreakpoint = { projectRule.addBreakpoint() }
+    )
 }

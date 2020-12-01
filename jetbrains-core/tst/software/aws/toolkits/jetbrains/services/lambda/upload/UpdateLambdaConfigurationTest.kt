@@ -13,6 +13,7 @@ import org.assertj.core.api.Assertions.assertThat
 import org.junit.Rule
 import org.junit.Test
 import software.amazon.awssdk.services.lambda.LambdaClient
+import software.amazon.awssdk.services.lambda.model.PackageType
 import software.amazon.awssdk.services.lambda.model.Runtime
 import software.amazon.awssdk.services.lambda.model.UpdateFunctionConfigurationRequest
 import software.amazon.awssdk.services.lambda.model.UpdateFunctionConfigurationResponse
@@ -34,10 +35,11 @@ class UpdateLambdaConfigurationTest {
         validate(
             FunctionDetails(
                 name = aString(),
+                description = aString(),
+                packageType = PackageType.ZIP,
                 handler = aString(),
                 iamRole = IamRole(aString()),
                 runtime = Runtime.knownValues().random(),
-                description = aString(),
                 envVars = mapOf(aString() to aString()),
                 timeout = 300,
                 memorySize = 1024,
@@ -59,7 +61,15 @@ class UpdateLambdaConfigurationTest {
             assertThat(allValues).hasSize(1)
 
             assertThat(firstValue.functionName()).isEqualTo(functionDetails.name)
+            assertThat(firstValue.description()).isEqualTo(functionDetails.description)
+            assertThat(firstValue.packageType()).isEqualTo(functionDetails.packageType)
+            assertThat(firstValue.runtime()).isEqualTo(functionDetails.runtime)
             assertThat(firstValue.handler()).isEqualTo(functionDetails.handler)
+            assertThat(firstValue.memorySize()).isEqualTo(functionDetails.memorySize)
+            assertThat(firstValue.timeout()).isEqualTo(functionDetails.timeout)
+            assertThat(firstValue.environment().variables()).isEqualTo(functionDetails.envVars)
+            assertThat(firstValue.role()).isEqualTo(functionDetails.iamRole.arn)
+            assertThat(firstValue.tracingConfig().mode()).isEqualTo(functionDetails.tracingMode)
         }
     }
 }

@@ -12,6 +12,7 @@ import software.aws.toolkits.core.credentials.CredentialIdentifier
 import software.aws.toolkits.core.credentials.ToolkitCredentialsProvider
 import software.aws.toolkits.core.region.AwsRegion
 import software.aws.toolkits.jetbrains.core.region.AwsRegionProvider
+import software.aws.toolkits.jetbrains.utils.rules.CodeInsightTestFixtureRule
 import software.aws.toolkits.jetbrains.utils.spinUntil
 import java.time.Duration
 
@@ -55,9 +56,12 @@ class MockAwsConnectionManager(project: Project) : AwsConnectionManager(project)
             ServiceManager.getService(project, AwsConnectionManager::class.java) as MockAwsConnectionManager
     }
 
-    class ProjectAccountSettingsManagerRule(projectRule: ProjectRule) : ExternalResource() {
+    class ProjectAccountSettingsManagerRule private constructor(projectSupplier: () -> Project) : ExternalResource() {
+        constructor(projectRule: ProjectRule) : this({ projectRule.project })
+        constructor(projectRule: CodeInsightTestFixtureRule) : this({ projectRule.project })
+
         val settingsManager by lazy {
-            getInstance(projectRule.project)
+            getInstance(projectSupplier())
         }
 
         override fun before() {

@@ -35,6 +35,7 @@ import software.aws.toolkits.jetbrains.services.lambda.sam.SamTemplateUtils
 import software.aws.toolkits.jetbrains.services.schemas.SchemaTemplateParameters
 import software.aws.toolkits.jetbrains.services.schemas.resources.SchemasResources
 import software.aws.toolkits.resources.message
+import software.aws.toolkits.telemetry.LambdaPackageType
 import software.aws.toolkits.telemetry.SamTelemetry
 import software.aws.toolkits.telemetry.Runtime.Companion as TelemetryRuntime
 
@@ -70,9 +71,7 @@ class SamProjectBuilder(private val generator: SamProjectGenerator) : ModuleBuil
             object : Task.Backgroundable(project, message("sam.init.generating.template"), false) {
                 override fun run(indicator: ProgressIndicator) {
                     ModuleRootModificationUtil.updateModel(rootModel.module) { model ->
-                        val samTemplate = settings.template
-
-                        runSamInit(project, rootModel.module.name, samTemplate, selectedRuntime, generator.schemaPanel.schemaInfo(), outputDir)
+                        runSamInit(project, rootModel.module.name, settings, generator.schemaPanel.schemaInfo(), outputDir)
 
                         runPostSamInit(project, model, indicator, settings, outputDir)
                     }
@@ -84,8 +83,7 @@ class SamProjectBuilder(private val generator: SamProjectGenerator) : ModuleBuil
     fun runSamInit(
         project: Project?,
         name: String,
-        samTemplate: SamProjectTemplate,
-        runtime: Runtime,
+        settings: SamNewProjectSettings,
         schemaParameters: SchemaTemplateParameters?,
         outputDir: VirtualFile
     ) {
@@ -93,8 +91,8 @@ class SamProjectBuilder(private val generator: SamProjectGenerator) : ModuleBuil
         try {
             SamInitRunner.execute(
                 outputDir,
-                samTemplate.templateParameters(name, runtime),
-                schemaParameters?.takeIf { samTemplate.supportsDynamicSchemas() }
+                settings.template.templateParameters(name, settings.runtime, settings.packagingType),
+                schemaParameters?.takeIf { settings.template.supportsDynamicSchemas() }
             )
         } catch (e: Throwable) {
             success = false
@@ -103,9 +101,10 @@ class SamProjectBuilder(private val generator: SamProjectGenerator) : ModuleBuil
             SamTelemetry.init(
                 project = project,
                 success = success,
-                runtime = TelemetryRuntime.from(runtime.toString()),
+                runtime = TelemetryRuntime.from(settings.runtime.toString()),
                 version = SamCommon.getVersionString(),
                 templateName = getName(),
+                lambdaPackageType = LambdaPackageType.from(settings.packagingType.toString()),
                 eventBridgeSchema = if (schemaParameters?.schema?.registryName == SchemasResources.AWS_EVENTS_REGISTRY) schemaParameters.schema.name else null
             )
         }
@@ -126,7 +125,7 @@ class SamProjectBuilder(private val generator: SamProjectGenerator) : ModuleBuil
         outputDir.refresh(false, true)
 
         openReadmeFile(project, outputDir)
-        createRunConfigurations(project, outputDir)
+        createRunConfigurations(project, outputDir, settings.runtime)
     }
 
     private fun openReadmeFile(project: Project, contentRoot: VirtualFile) {
@@ -140,7 +139,7 @@ class SamProjectBuilder(private val generator: SamProjectGenerator) : ModuleBuil
         }
     }
 
-    private fun createRunConfigurations(project: Project, contentRoot: VirtualFile) {
+    private fun createRunConfigurations(project: Project, contentRoot: VirtualFile, runtime: Runtime) {
         val template = SamCommon.getTemplateFromDirectory(contentRoot) ?: return
 
         val factory = LocalLambdaRunConfigurationProducer.getFactory()
@@ -149,7 +148,7 @@ class SamProjectBuilder(private val generator: SamProjectGenerator) : ModuleBuil
             val runConfigurationAndSettings = runManager.createConfiguration(it.logicalName, factory)
 
             val runConfiguration = runConfigurationAndSettings.configuration as LocalLambdaRunConfiguration
-            runConfiguration.useTemplate(template.path, it.logicalName)
+            runConfiguration.useTemplate(template.path, it.logicalName, runtime.toString())
             runConfiguration.setGeneratedName()
 
             runManager.addConfiguration(runConfigurationAndSettings)

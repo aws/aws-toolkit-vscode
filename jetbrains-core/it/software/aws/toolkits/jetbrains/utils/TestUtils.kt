@@ -7,6 +7,7 @@ import com.intellij.execution.ExecutorRegistry
 import com.intellij.execution.Output
 import com.intellij.execution.OutputListener
 import com.intellij.execution.configurations.RunConfiguration
+import com.intellij.execution.executors.DefaultDebugExecutor
 import com.intellij.execution.executors.DefaultRunExecutor
 import com.intellij.execution.process.ProcessEvent
 import com.intellij.execution.process.ProcessOutputType
@@ -16,10 +17,25 @@ import com.intellij.openapi.application.runInEdt
 import com.intellij.openapi.project.Project
 import com.intellij.openapi.util.Key
 import com.intellij.openapi.util.Ref
+import com.intellij.openapi.vfs.VirtualFile
+import com.intellij.testFramework.runInEdtAndWait
+import com.intellij.util.text.SemVer
 import com.intellij.xdebugger.XDebugProcess
 import com.intellij.xdebugger.XDebugSessionListener
 import com.intellij.xdebugger.XDebuggerManager
 import com.intellij.xdebugger.XDebuggerManagerListener
+import org.assertj.core.api.Assertions.assertThat
+import org.junit.Assume.assumeTrue
+import software.amazon.awssdk.services.lambda.model.Runtime
+import software.aws.toolkits.jetbrains.core.executables.ExecutableManager
+import software.aws.toolkits.jetbrains.core.executables.getExecutableIfPresent
+import software.aws.toolkits.jetbrains.services.lambda.execution.local.createTemplateRunConfiguration
+import software.aws.toolkits.jetbrains.services.lambda.sam.SamCommon.Companion.minImageVersion
+import software.aws.toolkits.jetbrains.services.lambda.sam.SamExecutable
+import software.aws.toolkits.jetbrains.utils.rules.CodeInsightTestFixtureRule
+import software.aws.toolkits.jetbrains.utils.rules.addFileToModule
+import java.io.File
+import java.nio.file.Paths
 import java.util.concurrent.CompletableFuture
 import java.util.concurrent.TimeUnit
 import kotlin.test.assertNotNull
@@ -59,7 +75,8 @@ fun executeRunConfiguration(
         }
     }
 
-    return executionFuture.get(3, TimeUnit.MINUTES)
+    // 5 is arbitrary, but Image-based functions can take > 3 min on first build/run, so 5 is a safer number
+    return executionFuture.get(5, TimeUnit.MINUTES)
 }
 
 fun checkBreakPointHit(project: Project, callback: () -> Unit = {}): Ref<Boolean> {
@@ -94,4 +111,91 @@ fun checkBreakPointHit(project: Project, callback: () -> Unit = {}): Ref<Boolean
     )
 
     return debuggerIsHit
+}
+
+fun readProject(relativePath: String, sourceFileName: String, projectRule: CodeInsightTestFixtureRule): Pair<VirtualFile, VirtualFile> {
+    val testDataPath = Paths.get(System.getProperty("testDataPath"), relativePath).toFile()
+    val (source, template) = testDataPath.walk().fold<File, Pair<VirtualFile?, VirtualFile?>>(Pair(null, null)) { acc, file ->
+        // skip directories which are part of the walk
+        if (!file.isFile) {
+            return@fold acc
+        }
+        val virtualFile = projectRule.fixture.addFileToModule(projectRule.module, file.relativeTo(testDataPath).path, file.readText()).virtualFile
+        when (virtualFile.name) {
+            "template.yaml" -> {
+                acc.first to virtualFile
+            }
+            sourceFileName -> {
+                virtualFile to acc.second
+            }
+            else -> {
+                acc
+            }
+        }
+    }
+
+    assertNotNull(source)
+    assertNotNull(template)
+
+    // open the file so we can do stuff like set breakpoints on it
+    runInEdtAndWait {
+        projectRule.fixture.openFileInEditor(source)
+    }
+
+    return source to template
+}
+
+fun samImageRunDebugTest(
+    projectRule: CodeInsightTestFixtureRule,
+    relativePath: String,
+    sourceFileName: String,
+    runtime: Runtime,
+    mockCredentialsId: String,
+    input: String,
+    expectedOutput: String = input.toUpperCase(),
+    addBreakpoint: (() -> Unit)? = null
+) {
+    assumeImageSupport()
+    val (_, template) = readProject(relativePath, sourceFileName, projectRule)
+
+    addBreakpoint?.let { it() }
+
+    val runConfiguration = createTemplateRunConfiguration(
+        project = projectRule.project,
+        runtime = runtime,
+        templateFile = template.path,
+        logicalId = "SomeFunction",
+        input = "\"$input\"",
+        credentialsProviderId = mockCredentialsId,
+        isImage = true
+    )
+
+    assertNotNull(runConfiguration)
+
+    val debuggerIsHit = checkBreakPointHit(projectRule.project)
+
+    val executeLambda = if (addBreakpoint != null) {
+        executeRunConfiguration(runConfiguration, DefaultDebugExecutor.EXECUTOR_ID)
+    } else {
+        executeRunConfiguration(runConfiguration)
+    }
+
+    // TODO debugging exits with "Abort!" in Node and Python although it works end to end (weird sam bug?)
+    if (addBreakpoint == null) {
+        assertThat(executeLambda.exitCode).isEqualTo(0)
+    }
+    assertThat(executeLambda.stdout).contains(expectedOutput)
+
+    if (addBreakpoint != null) {
+        assertThat(debuggerIsHit.get()).isTrue()
+    }
+}
+
+fun assumeImageSupport() {
+    val samVersion = ExecutableManager.getInstance().getExecutableIfPresent<SamExecutable>().version?.let {
+        SemVer.parseFromText(it)
+    }
+    // TODO, current minImageVersion is the same as external version skip for now with assume
+    assumeTrue(false)
+    assumeTrue(samVersion?.isGreaterOrEqualThan(minImageVersion) == true)
 }

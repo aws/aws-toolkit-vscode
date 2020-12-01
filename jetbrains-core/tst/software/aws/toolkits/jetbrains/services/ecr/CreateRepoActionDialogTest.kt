@@ -23,7 +23,6 @@ import software.amazon.awssdk.services.ecr.model.RepositoryAlreadyExistsExceptio
 import software.amazon.awssdk.services.ecr.model.SetRepositoryPolicyRequest
 import software.amazon.awssdk.services.ecr.model.SetRepositoryPolicyResponse
 import software.aws.toolkits.core.utils.RuleUtils
-import software.aws.toolkits.core.utils.test.aString
 import software.aws.toolkits.jetbrains.core.MockClientManagerRule
 
 class CreateRepoActionDialogTest {
@@ -68,33 +67,6 @@ class CreateRepoActionDialogTest {
 
         assertThat(createRepoCaptor.firstValue.repositoryName()).isEqualTo(repoName)
         verify(client, times(0)).setRepositoryPolicy(any<SetRepositoryPolicyRequest>())
-    }
-
-    @Test
-    fun `Create repo with policy succeeds`() {
-        val createRepoCaptor = argumentCaptor<CreateRepositoryRequest>()
-        val setPolicyCaptor = argumentCaptor<SetRepositoryPolicyRequest>()
-        val repoName = RuleUtils.randomName()
-        val repoPolicy = aString()
-        val client: EcrClient = mockClientManagerRule.create()
-
-        client.stub {
-            on { createRepository(createRepoCaptor.capture()) } doReturn CreateRepositoryResponse.builder().build()
-            on { setRepositoryPolicy(setPolicyCaptor.capture()) } doReturn SetRepositoryPolicyResponse.builder().build()
-        }
-
-        runInEdtAndWait {
-            val dialog = CreateEcrRepoDialog(project = projectRule.project, ecrClient = client)
-
-            dialog.repoName = repoName
-            dialog.repoPolicy = repoPolicy
-
-            dialog.createRepo()
-        }
-
-        assertThat(createRepoCaptor.firstValue.repositoryName()).isEqualTo(repoName)
-        assertThat(setPolicyCaptor.firstValue.repositoryName()).isEqualTo(repoName)
-        assertThat(setPolicyCaptor.firstValue.policyText()).isEqualTo(repoPolicy)
     }
 
     @Test

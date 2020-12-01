@@ -24,8 +24,8 @@ class UpdateFunctionConfigPanel(private val project: Project) {
     }
 
     private fun createUIComponents() {
-        configSettings = LambdaConfigPanel(project)
+        configSettings = LambdaConfigPanel(project, isUpdate = true)
     }
 
-    fun validatePanel(): ValidationInfo? = configSettings.validatePanel(handlerMustExist = false)
+    fun validatePanel(): ValidationInfo? = configSettings.validatePanel()
 }

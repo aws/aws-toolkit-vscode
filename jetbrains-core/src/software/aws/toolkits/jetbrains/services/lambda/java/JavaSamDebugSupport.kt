@@ -13,10 +13,30 @@ import com.intellij.xdebugger.XDebugProcess
 import com.intellij.xdebugger.XDebugProcessStarter
 import com.intellij.xdebugger.XDebugSession
 import com.intellij.xdebugger.impl.XDebugSessionImpl
-import software.aws.toolkits.jetbrains.services.lambda.execution.local.SamDebugSupport
-import software.aws.toolkits.jetbrains.services.lambda.execution.local.SamRunningState
+import software.amazon.awssdk.services.lambda.model.PackageType
+import software.amazon.awssdk.services.lambda.model.Runtime
+import software.aws.toolkits.jetbrains.services.lambda.execution.sam.SamDebugSupport
+import software.aws.toolkits.jetbrains.services.lambda.execution.sam.SamRunningState
 
 class JavaSamDebugSupport : SamDebugSupport {
+    override fun containerEnvVars(runtime: Runtime, packageType: PackageType, debugPorts: List<Int>): Map<String, String> {
+        if (packageType != PackageType.IMAGE) {
+            return mapOf()
+        }
+        return when (runtime) {
+            Runtime.JAVA8, Runtime.JAVA8_AL2 -> mapOf(
+                "_JAVA_OPTIONS" to "-agentlib:jdwp=transport=dt_socket,server=y,suspend=y,quiet=y,address=${debugPorts.first()} " +
+                    "-XX:MaxHeapSize=2834432k -XX:MaxMetaspaceSize=163840k -XX:ReservedCodeCacheSize=81920k -XX:+UseSerialGC " +
+                    "-XX:-TieredCompilation -Djava.net.preferIPv4Stack=true -Xshare:off"
+            )
+            else -> mapOf(
+                "_JAVA_OPTIONS" to "-agentlib:jdwp=transport=dt_socket,server=y,suspend=y,quiet=y,address=*:${debugPorts.first()} " +
+                    "-XX:MaxHeapSize=2834432k -XX:MaxMetaspaceSize=163840k -XX:ReservedCodeCacheSize=81920k -XX:+UseSerialGC " +
+                    "-XX:-TieredCompilation -Djava.net.preferIPv4Stack=true"
+            )
+        }
+    }
+
     override fun createDebugProcess(
         environment: ExecutionEnvironment,
         state: SamRunningState,

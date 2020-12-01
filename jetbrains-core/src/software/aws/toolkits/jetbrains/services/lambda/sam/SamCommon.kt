@@ -9,6 +9,7 @@ import com.intellij.openapi.project.Project
 import com.intellij.openapi.vfs.LocalFileSystem
 import com.intellij.openapi.vfs.VfsUtil
 import com.intellij.openapi.vfs.VirtualFile
+import com.intellij.util.text.SemVer
 import software.aws.toolkits.jetbrains.core.executables.ExecutableManager
 import software.aws.toolkits.jetbrains.core.executables.getExecutableIfPresent
 import software.aws.toolkits.jetbrains.services.cloudformation.CloudFormationTemplate
@@ -24,6 +25,9 @@ class SamCommon {
         const val SAM_INFO_VERSION_KEY = "version"
         const val SAM_INVALID_OPTION_SUBSTRING = "no such option"
         const val SAM_NAME = "SAM CLI"
+
+        // The minimum SAM CLI version required for images. TODO remove when sam min > 1.13.0
+        val minImageVersion = SemVer("1.13.0", 1, 13, 0)
 
         /**
          * @return The string representation of the SAM version else "UNKNOWN"

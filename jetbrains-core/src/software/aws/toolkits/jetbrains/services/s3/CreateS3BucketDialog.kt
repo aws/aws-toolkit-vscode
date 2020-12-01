@@ -46,7 +46,7 @@ class CreateS3BucketDialog(
 
     override fun doOKAction() {
         if (okAction.isEnabled) {
-            setOKButtonText(message("s3.create.bucket.in_progress"))
+            setOKButtonText(message("general.create_in_progress"))
             isOKActionEnabled = false
 
             ApplicationManager.getApplication().executeOnPooledThread {

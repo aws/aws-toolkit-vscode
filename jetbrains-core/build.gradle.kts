@@ -48,7 +48,7 @@ configurations {
 }
 
 val generateTelemetry = tasks.register<GenerateTelemetry>("generateTelemetry") {
-    inputFiles = listOf()
+    inputFiles = listOf(file("${project.projectDir}/resources/telemetryOverride.json"))
     outputDirectory = file("${project.buildDir}/generated-src")
 }
 compileKotlin.dependsOn(generateTelemetry)
@@ -79,10 +79,12 @@ tasks.jar {
 dependencies {
     api(project(":core"))
     api("software.amazon.awssdk:s3:$awsSdkVersion")
-    api("software.amazon.awssdk:lambda:$awsSdkVersion")
+//    api("software.amazon.awssdk:lambda:$awsSdkVersion") // TODO: Restore back to standard SDK post-launch
+    api(project(":lambda-client"))
     api("software.amazon.awssdk:iam:$awsSdkVersion")
     api("software.amazon.awssdk:ecr:$awsSdkVersion")
     api("software.amazon.awssdk:ecs:$awsSdkVersion")
+    api("software.amazon.awssdk:ecr:$awsSdkVersion")
     api("software.amazon.awssdk:cloudformation:$awsSdkVersion")
     api("software.amazon.awssdk:schemas:$awsSdkVersion")
     api("software.amazon.awssdk:cloudwatchlogs:$awsSdkVersion")

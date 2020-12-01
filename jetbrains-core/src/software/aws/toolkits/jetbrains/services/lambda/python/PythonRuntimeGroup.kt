@@ -18,6 +18,7 @@ import software.aws.toolkits.jetbrains.services.lambda.SdkBasedRuntimeGroup
 class PythonRuntimeGroup : SdkBasedRuntimeGroup() {
     override val id: String = BuiltInRuntimeGroups.Python
     override val languageIds: Set<String> = setOf(PythonLanguage.INSTANCE.id)
+    override val supportsPathMappings: Boolean = true
 
     override val supportedRuntimes = listOf(
         RuntimeInfo(Runtime.PYTHON2_7),

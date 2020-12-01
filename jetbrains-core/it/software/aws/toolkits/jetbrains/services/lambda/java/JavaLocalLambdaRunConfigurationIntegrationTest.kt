@@ -6,10 +6,8 @@ package software.aws.toolkits.jetbrains.services.lambda.java
 import com.intellij.compiler.CompilerTestUtil
 import com.intellij.execution.executors.DefaultDebugExecutor
 import com.intellij.testFramework.runInEdtAndWait
-import com.intellij.util.text.SemVer
 import org.assertj.core.api.Assertions.assertThat
 import org.junit.After
-import org.junit.Assume.assumeTrue
 import org.junit.Before
 import org.junit.Rule
 import org.junit.Test
@@ -17,18 +15,18 @@ import org.junit.runner.RunWith
 import org.junit.runners.Parameterized
 import software.amazon.awssdk.auth.credentials.AwsBasicCredentials
 import software.amazon.awssdk.services.lambda.model.Runtime
+import software.aws.toolkits.core.utils.RuleUtils
 import software.aws.toolkits.jetbrains.core.credentials.MockCredentialsManager
-import software.aws.toolkits.jetbrains.core.executables.ExecutableManager
-import software.aws.toolkits.jetbrains.core.executables.getExecutableIfPresent
 import software.aws.toolkits.jetbrains.services.lambda.execution.local.createHandlerBasedRunConfiguration
 import software.aws.toolkits.jetbrains.services.lambda.execution.local.createTemplateRunConfiguration
-import software.aws.toolkits.jetbrains.services.lambda.sam.SamExecutable
 import software.aws.toolkits.jetbrains.utils.addBreakpoint
 import software.aws.toolkits.jetbrains.utils.checkBreakPointHit
 import software.aws.toolkits.jetbrains.utils.executeRunConfiguration
 import software.aws.toolkits.jetbrains.utils.rules.HeavyJavaCodeInsightTestFixtureRule
 import software.aws.toolkits.jetbrains.utils.rules.addClass
+import software.aws.toolkits.jetbrains.utils.rules.addFileToModule
 import software.aws.toolkits.jetbrains.utils.rules.addModule
+import software.aws.toolkits.jetbrains.utils.samImageRunDebugTest
 import software.aws.toolkits.jetbrains.utils.setSamExecutableFromEnvironment
 import software.aws.toolkits.jetbrains.utils.setUpGradleProject
 import software.aws.toolkits.jetbrains.utils.setUpJdk
@@ -51,6 +49,7 @@ class JavaLocalLambdaRunConfigurationIntegrationTest(private val runtime: Runtim
 
     private val mockId = "MockCredsId"
     private val mockCreds = AwsBasicCredentials.create("Access", "ItsASecret")
+    private val input = RuleUtils.randomName()
 
     @Before
     fun setUp() {
@@ -112,7 +111,8 @@ class JavaLocalLambdaRunConfigurationIntegrationTest(private val runtime: Runtim
 
     @Test
     fun samIsExecutedWhenRunWithATemplateServerless() {
-        val templateFile = projectRule.fixture.addFileToProject(
+        val templateFile = projectRule.fixture.addFileToModule(
+            projectRule.module,
             "template.yaml",
             """
             Resources:
@@ -120,7 +120,7 @@ class JavaLocalLambdaRunConfigurationIntegrationTest(private val runtime: Runtim
                 Type: AWS::Serverless::Function
                 Properties:
                   Handler: com.example.LambdaHandler::handleRequest
-                  CodeUri: main
+                  CodeUri: .
                   Runtime: $runtime
                   Timeout: 900
             """.trimIndent()
@@ -144,7 +144,8 @@ class JavaLocalLambdaRunConfigurationIntegrationTest(private val runtime: Runtim
 
     @Test
     fun samIsExecutedWhenRunWithATemplateLambda() {
-        val templateFile = projectRule.fixture.addFileToProject(
+        val templateFile = projectRule.fixture.addFileToModule(
+            projectRule.module,
             "template.yaml",
             """
             Resources:
@@ -152,7 +153,7 @@ class JavaLocalLambdaRunConfigurationIntegrationTest(private val runtime: Runtim
                 Type: AWS::Lambda::Function
                 Properties:
                   Handler: com.example.LambdaHandler::handleRequest
-                  Code: main
+                  Code: .
                   Runtime: $runtime
                   Timeout: 900
             """.trimIndent()
@@ -176,15 +177,6 @@ class JavaLocalLambdaRunConfigurationIntegrationTest(private val runtime: Runtim
 
     @Test
     fun samIsExecutedWithDebugger() {
-        // TODO Remove when SAM 1.2.0 is out
-        if (runtime == Runtime.JAVA8_AL2) {
-            val samVersion = ExecutableManager.getInstance().getExecutableIfPresent<SamExecutable>().version?.let {
-                SemVer.parseFromText(it)
-            }
-            println(samVersion)
-            assumeTrue(samVersion?.isGreaterOrEqualThan(1, 2, 0) == true)
-        }
-
         projectRule.addBreakpoint()
 
         val runConfiguration = createHandlerBasedRunConfiguration(
@@ -204,4 +196,27 @@ class JavaLocalLambdaRunConfigurationIntegrationTest(private val runtime: Runtim
 
         assertThat(debuggerIsHit.get()).isTrue()
     }
+
+    @Test
+    fun samIsExecutedWhenRunWithATemplateImage(): Unit = samImageRunDebugTest(
+        projectRule = projectRule,
+        relativePath = "samProjects/image/$runtime/maven",
+        sourceFileName = "App.java",
+        runtime = runtime,
+        mockCredentialsId = mockId,
+        input = input,
+        expectedOutput = input.toUpperCase()
+    )
+
+    @Test
+    fun samIsExecutedWithDebuggerImage(): Unit = samImageRunDebugTest(
+        projectRule = projectRule,
+        relativePath = "samProjects/image/$runtime/maven",
+        sourceFileName = "App.java",
+        runtime = runtime,
+        mockCredentialsId = mockId,
+        input = input,
+        expectedOutput = input.toUpperCase(),
+        addBreakpoint = { projectRule.addBreakpoint() }
+    )
 }

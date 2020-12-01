@@ -18,12 +18,23 @@ import com.intellij.xdebugger.XDebugSession
 import com.jetbrains.debugger.wip.WipLocalVmConnection
 import com.jetbrains.nodeJs.NodeChromeDebugProcess
 import org.jetbrains.io.LocalFileFinder
+import software.amazon.awssdk.services.lambda.model.PackageType
+import software.amazon.awssdk.services.lambda.model.Runtime
 import software.aws.toolkits.jetbrains.services.PathMapping
-import software.aws.toolkits.jetbrains.services.lambda.execution.local.SamDebugSupport
-import software.aws.toolkits.jetbrains.services.lambda.execution.local.SamRunningState
+import software.aws.toolkits.jetbrains.services.lambda.execution.sam.SamDebugSupport
+import software.aws.toolkits.jetbrains.services.lambda.execution.sam.SamRunningState
 import java.net.InetSocketAddress
 
 class NodeJsSamDebugSupport : SamDebugSupport {
+    override fun containerEnvVars(runtime: Runtime, packageType: PackageType, debugPorts: List<Int>): Map<String, String> {
+        if (packageType != PackageType.IMAGE) {
+            return mapOf()
+        }
+        return mapOf(
+            "NODE_OPTIONS" to "--inspect-brk=0.0.0.0:${debugPorts.first()} --max-http-header-size 81920"
+        )
+    }
+
     override fun createDebugProcess(
         environment: ExecutionEnvironment,
         state: SamRunningState,
@@ -68,7 +79,7 @@ class NodeJsSamDebugSupport : SamDebugSupport {
 
         listOf(".", NODE_MODULES).forEach { subPath ->
             pathMapping.forEach {
-                val remotePath = FileUtil.toCanonicalPath("$TASK_PATH/${it.remoteRoot}/$subPath")
+                val remotePath = FileUtil.toCanonicalPath("${it.remoteRoot}/$subPath")
                 LocalFileFinder.findFile("${it.localRoot}/$subPath")?.let { localFile ->
                     mappings.putIfAbsent("file://$remotePath", localFile)
                 }
@@ -79,7 +90,6 @@ class NodeJsSamDebugSupport : SamDebugSupport {
     }
 
     private companion object {
-        const val TASK_PATH = "/var/task"
         const val NODE_MODULES = "node_modules"
     }
 }

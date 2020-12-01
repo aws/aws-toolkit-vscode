@@ -16,7 +16,7 @@ import com.intellij.ui.components.panels.Wrapper
 import com.intellij.ui.layout.panel
 import com.intellij.util.ThrowableRunnable
 import software.amazon.awssdk.services.lambda.model.Runtime
-import software.aws.toolkits.jetbrains.services.lambda.runtimeGroup
+import software.aws.toolkits.jetbrains.services.lambda.RuntimeGroup
 import javax.swing.JComponent
 import javax.swing.JLabel
 
@@ -65,8 +65,7 @@ class SdkSelectionPanel : WizardFragment {
 
     override fun isApplicable(template: SamProjectTemplate?): Boolean = true
 
-    override fun updateUi(projectLocation: TextFieldWithBrowseButton?, runtime: Runtime?, template: SamProjectTemplate?) {
-        val runtimeGroup = runtime?.runtimeGroup
+    override fun updateUi(projectLocation: TextFieldWithBrowseButton?, runtimeGroup: RuntimeGroup?, template: SamProjectTemplate?) {
         if (runtimeGroup == null) {
             component.setContent(ErrorLabel("No runtime selected"))
             return

@@ -32,6 +32,11 @@ class DeploySettings : PersistentStateComponent<DeployConfigs> {
         state.samConfigs.computeIfAbsent(samPath) { DeploySamConfig() }.bucketName = value
     }
 
+    fun samEcrRepoUri(samPath: String): String? = state.samConfigs[samPath]?.repoUri
+    fun setSamEcrRepoUri(samPath: String, value: String?) {
+        state.samConfigs.computeIfAbsent(samPath) { DeploySamConfig() }.repoUri = value
+    }
+
     fun samAutoExecute(samPath: String): Boolean? = state.samConfigs[samPath]?.autoExecute
     fun setSamAutoExecute(samPath: String, value: Boolean) {
         state.samConfigs.computeIfAbsent(samPath) { DeploySamConfig() }.autoExecute = value
@@ -60,6 +65,7 @@ data class DeployConfigs(
 data class DeploySamConfig(
     var stackName: String? = null,
     var bucketName: String? = null,
+    var repoUri: String? = null,
     var autoExecute: Boolean = false,
     var useContainer: Boolean = false,
     var enabledCapabilities: List<CreateCapabilities>? = null

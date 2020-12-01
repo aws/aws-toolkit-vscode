@@ -8,7 +8,9 @@ import com.intellij.openapi.module.ModuleUtil
 import com.intellij.openapi.project.Project
 import com.intellij.openapi.ui.DialogWrapper
 import com.intellij.openapi.ui.ValidationInfo
+import com.intellij.util.text.nullize
 import org.jetbrains.annotations.TestOnly
+import software.amazon.awssdk.services.lambda.model.PackageType
 import software.amazon.awssdk.services.lambda.model.Runtime
 import software.aws.toolkits.jetbrains.core.explorer.refreshAwsTree
 import software.aws.toolkits.jetbrains.core.help.HelpIds
@@ -20,15 +22,18 @@ import software.aws.toolkits.jetbrains.services.lambda.resources.LambdaResources
 import software.aws.toolkits.jetbrains.services.lambda.runtimeGroup
 import software.aws.toolkits.jetbrains.services.lambda.sam.SamOptions
 import software.aws.toolkits.jetbrains.services.lambda.upload.steps.CreateLambda.Companion.FUNCTION_ARN
-import software.aws.toolkits.jetbrains.services.lambda.upload.steps.createLambdaWorkflow
+import software.aws.toolkits.jetbrains.services.lambda.upload.steps.createLambdaWorkflowForImage
+import software.aws.toolkits.jetbrains.services.lambda.upload.steps.createLambdaWorkflowForZip
 import software.aws.toolkits.jetbrains.services.lambda.validOrNull
 import software.aws.toolkits.jetbrains.settings.UpdateLambdaSettings
 import software.aws.toolkits.jetbrains.utils.execution.steps.StepExecutor
 import software.aws.toolkits.jetbrains.utils.notifyError
 import software.aws.toolkits.jetbrains.utils.notifyInfo
+import software.aws.toolkits.jetbrains.utils.ui.selected
 import software.aws.toolkits.resources.message
 import software.aws.toolkits.telemetry.LambdaTelemetry
 import software.aws.toolkits.telemetry.Result
+import java.nio.file.Paths
 import javax.swing.JComponent
 
 class CreateFunctionDialog(private val project: Project, private val initialRuntime: Runtime?, private val handlerName: String?) : DialogWrapper(project) {
@@ -40,15 +45,15 @@ class CreateFunctionDialog(private val project: Project, private val initialRunt
         setOKButtonText(message("lambda.upload.create.title"))
 
         with(view.configSettings) {
-            handlerName?.let { handler ->
-                handlerPanel.handler.text = handler
-            }
             timeoutSlider.value = DEFAULT_TIMEOUT
             memorySlider.value = DEFAULT_MEMORY_SIZE
 
             // show a filtered list of runtimes to only ones we can build (since we have to build)
             runtimeModel.setAll(LambdaBuilder.supportedRuntimeGroups().flatMap { it.runtimes })
 
+            handlerName?.let { handler ->
+                handlerPanel.handler.text = handler
+            }
             initialRuntime?.validOrNull?.let {
                 runtime.selectedItem = it
                 handlerPanel.setRuntime(it)
@@ -77,63 +82,97 @@ class CreateFunctionDialog(private val project: Project, private val initialRunt
         if (!okAction.isEnabled) {
             return
         }
+
+        val functionName = view.name.text
+        val workflow = createWorkflow()
+
+        workflow.onSuccess = {
+            saveSettings(it.getRequiredAttribute(FUNCTION_ARN))
+
+            notifyInfo(
+                project = project,
+                title = message("lambda.service_name"),
+                content = message("lambda.function.created.notification", functionName)
+            )
+            LambdaTelemetry.editFunction(project, update = false, result = Result.Succeeded)
+            project.refreshAwsTree(LambdaResources.LIST_FUNCTIONS)
+        }
+
+        workflow.onError = {
+            it.notifyError(project = project, title = message("lambda.service_name"))
+            LambdaTelemetry.editFunction(project, update = false, result = Result.Failed)
+        }
+
+        workflow.startExecution()
+
+        close(OK_EXIT_CODE)
+    }
+
+    @TestOnly
+    fun createWorkflow(): StepExecutor {
         FileDocumentManager.getInstance().saveAllDocuments()
 
-        val functionDetails = viewToFunctionDetails()
         val samOptions = SamOptions(
             buildInContainer = view.buildSettings.buildInContainerCheckbox.isSelected
         )
 
-        // TODO: Move this so we can share it with UpdateCodeDialog, but don't move it lower since passing PsiElement lower needs to go away since
-        // it is causing customer complaints. We need to prompt for baseDir and try to infer it if we can but only as a default value...
-        val element = findPsiElementsForHandler(project, functionDetails.runtime, functionDetails.handler).first()
-        val module = ModuleUtil.findModuleForPsiElement(element) ?: throw IllegalStateException("Failed to locate module for $element")
-        val lambdaBuilder = functionDetails.runtime.runtimeGroup?.let { LambdaBuilder.getInstanceOrNull(it) }
-            ?: throw IllegalStateException("LambdaBuilder for ${functionDetails.runtime} not found")
-        val s3Bucket = view.codeStorage.sourceBucket.selectedItem as String
+        val workflow = when (val packageType = view.configSettings.packageType()) {
+            PackageType.ZIP -> {
+                val runtime = view.configSettings.runtime.selected() ?: throw IllegalStateException("Runtime is missing when package type is Zip")
+                val handler = view.configSettings.handlerPanel.handler.text
 
-        val codeDetails = CodeDetails(
-            baseDir = lambdaBuilder.handlerBaseDirectory(module, element),
-            handler = functionDetails.handler,
-            runtime = functionDetails.runtime
-        )
+                val functionDetails = viewToFunctionDetails(runtime, handler)
 
-        val workflow = createLambdaWorkflow(
-            project = project,
-            codeDetails = codeDetails,
-            buildDir = lambdaBuilder.getBuildDirectory(module), // TODO ... how do we kill module here? Can we use a temp dir?
-            buildEnvVars = lambdaBuilder.additionalEnvironmentVariables(module, samOptions),
-            codeStorageLocation = s3Bucket,
-            samOptions = samOptions,
-            functionDetails = functionDetails
-        )
+                // TODO: Move this so we can share it with CreateFunctionDialog, but don't move it lower since passing PsiElement lower needs to go away since
+                // it is causing customer complaints. We need to prompt for baseDir and try to infer it if we can but only as a default value...
+                val element = findPsiElementsForHandler(project, runtime, handler).first()
+                val module = ModuleUtil.findModuleForPsiElement(element) ?: throw IllegalStateException("Failed to locate module for $element")
+                val lambdaBuilder = runtime.runtimeGroup?.let { LambdaBuilder.getInstanceOrNull(it) }
+                    ?: throw IllegalStateException("LambdaBuilder for $runtime not found")
 
-        StepExecutor(project, message("lambda.workflow.create_new.name"), workflow, functionDetails.name).startExecution(
-            onSuccess = {
-                saveSettings(it.getRequiredAttribute(FUNCTION_ARN))
-
-                notifyInfo(
-                    project = project,
-                    title = message("lambda.service_name"),
-                    content = message("lambda.function.created.notification", functionDetails.name)
+                val codeDetails = ZipBasedCode(
+                    baseDir = lambdaBuilder.handlerBaseDirectory(module, element),
+                    handler = handler,
+                    runtime = runtime
                 )
-                LambdaTelemetry.editFunction(project, update = false, result = Result.Succeeded)
-                project.refreshAwsTree(LambdaResources.LIST_FUNCTIONS)
-            },
-            onError = {
-                it.notifyError(project = project, title = message("lambda.service_name"))
-                LambdaTelemetry.editFunction(project, update = false, result = Result.Failed)
+
+                createLambdaWorkflowForZip(
+                    project = project,
+                    functionDetails = functionDetails,
+                    codeDetails = codeDetails,
+                    buildDir = lambdaBuilder.getBuildDirectory(module),
+                    buildEnvVars = lambdaBuilder.additionalEnvironmentVariables(module, samOptions),
+                    codeStorageLocation = view.codeStorage.codeLocation(),
+                    samOptions = samOptions
+                )
             }
-        )
-        close(OK_EXIT_CODE)
+            PackageType.IMAGE -> {
+                val functionDetails = viewToFunctionDetails()
+                val codeDetails = ImageBasedCode(
+                    dockerfile = Paths.get(view.configSettings.dockerFile.text)
+                )
+
+                createLambdaWorkflowForImage(
+                    project = project,
+                    functionDetails = functionDetails,
+                    codeDetails = codeDetails,
+                    codeStorageLocation = view.codeStorage.codeLocation(),
+                    samOptions = samOptions
+                )
+            }
+            else -> throw UnsupportedOperationException("$packageType is not supported")
+        }
+
+        return StepExecutor(project, message("lambda.workflow.create_new.name"), workflow, view.name.text)
     }
 
-    private fun viewToFunctionDetails(): FunctionDetails = FunctionDetails(
+    private fun viewToFunctionDetails(runtime: Runtime? = null, handler: String? = null): FunctionDetails = FunctionDetails(
         name = view.name.text.trim(),
-        handler = view.configSettings.handlerPanel.handler.text,
-        iamRole = view.configSettings.iamRole.selected()!!,
-        runtime = view.configSettings.runtime.selectedItem as Runtime,
         description = view.description.text,
+        packageType = view.configSettings.packageType(),
+        runtime = runtime,
+        handler = handler,
+        iamRole = view.configSettings.iamRole.selected()!!,
         envVars = view.configSettings.envVars.envVars,
         timeout = view.configSettings.timeoutSlider.value,
         memorySize = view.configSettings.memorySlider.value,
@@ -142,7 +181,9 @@ class CreateFunctionDialog(private val project: Project, private val initialRunt
 
     private fun saveSettings(arn: String) {
         val settings = UpdateLambdaSettings.getInstance(arn)
-        settings.bucketName = view.codeStorage.sourceBucket.selectedItem?.toString()
+        settings.bucketName = view.codeStorage.sourceBucket.selected()
+        settings.ecrRepo = view.codeStorage.ecrRepo.selected()?.repositoryArn
+        settings.dockerfile = view.configSettings.dockerFile.text.nullize()
         settings.useContainer = view.buildSettings.buildInContainerCheckbox.isSelected
     }
 

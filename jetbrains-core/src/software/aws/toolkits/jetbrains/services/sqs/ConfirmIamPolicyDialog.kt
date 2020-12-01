@@ -47,7 +47,7 @@ class ConfirmIamPolicyDialog(
             return
         }
 
-        setOKButtonText(message("sqs.confirm.iam.in_progress"))
+        setOKButtonText(message("general.create_in_progress"))
         isOKActionEnabled = false
         launch {
             try {

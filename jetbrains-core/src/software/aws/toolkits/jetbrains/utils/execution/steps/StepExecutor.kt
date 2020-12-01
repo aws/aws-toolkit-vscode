@@ -16,6 +16,8 @@ import com.intellij.openapi.application.ApplicationManager
 import com.intellij.openapi.components.service
 import com.intellij.openapi.progress.ProcessCanceledException
 import com.intellij.openapi.project.Project
+import software.aws.toolkits.core.utils.getLogger
+import software.aws.toolkits.core.utils.tryOrNull
 import software.aws.toolkits.resources.message
 import java.io.OutputStream
 
@@ -28,7 +30,10 @@ class StepExecutor(
     private val workflow: StepWorkflow,
     private val uniqueId: String
 ) {
-    fun startExecution(onSuccess: (Context) -> Unit = {}, onError: (Throwable) -> Unit = {}): ProcessHandler {
+    var onSuccess: ((Context) -> Unit)? = null
+    var onError: ((Throwable) -> Unit)? = null
+
+    fun startExecution(): ProcessHandler {
         val context = Context(project)
         val processHandler = DummyProcessHandler(context)
         val descriptor = DefaultBuildDescriptor(
@@ -46,13 +51,20 @@ class StepExecutor(
             try {
                 executionStarted(descriptor, progressListener)
                 workflow.run(context, messageEmitter)
+                LOG.tryOrNull("Failed to invoke success callback") {
+                    onSuccess?.invoke(context)
+                }
                 executionFinishedSuccessfully(processHandler, progressListener)
-                onSuccess(context)
             } catch (e: Throwable) {
+                LOG.tryOrNull("Failed to invoke error callback") {
+                    onError?.invoke(e)
+                }
+                onError?.invoke(e)
                 executionFinishedExceptionally(processHandler, progressListener, e)
-                onError(e)
             }
         }
+
+        processHandler.startNotify()
 
         return processHandler
     }
@@ -117,5 +129,9 @@ class StepExecutor(
         public override fun notifyProcessTerminated(exitCode: Int) {
             super.notifyProcessTerminated(exitCode)
         }
+    }
+
+    private companion object {
+        val LOG = getLogger<StepExecutor>()
     }
 }

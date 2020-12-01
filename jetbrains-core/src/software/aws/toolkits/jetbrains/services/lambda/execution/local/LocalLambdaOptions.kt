@@ -15,6 +15,7 @@ import software.aws.toolkits.jetbrains.services.lambda.sam.SamOptions
 class LocalLambdaOptions : BaseLambdaOptions() {
     @get:Property(flat = true) // flat for backwards compat
     var functionOptions = FunctionOptions()
+
     @get:Property(surroundWithTag = false)
     var samOptions = SamOptions()
     var debugHost = "localhost"
@@ -23,6 +24,9 @@ class LocalLambdaOptions : BaseLambdaOptions() {
 @Tag("FunctionOptions")
 class FunctionOptions {
     var useTemplate = false
+    var platform: String? = null
+    var isImage: Boolean = false
+    var pathMappings: List<PersistedPathMapping> = listOf()
     var templateFile: String? = null
     @get:OptionTag("logicalFunctionName")
     var logicalId: String? = null
@@ -32,3 +36,8 @@ class FunctionOptions {
     var memorySize: Int = DEFAULT_MEMORY_SIZE
     var environmentVariables: Map<String, String> = linkedMapOf<String, String>()
 }
+
+data class PersistedPathMapping(
+    var local: String? = null,
+    var remote: String? = null
+)

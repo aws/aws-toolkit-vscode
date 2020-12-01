@@ -32,7 +32,6 @@ import com.intellij.util.io.isDirectory
 import com.intellij.util.io.readBytes
 import com.intellij.util.io.write
 import com.intellij.xdebugger.XDebuggerUtil
-import org.jetbrains.annotations.NotNull
 import org.jetbrains.idea.maven.project.MavenProjectsManager
 import org.jetbrains.plugins.gradle.settings.GradleProjectSettings
 import org.jetbrains.plugins.gradle.util.GradleConstants
@@ -44,7 +43,7 @@ import java.nio.file.Files
 import java.nio.file.Path
 import java.nio.file.Paths
 
-fun HeavyJavaCodeInsightTestFixtureRule.setUpJdk(jdkName: String = "Real JDK"): @NotNull String {
+fun HeavyJavaCodeInsightTestFixtureRule.setUpJdk(jdkName: String = "Real JDK"): String {
     val jdkHome = IdeaTestUtil.requireRealJdkHome()
 
     runInEdtAndWait {

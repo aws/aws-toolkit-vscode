@@ -19,6 +19,8 @@ import software.aws.toolkits.jetbrains.utils.executeRunConfiguration
 import software.aws.toolkits.jetbrains.utils.setSamExecutableFromEnvironment
 
 class Dotnet21LocalLambdaRunConfigurationIntegrationTest : DotnetLocalLambdaRunConfigurationIntegrationTestBase("EchoLambda2X", Runtime.DOTNETCORE2_1)
+class Dotnet21LocalLambdaImageRunConfigurationIntegrationTest :
+    DotnetLocalLambdaImageRunConfigurationIntegrationTestBase("ImageLambda2X", Runtime.DOTNETCORE2_1)
 // TODO: Fix test not running on CodeBuild
 // class Dotnet31LocalLambdaRunConfigurationIntegrationTest : DotnetLocalLambdaRunConfigurationIntegrationTestBase("EchoLambda3X", Runtime.DOTNETCORE3_1)
 
@@ -111,4 +113,45 @@ abstract class DotnetLocalLambdaRunConfigurationIntegrationTestBase(private val 
     }
 
     private fun jsonToMap(data: String) = jacksonObjectMapper().readValue<Map<String, Any>>(data)
+}
+
+abstract class DotnetLocalLambdaImageRunConfigurationIntegrationTestBase(private val solutionName: String, private val runtime: Runtime) :
+    AwsReuseSolutionTestBase() {
+
+    override val waitForCaches = false
+
+    private val mockId = "MockCredsId"
+    private val mockCreds = AwsBasicCredentials.create("Access", "ItsASecret")
+
+    @BeforeMethod
+    fun setUp() {
+        setSamExecutableFromEnvironment()
+
+        MockCredentialsManager.getInstance().addCredentials(mockId, mockCreds)
+    }
+
+    override fun getSolutionDirectoryName(): String = solutionName
+
+    // Cannot use assumeImage since Rider uses testNG, TODO enable when we have a SAM cli with support
+    /*
+    @Test
+    @TestEnvironment(solution = "ImageLambda")
+    fun samIsExecutedImage() {
+        val template = "$tempTestDirectory/$solutionName/template.yaml"
+
+        val runConfiguration = createTemplateRunConfiguration(
+            project = project,
+            runtime = runtime,
+            templateFile = template,
+            logicalId = "HelloWorldFunction",
+            input = "\"Hello World\"",
+            credentialsProviderId = mockId,
+            isImage = true
+        )
+        ModuleManager.getInstance(project).modules
+
+        val executeLambda = executeRunConfiguration(runConfiguration)
+        assertThat(executeLambda.exitCode).isEqualTo(0)
+    }
+    */
 }

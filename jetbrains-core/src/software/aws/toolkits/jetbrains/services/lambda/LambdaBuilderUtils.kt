@@ -24,6 +24,7 @@ import com.intellij.openapi.progress.Task
 import com.intellij.openapi.roots.ModuleRootManager
 import com.intellij.openapi.util.Key
 import software.aws.toolkits.resources.message
+import java.nio.file.Paths
 import java.util.concurrent.CompletableFuture
 import java.util.concurrent.CompletionStage
 
@@ -101,7 +102,8 @@ object LambdaBuilderUtils {
         is BuildLambdaFromTemplate -> {
             lambdaBuilder.buildLambdaFromTemplate(
                 module,
-                request.templateLocation,
+                // FIX_WHEN_MIN_IS_202 use .toNioPath
+                Paths.get(request.templateLocation.path),
                 request.logicalId,
                 request.samOptions
             ) { it.addProcessListener(processListener) }

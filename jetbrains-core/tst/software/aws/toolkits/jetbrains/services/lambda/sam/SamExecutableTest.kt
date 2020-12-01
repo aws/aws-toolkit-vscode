@@ -8,7 +8,11 @@ import org.assertj.core.api.Assertions.assertThat
 import org.junit.Rule
 import org.junit.Test
 import org.junit.rules.TemporaryFolder
+import software.amazon.awssdk.services.lambda.model.Runtime
 import software.aws.toolkits.jetbrains.services.lambda.deploy.CreateCapabilities
+import software.aws.toolkits.jetbrains.services.lambda.wizard.AppBasedImageTemplate
+import software.aws.toolkits.jetbrains.services.lambda.wizard.AppBasedZipTemplate
+import software.aws.toolkits.jetbrains.services.lambda.wizard.LocationBasedTemplate
 
 class SamExecutableTest {
     @Rule
@@ -180,14 +184,15 @@ class SamExecutableTest {
     }
 
     @Test
-    fun `sam package command is correct`() {
+    fun `sam package command without repo is correct`() {
         val templatePath = tempFolder.newFile("template.yaml").toPath()
         val packagedTemplatePath = tempFolder.newFile("packagedTemplate.yaml").toPath()
         val cmd = GeneralCommandLine("sam").samPackageCommand(
             environmentVariables = mapOf("Foo" to "Bar"),
             templatePath = templatePath,
             packagedTemplatePath = packagedTemplatePath,
-            s3Bucket = "myBucket"
+            s3Bucket = "myBucket",
+            ecrRepo = null
         )
 
         assertThat(cmd.commandLineString).isEqualTo(
@@ -200,6 +205,68 @@ class SamExecutableTest {
                 "$packagedTemplatePath",
                 "--s3-bucket",
                 "myBucket"
+            ).joinToString(separator = " ")
+        )
+
+        assertThat(cmd.workDirectory).isEqualTo(tempFolder.root)
+
+        assertThat(cmd.environment).containsEntry("Foo", "Bar")
+    }
+
+    @Test
+    fun `sam package command without bucket is correct`() {
+        val templatePath = tempFolder.newFile("template.yaml").toPath()
+        val packagedTemplatePath = tempFolder.newFile("packagedTemplate.yaml").toPath()
+        val cmd = GeneralCommandLine("sam").samPackageCommand(
+            environmentVariables = mapOf("Foo" to "Bar"),
+            templatePath = templatePath,
+            packagedTemplatePath = packagedTemplatePath,
+            s3Bucket = null,
+            ecrRepo = "myRepo"
+        )
+
+        assertThat(cmd.commandLineString).isEqualTo(
+            listOf(
+                "sam",
+                "package",
+                "--template-file",
+                "$templatePath",
+                "--output-template-file",
+                "$packagedTemplatePath",
+                "--image-repository",
+                "myRepo"
+            ).joinToString(separator = " ")
+        )
+
+        assertThat(cmd.workDirectory).isEqualTo(tempFolder.root)
+
+        assertThat(cmd.environment).containsEntry("Foo", "Bar")
+    }
+
+    @Test
+    fun `sam package command is correct`() {
+        val templatePath = tempFolder.newFile("template.yaml").toPath()
+        val packagedTemplatePath = tempFolder.newFile("packagedTemplate.yaml").toPath()
+        val cmd = GeneralCommandLine("sam").samPackageCommand(
+            environmentVariables = mapOf("Foo" to "Bar"),
+            templatePath = templatePath,
+            packagedTemplatePath = packagedTemplatePath,
+            s3Bucket = "myBucket",
+            ecrRepo = "myRepo"
+        )
+
+        assertThat(cmd.commandLineString).isEqualTo(
+            listOf(
+                "sam",
+                "package",
+                "--template-file",
+                "$templatePath",
+                "--output-template-file",
+                "$packagedTemplatePath",
+                "--s3-bucket",
+                "myBucket",
+                "--image-repository",
+                "myRepo"
             ).joinToString(separator = " ")
         )
 
@@ -277,6 +344,130 @@ class SamExecutableTest {
                 """ "\"Hello3\"='\"Wor ld\"'" """.trim(),
                 """ \"Hello4\"=\"It's\" """.trim(),
                 """ \"Hello5\"=\"2+2=22\" """.trim()
+            ).joinToString(separator = " ")
+        )
+    }
+
+    @Test
+    fun `sam init with zip app template is correct`() {
+        val outputDir = tempFolder.newFolder()
+        val cmd = GeneralCommandLine("sam").samInitCommand(
+            outputDir = outputDir.toPath(),
+            parameters = AppBasedZipTemplate(
+                name = "Hello",
+                runtime = Runtime.JAVA11,
+                appTemplate = "HelloWorldTemplate",
+                dependencyManager = "maven"
+            ),
+            extraContext = emptyMap()
+        )
+
+        assertThat(cmd.commandLineString).isEqualTo(
+            listOf(
+                "sam",
+                "init",
+                "--no-input",
+                "--output-dir",
+                "$outputDir",
+                "--name",
+                "Hello",
+                "--runtime",
+                "java11",
+                "--dependency-manager",
+                "maven",
+                "--app-template",
+                "HelloWorldTemplate"
+            ).joinToString(separator = " ")
+        )
+    }
+
+    @Test
+    fun `sam init with image app template is correct`() {
+        val outputDir = tempFolder.newFolder()
+        val cmd = GeneralCommandLine("sam").samInitCommand(
+            outputDir = outputDir.toPath(),
+            parameters = AppBasedImageTemplate(
+                name = "Hello",
+                baseImage = "amazon/runtime-base",
+                dependencyManager = "maven"
+            ),
+            extraContext = emptyMap()
+        )
+
+        assertThat(cmd.commandLineString).isEqualTo(
+            listOf(
+                "sam",
+                "init",
+                "--no-input",
+                "--output-dir",
+                "$outputDir",
+                "--package-type",
+                "Image",
+                "--name",
+                "Hello",
+                "--base-image",
+                "amazon/runtime-base",
+                "--dependency-manager",
+                "maven"
+            ).joinToString(separator = " ")
+        )
+    }
+
+    @Test
+    fun `sam init with location template is correct`() {
+        val outputDir = tempFolder.newFolder()
+        val cmd = GeneralCommandLine("sam").samInitCommand(
+            outputDir = outputDir.toPath(),
+            parameters = LocationBasedTemplate(
+                location = "SomeUrl"
+            ),
+            extraContext = emptyMap()
+        )
+
+        assertThat(cmd.commandLineString).isEqualTo(
+            listOf(
+                "sam",
+                "init",
+                "--no-input",
+                "--output-dir",
+                "$outputDir",
+                "--location",
+                "SomeUrl"
+            ).joinToString(separator = " ")
+        )
+    }
+
+    @Test
+    fun `sam init with extra context is correct`() {
+        val outputDir = tempFolder.newFolder()
+        val cmd = GeneralCommandLine("sam").samInitCommand(
+            outputDir = outputDir.toPath(),
+            parameters = AppBasedZipTemplate(
+                name = "Hello",
+                runtime = Runtime.JAVA11,
+                appTemplate = "HelloWorldTemplate",
+                dependencyManager = "maven"
+            ),
+            extraContext = mapOf("Foo" to "Bar")
+        )
+
+        assertThat(cmd.commandLineString).isEqualTo(
+            listOf(
+                "sam",
+                "init",
+                "--no-input",
+                "--output-dir",
+                "$outputDir",
+                "--name",
+                "Hello",
+                "--runtime",
+                "java11",
+                "--dependency-manager",
+                "maven",
+                "--app-template",
+                "HelloWorldTemplate",
+                "--extra-context",
+                """{\"Foo\":\"Bar\"}"""
             ).joinToString(separator = " ")
         )
     }

@@ -92,7 +92,7 @@ with what features/services are supported.
         </extensionPoint>
 
         <extensionPoint name="lambda.sam.debugSupport" beanClass="software.aws.toolkits.jetbrains.core.IdBasedExtensionPoint" dynamic="true">
-            <with attribute="implementationClass" implements="software.aws.toolkits.jetbrains.services.lambda.execution.local.SamDebugSupport"/>
+            <with attribute="implementationClass" implements="software.aws.toolkits.jetbrains.services.lambda.execution.sam.SamDebugSupport"/>
         </extensionPoint>
 
         <extensionPoint name="lambda.handlerResolver" beanClass="software.aws.toolkits.jetbrains.core.IdBasedExtensionPoint" dynamic="true">
@@ -185,7 +185,7 @@ with what features/services are supported.
                              key="aws.settings.title"
                              instance="software.aws.toolkits.jetbrains.settings.AwsSettingsConfigurable"/>
 
-        <programRunner implementation="software.aws.toolkits.jetbrains.services.lambda.execution.local.SamInvokeRunner"/>
+        <programRunner implementation="software.aws.toolkits.jetbrains.services.lambda.execution.sam.SamInvokeRunner"/>
         <programRunner implementation="software.aws.toolkits.jetbrains.services.lambda.execution.remote.RemoteLambdaRunner"/>
         <fileBasedIndex implementation="software.aws.toolkits.jetbrains.services.cloudformation.CloudFormationTemplateIndex"/>
 

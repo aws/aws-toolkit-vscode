@@ -25,7 +25,7 @@ class YamlWriter internal constructor() {
     override fun toString() = stringBuilder.toString().trimEnd()
 }
 
-fun yamlWriter(init: YamlWriter.() -> Unit): String {
+fun yaml(init: YamlWriter.() -> Unit): String {
     val yaml = YamlWriter()
     yaml.init()
     return yaml.toString()

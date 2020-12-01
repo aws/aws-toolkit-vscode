@@ -102,8 +102,16 @@ class YamlCloudFormationTemplate(template: YAMLFile) : CloudFormationTemplate {
             properties().putKeyValue(newKeyValue)
         }
 
+        override fun getScalarMetadata(key: String): String = getOptionalScalarMetadata(key)
+            ?: throw IllegalStateException(message("cloudformation.missing_property", key, logicalName))
+
+        override fun getOptionalScalarMetadata(key: String): String? = metadata().getKeyValueByKey(key)?.valueText
+
         private fun properties(): YAMLMapping = delegate.getKeyValueByKey("Properties")?.value as? YAMLMapping
             ?: throw RuntimeException(message("cloudformation.key_not_found", "Properties", logicalName))
+
+        private fun metadata(): YAMLMapping = delegate.getKeyValueByKey("Metadata")?.value as? YAMLMapping
+            ?: throw RuntimeException(message("cloudformation.key_not_found", "Metadata", logicalName))
     }
 
     private class YamlCloudFormationParameter(override val logicalName: String, private val delegate: YAMLMapping) :

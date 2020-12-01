@@ -26,6 +26,8 @@ import software.amazon.awssdk.services.lambda.model.Runtime
 import software.aws.toolkits.core.rules.EnvironmentVariableHelper
 import software.aws.toolkits.jetbrains.core.credentials.MockCredentialsManager
 import software.aws.toolkits.jetbrains.core.executables.ExecutableManager
+import software.aws.toolkits.jetbrains.services.lambda.execution.sam.SamRunningState
+import software.aws.toolkits.jetbrains.services.lambda.sam.SamCommon
 import software.aws.toolkits.jetbrains.services.lambda.sam.SamCommonTestUtils
 import software.aws.toolkits.jetbrains.services.lambda.sam.SamExecutable
 import software.aws.toolkits.jetbrains.utils.rules.HeavyJavaCodeInsightTestFixtureRule
@@ -98,6 +100,94 @@ class LocalLambdaRunConfigurationTest {
 
             assertThat(runConfiguration).isNotNull
             runConfiguration.checkConfiguration()
+        }
+    }
+
+    @Test
+    fun `Valid image configuration`() {
+        setupMinSamImage()
+        val project = projectRule.project
+        preWarmLambdaHandlerValidation(project)
+
+        val template = createImageTemplate()
+        tempDir.newFolder("hello-world")
+        tempDir.newFile("hello-world/Dockerfile3")
+        runInEdtAndWait {
+            val runConfiguration = createTemplateRunConfiguration(
+                project = projectRule.project,
+                isImage = true,
+                credentialsProviderId = mockId,
+                templateFile = template,
+                runtime = Runtime.JAVA11,
+                logicalId = "SomeFunction"
+            )
+
+            assertThat(runConfiguration).isNotNull
+            runConfiguration.checkConfiguration()
+        }
+    }
+
+    @Test
+    fun `Invalid image-based configuration, no runtime set`() {
+        setupMinSamImage()
+        runInEdtAndWait {
+            val runConfiguration = createTemplateRunConfiguration(
+                project = projectRule.project,
+                isImage = true,
+                credentialsProviderId = mockId,
+                templateFile = createImageTemplate(),
+                logicalId = "SomeFunction",
+                runtime = null
+            )
+
+            assertThat(runConfiguration).isNotNull
+            assertThatThrownBy { runConfiguration.checkConfiguration() }
+                .isInstanceOf(RuntimeConfigurationError::class.java)
+                .hasMessage(message("lambda.run_configuration.no_runtime_specified"))
+        }
+    }
+
+    @Test
+    fun `Invalid image-based configuration, unsupported runtime set`() {
+        setupMinSamImage()
+        runInEdtAndWait {
+            val runConfiguration = createTemplateRunConfiguration(
+                project = projectRule.project,
+                isImage = true,
+                credentialsProviderId = mockId,
+                templateFile = createImageTemplate(),
+                logicalId = "SomeFunction",
+                runtime = Runtime.fromValue("NotValid")
+            )
+
+            assertThat(runConfiguration).isNotNull
+            assertThatThrownBy { runConfiguration.checkConfiguration() }
+                .isInstanceOf(RuntimeConfigurationError::class.java)
+                // "null" comes from runtime UNKNOWN_TO_SDK_VERSION we use since we know it will never be supported
+                .hasMessage(message("lambda.run_configuration.unsupported_runtime", "null"))
+        }
+    }
+
+    @Test
+    fun `Invalid configuration, sam version too low for images`() {
+        val invalidSam = SamCommonTestUtils.makeATestSam(SamCommonTestUtils.getVersionAsJson("1.0.0"))
+        preWarmSamVersionCache(invalidSam.toString())
+        ExecutableManager.getInstance().setExecutablePath(SamExecutable(), invalidSam).value
+
+        runInEdtAndWait {
+            val runConfiguration = createTemplateRunConfiguration(
+                project = projectRule.project,
+                isImage = true,
+                input = "TestInput",
+                inputIsFile = false,
+                templateFile = createImageTemplate(),
+                logicalId = "SomeFunction",
+                credentialsProviderId = mockId
+            )
+            assertThat(runConfiguration).isNotNull
+            assertThatThrownBy { runConfiguration.checkConfiguration() }
+                .isInstanceOf(RuntimeConfigurationError::class.java)
+                .hasMessage(message("lambda.image.sam_version_too_low", "1.0.0", SamCommon.minImageVersion))
         }
     }
 
@@ -695,11 +785,11 @@ class LocalLambdaRunConfigurationTest {
 
             runConfiguration.readExternal(element)
 
-            assertThat(runConfiguration.skipPullImage()).isTrue()
-            assertThat(runConfiguration.buildInContainer()).isTrue()
-            assertThat(runConfiguration.dockerNetwork()).isEqualTo("aws-lambda")
-            assertThat(runConfiguration.additionalBuildArgs()).isEqualTo("--debug")
-            assertThat(runConfiguration.additionalLocalArgs()).isEqualTo("--skip-pull-image")
+            assertThat(runConfiguration.skipPullImage).isTrue()
+            assertThat(runConfiguration.buildInContainer).isTrue()
+            assertThat(runConfiguration.dockerNetwork).isEqualTo("aws-lambda")
+            assertThat(runConfiguration.additionalBuildArgs).isEqualTo("--debug")
+            assertThat(runConfiguration.additionalLocalArgs).isEqualTo("--skip-pull-image")
         }
     }
 
@@ -734,5 +824,29 @@ class LocalLambdaRunConfigurationTest {
         ).build()
 
         return runConfiguration.getState(executor, environment)
+    }
+
+    private fun createImageTemplate(): String = tempDir.newFile("template.yaml").also {
+        it.writeText(
+            """
+                Resources:
+                  SomeFunction:
+                    Type: AWS::Serverless::Function
+                    Properties:
+                      Handler: com.example.LambdaHandler::handleRequest
+                      PackageType: Image
+                      Timeout: 900
+                    Metadata:
+                      DockerTag: v1
+                      DockerContext: ./hello-world
+                      Dockerfile: Dockerfile3
+            """.trimIndent()
+        )
+    }.canonicalPath
+
+    private fun setupMinSamImage() {
+        val validSam = SamCommonTestUtils.makeATestSam(SamCommonTestUtils.getVersionAsJson(SamCommon.minImageVersion.toString()))
+        preWarmSamVersionCache(validSam.toString())
+        ExecutableManager.getInstance().setExecutablePath(SamExecutable(), validSam).value
     }
 }

@@ -59,5 +59,10 @@ gradlePlugin {
             id = "toolkit-change-log"
             implementationClass = "software.aws.toolkits.gradle.changelog.ChangeLogPlugin"
         }
+
+        create("generateSdk") {
+            id = "toolkit-generate-sdk"
+            implementationClass = "software.aws.toolkits.gradle.sdk.GenerateSdkPlugin"
+        }
     }
 }

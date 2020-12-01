@@ -9,10 +9,7 @@ import com.intellij.openapi.vfs.VirtualFile
 import com.intellij.psi.PsiElement
 import org.jetbrains.yaml.YAMLFileType
 import org.jetbrains.yaml.YAMLLanguage
-import software.amazon.awssdk.services.lambda.model.Runtime
 import software.aws.toolkits.jetbrains.services.cloudformation.yaml.YamlCloudFormationTemplate
-import software.aws.toolkits.jetbrains.services.lambda.runtimeGroup
-import software.aws.toolkits.jetbrains.services.lambda.validOrNull
 import software.aws.toolkits.resources.message
 import java.io.File
 
@@ -60,6 +57,8 @@ interface Resource : NamedMap {
     val cloudFormationTemplate: CloudFormationTemplate
     fun isType(requestedType: String): Boolean
     fun type(): String?
+    fun getScalarMetadata(key: String): String
+    fun getOptionalScalarMetadata(key: String): String?
 }
 
 interface Parameter : NamedMap {
@@ -133,28 +132,5 @@ fun Project.validateSamTemplateHasResources(virtualFile: VirtualFile): String? {
     CloudFormationTemplateIndex
         .listResources(this, { true }, virtualFile)
         .ifEmpty { return message("serverless.application.deploy.error.no_resources", path) }
-    return null
-}
-
-/**
- * Validate whether the Lambda function runtimes in the specified template are supported to build before deployment to AWS.
- *
- * @param virtualFile SAM template file
- * @return null if they are supported, or an error message otherwise.
- */
-fun Project.validateSamTemplateLambdaRuntimes(virtualFile: VirtualFile): String? {
-    val path = virtualFile.path
-
-    CloudFormationTemplateIndex
-        .listFunctions(this, virtualFile)
-        .forEach { indexedFunction ->
-            val rawRuntime = indexedFunction.runtime() ?: return message("serverless.application.deploy.error.empty_runtime", path)
-            val runtime = Runtime.fromValue(rawRuntime).validOrNull ?: return message("serverless.application.deploy.error.invalid_runtime", rawRuntime, path)
-            val runtimeGroup = runtime.runtimeGroup ?: return message("serverless.application.deploy.error.invalid_runtime_group", runtime.toString(), path)
-
-            if (!runtimeGroup.supportsSamBuild()) {
-                return message("serverless.application.deploy.error.unsupported_runtime_group", runtime.toString(), path)
-            }
-        }
     return null
 }

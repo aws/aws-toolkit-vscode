@@ -12,6 +12,7 @@ import com.intellij.openapi.application.ApplicationManager;
 import com.intellij.openapi.project.Project;
 import com.intellij.ui.AnActionButton;
 import com.intellij.ui.IdeBorderFactory;
+import com.intellij.ui.SimpleListCellRenderer;
 import com.intellij.ui.ToolbarDecorator;
 import com.intellij.ui.components.panels.Wrapper;
 import java.util.Collection;
@@ -21,12 +22,15 @@ import java.util.stream.Collectors;
 import javax.swing.JButton;
 import javax.swing.JCheckBox;
 import javax.swing.JComponent;
+import javax.swing.JLabel;
 import javax.swing.JPanel;
 import javax.swing.JRadioButton;
 import javax.swing.JTextField;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 import software.aws.toolkits.jetbrains.services.cloudformation.Parameter;
+import software.aws.toolkits.jetbrains.services.ecr.resources.EcrResources;
+import software.aws.toolkits.jetbrains.services.ecr.resources.Repository;
 import software.aws.toolkits.jetbrains.services.s3.resources.S3Resources;
 import software.aws.toolkits.jetbrains.ui.ResourceSelector;
 
@@ -44,6 +48,9 @@ public class DeployServerlessApplicationPanel {
     @NotNull JPanel parametersPanel;
     @NotNull JCheckBox useContainer;
     @NotNull JPanel capabilitiesPanel;
+    @NotNull ResourceSelector<Repository> ecrRepo;
+    @NotNull JButton createEcrRepoButton;
+    @NotNull private JLabel ecrLabel;
     final CapabilitiesEnumCheckBoxes capabilities;
     private final Project project;
 
@@ -51,6 +58,7 @@ public class DeployServerlessApplicationPanel {
         this.project = project;
         this.capabilities = new CapabilitiesEnumCheckBoxes();
         this.capabilities.getCheckboxes().forEach(it -> capabilitiesPanel.add(it));
+        showImageOptions(false);
     }
 
     public DeployServerlessApplicationPanel withTemplateParameters(final Collection<Parameter> parameters) {
@@ -88,11 +96,22 @@ public class DeployServerlessApplicationPanel {
         return parameters;
     }
 
+    public void showImageOptions(boolean hasImages) {
+        ecrLabel.setVisible(hasImages);
+        ecrRepo.setVisible(hasImages);
+        createEcrRepoButton.setVisible(hasImages);
+    }
+
     private void createUIComponents() {
         environmentVariablesTable = new EnvVariablesTable();
         stackParameters = new Wrapper();
         stacks = ResourceSelector.builder().resource(ACTIVE_STACKS).awsConnection(project).build();
         s3Bucket = ResourceSelector.builder().resource(S3Resources.listBucketNamesByActiveRegion(project)).awsConnection(project).build();
+        ecrRepo = ResourceSelector.builder()
+                                  .resource(EcrResources.getLIST_REPOS())
+                                  .awsConnection(project)
+                                  .customRenderer(SimpleListCellRenderer.create("", Repository::getRepositoryName))
+                                  .build();
 
         if (!ApplicationManager.getApplication().isUnitTestMode()) {
             JComponent tableComponent = environmentVariablesTable.getComponent();

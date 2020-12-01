@@ -23,7 +23,6 @@ import software.amazon.awssdk.services.lambda.model.UpdateFunctionConfigurationR
 import software.amazon.awssdk.services.lambda.model.UpdateFunctionConfigurationResponse
 import software.aws.toolkits.core.utils.test.aString
 import software.aws.toolkits.jetbrains.core.MockClientManagerRule
-import software.aws.toolkits.jetbrains.services.lambda.upload.steps.PackageLambda.Companion.UploadedCode
 import software.aws.toolkits.jetbrains.utils.execution.steps.ConsoleMessageEmitter
 import software.aws.toolkits.jetbrains.utils.execution.steps.Context
 
@@ -39,7 +38,7 @@ class UpdateLambdaCodeTest {
     @Test
     fun `can update S3 code`() {
         validate(
-            UploadedCode(
+            UploadedS3Code(
                 bucket = aString(),
                 key = aString(),
                 version = null
@@ -50,7 +49,7 @@ class UpdateLambdaCodeTest {
     @Test
     fun `can update S3 code with version`() {
         validate(
-            UploadedCode(
+            UploadedS3Code(
                 bucket = aString(),
                 key = aString(),
                 version = aString()
@@ -61,12 +60,21 @@ class UpdateLambdaCodeTest {
     @Test
     fun `can update the code and handler`() {
         validate(
-            UploadedCode(
+            UploadedS3Code(
                 bucket = aString(),
                 key = aString(),
                 version = null
             ),
             handler = aString()
+        )
+    }
+
+    @Test
+    fun `can update image based code`() {
+        validate(
+            UploadedEcrCode(
+                imageUri = aString()
+            )
         )
     }
 
@@ -92,9 +100,17 @@ class UpdateLambdaCodeTest {
             assertThat(allValues).hasSize(1)
 
             assertThat(firstValue.functionName()).isEqualTo(functionName)
-            assertThat(firstValue.s3Bucket()).isEqualTo(codeLocation.bucket)
-            assertThat(firstValue.s3Key()).isEqualTo(codeLocation.key)
-            assertThat(firstValue.s3ObjectVersion()).isEqualTo(codeLocation.version)
+
+            when (codeLocation) {
+                is UploadedS3Code -> {
+                    assertThat(firstValue.s3Bucket()).isEqualTo(codeLocation.bucket)
+                    assertThat(firstValue.s3Key()).isEqualTo(codeLocation.key)
+                    assertThat(firstValue.s3ObjectVersion()).isEqualTo(codeLocation.version)
+                }
+                is UploadedEcrCode -> {
+                    assertThat(firstValue.imageUri()).isEqualTo(codeLocation.imageUri)
+                }
+            }
         }
 
         if (handler == null) {

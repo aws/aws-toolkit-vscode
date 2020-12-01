@@ -14,6 +14,7 @@ import com.intellij.testFramework.runInEdtAndWait
 import org.assertj.core.api.Assertions.assertThat
 import org.junit.Rule
 import org.junit.Test
+import software.amazon.awssdk.services.lambda.model.PackageType
 import software.amazon.awssdk.services.lambda.model.Runtime
 import software.aws.toolkits.core.region.AwsRegion
 import software.aws.toolkits.jetbrains.core.credentials.MockAwsConnectionManager
@@ -34,6 +35,7 @@ class RemoteLambdaRunConfigurationProducerTest {
         val lambdaLocation = LambdaFunction(
             name = functionName,
             description = null,
+            packageType = PackageType.ZIP,
             arn = "arn",
             lastModified = "someDate",
             handler = "someHandler",

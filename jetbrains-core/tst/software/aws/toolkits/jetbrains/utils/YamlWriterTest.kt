@@ -9,7 +9,7 @@ import org.junit.Test
 class YamlWriterTest {
     @Test
     fun testYamlWriter() {
-        val text = yamlWriter {
+        val text = yaml {
             mapping("Foo") {
                 mapping("Bar") {
                     keyValue("Hello", "World")

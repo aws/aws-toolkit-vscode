@@ -77,8 +77,8 @@ class NodeJsLambdaBuilderTest {
         LambdaBuilderTestUtils.verifyPathMappings(
             module,
             builtLambda,
-            "%PROJECT_ROOT%" to "/",
-            "%BUILD_ROOT%" to "/"
+            "%PROJECT_ROOT%" to "/var/task/",
+            "%BUILD_ROOT%" to "/var/task/"
         )
     }
 
@@ -105,8 +105,8 @@ class NodeJsLambdaBuilderTest {
         LambdaBuilderTestUtils.verifyPathMappings(
             module,
             builtLambda,
-            "%PROJECT_ROOT%/$subPath" to "/",
-            "%BUILD_ROOT%" to "/"
+            "%PROJECT_ROOT%/$subPath" to "/var/task/",
+            "%BUILD_ROOT%" to "/var/task/"
         )
     }
 
@@ -138,8 +138,8 @@ class NodeJsLambdaBuilderTest {
         LambdaBuilderTestUtils.verifyPathMappings(
             projectRule.module,
             builtLambda,
-            "%PROJECT_ROOT%/$subPath" to "/",
-            "%BUILD_ROOT%" to "/"
+            "%PROJECT_ROOT%/$subPath" to "/var/task/",
+            "%BUILD_ROOT%" to "/var/task/"
         )
     }
 
@@ -173,8 +173,8 @@ class NodeJsLambdaBuilderTest {
         LambdaBuilderTestUtils.verifyPathMappings(
             module,
             builtLambda,
-            "%PROJECT_ROOT%" to "/",
-            "%BUILD_ROOT%" to "/"
+            "%PROJECT_ROOT%" to "/var/task/",
+            "%BUILD_ROOT%" to "/var/task"
         )
     }
 
@@ -196,8 +196,8 @@ class NodeJsLambdaBuilderTest {
         LambdaBuilderTestUtils.verifyPathMappings(
             projectRule.module,
             builtLambda,
-            "%PROJECT_ROOT%" to "/",
-            "%BUILD_ROOT%" to "/"
+            "%PROJECT_ROOT%" to "/var/task/",
+            "%BUILD_ROOT%" to "/var/task/"
         )
     }
 }

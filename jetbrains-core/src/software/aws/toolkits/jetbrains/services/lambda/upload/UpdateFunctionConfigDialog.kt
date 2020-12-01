@@ -12,6 +12,7 @@ import com.intellij.openapi.ui.ValidationInfo
 import com.intellij.util.ExceptionUtil
 import org.jetbrains.annotations.TestOnly
 import software.amazon.awssdk.services.lambda.LambdaClient
+import software.amazon.awssdk.services.lambda.model.PackageType
 import software.amazon.awssdk.services.lambda.model.Runtime
 import software.aws.toolkits.jetbrains.core.awsClient
 import software.aws.toolkits.jetbrains.core.help.HelpIds
@@ -34,9 +35,16 @@ class UpdateFunctionConfigDialog(private val project: Project, private val initi
         view.description.text = initialSettings.description
 
         with(view.configSettings) {
-            runtime.selectedItem = initialSettings.runtime
-            handlerPanel.setRuntime(initialSettings.runtime)
-            handlerPanel.handler.text = initialSettings.handler
+            if (initialSettings.packageType == PackageType.IMAGE) {
+                packageImage.isSelected = true
+            } else {
+                packageZip.isSelected
+                runtime.selectedItem = initialSettings.runtime
+                handlerPanel.setRuntime(initialSettings.runtime)
+                initialSettings.handler?.let {
+                    handlerPanel.handler.text = initialSettings.handler
+                }
+            }
             envVars.envVars = initialSettings.envVariables ?: emptyMap()
             timeoutSlider.value = initialSettings.timeout
             memorySlider.value = initialSettings.memorySize
@@ -45,9 +53,9 @@ class UpdateFunctionConfigDialog(private val project: Project, private val initi
         }
     }
 
-    override fun createCenterPanel(): JComponent? = view.content
+    override fun createCenterPanel(): JComponent = view.content
 
-    override fun getPreferredFocusedComponent(): JComponent? = view.configSettings.handlerPanel.handler
+    override fun getPreferredFocusedComponent(): JComponent = view.configSettings.handlerPanel.handler
 
     override fun doValidate(): ValidationInfo? = view.validatePanel()
 
@@ -69,7 +77,7 @@ class UpdateFunctionConfigDialog(private val project: Project, private val initi
 
         ApplicationManager.getApplication().executeOnPooledThread {
             try {
-                lambdaClient.updateFunctionConfiguration((functionDetails))
+                lambdaClient.updateFunctionConfiguration(functionDetails)
 
                 notifyInfo(
                     project = project,
@@ -89,17 +97,18 @@ class UpdateFunctionConfigDialog(private val project: Project, private val initi
 
     private fun viewToFunctionDetails(): FunctionDetails = FunctionDetails(
         name = initialSettings.name,
+        description = view.description.text,
+        packageType = view.configSettings.packageType(),
+        runtime = view.configSettings.runtime.selectedItem as Runtime,
         handler = view.configSettings.handlerPanel.handler.text,
         iamRole = view.configSettings.iamRole.selected()!!,
-        runtime = view.configSettings.runtime.selectedItem as Runtime,
-        description = view.description.text,
         envVars = view.configSettings.envVars.envVars,
         timeout = view.configSettings.timeoutSlider.value,
         memorySize = view.configSettings.memorySlider.value,
         xrayEnabled = view.configSettings.xrayEnabled.isSelected
     )
 
-    override fun getHelpId(): String? = HelpIds.UPDATE_FUNCTION_CONFIGURATION_DIALOG.id
+    override fun getHelpId(): String = HelpIds.UPDATE_FUNCTION_CONFIGURATION_DIALOG.id
 
     @TestOnly
     fun getViewForTestAssertions() = view

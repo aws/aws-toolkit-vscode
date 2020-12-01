@@ -326,6 +326,28 @@ Resources:
         }
     }
 
+    @Test
+    fun serverlessImageFunction() {
+        val template = yamlTemplate(template = makeImageTemplate("DockerFile2"))
+
+        runInEdtAndWait {
+            val samFunction = template.getResourceByName("MyFunction") as SamFunction
+            assertThat(samFunction.codeLocation()).isEqualTo("./hello-world")
+            assertThat(samFunction.dockerFile()).isEqualTo("DockerFile2")
+        }
+    }
+
+    @Test
+    fun serverlessImageFunctionDefaultDockerfile() {
+        val template = yamlTemplate(template = makeImageTemplate(null))
+
+        runInEdtAndWait {
+            val samFunction = template.getResourceByName("MyFunction") as SamFunction
+            assertThat(samFunction.codeLocation()).isEqualTo("./hello-world")
+            assertThat(samFunction.dockerFile()).isNull()
+        }
+    }
+
     private fun yamlTemplate(template: String = TEST_TEMPLATE): CloudFormationTemplate = runInEdtAndGet {
         val file = projectRule.fixture.addFileToProject("template.yaml", template)
         CloudFormationTemplate.parse(projectRule.project, file.virtualFile)
@@ -388,6 +410,20 @@ Resources:
         Type: AWS::Lambda::Function
         Properties:
             Handler: helloworld.App::handleRequest
+            """.trimIndent()
+
+        fun makeImageTemplate(dockerFile: String? = "DockerFile") =
+            """
+Description: "Some description"
+Resources:
+  MyFunction:
+    Type: AWS::Serverless::Function
+    Properties:
+      PackageType: Image
+    Metadata:
+      DockerTag: v1
+      DockerContext: ./hello-world
+      ${if (dockerFile == null) "" else "Dockerfile: $dockerFile"}
             """.trimIndent()
     }
 }

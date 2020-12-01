@@ -47,6 +47,7 @@ class SamDeployDialog(
     private val template: VirtualFile,
     private val parameters: Map<String, String>,
     private val s3Bucket: String,
+    private val ecrRepo: String?,
     private val autoExecute: Boolean,
     private val useContainer: Boolean,
     private val capabilities: List<CreateCapabilities>
@@ -122,7 +123,8 @@ class SamDeployDialog(
                 environmentVariables = createCommonEnvVars(),
                 templatePath = builtTemplateFile,
                 packagedTemplatePath = packagedTemplatePath,
-                s3Bucket = s3Bucket
+                s3Bucket = s3Bucket,
+                ecrRepo = ecrRepo
             )
         }.thenCompose {
             runCommand(message("serverless.application.deploy.step_name.package"), it) { packagedTemplatePath }

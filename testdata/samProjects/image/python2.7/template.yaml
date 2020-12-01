@@ -1,0 +1,10 @@
+Resources:
+  SomeFunction:
+    Type: AWS::Serverless::Function
+    Properties:
+      PackageType: Image
+      Timeout: 900
+    Metadata:
+      DockerTag: v1
+      DockerContext: hello_world
+      Dockerfile: Dockerfile

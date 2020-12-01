@@ -12,15 +12,20 @@ import com.intellij.openapi.ui.ValidationInfo
 import com.intellij.openapi.vfs.VirtualFile
 import com.intellij.util.text.nullize
 import software.amazon.awssdk.services.cloudformation.CloudFormationClient
+import software.amazon.awssdk.services.ecr.EcrClient
+import software.amazon.awssdk.services.lambda.model.PackageType
 import software.amazon.awssdk.services.s3.S3Client
 import software.aws.toolkits.jetbrains.core.Resource
 import software.aws.toolkits.jetbrains.core.awsClient
 import software.aws.toolkits.jetbrains.core.help.HelpIds
 import software.aws.toolkits.jetbrains.core.map
 import software.aws.toolkits.jetbrains.services.cloudformation.CloudFormationTemplate
+import software.aws.toolkits.jetbrains.services.cloudformation.SamFunction
 import software.aws.toolkits.jetbrains.services.cloudformation.describeStack
 import software.aws.toolkits.jetbrains.services.cloudformation.mergeRemoteParameters
 import software.aws.toolkits.jetbrains.services.cloudformation.resources.CloudFormationResources
+import software.aws.toolkits.jetbrains.services.ecr.CreateEcrRepoDialog
+import software.aws.toolkits.jetbrains.services.lambda.sam.SamTemplateUtils
 import software.aws.toolkits.jetbrains.services.s3.CreateS3BucketDialog
 import software.aws.toolkits.jetbrains.settings.DeploySettings
 import software.aws.toolkits.jetbrains.settings.relativeSamPath
@@ -38,9 +43,16 @@ class DeployServerlessApplicationDialog(
     private val settings: DeploySettings? = module?.let { DeploySettings.getInstance(it) }
     private val samPath: String = module?.let { relativeSamPath(it, templateFile) } ?: templateFile.name
 
+    /*
+     * We save before opening this dialog so this should be the most updated view
+     */
+    private val templateFunctions = SamTemplateUtils.findFunctionsFromTemplate(project, templateFile)
+    private val hasImageFunctions: Boolean = templateFunctions.any { (it as? SamFunction)?.packageType() == PackageType.IMAGE }
+
     private val view = DeployServerlessApplicationPanel(project)
-    private val validator = DeploySamApplicationValidator(view)
+    private val validator = DeploySamApplicationValidator(view, hasImageFunctions)
     private val s3Client: S3Client = project.awsClient()
+    private val ecrClient: EcrClient = project.awsClient()
     private val cloudFormationClient: CloudFormationClient = project.awsClient()
     private val templateParameters = CloudFormationTemplate.parse(project, templateFile).parameters().toList()
 
@@ -78,6 +90,9 @@ class DeployServerlessApplicationDialog(
         updateTemplateParameters()
 
         view.s3Bucket.selectedItem = settings?.samBucketName(samPath)
+        settings?.samEcrRepoUri(samPath)?.let { repoPath ->
+            view.ecrRepo.selectedItem { it.repositoryUri == repoPath }
+        }
 
         view.createS3BucketButton.addActionListener {
             val bucketDialog = CreateS3BucketDialog(
@@ -94,20 +109,35 @@ class DeployServerlessApplicationDialog(
             }
         }
 
+        view.createEcrRepoButton.addActionListener {
+            val ecrDialog = CreateEcrRepoDialog(
+                project = project,
+                ecrClient = ecrClient,
+                parent = view.content
+            )
+
+            if (ecrDialog.showAndGet()) {
+                view.ecrRepo.reload(forceFetch = true)
+                view.ecrRepo.selectedItem { it.repositoryName == ecrDialog.repoName }
+            }
+        }
+
         view.requireReview.isSelected = !(settings?.samAutoExecute(samPath) ?: true)
 
         view.useContainer.isSelected = (settings?.samUseContainer(samPath) ?: false)
         view.capabilities.selected = settings?.enabledCapabilities(samPath) ?: CreateCapabilities.values().filter { it.defaultEnabled }
+
+        view.showImageOptions(hasImageFunctions)
     }
 
-    override fun createCenterPanel(): JComponent? = view.content
+    override fun createCenterPanel(): JComponent = view.content
 
-    override fun getPreferredFocusedComponent(): JComponent? =
+    override fun getPreferredFocusedComponent(): JComponent =
         if (settings?.samStackName(samPath) == null) view.newStackName else view.updateStack
 
     override fun doValidate(): ValidationInfo? = validator.validateSettings()
 
-    override fun getHelpId(): String? = HelpIds.DEPLOY_SERVERLESS_APPLICATION_DIALOG.id
+    override fun getHelpId(): String = HelpIds.DEPLOY_SERVERLESS_APPLICATION_DIALOG.id
 
     val stackName: String
         get() = if (view.createStack.isSelected) {
@@ -131,6 +161,13 @@ class DeployServerlessApplicationDialog(
     val bucket: String
         get() = view.s3Bucket.selected()
             ?: throw RuntimeException(message("serverless.application.deploy.validation.s3.bucket.empty"))
+
+    val ecrRepo: String?
+        get() = if (hasImageFunctions) {
+            view.ecrRepo.selected()?.repositoryUri ?: throw RuntimeException("serverless.application.deploy.validation.ecr.repo.empty")
+        } else {
+            null
+        }
 
     val autoExecute: Boolean
         get() = !view.requireReview.isSelected
@@ -178,8 +215,7 @@ class DeployServerlessApplicationDialog(
     }
 }
 
-class DeploySamApplicationValidator(private val view: DeployServerlessApplicationPanel) {
-
+class DeploySamApplicationValidator(private val view: DeployServerlessApplicationPanel, private val hasImageFunctions: Boolean) {
     fun validateSettings(): ValidationInfo? {
         if (view.createStack.isSelected) {
             validateStackName(view.newStackName.text)?.let {
@@ -200,6 +236,14 @@ class DeploySamApplicationValidator(private val view: DeployServerlessApplicatio
         }
         // Has the user selected a bucket
         view.s3Bucket.selected() ?: return view.s3Bucket.validationInfo(message("serverless.application.deploy.validation.s3.bucket.empty"))
+
+        if (hasImageFunctions) {
+            if (view.ecrRepo.isLoading) {
+                return view.ecrRepo.validationInfo(message("serverless.application.deploy.validation.ecr.repo.loading"))
+            }
+
+            view.ecrRepo.selected() ?: return view.ecrRepo.validationInfo(message("serverless.application.deploy.validation.ecr.repo.empty"))
+        }
 
         return null
     }

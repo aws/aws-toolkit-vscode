@@ -14,6 +14,7 @@ import org.jetbrains.annotations.TestOnly
 import software.amazon.awssdk.services.iam.IamClient
 import software.aws.toolkits.core.utils.getLogger
 import software.aws.toolkits.core.utils.warn
+import software.aws.toolkits.jetbrains.services.iam.Iam.createRoleWithPolicy
 import software.aws.toolkits.jetbrains.utils.ui.formatAndSet
 import software.aws.toolkits.resources.message
 import java.awt.Component
@@ -56,12 +57,12 @@ class CreateIamRoleDialog(
 
     override fun doOKAction() {
         if (okAction.isEnabled) {
-            setOKButtonText(message("iam.create.role.in_progress"))
+            setOKButtonText(message("general.create_in_progress"))
             isOKActionEnabled = false
 
             ApplicationManager.getApplication().executeOnPooledThread {
                 try {
-                    createIamRole(roleName(), policyDocument(), assumeRolePolicy())
+                    createIamRole()
                     ApplicationManager.getApplication().invokeLater(
                         {
                             close(OK_EXIT_CODE)
@@ -84,35 +85,13 @@ class CreateIamRoleDialog(
 
     private fun assumeRolePolicy() = view.assumeRolePolicyDocument.text.trim()
 
-    private fun createIamRole(roleName: String, policy: String, assumeRolePolicy: String) {
-        val role = iamClient.createRole {
-            it.roleName(roleName)
-            it.assumeRolePolicyDocument(assumeRolePolicy)
-        }.role()
-
-        try {
-            iamClient.putRolePolicy {
-                it.roleName(roleName)
-                    .policyName(roleName)
-                    .policyDocument(policy)
-            }
-        } catch (exception: Exception) {
-            try {
-                iamClient.deleteRole {
-                    it.roleName(role.roleName())
-                }
-            } catch (deleteException: Exception) {
-                LOG.warn(deleteException) { "Failed to delete IAM role $roleName" }
-            }
-            throw exception
-        }
-
-        iamRole = IamRole(role.arn())
+    private fun createIamRole() {
+        iamRole = iamClient.createRoleWithPolicy(roleName(), assumeRolePolicy(), policyDocument())
     }
 
     @TestOnly
     internal fun createIamRoleForTesting() {
-        createIamRole(roleName(), policyDocument(), assumeRolePolicy())
+        createIamRole()
     }
 
     @TestOnly

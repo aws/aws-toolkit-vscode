@@ -19,8 +19,9 @@ class PackageLambda(
     private val templatePath: Path,
     private val packagedTemplatePath: Path,
     private val logicalId: String,
-    private val s3Bucket: String,
-    private val envVars: Map<String, String>
+    private val envVars: Map<String, String>,
+    private val s3Bucket: String? = null,
+    private val ecrRepo: String? = null
 ) : SamCliStep() {
     override val stepName: String = message("lambda.create.step.package")
 
@@ -28,30 +29,37 @@ class PackageLambda(
         templatePath = templatePath,
         packagedTemplatePath = packagedTemplatePath,
         environmentVariables = envVars,
-        s3Bucket = s3Bucket
+        s3Bucket = s3Bucket,
+        ecrRepo = ecrRepo
     )
 
     override fun handleSuccessResult(output: String, messageEmitter: MessageEmitter, context: Context) {
         // We finished the upload, extract out the uploaded code location
         val mapper = ObjectMapper(YAMLFactory())
         val packagedYaml = packagedTemplatePath.inputStream().use { mapper.readTree(it) }
-        val codeUri = packagedYaml.requiredAt("/Resources/$logicalId/Properties/CodeUri")
+        val uploadedCodeLocation = if (isImageBased()) {
+            UploadedEcrCode(packagedYaml.requiredAt("/Resources/$logicalId/Properties/ImageUri").textValue())
+        } else {
+            // CodeUri: s3://<bucket>>/<key>
+            // or
+            // CodeUri:
+            //  Bucket: mybucket-name
+            //  Key: code.zip
+            //  Version: 121212
 
-        // CodeUri: s3://<bucket>>/<key>
-        // or
-        // CodeUri:
-        //  Bucket: mybucket-name
-        //  Key: code.zip
-        //  Version: 121212
+            val codeUri = packagedYaml.requiredAt("/Resources/$logicalId/Properties/CodeUri")
 
-        val uploadedCodeLocation = when {
-            codeUri.isTextual -> convertCodeUriString(codeUri.textValue())
-            codeUri.isObject -> convertCodeUriObject(codeUri)
-            else -> throw IllegalStateException("Unable to parse codeUri $codeUri")
+            when {
+                codeUri.isTextual -> convertCodeUriString(codeUri.textValue())
+                codeUri.isObject -> convertCodeUriObject(codeUri)
+                else -> throw IllegalStateException("Unable to parse codeUri $codeUri")
+            }
         }
 
         context.putAttribute(UPLOADED_CODE_LOCATION, uploadedCodeLocation)
     }
+
+    private fun isImageBased() = ecrRepo != null
 
     private fun convertCodeUriString(codeUri: String): UploadedCode {
         if (!codeUri.startsWith(S3_PREFIX)) {
@@ -64,22 +72,20 @@ class PackageLambda(
             throw IllegalStateException("$codeUri does not follow the format $S3_PREFIX<bucket>/<key>")
         }
 
-        return UploadedCode(
+        return UploadedS3Code(
             bucket = split.first(),
             key = split.last(),
             version = null
         )
     }
 
-    private fun convertCodeUriObject(codeUri: JsonNode): UploadedCode = UploadedCode(
+    private fun convertCodeUriObject(codeUri: JsonNode): UploadedCode = UploadedS3Code(
         bucket = codeUri.required("Bucket").textValue(),
         key = codeUri.required("Key").textValue(),
         version = codeUri.get("Version").textValue()
     )
 
     companion object {
-        data class UploadedCode(val bucket: String, val key: String, val version: String?)
-
         private const val S3_PREFIX = "s3://"
         val UPLOADED_CODE_LOCATION = AttributeBagKey.create<UploadedCode>("UPLOADED_CODE_LOCATION")
     }

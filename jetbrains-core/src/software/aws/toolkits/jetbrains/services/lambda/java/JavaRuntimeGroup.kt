@@ -20,6 +20,7 @@ import software.aws.toolkits.jetbrains.services.lambda.SdkBasedRuntimeGroup
 class JavaRuntimeGroup : SdkBasedRuntimeGroup() {
     override val id: String = BuiltInRuntimeGroups.Java
     override val languageIds = setOf(JavaLanguage.INSTANCE.id)
+    override val supportsPathMappings: Boolean = false
 
     override val supportedRuntimes: List<RuntimeInfo> = listOf(
         RuntimeInfo(Runtime.JAVA8),

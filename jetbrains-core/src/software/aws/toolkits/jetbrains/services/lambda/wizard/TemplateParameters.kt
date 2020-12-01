@@ -7,5 +7,6 @@ import software.amazon.awssdk.services.lambda.model.Runtime
 
 sealed class TemplateParameters
 
-data class AppBasedTemplate(val name: String, val runtime: Runtime, val appTemplate: String, val dependencyManager: String) : TemplateParameters()
+data class AppBasedZipTemplate(val name: String, val runtime: Runtime, val appTemplate: String, val dependencyManager: String) : TemplateParameters()
+data class AppBasedImageTemplate(val name: String, val baseImage: String, val dependencyManager: String) : TemplateParameters()
 data class LocationBasedTemplate(val location: String) : TemplateParameters()

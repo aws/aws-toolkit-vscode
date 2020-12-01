@@ -8,6 +8,7 @@ import com.intellij.openapi.roots.ModifiableRootModel
 import com.intellij.openapi.ui.TextFieldWithBrowseButton
 import com.intellij.openapi.ui.ValidationInfo
 import software.amazon.awssdk.services.lambda.model.Runtime
+import software.aws.toolkits.jetbrains.services.lambda.RuntimeGroup
 import javax.swing.JComponent
 
 /**
@@ -37,7 +38,7 @@ interface WizardFragment {
     /**
      * Updates the fragment's UI based on changes to the project location (not always available), runtime, or template
      */
-    fun updateUi(projectLocation: TextFieldWithBrowseButton?, runtime: Runtime?, template: SamProjectTemplate?) {}
+    fun updateUi(projectLocation: TextFieldWithBrowseButton?, runtimeGroup: RuntimeGroup?, template: SamProjectTemplate?) {}
 
     /**
      * Runs after the initial template is executed to allow for post-generate activities such as code generation

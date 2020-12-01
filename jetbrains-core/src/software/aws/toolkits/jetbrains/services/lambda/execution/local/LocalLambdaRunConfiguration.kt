@@ -15,31 +15,36 @@ import com.intellij.openapi.options.SettingsEditor
 import com.intellij.openapi.options.SettingsEditorGroup
 import com.intellij.openapi.project.Project
 import com.intellij.openapi.vfs.LocalFileSystem
-import com.intellij.openapi.vfs.VfsUtil
-import com.intellij.psi.NavigatablePsiElement
 import com.intellij.psi.PsiElement
 import com.intellij.psi.util.PsiTreeUtil
 import com.intellij.refactoring.listeners.RefactoringElementAdapter
 import com.intellij.refactoring.listeners.RefactoringElementListener
+import com.intellij.util.PathMappingSettings.PathMapping
 import com.intellij.util.text.SemVer
-import com.intellij.util.text.nullize
 import org.jetbrains.concurrency.isPending
 import software.amazon.awssdk.services.lambda.model.Runtime
-import software.aws.toolkits.core.credentials.ToolkitCredentialsProvider
-import software.aws.toolkits.core.region.AwsRegion
-import software.aws.toolkits.core.utils.getLogger
-import software.aws.toolkits.core.utils.tryOrNull
+import software.aws.toolkits.jetbrains.core.credentials.ConnectionSettings
 import software.aws.toolkits.jetbrains.core.executables.ExecutableInstance
 import software.aws.toolkits.jetbrains.core.executables.ExecutableManager
 import software.aws.toolkits.jetbrains.core.executables.getExecutableIfPresent
+import software.aws.toolkits.jetbrains.services.cloudformation.SamFunction
 import software.aws.toolkits.jetbrains.services.lambda.Lambda.findPsiElementsForHandler
 import software.aws.toolkits.jetbrains.services.lambda.LambdaHandlerResolver
-import software.aws.toolkits.jetbrains.services.lambda.RuntimeGroup
 import software.aws.toolkits.jetbrains.services.lambda.execution.LambdaRunConfigurationBase
 import software.aws.toolkits.jetbrains.services.lambda.execution.LambdaRunConfigurationType
+import software.aws.toolkits.jetbrains.services.lambda.execution.resolveLambdaFromTemplate
+import software.aws.toolkits.jetbrains.services.lambda.execution.sam.HandlerRunSettings
+import software.aws.toolkits.jetbrains.services.lambda.execution.sam.ImageTemplateRunSettings
+import software.aws.toolkits.jetbrains.services.lambda.execution.sam.LocalLambdaRunSettings
+import software.aws.toolkits.jetbrains.services.lambda.execution.sam.SamRunningState
+import software.aws.toolkits.jetbrains.services.lambda.execution.sam.SamSettingsEditor
+import software.aws.toolkits.jetbrains.services.lambda.execution.sam.SamSettingsRunConfiguration
+import software.aws.toolkits.jetbrains.services.lambda.execution.sam.TemplateRunSettings
+import software.aws.toolkits.jetbrains.services.lambda.execution.validateSamTemplateDetails
+import software.aws.toolkits.jetbrains.services.lambda.execution.validateSupportedRuntime
 import software.aws.toolkits.jetbrains.services.lambda.runtimeGroup
+import software.aws.toolkits.jetbrains.services.lambda.sam.SamCommon
 import software.aws.toolkits.jetbrains.services.lambda.sam.SamExecutable
-import software.aws.toolkits.jetbrains.services.lambda.sam.SamOptions
 import software.aws.toolkits.jetbrains.services.lambda.sam.SamTemplateUtils
 import software.aws.toolkits.jetbrains.services.lambda.validOrNull
 import software.aws.toolkits.jetbrains.services.lambda.validation.LambdaHandlerEvaluationListener
@@ -47,23 +52,20 @@ import software.aws.toolkits.jetbrains.services.lambda.validation.LambdaHandlerV
 import software.aws.toolkits.jetbrains.ui.connection.AwsConnectionSettingsEditor
 import software.aws.toolkits.jetbrains.ui.connection.addAwsConnectionEditor
 import software.aws.toolkits.resources.message
-import java.nio.file.Path
+import java.nio.file.Paths
 
 class LocalLambdaRunConfigurationFactory(configuration: LambdaRunConfigurationType) : ConfigurationFactory(configuration) {
     override fun createTemplateConfiguration(project: Project) = LocalLambdaRunConfiguration(project, this)
     override fun getName(): String = "Local"
-    // Overwitten because it was deprecated in 2020.1
+
+    // Overwritten because it was deprecated in 2020.1 FIX_WHEN_MIN_IS_201 remove this message, it is only here for 2019.3
     override fun getId(): String = name
 }
 
 class LocalLambdaRunConfiguration(project: Project, factory: ConfigurationFactory) :
     LambdaRunConfigurationBase<LocalLambdaOptions>(project, factory, "SAM CLI"),
-    RefactoringListenerProvider {
-
-    companion object {
-        private val logger = getLogger<LocalLambdaRunConfiguration>()
-    }
-
+    RefactoringListenerProvider,
+    SamSettingsRunConfiguration {
     private val messageBus = project.messageBus
 
     override val serializableOptions = LocalLambdaOptions()
@@ -77,23 +79,35 @@ class LocalLambdaRunConfiguration(project: Project, factory: ConfigurationFactor
     }
 
     override fun checkConfiguration() {
-        val (handler, runtime) = resolveLambdaInfo(project = project, functionOptions = serializableOptions.functionOptions)
-        checkSamVersion(runtime)
         resolveRegion()
         resolveCredentials()
-        checkLambdaHandler(handler, runtime)
         checkInput()
+        if (isImage) {
+            validateSamTemplateDetails(templateFile(), logicalId())
+            checkImageSamVersion()
+            runtimeString().validateSupportedRuntime()
+        } else {
+            val (handler, runtime) = resolveLambdaInfo(project = project, functionOptions = serializableOptions.functionOptions)
+            checkSamVersion(runtime)
+            // If we aren't using a template we need to be able to find the handler. If it's a template, we don't care.
+            if (!serializableOptions.functionOptions.useTemplate) {
+                checkLambdaHandler(handler, runtime)
+            }
+        }
+    }
+
+    private fun checkImageSamVersion() {
+        val executable = getSam()
+
+        SemVer.parseFromText(executable.version)?.let { semVer ->
+            if (semVer < SamCommon.minImageVersion) {
+                throw RuntimeConfigurationError(message("lambda.image.sam_version_too_low", semVer, SamCommon.minImageVersion))
+            }
+        }
     }
 
     private fun checkSamVersion(runtime: Runtime) {
-        val executable = ExecutableManager.getInstance().getExecutableIfPresent<SamExecutable>().let {
-            when (it) {
-                is ExecutableInstance.Executable -> it
-                is ExecutableInstance.InvalidExecutable, is ExecutableInstance.UnresolvedExecutable -> throw RuntimeConfigurationError(
-                    (it as? ExecutableInstance.BadExecutable)?.validationError
-                )
-            }
-        }
+        val executable = getSam()
 
         runtime.runtimeGroup?.let { runtimeGroup ->
             SemVer.parseFromText(executable.version)?.let { semVer ->
@@ -104,6 +118,15 @@ class LocalLambdaRunConfiguration(project: Project, factory: ConfigurationFactor
                     throw RuntimeConfigurationError(e.message)
                 }
             }
+        }
+    }
+
+    private fun getSam() = ExecutableManager.getInstance().getExecutableIfPresent<SamExecutable>().let {
+        when (it) {
+            is ExecutableInstance.Executable -> it
+            is ExecutableInstance.InvalidExecutable, is ExecutableInstance.UnresolvedExecutable -> throw RuntimeConfigurationError(
+                (it as? ExecutableInstance.BadExecutable)?.validationError
+            )
         }
     }
 
@@ -128,26 +151,61 @@ class LocalLambdaRunConfiguration(project: Project, factory: ConfigurationFactor
 
     override fun getState(executor: Executor, environment: ExecutionEnvironment): SamRunningState {
         try {
-            val (handler, runtime, templateDetails) = resolveLambdaInfo(project = project, functionOptions = serializableOptions.functionOptions)
-            val psiElement = handlerPsiElement(handler, runtime)
-                ?: throw RuntimeConfigurationError(message("lambda.run_configuration.handler_not_found", handler))
+            val options: LocalLambdaRunSettings = if (serializableOptions.functionOptions.useTemplate) {
+                if (serializableOptions.functionOptions.isImage) {
+                    val (templateFile, logicalName) = validateSamTemplateDetails(templateFile(), logicalId())
+                    val function = SamTemplateUtils
+                        .findImageFunctionsFromTemplate(project, templateFile)
+                        .first { it.logicalName == logicalId() } as? SamFunction
+                        ?: throw IllegalStateException("Image functions must be SAM functions")
 
-            val samRunSettings = LocalLambdaRunSettings(
-                runtime,
-                handler,
-                resolveInput(),
-                timeout(),
-                memorySize(),
-                environmentVariables(),
-                resolveCredentials(),
-                resolveRegion(),
-                psiElement,
-                templateDetails,
-                serializableOptions.samOptions.copy(),
-                serializableOptions.debugHost
-            )
-
-            return SamRunningState(environment, samRunSettings)
+                    // TODO FIX_WHEN_MIN_IS_202 use templateFile.toNioPath()
+                    val dockerFile = function.dockerFile() ?: "Dockerfile"
+                    val dockerFilePath = Paths.get(templateFile.path).parent.resolve(function.codeLocation()).resolve(dockerFile)
+                    ImageTemplateRunSettings(
+                        templateFile,
+                        runtimeString().validateSupportedRuntime(),
+                        logicalName,
+                        LocalFileSystem.getInstance().refreshAndFindFileByIoFile(dockerFilePath.toFile())
+                            ?: throw IllegalStateException("Unable to get virtual file for path $dockerFilePath"),
+                        pathMappings,
+                        ConnectionSettings(resolveCredentials(), resolveRegion()),
+                        serializableOptions.samOptions.copy(),
+                        serializableOptions.debugHost,
+                        resolveInput()
+                    )
+                } else {
+                    val (templateFile, logicalId) = validateSamTemplateDetails(templateFile(), logicalId())
+                    val (handler, runtime) = resolveLambdaInfo(project = project, functionOptions = serializableOptions.functionOptions)
+                    TemplateRunSettings(
+                        templateFile,
+                        runtime,
+                        handler,
+                        logicalId,
+                        ConnectionSettings(resolveCredentials(), resolveRegion()),
+                        serializableOptions.samOptions.copy(),
+                        serializableOptions.debugHost,
+                        resolveInput()
+                    )
+                }
+            } else {
+                val (handler, runtime) = resolveLambdaInfo(project = project, functionOptions = serializableOptions.functionOptions)
+                val psiElement = handlerPsiElement(handler, runtime)
+                    ?: throw RuntimeConfigurationError(message("lambda.run_configuration.handler_not_found", handler))
+                HandlerRunSettings(
+                    runtime,
+                    handler,
+                    timeout(),
+                    memorySize(),
+                    psiElement,
+                    environmentVariables(),
+                    ConnectionSettings(resolveCredentials(), resolveRegion()),
+                    serializableOptions.samOptions.copy(),
+                    serializableOptions.debugHost,
+                    resolveInput()
+                )
+            }
+            return SamRunningState(environment, options)
         } catch (e: Exception) {
             throw ExecutionException(e.message, e)
         }
@@ -180,7 +238,7 @@ class LocalLambdaRunConfiguration(project: Project, factory: ConfigurationFactor
         return null
     }
 
-    fun useTemplate(templateLocation: String?, logicalId: String?) {
+    fun useTemplate(templateLocation: String?, logicalId: String?, runtime: String? = null) {
         val functionOptions = serializableOptions.functionOptions
         functionOptions.useTemplate = true
 
@@ -188,7 +246,7 @@ class LocalLambdaRunConfiguration(project: Project, factory: ConfigurationFactor
         functionOptions.logicalId = logicalId
 
         functionOptions.handler = null
-        functionOptions.runtime = null
+        functionOptions.runtime = runtime
     }
 
     fun useHandler(runtime: Runtime?, handler: String?) {
@@ -212,6 +270,19 @@ class LocalLambdaRunConfiguration(project: Project, factory: ConfigurationFactor
 
     fun runtime(): Runtime? = Runtime.fromValue(serializableOptions.functionOptions.runtime)?.validOrNull
 
+    /*
+     * Return raw runtime string to be validated. Used for validating Image run config
+     */
+    fun runtimeString(): String? = serializableOptions.functionOptions.runtime
+
+    /*
+     * This is only to be called for Image functions, otherwise we do not store the runtime for ZIP based template functions
+     * This is one of the things that needs to be cleaned up when we migrate the underlying representation
+     */
+    fun runtime(runtime: Runtime?) {
+        serializableOptions.functionOptions.runtime = runtime?.toString()
+    }
+
     fun timeout() = serializableOptions.functionOptions.timeout
 
     fun timeout(timeout: Int) {
@@ -230,41 +301,58 @@ class LocalLambdaRunConfiguration(project: Project, factory: ConfigurationFactor
         serializableOptions.functionOptions.environmentVariables = envVars
     }
 
-    fun dockerNetwork(): String? = serializableOptions.samOptions.dockerNetwork
+    /*
+     * This is only needed in `getState` during runtime. Although it is persisted, we don't actually
+     * care about reading the value back off of disk.
+     * TODO when we have a template registry remove this
+     */
+    var isImage: Boolean
+        get() = serializableOptions.functionOptions.isImage
+        set(value) {
+            serializableOptions.functionOptions.isImage = value
+        }
 
-    fun dockerNetwork(network: String?) {
-        serializableOptions.samOptions.dockerNetwork = network
-    }
+    var pathMappings: List<PathMapping>
+        get() = serializableOptions.functionOptions.pathMappings.map { PathMapping(it.local, it.remote) }
+        set(list) {
+            serializableOptions.functionOptions.pathMappings = list.map { PersistedPathMapping(it.localRoot, it.remoteRoot) }
+        }
 
-    fun debugHost(): String = serializableOptions.debugHost
+    override var dockerNetwork: String?
+        get() = serializableOptions.samOptions.dockerNetwork
+        set(network) {
+            serializableOptions.samOptions.dockerNetwork = network
+        }
 
-    fun debugHost(host: String) {
-        serializableOptions.debugHost = host
-    }
+    override var debugHost: String
+        get() = serializableOptions.debugHost
+        set(host) {
+            serializableOptions.debugHost = host
+        }
 
-    fun skipPullImage(): Boolean = serializableOptions.samOptions.skipImagePull
+    override var skipPullImage: Boolean
+        get() = serializableOptions.samOptions.skipImagePull
+        set(skip) {
+            serializableOptions.samOptions.skipImagePull = skip
+        }
 
-    fun skipPullImage(skip: Boolean) {
-        serializableOptions.samOptions.skipImagePull = skip
-    }
+    override var buildInContainer: Boolean
+        get() = serializableOptions.samOptions.buildInContainer
+        set(useContainer) {
+            serializableOptions.samOptions.buildInContainer = useContainer
+        }
 
-    fun buildInContainer(): Boolean = serializableOptions.samOptions.buildInContainer
+    override var additionalBuildArgs: String?
+        get() = serializableOptions.samOptions.additionalBuildArgs
+        set(args) {
+            serializableOptions.samOptions.additionalBuildArgs = args
+        }
 
-    fun buildInContainer(useContainer: Boolean) {
-        serializableOptions.samOptions.buildInContainer = useContainer
-    }
-
-    fun additionalBuildArgs(): String? = serializableOptions.samOptions.additionalBuildArgs
-
-    fun additionalBuildArgs(args: String?) {
-        serializableOptions.samOptions.additionalBuildArgs = args
-    }
-
-    fun additionalLocalArgs(): String? = serializableOptions.samOptions.additionalLocalArgs
-
-    fun additionalLocalArgs(args: String?) {
-        serializableOptions.samOptions.additionalLocalArgs = args
-    }
+    override var additionalLocalArgs: String?
+        get() = serializableOptions.samOptions.additionalLocalArgs
+        set(args) {
+            serializableOptions.samOptions.additionalLocalArgs = args
+        }
 
     override fun suggestedName(): String? {
         val subName = serializableOptions.functionOptions.logicalId ?: handlerDisplayName()
@@ -279,58 +367,13 @@ class LocalLambdaRunConfiguration(project: Project, factory: ConfigurationFactor
             ?.handlerDisplayName(handler) ?: handler
     }
 
-    private fun resolveLambdaFromTemplate(project: Project, templatePath: String?, functionName: String?): Triple<String, Runtime, SamTemplateDetails?> {
-        templatePath?.takeUnless { it.isEmpty() }
-            ?: throw RuntimeConfigurationError(message("lambda.run_configuration.sam.no_template_specified"))
-
-        functionName ?: throw RuntimeConfigurationError(message("lambda.run_configuration.sam.no_function_specified"))
-
-        val templateFile = LocalFileSystem.getInstance().refreshAndFindFileByPath(templatePath)
-            ?: throw RuntimeConfigurationError(message("lambda.run_configuration.sam.template_file_not_found"))
-
-        val function = SamTemplateUtils.findFunctionsFromTemplate(
-            project,
-            templateFile
-        ).find { it.logicalName == functionName }
-            ?: throw RuntimeConfigurationError(
-                message(
-                    "lambda.run_configuration.sam.no_such_function",
-                    functionName,
-                    templateFile.path
-                )
-            )
-
-        val handler = tryOrNull { function.handler() }
-            ?: throw RuntimeConfigurationError(message("lambda.run_configuration.no_handler_specified"))
-
-        val runtimeString = try {
-            function.runtime()
-        } catch (e: Exception) {
-            throw RuntimeConfigurationError(message("cloudformation.missing_property", "Runtime", functionName))
-        }
-
-        val runtime = runtimeString.validateSupportedRuntime()
-
-        return Triple(handler, runtime, SamTemplateDetails(VfsUtil.virtualToIoFile(templateFile).toPath(), functionName))
-    }
-
-    private fun resolveLambdaFromHandler(handler: String?, runtime: String?): Triple<String, Runtime, SamTemplateDetails?> {
+    private fun resolveLambdaFromHandler(handler: String?, runtime: String?): Pair<String, Runtime> {
         handler ?: throw RuntimeConfigurationError(message("lambda.run_configuration.no_handler_specified"))
 
-        return Triple(handler, runtime.validateSupportedRuntime(), null)
+        return Pair(handler, runtime.validateSupportedRuntime())
     }
 
-    private fun String?.validateSupportedRuntime(): Runtime {
-        val runtimeString = this.nullize() ?: throw RuntimeConfigurationError(message("lambda.run_configuration.no_runtime_specified"))
-        val runtime = Runtime.fromValue(runtimeString)
-        if (runtime.runtimeGroup == null) {
-            throw RuntimeConfigurationError(message("lambda.run_configuration.unsupported_runtime", runtimeString))
-        }
-
-        return runtime
-    }
-
-    private fun resolveLambdaInfo(project: Project, functionOptions: FunctionOptions): Triple<String, Runtime, SamTemplateDetails?> =
+    private fun resolveLambdaInfo(project: Project, functionOptions: FunctionOptions): Pair<String, Runtime> =
         if (functionOptions.useTemplate) {
             resolveLambdaFromTemplate(
                 project = project,
@@ -354,23 +397,3 @@ class LocalLambdaRunConfiguration(project: Project, factory: ConfigurationFactor
         null
     }
 }
-
-data class LocalLambdaRunSettings(
-    val runtime: Runtime,
-    val handler: String,
-    val input: String,
-    val timeout: Int,
-    val memorySize: Int,
-    val environmentVariables: Map<String, String>,
-    val credentials: ToolkitCredentialsProvider,
-    val region: AwsRegion,
-    val handlerElement: NavigatablePsiElement,
-    val templateDetails: SamTemplateDetails?,
-    val samOptions: SamOptions,
-    val debugHost: String
-) {
-    val runtimeGroup: RuntimeGroup = runtime.runtimeGroup
-        ?: throw IllegalStateException("Attempting to run SAM for unsupported runtime $runtime")
-}
-
-data class SamTemplateDetails(val templateFile: Path, val logicalName: String)

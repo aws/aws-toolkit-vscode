@@ -4,7 +4,10 @@
 package software.aws.toolkits.jetbrains.core.region
 
 import com.intellij.openapi.components.ServiceManager
+import com.intellij.openapi.components.service
 import com.intellij.testFramework.ApplicationRule
+import org.junit.rules.ExternalResource
+import software.amazon.awssdk.regions.Region
 import software.aws.toolkits.core.region.AwsPartition
 import software.aws.toolkits.core.region.AwsRegion
 import software.aws.toolkits.core.region.Service
@@ -13,6 +16,7 @@ import software.aws.toolkits.core.region.aRegionId
 import software.aws.toolkits.core.region.anAwsRegion
 import software.aws.toolkits.core.utils.test.aString
 
+@Deprecated("Use MockRegionProviderRule")
 class MockRegionProvider : ToolkitRegionProvider() {
     private val overrideRegions: MutableMap<String, AwsRegion> = mutableMapOf()
     private val services: MutableMap<String, Service> = mutableMapOf()
@@ -78,5 +82,34 @@ class MockRegionProvider : ToolkitRegionProvider() {
             }
             throw IllegalStateException("Failed to generate a unique region ID")
         }
+    }
+}
+
+@Suppress("DEPRECATION")
+class MockRegionProviderRule : ExternalResource() {
+    private lateinit var regionManager: MockRegionProvider
+
+    override fun before() {
+        regionManager = service<ToolkitRegionProvider>() as MockRegionProvider
+    }
+
+    fun addRegion(region: AwsRegion): AwsRegion = regionManager.addRegion(region)
+    fun addRegion(sdkRegion: Region): AwsRegion = regionManager.addRegion(
+        AwsRegion(
+            id = sdkRegion.id(),
+            name = sdkRegion.toString(),
+            partitionId = sdkRegion.metadata().partition().id()
+        )
+    )
+
+    fun addService(serviceName: String, service: Service) = regionManager.addService(serviceName, service)
+
+    override fun after() {
+        reset()
+    }
+
+    fun reset() {
+        @Suppress("DEPRECATION")
+        regionManager.reset()
     }
 }

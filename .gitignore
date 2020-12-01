@@ -10,3 +10,5 @@ Build/
 venv/
 guitest.log
 stale_outputs_checked
+# sam build directory
+.aws-sam/

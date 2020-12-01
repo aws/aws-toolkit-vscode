@@ -12,7 +12,8 @@ import software.aws.toolkits.jetbrains.core.executables.ExecutableCommon
 import software.aws.toolkits.jetbrains.core.executables.ExecutableType
 import software.aws.toolkits.jetbrains.core.executables.Validatable
 import software.aws.toolkits.jetbrains.services.lambda.deploy.CreateCapabilities
-import software.aws.toolkits.jetbrains.services.lambda.wizard.AppBasedTemplate
+import software.aws.toolkits.jetbrains.services.lambda.wizard.AppBasedImageTemplate
+import software.aws.toolkits.jetbrains.services.lambda.wizard.AppBasedZipTemplate
 import software.aws.toolkits.jetbrains.services.lambda.wizard.LocationBasedTemplate
 import software.aws.toolkits.jetbrains.services.lambda.wizard.TemplateParameters
 import software.aws.toolkits.jetbrains.settings.ExecutableDetector
@@ -113,7 +114,8 @@ fun GeneralCommandLine.samPackageCommand(
     environmentVariables: Map<String, String>,
     templatePath: Path,
     packagedTemplatePath: Path,
-    s3Bucket: String
+    s3Bucket: String?,
+    ecrRepo: String?
 ) = this.apply {
     withEnvironment(environmentVariables)
     withWorkDirectory(templatePath.parent.toAbsolutePath().toString())
@@ -123,8 +125,14 @@ fun GeneralCommandLine.samPackageCommand(
     addParameter(templatePath.toString())
     addParameter("--output-template-file")
     addParameter(packagedTemplatePath.toString())
-    addParameter("--s3-bucket")
-    addParameter(s3Bucket)
+    s3Bucket?.let {
+        addParameter("--s3-bucket")
+        addParameter(s3Bucket)
+    }
+    ecrRepo?.let {
+        addParameter("--image-repository")
+        addParameter(ecrRepo)
+    }
 }
 
 fun GeneralCommandLine.samDeployCommand(
@@ -178,7 +186,7 @@ private fun escapeParameter(param: String): String {
 fun GeneralCommandLine.samInitCommand(
     outputDir: Path,
     parameters: TemplateParameters,
-    extraContent: Map<String, String>
+    extraContext: Map<String, String>
 ) = this.apply {
     addParameter("init")
     addParameter("--no-input")
@@ -186,7 +194,7 @@ fun GeneralCommandLine.samInitCommand(
     addParameter(outputDir.toAbsolutePath().toString())
 
     when (parameters) {
-        is AppBasedTemplate -> {
+        is AppBasedZipTemplate -> {
             addParameter("--name")
             addParameter(parameters.name)
             addParameter("--runtime")
@@ -196,14 +204,24 @@ fun GeneralCommandLine.samInitCommand(
             addParameter("--app-template")
             addParameter(parameters.appTemplate)
         }
+        is AppBasedImageTemplate -> {
+            addParameter("--package-type")
+            addParameter("Image")
+            addParameter("--name")
+            addParameter(parameters.name)
+            addParameter("--base-image")
+            addParameter(parameters.baseImage)
+            addParameter("--dependency-manager")
+            addParameter(parameters.dependencyManager)
+        }
         is LocationBasedTemplate -> {
             addParameter("--location")
             addParameter(parameters.location)
         }
     }
 
-    if (extraContent.isNotEmpty()) {
-        val extraContextAsJson = jacksonObjectMapper().writeValueAsString(extraContent)
+    if (extraContext.isNotEmpty()) {
+        val extraContextAsJson = jacksonObjectMapper().writeValueAsString(extraContext)
 
         addParameter("--extra-context")
         addParameter(extraContextAsJson)

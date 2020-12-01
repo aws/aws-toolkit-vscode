@@ -38,6 +38,18 @@ class UpdateLambdaSettings private constructor(private val arn: String) {
             stateService.state.configs.computeIfAbsent(arn) { UpdateConfig() }.bucketName = value
         }
 
+    var ecrRepo: String?
+        get() = stateService.state.configs[arn]?.ecrRepo
+        set(value) {
+            stateService.state.configs.computeIfAbsent(arn) { UpdateConfig() }.ecrRepo = value
+        }
+
+    var dockerfile: String?
+        get() = stateService.state.configs[arn]?.dockerfile
+        set(value) {
+            stateService.state.configs.computeIfAbsent(arn) { UpdateConfig() }.dockerfile = value
+        }
+
     companion object {
         fun getInstance(arn: String) = UpdateLambdaSettings(arn)
     }
@@ -49,5 +61,7 @@ data class UpdateLambda(
 
 data class UpdateConfig(
     var bucketName: String? = null,
+    var ecrRepo: String? = null,
+    var dockerfile: String? = null,
     var useContainer: Boolean = false
 )

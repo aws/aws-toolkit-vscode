@@ -20,10 +20,12 @@ import software.aws.toolkits.core.region.AwsRegion
 import software.aws.toolkits.core.rules.S3TemporaryBucketRule
 import software.aws.toolkits.jetbrains.core.credentials.MockAwsConnectionManager
 import software.aws.toolkits.jetbrains.core.credentials.runUnderRealCredentials
+import software.aws.toolkits.jetbrains.utils.assumeImageSupport
 import software.aws.toolkits.jetbrains.utils.rules.HeavyJavaCodeInsightTestFixtureRule
 import software.aws.toolkits.jetbrains.utils.setSamExecutableFromEnvironment
 import java.io.File
 import java.nio.file.Paths
+import java.time.Year
 import java.util.UUID
 import java.util.concurrent.TimeUnit
 
@@ -129,6 +131,13 @@ class SamDeployTest {
         }
     }
 
+    @Test
+    fun deployImageBasedSamApp() {
+        assumeImageSupport()
+        // TODO write this test once we have cfn support (or blow up if we take too long :D)
+        assertThat(Year.now().value).isEqualTo(2020)
+    }
+
     private fun setUpProject(templateFilePath: String? = null): VirtualFile {
         projectRule.fixture.addFileToProject(
             "hello_world/app.py",
@@ -181,6 +190,7 @@ class SamDeployTest {
                     templateFile,
                     parameters,
                     bucketRule.createBucket(stackName),
+                    null,
                     false,
                     true,
                     CreateCapabilities.values().toList()

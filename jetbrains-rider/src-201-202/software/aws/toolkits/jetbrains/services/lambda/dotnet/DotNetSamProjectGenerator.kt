@@ -172,8 +172,7 @@ class DotNetSamProjectGenerator(
                 samProjectBuilder.runSamInit(
                     context.project,
                     projectNameField.text,
-                    samSettings.template,
-                    samSettings.runtime,
+                    samSettings,
                     null,
                     outDirVf
                 )

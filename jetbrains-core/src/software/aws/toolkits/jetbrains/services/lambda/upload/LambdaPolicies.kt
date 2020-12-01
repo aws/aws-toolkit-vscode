@@ -8,7 +8,7 @@ import org.intellij.lang.annotations.Language
 const val LAMBDA_PRINCIPAL = "lambda.amazonaws.com"
 
 @Language("JSON")
-val DEFAULT_ASSUME_ROLE_POLICY =
+val DEFAULT_LAMBDA_ASSUME_ROLE_POLICY =
     """
     {
       "Version": "2012-10-17",

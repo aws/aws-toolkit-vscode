@@ -27,7 +27,6 @@ import software.aws.toolkits.jetbrains.services.cloudformation.describeStack
 import software.aws.toolkits.jetbrains.services.cloudformation.executeChangeSetAndWait
 import software.aws.toolkits.jetbrains.services.cloudformation.stack.StackWindowManager
 import software.aws.toolkits.jetbrains.services.cloudformation.validateSamTemplateHasResources
-import software.aws.toolkits.jetbrains.services.cloudformation.validateSamTemplateLambdaRuntimes
 import software.aws.toolkits.jetbrains.services.lambda.LambdaHandlerResolver
 import software.aws.toolkits.jetbrains.services.lambda.deploy.DeployServerlessApplicationDialog
 import software.aws.toolkits.jetbrains.services.lambda.deploy.SamDeployDialog
@@ -117,6 +116,7 @@ class DeployServerlessApplicationAction : AnAction(
             templateFile,
             stackDialog.parameters,
             stackDialog.bucket,
+            stackDialog.ecrRepo,
             stackDialog.autoExecute,
             stackDialog.useContainer,
             stackDialog.capabilities
@@ -142,12 +142,12 @@ class DeployServerlessApplicationAction : AnAction(
                     message("cloudformation.execute_change_set.success", stackName),
                     project
                 )
-                SamTelemetry.deploy(project, Result.Succeeded)
+                SamTelemetry.deploy(project = project, result = Result.Succeeded)
                 // Since we could update anything, do a full refresh of the resource cache and explorer
                 project.refreshAwsTree()
             } catch (e: Exception) {
                 e.notifyError(message("cloudformation.execute_change_set.failed", stackName), project)
-                SamTelemetry.deploy(project, Result.Failed)
+                SamTelemetry.deploy(project = project, result = Result.Failed)
             }
         }
     }
@@ -196,6 +196,7 @@ class DeployServerlessApplicationAction : AnAction(
                 DeploySettings.getInstance(module)?.apply {
                     setSamStackName(samPath, stackDialog.stackName)
                     setSamBucketName(samPath, stackDialog.bucket)
+                    setSamEcrRepoUri(samPath, stackDialog.ecrRepo)
                     setSamAutoExecute(samPath, stackDialog.autoExecute)
                     setSamUseContainer(samPath, stackDialog.useContainer)
                     setEnabledCapabilities(samPath, stackDialog.capabilities)
@@ -206,7 +207,7 @@ class DeployServerlessApplicationAction : AnAction(
 
     private fun validateTemplateFile(project: Project, templateFile: VirtualFile): String? =
         try {
-            project.validateSamTemplateHasResources(templateFile) ?: project.validateSamTemplateLambdaRuntimes(templateFile)
+            project.validateSamTemplateHasResources(templateFile)
         } catch (e: Exception) {
             message("serverless.application.deploy.error.bad_parse", templateFile.path, e)
         }

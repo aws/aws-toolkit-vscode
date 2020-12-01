@@ -8,9 +8,10 @@ import software.amazon.awssdk.services.s3.S3Client
 import software.amazon.awssdk.services.s3.model.NoSuchBucketException
 import software.aws.toolkits.core.s3.deleteBucketAndContents
 import software.aws.toolkits.core.utils.RuleUtils
-import software.aws.toolkits.core.utils.Waiters.waitUntilBlocking
 
-class S3TemporaryBucketRule(private val s3Client: S3Client) : ExternalResource() {
+class S3TemporaryBucketRule(private val s3ClientSupplier: () -> S3Client) : ExternalResource() {
+    constructor(s3Client: S3Client) : this({ s3Client })
+
     private val buckets = mutableListOf<String>()
 
     /**
@@ -18,12 +19,12 @@ class S3TemporaryBucketRule(private val s3Client: S3Client) : ExternalResource()
      */
     fun createBucket(prefix: String = RuleUtils.prefixFromCallingClass()): String {
         val bucketName: String = RuleUtils.randomName(prefix).toLowerCase()
-        s3Client.createBucket { it.bucket(bucketName) }
+        val client = s3ClientSupplier()
+
+        client.createBucket { it.bucket(bucketName) }
 
         // Wait for bucket to be ready
-        waitUntilBlocking(exceptionsToIgnore = setOf(NoSuchBucketException::class)) {
-            s3Client.headBucket { it.bucket(bucketName) }
-        }
+        client.waiter().waitUntilBucketExists { it.bucket(bucketName) }
 
         buckets.add(bucketName)
 
@@ -38,7 +39,7 @@ class S3TemporaryBucketRule(private val s3Client: S3Client) : ExternalResource()
     }
 
     private fun deleteBucketAndContents(bucket: String): Exception? = try {
-        s3Client.deleteBucketAndContents(bucket)
+        s3ClientSupplier().deleteBucketAndContents(bucket)
         null
     } catch (e: Exception) {
         when (e) {

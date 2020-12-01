@@ -9,29 +9,50 @@ import software.aws.toolkits.jetbrains.core.credentials.AwsConnectionManager
 import software.aws.toolkits.jetbrains.core.credentials.toEnvironmentVariables
 import software.aws.toolkits.jetbrains.services.lambda.sam.SamOptions
 import software.aws.toolkits.jetbrains.services.lambda.sam.SamTemplateUtils
-import software.aws.toolkits.jetbrains.services.lambda.upload.CodeDetails
 import software.aws.toolkits.jetbrains.services.lambda.upload.FunctionDetails
+import software.aws.toolkits.jetbrains.services.lambda.upload.ImageBasedCode
+import software.aws.toolkits.jetbrains.services.lambda.upload.ZipBasedCode
 import software.aws.toolkits.jetbrains.utils.execution.steps.StepWorkflow
 import java.nio.file.Files
 import java.nio.file.Path
 
-fun createLambdaWorkflow(
+fun createLambdaWorkflowForZip(
     project: Project,
-    codeDetails: CodeDetails,
+    functionDetails: FunctionDetails,
+    codeDetails: ZipBasedCode,
     buildDir: Path,
     buildEnvVars: Map<String, String>,
     codeStorageLocation: String,
-    samOptions: SamOptions,
-    functionDetails: FunctionDetails
+    samOptions: SamOptions
 ): StepWorkflow {
-    val (dummyTemplate, dummyLogicalId) = createTemporaryTemplate(buildDir, codeDetails)
+    val (dummyTemplate, dummyLogicalId) = createTemporaryZipTemplate(buildDir, codeDetails)
     val packagedTemplate = buildDir.resolve("packaged-temp-template.yaml")
     val builtTemplate = buildDir.resolve("template.yaml")
     val envVars = createAwsEnvVars(project)
 
     return StepWorkflow(
         BuildLambda(dummyTemplate, buildDir, buildEnvVars, samOptions),
-        PackageLambda(builtTemplate, packagedTemplate, dummyLogicalId, codeStorageLocation, envVars),
+        PackageLambda(builtTemplate, packagedTemplate, dummyLogicalId, envVars, s3Bucket = codeStorageLocation),
+        CreateLambda(project.awsClient(), functionDetails)
+    )
+}
+
+fun createLambdaWorkflowForImage(
+    project: Project,
+    functionDetails: FunctionDetails,
+    codeDetails: ImageBasedCode,
+    codeStorageLocation: String,
+    samOptions: SamOptions
+): StepWorkflow {
+    val (dummyTemplate, dummyLogicalId) = createTemporaryImageTemplate(codeDetails)
+    val buildDir = codeDetails.dockerfile.resolveSibling(".aws-sam").resolve("build")
+    val builtTemplate = buildDir.resolve("template.yaml")
+    val packagedTemplate = buildDir.resolve("packaged-temp-template.yaml")
+    val envVars = createAwsEnvVars(project)
+
+    return StepWorkflow(
+        BuildLambda(dummyTemplate, buildDir, emptyMap(), samOptions),
+        PackageLambda(builtTemplate, packagedTemplate, dummyLogicalId, envVars, ecrRepo = codeStorageLocation),
         CreateLambda(project.awsClient(), functionDetails)
     )
 }
@@ -41,25 +62,45 @@ fun createLambdaWorkflow(
  *
  * @param updatedHandler If provided, we will call update function configuration with the provided handler.
  */
-fun updateLambdaCodeWorkflow(
+fun updateLambdaCodeWorkflowForZip(
     project: Project,
     functionName: String,
-    codeDetails: CodeDetails,
+    codeDetails: ZipBasedCode,
     buildDir: Path,
     buildEnvVars: Map<String, String>,
     codeStorageLocation: String,
     samOptions: SamOptions,
     updatedHandler: String?
 ): StepWorkflow {
-    val (dummyTemplate, dummyLogicalId) = createTemporaryTemplate(buildDir, codeDetails)
-    val packagedTemplate = buildDir.resolve("packaged-temp-template.yaml")
+    val (dummyTemplate, dummyLogicalId) = createTemporaryZipTemplate(buildDir, codeDetails)
     val builtTemplate = buildDir.resolve("template.yaml")
+    val packagedTemplate = buildDir.resolve("packaged-temp-template.yaml")
     val envVars = createAwsEnvVars(project)
 
     return StepWorkflow(
         BuildLambda(dummyTemplate, buildDir, buildEnvVars, samOptions),
-        PackageLambda(builtTemplate, packagedTemplate, dummyLogicalId, codeStorageLocation, envVars),
+        PackageLambda(builtTemplate, packagedTemplate, dummyLogicalId, envVars, s3Bucket = codeStorageLocation),
         UpdateLambdaCode(project.awsClient(), functionName, updatedHandler)
+    )
+}
+
+fun updateLambdaCodeWorkflowForImage(
+    project: Project,
+    functionName: String,
+    codeDetails: ImageBasedCode,
+    codeStorageLocation: String,
+    samOptions: SamOptions
+): StepWorkflow {
+    val (dummyTemplate, dummyLogicalId) = createTemporaryImageTemplate(codeDetails)
+    val buildDir = codeDetails.dockerfile.resolveSibling(".aws-sam").resolve("build")
+    val builtTemplate = buildDir.resolve("template.yaml")
+    val packagedTemplate = buildDir.resolve("packaged-temp-template.yaml")
+    val envVars = createAwsEnvVars(project)
+
+    return StepWorkflow(
+        BuildLambda(dummyTemplate, buildDir, emptyMap(), samOptions),
+        PackageLambda(builtTemplate, packagedTemplate, dummyLogicalId, envVars, ecrRepo = codeStorageLocation),
+        UpdateLambdaCode(project.awsClient(), functionName, updatedHandler = null)
     )
 }
 
@@ -70,7 +111,7 @@ private fun createAwsEnvVars(project: Project): Map<String, String> {
     return connectSettings.credentials.resolveCredentials().toEnvironmentVariables() + connectSettings.region.toEnvironmentVariables()
 }
 
-private fun createTemporaryTemplate(buildDir: Path, codeDetails: CodeDetails): Pair<Path, String> {
+private fun createTemporaryZipTemplate(buildDir: Path, codeDetails: ZipBasedCode): Pair<Path, String> {
     Files.createDirectories(buildDir)
 
     val dummyTemplate = Files.createTempFile("temp-template", ".yaml")
@@ -82,6 +123,19 @@ private fun createTemporaryTemplate(buildDir: Path, codeDetails: CodeDetails): P
         runtime = codeDetails.runtime,
         handler = codeDetails.handler,
         codeUri = codeDetails.baseDir.toString()
+    )
+
+    return Pair(dummyTemplate, dummyLogicalId)
+}
+
+private fun createTemporaryImageTemplate(codeDetails: ImageBasedCode): Pair<Path, String> {
+    val dummyTemplate = Files.createTempFile("temp-template", ".yaml")
+    val dummyLogicalId = "Function"
+
+    SamTemplateUtils.writeDummySamImageTemplate(
+        tempFile = dummyTemplate,
+        logicalId = dummyLogicalId,
+        dockerfile = codeDetails.dockerfile
     )
 
     return Pair(dummyTemplate, dummyLogicalId)

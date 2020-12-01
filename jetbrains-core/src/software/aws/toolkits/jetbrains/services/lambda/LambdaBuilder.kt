@@ -12,6 +12,7 @@ import com.intellij.openapi.application.ReadAction
 import com.intellij.openapi.extensions.ExtensionPointName
 import com.intellij.openapi.module.Module
 import com.intellij.openapi.project.rootManager
+import com.intellij.openapi.vfs.VirtualFile
 import com.intellij.psi.PsiElement
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.future.await
@@ -21,6 +22,7 @@ import software.aws.toolkits.core.utils.exists
 import software.aws.toolkits.jetbrains.core.executables.ExecutableInstance
 import software.aws.toolkits.jetbrains.core.executables.ExecutableManager
 import software.aws.toolkits.jetbrains.core.executables.getExecutable
+import software.aws.toolkits.jetbrains.core.utils.buildList
 import software.aws.toolkits.jetbrains.services.PathMapping
 import software.aws.toolkits.jetbrains.services.lambda.sam.SamExecutable
 import software.aws.toolkits.jetbrains.services.lambda.sam.SamOptions
@@ -110,15 +112,13 @@ abstract class LambdaBuilder {
         )
 
         val codeLocation = ReadAction.compute<String, Throwable> {
-            functions.find { it.logicalName == logicalId }
-                ?.codeLocation()
-                ?: throw RuntimeConfigurationError(
-                    message(
-                        "lambda.run_configuration.sam.no_such_function",
-                        logicalId,
-                        templateLocation
-                    )
+            functions.find { it.logicalName == logicalId }?.codeLocation() ?: throw RuntimeConfigurationError(
+                message(
+                    "lambda.run_configuration.sam.no_such_function",
+                    logicalId,
+                    templateLocation
                 )
+            )
         }
 
         val buildDir = getBuildDirectory(module)
@@ -126,10 +126,12 @@ abstract class LambdaBuilder {
         return runBlocking(Dispatchers.IO) {
             val commandLine = constructSamBuildCommand(module, templateLocation, logicalId, samOptions, buildDir)
 
-            val pathMappings = listOf(
-                PathMapping(templateLocation.parent.resolve(codeLocation).toString(), "/"),
-                PathMapping(buildDir.resolve(logicalId).toString(), "/")
-            )
+            val pathMappings = buildList<PathMapping> {
+                add(PathMapping(buildDir.resolve(logicalId).normalize().toString(), TASK_PATH))
+                templateLocation.parent?.let { parent ->
+                    add(PathMapping(parent.resolve(codeLocation).normalize().toString(), TASK_PATH))
+                }
+            }
 
             val processHandler = ColoredProcessHandler(commandLine)
 
@@ -151,7 +153,12 @@ abstract class LambdaBuilder {
 
     open fun additionalEnvironmentVariables(module: Module, samOptions: SamOptions): Map<String, String> = emptyMap()
 
-    companion object : RuntimeGroupExtensionPointObject<LambdaBuilder>(ExtensionPointName("aws.toolkit.lambda.builder"))
+    companion object : RuntimeGroupExtensionPointObject<LambdaBuilder>(ExtensionPointName("aws.toolkit.lambda.builder")) {
+        /*
+         * The default path to the task. The default is consistent across both Zip and Image based functions.
+         */
+        private const val TASK_PATH = "/var/task"
+    }
 }
 
 /**
@@ -167,11 +174,10 @@ data class BuiltLambda(
     val mappings: List<PathMapping> = emptyList()
 )
 
-// TODO Use these in this class
 sealed class BuildLambdaRequest
 
 data class BuildLambdaFromTemplate(
-    val templateLocation: Path,
+    val templateLocation: VirtualFile,
     val logicalId: String,
     val samOptions: SamOptions
 ) : BuildLambdaRequest()

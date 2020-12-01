@@ -8,14 +8,17 @@ import com.intellij.openapi.module.ModuleUtil
 import com.intellij.openapi.project.Project
 import com.intellij.openapi.ui.DialogWrapper
 import com.intellij.openapi.ui.ValidationInfo
+import com.intellij.util.text.nullize
 import org.jetbrains.annotations.TestOnly
+import software.amazon.awssdk.services.lambda.model.PackageType
 import software.aws.toolkits.jetbrains.core.help.HelpIds
 import software.aws.toolkits.jetbrains.services.lambda.Lambda.findPsiElementsForHandler
 import software.aws.toolkits.jetbrains.services.lambda.LambdaBuilder
 import software.aws.toolkits.jetbrains.services.lambda.LambdaFunction
 import software.aws.toolkits.jetbrains.services.lambda.runtimeGroup
 import software.aws.toolkits.jetbrains.services.lambda.sam.SamOptions
-import software.aws.toolkits.jetbrains.services.lambda.upload.steps.updateLambdaCodeWorkflow
+import software.aws.toolkits.jetbrains.services.lambda.upload.steps.updateLambdaCodeWorkflowForImage
+import software.aws.toolkits.jetbrains.services.lambda.upload.steps.updateLambdaCodeWorkflowForZip
 import software.aws.toolkits.jetbrains.settings.UpdateLambdaSettings
 import software.aws.toolkits.jetbrains.utils.execution.steps.StepExecutor
 import software.aws.toolkits.jetbrains.utils.notifyError
@@ -23,10 +26,11 @@ import software.aws.toolkits.jetbrains.utils.notifyInfo
 import software.aws.toolkits.resources.message
 import software.aws.toolkits.telemetry.LambdaTelemetry
 import software.aws.toolkits.telemetry.Result
+import java.nio.file.Paths
 import javax.swing.JComponent
 
 class UpdateFunctionCodeDialog(private val project: Project, private val initialSettings: LambdaFunction) : DialogWrapper(project) {
-    private val view = UpdateFunctionCodePanel(project)
+    private val view = UpdateFunctionCodePanel(project, initialSettings.packageType)
     private val updateSettings = UpdateLambdaSettings.getInstance(initialSettings.arn)
 
     init {
@@ -34,7 +38,9 @@ class UpdateFunctionCodeDialog(private val project: Project, private val initial
         title = message("lambda.upload.updateCode.title", initialSettings.name)
         setOKButtonText(message("general.update_button"))
 
-        view.handlerPanel.handler.text = initialSettings.handler
+        initialSettings.handler?.let {
+            view.handlerPanel.handler.text = it
+        }
         view.handlerPanel.setRuntime(initialSettings.runtime)
 
         loadSettings()
@@ -62,64 +68,99 @@ class UpdateFunctionCodeDialog(private val project: Project, private val initial
         if (!okAction.isEnabled) {
             return
         }
-        FileDocumentManager.getInstance().saveAllDocuments()
 
-        val runtime = initialSettings.runtime
-        val handler = view.handlerPanel.handler.text
+        val workflow = createWorkflow()
+
+        workflow.onSuccess = {
+            notifyInfo(
+                project = project,
+                title = message("lambda.service_name"),
+                content = message("lambda.function.code_updated.notification", initialSettings.name)
+            )
+            LambdaTelemetry.editFunction(project, update = false, result = Result.Succeeded)
+        }
+
+        workflow.onError = {
+            it.notifyError(project = project, title = message("lambda.service_name"))
+            LambdaTelemetry.editFunction(project, update = false, result = Result.Failed)
+        }
+
+        workflow.startExecution()
+
+        close(OK_EXIT_CODE)
+    }
+
+    @TestOnly
+    fun createWorkflow(): StepExecutor {
+        FileDocumentManager.getInstance().saveAllDocuments()
 
         val samOptions = SamOptions(
             buildInContainer = view.buildSettings.buildInContainerCheckbox.isSelected
         )
 
-        // TODO: Move this so we can share it with CreateFunctionDialog, but don't move it lower since passing PsiElement lower needs to go away since
-        // it is causing customer complaints. We need to prompt for baseDir and try to infer it if we can but only as a default value...
-        val element = findPsiElementsForHandler(project, runtime, handler).first()
-        val module = ModuleUtil.findModuleForPsiElement(element) ?: throw IllegalStateException("Failed to locate module for $element")
-        val lambdaBuilder = initialSettings.runtime.runtimeGroup?.let { LambdaBuilder.getInstanceOrNull(it) }
-            ?: throw IllegalStateException("LambdaBuilder for ${initialSettings.runtime} not found")
+        val workflow = when (val packageType = initialSettings.packageType) {
+            PackageType.ZIP -> {
+                val runtime = initialSettings.runtime ?: throw IllegalStateException("Runtime is missing when package type is Zip")
+                val handler = view.handlerPanel.handler.text
 
-        val codeDetails = CodeDetails(
-            baseDir = lambdaBuilder.handlerBaseDirectory(module, element),
-            handler = handler,
-            runtime = runtime
-        )
+                // TODO: Move this so we can share it with CreateFunctionDialog, but don't move it lower since passing PsiElement lower needs to go away since
+                // it is causing customer complaints. We need to prompt for baseDir and try to infer it if we can but only as a default value...
+                val element = findPsiElementsForHandler(project, runtime, handler).first()
+                val module = ModuleUtil.findModuleForPsiElement(element) ?: throw IllegalStateException("Failed to locate module for $element")
+                val lambdaBuilder = initialSettings.runtime.runtimeGroup?.let { LambdaBuilder.getInstanceOrNull(it) }
+                    ?: throw IllegalStateException("LambdaBuilder for ${initialSettings.runtime} not found")
 
-        val s3Bucket = view.codeStorage.sourceBucket.selected() as String
-        val workflow = updateLambdaCodeWorkflow(
-            project = project,
-            functionName = initialSettings.name,
-            codeDetails = codeDetails,
-            buildDir = lambdaBuilder.getBuildDirectory(module), // TODO ... how do we kill module here? Can we use a temp dir?
-            buildEnvVars = lambdaBuilder.additionalEnvironmentVariables(module, samOptions),
-            codeStorageLocation = s3Bucket,
-            samOptions = samOptions,
-            updatedHandler = handler.takeIf { it != initialSettings.handler }
-        )
-
-        StepExecutor(project, message("lambda.workflow.update_code.name"), workflow, initialSettings.name).startExecution(
-            onSuccess = {
-                notifyInfo(
-                    project = project,
-                    title = message("lambda.service_name"),
-                    content = message("lambda.function.code_updated.notification", initialSettings.name)
+                val codeDetails = ZipBasedCode(
+                    baseDir = lambdaBuilder.handlerBaseDirectory(module, element),
+                    handler = handler,
+                    runtime = runtime
                 )
-                LambdaTelemetry.editFunction(project, update = false, result = Result.Succeeded)
-            },
-            onError = {
-                it.notifyError(project = project, title = message("lambda.service_name"))
-                LambdaTelemetry.editFunction(project, update = false, result = Result.Failed)
+
+                updateLambdaCodeWorkflowForZip(
+                    project = project,
+                    functionName = initialSettings.name,
+                    codeDetails = codeDetails,
+                    buildDir = lambdaBuilder.getBuildDirectory(module),
+                    buildEnvVars = lambdaBuilder.additionalEnvironmentVariables(module, samOptions),
+                    codeStorageLocation = view.codeStorage.codeLocation(),
+                    samOptions = samOptions,
+                    updatedHandler = handler.takeIf { it != initialSettings.handler }
+                )
             }
-        )
-        close(OK_EXIT_CODE)
+            PackageType.IMAGE -> {
+                val codeDetails = ImageBasedCode(
+                    dockerfile = Paths.get(view.dockerFile.text)
+                )
+
+                updateLambdaCodeWorkflowForImage(
+                    project = project,
+                    functionName = initialSettings.name,
+                    codeDetails = codeDetails,
+                    codeStorageLocation = view.codeStorage.codeLocation(),
+                    samOptions = samOptions
+                )
+            }
+            else -> throw UnsupportedOperationException("$packageType is not supported")
+        }
+
+        return StepExecutor(project, message("lambda.workflow.update_code.name"), workflow, initialSettings.name)
     }
 
     private fun loadSettings() {
         view.codeStorage.sourceBucket.selectedItem = updateSettings.bucketName
+        updateSettings.ecrRepo?.let { savedArn ->
+            view.codeStorage.ecrRepo.selectedItem { it.repositoryArn == savedArn }
+        }
+        updateSettings.dockerfile?.let {
+            view.dockerFile.text = it
+        }
         view.buildSettings.buildInContainerCheckbox.isSelected = updateSettings.useContainer ?: false
     }
 
     private fun saveSettings() {
-        updateSettings.bucketName = view.codeStorage.sourceBucket.selectedItem?.toString()
+        updateSettings.bucketName = view.codeStorage.sourceBucket.selected()
+        updateSettings.ecrRepo = view.codeStorage.ecrRepo.selected()?.repositoryArn
+        updateSettings.dockerfile = view.dockerFile.text.nullize()
         updateSettings.useContainer = view.buildSettings.buildInContainerCheckbox.isSelected
     }
 

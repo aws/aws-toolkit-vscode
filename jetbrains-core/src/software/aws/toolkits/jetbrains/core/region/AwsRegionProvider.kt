@@ -19,13 +19,13 @@ import software.aws.toolkits.core.utils.logWhenNull
 import software.aws.toolkits.core.utils.tryOrNull
 import software.aws.toolkits.jetbrains.core.RemoteResourceResolverProvider
 
-class AwsRegionProvider constructor(remoteResourceResolverProvider: RemoteResourceResolverProvider) : ToolkitRegionProvider() {
+class AwsRegionProvider : ToolkitRegionProvider() {
     private val regionChain by lazy {
         // Querying the instance metadata is expensive due to high timeouts and retries
         AwsRegionProviderChain(SystemSettingsRegionProvider(), AwsProfileRegionProvider())
     }
     private val partitions: Map<String, PartitionData> by lazy {
-        val inputStream = remoteResourceResolverProvider.get().resolve(ServiceEndpointResource).toCompletableFuture().get()?.inputStream()
+        val inputStream = RemoteResourceResolverProvider.getInstance().get().resolve(ServiceEndpointResource).toCompletableFuture().get()?.inputStream()
         val partitions = inputStream?.use { PartitionParser.parse(it) }?.partitions ?: return@lazy emptyMap<String, PartitionData>()
 
         partitions.asSequence().associateBy { it.partition }.mapValues {

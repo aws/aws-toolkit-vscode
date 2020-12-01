@@ -22,10 +22,9 @@ import javax.swing.JComponent
 class CreateEcrRepoDialog(
     private val project: Project,
     private val ecrClient: EcrClient,
-    parent: Component? = null,
-    initialRepoPolicy: String = ""
+    parent: Component? = null
 ) : DialogWrapper(project, parent, false, IdeModalityType.PROJECT) {
-    private val view = CreateRepoPanel(project, initialRepoPolicy)
+    private val view = CreateRepoPanel(project)
 
     var repoName
         get() = view.repoName.text.trim()
@@ -34,18 +33,9 @@ class CreateEcrRepoDialog(
             view.repoName.text = value
         }
 
-    var repoPolicy
-        get() = view.policy.text.trim()
-        @TestOnly
-        set(value) {
-            view.policy.text = value
-        }
-
     init {
         title = message("ecr.create.repo.title")
         setOKButtonText(message("general.create_button"))
-
-        repoPolicy = initialRepoPolicy
 
         init()
     }
@@ -89,12 +79,6 @@ class CreateEcrRepoDialog(
 
     fun createRepo() {
         ecrClient.createRepository { it.repositoryName(repoName) }
-        repoPolicy.takeIf { it.isNotEmpty() }?.let {
-            ecrClient.setRepositoryPolicy {
-                it.repositoryName(repoName)
-                it.policyText(repoPolicy)
-            }
-        }
     }
 
     @TestOnly

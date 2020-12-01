@@ -16,15 +16,18 @@ import software.amazon.awssdk.http.SdkHttpResponse
 import software.amazon.awssdk.services.lambda.LambdaClient
 import software.amazon.awssdk.services.lambda.model.CreateFunctionRequest
 import software.amazon.awssdk.services.lambda.model.CreateFunctionResponse
+import software.amazon.awssdk.services.lambda.model.GetFunctionConfigurationRequest
+import software.amazon.awssdk.services.lambda.model.GetFunctionConfigurationResponse
 import software.amazon.awssdk.services.lambda.model.GetFunctionRequest
 import software.amazon.awssdk.services.lambda.model.GetFunctionResponse
+import software.amazon.awssdk.services.lambda.model.PackageType
 import software.amazon.awssdk.services.lambda.model.Runtime
+import software.amazon.awssdk.services.lambda.model.State
 import software.aws.toolkits.core.utils.test.aString
 import software.aws.toolkits.jetbrains.core.MockClientManagerRule
 import software.aws.toolkits.jetbrains.services.iam.IamRole
 import software.aws.toolkits.jetbrains.services.lambda.upload.FunctionDetails
 import software.aws.toolkits.jetbrains.services.lambda.upload.steps.CreateLambda.Companion.FUNCTION_ARN
-import software.aws.toolkits.jetbrains.services.lambda.upload.steps.PackageLambda.Companion.UploadedCode
 import software.aws.toolkits.jetbrains.utils.execution.steps.ConsoleMessageEmitter
 import software.aws.toolkits.jetbrains.utils.execution.steps.Context
 
@@ -40,17 +43,18 @@ class CreateLambdaTest {
     @Test
     fun `can update S3 code`() {
         validate(
-            UploadedCode(
+            UploadedS3Code(
                 bucket = aString(),
                 key = aString(),
                 version = null
             ),
             FunctionDetails(
                 name = aString(),
+                description = aString(),
+                packageType = PackageType.ZIP,
+                runtime = Runtime.knownValues().random(),
                 handler = aString(),
                 iamRole = IamRole(aString()),
-                runtime = Runtime.knownValues().random(),
-                description = aString(),
                 envVars = mapOf(aString() to aString()),
                 timeout = 300,
                 memorySize = 1024,
@@ -62,17 +66,18 @@ class CreateLambdaTest {
     @Test
     fun `can update S3 code with version`() {
         validate(
-            UploadedCode(
+            UploadedS3Code(
                 bucket = aString(),
                 key = aString(),
                 version = aString()
             ),
             FunctionDetails(
                 name = aString(),
+                description = aString(),
+                packageType = PackageType.ZIP,
+                runtime = Runtime.knownValues().random(),
                 handler = aString(),
                 iamRole = IamRole(aString()),
-                runtime = Runtime.knownValues().random(),
-                description = aString(),
                 envVars = mapOf(aString() to aString()),
                 timeout = 300,
                 memorySize = 1024,
@@ -84,17 +89,39 @@ class CreateLambdaTest {
     @Test
     fun `can update the code and handler`() {
         validate(
-            UploadedCode(
+            UploadedS3Code(
                 bucket = aString(),
                 key = aString(),
                 version = null
             ),
             FunctionDetails(
                 name = aString(),
+                description = aString(),
+                packageType = PackageType.ZIP,
+                runtime = Runtime.knownValues().random(),
                 handler = aString(),
                 iamRole = IamRole(aString()),
-                runtime = Runtime.knownValues().random(),
+                envVars = mapOf(aString() to aString()),
+                timeout = 300,
+                memorySize = 1024,
+                xrayEnabled = true
+            )
+        )
+    }
+
+    @Test
+    fun `can update the code from ecr`() {
+        validate(
+            UploadedEcrCode(
+                imageUri = aString()
+            ),
+            FunctionDetails(
+                name = aString(),
                 description = aString(),
+                packageType = PackageType.IMAGE,
+                runtime = null,
+                handler = null,
+                iamRole = IamRole(aString()),
                 envVars = mapOf(aString() to aString()),
                 timeout = 300,
                 memorySize = 1024,
@@ -112,6 +139,12 @@ class CreateLambdaTest {
                 sdkHttpResponse(SdkHttpResponse.builder().statusCode(200).build()) // waiters validate the status code
                 build()
             }
+            on { getFunctionConfiguration(any<GetFunctionConfigurationRequest>()) } doReturn with(GetFunctionConfigurationResponse.builder()) {
+                functionArn("arn of ${details.name}")
+                state(State.ACTIVE)
+                sdkHttpResponse(SdkHttpResponse.builder().statusCode(200).build()) // waiters validate the status code
+                build()
+            }
         }
 
         val context = Context(projectRule.project)
@@ -123,7 +156,6 @@ class CreateLambdaTest {
         with(requestCaptor) {
             assertThat(allValues).hasSize(1)
 
-            assertThat(allValues).hasSize(1)
             assertThat(firstValue.functionName()).isEqualTo(details.name)
             assertThat(firstValue.description()).isEqualTo(details.description)
             assertThat(firstValue.environment().variables()).isEqualTo(details.envVars)
@@ -134,9 +166,16 @@ class CreateLambdaTest {
             assertThat(firstValue.timeout()).isEqualTo(details.timeout)
             assertThat(firstValue.tracingConfig().mode()).isEqualTo(details.tracingMode)
 
-            assertThat(firstValue.code().s3Bucket()).isEqualTo(codeLocation.bucket)
-            assertThat(firstValue.code().s3Key()).isEqualTo(codeLocation.key)
-            assertThat(firstValue.code().s3ObjectVersion()).isEqualTo(codeLocation.version)
+            when (codeLocation) {
+                is UploadedS3Code -> {
+                    assertThat(firstValue.code().s3Bucket()).isEqualTo(codeLocation.bucket)
+                    assertThat(firstValue.code().s3Key()).isEqualTo(codeLocation.key)
+                    assertThat(firstValue.code().s3ObjectVersion()).isEqualTo(codeLocation.version)
+                }
+                is UploadedEcrCode -> {
+                    assertThat(firstValue.code().imageUri()).isEqualTo(codeLocation.imageUri)
+                }
+            }
         }
 
         assertThat(context.getAttribute(FUNCTION_ARN)).isEqualTo("arn of ${details.name}")

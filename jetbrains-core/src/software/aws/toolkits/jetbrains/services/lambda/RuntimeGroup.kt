@@ -42,6 +42,7 @@ data class RuntimeInfo(val runtime: Runtime, val minimumVersion: SemVer = SamExe
 abstract class RuntimeGroup {
     abstract val id: String
     abstract val languageIds: Set<String>
+    abstract val supportsPathMappings: Boolean
 
     val runtimes: List<Runtime> by lazy {
         supportedRuntimes.map { it.runtime }
@@ -69,7 +70,7 @@ abstract class RuntimeGroup {
         @JvmStatic
         fun find(predicate: (RuntimeGroup) -> Boolean): RuntimeGroup? = registeredRuntimeGroups().firstOrNull(predicate)
 
-        fun getById(id: String): RuntimeGroup = find { it.id == id } ?: throw IllegalStateException("No RuntimeGroup with $id is registered")
+        fun getById(id: String?): RuntimeGroup = id?.let { find { it.id == id } } ?: throw IllegalStateException("No RuntimeGroup with id '$id' is registered")
 
         fun determineRuntime(project: Project?): Runtime? = project?.let { _ ->
             registeredRuntimeGroups().asSequence().mapNotNull { it.determineRuntime(project) }.firstOrNull()

@@ -70,11 +70,13 @@ class IndexedFunction : IndexedResource {
 
     internal constructor(type: String, indexedProperties: Map<String, String>) : super(type, indexedProperties)
 
-    internal constructor(resource: Resource) : super(resource, listOf("Runtime", "Handler"))
+    internal constructor(resource: Resource) : super(resource, listOf("Runtime", "Handler", "PackageType"))
 
     fun runtime(): String? = indexedProperties["Runtime"]
 
     fun handler(): String? = indexedProperties["Handler"]
+
+    fun packageType(): String? = indexedProperties["PackageType"]
 
     override fun toString(): String = indexedProperties.toString()
 }

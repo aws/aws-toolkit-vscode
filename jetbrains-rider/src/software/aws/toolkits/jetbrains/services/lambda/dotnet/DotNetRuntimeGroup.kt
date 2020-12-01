@@ -15,12 +15,12 @@ import software.aws.toolkits.jetbrains.utils.DotNetRuntimeUtils
 
 class DotNetRuntimeGroup : SdkBasedRuntimeGroup() {
     override val id: String = BuiltInRuntimeGroups.Dotnet
+    override val supportsPathMappings: Boolean = false
 
     override val languageIds: Set<String> = setOf(
         CSharpLanguage.id,
         VbLanguage.id
     )
-
     override val supportedRuntimes: List<RuntimeInfo> = listOf(
         RuntimeInfo(Runtime.DOTNETCORE2_1),
         RuntimeInfo(Runtime.DOTNETCORE3_1)

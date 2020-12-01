@@ -8,6 +8,7 @@ import com.intellij.testFramework.runInEdtAndGet
 import org.assertj.core.api.Assertions.assertThat
 import org.junit.Rule
 import org.junit.Test
+import software.amazon.awssdk.services.lambda.model.PackageType
 import software.amazon.awssdk.services.lambda.model.Runtime
 import software.amazon.awssdk.services.s3.model.Bucket
 import software.aws.toolkits.core.utils.RuleUtils
@@ -93,6 +94,7 @@ class UpdateFunctionCodeDialogTest {
     private fun aLambdaFunction() = LambdaFunction(
         name = aString(),
         description = aString(),
+        packageType = PackageType.ZIP,
         arn = aString(),
         lastModified = "",
         handler = aString(),
