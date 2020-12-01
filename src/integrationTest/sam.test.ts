@@ -182,7 +182,7 @@ describe('SAM Integration Tests', async function () {
                 })
 
                 it('creates a new SAM Application (happy path)', async function () {
-                    await createSamApplication(testDir)
+                    await createZipSamApplication(testDir)
 
                     // Check for readme file
                     const readmePath = path.join(testDir, samApplicationName, 'README.md')
@@ -206,7 +206,7 @@ describe('SAM Integration Tests', async function () {
                     testDir = await mkdtemp(path.join(runtimeTestRoot, 'samapp-'))
                     log(`testDir: ${testDir}`)
 
-                    await createSamApplication(testDir)
+                    await createZipSamApplication(testDir)
                     appPath = path.join(testDir, samApplicationName, scenario.path)
                     cfnTemplatePath = path.join(testDir, samApplicationName, 'template.yaml')
                     samAppCodeUri = await openSamAppFile(appPath)
@@ -232,7 +232,7 @@ describe('SAM Integration Tests', async function () {
                 })
 
                 it('produces an error when creating a SAM Application to the same location', async function () {
-                    const err = await assertThrowsError(async () => await createSamApplication(testDir))
+                    const err = await assertThrowsError(async () => await createZipSamApplication(testDir))
                     assert(err.message.includes('directory already exists'))
                 })
 
@@ -365,7 +365,7 @@ describe('SAM Integration Tests', async function () {
             })
         })
 
-        async function createSamApplication(location: string): Promise<void> {
+        async function createZipSamApplication(location: string): Promise<void> {
             const initArguments: SamCliInitArgs = {
                 name: samApplicationName,
                 location: location,

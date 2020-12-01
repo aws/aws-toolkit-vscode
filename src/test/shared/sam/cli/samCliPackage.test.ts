@@ -7,7 +7,7 @@ import * as assert from 'assert'
 import { runSamCliPackage, SamCliPackageParameters } from '../../../../shared/sam/cli/samCliPackage'
 import { getTestLogger } from '../../../globalSetup.test'
 import { assertThrowsError } from '../../utilities/assertUtils'
-import { assertArgsContainArgument, MockSamCliProcessInvoker } from './samCliTestUtils'
+import { assertArgNotPresent, assertArgsContainArgument, MockSamCliProcessInvoker } from './samCliTestUtils'
 import {
     assertErrorContainsBadExitMessage,
     assertLogContainsBadExitInformation,
@@ -35,9 +35,25 @@ describe('SamCliPackageInvocation', async () => {
             assertArgsContainArgument(args, '--s3-bucket', 'bucket')
             assertArgsContainArgument(args, '--output-template-file', 'output')
             assertArgsContainArgument(args, '--region', 'region')
+            assertArgNotPresent(args, '--image-repository')
         })
 
         await runSamCliPackage(packageParameters, invoker)
+
+        assert.strictEqual(invokeCount, 1, 'Unexpected invoke count')
+    })
+
+    it('includes a template, s3 bucket, output template file, region, and repo', async () => {
+        const invoker = new MockSamCliProcessInvoker(args => {
+            invokeCount++
+            assertArgsContainArgument(args, '--template-file', 'template')
+            assertArgsContainArgument(args, '--s3-bucket', 'bucket')
+            assertArgsContainArgument(args, '--output-template-file', 'output')
+            assertArgsContainArgument(args, '--region', 'region')
+            assertArgsContainArgument(args, '--image-repository', 'ecrRepo')
+        })
+
+        await runSamCliPackage({ ...packageParameters, ecrRepo: 'ecrRepo' }, invoker)
 
         assert.strictEqual(invokeCount, 1, 'Unexpected invoke count')
     })

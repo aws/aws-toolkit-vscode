@@ -19,6 +19,7 @@ import {
     CreateNewSamAppWizardContext,
     CreateNewSamAppWizardResponse,
 } from '../../../lambda/wizards/samInitWizard'
+import { RuntimePackageType } from '../../../lambda/models/samLambdaRuntime'
 
 function isMultiDimensionalArray(array: any[] | any[][] | undefined): boolean {
     if (!array) {
@@ -140,12 +141,14 @@ class MockCreateNewSamAppWizardContext implements CreateNewSamAppWizardContext {
         return this.openDialogResult as vscode.Uri[]
     }
 
-    public async promptUserForRuntime(currRuntime?: Runtime): Promise<Runtime | undefined> {
-        return this.lambdaRuntimes.toArray().pop()
+    public async promptUserForRuntime(currRuntime?: Runtime): Promise<[Runtime, RuntimePackageType] | undefined> {
+        const runtime = this.lambdaRuntimes.toArray().pop()
+        return runtime ? [runtime, 'Zip'] : undefined
     }
 
     public async promptUserForTemplate(
         currRuntime: Runtime,
+        packageType: RuntimePackageType,
         currTemplate?: SamTemplate
     ): Promise<SamTemplate | undefined> {
         return this.samTemplates.toArray().pop()

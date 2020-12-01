@@ -43,6 +43,7 @@ import { DefaultRegionProvider } from './shared/regions/defaultRegionProvider'
 import { EndpointsProvider } from './shared/regions/endpointsProvider'
 import { FileResourceFetcher } from './shared/resourcefetcher/fileResourceFetcher'
 import { HttpResourceFetcher } from './shared/resourcefetcher/httpResourceFetcher'
+import { activate as activateEcr } from './ecr/activation'
 import { activate as activateSam } from './shared/sam/activation'
 import { DefaultSettingsConfiguration } from './shared/settingsConfiguration'
 import { activate as activateTelemetry } from './shared/telemetry/activation'
@@ -62,6 +63,7 @@ import { activate as activateApiGateway } from './apigateway/activation'
 import { activate as activateStepFunctions } from './stepFunctions/activation'
 import { activate as activateSsmDocument } from './ssmDocument/activation'
 import { CredentialsStore } from './credentials/credentialsStore'
+import { getSamCliContext } from './shared/sam/cli/samCliContext'
 
 let localize: nls.LocalizeFunc
 
@@ -124,6 +126,7 @@ export async function activate(context: vscode.ExtensionContext) {
         const extContext: ExtContext = {
             extensionContext: context,
             awsContext: awsContext,
+            samCliContext: getSamCliContext,
             regionProvider: regionProvider,
             settings: toolkitSettings,
             outputChannel: toolkitOutputChannel,
@@ -224,6 +227,8 @@ export async function activate(context: vscode.ExtensionContext) {
 
         await activateS3(context)
 
+        await activateEcr(context)
+
         setImmediate(async () => {
             await activateStepFunctions(context, awsContext, toolkitOutputChannel)
         })
@@ -249,6 +254,9 @@ function initializeIconPaths(context: vscode.ExtensionContext) {
 
     ext.iconPaths.dark.cloudFormation = context.asAbsolutePath('resources/dark/cloudformation.svg')
     ext.iconPaths.light.cloudFormation = context.asAbsolutePath('resources/light/cloudformation.svg')
+
+    ext.iconPaths.dark.ecr = context.asAbsolutePath('resources/dark/ecr.svg')
+    ext.iconPaths.light.ecr = context.asAbsolutePath('resources/light/ecr.svg')
 
     ext.iconPaths.dark.lambda = context.asAbsolutePath('resources/dark/lambda.svg')
     ext.iconPaths.light.lambda = context.asAbsolutePath('resources/light/lambda.svg')

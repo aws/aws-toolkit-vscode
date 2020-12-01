@@ -26,7 +26,7 @@ export interface NodejsDebugConfiguration extends SamLaunchRequestArgs {
     readonly preLaunchTask?: string
     readonly address: 'localhost'
     readonly localRoot: string
-    readonly remoteRoot: '/var/task'
+    readonly remoteRoot: string
     readonly skipFiles?: string[]
     readonly port: number
 }
@@ -51,7 +51,7 @@ export interface DotNetCoreDebugConfiguration extends SamLaunchRequestArgs {
     windows: {
         pipeTransport: PipeTransport
     }
-    sourceFileMap: {
+    sourceFileMap?: {
         [key: string]: string
     }
 }
@@ -98,7 +98,14 @@ export function getCodeRoot(
             }
             const fullPath = tryGetAbsolutePath(folder, templateInvoke.templatePath)
             const templateDir = path.dirname(fullPath)
-            const uri = CloudFormation.getStringForProperty(templateResource?.Properties?.CodeUri, template)
+            // Image lambda or ZIP lambda?
+            const isImageLambda = CloudFormation.isImageLambdaResource(templateResource.Properties)
+            const uri = isImageLambda
+                ? CloudFormation.getStringForProperty(templateResource?.Metadata?.DockerContext, template)
+                : CloudFormation.getStringForProperty(
+                      (templateResource.Properties as CloudFormation.ZipResourceProperties)?.CodeUri,
+                      template
+                  )
             return uri ? pathutil.normalize(path.resolve(templateDir ?? '', uri)) : undefined
         }
         default: {
@@ -125,6 +132,10 @@ export function getHandlerName(
                 return ''
             }
             const templateResource = getTemplateResource(folder, config)
+            if (CloudFormation.isImageLambdaResource(templateResource?.Properties)) {
+                return config.invokeTarget.logicalId
+            }
+
             const propertyValue = CloudFormation.resolvePropertyWithOverrides(
                 templateResource?.Properties?.Handler!!,
                 template,
@@ -187,4 +198,15 @@ export function getTemplateResource(
         )
     }
     return templateResource
+}
+
+/**
+ * Checks if the current configuration is based on an Image-based template.
+ *
+ * Intended for use only by the language-specific `makeConfig` functions.
+ */
+export function isImageLambdaConfig(config: SamLaunchRequestArgs): boolean {
+    const templateResource = getTemplateResource(config.workspaceFolder, config)
+
+    return CloudFormation.isImageLambdaResource(templateResource?.Properties)
 }

@@ -13,6 +13,7 @@ export interface SamCliDeployParameters {
     environmentVariables: NodeJS.ProcessEnv
     region: string
     stackName: string
+    s3Bucket: string
 }
 
 export async function runSamCliDeploy(
@@ -29,8 +30,11 @@ export async function runSamCliDeploy(
         '--capabilities',
         'CAPABILITY_IAM',
         'CAPABILITY_NAMED_IAM',
+        'CAPABILITY_AUTO_EXPAND',
         '--region',
         deployArguments.region,
+        '--s3-bucket',
+        deployArguments.s3Bucket,
     ]
     if (deployArguments.parameterOverrides.size > 0) {
         const overrides = [...map(deployArguments.parameterOverrides.entries(), ([key, value]) => `${key}=${value}`)]

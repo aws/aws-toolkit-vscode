@@ -107,6 +107,7 @@ function makeNameApi(primaryName: string, parentDir: string | undefined, suffix:
  *
  * @param folder
  * @param runtimeName  Optional runtime name used to enhance the config name
+ * @addRuntimeToConfig
  * @param resourceName
  * @param templatePath
  * @param preloadedConfig
@@ -114,6 +115,7 @@ function makeNameApi(primaryName: string, parentDir: string | undefined, suffix:
 export function createTemplateAwsSamDebugConfig(
     folder: vscode.WorkspaceFolder | undefined,
     runtimeName: string | undefined,
+    addRuntimeToConfig: boolean,
     resourceName: string,
     templatePath: string,
     preloadedConfig?: {
@@ -139,6 +141,10 @@ export function createTemplateAwsSamDebugConfig(
             payload: {},
             environmentVariables: {},
         },
+    }
+
+    if (addRuntimeToConfig) {
+        response.lambda!.runtime = runtimeName
     }
 
     if (preloadedConfig) {

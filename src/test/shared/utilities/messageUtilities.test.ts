@@ -9,16 +9,6 @@ import { MockOutputChannel } from '../../mockOutputChannel'
 import { FakeWindow } from '../../shared/vscode/fakeWindow'
 
 describe('messages', () => {
-    describe('showErrorWithLogs', () => {
-        const message = 'message'
-
-        it('shows error message with a button to view logs', async () => {
-            const window = new FakeWindow({ message: { errorSelection: 'View Logs...' } })
-            await showErrorWithLogs(message, window)
-            assert.strictEqual(window.message.error, message)
-        })
-    })
-
     describe('showConfirmationMessage', () => {
         const prompt = 'prompt'
         const confirm = 'confirm'
@@ -51,6 +41,16 @@ describe('messages', () => {
             assert.strictEqual(outputChannel.isFocused, false)
             assert.strictEqual(outputChannel.isShown, true)
             assert.strictEqual(outputChannel.value, 'message\n')
+        })
+    })
+
+    describe('showErrorWithLogs', () => {
+        const message = 'message'
+
+        it('shows error message with a button to view logs', async () => {
+            const window = new FakeWindow({ message: { errorSelection: 'View Logs...' } })
+            await showErrorWithLogs(message, window)
+            assert.strictEqual(window.message.error, message)
         })
     })
 })

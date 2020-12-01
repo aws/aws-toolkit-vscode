@@ -7,15 +7,12 @@ import { copyFile, unlink, writeFile } from 'fs-extra'
 import * as path from 'path'
 import * as tcpPortUsed from 'tcp-port-used'
 import * as vscode from 'vscode'
-import { getTemplate, getTemplateResource } from '../../lambda/local/debugConfiguration'
+import { getTemplate, getTemplateResource, isImageLambdaConfig } from '../../lambda/local/debugConfiguration'
 import { getFamily, RuntimeFamily } from '../../lambda/models/samLambdaRuntime'
 import { ExtContext } from '../extensions'
-import { makeTemporaryToolkitFolder } from '../filesystemUtilities'
-import * as pathutils from '../../shared/utilities/pathUtils'
 import { getLogger } from '../logger'
 import { SettingsConfiguration } from '../settingsConfiguration'
-import { recordLambdaInvokeLocal, Result, Runtime, recordSamAttachDebugger } from '../telemetry/telemetry'
-import { TelemetryService } from '../telemetry/telemetryService'
+import { recordLambdaInvokeLocal, recordSamAttachDebugger, Result, Runtime } from '../telemetry/telemetry'
 import { SamTemplateGenerator } from '../templates/sam/samTemplateGenerator'
 import { ExtensionDisposableFiles } from '../utilities/disposableFiles'
 import * as pathutil from '../utilities/pathUtils'
@@ -181,7 +178,10 @@ export async function invokeLambdaFunction(
         skipPullImage: config.sam?.skipNewImageCheck,
     }
     if (!config.noDebug) {
-        // Needed at least for dotnet case; harmless for others.
+        // SAM_BUILD_MODE: https://github.com/aws/aws-sam-cli/blame/846dfc3e0a8ed12627d554a4f712790a0ddc8b47/designs/build_debug_artifacts.md#L58
+        // Needed at least for dotnet case because omnisharp ignores anything 'optimized'
+        // and thinks everything is library code; harmless for others.
+        // TODO: why doesn't this affect JB Toolkit/Rider?
         samCliArgs.environmentVariables = {
             ...samCliArgs.environmentVariables,
             SAM_BUILD_MODE: 'debug',
@@ -221,6 +221,7 @@ export async function invokeLambdaFunction(
         debugPort: !config.noDebug ? config.debugPort?.toString() : undefined,
         debuggerPath: config.debuggerPath,
         debugArgs: config.debugArgs,
+        containerEnvFile: config.containerEnvFile,
         extraArgs: config.sam?.localArguments,
         parameterOverrides: config.parameterOverrides,
         skipPullImage: config.sam?.skipNewImageCheck,
@@ -230,6 +231,8 @@ export async function invokeLambdaFunction(
 
     const timer = createInvokeTimer(ctx.settings)
 
+    const lambdaPackageType = isImageLambdaConfig(config) ? 'Image' : 'Zip'
+
     let invokeResult: Result = 'Failed'
     try {
         await command.execute(timer)
@@ -238,6 +241,7 @@ export async function invokeLambdaFunction(
         ctx.chanLogger.error('AWS.error.during.sam.local', 'Failed to run SAM Application locally: {0}', err as Error)
     } finally {
         recordLambdaInvokeLocal({
+            lambdaPackageType: lambdaPackageType,
             result: invokeResult,
             runtime: config.runtime as Runtime,
             debug: !config.noDebug,
@@ -263,12 +267,12 @@ export async function invokeLambdaFunction(
             retryDelayMillis: ATTACH_DEBUGGER_RETRY_DELAY_MILLIS,
             channelLogger: ctx.chanLogger,
             onRecordAttachDebuggerMetric: (attachResult: boolean | undefined, attempts: number): void => {
-                recordAttachDebuggerMetric({
-                    telemetryService: ctx.telemetryService,
-                    result: attachResult,
-                    attempts,
-                    durationMillis: timer.elapsedTime,
-                    runtime: config.runtime,
+                recordSamAttachDebugger({
+                    lambdaPackageType: lambdaPackageType,
+                    runtime: config.runtime as Runtime,
+                    result: attachResult ? 'Succeeded' : 'Failed',
+                    attempts: attempts,
+                    duration: timer.elapsedTime,
                 })
             },
         })
@@ -371,23 +375,6 @@ export async function waitForDebugPort(
     }
 }
 
-export interface RecordAttachDebuggerMetricContext {
-    telemetryService: Pick<TelemetryService, 'record'>
-    runtime: string
-    result: boolean | undefined
-    attempts: number
-    durationMillis: number
-}
-
-function recordAttachDebuggerMetric(params: RecordAttachDebuggerMetricContext) {
-    recordSamAttachDebugger({
-        runtime: params.runtime as Runtime,
-        result: params.result ? 'Succeeded' : 'Failed',
-        attempts: params.attempts,
-        duration: params.durationMillis,
-    })
-}
-
 function getAttachDebuggerMaxRetryLimit(configuration: SettingsConfiguration, defaultValue: number): number {
     return configuration.readSetting<number>('samcli.debug.attach.retry.maximum', defaultValue)!
 }
@@ -451,15 +438,20 @@ function messageUserWaitingToAttach(channelLogger: ChannelLogger) {
  *
  * @param config
  */
-export async function makeConfig(config: SamLaunchRequestArgs): Promise<void> {
-    // TODO is this normalize actually needed for any platform?
-    config.baseBuildDir = pathutils.normalize(await makeTemporaryToolkitFolder())
+export async function makeJsonFiles(config: SamLaunchRequestArgs): Promise<void> {
     config.eventPayloadFile = path.join(config.baseBuildDir!, 'event.json')
     config.envFile = path.join(config.baseBuildDir!, 'env-vars.json')
 
     // env-vars.json (NB: effectively ignored for the `target=code` case).
     const env = JSON.stringify(getEnvironmentVariables(makeResourceName(config), config.lambda?.environmentVariables))
     await writeFile(config.envFile, env)
+
+    // container-env-vars.json
+    if (config.containerEnvVars) {
+        config.containerEnvFile = path.join(config.baseBuildDir!, 'container-env-vars.json')
+        const containerEnv = JSON.stringify(config.containerEnvVars)
+        await writeFile(config.containerEnvFile, containerEnv)
+    }
 
     // event.json
     if (config.lambda?.payload?.path) {

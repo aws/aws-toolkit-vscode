@@ -29,7 +29,7 @@ import { getSamCliVersion, getSamCliContext, SamCliContext } from '../../shared/
 import { runSamCliInit, SamCliInitArgs } from '../../shared/sam/cli/samCliInit'
 import { throwAndNotifyIfInvalid } from '../../shared/sam/cli/samCliValidationUtils'
 import { SamCliValidator } from '../../shared/sam/cli/samCliValidator'
-import { recordSamInit, Result, Runtime } from '../../shared/telemetry/telemetry'
+import { recordSamInit, Result, Runtime as TelemetryRuntime } from '../../shared/telemetry/telemetry'
 import { makeCheckLogsMessage } from '../../shared/utilities/messages'
 import { ChannelLogger } from '../../shared/utilities/vsCodeUtils'
 import { addFolderToWorkspace } from '../../shared/utilities/workspaceUtils'
@@ -49,6 +49,7 @@ import * as pathutils from '../../shared/utilities/pathUtils'
 import { openLaunchJsonFile } from '../../shared/sam/debugger/commands/addSamDebugConfiguration'
 import { waitUntil } from '../../shared/utilities/timeoutUtils'
 import { launchConfigDocUrl } from '../../shared/constants'
+import { Runtime } from 'aws-sdk/clients/lambda'
 
 export async function resumeCreateNewSamApp(
     extContext: ExtContext,
@@ -103,6 +104,7 @@ export async function createNewSamApplication(
     let regionProvider: RegionProvider = extContext.regionProvider
     let createResult: Result = 'Succeeded'
     let reason: createReason = 'unknown'
+    let lambdaPackageType: 'Zip' | 'Image' | undefined
     let createRuntime: Runtime | undefined
     let config: CreateNewSamAppWizardResponse | undefined
 
@@ -131,14 +133,12 @@ export async function createNewSamApplication(
         createRuntime = config.runtime as Runtime
 
         // TODO: Make this selectable in the wizard to account for runtimes with multiple dependency managers
-        const dependencyManager = getDependencyManager(config.runtime)
+        const dependencyManager = getDependencyManager(createRuntime)
 
         initArguments = {
             name: config.name,
             location: config.location.fsPath,
-            runtime: config.runtime,
-            dependencyManager,
-            template: config.template,
+            dependencyManager: dependencyManager,
         }
 
         let request: SchemaCodeDownloadRequestDetails
@@ -156,6 +156,16 @@ export async function createNewSamApplication(
             initArguments.extraContent = schemaTemplateParameters.templateExtraContent
         }
 
+        if (config.packageType === 'Image') {
+            lambdaPackageType = 'Image'
+            initArguments.baseImage = `amazon/${createRuntime}-base`
+        } else {
+            lambdaPackageType = 'Zip'
+            initArguments.runtime = createRuntime
+            // in theory, templates could be provided with image-based lambdas, but that is currently not supported by SAM
+            initArguments.template = config.template
+        }
+
         await runSamCliInit(initArguments, samCliContext)
 
         const uri = await getMainUri(config)
@@ -170,7 +180,7 @@ export async function createNewSamApplication(
             request = {
                 registryName: config.registryName!,
                 schemaName: config.schemaName!,
-                language: getApiValueForSchemasDownload(config.runtime),
+                language: getApiValueForSchemasDownload(createRuntime),
                 schemaVersion: schemaTemplateParameters!.SchemaVersion,
                 destinationDirectory: vscode.Uri.file(destinationDirectory),
             }
@@ -261,9 +271,10 @@ export async function createNewSamApplication(
         activationLaunchPath.clearLaunchPath()
     } finally {
         recordSamInit({
+            lambdaPackageType: lambdaPackageType,
             result: createResult,
             reason: reason,
-            runtime: createRuntime,
+            runtime: createRuntime as TelemetryRuntime,
             name: config?.name,
         })
     }
