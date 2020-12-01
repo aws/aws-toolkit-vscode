@@ -14,6 +14,17 @@ import { FakeAwsContext, FakeRegionProvider } from './utilities/fakeAwsContext'
 import { FakeChannelLogger } from './shared/fakeChannelLogger'
 import { FakeTelemetryPublisher } from './fake/fakeTelemetryService'
 import { MockOutputChannel } from './mockOutputChannel'
+import { SamCliContext } from '../shared/sam/cli/samCliContext'
+import {
+    MINIMUM_SAM_CLI_VERSION_INCLUSIVE,
+    MINIMUM_SAM_CLI_VERSION_INCLUSIVE_FOR_IMAGE_SUPPORT,
+    SamCliValidator,
+    SamCliValidatorResult,
+    SamCliVersionValidation,
+    SamCliVersionValidatorResult,
+} from '../shared/sam/cli/samCliValidator'
+import { FakeChildProcessResult, TestSamCliProcessInvoker } from './shared/sam/cli/testSamCliProcessInvoker'
+import { ChildProcessResult } from '../shared/utilities/childProcess'
 
 export interface FakeMementoStorage {
     [key: string]: any
@@ -81,6 +92,16 @@ export class FakeExtensionContext implements vscode.ExtensionContext {
     public static async getFakeExtContext(): Promise<ExtContext> {
         const ctx = await FakeExtensionContext.getNew()
         const awsContext = new FakeAwsContext()
+        const samCliContext = () => {
+            return {
+                invoker: new TestSamCliProcessInvoker(
+                    (spawnOptions, args: any[]): ChildProcessResult => {
+                        return new FakeChildProcessResult({})
+                    }
+                ),
+                validator: new FakeSamCliValidator(MINIMUM_SAM_CLI_VERSION_INCLUSIVE_FOR_IMAGE_SUPPORT),
+            } as SamCliContext
+        }
         const regionProvider = new FakeRegionProvider()
         const settings = new DefaultSettingsConfiguration('aws')
         const outputChannel = new MockOutputChannel()
@@ -90,6 +111,7 @@ export class FakeExtensionContext implements vscode.ExtensionContext {
         return {
             extensionContext: ctx,
             awsContext: awsContext,
+            samCliContext: samCliContext,
             regionProvider: regionProvider,
             settings: settings,
             outputChannel: outputChannel,
@@ -139,5 +161,25 @@ class FakeMemento implements vscode.Memento {
         this._storage[key] = value
 
         return Promise.resolve()
+    }
+}
+
+export class FakeSamCliValidator implements SamCliValidator {
+    private readonly version: string
+    public constructor(version: string = MINIMUM_SAM_CLI_VERSION_INCLUSIVE) {
+        this.version = version
+    }
+    public async detectValidSamCli(): Promise<SamCliValidatorResult> {
+        return {
+            samCliFound: true,
+            versionValidation: {
+                version: this.version,
+                validation: SamCliVersionValidation.Valid,
+            },
+        }
+    }
+
+    public async getVersionValidatorResult(): Promise<SamCliVersionValidatorResult> {
+        return { validation: SamCliVersionValidation.VersionNotParseable }
     }
 }

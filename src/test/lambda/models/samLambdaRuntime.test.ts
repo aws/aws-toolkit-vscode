@@ -9,7 +9,7 @@ import {
     compareSamLambdaRuntime,
     getDependencyManager,
     getFamily,
-    samLambdaRuntimes,
+    samZipLambdaRuntimes,
     RuntimeFamily,
 } from '../../../lambda/models/samLambdaRuntime'
 
@@ -21,6 +21,8 @@ describe('compareSamLambdaRuntime', async () => {
         { lowerRuntime: 'nodejs8.10', higherRuntime: 'nodejs10.x' },
         { lowerRuntime: 'nodejs8.10', higherRuntime: 'nodejs12.x' },
         { lowerRuntime: 'nodejs10.x', higherRuntime: 'nodejs12.x' },
+        { lowerRuntime: 'nodejs10.x', higherRuntime: 'nodejs10.x (Image)' },
+        { lowerRuntime: 'nodejs10.x (Image)', higherRuntime: 'nodejs12.x' },
     ]
 
     scenarios.forEach(scenario => {
@@ -36,7 +38,7 @@ describe('compareSamLambdaRuntime', async () => {
 
 describe('getDependencyManager', async () => {
     it('all runtimes are handled', async () => {
-        samLambdaRuntimes.forEach(runtime => {
+        samZipLambdaRuntimes.forEach(runtime => {
             // Checking that call does not throw
             getDependencyManager(runtime)
         })
@@ -48,8 +50,8 @@ describe('getFamily', async () => {
         assert.strictEqual(getFamily('foo'), RuntimeFamily.Unknown)
     })
     it('handles all known runtimes', async () => {
-        samLambdaRuntimes.forEach(runtime => {
-            assert.notEqual(getFamily(runtime), RuntimeFamily.Unknown)
+        samZipLambdaRuntimes.forEach(runtime => {
+            assert.notStrictEqual(getFamily(runtime), RuntimeFamily.Unknown)
         })
     })
 })
