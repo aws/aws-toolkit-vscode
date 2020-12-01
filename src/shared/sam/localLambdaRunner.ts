@@ -66,11 +66,11 @@ function makeResourceName(config: SamLaunchRequestArgs): string {
 
 const SAM_LOCAL_PORT_CHECK_RETRY_INTERVAL_MILLIS: number = 125
 const SAM_LOCAL_PORT_CHECK_RETRY_TIMEOUT_MILLIS_DEFAULT: number = 30000
-const MAX_DEBUGGER_RETRIES_DEFAULT: number = 30
-const ATTACH_DEBUGGER_RETRY_DELAY_MILLIS: number = 200
+const MAX_DEBUGGER_RETRIES_DEFAULT: number = 4
+const ATTACH_DEBUGGER_RETRY_DELAY_MILLIS: number = 1000
 
-/** "sam local start-api" process from the current debug-session. */
-let samStartApi: ChildProcess | undefined
+/** "sam local start-api" wrapper from the current debug-session. */
+let samStartApi: Promise<void>
 
 export function getRelativeFunctionHandler(params: {
     handlerName: string
@@ -248,8 +248,9 @@ export async function invokeLambdaFunction(
             })
         }
 
-        // We want async behavior so `await` is intentionally not used here.
-        config
+        // We want async behavior so `await` is intentionally not used here, we
+        // need to call requestLocalApi() while it is up.
+        samStartApi = config
             .samLocalInvokeCommand!.invoke({
                 options: {
                     env: {
@@ -259,14 +260,13 @@ export async function invokeLambdaFunction(
                 },
                 command: samCommand,
                 args: samArgs,
-                // start-api does not produce "attach" messages.
-                isDebug: false,
+                // "sam local start-api" produces "attach" messages similar to "sam local invoke".
+                waitForCues: true,
                 timeout: timer,
             })
             .then(sam => {
                 recordApigwTelemetry('Succeeded')
-                // Track the "sam local start-api" process so that we can stop it later.
-                samStartApi = sam
+                stopApi(config, sam)
             })
             .catch(e => {
                 recordApigwTelemetry('Failed')
@@ -319,9 +319,9 @@ export async function invokeLambdaFunction(
     if (!config.noDebug) {
         if (config.invokeTarget.target === 'api') {
             const payload = JSON.parse(await readFile(config.eventPayloadFile, { encoding: 'utf-8' }))
-            await requestLocalApi(ctx, config.api!, config.apiPort!, payload).finally(() => {
-                stopApi(config)
-            })
+            await requestLocalApi(ctx, config.api!, config.apiPort!, payload)
+            // Wait for cue messages ("Starting debugger" etc.).
+            await samStartApi
         }
 
         if (config.onWillAttachDebugger) {
@@ -363,20 +363,20 @@ export async function invokeLambdaFunction(
     return config
 }
 
-function stopApi(config: SamLaunchRequestArgs) {
-    if (!samStartApi) {
+function stopApi(config: SamLaunchRequestArgs, proc: ChildProcess | undefined) {
+    if (!proc) {
         // This is a bug, should never happen.
         getLogger().error('SAM: unknown debug session: %s', config.name)
         return
     }
 
     try {
-        getLogger().verbose('SAM: sending SIGHUP to sam process: pid %d', samStartApi.pid())
-        samStartApi.stop(true, 'SIGHUP')
+        getLogger().verbose('SAM: sending SIGHUP to sam process: pid %d', proc.pid())
+        proc.stop(true, 'SIGHUP')
     } catch (e) {
-        getLogger().warn('SAM: failed to stop sam process: pid %d: %O', samStartApi.pid(), e as Error)
+        getLogger().warn('SAM: failed to stop sam process: pid %d: %O', proc.pid(), e as Error)
     } finally {
-        samStartApi = undefined
+        proc = undefined
     }
 }
 
