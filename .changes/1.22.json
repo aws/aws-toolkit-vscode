@@ -1,0 +1,11 @@
+{
+  "date" : "2020-12-01",
+  "version" : "1.22",
+  "entries" : [ {
+    "type" : "feature",
+    "description" : "Container Image Support in Lambda"
+  }, {
+    "type" : "bugfix",
+    "description" : "Fix update Lambda code for compiled languages (#2231)"
+  } ]
+}

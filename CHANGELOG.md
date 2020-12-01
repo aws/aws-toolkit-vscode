@@ -1,3 +1,7 @@
+# _1.22_ (2020-12-01)
+- **(Feature)** Container Image Support in Lambda
+- **(Bug Fix)** Fix update Lambda code for compiled languages ([#2231](https://github.com/aws/aws-toolkit-jetbrains/issues/2231))
+
 # _1.21_ (2020-11-24)
 - **(Breaking Change)** Remove support for 2019.3, 2020.1 is the new minimum version
 - **(Feature)** Add copy Logical/Physical ID actions to Stack View [#2165](https://github.com/aws/aws-toolkit-jetbrains/issues/2165)
