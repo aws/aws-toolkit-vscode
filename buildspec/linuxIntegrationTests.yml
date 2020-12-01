@@ -20,25 +20,16 @@ phases:
             # Install other needed dependencies
             - '>/dev/null apt-get -qq install -y jq python2.7 python-pip python3.6 python3.7 python3.8 python3-pip python3-distutils'
             - '>/dev/null apt-get -qq install -y libgtk-3-dev libxss1 xvfb libnss3-dev libasound2 libasound2-plugins libsecret-1-0'
-            # TODO: uncomment
-            # - '>/dev/null pip3 install --user aws-sam-cli'
-            # - '>/dev/null pip3 install --upgrade awscli'
+            - '>/dev/null pip3 install --user aws-sam-cli'
+            - '>/dev/null pip3 install --upgrade awscli'
             - '>/dev/null pip3 install pylint'
             # login to DockerHub so we don't get throttled
             - docker login --username $(echo $DOCKER_HUB_TOKEN | jq -r '.username') --password $(echo $DOCKER_HUB_TOKEN | jq -r '.password') || true
-            # TODO: delete these
-            # temporarily clone from SAM CLI's repo so we can actually test their unreleased changes
-            - git clone --branch oci-develop https://$GITHUB_TOKEN@github.com/aws/PRIVATE-aws-sam-cli.git
-            - pip uninstall -y aws-sam-cli aws-lambda-builders
-            - (cd PRIVATE-aws-sam-cli && echo '__version__ = "1.9.0"' > samcli/__init__.py && sed -i s:/var/lang/bin/python2.7:/usr/bin/python2.7:g samcli/local/docker/lambda_debug_settings.py && make init)
 
     pre_build:
         commands:
             # make sure that SAM is in the path, is not automatically done on CodeBuild
             - USER_BASE_PATH=$(python -m site --user-base) && export PATH=$PATH:$USER_BASE_PATH/bin
-            # TODO: delete these
-            # pyenv is confused if we symlink the shim. also why is pyenv on here...
-            - ln -s /root/.pyenv/versions/3.8.3/bin/samdev /usr/local/bin/sam
             # start Docker
             - nohup /usr/local/bin/dockerd --host=unix:///var/run/docker.sock --host=tcp://127.0.0.1:2375 --storage-driver=overlay&
             - timeout 15 sh -c "until docker info; do echo .; sleep 1; done"
