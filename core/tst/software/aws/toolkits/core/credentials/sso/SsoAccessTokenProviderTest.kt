@@ -240,7 +240,7 @@ class SsoAccessTokenProviderTest {
                 )
             )
 
-        assertThat(callDuration.seconds).isGreaterThanOrEqualTo(6)
+        assertThat(callDuration).isGreaterThan(Duration.ofSeconds(5))
 
         verify(ssoCache).saveAccessToken(ssoUrl, accessToken)
 
