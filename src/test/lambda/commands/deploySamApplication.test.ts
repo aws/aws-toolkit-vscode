@@ -7,11 +7,7 @@ import * as assert from 'assert'
 import * as fs from 'fs-extra'
 import * as path from 'path'
 import * as vscode from 'vscode'
-import {
-    deploySamApplication,
-    SamDeployWizardResponseProvider,
-    WindowFunctions,
-} from '../../../lambda/commands/deploySamApplication'
+import { deploySamApplication, WindowFunctions } from '../../../lambda/commands/deploySamApplication'
 import { SamDeployWizardResponse } from '../../../lambda/wizards/samDeployWizard'
 import { AwsContext } from '../../../shared/awsContext'
 import { makeTemporaryToolkitFolder } from '../../../shared/filesystemUtilities'
@@ -120,10 +116,8 @@ describe('deploySamApplication', async () => {
     let channelLogger: FakeChannelLogger
 
     let samDeployWizardResponse: SamDeployWizardResponse | undefined
-    const samDeployWizard: SamDeployWizardResponseProvider = {
-        getSamDeployWizardResponse: async (): Promise<SamDeployWizardResponse | undefined> => {
-            return samDeployWizardResponse
-        },
+    const samDeployWizard = async (): Promise<SamDeployWizardResponse | undefined> => {
+        return samDeployWizardResponse
     }
 
     let tempToolkitFolder: string

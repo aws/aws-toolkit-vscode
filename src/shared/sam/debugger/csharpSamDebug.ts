@@ -10,6 +10,7 @@ import {
     DotNetCoreDebugConfiguration,
     DOTNET_CORE_DEBUGGER_PATH,
     getCodeRoot,
+    isImageLambdaConfig,
 } from '../../../lambda/local/debugConfiguration'
 import { RuntimeFamily } from '../../../lambda/models/samLambdaRuntime'
 import * as pathutil from '../../../shared/utilities/pathUtils'
@@ -204,9 +205,39 @@ export async function makeCoreCLRDebugConfiguration(
     config.debuggerPath = pathutil.normalize(getDebuggerPath(codeUri))
     await ensureDir(config.debuggerPath)
 
+    const isImageLambda = isImageLambdaConfig(config)
+
+    if (isImageLambda && !config.noDebug) {
+        config.containerEnvVars = {
+            _AWS_LAMBDA_DOTNET_DEBUGGING: '1',
+        }
+    }
+
     if (os.platform() === 'win32') {
         // Coerce drive letter to uppercase. While Windows is case-insensitive, sourceFileMap is case-sensitive.
         codeUri = codeUri.replace(pathutil.DRIVE_LETTER_REGEX, match => match.toUpperCase())
+    }
+
+    if (isImageLambda) {
+        // default build path, in dotnet image-based templates
+        // Not needed for ZIP lambdas, because SAM prevents dotnet from being
+        // built in-container thus PDBs already point to the user workspace.
+        if (!config.sourceFileMap) {
+            config.sourceFileMap = {}
+        }
+        config.sourceFileMap['/build'] = codeUri
+    }
+
+    if (config.lambda?.pathMappings !== undefined) {
+        if (!config.sourceFileMap) {
+            config.sourceFileMap = {}
+        }
+        // we could safely leave this entry in, but might as well give the user full control if they're specifying mappings
+        delete config.sourceFileMap['/build']
+        config.lambda.pathMappings.forEach(mapping => {
+            // this looks weird because we're mapping the PDB path to the local workspace
+            config.sourceFileMap[mapping.remoteRoot] = mapping.localRoot
+        })
     }
 
     return {
@@ -229,9 +260,6 @@ export async function makeCoreCLRDebugConfiguration(
                 debuggerPath: DOTNET_CORE_DEBUGGER_PATH,
                 pipeCwd: codeUri,
             },
-        },
-        sourceFileMap: {
-            ['/var/task']: codeUri,
         },
     }
 }

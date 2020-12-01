@@ -317,6 +317,26 @@
                                     "timeoutSec": {
                                         "description": "%AWS.configuration.description.awssam.debug.timeout%",
                                         "type": "number"
+                                    },
+                                    "pathMappings": {
+                                        "type:": "array",
+                                        "items": {
+                                            "title": "Path Mapping",
+                                            "type": "object",
+                                            "properties": {
+                                                "localRoot": {
+                                                    "type": "string"
+                                                },
+                                                "remoteRoot": {
+                                                    "type": "string"
+                                                }
+                                            },
+                                            "additionalProperties": false,
+                                            "required": [
+                                                "localRoot",
+                                                "remoteRoot"
+                                            ]
+                                        }
                                     }
                                 },
                                 "additionalProperties": false,
@@ -560,6 +580,10 @@
                     "when": "false"
                 },
                 {
+                    "command": "aws.ecr.createRepository",
+                    "when": "false"
+                },
+                {
                     "command": "aws.executeStateMachine",
                     "when": "false"
                 },
@@ -649,6 +673,22 @@
                 },
                 {
                     "command": "aws.cloudWatchLogs.viewLogStream",
+                    "when": "false"
+                },
+                {
+                    "command": "aws.ecr.deleteRepository",
+                    "when": "false"
+                },
+                {
+                    "command": "aws.ecr.copyTagUri",
+                    "when": "false"
+                },
+                {
+                    "command": "aws.ecr.copyRepositoryUri",
+                    "when": "false"
+                },
+                {
+                    "command": "aws.ecr.deleteTag",
                     "when": "false"
                 },
                 {
@@ -797,6 +837,11 @@
                     "group": "0@1"
                 },
                 {
+                    "command": "aws.ecr.createRepository",
+                    "when": "view == aws.explorer && viewItem == awsEcrNode",
+                    "group": "inline@1"
+                },
+                {
                     "command": "aws.s3.downloadFileAs",
                     "when": "view == aws.explorer && viewItem == awsS3FileNode",
                     "group": "inline@1"
@@ -830,6 +875,31 @@
                     "command": "aws.deploySamApplication",
                     "when": "view == aws.explorer && viewItem == awsLambdaNode || viewItem == awsRegionNode || viewItem == awsCloudFormationRootNode",
                     "group": "1@1"
+                },
+                {
+                    "command": "aws.ecr.copyTagUri",
+                    "when": "view == aws.explorer && viewItem == awsEcrTagNode",
+                    "group": "2@1"
+                },
+                {
+                    "command": "aws.ecr.deleteTag",
+                    "when": "view == aws.explorer && viewItem == awsEcrTagNode",
+                    "group": "3@1"
+                },
+                {
+                    "command": "aws.ecr.copyRepositoryUri",
+                    "when": "view == aws.explorer && viewItem == awsEcrRepositoryNode",
+                    "group": "2@1"
+                },
+                {
+                    "command": "aws.ecr.createRepository",
+                    "when": "view == aws.explorer && viewItem == awsEcrNode",
+                    "group": "0@1"
+                },
+                {
+                    "command": "aws.ecr.deleteRepository",
+                    "when": "view == aws.explorer && viewItem == awsEcrRepositoryNode",
+                    "group": "3@1"
                 },
                 {
                     "command": "aws.invokeLambda",
@@ -913,7 +983,7 @@
                 },
                 {
                     "command": "aws.copyArn",
-                    "when": "view == aws.explorer && viewItem =~ /^(awsRegionFunctionNode|awsRegionFunctionNodeImportable|awsCloudFormationFunctionNode|awsStateMachineNode|awsCloudFormationNode|awsCloudWatchLogNode|awsS3BucketNode|awsS3FolderNode|awsS3FileNode|awsApiGatewayNode)$/",
+                    "when": "view == aws.explorer && viewItem =~ /^(awsRegionFunctionNode|awsRegionFunctionNodeImportable|awsCloudFormationFunctionNode|awsStateMachineNode|awsCloudFormationNode|awsCloudWatchLogNode|awsS3BucketNode|awsS3FolderNode|awsS3FileNode|awsApiGatewayNode|awsEcrRepositoryNode)$/",
                     "group": "2@2"
                 },
                 {
@@ -1022,6 +1092,32 @@
             {
                 "command": "aws.cdk.help",
                 "title": "%AWS.command.cdk.help%",
+                "category": "AWS"
+            },
+            {
+                "command": "aws.ecr.copyTagUri",
+                "title": "%AWS.command.ecr.copyTagUri%",
+                "category": "AWS"
+            },
+            {
+                "command": "aws.ecr.deleteTag",
+                "title": "%AWS.command.ecr.deleteTag%",
+                "category": "AWS"
+            },
+            {
+                "command": "aws.ecr.copyRepositoryUri",
+                "title": "%AWS.command.ecr.copyRepositoryUri%",
+                "category": "AWS"
+            },
+            {
+                "command": "aws.ecr.createRepository",
+                "title": "%AWS.command.ecr.createRepository%",
+                "category": "AWS",
+                "icon": "$(add)"
+            },
+            {
+                "command": "aws.ecr.deleteRepository",
+                "title": "%AWS.command.ecr.deleteRepository%",
                 "category": "AWS"
             },
             {
@@ -1387,13 +1483,13 @@
         "package": "vsce package",
         "packageDebug": "ts-node ./build-scripts/packageDebug.ts",
         "install-plugin": "vsce package -o aws-toolkit-vscode-test.vsix && code --install-extension aws-toolkit-vscode-test.vsix",
-        "generateTelemetry": "node node_modules/@aws-toolkits/telemetry/lib/generateTelemetry.js --extraInput=src/shared/telemetry/vscodeTelemetry.json --output=src/shared/telemetry/telemetry.gen.ts",
+        "generateTelemetry": "node node_modules/@aws-toolkits/telemetry/lib/generateTelemetry.js --extraInput=src/shared/telemetry/vscodeTelemetry.json,src/shared/telemetry/lambdaImageTelemetry.json --output=src/shared/telemetry/telemetry.gen.ts",
         "generateConfigurationAttributes": "ts-node ./build-scripts/generateConfigurationAttributes.ts",
         "newChange": "ts-node ./build-scripts/newChange.ts",
         "createRelease": "ts-node ./build-scripts/createRelease.ts"
     },
     "devDependencies": {
-        "@aws-toolkits/telemetry": "0.0.69",
+        "@aws-toolkits/telemetry": "0.0.79",
         "@types/adm-zip": "^0.4.32",
         "@types/async-lock": "^1.1.0",
         "@types/bytes": "^3.1.0",

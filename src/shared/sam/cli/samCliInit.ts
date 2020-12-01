@@ -11,12 +11,15 @@ import { SamCliContext } from './samCliContext'
 import { logAndThrowIfUnexpectedExitCode } from './samCliInvokerUtils'
 
 export interface SamCliInitArgs {
-    runtime: Runtime
-    template: SamTemplate
-    location: string
     name: string
+    location: string
     dependencyManager: DependencyManager
     extraContent?: SchemaTemplateExtraContext
+    template?: SamTemplate
+    // zip-based lambdas; mutually exclusive with baseImage
+    runtime?: Runtime
+    // image-based lambdas; mutually exclusive with runtime
+    baseImage?: string
 }
 
 export async function runSamCliInit(initArguments: SamCliInitArgs, context: SamCliContext): Promise<void> {
@@ -24,14 +27,24 @@ export async function runSamCliInit(initArguments: SamCliInitArgs, context: SamC
         'init',
         '--name',
         initArguments.name,
-        '--runtime',
-        initArguments.runtime,
         '--no-interactive',
-        '--app-template',
-        getSamCliTemplateParameter(initArguments.template),
         '--dependency-manager',
         initArguments.dependencyManager,
     ]
+
+    if (initArguments.runtime) {
+        args.push('--runtime', initArguments.runtime)
+    }
+
+    if (initArguments.template) {
+        args.push('--app-template', getSamCliTemplateParameter(initArguments.template))
+    }
+
+    if (initArguments.baseImage) {
+        // specifying baseImage implies a packageType of image
+        args.push('--package-type', 'Image')
+        args.push('--base-image', initArguments.baseImage)
+    }
 
     if (initArguments.extraContent!) {
         args.push('--extra-context', JSON.stringify(initArguments.extraContent))

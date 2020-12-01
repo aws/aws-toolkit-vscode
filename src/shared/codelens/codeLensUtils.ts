@@ -378,6 +378,8 @@ export function initializeTypescriptCodelens(context: ExtContext): void {
                 throw err
             } finally {
                 recordLambdaInvokeLocal({
+                    // this is the legacy path; only supports ZIPs
+                    lambdaPackageType: 'Zip',
                     result: invokeResult,
                     runtime: lambdaRuntime as Runtime,
                     debug: params.isDebug,
