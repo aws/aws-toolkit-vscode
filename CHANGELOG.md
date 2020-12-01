@@ -1,3 +1,17 @@
+## 1.16.0 2020-12-01
+
+- **Bug Fix** Fix showing templates from .aws-sam in Sam Deploy (#1380)
+- **Bug Fix** Fix creating S3 buckets in us-east-1
+- **Bug Fix** Retain view state for Step Functions and Lambda when changing tabs
+- **Feature** Container Image Support in Lambda
+- **Feature** Add an explorer node for managing ECR repositories
+- **Feature** NodeJS and Python Lambda functions can be imported from an AWS account into a local workspace
+- **Feature** Lambda functions can be updated with code from ZIP files and directories containing built or unbuilt code
+- **Feature** Codelenses in source files can create launch configurations that reference template.yaml resources.
+- **Feature** "Create new SAM Application" action is available from the context menu of Lambda nodes in the AWS Explorer
+- **Feature** The amount of CloudWatch Logs entries retrieved per request is now configurable.
+- **Feature** "Deploy SAM Application" action is available from the context menu of Lambda, CloudFormation, and Region nodes in the AWS Explorer
+
 ## 1.15.0 2020-10-06
 
 - **Bug Fix** Fix issues which prevented SAM debugging in WSL #1300
