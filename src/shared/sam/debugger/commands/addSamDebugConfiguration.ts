@@ -48,7 +48,8 @@ export async function addSamDebugConfiguration(
 
     let samDebugConfig: AwsSamDebuggerConfiguration
     const workspaceFolder = vscode.workspace.getWorkspaceFolder(rootUri)
-    const runtimeName = runtimeFamily ? getDefaultRuntime(runtimeFamily) : undefined
+    let runtimeName = runtimeFamily ? getDefaultRuntime(runtimeFamily) : undefined
+    let addRuntimeNameToConfig = false
 
     if (type === TEMPLATE_TARGET_TYPE) {
         let preloadedConfig = undefined
@@ -57,7 +58,11 @@ export async function addSamDebugConfiguration(
             const templateDatum = ext.templateRegistry.getRegisteredItem(rootUri.fsPath)
             if (templateDatum) {
                 const resource = templateDatum.item.Resources![resourceName]
-                if (resource && resource.Properties) {
+                if (!resource) {
+                    return
+                }
+
+                if (CloudFormation.isZipLambdaResource(resource.Properties)) {
                     const handler = CloudFormation.getStringForProperty(resource.Properties.Handler, templateDatum.item)
                     const existingConfig = await getExistingConfiguration(workspaceFolder, handler ?? '', rootUri)
                     if (existingConfig) {
@@ -85,18 +90,40 @@ export async function addSamDebugConfiguration(
                             preloadedConfig = existingConfig
                         }
                     }
+                } else if (CloudFormation.isImageLambdaResource(resource.Properties) && runtimeFamily === undefined) {
+                    const quickPick = createRuntimeQuickPick({
+                        showImageRuntimes: false,
+                    })
+
+                    const choices = await picker.promptUser({
+                        picker: quickPick,
+                        onDidTriggerButton: (button, resolve, reject) => {
+                            if (button === vscode.QuickInputButtons.Back) {
+                                resolve(undefined)
+                            }
+                        },
+                    })
+                    const userRuntime = picker.verifySinglePickerOutput(choices)?.runtime
+                    if (!userRuntime) {
+                        // User selected "Cancel". Abandon config creation
+                        return
+                    }
+                    runtimeName = userRuntime
+                    addRuntimeNameToConfig = true
                 }
             }
         }
         samDebugConfig = createTemplateAwsSamDebugConfig(
             workspaceFolder,
             runtimeName,
+            addRuntimeNameToConfig,
             resourceName,
             rootUri.fsPath,
             preloadedConfig
         )
     } else if (type === CODE_TARGET_TYPE) {
         const quickPick = createRuntimeQuickPick({
+            showImageRuntimes: false,
             runtimeFamily,
             step: step?.step,
             totalSteps: step?.totalSteps,

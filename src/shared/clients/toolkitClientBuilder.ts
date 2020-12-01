@@ -7,6 +7,7 @@ import { ServiceConfigurationOptions } from 'aws-sdk/lib/service'
 import { ApiGatewayClient } from './apiGatewayClient'
 import { CloudFormationClient } from './cloudFormationClient'
 import { CloudWatchLogsClient } from './cloudWatchLogsClient'
+import { EcrClient } from './ecrClient'
 import { EcsClient } from './ecsClient'
 import { IamClient } from './iamClient'
 import { LambdaClient } from './lambdaClient'
@@ -22,6 +23,8 @@ export interface ToolkitClientBuilder {
     createCloudFormationClient(regionCode: string): CloudFormationClient
 
     createCloudWatchLogsClient(regionCode: string): CloudWatchLogsClient
+
+    createEcrClient(regionCode: string): EcrClient
 
     createEcsClient(regionCode: string): EcsClient
 
