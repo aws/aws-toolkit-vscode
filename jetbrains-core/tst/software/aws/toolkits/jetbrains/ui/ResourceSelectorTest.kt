@@ -168,6 +168,24 @@ class ResourceSelectorTest {
     }
 
     @Test
+    fun selectingAnInvalidItemWillDefaultToUnselected() {
+        resourceCache.addEntry(projectRule.project, mockResource, listOf("foo", "bar", "baz"))
+        val comboBox = ResourceSelector.builder().resource(mockResource).awsConnection(projectRule.project).build()
+
+        runInEdtAndWait {
+            comboBox.selectedItem = "invalidItem"
+        }
+
+        comboBox.reload()
+
+        retryableAssert {
+            runInEdtAndWait {
+                assertThat(comboBox.selected()).isEqualTo(null)
+            }
+        }
+    }
+
+    @Test
     fun canSpecifyWhichRegionAndCredentialsToUse() {
         resourceCache.addEntry(mockResource, "region1", "credential1", listOf("foo"))
         val comboBox = ResourceSelector.builder()

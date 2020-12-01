@@ -39,10 +39,13 @@ class ResourceSelector<T> private constructor(
     private val sortOnLoad: Boolean,
     private val connectionSettingsSupplier: ConnectionSettingsSupplier
 ) : ComboBox<T>(comboBoxModel) {
+    private val loading = message("loading_resource.loading")
+
     @Volatile
     private var loadingStatus: Status = Status.NOT_LOADED
     private var shouldBeEnabled: Boolean = isEnabled
     private var selector: Selector<T>? = null
+
     @Volatile
     private var loadingFuture: CompletableFuture<*>? = null
 
@@ -70,7 +73,7 @@ class ResourceSelector<T> private constructor(
             super.setEnabled(false)
             setEditable(true)
 
-            super.setSelectedItem(message("loading_resource.loading"))
+            super.setSelectedItem(loading)
 
             val resource = resourceType.invoke()
             val connectionSettings = connectionSettingsSupplier()
@@ -163,7 +166,16 @@ class ResourceSelector<T> private constructor(
             when {
                 value.isEmpty() -> super.setSelectedItem(null)
                 value.size == 1 -> super.setSelectedItem(value.first())
-                else -> super.setSelectedItem(determineSelection(selector, previouslySelected))
+                else -> {
+                    // if the select item was removed or set to an invalid value, setSelectedItem
+                    // will cause the selected item to be the string "Loading..." so we need to
+                    // make sure after setting that that is not the case. Otherwise, set it to
+                    // null to inform the user they need to set it again
+                    super.setSelectedItem(determineSelection(selector, previouslySelected))
+                    if (selectedItem == loading) {
+                        super.setSelectedItem(null)
+                    }
+                }
             }
         }
     }
@@ -197,6 +209,7 @@ class ResourceSelector<T> private constructor(
 
     companion object {
         private val LOG = getLogger<ResourceSelector<*>>()
+
         @JvmStatic
         fun builder() = object : ResourceBuilder {
             override fun <T> resource(resource: (() -> Resource<out Collection<T>>?)): ResourceBuilderOptions<T> = ResourceBuilderOptions(resource)
