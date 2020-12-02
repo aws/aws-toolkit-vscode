@@ -40,8 +40,8 @@ class RemoteResourceResolverTest {
 
         val resource = resource()
 
-        val firstCall = sut.resolve(resource).toCompletableFuture().get()
-        val secondCall = sut.resolve(resource).toCompletableFuture().get()
+        val firstCall = sut.resolve(resource).unwrap()
+        val secondCall = sut.resolve(resource).unwrap()
 
         assertThat(firstCall).isEqualTo(secondCall)
         assertThat(firstCall).hasContent("data")
@@ -126,6 +126,8 @@ class RemoteResourceResolverTest {
     }
 
     private companion object {
+        val LOG = getLogger<RemoteResourceResolverTest>()
+
         fun resource(
             name: String = "resource",
             urls: List<String> = listOf(PRIMARY_URL),
@@ -139,7 +141,14 @@ class RemoteResourceResolverTest {
         }
 
         fun writeDataToFile(data: String): (InvocationOnMock) -> Unit = { invocation ->
-            (invocation.arguments[1] as Path).writeText(data)
+            val path = invocation.arguments[1] as Path
+            path.writeText(data)
+            // It's possible for it to be done writing but path.exists to not work yet which
+            // makes the canDownloadAFileOnce test fail (on CodeBuild).
+            while (!path.exists()) {
+                LOG.debug("writeDataToFile path does not exist yet: $path")
+                Thread.sleep(10)
+            }
         }
 
         val immediateExecutor: (Callable<Path>) -> CompletionStage<Path> = { CompletableFuture.completedFuture(it.call()) }
