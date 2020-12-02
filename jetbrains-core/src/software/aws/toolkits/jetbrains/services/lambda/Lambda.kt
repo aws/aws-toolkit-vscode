@@ -82,7 +82,7 @@ object LambdaWidgets {
 
     @JvmStatic
     fun lambdaMemory(): SliderPanel =
-        SliderPanel(MIN_MEMORY, MAX_MEMORY, DEFAULT_MEMORY_SIZE, MIN_MEMORY, MAX_MEMORY, MEMORY_INCREMENT, MEMORY_INCREMENT * 5, true)
+        SliderPanel(MIN_MEMORY, MAX_MEMORY, DEFAULT_MEMORY_SIZE, MIN_MEMORY, MAX_MEMORY, MEMORY_INCREMENT, MEMORY_INCREMENT * 15, true)
 }
 
 data class LambdaFunction(

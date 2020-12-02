@@ -8,7 +8,7 @@ import java.util.concurrent.TimeUnit
 // @see https://docs.aws.amazon.com/lambda/latest/dg/limits.html
 object LambdaLimits {
     const val MIN_MEMORY = 128
-    const val MAX_MEMORY = 3008
+    const val MAX_MEMORY = 10240
     const val MAX_FUNCTION_NAME_LENGTH = 64
     val FUNCTION_NAME_PATTERN = "[a-zA-Z0-9-_]+".toRegex()
     const val MEMORY_INCREMENT = 64
