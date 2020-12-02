@@ -7,7 +7,7 @@ COPY pom.xml ./
 RUN mvn -q clean install
 RUN mvn dependency:copy-dependencies -DincludeScope=compile
 
-FROM TODO
+FROM public.ecr.aws/lambda/java:8.al2
 
 COPY --from=build-image /task/target/classes /var/task/
 COPY --from=build-image /task/target/dependency /var/task/lib
