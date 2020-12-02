@@ -1,4 +1,4 @@
-FROM TODO
+FROM public.ecr.aws/lambda/nodejs:10
 
 COPY app.js package.json ./
 

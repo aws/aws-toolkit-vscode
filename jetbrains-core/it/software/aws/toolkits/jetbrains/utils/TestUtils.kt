@@ -180,10 +180,7 @@ fun samImageRunDebugTest(
         executeRunConfiguration(runConfiguration)
     }
 
-    // TODO debugging exits with "Abort!" in Node and Python although it works end to end (weird sam bug?)
-    if (addBreakpoint == null) {
-        assertThat(executeLambda.exitCode).isEqualTo(0)
-    }
+    assertThat(executeLambda.exitCode).isEqualTo(0)
     assertThat(executeLambda.stdout).contains(expectedOutput)
 
     if (addBreakpoint != null) {
@@ -195,7 +192,5 @@ fun assumeImageSupport() {
     val samVersion = ExecutableManager.getInstance().getExecutableIfPresent<SamExecutable>().version?.let {
         SemVer.parseFromText(it)
     }
-    // TODO, current minImageVersion is the same as external version skip for now with assume
-    assumeTrue(false)
     assumeTrue(samVersion?.isGreaterOrEqualThan(minImageVersion) == true)
 }
