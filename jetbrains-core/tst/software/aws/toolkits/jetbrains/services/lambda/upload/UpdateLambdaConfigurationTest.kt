@@ -62,7 +62,6 @@ class UpdateLambdaConfigurationTest {
 
             assertThat(firstValue.functionName()).isEqualTo(functionDetails.name)
             assertThat(firstValue.description()).isEqualTo(functionDetails.description)
-            assertThat(firstValue.packageType()).isEqualTo(functionDetails.packageType)
             assertThat(firstValue.runtime()).isEqualTo(functionDetails.runtime)
             assertThat(firstValue.handler()).isEqualTo(functionDetails.handler)
             assertThat(firstValue.memorySize()).isEqualTo(functionDetails.memorySize)

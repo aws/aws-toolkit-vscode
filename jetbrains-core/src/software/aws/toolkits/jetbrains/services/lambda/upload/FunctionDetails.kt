@@ -33,7 +33,6 @@ data class FunctionDetails(
 fun LambdaClient.updateFunctionConfiguration(config: FunctionDetails): UpdateFunctionConfigurationResponse = this.updateFunctionConfiguration {
     it.functionName(config.name)
     it.description(config.description)
-    it.packageType(config.packageType)
     if (config.packageType == PackageType.ZIP) {
         it.runtime(config.runtime)
         it.handler(config.handler)
