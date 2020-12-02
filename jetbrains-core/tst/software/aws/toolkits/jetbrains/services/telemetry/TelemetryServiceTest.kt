@@ -20,6 +20,7 @@ import software.aws.toolkits.core.telemetry.DefaultMetricEvent.Companion.METADAT
 import software.aws.toolkits.core.telemetry.MetricEvent
 import software.aws.toolkits.core.telemetry.TelemetryBatcher
 import software.aws.toolkits.jetbrains.core.MockResourceCacheRule
+import software.aws.toolkits.jetbrains.core.credentials.ConnectionState
 import software.aws.toolkits.jetbrains.core.credentials.MockAwsConnectionManager
 import software.aws.toolkits.jetbrains.core.credentials.MockAwsConnectionManager.ProjectAccountSettingsManagerRule
 import software.aws.toolkits.jetbrains.core.credentials.MockCredentialsManager
@@ -141,6 +142,9 @@ class TelemetryServiceTest {
         connectionSettingsManager.settingsManager.changeRegion(mockRegion)
         connectionSettingsManager.settingsManager.waitUntilConnectionStateIsStable()
 
+        // assert that connection setting succeeded. This test has been failing sometimes in the assert stage that there is nothing
+        assertThat(connectionSettingsManager.settingsManager.connectionState).isInstanceOf(ConnectionState.ValidConnection::class.java)
+
         val eventCaptor = argumentCaptor<MetricEvent>()
         val batcher = mock<TelemetryBatcher>()
         val telemetryService = TestTelemetryService(batcher)
@@ -190,10 +194,10 @@ class TelemetryServiceTest {
     }
 
     private fun assertMetricEventsContains(events: Collection<MetricEvent>, event: String, awsAccount: String, awsRegion: String) {
-        val metricEvent = events.find { e ->
-            e.data.find { it.name == event } != null && e.awsAccount == awsAccount && e.awsRegion == awsRegion
+        assertThat(events).anySatisfy { e ->
+            assertThat(e.data).anySatisfy { assertThat(it.name).isEqualTo(event) }
+            assertThat(e.awsAccount).isEqualTo(awsAccount)
+            assertThat(e.awsRegion).isEqualTo(awsRegion)
         }
-
-        assertThat(metricEvent).isNotNull
     }
 }
