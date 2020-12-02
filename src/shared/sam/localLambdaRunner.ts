@@ -71,6 +71,7 @@ const ATTACH_DEBUGGER_RETRY_DELAY_MILLIS: number = 1000
 
 /** "sam local start-api" wrapper from the current debug-session. */
 let samStartApi: Promise<void>
+let samStartApiProc: ChildProcess | undefined
 
 export function getRelativeFunctionHandler(params: {
     handlerName: string
@@ -266,7 +267,7 @@ export async function invokeLambdaFunction(
             })
             .then(sam => {
                 recordApigwTelemetry('Succeeded')
-                stopApi(config, sam)
+                samStartApiProc = sam
             })
             .catch(e => {
                 recordApigwTelemetry('Failed')
@@ -319,8 +320,9 @@ export async function invokeLambdaFunction(
     if (!config.noDebug) {
         if (config.invokeTarget.target === 'api') {
             const payload = JSON.parse(await readFile(config.eventPayloadFile, { encoding: 'utf-8' }))
+            // Send the request to the local API server.
             await requestLocalApi(ctx, config.api!, config.apiPort!, payload)
-            // Wait for cue messages ("Starting debugger" etc.).
+            // Wait for cue messages ("Starting debugger" etc.) before attach.
             await samStartApi
         }
 
@@ -363,22 +365,28 @@ export async function invokeLambdaFunction(
     return config
 }
 
-function stopApi(config: SamLaunchRequestArgs, proc: ChildProcess | undefined) {
-    if (!proc) {
-        // This is a bug, should never happen.
+function stopApi(config: vscode.DebugConfiguration) {
+    if (!samStartApiProc) {
         getLogger().error('SAM: unknown debug session: %s', config.name)
         return
     }
 
     try {
-        getLogger().verbose('SAM: sending SIGHUP to sam process: pid %d', proc.pid())
-        proc.stop(true, 'SIGHUP')
+        getLogger().verbose('SAM: sending SIGHUP to sam process: pid %d', samStartApiProc.pid())
+        samStartApiProc.stop(true, 'SIGHUP')
     } catch (e) {
-        getLogger().warn('SAM: failed to stop sam process: pid %d: %O', proc.pid(), e as Error)
+        getLogger().warn('SAM: failed to stop sam process: pid %d: %O', samStartApiProc.pid(), e as Error)
     } finally {
-        proc = undefined
+        samStartApiProc = undefined
     }
 }
+
+vscode.debug.onDidTerminateDebugSession(session => {
+    const config = session.configuration as SamLaunchRequestArgs
+    if (config.invokeTarget?.target === 'api') {
+        stopApi(config)
+    }
+})
 
 /**
  * Sends an HTTP request to the local API webserver, which invokes the backing
