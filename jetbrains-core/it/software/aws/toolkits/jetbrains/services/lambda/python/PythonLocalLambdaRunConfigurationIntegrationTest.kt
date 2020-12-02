@@ -193,7 +193,8 @@ class PythonLocalLambdaRunConfigurationIntegrationTest(private val runtime: Runt
         assertThat(jsonToMap(executeLambda.stdout))
             .containsEntry("AWS_ACCESS_KEY_ID", mockCreds.accessKeyId())
             .containsEntry("AWS_SECRET_ACCESS_KEY", mockCreds.secretAccessKey())
-            .doesNotContainKey("AWS_SESSION_TOKEN")
+            // An empty AWS_SESSION_TOKEN is inserted by Samcli/the Lambda runtime as of 1.13.1
+            .containsEntry("AWS_SESSION_TOKEN", "")
     }
 
     @Test
