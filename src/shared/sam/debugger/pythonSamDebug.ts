@@ -18,8 +18,10 @@ import { fileExists, readFileAsString } from '../../filesystemUtilities'
 import { getLogger } from '../../logger'
 import * as pathutil from '../../utilities/pathUtils'
 import { getLocalRootVariants } from '../../utilities/pathUtils'
+import { Timeout } from '../../utilities/timeoutUtils'
+import { ChannelLogger } from '../../utilities/vsCodeUtils'
 import { DefaultSamLocalInvokeCommand, WAIT_FOR_DEBUGGER_MESSAGES } from '../cli/samCliLocalInvoke'
-import { invokeLambdaFunction, makeInputTemplate, waitForDebugPort } from '../localLambdaRunner'
+import { invokeLambdaFunction, makeInputTemplate } from '../localLambdaRunner'
 import { SamLaunchRequestArgs } from './awsSamDebugger'
 import { join } from 'path'
 import { ext } from '../../extensionGlobals'
@@ -137,9 +139,15 @@ export async function invokePythonLambda(
 ): Promise<PythonDebugConfiguration> {
     config.samLocalInvokeCommand = new DefaultSamLocalInvokeCommand(ctx.chanLogger, [WAIT_FOR_DEBUGGER_MESSAGES.PYTHON])
     // eslint-disable-next-line @typescript-eslint/unbound-method
-    config.onWillAttachDebugger = waitForDebugPort
+    config.onWillAttachDebugger = waitForPythonDebugAdapter
     const c = (await invokeLambdaFunction(ctx, config, async () => {})) as PythonDebugConfiguration
     return c
+}
+
+export async function waitForPythonDebugAdapter(debugPort: number, timeout: Timeout, channelLogger: ChannelLogger) {
+    await new Promise<void>(resolve => {
+        setTimeout(resolve, 1000)
+    })
 }
 
 export async function activatePythonExtensionIfInstalled() {
