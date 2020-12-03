@@ -15,6 +15,7 @@ import com.nhaarman.mockitokotlin2.times
 import com.nhaarman.mockitokotlin2.verify
 import com.nhaarman.mockitokotlin2.verifyNoMoreInteractions
 import com.nhaarman.mockitokotlin2.whenever
+import kotlinx.coroutines.runBlocking
 import org.assertj.core.api.Assertions.assertThat
 import org.assertj.core.api.Assertions.assertThatThrownBy
 import org.junit.After
@@ -79,7 +80,7 @@ class AwsResourceCacheTest {
         connectionSettings = ConnectionSettings(credentialsManager.createCredentialProvider(), regionProviderRule.createAwsRegion())
 
         sut = DefaultAwsResourceCache(mockClock, 1000, Duration.ofMinutes(1))
-        sut.clear()
+        runBlocking { sut.clear() }
 
         reset(mockClock, mockResource)
         whenever(mockResource.expiry()).thenReturn(DEFAULT_EXPIRY)
@@ -163,7 +164,7 @@ class AwsResourceCacheTest {
         assertThat(sut.getResource(mockResource, connectionSettings)).hasValue("hello")
         assertThat(sut.getResource(mockResource, connectionSettings)).hasValue("hello")
 
-        sut.clear()
+        runBlocking { sut.clear() }
 
         assertThat(sut.getResource(mockResource, connectionSettings)).hasValue("goodbye")
         assertThat(sut.getResource(mockResource, connectionSettings)).hasValue("goodbye")
@@ -466,7 +467,7 @@ class AwsResourceCacheTest {
             false -> assertThat(sut.getResource(mockResource, connectionSettings)).hasValue("hello")
         }
 
-        sut.clear()
+        runBlocking { sut.clear() }
     }
 
     private fun verifyResourceCalled(times: Int, resource: Resource.Cached<*> = mockResource) {

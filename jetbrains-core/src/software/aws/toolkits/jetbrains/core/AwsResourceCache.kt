@@ -10,6 +10,9 @@ import com.intellij.openapi.components.service
 import com.intellij.openapi.project.Project
 import com.intellij.util.Alarm
 import com.intellij.util.AlarmFactory
+import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.coroutineScope
+import kotlinx.coroutines.launch
 import software.amazon.awssdk.core.SdkClient
 import software.aws.toolkits.core.credentials.CredentialIdentifier
 import software.aws.toolkits.core.credentials.ToolkitCredentialsChangeListener
@@ -24,6 +27,7 @@ import software.aws.toolkits.jetbrains.core.credentials.toEnvironmentVariables
 import software.aws.toolkits.jetbrains.core.executables.ExecutableInstance
 import software.aws.toolkits.jetbrains.core.executables.ExecutableManager
 import software.aws.toolkits.jetbrains.core.executables.ExecutableType
+import software.aws.toolkits.jetbrains.utils.ApplicationThreadPoolScope
 import java.time.Clock
 import java.time.Duration
 import java.time.Instant
@@ -112,7 +116,7 @@ interface AwsResourceCache {
     /**
      * Clears the contents of the cache across all regions, credentials and resource types.
      */
-    fun clear()
+    suspend fun clear() // TODO: ultimately all of these calls need to be made suspend - start with this one to resolve UI lock
 
     /**
      * Clears the contents of the cache for the specific [ConnectionSettings]
@@ -261,7 +265,7 @@ class DefaultAwsResourceCache(
     private val clock: Clock,
     private val maximumCacheEntries: Int,
     private val maintenanceInterval: Duration
-) : AwsResourceCache, Disposable, ToolkitCredentialsChangeListener {
+) : AwsResourceCache, Disposable, ToolkitCredentialsChangeListener, CoroutineScope by ApplicationThreadPoolScope("DefaultAwsResourceCache") {
 
     @Suppress("unused")
     constructor() : this(Clock.systemDefaultZone(), MAXIMUM_CACHE_ENTRIES, DEFAULT_MAINTENANCE_INTERVAL)
@@ -341,8 +345,8 @@ class DefaultAwsResourceCache(
         }
     }
 
-    override fun clear() {
-        cache.clear()
+    override suspend fun clear() {
+        coroutineScope { launch { cache.clear() } }
     }
 
     override fun clear(connectionSettings: ConnectionSettings) {
@@ -350,7 +354,7 @@ class DefaultAwsResourceCache(
     }
 
     override fun dispose() {
-        clear()
+        launch { clear() }
     }
 
     override fun providerRemoved(identifier: CredentialIdentifier) = clearByCredential(identifier.id)
