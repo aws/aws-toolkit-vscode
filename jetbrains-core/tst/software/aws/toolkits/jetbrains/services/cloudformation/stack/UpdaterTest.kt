@@ -22,6 +22,7 @@ import software.amazon.awssdk.services.cloudformation.model.Stack
 import software.amazon.awssdk.services.cloudformation.model.StackResource
 import software.amazon.awssdk.services.cloudformation.model.StackStatus
 import software.aws.toolkits.jetbrains.core.MockClientManagerRule
+import java.time.Duration
 import java.util.concurrent.Semaphore
 import java.util.concurrent.TimeUnit
 import javax.swing.JLabel
@@ -97,7 +98,7 @@ class UpdaterTest {
                 resourceListener = resourceListener,
                 outputsTable = outputTable,
                 stackName = "MyStack",
-                updateEveryMs = 1,
+                updateInterval = Duration.ofMillis(1),
                 listener = updateListener,
                 client = client,
                 setPagesAvailable = { p -> availablePages = p }

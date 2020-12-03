@@ -14,6 +14,8 @@ import software.amazon.awssdk.services.cloudformation.model.Output
 import software.amazon.awssdk.services.cloudformation.model.StackEvent
 import software.amazon.awssdk.services.cloudformation.model.StackResource
 import software.amazon.awssdk.services.cloudformation.model.StackStatus
+import java.time.Duration
+import java.util.concurrent.atomic.AtomicBoolean
 import javax.swing.SwingUtilities
 
 /**
@@ -33,7 +35,7 @@ class Updater(
     private val outputsTable: OutputsListener,
     private val resourceListener: ResourceListener,
     private val stackName: String,
-    private val updateEveryMs: Int,
+    private val updateInterval: Duration,
     private val listener: UpdateListener,
     private val client: CloudFormationClient,
     private val setPagesAvailable: (Set<Page>) -> Unit
@@ -41,6 +43,8 @@ class Updater(
 
     @Volatile
     private var previousStackStatusType: StatusType = StatusType.UNKNOWN
+    private val updating = AtomicBoolean(false)
+    val running get() = updating.get()
     private val eventsFetcher = EventsFetcher(stackName)
 
     private val app: Application
@@ -53,6 +57,7 @@ class Updater(
     private val alarm: Alarm = AlarmFactory.getInstance().create(Alarm.ThreadToUse.POOLED_THREAD, this)
 
     fun start() {
+        updating.set(true)
         alarm.addRequest({ fetchDataSafely() }, 0)
     }
 
@@ -112,9 +117,11 @@ class Updater(
                 listener.onStackStatusChanged(newStackStatus)
             }
 
+            updating.set(!newStackStatusNotInProgress)
+
             // Reschedule next run
-            if (!alarm.isDisposed) {
-                alarm.addRequest({ fetchDataSafely() }, updateEveryMs)
+            if (!alarm.isDisposed && updating.get()) {
+                alarm.addRequest({ fetchDataSafely() }, updateInterval.toMillis())
             }
         }
     }
