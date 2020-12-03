@@ -220,7 +220,7 @@ describe('deploySamApplication', async () => {
         assert.strictEqual(invokerCalledCount, 0, 'Did not expect sam cli to get invoked')
     })
 
-    it('informs user of error if invoking sam build fails', async () => {
+    it('continues deploying with initial template if invoking sam build fails', async () => {
         goodSamCliProcessInvoker = new TestSamCliProcessInvoker(
             (spawnOptions, args: any[]): ChildProcessResult => {
                 invokerCalledCount++
@@ -247,9 +247,8 @@ describe('deploySamApplication', async () => {
         )
 
         await waitForDeployToComplete()
-        assert.strictEqual(invokerCalledCount, 1, 'Unexpected sam cli invoke count')
-        assertErrorLogsContain('broken build', false)
-        assertGeneralErrorLogged(channelLogger)
+        assert.strictEqual(invokerCalledCount, 3, 'Unexpected sam cli invoke count')
+        assertErrorLogsSwallowed('broken build', false)
     })
 
     it('informs user of error if invoking sam package fails', async () => {
@@ -334,7 +333,16 @@ function assertErrorLogsContain(text: string, exactMatch: boolean) {
         getTestLogger()
             .getLoggedEntries('error')
             .some(e => e instanceof Error && (exactMatch ? e.message === text : e.message.includes(text))),
-        `Expected to find ${text} in the error logs`
+        `Expected to find "${text}" in the error logs`
+    )
+}
+
+function assertErrorLogsSwallowed(text: string, exactMatch: boolean) {
+    assert.ok(
+        getTestLogger()
+            .getLoggedEntries('error')
+            .some(e => !(e instanceof Error) && (exactMatch ? e === text : e.includes(text))),
+        `Expected to find "${text}" in the error logs, but not as a thrown error`
     )
 }
 

@@ -220,7 +220,7 @@ async function addLaunchConfigEntry(
     const samDebugConfig = createCodeAwsSamDebugConfig(
         workspaceFolder,
         handler,
-        path.dirname(lambdaLocation),
+        computeLambdaRoot(lambdaLocation, functionNode),
         functionNode.configuration.Runtime!
     )
 
@@ -232,6 +232,21 @@ async function addLaunchConfigEntry(
     ) {
         await launchConfig.addDebugConfiguration(samDebugConfig)
     }
+}
+
+/**
+ * Computes the Lambda root.
+ * We cannot assume that the Lambda root is the dirname since CodeUri is not a required field (can be merged with handler)
+ * @param lambdaLocation Lambda handler file location
+ * @param functionNode Function node
+ */
+function computeLambdaRoot(lambdaLocation: string, functionNode: LambdaFunctionNode): string {
+    const lambdaDetails = getLambdaDetails(functionNode.configuration)
+    const normalizedLocation = pathutils.normalize(lambdaLocation)
+
+    const lambdaIndex = normalizedLocation.indexOf(`/${lambdaDetails.fileName}`)
+
+    return lambdaIndex > -1 ? normalizedLocation.substr(0, lambdaIndex) : path.dirname(normalizedLocation)
 }
 
 class ImportError extends Error {}

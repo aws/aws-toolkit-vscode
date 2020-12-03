@@ -86,12 +86,12 @@ describe('CloudFormation', () => {
         })
 
         it('Does not load YAML with missing fields', async () => {
-            // codeuri is missing
+            // handler is missing
             const badYamlStr: string = `Resources:
                                             TestResource:
                                                 Type: ${CloudFormation.SERVERLESS_FUNCTION_TYPE}
                                                 Properties:
-                                                    Handler: handler
+                                                    CodeUri: asdf
                                                     Runtime: runtime
                                                     Timeout: 1
                                                     Environment:
@@ -119,7 +119,7 @@ describe('CloudFormation', () => {
 
         it('Loads YAML with references', async () => {
             // This one is valid, "!Ref" is valid!
-            const badYamlStr: string = `Resources:
+            const validYamlStr: string = `Resources:
                                             TestResource:
                                                 Type: ${CloudFormation.SERVERLESS_FUNCTION_TYPE}
                                                 Properties:
@@ -130,8 +130,25 @@ describe('CloudFormation', () => {
                                                     Environment:
                                                         Variables:
                                                             ENVVAR: !Ref this_is_valid`
-            await strToYamlFile(badYamlStr, filename)
+            await strToYamlFile(validYamlStr, filename)
             await CloudFormation.load(filename)
+        })
+
+        it('Loads YAML without a CodeUri', async () => {
+            // This one is valid, "!Ref" is valid!
+            const validYamlStr: string = `Resources:
+                                            TestResource:
+                                                Type: ${CloudFormation.SERVERLESS_FUNCTION_TYPE}
+                                                Properties:
+                                                    Handler: handler
+                                                    Runtime: runtime
+                                                    Timeout: 12345
+                                                    Environment:
+                                                        Variables:
+                                                            ENVVAR: envvar`
+            await strToYamlFile(validYamlStr, filename)
+            const template = await CloudFormation.load(filename)
+            assert.strictEqual(template.Resources!['TestResource']?.Properties?.CodeUri, '')
         })
     })
 
@@ -173,11 +190,11 @@ describe('CloudFormation', () => {
 
         it('can detect an invalid resource', () => {
             const badResource = createBaseResource()
-            delete (badResource.Properties as any)!.CodeUri
+            delete (badResource.Properties as any)!.Handler
             assert.throws(
                 () => CloudFormation.validateResource(badResource, createBaseTemplate()),
                 Error,
-                'Missing or invalid value in Template for key: CodeUri'
+                'Missing or invalid value in Template for key: Handler'
             )
         })
     })

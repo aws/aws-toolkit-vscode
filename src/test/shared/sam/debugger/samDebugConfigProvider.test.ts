@@ -497,7 +497,7 @@ describe('SamDebugConfigurationProvider', async () => {
                 },
                 localRoot: pathutil.normalize(path.join(appDir, 'src')), // Normalized to absolute path.
                 name: input.name,
-                templatePath: pathutil.normalize(path.join(actual.baseBuildDir ?? '?', 'input/input-template.yaml')),
+                templatePath: pathutil.normalize(path.join(appDir, 'src', 'app___vsctk___template.yaml')),
                 parameterOverrides: undefined,
 
                 //
@@ -833,7 +833,7 @@ describe('SamDebugConfigurationProvider', async () => {
                     timeoutSec: undefined,
                 },
                 name: input.name,
-                templatePath: expectedCodeRoot + '/input-template.yaml',
+                templatePath: pathutil.normalize(path.join(appDir, 'src', 'HelloWorld', 'app___vsctk___template.yaml')),
                 parameterOverrides: undefined,
 
                 //
@@ -1141,7 +1141,7 @@ Outputs:
                     timeoutSec: undefined,
                 },
                 name: input.name,
-                templatePath: pathutil.normalize(path.join(actual.baseBuildDir ?? '?', 'input/input-template.yaml')),
+                templatePath: pathutil.normalize(path.join(appDir, 'hello_world', 'app___vsctk___template.yaml')),
                 port: actual.debugPort,
                 redirectOutput: false,
                 parameterOverrides: undefined,
@@ -1589,7 +1589,7 @@ Outputs:
                     containerBuild: true,
                 },
                 name: input.name,
-                templatePath: pathutil.normalize(path.join(actual.baseBuildDir ?? '?', 'input/input-template.yaml')),
+                templatePath: pathutil.normalize(path.join(appDir, 'hello_world', 'app___vsctk___template.yaml')),
                 parameterOverrides: undefined,
 
                 //
@@ -2012,7 +2012,7 @@ Resources:
                 },
                 localRoot: pathutil.normalize(path.join(tempDir, 'codeuri')), // Normalized to absolute path.
                 name: input.name,
-                templatePath: pathutil.normalize(path.join(actual.baseBuildDir ?? '?', 'input/input-template.yaml')),
+                templatePath: pathutil.normalize(path.join(appDir, 'src', 'app___vsctk___template.yaml')),
                 parameterOverrides: undefined,
 
                 //
