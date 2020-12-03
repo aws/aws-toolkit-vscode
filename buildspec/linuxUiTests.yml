@@ -2,15 +2,14 @@ version: 0.2
 
 #cache:
 #  paths:
-#    - 'gradle-home/caches/**/*'
-#    - 'gradle-home/wrapper/**/*'
+#    - '/root/.gradle/caches/**/*'
+#    - '/root/.gradle/wrapper/**/*'
 
 env:
   variables:
     CI: true
     RECORD_UI: true
     LOCAL_ENV_RUN: true
-    GRADLE_USER_HOME: gradle-home
     AWS_STS_REGIONAL_ENDPOINTS: regional
 
 phases:
