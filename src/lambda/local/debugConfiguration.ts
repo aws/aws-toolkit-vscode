@@ -113,7 +113,7 @@ export function getCodeRoot(
             const fullPath = tryGetAbsolutePath(folder, templateInvoke.templatePath)
             const templateDir = path.dirname(fullPath)
             const uri = CloudFormation.getStringForProperty(templateResource?.Properties?.CodeUri, template)
-            return uri ? pathutil.normalize(path.resolve(templateDir ?? '', uri)) : undefined
+            return uri !== undefined ? pathutil.normalize(path.resolve(templateDir ?? '', uri)) : undefined
         }
         default: {
             throw Error('invalid invokeTarget') // Must not happen.

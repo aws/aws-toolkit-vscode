@@ -241,11 +241,12 @@ export namespace CloudFormation {
             ) {
                 throw new Error('Missing or invalid value in Template for key: Handler')
             }
-            if (
-                !resource.Properties.CodeUri ||
-                !validatePropertyType(resource.Properties.CodeUri, template, 'string')
-            ) {
-                throw new Error('Missing or invalid value in Template for key: CodeUri')
+            if (!resource.Properties.CodeUri) {
+                // Missing codeUri is allowed, (SAM pulls from the handler instead). Set as empty string.
+                resource.Properties.CodeUri = ''
+            }
+            if (!validatePropertyType(resource.Properties.CodeUri, template, 'string')) {
+                throw new Error('Invalid value in Template for key: CodeUri')
             }
             if (
                 !!resource.Properties.Runtime &&
