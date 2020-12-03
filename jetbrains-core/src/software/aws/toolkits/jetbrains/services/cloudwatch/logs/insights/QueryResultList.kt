@@ -24,6 +24,7 @@ class QueryResultList(
     private val queryDetails: QueryDetails
 ) : CoroutineScope by ApplicationThreadPoolScope("CloudWatchLogsGroup"), Disposable {
     lateinit var resultsPanel: JPanel
+        private set
     private lateinit var tablePanel: SimpleToolWindowPanel
     private lateinit var openQueryEditor: JButton
     private lateinit var resultsTitle: JLabel

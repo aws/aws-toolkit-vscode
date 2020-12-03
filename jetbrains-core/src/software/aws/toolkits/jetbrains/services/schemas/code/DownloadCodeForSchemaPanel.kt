@@ -18,10 +18,15 @@ import javax.swing.JPanel
 
 class DownloadCodeForSchemaPanel(project: Project) {
     lateinit var content: JPanel
+        private set
     lateinit var heading: JLabel
+        private set
     lateinit var version: JComboBox<String>
+        private set
     lateinit var language: JComboBox<SchemaCodeLangs>
+        private set
     lateinit var location: TextFieldWithBrowseButton
+        private set
     private lateinit var versionModel: DefaultComboBoxModel<String>
     private lateinit var languageModel: SortedComboBoxModel<SchemaCodeLangs>
 

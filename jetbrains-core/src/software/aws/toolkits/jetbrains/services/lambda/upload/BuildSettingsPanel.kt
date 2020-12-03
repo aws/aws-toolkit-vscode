@@ -12,7 +12,9 @@ import kotlin.properties.Delegates
 
 class BuildSettingsPanel : JPanel(BorderLayout()) {
     lateinit var content: JPanel
+        private set
     lateinit var buildInContainerCheckbox: JCheckBox
+        private set
 
     var packagingType: PackageType by Delegates.observable(PackageType.ZIP) { _, _, _ -> updateComponents() }
 

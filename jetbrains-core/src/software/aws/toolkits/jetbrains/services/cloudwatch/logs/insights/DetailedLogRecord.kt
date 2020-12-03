@@ -24,7 +24,6 @@ import software.aws.toolkits.jetbrains.utils.notifyError
 import software.aws.toolkits.resources.message
 import software.aws.toolkits.telemetry.CloudwatchinsightsTelemetry
 import software.aws.toolkits.telemetry.Result
-import java.lang.IllegalStateException
 import javax.swing.JButton
 import javax.swing.JPanel
 
@@ -34,8 +33,11 @@ class DetailedLogRecord(
     private val logRecordPointer: String
 ) : CoroutineScope by ApplicationThreadPoolScope("DetailedLogEvents"), Disposable {
     val title = message("cloudwatch.logs.log_record", logRecordPointer)
+
     lateinit var basePanel: JPanel
+        private set
     lateinit var tableView: TableView<LogRecordFieldPair>
+        private set
     private lateinit var openStream: JButton
     private val recordLoadTask: Deferred<LogRecord>
 

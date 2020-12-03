@@ -28,8 +28,11 @@ import javax.swing.JPanel
 
 class InstrumentDialog(private val project: Project, val clusterArn: String, val serviceArn: String) : Disposable {
     lateinit var content: JPanel
+        private set
     lateinit var iamRole: ResourceSelector<IamRole>
+        private set
     lateinit var roleNotValidWarning: JBLabel
+        private set
 
     init {
         roleNotValidWarning.isVisible = false

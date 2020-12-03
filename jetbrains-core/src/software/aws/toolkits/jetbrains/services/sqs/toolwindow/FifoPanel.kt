@@ -14,10 +14,15 @@ import javax.swing.JPanel
 
 class FifoPanel {
     lateinit var component: JPanel
+        private set
     lateinit var deduplicationId: JBTextField
+        private set
     lateinit var groupId: JBTextField
+        private set
     lateinit var deduplicationContextHelp: JLabel
+        private set
     lateinit var groupContextHelp: JLabel
+        private set
 
     init {
         deduplicationContextHelp.icon = AllIcons.General.ContextHelp

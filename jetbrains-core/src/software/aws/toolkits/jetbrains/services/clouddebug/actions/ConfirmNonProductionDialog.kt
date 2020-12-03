@@ -12,8 +12,11 @@ import javax.swing.JPanel
 
 class ConfirmNonProductionDialog(serviceName: String) : Disposable {
     lateinit var content: JPanel
+        private set
     lateinit var confirmProceed: JCheckBox
+        private set
     lateinit var warning: JBLabel
+        private set
 
     init {
         warning.text = message("cloud_debug.instrument.production_warning.text")

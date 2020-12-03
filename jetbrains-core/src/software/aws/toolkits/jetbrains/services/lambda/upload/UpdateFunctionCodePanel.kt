@@ -19,12 +19,19 @@ import javax.swing.JPanel
 
 class UpdateFunctionCodePanel internal constructor(private val project: Project, private val packageType: PackageType) {
     lateinit var content: JPanel
+        private set
     lateinit var buildSettings: BuildSettingsPanel
+        private set
     lateinit var codeStorage: CodeStoragePanel
+        private set
     lateinit var handlerLabel: JLabel
+        private set
     lateinit var handlerPanel: HandlerPanel
+        private set
     lateinit var dockerFileLabel: JLabel
+        private set
     lateinit var dockerFile: TextFieldWithBrowseButton
+        private set
     private lateinit var lambdaConfigurationPanel: JPanel
 
     init {

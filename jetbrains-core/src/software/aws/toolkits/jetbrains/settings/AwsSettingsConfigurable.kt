@@ -43,8 +43,11 @@ class AwsSettingsConfigurable(private val project: Project) : SearchableConfigur
     private lateinit var applicationLevelSettings: JPanel
     private lateinit var defaultRegionHandling: ComboBox<UseAwsCredentialRegion>
     lateinit var samExecutablePath: TextFieldWithBrowseButton
+        private set
     lateinit var enableTelemetry: JBCheckBox
+        private set
     lateinit var cloudDebugExecutablePath: TextFieldWithBrowseButton
+        private set
 
     private val cloudDebugExecutableInstance: CloudDebugExecutable
         get() = ExecutableType.getExecutable(CloudDebugExecutable::class.java)

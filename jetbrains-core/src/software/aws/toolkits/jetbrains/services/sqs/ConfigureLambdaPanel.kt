@@ -15,8 +15,11 @@ import javax.swing.JPanel
 
 class ConfigureLambdaPanel(private val project: Project) {
     lateinit var component: JPanel
+        private set
     lateinit var lambdaFunction: ResourceSelector<FunctionConfiguration>
+        private set
     lateinit var functionContextHelp: JLabel
+        private set
 
     init {
         functionContextHelp.icon = AllIcons.General.ContextHelp

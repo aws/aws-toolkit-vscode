@@ -34,12 +34,19 @@ class SendMessagePane(
     private val queue: Queue
 ) : CoroutineScope by ApplicationThreadPoolScope("SendMessagePane") {
     lateinit var component: JPanel
+        private set
     lateinit var inputText: JBTextArea
+        private set
     lateinit var sendButton: UpdateButton
+        private set
     lateinit var clearButton: JButton
+        private set
     lateinit var messageSentLabel: JLabel
+        private set
     lateinit var fifoFields: FifoPanel
+        private set
     lateinit var scrollPane: JScrollPane
+        private set
     private val edt = getCoroutineUiContext()
 
     init {

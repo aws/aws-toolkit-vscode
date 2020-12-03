@@ -14,8 +14,11 @@ class ConfirmPolicyPanel(
     warning: String
 ) {
     lateinit var component: JPanel
+        private set
     lateinit var policyDocument: EditorTextField
+        private set
     lateinit var warningText: JBLabel
+        private set
 
     init {
         warningText.text = warning

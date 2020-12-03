@@ -16,8 +16,11 @@ import javax.swing.JPanel
 
 class SubscribeSnsPanel(private val project: Project) {
     lateinit var component: JPanel
+        private set
     lateinit var topicSelector: ResourceSelector<Topic>
+        private set
     lateinit var selectContextHelp: JLabel
+        private set
 
     init {
         selectContextHelp.icon = AllIcons.General.ContextHelp

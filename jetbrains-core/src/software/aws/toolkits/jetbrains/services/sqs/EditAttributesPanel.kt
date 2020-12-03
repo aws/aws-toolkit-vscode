@@ -10,11 +10,17 @@ import javax.swing.JPanel
 
 class EditAttributesPanel {
     lateinit var component: JPanel
+        private set
     lateinit var visibilityTimeout: SliderPanel
+        private set
     lateinit var messageSize: IntegerField
+        private set
     lateinit var retentionPeriod: IntegerField
+        private set
     lateinit var deliveryDelay: SliderPanel
+        private set
     lateinit var waitTime: SliderPanel
+        private set
 
     private fun createUIComponents() {
         visibilityTimeout = SliderPanel(

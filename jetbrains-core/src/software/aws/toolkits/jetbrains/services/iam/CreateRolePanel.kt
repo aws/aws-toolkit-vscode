@@ -15,9 +15,13 @@ import javax.swing.JTextField
 
 class CreateRolePanel(private val project: Project) {
     lateinit var component: JPanel
+        private set
     lateinit var roleName: JTextField
+        private set
     lateinit var policyDocument: EditorTextField
+        private set
     lateinit var assumeRolePolicyDocument: EditorTextField
+        private set
 
     private fun createUIComponents() {
         val textFieldProvider = EditorTextFieldProvider.getInstance()
