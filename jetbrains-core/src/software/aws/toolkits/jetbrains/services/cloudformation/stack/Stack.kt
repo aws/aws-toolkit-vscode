@@ -2,14 +2,19 @@
 // SPDX-License-Identifier: Apache-2.0
 package software.aws.toolkits.jetbrains.services.cloudformation.stack
 
+import com.intellij.icons.AllIcons
 import com.intellij.notification.NotificationGroup
 import com.intellij.notification.NotificationType
 import com.intellij.openapi.Disposable
+import com.intellij.openapi.actionSystem.ActionManager
 import com.intellij.openapi.actionSystem.AnActionEvent
+import com.intellij.openapi.actionSystem.DefaultActionGroup
 import com.intellij.openapi.actionSystem.LangDataKeys
 import com.intellij.openapi.components.ServiceManager
 import com.intellij.openapi.project.DumbAware
+import com.intellij.openapi.project.DumbAwareAction
 import com.intellij.openapi.project.Project
+import com.intellij.openapi.ui.SimpleToolWindowPanel
 import com.intellij.openapi.util.Disposer
 import com.intellij.ui.OnePixelSplitter
 import com.intellij.ui.components.JBTabbedPane
@@ -27,11 +32,13 @@ import software.aws.toolkits.jetbrains.core.toolwindow.ToolkitToolWindowType
 import software.aws.toolkits.jetbrains.services.cloudformation.CloudFormationStackNode
 import software.aws.toolkits.resources.message
 import software.aws.toolkits.telemetry.CloudformationTelemetry
+import java.time.Duration
 import javax.swing.BoxLayout
+import javax.swing.JComponent
 import javax.swing.JPanel
 import javax.swing.SwingUtilities
 
-private const val UPDATE_STACK_STATUS_INTERVAL = 5000
+private val UPDATE_STACK_STATUS_INTERVAL = Duration.ofSeconds(5)
 private const val REDRAW_ANIMATED_ICON_INTERVAL = 70
 private const val TREE_TABLE_INITIAL_PROPORTION = 0.25f
 internal val STACK_TOOL_WINDOW =
@@ -83,6 +90,7 @@ private class StackUI(
         notificationGroup = NotificationGroup.findRegisteredGroup(STACK_TOOL_WINDOW.id)
             ?: NotificationGroup.toolWindowGroup(STACK_TOOL_WINDOW.id, STACK_TOOL_WINDOW.id)
 
+        val window = SimpleToolWindowPanel(false, true)
         val mainPanel = OnePixelSplitter(false, TREE_TABLE_INITIAL_PROPORTION).apply {
             firstComponent = tree.component
             secondComponent = JBTabbedPane().apply {
@@ -143,20 +151,22 @@ private class StackUI(
                 )
             }
         }
-
         updater = Updater(
             tree,
             eventsTable = eventsTable,
             outputsTable = outputsTable,
             resourceListener = resourcesTable,
             stackName = stackName,
-            updateEveryMs = UPDATE_STACK_STATUS_INTERVAL,
+            updateInterval = UPDATE_STACK_STATUS_INTERVAL,
             listener = this,
             client = project.awsClient(),
             setPagesAvailable = pageButtons::setPagesAvailable
         )
 
-        toolWindowTab = toolWindow.addTab(stackName, mainPanel, id = stackId, disposable = this)
+        window.setContent(mainPanel)
+        window.toolbar = createToolbar()
+
+        toolWindowTab = toolWindow.addTab(stackName, window, id = stackId, disposable = this)
         listOf(tree, updater, animator, eventsTable, outputsTable, resourcesTable, pageButtons).forEach { Disposer.register(this, it) }
     }
 
@@ -182,6 +192,21 @@ private class StackUI(
 
     private fun notify(message: String, notificationType: NotificationType) {
         notificationGroup.createNotification("$stackName: $message", notificationType).notify(project)
+    }
+
+    private fun createToolbar(): JComponent {
+        val actionGroup = DefaultActionGroup()
+        actionGroup.addAction(object : DumbAwareAction(message("general.refresh"), null, AllIcons.Actions.Refresh) {
+            override fun actionPerformed(e: AnActionEvent) {
+                updater.start()
+            }
+
+            override fun update(e: AnActionEvent) {
+                e.presentation.isEnabled = !updater.running
+            }
+        })
+
+        return ActionManager.getInstance().createActionToolbar("", actionGroup, false).component
     }
 
     fun onPageButtonClick(page: Page) {
