@@ -302,7 +302,7 @@ function makeEndpointsProvider(): EndpointsProvider {
     const remoteManifestFetcher = new HttpResourceFetcher(endpointsFileUrl, { showUrl: true })
 
     const provider = new EndpointsProvider(localManifestFetcher, remoteManifestFetcher)
-    // tslint:disable-next-line:no-floating-promises -- start the load without waiting. It raises events as fetchers retrieve data.
+    // Start the load without waiting. It raises events as fetchers retrieve data.
     provider.load().catch((err: Error) => {
         getLogger().error('Failure while loading Endpoints Manifest: %O', err)
 

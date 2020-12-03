@@ -30,7 +30,7 @@ export class SystemUtilities {
     public static async fileExists(file: string): Promise<boolean> {
         return new Promise<boolean>((resolve, reject) => {
             fs.access(file, err => {
-                if (!!err) {
+                if (err) {
                     resolve(false)
                 }
 

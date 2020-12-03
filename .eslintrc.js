@@ -23,21 +23,13 @@ module.exports = {
         // TODO reenable this rule (by removing this off)
         '@typescript-eslint/no-misused-promises': 'off',
         // TODO reenable this rule (by removing this off)
-        '@typescript-eslint/ban-types': 'off',
-        // TODO reenable this rule (by removing this off)
         'no-ex-assign': 'off',
         // TODO reenable this rule (by removing this off)
         '@typescript-eslint/prefer-regexp-exec': 'off',
         // TODO reenable this rule (by removing this off)
-        'no-empty-pattern': 'off',
-        // TODO reenable this rule (by removing this off)
         'no-async-promise-executors': 'off',
         // TODO reenable this rule (by removing this off)
         '@typescript-eslint/consistent-type-assertions': 'off',
-        // TODO reenable this rule (by removing this off)
-        'no-extra-semi': 'off',
-        // TODO reenable this rule (by removing this off)
-        'no-case-declarations': 'off',
         // TODO reenable this rule (by removing this off)
         '@typescript-eslint/ban-ts-ignore': 'off',
         // TODO reenable this rule (by removing this off)
@@ -55,8 +47,6 @@ module.exports = {
         // TODO rennable this rule (by removing this off)
         'no-prototype-builtins': 'off',
         // TODO rennable this rule (by removing this off)
-        'no-extra-boolean-cast': 'off',
-        // TODO rennable this rule (by removing this off)
         '@typescript-eslint/no-use-before-define': 'off',
         // TODO rennable this rule (by removing this off)
         '@typescript-eslint/camelcase': 'off',
@@ -73,6 +63,8 @@ module.exports = {
         // TODO reenable this rule, tests mostly break this one (by changing off to error)
         // This currently produces 700 non fixable by --fix errors
         'sort-imports': 'off',
+        // This is off because prettier takes care of it
+        'no-extra-semi': 'off',
         'no-null/no-null': 'error',
         '@typescript-eslint/no-empty-function': 'off',
         '@typescript-eslint/no-unused-vars': 'off',

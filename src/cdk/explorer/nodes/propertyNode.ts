@@ -41,7 +41,6 @@ export function generatePropertyNodes(properties: { [key: string]: any }): Prope
         const value = properties[property]
 
         if (value instanceof Array || value instanceof Object) {
-            // tslint:disable-next-line: no-unsafe-any
             propertyNodes.push(new PropertyNode(property, vscode.TreeItemCollapsibleState.Collapsed, value))
         } else {
             propertyNodes.push(new PropertyNode(`${property}: ${value}`, vscode.TreeItemCollapsibleState.None))

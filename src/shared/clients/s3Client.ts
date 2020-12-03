@@ -164,7 +164,7 @@ export interface File {
     readonly sizeBytes?: number
 }
 
-interface Object {
+interface S3Object {
     readonly key: string
     readonly versionId?: string
 }
@@ -229,7 +229,7 @@ export interface ListObjectVersionsRequest {
 }
 
 export interface ListObjectVersionsResponse {
-    readonly objects: Object[]
+    readonly objects: S3Object[]
     readonly continuationToken?: ContinuationToken
 }
 

@@ -195,7 +195,7 @@ export async function makeCoreCLRDebugConfiguration(
     config: SamLaunchRequestArgs,
     codeUri: string
 ): Promise<DotNetCoreDebugConfiguration> {
-    if (!!config.noDebug) {
+    if (config.noDebug) {
         throw Error(`SAM debug: invalid config ${config}`)
     }
     const pipeArgs = ['-c', `docker exec -i $(docker ps -q -f publish=${config.debugPort}) \${debuggerCommand}`]

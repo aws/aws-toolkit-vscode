@@ -12,14 +12,15 @@ import {
     CloudFormationTemplateRegistry,
     getResourcesForHandler,
     getResourcesForHandlerFromTemplateDatum,
-    TemplateDatum,
 } from '../../../shared/cloudformation/templateRegistry'
 import { makeTemporaryToolkitFolder } from '../../../shared/filesystemUtilities'
 import { assertThrowsError } from '../utilities/assertUtils'
 import { badYaml, makeSampleSamTemplateYaml, strToYamlFile } from './cloudformationTestUtils'
 import { assertEqualPaths } from '../../testUtil'
 import { CloudFormation } from '../../../shared/cloudformation/cloudformation'
+import { WatchedItem } from '../../../shared/watchedFiles'
 
+// TODO almost all of these tests should be moved to test WatchedFiles instead
 describe('CloudFormation Template Registry', async () => {
     const goodYaml1 = makeSampleSamTemplateYaml(false)
 
@@ -36,15 +37,15 @@ describe('CloudFormation Template Registry', async () => {
             await fs.remove(tempFolder)
         })
 
-        describe('addTemplateToRegistry', async () => {
+        describe('addItemToRegistry', async () => {
             it("adds data from a template to the registry and can receive the template's data", async () => {
                 const filename = vscode.Uri.file(path.join(tempFolder, 'template.yaml'))
                 await strToYamlFile(goodYaml1, filename.fsPath)
-                await testRegistry.addTemplateToRegistry(filename)
+                await testRegistry.addItemToRegistry(filename)
 
-                assert.strictEqual(testRegistry.registeredTemplates.length, 1)
+                assert.strictEqual(testRegistry.registeredItems.length, 1)
 
-                const data = testRegistry.getRegisteredTemplate(filename.fsPath)
+                const data = testRegistry.getRegisteredItem(filename.fsPath)
 
                 assertValidTestTemplate(data, filename.fsPath)
             })
@@ -54,30 +55,30 @@ describe('CloudFormation Template Registry', async () => {
                 await strToYamlFile(badYaml, filename.fsPath)
 
                 await assertThrowsError(
-                    async () => await testRegistry.addTemplateToRegistry(vscode.Uri.file(filename.fsPath))
+                    async () => await testRegistry.addItemToRegistry(vscode.Uri.file(filename.fsPath))
                 )
             })
         })
 
         // other get cases are tested in the add section
-        describe('registeredTemplates', async () => {
+        describe('registeredItems', async () => {
             it('returns an empty array if the registry has no registered templates', () => {
-                assert.strictEqual(testRegistry.registeredTemplates.length, 0)
+                assert.strictEqual(testRegistry.registeredItems.length, 0)
             })
         })
 
         // other get cases are tested in the add section
-        describe('getRegisteredTemplate', async () => {
+        describe('getRegisteredItem', async () => {
             it('returns undefined if the registry has no registered templates', () => {
-                assert.strictEqual(testRegistry.getRegisteredTemplate('/template.yaml'), undefined)
+                assert.strictEqual(testRegistry.getRegisteredItem('/template.yaml'), undefined)
             })
 
             it('returns undefined if the registry does not contain the template in question', async () => {
                 const filename = vscode.Uri.file(path.join(tempFolder, 'template.yaml'))
                 await strToYamlFile(goodYaml1, filename.fsPath)
-                await testRegistry.addTemplateToRegistry(vscode.Uri.file(filename.fsPath))
+                await testRegistry.addItemToRegistry(vscode.Uri.file(filename.fsPath))
 
-                assert.strictEqual(testRegistry.getRegisteredTemplate('/not-the-template.yaml'), undefined)
+                assert.strictEqual(testRegistry.getRegisteredItem('/not-the-template.yaml'), undefined)
             })
         })
 
@@ -85,21 +86,21 @@ describe('CloudFormation Template Registry', async () => {
             it('removes an added template', async () => {
                 const filename = vscode.Uri.file(path.join(tempFolder, 'template.yaml'))
                 await strToYamlFile(goodYaml1, filename.fsPath)
-                await testRegistry.addTemplateToRegistry(vscode.Uri.file(filename.fsPath))
-                assert.strictEqual(testRegistry.registeredTemplates.length, 1)
+                await testRegistry.addItemToRegistry(vscode.Uri.file(filename.fsPath))
+                assert.strictEqual(testRegistry.registeredItems.length, 1)
 
-                testRegistry.removeTemplateFromRegistry(vscode.Uri.file(filename.fsPath))
-                assert.strictEqual(testRegistry.registeredTemplates.length, 0)
+                testRegistry.remove(vscode.Uri.file(filename.fsPath))
+                assert.strictEqual(testRegistry.registeredItems.length, 0)
             })
 
             it('does not affect the registry if a nonexistant template is removed', async () => {
                 const filename = vscode.Uri.file(path.join(tempFolder, 'template.yaml'))
                 await strToYamlFile(goodYaml1, filename.fsPath)
-                await testRegistry.addTemplateToRegistry(vscode.Uri.file(filename.fsPath))
-                assert.strictEqual(testRegistry.registeredTemplates.length, 1)
+                await testRegistry.addItemToRegistry(vscode.Uri.file(filename.fsPath))
+                assert.strictEqual(testRegistry.registeredItems.length, 1)
 
-                testRegistry.removeTemplateFromRegistry(vscode.Uri.file(path.join(tempFolder, 'wrong-template.yaml')))
-                assert.strictEqual(testRegistry.registeredTemplates.length, 1)
+                testRegistry.remove(vscode.Uri.file(path.join(tempFolder, 'wrong-template.yaml')))
+                assert.strictEqual(testRegistry.registeredItems.length, 1)
             })
         })
     })
@@ -121,11 +122,11 @@ describe('CloudFormation Template Registry', async () => {
     }
     const nonParentTemplate = {
         path: path.join(otherPath, 'template.yaml'),
-        template: {},
+        item: {},
     }
     const workingTemplate = {
         path: path.join(rootPath, 'template.yaml'),
-        template: {
+        item: {
             Resources: {
                 resource1: matchingResource,
             },
@@ -133,7 +134,7 @@ describe('CloudFormation Template Registry', async () => {
     }
     const noResourceTemplate = {
         path: path.join(rootPath, 'template.yaml'),
-        template: {
+        item: {
             Resources: {},
         },
     }
@@ -150,7 +151,7 @@ describe('CloudFormation Template Registry', async () => {
     }
     const dotNetTemplate = {
         path: path.join(rootPath, 'template.yaml'),
-        template: {
+        item: {
             Resources: {
                 resource1: compiledResource,
             },
@@ -158,7 +159,7 @@ describe('CloudFormation Template Registry', async () => {
     }
     const multiResourceTemplate = {
         path: path.join(rootPath, 'template.yaml'),
-        template: {
+        item: {
             Resources: {
                 resource1: matchingResource,
                 resource2: {
@@ -173,7 +174,7 @@ describe('CloudFormation Template Registry', async () => {
     }
     const badRuntimeTemplate = {
         path: path.join(rootPath, 'template.yaml'),
-        template: {
+        item: {
             Resources: {
                 badResource: {
                     ...matchingResource,
@@ -330,10 +331,10 @@ describe('CloudFormation Template Registry', async () => {
     })
 })
 
-function assertValidTestTemplate(data: TemplateDatum | undefined, filename: string): void {
+function assertValidTestTemplate(data: WatchedItem<CloudFormation.Template> | undefined, filename: string): void {
     assert.ok(data)
     if (data) {
         assertEqualPaths(data.path, filename)
-        assert.ok(data.template.Resources?.TestResource)
+        assert.ok(data.item.Resources?.TestResource)
     }
 }

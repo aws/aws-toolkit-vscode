@@ -13,7 +13,6 @@ export const hostedFilesBaseUrl: string = 'https://d3rrggjwfhwld2.cloudfront.net
 export const endpointsFileUrl: string = 'https://idetoolkits.amazonwebservices.com/endpoints.json'
 export const aboutCredentialsFileUrl: string = 'https://docs.aws.amazon.com/cli/latest/userguide/cli-config-files.html'
 export const samAboutInstallUrl: string = 'https://aws.amazon.com/serverless/sam/'
-// tslint:disable-next-line:max-line-length
 export const vscodeMarketplaceUrl: string =
     'https://marketplace.visualstudio.com/items?itemName=AmazonWebServices.aws-toolkit-vscode'
 export const githubUrl: string = 'https://github.com/aws/aws-toolkit-vscode'
@@ -21,7 +20,6 @@ export const githubCreateIssueUrl = `${githubUrl}/issues/new/choose`
 export const documentationUrl: string = isCloud9()
     ? 'https://docs.aws.amazon.com/cloud9/latest/user-guide/toolkit-welcome.html'
     : 'https://docs.aws.amazon.com/toolkit-for-vscode/latest/userguide/welcome.html'
-// tslint:disable-next-line:max-line-length
 export const credentialHelpUrl: string =
     'https://docs.aws.amazon.com/toolkit-for-vscode/latest/userguide/setup-credentials.html'
 
@@ -33,7 +31,6 @@ export const launchConfigDocUrl: string = isCloud9()
     ? 'https://docs.aws.amazon.com/cloud9/latest/user-guide/run-debug-sam-app.html'
     : 'https://docs.aws.amazon.com/toolkit-for-vscode/latest/userguide/run-debug-sam-app.html'
 // URLs for samDeployWizard
-// tslint:disable-next-line:max-line-length
 export const samDeployDocUrl: string = isCloud9()
     ? 'https://docs.aws.amazon.com/cloud9/latest/user-guide/deploy-serverless-app.html'
     : 'https://docs.aws.amazon.com/toolkit-for-vscode/latest/userguide/deploy-serverless-app.html'

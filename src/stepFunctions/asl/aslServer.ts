@@ -8,8 +8,6 @@
  *  Licensed under the MIT License. See License.txt in the project root for license information.
  */
 
-// tslint:disable: no-inferred-empty-object-type
-
 import {
     ClientCapabilities,
     Diagnostic,
@@ -97,7 +95,6 @@ connection.onInitialize(
             clientCapabilities: params.capabilities,
         })
 
-        // tslint:disable: no-unsafe-any
         function getClientCapability<T>(name: string, def: T) {
             const keys = name.split('.')
             let c: any = params.capabilities
@@ -120,7 +117,6 @@ connection.onInitialize(
             'textDocument.documentSymbol.hierarchicalDocumentSymbolSupport',
             false
         )
-        // tslint:enable: no-unsafe-any
         const capabilities: ServerCapabilities = {
             textDocumentSync: TextDocumentSyncKind.Incremental,
             completionProvider: clientSnippetSupport
@@ -128,7 +124,6 @@ connection.onInitialize(
                 : undefined,
             hoverProvider: true,
             documentSymbolProvider: true,
-            // tslint:disable-next-line: no-unsafe-any
             documentRangeFormattingProvider: params.initializationOptions.provideFormatter === true,
             colorProvider: {},
             foldingRangeProvider: true,
@@ -158,7 +153,6 @@ namespace LimitExceededWarnings {
         const warning = pendingWarnings[uri]
         if (warning && warning.timeout) {
             clearTimeout(warning.timeout)
-            // tslint:disable-next-line: no-dynamic-delete
             delete pendingWarnings[uri]
         }
     }
@@ -252,7 +246,6 @@ function cleanPendingValidation(textDocument: TextDocument): void {
     const request = pendingValidationRequests[textDocument.uri]
     if (request) {
         clearTimeout(request)
-        // tslint:disable-next-line: no-dynamic-delete
         delete pendingValidationRequests[textDocument.uri]
     }
 }
@@ -260,7 +253,6 @@ function cleanPendingValidation(textDocument: TextDocument): void {
 function triggerValidation(textDocument: TextDocument): void {
     cleanPendingValidation(textDocument)
     pendingValidationRequests[textDocument.uri] = setTimeout(() => {
-        // tslint:disable-next-line: no-dynamic-delete
         delete pendingValidationRequests[textDocument.uri]
         validateTextDocument(textDocument)
     }, validationDelayMs)
@@ -300,7 +292,6 @@ function validateTextDocument(textDocument: TextDocument, callback?: (diagnostic
 connection.onDidChangeWatchedFiles(change => {
     // Monitored files have changed in VSCode
     let hasChanges = false
-    // tslint:disable-next-line: no-unsafe-any
     change.changes.forEach(c => {
         if (languageService.resetSchema(c.uri)) {
             hasChanges = true
@@ -375,7 +366,6 @@ connection.onHover((textDocumentPositionParams, token) => {
 connection.onDocumentSymbol((documentSymbolParams, token) => {
     return runSafe(
         () => {
-            // tslint:disable-next-line no-unsafe-any
             const document = documents.get(documentSymbolParams.textDocument.uri)
             if (document) {
                 const jsonDocument = getJSONDocument(document)
@@ -398,7 +388,6 @@ connection.onDocumentSymbol((documentSymbolParams, token) => {
             }
 
             return []
-            // tslint:disable: no-unsafe-any
         },
         [],
         `Error while computing document symbols for ${documentSymbolParams.textDocument.uri}`,

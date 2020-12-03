@@ -19,6 +19,7 @@ import {
 import * as codelensUtils from '../codelens/codeLensUtils'
 import * as csLensProvider from '../codelens/csharpCodeLensProvider'
 import * as pyLensProvider from '../codelens/pythonCodeLensProvider'
+import * as jsLensProvider from '../codelens/typescriptCodeLensProvider'
 import { SamTemplateCodeLensProvider } from '../codelens/samTemplateCodeLensProvider'
 import { ext } from '../extensionGlobals'
 import { ExtContext, VSCODE_EXTENSION_ID } from '../extensions'
@@ -32,6 +33,8 @@ import { detectSamCli } from './cli/samCliDetection'
 import { SamDebugConfigProvider } from './debugger/awsSamDebugger'
 import { addSamDebugConfiguration } from './debugger/commands/addSamDebugConfiguration'
 import { AWS_SAM_DEBUG_TYPE } from './debugger/awsSamDebugConfiguration'
+import { CodelensRootRegistry } from './codelensRootRegistry'
+import { NoopWatcher } from '../watchedFiles'
 
 const STATE_NAME_SUPPRESS_YAML_PROMPT = 'aws.sam.suppressYamlPrompt'
 
@@ -138,13 +141,7 @@ async function activateCodeLensProviders(
 
     disposables.push(
         vscode.languages.registerCodeLensProvider(
-            // TODO : Turn into a constant to be consistent with Python, C#
-            [
-                {
-                    language: 'javascript',
-                    scheme: 'file',
-                },
-            ],
+            jsLensProvider.JAVASCRIPT_ALL_FILES,
             codelensUtils.makeTypescriptCodeLensProvider()
         )
     )
@@ -164,6 +161,25 @@ async function activateCodeLensProviders(
             await codelensUtils.makeCSharpCodeLensProvider()
         )
     )
+
+    try {
+        const registry = new CodelensRootRegistry()
+
+        await registry.addWatchPattern(pyLensProvider.PYTHON_BASE_PATTERN)
+        await registry.addWatchPattern(jsLensProvider.JAVASCRIPT_BASE_PATTERN)
+        await registry.addWatchPattern(csLensProvider.CSHARP_BASE_PATTERN)
+
+        ext.codelensRootRegistry = registry
+    } catch (e) {
+        vscode.window.showErrorMessage(
+            localize('AWS.codelens.failToInitializeCode', 'Failed to activate Lambda handler CodeLenses')
+        )
+        getLogger().error('Failed to activate codelens registry', e)
+        // This prevents us from breaking for any reason later if it fails to load. Since
+        // Noop watcher is always empty, we will get back empty arrays with no issues.
+        ext.codelensRootRegistry = (new NoopWatcher() as unknown) as CodelensRootRegistry
+    }
+    context.extensionContext.subscriptions.push(ext.codelensRootRegistry)
 
     return disposables
 }

@@ -56,15 +56,6 @@ describe('localLambdaRunner', async () => {
             return Promise.resolve(false)
         }
 
-        async function startDebuggingReturnsUndefined(
-            folder: vscode.WorkspaceFolder | undefined,
-            nameOrConfiguration: string | vscode.DebugConfiguration
-        ): Promise<boolean> {
-            const result: boolean | undefined = undefined
-
-            return Promise.resolve(result!)
-        }
-
         it('Successful attach has no retries', async () => {
             await localLambdaRunner.attachDebugger({
                 debugConfig: ({} as any) as SamLaunchRequestArgs,
@@ -177,7 +168,7 @@ describe('localLambdaRunner', async () => {
                 debugConfig: ({} as any) as SamLaunchRequestArgs,
                 channelLogger,
                 maxRetries: maxRetries,
-                onStartDebugging: startDebuggingReturnsUndefined,
+                onStartDebugging: startDebuggingReturnsFalse,
                 onWillRetry,
             })
 
@@ -191,7 +182,7 @@ describe('localLambdaRunner', async () => {
                 debugConfig: ({} as any) as SamLaunchRequestArgs,
                 channelLogger,
                 maxRetries,
-                onStartDebugging: startDebuggingReturnsUndefined,
+                onStartDebugging: startDebuggingReturnsFalse,
                 onWillRetry,
             })
 
@@ -201,12 +192,12 @@ describe('localLambdaRunner', async () => {
             )
         })
 
-        it('Does not log metrics when startDebugging returns undefined', async () => {
+        it('Does not log metrics when startDebugging returns false', async () => {
             await localLambdaRunner.attachDebugger({
                 debugConfig: ({} as any) as SamLaunchRequestArgs,
                 channelLogger,
                 maxRetries: 2,
-                onStartDebugging: startDebuggingReturnsUndefined,
+                onStartDebugging: startDebuggingReturnsFalse,
                 onRecordAttachDebuggerMetric: (attachResult: boolean | undefined, attempts: number): void => {
                     assert.strictEqual(actualRetries, 2, 'Metrics should only be recorded once')
                     assert.notStrictEqual(attachResult, undefined, 'attachResult should not be undefined')
@@ -235,33 +226,13 @@ describe('localLambdaRunner', async () => {
             assert.ok(results.success, 'Expected attach results to succeed')
         })
 
-        it('Returns false if attach fails during retries', async () => {
-            const maxRetries: number = 5
-            const results = await localLambdaRunner.attachDebugger({
-                debugConfig: ({} as any) as SamLaunchRequestArgs,
-                channelLogger,
-                maxRetries,
-                onStartDebugging: async (
-                    folder: vscode.WorkspaceFolder | undefined,
-                    nameOrConfiguration: string | vscode.DebugConfiguration
-                ): Promise<boolean> => {
-                    const retVal = actualRetries === maxRetries - 2 ? false : undefined
-
-                    return retVal!
-                },
-                onWillRetry,
-            })
-
-            assert.strictEqual(results.success, false, 'Expected attach results to fail')
-        })
-
         it('Returns false if retry count exceeded', async () => {
             const maxRetries: number = 3
             const results = await localLambdaRunner.attachDebugger({
                 debugConfig: ({} as any) as SamLaunchRequestArgs,
                 channelLogger,
                 maxRetries,
-                onStartDebugging: startDebuggingReturnsUndefined,
+                onStartDebugging: startDebuggingReturnsFalse,
                 onWillRetry,
             })
 

@@ -29,7 +29,7 @@ export async function invokeTypescriptLambda(
 }
 
 export async function getSamProjectDirPathForFile(filepath: string): Promise<string> {
-    const packageJsonPath = await findParentProjectFile(vscode.Uri.parse(filepath), 'package.json')
+    const packageJsonPath = await findParentProjectFile(vscode.Uri.parse(filepath), /^package\.json$/)
     if (!packageJsonPath) {
         throw new Error(`Cannot find package.json for: ${filepath}`)
     }

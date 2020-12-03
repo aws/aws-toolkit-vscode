@@ -43,7 +43,7 @@ export async function addSamDebugConfiguration(
     type: typeof CODE_TARGET_TYPE | typeof TEMPLATE_TARGET_TYPE | typeof API_TARGET_TYPE,
     step?: { step: number; totalSteps: number }
 ): Promise<void> {
-    // tslint:disable-next-line: no-floating-promises
+    // emit without waiting
     emitCommandTelemetry()
 
     let samDebugConfig: AwsSamDebuggerConfiguration
@@ -54,14 +54,11 @@ export async function addSamDebugConfiguration(
         let preloadedConfig = undefined
 
         if (workspaceFolder) {
-            const templateDatum = ext.templateRegistry.getRegisteredTemplate(rootUri.fsPath)
+            const templateDatum = ext.templateRegistry.getRegisteredItem(rootUri.fsPath)
             if (templateDatum) {
-                const resource = templateDatum.template.Resources![resourceName]
+                const resource = templateDatum.item.Resources![resourceName]
                 if (resource && resource.Properties) {
-                    const handler = CloudFormation.getStringForProperty(
-                        resource.Properties.Handler,
-                        templateDatum.template
-                    )
+                    const handler = CloudFormation.getStringForProperty(resource.Properties.Handler, templateDatum.item)
                     const existingConfig = await getExistingConfiguration(workspaceFolder, handler ?? '', rootUri)
                     if (existingConfig) {
                         const responseMigrate: string = localize(

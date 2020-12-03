@@ -43,5 +43,5 @@ class DefaultFakeClipboard implements FakeClipboard {
         this.text = text
     }
 
-    public constructor({}: ClipboardOptions = {}) {}
+    public constructor(_options: ClipboardOptions = {}) {}
 }
