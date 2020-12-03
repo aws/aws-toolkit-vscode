@@ -36,10 +36,10 @@ interface TestScenario {
 const scenarios: TestScenario[] = [
     { runtime: 'nodejs10.x', path: 'hello-world/app.js', debugSessionType: 'pwa-node', language: 'javascript' },
     { runtime: 'nodejs12.x', path: 'hello-world/app.js', debugSessionType: 'pwa-node', language: 'javascript' },
-    // { runtime: 'python2.7', path: 'hello_world/app.py', debugSessionType: 'python', language: 'python' },
-    // { runtime: 'python3.6', path: 'hello_world/app.py', debugSessionType: 'python', language: 'python' },
-    // { runtime: 'python3.7', path: 'hello_world/app.py', debugSessionType: 'python', language: 'python' },
-    // { runtime: 'python3.8', path: 'hello_world/app.py', debugSessionType: 'python', language: 'python' },
+    { runtime: 'python2.7', path: 'hello_world/app.py', debugSessionType: 'python', language: 'python' },
+    { runtime: 'python3.6', path: 'hello_world/app.py', debugSessionType: 'python', language: 'python' },
+    { runtime: 'python3.7', path: 'hello_world/app.py', debugSessionType: 'python', language: 'python' },
+    { runtime: 'python3.8', path: 'hello_world/app.py', debugSessionType: 'python', language: 'python' },
     // { runtime: 'dotnetcore2.1', path: 'src/HelloWorld/Function.cs', debugSessionType: 'coreclr', language: 'csharp' },
 ]
 
