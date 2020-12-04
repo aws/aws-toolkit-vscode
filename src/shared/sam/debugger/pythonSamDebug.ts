@@ -7,7 +7,11 @@ import { writeFile } from 'fs-extra'
 import * as os from 'os'
 import * as path from 'path'
 import * as vscode from 'vscode'
-import { PythonDebugConfiguration, PythonPathMapping } from '../../../lambda/local/debugConfiguration'
+import {
+    isImageLambdaConfig,
+    PythonDebugConfiguration,
+    PythonPathMapping,
+} from '../../../lambda/local/debugConfiguration'
 import { RuntimeFamily } from '../../../lambda/models/samLambdaRuntime'
 import { PythonDebugAdapterHeartbeat } from '../../debug/pythonDebugAdapterHeartbeat'
 import { ExtContext, VSCODE_EXTENSION_ID } from '../../extensions'
@@ -23,6 +27,7 @@ import { invokeLambdaFunction, makeInputTemplate } from '../localLambdaRunner'
 import { SamLaunchRequestArgs } from './awsSamDebugger'
 import { join } from 'path'
 import { ext } from '../../extensionGlobals'
+import { Runtime } from 'aws-sdk/clients/lambda'
 
 const PYTHON_DEBUG_ADAPTER_RETRY_DELAY_MS = 1000
 
@@ -33,11 +38,14 @@ export async function getSamProjectDirPathForFile(filepath: string): Promise<str
 
 // Add create debugging manifest/requirements.txt containing ptvsd
 async function makePythonDebugManifest(params: {
+    isImageLambda: boolean
     samProjectCodeRoot: string
     outputDir: string
 }): Promise<string | undefined> {
     let manifestText = ''
     const manfestPath = path.join(params.samProjectCodeRoot, 'requirements.txt')
+    // TODO: figure out how to get ptvsd in the container without hacking the user's requirements
+    const debugManifestPath = params.isImageLambda ? manfestPath : path.join(params.outputDir, 'debug-requirements.txt')
     if (await fileExists(manfestPath)) {
         manifestText = await readFileAsString(manfestPath)
     }
@@ -45,7 +53,6 @@ async function makePythonDebugManifest(params: {
     // TODO: Make this logic more robust. What if other module names include ptvsd?
     if (!manifestText.includes('ptvsd')) {
         manifestText += `${os.EOL}ptvsd>4.2,<5`
-        const debugManifestPath = path.join(params.outputDir, 'debug-requirements.txt')
         await writeFile(debugManifestPath, manifestText)
 
         return debugManifestPath
@@ -79,22 +86,36 @@ export async function makePythonDebugConfig(config: SamLaunchRequestArgs): Promi
     if (!config.noDebug) {
         debugPort = await getStartPort()
 
+        const isImageLambda = isImageLambdaConfig(config)
+        const debugArgs = `/tmp/lambci_debug_files/py_debug_wrapper.py --host 0.0.0.0 --port ${debugPort} --wait`
         config.debuggerPath = ext.context.asAbsolutePath(join('resources', 'debugger'))
-        config.debugArgs = [`/tmp/lambci_debug_files/py_debug_wrapper.py --host 0.0.0.0 --port ${debugPort} --wait`]
+        if (isImageLambda) {
+            const params = getPythonExeAndBootstrap(config.runtime)
+            config.debugArgs = [`${params.python} ${debugArgs} ${params.boostrap}`]
+        } else {
+            config.debugArgs = [debugArgs]
+        }
 
         manifestPath = await makePythonDebugManifest({
+            isImageLambda: isImageLambda,
             samProjectCodeRoot: config.codeRoot,
             outputDir: config.baseBuildDir,
         })
     }
 
     config.templatePath = await makeInputTemplate(config)
-    const pathMappings: PythonPathMapping[] = getLocalRootVariants(config.codeRoot).map<PythonPathMapping>(variant => {
-        return {
-            localRoot: variant,
-            remoteRoot: '/var/task',
-        }
-    })
+
+    let pathMappings: PythonPathMapping[]
+    if (config.lambda?.pathMappings !== undefined) {
+        pathMappings = config.lambda.pathMappings
+    } else {
+        pathMappings = getLocalRootVariants(config.codeRoot).map<PythonPathMapping>(variant => {
+            return {
+                localRoot: variant,
+                remoteRoot: '/var/task',
+            }
+        })
+    }
 
     return {
         ...config,
@@ -181,5 +202,22 @@ export async function activatePythonExtensionIfInstalled() {
     if (extension && !extension.isActive) {
         getLogger().info('Python CodeLens Provider is activating the python extension')
         await extension.activate()
+    }
+}
+
+function getPythonExeAndBootstrap(runtime: Runtime) {
+    // unfortunately new 'Image'-base images did not standardize the paths
+    // https://github.com/aws/aws-sam-cli/blob/7d5101a8edeb575b6925f9adecf28f47793c403c/samcli/local/docker/lambda_debug_settings.py
+    switch (runtime) {
+        case 'python2.7':
+            return { python: '/usr/bin/python2.7', boostrap: '/var/runtime/awslambda/bootstrap.py' }
+        case 'python3.6':
+            return { python: '/var/lang/bin/python3.6', boostrap: '/var/runtime/awslambda/bootstrap.py' }
+        case 'python3.7':
+            return { python: '/var/lang/bin/python3.7', boostrap: '/var/runtime/bootstrap' }
+        case 'python3.8':
+            return { python: '/var/lang/bin/python3.8', boostrap: '/var/runtime/bootstrap.py' }
+        default:
+            throw new Error(`Python SAM debug logic ran for invalid Python runtime: ${runtime}`)
     }
 }

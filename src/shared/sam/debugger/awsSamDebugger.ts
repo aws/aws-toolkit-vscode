@@ -5,7 +5,6 @@
 
 import * as semver from 'semver'
 import * as vscode from 'vscode'
-import * as _ from 'lodash'
 import * as nls from 'vscode-nls'
 import { Runtime } from 'aws-sdk/clients/lambda'
 import {
@@ -23,7 +22,7 @@ import * as csharpDebug from './csharpSamDebug'
 import * as pythonDebug from './pythonSamDebug'
 import * as tsDebug from './typescriptSamDebug'
 import { ExtContext } from '../../extensions'
-import { isInDirectory } from '../../filesystemUtilities'
+import { isInDirectory, makeTemporaryToolkitFolder } from '../../filesystemUtilities'
 import { getLogger } from '../../logger'
 import { getStartPort } from '../../utilities/debuggerUtils'
 import * as pathutil from '../../utilities/pathUtils'
@@ -39,15 +38,17 @@ import {
     AwsSamDebugConfigurationValidator,
     DefaultAwsSamDebugConfigurationValidator,
 } from './awsSamDebugConfigurationValidator'
-import { makeConfig } from '../localLambdaRunner'
+import { makeJsonFiles } from '../localLambdaRunner'
 import { SamLocalInvokeCommand } from '../cli/samCliLocalInvoke'
 import { getCredentialsFromStore } from '../../../credentials/credentialsStore'
 import { fromString } from '../../../credentials/providers/credentialsProviderId'
 import { notifyUserInvalidCredentials } from '../../../credentials/credentialsUtilities'
 import { Credentials } from 'aws-sdk/lib/credentials'
 import { CloudFormation } from '../../cloudformation/cloudformation'
-import { getSamCliContext, getSamCliVersion } from '../cli/samCliContext'
+import { getSamCliVersion } from '../cli/samCliContext'
 import { ext } from '../../extensionGlobals'
+import * as pathutils from '../../utilities/pathUtils'
+import { MINIMUM_SAM_CLI_VERSION_INCLUSIVE_FOR_IMAGE_SUPPORT } from '../cli/samCliValidator'
 
 const localize = nls.loadMessageBundle()
 
@@ -118,6 +119,13 @@ export interface SamLaunchRequestArgs extends AwsSamDebuggerConfiguration {
     noDebug?: boolean
     debuggerPath?: string
     debugArgs?: string[]
+    /** Passed to SAM CLI --container-env-vars. For Toolkit use, not exposed to the user. */
+    containerEnvVars?: { [k: string]: string }
+    /**
+     * Path to `container-env-vars.json` (generated from `containerEnvVars`).
+     * For Toolkit use, not exposed to the user.
+     */
+    containerEnvFile?: string
     debugPort?: number
 
     /**
@@ -180,11 +188,15 @@ export class SamDebugConfigProvider implements vscode.DebugConfigurationProvider
                     for (const resourceKey of Object.keys(templateDatum.item.Resources)) {
                         const resource = templateDatum.item.Resources[resourceKey]
                         if (resource) {
-                            const runtimeName = resource.Properties?.Runtime
+                            // we do not know enough to populate the runtime field for Image-based Lambdas
+                            const runtimeName = CloudFormation.isZipLambdaResource(resource?.Properties)
+                                ? resource?.Properties?.Runtime
+                                : ''
                             configs.push(
                                 createTemplateAwsSamDebugConfig(
                                     folder,
                                     CloudFormation.getStringForProperty(runtimeName, templateDatum.item),
+                                    false,
                                     resourceKey,
                                     templateDatum.path
                                 )
@@ -322,9 +334,10 @@ export class SamDebugConfigProvider implements vscode.DebugConfigurationProvider
             templateInvoke.templatePath = pathutil.normalize(tryGetAbsolutePath(folder, templateInvoke.templatePath))
         }
 
+        const isZip = CloudFormation.isZipLambdaResource(templateResource?.Properties)
         const runtime: string | undefined =
             config.lambda?.runtime ??
-            (template
+            (template && isZip
                 ? CloudFormation.getStringForProperty(templateResource?.Properties?.Runtime, template)
                 : undefined) ??
             getDefaultRuntime(getRuntimeFamily(editor?.document?.languageId ?? 'unknown'))
@@ -337,6 +350,21 @@ export class SamDebugConfigProvider implements vscode.DebugConfigurationProvider
             (template
                 ? CloudFormation.getNumberForProperty(templateResource?.Properties?.Timeout, template)
                 : undefined) ?? config.lambda?.timeoutSec
+
+        // TODO: Remove this when min sam version is > 1.13.0
+        if (!isZip) {
+            const samCliVersion = await getSamCliVersion(this.ctx.samCliContext())
+            if (semver.lt(samCliVersion, MINIMUM_SAM_CLI_VERSION_INCLUSIVE_FOR_IMAGE_SUPPORT)) {
+                getLogger().error(`SAM debug: version (${samCliVersion}) too low for Image lambdas: ${config})`)
+                vscode.window.showErrorMessage(
+                    localize(
+                        'AWS.output.sam.no.image.support',
+                        'Support for Image-based Lambdas requires a minimum SAM CLI version of 1.13.0.'
+                    )
+                )
+                return undefined
+            }
+        }
 
         if (!runtime) {
             getLogger().error(`SAM debug: failed to launch config: ${config})`)
@@ -356,13 +384,12 @@ export class SamDebugConfigProvider implements vscode.DebugConfigurationProvider
 
         // TODO: Remove this when min sam version is >= 1.4.0
         if (runtime === 'dotnetcore3.1' && !config.noDebug) {
-            const samCliVersion = await getSamCliVersion(getSamCliContext())
-
+            const samCliVersion = await getSamCliVersion(this.ctx.samCliContext())
             if (semver.lt(samCliVersion, '1.4.0')) {
                 vscode.window.showWarningMessage(
                     localize(
                         'AWS.output.sam.local.no.net.3.1.debug',
-                        'Debugging dotnetcore3.1 requires a minimum SAM CLI version  of 1.4.0. Function will run locally without debug.'
+                        'Debugging dotnetcore3.1 requires a minimum SAM CLI version of 1.4.0. Function will run locally without debug.'
                     )
                 )
                 config.noDebug = true
@@ -419,7 +446,8 @@ export class SamDebugConfigProvider implements vscode.DebugConfigurationProvider
         // 2. do `sam build`
         // 3. do `sam local invoke`
         //
-        await makeConfig(launchConfig)
+        // TODO is this normalize actually needed for any platform?
+        launchConfig.baseBuildDir = pathutils.normalize(await makeTemporaryToolkitFolder())
         switch (launchConfig.runtimeFamily) {
             case RuntimeFamily.NodeJS: {
                 // Make a NodeJS launch-config from the generic config.
@@ -444,6 +472,7 @@ export class SamDebugConfigProvider implements vscode.DebugConfigurationProvider
                 return undefined
             }
         }
+        await makeJsonFiles(launchConfig)
 
         // Set the type, then vscode will pass the config to SamDebugSession.attachRequest().
         // (Registered in sam/activation.ts which calls registerDebugAdapterDescriptorFactory()).

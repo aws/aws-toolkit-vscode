@@ -13,7 +13,7 @@ import * as picker from '../../shared/ui/picker'
 import { getLogger } from '../logger/logger'
 
 export interface WizardStep {
-    (): Thenable<Transition>
+    (stepNumber: number): Thenable<Transition>
 }
 
 export interface Transition {
@@ -65,7 +65,7 @@ export abstract class MultiStepWizard<TResult> {
                 getLogger().warn('encountered an undefined step, terminating wizard')
                 break
             }
-            const result = await step()
+            const result = await step(steps.length)
 
             switch (result.nextState) {
                 case WizardNextState.TERMINATE:

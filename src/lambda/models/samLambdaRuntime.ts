@@ -18,6 +18,8 @@ export enum RuntimeFamily {
     DotNetCore,
 }
 
+export type RuntimePackageType = 'Image' | 'Zip'
+
 // TODO: Consolidate all of the runtime constructs into a single <Runtime, Set<Runtime>> map
 //       We should be able to eliminate a fair amount of redundancy with that.
 export const nodeJsRuntimes: ImmutableSet<Runtime> = ImmutableSet<Runtime>(['nodejs12.x', 'nodejs10.x', 'nodejs8.10'])
@@ -34,17 +36,31 @@ const DEFAULT_RUNTIMES = ImmutableMap<RuntimeFamily, Runtime>([
     [RuntimeFamily.DotNetCore, 'dotnetcore2.1'],
 ])
 
-export const samLambdaRuntimes: ImmutableSet<Runtime> = ImmutableSet.union([
+export const samZipLambdaRuntimes: ImmutableSet<Runtime> = ImmutableSet.union([
     nodeJsRuntimes,
     pythonRuntimes,
     dotNetRuntimes,
 ])
+
 export const samLambdaImportableRuntimes: ImmutableSet<Runtime> = ImmutableSet.union([nodeJsRuntimes, pythonRuntimes])
 
 // Filter out node8 until local debugging is no longer supported, and it can be removed from samLambdaRuntimes
-export const samLambdaCreatableRuntimes: ImmutableSet<Runtime> = samLambdaRuntimes.filter(
+export const samLambdaCreatableRuntimes: ImmutableSet<Runtime> = samZipLambdaRuntimes.filter(
     runtime => runtime !== 'nodejs8.10'
 )
+// Image runtimes are not a direct subset of valid ZIP lambda types
+const dotnet50 = 'dotnet5.0'
+export const samImageLambdaRuntimes = ImmutableSet<Runtime>([
+    ...samLambdaCreatableRuntimes,
+    // TODO enable to allow dotnet 5 support
+    // dotnet50,
+    // SAM also supports ruby, go, java, but toolkit does not support
+])
+
+export const samLambdaRuntimes: ImmutableSet<Runtime> = ImmutableSet.union([
+    samZipLambdaRuntimes,
+    samImageLambdaRuntimes,
+])
 
 export type DependencyManager = 'cli-package' | 'mod' | 'gradle' | 'pip' | 'npm' | 'maven' | 'bundler'
 
@@ -54,7 +70,7 @@ export function getDependencyManager(runtime: Runtime): DependencyManager {
         return 'npm'
     } else if (pythonRuntimes.has(runtime)) {
         return 'pip'
-    } else if (dotNetRuntimes.has(runtime)) {
+    } else if (dotNetRuntimes.has(runtime) || runtime === dotnet50) {
         return 'cli-package'
     }
     throw new Error(`Runtime ${runtime} does not have an associated DependencyManager`)
@@ -65,26 +81,22 @@ export function getFamily(runtime: string): RuntimeFamily {
         return RuntimeFamily.NodeJS
     } else if (pythonRuntimes.has(runtime)) {
         return RuntimeFamily.Python
-    } else if (dotNetRuntimes.has(runtime)) {
+    } else if (dotNetRuntimes.has(runtime) || runtime === dotnet50) {
         return RuntimeFamily.DotNetCore
     }
     return RuntimeFamily.Unknown
-}
-
-// This allows us to do things like "sort" nodejs10.x after nodejs8.10
-// Map Values are used for comparisons, not for display
-const runtimeCompareText: ImmutableMap<Runtime, string> = ImmutableMap<Runtime, string>([['nodejs8.10', 'nodejs08.10']])
-
-function getSortableCompareText(runtime: Runtime): string {
-    return runtimeCompareText.get(runtime) || runtime.toString()
 }
 
 /**
  * Sorts runtimes from lowest value to greatest value, helpful for outputting alphabetized lists of runtimes
  * Differs from normal sorting as it numbers into account: e.g. nodeJs8.10 < nodeJs10.x
  */
-export function compareSamLambdaRuntime(a: Runtime, b: Runtime): number {
-    return getSortableCompareText(a).localeCompare(getSortableCompareText(b))
+export function compareSamLambdaRuntime(a: string, b: string): number {
+    return a.localeCompare(b, 'en', { numeric: true, ignorePunctuation: true })
+}
+
+function extractAndCompareRuntime(a: RuntimeQuickPickItem, b: RuntimeQuickPickItem): number {
+    return compareSamLambdaRuntime(a.label, b.label)
 }
 
 /**
@@ -128,6 +140,13 @@ function getRuntimesForFamily(family: RuntimeFamily): ImmutableSet<Runtime> | un
     }
 }
 
+export interface RuntimeQuickPickItem extends vscode.QuickPickItem {
+    packageType: RuntimePackageType
+    runtime: Runtime
+}
+
+export type RuntimeTuple = [Runtime, RuntimePackageType]
+
 /**
  * Creates a quick pick for a Runtime with the following parameters (all optional)
  * @param {Object} params Optional parameters for creating a QuickPick for runtimes:
@@ -136,17 +155,49 @@ function getRuntimesForFamily(family: RuntimeFamily): ImmutableSet<Runtime> | un
  * @param {RuntimeFamily} params.runtimeFamily RuntimeFamily that will define the list of runtimes to show (default: samLambdaCreatableRuntimes)
  */
 export function createRuntimeQuickPick(params: {
+    showImageRuntimes: boolean
     buttons?: vscode.QuickInputButton[]
     currRuntime?: Runtime
     runtimeFamily?: RuntimeFamily
     step?: number
     totalSteps?: number
-}): vscode.QuickPick<vscode.QuickPickItem> {
-    const runtimes = params.runtimeFamily
+}): vscode.QuickPick<RuntimeQuickPickItem> {
+    const zipRuntimes = params.runtimeFamily
         ? getRuntimesForFamily(params.runtimeFamily) ?? samLambdaCreatableRuntimes
         : samLambdaCreatableRuntimes
 
-    return picker.createQuickPick<vscode.QuickPickItem>({
+    const zipRuntimeItems = zipRuntimes
+        // remove uncreatable runtimes
+        .filter(value => samLambdaCreatableRuntimes.has(value))
+        .toArray()
+        .map<RuntimeQuickPickItem>(runtime => ({
+            packageType: 'Zip',
+            runtime: runtime,
+            label: runtime,
+            alwaysShow: runtime === params.currRuntime,
+            description:
+                runtime === params.currRuntime ? localize('AWS.wizard.selectedPreviously', 'Selected Previously') : '',
+        }))
+
+    // internally, after init there is essentially no difference between a ZIP and Image runtime;
+    // behavior is keyed off of what is specified in the cloudformation template
+    let imageRuntimeItems: RuntimeQuickPickItem[] = []
+    if (params.showImageRuntimes) {
+        imageRuntimeItems = samImageLambdaRuntimes
+            .map<RuntimeQuickPickItem>(runtime => ({
+                packageType: 'Image',
+                runtime: runtime,
+                label: `${runtime} (Image)`,
+                alwaysShow: runtime === params.currRuntime,
+                description:
+                    runtime === params.currRuntime
+                        ? localize('AWS.wizard.selectedPreviously', 'Selected Previously')
+                        : '',
+            }))
+            .toArray()
+    }
+
+    return picker.createQuickPick({
         options: {
             ignoreFocusOut: true,
             title: localize('AWS.samcli.initWizard.runtime.prompt', 'Select a SAM Application Runtime'),
@@ -155,18 +206,6 @@ export function createRuntimeQuickPick(params: {
             totalSteps: params.totalSteps,
         },
         buttons: [...(params.buttons ?? []), vscode.QuickInputButtons.Back],
-        items: runtimes
-            // remove uncreatable runtimes
-            .filter(value => samLambdaCreatableRuntimes.has(value))
-            .toArray()
-            .sort(compareSamLambdaRuntime)
-            .map(runtime => ({
-                label: runtime,
-                alwaysShow: runtime === params.currRuntime,
-                description:
-                    runtime === params.currRuntime
-                        ? localize('AWS.wizard.selectedPreviously', 'Selected Previously')
-                        : '',
-            })),
+        items: [...zipRuntimeItems, ...imageRuntimeItems].sort(extractAndCompareRuntime),
     })
 }

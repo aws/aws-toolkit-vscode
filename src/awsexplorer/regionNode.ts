@@ -10,6 +10,7 @@ import { CloudFormationNode } from '../lambda/explorer/cloudFormationNodes'
 import { CloudWatchLogsNode } from '../cloudWatchLogs/explorer/cloudWatchLogsNode'
 import { LambdaNode } from '../lambda/explorer/lambdaNodes'
 import { S3Node } from '../s3/explorer/s3Nodes'
+import { EcrNode } from '../ecr/explorer/ecrNode'
 import { ext } from '../shared/extensionGlobals'
 import { Region } from '../shared/regions/endpoints'
 import { RegionProvider } from '../shared/regions/regionProvider'
@@ -52,6 +53,10 @@ export class RegionNode extends AWSTreeNodeBase {
                 ? []
                 : [{ serviceId: 'apigateway', createFn: () => new ApiGatewayNode(partitionId, this.regionCode) }]),
             { serviceId: 'cloudformation', createFn: () => new CloudFormationNode(this.regionCode) },
+            {
+                serviceId: 'ecr',
+                createFn: () => new EcrNode(ext.toolkitClientBuilder.createEcrClient(this.regionCode)),
+            },
             { serviceId: 'logs', createFn: () => new CloudWatchLogsNode(this.regionCode) },
             { serviceId: 'lambda', createFn: () => new LambdaNode(this.regionCode) },
             { serviceId: 's3', createFn: () => new S3Node(ext.toolkitClientBuilder.createS3Client(this.regionCode)) },

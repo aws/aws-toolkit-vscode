@@ -17,24 +17,34 @@ export interface SamCliPackageParameters {
     environmentVariables: NodeJS.ProcessEnv
     region: string
     s3Bucket: string
+
+    /**
+     * The URI of an ECR repository
+     */
+    ecrRepo?: string
 }
 
 export async function runSamCliPackage(
     packageArguments: SamCliPackageParameters,
     invoker: SamCliProcessInvoker
 ): Promise<void> {
+    const args = [
+        'package',
+        '--template-file',
+        packageArguments.sourceTemplateFile,
+        '--s3-bucket',
+        packageArguments.s3Bucket,
+        '--output-template-file',
+        packageArguments.destinationTemplateFile,
+        '--region',
+        packageArguments.region,
+    ]
+    if (packageArguments.ecrRepo) {
+        args.push('--image-repository')
+        args.push(packageArguments.ecrRepo)
+    }
     const childProcessResult = await invoker.invoke({
-        arguments: [
-            'package',
-            '--template-file',
-            packageArguments.sourceTemplateFile,
-            '--s3-bucket',
-            packageArguments.s3Bucket,
-            '--output-template-file',
-            packageArguments.destinationTemplateFile,
-            '--region',
-            packageArguments.region,
-        ],
+        arguments: args,
         spawnOptions: {
             env: packageArguments.environmentVariables,
         },
