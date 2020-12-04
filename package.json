@@ -58,6 +58,7 @@
         "onCommand:aws.aboutToolkit",
         "onCommand:aws.cloudWatchLogs.viewLogStream",
         "onLanguage:asl",
+        "onLanguage:asl-yaml",
         "onLanguage:ssm-json",
         "onLanguage:ssm-yaml",
         "onCommand:aws.ssmDocument.createLocalDocument",
@@ -727,7 +728,7 @@
             "editor/title": [
                 {
                     "command": "aws.previewStateMachine",
-                    "when": "editorLangId == asl",
+                    "when": "editorLangId == asl || editorLangId == asl-yaml",
                     "group": "navigation"
                 },
                 {
@@ -1407,6 +1408,16 @@
                 ]
             },
             {
+                "id": "asl-yaml",
+                "aliases": [
+                    "Amazon States Language (YAML)"
+                ],
+                "extensions": [
+                    ".asl.yml",
+                    ".asl.yaml"
+                ]
+            },
+            {
                 "id": "ssm-json",
                 "extensions": [
                     ".ssm.json"
@@ -1431,7 +1442,7 @@
                 "command": "aws.previewStateMachine",
                 "key": "ctrl+shift+v",
                 "mac": "cmd+shift+v",
-                "when": "editorTextFocus && editorLangId == asl"
+                "when": "editorTextFocus && (editorLangId == asl || editorLangId == asl-yaml)"
             }
         ],
         "grammars": [
@@ -1439,6 +1450,11 @@
                 "language": "asl",
                 "scopeName": "source.asl",
                 "path": "./syntaxes/ASL.tmLanguage"
+            },
+            {
+                "language": "asl-yaml",
+                "scopeName": "source.asl.yaml",
+                "path": "./syntaxes/asl-yaml.tmLanguage.json"
             },
             {
                 "language": "ssm-json",
@@ -1503,8 +1519,8 @@
         "@types/mime-types": "^2.1.0",
         "@types/mocha": "^7.0.2",
         "@types/node": "^10.14.22",
-        "@types/request": "^2.47.1",
         "@types/readline-sync": "^1.4.3",
+        "@types/request": "^2.47.1",
         "@types/semver": "^5.5.0",
         "@types/sinon": "^7.0.13",
         "@types/tcp-port-used": "^1.0.0",
@@ -1540,6 +1556,7 @@
         "ts-mockito": "^2.5.0",
         "ts-node": "^9.0.0",
         "tslint": "^6.1.3",
+        "umd-compat-loader": "^2.1.2",
         "vsce": "^1.81.1",
         "vscode-nls-dev": "^3.3.1",
         "vscode-test": "^1.4.0",
@@ -1548,7 +1565,7 @@
     },
     "dependencies": {
         "adm-zip": "^0.4.13",
-        "amazon-states-language-service": "^1.4.1",
+        "amazon-states-language-service": "^1.6.1",
         "async-lock": "^1.1.3",
         "aws-sdk": "^2.581.0",
         "aws-ssm-document-language-service": "^1.0.0",
