@@ -6,7 +6,6 @@ package software.aws.toolkits.jetbrains.services.cloudwatch.logs.insights
 import com.intellij.openapi.Disposable
 import com.intellij.openapi.project.Project
 import com.intellij.ui.TableSpeedSearch
-import com.intellij.ui.components.breadcrumbs.Breadcrumbs
 import com.intellij.ui.table.TableView
 import com.intellij.util.ExceptionUtil
 import com.intellij.util.ui.ListTableModel
