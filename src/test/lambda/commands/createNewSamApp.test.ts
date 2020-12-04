@@ -16,7 +16,10 @@ import { anything, capture, instance, mock, when } from 'ts-mockito'
 import { makeSampleSamTemplateYaml } from '../../shared/cloudformation/cloudformationTestUtils'
 import { makeTemporaryToolkitFolder } from '../../../shared/filesystemUtilities'
 import { ExtContext } from '../../../shared/extensions'
-import { TemplateTargetProperties } from '../../../shared/sam/debugger/awsSamDebugConfiguration'
+import {
+    AwsSamDebuggerConfiguration,
+    TemplateTargetProperties,
+} from '../../../shared/sam/debugger/awsSamDebugConfiguration'
 import { ext } from '../../../shared/extensionGlobals'
 
 describe('addInitialLaunchConfiguration', function () {
@@ -62,11 +65,13 @@ describe('addInitialLaunchConfiguration', function () {
 
         testutil.toFile(makeSampleSamTemplateYaml(true), tempTemplate.fsPath)
 
+        // without runtime
         await ext.templateRegistry.addItemToRegistry(tempTemplate)
-        const launchConfigs = await addInitialLaunchConfiguration(
+        let launchConfigs = await addInitialLaunchConfiguration(
             fakeContext,
             fakeWorkspaceFolder,
             tempTemplate,
+            undefined,
             instance(mockLaunchConfiguration)
         )
 
@@ -91,6 +96,44 @@ describe('addInitialLaunchConfiguration', function () {
         assert.strictEqual(matchingConfigs!.length, 1)
     })
 
+    it('produces and returns initial launch configurations with runtime', async () => {
+        when(mockLaunchConfiguration.addDebugConfigurations(anything())).thenResolve()
+
+        testutil.toFile(makeSampleSamTemplateYaml(true), tempTemplate.fsPath)
+
+        // without runtime
+        await ext.templateRegistry.addItemToRegistry(tempTemplate)
+        let launchConfigs = (await addInitialLaunchConfiguration(
+            fakeContext,
+            fakeWorkspaceFolder,
+            tempTemplate,
+            'someruntime',
+            instance(mockLaunchConfiguration)
+        )) as AwsSamDebuggerConfiguration[]
+
+        // eslint-disable-next-line @typescript-eslint/unbound-method
+        const [arg] = capture(mockLaunchConfiguration.addDebugConfigurations).last()
+        assert.ok(
+            pathutils.areEqual(
+                fakeWorkspaceFolder.uri.fsPath,
+                (arg[0].invokeTarget as TemplateTargetProperties).templatePath,
+                tempTemplate.fsPath
+            )
+        )
+        assert.ok(launchConfigs)
+        const matchingConfigs = launchConfigs?.filter(config => {
+            return (
+                pathutils.areEqual(
+                    fakeWorkspaceFolder.uri.fsPath,
+                    (config.invokeTarget as TemplateTargetProperties).templatePath,
+                    tempTemplate.fsPath
+                ) && config.lambda?.runtime === 'someruntime'
+            )
+        })
+        assert.ok(matchingConfigs)
+        assert.strictEqual(matchingConfigs!.length, 1)
+    })
+
     it('returns a blank array if it does not match any launch configs', async () => {
         when(mockLaunchConfiguration.addDebugConfigurations(anything())).thenResolve()
 
@@ -101,6 +144,7 @@ describe('addInitialLaunchConfiguration', function () {
             fakeContext,
             fakeWorkspaceFolder,
             vscode.Uri.file(path.join(tempFolder, 'thisAintIt.yaml')),
+            undefined,
             instance(mockLaunchConfiguration)
         )
         assert.deepStrictEqual(launchConfigs, [])
