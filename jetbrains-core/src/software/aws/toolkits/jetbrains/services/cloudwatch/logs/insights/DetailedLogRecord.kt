@@ -6,6 +6,7 @@ package software.aws.toolkits.jetbrains.services.cloudwatch.logs.insights
 import com.intellij.openapi.Disposable
 import com.intellij.openapi.project.Project
 import com.intellij.ui.TableSpeedSearch
+import com.intellij.ui.components.breadcrumbs.Breadcrumbs
 import com.intellij.ui.table.TableView
 import com.intellij.util.ExceptionUtil
 import com.intellij.util.ui.ListTableModel
@@ -34,6 +35,8 @@ class DetailedLogRecord(
 ) : CoroutineScope by ApplicationThreadPoolScope("DetailedLogEvents"), Disposable {
     val title = message("cloudwatch.logs.log_record", logRecordPointer)
 
+    private lateinit var breadcrumbHolder: JPanel
+    private lateinit var locationInformation: Breadcrumbs
     lateinit var basePanel: JPanel
         private set
     lateinit var tableView: TableView<LogRecordFieldPair>
