@@ -15,12 +15,16 @@ import javax.swing.JPanel
 
 class LocalLambdaRunSettingsEditorPanel(private val project: Project) {
     lateinit var panel: JPanel
+        private set
+    lateinit var invalidator: JCheckBox
+        private set
+    lateinit var lambdaInputPanel: JPanel
+        private set
+    lateinit var lambdaInput: LambdaInputPanel
+        private set
     private lateinit var raw: JBRadioButton
     private lateinit var template: JBRadioButton
     private lateinit var settings: Wrapper
-    lateinit var invalidator: JCheckBox
-    lateinit var lambdaInputPanel: JPanel
-    lateinit var lambdaInput: LambdaInputPanel
 
     val rawSettings = RawSettings(project)
     val templateSettings = TemplateSettings(project)

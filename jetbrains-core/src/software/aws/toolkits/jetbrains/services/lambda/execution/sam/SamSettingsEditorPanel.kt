@@ -10,10 +10,17 @@ import javax.swing.JTextField
 
 class SamSettingsEditorPanel {
     lateinit var buildInContainer: JCheckBox
+        private set
     lateinit var dockerNetwork: JTextField
+        private set
     lateinit var skipPullImage: JCheckBox
+        private set
     lateinit var panel: JPanel
+        private set
     lateinit var additionalBuildArgs: ExpandableTextField
+        private set
     lateinit var additionalLocalArgs: ExpandableTextField
+        private set
     lateinit var debugHostChooser: ComboBox<String>
+        private set
 }

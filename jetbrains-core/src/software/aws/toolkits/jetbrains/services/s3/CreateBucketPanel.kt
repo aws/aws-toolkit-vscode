@@ -8,5 +8,7 @@ import javax.swing.JTextField
 
 class CreateBucketPanel {
     lateinit var bucketName: JTextField
+        private set
     lateinit var component: JPanel
+        private set
 }

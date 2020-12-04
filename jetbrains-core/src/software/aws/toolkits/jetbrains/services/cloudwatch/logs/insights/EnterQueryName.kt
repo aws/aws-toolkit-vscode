@@ -7,5 +7,7 @@ import javax.swing.JTextField
 
 class EnterQueryName {
     lateinit var queryName: JTextField
+        private set
     lateinit var saveQueryPanel: JPanel
+        private set
 }

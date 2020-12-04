@@ -32,6 +32,7 @@ class CloudWatchLogGroup(
     private val logGroup: String
 ) : CoroutineScope by ApplicationThreadPoolScope("CloudWatchLogsGroup"), Disposable {
     lateinit var content: JPanel
+        private set
 
     private val edtContext = getCoroutineUiContext(disposable = this)
 

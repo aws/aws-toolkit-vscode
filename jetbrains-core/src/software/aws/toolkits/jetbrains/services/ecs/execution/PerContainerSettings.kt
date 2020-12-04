@@ -22,11 +22,17 @@ import javax.swing.JPanel
 
 class PerContainerSettings(private val project: Project, private val containerName: String, parent: Disposable) {
     lateinit var panel: JPanel
+        private set
     lateinit var platform: ComboBox<CloudDebuggingPlatform>
+        private set
     lateinit var startCommand: StartupCommandWithAutoFill
+        private set
     lateinit var containerSettingsTabsPanel: JPanel
+        private set
     lateinit var remoteDebugPort: RemoteDebugPort
+        private set
     lateinit var importFromDockerfile: JButton
+        private set
 
     private val platformModel = SortedComboBoxModel<CloudDebuggingPlatform>(compareBy { it.name })
     private val containerSettingsTabs = createEditorTabs(project, parent)

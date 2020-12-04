@@ -24,7 +24,9 @@ class SliderPanel(
 ) {
     private lateinit var content: JPanel
     lateinit var slider: JSlider
+        private set
     lateinit var textField: JTextField
+        private set
 
     init {
         slider.majorTickSpacing = majorTick

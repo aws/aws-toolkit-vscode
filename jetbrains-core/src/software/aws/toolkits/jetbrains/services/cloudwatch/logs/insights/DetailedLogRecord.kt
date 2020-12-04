@@ -34,10 +34,13 @@ class DetailedLogRecord(
     private val logRecordPointer: String
 ) : CoroutineScope by ApplicationThreadPoolScope("DetailedLogEvents"), Disposable {
     val title = message("cloudwatch.logs.log_record", logRecordPointer)
-    lateinit var basePanel: JPanel
+
     private lateinit var breadcrumbHolder: JPanel
     private lateinit var locationInformation: Breadcrumbs
+    lateinit var basePanel: JPanel
+        private set
     lateinit var tableView: TableView<LogRecordFieldPair>
+        private set
     private val recordLoadTask: Deferred<LogRecord>
 
     private fun createUIComponents() {

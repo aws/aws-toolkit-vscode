@@ -29,13 +29,19 @@ import javax.swing.JPanel
 
 class TemplateSettings(val project: Project) {
     lateinit var panel: JPanel
+        private set
     lateinit var templateFile: TextFieldWithBrowseButton
-    private lateinit var imageSettingsPanel: JPanel
-    private lateinit var functionModels: DefaultComboBoxModel<Function>
+        private set
     lateinit var function: JComboBox<Function>
-    private lateinit var runtimeModel: SortedComboBoxModel<Runtime>
+        private set
     lateinit var runtime: JComboBox<Runtime>
+        private set
     lateinit var pathMappingsTable: PathMappingsComponent
+        private set
+    private lateinit var functionModels: DefaultComboBoxModel<Function>
+    private lateinit var imageSettingsPanel: JPanel
+    private lateinit var runtimeModel: SortedComboBoxModel<Runtime>
+
     val isImage
         get() = function.selected()?.packageType() == PackageType.IMAGE
 

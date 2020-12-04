@@ -42,6 +42,7 @@ class CloudWatchLogStream(
     private val duration: Duration? = null
 ) : CoroutineScope by ApplicationThreadPoolScope("CloudWatchLogStream"), Disposable {
     lateinit var content: JPanel
+        private set
     private lateinit var breadcrumbHolder: JPanel
     private lateinit var locationInformation: Breadcrumbs
     private lateinit var tablePanel: SimpleToolWindowPanel

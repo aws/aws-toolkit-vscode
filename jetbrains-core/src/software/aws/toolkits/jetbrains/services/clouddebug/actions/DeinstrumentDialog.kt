@@ -10,7 +10,9 @@ import javax.swing.JPanel
 
 class DeinstrumentDialog(serviceName: String) : Disposable {
     lateinit var content: JPanel
+        private set
     lateinit var warningMessage: JBLabel
+        private set
 
     init {
         warningMessage.text = MessageFormat.format(warningMessage.text, serviceName)

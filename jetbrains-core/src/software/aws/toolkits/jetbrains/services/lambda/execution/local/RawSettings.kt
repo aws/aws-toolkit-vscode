@@ -20,12 +20,18 @@ import javax.swing.JPanel
 
 class RawSettings(private val project: Project) {
     lateinit var panel: JPanel
+        private set
     lateinit var handlerPanel: HandlerPanel
-    private lateinit var runtimeModel: SortedComboBoxModel<Runtime>
+        private set
     lateinit var runtime: JComboBox<Runtime>
+        private set
     lateinit var timeoutSlider: SliderPanel
+        private set
     lateinit var memorySlider: SliderPanel
+        private set
     lateinit var environmentVariables: EnvironmentVariablesTextField
+        private set
+    private lateinit var runtimeModel: SortedComboBoxModel<Runtime>
 
     var lastSelectedRuntime: Runtime? = null
 

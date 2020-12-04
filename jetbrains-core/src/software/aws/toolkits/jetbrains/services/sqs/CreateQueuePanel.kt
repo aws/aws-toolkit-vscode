@@ -16,12 +16,19 @@ import javax.swing.JTextField
 
 class CreateQueuePanel {
     lateinit var component: JPanel
+        private set
     lateinit var queueName: JTextField
+        private set
     lateinit var standardType: JRadioButton
+        private set
     lateinit var fifoType: JRadioButton
+        private set
     lateinit var queueNameContextHelp: JLabel
+        private set
     lateinit var fifoSuffix: JPanel
+        private set
     lateinit var textPanel: JPanel
+        private set
 
     init {
         setRadioButton()

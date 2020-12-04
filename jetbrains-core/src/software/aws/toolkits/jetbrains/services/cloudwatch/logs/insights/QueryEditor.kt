@@ -27,26 +27,42 @@ import javax.swing.JTextField
 
 class QueryEditor internal constructor(
     private val project: Project,
-    val initialQueryDetails: QueryDetails
+    private val initialQueryDetails: QueryDetails
 ) {
     lateinit var absoluteTimeRadioButton: JRadioButton
+        private set
     lateinit var relativeTimeRadioButton: JRadioButton
+        private set
     lateinit var searchTerm: JRadioButton
+        private set
     lateinit var querySearchTerm: JTextField
+        private set
     lateinit var queryLogGroupsRadioButton: JRadioButton
+        private set
     lateinit var saveQueryButton: JButton
+        private set
     lateinit var retrieveSavedQueriesButton: JButton
+        private set
     lateinit var tablePanel: SimpleToolWindowPanel
+        private set
     lateinit var queryBox: JTextArea
+        private set
     lateinit var endDate: DatePicker
+        private set
     lateinit var queryEditorBasePanel: JPanel
-    private lateinit var comboBoxModel: EnumComboBoxModel<TimeUnit>
+        private set
     lateinit var relativeTimeUnit: JComboBox<TimeUnit>
-    private lateinit var numberFormat: NumberFormat
+        private set
     lateinit var relativeTimeNumber: JFormattedTextField
+        private set
     lateinit var startDate: DatePicker
+        private set
     lateinit var queryGroupScrollPane: JBScrollPane
+        private set
     lateinit var logGroupTable: LogGroupSelectorTable
+        private set
+    private lateinit var comboBoxModel: EnumComboBoxModel<TimeUnit>
+    private lateinit var numberFormat: NumberFormat
     private lateinit var timePanel: JPanel
     private lateinit var searchPanel: JPanel
 

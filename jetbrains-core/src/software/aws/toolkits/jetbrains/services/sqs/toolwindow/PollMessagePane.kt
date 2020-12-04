@@ -37,10 +37,15 @@ class PollMessagePane(
     private val queue: Queue
 ) : CoroutineScope by ApplicationThreadPoolScope("PollMessagesPane") {
     lateinit var component: JPanel
+        private set
     lateinit var messagesAvailableLabel: JLabel
+        private set
     lateinit var tablePanel: SimpleToolWindowPanel
+        private set
     lateinit var pollButton: JButton
+        private set
     lateinit var pollHelpLabel: JLabel
+        private set
 
     val messagesTable = MessagesTable()
 
