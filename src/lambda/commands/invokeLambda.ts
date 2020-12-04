@@ -56,8 +56,8 @@ export async function invokeLambda(params: {
             `Invoked ${functionNode.configuration.FunctionName}`,
             vscode.ViewColumn.One,
             {
-                // Enable scripts in the webview
                 enableScripts: true,
+                retainContextWhenHidden: true,
             }
         )
         const baseTemplateFn = _.template(BaseTemplates.SIMPLE_HTML)

@@ -15,7 +15,6 @@ async function setupVSCode(): Promise<string> {
     return vsCodeExecutablePath
 }
 
-// tslint:disable-next-line: no-floating-promises
 ;(async () => {
     try {
         console.log('Running Main test suite...')

@@ -57,7 +57,6 @@ export class CredentialsStore {
      * Evicts credentials from storage
      */
     public invalidateCredentials(credentialsProviderId: CredentialsProviderId) {
-        // tslint:disable-next-line:no-dynamic-delete
         delete this.credentialsCache[asString(credentialsProviderId)]
     }
 

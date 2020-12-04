@@ -54,7 +54,6 @@ export function submitFeedback(listener?: (message: any) => Promise<void>): vsco
 function createListener(panel: vscode.WebviewPanel) {
     const feedbackPanel = {
         postMessage: (message: any) => panel.webview.postMessage(message),
-        // tslint:disable-next-line: no-unsafe-any
         dispose: () => panel.dispose(),
     }
 

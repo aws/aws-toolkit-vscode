@@ -139,7 +139,6 @@ describe('templates', async () => {
                 assert.ok(err)
                 assert.strictEqual(
                     String(err),
-                    // tslint:disable-next-line:max-line-length
                     'Error: Could not load .aws/templates.json: Error: Could not parse .aws/templates.json: close brace expected at offset 1, length 0'
                 )
 
@@ -797,7 +796,7 @@ describe('getExistingConfiguration', async () => {
     it('returns undefined if the legacy config file is not valid JSON', async () => {
         await writeFile(tempTemplateFile.fsPath, makeSampleSamTemplateYaml(true, { handler: matchedHandler }), 'utf8')
         await writeFile(tempConfigFile, makeSampleSamTemplateYaml(true, { handler: matchedHandler }), 'utf8')
-        await ext.templateRegistry.addTemplateToRegistry(tempTemplateFile)
+        await ext.templateRegistry.addItemToRegistry(tempTemplateFile)
         const val = await getExistingConfiguration(fakeWorkspaceFolder, matchedHandler, tempTemplateFile)
         assert.strictEqual(val, undefined)
     })
@@ -818,7 +817,7 @@ describe('getExistingConfiguration', async () => {
             },
         }
         await writeFile(tempConfigFile, JSON.stringify(configData), 'utf8')
-        await ext.templateRegistry.addTemplateToRegistry(tempTemplateFile)
+        await ext.templateRegistry.addItemToRegistry(tempTemplateFile)
         const val = await getExistingConfiguration(fakeWorkspaceFolder, matchedHandler, tempTemplateFile)
         assert.ok(val)
         if (val) {

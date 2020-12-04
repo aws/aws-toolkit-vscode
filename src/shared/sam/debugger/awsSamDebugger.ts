@@ -178,22 +178,22 @@ export class SamDebugConfigProvider implements vscode.DebugConfigurationProvider
         const configs: AwsSamDebuggerConfiguration[] = []
         if (folder) {
             const folderPath = folder.uri.fsPath
-            const templates = ext.templateRegistry.registeredTemplates
+            const templates = ext.templateRegistry.registeredItems
 
             for (const templateDatum of templates) {
                 if (isInDirectory(folderPath, templateDatum.path)) {
-                    if (!templateDatum.template.Resources) {
+                    if (!templateDatum.item.Resources) {
                         getLogger().error(`provideDebugConfigurations: invalid template: ${templateDatum.path}`)
                         continue
                     }
-                    for (const resourceKey of Object.keys(templateDatum.template.Resources)) {
-                        const resource = templateDatum.template.Resources[resourceKey]
+                    for (const resourceKey of Object.keys(templateDatum.item.Resources)) {
+                        const resource = templateDatum.item.Resources[resourceKey]
                         if (resource) {
                             const runtimeName = resource.Properties?.Runtime
                             configs.push(
                                 createTemplateAwsSamDebugConfig(
                                     folder,
-                                    CloudFormation.getStringForProperty(runtimeName, templateDatum.template),
+                                    CloudFormation.getStringForProperty(runtimeName, templateDatum.item),
                                     resourceKey,
                                     templateDatum.path
                                 )
@@ -208,10 +208,7 @@ export class SamDebugConfigProvider implements vscode.DebugConfigurationProvider
                                         configs.push(
                                             createApiAwsSamDebugConfig(
                                                 folder,
-                                                CloudFormation.getStringForProperty(
-                                                    runtimeName,
-                                                    templateDatum.template
-                                                ),
+                                                CloudFormation.getStringForProperty(runtimeName, templateDatum.item),
                                                 resourceKey,
                                                 templateDatum.path,
                                                 {
@@ -408,7 +405,10 @@ export class SamDebugConfigProvider implements vscode.DebugConfigurationProvider
             }
         }
 
-        const port = await getStartPort()
+        // TODO: Let the OS (or SAM CLI) assign the port, then we need to
+        // scrape SAM CLI to find the port that was actually used?
+        const apiPort = config.invokeTarget.target === 'api' ? await getStartPort() : undefined
+        const debugPort = config.noDebug ? undefined : await getStartPort(apiPort ? apiPort + 1 : undefined)
         let launchConfig: SamLaunchRequestArgs = {
             ...config,
             request: 'attach',
@@ -421,12 +421,8 @@ export class SamDebugConfigProvider implements vscode.DebugConfigurationProvider
             templatePath: pathutil.normalize(templateInvoke?.templatePath),
             eventPayloadFile: '', // Populated by makeConfig().
             envFile: '', // Populated by makeConfig().
-            // TODO: Let the OS (or SAM CLI) assign the port, then we need to
-            // scrape SAM CLI to find the port that was actually used?
-            apiPort: port,
-            // TODO: Let the OS (or SAM CLI) assign the port, then we need to
-            // scrape SAM CLI to find the port that was actually used?
-            debugPort: config.noDebug ? undefined : port + 1,
+            apiPort: apiPort,
+            debugPort: debugPort,
             lambda: {
                 ...config.lambda,
                 memoryMb: lambdaMemory,

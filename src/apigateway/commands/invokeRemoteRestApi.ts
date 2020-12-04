@@ -52,6 +52,7 @@ export async function invokeRemoteRestApi(params: { outputChannel: vscode.Output
             vscode.ViewColumn.One,
             {
                 enableScripts: true,
+                retainContextWhenHidden: true,
             }
         )
         const baseTemplateFn = template(BaseTemplates.SIMPLE_HTML)
