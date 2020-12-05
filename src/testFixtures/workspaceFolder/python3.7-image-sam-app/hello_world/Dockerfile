@@ -1,4 +1,4 @@
-FROM 628053151772.dkr.ecr.sa-east-1.amazonaws.com/awslambda/python3.7-runtime:beta
+FROM public.ecr.aws/lambda/python:3.7
 
 COPY app.py requirements.txt ./
 
