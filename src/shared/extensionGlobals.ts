@@ -50,6 +50,7 @@ export interface IconPaths {
     statemachine: string
     help: string
     cloudFormation: string
+    ecr: string
     lambda: string
     settings: string
     registry: string
@@ -64,6 +65,7 @@ function makeIconPathsObject(): IconPaths {
     return {
         help: '',
         cloudFormation: '',
+        ecr: '',
         lambda: '',
         settings: '',
         registry: '',

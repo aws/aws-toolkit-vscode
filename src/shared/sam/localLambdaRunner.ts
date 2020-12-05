@@ -8,15 +8,12 @@ import * as path from 'path'
 import * as request from 'request'
 import * as tcpPortUsed from 'tcp-port-used'
 import * as vscode from 'vscode'
-import { getTemplate, getTemplateResource } from '../../lambda/local/debugConfiguration'
+import { getTemplate, getTemplateResource, isImageLambdaConfig } from '../../lambda/local/debugConfiguration'
 import { getFamily, RuntimeFamily } from '../../lambda/models/samLambdaRuntime'
 import { ExtContext } from '../extensions'
-import { makeTemporaryToolkitFolder } from '../filesystemUtilities'
-import * as pathutils from '../../shared/utilities/pathUtils'
 import { getLogger } from '../logger'
 import { SettingsConfiguration } from '../settingsConfiguration'
 import * as telemetry from '../telemetry/telemetry'
-import { TelemetryService } from '../telemetry/telemetryService'
 import { SamTemplateGenerator } from '../templates/sam/samTemplateGenerator'
 import { ExtensionDisposableFiles } from '../utilities/disposableFiles'
 import * as pathutil from '../utilities/pathUtils'
@@ -188,7 +185,10 @@ export async function invokeLambdaFunction(
         parameterOverrides: config.parameterOverrides,
     }
     if (!config.noDebug) {
-        // Needed at least for dotnet case; harmless for others.
+        // SAM_BUILD_MODE: https://github.com/aws/aws-sam-cli/blame/846dfc3e0a8ed12627d554a4f712790a0ddc8b47/designs/build_debug_artifacts.md#L58
+        // Needed at least for dotnet case because omnisharp ignores anything 'optimized'
+        // and thinks everything is library code; harmless for others.
+        // TODO: why doesn't this affect JB Toolkit/Rider?
         samCliArgs.environmentVariables = {
             ...samCliArgs.environmentVariables,
             SAM_BUILD_MODE: 'debug',
@@ -215,6 +215,7 @@ export async function invokeLambdaFunction(
     const maxRetries: number = getAttachDebuggerMaxRetryLimit(ctx.settings, MAX_DEBUGGER_RETRIES_DEFAULT)
     const timer = createInvokeTimer(ctx.settings)
     const debugPort = !config.noDebug ? config.debugPort?.toString() : undefined
+    const lambdaPackageType = isImageLambdaConfig(config) ? 'Image' : 'Zip'
 
     if (config.invokeTarget.target === 'api') {
         // sam local start-api ...
@@ -291,6 +292,7 @@ export async function invokeLambdaFunction(
             debugPort: debugPort,
             debuggerPath: config.debuggerPath,
             debugArgs: config.debugArgs,
+            containerEnvFile: config.containerEnvFile,
             extraArgs: config.sam?.localArguments,
             skipPullImage: config.sam?.skipNewImageCheck,
             parameterOverrides: config.parameterOverrides,
@@ -310,6 +312,7 @@ export async function invokeLambdaFunction(
             )
         } finally {
             telemetry.recordLambdaInvokeLocal({
+                lambdaPackageType: lambdaPackageType,
                 result: invokeResult,
                 runtime: config.runtime as telemetry.Runtime,
                 debug: !config.noDebug,
@@ -342,12 +345,12 @@ export async function invokeLambdaFunction(
             retryDelayMillis: ATTACH_DEBUGGER_RETRY_DELAY_MILLIS,
             channelLogger: ctx.chanLogger,
             onRecordAttachDebuggerMetric: (attachResult: boolean | undefined, attempts: number): void => {
-                recordAttachDebuggerMetric({
-                    telemetryService: ctx.telemetryService,
-                    result: attachResult,
-                    attempts,
-                    durationMillis: timer.elapsedTime,
-                    runtime: config.runtime,
+                telemetry.recordSamAttachDebugger({
+                    lambdaPackageType: lambdaPackageType,
+                    runtime: config.runtime as telemetry.Runtime,
+                    result: attachResult ? 'Succeeded' : 'Failed',
+                    attempts: attempts,
+                    duration: timer.elapsedTime,
                 })
             },
         })
@@ -557,23 +560,6 @@ export async function waitForPort(
     }
 }
 
-export interface RecordAttachDebuggerMetricContext {
-    telemetryService: Pick<TelemetryService, 'record'>
-    runtime: string
-    result: boolean | undefined
-    attempts: number
-    durationMillis: number
-}
-
-function recordAttachDebuggerMetric(params: RecordAttachDebuggerMetricContext) {
-    telemetry.recordSamAttachDebugger({
-        runtime: params.runtime as telemetry.Runtime,
-        result: params.result ? 'Succeeded' : 'Failed',
-        attempts: params.attempts,
-        duration: params.durationMillis,
-    })
-}
-
 function getAttachDebuggerMaxRetryLimit(configuration: SettingsConfiguration, defaultValue: number): number {
     return configuration.readSetting<number>('samcli.debug.attach.retry.maximum', defaultValue)!
 }
@@ -630,15 +616,20 @@ async function showDebugConsole(): Promise<void> {
  *
  * @param config
  */
-export async function makeConfig(config: SamLaunchRequestArgs): Promise<void> {
-    // TODO is this normalize actually needed for any platform?
-    config.baseBuildDir = pathutils.normalize(await makeTemporaryToolkitFolder())
+export async function makeJsonFiles(config: SamLaunchRequestArgs): Promise<void> {
     config.eventPayloadFile = path.join(config.baseBuildDir!, 'event.json')
     config.envFile = path.join(config.baseBuildDir!, 'env-vars.json')
 
     // env-vars.json (NB: effectively ignored for the `target=code` case).
     const env = JSON.stringify(getEnvironmentVariables(makeResourceName(config), config.lambda?.environmentVariables))
     await writeFile(config.envFile, env)
+
+    // container-env-vars.json
+    if (config.containerEnvVars) {
+        config.containerEnvFile = path.join(config.baseBuildDir!, 'container-env-vars.json')
+        const containerEnv = JSON.stringify(config.containerEnvVars)
+        await writeFile(config.containerEnvFile, containerEnv)
+    }
 
     // event.json
     const payloadObj = config.lambda?.payload?.json ?? config.api?.payload?.json

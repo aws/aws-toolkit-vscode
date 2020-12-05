@@ -1,0 +1,50 @@
+{
+	"date": "2020-12-01",
+	"version": "1.16.0",
+	"entries": [
+		{
+			"type": "Bug Fix",
+			"description": "Fix showing templates from .aws-sam in Sam Deploy (#1380)"
+		},
+		{
+			"type": "Bug Fix",
+			"description": "Fix creating S3 buckets in us-east-1"
+		},
+		{
+			"type": "Bug Fix",
+			"description": "Retain view state for Step Functions and Lambda when changing tabs"
+		},
+		{
+			"type": "Feature",
+			"description": "Container Image Support in Lambda"
+		},
+		{
+			"type": "Feature",
+			"description": "Add an explorer node for managing ECR repositories"
+		},
+		{
+			"type": "Feature",
+			"description": "NodeJS and Python Lambda functions can be imported from an AWS account into a local workspace"
+		},
+		{
+			"type": "Feature",
+			"description": "Lambda functions can be updated with code from ZIP files and directories containing built or unbuilt code"
+		},
+		{
+			"type": "Feature",
+			"description": "Codelenses in source files can create launch configurations that reference template.yaml resources."
+		},
+		{
+			"type": "Feature",
+			"description": "\"Create new SAM Application\" action is available from the context menu of Lambda nodes in the AWS Explorer"
+		},
+		{
+			"type": "Feature",
+			"description": "The amount of CloudWatch Logs entries retrieved per request is now configurable."
+		},
+		{
+			"type": "Feature",
+			"description": "\"Deploy SAM Application\" action is available from the context menu of Lambda, CloudFormation, and Region nodes in the AWS Explorer"
+		}
+	]
+}

@@ -78,3 +78,5 @@ export const INSIGHTS_TIMESTAMP_FORMAT = 'YYYY-MM-DDThh:mm:ss.SSSZ'
 export const CLOUDWATCH_LOGS_SCHEME = 'awsCloudWatchLogs'
 
 export const COPY_TO_CLIPBOARD_INFO_TIMEOUT_MS = 5000
+
+export const LAMBDA_PACKAGE_TYPE_IMAGE = 'Image'

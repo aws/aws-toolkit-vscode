@@ -20,6 +20,19 @@ export function createBaseTemplate(): CloudFormation.Template {
     }
 }
 
+export function createBaseImageTemplate(): CloudFormation.Template {
+    return {
+        Globals: {
+            Function: {
+                Timeout: 5,
+            },
+        },
+        Resources: {
+            TestResource: createBaseImageResource(),
+        },
+    }
+}
+
 export function createBaseResource(): CloudFormation.Resource {
     return {
         Type: CloudFormation.SERVERLESS_FUNCTION_TYPE,
@@ -27,6 +40,21 @@ export function createBaseResource(): CloudFormation.Resource {
             Handler: 'handler',
             CodeUri: '/',
             Runtime: 'nodejs12.x',
+            Timeout: 12345,
+            Environment: {
+                Variables: {
+                    ENVVAR: 'envvar',
+                },
+            },
+        },
+    }
+}
+
+export function createBaseImageResource(): CloudFormation.Resource {
+    return {
+        Type: CloudFormation.SERVERLESS_FUNCTION_TYPE,
+        Properties: {
+            PackageType: 'Image',
             Timeout: 12345,
             Environment: {
                 Variables: {

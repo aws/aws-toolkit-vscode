@@ -9,6 +9,7 @@ import * as semver from 'semver'
 import { Runtime } from 'aws-sdk/clients/lambda'
 import { Set as ImmutableSet } from 'immutable'
 import { supportsEventBridgeTemplates } from '../../../src/eventSchemas/models/schemaCodeLangs'
+import { RuntimePackageType } from './samLambdaRuntime'
 
 export const helloWorldTemplate = 'AWS SAM Hello World'
 export const eventBridgeHelloWorldTemplate = 'AWS SAM EventBridge Hello World'
@@ -25,8 +26,17 @@ export type SamTemplate =
     | 'AWS Step Functions Sample App'
     | 'REQUIRES_AWS_CREDENTIALS_REPROMPT_USER_FOR_TEMPLATE'
 
-export function getSamTemplateWizardOption(runtime: Runtime, samCliVersion: string): ImmutableSet<SamTemplate> {
+export function getSamTemplateWizardOption(
+    runtime: Runtime,
+    packageType: RuntimePackageType,
+    samCliVersion: string
+): ImmutableSet<SamTemplate> {
     let templateOptions: Array<SamTemplate> = Array<SamTemplate>(helloWorldTemplate)
+
+    if (packageType === 'Image') {
+        // only supports hello world for now
+        return ImmutableSet<SamTemplate>(templateOptions)
+    }
 
     if (supportsEventBridgeTemplates(runtime)) {
         templateOptions.push(eventBridgeHelloWorldTemplate, eventBridgeStarterAppTemplate)

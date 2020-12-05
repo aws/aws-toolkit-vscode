@@ -1,4 +1,0 @@
-{
-	"type": "Bug Fix",
-	"description": "Fix creating S3 buckets in us-east-1"
-}

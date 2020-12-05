@@ -186,6 +186,10 @@ export interface SamCliLocalInvokeInvocationArguments {
      */
     debugArgs?: string[]
     /**
+     * Passed to be executed as the root process in the Lambda container
+     */
+    containerEnvFile?: string
+    /**
      * parameter overrides specified in the `sam.template.parameters` field
      */
     parameterOverrides?: string[]
@@ -235,6 +239,8 @@ export class SamCliLocalInvokeInvocation {
         pushIf(invokeArgs, !!this.args.skipPullImage, '--skip-pull-image')
         pushIf(invokeArgs, !!this.args.debuggerPath, '--debugger-path', this.args.debuggerPath!)
         pushIf(invokeArgs, !!this.args.debugArgs, '--debug-args', ...(this.args.debugArgs ?? []))
+        pushIf(invokeArgs, !!this.args.containerEnvFile, '--container-env-vars', this.args.containerEnvFile)
+
         pushIf(
             invokeArgs,
             !!this.args.parameterOverrides && this.args.parameterOverrides.length > 0,
