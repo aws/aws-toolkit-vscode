@@ -10,7 +10,7 @@ COPY Function.cs HelloWorld.csproj aws-lambda-tools-defaults.json $FUNCTION_DIR/
 RUN dotnet tool install -g Amazon.Lambda.Tools
 RUN dotnet lambda package
 
-FROM 628053151772.dkr.ecr.sa-east-1.amazonaws.com/awslambda/dotnetcore2.1-runtime:beta
+FROM public.ecr.aws/lambda/dotnet:core2.1
 
 COPY --from=build-image /build/bin/Release/netcoreapp2.1/publish/ /var/task/
 
