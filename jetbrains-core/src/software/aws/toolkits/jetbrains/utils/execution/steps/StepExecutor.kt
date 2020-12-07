@@ -41,8 +41,10 @@ class StepExecutor(
             title,
             "/unused/working/directory",
             System.currentTimeMillis()
-        )
-        descriptor.isActivateToolWindowWhenAdded = true
+        ).apply {
+            isActivateToolWindowWhenAdded = true
+        }
+        // FIX_WHEN_MIN_IS_202 add optional filters and use descriptor.withExecutionFilter
 
         val progressListener: BuildProgressListener = project.service<BuildViewManager>()
         val messageEmitter = DefaultMessageEmitter.createRoot(progressListener, uniqueId)

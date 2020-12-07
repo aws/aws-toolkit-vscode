@@ -13,6 +13,7 @@ dependencies {
     api("com.fasterxml.jackson.datatype:jackson-datatype-jsr310:$jacksonVersion")
     api("com.fasterxml.jackson.dataformat:jackson-dataformat-xml:$jacksonVersion")
     api("software.amazon.awssdk:cognitoidentity:$awsSdkVersion")
+    api("software.amazon.awssdk:ecr:$awsSdkVersion")
     api("software.amazon.awssdk:ecs:$awsSdkVersion")
     api("software.amazon.awssdk:s3:$awsSdkVersion")
     api("software.amazon.awssdk:sso:$awsSdkVersion")

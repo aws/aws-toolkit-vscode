@@ -18,7 +18,7 @@ import java.nio.file.Path
 class PackageLambda(
     private val templatePath: Path,
     private val packagedTemplatePath: Path,
-    private val logicalId: String,
+    private val logicalId: String?,
     private val envVars: Map<String, String>,
     private val s3Bucket: String? = null,
     private val ecrRepo: String? = null
@@ -34,7 +34,9 @@ class PackageLambda(
     )
 
     override fun handleSuccessResult(output: String, messageEmitter: MessageEmitter, context: Context) {
-        // We finished the upload, extract out the uploaded code location
+        // We finished the upload, extract out the uploaded code location if we have a logicalId
+        logicalId ?: return
+
         val mapper = ObjectMapper(YAMLFactory())
         val packagedYaml = packagedTemplatePath.inputStream().use { mapper.readTree(it) }
         val uploadedCodeLocation = if (isImageBased()) {

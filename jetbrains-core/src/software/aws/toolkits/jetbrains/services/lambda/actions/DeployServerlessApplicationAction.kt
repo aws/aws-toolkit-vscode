@@ -16,6 +16,8 @@ import com.intellij.openapi.project.Project
 import com.intellij.openapi.roots.ModuleRootManager
 import com.intellij.openapi.vfs.VirtualFile
 import icons.AwsIcons
+import kotlinx.coroutines.runBlocking
+import kotlinx.coroutines.withContext
 import software.amazon.awssdk.services.cloudformation.CloudFormationClient
 import software.aws.toolkits.jetbrains.core.awsClient
 import software.aws.toolkits.jetbrains.core.credentials.AwsConnectionManager
@@ -29,12 +31,16 @@ import software.aws.toolkits.jetbrains.services.cloudformation.stack.StackWindow
 import software.aws.toolkits.jetbrains.services.cloudformation.validateSamTemplateHasResources
 import software.aws.toolkits.jetbrains.services.lambda.LambdaHandlerResolver
 import software.aws.toolkits.jetbrains.services.lambda.deploy.DeployServerlessApplicationDialog
-import software.aws.toolkits.jetbrains.services.lambda.deploy.SamDeployDialog
 import software.aws.toolkits.jetbrains.services.lambda.sam.SamExecutable
+import software.aws.toolkits.jetbrains.services.lambda.upload.UploadFunctionContinueDialog
+import software.aws.toolkits.jetbrains.services.lambda.upload.steps.DeployLambda
+import software.aws.toolkits.jetbrains.services.lambda.upload.steps.createDeployWorkflow
 import software.aws.toolkits.jetbrains.settings.DeploySettings
 import software.aws.toolkits.jetbrains.settings.relativeSamPath
 import software.aws.toolkits.jetbrains.utils.Operation
 import software.aws.toolkits.jetbrains.utils.TaggingResourceType
+import software.aws.toolkits.jetbrains.utils.execution.steps.StepExecutor
+import software.aws.toolkits.jetbrains.utils.getCoroutineUiContext
 import software.aws.toolkits.jetbrains.utils.notifyError
 import software.aws.toolkits.jetbrains.utils.notifyInfo
 import software.aws.toolkits.jetbrains.utils.notifyNoActiveCredentialsError
@@ -49,6 +55,7 @@ class DeployServerlessApplicationAction : AnAction(
     null,
     AwsIcons.Resources.SERVERLESS_APP
 ) {
+    private val edtContext = getCoroutineUiContext()
     private val templateYamlRegex = Regex("template\\.y[a]?ml", RegexOption.IGNORE_CASE)
 
     override fun actionPerformed(e: AnActionEvent) {
@@ -110,46 +117,76 @@ class DeployServerlessApplicationAction : AnAction(
     }
 
     private fun continueDeployment(project: Project, stackName: String, templateFile: VirtualFile, stackDialog: DeployServerlessApplicationDialog) {
-        val deployDialog = SamDeployDialog(
+        val workflow = StepExecutor(
             project,
-            stackName,
-            templateFile,
-            stackDialog.parameters,
-            stackDialog.bucket,
-            stackDialog.ecrRepo,
-            stackDialog.autoExecute,
-            stackDialog.useContainer,
-            stackDialog.capabilities
+            message("serverless.application.deploy_in_progress.title", stackName),
+            createDeployWorkflow(
+                project,
+                stackName,
+                templateFile,
+                stackDialog.bucket,
+                stackDialog.ecrRepo,
+                stackDialog.useContainer,
+                stackDialog.parameters,
+                stackDialog.capabilities
+            ),
+            stackName
         )
 
-        deployDialog.show()
-        if (!deployDialog.isOK) return
+        workflow.onSuccess = {
+            runBlocking {
+                val changeSetArn = it.getRequiredAttribute(DeployLambda.CHANGE_SET_ARN)
 
-        val cfnClient = project.awsClient<CloudFormationClient>()
-
-        cfnClient.describeStack(stackName) {
-            it?.run {
-                runInEdt {
-                    StackWindowManager.getInstance(project).openStack(stackName(), stackId())
+                if (!stackDialog.autoExecute) {
+                    val response = withContext(edtContext) { UploadFunctionContinueDialog(project, changeSetArn).showAndGet() }
+                    if (!response) {
+                        // TODO this telemetry needs to be improved. The user can finish the deployment later so we do not know if
+                        // it is actually cancelled or not
+                        SamTelemetry.deploy(project = project, result = Result.Cancelled)
+                        return@runBlocking
+                    }
                 }
-            }
-        }
-        ApplicationManager.getApplication().executeOnPooledThread {
-            try {
-                cfnClient.executeChangeSetAndWait(stackName, deployDialog.changeSetName)
+
+                val cfnClient = project.awsClient<CloudFormationClient>()
+
+                cfnClient.describeStack(stackName) {
+                    it?.run {
+                        runInEdt {
+                            StackWindowManager.getInstance(project).openStack(stackName(), stackId())
+                        }
+                    }
+                }
+                ApplicationManager.getApplication().executeOnPooledThread {
+                    try {
+                        cfnClient.executeChangeSetAndWait(stackName, changeSetArn)
+                        notifyInfo(
+                            message("cloudformation.execute_change_set.success.title"),
+                            message("cloudformation.execute_change_set.success", stackName),
+                            project
+                        )
+                        SamTelemetry.deploy(project, Result.Succeeded)
+                        // Since we could update anything, do a full refresh of the resource cache and explorer
+                        project.refreshAwsTree()
+                    } catch (e: Exception) {
+                        e.notifyError(message("cloudformation.execute_change_set.failed", stackName), project)
+                        SamTelemetry.deploy(project, Result.Failed)
+                    }
+                }
+
                 notifyInfo(
-                    message("cloudformation.execute_change_set.success.title"),
-                    message("cloudformation.execute_change_set.success", stackName),
-                    project
+                    project = project,
+                    title = message("lambda.service_name"),
+                    content = message("lambda.function.created.notification", stackName)
                 )
-                SamTelemetry.deploy(project = project, result = Result.Succeeded)
-                // Since we could update anything, do a full refresh of the resource cache and explorer
-                project.refreshAwsTree()
-            } catch (e: Exception) {
-                e.notifyError(message("cloudformation.execute_change_set.failed", stackName), project)
-                SamTelemetry.deploy(project = project, result = Result.Failed)
             }
         }
+
+        workflow.onError = {
+            it.notifyError(project = project, title = message("lambda.service_name"))
+            SamTelemetry.deploy(project = project, result = Result.Failed)
+        }
+
+        workflow.startExecution()
     }
 
     override fun update(e: AnActionEvent) {

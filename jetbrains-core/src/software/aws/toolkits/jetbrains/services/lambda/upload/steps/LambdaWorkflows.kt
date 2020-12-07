@@ -4,9 +4,12 @@
 package software.aws.toolkits.jetbrains.services.lambda.upload.steps
 
 import com.intellij.openapi.project.Project
+import com.intellij.openapi.vfs.VirtualFile
 import software.aws.toolkits.jetbrains.core.awsClient
 import software.aws.toolkits.jetbrains.core.credentials.AwsConnectionManager
 import software.aws.toolkits.jetbrains.core.credentials.toEnvironmentVariables
+import software.aws.toolkits.jetbrains.services.lambda.deploy.CreateCapabilities
+import software.aws.toolkits.jetbrains.services.lambda.sam.SamCommon
 import software.aws.toolkits.jetbrains.services.lambda.sam.SamOptions
 import software.aws.toolkits.jetbrains.services.lambda.sam.SamTemplateUtils
 import software.aws.toolkits.jetbrains.services.lambda.upload.FunctionDetails
@@ -15,6 +18,7 @@ import software.aws.toolkits.jetbrains.services.lambda.upload.ZipBasedCode
 import software.aws.toolkits.jetbrains.utils.execution.steps.StepWorkflow
 import java.nio.file.Files
 import java.nio.file.Path
+import java.nio.file.Paths
 
 fun createLambdaWorkflowForZip(
     project: Project,
@@ -101,6 +105,32 @@ fun updateLambdaCodeWorkflowForImage(
         BuildLambda(dummyTemplate, buildDir, emptyMap(), samOptions),
         PackageLambda(builtTemplate, packagedTemplate, dummyLogicalId, envVars, ecrRepo = codeStorageLocation),
         UpdateLambdaCode(project.awsClient(), functionName, updatedHandler = null)
+    )
+}
+
+fun createDeployWorkflow(
+    project: Project,
+    stackName: String,
+    template: VirtualFile,
+    s3Bucket: String,
+    ecrRepo: String?,
+    useContainer: Boolean,
+    parameters: Map<String, String>,
+    capabilities: List<CreateCapabilities>
+): StepWorkflow {
+    val envVars = createAwsEnvVars(project)
+    val region = AwsConnectionManager.getInstance(project).activeRegion
+    val buildDir = Paths.get(template.parent.path, SamCommon.SAM_BUILD_DIR, "build")
+    val builtTemplate = buildDir.resolve("template.yaml")
+    val packagedTemplate = builtTemplate.parent.resolve("packaged-${builtTemplate.fileName}")
+    val templatePath = Paths.get(template.path)
+
+    Files.createDirectories(buildDir)
+
+    return StepWorkflow(
+        BuildLambda(templatePath, buildDir, envVars, SamOptions(buildInContainer = useContainer)),
+        PackageLambda(builtTemplate, packagedTemplate, null, envVars, s3Bucket, ecrRepo),
+        DeployLambda(packagedTemplate, stackName, s3Bucket, capabilities, parameters, envVars, region)
     )
 }
 
