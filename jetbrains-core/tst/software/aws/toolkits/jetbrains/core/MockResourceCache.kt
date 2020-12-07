@@ -7,6 +7,7 @@ import com.intellij.openapi.application.ApplicationManager
 import com.intellij.openapi.components.service
 import com.intellij.openapi.project.Project
 import com.intellij.testFramework.ApplicationRule
+import kotlinx.coroutines.runBlocking
 import software.aws.toolkits.core.credentials.ToolkitCredentialsProvider
 import software.aws.toolkits.core.region.AwsRegion
 import software.aws.toolkits.jetbrains.core.credentials.ConnectionSettings
@@ -79,7 +80,7 @@ class MockResourceCache : AwsResourceCache {
         map.keys.removeIf { it.credentialsId == connectionSettings.credentials.id && it.regionId == connectionSettings.region.id }
     }
 
-    override fun clear() {
+    override suspend fun clear() {
         map.clear()
     }
 
@@ -105,7 +106,7 @@ class MockResourceCacheRule : ApplicationRule() {
     private val cache by lazy { MockResourceCache.getInstance() }
 
     override fun after() {
-        cache.clear()
+        runBlocking { cache.clear() }
     }
 
     fun <T> addEntry(project: Project, resource: Resource.Cached<T>, value: T) =

@@ -43,6 +43,9 @@ class Updater(
 
     @Volatile
     private var previousStackStatusType: StatusType = StatusType.UNKNOWN
+
+    @Volatile
+    private var predicate: (StackResource) -> Boolean = { true }
     private val updating = AtomicBoolean(false)
     val running get() = updating.get()
     private val eventsFetcher = EventsFetcher(stackName)
@@ -66,6 +69,14 @@ class Updater(
      */
     fun switchPage(page: Page) {
         alarm.addRequest({ fetchDataSafely(page) }, 0)
+    }
+
+    /**
+     * Apply a filter to the resources returned by the updater
+     */
+    fun applyFilter(predicate: (StackResource) -> Boolean) {
+        this.predicate = predicate
+        fetchDataSafely()
     }
 
     private fun fetchDataSafely(pageToSwitchTo: Page? = null) {
@@ -106,7 +117,7 @@ class Updater(
 
             showData(
                 stackStatus = newStackStatus,
-                resources = stackDetails.resources,
+                resources = stackDetails.resources.filter(predicate),
                 newEvents = eventsAndButtonStates?.first ?: emptyList(),
                 pageChanged = pageToSwitchTo != null
             )
@@ -120,7 +131,7 @@ class Updater(
             updating.set(!newStackStatusNotInProgress)
 
             // Reschedule next run
-            if (!alarm.isDisposed && updating.get()) {
+            if (!alarm.isDisposed && updating.get() && alarm.isEmpty) {
                 alarm.addRequest({ fetchDataSafely() }, updateInterval.toMillis())
             }
         }
