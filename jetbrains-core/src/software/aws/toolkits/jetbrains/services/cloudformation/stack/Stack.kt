@@ -10,6 +10,8 @@ import com.intellij.openapi.actionSystem.ActionManager
 import com.intellij.openapi.actionSystem.AnActionEvent
 import com.intellij.openapi.actionSystem.DefaultActionGroup
 import com.intellij.openapi.actionSystem.LangDataKeys
+import com.intellij.openapi.actionSystem.ToggleAction
+import com.intellij.openapi.application.ApplicationManager
 import com.intellij.openapi.components.ServiceManager
 import com.intellij.openapi.project.DumbAware
 import com.intellij.openapi.project.DumbAwareAction
@@ -33,6 +35,7 @@ import software.aws.toolkits.jetbrains.services.cloudformation.CloudFormationSta
 import software.aws.toolkits.resources.message
 import software.aws.toolkits.telemetry.CloudformationTelemetry
 import java.time.Duration
+import java.util.concurrent.atomic.AtomicBoolean
 import javax.swing.BoxLayout
 import javax.swing.JComponent
 import javax.swing.JPanel
@@ -206,8 +209,26 @@ private class StackUI(
             }
         })
 
+        actionGroup.addAction(createFilterAction())
+
         return ActionManager.getInstance().createActionToolbar("", actionGroup, false).component
     }
+
+    private fun createFilterAction() =
+        object : ToggleAction(message("cloudformation.stack.filter.show_completed"), null, AllIcons.RunConfigurations.ShowPassed), DumbAware {
+            private val state = AtomicBoolean(true)
+            override fun isSelected(e: AnActionEvent): Boolean = state.get()
+
+            override fun setSelected(e: AnActionEvent, newState: Boolean) {
+                if (state.getAndSet(newState) != newState) {
+                    ApplicationManager.getApplication().executeOnPooledThread {
+                        updater.applyFilter {
+                            newState || it.resourceStatus().type != StatusType.COMPLETED
+                        }
+                    }
+                }
+            }
+        }
 
     fun onPageButtonClick(page: Page) {
         eventsTable.showBusyIcon()
