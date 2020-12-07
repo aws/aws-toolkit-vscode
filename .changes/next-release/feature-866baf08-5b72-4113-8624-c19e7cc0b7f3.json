@@ -1,0 +1,4 @@
+{
+  "type" : "feature",
+  "description" : "Add \"Copy S3 URI\" to S3 objects (#2208)"
+}
