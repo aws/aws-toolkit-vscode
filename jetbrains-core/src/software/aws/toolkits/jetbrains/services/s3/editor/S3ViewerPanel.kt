@@ -3,9 +3,13 @@
 
 package software.aws.toolkits.jetbrains.services.s3.editor
 
+import com.intellij.icons.AllIcons
 import com.intellij.openapi.Disposable
+import com.intellij.openapi.actionSystem.ActionGroup
 import com.intellij.openapi.actionSystem.ActionManager
 import com.intellij.openapi.actionSystem.ActionPlaces
+import com.intellij.openapi.actionSystem.AnAction
+import com.intellij.openapi.actionSystem.AnActionEvent
 import com.intellij.openapi.actionSystem.CommonShortcuts
 import com.intellij.openapi.actionSystem.DefaultActionGroup
 import com.intellij.openapi.actionSystem.Separator
@@ -17,6 +21,7 @@ import com.intellij.ui.tree.StructureTreeModel
 import com.intellij.ui.treeStructure.SimpleTreeStructure
 import com.intellij.util.concurrency.Invoker
 import software.aws.toolkits.jetbrains.services.s3.objectActions.CopyPathAction
+import software.aws.toolkits.jetbrains.services.s3.objectActions.CopyUriAction
 import software.aws.toolkits.jetbrains.services.s3.objectActions.CopyUrlAction
 import software.aws.toolkits.jetbrains.services.s3.objectActions.DeleteObjectAction
 import software.aws.toolkits.jetbrains.services.s3.objectActions.DownloadObjectAction
@@ -25,11 +30,12 @@ import software.aws.toolkits.jetbrains.services.s3.objectActions.RefreshSubTreeA
 import software.aws.toolkits.jetbrains.services.s3.objectActions.RefreshTreeAction
 import software.aws.toolkits.jetbrains.services.s3.objectActions.RenameObjectAction
 import software.aws.toolkits.jetbrains.services.s3.objectActions.UploadObjectAction
+import software.aws.toolkits.resources.message
 import javax.swing.JComponent
 import javax.swing.SwingConstants
 import javax.swing.table.DefaultTableCellRenderer
 
-class S3ViewerPanel(disposable: Disposable, private val project: Project, private val virtualBucket: S3VirtualBucket) {
+class S3ViewerPanel(disposable: Disposable, private val project: Project, virtualBucket: S3VirtualBucket) {
     val component: JComponent
     val treeTable: S3TreeTable
     private val rootNode: S3TreeDirectoryNode = S3TreeDirectoryNode(virtualBucket, null, "")
@@ -64,7 +70,7 @@ class S3ViewerPanel(disposable: Disposable, private val project: Project, privat
         treeTable.setDefaultRenderer(Any::class.java, tableRenderer)
         PopupHandler.installPopupHandler(
             treeTable,
-            createCommonActionGroup(treeTable).also {
+            createCommonActionGroup(treeTable, addCopy = true).also {
                 it.addAction(RefreshSubTreeAction(treeTable))
             },
             ActionPlaces.EDITOR_POPUP,
@@ -73,13 +79,14 @@ class S3ViewerPanel(disposable: Disposable, private val project: Project, privat
     }
 
     private fun addToolbar(): ToolbarDecorator {
-        val group = createCommonActionGroup(treeTable).also {
+        val group = createCommonActionGroup(treeTable, addCopy = false).also {
             it.addAction(RefreshTreeAction(treeTable, rootNode))
         }
         return ToolbarDecorator.createDecorator(treeTable).setActionGroup(group)
     }
 
-    private fun createCommonActionGroup(table: S3TreeTable): DefaultActionGroup = DefaultActionGroup().also {
+    // addCopy is here vs doing it in the `also`'s because it makes it easier to get actions in the right order
+    private fun createCommonActionGroup(table: S3TreeTable, addCopy: Boolean): DefaultActionGroup = DefaultActionGroup().also {
         it.add(DownloadObjectAction(project, table))
         it.add(UploadObjectAction(project, table))
         it.add(Separator())
@@ -89,9 +96,22 @@ class S3ViewerPanel(disposable: Disposable, private val project: Project, privat
                 registerCustomShortcutSet(CommonShortcuts.getRename(), table)
             }
         )
-        it.add(CopyPathAction(project, table))
-        it.add(CopyUrlAction(project, table))
-        it.add(Separator())
+        if (addCopy) {
+            it.add(object : ActionGroup(message("s3.copy.actiongroup.label"), null, AllIcons.Actions.Copy) {
+                override fun isPopup(): Boolean = true
+                override fun update(e: AnActionEvent) {
+                    // Only enable it if we have some selection. We hide the root node so it means we have no selection if that is the node passed in
+                    val selected = treeTable.getSelectedNodes().firstOrNull()
+                    e.presentation.isEnabled = selected != null && selected != treeTable.rootNode
+                }
+
+                override fun getChildren(e: AnActionEvent?): Array<AnAction> = arrayOf(
+                    CopyPathAction(project, table),
+                    CopyUrlAction(project, table),
+                    CopyUriAction(project, table)
+                )
+            })
+        }
         it.add(DeleteObjectAction(project, table))
         it.add(Separator())
     }
