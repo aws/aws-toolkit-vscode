@@ -111,7 +111,7 @@ describe('CloudFormation Template Registry', async () => {
     const otherPath = path.join('obi-wan', 'killed', 'your', 'father')
     const matchingResource: {
         Type: 'AWS::Serverless::Function'
-        Properties: CloudFormation.ResourceProperties
+        Properties: CloudFormation.ZipResourceProperties
     } = {
         Type: 'AWS::Serverless::Function',
         Properties: {
@@ -140,7 +140,7 @@ describe('CloudFormation Template Registry', async () => {
     }
     const compiledResource: {
         Type: 'AWS::Serverless::Function'
-        Properties: CloudFormation.ResourceProperties
+        Properties: CloudFormation.ZipResourceProperties
     } = {
         Type: 'AWS::Serverless::Function',
         Properties: {

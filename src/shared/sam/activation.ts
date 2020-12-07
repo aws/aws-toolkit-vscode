@@ -8,7 +8,7 @@ const localize = nls.loadMessageBundle()
 
 import * as vscode from 'vscode'
 import { createNewSamApplication, resumeCreateNewSamApp } from '../../lambda/commands/createNewSamApp'
-import { deploySamApplication, SamDeployWizardResponseProvider } from '../../lambda/commands/deploySamApplication'
+import { deploySamApplication } from '../../lambda/commands/deploySamApplication'
 import { SamParameterCompletionItemProvider } from '../../lambda/config/samParameterCompletionItemProvider'
 import { configureLocalLambda } from '../../lambda/local/configureLocalLambda'
 import {
@@ -97,17 +97,18 @@ async function registerServerlessCommands(ctx: ExtContext): Promise<void> {
         vscode.commands.registerCommand('aws.addSamDebugConfiguration', addSamDebugConfiguration),
         vscode.commands.registerCommand('aws.pickAddSamDebugConfiguration', codelensUtils.pickAddSamDebugConfiguration),
         vscode.commands.registerCommand('aws.deploySamApplication', async regionNode => {
-            const samDeployWizardContext = new DefaultSamDeployWizardContext(ctx.regionProvider, ctx.awsContext)
-            const samDeployWizard: SamDeployWizardResponseProvider = {
-                getSamDeployWizardResponse: async (): Promise<SamDeployWizardResponse | undefined> => {
-                    const wizard = new SamDeployWizard(samDeployWizardContext, regionNode)
+            const samDeployWizardContext = new DefaultSamDeployWizardContext(ctx)
+            const samDeployWizard = async (): Promise<SamDeployWizardResponse | undefined> => {
+                const wizard = new SamDeployWizard(samDeployWizardContext, regionNode)
 
-                    return wizard.run()
-                },
+                return wizard.run()
             }
 
             await deploySamApplication(
-                { channelLogger: ctx.chanLogger, samDeployWizard },
+                {
+                    channelLogger: ctx.chanLogger,
+                    samDeployWizard: samDeployWizard,
+                },
                 { awsContext: ctx.awsContext }
             )
         })

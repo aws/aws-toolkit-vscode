@@ -31,6 +31,22 @@ function createTemplateConfig(): AwsSamDebuggerConfiguration {
     }
 }
 
+function createImageTemplateConfig(): AwsSamDebuggerConfiguration {
+    return {
+        type: 'aws-sam',
+        name: 'name',
+        request: 'direct-invoke',
+        invokeTarget: {
+            target: 'template',
+            templatePath: '/image',
+            logicalId: 'TestResource',
+        },
+        lambda: {
+            runtime: 'nodejs12.x',
+        },
+    }
+}
+
 function createCodeConfig(): AwsSamDebuggerConfiguration {
     return {
         type: 'aws-sam',
@@ -68,11 +84,20 @@ function createTemplateData(): WatchedItem<CloudFormation.Template> {
     }
 }
 
+function createImageTemplateData(): WatchedItem<CloudFormation.Template> {
+    return {
+        path: '/image',
+        item: createBaseTemplate(),
+    }
+}
+
 describe('DefaultAwsSamDebugConfigurationValidator', () => {
     const templateConfig = createTemplateConfig()
+    const imageTemplateConfig = createImageTemplateConfig()
     const codeConfig = createCodeConfig()
     const apiConfig = createApiConfig()
     const templateData = createTemplateData()
+    const imageTemplateData = createImageTemplateData()
 
     const mockRegistry: CloudFormationTemplateRegistry = mock()
     const mockFolder: vscode.WorkspaceFolder = mock()
@@ -91,6 +116,7 @@ describe('DefaultAwsSamDebugConfigurationValidator', () => {
 
     beforeEach(() => {
         when(mockRegistry.getRegisteredItem('/')).thenReturn(templateData)
+        when(mockRegistry.getRegisteredItem('/image')).thenReturn(imageTemplateData)
 
         ext.templateRegistry = mockRegistry
 
@@ -138,7 +164,7 @@ describe('DefaultAwsSamDebugConfigurationValidator', () => {
     })
 
     it('returns undefined when resolving template debug configurations with a resource that has an invalid runtime in template', () => {
-        const properties = templateData.item.Resources?.TestResource?.Properties as CloudFormation.ResourceProperties
+        const properties = templateData.item.Resources?.TestResource?.Properties as CloudFormation.ZipResourceProperties
         properties.Runtime = 'invalid'
 
         const result = validator.validate(templateConfig)
@@ -174,6 +200,15 @@ describe('DefaultAwsSamDebugConfigurationValidator', () => {
         codeConfig.lambda = { runtime: 'asd' }
 
         const result = validator.validate(codeConfig)
+        assert.strictEqual(result.isValid, false)
+    })
+
+    it('returns invalid when Image app does not declare runtime', () => {
+        const lambda = imageTemplateConfig.lambda
+
+        delete lambda?.runtime
+
+        const result = validator.validate(templateConfig)
         assert.strictEqual(result.isValid, false)
     })
 })

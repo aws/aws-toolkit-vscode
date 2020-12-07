@@ -1,4 +1,0 @@
-{
-	"type": "Bug Fix",
-	"description": "Retain view state for Step Functions and Lambda when changing tabs"
-}

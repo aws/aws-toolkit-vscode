@@ -9,7 +9,7 @@ import {
     getLanguageDetails,
     schemaCodeLangs,
 } from '../../../eventSchemas/models/schemaCodeLangs'
-import { samLambdaRuntimes } from '../../../lambda/models/samLambdaRuntime'
+import { samZipLambdaRuntimes } from '../../../lambda/models/samLambdaRuntime'
 import { assertThrowsError } from '../../../test/shared/utilities/assertUtils'
 
 describe('getLanguageDetails', () => {
@@ -26,7 +26,7 @@ describe('getLanguageDetails', () => {
 
 describe('getApiValueForSchemasDownload', () => {
     it('should return api value for runtimes supported by eventBridge application', async () => {
-        for (const runtime of samLambdaRuntimes.values()) {
+        for (const runtime of samZipLambdaRuntimes.values()) {
             switch (runtime) {
                 case 'python3.6':
                 case 'python3.7':
