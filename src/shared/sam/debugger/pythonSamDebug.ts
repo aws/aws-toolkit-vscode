@@ -17,7 +17,6 @@ import { PythonDebugAdapterHeartbeat } from '../../debug/pythonDebugAdapterHeart
 import { ExtContext, VSCODE_EXTENSION_ID } from '../../extensions'
 import { fileExists, readFileAsString } from '../../filesystemUtilities'
 import { getLogger } from '../../logger'
-import { getStartPort } from '../../utilities/debuggerUtils'
 import * as pathutil from '../../utilities/pathUtils'
 import { getLocalRootVariants } from '../../utilities/pathUtils'
 import { Timeout } from '../../utilities/timeoutUtils'
@@ -81,14 +80,11 @@ export async function makePythonDebugConfig(config: SamLaunchRequestArgs): Promi
     }
     config.codeRoot = pathutil.normalize(config.codeRoot)
 
-    let debugPort: number | undefined
     let manifestPath: string | undefined
     if (!config.noDebug) {
-        debugPort = await getStartPort()
-
-        const isImageLambda = isImageLambdaConfig(config)
-        const debugArgs = `/tmp/lambci_debug_files/py_debug_wrapper.py --host 0.0.0.0 --port ${debugPort} --wait`
         config.debuggerPath = ext.context.asAbsolutePath(join('resources', 'debugger'))
+        const isImageLambda = isImageLambdaConfig(config)
+        const debugArgs = `/tmp/lambci_debug_files/py_debug_wrapper.py --host 0.0.0.0 --port ${config.debugPort} --wait`
         if (isImageLambda) {
             const params = getPythonExeAndBootstrap(config.runtime)
             config.debugArgs = [`${params.python} ${debugArgs} ${params.boostrap}`]
@@ -127,8 +123,7 @@ export async function makePythonDebugConfig(config: SamLaunchRequestArgs): Promi
         // Python-specific fields.
         //
         manifestPath: manifestPath,
-        debugPort: debugPort,
-        port: debugPort ?? -1,
+        port: config.debugPort ?? -1,
         host: 'localhost',
         pathMappings,
         // Disable redirectOutput to prevent the Python Debugger from automatically writing stdout/stderr text

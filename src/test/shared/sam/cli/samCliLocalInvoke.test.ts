@@ -12,14 +12,16 @@ import {
     SamLocalInvokeCommand,
     SamLocalInvokeCommandArgs,
 } from '../../../../shared/sam/cli/samCliLocalInvoke'
+import { ChildProcess } from '../../../../shared/utilities/childProcess'
 import { assertArgIsPresent, assertArgNotPresent, assertArgsContainArgument } from './samCliTestUtils'
 
 describe('SamCliLocalInvokeInvocation', async () => {
     class TestSamLocalInvokeCommand implements SamLocalInvokeCommand {
         public constructor(private readonly onInvoke: ({ ...params }: SamLocalInvokeCommandArgs) => void) {}
 
-        public async invoke({ ...params }: SamLocalInvokeCommandArgs): Promise<void> {
+        public async invoke({ ...params }: SamLocalInvokeCommandArgs): Promise<ChildProcess> {
             this.onInvoke(params)
+            return {} as ChildProcess // Fake, not used by tests.
         }
     }
 
