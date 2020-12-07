@@ -25,6 +25,7 @@ import {
     createCodeAwsSamDebugConfig,
     CodeTargetProperties,
     createApiAwsSamDebugConfig,
+    APIGatewayProperties,
     PathMapping,
 } from '../../../../shared/sam/debugger/awsSamDebugConfiguration'
 import { SamDebugConfigProvider, SamLaunchRequestArgs } from '../../../../shared/sam/debugger/awsSamDebugger'
@@ -62,6 +63,7 @@ function assertEqualLaunchConfigs(actual: SamLaunchRequestArgs, expected: SamLau
     testutil.assertEqualPaths(actual.workspaceFolder.uri.fsPath, expected.workspaceFolder.uri.fsPath)
 
     // Port number is unstable; check that it looks reasonable.
+    assert.ok(!actual.apiPort || actual.apiPort > 5000)
     assert.ok(!actual.debugPort || actual.debugPort > 5000)
     assert.strictEqual(actual.port, expected.port)
 
@@ -100,6 +102,31 @@ function assertEqualLaunchConfigs(actual: SamLaunchRequestArgs, expected: SamLau
         delete (o as any).debuggerPath // Dotnet-only
     }
     assert.deepStrictEqual(actual, expected)
+}
+
+/**
+ * Tests `noDebug=true` for the given `input` and fixes up the given `expected`
+ * result, for a `target=template` config.
+ */
+async function assertEqualNoDebugTemplateTarget(
+    input: any,
+    expected: SamLaunchRequestArgs,
+    folder: vscode.WorkspaceFolder,
+    debugConfigProvider: SamDebugConfigProvider
+) {
+    ;(input as any).noDebug = true
+    const actualNoDebug = (await debugConfigProvider.makeConfig(folder, input))!
+    const expectedNoDebug: SamLaunchRequestArgs = {
+        ...expected,
+        noDebug: true,
+        request: 'launch',
+        debugPort: undefined,
+        port: -1,
+        baseBuildDir: actualNoDebug.baseBuildDir,
+        envFile: `${actualNoDebug.baseBuildDir}/env-vars.json`,
+        eventPayloadFile: `${actualNoDebug.baseBuildDir}/event.json`,
+    }
+    assertEqualLaunchConfigs(actualNoDebug, expectedNoDebug)
 }
 
 describe('SamDebugConfigurationProvider', async () => {
@@ -465,6 +492,7 @@ describe('SamDebugConfigurationProvider', async () => {
                 envFile: `${actual.baseBuildDir}/env-vars.json`,
                 eventPayloadFile: `${actual.baseBuildDir}/event.json`,
                 codeRoot: pathutil.normalize(path.join(appDir, 'src')), // Normalized to absolute path.
+                apiPort: undefined,
                 debugPort: actual.debugPort,
                 documentUri: vscode.Uri.file(''), // TODO: remove or test.
                 handlerName: 'my.test.handler',
@@ -619,6 +647,7 @@ describe('SamDebugConfigurationProvider', async () => {
                 envFile: `${actual.baseBuildDir}/env-vars.json`,
                 eventPayloadFile: `${actual.baseBuildDir}/event.json`,
                 codeRoot: appDir,
+                apiPort: undefined,
                 debugPort: actual.debugPort,
                 documentUri: vscode.Uri.file(''), // TODO: remove or test.
                 handlerName: 'src/subfolder/app.handlerTwoFoldersDeep',
@@ -763,6 +792,7 @@ describe('SamDebugConfigurationProvider', async () => {
                 envFile: `${actual.baseBuildDir}/env-vars.json`,
                 eventPayloadFile: `${actual.baseBuildDir}/event.json`,
                 codeRoot: appDir,
+                apiPort: undefined,
                 debugPort: actual.debugPort,
                 documentUri: vscode.Uri.file(''), // TODO: remove or test.
                 handlerName: 'HelloWorldFunction',
@@ -879,22 +909,125 @@ Outputs:
             }
             assertEqualLaunchConfigs(actualWithPathMapping, expectedWithPathMapping)
 
-            //
             // Test noDebug=true.
-            //
-            ;(input as any).noDebug = true
-            const actualNoDebug = (await debugConfigProvider.makeConfig(folder, input))!
-            const expectedNoDebug: SamLaunchRequestArgs = {
-                ...expected,
-                noDebug: true,
-                request: 'launch',
-                debugPort: undefined,
-                port: -1,
-                baseBuildDir: actualNoDebug.baseBuildDir,
-                envFile: `${actualNoDebug.baseBuildDir}/env-vars.json`,
-                eventPayloadFile: `${actualNoDebug.baseBuildDir}/event.json`,
+            assertEqualNoDebugTemplateTarget(input, expected, folder, debugConfigProvider)
+        })
+
+        it('target=api: javascript', async () => {
+            const appDir = pathutil.normalize(
+                path.join(testutil.getProjectDir(), 'testFixtures/workspaceFolder/js-manifest-in-root')
+            )
+            const folder = testutil.getWorkspaceFolder(appDir)
+            const input: AwsSamDebuggerConfiguration = {
+                type: AWS_SAM_DEBUG_TYPE,
+                name: 'test-js-api',
+                request: DIRECT_INVOKE_TYPE,
+                invokeTarget: {
+                    target: API_TARGET_TYPE,
+                    templatePath: 'template.yaml',
+                    logicalId: 'SourceCodeTwoFoldersDeep',
+                },
+                api: {
+                    path: '/hello',
+                    httpMethod: 'post',
+                    headers: {
+                        'user-agent': 'mozilla 42'
+                    },
+                    querystring: 'foo&bar=baz'
+                },
+                lambda: {
+                    // For target=template these are written to env-vars.json,
+                    // NOT the input-template.yaml.
+                    environmentVariables: {
+                        'test-js-template-envvar-1': 'test target=template envvar value 1',
+                        'test-js-template-envvar-2': 'test target=template envvar value 2',
+                    },
+                    memoryMb: 1.01,
+                    timeoutSec: 99,
+                    payload: {
+                        json: {
+                            'test-js-template-key-1': 'test js target=template value 1',
+                            'test-js-template-key-2': 'test js target=template value 2',
+                        },
+                    },
+                },
             }
-            assertEqualLaunchConfigs(actualNoDebug, expectedNoDebug)
+            const templatePath = vscode.Uri.file(path.join(appDir, 'template.yaml'))
+            await ext.templateRegistry.addItemToRegistry(templatePath)
+            const actual = (await debugConfigProvider.makeConfig(folder, input))!
+
+            const expected: SamLaunchRequestArgs = {
+                type: AWS_SAM_DEBUG_TYPE,
+                awsCredentials: undefined,
+                request: 'attach', // Input "direct-invoke", output "attach".
+                runtime: 'nodejs10.x',
+                runtimeFamily: lambdaModel.RuntimeFamily.NodeJS,
+                workspaceFolder: {
+                    index: 0,
+                    name: 'test-workspace-folder',
+                    uri: vscode.Uri.file(appDir),
+                },
+                baseBuildDir: actual.baseBuildDir, // Random, sanity-checked by assertEqualLaunchConfigs().
+                envFile: `${actual.baseBuildDir}/env-vars.json`,
+                eventPayloadFile: `${actual.baseBuildDir}/event.json`,
+                codeRoot: appDir,
+                apiPort: actual.apiPort,
+                debugPort: actual.debugPort,
+                documentUri: vscode.Uri.file(''), // TODO: remove or test.
+                handlerName: 'src/subfolder/app.handlerTwoFoldersDeep',
+                invokeTarget: { ...input.invokeTarget },
+                api: {
+                    ...input.api as APIGatewayProperties,
+                },
+                lambda: {
+                    ...input.lambda,
+                },
+                localRoot: appDir,
+                name: input.name,
+                templatePath: pathutil.normalize(
+                    path.join(path.dirname(templatePath.fsPath), 'app___vsctk___template.yaml')
+                ),
+
+                //
+                // Node-related fields
+                //
+                address: 'localhost',
+                port: actual.debugPort,
+                preLaunchTask: undefined,
+                protocol: 'inspector',
+                remoteRoot: '/var/task',
+                skipFiles: ['/var/runtime/node_modules/**/*.js', '<node_internals>/**/*.js'],
+                stopOnEntry: false,
+                parameterOverrides: undefined,
+            }
+
+            assertEqualLaunchConfigs(actual, expected)
+            assertFileText(
+                expected.envFile,
+                '{"SourceCodeTwoFoldersDeep":{"test-js-template-envvar-1":"test target=template envvar value 1","test-js-template-envvar-2":"test target=template envvar value 2"}}'
+            )
+            assertFileText(
+                expected.eventPayloadFile,
+                '{"test-js-template-key-1":"test js target=template value 1","test-js-template-key-2":"test js target=template value 2"}'
+            )
+            assertFileText(
+                expected.templatePath,
+                `Resources:
+  SourceCodeTwoFoldersDeep:
+    Type: 'AWS::Serverless::Function'
+    Properties:
+      CodeUri: .
+      Handler: src/subfolder/app.handlerTwoFoldersDeep
+      Runtime: nodejs10.x
+    Environment:
+      Variables:
+        SAMPLE1: value 1 from template.yaml
+        SAMPLE2: value 2 from template.yaml
+`
+            )
+
+            // Test noDebug=true.
+            assertEqualNoDebugTemplateTarget(input, expected, folder, debugConfigProvider)
         })
 
         it('target=code: dotnet/csharp', async () => {
@@ -933,6 +1066,7 @@ Outputs:
                 envFile: `${actual.baseBuildDir}/env-vars.json`,
                 eventPayloadFile: `${actual.baseBuildDir}/event.json`,
                 codeRoot: expectedCodeRoot, // Normalized to absolute path.
+                apiPort: undefined,
                 debugPort: actual.debugPort,
                 documentUri: vscode.Uri.file(''), // TODO: remove or test.
                 handlerName: 'HelloWorld::HelloWorld.Function::FunctionHandler',
@@ -1099,6 +1233,7 @@ Outputs:
                 envFile: `${actual.baseBuildDir}/env-vars.json`,
                 eventPayloadFile: `${actual.baseBuildDir}/event.json`,
                 codeRoot: expectedCodeRoot,
+                apiPort: undefined,
                 debugPort: actual.debugPort,
                 documentUri: vscode.Uri.file(''), // TODO: remove or test.
                 handlerName: 'HelloWorld::HelloWorld.Function::FunctionHandler',
@@ -1301,6 +1436,7 @@ Outputs:
                 envFile: `${actual.baseBuildDir}/env-vars.json`,
                 eventPayloadFile: `${actual.baseBuildDir}/event.json`,
                 codeRoot: expectedCodeRoot,
+                apiPort: undefined,
                 debugPort: actual.debugPort,
                 documentUri: vscode.Uri.file(''), // TODO: remove or test.
                 handlerName: 'HelloWorldFunction',
@@ -1507,6 +1643,7 @@ Outputs:
                 debugArgs: [
                     `/tmp/lambci_debug_files/py_debug_wrapper.py --host 0.0.0.0 --port ${actual.debugPort} --wait`,
                 ],
+                apiPort: undefined,
                 debugPort: actual.debugPort,
                 documentUri: vscode.Uri.file(''), // TODO: remove or test.
                 invokeTarget: { ...input.invokeTarget },
@@ -1657,6 +1794,7 @@ Outputs:
                 debugArgs: [
                     `/tmp/lambci_debug_files/py_debug_wrapper.py --host 0.0.0.0 --port ${actual.debugPort} --wait`,
                 ],
+                apiPort: undefined,
                 debugPort: actual.debugPort,
                 documentUri: vscode.Uri.file(''), // TODO: remove or test.
                 invokeTarget: { ...input.invokeTarget },
@@ -1797,23 +1935,174 @@ Outputs:
             }
             assertEqualLaunchConfigs(actualWithPathMapping, expectedWithPathMapping)
 
-            //
             // Test noDebug=true.
-            //
-            ;(input as any).noDebug = true
-            const actualNoDebug = (await debugConfigProvider.makeConfig(folder, input))!
-            const expectedNoDebug: SamLaunchRequestArgs = {
-                ...expected,
-                noDebug: true,
-                request: 'launch',
-                debugPort: undefined,
-                port: -1,
-                handlerName: 'app.lambda_handler',
-                baseBuildDir: actualNoDebug.baseBuildDir,
-                envFile: `${actualNoDebug.baseBuildDir}/env-vars.json`,
-                eventPayloadFile: `${actualNoDebug.baseBuildDir}/event.json`,
+            expected.handlerName = 'app.lambda_handler'
+            assertEqualNoDebugTemplateTarget(input, expected, folder, debugConfigProvider)
+        })
+
+        it('target=api: python 3.7 (deep project tree)', async () => {
+            // Use "testFixtures/workspaceFolder/" as the project root to test
+            // a deeper tree.
+            const appDir = pathutil.normalize(path.join(testutil.getProjectDir(), 'testFixtures/workspaceFolder/'))
+            const folder = testutil.getWorkspaceFolder(appDir)
+            const input: AwsSamDebuggerConfiguration = {
+                type: AWS_SAM_DEBUG_TYPE,
+                name: 'test-py37-api',
+                request: DIRECT_INVOKE_TYPE,
+                invokeTarget: {
+                    target: API_TARGET_TYPE,
+                    templatePath: 'python3.7-plain-sam-app/template.yaml',
+                    logicalId: 'HelloWorldFunction',
+                },
+                api: {
+                    path: '/hello',
+                    httpMethod: 'put',
+                    headers: {
+                        'accept-language': 'es-CA'
+                    },
+                    querystring: 'name1=value1&foo&bar'
+                },
             }
-            assertEqualLaunchConfigs(actualNoDebug, expectedNoDebug)
+            const templatePath = vscode.Uri.file(path.join(appDir, 'python3.7-plain-sam-app/template.yaml'))
+            await ext.templateRegistry.addItemToRegistry(templatePath)
+
+            // Invoke with noDebug=false (the default).
+            const actual = (await debugConfigProvider.makeConfig(folder, input))!
+            // Expected result with noDebug=false.
+            const expected: SamLaunchRequestArgs = {
+                awsCredentials: undefined,
+                request: 'attach', // Input "direct-invoke", output "attach".
+                runtime: 'python3.7',
+                runtimeFamily: lambdaModel.RuntimeFamily.Python,
+                type: AWS_SAM_DEBUG_TYPE,
+                handlerName: 'app.lambda_handler',
+                workspaceFolder: {
+                    index: 0,
+                    name: 'test-workspace-folder',
+                    uri: vscode.Uri.file(appDir),
+                },
+                baseBuildDir: actual.baseBuildDir, // Random, sanity-checked by assertEqualLaunchConfigs().
+                envFile: `${actual.baseBuildDir}/env-vars.json`,
+                eventPayloadFile: `${actual.baseBuildDir}/event.json`,
+                codeRoot: pathutil.normalize(path.join(appDir, 'python3.7-plain-sam-app/hello_world')),
+                debugArgs: [
+                    `/tmp/lambci_debug_files/py_debug_wrapper.py --host 0.0.0.0 --port ${actual.debugPort} --wait`,
+                ],
+                apiPort: actual.apiPort,
+                debugPort: actual.debugPort,
+                documentUri: vscode.Uri.file(''), // TODO: remove or test.
+                invokeTarget: { ...input.invokeTarget },
+                api: {
+                    ...input.api as APIGatewayProperties,
+                },
+                lambda: {
+                    environmentVariables: {},
+                    memoryMb: undefined,
+                    timeoutSec: undefined,
+                },
+                name: input.name,
+                templatePath: pathutil.normalize(
+                    path.join(path.dirname(templatePath.fsPath), 'app___vsctk___template.yaml')
+                ),
+                port: actual.debugPort,
+                redirectOutput: false,
+
+                //
+                // Python-related fields
+                //
+                host: 'localhost',
+                pathMappings: [
+                    {
+                        localRoot: pathutil.normalize(path.join(appDir, 'python3.7-plain-sam-app/hello_world')),
+                        remoteRoot: '/var/task',
+                    },
+                ],
+                parameterOverrides: undefined,
+            }
+
+            // Windows: pathMappings has uppercase and lowercase variants.
+            // See getLocalRootVariants(). ref: 4bd1418863edd45e27
+            if (os.platform() === 'win32') {
+                const localRoot: string = expected.pathMappings[0].localRoot
+                expected.pathMappings.unshift({
+                    localRoot: localRoot.substring(0, 1).toLowerCase() + localRoot.substring(1),
+                    remoteRoot: '/var/task',
+                })
+            }
+
+            assertEqualLaunchConfigs(actual, expected)
+            assertFileText(expected.envFile, '{"HelloWorldFunction":{}}')
+            assertFileText(expected.eventPayloadFile, '{}')
+
+            assertFileText(
+                expected.templatePath,
+                `AWSTemplateFormatVersion: '2010-09-09'
+Transform: 'AWS::Serverless-2016-10-31'
+Description: |
+  python3.7-plain-sam-app
+  Sample SAM Template for python3.7-plain-sam-app
+Globals:
+  Function:
+    Timeout: 3
+Resources:
+  HelloWorldFunction:
+    Type: 'AWS::Serverless::Function'
+    Properties:
+      CodeUri: hello_world/
+      Handler: app.lambda_handler
+      Runtime: python3.7
+      Events:
+        HelloWorld:
+          Type: Api
+          Properties:
+            Path: /hello
+            Method: get
+  Function2NotInLaunchJson:
+    Type: 'AWS::Serverless::Function'
+    Properties:
+      CodeUri: hello_world/
+      Handler: app.lambda_handler_2
+      Runtime: python3.7
+  Function3NotInLaunchJson:
+    Type: 'AWS::Serverless::Function'
+    Properties:
+      CodeUri: hello_world/
+      Handler: app.lambda_handler_3
+      Runtime: python3.7
+      Events:
+        HelloWorld:
+          Type: Api
+          Properties:
+            Path: /apipath1
+            Method: get
+  ServerlessApi:
+    Type: 'AWS::Serverless::Api'
+    Properties:
+      Name: ResourceName
+Outputs:
+  HelloWorldApi:
+    Description: API Gateway endpoint URL for Prod stage for Hello World function
+    Value:
+      'Fn::Sub': >-
+        https://\${ServerlessRestApi}.execute-api.\${AWS::Region}.amazonaws.com/Prod/hello/
+  HelloWorldFunction:
+    Description: Hello World Lambda Function ARN
+    Value:
+      'Fn::GetAtt':
+        - HelloWorldFunction
+        - Arn
+  HelloWorldFunctionIamRole:
+    Description: Implicit IAM Role created for Hello World function
+    Value:
+      'Fn::GetAtt':
+        - HelloWorldFunctionRole
+        - Arn
+`
+            )
+
+            // Test noDebug=true.
+            expected.handlerName = 'app.lambda_handler'
+            assertEqualNoDebugTemplateTarget(input, expected, folder, debugConfigProvider)
         })
 
         it('target=template: Image python 3.7', async () => {
@@ -1859,6 +2148,7 @@ Outputs:
                 debugArgs: [
                     `/var/lang/bin/python3.7 /tmp/lambci_debug_files/py_debug_wrapper.py --host 0.0.0.0 --port ${actual.debugPort} --wait /var/runtime/bootstrap`,
                 ],
+                apiPort: undefined,
                 debugPort: actual.debugPort,
                 documentUri: vscode.Uri.file(''), // TODO: remove or test.
                 invokeTarget: { ...input.invokeTarget },
@@ -2046,6 +2336,7 @@ Outputs:
                 envFile: `${actual.baseBuildDir}/env-vars.json`,
                 eventPayloadFile: `${actual.baseBuildDir}/event.json`,
                 codeRoot: pathutil.normalize(path.join(tempDir, 'codeuri')), // Normalized to absolute path.
+                apiPort: undefined,
                 debugPort: actual.debugPort,
                 documentUri: vscode.Uri.file(''), // TODO: remove or test.
                 handlerName: 'my.test.handler',
@@ -2190,6 +2481,7 @@ Resources:
                 envFile: `${actual.baseBuildDir}/env-vars.json`,
                 eventPayloadFile: `${actual.baseBuildDir}/event.json`,
                 codeRoot: pathutil.normalize(path.join(tempDir, 'codeuri')), // Normalized to absolute path.
+                apiPort: undefined,
                 debugPort: actual.debugPort,
                 documentUri: vscode.Uri.file(''), // TODO: remove or test.
                 handlerName: 'my.test.handler',
