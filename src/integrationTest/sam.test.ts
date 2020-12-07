@@ -174,7 +174,7 @@ async function getAddConfigCodeLens(documentUri: vscode.Uri): Promise<vscode.Cod
                 return codeLenses[0]
             }
         } catch (e) {
-            console.log(`getAddConfigCodeLens(): failed, retrying:\n${e}`)
+            console.log(`sam.test.ts: getAddConfigCodeLens(): failed, retrying:\n${e}`)
         }
     }
 }
@@ -183,7 +183,10 @@ async function continueDebugger(): Promise<void> {
     await vscode.commands.executeCommand('workbench.action.debug.continue')
 }
 
-async function stopDebugger(): Promise<void> {
+async function stopDebugger(logMsg: string | undefined): Promise<void> {
+    if (logMsg) {
+        console.log(`sam.test.ts: stopDebugger(): ${logMsg}`)
+    }
     await vscode.commands.executeCommand('workbench.action.debug.stop')
 }
 
@@ -314,7 +317,7 @@ describe('SAM Integration Tests', async function () {
 
                 afterEach(async function () {
                     testDisposables.forEach(d => d.dispose())
-                    await stopDebugger()
+                    await stopDebugger(undefined)
                 })
 
                 after(async function () {
@@ -417,7 +420,7 @@ describe('SAM Integration Tests', async function () {
 
                                 // If `onDidStartDebugSession` is fired then the debugger doesn't need the workaround anymore.
                                 if (runtimeNeedsWorkaround(scenario.language)) {
-                                    await stopDebugger()
+                                    await stopDebugger(`${scenario.runtime} / runtimeNeedsWorkaround`)
                                     reject(
                                         new Error(
                                             `runtime "${scenario.language}" triggered onDidStartDebugSession, so it can be removed from runtimeNeedsWorkaround(), yay!`
@@ -445,7 +448,7 @@ describe('SAM Integration Tests', async function () {
                                             reject(new Error(failMsg))
                                         }
                                         resolve()
-                                        await stopDebugger()
+                                        await stopDebugger(`${scenario.runtime} / onDidTerminateDebugSession`)
                                     })
                                 )
 

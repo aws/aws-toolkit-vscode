@@ -8,7 +8,6 @@ import { RestApiNode } from './explorer/apiNodes'
 import { invokeRemoteRestApi } from './commands/invokeRemoteRestApi'
 import { copyUrlCommand } from './commands/copyUrl'
 import { ExtContext } from '../shared/extensions'
-import * as featureToggle from '../shared/featureToggle'
 
 /**
  * Activate API Gateway functionality for the extension.
@@ -17,10 +16,6 @@ export async function activate(activateArguments: {
     extContext: ExtContext
     outputChannel: vscode.OutputChannel
 }): Promise<void> {
-    if (featureToggle.disableApigw) {
-        return
-    }
-
     const extensionContext = activateArguments.extContext.extensionContext
     const regionProvider = activateArguments.extContext.regionProvider
     extensionContext.subscriptions.push(
