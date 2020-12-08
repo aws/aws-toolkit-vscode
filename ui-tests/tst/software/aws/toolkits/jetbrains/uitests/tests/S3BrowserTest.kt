@@ -213,7 +213,10 @@ class S3BrowserTest {
     }
 
     private fun waitForS3BucketDeletion() {
-        s3Client.waiter().waitUntilBucketNotExists { it.bucket(bucket) }
+        s3Client.waiter().waitUntilBucketNotExists(
+            { it.bucket(bucket) },
+            { it.maxAttempts(30) }
+        )
     }
 
     private fun waitForS3BucketCreation() {
