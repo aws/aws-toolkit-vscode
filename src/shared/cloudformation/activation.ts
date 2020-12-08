@@ -9,7 +9,7 @@ import { localize } from '../utilities/vsCodeUtils'
 
 import { CloudFormationTemplateRegistry } from './templateRegistry'
 import { ext } from '../extensionGlobals'
-import { isCloud9 } from '../extensionUtilities'
+import { getIdeProperties } from '../extensionUtilities'
 import { NoopWatcher } from '../watchedFiles'
 
 export const TEMPLATE_FILE_GLOB_PATTERN = '**/template.{yaml,yml}'
@@ -36,15 +36,11 @@ export async function activate(extensionContext: vscode.ExtensionContext): Promi
         ext.templateRegistry = registry
     } catch (e) {
         vscode.window.showErrorMessage(
-            isCloud9()
-                ? localize(
-                      'AWS.codelens.failToInitialize',
-                      'Failed to activate template registry. CodeLenses will not appear on SAM template files.'
-                  )
-                : localize(
-                      'AWS.codelens.failToInitialize.c9',
-                      'Failed to activate template registry. Inline Actions will not appear on SAM template files.'
-                  )
+            localize(
+                'AWS.codelens.failToInitialize',
+                'Failed to activate template registry. {0}} will not appear on SAM template files.',
+                getIdeProperties().codelenses
+            )
         )
         getLogger().error('Failed to activate template registry', e)
         // This prevents us from breaking for any reason later if it fails to load. Since

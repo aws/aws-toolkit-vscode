@@ -684,9 +684,9 @@ describe('SamDebugConfigurationProvider', async () => {
                     path: '/hello',
                     httpMethod: 'post',
                     headers: {
-                        'user-agent': 'mozilla 42'
+                        'user-agent': 'mozilla 42',
                     },
-                    querystring: 'foo&bar=baz'
+                    querystring: 'foo&bar=baz',
                 },
                 lambda: {
                     // For target=template these are written to env-vars.json,
@@ -730,7 +730,7 @@ describe('SamDebugConfigurationProvider', async () => {
                 handlerName: 'src/subfolder/app.handlerTwoFoldersDeep',
                 invokeTarget: { ...input.invokeTarget },
                 api: {
-                    ...input.api as APIGatewayProperties,
+                    ...(input.api as APIGatewayProperties),
                 },
                 lambda: {
                     ...input.lambda,
@@ -1380,9 +1380,9 @@ Outputs:
                     path: '/hello',
                     httpMethod: 'put',
                     headers: {
-                        'accept-language': 'es-CA'
+                        'accept-language': 'es-CA',
                     },
-                    querystring: 'name1=value1&foo&bar'
+                    querystring: 'name1=value1&foo&bar',
                 },
             }
             const templatePath = vscode.Uri.file(path.join(appDir, 'python3.7-plain-sam-app/template.yaml'))
@@ -1416,7 +1416,7 @@ Outputs:
                 documentUri: vscode.Uri.file(''), // TODO: remove or test.
                 invokeTarget: { ...input.invokeTarget },
                 api: {
-                    ...input.api as APIGatewayProperties,
+                    ...(input.api as APIGatewayProperties),
                 },
                 lambda: {
                     environmentVariables: {},

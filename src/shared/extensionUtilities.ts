@@ -52,23 +52,32 @@ interface IdeProperties {
     shortName: string
     longName: string
     commandPalette: string
+    codelens: string
+    codelenses: string
 }
 
 export function getIdeProperties(): IdeProperties {
+    // in a separate const so other IDEs can take from this selectively.
+    const vscodeVals: IdeProperties = {
+        shortName: 'VS Code',
+        longName: 'Visual Studio Code',
+        commandPalette: 'Command Palette',
+        codelens: 'CodeLens',
+        codelenses: 'CodeLenses',
+    }
+
     switch (getIdeType()) {
         case IDE.cloud9:
             return {
                 shortName: 'Cloud9',
                 longName: 'AWS Cloud9',
                 commandPalette: 'Go to Anything Panel',
+                codelens: 'Inline Action',
+                codelenses: 'Inline Actions',
             }
         // default is IDE.vscode
         default:
-            return {
-                shortName: 'VS Code',
-                longName: 'Visual Studio Code',
-                commandPalette: 'Command Palette',
-            }
+            return vscodeVals
     }
 }
 
