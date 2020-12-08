@@ -8,11 +8,12 @@ import * as yaml from 'js-yaml'
 import * as path from 'path'
 import * as filesystemUtilities from '../../../shared/filesystemUtilities'
 import { CloudFormation } from '../../cloudformation/cloudformation'
+import ZipResourceProperties = CloudFormation.ZipResourceProperties
 
 export class SamTemplateGenerator {
     private resourceName?: string
     private templateResources?: CloudFormation.TemplateResources
-    private readonly properties: Partial<CloudFormation.ResourceProperties> = {}
+    private readonly properties: Partial<CloudFormation.LambdaResourceProperties> = {}
     private globals: CloudFormation.TemplateGlobals | undefined
     private parameters:
         | {
@@ -35,19 +36,19 @@ export class SamTemplateGenerator {
     }
 
     public withFunctionHandler(handlerName: string | CloudFormation.Ref): SamTemplateGenerator {
-        this.properties.Handler = handlerName
+        ;(this.properties as ZipResourceProperties).Handler = handlerName
 
         return this
     }
 
     public withCodeUri(codeUri: string | CloudFormation.Ref): SamTemplateGenerator {
-        this.properties.CodeUri = codeUri
+        ;(this.properties as ZipResourceProperties).CodeUri = codeUri
 
         return this
     }
 
     public withRuntime(runtime: string | CloudFormation.Ref): SamTemplateGenerator {
-        this.properties.Runtime = runtime
+        ;(this.properties as ZipResourceProperties).Runtime = runtime
 
         return this
     }
@@ -98,7 +99,7 @@ export class SamTemplateGenerator {
                 ...templateAdditions.Resources,
                 [this.resourceName]: {
                     Type: CloudFormation.SERVERLESS_FUNCTION_TYPE,
-                    Properties: CloudFormation.validateProperties(this.properties),
+                    Properties: CloudFormation.validateZipLambdaProperties(this.properties as ZipResourceProperties),
                 },
             }
         }

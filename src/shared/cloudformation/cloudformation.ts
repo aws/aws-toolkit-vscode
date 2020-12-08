@@ -9,18 +9,31 @@ import * as yaml from 'js-yaml'
 import * as filesystemUtilities from '../filesystemUtilities'
 import { SystemUtilities } from '../systemUtilities'
 import { getLogger } from '../logger'
+import { LAMBDA_PACKAGE_TYPE_IMAGE } from '../constants'
 
 export namespace CloudFormation {
     export const SERVERLESS_API_TYPE = 'AWS::Serverless::Api'
     export const SERVERLESS_FUNCTION_TYPE = 'AWS::Serverless::Function'
     export const LAMBDA_FUNCTION_TYPE = 'AWS::Lambda::Function'
 
-    export function validateProperties({
+    export function isZipLambdaResource(
+        resource?: ZipResourceProperties | ImageResourceProperties
+    ): resource is ZipResourceProperties {
+        return resource?.PackageType !== 'Image'
+    }
+
+    export function isImageLambdaResource(
+        resource?: ZipResourceProperties | ImageResourceProperties
+    ): resource is ImageResourceProperties {
+        return resource?.PackageType === 'Image'
+    }
+
+    export function validateZipLambdaProperties({
         Handler,
         CodeUri,
         Runtime,
         ...rest
-    }: Partial<ResourceProperties>): ResourceProperties {
+    }: Partial<ZipResourceProperties>): ZipResourceProperties {
         if (!Handler) {
             throw new Error('Missing value: Handler')
         }
@@ -41,15 +54,31 @@ export namespace CloudFormation {
         }
     }
 
-    export interface ResourceProperties {
-        Handler: string | Ref
-        CodeUri: string | Ref
-        Runtime?: string | Ref
+    export interface LambdaResourceProperties {
         MemorySize?: number | Ref
         Timeout?: number | Ref
         Environment?: Environment
         Events?: Events
+        PackageType?: 'Image' | 'Zip'
         [key: string]: any
+    }
+
+    export interface ZipResourceProperties extends LambdaResourceProperties {
+        Handler: string | Ref
+        CodeUri: string | Ref
+        Runtime?: string | Ref
+        PackageType?: 'Zip'
+    }
+
+    export interface ImageResourceProperties extends LambdaResourceProperties {
+        PackageType: 'Image'
+        ImageConfig?: ImageConfig
+    }
+
+    export interface ImageConfig {
+        EntryPoint?: string[]
+        Command?: string[]
+        WorkingDirectory?: string
     }
 
     export interface Ref {
@@ -91,8 +120,16 @@ export namespace CloudFormation {
 
     export interface Resource {
         Type: ResourceType
-        Properties?: ResourceProperties
+        Properties?: ZipResourceProperties | ImageResourceProperties
+        Metadata?: SamImageMetadata
         // Any other properties are fine to have, we just copy them transparently
+        [key: string]: any
+    }
+
+    export interface SamImageMetadata {
+        Dockerfile: string
+        DockerContext: string
+        // we only care about the two above, but really anything can go here
         [key: string]: any
     }
 
@@ -232,24 +269,40 @@ export namespace CloudFormation {
             throw new Error('Missing or invalid value in Template for key: Type')
         }
         if (resource.Properties) {
-            if (
-                !resource.Properties.Handler ||
-                !validatePropertyType(resource.Properties.Handler, template, 'string')
-            ) {
-                throw new Error('Missing or invalid value in Template for key: Handler')
+            if (resource.Properties.PackageType === LAMBDA_PACKAGE_TYPE_IMAGE) {
+                if (
+                    !resource.Metadata?.Dockerfile ||
+                    !validatePropertyType(resource.Metadata.Dockerfile, template, 'string')
+                ) {
+                    throw new Error('Missing or invalid value in Template for key: Metadata.Dockerfile')
+                }
+                if (
+                    !resource.Metadata.DockerContext ||
+                    !validatePropertyType(resource.Metadata.DockerContext, template, 'string')
+                ) {
+                    throw new Error('Missing or invalid value in Template for key: Metadata.DockerContext')
+                }
+            } else {
+                if (
+                    !resource.Properties.Handler ||
+                    !validatePropertyType(resource.Properties.Handler, template, 'string')
+                ) {
+                    throw new Error('Missing or invalid value in Template for key: Handler')
+                }
+                if (
+                    !resource.Properties.CodeUri ||
+                    !validatePropertyType(resource.Properties.CodeUri, template, 'string')
+                ) {
+                    throw new Error('Missing or invalid value in Template for key: CodeUri')
+                }
+                if (
+                    !!resource.Properties.Runtime &&
+                    !validatePropertyType(resource.Properties.Runtime, template, 'string')
+                ) {
+                    throw new Error('Invalid value in Template for key: Runtime')
+                }
             }
-            if (
-                !resource.Properties.CodeUri ||
-                !validatePropertyType(resource.Properties.CodeUri, template, 'string')
-            ) {
-                throw new Error('Missing or invalid value in Template for key: CodeUri')
-            }
-            if (
-                !!resource.Properties.Runtime &&
-                !validatePropertyType(resource.Properties.Runtime, template, 'string')
-            ) {
-                throw new Error('Invalid value in Template for key: Runtime')
-            }
+
             if (
                 !!resource.Properties.Timeout &&
                 !validatePropertyType(resource.Properties.Timeout, template, 'number')
@@ -260,7 +313,7 @@ export namespace CloudFormation {
     }
 
     export function getRuntime(resource: Pick<Resource, 'Properties'>, template: Template): string {
-        const properties = resource.Properties
+        const properties = resource.Properties as ZipResourceProperties
         if (!properties || !validatePropertyType(properties.Runtime, template, 'string')) {
             throw new Error('Resource does not specify a Runtime')
         }
@@ -322,7 +375,7 @@ export namespace CloudFormation {
         return (
             resource &&
             resource.Type === SERVERLESS_FUNCTION_TYPE &&
-            resource.Properties &&
+            isZipLambdaResource(resource.Properties) &&
             // TODO: `resource.Properties.Handler` is relative to `CodeUri`, but
             //       `handlerName` is relative to the directory containing the source
             //       file. To fix, update lambda handler candidate searches for
@@ -433,9 +486,13 @@ export namespace CloudFormation {
     }
 
     /**
-     * Gets a number from a Ref.
-     * Throws an error if the value is not specifically a number.
-     * Returns undefined if ref does not have a default value but is a number.
+     * Gets a value (string or number) from a Ref.
+     *
+     * If `thingType == number`...
+     * - it is an error if the resolved value is not a number.
+     * - returns undefined if the Ref does not have a default value but is
+     *   a number.
+     *
      * @param ref Ref to pull a number from
      * @param template Template to parse through
      * @param thingType Type to validate against

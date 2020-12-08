@@ -4,9 +4,7 @@
  */
 
 import * as vscode from 'vscode'
-
-import { nodeJsRuntimes, RuntimeFamily } from '../../lambda/models/samLambdaRuntime'
-import { CloudFormation } from '../cloudformation/cloudformation'
+import { RuntimeFamily } from '../../lambda/models/samLambdaRuntime'
 import { getResourcesForHandler } from '../cloudformation/templateRegistry'
 import { LambdaHandlerCandidate } from '../lambdaHandlerSearch'
 import { getLogger } from '../logger'
@@ -15,16 +13,13 @@ import {
     addSamDebugConfiguration,
     AddSamDebugConfigurationInput,
 } from '../sam/debugger/commands/addSamDebugConfiguration'
-import { LambdaLocalInvokeParams } from '../sam/localLambdaRunner'
-import { recordLambdaInvokeLocal, Result, Runtime } from '../telemetry/telemetry'
-import { localize } from '../utilities/vsCodeUtils'
 import * as pythonDebug from '../sam/debugger/pythonSamDebug'
 import { createQuickPick, promptUser, verifySinglePickerOutput } from '../ui/picker'
+import { localize } from '../utilities/vsCodeUtils'
 import { getWorkspaceRelativePath } from '../utilities/workspaceUtils'
-import * as pythonCodelens from './pythonCodeLensProvider'
 import * as csharpCodelens from './csharpCodeLensProvider'
+import * as pythonCodelens from './pythonCodeLensProvider'
 import * as tsCodelens from './typescriptCodeLensProvider'
-import { ExtContext } from '../extensions'
 
 export type Language = 'python' | 'javascript' | 'csharp'
 
@@ -97,10 +92,6 @@ export async function makeCodeLenses({
     }
 
     return lenses
-}
-
-export function getInvokeCmdKey(language: Language) {
-    return `aws.lambda.local.invoke.${language}`
 }
 
 function makeAddCodeSamDebugCodeLens(
@@ -203,8 +194,6 @@ export async function pickAddSamDebugConfiguration(
 }
 
 export async function makePythonCodeLensProvider(): Promise<vscode.CodeLensProvider> {
-    const logger = getLogger()
-
     return {
         // CodeLensProvider
         provideCodeLenses: async (
@@ -218,8 +207,6 @@ export async function makePythonCodeLensProvider(): Promise<vscode.CodeLensProvi
             }
 
             const handlers: LambdaHandlerCandidate[] = await pythonCodelens.getLambdaHandlerCandidates(document.uri)
-            logger.debug('pythonCodeLensProvider.makePythonCodeLensProvider handlers: %O', handlers)
-
             return makeCodeLenses({
                 document,
                 handlers,
@@ -231,16 +218,12 @@ export async function makePythonCodeLensProvider(): Promise<vscode.CodeLensProvi
 }
 
 export async function makeCSharpCodeLensProvider(): Promise<vscode.CodeLensProvider> {
-    const logger = getLogger()
-
     return {
         provideCodeLenses: async (
             document: vscode.TextDocument,
             token: vscode.CancellationToken
         ): Promise<vscode.CodeLens[]> => {
             const handlers: LambdaHandlerCandidate[] = await csharpCodelens.getLambdaHandlerCandidates(document)
-            logger.debug('makeCSharpCodeLensProvider handlers: %O', handlers)
-
             return makeCodeLenses({
                 document,
                 handlers,
@@ -252,16 +235,12 @@ export async function makeCSharpCodeLensProvider(): Promise<vscode.CodeLensProvi
 }
 
 export function makeTypescriptCodeLensProvider(): vscode.CodeLensProvider {
-    const logger = getLogger()
-
     return {
         provideCodeLenses: async (
             document: vscode.TextDocument,
             token: vscode.CancellationToken
         ): Promise<vscode.CodeLens[]> => {
             const handlers = await tsCodelens.getLambdaHandlerCandidates(document)
-            logger.debug('makeTypescriptCodeLensProvider handlers: %O', handlers)
-
             return makeCodeLenses({
                 document,
                 handlers,
@@ -270,119 +249,4 @@ export function makeTypescriptCodeLensProvider(): vscode.CodeLensProvider {
             })
         },
     }
-}
-
-export async function initializePythonCodelens(context: ExtContext): Promise<void> {
-    context.extensionContext.subscriptions.push(
-        vscode.commands.registerCommand(
-            getInvokeCmdKey('python'),
-            async (params: LambdaLocalInvokeParams): Promise<void> => {
-                // TODO: restore or remove
-            }
-        )
-    )
-}
-
-export async function initializeCsharpCodelens(context: ExtContext): Promise<void> {
-    context.extensionContext.subscriptions.push(
-        vscode.commands.registerCommand(
-            getInvokeCmdKey(csharpCodelens.CSHARP_LANGUAGE),
-            async (params: LambdaLocalInvokeParams) => {
-                // await csharpDebug.invokeCsharpLambda({
-                //     ctx: context,
-                //     config: undefined,
-                //     lambdaLocalInvokeParams: params,
-                // })
-            }
-        )
-    )
-}
-
-/**
- * LEGACY/DEPRECATED codelens-based debug entrypoint.
- */
-export function initializeTypescriptCodelens(context: ExtContext): void {
-    // const processInvoker = new DefaultValidatingSamCliProcessInvoker({}),
-    // const localInvokeCommand = new DefaultSamLocalInvokeCommand(getChannelLogger(context.outputChannel), [
-    //     WAIT_FOR_DEBUGGER_MESSAGES.NODEJS
-    // ])
-    const invokeLambda = async (params: LambdaLocalInvokeParams & { runtime: string }) => {
-        // const samProjectCodeRoot = await getSamProjectDirPathForFile(params.uri.fsPath)
-        // let debugPort: number | undefined
-        // if (params.isDebug) {
-        //     debugPort = await getStartPort()
-        // }
-        // const debugConfig: NodejsDebugConfiguration = {
-        //     type: 'node',
-        //     request: 'attach',
-        //     name: 'SamLocalDebug',
-        //     preLaunchTask: undefined,
-        //     address: 'localhost',
-        //     port: debugPort!,
-        //     localRoot: samProjectCodeRoot,
-        //     remoteRoot: '/var/task',
-        //     protocol: 'inspector',
-        //     skipFiles: ['/var/runtime/node_modules/**/*.js', '<node_internals>/**/*.js']
-        // }
-        // const localLambdaRunner: LocalLambdaRunner = new LocalLambdaRunner(
-        //     configuration,
-        //     params,
-        //     debugPort,
-        //     params.runtime,
-        //     toolkitOutputChannel,
-        //     processInvoker,
-        //     localInvokeCommand,
-        //     debugConfig,
-        //     samProjectCodeRoot,
-        //     telemetryService
-        // )
-        // await localLambdaRunner.run()
-    }
-
-    const command = getInvokeCmdKey('javascript')
-    context.extensionContext.subscriptions.push(
-        vscode.commands.registerCommand(command, async (params: LambdaLocalInvokeParams) => {
-            const logger = getLogger()
-
-            const resource = await CloudFormation.getResourceFromTemplate({
-                handlerName: params.handlerName,
-                templatePath: params.samTemplate.fsPath,
-            })
-            const template = await CloudFormation.load(params.samTemplate.fsPath)
-            const lambdaRuntime = CloudFormation.getRuntime(resource, template)
-            let invokeResult: Result = 'Succeeded'
-            try {
-                if (!nodeJsRuntimes.has(lambdaRuntime)) {
-                    invokeResult = 'Failed'
-                    logger.error(
-                        `Javascript local invoke on ${params.uri.fsPath} encountered` +
-                            ` unsupported runtime ${lambdaRuntime}`
-                    )
-
-                    vscode.window.showErrorMessage(
-                        localize(
-                            'AWS.samcli.local.invoke.runtime.unsupported',
-                            'Unsupported {0} runtime: {1}',
-                            'javascript',
-                            lambdaRuntime
-                        )
-                    )
-                } else {
-                    await invokeLambda({
-                        runtime: lambdaRuntime,
-                        ...params,
-                    })
-                }
-            } catch (err) {
-                invokeResult = 'Failed'
-                throw err
-            } finally {
-                recordLambdaInvokeLocal({
-                    result: invokeResult,
-                    runtime: lambdaRuntime as Runtime,
-                    debug: params.isDebug,
-                })
-            }
-        })
-    )
 }

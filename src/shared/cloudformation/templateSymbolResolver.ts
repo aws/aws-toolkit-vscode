@@ -7,7 +7,6 @@ import { safeLoad } from 'js-yaml'
 import * as vscode from 'vscode'
 import { CloudFormation } from './cloudformation'
 import { waitUntil } from '../utilities/timeoutUtils'
-import * as featureToggle from '../featureToggle'
 
 /**
  * SAM template Lambda resource or API Gateway resource.
@@ -46,9 +45,6 @@ export class TemplateSymbolResolver {
         ).filter(r => this.isCfnType(CloudFormation.SERVERLESS_FUNCTION_TYPE, r))
         if (kind === 'function') {
             return funSymbols.map(r => ({ name: r.name, range: r.range, kind: kind }))
-        }
-        if (featureToggle.disableApigw) {
-            return []
         }
         // Api symbols:
         //

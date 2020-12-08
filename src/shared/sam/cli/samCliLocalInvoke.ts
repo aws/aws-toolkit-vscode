@@ -25,17 +25,24 @@ export interface SamLocalInvokeCommandArgs {
     command: string
     args: string[]
     options?: child_process.SpawnOptions
-    isDebug: boolean
+    /** Wait until strings specified in `debuggerAttachCues` appear in the process output.  */
+    waitForCues: boolean
     timeout?: Timeout
 }
 
 /**
- * Represents and manages the SAM CLI command that is run to locally invoke SAM Applications.
+ * Yet another `sam` CLI wrapper.
  */
 export interface SamLocalInvokeCommand {
-    invoke(items: SamLocalInvokeCommandArgs): Promise<void>
+    /** @returns `sam` process (may be running or stopped) */
+    invoke(items: SamLocalInvokeCommandArgs): Promise<ChildProcess>
 }
 
+/**
+ * Yet another `sam` CLI wrapper.
+ *
+ * TODO: Merge this with `DefaultSamCliProcessInvoker`.
+ */
 export class DefaultSamLocalInvokeCommand implements SamLocalInvokeCommand {
     private readonly logger: Logger = getLogger()
 
@@ -47,41 +54,42 @@ export class DefaultSamLocalInvokeCommand implements SamLocalInvokeCommand {
         ]
     ) {}
 
-    public async invoke({ options, ...params }: SamLocalInvokeCommandArgs): Promise<void> {
+    public async invoke({ options, ...params }: SamLocalInvokeCommandArgs): Promise<ChildProcess> {
         const childProcess = new ChildProcess(params.command, options, ...params.args)
-        this.channelLogger.info('AWS.running.command', 'Running command: {0}', `${childProcess}`)
+        this.channelLogger.info('AWS.running.command', 'Running: {0}', `${childProcess}`)
+        // "sam local invoke", "sam local start-api", etc.
+        const samCommandName = `sam ${params.args[0]} ${params.args[1]}`
 
-        let debuggerPromiseClosed: boolean = false
-        const debuggerPromise = new Promise<void>(async (resolve, reject) => {
-            let checkForDebuggerAttachCue: boolean = params.isDebug && this.debuggerAttachCues.length !== 0
-
-            await childProcess.start({
+        let timeExpired: boolean = true
+        const checkForCues: boolean = params.waitForCues && this.debuggerAttachCues.length !== 0
+        const runDebugger = new Promise<void>((resolve, reject) => {
+            return childProcess.start({
                 onStdout: (text: string): void => {
                     this.channelLogger.emitMessage(text)
                     // If we have a timeout (as we do on debug) refresh the timeout as we receive text
                     params.timeout?.refresh()
-                    this.logger.verbose(`stdout: ${text}`)
+                    this.logger.verbose(`SAM: pid ${childProcess.pid()}: stdout: ${text}`)
                 },
                 onStderr: (text: string): void => {
                     this.channelLogger.emitMessage(text)
                     // If we have a timeout (as we do on debug) refresh the timeout as we receive text
                     params.timeout?.refresh()
-                    this.logger.verbose(`stderr: ${text}`)
-                    if (checkForDebuggerAttachCue) {
+                    this.logger.verbose(`SAM: pid ${childProcess.pid()}: stderr: ${text}`)
+                    if (checkForCues) {
                         // Look for messages like "Waiting for debugger to attach" before returning back to caller
                         if (this.debuggerAttachCues.some(cue => text.includes(cue))) {
-                            checkForDebuggerAttachCue = false
-                            this.logger.verbose('Local SAM App should be ready for a debugger to attach now.')
-                            debuggerPromiseClosed = true
+                            this.logger.verbose(
+                                `SAM: pid ${childProcess.pid()}: local SAM app is ready for debugger to attach`
+                            )
                             // Process will continue running, while user debugs it.
                             resolve()
                         }
                     }
                 },
                 onClose: (code: number, _: string): void => {
-                    this.logger.verbose(`samCliLocalInvoke: command exited (code: ${code}): ${childProcess}`)
+                    this.logger.verbose(`SAM: command exited (code: ${code}): ${childProcess}`)
                     this.channelLogger.channel.appendLine(
-                        localize('AWS.samcli.local.invoke.ended', 'Local invoke of SAM Application has ended.')
+                        localize('AWS.samcli.stopped', 'Command stopped: "{0}"', samCommandName)
                     )
 
                     // Process ended without emitting a known "cue" message.
@@ -90,48 +98,42 @@ export class DefaultSamLocalInvokeCommand implements SamLocalInvokeCommand {
                     // - User manually attached before we found a "cue" message.
                     // - We need to update the list of "cue" messages.
                     if (code === 0) {
-                        debuggerPromiseClosed = true
                         resolve()
                     } else if (code !== 0) {
-                        debuggerPromiseClosed = true
-                        reject(new Error(`"sam local invoke" command stopped unexpectedly (error code: ${code})`))
+                        reject(new Error(`"${samCommandName}" command stopped (error code: ${code})`))
                     }
                 },
                 onError: (error: Error): void => {
                     this.channelLogger.error(
-                        'AWS.samcli.local.invoke.error',
-                        'Error running local SAM Application: {0}',
+                        'AWS.samcli.error',
+                        'Error running command "{0}": {1}',
+                        samCommandName,
                         error
                     )
-                    debuggerPromiseClosed = true
                     reject(error)
                 },
             })
-
-            if (!params.isDebug || this.debuggerAttachCues.length === 0) {
-                debuggerPromiseClosed = true
-                resolve()
-            }
+        }).then(() => {
+            timeExpired = false
         })
 
-        const awaitedPromises = params.timeout ? [debuggerPromise, params.timeout.timer] : [debuggerPromise]
+        const awaitedPromises = params.timeout ? [runDebugger, params.timeout.timer] : [runDebugger]
 
         await Promise.race(awaitedPromises).catch(async () => {
-            // did debugger promise resolve/reject? if not, this was a timeout: kill the process
-            // otherwise, process closed out on its own; no need to kill the process
-            if (!debuggerPromiseClosed) {
-                const err = new Error('The SAM process did not make the debugger available within the timelimit')
+            if (timeExpired) {
                 this.channelLogger.error(
-                    'AWS.samcli.local.invoke.debugger.timeout',
-                    'The SAM process did not make the debugger available within the time limit',
-                    err
+                    'AWS.samcli.timeout',
+                    'Timeout while waiting for command: "{0}"',
+                    samCommandName
                 )
                 if (!childProcess.stopped) {
                     childProcess.stop()
                 }
-                throw err
+                throw new Error(`Timeout while waiting for command: "${samCommandName}"`)
             }
         })
+
+        return childProcess
     }
 }
 
@@ -184,6 +186,10 @@ export interface SamCliLocalInvokeInvocationArguments {
      */
     debugArgs?: string[]
     /**
+     * Passed to be executed as the root process in the Lambda container
+     */
+    containerEnvFile?: string
+    /**
      * parameter overrides specified in the `sam.template.parameters` field
      */
     parameterOverrides?: string[]
@@ -192,7 +198,7 @@ export interface SamCliLocalInvokeInvocationArguments {
 }
 
 /**
- * An elaborate way to run `sam local`.
+ * Yet another `sam` CLI wrapper.
  */
 export class SamCliLocalInvokeInvocation {
     private readonly invokerContext: SamCliProcessInvokerContext
@@ -233,6 +239,8 @@ export class SamCliLocalInvokeInvocation {
         pushIf(invokeArgs, !!this.args.skipPullImage, '--skip-pull-image')
         pushIf(invokeArgs, !!this.args.debuggerPath, '--debugger-path', this.args.debuggerPath!)
         pushIf(invokeArgs, !!this.args.debugArgs, '--debug-args', ...(this.args.debugArgs ?? []))
+        pushIf(invokeArgs, !!this.args.containerEnvFile, '--container-env-vars', this.args.containerEnvFile)
+
         pushIf(
             invokeArgs,
             !!this.args.parameterOverrides && this.args.parameterOverrides.length > 0,
@@ -250,7 +258,7 @@ export class SamCliLocalInvokeInvocation {
             },
             command: samCommand,
             args: invokeArgs,
-            isDebug: !!this.args.debugPort,
+            waitForCues: !!this.args.debugPort,
             timeout,
         })
     }

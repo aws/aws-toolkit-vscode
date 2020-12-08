@@ -10,16 +10,14 @@ const localize = nls.loadMessageBundle()
 
 import * as path from 'path'
 import * as vscode from 'vscode'
-import { AwsContext } from '../../shared/awsContext'
 import { samDeployDocUrl } from '../../shared/constants'
 import * as localizedText from '../../shared/localizedText'
 import { getLogger } from '../../shared/logger'
-import { RegionProvider } from '../../shared/regions/regionProvider'
 import { getRegionsForActiveCredentials } from '../../shared/regions/regionUtilities'
 import { createHelpButton } from '../../shared/ui/buttons'
 import * as input from '../../shared/ui/input'
 import * as picker from '../../shared/ui/picker'
-import { difference, filter } from '../../shared/utilities/collectionUtils'
+import { difference, filter, IteratorTransformer } from '../../shared/utilities/collectionUtils'
 import {
     MultiStepWizard,
     WIZARD_GOBACK,
@@ -30,12 +28,18 @@ import {
 import { configureParameterOverrides } from '../config/configureParameterOverrides'
 import { getOverriddenParameters, getParameters } from '../utilities/parameterUtils'
 import { ext } from '../../shared/extensionGlobals'
+import { EcrRepository } from '../../shared/clients/ecrClient'
+import { getSamCliVersion } from '../../shared/sam/cli/samCliContext'
+import * as semver from 'semver'
+import { MINIMUM_SAM_CLI_VERSION_INCLUSIVE_FOR_IMAGE_SUPPORT } from '../../shared/sam/cli/samCliValidator'
+import { ExtContext } from '../../shared/extensions'
 
 export interface SamDeployWizardResponse {
     parameterOverrides: Map<string, string>
     region: string
     template: vscode.Uri
     s3Bucket: string
+    ecrRepo?: EcrRepository
     stackName: string
 }
 
@@ -45,7 +49,9 @@ export const enum ParameterPromptResult {
 }
 
 export interface SamDeployWizardContext {
+    readonly extContext: ExtContext
     readonly workspaceFolders: vscode.Uri[] | undefined
+    additionalSteps: number
 
     /**
      * Returns the parameters in the specified template, or `undefined`
@@ -55,6 +61,13 @@ export interface SamDeployWizardContext {
      * @param templateUri The URL of the SAM template to inspect.
      */
     getParameters: typeof getParameters
+
+    /**
+     * Returns true if the teamplate has images and needs an ECR repo to upload them to
+     * TODO refactor this to not be needed by making getTemplate also return the template in addition
+     * to the URI
+     */
+    determineIfTemplateHasImages(templatePath: vscode.Uri): Promise<boolean>
 
     /**
      * Returns the names and values of parameters from the specified template
@@ -86,7 +99,7 @@ export interface SamDeployWizardContext {
         missingParameters?: Set<string>
     }): Promise<ParameterPromptResult>
 
-    promptUserForRegion(initialValue?: string): Promise<string | undefined>
+    promptUserForRegion(step: number, initialValue?: string): Promise<string | undefined>
 
     /**
      * Retrieves an S3 Bucket to deploy to from the user.
@@ -95,7 +108,20 @@ export interface SamDeployWizardContext {
      *
      * @returns S3 Bucket name. Undefined represents cancel.
      */
-    promptUserForS3Bucket(selectedRegion?: string, initialValue?: string): Promise<string | undefined>
+    promptUserForS3Bucket(step: number, selectedRegion?: string, initialValue?: string): Promise<string | undefined>
+
+    /**
+     * Retrieves an ECR Repo to deploy to from the user.
+     *
+     * @param initialValue Optional, Initial value to prompt with
+     *
+     * @returns ECR Repo URI. Undefined represents cancel.
+     */
+    promptUserForEcrRepo(
+        step: number,
+        selectedRegion?: string,
+        initialValue?: EcrRepository
+    ): Promise<EcrRepository | undefined>
 
     /**
      * Retrieves a Stack Name to deploy to from the user.
@@ -132,12 +158,25 @@ export class DefaultSamDeployWizardContext implements SamDeployWizardContext {
     private readonly helpButton = createHelpButton(localize('AWS.command.help', 'View Toolkit Documentation'))
 
     private readonly totalSteps: number = 4
-    private additionalSteps: number = 0
+    public additionalSteps: number = 0
 
-    public constructor(private readonly regionProvider: RegionProvider, private readonly awsContext: AwsContext) {}
+    public constructor(readonly extContext: ExtContext) {}
 
     public get workspaceFolders(): vscode.Uri[] | undefined {
         return (vscode.workspace.workspaceFolders || []).map(f => f.uri)
+    }
+
+    public async determineIfTemplateHasImages(templatePath: vscode.Uri): Promise<boolean> {
+        const template = ext.templateRegistry.getRegisteredItem(templatePath.fsPath)
+        const resources = template?.item?.Resources
+        if (resources === undefined) {
+            return false
+        } else {
+            return Object.keys(resources)
+                .filter(key => resources[key]?.Type === 'AWS::Serverless::Function')
+                .map(key => resources[key]?.Properties?.PackageType)
+                .some(it => it === 'Image')
+        }
     }
 
     /**
@@ -146,8 +185,6 @@ export class DefaultSamDeployWizardContext implements SamDeployWizardContext {
      * @returns vscode.Uri of a Sam Template. undefined represents cancel.
      */
     public async promptUserForSamTemplate(initialValue?: vscode.Uri): Promise<vscode.Uri | undefined> {
-        // set steps back to 0 since the next step determines if additional steps are needed
-        this.additionalSteps = 0
         const workspaceFolders = this.workspaceFolders || []
 
         const quickPick = picker.createQuickPick<SamTemplateQuickPickItem>({
@@ -186,7 +223,6 @@ export class DefaultSamDeployWizardContext implements SamDeployWizardContext {
         templateUri: vscode.Uri
         missingParameters?: Set<string>
     }): Promise<ParameterPromptResult> {
-        this.additionalSteps = 1
         if (missingParameters.size < 1) {
             const prompt = localize(
                 'AWS.samcli.deploy.parameters.optionalPrompt.message',
@@ -271,8 +307,11 @@ export class DefaultSamDeployWizardContext implements SamDeployWizardContext {
         }
     }
 
-    public async promptUserForRegion(initialRegionCode?: string): Promise<string | undefined> {
-        const partitionRegions = getRegionsForActiveCredentials(this.awsContext, this.regionProvider)
+    public async promptUserForRegion(step: number, initialRegionCode?: string): Promise<string | undefined> {
+        const partitionRegions = getRegionsForActiveCredentials(
+            this.extContext.awsContext,
+            this.extContext.regionProvider
+        )
 
         const quickPick = picker.createQuickPick<vscode.QuickPickItem>({
             options: {
@@ -280,7 +319,7 @@ export class DefaultSamDeployWizardContext implements SamDeployWizardContext {
                 value: initialRegionCode,
                 matchOnDetail: true,
                 ignoreFocusOut: true,
-                step: 2 + this.additionalSteps,
+                step: step,
                 totalSteps: this.totalSteps + this.additionalSteps,
             },
             items: partitionRegions.map(region => ({
@@ -322,6 +361,7 @@ export class DefaultSamDeployWizardContext implements SamDeployWizardContext {
      * @returns S3 Bucket name. Undefined represents cancel.
      */
     public async promptUserForS3Bucket(
+        step: number,
         selectedRegion: string,
         initialValue: string | undefined = undefined,
         messages: {
@@ -341,7 +381,7 @@ export class DefaultSamDeployWizardContext implements SamDeployWizardContext {
                 value: initialValue,
                 matchOnDetail: true,
                 ignoreFocusOut: true,
-                step: 3 + this.additionalSteps,
+                step: step,
                 totalSteps: this.totalSteps + this.additionalSteps,
             },
             items: [
@@ -375,6 +415,51 @@ export class DefaultSamDeployWizardContext implements SamDeployWizardContext {
         return val?.label && ![loadingBuckets, messages.noBuckets, messages.bucketError].includes(val.label)
             ? val.label
             : undefined
+    }
+
+    public async promptUserForEcrRepo(
+        step: number,
+        selectedRegion: string,
+        initialValue?: EcrRepository
+    ): Promise<EcrRepository | undefined> {
+        const quickPick = picker.createQuickPick<vscode.QuickPickItem>({
+            buttons: [this.helpButton, vscode.QuickInputButtons.Back],
+            options: {
+                title: localize('AWS.samcli.deploy.ecrRepo.prompt', 'Select a ECR repo to deploy images to'),
+                value: initialValue?.repositoryName,
+                matchOnDetail: true,
+                ignoreFocusOut: true,
+                step: step,
+                totalSteps: this.totalSteps + this.additionalSteps,
+            },
+        })
+
+        const populator = new IteratorTransformer<EcrRepository, vscode.QuickPickItem>(
+            () => ext.toolkitClientBuilder.createEcrClient(selectedRegion).describeRepositories(),
+            response => (response === undefined ? [] : [{ label: response.repositoryName, repository: response }])
+        )
+        const controller = new picker.IteratingQuickPickController(quickPick, populator)
+        controller.startRequests()
+        const choices = await picker.promptUser({
+            picker: quickPick,
+            onDidTriggerButton: (button, resolve, reject) => {
+                if (button === vscode.QuickInputButtons.Back) {
+                    resolve(undefined)
+                } else if (button === this.helpButton) {
+                    vscode.env.openExternal(vscode.Uri.parse(samDeployDocUrl))
+                }
+            },
+        })
+
+        let result = picker.verifySinglePickerOutput(choices)
+        let repository: EcrRepository | undefined = (result as any)?.repository
+        let label = result?.label
+
+        if (!repository || label === picker.IteratingQuickPickController.NO_ITEMS_ITEM.label) {
+            return undefined
+        }
+
+        return repository
     }
 
     /**
@@ -423,6 +508,11 @@ export class DefaultSamDeployWizardContext implements SamDeployWizardContext {
 
 export class SamDeployWizard extends MultiStepWizard<SamDeployWizardResponse> {
     private readonly response: Partial<SamDeployWizardResponse> = {}
+    /**
+     * If the selected template has Image based lambdas. If it does, we also need to prompt for
+     * an ECR repo to push the images to
+     */
+    private hasImages: boolean = false
 
     public constructor(private readonly context: SamDeployWizardContext, private readonly regionNode?: any) {
         super()
@@ -452,11 +542,14 @@ export class SamDeployWizard extends MultiStepWizard<SamDeployWizardResponse> {
             template: this.response.template,
             region: this.response.region,
             s3Bucket: this.response.s3Bucket,
+            ecrRepo: this.response.ecrRepo,
             stackName: this.response.stackName,
         }
     }
 
     private readonly TEMPLATE: WizardStep = async () => {
+        // set steps back to 0 since the next step determines if additional steps are needed
+        this.context.additionalSteps = 0
         this.response.template = await this.context.promptUserForSamTemplate(this.response.template)
 
         if (!this.response.template) {
@@ -471,6 +564,23 @@ export class SamDeployWizard extends MultiStepWizard<SamDeployWizardResponse> {
                 case ParameterPromptResult.Continue:
                     return wizardContinue(this.skipOrPromptRegion(this.S3_BUCKET))
             }
+        }
+
+        this.hasImages = await this.context.determineIfTemplateHasImages(this.response.template)
+        if (this.hasImages) {
+            // TODO: remove check when min version is high enough
+            const samCliVersion = await getSamCliVersion(this.context.extContext.samCliContext())
+            if (semver.lt(samCliVersion, MINIMUM_SAM_CLI_VERSION_INCLUSIVE_FOR_IMAGE_SUPPORT)) {
+                vscode.window.showErrorMessage(
+                    localize(
+                        'AWS.output.sam.no.image.support',
+                        'Support for Image-based Lambdas requires a minimum SAM CLI version of 1.13.0.'
+                    )
+                )
+                return WIZARD_TERMINATE
+            }
+
+            this.context.additionalSteps++
         }
 
         const parameters = await this.context.getParameters(this.response.template)
@@ -488,6 +598,8 @@ export class SamDeployWizard extends MultiStepWizard<SamDeployWizardResponse> {
             // In there are no missing required parameters case, it isn't mandatory to override any parameters,
             // but we still want to inform users of the option to override. Once we have prompted (i.e., if the
             // parameter overrides section is empty instead of undefined), don't prompt again unless required.
+            this.context.additionalSteps++
+
             const options = {
                 templateUri: this.response.template,
                 missingParameters: requiredParameterNames.size > 0 ? requiredParameterNames : undefined,
@@ -500,6 +612,8 @@ export class SamDeployWizard extends MultiStepWizard<SamDeployWizardResponse> {
 
         const missingParameters = difference(requiredParameterNames, overriddenParameters.keys())
         if (missingParameters.size > 0) {
+            this.context.additionalSteps++
+
             return getNextStep(
                 await this.context.promptUserForParametersIfApplicable({
                     templateUri: this.response.template,
@@ -513,16 +627,34 @@ export class SamDeployWizard extends MultiStepWizard<SamDeployWizardResponse> {
         return wizardContinue(this.skipOrPromptRegion(this.S3_BUCKET))
     }
 
-    private readonly REGION: WizardStep = async () => {
-        this.response.region = await this.context.promptUserForRegion(this.response.region)
+    private readonly REGION: WizardStep = async step => {
+        this.response.region = await this.context.promptUserForRegion(step, this.response.region)
 
         return this.response.region ? wizardContinue(this.S3_BUCKET) : WIZARD_GOBACK
     }
 
-    private readonly S3_BUCKET: WizardStep = async () => {
-        this.response.s3Bucket = await this.context.promptUserForS3Bucket(this.response.region, this.response.s3Bucket)
+    private readonly S3_BUCKET: WizardStep = async step => {
+        const response = await this.context.promptUserForS3Bucket(step, this.response.region, this.response.s3Bucket)
 
-        return this.response.s3Bucket ? wizardContinue(this.STACK_NAME) : WIZARD_GOBACK
+        this.response.s3Bucket = response
+
+        if (!response) {
+            return WIZARD_GOBACK
+        }
+
+        return this.hasImages ? wizardContinue(this.ECR_REPO) : wizardContinue(this.STACK_NAME)
+    }
+
+    private readonly ECR_REPO: WizardStep = async step => {
+        const response = await this.context.promptUserForEcrRepo(step, this.response.region, this.response.ecrRepo)
+
+        this.response.ecrRepo = response
+
+        if (!response) {
+            return WIZARD_GOBACK
+        }
+
+        return wizardContinue(this.STACK_NAME)
     }
 
     private readonly STACK_NAME: WizardStep = async () => {

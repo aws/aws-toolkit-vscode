@@ -36,6 +36,11 @@ export function resolveSamCliProcessInvokerContext(
     }
 }
 
+/**
+ * Yet another `sam` CLI wrapper.
+ *
+ * TODO: Merge this with `DefaultSamLocalInvokeCommand`.
+ */
 export class DefaultSamCliProcessInvoker implements SamCliProcessInvoker {
     public constructor(private readonly context: SamCliProcessInvokerContext = resolveSamCliProcessInvokerContext()) {}
 

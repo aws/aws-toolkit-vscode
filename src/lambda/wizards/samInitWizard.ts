@@ -27,7 +27,7 @@ import {
     wizardContinue,
     WizardStep,
 } from '../../shared/wizards/multiStepWizard'
-import { createRuntimeQuickPick, samLambdaCreatableRuntimes } from '../models/samLambdaRuntime'
+import { createRuntimeQuickPick, RuntimePackageType, samLambdaCreatableRuntimes } from '../models/samLambdaRuntime'
 import {
     eventBridgeStarterAppTemplate,
     getSamTemplateWizardOption,
@@ -35,6 +35,8 @@ import {
     repromptUserForTemplate,
     SamTemplate,
 } from '../models/samTemplates'
+import * as semver from 'semver'
+import { MINIMUM_SAM_CLI_VERSION_INCLUSIVE_FOR_IMAGE_SUPPORT } from '../../shared/sam/cli/samCliValidator'
 
 const localize = nls.loadMessageBundle()
 
@@ -42,8 +44,12 @@ export interface CreateNewSamAppWizardContext {
     readonly lambdaRuntimes: ImmutableSet<Runtime>
     readonly workspaceFolders: readonly vscode.WorkspaceFolder[] | undefined
 
-    promptUserForRuntime(currRuntime?: Runtime): Promise<Runtime | undefined>
-    promptUserForTemplate(currRuntime: Runtime, currTemplate?: SamTemplate): Promise<SamTemplate | undefined>
+    promptUserForRuntime(currRuntime?: Runtime): Promise<[Runtime, RuntimePackageType] | undefined>
+    promptUserForTemplate(
+        currRuntime: Runtime,
+        packageType: RuntimePackageType,
+        currTemplate?: SamTemplate
+    ): Promise<SamTemplate | undefined>
 
     promptUserForRegion(currRegion?: string): Promise<string | undefined>
     promptUserForRegistry(currRegion: string, currRegistry?: string): Promise<string | undefined>
@@ -72,8 +78,10 @@ export class DefaultCreateNewSamAppWizardContext extends WizardContext implement
         this.samCliVersion = samCliVersion
     }
 
-    public async promptUserForRuntime(currRuntime?: Runtime): Promise<Runtime | undefined> {
+    public async promptUserForRuntime(currRuntime?: Runtime): Promise<[Runtime, RuntimePackageType] | undefined> {
         const quickPick = createRuntimeQuickPick({
+            // TODO: remove check when SAM CLI version is low enough
+            showImageRuntimes: semver.gte(this.samCliVersion, MINIMUM_SAM_CLI_VERSION_INCLUSIVE_FOR_IMAGE_SUPPORT),
             buttons: [this.helpButton],
             currRuntime,
             step: 1,
@@ -92,16 +100,17 @@ export class DefaultCreateNewSamAppWizardContext extends WizardContext implement
         })
         const val = picker.verifySinglePickerOutput(choices)
 
-        return val ? (val.label as Runtime) : undefined
+        return val ? [val.runtime, val.packageType] : undefined
     }
 
     public async promptUserForTemplate(
         currRuntime: Runtime,
+        packageType: RuntimePackageType,
         currTemplate?: SamTemplate
     ): Promise<SamTemplate | undefined> {
         // last common step; reset additionalSteps to 0
         this.additionalSteps = 0
-        const templates = getSamTemplateWizardOption(currRuntime, this.samCliVersion)
+        const templates = getSamTemplateWizardOption(currRuntime, packageType, this.samCliVersion)
         const quickPick = picker.createQuickPick<vscode.QuickPickItem>({
             options: {
                 ignoreFocusOut: true,
@@ -349,6 +358,7 @@ export class DefaultCreateNewSamAppWizardContext extends WizardContext implement
 }
 
 export interface CreateNewSamAppWizardResponse {
+    packageType: RuntimePackageType
     runtime: Runtime
     template: SamTemplate
     region?: string
@@ -359,6 +369,7 @@ export interface CreateNewSamAppWizardResponse {
 }
 
 export class CreateNewSamAppWizard extends MultiStepWizard<CreateNewSamAppWizardResponse> {
+    private packageType?: RuntimePackageType
     private runtime?: Runtime
     private template?: SamTemplate
     private region?: string
@@ -376,7 +387,7 @@ export class CreateNewSamAppWizard extends MultiStepWizard<CreateNewSamAppWizard
     }
 
     protected getResult(): CreateNewSamAppWizardResponse | undefined {
-        if (!this.runtime || !this.template || !this.location || !this.name) {
+        if (!this.runtime || !this.packageType || !this.template || !this.location || !this.name) {
             return undefined
         }
 
@@ -387,6 +398,7 @@ export class CreateNewSamAppWizard extends MultiStepWizard<CreateNewSamAppWizard
         }
 
         return {
+            packageType: this.packageType,
             runtime: this.runtime,
             template: this.template,
             region: this.region,
@@ -398,13 +410,16 @@ export class CreateNewSamAppWizard extends MultiStepWizard<CreateNewSamAppWizard
     }
 
     private readonly RUNTIME: WizardStep = async () => {
-        this.runtime = await this.context.promptUserForRuntime(this.runtime)
+        const result = await this.context.promptUserForRuntime(this.runtime)
+        if (result) {
+            ;[this.runtime, this.packageType] = result
+        }
 
-        return this.runtime ? wizardContinue(this.TEMPLATE) : WIZARD_TERMINATE
+        return result ? wizardContinue(this.TEMPLATE) : WIZARD_TERMINATE
     }
 
     private readonly TEMPLATE: WizardStep = async () => {
-        this.template = await this.context.promptUserForTemplate(this.runtime!)
+        this.template = await this.context.promptUserForTemplate(this.runtime!, this.packageType!)
 
         if (this.template === repromptUserForTemplate) {
             return WIZARD_RETRY

@@ -12,6 +12,8 @@ import { makeTemporaryToolkitFolder } from '../../../shared/filesystemUtilities'
 import { SystemUtilities } from '../../../shared/systemUtilities'
 import { assertRejects } from '../utilities/assertUtils'
 import {
+    createBaseImageResource,
+    createBaseImageTemplate,
     createBaseResource,
     createBaseTemplate,
     makeSampleSamTemplateYaml,
@@ -180,6 +182,17 @@ describe('CloudFormation', () => {
                 'Missing or invalid value in Template for key: CodeUri'
             )
         })
+
+        it('can detect invalid Image resources', () => {
+            const badResource = createBaseImageResource()
+            assert.ok(CloudFormation.isImageLambdaResource(badResource.Properties))
+
+            assert.throws(
+                () => CloudFormation.validateResource(badResource, createBaseImageTemplate()),
+                Error,
+                'Missing or invalid value in Template for key: Metadata.Dockerfile'
+            )
+        })
     })
 
     const templateWithExistingHandlerScenarios = [
@@ -298,6 +311,8 @@ describe('CloudFormation', () => {
 
         it('throws if resource does not specify a runtime', async () => {
             const resource = createBaseResource()
+            assert.ok(CloudFormation.isZipLambdaResource(resource.Properties))
+
             delete resource.Properties!.Runtime
 
             assert.throws(() => CloudFormation.getRuntime(resource, createBaseTemplate()))

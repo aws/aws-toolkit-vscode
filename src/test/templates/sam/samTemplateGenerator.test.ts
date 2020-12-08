@@ -50,6 +50,7 @@ describe('SamTemplateGenerator', () => {
 
         const resource = template.Resources![sampleResourceNameValue]
         assert.ok(resource)
+        assert.ok(CloudFormation.isZipLambdaResource(resource.Properties))
         assert.strictEqual(resource!.Properties!.CodeUri, sampleCodeUriValue)
         assert.strictEqual(resource!.Properties!.Handler, sampleFunctionHandlerValue)
         assert.strictEqual(resource!.Properties!.Runtime, sampleRuntimeValue)

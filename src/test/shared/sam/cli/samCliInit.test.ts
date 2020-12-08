@@ -13,13 +13,6 @@ import {
 import { SamCliContext } from '../../../../shared/sam/cli/samCliContext'
 import { runSamCliInit, SamCliInitArgs } from '../../../../shared/sam/cli/samCliInit'
 import { SamCliProcessInvoker } from '../../../../shared/sam/cli/samCliInvokerUtils'
-import {
-    MINIMUM_SAM_CLI_VERSION_INCLUSIVE,
-    SamCliValidator,
-    SamCliValidatorResult,
-    SamCliVersionValidation,
-    SamCliVersionValidatorResult,
-} from '../../../../shared/sam/cli/samCliValidator'
 import { ChildProcessResult } from '../../../../shared/utilities/childProcess'
 import { getTestLogger } from '../../../globalSetup.test'
 import { assertThrowsError } from '../../utilities/assertUtils'
@@ -32,6 +25,7 @@ import {
 } from './testSamCliProcessInvoker'
 
 import { SchemaTemplateExtraContext } from '../../../../eventSchemas/templates/schemasAppTemplateUtils'
+import { FakeSamCliValidator } from '../../../fakeExtensionContext'
 
 describe('runSamCliInit', async () => {
     class FakeChildProcessResult implements ChildProcessResult {
@@ -49,26 +43,6 @@ describe('runSamCliInit', async () => {
 
                 return new FakeChildProcessResult()
             })
-        }
-    }
-
-    class FakeSamCliValidator implements SamCliValidator {
-        private readonly version: string
-        public constructor(version: string = MINIMUM_SAM_CLI_VERSION_INCLUSIVE) {
-            this.version = version
-        }
-        public async detectValidSamCli(): Promise<SamCliValidatorResult> {
-            return {
-                samCliFound: true,
-                versionValidation: {
-                    version: this.version,
-                    validation: SamCliVersionValidation.Valid,
-                },
-            }
-        }
-
-        public async getVersionValidatorResult(): Promise<SamCliVersionValidatorResult> {
-            return { validation: SamCliVersionValidation.VersionNotParseable }
         }
     }
 
@@ -134,7 +108,7 @@ describe('runSamCliInit', async () => {
         it('Passes runtime to sam cli', async () => {
             const processInvoker: SamCliProcessInvoker = new ExtendedTestSamCliProcessInvoker(
                 (spawnOptions: SpawnOptions, args: any[]) => {
-                    assertArgsContainArgument(args, '--runtime', sampleSamInitArgs.runtime)
+                    assertArgsContainArgument(args, '--runtime', sampleSamInitArgs.runtime!)
                 }
             )
 

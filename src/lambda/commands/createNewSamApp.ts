@@ -18,7 +18,7 @@ import {
     buildSchemaTemplateParameters,
     SchemaTemplateParameters,
 } from '../../eventSchemas/templates/schemasAppTemplateUtils'
-import { ActivationLaunchPath } from '../../shared/activationLaunchPath'
+import { ActivationReloadState } from '../../shared/activationReloadState'
 import { AwsContext } from '../../shared/awsContext'
 import { ext } from '../../shared/extensionGlobals'
 import { fileExists } from '../../shared/filesystemUtilities'
@@ -29,7 +29,7 @@ import { getSamCliVersion, getSamCliContext, SamCliContext } from '../../shared/
 import { runSamCliInit, SamCliInitArgs } from '../../shared/sam/cli/samCliInit'
 import { throwAndNotifyIfInvalid } from '../../shared/sam/cli/samCliValidationUtils'
 import { SamCliValidator } from '../../shared/sam/cli/samCliValidator'
-import { recordSamInit, Result, Runtime } from '../../shared/telemetry/telemetry'
+import { recordSamInit, Result, Runtime as TelemetryRuntime } from '../../shared/telemetry/telemetry'
 import { makeCheckLogsMessage } from '../../shared/utilities/messages'
 import { ChannelLogger } from '../../shared/utilities/vsCodeUtils'
 import { addFolderToWorkspace } from '../../shared/utilities/workspaceUtils'
@@ -49,13 +49,15 @@ import * as pathutils from '../../shared/utilities/pathUtils'
 import { openLaunchJsonFile } from '../../shared/sam/debugger/commands/addSamDebugConfiguration'
 import { waitUntil } from '../../shared/utilities/timeoutUtils'
 import { launchConfigDocUrl } from '../../shared/constants'
+import { Runtime } from 'aws-sdk/clients/lambda'
 
 export async function resumeCreateNewSamApp(
     extContext: ExtContext,
-    activationLaunchPath: ActivationLaunchPath = new ActivationLaunchPath()
+    activationReloadState: ActivationReloadState = new ActivationReloadState()
 ) {
     try {
-        const pathToLaunch = activationLaunchPath.getLaunchPath()
+        const samInitState = activationReloadState.getSamInitState()
+        const pathToLaunch = samInitState?.path
         if (!pathToLaunch) {
             return
         }
@@ -76,10 +78,10 @@ export async function resumeCreateNewSamApp(
             return
         }
 
-        await addInitialLaunchConfiguration(extContext, folder, uri)
+        await addInitialLaunchConfiguration(extContext, folder, uri, samInitState?.imageRuntime)
         await vscode.window.showTextDocument(uri)
     } finally {
-        activationLaunchPath.clearLaunchPath()
+        activationReloadState.clearSamInitState()
     }
 }
 
@@ -96,13 +98,14 @@ type createReason = 'unknown' | 'userCancelled' | 'fileNotFound' | 'complete' | 
 export async function createNewSamApplication(
     extContext: ExtContext,
     samCliContext: SamCliContext = getSamCliContext(),
-    activationLaunchPath: ActivationLaunchPath = new ActivationLaunchPath()
+    activationReloadState: ActivationReloadState = new ActivationReloadState()
 ): Promise<void> {
     const channelLogger: ChannelLogger = extContext.chanLogger
     const awsContext: AwsContext = extContext.awsContext
     const regionProvider: RegionProvider = extContext.regionProvider
     let createResult: Result = 'Succeeded'
     let reason: createReason = 'unknown'
+    let lambdaPackageType: 'Zip' | 'Image' | undefined
     let createRuntime: Runtime | undefined
     let config: CreateNewSamAppWizardResponse | undefined
 
@@ -131,14 +134,12 @@ export async function createNewSamApplication(
         createRuntime = config.runtime as Runtime
 
         // TODO: Make this selectable in the wizard to account for runtimes with multiple dependency managers
-        const dependencyManager = getDependencyManager(config.runtime)
+        const dependencyManager = getDependencyManager(createRuntime)
 
         initArguments = {
             name: config.name,
             location: config.location.fsPath,
-            runtime: config.runtime,
-            dependencyManager,
-            template: config.template,
+            dependencyManager: dependencyManager,
         }
 
         let request: SchemaCodeDownloadRequestDetails
@@ -156,6 +157,16 @@ export async function createNewSamApplication(
             initArguments.extraContent = schemaTemplateParameters.templateExtraContent
         }
 
+        if (config.packageType === 'Image') {
+            lambdaPackageType = 'Image'
+            initArguments.baseImage = `amazon/${createRuntime}-base`
+        } else {
+            lambdaPackageType = 'Zip'
+            initArguments.runtime = createRuntime
+            // in theory, templates could be provided with image-based lambdas, but that is currently not supported by SAM
+            initArguments.template = config.template
+        }
+
         await runSamCliInit(initArguments, samCliContext)
 
         const uri = await getMainUri(config)
@@ -170,7 +181,7 @@ export async function createNewSamApplication(
             request = {
                 registryName: config.registryName!,
                 schemaName: config.schemaName!,
-                language: getApiValueForSchemasDownload(config.runtime),
+                language: getApiValueForSchemasDownload(createRuntime),
                 schemaVersion: schemaTemplateParameters!.SchemaVersion,
                 destinationDirectory: vscode.Uri.file(destinationDirectory),
             }
@@ -192,9 +203,13 @@ export async function createNewSamApplication(
             )
         }
 
-        // In case adding the workspace folder triggers a VS Code restart, instruct extension to
-        // launch app file after activation.
-        activationLaunchPath.setLaunchPath(uri.fsPath)
+        const templateRuntime = config.packageType === 'Image' ? config.runtime : undefined
+        // In case adding the workspace folder triggers a VS Code restart, persist relevant state to be used after reload
+        activationReloadState.setSamInitState({
+            path: uri.fsPath,
+            imageRuntime: templateRuntime,
+        })
+
         await addFolderToWorkspace(
             {
                 uri: config.location,
@@ -213,7 +228,8 @@ export async function createNewSamApplication(
             const newLaunchConfigs = await addInitialLaunchConfiguration(
                 extContext,
                 vscode.workspace.getWorkspaceFolder(uri)!,
-                uri
+                uri,
+                templateRuntime
             )
             if (newLaunchConfigs && newLaunchConfigs.length > 0) {
                 showCompletionNotification(config.name, `"${newLaunchConfigs.map(config => config.name).join('", "')}"`)
@@ -240,7 +256,7 @@ export async function createNewSamApplication(
                 })
         }
 
-        activationLaunchPath.clearLaunchPath()
+        activationReloadState.clearSamInitState()
         await vscode.window.showTextDocument(uri)
     } catch (err) {
         createResult = 'Failed'
@@ -257,13 +273,14 @@ export async function createNewSamApplication(
 
         getLogger().error('Error creating new SAM Application: %O', err as Error)
 
-        // An error occured, so do not try to open any files during the next extension activation
-        activationLaunchPath.clearLaunchPath()
+        // An error occured, so do not try to continue during the next extension activation
+        activationReloadState.clearSamInitState()
     } finally {
         recordSamInit({
+            lambdaPackageType: lambdaPackageType,
             result: createResult,
             reason: reason,
-            runtime: createRuntime,
+            runtime: createRuntime as TelemetryRuntime,
             name: config?.name,
         })
     }
@@ -295,6 +312,7 @@ export async function addInitialLaunchConfiguration(
     extContext: ExtContext,
     folder: vscode.WorkspaceFolder,
     targetUri: vscode.Uri,
+    runtime?: Runtime,
     launchConfiguration: LaunchConfiguration = new LaunchConfiguration(folder.uri)
 ): Promise<vscode.DebugConfiguration[] | undefined> {
     const configurations = await new SamDebugConfigProvider(extContext).provideDebugConfigurations(folder)
@@ -309,6 +327,16 @@ export async function addInitialLaunchConfiguration(
                     targetUri.fsPath
                 )
         )
+
+        // optional for ZIP-lambdas but required for Image-lambdas
+        if (runtime !== undefined) {
+            filtered.forEach(configuration => {
+                if (!configuration.lambda) {
+                    configuration.lambda = {}
+                }
+                configuration.lambda.runtime = runtime
+            })
+        }
 
         await launchConfiguration.addDebugConfigurations(filtered)
         return filtered
