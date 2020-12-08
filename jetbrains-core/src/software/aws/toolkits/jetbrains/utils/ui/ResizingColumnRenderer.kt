@@ -3,6 +3,7 @@
 
 package software.aws.toolkits.jetbrains.utils.ui
 
+import com.intellij.ui.SimpleColoredRenderer
 import java.awt.BorderLayout
 import java.awt.Component
 import javax.swing.JLabel
@@ -12,13 +13,17 @@ import javax.swing.border.CompoundBorder
 import javax.swing.table.DefaultTableCellRenderer
 import javax.swing.table.TableCellRenderer
 
-abstract class ResizingColumnRenderer : TableCellRenderer {
+abstract class ResizingColumnRenderer : TableCellRenderer, SimpleColoredRenderer() {
     private val defaultRenderer = DefaultTableCellRenderer()
     abstract fun getText(value: Any?): String?
 
     override fun getTableCellRendererComponent(table: JTable?, value: Any?, isSelected: Boolean, hasFocus: Boolean, row: Int, column: Int): Component {
         // This wrapper will let us force the component to be at the top instead of in the middle for linewraps
         val wrapper = JPanel(BorderLayout())
+
+        // this is basically what ColoredTableCellRenderer is doing, but we can't override getTableCellRendererComponent on that class
+        cellState.updateRenderer(defaultRenderer)
+
         val defaultComponent = defaultRenderer.getTableCellRendererComponent(table, value, isSelected, hasFocus, row, column)
         if (table == null) {
             return defaultComponent
