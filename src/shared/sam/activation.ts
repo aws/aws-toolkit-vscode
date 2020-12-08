@@ -113,8 +113,6 @@ async function registerServerlessCommands(ctx: ExtContext): Promise<void> {
             )
         })
     )
-
-    // TODO : Register CodeLens commands from here instead of in xxxCodeLensProvider.ts::initialize
 }
 
 async function activateCodeLensProviders(
@@ -124,8 +122,6 @@ async function activateCodeLensProviders(
     telemetryService: TelemetryService
 ): Promise<vscode.Disposable[]> {
     const disposables: vscode.Disposable[] = []
-
-    codelensUtils.initializeTypescriptCodelens(context)
 
     disposables.push(
         vscode.languages.registerCodeLensProvider(
@@ -147,7 +143,6 @@ async function activateCodeLensProviders(
         )
     )
 
-    await codelensUtils.initializePythonCodelens(context)
     disposables.push(
         vscode.languages.registerCodeLensProvider(
             pyLensProvider.PYTHON_ALLFILES,
@@ -155,7 +150,6 @@ async function activateCodeLensProviders(
         )
     )
 
-    await codelensUtils.initializeCsharpCodelens(context)
     disposables.push(
         vscode.languages.registerCodeLensProvider(
             csLensProvider.CSHARP_ALLFILES,
