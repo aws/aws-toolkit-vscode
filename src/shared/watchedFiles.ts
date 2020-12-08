@@ -109,13 +109,8 @@ export abstract class WatchedFiles<T> implements vscode.Disposable {
      * @param path Absolute path to item of interest or a vscode.Uri to the item
      */
     public getRegisteredItem(path: string | vscode.Uri): WatchedItem<T> | undefined {
-        let absolutePath: string
-        if (typeof path === 'string') {
-            absolutePath = path
-        } else {
-            // fsPath is needed for Windows, it's equivalent to path on mac/linux
-            absolutePath = path.fsPath
-        }
+        // fsPath is needed for Windows, it's equivalent to path on mac/linux
+        const absolutePath = (typeof path === 'string') ? absolutePath = path : absolutePath = path.fsPath
         const normalizedPath = pathutils.normalize(absolutePath)
         this.assertAbsolute(normalizedPath)
         const item = this.registryData.get(normalizedPath)
