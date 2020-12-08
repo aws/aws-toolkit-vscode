@@ -3,14 +3,11 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
-import * as nls from 'vscode-nls'
-const localize = nls.loadMessageBundle()
-
 import * as vscode from 'vscode'
+import * as nls from 'vscode-nls'
 import { createNewSamApplication, resumeCreateNewSamApp } from '../../lambda/commands/createNewSamApp'
 import { deploySamApplication } from '../../lambda/commands/deploySamApplication'
 import { SamParameterCompletionItemProvider } from '../../lambda/config/samParameterCompletionItemProvider'
-import { configureLocalLambda } from '../../lambda/local/configureLocalLambda'
 import {
     DefaultSamDeployWizardContext,
     SamDeployWizard,
@@ -19,8 +16,8 @@ import {
 import * as codelensUtils from '../codelens/codeLensUtils'
 import * as csLensProvider from '../codelens/csharpCodeLensProvider'
 import * as pyLensProvider from '../codelens/pythonCodeLensProvider'
-import * as jsLensProvider from '../codelens/typescriptCodeLensProvider'
 import { SamTemplateCodeLensProvider } from '../codelens/samTemplateCodeLensProvider'
+import * as jsLensProvider from '../codelens/typescriptCodeLensProvider'
 import { ext } from '../extensionGlobals'
 import { ExtContext, VSCODE_EXTENSION_ID } from '../extensions'
 import { getIdeType, IDE } from '../extensionUtilities'
@@ -28,13 +25,14 @@ import { getLogger } from '../logger/logger'
 import { SettingsConfiguration } from '../settingsConfiguration'
 import { TelemetryService } from '../telemetry/telemetryService'
 import { PromiseSharer } from '../utilities/promiseUtilities'
+import { NoopWatcher } from '../watchedFiles'
 import { initialize as initializeSamCliContext } from './cli/samCliContext'
 import { detectSamCli } from './cli/samCliDetection'
+import { CodelensRootRegistry } from './codelensRootRegistry'
+import { AWS_SAM_DEBUG_TYPE } from './debugger/awsSamDebugConfiguration'
 import { SamDebugConfigProvider } from './debugger/awsSamDebugger'
 import { addSamDebugConfiguration } from './debugger/commands/addSamDebugConfiguration'
-import { AWS_SAM_DEBUG_TYPE } from './debugger/awsSamDebugConfiguration'
-import { CodelensRootRegistry } from './codelensRootRegistry'
-import { NoopWatcher } from '../watchedFiles'
+const localize = nls.loadMessageBundle()
 
 const STATE_NAME_SUPPRESS_YAML_PROMPT = 'aws.sam.suppressYamlPrompt'
 
@@ -93,7 +91,6 @@ async function registerServerlessCommands(ctx: ExtContext): Promise<void> {
         vscode.commands.registerCommand('aws.lambda.createNewSamApp', async () => {
             await createNewSamApplication(ctx)
         }),
-        vscode.commands.registerCommand('aws.configureLambda', configureLocalLambda),
         vscode.commands.registerCommand('aws.addSamDebugConfiguration', addSamDebugConfiguration),
         vscode.commands.registerCommand('aws.pickAddSamDebugConfiguration', codelensUtils.pickAddSamDebugConfiguration),
         vscode.commands.registerCommand('aws.deploySamApplication', async regionNode => {
