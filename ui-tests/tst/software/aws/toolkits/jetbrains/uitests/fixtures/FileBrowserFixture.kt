@@ -47,24 +47,27 @@ class FileBrowserFixture(
     fun selectFile(path: Path) {
         val absolutePath = path.toAbsolutePath()
         step("Select $absolutePath") {
-            step("Fill file explorer with $absolutePath") {
-                val pathBox: JTextFieldFixture = if (remoteRobot.ideMajorVersion() <= 202) {
-                    find(byXpath("//div[@class='JTextField']"), Duration.ofSeconds(5))
-                } else {
-                    find(byXpath("//div[@class='BorderlessTextField']"), Duration.ofSeconds(5))
-                }
-                pathBox.text = absolutePath.toString()
-            }
-
             step("Refresh file explorer to make sure the file ${path.fileName} is loaded") {
-                waitForIgnoringError {
-                    findAndClick("//div[@accessiblename='Refresh']")
+                findAndClick("//div[@accessiblename='Refresh']")
+                waitForIgnoringError(duration = Duration.ofSeconds(15)) {
+                    setFilePath(absolutePath)
                     tree.requireSelection(*absolutePath.toParts())
                     true
                 }
             }
 
             pressOk()
+        }
+    }
+
+    private fun setFilePath(path: Path) {
+        step("Set file path to $path") {
+            val pathBox: JTextFieldFixture = if (remoteRobot.ideMajorVersion() <= 202) {
+                find(byXpath("//div[@class='JTextField']"), Duration.ofSeconds(5))
+            } else {
+                find(byXpath("//div[@class='BorderlessTextField']"), Duration.ofSeconds(5))
+            }
+            pathBox.text = path.toString()
         }
     }
 
