@@ -67,8 +67,8 @@ class CreateIamRoleDialogTest {
             roleDialog.createIamRoleForTesting()
 
             val iamRole = roleDialog.iamRole
-            assertThat(iamRole?.arn).isEqualTo(TEST_ROLE_ARN)
-            assertThat(iamRole?.name).isEqualTo(TEST_ROLE_NAME)
+            assertThat(iamRole?.arn()).isEqualTo(TEST_ROLE_ARN)
+            assertThat(iamRole?.roleName()).isEqualTo(TEST_ROLE_NAME)
         }
 
         assertThat(createRoleCaptor.firstValue.roleName()).isEqualTo(TEST_ROLE_NAME)

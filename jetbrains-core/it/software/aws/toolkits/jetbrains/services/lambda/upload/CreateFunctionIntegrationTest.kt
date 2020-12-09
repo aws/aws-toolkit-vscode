@@ -11,7 +11,6 @@ import com.intellij.util.ThrowableRunnable
 import org.assertj.core.api.Assertions.assertThat
 import org.junit.After
 import org.junit.Before
-import org.junit.Ignore
 import org.junit.Rule
 import org.junit.Test
 import software.amazon.awssdk.regions.Region
@@ -36,7 +35,6 @@ import software.aws.toolkits.jetbrains.services.ecr.resources.EcrResources
 import software.aws.toolkits.jetbrains.services.ecr.resources.Repository
 import software.aws.toolkits.jetbrains.services.iam.Iam.createRoleWithPolicy
 import software.aws.toolkits.jetbrains.services.iam.IamResources
-import software.aws.toolkits.jetbrains.services.iam.IamRole
 import software.aws.toolkits.jetbrains.services.s3.resources.S3Resources
 import software.aws.toolkits.jetbrains.utils.assumeImageSupport
 import software.aws.toolkits.jetbrains.utils.execution.steps.StepExecutor
@@ -48,7 +46,6 @@ import software.aws.toolkits.jetbrains.utils.setUpGradleProject
 import software.aws.toolkits.jetbrains.utils.waitToLoad
 import java.time.Duration
 
-@Ignore
 class CreateFunctionIntegrationTest {
     private val projectRule = HeavyJavaCodeInsightTestFixtureRule()
     private val resourceCache = MockResourceCacheRule()
@@ -76,21 +73,23 @@ class CreateFunctionIntegrationTest {
     private lateinit var ecrClient: EcrClient
 
     private lateinit var lambdaName: String
-    private lateinit var iamRole: IamRole
+    private lateinit var iamRole: Role
 
     @Before
     fun setUp() {
         setSamExecutableFromEnvironment()
         projectRule.fixture.addModule("main")
 
-        // TODO: Move this to us-west-2
-        val region = regionProvider.addRegion(Region.SA_EAST_1)
+        // Make sure this is called before we use real credentials since if we assume a role, we will trigger SDK client creation and that will show up as a
+        // leaked thread in the idle connection reaper
+        // TODO: To defend against this we should make a AwsSdkClient that throws telling people to use this method
+        MockClientManager.useRealImplementations(disposableRule.disposable)
+
+        val region = regionProvider.addRegion(Region.US_WEST_2)
         val credentials = credentialManager.addCredentials("ReadCreds", createIntegrationTestCredentialProvider(), region)
 
-        settingsManager.settingsManager.changeRegion(regionProvider.addRegion(Region.SA_EAST_1))
+        settingsManager.settingsManager.changeRegion(region)
         settingsManager.settingsManager.changeCredentialProviderAndWait(credentials)
-
-        MockClientManager.useRealImplementations(disposableRule.disposable)
 
         lambdaClient = projectRule.project.awsClient()
         iamClient = projectRule.project.awsClient()
@@ -99,10 +98,13 @@ class CreateFunctionIntegrationTest {
         lambdaName = RuleUtils.randomName()
         iamRole = iamClient.createRoleWithPolicy(RuleUtils.randomName(), DEFAULT_LAMBDA_ASSUME_ROLE_POLICY)
 
+        // Sleep for a while to allow the new IAM role to propagate to other regions
+        Thread.sleep(Duration.ofSeconds(30).toMillis())
+
         resourceCache.addEntry(
             projectRule.project,
             IamResources.LIST_RAW_ROLES,
-            listOf(Role.builder().arn(iamRole.arn).assumeRolePolicyDocument(DEFAULT_LAMBDA_ASSUME_ROLE_POLICY).build())
+            listOf(iamRole)
         )
     }
 
@@ -119,15 +121,13 @@ class CreateFunctionIntegrationTest {
                 }
             },
             ThrowableRunnable {
-                iamClient.deleteRole { it.roleName(iamRole.name) }
+                iamClient.deleteRole { it.roleName(iamRole.roleName()) }
             }
         )
     }
 
     @Test
     fun `zip based lambda can be created`() {
-        projectRule.setUpGradleProject()
-
         val s3Bucket = temporaryBucket.createBucket()
         resourceCache.addEntry(
             projectRule.project,
@@ -135,17 +135,21 @@ class CreateFunctionIntegrationTest {
             listOf(S3Resources.RegionalizedBucket(Bucket.builder().name(s3Bucket).build(), projectRule.project.activeRegion()))
         )
 
+        projectRule.setUpGradleProject()
+
         executeCreateFunction {
             val dialog = runInEdtAndGet {
                 CreateFunctionDialog(projectRule.project, Runtime.JAVA8, "com.example.SomeClass").apply {
                     val view = getViewForTestAssertions()
                     view.name.text = lambdaName
+                    view.configSettings.iamRole.selectedItem { iamRole.arn() == it.arn }
                     view.codeStorage.sourceBucket.selectedItem = s3Bucket
                 }
             }
 
             val view = dialog.getViewForTestAssertions()
             view.codeStorage.sourceBucket.waitToLoad()
+            view.configSettings.iamRole.waitToLoad()
 
             runInEdtAndGet {
                 assertThat(view.validatePanel()?.message).isNull() // Validate we set everything up
@@ -158,7 +162,6 @@ class CreateFunctionIntegrationTest {
     fun `image based lambda can be created`() {
         assumeImageSupport()
         val (dockerfile, _) = readProject("samProjects/image/java8/maven", "Dockerfile", projectRule)
-
         val ecrRepo = ecrClient.createRepository {
             it.repositoryName(RuleUtils.randomName().toLowerCase())
         }.repository()
@@ -179,12 +182,14 @@ class CreateFunctionIntegrationTest {
                         view.name.text = lambdaName
                         view.configSettings.packageImage.isSelected = true
                         view.configSettings.dockerFile.textField.text = dockerfile.path
+                        view.configSettings.iamRole.selectedItem { iamRole.arn() == it.arn }
                         view.codeStorage.ecrRepo.selectedItem = repository
                     }
                 }
 
                 val view = dialog.getViewForTestAssertions()
                 view.codeStorage.ecrRepo.waitToLoad()
+                view.configSettings.iamRole.waitToLoad()
 
                 runInEdtAndGet {
                     assertThat(view.validatePanel()?.message).isNull() // Validate we set everything up
