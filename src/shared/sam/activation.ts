@@ -3,14 +3,11 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
-import * as nls from 'vscode-nls'
-const localize = nls.loadMessageBundle()
-
 import * as vscode from 'vscode'
+import * as nls from 'vscode-nls'
 import { createNewSamApplication, resumeCreateNewSamApp } from '../../lambda/commands/createNewSamApp'
-import { deploySamApplication, SamDeployWizardResponseProvider } from '../../lambda/commands/deploySamApplication'
+import { deploySamApplication } from '../../lambda/commands/deploySamApplication'
 import { SamParameterCompletionItemProvider } from '../../lambda/config/samParameterCompletionItemProvider'
-import { configureLocalLambda } from '../../lambda/local/configureLocalLambda'
 import {
     DefaultSamDeployWizardContext,
     SamDeployWizard,
@@ -20,6 +17,7 @@ import * as codelensUtils from '../codelens/codeLensUtils'
 import * as csLensProvider from '../codelens/csharpCodeLensProvider'
 import * as pyLensProvider from '../codelens/pythonCodeLensProvider'
 import { SamTemplateCodeLensProvider } from '../codelens/samTemplateCodeLensProvider'
+import * as jsLensProvider from '../codelens/typescriptCodeLensProvider'
 import { ext } from '../extensionGlobals'
 import { ExtContext, VSCODE_EXTENSION_ID } from '../extensions'
 import { getIdeType, IDE } from '../extensionUtilities'
@@ -27,11 +25,14 @@ import { getLogger } from '../logger/logger'
 import { SettingsConfiguration } from '../settingsConfiguration'
 import { TelemetryService } from '../telemetry/telemetryService'
 import { PromiseSharer } from '../utilities/promiseUtilities'
+import { NoopWatcher } from '../watchedFiles'
 import { initialize as initializeSamCliContext } from './cli/samCliContext'
 import { detectSamCli } from './cli/samCliDetection'
+import { CodelensRootRegistry } from './codelensRootRegistry'
+import { AWS_SAM_DEBUG_TYPE } from './debugger/awsSamDebugConfiguration'
 import { SamDebugConfigProvider } from './debugger/awsSamDebugger'
 import { addSamDebugConfiguration } from './debugger/commands/addSamDebugConfiguration'
-import { AWS_SAM_DEBUG_TYPE } from './debugger/awsSamDebugConfiguration'
+const localize = nls.loadMessageBundle()
 
 const STATE_NAME_SUPPRESS_YAML_PROMPT = 'aws.sam.suppressYamlPrompt'
 
@@ -90,27 +91,25 @@ async function registerServerlessCommands(ctx: ExtContext): Promise<void> {
         vscode.commands.registerCommand('aws.lambda.createNewSamApp', async () => {
             await createNewSamApplication(ctx)
         }),
-        vscode.commands.registerCommand('aws.configureLambda', configureLocalLambda),
         vscode.commands.registerCommand('aws.addSamDebugConfiguration', addSamDebugConfiguration),
         vscode.commands.registerCommand('aws.pickAddSamDebugConfiguration', codelensUtils.pickAddSamDebugConfiguration),
         vscode.commands.registerCommand('aws.deploySamApplication', async regionNode => {
-            const samDeployWizardContext = new DefaultSamDeployWizardContext(ctx.regionProvider, ctx.awsContext)
-            const samDeployWizard: SamDeployWizardResponseProvider = {
-                getSamDeployWizardResponse: async (): Promise<SamDeployWizardResponse | undefined> => {
-                    const wizard = new SamDeployWizard(samDeployWizardContext, regionNode)
+            const samDeployWizardContext = new DefaultSamDeployWizardContext(ctx)
+            const samDeployWizard = async (): Promise<SamDeployWizardResponse | undefined> => {
+                const wizard = new SamDeployWizard(samDeployWizardContext, regionNode)
 
-                    return wizard.run()
-                },
+                return wizard.run()
             }
 
             await deploySamApplication(
-                { channelLogger: ctx.chanLogger, samDeployWizard },
+                {
+                    channelLogger: ctx.chanLogger,
+                    samDeployWizard: samDeployWizard,
+                },
                 { awsContext: ctx.awsContext }
             )
         })
     )
-
-    // TODO : Register CodeLens commands from here instead of in xxxCodeLensProvider.ts::initialize
 }
 
 async function activateCodeLensProviders(
@@ -120,8 +119,6 @@ async function activateCodeLensProviders(
     telemetryService: TelemetryService
 ): Promise<vscode.Disposable[]> {
     const disposables: vscode.Disposable[] = []
-
-    codelensUtils.initializeTypescriptCodelens(context)
 
     disposables.push(
         vscode.languages.registerCodeLensProvider(
@@ -138,18 +135,11 @@ async function activateCodeLensProviders(
 
     disposables.push(
         vscode.languages.registerCodeLensProvider(
-            // TODO : Turn into a constant to be consistent with Python, C#
-            [
-                {
-                    language: 'javascript',
-                    scheme: 'file',
-                },
-            ],
+            jsLensProvider.JAVASCRIPT_ALL_FILES,
             codelensUtils.makeTypescriptCodeLensProvider()
         )
     )
 
-    await codelensUtils.initializePythonCodelens(context)
     disposables.push(
         vscode.languages.registerCodeLensProvider(
             pyLensProvider.PYTHON_ALLFILES,
@@ -157,13 +147,31 @@ async function activateCodeLensProviders(
         )
     )
 
-    await codelensUtils.initializeCsharpCodelens(context)
     disposables.push(
         vscode.languages.registerCodeLensProvider(
             csLensProvider.CSHARP_ALLFILES,
             await codelensUtils.makeCSharpCodeLensProvider()
         )
     )
+
+    try {
+        const registry = new CodelensRootRegistry()
+
+        await registry.addWatchPattern(pyLensProvider.PYTHON_BASE_PATTERN)
+        await registry.addWatchPattern(jsLensProvider.JAVASCRIPT_BASE_PATTERN)
+        await registry.addWatchPattern(csLensProvider.CSHARP_BASE_PATTERN)
+
+        ext.codelensRootRegistry = registry
+    } catch (e) {
+        vscode.window.showErrorMessage(
+            localize('AWS.codelens.failToInitializeCode', 'Failed to activate Lambda handler CodeLenses')
+        )
+        getLogger().error('Failed to activate codelens registry', e)
+        // This prevents us from breaking for any reason later if it fails to load. Since
+        // Noop watcher is always empty, we will get back empty arrays with no issues.
+        ext.codelensRootRegistry = (new NoopWatcher() as unknown) as CodelensRootRegistry
+    }
+    context.extensionContext.subscriptions.push(ext.codelensRootRegistry)
 
     return disposables
 }

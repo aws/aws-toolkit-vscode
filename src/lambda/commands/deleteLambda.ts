@@ -9,30 +9,26 @@ import * as nls from 'vscode-nls'
 import * as localizedText from '../../shared/localizedText'
 import { LambdaClient } from '../../shared/clients/lambdaClient'
 import { millisecondsSince, recordLambdaDelete, Result } from '../../shared/telemetry/telemetry'
+import { showConfirmationMessage } from '../../shared/utilities/messages'
+import { Window } from '../../shared/vscode/window'
 
 const localize = nls.loadMessageBundle()
 
-/**
- * @param message: Message displayed to user
- */
-const confirm = async (message: string): Promise<boolean> => {
-    // TODO: Re-use `confirm` throughout package (rather than cutting and pasting logic).
-    const response = await vscode.window.showWarningMessage(message, localizedText.yes, localizedText.no)
-
-    return response === localizedText.yes
-}
-
 export async function deleteLambda({
     deleteParams,
-    onConfirm = async () => {
-        return await confirm(
-            localize(
-                'AWS.command.deleteLambda.confirm',
-                "Are you sure you want to delete lambda function '{0}'?",
-                deleteParams.functionName
-            )
-        )
-    },
+    onConfirm = async () =>
+        showConfirmationMessage(
+            {
+                prompt: localize(
+                    'AWS.command.deleteLambda.confirm',
+                    "Are you sure you want to delete lambda function '{0}'?",
+                    deleteParams.functionName
+                ),
+                confirm: localizedText.localizedDelete,
+                cancel: localizedText.cancel,
+            },
+            Window.vscode()
+        ),
     ...restParams
 }: {
     deleteParams: { functionName: string }

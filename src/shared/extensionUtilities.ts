@@ -217,7 +217,6 @@ export function showWelcomeMessage(context: vscode.ExtensionContext): void {
         if (isDifferentVersion(context)) {
             setMostRecentVersion(context)
             // the welcome toast should be nonblocking.
-            // tslint:disable-next-line: no-floating-promises
             showQuickstartPrompt()
         }
     } catch (err) {

@@ -38,10 +38,7 @@ export class SchemaCodeGenUtils {
     private buildPartnerEventPackageName(builder: CodeGenPackageBuilder, schemaName: string): void {
         const partnerSchemaString = schemaName.substring(this.AWS_PARTNER_PREFIX.length)
 
-        builder
-            .append(this.AWS)
-            .append(this.PARTNER)
-            .append(partnerSchemaString)
+        builder.append(this.AWS).append(this.PARTNER).append(partnerSchemaString)
     }
 
     private isAwsEvent(name: string): boolean {
@@ -66,7 +63,7 @@ class CodeGenPackageBuilder {
         return this.builder
     }
 
-    public append(segment: String): CodeGenPackageBuilder {
+    public append(segment: string): CodeGenPackageBuilder {
         if (this.builder.length > 0) {
             this.builder = this.builder.concat(IdentifierFormatter.PACKAGE_SEPARATOR)
         }

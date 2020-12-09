@@ -36,4 +36,6 @@ export class FakeChannelLogger implements ChannelLogger {
     public verbose(nlsKey: string, nlsTemplate: string, ...templateTokens: Loggable[]): void {
         this.loggedVerboseKeys.add(nlsKey)
     }
+
+    public emitMessage(message: string): void {}
 }

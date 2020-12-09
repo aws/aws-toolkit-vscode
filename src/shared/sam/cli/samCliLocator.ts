@@ -121,12 +121,12 @@ class WindowsSamCliLocator extends BaseSamCliLocator {
             const envVars = process.env as EnvironmentVariables
 
             const programFiles = envVars.PROGRAMFILES
-            if (!!programFiles) {
+            if (programFiles) {
                 WindowsSamCliLocator.LOCATION_PATHS.push(String.raw`${programFiles}\Amazon\AWSSAMCLI\bin`)
             }
 
             const programFilesX86 = envVars['PROGRAMFILES(X86)']
-            if (!!programFilesX86) {
+            if (programFilesX86) {
                 WindowsSamCliLocator.LOCATION_PATHS.push(String.raw`${programFilesX86}\Amazon\AWSSAMCLI\bin`)
             }
         }

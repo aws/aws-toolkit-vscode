@@ -52,6 +52,7 @@ export async function invokeRemoteRestApi(params: { outputChannel: vscode.Output
             vscode.ViewColumn.One,
             {
                 enableScripts: true,
+                retainContextWhenHidden: true,
             }
         )
         const baseTemplateFn = template(BaseTemplates.SIMPLE_HTML)
@@ -137,7 +138,7 @@ export function createMessageReceivedFunc({
             if (!selectedResourceId) {
                 throw new Error(`Vue called 'apiResourceSelected', but no resourceId was provided!`)
             }
-            logger.info(`Selected ${selectedResourceId}`)
+            logger.verbose(`Selected ${selectedResourceId}`)
             postMessage({
                 command: 'setMethods',
                 methods: listValidMethods(resources, selectedResourceId),

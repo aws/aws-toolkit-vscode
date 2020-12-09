@@ -8,13 +8,15 @@ import * as vscode from 'vscode'
 import { instance, mock, when } from 'ts-mockito'
 
 import { CloudFormation } from '../../../../shared/cloudformation/cloudformation'
-import { CloudFormationTemplateRegistry, TemplateDatum } from '../../../../shared/cloudformation/templateRegistry'
+import { CloudFormationTemplateRegistry } from '../../../../shared/cloudformation/templateRegistry'
 import {
     AwsSamDebuggerConfiguration,
     TemplateTargetProperties,
 } from '../../../../shared/sam/debugger/awsSamDebugConfiguration'
 import { DefaultAwsSamDebugConfigurationValidator } from '../../../../shared/sam/debugger/awsSamDebugConfigurationValidator'
 import { createBaseTemplate } from '../../cloudformation/cloudformationTestUtils'
+import { ext } from '../../../../shared/extensionGlobals'
+import { WatchedItem } from '../../../../shared/watchedFiles'
 
 function createTemplateConfig(): AwsSamDebuggerConfiguration {
     return {
@@ -25,6 +27,22 @@ function createTemplateConfig(): AwsSamDebuggerConfiguration {
             target: 'template',
             templatePath: '/',
             logicalId: 'TestResource',
+        },
+    }
+}
+
+function createImageTemplateConfig(): AwsSamDebuggerConfiguration {
+    return {
+        type: 'aws-sam',
+        name: 'name',
+        request: 'direct-invoke',
+        invokeTarget: {
+            target: 'template',
+            templatePath: '/image',
+            logicalId: 'TestResource',
+        },
+        lambda: {
+            runtime: 'nodejs12.x',
         },
     }
 }
@@ -59,28 +77,50 @@ function createApiConfig(): AwsSamDebuggerConfiguration {
     }
 }
 
-function createTemplateData(): TemplateDatum {
+function createTemplateData(): WatchedItem<CloudFormation.Template> {
     return {
         path: '/',
-        template: createBaseTemplate(),
+        item: createBaseTemplate(),
+    }
+}
+
+function createImageTemplateData(): WatchedItem<CloudFormation.Template> {
+    return {
+        path: '/image',
+        item: createBaseTemplate(),
     }
 }
 
 describe('DefaultAwsSamDebugConfigurationValidator', () => {
     const templateConfig = createTemplateConfig()
+    const imageTemplateConfig = createImageTemplateConfig()
     const codeConfig = createCodeConfig()
     const apiConfig = createApiConfig()
     const templateData = createTemplateData()
+    const imageTemplateData = createImageTemplateData()
 
     const mockRegistry: CloudFormationTemplateRegistry = mock()
     const mockFolder: vscode.WorkspaceFolder = mock()
 
     let validator: DefaultAwsSamDebugConfigurationValidator
 
-    beforeEach(() => {
-        when(mockRegistry.getRegisteredTemplate('/')).thenReturn(templateData)
+    let savedRegistry: CloudFormationTemplateRegistry
 
-        validator = new DefaultAwsSamDebugConfigurationValidator(instance(mockRegistry), instance(mockFolder))
+    before(() => {
+        savedRegistry = ext.templateRegistry
+    })
+
+    after(() => {
+        ext.templateRegistry = savedRegistry
+    })
+
+    beforeEach(() => {
+        when(mockRegistry.getRegisteredItem('/')).thenReturn(templateData)
+        when(mockRegistry.getRegisteredItem('/image')).thenReturn(imageTemplateData)
+
+        ext.templateRegistry = mockRegistry
+
+        validator = new DefaultAwsSamDebugConfigurationValidator(instance(mockFolder))
     })
 
     it('returns invalid when resolving debug configurations with an invalid request type', () => {
@@ -99,9 +139,9 @@ describe('DefaultAwsSamDebugConfigurationValidator', () => {
 
     it("returns invalid when resolving template debug configurations with a template that isn't in the registry", () => {
         const mockEmptyRegistry: CloudFormationTemplateRegistry = mock()
-        when(mockEmptyRegistry.getRegisteredTemplate('/')).thenReturn(undefined)
+        when(mockEmptyRegistry.getRegisteredItem('/')).thenReturn(undefined)
 
-        validator = new DefaultAwsSamDebugConfigurationValidator(instance(mockEmptyRegistry), instance(mockFolder))
+        validator = new DefaultAwsSamDebugConfigurationValidator(instance(mockFolder))
 
         const result = validator.validate(templateConfig)
         assert.strictEqual(result.isValid, false)
@@ -124,8 +164,7 @@ describe('DefaultAwsSamDebugConfigurationValidator', () => {
     })
 
     it('returns undefined when resolving template debug configurations with a resource that has an invalid runtime in template', () => {
-        const properties = templateData.template.Resources?.TestResource
-            ?.Properties as CloudFormation.ResourceProperties
+        const properties = templateData.item.Resources?.TestResource?.Properties as CloudFormation.ZipResourceProperties
         properties.Runtime = 'invalid'
 
         const result = validator.validate(templateConfig)
@@ -161,6 +200,15 @@ describe('DefaultAwsSamDebugConfigurationValidator', () => {
         codeConfig.lambda = { runtime: 'asd' }
 
         const result = validator.validate(codeConfig)
+        assert.strictEqual(result.isValid, false)
+    })
+
+    it('returns invalid when Image app does not declare runtime', () => {
+        const lambda = imageTemplateConfig.lambda
+
+        delete lambda?.runtime
+
+        const result = validator.validate(templateConfig)
         assert.strictEqual(result.isValid, false)
     })
 })

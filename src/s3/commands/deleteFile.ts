@@ -3,6 +3,7 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
+import * as localizedText from '../../shared/localizedText'
 import { getLogger } from '../../shared/logger'
 import * as telemetry from '../../shared/telemetry/telemetry'
 import { localize } from '../../shared/utilities/vsCodeUtils'
@@ -11,7 +12,8 @@ import { Window } from '../../shared/vscode/window'
 import { S3BucketNode } from '../explorer/s3BucketNode'
 import { S3FileNode } from '../explorer/s3FileNode'
 import { S3FolderNode } from '../explorer/s3FolderNode'
-import { readablePath, showConfirmationMessage, showErrorWithLogs } from '../util/messages'
+import { readablePath } from '../util'
+import { showErrorWithLogs, showConfirmationMessage } from '../../shared/utilities/messages'
 
 const DELETE_FILE_DISPLAY_TIMEOUT_MS = 2000
 
@@ -34,8 +36,8 @@ export async function deleteFileCommand(
     const isConfirmed = await showConfirmationMessage(
         {
             prompt: localize('AWS.s3.deleteFile.prompt', 'Are you sure you want to delete file {0}?', filePath),
-            confirm: localize('AWS.s3.deleteFile.confirm', 'Delete'),
-            cancel: localize('AWS.s3.deleteFile.cancel', 'Cancel'),
+            confirm: localizedText.localizedDelete,
+            cancel: localizedText.cancel,
         },
         window
     )

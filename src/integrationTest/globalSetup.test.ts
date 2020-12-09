@@ -9,7 +9,8 @@
 import * as assert from 'assert'
 import { VSCODE_EXTENSION_ID } from '../shared/extensions'
 import { activateExtension } from './integrationTestsUtilities'
-import { setMaxLogging } from '../shared/logger/logger'
+import { getLogger } from '../shared/logger'
+import { WinstonToolkitLogger } from '../shared/logger/winstonToolkitLogger'
 
 // ASSUMPTION: Tests are not run concurrently
 
@@ -37,7 +38,7 @@ export function setTestTimeout(testName: string | undefined, ms: number) {
         throw Error(`timeout set by previous test was not cleared: "${timeout.name}"`)
     }
     timeout.name = testName
-    timeout.id = setTimeout(function() {
+    timeout.id = setTimeout(function () {
         const name = timeout.name
         clearTestTimeout()
         assert.fail(`Exceeded timeout of ${(ms / 1000).toFixed(1)} seconds: "${name}"`)
@@ -49,15 +50,19 @@ before(async () => {
     console.log('globalSetup: before()')
     // Needed for getLogger().
     await activateExtension(VSCODE_EXTENSION_ID.awstoolkit)
+
     // Log as much as possible, useful for debugging integration tests.
-    setMaxLogging()
+    getLogger().setLogLevel('debug')
+    if (getLogger() instanceof WinstonToolkitLogger) {
+        ;(getLogger() as WinstonToolkitLogger).logToConsole()
+    }
 })
 // After all tests end, once only:
 after(async () => {
     console.log('globalSetup: after()')
 })
 
-afterEach(function() {
+afterEach(function () {
     clearTestTimeout()
 })
 

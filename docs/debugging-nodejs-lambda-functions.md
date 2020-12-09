@@ -16,7 +16,7 @@ Throughout these instructions, replace the following:
 | ----------------------- | ------------------------------------------------------------------------------------- |
 | `<sam app root>`        | The root of your SAM app (typically this is the directory containing `template.yaml`) |
 | `<nodejs project root>` | The root of your Node.js source code (the directory containing `package.json`)        |
-| `<protocol>`            | Either `inspector` (for Node.js 6.3+) or `legacy` (for prior versions of Node.js)       |
+| `<protocol>`            | Either `inspector` (for Node.js 6.3+) or `legacy` (for prior versions of Node.js)     |
 
 1. Open `<sam app root>/.vscode/launch.json` (create a new file if it does not already exist), and add the following contents.
 

@@ -4,9 +4,9 @@
  */
 
 import * as _ from 'lodash'
+import * as nls from 'vscode-nls'
 import * as path from 'path'
 import * as vscode from 'vscode'
-import { CloudFormationTemplateRegistry } from '../cloudformation/templateRegistry'
 import {
     AwsSamDebuggerConfiguration,
     CodeTargetProperties,
@@ -25,6 +25,9 @@ import { tryGetAbsolutePath } from '../utilities/workspaceUtils'
 import { getLogger } from '../logger'
 import * as window from '../../shared/vscode/window'
 import { makeFailedWriteMessage } from '../utilities/messages'
+import { launchConfigDocUrl } from '../constants'
+
+const localize = nls.loadMessageBundle()
 
 /**
  * Reads and writes DebugConfigurations.
@@ -46,7 +49,6 @@ export class LaunchConfiguration {
         public readonly scopedResource: vscode.Uri,
         private readonly configSource: DebugConfigurationSource = new DefaultDebugConfigSource(scopedResource),
         private readonly samValidator: AwsSamDebugConfigurationValidator = new DefaultAwsSamDebugConfigurationValidator(
-            CloudFormationTemplateRegistry.getRegistry(),
             vscode.workspace.getWorkspaceFolder(scopedResource)
         )
     ) {
@@ -103,8 +105,15 @@ class DefaultDebugConfigSource implements DebugConfigurationSource {
         try {
             await this.launch.update('configurations', value)
         } catch (e) {
+            const helpText = localize('AWS.generic.message.getHelp', 'Get Help...')
             getLogger().error('setDebugConfigurations failed: %O', e as Error)
-            window.Window.vscode().showErrorMessage(makeFailedWriteMessage('launch.json'))
+            window.Window.vscode()
+                .showErrorMessage(makeFailedWriteMessage('launch.json'), helpText)
+                .then(async buttonText => {
+                    if (buttonText === helpText) {
+                        vscode.env.openExternal(vscode.Uri.parse(launchConfigDocUrl))
+                    }
+                })
         }
     }
 }

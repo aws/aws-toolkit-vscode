@@ -8,6 +8,7 @@ import * as nls from 'vscode-nls'
 import { getLogger, LogLevel } from '../logger'
 import { Loggable } from '../logger/loggableType'
 import { ext } from '../../shared/extensionGlobals'
+import { removeAnsi } from './textUtilities'
 
 // TODO: Consider NLS initialization/configuration here & have packages to import localize from here
 export const localize = nls.loadMessageBundle()
@@ -58,6 +59,8 @@ export interface ChannelLogger {
     info: TemplateHandler
     warn: TemplateHandler
     error: TemplateHandler
+    /** For when it's necessary to emit non-templated text (e.g. output from a CLI) */
+    emitMessage: (message: string) => void
 }
 
 /**
@@ -115,6 +118,12 @@ export function getChannelLogger(channel: vscode.OutputChannel): ChannelLogger {
                 nlsTemplate,
                 templateTokens,
             }),
+        emitMessage: (text: string) => {
+            // From VS Code API: If no debug session is active, output sent to the debug console is not shown.
+            // We send text to output channel and debug console to ensure no text is lost.
+            channel.append(removeAnsi(text))
+            vscode.debug.activeDebugConsole.append(text)
+        },
     })
 }
 

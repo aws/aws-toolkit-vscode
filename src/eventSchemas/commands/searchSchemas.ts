@@ -153,7 +153,7 @@ export function createMessageReceivedFunc({
 }) {
     return async (message: CommandMessage) => {
         switch (message.command) {
-            case 'fetchSchemaContent':
+            case 'fetchSchemaContent': {
                 recordSchemasView({ result: 'Succeeded' })
 
                 let selectedVersion = message.version
@@ -182,8 +182,8 @@ export function createMessageReceivedFunc({
                 }
 
                 return
-
-            case 'searchSchemas':
+            }
+            case 'searchSchemas': {
                 recordSchemasSearch({ result: 'Succeeded' })
 
                 const results = await getSearchResults(schemaClient, registryNames, message.keyword!)
@@ -195,8 +195,8 @@ export function createMessageReceivedFunc({
                 })
 
                 return
-
-            case 'downloadCodeBindings':
+            }
+            case 'downloadCodeBindings': {
                 const schemaItem: Schemas.SchemaSummary = {
                     SchemaName: getSchemaNameFromTitle(message.schemaSummary!.Title),
                 }
@@ -208,7 +208,7 @@ export function createMessageReceivedFunc({
                 await downloadSchemaItemCode(schemaItemNode, restParams.outputChannel)
 
                 return
-
+            }
             default:
                 throw new Error(`Search webview command ${message.command} is invalid`)
         }

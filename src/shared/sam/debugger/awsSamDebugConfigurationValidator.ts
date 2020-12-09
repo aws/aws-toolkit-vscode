@@ -5,9 +5,8 @@
 
 import * as vscode from 'vscode'
 import * as fs from 'fs'
-import { samLambdaRuntimes } from '../../../lambda/models/samLambdaRuntime'
+import { samZipLambdaRuntimes } from '../../../lambda/models/samLambdaRuntime'
 import { CloudFormation } from '../../cloudformation/cloudformation'
-import { CloudFormationTemplateRegistry } from '../../cloudformation/templateRegistry'
 import { localize } from '../../utilities/vsCodeUtils'
 import {
     AWS_SAM_DEBUG_REQUEST_TYPES,
@@ -19,6 +18,7 @@ import {
     API_TARGET_TYPE,
 } from './awsSamDebugConfiguration'
 import { tryGetAbsolutePath } from '../../utilities/workspaceUtils'
+import { ext } from '../../extensionGlobals'
 
 export interface ValidationResult {
     isValid: boolean
@@ -30,10 +30,7 @@ export interface AwsSamDebugConfigurationValidator {
 }
 
 export class DefaultAwsSamDebugConfigurationValidator implements AwsSamDebugConfigurationValidator {
-    public constructor(
-        private readonly cftRegistry = CloudFormationTemplateRegistry.getRegistry(),
-        private readonly workspaceFolder: vscode.WorkspaceFolder | undefined
-    ) {}
+    public constructor(private readonly workspaceFolder: vscode.WorkspaceFolder | undefined) {}
 
     /**
      * Validates debug configuration properties.
@@ -67,7 +64,7 @@ export class DefaultAwsSamDebugConfigurationValidator implements AwsSamDebugConf
                 const fullpath = tryGetAbsolutePath(this.workspaceFolder, config.invokeTarget.templatePath)
                 // Normalize to absolute path for use in the runner.
                 config.invokeTarget.templatePath = fullpath
-                cfnTemplate = this.cftRegistry.getRegisteredTemplate(fullpath)?.template
+                cfnTemplate = ext.templateRegistry.getRegisteredItem(fullpath)?.item
             }
             rv = this.validateTemplateConfig(config, config.invokeTarget.templatePath, cfnTemplate)
         } else if (config.invokeTarget.target === CODE_TARGET_TYPE) {
@@ -160,18 +157,44 @@ export class DefaultAwsSamDebugConfigurationValidator implements AwsSamDebugConf
             }
         }
 
-        // TODO: Decide what to do with this re: refs.
-        // As of now, this has to be directly declared without a ref, despite the fact that SAM will handle a ref.
-        // Should we just pass validation off to SAM and ignore validation at this point, or should we directly process the value (like the handler)?
-        if (!resource?.Properties?.Runtime || !samLambdaRuntimes.has(resource?.Properties?.Runtime as string)) {
-            return {
-                isValid: false,
-                message: localize(
-                    'AWS.sam.debugger.unsupportedRuntime',
-                    'Runtime for Template Resource {0} in Template file {1} is either undefined or unsupported.',
-                    templateTarget.logicalId,
-                    templateTarget.templatePath
-                ),
+        if (CloudFormation.isImageLambdaResource(resource?.Properties)) {
+            // SAM also checks that Metadata.DockerContext and Metadata.Dockerfile exists
+            if (!resource?.Metadata?.DockerContext || !resource?.Metadata?.Dockerfile) {
+                return {
+                    isValid: false,
+                    message: localize(
+                        'AWS.sam.debugger.missingSamMetadata',
+                        'The Metadata section for Template Resource {0} in Template file {1} is not defined',
+                        templateTarget.logicalId,
+                        templateTarget.templatePath
+                    ),
+                }
+            }
+            // can't infer the runtime for image-based lambdas
+            if (!config.lambda?.runtime || !samZipLambdaRuntimes.has(config.lambda.runtime)) {
+                return {
+                    isValid: false,
+                    message: localize(
+                        'AWS.sam.debugger.missingRuntimeForImage',
+                        'Run configurations for Image-based Lambdas require a valid Lambda runtime value, expected one of [{0}]',
+                        Array.from(samZipLambdaRuntimes).join(', ')
+                    ),
+                }
+            }
+        } else {
+            // TODO: Decide what to do with this re: refs.
+            // As of now, this has to be directly declared without a ref, despite the fact that SAM will handle a ref.
+            // Should we just pass validation off to SAM and ignore validation at this point, or should we directly process the value (like the handler)?
+            if (!resource?.Properties?.Runtime || !samZipLambdaRuntimes.has(resource?.Properties?.Runtime as string)) {
+                return {
+                    isValid: false,
+                    message: localize(
+                        'AWS.sam.debugger.unsupportedRuntime',
+                        'Runtime for Template Resource {0} in Template file {1} is either undefined or unsupported.',
+                        templateTarget.logicalId,
+                        templateTarget.templatePath
+                    ),
+                }
             }
         }
 
@@ -220,15 +243,16 @@ export class DefaultAwsSamDebugConfigurationValidator implements AwsSamDebugConf
         }
         return { isValid: true }
     }
+
     private validateCodeConfig(debugConfiguration: AwsSamDebuggerConfiguration): ValidationResult {
-        if (!debugConfiguration.lambda?.runtime || !samLambdaRuntimes.has(debugConfiguration.lambda.runtime)) {
+        if (!debugConfiguration.lambda?.runtime || !samZipLambdaRuntimes.has(debugConfiguration.lambda.runtime)) {
             return {
                 isValid: false,
                 message: localize(
                     'AWS.sam.debugger.missingRuntime',
                     'Debug Configurations with an invoke target of "{0}" require a valid Lambda runtime value, expected one of [{1}]',
                     CODE_TARGET_TYPE,
-                    Array.from(samLambdaRuntimes).join(', ')
+                    Array.from(samZipLambdaRuntimes).join(', ')
                 ),
             }
         }

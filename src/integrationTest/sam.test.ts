@@ -5,7 +5,7 @@
 
 import * as assert from 'assert'
 import { Runtime } from 'aws-sdk/clients/lambda'
-import { mkdirpSync, mkdtemp, readFileSync, removeSync } from 'fs-extra'
+import { mkdirpSync, mkdtemp, removeSync } from 'fs-extra'
 import * as path from 'path'
 import * as vscode from 'vscode'
 import { getDependencyManager } from '../../src/lambda/models/samLambdaRuntime'
@@ -21,11 +21,15 @@ import { findParentProjectFile } from '../shared/utilities/workspaceUtils'
 import { activateExtension, getCodeLenses, getTestWorkspaceFolder, sleep } from './integrationTestsUtilities'
 import { setTestTimeout } from './globalSetup.test'
 import { waitUntil } from '../shared/utilities/timeoutUtils'
+import { AwsSamDebuggerConfiguration } from '../shared/sam/debugger/awsSamDebugConfiguration.gen'
+import { ext } from '../shared/extensionGlobals'
 
 const projectFolder = getTestWorkspaceFolder()
 
 interface TestScenario {
+    displayName: string
     runtime: Runtime
+    baseImage?: string
     path: string
     debugSessionType: string
     language: Language
@@ -34,13 +38,103 @@ interface TestScenario {
 // When testing additional runtimes, consider pulling the docker container in buildspec\linuxIntegrationTests.yml
 // to reduce the chance of automated tests timing out.
 const scenarios: TestScenario[] = [
-    { runtime: 'nodejs10.x', path: 'hello-world/app.js', debugSessionType: 'pwa-node', language: 'javascript' },
-    { runtime: 'nodejs12.x', path: 'hello-world/app.js', debugSessionType: 'pwa-node', language: 'javascript' },
-    { runtime: 'python2.7', path: 'hello_world/app.py', debugSessionType: 'python', language: 'python' },
-    { runtime: 'python3.6', path: 'hello_world/app.py', debugSessionType: 'python', language: 'python' },
-    { runtime: 'python3.7', path: 'hello_world/app.py', debugSessionType: 'python', language: 'python' },
-    { runtime: 'python3.8', path: 'hello_world/app.py', debugSessionType: 'python', language: 'python' },
+    // zips
+    {
+        runtime: 'nodejs10.x',
+        displayName: 'nodejs10.x (ZIP)',
+        path: 'hello-world/app.js',
+        debugSessionType: 'pwa-node',
+        language: 'javascript',
+    },
+    {
+        runtime: 'nodejs12.x',
+        displayName: 'nodejs12.x (ZIP)',
+        path: 'hello-world/app.js',
+        debugSessionType: 'pwa-node',
+        language: 'javascript',
+    },
+    {
+        runtime: 'python2.7',
+        displayName: 'python2.7 (ZIP)',
+        path: 'hello_world/app.py',
+        debugSessionType: 'python',
+        language: 'python',
+    },
+    {
+        runtime: 'python3.6',
+        displayName: 'python3.6 (ZIP)',
+        path: 'hello_world/app.py',
+        debugSessionType: 'python',
+        language: 'python',
+    },
+    {
+        runtime: 'python3.7',
+        displayName: 'python3.7 (ZIP)',
+        path: 'hello_world/app.py',
+        debugSessionType: 'python',
+        language: 'python',
+    },
+    {
+        runtime: 'python3.8',
+        displayName: 'python3.8 (ZIP)',
+        path: 'hello_world/app.py',
+        debugSessionType: 'python',
+        language: 'python',
+    },
     // { runtime: 'dotnetcore2.1', path: 'src/HelloWorld/Function.cs', debugSessionType: 'coreclr', language: 'csharp' },
+    // { runtime: 'dotnetcore3.1', path: 'src/HelloWorld/Function.cs', debugSessionType: 'coreclr', language: 'csharp' },
+
+    // images
+    {
+        runtime: 'nodejs10.x',
+        displayName: 'nodejs10.x (Image)',
+        baseImage: `amazon/nodejs10.x-base`,
+        path: 'hello-world/app.js',
+        debugSessionType: 'pwa-node',
+        language: 'javascript',
+    },
+    {
+        runtime: 'nodejs12.x',
+        displayName: 'nodejs12.x (Image)',
+        baseImage: `amazon/nodejs12.x-base`,
+        path: 'hello-world/app.js',
+        debugSessionType: 'pwa-node',
+        language: 'javascript',
+    },
+    {
+        runtime: 'python2.7',
+        displayName: 'python2.7 (Image)',
+        baseImage: `amazon/python2.7-base`,
+        path: 'hello_world/app.py',
+        debugSessionType: 'python',
+        language: 'python',
+    },
+    {
+        runtime: 'python3.6',
+        displayName: 'python3.6 (Image)',
+        baseImage: `amazon/python3.6-base`,
+        path: 'hello_world/app.py',
+        debugSessionType: 'python',
+        language: 'python',
+    },
+    {
+        runtime: 'python3.7',
+        displayName: 'python3.7 (Image)',
+        baseImage: `amazon/python3.7-base`,
+        path: 'hello_world/app.py',
+        debugSessionType: 'python',
+        language: 'python',
+    },
+    {
+        runtime: 'python3.8',
+        displayName: 'python3.8 (Image)',
+        baseImage: `amazon/python3.8-base`,
+        path: 'hello_world/app.py',
+        debugSessionType: 'python',
+        language: 'python',
+    },
+    // { runtime: 'dotnetcore2.1', path: 'src/HelloWorld/Function.cs', debugSessionType: 'coreclr', language: 'csharp' },
+    // { runtime: 'dotnetcore3.1', path: 'src/HelloWorld/Function.cs', debugSessionType: 'coreclr', language: 'csharp' },
 ]
 
 async function openSamAppFile(applicationPath: string): Promise<vscode.Uri> {
@@ -80,7 +174,7 @@ async function getAddConfigCodeLens(documentUri: vscode.Uri): Promise<vscode.Cod
                 return codeLenses[0]
             }
         } catch (e) {
-            console.log(`getAddConfigCodeLens(): failed, retrying:\n${e}`)
+            console.log(`sam.test.ts: getAddConfigCodeLens(): failed, retrying:\n${e}`)
         }
     }
 }
@@ -89,7 +183,10 @@ async function continueDebugger(): Promise<void> {
     await vscode.commands.executeCommand('workbench.action.debug.continue')
 }
 
-async function stopDebugger(): Promise<void> {
+async function stopDebugger(logMsg: string | undefined): Promise<void> {
+    if (logMsg) {
+        console.log(`sam.test.ts: stopDebugger(): ${logMsg}`)
+    }
     await vscode.commands.executeCommand('workbench.action.debug.stop')
 }
 
@@ -120,7 +217,7 @@ function runtimeNeedsWorkaround(lang: Language) {
     return vscode.version.startsWith('1.42') || lang === 'csharp' || lang === 'python'
 }
 
-describe('SAM Integration Tests', async function() {
+describe('SAM Integration Tests', async function () {
     const samApplicationName = 'testProject'
     /**
      * Breadcrumbs from each process, printed at end of all scenarios to give
@@ -129,7 +226,7 @@ describe('SAM Integration Tests', async function() {
     const sessionLog: string[] = []
     let testSuiteRoot: string
 
-    before(async function() {
+    before(async function () {
         await activateExtensions()
         await configureAwsToolkitExtension()
         await configurePythonExtension()
@@ -139,7 +236,7 @@ describe('SAM Integration Tests', async function() {
         mkdirpSync(testSuiteRoot)
     })
 
-    after(async function() {
+    after(async function () {
         tryRemoveFolder(testSuiteRoot)
         // Print a summary of session that were seen by `onDidStartDebugSession`.
         const sessionReport = sessionLog.map(x => `    ${x}`).join('\n')
@@ -149,39 +246,39 @@ describe('SAM Integration Tests', async function() {
     for (let scenarioIndex = 0; scenarioIndex < scenarios.length; scenarioIndex++) {
         const scenario = scenarios[scenarioIndex]
 
-        describe(`SAM Application Runtime: ${scenario.runtime}`, async function() {
+        describe(`SAM Application Runtime: ${scenario.displayName}`, async function () {
             let runtimeTestRoot: string
 
-            before(async function() {
+            before(async function () {
                 runtimeTestRoot = path.join(testSuiteRoot, scenario.runtime)
                 console.log('runtimeTestRoot: ', runtimeTestRoot)
                 mkdirpSync(runtimeTestRoot)
             })
 
-            after(async function() {
+            after(async function () {
                 tryRemoveFolder(runtimeTestRoot)
             })
 
             function log(o: any) {
-                console.log(`sam.test.ts: scenario ${scenarioIndex} (${scenario.runtime}): ${o}`)
+                console.log(`sam.test.ts: scenario ${scenarioIndex} (${scenario.displayName}): ${o}`)
             }
 
             /**
              * This suite cleans up at the end of each test.
              */
-            describe('Starting from scratch', async function() {
+            describe('Starting from scratch', async function () {
                 let testDir: string
 
-                beforeEach(async function() {
+                beforeEach(async function () {
                     testDir = await mkdtemp(path.join(runtimeTestRoot, 'test-'))
                     log(`testDir: ${testDir}`)
                 })
 
-                afterEach(async function() {
+                afterEach(async function () {
                     tryRemoveFolder(testDir)
                 })
 
-                it('creates a new SAM Application (happy path)', async function() {
+                it('creates a new SAM Application (happy path)', async function () {
                     await createSamApplication(testDir)
 
                     // Check for readme file
@@ -194,7 +291,7 @@ describe('SAM Integration Tests', async function() {
              * This suite makes a sam app that all tests operate on.
              * Cleanup happens at the end of the suite.
              */
-            describe(`Starting with a newly created ${scenario.runtime} SAM Application...`, async function() {
+            describe(`Starting with a newly created ${scenario.displayName} SAM Application...`, async function () {
                 let testDisposables: vscode.Disposable[]
 
                 let testDir: string
@@ -202,56 +299,51 @@ describe('SAM Integration Tests', async function() {
                 let appPath: string
                 let cfnTemplatePath: string
 
-                before(async function() {
+                before(async function () {
                     testDir = await mkdtemp(path.join(runtimeTestRoot, 'samapp-'))
                     log(`testDir: ${testDir}`)
 
                     await createSamApplication(testDir)
                     appPath = path.join(testDir, samApplicationName, scenario.path)
                     cfnTemplatePath = path.join(testDir, samApplicationName, 'template.yaml')
+                    assert.ok(await fileExists(cfnTemplatePath), `Expected SAM template to exist at ${cfnTemplatePath}`)
                     samAppCodeUri = await openSamAppFile(appPath)
                 })
 
-                beforeEach(async function() {
+                beforeEach(async function () {
                     testDisposables = []
                     await closeAllEditors()
                 })
 
-                afterEach(async function() {
-                    // tslint:disable-next-line: no-unsafe-any
+                afterEach(async function () {
                     testDisposables.forEach(d => d.dispose())
-                    await stopDebugger()
+                    await stopDebugger(undefined)
                 })
 
-                after(async function() {
+                after(async function () {
                     tryRemoveFolder(testDir)
                 })
 
-                it('the SAM Template contains the expected runtime', async function() {
-                    const fileContents = readFileSync(cfnTemplatePath).toString()
-                    assert.ok(fileContents.includes(`Runtime: ${scenario.runtime}`))
-                })
-
-                it('produces an error when creating a SAM Application to the same location', async function() {
+                it('produces an error when creating a SAM Application to the same location', async function () {
                     const err = await assertThrowsError(async () => await createSamApplication(testDir))
                     assert(err.message.includes('directory already exists'))
                 })
 
-                it('produces an Add Debug Configuration codelens', async function() {
+                it('produces an Add Debug Configuration codelens', async function () {
                     setTestTimeout(this.test?.fullTitle(), 60000)
                     const codeLens = await getAddConfigCodeLens(samAppCodeUri)
                     assert.ok(codeLens)
 
-                    let manifestFile: string
+                    let manifestFile: RegExp
                     switch (scenario.language) {
                         case 'javascript':
-                            manifestFile = 'package.json'
+                            manifestFile = /^package\.json$/
                             break
                         case 'python':
-                            manifestFile = 'requirements.txt'
+                            manifestFile = /^requirements\.txt$/
                             break
                         case 'csharp':
-                            manifestFile = '*.csproj'
+                            manifestFile = /^.*\.csproj$/
                             break
                         default:
                             assert.fail('invalid scenario language')
@@ -262,11 +354,11 @@ describe('SAM Integration Tests', async function() {
                     assertCodeLensReferencesHasSameRoot(codeLens, projectRoot!)
                 })
 
-                it('invokes and attaches on debug request (F5)', async function() {
-                    setTestTimeout(this.test?.fullTitle(), 60000)
+                it('invokes and attaches on debug request (F5)', async function () {
+                    setTestTimeout(this.test?.fullTitle(), 90000)
                     // Allow previous sessions to go away.
                     await waitUntil(
-                        async function() {
+                        async function () {
                             return vscode.debug.activeDebugSession === undefined
                         },
                         { timeout: 100, interval: 300 }
@@ -292,7 +384,17 @@ describe('SAM Integration Tests', async function() {
                             logicalId: 'HelloWorldFunction',
                             templatePath: cfnTemplatePath,
                         },
+                    } as AwsSamDebuggerConfiguration
+
+                    // runtime is optional for ZIP, but required for image-based
+                    if (scenario.baseImage) {
+                        testConfig.lambda = {
+                            runtime: scenario.runtime,
+                        }
                     }
+
+                    // XXX: force load since template registry seems a bit flakey
+                    await ext.templateRegistry.addItemToRegistry(vscode.Uri.file(cfnTemplatePath))
 
                     // Simulate "F5".
                     await vscode.debug.startDebugging(undefined, testConfig)
@@ -318,7 +420,7 @@ describe('SAM Integration Tests', async function() {
 
                                 // If `onDidStartDebugSession` is fired then the debugger doesn't need the workaround anymore.
                                 if (runtimeNeedsWorkaround(scenario.language)) {
-                                    await stopDebugger()
+                                    await stopDebugger(`${scenario.runtime} / runtimeNeedsWorkaround`)
                                     reject(
                                         new Error(
                                             `runtime "${scenario.language}" triggered onDidStartDebugSession, so it can be removed from runtimeNeedsWorkaround(), yay!`
@@ -346,7 +448,7 @@ describe('SAM Integration Tests', async function() {
                                             reject(new Error(failMsg))
                                         }
                                         resolve()
-                                        await stopDebugger()
+                                        await stopDebugger(`${scenario.runtime} / onDidTerminateDebugSession`)
                                     })
                                 )
 
@@ -370,9 +472,13 @@ describe('SAM Integration Tests', async function() {
             const initArguments: SamCliInitArgs = {
                 name: samApplicationName,
                 location: location,
-                template: helloWorldTemplate,
-                runtime: scenario.runtime,
                 dependencyManager: getDependencyManager(scenario.runtime),
+            }
+            if (scenario.baseImage) {
+                initArguments.baseImage = scenario.baseImage
+            } else {
+                initArguments.runtime = scenario.runtime
+                initArguments.template = helloWorldTemplate
             }
             const samCliContext = getSamCliContext()
             await runSamCliInit(initArguments, samCliContext)

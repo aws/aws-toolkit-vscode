@@ -9,7 +9,7 @@ import {
     getLanguageDetails,
     schemaCodeLangs,
 } from '../../../eventSchemas/models/schemaCodeLangs'
-import { samLambdaRuntimes } from '../../../lambda/models/samLambdaRuntime'
+import { samZipLambdaRuntimes } from '../../../lambda/models/samLambdaRuntime'
 import { assertThrowsError } from '../../../test/shared/utilities/assertUtils'
 
 describe('getLanguageDetails', () => {
@@ -26,19 +26,21 @@ describe('getLanguageDetails', () => {
 
 describe('getApiValueForSchemasDownload', () => {
     it('should return api value for runtimes supported by eventBridge application', async () => {
-        for (const runtime of samLambdaRuntimes.values()) {
+        for (const runtime of samZipLambdaRuntimes.values()) {
             switch (runtime) {
                 case 'python3.6':
                 case 'python3.7':
-                case 'python3.8':
+                case 'python3.8': {
                     const result = getApiValueForSchemasDownload(runtime)
                     assert.strictEqual(result, 'Python36', 'Api value used by schemas api')
                     break
-                default:
+                }
+                default: {
                     const errorMessage = `Runtime ${runtime} is not supported by eventBridge application`
                     const error = await assertThrowsError(async () => getApiValueForSchemasDownload(runtime))
                     assert.strictEqual(error.message, errorMessage, 'Should fail for same error')
                     break
+                }
             }
         }
     })

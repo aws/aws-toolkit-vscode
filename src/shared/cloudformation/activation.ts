@@ -8,7 +8,8 @@ import { getLogger } from '../logger'
 import { localize } from '../utilities/vsCodeUtils'
 
 import { CloudFormationTemplateRegistry } from './templateRegistry'
-import { CloudFormationTemplateRegistryManager } from './templateRegistryManager'
+import { ext } from '../extensionGlobals'
+import { NoopWatcher } from '../watchedFiles'
 
 export const TEMPLATE_FILE_GLOB_PATTERN = '**/template.{yaml,yml}'
 
@@ -28,11 +29,10 @@ export const TEMPLATE_FILE_EXCLUDE_PATTERN = /.*[/\\]\.aws-sam([/\\].*|$)/
  */
 export async function activate(extensionContext: vscode.ExtensionContext): Promise<void> {
     try {
-        const registry = CloudFormationTemplateRegistry.getRegistry()
-        const manager = new CloudFormationTemplateRegistryManager(registry)
-        await manager.addExcludedPattern(TEMPLATE_FILE_EXCLUDE_PATTERN)
-        await manager.addTemplateGlob(TEMPLATE_FILE_GLOB_PATTERN)
-        extensionContext.subscriptions.push(manager)
+        const registry = new CloudFormationTemplateRegistry()
+        await registry.addExcludedPattern(TEMPLATE_FILE_EXCLUDE_PATTERN)
+        await registry.addWatchPattern(TEMPLATE_FILE_GLOB_PATTERN)
+        ext.templateRegistry = registry
     } catch (e) {
         vscode.window.showErrorMessage(
             localize(
@@ -41,5 +41,10 @@ export async function activate(extensionContext: vscode.ExtensionContext): Promi
             )
         )
         getLogger().error('Failed to activate template registry', e)
+        // This prevents us from breaking for any reason later if it fails to load. Since
+        // Noop watcher is always empty, we will get back empty arrays with no issues.
+        ext.templateRegistry = (new NoopWatcher() as unknown) as CloudFormationTemplateRegistry
     }
+    // If setting it up worked, add it to subscriptions so it is cleaned up at exit
+    extensionContext.subscriptions.push(ext.templateRegistry)
 }

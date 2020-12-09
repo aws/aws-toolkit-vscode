@@ -4,7 +4,6 @@
  */
 import { getPortPromise } from 'portfinder'
 
-export async function getStartPort(): Promise<number> {
-    // should we let the user configure the starting port?
-    return getPortPromise({ port: 5858 })
+export async function getStartPort(port: number = 5858): Promise<number> {
+    return getPortPromise({ port: port })
 }

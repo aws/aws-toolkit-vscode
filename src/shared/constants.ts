@@ -12,20 +12,19 @@ export const hostedFilesBaseUrl: string = 'https://d3rrggjwfhwld2.cloudfront.net
 export const endpointsFileUrl: string = 'https://idetoolkits.amazonwebservices.com/endpoints.json'
 export const aboutCredentialsFileUrl: string = 'https://docs.aws.amazon.com/cli/latest/userguide/cli-config-files.html'
 export const samAboutInstallUrl: string = 'https://aws.amazon.com/serverless/sam/'
-// tslint:disable-next-line:max-line-length
 export const vscodeMarketplaceUrl: string =
     'https://marketplace.visualstudio.com/items?itemName=AmazonWebServices.aws-toolkit-vscode'
 export const githubUrl: string = 'https://github.com/aws/aws-toolkit-vscode'
 export const githubCreateIssueUrl = `${githubUrl}/issues/new/choose`
 export const documentationUrl: string = 'https://docs.aws.amazon.com/toolkit-for-vscode/latest/userguide/welcome.html'
-// tslint:disable-next-line:max-line-length
 export const credentialHelpUrl: string =
     'https://docs.aws.amazon.com/toolkit-for-vscode/latest/userguide/setup-credentials.html'
 
 // URLs for samInitWizard
 export const samInitDocUrl: string = 'https://docs.aws.amazon.com/toolkit-for-vscode/latest/userguide/create-sam.html'
+export const launchConfigDocUrl: string =
+    'https://docs.aws.amazon.com/toolkit-for-vscode/latest/userguide/run-debug-sam-app.html'
 // URLs for samDeployWizard
-// tslint:disable-next-line:max-line-length
 export const samDeployDocUrl: string =
     'https://docs.aws.amazon.com/toolkit-for-vscode/latest/userguide/deploy-serverless-app.html'
 
@@ -79,3 +78,5 @@ export const INSIGHTS_TIMESTAMP_FORMAT = 'YYYY-MM-DDThh:mm:ss.SSSZ'
 export const CLOUDWATCH_LOGS_SCHEME = 'awsCloudWatchLogs'
 
 export const COPY_TO_CLIPBOARD_INFO_TIMEOUT_MS = 5000
+
+export const LAMBDA_PACKAGE_TYPE_IMAGE = 'Image'

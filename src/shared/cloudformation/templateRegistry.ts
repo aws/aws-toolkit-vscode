@@ -3,111 +3,24 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
-import * as vscode from 'vscode'
-import * as path_ from 'path'
-import { getLogger } from '../logger/logger'
 import { CloudFormation } from './cloudformation'
 import * as pathutils from '../utilities/pathUtils'
+import * as path from 'path'
 import { isInDirectory } from '../filesystemUtilities'
 import { dotNetRuntimes } from '../../lambda/models/samLambdaRuntime'
 import { getLambdaDetails } from '../../lambda/utils'
+import { ext } from '../extensionGlobals'
+import { WatchedFiles, WatchedItem } from '../watchedFiles'
 
 export interface TemplateDatum {
     path: string
     template: CloudFormation.Template
 }
 
-export class CloudFormationTemplateRegistry {
-    private static INSTANCE: CloudFormationTemplateRegistry | undefined
-    private readonly templateRegistryData: Map<string, CloudFormation.Template>
-
-    public constructor() {
-        this.templateRegistryData = new Map<string, CloudFormation.Template>()
-    }
-
-    private assertAbsolute(path: string) {
-        if (!path_.isAbsolute(path)) {
-            throw Error(`CloudFormationTemplateRegistry: path is relative: ${path}`)
-        }
-    }
-
-    /**
-     * Adds template to registry. Wipes any existing template in its place with newly-parsed copy of the data.
-     * @param templateUri vscode.Uri containing the template to load in
-     */
-    public async addTemplateToRegistry(templateUri: vscode.Uri, quiet?: boolean): Promise<void> {
-        const pathAsString = pathutils.normalize(templateUri.fsPath)
-        this.assertAbsolute(pathAsString)
-        try {
-            const template = await CloudFormation.load(pathAsString)
-            this.templateRegistryData.set(pathAsString, template)
-        } catch (e) {
-            if (!quiet) {
-                throw e
-            }
-            getLogger().verbose(`Template ${templateUri} is malformed: ${e}`)
-        }
-    }
-
-    /**
-     * Get a specific template's data
-     * @param path Path to template of interest
-     */
-    public getRegisteredTemplate(path: string): TemplateDatum | undefined {
-        const normalizedPath = pathutils.normalize(path)
-        this.assertAbsolute(normalizedPath)
-        const template = this.templateRegistryData.get(normalizedPath)
-        if (template) {
-            return {
-                path: normalizedPath,
-                template: template,
-            }
-        }
-    }
-
-    /**
-     * Returns the registry's data as an array of TemplateData objects
-     */
-    public get registeredTemplates(): TemplateDatum[] {
-        const arr: TemplateDatum[] = []
-
-        for (const templatePath of this.templateRegistryData.keys()) {
-            const template = this.getRegisteredTemplate(templatePath)
-            if (template) {
-                arr.push(template)
-            }
-        }
-
-        return arr
-    }
-
-    /**
-     * Removes a template from the registry.
-     * @param templateUri vscode.Uri containing template to remove
-     */
-    public removeTemplateFromRegistry(templateUri: vscode.Uri): void {
-        const pathAsString = pathutils.normalize(templateUri.fsPath)
-        this.assertAbsolute(pathAsString)
-        this.templateRegistryData.delete(pathAsString)
-    }
-
-    /**
-     * Removes all templates from the registry.
-     */
-    public reset() {
-        this.templateRegistryData.clear()
-    }
-
-    /**
-     * Returns the CloudFormationTemplateRegistry singleton.
-     * If the singleton doesn't exist, creates it.
-     */
-    public static getRegistry(): CloudFormationTemplateRegistry {
-        if (!CloudFormationTemplateRegistry.INSTANCE) {
-            CloudFormationTemplateRegistry.INSTANCE = new CloudFormationTemplateRegistry()
-        }
-
-        return CloudFormationTemplateRegistry.INSTANCE
+export class CloudFormationTemplateRegistry extends WatchedFiles<CloudFormation.Template> {
+    protected name: string = 'CloudFormationTemplateRegistry'
+    protected async load(path: string): Promise<CloudFormation.Template> {
+        return await CloudFormation.load(path)
     }
 }
 
@@ -121,8 +34,8 @@ export class CloudFormationTemplateRegistry {
 export function getResourcesForHandler(
     filepath: string,
     handler: string,
-    unfilteredTemplates: TemplateDatum[] = CloudFormationTemplateRegistry.getRegistry().registeredTemplates
-): { templateDatum: TemplateDatum; name: string; resourceData: CloudFormation.Resource }[] {
+    unfilteredTemplates: WatchedItem<CloudFormation.Template>[] = ext.templateRegistry.registeredItems
+): { templateDatum: WatchedItem<CloudFormation.Template>; name: string; resourceData: CloudFormation.Resource }[] {
     // TODO: Array.flat and Array.flatMap not introduced until >= Node11.x -- migrate when VS Code updates Node ver
     const o = unfilteredTemplates.map(templateDatum => {
         return getResourcesForHandlerFromTemplateDatum(filepath, handler, templateDatum).map(resource => {
@@ -147,17 +60,17 @@ export function getResourcesForHandler(
 export function getResourcesForHandlerFromTemplateDatum(
     filepath: string,
     handler: string,
-    templateDatum: TemplateDatum
+    templateDatum: WatchedItem<CloudFormation.Template>
 ): { name: string; resourceData: CloudFormation.Resource }[] {
     const matchingResources: { name: string; resourceData: CloudFormation.Resource }[] = []
-    const templateDirname = path_.dirname(templateDatum.path)
+    const templateDirname = path.dirname(templateDatum.path)
     // template isn't a parent or sibling of file
-    if (!isInDirectory(templateDirname, path_.dirname(filepath))) {
+    if (!isInDirectory(templateDirname, path.dirname(filepath))) {
         return []
     }
 
     // no resources
-    const resources = templateDatum.template.Resources
+    const resources = templateDatum.item.Resources
     if (!resources) {
         return []
     }
@@ -172,15 +85,15 @@ export function getResourcesForHandlerFromTemplateDatum(
             // parse template values that could potentially be refs
             const registeredRuntime = CloudFormation.getStringForProperty(
                 resource.Properties?.Runtime,
-                templateDatum.template
+                templateDatum.item
             )
             const registeredCodeUri = CloudFormation.getStringForProperty(
                 resource.Properties?.CodeUri,
-                templateDatum.template
+                templateDatum.item
             )
             const registeredHandler = CloudFormation.getStringForProperty(
                 resource.Properties?.Handler,
-                templateDatum.template
+                templateDatum.item
             )
 
             if (registeredRuntime && registeredHandler && registeredCodeUri) {
@@ -191,7 +104,7 @@ export function getResourcesForHandlerFromTemplateDatum(
                     if (
                         handler === registeredHandler &&
                         isInDirectory(
-                            pathutils.normalize(path_.join(templateDirname, registeredCodeUri)),
+                            pathutils.normalize(path.join(templateDirname, registeredCodeUri)),
                             pathutils.normalize(filepath)
                         )
                     ) {
@@ -210,7 +123,7 @@ export function getResourcesForHandlerFromTemplateDatum(
                         if (
                             pathutils.normalize(filepath) ===
                                 pathutils.normalize(
-                                    path_.join(templateDirname, registeredCodeUri, parsedLambda.fileName)
+                                    path.join(templateDirname, registeredCodeUri, parsedLambda.fileName)
                                 ) &&
                             functionName === parsedLambda.functionName
                         ) {

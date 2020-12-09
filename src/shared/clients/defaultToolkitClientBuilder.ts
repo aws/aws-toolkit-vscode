@@ -10,6 +10,7 @@ import { CloudWatchLogsClient } from './cloudWatchLogsClient'
 import { DefaultApiGatewayClient } from './defaultApiGatewayClient'
 import { DefaultCloudFormationClient } from './defaultCloudFormationClient'
 import { DefaultCloudWatchLogsClient } from './defaultCloudWatchLogsClient'
+import { DefaultEcrClient } from './defaultEcrClient'
 import { DefaultEcsClient } from './defaultEcsClient'
 import { DefaultIamClient } from './defaultIamClient'
 import { DefaultLambdaClient } from './defaultLambdaClient'
@@ -17,6 +18,7 @@ import { DefaultSchemaClient } from './defaultSchemaClient'
 import { DefaultStepFunctionsClient } from './defaultStepFunctionsClient'
 import { DefaultStsClient } from './defaultStsClient'
 import { DefaultSsmDocumentClient } from './defaultSsmDocumentClient'
+import { EcrClient } from './ecrClient'
 import { EcsClient } from './ecsClient'
 import { IamClient } from './iamClient'
 import { LambdaClient } from './lambdaClient'
@@ -43,6 +45,10 @@ export class DefaultToolkitClientBuilder implements ToolkitClientBuilder {
 
     public createCloudWatchLogsClient(regionCode: string): CloudWatchLogsClient {
         return new DefaultCloudWatchLogsClient(regionCode)
+    }
+
+    public createEcrClient(regionCode: string): EcrClient {
+        return new DefaultEcrClient(regionCode)
     }
 
     public createEcsClient(regionCode: string): EcsClient {

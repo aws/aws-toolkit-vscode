@@ -10,14 +10,14 @@ import {
     DotNetCoreDebugConfiguration,
     DOTNET_CORE_DEBUGGER_PATH,
     getCodeRoot,
+    isImageLambdaConfig,
 } from '../../../lambda/local/debugConfiguration'
 import { RuntimeFamily } from '../../../lambda/models/samLambdaRuntime'
 import * as pathutil from '../../../shared/utilities/pathUtils'
 import { ExtContext } from '../../extensions'
 import { DefaultSamLocalInvokeCommand, WAIT_FOR_DEBUGGER_MESSAGES } from '../cli/samCliLocalInvoke'
-import { getStartPort } from '../../utilities/debuggerUtils'
 import { ChannelLogger, getChannelLogger } from '../../utilities/vsCodeUtils'
-import { invokeLambdaFunction, makeInputTemplate, waitForDebugPort } from '../localLambdaRunner'
+import { invokeLambdaFunction, makeInputTemplate, waitForPort } from '../localLambdaRunner'
 import { SamLaunchRequestArgs } from './awsSamDebugger'
 import { ChildProcess } from '../../utilities/childProcess'
 import { HttpResourceFetcher } from '../../resourcefetcher/httpResourceFetcher'
@@ -65,7 +65,7 @@ export async function invokeCsharpLambda(ctx: ExtContext, config: SamLaunchReque
         WAIT_FOR_DEBUGGER_MESSAGES.DOTNET,
     ])
     // eslint-disable-next-line @typescript-eslint/unbound-method
-    config.onWillAttachDebugger = waitForDebugPort
+    config.onWillAttachDebugger = waitForPort
     return await invokeLambdaFunction(ctx, config, async () => {
         if (!config.noDebug) {
             await _installDebugger({
@@ -196,17 +196,46 @@ export async function makeCoreCLRDebugConfiguration(
     config: SamLaunchRequestArgs,
     codeUri: string
 ): Promise<DotNetCoreDebugConfiguration> {
-    if (!!config.noDebug) {
+    if (config.noDebug) {
         throw Error(`SAM debug: invalid config ${config}`)
     }
-    config.debugPort = config.debugPort ?? (await getStartPort())
     const pipeArgs = ['-c', `docker exec -i $(docker ps -q -f publish=${config.debugPort}) \${debuggerCommand}`]
     config.debuggerPath = pathutil.normalize(getDebuggerPath(codeUri))
     await ensureDir(config.debuggerPath)
 
+    const isImageLambda = isImageLambdaConfig(config)
+
+    if (isImageLambda && !config.noDebug) {
+        config.containerEnvVars = {
+            _AWS_LAMBDA_DOTNET_DEBUGGING: '1',
+        }
+    }
+
     if (os.platform() === 'win32') {
         // Coerce drive letter to uppercase. While Windows is case-insensitive, sourceFileMap is case-sensitive.
         codeUri = codeUri.replace(pathutil.DRIVE_LETTER_REGEX, match => match.toUpperCase())
+    }
+
+    if (isImageLambda) {
+        // default build path, in dotnet image-based templates
+        // Not needed for ZIP lambdas, because SAM prevents dotnet from being
+        // built in-container thus PDBs already point to the user workspace.
+        if (!config.sourceFileMap) {
+            config.sourceFileMap = {}
+        }
+        config.sourceFileMap['/build'] = codeUri
+    }
+
+    if (config.lambda?.pathMappings !== undefined) {
+        if (!config.sourceFileMap) {
+            config.sourceFileMap = {}
+        }
+        // we could safely leave this entry in, but might as well give the user full control if they're specifying mappings
+        delete config.sourceFileMap['/build']
+        config.lambda.pathMappings.forEach(mapping => {
+            // this looks weird because we're mapping the PDB path to the local workspace
+            config.sourceFileMap[mapping.remoteRoot] = mapping.localRoot
+        })
     }
 
     return {
@@ -229,9 +258,6 @@ export async function makeCoreCLRDebugConfiguration(
                 debuggerPath: DOTNET_CORE_DEBUGGER_PATH,
                 pipeCwd: codeUri,
             },
-        },
-        sourceFileMap: {
-            ['/var/task']: codeUri,
         },
     }
 }

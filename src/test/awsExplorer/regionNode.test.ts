@@ -19,9 +19,10 @@ describe('RegionNode', () => {
         sandbox = sinon.createSandbox()
         console.log('initializing...')
 
-        // contingency for current S3Node impl: requires a client built from ext.toolkitClientBuilder.
+        // contingency for current Node impl: requires a client built from ext.toolkitClientBuilder.
         const clientBuilder = {
             createS3Client: sandbox.stub().returns({}),
+            createEcrClient: sandbox.stub().returns({}),
         }
         ext.toolkitClientBuilder = (clientBuilder as any) as ToolkitClientBuilder
 

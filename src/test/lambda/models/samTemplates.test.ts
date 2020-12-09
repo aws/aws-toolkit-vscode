@@ -19,7 +19,7 @@ import {
 import { Set } from 'immutable'
 import { assertThrowsError } from '../../../test/shared/utilities/assertUtils'
 
-import { samLambdaRuntimes } from '../../../lambda/models/samLambdaRuntime'
+import { samZipLambdaRuntimes } from '../../../lambda/models/samLambdaRuntime'
 
 const validTemplateOptions: Set<SamTemplate> = Set<SamTemplate>([
     helloWorldTemplate,
@@ -32,8 +32,8 @@ const defaultTemplateOptions: Set<SamTemplate> = Set<SamTemplate>([helloWorldTem
 
 describe('getSamTemplateWizardOption', () => {
     it('should successfully return available templates for specific runtime', () => {
-        for (const runtime of samLambdaRuntimes.values()) {
-            const result = getSamTemplateWizardOption(runtime, CLI_VERSION_STEP_FUNCTIONS_TEMPLATE)
+        for (const runtime of samZipLambdaRuntimes.values()) {
+            const result = getSamTemplateWizardOption(runtime, 'Zip', CLI_VERSION_STEP_FUNCTIONS_TEMPLATE)
             switch (runtime) {
                 case 'python3.6':
                 case 'python3.7':
@@ -56,8 +56,8 @@ describe('getSamTemplateWizardOption', () => {
     })
 
     it('should not return Step Functions templates for a SAM CLI version that does not support them', () => {
-        for (const runtime of samLambdaRuntimes.values()) {
-            const result = getSamTemplateWizardOption(runtime, '0.40.0')
+        for (const runtime of samZipLambdaRuntimes.values()) {
+            const result = getSamTemplateWizardOption(runtime, 'Zip', '0.40.0')
             assert(!result.contains(stepFunctionsSampleApp))
         }
     })

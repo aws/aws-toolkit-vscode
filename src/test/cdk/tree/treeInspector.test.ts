@@ -81,7 +81,6 @@ describe('TreeInspector', () => {
 
     it('returns properties when a construct has attributes', async () => {
         const attributes = treeUtils.generateAttributes()
-        // tslint:disable-next-line: no-unsafe-any
         const expectedProps: ConstructProps = attributes[CfnResourceKeys.PROPS]
         const construct: ConstructTreeEntity = {
             id: 'test-label',

@@ -8,7 +8,6 @@ import * as vscode from 'vscode'
 import { Runtime } from 'aws-sdk/clients/lambda'
 import { getExistingConfiguration } from '../../../../lambda/config/templates'
 import { createRuntimeQuickPick, getDefaultRuntime, RuntimeFamily } from '../../../../lambda/models/samLambdaRuntime'
-import { CloudFormationTemplateRegistry } from '../../../cloudformation/templateRegistry'
 import { LaunchConfiguration } from '../../../debug/launchConfiguration'
 import * as picker from '../../../ui/picker'
 import { localize } from '../../../utilities/vsCodeUtils'
@@ -22,6 +21,7 @@ import {
     TEMPLATE_TARGET_TYPE,
 } from '../awsSamDebugConfiguration'
 import { CloudFormation } from '../../../cloudformation/cloudformation'
+import { ext } from '../../../extensionGlobals'
 
 /**
  * Holds information required to create a launch config
@@ -31,6 +31,7 @@ import { CloudFormation } from '../../../cloudformation/cloudformation'
 export interface AddSamDebugConfigurationInput {
     resourceName: string
     rootUri: vscode.Uri
+    apiEvent?: { name: string; event: CloudFormation.Event }
     runtimeFamily?: RuntimeFamily
 }
 
@@ -38,30 +39,31 @@ export interface AddSamDebugConfigurationInput {
  * Adds a new debug configuration for the given sam function resource and template.
  */
 export async function addSamDebugConfiguration(
-    { resourceName, rootUri, runtimeFamily }: AddSamDebugConfigurationInput,
+    { resourceName, rootUri, apiEvent, runtimeFamily }: AddSamDebugConfigurationInput,
     type: typeof CODE_TARGET_TYPE | typeof TEMPLATE_TARGET_TYPE | typeof API_TARGET_TYPE,
     step?: { step: number; totalSteps: number }
 ): Promise<void> {
-    // tslint:disable-next-line: no-floating-promises
+    // emit without waiting
     emitCommandTelemetry()
 
     let samDebugConfig: AwsSamDebuggerConfiguration
     const workspaceFolder = vscode.workspace.getWorkspaceFolder(rootUri)
-    const runtimeName = runtimeFamily ? getDefaultRuntime(runtimeFamily) : undefined
+    let runtimeName = runtimeFamily ? getDefaultRuntime(runtimeFamily) : undefined
+    let addRuntimeNameToConfig = false
 
     if (type === TEMPLATE_TARGET_TYPE) {
         let preloadedConfig = undefined
 
         if (workspaceFolder) {
-            const registry = CloudFormationTemplateRegistry.getRegistry()
-            const templateDatum = registry.getRegisteredTemplate(rootUri.fsPath)
+            const templateDatum = ext.templateRegistry.getRegisteredItem(rootUri.fsPath)
             if (templateDatum) {
-                const resource = templateDatum.template.Resources![resourceName]
-                if (resource && resource.Properties) {
-                    const handler = CloudFormation.getStringForProperty(
-                        resource.Properties.Handler,
-                        templateDatum.template
-                    )
+                const resource = templateDatum.item.Resources![resourceName]
+                if (!resource) {
+                    return
+                }
+
+                if (CloudFormation.isZipLambdaResource(resource.Properties)) {
+                    const handler = CloudFormation.getStringForProperty(resource.Properties.Handler, templateDatum.item)
                     const existingConfig = await getExistingConfiguration(workspaceFolder, handler ?? '', rootUri)
                     if (existingConfig) {
                         const responseMigrate: string = localize(
@@ -88,18 +90,40 @@ export async function addSamDebugConfiguration(
                             preloadedConfig = existingConfig
                         }
                     }
+                } else if (CloudFormation.isImageLambdaResource(resource.Properties) && runtimeFamily === undefined) {
+                    const quickPick = createRuntimeQuickPick({
+                        showImageRuntimes: false,
+                    })
+
+                    const choices = await picker.promptUser({
+                        picker: quickPick,
+                        onDidTriggerButton: (button, resolve, reject) => {
+                            if (button === vscode.QuickInputButtons.Back) {
+                                resolve(undefined)
+                            }
+                        },
+                    })
+                    const userRuntime = picker.verifySinglePickerOutput(choices)?.runtime
+                    if (!userRuntime) {
+                        // User selected "Cancel". Abandon config creation
+                        return
+                    }
+                    runtimeName = userRuntime
+                    addRuntimeNameToConfig = true
                 }
             }
         }
         samDebugConfig = createTemplateAwsSamDebugConfig(
             workspaceFolder,
             runtimeName,
+            addRuntimeNameToConfig,
             resourceName,
             rootUri.fsPath,
             preloadedConfig
         )
     } else if (type === CODE_TARGET_TYPE) {
         const quickPick = createRuntimeQuickPick({
+            showImageRuntimes: false,
             runtimeFamily,
             step: step?.step,
             totalSteps: step?.totalSteps,
@@ -128,7 +152,20 @@ export async function addSamDebugConfiguration(
             return
         }
     } else if (type === API_TARGET_TYPE) {
-        samDebugConfig = createApiAwsSamDebugConfig(workspaceFolder, runtimeName, resourceName, rootUri.fsPath)
+        // If the event has no properties, the default will be used
+        const preloadedConfig = {
+            path: apiEvent?.event.Properties?.Path,
+            httpMethod: apiEvent?.event.Properties?.Method,
+            payload: apiEvent?.event.Properties?.Payload,
+        }
+
+        samDebugConfig = createApiAwsSamDebugConfig(
+            workspaceFolder,
+            runtimeName,
+            resourceName,
+            rootUri.fsPath,
+            preloadedConfig
+        )
     } else {
         throw new Error('Unrecognized debug target type')
     }

@@ -7,6 +7,7 @@ import { APIGateway, CloudFormation, CloudWatchLogs, IAM, Lambda, Schemas, StepF
 import { ApiGatewayClient } from '../../../shared/clients/apiGatewayClient'
 import { CloudFormationClient } from '../../../shared/clients/cloudFormationClient'
 import { CloudWatchLogsClient } from '../../../shared/clients/cloudWatchLogsClient'
+import { EcrClient, EcrRepository } from '../../../shared/clients/ecrClient'
 import { EcsClient } from '../../../shared/clients/ecsClient'
 import { IamClient } from '../../../shared/clients/iamClient'
 import { LambdaClient } from '../../../shared/clients/lambdaClient'
@@ -41,6 +42,7 @@ interface Clients {
     apiGatewayClient: ApiGatewayClient
     cloudFormationClient: CloudFormationClient
     cloudWatchLogsClient: CloudWatchLogsClient
+    ecrClient: EcrClient
     ecsClient: EcsClient
     iamClient: IamClient
     lambdaClient: LambdaClient
@@ -59,6 +61,7 @@ export class MockToolkitClientBuilder implements ToolkitClientBuilder {
             cloudFormationClient: new MockCloudFormationClient(),
             cloudWatchLogsClient: new MockCloudWatchLogsClient(),
             ecsClient: new MockEcsClient({}),
+            ecrClient: new MockEcrClient({}),
             iamClient: new MockIamClient({}),
             lambdaClient: new MockLambdaClient({}),
             schemaClient: new MockSchemaClient(),
@@ -88,6 +91,10 @@ export class MockToolkitClientBuilder implements ToolkitClientBuilder {
 
     public createIamClient(): IamClient {
         return this.clients.iamClient
+    }
+
+    public createEcrClient(): EcrClient {
+        return this.clients.ecrClient
     }
 
     public createEcsClient(regionCode: string): EcsClient {
@@ -253,6 +260,38 @@ export class MockSchemaClient implements SchemaClient {
         ) => AsyncIterableIterator<Schemas.SearchSchemaSummary> = (keywords: string, registryName: string) =>
             asyncGenerator([])
     ) {}
+}
+
+export class MockEcrClient implements EcrClient {
+    public readonly regionCode: string
+    public readonly describeRepositories: () => AsyncIterableIterator<EcrRepository>
+    public readonly describeTags: (repositoryName: string) => AsyncIterableIterator<string>
+    public readonly deleteRepository: (repositoryName: string) => Promise<void>
+    public readonly deleteTag: (repositoryName: string, tag: string) => Promise<void>
+    public readonly createRepository: (repositoryName: string) => Promise<void>
+
+    public constructor({
+        regionCode = '',
+        describeRepositories = () => asyncGenerator([]),
+        describeTags = () => asyncGenerator([]),
+        deleteRepository = async () => {},
+        deleteTag = async () => {},
+        createRepository = async () => {},
+    }: {
+        regionCode?: string
+        describeRepositories?(): AsyncIterableIterator<EcrRepository>
+        describeTags?(): AsyncIterableIterator<string>
+        deleteRepository?(): Promise<void>
+        deleteTag?(): Promise<void>
+        createRepository?(): Promise<void>
+    }) {
+        this.regionCode = regionCode
+        this.describeRepositories = describeRepositories
+        this.describeTags = describeTags
+        this.deleteRepository = deleteRepository
+        this.deleteTag = deleteTag
+        this.createRepository = createRepository
+    }
 }
 
 export class MockEcsClient implements EcsClient {

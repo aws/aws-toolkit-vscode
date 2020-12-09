@@ -26,7 +26,7 @@ export class FakeCommands implements Commands {
         return this._args
     }
 
-    public constructor({}: FakeCommandsOptions = {}) {}
+    public constructor(_items: FakeCommandsOptions = {}) {}
 
     /**
      * Records the command that was executed, along with its arguments.

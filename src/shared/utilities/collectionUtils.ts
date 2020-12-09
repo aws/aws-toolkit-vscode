@@ -55,7 +55,7 @@ export function toMap<TKey, TValue>(
 
     for (const item of items) {
         const key = keySelector(item)
-        if (!!key) {
+        if (key) {
             if (result.has(key)) {
                 throw new Error(`Conflict: Multiple items have the key '${key}'`)
             }
@@ -75,7 +75,7 @@ export async function toMapAsync<TKey, TValue>(
 
     for await (const item of items) {
         const key = keySelector(item)
-        if (!!key) {
+        if (key) {
             if (result.has(key)) {
                 throw new Error(`Conflict: Multiple items have the key '${key}'`)
             }

@@ -30,6 +30,7 @@ interface DeploySamApplicationParameters {
     environmentVariables: NodeJS.ProcessEnv
     region: string
     packageBucketName: string
+    ecrRepo?: string
     destinationStackName: string
     parameterOverrides: Map<string, string>
 }
@@ -40,10 +41,6 @@ export interface WindowFunctions {
     setStatusBarMessage(text: string, hideWhenDone: Thenable<any>): vscode.Disposable
 }
 
-export interface SamDeployWizardResponseProvider {
-    getSamDeployWizardResponse(): Promise<SamDeployWizardResponse | undefined>
-}
-
 export async function deploySamApplication(
     {
         samCliContext = getSamCliContext(),
@@ -52,7 +49,7 @@ export async function deploySamApplication(
     }: {
         samCliContext?: SamCliContext
         channelLogger: ChannelLogger
-        samDeployWizard: SamDeployWizardResponseProvider
+        samDeployWizard: () => Promise<SamDeployWizardResponse | undefined>
     },
     {
         awsContext,
@@ -72,7 +69,7 @@ export async function deploySamApplication(
 
         throwAndNotifyIfInvalid(await samCliContext.validator.detectValidSamCli())
 
-        const deployWizardResponse = await samDeployWizard.getSamDeployWizardResponse()
+        const deployWizardResponse = await samDeployWizard()
 
         if (!deployWizardResponse) {
             return
@@ -84,6 +81,7 @@ export async function deploySamApplication(
             deployRootFolder: deployFolder,
             destinationStackName: deployWizardResponse.stackName,
             packageBucketName: deployWizardResponse.s3Bucket,
+            ecrRepo: deployWizardResponse.ecrRepo?.repositoryUri,
             parameterOverrides: deployWizardResponse.parameterOverrides,
             environmentVariables: asEnvironmentVariables(credentials),
             region: deployWizardResponse.region,
@@ -170,6 +168,7 @@ async function packageOperation(params: {
             environmentVariables: params.deployParameters.environmentVariables,
             region: params.deployParameters.region,
             s3Bucket: params.deployParameters.packageBucketName,
+            ecrRepo: params.deployParameters.ecrRepo,
         },
         params.invoker
     )
@@ -196,6 +195,7 @@ async function deployOperation(params: {
                 templateFile: packageTemplatePath,
                 region: params.deployParameters.region,
                 stackName: params.deployParameters.destinationStackName,
+                s3Bucket: params.deployParameters.packageBucketName,
             },
             params.invoker
         )
@@ -248,11 +248,9 @@ function enhanceAwsCloudFormationInstructions(
     message: string,
     deployParameters: DeploySamApplicationParameters
 ): string {
-    // tslint:disable-next-line:max-line-length
     // detect error message from https://github.com/aws/aws-cli/blob/4ff0cbacbac69a21d4dd701921fe0759cf7852ed/awscli/customizations/cloudformation/exceptions.py#L42
     // and append region to assist in troubleshooting the error
     // (command uses CLI configured value--users that don't know this and omit region won't see error)
-    // tslint:disable-next-line:max-line-length
     if (
         message.includes(
             `aws cloudformation describe-stack-events --stack-name ${deployParameters.destinationStackName}`

@@ -105,7 +105,6 @@ describe('ConstructNode', () => {
 
     it('child node is collapsed if construct has child with attributes', async () => {
         const childWithAttributes = treeUtils.generateTreeChildResource()
-        // tslint:disable-next-line: no-unsafe-any
         childWithAttributes.Resource.attributes = treeUtils.generateAttributes()
 
         const treeEntity: ConstructTreeEntity = {

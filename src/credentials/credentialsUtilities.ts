@@ -26,8 +26,8 @@ export function asEnvironmentVariables(credentials: Credentials): NodeJS.Process
 }
 
 export function notifyUserInvalidCredentials(credentialProviderId: CredentialsProviderId): void {
-    const getHelp = localize('AWS.message.credentials.invalid.help', 'Get Help...')
-    const viewLogs = localize('AWS.message.credentials.invalid.logs', 'View Logs...')
+    const getHelp = localize('AWS.generic.message.getHelp', 'Get Help...')
+    const viewLogs = localize('AWS.generic.message.viewLogs', 'View Logs...')
 
     vscode.window
         .showErrorMessage(

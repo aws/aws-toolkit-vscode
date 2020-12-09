@@ -3,6 +3,7 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
+import { getLogger } from '../../logger/logger'
 import { map } from '../../utilities/collectionUtils'
 import { logAndThrowIfUnexpectedExitCode, SamCliProcessInvoker } from './samCliInvokerUtils'
 
@@ -12,6 +13,7 @@ export interface SamCliDeployParameters {
     environmentVariables: NodeJS.ProcessEnv
     region: string
     stackName: string
+    s3Bucket: string
 }
 
 export async function runSamCliDeploy(
@@ -20,6 +22,7 @@ export async function runSamCliDeploy(
 ): Promise<void> {
     const args = [
         'deploy',
+        ...(getLogger().logLevelEnabled('debug') ? ['--debug'] : []),
         '--template-file',
         deployArguments.templateFile,
         '--stack-name',
@@ -27,8 +30,11 @@ export async function runSamCliDeploy(
         '--capabilities',
         'CAPABILITY_IAM',
         'CAPABILITY_NAMED_IAM',
+        'CAPABILITY_AUTO_EXPAND',
         '--region',
         deployArguments.region,
+        '--s3-bucket',
+        deployArguments.s3Bucket,
     ]
     if (deployArguments.parameterOverrides.size > 0) {
         const overrides = [...map(deployArguments.parameterOverrides.entries(), ([key, value]) => `${key}=${value}`)]
