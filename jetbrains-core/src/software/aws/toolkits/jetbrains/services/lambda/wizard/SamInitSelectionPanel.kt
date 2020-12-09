@@ -114,6 +114,7 @@ class SamInitSelectionPanel(
     }
 
     private fun runtimeUpdate() {
+        val selectedTemplate = templateComboBox.selectedItem as? SamProjectTemplate
         templateComboBox.removeAllItems()
         val selectedRuntime = runtimeComboBox.selectedItem as? Runtime ?: return
 
@@ -122,8 +123,17 @@ class SamInitSelectionPanel(
             .filter { it.supportedRuntimes().contains(selectedRuntime) }
             .filter { it.supportedPackagingTypes().contains(packagingType) }
             .forEach { templateComboBox.addItem(it) }
+
+        // repopulate template after runtime updates
+        // this should no-op if the previous selection is not applicable to the current runtime
+        if (selectedTemplate != null) {
+            templateComboBox.selectedItem = selectedTemplate
+        }
     }
 
+    /**
+     * Updates UI fragments in the wizard after a combobox update
+     */
     private fun wizardUpdate() {
         val selectedRuntime = runtimeComboBox.selectedItem as? Runtime
         val selectedTemplate = templateComboBox.selectedItem as? SamProjectTemplate

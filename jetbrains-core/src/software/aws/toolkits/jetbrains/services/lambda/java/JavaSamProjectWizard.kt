@@ -32,12 +32,12 @@ class JavaSamProjectWizard : SamProjectWizard {
     override fun createSdkSelectionPanel(projectLocation: TextFieldWithBrowseButton?): SdkSelector? = IntelliJSdkSelectionPanel(BuiltInRuntimeGroups.Java)
 
     override fun listTemplates(): Collection<SamProjectTemplate> = listOf(
-        SamHelloWorldMaven(),
         SamHelloWorldGradle(),
-        SamEventBridgeHelloWorldMaven(),
+        SamHelloWorldMaven(),
         SamEventBridgeHelloWorldGradle(),
-        SamEventBridgeStarterAppMaven(),
-        SamEventBridgeStarterAppGradle()
+        SamEventBridgeHelloWorldMaven(),
+        SamEventBridgeStarterAppGradle(),
+        SamEventBridgeStarterAppMaven()
     )
 }
 
