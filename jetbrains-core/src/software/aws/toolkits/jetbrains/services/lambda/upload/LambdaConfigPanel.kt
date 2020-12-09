@@ -97,7 +97,7 @@ class LambdaConfigPanel(private val project: Project, private val isUpdate: Bool
             if (iamRoleDialog.showAndGet()) {
                 iamRoleDialog.iamRole?.let { newRole ->
                     iamRole.reload(forceFetch = true)
-                    iamRole.selectedItem = newRole
+                    iamRole.selectedItem { role -> role.arn == newRole.arn() }
                 }
             }
         }

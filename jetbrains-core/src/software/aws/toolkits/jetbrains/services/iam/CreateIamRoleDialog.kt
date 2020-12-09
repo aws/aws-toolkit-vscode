@@ -12,6 +12,7 @@ import com.intellij.openapi.ui.ValidationInfo
 import org.intellij.lang.annotations.Language
 import org.jetbrains.annotations.TestOnly
 import software.amazon.awssdk.services.iam.IamClient
+import software.amazon.awssdk.services.iam.model.Role
 import software.aws.toolkits.core.utils.getLogger
 import software.aws.toolkits.core.utils.warn
 import software.aws.toolkits.jetbrains.services.iam.Iam.createRoleWithPolicy
@@ -30,7 +31,7 @@ class CreateIamRoleDialog(
 
     private val view = CreateRolePanel(project)
 
-    var iamRole: IamRole? = null
+    var iamRole: Role? = null
         private set
 
     init {

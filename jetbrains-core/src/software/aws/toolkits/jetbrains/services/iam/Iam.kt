@@ -4,6 +4,7 @@
 package software.aws.toolkits.jetbrains.services.iam
 
 import software.amazon.awssdk.services.iam.IamClient
+import software.amazon.awssdk.services.iam.model.Role
 import software.aws.toolkits.core.utils.getLogger
 import software.aws.toolkits.core.utils.warn
 import software.aws.toolkits.jetbrains.core.ClientBackedCachedResource
@@ -44,7 +45,7 @@ object IamResources {
 object Iam {
     private val LOG = getLogger<Iam>()
 
-    fun IamClient.createRoleWithPolicy(roleName: String, assumeRolePolicy: String, policy: String? = null): IamRole {
+    fun IamClient.createRoleWithPolicy(roleName: String, assumeRolePolicy: String, policy: String? = null): Role {
         val role = this.createRole {
             it.roleName(roleName)
             it.assumeRolePolicyDocument(assumeRolePolicy)
@@ -69,6 +70,6 @@ object Iam {
             }
         }
 
-        return IamRole(role.arn())
+        return role
     }
 }
