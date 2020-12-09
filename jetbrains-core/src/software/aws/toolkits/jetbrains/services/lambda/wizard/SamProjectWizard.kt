@@ -88,6 +88,15 @@ abstract class SamProjectTemplate {
         }
     }
 
+    // defined so that we can restore the template selection when the runtime selection changes
+    override fun equals(other: Any?) = if (other is SamProjectTemplate) {
+        displayName() == other.displayName()
+    } else {
+        false
+    }
+
+    override fun hashCode() = displayName().hashCode()
+
     companion object {
         // Dont cache this since it is not compatible in a dynamic plugin world / waste memory if no longer needed
         fun supportedTemplates() = SamProjectWizard.supportedRuntimeGroups().flatMap {
