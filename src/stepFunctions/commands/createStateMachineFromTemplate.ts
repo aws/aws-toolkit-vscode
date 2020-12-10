@@ -54,6 +54,7 @@ async function getTextDocumentForSelectedItem(
     let content = await readFileAsString(path.join(extensionPath, 'templates', item.fileName))
 
     if (format === TemplateFormats.YAML) {
+        // Convert JSON string to YAML string
         content = safeDump(safeLoad(content))
     }
 
