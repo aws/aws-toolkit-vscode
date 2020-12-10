@@ -32,13 +32,9 @@ import software.amazon.awssdk.services.lambda.model.Runtime
  *
  * If you wish to have just a [Project], you may use Intellij's [com.intellij.testFramework.ProjectRule]
  */
-class NodeJsCodeInsightTestFixtureRule : CodeInsightTestFixtureRule() {
+class NodeJsCodeInsightTestFixtureRule : CodeInsightTestFixtureRule(NodeJsLightProjectDescriptor()) {
     override fun createTestFixture(): CodeInsightTestFixture {
-        val fixtureFactory = IdeaTestFixtureFactory.getFixtureFactory()
-        val projectFixture = fixtureFactory.createLightFixtureBuilder(NodeJsLightProjectDescriptor())
-        val codeInsightFixture = fixtureFactory.createCodeInsightFixture(projectFixture.fixture)
-        codeInsightFixture.setUp()
-        codeInsightFixture.testDataPath = testDataPath
+        val codeInsightFixture = super.createTestFixture()
         PsiTestUtil.addContentRoot(codeInsightFixture.module, codeInsightFixture.tempDirFixture.getFile(".")!!)
         codeInsightFixture.project.setNodeJsInterpreterVersion(SemVer("v8.10.10", 8, 10, 10))
         codeInsightFixture.project.setJsLanguageLevel(JSLanguageLevel.ES6)
