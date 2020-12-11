@@ -13,7 +13,6 @@ import {
     PythonPathMapping,
 } from '../../../lambda/local/debugConfiguration'
 import { RuntimeFamily } from '../../../lambda/models/samLambdaRuntime'
-import { PythonDebugAdapterHeartbeat } from '../../debug/pythonDebugAdapterHeartbeat'
 import { ExtContext, VSCODE_EXTENSION_ID } from '../../extensions'
 import { fileExists, readFileAsString } from '../../filesystemUtilities'
 import { getLogger } from '../../logger'
@@ -27,8 +26,6 @@ import { SamLaunchRequestArgs } from './awsSamDebugger'
 import { join } from 'path'
 import { ext } from '../../extensionGlobals'
 import { Runtime } from 'aws-sdk/clients/lambda'
-
-const PYTHON_DEBUG_ADAPTER_RETRY_DELAY_MS = 1000
 
 // TODO: Fix this! Implement a more robust/flexible solution. This is just a basic minimal proof of concept.
 export async function getSamProjectDirPathForFile(filepath: string): Promise<string> {
@@ -148,46 +145,9 @@ export async function invokePythonLambda(
 }
 
 export async function waitForPythonDebugAdapter(debugPort: number, timeout: Timeout, channelLogger: ChannelLogger) {
-    const logger = getLogger()
-
-    logger.verbose(`Testing debug adapter connection on port ${debugPort}`)
-
-    let debugServerAvailable: boolean = false
-
-    while (!debugServerAvailable) {
-        const tester = new PythonDebugAdapterHeartbeat(debugPort)
-
-        try {
-            if (await tester.connect()) {
-                if (await tester.isDebugServerUp()) {
-                    logger.verbose('Debug Adapter is available')
-                    debugServerAvailable = true
-                }
-            }
-        } catch (err) {
-            logger.verbose('Error while testing: %O', err as Error)
-        } finally {
-            await tester.disconnect()
-        }
-
-        if (!debugServerAvailable) {
-            if (timeout.remainingTime === 0) {
-                break
-            }
-
-            logger.verbose('Debug Adapter not ready, retrying...')
-            await new Promise<void>(resolve => {
-                setTimeout(resolve, PYTHON_DEBUG_ADAPTER_RETRY_DELAY_MS)
-            })
-        }
-    }
-
-    if (!debugServerAvailable) {
-        channelLogger.warn(
-            'AWS.sam.local.invoke.python.server.not.available',
-            'Unable to communicate with the Python Debug Adapter. The debugger might not succeed when attaching to your SAM Application.'
-        )
-    }
+    await new Promise<void>(resolve => {
+        setTimeout(resolve, 1000)
+    })
 }
 
 export async function activatePythonExtensionIfInstalled() {
