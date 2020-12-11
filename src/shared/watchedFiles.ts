@@ -94,8 +94,8 @@ export abstract class WatchedFiles<T> implements vscode.Disposable {
         const pathAsString = pathutils.normalize(uri.fsPath)
         this.assertAbsolute(pathAsString)
         try {
-            const template = await this.load(pathAsString)
-            this.registryData.set(pathAsString, template)
+            const item = await this.load(pathAsString)
+            this.registryData.set(pathAsString, item)
         } catch (e) {
             if (!quiet) {
                 throw e
@@ -106,10 +106,12 @@ export abstract class WatchedFiles<T> implements vscode.Disposable {
 
     /**
      * Get a specific item's data
-     * @param path Absolute path to template of interest
+     * @param path Absolute path to item of interest or a vscode.Uri to the item
      */
-    public getRegisteredItem(path: string): WatchedItem<T> | undefined {
-        const normalizedPath = pathutils.normalize(path)
+    public getRegisteredItem(path: string | vscode.Uri): WatchedItem<T> | undefined {
+        // fsPath is needed for Windows, it's equivalent to path on mac/linux
+        const absolutePath = (typeof path === 'string') ? path : path.fsPath
+        const normalizedPath = pathutils.normalize(absolutePath)
         this.assertAbsolute(normalizedPath)
         const item = this.registryData.get(normalizedPath)
         if (!item) {
@@ -127,10 +129,10 @@ export abstract class WatchedFiles<T> implements vscode.Disposable {
     public get registeredItems(): WatchedItem<T>[] {
         const arr: WatchedItem<T>[] = []
 
-        for (const templatePath of this.registryData.keys()) {
-            const template = this.getRegisteredItem(templatePath)
-            if (template) {
-                arr.push(template)
+        for (const itemPath of this.registryData.keys()) {
+            const item = this.getRegisteredItem(itemPath)
+            if (item) {
+                arr.push(item)
             }
         }
 
@@ -173,9 +175,9 @@ export abstract class WatchedFiles<T> implements vscode.Disposable {
     private async rebuild(): Promise<void> {
         this.reset()
         for (const glob of this.globs) {
-            const templateUris = await vscode.workspace.findFiles(glob)
-            for (const template of templateUris) {
-                await this.addItemToRegistry(template, true)
+            const itemUris = await vscode.workspace.findFiles(glob)
+            for (const item of itemUris) {
+                await this.addItemToRegistry(item, true)
             }
         }
     }

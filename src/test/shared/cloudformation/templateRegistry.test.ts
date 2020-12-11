@@ -69,6 +69,16 @@ describe('CloudFormation Template Registry', async () => {
 
         // other get cases are tested in the add section
         describe('getRegisteredItem', async () => {
+            it('Returns the item from the VSCode URI', async () => {
+                const filename = vscode.Uri.file(path.join(tempFolder, 'template.yaml'))
+                await strToYamlFile(goodYaml1, filename.fsPath)
+                await testRegistry.addItemToRegistry(filename)
+
+                const data = testRegistry.getRegisteredItem(filename)
+
+                assertValidTestTemplate(data, filename.fsPath)
+            })
+
             it('returns undefined if the registry has no registered templates', () => {
                 assert.strictEqual(testRegistry.getRegisteredItem('/template.yaml'), undefined)
             })
