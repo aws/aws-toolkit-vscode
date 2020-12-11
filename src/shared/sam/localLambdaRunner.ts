@@ -63,7 +63,7 @@ function makeResourceName(config: SamLaunchRequestArgs): string {
 
 const SAM_LOCAL_PORT_CHECK_RETRY_INTERVAL_MILLIS: number = 125
 const SAM_LOCAL_PORT_CHECK_RETRY_TIMEOUT_MILLIS_DEFAULT: number = 30000
-const MAX_DEBUGGER_RETRIES_DEFAULT: number = 4
+const MAX_DEBUGGER_RETRIES: number = 4
 const ATTACH_DEBUGGER_RETRY_DELAY_MILLIS: number = 1000
 
 /** "sam local start-api" wrapper from the current debug-session. */
@@ -212,7 +212,6 @@ export async function invokeLambdaFunction(
     ctx.chanLogger.info('AWS.output.starting.sam.app.locally', 'Starting SAM application locally')
     getLogger().debug(`localLambdaRunner.invokeLambdaFunction: ${config.name}`)
 
-    const maxRetries: number = getAttachDebuggerMaxRetryLimit(ctx.settings, MAX_DEBUGGER_RETRIES_DEFAULT)
     const timer = createInvokeTimer(ctx.settings)
     const debugPort = !config.noDebug ? config.debugPort?.toString() : undefined
     const lambdaPackageType = isImageLambdaConfig(config) ? 'Image' : 'Zip'
@@ -341,7 +340,6 @@ export async function invokeLambdaFunction(
 
         await attachDebugger({
             debugConfig: config,
-            maxRetries,
             retryDelayMillis: ATTACH_DEBUGGER_RETRY_DELAY_MILLIS,
             channelLogger: ctx.chanLogger,
             onRecordAttachDebuggerMetric: (attachResult: boolean | undefined, attempts: number): void => {
@@ -457,7 +455,6 @@ function requestLocalApi(ctx: ExtContext, api: APIGatewayProperties, apiPort: nu
 
 export interface AttachDebuggerContext {
     debugConfig: SamLaunchRequestArgs
-    maxRetries: number
     retryDelayMillis?: number
     channelLogger: Pick<ChannelLogger, 'info' | 'error'>
     onStartDebugging?: typeof vscode.debug.startDebugging
@@ -492,7 +489,7 @@ export async function attachDebugger({
     do {
         isDebuggerAttached = await onStartDebugging(undefined, params.debugConfig)
         if (!isDebuggerAttached) {
-            if (retries < params.maxRetries) {
+            if (retries < MAX_DEBUGGER_RETRIES) {
                 if (onWillRetry) {
                     await onWillRetry()
                 }
@@ -558,10 +555,6 @@ export async function waitForPort(
             channelLogger.warn('AWS.apig.portUnavailable', 'Failed to use API port: {0}', port.toString())
         }
     }
-}
-
-function getAttachDebuggerMaxRetryLimit(configuration: SettingsConfiguration, defaultValue: number): number {
-    return configuration.readSetting<number>('samcli.debug.attach.retry.maximum', defaultValue)!
 }
 
 export function shouldAppendRelativePathToFunctionHandler(runtime: string): boolean {
