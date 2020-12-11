@@ -931,9 +931,9 @@ Outputs:
                     path: '/hello',
                     httpMethod: 'post',
                     headers: {
-                        'user-agent': 'mozilla 42'
+                        'user-agent': 'mozilla 42',
                     },
-                    querystring: 'foo&bar=baz'
+                    querystring: 'foo&bar=baz',
                 },
                 lambda: {
                     // For target=template these are written to env-vars.json,
@@ -977,7 +977,7 @@ Outputs:
                 handlerName: 'src/subfolder/app.handlerTwoFoldersDeep',
                 invokeTarget: { ...input.invokeTarget },
                 api: {
-                    ...input.api as APIGatewayProperties,
+                    ...(input.api as APIGatewayProperties),
                 },
                 lambda: {
                     ...input.lambda,
@@ -1641,7 +1641,7 @@ Outputs:
                 eventPayloadFile: `${actual.baseBuildDir}/event.json`,
                 codeRoot: pathutil.normalize(path.join(appDir, 'hello_world')),
                 debugArgs: [
-                    `/tmp/lambci_debug_files/py_debug_wrapper.py --host 0.0.0.0 --port ${actual.debugPort} --wait`,
+                    `/tmp/lambci_debug_files/py_debug_wrapper.py --listen 0.0.0.0:${actual.debugPort} --wait-for-client`,
                 ],
                 apiPort: undefined,
                 debugPort: actual.debugPort,
@@ -1792,7 +1792,7 @@ Outputs:
                 eventPayloadFile: `${actual.baseBuildDir}/event.json`,
                 codeRoot: pathutil.normalize(path.join(appDir, 'python3.7-plain-sam-app/hello_world')),
                 debugArgs: [
-                    `/tmp/lambci_debug_files/py_debug_wrapper.py --host 0.0.0.0 --port ${actual.debugPort} --wait`,
+                    `/tmp/lambci_debug_files/py_debug_wrapper.py --listen 0.0.0.0:${actual.debugPort} --wait-for-client`,
                 ],
                 apiPort: undefined,
                 debugPort: actual.debugPort,
@@ -1958,9 +1958,9 @@ Outputs:
                     path: '/hello',
                     httpMethod: 'put',
                     headers: {
-                        'accept-language': 'es-CA'
+                        'accept-language': 'es-CA',
                     },
-                    querystring: 'name1=value1&foo&bar'
+                    querystring: 'name1=value1&foo&bar',
                 },
             }
             const templatePath = vscode.Uri.file(path.join(appDir, 'python3.7-plain-sam-app/template.yaml'))
@@ -1986,14 +1986,14 @@ Outputs:
                 eventPayloadFile: `${actual.baseBuildDir}/event.json`,
                 codeRoot: pathutil.normalize(path.join(appDir, 'python3.7-plain-sam-app/hello_world')),
                 debugArgs: [
-                    `/tmp/lambci_debug_files/py_debug_wrapper.py --host 0.0.0.0 --port ${actual.debugPort} --wait`,
+                    `/tmp/lambci_debug_files/py_debug_wrapper.py --listen 0.0.0.0:${actual.debugPort} --wait-for-client`,
                 ],
                 apiPort: actual.apiPort,
                 debugPort: actual.debugPort,
                 documentUri: vscode.Uri.file(''), // TODO: remove or test.
                 invokeTarget: { ...input.invokeTarget },
                 api: {
-                    ...input.api as APIGatewayProperties,
+                    ...(input.api as APIGatewayProperties),
                 },
                 lambda: {
                     environmentVariables: {},
@@ -2146,7 +2146,7 @@ Outputs:
                 eventPayloadFile: `${actual.baseBuildDir}/event.json`,
                 codeRoot: pathutil.normalize(path.join(appDir, 'python3.7-image-sam-app/hello_world')),
                 debugArgs: [
-                    `/var/lang/bin/python3.7 /tmp/lambci_debug_files/py_debug_wrapper.py --host 0.0.0.0 --port ${actual.debugPort} --wait /var/runtime/bootstrap`,
+                    `/var/lang/bin/python3.7 /tmp/lambci_debug_files/py_debug_wrapper.py --listen 0.0.0.0:${actual.debugPort} --wait-for-client /var/runtime/bootstrap`,
                 ],
                 apiPort: undefined,
                 debugPort: actual.debugPort,
