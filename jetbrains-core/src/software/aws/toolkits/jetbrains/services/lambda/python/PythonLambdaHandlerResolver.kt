@@ -21,8 +21,6 @@ import com.jetbrains.python.psi.stubs.PyModuleNameIndex
 import software.aws.toolkits.jetbrains.services.lambda.LambdaHandlerResolver
 
 class PythonLambdaHandlerResolver : LambdaHandlerResolver {
-    override fun version(): Int = 1
-
     override fun determineHandlers(element: PsiElement, file: VirtualFile): Set<String> =
         determineHandler(element)?.let { setOf(it) }.orEmpty()
 

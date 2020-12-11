@@ -21,9 +21,6 @@ import software.aws.toolkits.jetbrains.services.lambda.LambdaHandlerResolver
 import software.aws.toolkits.jetbrains.services.lambda.dotnet.element.RiderLambdaHandlerFakePsiElement
 
 class DotNetLambdaHandlerResolver : LambdaHandlerResolver {
-
-    override fun version(): Int = 1
-
     override fun findPsiElements(
         project: Project,
         handler: String,
