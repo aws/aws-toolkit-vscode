@@ -37,6 +37,8 @@ abstract class LambdaBuilder {
 
     /**
      * Returns the base directory of the Lambda handler
+     *
+     * @throws IllegalStateException if we cant determine a valid base directory for the handler element
      */
     abstract fun handlerBaseDirectory(module: Module, handlerElement: PsiElement): Path
 
@@ -157,7 +159,7 @@ abstract class LambdaBuilder {
         /*
          * The default path to the task. The default is consistent across both Zip and Image based functions.
          */
-        private const val TASK_PATH = "/var/task"
+        const val TASK_PATH = "/var/task"
     }
 }
 

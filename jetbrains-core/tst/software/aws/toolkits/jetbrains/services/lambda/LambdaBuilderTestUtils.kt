@@ -53,11 +53,12 @@ object LambdaBuilderTestUtils {
     }
 
     fun verifyPathMappings(module: Module, builtLambda: BuiltLambda, vararg mappings: Pair<String, String>) {
-        val basePath = ModuleRootManager.getInstance(module).contentRoots[0].path
+        val basePath = ModuleRootManager.getInstance(module).contentRoots[0]
         val updatedPaths = mappings
             .map { (path, file) ->
                 PathMapping(
-                    path.replace("%PROJECT_ROOT%", basePath)
+                    path.replace("%PROJECT_ROOT%", basePath.parent.path)
+                        .replace("%MODULE_ROOT%", basePath.path)
                         .replace("%BUILD_ROOT%", builtLambda.codeLocation.toString()),
                     file
                 )

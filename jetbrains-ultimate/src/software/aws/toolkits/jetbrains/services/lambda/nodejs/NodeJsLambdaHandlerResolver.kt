@@ -42,7 +42,7 @@ class NodeJsLambdaHandlerResolver : LambdaHandlerResolver {
      */
     private fun PsiElement.isValidHandlerElement(fileName: String): Boolean {
         val virtualFile = this.containingFile.virtualFile ?: return false
-        val sourceRoot = inferSourceRoot(project, virtualFile) ?: return false
+        val sourceRoot = inferSourceRoot(virtualFile) ?: return false
 
         val relativePath = VfsUtilCore.findRelativePath(sourceRoot, virtualFile, '/') ?: return false
         return this is NavigatablePsiElement &&
@@ -59,7 +59,7 @@ class NodeJsLambdaHandlerResolver : LambdaHandlerResolver {
 
         val virtualFile = element.containingFile.virtualFile ?: return null
 
-        val sourceRoot = inferSourceRoot(element.project, virtualFile) ?: return null
+        val sourceRoot = inferSourceRoot(virtualFile) ?: return null
         val relativePath = VfsUtilCore.findRelativePath(sourceRoot, virtualFile, '/') ?: return null
         val prefix = FileUtilRt.getNameWithoutExtension(relativePath)
         val handlerName = element.text
