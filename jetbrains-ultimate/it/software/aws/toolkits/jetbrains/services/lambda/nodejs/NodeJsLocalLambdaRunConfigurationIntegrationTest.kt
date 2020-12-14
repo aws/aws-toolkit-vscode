@@ -4,6 +4,8 @@
 package software.aws.toolkits.jetbrains.services.lambda.nodejs
 
 import com.intellij.execution.executors.DefaultDebugExecutor
+import com.intellij.openapi.module.ModuleType
+import com.intellij.testFramework.PsiTestUtil
 import com.intellij.testFramework.runInEdtAndWait
 import org.assertj.core.api.Assertions.assertThat
 import org.junit.After
@@ -22,7 +24,8 @@ import software.aws.toolkits.jetbrains.services.lambda.sam.SamOptions
 import software.aws.toolkits.jetbrains.utils.WebStormTestUtils
 import software.aws.toolkits.jetbrains.utils.checkBreakPointHit
 import software.aws.toolkits.jetbrains.utils.executeRunConfiguration
-import software.aws.toolkits.jetbrains.utils.rules.NodeJsCodeInsightTestFixtureRule
+import software.aws.toolkits.jetbrains.utils.rules.HeavyNodeJsCodeInsightTestFixtureRule
+import software.aws.toolkits.jetbrains.utils.rules.addFileToModule
 import software.aws.toolkits.jetbrains.utils.rules.addPackageJsonFile
 import software.aws.toolkits.jetbrains.utils.samImageRunDebugTest
 import software.aws.toolkits.jetbrains.utils.setSamExecutableFromEnvironment
@@ -40,7 +43,7 @@ class NodeJsLocalLambdaRunConfigurationIntegrationTest(private val runtime: Runt
 
     @Rule
     @JvmField
-    val projectRule = NodeJsCodeInsightTestFixtureRule()
+    val projectRule = HeavyNodeJsCodeInsightTestFixtureRule()
 
     private val input = RuleUtils.randomName()
     private val mockId = "MockCredsId"
@@ -61,6 +64,7 @@ class NodeJsLocalLambdaRunConfigurationIntegrationTest(private val runtime: Runt
         setSamExecutableFromEnvironment()
 
         val fixture = projectRule.fixture
+        PsiTestUtil.addModule(projectRule.project, ModuleType.EMPTY, "main", fixture.tempDirFixture.findOrCreateDir("."))
 
         val psiFile = fixture.addFileToProject("hello_world/app.js", fileContents)
 
@@ -126,7 +130,8 @@ class NodeJsLocalLambdaRunConfigurationIntegrationTest(private val runtime: Runt
     fun samIsExecutedWhenRunWithATemplateServerless() {
         projectRule.fixture.addPackageJsonFile(subPath = "hello_world")
 
-        val templateFile = projectRule.fixture.addFileToProject(
+        val templateFile = projectRule.fixture.addFileToModule(
+            projectRule.module,
             "template.yaml",
             """
             Resources:

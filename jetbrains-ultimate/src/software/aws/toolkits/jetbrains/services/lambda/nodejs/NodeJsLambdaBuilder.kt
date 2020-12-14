@@ -3,10 +3,8 @@
 
 package software.aws.toolkits.jetbrains.services.lambda.nodejs
 
-import com.intellij.openapi.application.ReadAction
+import com.intellij.openapi.application.runReadAction
 import com.intellij.openapi.module.Module
-import com.intellij.openapi.project.Project
-import com.intellij.openapi.vfs.VirtualFile
 import com.intellij.psi.PsiElement
 import software.aws.toolkits.jetbrains.services.lambda.LambdaBuilder
 import java.nio.file.Path
@@ -14,13 +12,10 @@ import java.nio.file.Paths
 
 class NodeJsLambdaBuilder : LambdaBuilder() {
     override fun handlerBaseDirectory(module: Module, handlerElement: PsiElement): Path {
-        val handlerVirtualFile = ReadAction.compute<VirtualFile, Throwable> {
-            handlerElement.containingFile?.virtualFile
-                ?: throw IllegalArgumentException("Handler file must be backed by a VirtualFile")
-        }
-        return Paths.get(getBaseDirectory(module.project, handlerVirtualFile).path)
+        val handlerVirtualFile = runReadAction { handlerElement.containingFile?.virtualFile }
+            ?: throw IllegalArgumentException("Handler file must be backed by a VirtualFile")
+        val sourceRootVirtualFile = inferSourceRoot(handlerVirtualFile)
+            ?: throw IllegalStateException("Cannot locate package.json for $handlerVirtualFile")
+        return Paths.get(sourceRootVirtualFile.path)
     }
-
-    private fun getBaseDirectory(project: Project, virtualFile: VirtualFile): VirtualFile =
-        inferSourceRoot(project, virtualFile) ?: throw IllegalStateException("Cannot locate content root for file")
 }
