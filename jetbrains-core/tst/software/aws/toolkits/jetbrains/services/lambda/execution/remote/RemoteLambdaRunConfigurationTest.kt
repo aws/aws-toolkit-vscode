@@ -13,13 +13,12 @@ import com.intellij.psi.PsiDocumentManager
 import com.intellij.testFramework.runInEdtAndWait
 import org.assertj.core.api.Assertions.assertThat
 import org.assertj.core.api.Assertions.assertThatThrownBy
-import org.junit.After
 import org.junit.Before
 import org.junit.Rule
 import org.junit.Test
 import org.junit.rules.TemporaryFolder
 import software.amazon.awssdk.auth.credentials.AwsBasicCredentials
-import software.aws.toolkits.jetbrains.core.credentials.MockCredentialsManager
+import software.aws.toolkits.jetbrains.core.credentials.MockCredentialManagerRule
 import software.aws.toolkits.jetbrains.utils.rules.HeavyJavaCodeInsightTestFixtureRule
 import software.aws.toolkits.resources.message
 import kotlin.test.assertNotNull
@@ -33,16 +32,15 @@ class RemoteLambdaRunConfigurationTest {
     @JvmField
     val tempDir = TemporaryFolder()
 
+    @Rule
+    @JvmField
+    val credentialManager = MockCredentialManagerRule()
+
     private val mockCreds = AwsBasicCredentials.create("Access", "ItsASecret")
 
     @Before
     fun setUp() {
-        MockCredentialsManager.getInstance().addCredentials("MockCredentials", mockCreds)
-    }
-
-    @After
-    fun tearDown() {
-        MockCredentialsManager.getInstance().reset()
+        credentialManager.addCredentials("MockCredentials", mockCreds)
     }
 
     @Test

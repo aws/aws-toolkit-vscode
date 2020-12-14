@@ -13,7 +13,7 @@ import org.testng.annotations.Test
 import software.amazon.awssdk.auth.credentials.AwsBasicCredentials
 import software.amazon.awssdk.services.lambda.model.Runtime
 import software.aws.toolkits.jetbrains.core.credentials.MockCredentialsManager
-import software.aws.toolkits.jetbrains.core.region.MockRegionProvider
+import software.aws.toolkits.jetbrains.core.region.getDefaultRegion
 import software.aws.toolkits.jetbrains.services.lambda.execution.local.createHandlerBasedRunConfiguration
 import software.aws.toolkits.jetbrains.utils.executeRunConfiguration
 import software.aws.toolkits.jetbrains.utils.setSamExecutableFromEnvironment
@@ -91,7 +91,7 @@ abstract class DotnetLocalLambdaRunConfigurationIntegrationTestBase(private val 
 
         assertThat(executeLambda.exitCode).isEqualTo(0)
         assertThat(jsonToMap(executeLambda.stdout))
-            .containsEntry("AWS_REGION", MockRegionProvider.getInstance().defaultRegion().id)
+            .containsEntry("AWS_REGION", getDefaultRegion().id)
     }
 
     @Test

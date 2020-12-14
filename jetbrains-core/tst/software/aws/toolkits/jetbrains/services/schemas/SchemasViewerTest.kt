@@ -21,7 +21,6 @@ import software.aws.toolkits.jetbrains.core.MockClientManagerRule
 import software.aws.toolkits.jetbrains.core.MockResourceCacheRule
 import software.aws.toolkits.jetbrains.core.credentials.AwsConnectionManager
 import software.aws.toolkits.jetbrains.core.credentials.MockAwsConnectionManager
-import software.aws.toolkits.jetbrains.core.credentials.MockCredentialsManager
 import software.aws.toolkits.jetbrains.services.schemas.resources.SchemasResources
 import java.io.File
 import java.util.concurrent.CompletableFuture.completedFuture
@@ -44,7 +43,7 @@ class SchemasViewerTest {
 
     private val fileEditorManager = FileEditorManager.getInstance(projectRule.project)
 
-    private val CREDENTIAL_IDENTIFIER = MockCredentialsManager.DUMMY_PROVIDER_IDENTIFIER.displayName
+    private val CREDENTIAL_IDENTIFIER = MockAwsConnectionManager.getInstance(projectRule.project).activeCredentialProvider.displayName
     private val REGION = MockAwsConnectionManager.getInstance(projectRule.project).activeRegion.id
     private val REGISTRY = "registry"
     private val SCHEMA = "schema"

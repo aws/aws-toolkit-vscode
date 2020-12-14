@@ -11,7 +11,7 @@ import software.aws.toolkits.jetbrains.core.MockResourceCacheRule
 import software.aws.toolkits.jetbrains.core.explorer.nodes.AwsExplorerEmptyNode
 import software.aws.toolkits.jetbrains.core.explorer.nodes.AwsExplorerErrorNode
 import software.aws.toolkits.jetbrains.core.explorer.nodes.S3ExplorerRootNode
-import software.aws.toolkits.jetbrains.core.region.MockRegionProvider
+import software.aws.toolkits.jetbrains.core.region.MockRegionProviderRule
 import software.aws.toolkits.jetbrains.services.s3.resources.S3Resources
 import java.time.Instant
 import java.util.concurrent.CompletableFuture
@@ -25,6 +25,10 @@ class S3ServiceNodeTest {
     @JvmField
     @Rule
     val resourceCache = MockResourceCacheRule()
+
+    @JvmField
+    @Rule
+    val regionProvider = MockRegionProviderRule()
 
     @Test
     fun s3BucketsAreListed() {
@@ -70,7 +74,7 @@ class S3ServiceNodeTest {
         resourceCache.addEntry(
             projectRule.project,
             S3Resources.LIST_REGIONALIZED_BUCKETS,
-            CompletableFuture.completedFuture(names.map { S3Resources.RegionalizedBucket(bucketData(it), MockRegionProvider.getInstance().defaultRegion()) })
+            CompletableFuture.completedFuture(names.map { S3Resources.RegionalizedBucket(bucketData(it), regionProvider.defaultRegion()) })
         )
     }
 

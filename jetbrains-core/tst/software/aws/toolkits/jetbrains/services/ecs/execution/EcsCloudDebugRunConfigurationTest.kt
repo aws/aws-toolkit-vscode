@@ -23,7 +23,7 @@ import software.amazon.awssdk.services.ecs.model.ServiceNotFoundException
 import software.amazon.awssdk.services.ecs.model.TaskDefinition
 import software.aws.toolkits.core.credentials.CredentialIdentifier
 import software.aws.toolkits.jetbrains.core.MockResourceCacheRule
-import software.aws.toolkits.jetbrains.core.credentials.MockCredentialsManager
+import software.aws.toolkits.jetbrains.core.credentials.MockCredentialManagerRule
 import software.aws.toolkits.jetbrains.services.clouddebug.CloudDebugConstants
 import software.aws.toolkits.jetbrains.services.clouddebug.CloudDebuggingPlatform
 import software.aws.toolkits.jetbrains.services.clouddebug.execution.CloudDebugRunState
@@ -45,6 +45,10 @@ class EcsCloudDebugRunConfigurationTest {
     @JvmField
     @Rule
     val resourceCache = MockResourceCacheRule()
+
+    @JvmField
+    @Rule
+    val credentialManager = MockCredentialManagerRule()
 
     @Test
     fun happyPath() {
@@ -488,7 +492,7 @@ class EcsCloudDebugRunConfigurationTest {
         resourceCache.addEntry(EcsResources.describeTaskDefinition(taskDefinitionName), regionId, credentialsIdentifier.id, fakeTaskDefinition)
     }
 
-    private fun getMockCredentials(): CredentialIdentifier = MockCredentialsManager.getInstance().addCredentials(
+    private fun getMockCredentials(): CredentialIdentifier = credentialManager.addCredentials(
         "mockCreds",
         AwsBasicCredentials.create("foo", "bar")
     )

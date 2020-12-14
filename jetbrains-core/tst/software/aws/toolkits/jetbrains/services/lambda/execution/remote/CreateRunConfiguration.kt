@@ -6,14 +6,14 @@ package software.aws.toolkits.jetbrains.services.lambda.execution.remote
 import com.intellij.execution.RunManager
 import com.intellij.openapi.project.Project
 import software.aws.toolkits.core.region.AwsRegion
-import software.aws.toolkits.jetbrains.core.region.MockRegionProvider
+import software.aws.toolkits.jetbrains.core.region.getDefaultRegion
 import software.aws.toolkits.jetbrains.services.lambda.execution.LambdaRunConfigurationType
 
 fun createRunConfiguration(
     project: Project,
     input: String? = "",
     inputIsFile: Boolean = false,
-    regionId: AwsRegion? = MockRegionProvider.getInstance().defaultRegion(),
+    regionId: AwsRegion? = getDefaultRegion(),
     credentialId: String? = "MockCredentials",
     functionName: String? = "DummyFunction"
 ): RemoteLambdaRunConfiguration {

@@ -13,7 +13,7 @@ import org.junit.Rule
 import org.junit.Test
 import software.aws.toolkits.core.credentials.aCredentialsIdentifier
 import software.aws.toolkits.core.region.anAwsRegion
-import software.aws.toolkits.jetbrains.core.region.MockRegionProvider.RegionProviderRule
+import software.aws.toolkits.jetbrains.core.region.MockRegionProviderRule
 import software.aws.toolkits.jetbrains.settings.AwsSettings
 import software.aws.toolkits.jetbrains.settings.AwsSettingsRule
 import software.aws.toolkits.jetbrains.settings.UseAwsCredentialRegion
@@ -28,7 +28,7 @@ class CredentialsRegionHandlerTest {
 
     @Rule
     @JvmField
-    val regionProviderRule = RegionProviderRule()
+    val regionProviderRule = MockRegionProviderRule()
 
     @Rule
     @JvmField

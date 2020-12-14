@@ -11,7 +11,7 @@ import software.amazon.awssdk.services.lambda.model.Runtime
 import software.aws.toolkits.core.region.AwsRegion
 import software.aws.toolkits.jetbrains.core.executables.ExecutableManager
 import software.aws.toolkits.jetbrains.core.executables.setExecutablePath
-import software.aws.toolkits.jetbrains.core.region.MockRegionProvider
+import software.aws.toolkits.jetbrains.core.region.getDefaultRegion
 import software.aws.toolkits.jetbrains.services.lambda.execution.LambdaRunConfigurationType
 import software.aws.toolkits.jetbrains.services.lambda.sam.SamExecutable
 import software.aws.toolkits.jetbrains.services.lambda.sam.SamOptions
@@ -32,7 +32,7 @@ fun createTemplateRunConfiguration(
     logicalId: String? = null,
     inputIsFile: Boolean = false,
     credentialsProviderId: String? = null,
-    region: AwsRegion? = MockRegionProvider.getInstance().defaultRegion(),
+    region: AwsRegion? = getDefaultRegion(),
     samOptions: SamOptions = SamOptions()
 ): LocalLambdaRunConfiguration {
     val runConfiguration = samRunConfiguration(project)
@@ -60,7 +60,7 @@ fun createHandlerBasedRunConfiguration(
     input: String? = "inputText",
     inputIsFile: Boolean = false,
     credentialsProviderId: String? = null,
-    region: AwsRegion? = MockRegionProvider.getInstance().defaultRegion(),
+    region: AwsRegion? = getDefaultRegion(),
     environmentVariables: MutableMap<String, String> = mutableMapOf(),
     samOptions: SamOptions = SamOptions()
 ): LocalLambdaRunConfiguration {

@@ -13,13 +13,11 @@ import software.amazon.awssdk.services.rds.model.DBInstance
 import software.amazon.awssdk.services.rds.model.Endpoint
 import software.aws.toolkits.core.utils.RuleUtils
 import software.aws.toolkits.jetbrains.core.MockResourceCacheRule
-import software.aws.toolkits.jetbrains.core.credentials.MockCredentialsManager
-import software.aws.toolkits.jetbrains.core.region.MockRegionProvider
+import software.aws.toolkits.jetbrains.core.credentials.DUMMY_PROVIDER_IDENTIFIER
+import software.aws.toolkits.jetbrains.core.region.getDefaultRegion
 import software.aws.toolkits.jetbrains.services.rds.RdsDatasourceConfiguration
-import software.aws.toolkits.jetbrains.services.rds.RdsNode
 import software.aws.toolkits.jetbrains.services.rds.actions.createRdsDatasource
 import software.aws.toolkits.jetbrains.services.rds.jdbcMysqlAurora
-import software.aws.toolkits.jetbrains.services.rds.mysqlEngineType
 import software.aws.toolkits.jetbrains.services.rds.postgresEngineType
 
 // FIX_WHEN_MIN_IS_202 merge this with the normal one
@@ -44,8 +42,8 @@ class CreateConfigurationActionTest202 {
         registry.createRdsDatasource(
             RdsDatasourceConfiguration(
                 username = username,
-                credentialId = MockCredentialsManager.DUMMY_PROVIDER_IDENTIFIER.id,
-                regionId = MockRegionProvider.getInstance().defaultRegion().id,
+                credentialId = DUMMY_PROVIDER_IDENTIFIER.id,
+                regionId = getDefaultRegion().id,
                 dbInstance = instance
             )
         )
@@ -64,8 +62,8 @@ class CreateConfigurationActionTest202 {
         registry.createRdsDatasource(
             RdsDatasourceConfiguration(
                 username = username,
-                credentialId = MockCredentialsManager.DUMMY_PROVIDER_IDENTIFIER.id,
-                regionId = MockRegionProvider.getInstance().defaultRegion().id,
+                credentialId = DUMMY_PROVIDER_IDENTIFIER.id,
+                regionId = getDefaultRegion().id,
                 dbInstance = instance
             )
         )
@@ -74,19 +72,6 @@ class CreateConfigurationActionTest202 {
             assertThat(it.driverClass).contains("mariadb")
             assertThat(it.url).contains(jdbcMysqlAurora)
             assertThat(it.sslCfg?.myMode).isEqualTo(SslMode.REQUIRE)
-        }
-    }
-
-    private fun createNode(
-        address: String = RuleUtils.randomName(),
-        port: Int = RuleUtils.randomNumber(),
-        dbName: String = RuleUtils.randomName(),
-        iamAuthEnabled: Boolean = true,
-        engineType: String = mysqlEngineType
-    ): RdsNode = mock {
-        on { nodeProject } doAnswer { projectRule.project }
-        on { dbInstance } doAnswer {
-            createDbInstance(address, port, dbName, iamAuthEnabled, engineType)
         }
     }
 

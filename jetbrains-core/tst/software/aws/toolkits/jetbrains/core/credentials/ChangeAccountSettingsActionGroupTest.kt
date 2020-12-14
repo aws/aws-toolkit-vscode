@@ -7,7 +7,8 @@ import com.intellij.testFramework.ProjectRule
 import org.assertj.core.api.Assertions.assertThat
 import org.junit.Rule
 import org.junit.Test
-import software.aws.toolkits.jetbrains.core.region.MockRegionProvider.RegionProviderRule
+import software.aws.toolkits.jetbrains.core.region.MockRegionProviderRule
+import software.aws.toolkits.jetbrains.core.region.getDefaultRegion
 
 class ChangeAccountSettingsActionGroupTest {
 
@@ -17,7 +18,7 @@ class ChangeAccountSettingsActionGroupTest {
 
     @Rule
     @JvmField
-    val regionProviderRule = RegionProviderRule()
+    val regionProviderRule = MockRegionProviderRule()
 
     @Rule
     @JvmField
@@ -81,7 +82,7 @@ class ChangeAccountSettingsActionGroupTest {
 
     @Test
     fun `Don't show partition selector if there is only one partition`() {
-        val selectedRegion = regionProviderRule.regionProvider.defaultRegion()
+        val selectedRegion = getDefaultRegion()
 
         settingsManagerRule.settingsManager.changeRegionAndWait(selectedRegion)
 
