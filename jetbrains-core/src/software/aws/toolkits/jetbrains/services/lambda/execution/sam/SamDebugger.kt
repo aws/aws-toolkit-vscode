@@ -7,6 +7,7 @@ import com.fasterxml.jackson.module.kotlin.jacksonObjectMapper
 import com.intellij.execution.configurations.GeneralCommandLine
 import com.intellij.execution.runners.ExecutionEnvironment
 import com.intellij.execution.ui.RunContentDescriptor
+import com.intellij.openapi.application.ApplicationManager
 import com.intellij.openapi.progress.ProgressIndicator
 import com.intellij.openapi.progress.ProgressManager
 import com.intellij.openapi.progress.Task
@@ -46,18 +47,24 @@ internal class SamDebugger(runtimeGroup: RuntimeGroup) : SamRunner() {
 
         var isDebuggerAttachDone = false
 
-        ProgressManager.getInstance().run(
-            object : Task.Backgroundable(environment.project, message("lambda.debug.waiting"), false) {
-                override fun run(indicator: ProgressIndicator) {
-                    val debugAttachedResult = spinUntil(debugExtension.debuggerAttachTimeoutMs) { isDebuggerAttachDone }
-                    if (!debugAttachedResult) {
-                        val message = message("lambda.debug.attach.fail")
-                        LOG.error { message }
-                        notifyError(message("lambda.debug.attach.error"), message, environment.project)
+        // In integration tests this will block for 1 minute per integration test that uses the debugger because we 
+        // run integration tests under edt. In real execution, there's some funky thread switching that leads this call
+        // to not be on edt, but that is not emulated in tests. So, skip this entirely if we are in unit test mode.
+        // Tests have their own timeout which will prevent it running forever without attaching
+        if (!ApplicationManager.getApplication().isUnitTestMode) {
+            ProgressManager.getInstance().run(
+                object : Task.Backgroundable(environment.project, message("lambda.debug.waiting"), false) {
+                    override fun run(indicator: ProgressIndicator) {
+                        val debugAttachedResult = spinUntil(debugExtension.debuggerAttachTimeoutMs) { isDebuggerAttachDone }
+                        if (!debugAttachedResult) {
+                            val message = message("lambda.debug.attach.fail")
+                            LOG.error { message }
+                            notifyError(message("lambda.debug.attach.error"), message, environment.project)
+                        }
                     }
                 }
-            }
-        )
+            )
+        }
 
         debugExtension.createDebugProcessAsync(environment, state, state.settings.debugHost, debugPorts)
             .onSuccess { debugProcessStarter ->
