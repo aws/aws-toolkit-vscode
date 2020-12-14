@@ -4,19 +4,18 @@
 package software.aws.toolkits.jetbrains.services.lambda.nodejs
 
 import com.intellij.openapi.application.invokeAndWaitIfNeeded
+import com.intellij.openapi.module.ModuleType
 import com.intellij.testFramework.PsiTestUtil
-import com.intellij.testFramework.runInEdtAndWait
 import org.assertj.core.api.Assertions.assertThat
+import org.assertj.core.api.Assertions.assertThatThrownBy
 import org.junit.Before
 import org.junit.Rule
 import org.junit.Test
 import software.amazon.awssdk.services.lambda.model.Runtime
-import software.aws.toolkits.jetbrains.services.lambda.Lambda
 import software.aws.toolkits.jetbrains.services.lambda.LambdaBuilderTestUtils
 import software.aws.toolkits.jetbrains.services.lambda.LambdaBuilderTestUtils.buildLambda
 import software.aws.toolkits.jetbrains.services.lambda.LambdaBuilderTestUtils.buildLambdaFromTemplate
-import software.aws.toolkits.jetbrains.services.lambda.sam.SamCommon
-import software.aws.toolkits.jetbrains.utils.rules.NodeJsCodeInsightTestFixtureRule
+import software.aws.toolkits.jetbrains.utils.rules.HeavyNodeJsCodeInsightTestFixtureRule
 import software.aws.toolkits.jetbrains.utils.rules.addLambdaHandler
 import software.aws.toolkits.jetbrains.utils.rules.addPackageJsonFile
 import software.aws.toolkits.jetbrains.utils.rules.addSamTemplate
@@ -26,37 +25,14 @@ import java.nio.file.Paths
 class NodeJsLambdaBuilderTest {
     @Rule
     @JvmField
-    val projectRule = NodeJsCodeInsightTestFixtureRule()
+    val projectRule = HeavyNodeJsCodeInsightTestFixtureRule()
 
     private val sut = NodeJsLambdaBuilder()
 
     @Before
     fun setUp() {
         setSamExecutableFromEnvironment()
-    }
-
-    @Test
-    fun findHandlerElementsIgnoresSamBuildLocation() {
-        val sampleHandler =
-            """
-            exports.myLambdaHandler = async (event, context) => {}
-            """.trimIndent()
-
-        // Set up the actual project contents
-        val expectedHandlerFile = projectRule.fixture.addFileToProject("hello-world/app.js", sampleHandler)
-        projectRule.fixture.addPackageJsonFile("hello-world")
-
-        // Populate some SAM Build contents
-        projectRule.fixture.addFileToProject("${SamCommon.SAM_BUILD_DIR}/build/hello-world/app.js", sampleHandler)
-        projectRule.fixture.addPackageJsonFile("${SamCommon.SAM_BUILD_DIR}/build/hello-world")
-
-        runInEdtAndWait {
-            val foundElements = Lambda.findPsiElementsForHandler(projectRule.project, Runtime.NODEJS10_X, "app.myLambdaHandler")
-            assertThat(foundElements).hasSize(1)
-            assertThat(foundElements).allMatch {
-                it.containingFile.isEquivalentTo(expectedHandlerFile)
-            }
-        }
+        PsiTestUtil.addModule(projectRule.project, ModuleType.EMPTY, "main", projectRule.fixture.tempDirFixture.findOrCreateDir("main"))
     }
 
     @Test
@@ -199,5 +175,34 @@ class NodeJsLambdaBuilderTest {
             "%PROJECT_ROOT%" to "/var/task/",
             "%BUILD_ROOT%" to "/var/task/"
         )
+    }
+
+    @Test
+    fun handlerBaseDirIsCorrect() {
+        val handlerFile = projectRule.fixture.addLambdaHandler(subPath = "hello-world")
+        projectRule.fixture.addPackageJsonFile("hello-world")
+
+        val baseDir = sut.handlerBaseDirectory(projectRule.module, handlerFile)
+        val root = Paths.get(projectRule.fixture.tempDirPath)
+        assertThat(baseDir.toAbsolutePath()).isEqualTo(root.resolve("hello-world"))
+    }
+
+    @Test
+    fun handlerBaseDirIsCorrectInSubDir() {
+        val handlerFile = projectRule.fixture.addLambdaHandler(subPath = "hello-world/foo-bar")
+        projectRule.fixture.addPackageJsonFile("hello-world")
+
+        val baseDir = sut.handlerBaseDirectory(projectRule.module, handlerFile)
+        val root = Paths.get(projectRule.fixture.tempDirPath)
+        assertThat(baseDir).isEqualTo(root.resolve("hello-world"))
+    }
+
+    @Test
+    fun missingPackageJsonThrowsForHandlerBaseDir() {
+        val handlerFile = projectRule.fixture.addLambdaHandler(subPath = "hello-world/foo-bar")
+
+        assertThatThrownBy {
+            sut.handlerBaseDirectory(projectRule.module, handlerFile)
+        }.hasMessageStartingWith("Cannot locate package.json")
     }
 }

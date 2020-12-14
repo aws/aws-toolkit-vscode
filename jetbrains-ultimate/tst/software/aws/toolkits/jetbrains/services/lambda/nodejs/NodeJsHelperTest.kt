@@ -3,9 +3,9 @@
 
 package software.aws.toolkits.jetbrains.services.lambda.nodejs
 
+import com.intellij.openapi.application.runReadAction
 import com.intellij.openapi.roots.ProjectFileIndex
 import com.intellij.openapi.vfs.VfsUtilCore
-import com.intellij.testFramework.runInEdtAndWait
 import org.assertj.core.api.Assertions.assertThat
 import org.junit.Rule
 import org.junit.Test
@@ -20,22 +20,21 @@ class NodeJsHelperTest {
     val projectRule = NodeJsCodeInsightTestFixtureRule()
 
     @Test
-    fun inferSourceRoot_noPackageJsonReturnsContentRoot() {
+    fun noPackageJsonReturnsNull() {
         val element = projectRule.fixture.addLambdaHandler(
             subPath = "foo/bar",
             fileName = "app.js",
             handlerName = "someHandler"
         )
 
-        runInEdtAndWait {
-            val contentRoot = ProjectFileIndex.getInstance(projectRule.project).getContentRootForFile(element.containingFile.virtualFile)
-            val sourceRoot = inferSourceRoot(projectRule.project, element.containingFile.virtualFile)
-            assertThat(contentRoot).isEqualTo(sourceRoot)
+        runReadAction {
+            val sourceRoot = inferSourceRoot(element.containingFile.virtualFile)
+            assertThat(sourceRoot).isNull()
         }
     }
 
     @Test
-    fun inferSourceRoot_packageJsonInSubFolder() {
+    fun packageJsonInSubFolder() {
         val element = projectRule.fixture.addLambdaHandler(
             subPath = "foo/bar",
             fileName = "app.js",
@@ -46,15 +45,15 @@ class NodeJsHelperTest {
             subPath = "foo"
         )
 
-        runInEdtAndWait {
+        runReadAction {
             val contentRoot = ProjectFileIndex.getInstance(projectRule.project).getContentRootForFile(element.containingFile.virtualFile)
-            val sourceRoot = inferSourceRoot(projectRule.project, element.containingFile.virtualFile)
-            assertThat(VfsUtilCore.findRelativeFile("foo", contentRoot)).isEqualTo(sourceRoot)
+            val sourceRoot = inferSourceRoot(element.containingFile.virtualFile)
+            assertThat(sourceRoot).isEqualTo(VfsUtilCore.findRelativeFile("foo", contentRoot))
         }
     }
 
     @Test
-    fun inferSourceRoot_packageJsonInRootFolder() {
+    fun packageJsonInRootFolder() {
         val element = projectRule.fixture.addLambdaHandler(
             subPath = "foo/bar",
             fileName = "app.js",
@@ -65,10 +64,10 @@ class NodeJsHelperTest {
             subPath = "."
         )
 
-        runInEdtAndWait {
+        runReadAction {
             val contentRoot = ProjectFileIndex.getInstance(projectRule.project).getContentRootForFile(element.containingFile.virtualFile)
-            val sourceRoot = inferSourceRoot(projectRule.project, element.containingFile.virtualFile)
-            assertThat(contentRoot).isEqualTo(sourceRoot)
+            val sourceRoot = inferSourceRoot(element.containingFile.virtualFile)
+            assertThat(sourceRoot).isEqualTo(contentRoot)
         }
     }
 }
