@@ -17,7 +17,7 @@ import software.aws.toolkits.core.credentials.CredentialsChangeListener
 import software.aws.toolkits.core.credentials.ToolkitCredentialsProvider
 import software.aws.toolkits.core.region.AwsRegion
 import software.aws.toolkits.core.utils.test.aString
-import software.aws.toolkits.jetbrains.core.region.MockRegionProvider
+import software.aws.toolkits.jetbrains.core.region.getDefaultRegion
 
 @Deprecated("Use MockCredentialManagerRule")
 class MockCredentialsManager : CredentialManager() {
@@ -47,8 +47,8 @@ class MockCredentialsManager : CredentialManager() {
 
     fun createCredentialProvider(
         id: String = aString(),
-        credentials: AwsCredentials = AwsBasicCredentials.create("Access", "Secret"),
-        region: AwsRegion = MockRegionProvider.getInstance().defaultRegion()
+        credentials: AwsCredentials,
+        region: AwsRegion
     ): ToolkitCredentialsProvider {
         val credentialIdentifier = MockCredentialIdentifier(id, StaticCredentialsProvider.create(credentials), null)
 
@@ -61,16 +61,11 @@ class MockCredentialsManager : CredentialManager() {
         removeProvider(credentialIdentifier)
     }
 
-    override fun factoryMapping(): Map<String, CredentialProviderFactory> = mapOf(MockCredentialProviderFactory.id to MockCredentialProviderFactory)
+    override fun factoryMapping(): Map<String, CredentialProviderFactory> =
+        mapOf<String, CredentialProviderFactory>(MockCredentialProviderFactory.id to MockCredentialProviderFactory)
 
     companion object {
         fun getInstance(): MockCredentialsManager = ServiceManager.getService(CredentialManager::class.java) as MockCredentialsManager
-
-        val DUMMY_PROVIDER_IDENTIFIER: CredentialIdentifier = MockCredentialIdentifier(
-            "DUMMY_CREDENTIALS",
-            StaticCredentialsProvider.create(AwsBasicCredentials.create("DummyAccess", "DummySecret")),
-            null
-        )
     }
 
     class MockCredentialIdentifier(override val displayName: String, val credentials: AwsCredentialsProvider, override val defaultRegionId: String?) :
@@ -109,14 +104,18 @@ class MockCredentialManagerRule : ExternalResource() {
     fun addCredentials(
         id: String,
         credentials: AwsCredentialsProvider,
-        region: AwsRegion? = null
-    ): CredentialIdentifier = credentialManager.addCredentials(id, credentials, region?.id)
+        regionId: String? = null
+    ): MockCredentialsManager.MockCredentialIdentifier = credentialManager.addCredentials(id, credentials, regionId)
 
     fun createCredentialProvider(
         id: String = aString(),
         credentials: AwsCredentials = AwsBasicCredentials.create("Access", "Secret"),
-        region: AwsRegion = MockRegionProvider.getInstance().defaultRegion()
+        // Do not store this value as we should be able to dynamically change it
+        region: AwsRegion = getDefaultRegion()
     ): ToolkitCredentialsProvider = credentialManager.createCredentialProvider(id, credentials, region)
+
+    fun getAwsCredentialProvider(providerId: CredentialIdentifier, region: AwsRegion): ToolkitCredentialsProvider =
+        credentialManager.getAwsCredentialProvider(providerId, region)
 
     fun removeCredentials(credentialIdentifier: CredentialIdentifier) = credentialManager.removeCredentials(credentialIdentifier)
 
@@ -125,7 +124,17 @@ class MockCredentialManagerRule : ExternalResource() {
     }
 
     fun reset() {
-        @Suppress("DEPRECATION")
         credentialManager.reset()
     }
 }
+
+@Deprecated(
+    "DUMMY_PROVIDER_IDENTIFIER should not be used outside of the MockCredentialsManager, if you " +
+        "need mock credentials set them up in the test instead of relying on the global one"
+)
+@Suppress("DEPRECATION")
+val DUMMY_PROVIDER_IDENTIFIER: CredentialIdentifier = MockCredentialsManager.MockCredentialIdentifier(
+    "DUMMY_CREDENTIALS",
+    StaticCredentialsProvider.create(AwsBasicCredentials.create("DummyAccess", "DummySecret")),
+    null
+)

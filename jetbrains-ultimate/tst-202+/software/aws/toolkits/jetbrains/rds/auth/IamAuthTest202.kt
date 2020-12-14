@@ -15,10 +15,9 @@ import org.junit.Before
 import org.junit.Rule
 import org.junit.Test
 import software.amazon.awssdk.auth.credentials.AwsBasicCredentials
-import software.aws.toolkits.core.region.AwsRegion
 import software.aws.toolkits.core.utils.RuleUtils
-import software.aws.toolkits.jetbrains.core.credentials.MockCredentialsManager
-import software.aws.toolkits.jetbrains.core.region.MockRegionProvider
+import software.aws.toolkits.jetbrains.core.credentials.MockCredentialManagerRule
+import software.aws.toolkits.jetbrains.core.region.getDefaultRegion
 import software.aws.toolkits.jetbrains.datagrip.CREDENTIAL_ID_PROPERTY
 import software.aws.toolkits.jetbrains.datagrip.REGION_ID_PROPERTY
 import software.aws.toolkits.jetbrains.datagrip.RequireSsl
@@ -33,9 +32,12 @@ class IamAuthTest202 {
     @JvmField
     val projectRule = ProjectRule()
 
+    @Rule
+    @JvmField
+    val credentialManager = MockCredentialManagerRule()
+
     private val iamAuth = IamAuth()
     private val credentialId = RuleUtils.randomName()
-    private val defaultRegion = RuleUtils.randomName()
     private val username = RuleUtils.randomName()
     private val instancePort = RuleUtils.randomNumber().toString()
     private val dbHost = "${RuleUtils.randomName()}.555555.us-west-2.rds.amazonaws.com"
@@ -45,8 +47,7 @@ class IamAuthTest202 {
 
     @Before
     fun setUp() {
-        MockCredentialsManager.getInstance().addCredentials(credentialId, mockCreds)
-        MockRegionProvider.getInstance().addRegion(AwsRegion(defaultRegion, RuleUtils.randomName(), RuleUtils.randomName()))
+        credentialManager.addCredentials(credentialId, mockCreds)
     }
 
     @Test
@@ -54,7 +55,7 @@ class IamAuthTest202 {
         val authInformation = iamAuth.getAuthInformation(buildConnection(dbmsType = Dbms.MYSQL_AURORA))
         assertThat(authInformation.port.toString()).isEqualTo(instancePort)
         assertThat(authInformation.user).isEqualTo(username)
-        assertThat(authInformation.connectionSettings.region.id).isEqualTo(defaultRegion)
+        assertThat(authInformation.connectionSettings.region.id).isEqualTo(getDefaultRegion().id)
         assertThat(authInformation.address).isEqualTo(dbHost)
     }
 
@@ -92,7 +93,7 @@ class IamAuthTest202 {
                     m[CREDENTIAL_ID_PROPERTY] = credentialId
                 }
                 if (hasRegion) {
-                    m[REGION_ID_PROPERTY] = defaultRegion
+                    m[REGION_ID_PROPERTY] = getDefaultRegion().id
                 }
                 if (hasHost) {
                     m[RDS_SIGNING_HOST_PROPERTY] = dbHost

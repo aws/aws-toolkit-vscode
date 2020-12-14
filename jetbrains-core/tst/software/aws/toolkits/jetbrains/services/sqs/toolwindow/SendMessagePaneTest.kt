@@ -16,7 +16,7 @@ import software.amazon.awssdk.services.sqs.model.SendMessageResponse
 import software.aws.toolkits.core.region.AwsRegion
 import software.aws.toolkits.core.utils.RuleUtils
 import software.aws.toolkits.jetbrains.core.MockClientManagerRule
-import software.aws.toolkits.jetbrains.core.region.MockRegionProvider
+import software.aws.toolkits.jetbrains.core.region.MockRegionProviderRule
 import software.aws.toolkits.jetbrains.services.sqs.MAX_LENGTH_OF_FIFO_ID
 import software.aws.toolkits.jetbrains.services.sqs.Queue
 import software.aws.toolkits.jetbrains.utils.BaseCoroutineTest
@@ -28,6 +28,10 @@ class SendMessagePaneTest : BaseCoroutineTest() {
     @Rule
     val mockClientManager = MockClientManagerRule()
 
+    @JvmField
+    @Rule
+    val regionProvider = MockRegionProviderRule()
+
     private lateinit var client: SqsClient
     private lateinit var region: AwsRegion
     private lateinit var standardQueue: Queue
@@ -38,7 +42,7 @@ class SendMessagePaneTest : BaseCoroutineTest() {
     @Before
     fun reset() {
         client = mockClientManager.create()
-        region = MockRegionProvider.getInstance().defaultRegion()
+        region = regionProvider.defaultRegion()
         standardQueue = Queue("https://sqs.us-east-1.amazonaws.com/123456789012/standard", region)
         fifoQueue = Queue("https://sqs.us-east-1.amazonaws.com/123456789012/fifo.fifo", region)
         standardPane = SendMessagePane(projectRule.project, client, standardQueue)

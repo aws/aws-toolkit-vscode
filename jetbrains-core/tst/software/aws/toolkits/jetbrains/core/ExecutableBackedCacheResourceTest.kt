@@ -9,17 +9,16 @@ import com.intellij.testFramework.ExtensionTestUtil
 import com.intellij.testFramework.ProjectRule
 import org.assertj.core.api.Assertions.assertThat
 import org.assertj.core.api.Assertions.assertThatThrownBy
-import org.junit.After
 import org.junit.Before
 import org.junit.Rule
 import org.junit.Test
 import org.junit.rules.TemporaryFolder
 import software.aws.toolkits.core.credentials.ToolkitCredentialsProvider
-import software.aws.toolkits.jetbrains.core.credentials.MockCredentialsManager
+import software.aws.toolkits.jetbrains.core.credentials.MockCredentialManagerRule
 import software.aws.toolkits.jetbrains.core.executables.ExecutableManager
 import software.aws.toolkits.jetbrains.core.executables.ExecutableType
 import software.aws.toolkits.jetbrains.core.executables.Validatable
-import software.aws.toolkits.jetbrains.core.region.MockRegionProvider
+import software.aws.toolkits.jetbrains.core.region.getDefaultRegion
 import java.nio.file.Path
 import java.util.concurrent.TimeUnit
 
@@ -36,14 +35,13 @@ class ExecutableBackedCacheResourceTest {
     @JvmField
     val disposableRule = DisposableRule()
 
+    @Rule
+    @JvmField
+    val credentialManager = MockCredentialManagerRule()
+
     @Before
     fun setUp() {
         ExtensionTestUtil.maskExtensions(ExecutableType.EP_NAME, listOf(MockExecutable), disposableRule.disposable)
-    }
-
-    @After
-    fun testDown() {
-        MockCredentialsManager.getInstance().reset()
     }
 
     @Test
@@ -103,13 +101,11 @@ class ExecutableBackedCacheResourceTest {
             assertionBlock.invoke(this)
         }
 
-        return cacheResource.fetch(MockRegionProvider.getInstance().defaultRegion(), mockCredentials())
+        return cacheResource.fetch(getDefaultRegion(), mockCredentials())
     }
 
-    private fun mockCredentials(): ToolkitCredentialsProvider {
-        val credentialsManager = MockCredentialsManager.getInstance()
-        return credentialsManager.getAwsCredentialProvider(credentialsManager.addCredentials("Cred2"), MockRegionProvider.getInstance().defaultRegion())
-    }
+    private fun mockCredentials(): ToolkitCredentialsProvider =
+        credentialManager.getAwsCredentialProvider(credentialManager.addCredentials("Cred2"), getDefaultRegion())
 
     private object MockExecutable : ExecutableType<String>, Validatable {
         override val id: String = "Mock"

@@ -47,7 +47,7 @@ import software.aws.toolkits.core.region.ToolkitRegionProvider
 import software.aws.toolkits.core.rules.SystemPropertyHelper
 import software.aws.toolkits.jetbrains.core.credentials.profiles.ProfileCredentialProviderFactory
 import software.aws.toolkits.jetbrains.core.credentials.profiles.ProfileWatcher
-import software.aws.toolkits.jetbrains.core.region.MockRegionProvider
+import software.aws.toolkits.jetbrains.core.region.getDefaultRegion
 import software.aws.toolkits.jetbrains.ui.TestDialogService
 import java.io.File
 import java.time.ZonedDateTime
@@ -768,7 +768,7 @@ class ProfileCredentialProviderFactoryTest {
 
     private fun ProfileCredentialProviderFactory.createProvider(validProfile: CredentialIdentifier) = this.createAwsCredentialProvider(
         validProfile,
-        MockRegionProvider.getInstance().defaultRegion(),
+        getDefaultRegion(),
         sdkHttpClientSupplier = { mockSdkHttpClient }
     )
 

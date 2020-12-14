@@ -26,7 +26,7 @@ import software.amazon.awssdk.services.sqs.model.GetQueueAttributesResponse
 import software.amazon.awssdk.services.sqs.model.QueueAttributeName
 import software.aws.toolkits.core.region.AwsRegion
 import software.aws.toolkits.jetbrains.core.MockClientManagerRule
-import software.aws.toolkits.jetbrains.core.region.MockRegionProvider
+import software.aws.toolkits.jetbrains.core.region.MockRegionProviderRule
 
 class SubscribeSnsDialogTest {
     lateinit var snsClient: SnsClient
@@ -43,6 +43,10 @@ class SubscribeSnsDialogTest {
     @Rule
     val mockClientManagerRule = MockClientManagerRule()
 
+    @JvmField
+    @Rule
+    val regionProvider = MockRegionProviderRule()
+
     @Before
     fun setup() {
         snsClient = mockClientManagerRule.create()
@@ -56,7 +60,7 @@ class SubscribeSnsDialogTest {
             ).build()
         }
 
-        region = MockRegionProvider.getInstance().defaultRegion()
+        region = regionProvider.defaultRegion()
         queue = Queue("https://sqs.us-east-1.amazonaws.com/123456789012/test", region)
     }
 

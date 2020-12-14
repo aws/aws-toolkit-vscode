@@ -21,7 +21,8 @@ import software.aws.toolkits.core.credentials.CredentialProviderNotFoundExceptio
 import software.aws.toolkits.core.credentials.CredentialsChangeEvent
 import software.aws.toolkits.core.credentials.CredentialsChangeListener
 import software.aws.toolkits.core.region.AwsRegion
-import software.aws.toolkits.jetbrains.core.region.MockRegionProvider
+import software.aws.toolkits.jetbrains.core.region.MockRegionProviderRule
+import software.aws.toolkits.jetbrains.core.region.getDefaultRegion
 import kotlin.test.assertNotNull
 
 class CredentialManagerTest {
@@ -33,9 +34,13 @@ class CredentialManagerTest {
     @JvmField
     val application = ApplicationRule()
 
+    @Rule
+    @JvmField
+    val regionProvider = MockRegionProviderRule()
+
     @Test
     fun testCredentialsCanLoadFromExtensions() {
-        val region = MockRegionProvider.getInstance().defaultRegion()
+        val region = getDefaultRegion()
 
         addFactories(
             createTestCredentialFactory(
@@ -97,7 +102,7 @@ class CredentialManagerTest {
 
     @Test
     fun testCredentialUpdatingDoesNotBreakExisting() {
-        val region = MockRegionProvider.getInstance().defaultRegion()
+        val region = getDefaultRegion()
         val credentialFactory = createTestCredentialFactory(
             "testFactory1",
             listOf("testFoo1")
@@ -139,7 +144,7 @@ class CredentialManagerTest {
 
     @Test
     fun testRemovedCredentialsCeaseWorkingAfter() {
-        val region = MockRegionProvider.getInstance().defaultRegion()
+        val region = getDefaultRegion()
         val credentialFactory = createTestCredentialFactory(
             "testFactory1",
             listOf("testFoo1")
@@ -177,7 +182,7 @@ class CredentialManagerTest {
 
     @Test
     fun testUpdatedCredentialIdentifierIsApplied() {
-        val region = MockRegionProvider.getInstance().defaultRegion()
+        val region = getDefaultRegion()
         val credentialFactory = createTestCredentialFactory(
             "testFactory1",
             listOf("testFoo1")
@@ -189,7 +194,7 @@ class CredentialManagerTest {
 
         assertThat(credentialManager.getCredentialIdentifierById("testFoo1")?.defaultRegionId).isEqualTo(region.id)
 
-        val newRegion = MockRegionProvider.getInstance().addRegion(AwsRegion("test", "test", "test"))
+        val newRegion = regionProvider.addRegion(AwsRegion("test", "test", "test"))
 
         credentialFactory.updateCredentials(
             "testFoo1",
@@ -219,7 +224,7 @@ class CredentialManagerTest {
             callback = credentialLoadCallback
 
             initialProviderIds.forEach {
-                credentialsMapping[it] = TestCredentialProviderIdentifier(it, id, MockRegionProvider.getInstance().defaultRegion().id)
+                credentialsMapping[it] = TestCredentialProviderIdentifier(it, id, getDefaultRegion().id)
             }
 
             callback(

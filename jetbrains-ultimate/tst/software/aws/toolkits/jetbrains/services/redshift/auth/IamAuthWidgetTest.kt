@@ -14,10 +14,9 @@ import org.junit.Before
 import org.junit.Rule
 import org.junit.Test
 import software.amazon.awssdk.auth.credentials.AwsBasicCredentials
-import software.aws.toolkits.core.region.AwsRegion
 import software.aws.toolkits.core.utils.RuleUtils
 import software.aws.toolkits.jetbrains.core.credentials.MockCredentialsManager
-import software.aws.toolkits.jetbrains.core.region.MockRegionProvider
+import software.aws.toolkits.jetbrains.core.region.MockRegionProviderRule
 import software.aws.toolkits.jetbrains.datagrip.CREDENTIAL_ID_PROPERTY
 import software.aws.toolkits.jetbrains.datagrip.REGION_ID_PROPERTY
 
@@ -25,6 +24,10 @@ class IamAuthWidgetTest {
     @Rule
     @JvmField
     val projectRule = ProjectRule()
+
+    @JvmField
+    @Rule
+    val regionProvider = MockRegionProviderRule()
 
     private lateinit var widget: IamAuthWidget
     private val credentialId = RuleUtils.randomName()
@@ -36,7 +39,7 @@ class IamAuthWidgetTest {
     fun setUp() {
         widget = IamAuthWidget()
         MockCredentialsManager.getInstance().addCredentials(credentialId, mockCreds)
-        MockRegionProvider.getInstance().addRegion(AwsRegion(defaultRegion, RuleUtils.randomName(), RuleUtils.randomName()))
+        regionProvider.addRegion(regionProvider.createAwsRegion(defaultRegion))
     }
 
     @Test

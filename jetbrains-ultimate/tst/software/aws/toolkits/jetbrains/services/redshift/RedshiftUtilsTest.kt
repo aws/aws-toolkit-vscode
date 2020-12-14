@@ -10,9 +10,9 @@ import org.assertj.core.api.Assertions.assertThat
 import org.junit.Rule
 import org.junit.Test
 import software.amazon.awssdk.services.redshift.model.Cluster
-import software.aws.toolkits.core.region.AwsRegion
 import software.aws.toolkits.core.utils.RuleUtils
 import software.aws.toolkits.jetbrains.core.MockResourceCacheRule
+import software.aws.toolkits.jetbrains.core.region.getDefaultRegion
 import software.aws.toolkits.jetbrains.services.sts.StsResources
 
 class RedshiftUtilsTest {
@@ -24,8 +24,6 @@ class RedshiftUtilsTest {
     @Rule
     val resourceCache = MockResourceCacheRule()
 
-    private val defaultRegion = RuleUtils.randomName()
-    private val region = AwsRegion(defaultRegion, RuleUtils.randomName(), RuleUtils.randomName())
     private val clusterId = RuleUtils.randomName()
     private val accountId = RuleUtils.randomName()
     private val mockCluster = mock<Cluster> {
@@ -34,6 +32,7 @@ class RedshiftUtilsTest {
 
     @Test
     fun `Account ID ARN`() {
+        val region = getDefaultRegion()
         resourceCache.addEntry(projectRule.project, StsResources.ACCOUNT, accountId)
         val arn = projectRule.project.clusterArn(mockCluster, region)
         assertThat(arn).isEqualTo("arn:${region.partitionId}:redshift:${region.id}:$accountId:cluster:$clusterId")
@@ -41,6 +40,7 @@ class RedshiftUtilsTest {
 
     @Test
     fun `No account ID ARN`() {
+        val region = getDefaultRegion()
         val arn = projectRule.project.clusterArn(mockCluster, region)
         assertThat(arn).isEqualTo("arn:${region.partitionId}:redshift:${region.id}::cluster:$clusterId")
     }

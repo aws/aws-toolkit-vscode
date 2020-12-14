@@ -14,8 +14,8 @@ import org.junit.Test
 import software.amazon.awssdk.auth.credentials.AwsBasicCredentials
 import software.aws.toolkits.core.region.AwsRegion
 import software.aws.toolkits.core.utils.RuleUtils
-import software.aws.toolkits.jetbrains.core.credentials.MockCredentialsManager
-import software.aws.toolkits.jetbrains.core.region.MockRegionProvider
+import software.aws.toolkits.jetbrains.core.credentials.MockCredentialManagerRule
+import software.aws.toolkits.jetbrains.core.region.MockRegionProviderRule
 
 class DatagripUtilsTest {
     @Rule
@@ -27,10 +27,18 @@ class DatagripUtilsTest {
 
     private val mockCreds = AwsBasicCredentials.create("Access", "ItsASecret")
 
+    @Rule
+    @JvmField
+    val credentialManager = MockCredentialManagerRule()
+
+    @Rule
+    @JvmField
+    val regionProvider = MockRegionProviderRule()
+
     @Before
     fun setUp() {
-        MockCredentialsManager.getInstance().addCredentials(credentialId, mockCreds)
-        MockRegionProvider.getInstance().addRegion(AwsRegion(defaultRegion, RuleUtils.randomName(), RuleUtils.randomName()))
+        credentialManager.addCredentials(credentialId, mockCreds)
+        regionProvider.addRegion(AwsRegion(defaultRegion, RuleUtils.randomName(), RuleUtils.randomName()))
     }
 
     @Test(expected = IllegalArgumentException::class)

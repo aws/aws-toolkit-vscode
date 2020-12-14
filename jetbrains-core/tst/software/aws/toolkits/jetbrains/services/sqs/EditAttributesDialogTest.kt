@@ -20,13 +20,11 @@ import software.amazon.awssdk.services.sqs.SqsClient
 import software.amazon.awssdk.services.sqs.model.QueueAttributeName
 import software.amazon.awssdk.services.sqs.model.SetQueueAttributesRequest
 import software.amazon.awssdk.services.sqs.model.SetQueueAttributesResponse
-import software.aws.toolkits.core.region.AwsRegion
 import software.aws.toolkits.jetbrains.core.MockClientManagerRule
-import software.aws.toolkits.jetbrains.core.region.MockRegionProvider
+import software.aws.toolkits.jetbrains.core.region.getDefaultRegion
 
 class EditAttributesDialogTest {
     lateinit var client: SqsClient
-    lateinit var region: AwsRegion
     lateinit var queue: Queue
 
     @Rule
@@ -40,8 +38,7 @@ class EditAttributesDialogTest {
     @Before
     fun setUp() {
         client = mockClientManagerRule.create()
-        region = MockRegionProvider.getInstance().defaultRegion()
-        queue = Queue("https://sqs.us-east-1.amazonaws.com/123456789012/test", region)
+        queue = Queue("https://sqs.us-east-1.amazonaws.com/123456789012/test", getDefaultRegion())
     }
 
     @Test
