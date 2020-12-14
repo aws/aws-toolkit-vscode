@@ -7,6 +7,8 @@ import com.intellij.testFramework.PsiTestUtil
 import com.intellij.testFramework.runInEdtAndGet
 import com.jetbrains.python.psi.PyFile
 import com.jetbrains.python.psi.PyFunction
+import org.assertj.core.api.Assertions.assertThat
+import org.assertj.core.api.Assertions.assertThatThrownBy
 import org.junit.Before
 import org.junit.Rule
 import org.junit.Test
@@ -31,10 +33,39 @@ class PythonLambdaBuilderTest {
     }
 
     @Test
+    fun handlerBaseDirIsCorrect() {
+        val handler = addPythonHandler("hello_world")
+        addRequirementsFile()
+
+        val baseDir = sut.handlerBaseDirectory(projectRule.module, handler)
+        val root = Paths.get(projectRule.fixture.tempDirPath)
+        assertThat(baseDir.toAbsolutePath()).isEqualTo(root)
+    }
+
+    @Test
+    fun handlerBaseDirIsCorrectInSubDir() {
+        val handler = addPythonHandler("hello-world/foo-bar")
+        addRequirementsFile("hello-world")
+
+        val baseDir = sut.handlerBaseDirectory(projectRule.module, handler)
+        val root = Paths.get(projectRule.fixture.tempDirPath)
+        assertThat(baseDir).isEqualTo(root.resolve("hello-world"))
+    }
+
+    @Test
+    fun missingRequirementsThrowsForHandlerBaseDir() {
+        val handlerFile = addPythonHandler("hello-world/foo-bar")
+
+        assertThatThrownBy {
+            sut.handlerBaseDirectory(projectRule.module, handlerFile)
+        }.hasMessageStartingWith("Cannot locate requirements.txt")
+    }
+
+    @Test
     fun contentRootIsAdded() {
         val module = projectRule.module
         val handler = addPythonHandler("hello_world")
-        addRequirementsFile("")
+        addRequirementsFile()
         val builtLambda = sut.buildLambda(module, handler, Runtime.PYTHON3_6, "hello_world/app.handle")
         LambdaBuilderTestUtils.verifyEntries(
             builtLambda,
@@ -95,7 +126,7 @@ class PythonLambdaBuilderTest {
     fun dependenciesAreAdded() {
         val module = projectRule.module
         val handler = addPythonHandler("hello_world")
-        addRequirementsFile("", "requests==2.20.0")
+        addRequirementsFile(content = "requests==2.20.0")
 
         val builtLambda = sut.buildLambda(module, handler, Runtime.PYTHON3_6, "hello_world/app.handle")
         LambdaBuilderTestUtils.verifyEntries(
@@ -149,7 +180,7 @@ class PythonLambdaBuilderTest {
     fun buildInContainer() {
         val module = projectRule.module
         val handler = addPythonHandler("hello_world")
-        addRequirementsFile("")
+        addRequirementsFile()
         val builtLambda = sut.buildLambda(module, handler, Runtime.PYTHON3_6, "hello_world/app.handle", true)
         LambdaBuilderTestUtils.verifyEntries(
             builtLambda,
@@ -178,7 +209,7 @@ class PythonLambdaBuilderTest {
         }
     }
 
-    private fun addRequirementsFile(subPath: String, content: String = "") {
+    private fun addRequirementsFile(subPath: String = ".", content: String = "") {
         projectRule.fixture.addFileToProject("$subPath/requirements.txt", content)
     }
 }
