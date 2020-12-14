@@ -86,7 +86,7 @@ class CreateFunctionIntegrationTest {
         MockClientManager.useRealImplementations(disposableRule.disposable)
 
         val region = regionProvider.addRegion(Region.US_WEST_2)
-        val credentials = credentialManager.addCredentials("ReadCreds", createIntegrationTestCredentialProvider(), region)
+        val credentials = credentialManager.addCredentials("ReadCreds", createIntegrationTestCredentialProvider(), region.id)
 
         settingsManager.settingsManager.changeRegion(region)
         settingsManager.settingsManager.changeCredentialProviderAndWait(credentials)

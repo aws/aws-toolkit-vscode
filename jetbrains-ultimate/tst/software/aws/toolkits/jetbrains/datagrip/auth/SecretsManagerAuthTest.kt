@@ -28,8 +28,8 @@ import software.aws.toolkits.core.region.AwsRegion
 import software.aws.toolkits.core.utils.RuleUtils
 import software.aws.toolkits.core.utils.unwrap
 import software.aws.toolkits.jetbrains.core.MockClientManagerRule
-import software.aws.toolkits.jetbrains.core.credentials.MockCredentialsManager
-import software.aws.toolkits.jetbrains.core.region.MockRegionProvider
+import software.aws.toolkits.jetbrains.core.credentials.MockCredentialManagerRule
+import software.aws.toolkits.jetbrains.core.region.MockRegionProviderRule
 import software.aws.toolkits.jetbrains.datagrip.CREDENTIAL_ID_PROPERTY
 import software.aws.toolkits.jetbrains.datagrip.REGION_ID_PROPERTY
 import kotlin.test.assertNotNull
@@ -42,6 +42,14 @@ class SecretsManagerAuthTest {
     @Rule
     @JvmField
     val clientManager = MockClientManagerRule()
+
+    @Rule
+    @JvmField
+    val credentialManager = MockCredentialManagerRule()
+
+    @Rule
+    @JvmField
+    val regionProvider = MockRegionProviderRule()
 
     private val objectMapper = jacksonObjectMapper()
 
@@ -60,8 +68,8 @@ class SecretsManagerAuthTest {
 
     @Before
     fun setUp() {
-        MockCredentialsManager.getInstance().addCredentials(credentialId, mockCreds)
-        MockRegionProvider.getInstance().addRegion(AwsRegion(defaultRegion, RuleUtils.randomName(), RuleUtils.randomName()))
+        credentialManager.addCredentials(credentialId, mockCreds)
+        regionProvider.addRegion(AwsRegion(defaultRegion, RuleUtils.randomName(), RuleUtils.randomName()))
     }
 
     @Test

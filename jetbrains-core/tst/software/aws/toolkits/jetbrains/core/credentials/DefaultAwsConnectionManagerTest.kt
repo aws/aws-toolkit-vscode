@@ -21,8 +21,8 @@ import software.aws.toolkits.core.utils.test.notNull
 import software.aws.toolkits.jetbrains.core.MockResourceCacheRule
 import software.aws.toolkits.jetbrains.core.credentials.AwsConnectionManager.Companion.selectedPartition
 import software.aws.toolkits.jetbrains.core.region.AwsRegionProvider
-import software.aws.toolkits.jetbrains.core.region.MockRegionProvider
-import software.aws.toolkits.jetbrains.core.region.MockRegionProvider.RegionProviderRule
+import software.aws.toolkits.jetbrains.core.region.MockRegionProviderRule
+import software.aws.toolkits.jetbrains.core.region.getDefaultRegion
 import software.aws.toolkits.jetbrains.services.sts.StsResources
 import software.aws.toolkits.jetbrains.utils.rules.HeavyJavaCodeInsightTestFixtureRule
 import software.aws.toolkits.jetbrains.utils.toElement
@@ -40,13 +40,16 @@ class DefaultAwsConnectionManagerTest {
 
     @Rule
     @JvmField
-    val regionProviderRule = RegionProviderRule()
+    val mockCredentialManager = MockCredentialManagerRule()
+
+    @Rule
+    @JvmField
+    val regionProviderRule = MockRegionProviderRule()
 
     @JvmField
     @Rule
     val resourceCache = MockResourceCacheRule()
 
-    private lateinit var mockCredentialManager: MockCredentialsManager
     private lateinit var manager: DefaultAwsConnectionManager
 
     @Before
@@ -56,8 +59,6 @@ class DefaultAwsConnectionManagerTest {
         System.getProperties().setProperty("aws.sharedCredentialsFile", Files.createTempFile("dummy", null).toAbsolutePath().toString())
         System.getProperties().remove("aws.region")
         environmentVariableHelper.remove("AWS_REGION")
-
-        mockCredentialManager = MockCredentialsManager.getInstance()
         manager = DefaultAwsConnectionManager(projectRule.project)
     }
 
@@ -94,11 +95,10 @@ class DefaultAwsConnectionManagerTest {
             </AccountState>
         """.toElement()
 
-        val credentials = mockCredentialManager.addCredentials("Mock", regionId = "us-west-2")
-        with(MockRegionProvider.getInstance()) {
-            markConnectionSettingsAsValid(credentials, defaultRegion())
-            addRegion(AwsRegion("us-west-2", "Oregon", "AWS"))
-        }
+        val region = AwsRegion("us-west-2", "Oregon", "AWS")
+        val credentials = mockCredentialManager.addCredentials(id = "Mock", region = region)
+        markConnectionSettingsAsValid(credentials, regionProviderRule.defaultRegion())
+        regionProviderRule.addRegion(region)
 
         deserializeAndLoadState(manager, element)
 
@@ -139,9 +139,8 @@ class DefaultAwsConnectionManagerTest {
 
     @Test
     fun `Activated regions are validated and added to the recently used list`() {
-        val mockRegionProvider = MockRegionProvider.getInstance()
-        val mockRegion1 = mockRegionProvider.addRegion(AwsRegion("MockRegion-1", "MockRegion-1", "aws"))
-        val mockRegion2 = mockRegionProvider.addRegion(AwsRegion("MockRegion-2", "MockRegion-2", "aws"))
+        val mockRegion1 = regionProviderRule.addRegion(AwsRegion("MockRegion-1", "MockRegion-1", "aws"))
+        val mockRegion2 = regionProviderRule.addRegion(AwsRegion("MockRegion-2", "MockRegion-2", "aws"))
 
         assertThat(manager.recentlyUsedRegions()).isEmpty()
 
@@ -257,7 +256,7 @@ class DefaultAwsConnectionManagerTest {
         """.toElement()
 
         val credentials = mockCredentialManager.addCredentials("Mock")
-        markConnectionSettingsAsValid(credentials, MockRegionProvider.getInstance().defaultRegion())
+        markConnectionSettingsAsValid(credentials, regionProviderRule.defaultRegion())
 
         deserializeAndLoadState(manager, element)
 
@@ -272,10 +271,10 @@ class DefaultAwsConnectionManagerTest {
         val element =
             """
             <AccountState>
-                <option name="activeRegion" value="${MockRegionProvider.getInstance().defaultRegion().id}" />
+                <option name="activeRegion" value="${getDefaultRegion().id}" />
                 <option name="recentlyUsedRegions">
                     <list>
-                        <option value="${MockRegionProvider.getInstance().defaultRegion().id}" />
+                        <option value="${getDefaultRegion().id}" />
                     </list>
                 </option>
             </AccountState>
@@ -285,9 +284,9 @@ class DefaultAwsConnectionManagerTest {
 
         manager.waitUntilConnectionStateIsStable()
 
-        val region = regionProviderRule.regionProvider[MockRegionProvider.getInstance().defaultRegion().id]
+        val region = regionProviderRule.defaultRegion()
         assertThat(manager.selectedRegion).isEqualTo(region)
-        assertThat(manager.selectedPartition?.id).isEqualTo(region?.partitionId)
+        assertThat(manager.selectedPartition?.id).isEqualTo(region.partitionId)
         assertThat(manager.recentlyUsedRegions()).element(0).isEqualTo(region)
     }
 
@@ -339,7 +338,7 @@ class DefaultAwsConnectionManagerTest {
     fun `Credentials are validated when restored from persistence`() {
         val mockCredentials = mockCredentialManager.addCredentials("Mock")
 
-        markConnectionSettingsAsInvalid(mockCredentials, MockRegionProvider.getInstance().defaultRegion())
+        markConnectionSettingsAsInvalid(mockCredentials, regionProviderRule.defaultRegion())
 
         val element =
             """
@@ -363,7 +362,7 @@ class DefaultAwsConnectionManagerTest {
     @Test
     fun `On load, default credential is selected if no other credential is active`() {
         val credentials = mockCredentialManager.addCredentials(DEFAULT_PROFILE_ID)
-        markConnectionSettingsAsValid(credentials, MockRegionProvider.getInstance().defaultRegion())
+        markConnectionSettingsAsValid(credentials, regionProviderRule.defaultRegion())
 
         val element =
             """

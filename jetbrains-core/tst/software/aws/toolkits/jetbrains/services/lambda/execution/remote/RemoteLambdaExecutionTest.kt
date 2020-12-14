@@ -29,8 +29,8 @@ import software.amazon.awssdk.services.lambda.model.InvokeResponse
 import software.amazon.awssdk.services.lambda.model.LambdaException
 import software.amazon.awssdk.services.lambda.model.LogType
 import software.aws.toolkits.jetbrains.core.MockClientManagerRule
-import software.aws.toolkits.jetbrains.core.credentials.MockCredentialsManager
-import software.aws.toolkits.jetbrains.core.region.MockRegionProvider
+import software.aws.toolkits.jetbrains.core.credentials.MockCredentialManagerRule
+import software.aws.toolkits.jetbrains.core.region.getDefaultRegion
 import java.nio.charset.StandardCharsets
 import java.util.Base64
 import java.util.concurrent.CompletableFuture
@@ -46,10 +46,13 @@ class RemoteLambdaExecutionTest {
     @JvmField
     val mockClientManager = MockClientManagerRule()
 
+    @Rule
+    @JvmField
+    val credentialManager = MockCredentialManagerRule()
+
     @Before
     fun setUp() {
-        MockCredentialsManager.getInstance()
-            .addCredentials(CREDENTIAL_ID, AwsBasicCredentials.create("Access", "Secret"))
+        credentialManager.addCredentials(CREDENTIAL_ID, AwsBasicCredentials.create("Access", "Secret"))
     }
 
     @Test
@@ -128,7 +131,7 @@ class RemoteLambdaExecutionTest {
             inputIsFile = inputFile,
             credentialId = CREDENTIAL_ID,
             functionName = FUNCTION_NAME,
-            regionId = MockRegionProvider.getInstance().defaultRegion()
+            regionId = getDefaultRegion()
         )
 
         val executor = ExecutorRegistry.getInstance().getExecutorById(DefaultRunExecutor.EXECUTOR_ID)

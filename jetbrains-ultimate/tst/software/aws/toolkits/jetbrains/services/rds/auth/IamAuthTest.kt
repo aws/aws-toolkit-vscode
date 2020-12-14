@@ -20,8 +20,8 @@ import software.amazon.awssdk.auth.credentials.AwsBasicCredentials
 import software.aws.toolkits.core.region.AwsRegion
 import software.aws.toolkits.core.utils.RuleUtils
 import software.aws.toolkits.core.utils.unwrap
-import software.aws.toolkits.jetbrains.core.credentials.MockCredentialsManager
-import software.aws.toolkits.jetbrains.core.region.MockRegionProvider
+import software.aws.toolkits.jetbrains.core.credentials.MockCredentialManagerRule
+import software.aws.toolkits.jetbrains.core.region.MockRegionProviderRule
 import software.aws.toolkits.jetbrains.datagrip.CREDENTIAL_ID_PROPERTY
 import software.aws.toolkits.jetbrains.datagrip.REGION_ID_PROPERTY
 import software.aws.toolkits.jetbrains.datagrip.RequireSsl
@@ -42,10 +42,18 @@ class IamAuthTest {
 
     private val mockCreds = AwsBasicCredentials.create("Access", "ItsASecret")
 
+    @Rule
+    @JvmField
+    val regionProvider = MockRegionProviderRule()
+
+    @Rule
+    @JvmField
+    val credentialManager = MockCredentialManagerRule()
+
     @Before
     fun setUp() {
-        MockCredentialsManager.getInstance().addCredentials(credentialId, mockCreds)
-        MockRegionProvider.getInstance().addRegion(AwsRegion(defaultRegion, RuleUtils.randomName(), RuleUtils.randomName()))
+        credentialManager.addCredentials(credentialId, mockCreds)
+        regionProvider.addRegion(AwsRegion(defaultRegion, RuleUtils.randomName(), RuleUtils.randomName()))
     }
 
     @Test

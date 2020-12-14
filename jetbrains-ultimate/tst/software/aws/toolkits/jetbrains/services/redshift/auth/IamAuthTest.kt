@@ -30,8 +30,8 @@ import software.aws.toolkits.core.region.AwsRegion
 import software.aws.toolkits.core.utils.RuleUtils
 import software.aws.toolkits.jetbrains.core.MockClientManagerRule
 import software.aws.toolkits.jetbrains.core.credentials.ConnectionSettings
-import software.aws.toolkits.jetbrains.core.credentials.MockCredentialsManager
-import software.aws.toolkits.jetbrains.core.region.MockRegionProvider
+import software.aws.toolkits.jetbrains.core.credentials.MockCredentialManagerRule
+import software.aws.toolkits.jetbrains.core.region.MockRegionProviderRule
 import software.aws.toolkits.jetbrains.datagrip.CREDENTIAL_ID_PROPERTY
 import software.aws.toolkits.jetbrains.datagrip.REGION_ID_PROPERTY
 
@@ -43,6 +43,14 @@ class IamAuthTest {
     @Rule
     @JvmField
     val mockClientManager = MockClientManagerRule()
+
+    @Rule
+    @JvmField
+    val credentialManager = MockCredentialManagerRule()
+
+    @Rule
+    @JvmField
+    val regionProvider = MockRegionProviderRule()
 
     private val mockCreds = AwsBasicCredentials.create("Access", "ItsASecret")
 
@@ -61,8 +69,8 @@ class IamAuthTest {
 
     @Before
     fun setUp() {
-        MockCredentialsManager.getInstance().addCredentials(credentialId, mockCreds)
-        MockRegionProvider.getInstance().addRegion(region)
+        credentialManager.addCredentials(credentialId, mockCreds)
+        regionProvider.addRegion(region)
     }
 
     @Test

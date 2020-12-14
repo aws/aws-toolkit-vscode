@@ -23,10 +23,9 @@ import software.aws.toolkits.jetbrains.core.MockResourceCacheRule
 import software.aws.toolkits.jetbrains.core.credentials.ConnectionState
 import software.aws.toolkits.jetbrains.core.credentials.MockAwsConnectionManager
 import software.aws.toolkits.jetbrains.core.credentials.MockAwsConnectionManager.ProjectAccountSettingsManagerRule
-import software.aws.toolkits.jetbrains.core.credentials.MockCredentialsManager
+import software.aws.toolkits.jetbrains.core.credentials.MockCredentialManagerRule
 import software.aws.toolkits.jetbrains.core.credentials.waitUntilConnectionStateIsStable
-import software.aws.toolkits.jetbrains.core.region.MockRegionProvider
-import software.aws.toolkits.jetbrains.core.region.MockRegionProvider.RegionProviderRule
+import software.aws.toolkits.jetbrains.core.region.MockRegionProviderRule
 import software.aws.toolkits.jetbrains.services.sts.StsResources
 import software.aws.toolkits.jetbrains.settings.AwsSettings
 import java.util.concurrent.CountDownLatch
@@ -45,7 +44,11 @@ class TelemetryServiceTest {
 
     @JvmField
     @Rule
-    val regionProvider = RegionProviderRule()
+    val regionProvider = MockRegionProviderRule()
+
+    @JvmField
+    @Rule
+    val credentialManager = MockCredentialManagerRule()
 
     @JvmField
     @Rule
@@ -54,8 +57,6 @@ class TelemetryServiceTest {
     @After
     fun tearDown() {
         AwsSettings.getInstance().isTelemetryEnabled = false
-
-        MockCredentialsManager.getInstance().reset()
     }
 
     @Test
@@ -133,7 +134,7 @@ class TelemetryServiceTest {
 
     @Test
     fun metricEventMetadataIsSet() {
-        val credentials = MockCredentialsManager.getInstance().addCredentials("profile:admin")
+        val credentials = credentialManager.addCredentials("profile:admin")
         val mockRegion = regionProvider.createAwsRegion()
 
         markConnectionSettingsAsValid(credentials, mockRegion)
@@ -161,13 +162,13 @@ class TelemetryServiceTest {
     @Test
     fun metricEventMetadataIsOverridden() {
         val accountSettings = MockAwsConnectionManager.getInstance(projectRule.project)
-        val credentials = MockCredentialsManager.getInstance().addCredentials("profile:admin")
+        val credentials = credentialManager.addCredentials("profile:admin")
 
         markConnectionSettingsAsValid(credentials, accountSettings.activeRegion)
         accountSettings.changeCredentialProvider(credentials)
 
         val mockRegion = AwsRegion("foo-region", "foo-region", "aws")
-        MockRegionProvider.getInstance().addRegion(mockRegion)
+        regionProvider.addRegion(mockRegion)
         accountSettings.changeRegion(mockRegion)
 
         val eventCaptor = argumentCaptor<MetricEvent>()

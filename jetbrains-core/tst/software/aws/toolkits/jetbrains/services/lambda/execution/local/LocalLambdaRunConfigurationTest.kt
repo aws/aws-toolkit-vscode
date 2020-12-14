@@ -24,7 +24,7 @@ import org.junit.rules.TemporaryFolder
 import software.amazon.awssdk.auth.credentials.AwsBasicCredentials
 import software.amazon.awssdk.services.lambda.model.Runtime
 import software.aws.toolkits.core.rules.EnvironmentVariableHelper
-import software.aws.toolkits.jetbrains.core.credentials.MockCredentialsManager
+import software.aws.toolkits.jetbrains.core.credentials.MockCredentialManagerRule
 import software.aws.toolkits.jetbrains.core.executables.ExecutableManager
 import software.aws.toolkits.jetbrains.services.lambda.execution.sam.SamRunningState
 import software.aws.toolkits.jetbrains.services.lambda.sam.SamCommon
@@ -52,6 +52,10 @@ class LocalLambdaRunConfigurationTest {
     @JvmField
     val tempDir = TemporaryFolder()
 
+    @Rule
+    @JvmField
+    val credentialManager = MockCredentialManagerRule()
+
     private val mockId = "MockCredsId"
     private val mockCreds = AwsBasicCredentials.create("Access", "ItsASecret")
     private val runtime = Runtime.JAVA8
@@ -63,7 +67,7 @@ class LocalLambdaRunConfigurationTest {
         preWarmSamVersionCache(validSam.toString())
         ExecutableManager.getInstance().setExecutablePath(SamExecutable(), validSam).value
 
-        MockCredentialsManager.getInstance().addCredentials(mockId, mockCreds)
+        credentialManager.addCredentials(mockId, mockCreds)
 
         val fixture = projectRule.fixture
         val module = fixture.addModule("main")
@@ -83,7 +87,6 @@ class LocalLambdaRunConfigurationTest {
 
     @After
     fun tearDown() {
-        MockCredentialsManager.getInstance().reset()
         ExecutableManager.getInstance().removeExecutable(SamExecutable())
     }
 
