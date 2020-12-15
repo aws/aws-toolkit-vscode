@@ -25,11 +25,7 @@ class NodeJsLambdaHandlerResolverTest {
     @Test
     fun determineHandler() {
         projectRule.fixture.addPackageJsonFile()
-        val handlerElement = projectRule.fixture.addLambdaHandler(
-            subPath = ".",
-            fileName = "app",
-            handlerName = "lambdaHandler"
-        )
+        val handlerElement = projectRule.fixture.addLambdaHandler()
 
         assertDetermineHandler(handlerElement, "app.lambdaHandler")
     }
@@ -38,15 +34,11 @@ class NodeJsLambdaHandlerResolverTest {
     fun determineHandler_noExportsReturnsNull() {
         projectRule.fixture.addPackageJsonFile()
         val handlerElement = projectRule.fixture.addLambdaHandler(
-            subPath = ".",
-            fileName = "app",
-            handlerName = "lambdaHandler",
-            fileContent =
-                """
+            fileContent = """
                 lambdaHandler = async (event, context) => {
                     return "Hello World"
                 }
-                """.trimIndent()
+            """.trimIndent()
         )
 
         assertDetermineHandler(handlerElement, null)
@@ -56,15 +48,11 @@ class NodeJsLambdaHandlerResolverTest {
     fun determineHandler_oneParameter() {
         projectRule.fixture.addPackageJsonFile()
         val handlerElement = projectRule.fixture.addLambdaHandler(
-            subPath = ".",
-            fileName = "app",
-            handlerName = "lambdaHandler",
-            fileContent =
-                """
+            fileContent = """
                 exports.lambdaHandler = function(event) {
                     return "Hello World"
                 }
-                """.trimIndent()
+            """.trimIndent()
         )
 
         assertDetermineHandler(handlerElement, "app.lambdaHandler")
@@ -74,15 +62,11 @@ class NodeJsLambdaHandlerResolverTest {
     fun determineHandler_TooManyParametersReturnsNull() {
         projectRule.fixture.addPackageJsonFile()
         val handlerElement = projectRule.fixture.addLambdaHandler(
-            subPath = ".",
-            fileName = "app",
-            handlerName = "lambdaHandler",
-            fileContent =
-                """
+            fileContent = """
                 exports.lambdaHandler = function(event, context, callback, foo) {
                     return "Hello World"
                 }
-                """.trimIndent()
+            """.trimIndent()
         )
 
         assertDetermineHandler(handlerElement, null)
@@ -92,15 +76,11 @@ class NodeJsLambdaHandlerResolverTest {
     fun determineHandler_oneParameterForAsync() {
         projectRule.fixture.addPackageJsonFile()
         val handlerElement = projectRule.fixture.addLambdaHandler(
-            subPath = ".",
-            fileName = "app",
-            handlerName = "lambdaHandler",
-            fileContent =
-                """
+            fileContent = """
                 exports.lambdaHandler = async (event) => {
                     return "Hello World"
                 }
-                """.trimIndent()
+            """.trimIndent()
         )
 
         assertDetermineHandler(handlerElement, "app.lambdaHandler")
@@ -110,15 +90,11 @@ class NodeJsLambdaHandlerResolverTest {
     fun determineHandler_ThreeParametersForAsyncReturnsNull() {
         projectRule.fixture.addPackageJsonFile()
         val handlerElement = projectRule.fixture.addLambdaHandler(
-            subPath = ".",
-            fileName = "app",
-            handlerName = "lambdaHandler",
-            fileContent =
-                """
+            fileContent = """
                 exports.lambdaHandler = async (event, context, callback) => {
                     return "Hello World"
                 }
-                """.trimIndent()
+            """.trimIndent()
         )
 
         assertDetermineHandler(handlerElement, null)
@@ -128,15 +104,11 @@ class NodeJsLambdaHandlerResolverTest {
     fun determineHandler_es5Code() {
         projectRule.fixture.addPackageJsonFile()
         val handlerElement = projectRule.fixture.addLambdaHandler(
-            subPath = ".",
-            fileName = "app",
-            handlerName = "lambdaHandler",
-            fileContent =
-                """
+            fileContent = """
                 exports.lambdaHandler = function(event, context, callback) {
                     return "Hello World"
                 }
-                """.trimIndent()
+            """.trimIndent()
         )
 
         assertDetermineHandler(handlerElement, "app.lambdaHandler")
@@ -147,14 +119,11 @@ class NodeJsLambdaHandlerResolverTest {
         projectRule.fixture.addPackageJsonFile()
         val handlerElement = projectRule.fixture.addLambdaHandler(
             subPath = "foo/bar",
-            fileName = "app",
-            handlerName = "lambdaHandler",
-            fileContent =
-                """
+            fileContent = """
                 exports.lambdaHandler = async (event, context) => {
                     return "Hello World"
                 }
-                """.trimIndent()
+            """.trimIndent()
         )
 
         assertDetermineHandler(handlerElement, "foo/bar/app.lambdaHandler")
@@ -163,17 +132,13 @@ class NodeJsLambdaHandlerResolverTest {
     @Test
     fun determineHandler_packageJsonFolderAsSourceRoot() {
         projectRule.fixture.addPackageJsonFile("foo")
-
         val handlerElement = projectRule.fixture.addLambdaHandler(
             subPath = "foo/bar",
-            fileName = "app",
-            handlerName = "lambdaHandler",
-            fileContent =
-                """
+            fileContent = """
                 exports.lambdaHandler = async (event, context) => {
                     return "Hello World"
                 }
-                """.trimIndent()
+            """.trimIndent()
         )
 
         assertDetermineHandler(handlerElement, "bar/app.lambdaHandler")
@@ -183,12 +148,9 @@ class NodeJsLambdaHandlerResolverTest {
     fun determineHandler_notAFunction() {
         val handlerElement = projectRule.fixture.addLambdaHandler(
             subPath = "foo/bar",
-            fileName = "app",
-            handlerName = "lambdaHandler",
-            fileContent =
-                """
+            fileContent = """
                 exports.lambdaHandler = "foo"
-                """.trimIndent()
+            """.trimIndent()
         )
 
         assertDetermineHandler(handlerElement, null)
@@ -197,33 +159,25 @@ class NodeJsLambdaHandlerResolverTest {
     @Test
     fun findPsiElement_exportsAsync2Parameters() {
         projectRule.fixture.addPackageJsonFile()
-        val fileContent =
-            """
-            exports.lambdaHandler = async (event, context) => {
-                return "Hello World";
-            }
-            """.trimIndent()
-
-        projectRule.fixture.addFileToProject("app.js", fileContent)
+        projectRule.fixture.addLambdaHandler()
         assertFindPsiElements("app.lambdaHandler", true)
     }
 
     @Test
     fun findPsiElement_exportsAsync3Parameters() {
-        val fileContent =
-            """
+        val fileContent = """
             exports.lambdaHandler = async (event, context, callback) => {
                 return "Hello World";
             }
-            """.trimIndent()
+        """.trimIndent()
 
         projectRule.fixture.addFileToProject("app.js", fileContent)
+        projectRule.fixture.addPackageJsonFile()
         assertFindPsiElements("app.lambdaHandler", false)
     }
 
     @Test
     fun findPsiElement_exportsAsync1Parameter() {
-        projectRule.fixture.addPackageJsonFile()
         val fileContent =
             """
             exports.lambdaHandler = async (event) => {
@@ -232,6 +186,7 @@ class NodeJsLambdaHandlerResolverTest {
             """.trimIndent()
 
         projectRule.fixture.addFileToProject("app.js", fileContent)
+        projectRule.fixture.addPackageJsonFile()
         assertFindPsiElements("app.lambdaHandler", true)
     }
 
@@ -245,6 +200,7 @@ class NodeJsLambdaHandlerResolverTest {
             """.trimIndent()
 
         projectRule.fixture.addFileToProject("app.js", fileContent)
+        projectRule.fixture.addPackageJsonFile()
         assertFindPsiElements("app.lambdaHandler", false)
     }
 
@@ -258,6 +214,7 @@ class NodeJsLambdaHandlerResolverTest {
             """.trimIndent()
 
         projectRule.fixture.addFileToProject("app.js", fileContent)
+        projectRule.fixture.addPackageJsonFile()
         assertFindPsiElements("app.lambdaHandler", false)
     }
 
@@ -299,6 +256,7 @@ class NodeJsLambdaHandlerResolverTest {
             """.trimIndent()
 
         projectRule.fixture.addFileToProject("foo/app.js", fileContent)
+        projectRule.fixture.addPackageJsonFile()
         assertFindPsiElements("app.lambdaHandler", false)
     }
 
