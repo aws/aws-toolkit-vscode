@@ -30,6 +30,7 @@ object BuiltInRuntimeGroups {
     const val Dotnet = "DOTNET"
     const val Java = "JAVA"
     const val NodeJs = "NODEJS"
+    const val Go = "GO"
 }
 
 data class RuntimeInfo(val runtime: Runtime, val minimumVersion: SemVer = SamExecutable.minVersion)

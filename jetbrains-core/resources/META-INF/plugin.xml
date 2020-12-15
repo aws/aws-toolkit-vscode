@@ -73,6 +73,7 @@ with what features/services are supported.
     <depends optional="true" config-file="ext-nodejs.xml">JavaScriptDebugger</depends>
     <depends optional="true" config-file="ext-rider.xml">com.intellij.modules.rider</depends>
     <depends optional="true" config-file="ext-datagrip.xml">com.intellij.database</depends>
+    <depends optional="true" config-file="ext-go.xml">org.jetbrains.plugins.go</depends>
 
     <xi:include href="/META-INF/change-notes.xml" xpointer="xpointer(/idea-plugin/*)">
         <xi:fallback/>

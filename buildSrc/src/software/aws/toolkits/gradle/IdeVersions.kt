@@ -25,7 +25,8 @@ object IdeVersions {
                 "JavaScript",
                 "JavaScriptDebugger",
                 "com.intellij.database",
-                "Pythonid:201.6668.31"
+                "Pythonid:201.6668.31",
+                "org.jetbrains.plugins.go:201.6668.1.98"
             ),
             rdGenVersion = "0.203.161",
             nugetVersion = "2020.1.0"
@@ -43,7 +44,8 @@ object IdeVersions {
                 "JavaScript",
                 "JavaScriptDebugger",
                 "com.intellij.database",
-                "Pythonid:202.6397.98"
+                "Pythonid:202.6397.98",
+                "org.jetbrains.plugins.go:202.6397.20"
             ),
             rdGenVersion = "0.203.161",
             nugetVersion = "2020.2.0"
@@ -61,7 +63,8 @@ object IdeVersions {
                 "JavaScript",
                 "JavaScriptDebugger",
                 "com.intellij.database",
-                "Pythonid:203.5981.165"
+                "Pythonid:203.5981.165",
+                "org.jetbrains.plugins.go:203.5981.114"
             ),
             ijSdkOverride = "2020.3",
             riderSdkOverride = "2020.3-SNAPSHOT",

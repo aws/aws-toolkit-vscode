@@ -1,0 +1,16 @@
+<!-- Copyright 2020 Amazon.com, Inc. or its affiliates. All Rights Reserved. -->
+<!-- SPDX-License-Identifier: Apache-2.0 -->
+
+<idea-plugin>
+    <extensions defaultExtensionNs="com.intellij">
+        <codeInsight.lineMarkerProvider language="go" implementationClass="software.aws.toolkits.jetbrains.services.lambda.upload.LambdaLineMarker"/>
+    </extensions>
+
+    <extensions defaultExtensionNs="aws.toolkit.lambda">
+        <runtimeGroup implementation="software.aws.toolkits.jetbrains.services.lambda.go.GoRuntimeGroup"/>
+        <builder id="GO" implementationClass="software.aws.toolkits.jetbrains.services.lambda.go.GoLambdaBuilder"/>
+        <handlerResolver id="GO" implementationClass="software.aws.toolkits.jetbrains.services.lambda.go.GoLambdaHandlerResolver"/>
+        <sam.debugSupport id="GO" implementationClass="software.aws.toolkits.jetbrains.services.lambda.go.GoSamDebugSupport"/>
+        <sam.projectWizard id="GO" implementationClass="software.aws.toolkits.jetbrains.services.lambda.go.GoSamProjectWizard"/>
+    </extensions>
+</idea-plugin>
