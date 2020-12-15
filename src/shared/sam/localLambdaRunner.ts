@@ -651,7 +651,7 @@ export async function makeConfig(config: SamLaunchRequestArgs): Promise<void> {
     if (payloadPath) {
         const fullpath = tryGetAbsolutePath(config.workspaceFolder, payloadPath)
         try {
-            JSON.parse(await readFile(payloadPath, { encoding: 'utf-8' }))
+            JSON.parse(await readFile(fullpath, { encoding: 'utf-8' }))
         } catch (e) {
             throw Error(`Invalid JSON in payload file: ${payloadPath}`)
         }
