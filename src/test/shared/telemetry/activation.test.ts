@@ -4,6 +4,7 @@
  */
 
 import * as assert from 'assert'
+import { AWSError, MetadataService } from 'aws-sdk'
 import * as sinon from 'sinon'
 import * as vscode from 'vscode'
 
@@ -17,6 +18,7 @@ import {
     hasUserSeenTelemetryNotice,
     setHasUserSeenTelemetryNotice,
     sanitizeTelemetrySetting,
+    getComputeRegion,
 } from '../../../shared/telemetry/activation'
 import { DefaultSettingsConfiguration } from '../../../shared/settingsConfiguration'
 import { extensionSettingsPrefix } from '../../../shared/constants'
@@ -193,5 +195,47 @@ describe('hasUserSeenTelemetryNotice', async () => {
             await extensionContext.globalState.update(TELEMETRY_NOTICE_VERSION_ACKNOWLEDGED, scenario.currentState)
             assert.strictEqual(hasUserSeenTelemetryNotice(extensionContext), scenario.expectedHasSeen)
         })
+    })
+})
+
+describe('getComputeRegion', async () => {
+    let metadataService = new MetadataService()
+
+    let sandbox: sinon.SinonSandbox
+
+    before(() => {
+        sandbox = sinon.createSandbox()
+    })
+
+    afterEach(() => {
+        sandbox.restore()
+    })
+
+    it('returns a compute region', async () => {
+        sandbox.stub(metadataService, 'request').callsArgWith(1, undefined, '{"region": "us-weast-1"}')
+
+        const val = await getComputeRegion(metadataService, true)
+        assert.strictEqual(val, 'us-weast-1')
+    })
+
+    it('returns "unknown" if cloud9 and the MetadataService request fails', async () => {
+        sandbox.stub(metadataService, 'request').callsArgWith(1, {} as AWSError, 'lol')
+
+        const val = await getComputeRegion(metadataService, true)
+        assert.strictEqual(val, 'unknown')
+    })
+
+    it('returns "unknown" if cloud9 and can not find a region', async () => {
+        sandbox.stub(metadataService, 'request').callsArgWith(1, undefined, '{"legion": "d\'honneur"}')
+
+        const val = await getComputeRegion(metadataService, true)
+        assert.strictEqual(val, 'unknown')
+    })
+
+    it('returns undefined if not cloud9', async () => {
+        sandbox.stub(metadataService, 'request').callsArgWith(1, undefined, 'lol')
+
+        const val = await getComputeRegion(metadataService, false)
+        assert.strictEqual(val, undefined)
     })
 })

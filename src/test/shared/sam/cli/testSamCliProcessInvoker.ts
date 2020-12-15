@@ -18,6 +18,7 @@ import { TestLogger } from '../../../testLogger'
 export class TestSamCliProcessInvoker implements SamCliProcessInvoker {
     public constructor(private readonly onInvoke: (spawnOptions: SpawnOptions, ...args: any[]) => ChildProcessResult) {}
 
+    public stop(): void {}
     public async invoke(options?: SamCliProcessInvokeOptions): Promise<ChildProcessResult> {
         const invokeOptions = makeRequiredSamCliProcessInvokeOptions(options)
 

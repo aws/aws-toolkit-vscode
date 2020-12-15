@@ -12,11 +12,13 @@ import { ChildProcess } from '../../utilities/childProcess'
 import { Timeout } from '../../utilities/timeoutUtils'
 import { ChannelLogger } from '../../utilities/vsCodeUtils'
 import { DefaultSamCliProcessInvokerContext, SamCliProcessInvokerContext } from './samCliInvoker'
+import { removeAnsi } from '../../utilities/textUtilities'
 
 const localize = nls.loadMessageBundle()
 
 export const WAIT_FOR_DEBUGGER_MESSAGES = {
     PYTHON: 'Starting debugger',
+    PYTHON_IKPDB: 'IKP3db listening on',
     NODEJS: 'Debugger listening on',
     DOTNET: 'Waiting for the debugger to attach...',
 }
@@ -68,13 +70,13 @@ export class DefaultSamLocalInvokeCommand implements SamLocalInvokeCommand {
                     this.channelLogger.emitMessage(text)
                     // If we have a timeout (as we do on debug) refresh the timeout as we receive text
                     params.timeout?.refresh()
-                    this.logger.verbose(`SAM: pid ${childProcess.pid()}: stdout: ${text}`)
+                    this.logger.verbose('SAM: pid %d: stdout: %s', childProcess.pid(), removeAnsi(text))
                 },
                 onStderr: (text: string): void => {
                     this.channelLogger.emitMessage(text)
                     // If we have a timeout (as we do on debug) refresh the timeout as we receive text
                     params.timeout?.refresh()
-                    this.logger.verbose(`SAM: pid ${childProcess.pid()}: stderr: ${text}`)
+                    this.logger.verbose('SAM: pid %d: stderr: %s', childProcess.pid(), removeAnsi(text))
                     if (checkForCues) {
                         // Look for messages like "Waiting for debugger to attach" before returning back to caller
                         if (this.debuggerAttachCues.some(cue => text.includes(cue))) {

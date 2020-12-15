@@ -40,5 +40,6 @@ function generateFileHash(root: string) {
     }
 }
 
-translateReadmeToHtml(REPO_ROOT, 'README.quickstart.vscode.md', 'quickStart.html')
+translateReadmeToHtml(REPO_ROOT, 'README.quickstart.vscode.md', 'quickStartVscode.html')
+translateReadmeToHtml(REPO_ROOT, 'README.quickstart.cloud9.md', 'quickStartCloud9.html')
 generateFileHash(REPO_ROOT)

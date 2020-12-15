@@ -10,6 +10,7 @@ import * as os from 'os'
 import * as vscode from 'vscode'
 
 import * as picker from '../../shared/ui/picker'
+import { addCodiconToString } from '../utilities/textUtilities'
 import { getLogger } from '../logger/logger'
 
 export interface WizardStep {
@@ -104,7 +105,7 @@ export class WorkspaceFolderQuickPickItem implements FolderQuickPickItem {
     public readonly label: string
 
     public constructor(private readonly folder: vscode.WorkspaceFolder) {
-        this.label = `$(root-folder-opened) ${folder.name}`
+        this.label = addCodiconToString('root-folder-opened', folder.name)
     }
 
     public async getUri(): Promise<vscode.Uri | undefined> {
@@ -126,10 +127,10 @@ export class BrowseFolderQuickPickItem implements FolderQuickPickItem {
 
     public get label(): string {
         if (this.context.workspaceFolders && this.context.workspaceFolders.length > 0) {
-            return `$(folder-opened) ${localize(
-                'AWS.initWizard.location.select.folder',
-                'Select a different folder...'
-            )}`
+            return addCodiconToString(
+                'folder-opened',
+                localize('AWS.initWizard.location.select.folder', 'Select a different folder...')
+            )
         }
 
         return localize(

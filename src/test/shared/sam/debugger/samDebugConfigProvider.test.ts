@@ -8,7 +8,6 @@ import * as os from 'os'
 import * as path from 'path'
 import * as sinon from 'sinon'
 import * as vscode from 'vscode'
-import { DotNetCoreDebugConfiguration } from '../../../../lambda/local/debugConfiguration'
 import * as lambdaModel from '../../../../lambda/models/samLambdaRuntime'
 import { CloudFormationTemplateRegistry } from '../../../../shared/cloudformation/templateRegistry'
 import { makeTemporaryToolkitFolder } from '../../../../shared/filesystemUtilities'
@@ -483,6 +482,7 @@ describe('SamDebugConfigurationProvider', async () => {
                 request: 'attach', // Input "direct-invoke", output "attach".
                 runtime: 'nodejs12.x',
                 runtimeFamily: lambdaModel.RuntimeFamily.NodeJS,
+                useIkpdb: false,
                 workspaceFolder: {
                     index: 0,
                     name: 'test-workspace-folder',
@@ -502,7 +502,8 @@ describe('SamDebugConfigurationProvider', async () => {
                 },
                 localRoot: pathutil.normalize(path.join(appDir, 'src')), // Normalized to absolute path.
                 name: input.name,
-                templatePath: pathutil.normalize(path.join(actual.baseBuildDir ?? '?', 'input/input-template.yaml')),
+                templatePath: pathutil.normalize(path.join(appDir, 'src', 'app___vsctk___template.yaml')),
+                parameterOverrides: undefined,
 
                 //
                 // Node-related fields
@@ -514,7 +515,6 @@ describe('SamDebugConfigurationProvider', async () => {
                 remoteRoot: '/var/task',
                 skipFiles: ['/var/runtime/node_modules/**/*.js', '<node_internals>/**/*.js'],
                 stopOnEntry: false,
-                parameterOverrides: undefined,
             }
 
             assertEqualLaunchConfigs(actual, expected)
@@ -638,6 +638,7 @@ describe('SamDebugConfigurationProvider', async () => {
                 request: 'attach', // Input "direct-invoke", output "attach".
                 runtime: 'nodejs10.x',
                 runtimeFamily: lambdaModel.RuntimeFamily.NodeJS,
+                useIkpdb: false,
                 workspaceFolder: {
                     index: 0,
                     name: 'test-workspace-folder',
@@ -660,6 +661,7 @@ describe('SamDebugConfigurationProvider', async () => {
                 templatePath: pathutil.normalize(
                     path.join(path.dirname(templatePath.fsPath), 'app___vsctk___template.yaml')
                 ),
+                parameterOverrides: undefined,
 
                 //
                 // Node-related fields
@@ -671,7 +673,6 @@ describe('SamDebugConfigurationProvider', async () => {
                 remoteRoot: '/var/task',
                 skipFiles: ['/var/runtime/node_modules/**/*.js', '<node_internals>/**/*.js'],
                 stopOnEntry: false,
-                parameterOverrides: undefined,
             }
 
             assertEqualLaunchConfigs(actual, expected)
@@ -779,6 +780,7 @@ describe('SamDebugConfigurationProvider', async () => {
                 request: 'attach', // Input "direct-invoke", output "attach".
                 runtime: 'nodejs12.x',
                 runtimeFamily: lambdaModel.RuntimeFamily.NodeJS,
+                useIkpdb: false,
                 workspaceFolder: {
                     index: 0,
                     name: 'test-workspace-folder',
@@ -962,6 +964,7 @@ Outputs:
                 request: 'attach', // Input "direct-invoke", output "attach".
                 runtime: 'nodejs10.x',
                 runtimeFamily: lambdaModel.RuntimeFamily.NodeJS,
+                useIkpdb: false,
                 workspaceFolder: {
                     index: 0,
                     name: 'test-workspace-folder',
@@ -1048,7 +1051,7 @@ Outputs:
                     runtime: 'dotnetcore2.1',
                 },
             }
-            const actual = (await debugConfigProvider.makeConfig(folder, input))! as DotNetCoreDebugConfiguration
+            const actual = (await debugConfigProvider.makeConfig(folder, input))! as SamLaunchRequestArgs
             const codeRoot = `${appDir}${input.invokeTarget.projectRoot}`
             const expectedCodeRoot = (actual.baseBuildDir ?? 'fail') + '/input'
             const expected: SamLaunchRequestArgs = {
@@ -1056,6 +1059,7 @@ Outputs:
                 request: 'attach', // Input "direct-invoke", output "attach".
                 runtime: 'dotnetcore2.1', // lambdaModel.dotNetRuntimes[0],
                 runtimeFamily: lambdaModel.RuntimeFamily.DotNetCore,
+                useIkpdb: false,
                 type: AWS_SAM_DEBUG_TYPE,
                 workspaceFolder: {
                     index: 0,
@@ -1078,7 +1082,8 @@ Outputs:
                     timeoutSec: undefined,
                 },
                 name: input.name,
-                templatePath: expectedCodeRoot + '/input-template.yaml',
+                templatePath: pathutil.normalize(path.join(appDir, 'src', 'HelloWorld', 'app___vsctk___template.yaml')),
+                parameterOverrides: undefined,
 
                 //
                 // Csharp-related fields
@@ -1105,7 +1110,6 @@ Outputs:
                         pipeProgram: 'powershell',
                     },
                 },
-                parameterOverrides: undefined,
             }
 
             assertEqualLaunchConfigs(actual, expected)
@@ -1166,7 +1170,7 @@ Outputs:
             // Test noDebug=true.
             //
             ;(input as any).noDebug = true
-            const actualNoDebug = (await debugConfigProvider.makeConfig(folder, input))! as DotNetCoreDebugConfiguration
+            const actualNoDebug = (await debugConfigProvider.makeConfig(folder, input))! as SamLaunchRequestArgs
             const expectedCodeRootNoDebug = (actualNoDebug.baseBuildDir ?? 'fail') + '/input'
             const expectedNoDebug: SamLaunchRequestArgs = {
                 ...expected,
@@ -1215,7 +1219,7 @@ Outputs:
             }
             const templatePath = vscode.Uri.file(path.join(appDir, 'template.yaml'))
             await ext.templateRegistry.addItemToRegistry(templatePath)
-            const actual = (await debugConfigProvider.makeConfig(folder, input))! as DotNetCoreDebugConfiguration
+            const actual = (await debugConfigProvider.makeConfig(folder, input))! as SamLaunchRequestArgs
             const codeRoot = `${appDir}/src/HelloWorld`
             const expectedCodeRoot = (actual.baseBuildDir ?? 'fail') + '/input'
             const expected: SamLaunchRequestArgs = {
@@ -1223,6 +1227,7 @@ Outputs:
                 request: 'attach', // Input "direct-invoke", output "attach".
                 runtime: 'dotnetcore2.1', // lambdaModel.dotNetRuntimes[0],
                 runtimeFamily: lambdaModel.RuntimeFamily.DotNetCore,
+                useIkpdb: false,
                 type: AWS_SAM_DEBUG_TYPE,
                 workspaceFolder: {
                     index: 0,
@@ -1364,7 +1369,7 @@ Outputs:
             // Test noDebug=true.
             //
             ;(input as any).noDebug = true
-            const actualNoDebug = (await debugConfigProvider.makeConfig(folder, input))! as DotNetCoreDebugConfiguration
+            const actualNoDebug = (await debugConfigProvider.makeConfig(folder, input))! as SamLaunchRequestArgs
             const expectedCodeRootNoDebug = (actualNoDebug.baseBuildDir ?? 'fail') + '/input'
             const expectedNoDebug: SamLaunchRequestArgs = {
                 ...expected,
@@ -1414,7 +1419,7 @@ Outputs:
             }
             const templatePath = vscode.Uri.file(path.join(appDir, 'template.yaml'))
             await ext.templateRegistry.addItemToRegistry(templatePath)
-            const actual = (await debugConfigProvider.makeConfig(folder, input))! as DotNetCoreDebugConfiguration
+            const actual = (await debugConfigProvider.makeConfig(folder, input))! as SamLaunchRequestArgs
             const codeRoot = `${appDir}/src/HelloWorld`
             const expectedCodeRoot = (actual.baseBuildDir ?? 'fail') + '/input'
             const expected: SamLaunchRequestArgs = {
@@ -1422,6 +1427,7 @@ Outputs:
                 request: 'attach', // Input "direct-invoke", output "attach".
                 runtime: 'dotnetcore2.1', // lambdaModel.dotNetRuntimes[0],
                 runtimeFamily: lambdaModel.RuntimeFamily.DotNetCore,
+                useIkpdb: false,
                 type: AWS_SAM_DEBUG_TYPE,
                 workspaceFolder: {
                     index: 0,
@@ -1448,6 +1454,7 @@ Outputs:
                 templatePath: pathutil.normalize(
                     path.join(path.dirname(templatePath.fsPath), 'app___vsctk___template.yaml')
                 ),
+                parameterOverrides: undefined,
 
                 //
                 // Csharp-related fields
@@ -1479,7 +1486,6 @@ Outputs:
                         pipeProgram: 'powershell',
                     },
                 },
-                parameterOverrides: undefined,
             }
 
             assertEqualLaunchConfigs(actual, expected)
@@ -1579,7 +1585,7 @@ Outputs:
             // Test noDebug=true.
             //
             ;(input as any).noDebug = true
-            const actualNoDebug = (await debugConfigProvider.makeConfig(folder, input))! as DotNetCoreDebugConfiguration
+            const actualNoDebug = (await debugConfigProvider.makeConfig(folder, input))! as SamLaunchRequestArgs
             const expectedCodeRootNoDebug = (actualNoDebug.baseBuildDir ?? 'fail') + '/input'
             const expectedNoDebug: SamLaunchRequestArgs = {
                 ...expected,
@@ -1629,6 +1635,7 @@ Outputs:
                 request: 'attach', // Input "direct-invoke", output "attach".
                 runtime: 'python3.7',
                 runtimeFamily: lambdaModel.RuntimeFamily.Python,
+                useIkpdb: false,
                 type: AWS_SAM_DEBUG_TYPE,
                 handlerName: 'app.lambda_handler',
                 workspaceFolder: {
@@ -1654,9 +1661,10 @@ Outputs:
                     timeoutSec: undefined,
                 },
                 name: input.name,
-                templatePath: pathutil.normalize(path.join(actual.baseBuildDir ?? '?', 'input/input-template.yaml')),
+                templatePath: pathutil.normalize(path.join(appDir, 'hello_world', 'app___vsctk___template.yaml')),
                 port: actual.debugPort,
                 redirectOutput: false,
+                parameterOverrides: undefined,
 
                 //
                 // Python-related fields
@@ -1668,7 +1676,6 @@ Outputs:
                         remoteRoot: '/var/task',
                     },
                 ],
-                parameterOverrides: undefined,
             }
 
             // Windows: pathMappings has uppercase and lowercase variants.
@@ -1739,7 +1746,7 @@ Outputs:
             // Test noDebug=true.
             //
             ;(input as any).noDebug = true
-            const actualNoDebug = (await debugConfigProvider.makeConfig(folder, input))! as DotNetCoreDebugConfiguration
+            const actualNoDebug = (await debugConfigProvider.makeConfig(folder, input))! as SamLaunchRequestArgs
             const expectedNoDebug: SamLaunchRequestArgs = {
                 ...expected,
                 noDebug: true,
@@ -1755,8 +1762,7 @@ Outputs:
         })
 
         it('target=template: python 3.7 (deep project tree)', async () => {
-            // Use "testFixtures/workspaceFolder/" as the project root to test
-            // a deeper tree.
+            // To test a deeper tree, use "testFixtures/workspaceFolder/" as the root.
             const appDir = pathutil.normalize(path.join(testutil.getProjectDir(), 'testFixtures/workspaceFolder/'))
             const folder = testutil.getWorkspaceFolder(appDir)
             const input = {
@@ -1780,6 +1786,7 @@ Outputs:
                 request: 'attach', // Input "direct-invoke", output "attach".
                 runtime: 'python3.7',
                 runtimeFamily: lambdaModel.RuntimeFamily.Python,
+                useIkpdb: false,
                 type: AWS_SAM_DEBUG_TYPE,
                 handlerName: 'app.lambda_handler',
                 workspaceFolder: {
@@ -1809,6 +1816,7 @@ Outputs:
                 ),
                 port: actual.debugPort,
                 redirectOutput: false,
+                parameterOverrides: undefined,
 
                 //
                 // Python-related fields
@@ -1820,7 +1828,6 @@ Outputs:
                         remoteRoot: '/var/task',
                     },
                 ],
-                parameterOverrides: undefined,
             }
 
             // Windows: pathMappings has uppercase and lowercase variants.
@@ -1974,6 +1981,7 @@ Outputs:
                 request: 'attach', // Input "direct-invoke", output "attach".
                 runtime: 'python3.7',
                 runtimeFamily: lambdaModel.RuntimeFamily.Python,
+                useIkpdb: false,
                 type: AWS_SAM_DEBUG_TYPE,
                 handlerName: 'app.lambda_handler',
                 workspaceFolder: {
@@ -2134,6 +2142,7 @@ Outputs:
                 request: 'attach', // Input "direct-invoke", output "attach".
                 runtime: 'python3.7',
                 runtimeFamily: lambdaModel.RuntimeFamily.Python,
+                useIkpdb: false,
                 type: AWS_SAM_DEBUG_TYPE,
                 handlerName: 'HelloWorldFunction',
                 workspaceFolder: {
@@ -2289,6 +2298,277 @@ Outputs:
             assertEqualLaunchConfigs(actualNoDebug, expectedNoDebug)
         })
 
+        it('target=code: ikpdb, python 3.7', async () => {
+            const appDir = pathutil.normalize(
+                path.join(testutil.getProjectDir(), 'testFixtures/workspaceFolder/python3.7-plain-sam-app')
+            )
+            const folder = testutil.getWorkspaceFolder(appDir)
+            const input = {
+                type: AWS_SAM_DEBUG_TYPE,
+                name: 'test: ikpdb target=code',
+                request: DIRECT_INVOKE_TYPE,
+                invokeTarget: {
+                    target: CODE_TARGET_TYPE,
+                    lambdaHandler: 'app.lambda_handler',
+                    projectRoot: 'hello_world',
+                },
+                lambda: {
+                    runtime: 'python3.7',
+                    payload: {
+                        path: `${appDir}/events/event.json`,
+                    },
+                },
+                // Force ikpdb in non-cloud9 environment.
+                useIkpdb: true,
+            }
+
+            // Invoke with noDebug=false (the default).
+            const actual = (await debugConfigProvider.makeConfig(folder, input))!
+            // Expected result with noDebug=false.
+            const expected: SamLaunchRequestArgs = {
+                awsCredentials: undefined,
+                request: 'attach', // Input "direct-invoke", output "attach".
+                runtime: 'python3.7',
+                runtimeFamily: lambdaModel.RuntimeFamily.Python,
+                useIkpdb: true,
+                type: AWS_SAM_DEBUG_TYPE,
+                handlerName: 'app.lambda_handler',
+                workspaceFolder: {
+                    index: 0,
+                    name: 'test-workspace-folder',
+                    uri: vscode.Uri.file(appDir),
+                },
+                baseBuildDir: actual.baseBuildDir, // Random, sanity-checked by assertEqualLaunchConfigs().
+                envFile: `${actual.baseBuildDir}/env-vars.json`,
+                eventPayloadFile: `${actual.baseBuildDir}/event.json`,
+                codeRoot: pathutil.normalize(path.join(appDir, 'hello_world')),
+                debugArgs: [
+                    `-m ikp3db --ikpdb-address=0.0.0.0 --ikpdb-port=${actual.debugPort} -ik_ccwd=hello_world -ik_cwd=/var/task --ikpdb-log=BEXFPG`,
+                ],
+                apiPort: actual.apiPort,
+                debugPort: actual.debugPort,
+                documentUri: vscode.Uri.file(''), // TODO: remove or test.
+                invokeTarget: { ...input.invokeTarget },
+                lambda: {
+                    ...input.lambda,
+                    environmentVariables: {},
+                    memoryMb: undefined,
+                    timeoutSec: undefined,
+                },
+                sam: {
+                    containerBuild: true,
+                },
+                name: input.name,
+                templatePath: pathutil.normalize(path.join(appDir, 'hello_world', 'app___vsctk___template.yaml')),
+                parameterOverrides: undefined,
+
+                //
+                // Python-ikpdb fields
+                //
+                port: actual.debugPort,
+                address: 'localhost',
+                localRoot: pathutil.normalize(path.join(appDir, 'hello_world')),
+                remoteRoot: '/var/task',
+            }
+
+            assertEqualLaunchConfigs(actual, expected)
+            assertFileText(expected.envFile, '{"awsToolkitSamLocalResource":{}}')
+            assert.strictEqual(
+                readFileSync(actual.eventPayloadFile, 'utf-8'),
+                readFileSync(input.lambda.payload.path, 'utf-8')
+            )
+            assertFileText(
+                expected.templatePath,
+                `Resources:
+  awsToolkitSamLocalResource:
+    Type: 'AWS::Serverless::Function'
+    Properties:
+      Handler: ${expected.handlerName}
+      CodeUri: >-
+        ${expected.codeRoot}
+      Runtime: python3.7
+      Environment:
+        Variables: {}
+`
+            )
+
+            //
+            // Test noDebug=true.
+            //
+            ;(input as any).noDebug = true
+            const actualNoDebug = (await debugConfigProvider.makeConfig(folder, input))! as SamLaunchRequestArgs
+            const expectedNoDebug: SamLaunchRequestArgs = {
+                ...expected,
+                noDebug: true,
+                request: 'launch',
+                debugPort: undefined,
+                port: -1,
+                handlerName: 'app.lambda_handler',
+                baseBuildDir: actualNoDebug.baseBuildDir,
+                envFile: `${actualNoDebug.baseBuildDir}/env-vars.json`,
+                eventPayloadFile: `${actualNoDebug.baseBuildDir}/event.json`,
+            }
+            assertEqualLaunchConfigs(actualNoDebug, expectedNoDebug)
+        })
+
+        it('target=template: ikpdb, python 3.7 (deep project tree)', async () => {
+            // To test a deeper tree, use "testFixtures/workspaceFolder/" as the root.
+            const appDir = pathutil.normalize(path.join(testutil.getProjectDir(), 'testFixtures/workspaceFolder/'))
+            const folder = testutil.getWorkspaceFolder(appDir)
+            const input = {
+                type: AWS_SAM_DEBUG_TYPE,
+                name: 'test-py37-template',
+                request: DIRECT_INVOKE_TYPE,
+                invokeTarget: {
+                    target: TEMPLATE_TARGET_TYPE,
+                    templatePath: 'python3.7-plain-sam-app/template.yaml',
+                    logicalId: 'HelloWorldFunction',
+                },
+                // Force ikpdb in non-cloud9 environment.
+                useIkpdb: true,
+            }
+            const templatePath = vscode.Uri.file(path.join(appDir, 'python3.7-plain-sam-app/template.yaml'))
+            await ext.templateRegistry.addItemToRegistry(templatePath)
+
+            // Invoke with noDebug=false (the default).
+            const actual = (await debugConfigProvider.makeConfig(folder, input))!
+            // Expected result with noDebug=false.
+            const expected: SamLaunchRequestArgs = {
+                awsCredentials: undefined,
+                request: 'attach', // Input "direct-invoke", output "attach".
+                runtime: 'python3.7',
+                runtimeFamily: lambdaModel.RuntimeFamily.Python,
+                useIkpdb: true,
+                type: AWS_SAM_DEBUG_TYPE,
+                handlerName: 'app.lambda_handler',
+                workspaceFolder: {
+                    index: 0,
+                    name: 'test-workspace-folder',
+                    uri: vscode.Uri.file(appDir),
+                },
+                baseBuildDir: actual.baseBuildDir, // Random, sanity-checked by assertEqualLaunchConfigs().
+                envFile: `${actual.baseBuildDir}/env-vars.json`,
+                eventPayloadFile: `${actual.baseBuildDir}/event.json`,
+                codeRoot: pathutil.normalize(path.join(appDir, 'python3.7-plain-sam-app/hello_world')),
+                apiPort: undefined,
+                debugArgs: [
+                    `-m ikp3db --ikpdb-address=0.0.0.0 --ikpdb-port=${actual.debugPort} -ik_ccwd=python3.7-plain-sam-app/hello_world -ik_cwd=/var/task --ikpdb-log=BEXFPG`,
+                ],
+                debugPort: actual.debugPort,
+                documentUri: vscode.Uri.file(''), // TODO: remove or test.
+                invokeTarget: { ...input.invokeTarget },
+                lambda: {
+                    environmentVariables: {},
+                    memoryMb: undefined,
+                    timeoutSec: undefined,
+                },
+                sam: {
+                    containerBuild: true,
+                },
+                name: input.name,
+                templatePath: pathutil.normalize(
+                    path.join(path.dirname(templatePath.fsPath), 'app___vsctk___template.yaml')
+                ),
+                parameterOverrides: undefined,
+
+                //
+                // Python-ikpdb fields
+                //
+                port: actual.debugPort,
+                address: 'localhost',
+                localRoot: pathutil.normalize(path.join(appDir, 'hello_world')),
+                remoteRoot: '/var/task',
+            }
+
+            assertEqualLaunchConfigs(actual, expected)
+            assertFileText(expected.envFile, '{"HelloWorldFunction":{}}')
+            assertFileText(expected.eventPayloadFile, '{}')
+
+            assertFileText(
+                expected.templatePath,
+                `AWSTemplateFormatVersion: '2010-09-09'
+Transform: 'AWS::Serverless-2016-10-31'
+Description: |
+  python3.7-plain-sam-app
+  Sample SAM Template for python3.7-plain-sam-app
+Globals:
+  Function:
+    Timeout: 3
+Resources:
+  HelloWorldFunction:
+    Type: 'AWS::Serverless::Function'
+    Properties:
+      CodeUri: hello_world/
+      Handler: app.lambda_handler
+      Runtime: python3.7
+      Events:
+        HelloWorld:
+          Type: Api
+          Properties:
+            Path: /hello
+            Method: get
+  Function2NotInLaunchJson:
+    Type: 'AWS::Serverless::Function'
+    Properties:
+      CodeUri: hello_world/
+      Handler: app.lambda_handler_2
+      Runtime: python3.7
+  Function3NotInLaunchJson:
+    Type: 'AWS::Serverless::Function'
+    Properties:
+      CodeUri: hello_world/
+      Handler: app.lambda_handler_3
+      Runtime: python3.7
+      Events:
+        HelloWorld:
+          Type: Api
+          Properties:
+            Path: /apipath1
+            Method: get
+  ServerlessApi:
+    Type: 'AWS::Serverless::Api'
+    Properties:
+      Name: ResourceName
+Outputs:
+  HelloWorldApi:
+    Description: API Gateway endpoint URL for Prod stage for Hello World function
+    Value:
+      'Fn::Sub': >-
+        https://\${ServerlessRestApi}.execute-api.\${AWS::Region}.amazonaws.com/Prod/hello/
+  HelloWorldFunction:
+    Description: Hello World Lambda Function ARN
+    Value:
+      'Fn::GetAtt':
+        - HelloWorldFunction
+        - Arn
+  HelloWorldFunctionIamRole:
+    Description: Implicit IAM Role created for Hello World function
+    Value:
+      'Fn::GetAtt':
+        - HelloWorldFunctionRole
+        - Arn
+`
+            )
+
+            //
+            // Test noDebug=true.
+            //
+            ;(input as any).noDebug = true
+            const actualNoDebug = (await debugConfigProvider.makeConfig(folder, input))!
+            const expectedNoDebug: SamLaunchRequestArgs = {
+                ...expected,
+                noDebug: true,
+                request: 'launch',
+                debugPort: undefined,
+                port: -1,
+                handlerName: 'app.lambda_handler',
+                baseBuildDir: actualNoDebug.baseBuildDir,
+                envFile: `${actualNoDebug.baseBuildDir}/env-vars.json`,
+                eventPayloadFile: `${actualNoDebug.baseBuildDir}/event.json`,
+            }
+            assertEqualLaunchConfigs(actualNoDebug, expectedNoDebug)
+        })
+
         it('debugconfig with extraneous env vars', async () => {
             const appDir = pathutil.normalize(
                 path.join(testutil.getProjectDir(), 'testFixtures/workspaceFolder/js-manifest-in-root/')
@@ -2327,6 +2607,7 @@ Outputs:
             const expected: SamLaunchRequestArgs = {
                 awsCredentials: undefined,
                 type: AWS_SAM_DEBUG_TYPE,
+                useIkpdb: false,
                 workspaceFolder: {
                     index: 0,
                     name: 'test-workspace-folder',
@@ -2358,6 +2639,7 @@ Outputs:
                 templatePath: pathutil.normalize(
                     path.join(path.dirname(tempFile.fsPath), 'app___vsctk___template.yaml')
                 ),
+                parameterOverrides: undefined,
 
                 //
                 // Node-related fields
@@ -2372,7 +2654,6 @@ Outputs:
                 runtimeFamily: lambdaModel.RuntimeFamily.NodeJS,
                 skipFiles: ['/var/runtime/node_modules/**/*.js', '<node_internals>/**/*.js'],
                 stopOnEntry: false,
-                parameterOverrides: undefined,
             }
 
             assertEqualLaunchConfigs(actual, expected)
@@ -2472,6 +2753,7 @@ Resources:
                 awsCredentials: mockedCredentials,
                 ...awsSection,
                 type: AWS_SAM_DEBUG_TYPE,
+                useIkpdb: false,
                 workspaceFolder: {
                     index: 0,
                     name: 'test-workspace-folder',
@@ -2500,7 +2782,8 @@ Resources:
                 },
                 localRoot: pathutil.normalize(path.join(tempDir, 'codeuri')), // Normalized to absolute path.
                 name: input.name,
-                templatePath: pathutil.normalize(path.join(actual.baseBuildDir ?? '?', 'input/input-template.yaml')),
+                templatePath: pathutil.normalize(path.join(appDir, 'src', 'app___vsctk___template.yaml')),
+                parameterOverrides: undefined,
 
                 //
                 // Node-related fields
@@ -2515,7 +2798,6 @@ Resources:
                 runtimeFamily: lambdaModel.RuntimeFamily.NodeJS,
                 skipFiles: ['/var/runtime/node_modules/**/*.js', '<node_internals>/**/*.js'],
                 stopOnEntry: false,
-                parameterOverrides: undefined,
             }
 
             assertEqualLaunchConfigs(actual, expected)
