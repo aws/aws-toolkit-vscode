@@ -1603,6 +1603,8 @@ Outputs:
             const appDir = pathutil.normalize(
                 path.join(testutil.getProjectDir(), 'testFixtures/workspaceFolder/python3.7-plain-sam-app')
             )
+            const relPayloadPath = `events/event.json`
+            const absPayloadPath = `${appDir}/${relPayloadPath}`
             const folder = testutil.getWorkspaceFolder(appDir)
             const input = {
                 type: AWS_SAM_DEBUG_TYPE,
@@ -1616,7 +1618,7 @@ Outputs:
                 lambda: {
                     runtime: 'python3.7',
                     payload: {
-                        path: `${appDir}/events/event.json`,
+                        path: relPayloadPath,
                     },
                 },
             }
@@ -1685,7 +1687,7 @@ Outputs:
             assertFileText(expected.envFile, '{"awsToolkitSamLocalResource":{}}')
             assert.strictEqual(
                 readFileSync(actual.eventPayloadFile, 'utf-8'),
-                readFileSync(input.lambda.payload.path, 'utf-8')
+                readFileSync(absPayloadPath, 'utf-8')
             )
             assertFileText(
                 expected.templatePath,
