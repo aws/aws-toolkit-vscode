@@ -24,7 +24,7 @@
             "request": "attach",
             "port": 6009,
             "restart": true,
-            "outFiles": ["${workspaceRoot}/dist/src/stepFunctions/amazonStatesLanguage/server.js"]
+            "outFiles": ["${workspaceRoot}/dist/src/stepFunctions/asl/**.js"]
         },
         {
             "name": "Attach to SSM Document Language Server",
