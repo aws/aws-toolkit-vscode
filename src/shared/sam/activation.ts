@@ -20,7 +20,7 @@ import { SamTemplateCodeLensProvider } from '../codelens/samTemplateCodeLensProv
 import * as jsLensProvider from '../codelens/typescriptCodeLensProvider'
 import { ext } from '../extensionGlobals'
 import { ExtContext, VSCODE_EXTENSION_ID } from '../extensions'
-import { getIdeType, IDE } from '../extensionUtilities'
+import { getIdeProperties, getIdeType, IDE } from '../extensionUtilities'
 import { getLogger } from '../logger/logger'
 import { SettingsConfiguration } from '../settingsConfiguration'
 import { TelemetryService } from '../telemetry/telemetryService'
@@ -164,7 +164,11 @@ async function activateCodeLensProviders(
         ext.codelensRootRegistry = registry
     } catch (e) {
         vscode.window.showErrorMessage(
-            localize('AWS.codelens.failToInitializeCode', 'Failed to activate Lambda handler CodeLenses')
+            localize(
+                'AWS.codelens.failToInitializeCode',
+                'Failed to activate Lambda handler {0}',
+                getIdeProperties().codelenses
+            )
         )
         getLogger().error('Failed to activate codelens registry', e)
         // This prevents us from breaking for any reason later if it fails to load. Since

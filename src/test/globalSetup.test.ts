@@ -42,7 +42,7 @@ before(async () => {
         enqueue(...events: any[]) {},
         async flush() {},
     }
-    const service = new DefaultTelemetryService(mockContext, mockAws, mockPublisher)
+    const service = new DefaultTelemetryService(mockContext, mockAws, undefined, mockPublisher)
     ext.telemetry = service
     ext.templateRegistry = new CloudFormationTemplateRegistry()
     ext.codelensRootRegistry = new CodelensRootRegistry()

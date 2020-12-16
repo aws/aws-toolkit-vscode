@@ -42,7 +42,15 @@ export function resolveSamCliProcessInvokerContext(
  * TODO: Merge this with `DefaultSamLocalInvokeCommand`.
  */
 export class DefaultSamCliProcessInvoker implements SamCliProcessInvoker {
+    private childProcess?: ChildProcess
     public constructor(private readonly context: SamCliProcessInvokerContext = resolveSamCliProcessInvokerContext()) {}
+
+    public stop(): void {
+        if (!this.childProcess) {
+            throw new Error('not started')
+        }
+        this.childProcess.stop()
+    }
 
     public async invoke(options?: SamCliProcessInvokeOptions): Promise<ChildProcessResult> {
         const invokeOptions = makeRequiredSamCliProcessInvokeOptions(options)
@@ -56,22 +64,24 @@ export class DefaultSamCliProcessInvoker implements SamCliProcessInvoker {
         }
 
         const samCommand = sam.path ? sam.path : 'sam'
-        const childProcess: ChildProcess = new ChildProcess(
-            samCommand,
-            invokeOptions.spawnOptions,
-            ...invokeOptions.arguments
-        )
+        this.childProcess = new ChildProcess(samCommand, invokeOptions.spawnOptions, ...invokeOptions.arguments)
 
-        options?.channelLogger?.info('AWS.running.command', 'Running command: {0}', `${childProcess}`)
-        logger.verbose(`running: ${childProcess}`)
-        return await childProcess.run(
+        options?.channelLogger?.info('AWS.running.command', 'Running command: {0}', `${this.childProcess}`)
+        logger.verbose(`running: ${this.childProcess}`)
+        return await this.childProcess.run(
             (text: string) => {
                 options?.channelLogger?.emitMessage(text)
                 logger.verbose(`stdout: ${text}`)
+                if (options?.onStdout) {
+                    options.onStdout(text)
+                }
             },
             (text: string) => {
                 options?.channelLogger?.emitMessage(text)
                 logger.verbose(`stderr: ${text}`)
+                if (options?.onStderr) {
+                    options.onStderr(text)
+                }
             }
         )
     }

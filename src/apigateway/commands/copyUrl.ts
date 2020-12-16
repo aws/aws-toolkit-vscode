@@ -18,6 +18,7 @@ import { DEFAULT_DNS_SUFFIX } from '../../shared/regions/regionUtilities'
 import { COPY_TO_CLIPBOARD_INFO_TIMEOUT_MS } from '../../shared/constants'
 import { getLogger } from '../../shared/logger'
 import { recordApigatewayCopyUrl } from '../../shared/telemetry/telemetry'
+import { addCodiconToString } from '../../shared/utilities/textUtilities'
 
 interface StageInvokeUrlQuickPick extends vscode.QuickPickItem {
     // override declaration so this can't be undefined
@@ -105,7 +106,10 @@ export function buildDefaultApiInvokeUrl(apiId: string, region: string, dnsSuffi
 async function copyUrl(window: Window, env: Env, url: string) {
     await env.clipboard.writeText(url)
     window.setStatusBarMessage(
-        localize('AWS.explorerNode.copiedToClipboard', '$(clippy) Copied URL to clipboard: {0}', url),
+        addCodiconToString(
+            'clippy',
+            `${localize('AWS.explorerNode.copiedToClipboard', 'Copied {0} to clipboard', 'URL')}: ${url}`
+        ),
         COPY_TO_CLIPBOARD_INFO_TIMEOUT_MS
     )
 

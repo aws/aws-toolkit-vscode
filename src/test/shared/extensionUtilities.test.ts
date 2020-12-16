@@ -8,7 +8,7 @@ import * as assert from 'assert'
 import { writeFile, remove } from 'fs-extra'
 import * as path from 'path'
 import * as vscode from 'vscode'
-import { mostRecentVersionKey, pluginVersion } from '../../shared/constants'
+import { mostRecentVersionKey, pluginVersion } from '../../shared/extensionUtilities'
 import {
     createQuickStartWebview,
     isDifferentVersion,

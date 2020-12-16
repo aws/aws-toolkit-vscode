@@ -9,6 +9,7 @@ import { localize } from '../utilities/vsCodeUtils'
 
 import { CloudFormationTemplateRegistry } from './templateRegistry'
 import { ext } from '../extensionGlobals'
+import { getIdeProperties } from '../extensionUtilities'
 import { NoopWatcher } from '../watchedFiles'
 
 export const TEMPLATE_FILE_GLOB_PATTERN = '**/template.{yaml,yml}'
@@ -37,7 +38,8 @@ export async function activate(extensionContext: vscode.ExtensionContext): Promi
         vscode.window.showErrorMessage(
             localize(
                 'AWS.codelens.failToInitialize',
-                'Failed to activate template registry. CodeLenses will not appear on SAM template files.'
+                'Failed to activate template registry. {0}} will not appear on SAM template files.',
+                getIdeProperties().codelenses
             )
         )
         getLogger().error('Failed to activate template registry', e)

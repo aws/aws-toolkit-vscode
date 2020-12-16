@@ -3,7 +3,7 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
-import { copyFile, unlink, readFile, writeFile } from 'fs-extra'
+import { copyFile, readFile, remove, writeFile } from 'fs-extra'
 import * as path from 'path'
 import * as request from 'request'
 import * as tcpPortUsed from 'tcp-port-used'
@@ -15,7 +15,6 @@ import { getLogger } from '../logger'
 import { SettingsConfiguration } from '../settingsConfiguration'
 import * as telemetry from '../telemetry/telemetry'
 import { SamTemplateGenerator } from '../templates/sam/samTemplateGenerator'
-import { ExtensionDisposableFiles } from '../utilities/disposableFiles'
 import * as pathutil from '../utilities/pathUtils'
 import { normalizeSeparator } from '../utilities/pathUtils'
 import { Timeout } from '../utilities/timeoutUtils'
@@ -122,9 +121,7 @@ export async function makeInputTemplate(config: SamLaunchRequestArgs): Promise<s
                 Variables: config.lambda?.environmentVariables,
             })
         }
-        inputTemplatePath = path.join(config.baseBuildDir!, 'input', 'input-template.yaml')
-        // code type is fire-and-forget so we can add to disposable files
-        ExtensionDisposableFiles.getInstance().addFolder(inputTemplatePath)
+        inputTemplatePath = path.join(config.codeRoot, 'app___vsctk___template.yaml')
     }
 
     // additional overrides
@@ -196,16 +193,22 @@ export async function invokeLambdaFunction(
     }
 
     try {
-        await new SamCliBuildInvocation(samCliArgs).execute()
-    } finally {
-        // always delete temp template.
-        await unlink(config.templatePath)
+        const samBuild = new SamCliBuildInvocation(samCliArgs)
+        await samBuild.execute()
+        if (samBuild.failure()) {
+            ctx.chanLogger.emitMessage(samBuild.failure()!)
+            throw new Error(samBuild.failure())
+        }
+        // build successful: use output template path for invocation
+        // XXX: reassignment
+        await remove(config.templatePath)
+        config.templatePath = path.join(samBuildOutputFolder, 'template.yaml')
+        ctx.chanLogger.info('AWS.output.building.sam.application.complete', 'Build complete.')
+    } catch (err) {
+        // build unsuccessful: don't delete temp template and continue using it for invocation
+        // will be cleaned up in the last `finally` step
+        ctx.chanLogger.warn('AWS.samcli.build.failedBuild', '"sam build" failed: {0}', config.templatePath)
     }
-
-    ctx.chanLogger.info('AWS.output.building.sam.application.complete', 'Build complete.')
-
-    // XXX: reassignment
-    config.templatePath = path.join(samBuildOutputFolder, 'template.yaml')
 
     await onAfterBuild()
 
@@ -310,6 +313,7 @@ export async function invokeLambdaFunction(
                 err as Error
             )
         } finally {
+            await remove(config.templatePath)
             telemetry.recordLambdaInvokeLocal({
                 lambdaPackageType: lambdaPackageType,
                 result: invokeResult,
@@ -466,6 +470,7 @@ export async function attachDebugger({
     retryDelayMillis = ATTACH_DEBUGGER_RETRY_DELAY_MILLIS,
     onStartDebugging = vscode.debug.startDebugging,
     onWillRetry = async (): Promise<void> => {
+        getLogger().debug('attachDebugger: retrying...')
         await new Promise<void>(resolve => {
             setTimeout(resolve, retryDelayMillis)
         })
