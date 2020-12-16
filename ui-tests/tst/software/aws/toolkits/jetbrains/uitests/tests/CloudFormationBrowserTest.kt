@@ -5,6 +5,9 @@ package software.aws.toolkits.jetbrains.uitests.tests
 
 import com.intellij.remoterobot.stepsProcessing.log
 import com.intellij.remoterobot.stepsProcessing.step
+import kotlinx.coroutines.delay
+import kotlinx.coroutines.runBlocking
+import kotlinx.coroutines.withTimeoutOrNull
 import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.AfterAll
 import org.junit.jupiter.api.BeforeAll
@@ -47,6 +50,22 @@ class CloudFormationBrowserTest {
         cloudFormationClient.createStack { it.templateBody(templateFile.toFile().readText()).stackName(stack) }
         cloudFormationClient.waiter().waitUntilStackCreateComplete { it.stackName(stack) }
         log.info("Successfully deployed $stack")
+        // Even when it's deployed, the stack can still take extra time to show up in the list operation
+        // so, we have to also confirm that it shows up in list
+        runBlocking {
+            withTimeoutOrNull(20000) {
+                while (true) {
+                    try {
+                        if (cloudFormationClient.listStacksPaginator().stackSummaries().any { it.stackName() == stack }) {
+                            log.info("Successfully listed $stack")
+                            break
+                        }
+                    } catch (e: Exception) {
+                    }
+                    delay(2000)
+                }
+            }
+        }
     }
 
     @Test
