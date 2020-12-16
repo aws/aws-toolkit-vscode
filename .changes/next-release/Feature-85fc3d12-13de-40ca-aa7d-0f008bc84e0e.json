@@ -1,0 +1,4 @@
+{
+	"type": "Feature",
+	"description": "Adds Amazon States Language (YAML) format to the ASL Language Server. Adds option to choose YAML format when creating new Step Functions state machine from a template."
+}
