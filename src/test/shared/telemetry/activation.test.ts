@@ -199,7 +199,7 @@ describe('hasUserSeenTelemetryNotice', async () => {
 })
 
 describe('getComputeRegion', async () => {
-    let metadataService = new MetadataService()
+    const metadataService = new MetadataService()
 
     let sandbox: sinon.SinonSandbox
 

@@ -451,9 +451,9 @@ export class DefaultSamDeployWizardContext implements SamDeployWizardContext {
             },
         })
 
-        let result = picker.verifySinglePickerOutput(choices)
-        let repository: EcrRepository | undefined = (result as any)?.repository
-        let label = result?.label
+        const result = picker.verifySinglePickerOutput(choices)
+        const repository: EcrRepository | undefined = (result as any)?.repository
+        const label = result?.label
 
         if (!repository || label === picker.IteratingQuickPickController.NO_ITEMS_ITEM.label) {
             return undefined
