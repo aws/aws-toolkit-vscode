@@ -2,6 +2,9 @@
 // SPDX-License-Identifier: Apache-2.0
 package software.aws.toolkits.jetbrains.services.lambda.sam
 
+import com.fasterxml.jackson.databind.JsonNode
+import com.fasterxml.jackson.databind.ObjectMapper
+import com.fasterxml.jackson.dataformat.yaml.YAMLFactory
 import com.intellij.openapi.application.ReadAction
 import com.intellij.openapi.project.Project
 import com.intellij.openapi.vfs.VirtualFile
@@ -11,20 +14,86 @@ import software.amazon.awssdk.services.lambda.model.PackageType
 import software.amazon.awssdk.services.lambda.model.Runtime
 import software.aws.toolkits.core.utils.exists
 import software.aws.toolkits.core.utils.getLogger
+import software.aws.toolkits.core.utils.inputStream
 import software.aws.toolkits.core.utils.warn
 import software.aws.toolkits.core.utils.writeText
 import software.aws.toolkits.jetbrains.services.cloudformation.CloudFormationTemplate
 import software.aws.toolkits.jetbrains.services.cloudformation.Function
 import software.aws.toolkits.jetbrains.services.cloudformation.SERVERLESS_FUNCTION_TYPE
 import software.aws.toolkits.jetbrains.services.lambda.LambdaLimits
+import software.aws.toolkits.jetbrains.services.lambda.upload.steps.UploadedCode
+import software.aws.toolkits.jetbrains.services.lambda.upload.steps.UploadedEcrCode
+import software.aws.toolkits.jetbrains.services.lambda.upload.steps.UploadedS3Code
 import software.aws.toolkits.jetbrains.utils.YamlWriter
 import software.aws.toolkits.jetbrains.utils.yaml
+import software.aws.toolkits.resources.message
 import java.io.File
 import java.nio.file.Files
 import java.nio.file.Path
 
 object SamTemplateUtils {
     private val LOG = getLogger<SamTemplateUtils>()
+    private val MAPPER = ObjectMapper(YAMLFactory())
+    private const val S3_URI_PREFIX = "s3://"
+
+    fun getUploadedCodeUri(template: Path, logicalId: String): UploadedCode = readTemplate(template) {
+        val function = requiredAt("/Resources").get(logicalId)
+            ?: throw IllegalArgumentException("No resource with the logical ID $logicalId")
+        if (function.isImageBased()) {
+            UploadedEcrCode(function.requiredAt("/Properties/ImageUri").textValue())
+        } else {
+            val codeUri = function.requiredAt("/Properties/CodeUri")
+
+            // CodeUri: s3://<bucket>>/<key>
+            // or
+            // CodeUri:
+            //  Bucket: mybucket-name
+            //  Key: code.zip
+            //  Version: 121212
+
+            when {
+                codeUri.isTextual -> convertCodeUriString(codeUri.textValue())
+                codeUri.isObject -> convertCodeUriObject(codeUri)
+                else -> throw IllegalStateException("Unable to parse codeUri $codeUri")
+            }
+        }
+    }
+
+    private fun convertCodeUriString(codeUri: String): UploadedS3Code {
+        if (!codeUri.startsWith(S3_URI_PREFIX)) {
+            throw IllegalStateException("$codeUri does not start with $S3_URI_PREFIX")
+        }
+
+        val s3bucketKey = codeUri.removePrefix(S3_URI_PREFIX)
+        val split = s3bucketKey.split("/", limit = 2)
+        if (split.size != 2) {
+            throw IllegalStateException("$codeUri does not follow the format $S3_URI_PREFIX<bucket>/<key>")
+        }
+
+        return UploadedS3Code(
+            bucket = split.first(),
+            key = split.last(),
+            version = null
+        )
+    }
+
+    private fun convertCodeUriObject(codeUri: JsonNode): UploadedS3Code = UploadedS3Code(
+        bucket = codeUri.required("Bucket").textValue(),
+        key = codeUri.required("Key").textValue(),
+        version = codeUri.get("Version").textValue()
+    )
+
+    private fun JsonNode.isImageBased(): Boolean = this.packageType() == PackageType.IMAGE
+
+    private fun JsonNode.packageType(): PackageType {
+        val type = this.at("/Properties/PackageType")?.textValue() ?: return PackageType.ZIP
+        return PackageType.knownValues().firstOrNull { it.toString() == type }
+            ?: throw IllegalStateException(message("cloudformation.invalid_property", "PackageType", type))
+    }
+
+    private fun <T> readTemplate(template: Path, function: JsonNode.() -> T): T = template.inputStream().use {
+        function(MAPPER.readTree(it))
+    }
 
     @JvmStatic
     fun findFunctionsFromTemplate(project: Project, file: File): List<Function> {
@@ -42,11 +111,6 @@ object SamTemplateUtils {
     } catch (e: Exception) {
         LOG.warn(e) { "Failed to parse template: $file" }
         emptyList()
-    }
-
-    fun findImageFunctionsFromTemplate(project: Project, file: File): List<Function> {
-        val virtualFile = file.readFileIntoMemory() ?: return emptyList()
-        return findImageFunctionsFromTemplate(project, virtualFile)
     }
 
     fun findImageFunctionsFromTemplate(project: Project, file: VirtualFile): List<Function> =
@@ -123,6 +187,7 @@ object SamTemplateUtils {
         metadata: (YamlWriter.() -> Unit)? = null
     ) {
         if (!tempFile.exists()) {
+            Files.createDirectories(tempFile.parent)
             Files.createFile(tempFile)
         }
         tempFile.writeText(

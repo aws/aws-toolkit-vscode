@@ -125,45 +125,6 @@ class PackageLambdaTest {
         }
     }
 
-    @Test
-    fun `wrong S3 scheme throws`() {
-        assertThatThrownBy {
-            testPackageStep(
-                packagedTemplate = """
-                    Resources:
-                      Function:
-                        Type: AWS::Serverless::Function
-                        Properties:
-                          Handler: helloworld.App::handleRequest
-                          CodeUri:  file://FooBucket/Foo/Key
-                          Runtime: java8.al2
-                          Timeout: 300
-                          MemorySize: 128
-                """.trimIndent(),
-                s3Bucket = aString()
-            )
-        }.hasMessageContaining("does not start with s3://")
-    }
-
-    @Test
-    fun `wrong S3 URI format throws`() {
-        assertThatThrownBy {
-            testPackageStep(
-                """
-                Resources:
-                  Function:
-                    Type: AWS::Serverless::Function
-                    Properties:
-                      Handler: helloworld.App::handleRequest
-                      CodeUri:  s3://FooBucket
-                      Runtime: java8.al2
-                      Timeout: 300
-                      MemorySize: 128
-                """.trimIndent()
-            )
-        }.hasMessageContaining("does not follow the format s3://<bucket>/<key>")
-    }
-
     private fun testPackageStep(packagedTemplate: String, s3Bucket: String? = null, ecrRepo: String? = null, assertBlock: (UploadedCode) -> Unit = {}) {
         setSamExecutable(SamCommonTestUtils.makeATestSam(SamCommonTestUtils.getMinVersionAsJson()))
 
