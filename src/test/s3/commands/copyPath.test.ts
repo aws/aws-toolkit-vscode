@@ -19,8 +19,6 @@ describe('copyPathCommand', () => {
         await copyPathCommand(node, window, env)
 
         assert.strictEqual(env.clipboard.text, 'path')
-
-        assert.strictEqual(window.statusBar.message, '$(clippy) Copied path to clipboard')
     })
 })
 

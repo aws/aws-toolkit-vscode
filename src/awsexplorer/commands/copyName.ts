@@ -9,6 +9,7 @@ import { getLogger } from '../../shared/logger'
 import { AWSResourceNode } from '../../shared/treeview/nodes/awsResourceNode'
 import { localize } from '../../shared/utilities/vsCodeUtils'
 import { COPY_TO_CLIPBOARD_INFO_TIMEOUT_MS } from '../../shared/constants'
+import { addCodiconToString } from '../../shared/utilities/textUtilities'
 
 /**
  * Copies the name of the resource represented by the given node.
@@ -24,7 +25,14 @@ export async function copyNameCommand(
     recordCopyName()
 
     window.setStatusBarMessage(
-        localize('AWS.explorerNode.copiedToClipboard', '$(clippy) Copied {0} to clipboard', 'name'),
+        addCodiconToString(
+            'clippy',
+            localize(
+                'AWS.explorerNode.copiedToClipboard',
+                'Copied {0} to clipboard',
+                localize('AWS.generic.name', 'name')
+            )
+        ),
         COPY_TO_CLIPBOARD_INFO_TIMEOUT_MS
     )
 }

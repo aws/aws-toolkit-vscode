@@ -11,4 +11,4 @@ if __name__ == '__main__':
     sys.stdout.flush()
 
     # pretend like we invoked the debugger like: python -m <debugger_name>
-    runpy.run_module('ptvsd', run_name='__main__')
+    runpy.run_module('debugpy', run_name='__main__')

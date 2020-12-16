@@ -60,7 +60,6 @@ describe('localLambdaRunner', async () => {
             await localLambdaRunner.attachDebugger({
                 debugConfig: ({} as any) as SamLaunchRequestArgs,
                 channelLogger,
-                maxRetries: 0,
                 onStartDebugging: startDebuggingReturnsTrue,
                 onWillRetry,
             })
@@ -72,7 +71,6 @@ describe('localLambdaRunner', async () => {
             await localLambdaRunner.attachDebugger({
                 debugConfig: ({} as any) as SamLaunchRequestArgs,
                 channelLogger,
-                maxRetries: 0,
                 onStartDebugging: startDebuggingReturnsTrue,
                 onWillRetry,
             })
@@ -87,7 +85,6 @@ describe('localLambdaRunner', async () => {
             await localLambdaRunner.attachDebugger({
                 debugConfig: ({} as any) as SamLaunchRequestArgs,
                 channelLogger,
-                maxRetries: 0,
                 onStartDebugging: startDebuggingReturnsTrue,
                 onWillRetry,
                 onRecordAttachDebuggerMetric: (attachResult: boolean | undefined, attempts: number) => {
@@ -101,7 +98,6 @@ describe('localLambdaRunner', async () => {
             const results = await localLambdaRunner.attachDebugger({
                 debugConfig: ({} as any) as SamLaunchRequestArgs,
                 channelLogger,
-                maxRetries: 0,
                 onStartDebugging: startDebuggingReturnsTrue,
                 onWillRetry,
             })
@@ -109,23 +105,10 @@ describe('localLambdaRunner', async () => {
             assert.ok(results.success, 'Expected attach results to be successful')
         })
 
-        it('Failure to attach has no retries', async () => {
-            await localLambdaRunner.attachDebugger({
-                debugConfig: ({} as any) as SamLaunchRequestArgs,
-                channelLogger,
-                maxRetries: 0,
-                onStartDebugging: startDebuggingReturnsFalse,
-                onWillRetry,
-            })
-
-            assert.strictEqual(actualRetries, 0, 'Did not expect any retries when attaching debugger fails')
-        })
-
         it('Failure to attach logs that the debugger did not attach', async () => {
             await localLambdaRunner.attachDebugger({
                 debugConfig: ({} as any) as SamLaunchRequestArgs,
                 channelLogger,
-                maxRetries: 0,
                 onStartDebugging: startDebuggingReturnsFalse,
                 onWillRetry,
             })
@@ -140,7 +123,6 @@ describe('localLambdaRunner', async () => {
             await localLambdaRunner.attachDebugger({
                 debugConfig: ({} as any) as SamLaunchRequestArgs,
                 channelLogger,
-                maxRetries: 0,
                 onStartDebugging: startDebuggingReturnsFalse,
                 onWillRetry,
                 onRecordAttachDebuggerMetric: (attachResult: boolean | undefined, attempts: number) => {
@@ -153,7 +135,6 @@ describe('localLambdaRunner', async () => {
             const results = await localLambdaRunner.attachDebugger({
                 debugConfig: ({} as any) as SamLaunchRequestArgs,
                 channelLogger,
-                maxRetries: 0,
                 onStartDebugging: startDebuggingReturnsFalse,
                 onWillRetry,
             })
@@ -161,27 +142,10 @@ describe('localLambdaRunner', async () => {
             assert.strictEqual(results.success, false, 'Expected attach results to fail')
         })
 
-        it('Attempts to retry when startDebugging returns undefined', async () => {
-            const maxRetries: number = 3
-
-            await localLambdaRunner.attachDebugger({
-                debugConfig: ({} as any) as SamLaunchRequestArgs,
-                channelLogger,
-                maxRetries: maxRetries,
-                onStartDebugging: startDebuggingReturnsFalse,
-                onWillRetry,
-            })
-
-            assert.strictEqual(actualRetries, maxRetries, 'Unexpected Retry count')
-        })
-
         it('Logs about exceeding the retry limit', async () => {
-            const maxRetries: number = 3
-
             await localLambdaRunner.attachDebugger({
                 debugConfig: ({} as any) as SamLaunchRequestArgs,
                 channelLogger,
-                maxRetries,
                 onStartDebugging: startDebuggingReturnsFalse,
                 onWillRetry,
             })
@@ -196,10 +160,9 @@ describe('localLambdaRunner', async () => {
             await localLambdaRunner.attachDebugger({
                 debugConfig: ({} as any) as SamLaunchRequestArgs,
                 channelLogger,
-                maxRetries: 2,
                 onStartDebugging: startDebuggingReturnsFalse,
                 onRecordAttachDebuggerMetric: (attachResult: boolean | undefined, attempts: number): void => {
-                    assert.strictEqual(actualRetries, 2, 'Metrics should only be recorded once')
+                    assert.strictEqual(actualRetries, 4, 'Metrics should only be recorded once')
                     assert.notStrictEqual(attachResult, undefined, 'attachResult should not be undefined')
                 },
                 onWillRetry,
@@ -207,16 +170,14 @@ describe('localLambdaRunner', async () => {
         })
 
         it('Returns true if attach succeeds during retries', async () => {
-            const maxRetries: number = 5
             const results = await localLambdaRunner.attachDebugger({
                 debugConfig: ({} as any) as SamLaunchRequestArgs,
                 channelLogger,
-                maxRetries,
                 onStartDebugging: async (
                     folder: vscode.WorkspaceFolder | undefined,
                     nameOrConfiguration: string | vscode.DebugConfiguration
                 ): Promise<boolean> => {
-                    const retVal = actualRetries === maxRetries - 2 ? true : undefined
+                    const retVal = actualRetries === 3 ? true : undefined
 
                     return retVal!
                 },
@@ -227,11 +188,9 @@ describe('localLambdaRunner', async () => {
         })
 
         it('Returns false if retry count exceeded', async () => {
-            const maxRetries: number = 3
             const results = await localLambdaRunner.attachDebugger({
                 debugConfig: ({} as any) as SamLaunchRequestArgs,
                 channelLogger,
-                maxRetries,
                 onStartDebugging: startDebuggingReturnsFalse,
                 onWillRetry,
             })
@@ -262,6 +221,7 @@ describe('localLambdaRunner', async () => {
                 templatePath: tempDir,
                 manifestPath: undefined, // not needed for testing
                 invoker: {
+                    stop: () => {},
                     invoke: async (): Promise<ChildProcessResult> =>
                         isSuccessfulBuild ? successfulChildProcess : failedChildProcess,
                 },
