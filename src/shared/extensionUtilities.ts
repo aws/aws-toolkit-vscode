@@ -9,7 +9,6 @@ import * as path from 'path'
 import * as vscode from 'vscode'
 import * as nls from 'vscode-nls'
 import { ext } from '../shared/extensionGlobals'
-import { mostRecentVersionKey, pluginVersion } from './constants'
 import { readFileAsString } from './filesystemUtilities'
 import { getLogger } from './logger'
 import { VSCODE_EXTENSION_ID, EXTENSION_ALPHA_VERSION } from './extensions'
@@ -17,13 +16,29 @@ import { VSCODE_EXTENSION_ID, EXTENSION_ALPHA_VERSION } from './extensions'
 const localize = nls.loadMessageBundle()
 
 const VSCODE_APPNAME = 'Visual Studio Code'
+const CLOUD9_APPNAME = 'AWS Cloud9'
+
+export const mostRecentVersionKey: string = 'awsToolkitMostRecentVersion'
+// This is a hack to get around webpack messing everything up in unit test mode, it's also a very obvious
+// bad version if something goes wrong while building it
+let pluginVersion = 'testPluginVersion'
+try {
+    pluginVersion = PLUGINVERSION
+} catch (e) {}
+
+export { pluginVersion }
 
 export enum IDE {
     vscode,
+    cloud9,
     unknown,
 }
 
 export function getIdeType(): IDE {
+    if (vscode.env.appName === CLOUD9_APPNAME) {
+        return IDE.cloud9
+    }
+
     // Theia doesn't necessarily have all env propertie
     // so we should be defensive and assume appName is nullable.
     if (vscode.env.appName?.startsWith(VSCODE_APPNAME)) {
@@ -31,6 +46,46 @@ export function getIdeType(): IDE {
     }
 
     return IDE.unknown
+}
+
+interface IdeProperties {
+    shortName: string
+    longName: string
+    commandPalette: string
+    codelens: string
+    codelenses: string
+}
+
+export function getIdeProperties(): IdeProperties {
+    // in a separate const so other IDEs can take from this selectively.
+    const vscodeVals: IdeProperties = {
+        shortName: 'VS Code',
+        longName: 'Visual Studio Code',
+        commandPalette: 'Command Palette',
+        codelens: 'CodeLens',
+        codelenses: 'CodeLenses',
+    }
+
+    switch (getIdeType()) {
+        case IDE.cloud9:
+            return {
+                shortName: 'Cloud9',
+                longName: 'AWS Cloud9',
+                commandPalette: 'Go to Anything Panel',
+                codelens: 'Inline Action',
+                codelenses: 'Inline Actions',
+            }
+        // default is IDE.vscode
+        default:
+            return vscodeVals
+    }
+}
+
+/**
+ * Returns whether or not this is Cloud9
+ */
+export function isCloud9(): boolean {
+    return getIdeType() === IDE.cloud9
 }
 
 export class ExtensionUtilities {
@@ -109,12 +164,13 @@ export async function showQuickStartWebview(context: vscode.ExtensionContext): P
  * Returns an unfocused vscode.WebviewPanel if the quick start page is renderable.
  *
  * @param context VS Code Extension Context
- * @param page Page to load (use for testing); default: `quickStart.html`
+ * @param page Page to load (use for testing)
  */
 export async function createQuickStartWebview(
     context: vscode.ExtensionContext,
-    page: string = 'quickStart.html'
+    page?: string
 ): Promise<vscode.WebviewPanel> {
+    const actualPage = page ? page : isCloud9() ? 'quickStartCloud9.html' : 'quickStartVscode.html'
     // create hidden webview, leave it up to the caller to show
     const view = vscode.window.createWebviewPanel(
         'html',
@@ -122,7 +178,7 @@ export async function createQuickStartWebview(
         { viewColumn: vscode.ViewColumn.Active, preserveFocus: true }
     )
     view.webview.html = convertExtensionRootTokensToPath(
-        await readFileAsString(path.join(context.extensionPath, page)),
+        await readFileAsString(path.join(context.extensionPath, actualPage)),
         context.extensionPath,
         view.webview
     )
@@ -175,19 +231,24 @@ export function setMostRecentVersion(context: vscode.ExtensionContext): void {
 
 /**
  * Shows a message with a link to the quickstart page.
+ * In cloud9, directly opens quickstart instead
  */
-async function showQuickstartPrompt(): Promise<void> {
-    const view = localize('AWS.command.quickStart', 'View Quick Start')
-    const prompt = await vscode.window.showInformationMessage(
-        localize(
-            'AWS.message.prompt.quickStart.toastMessage',
-            'You are now using AWS Toolkit version {0}',
-            pluginVersion
-        ),
-        view
-    )
-    if (prompt === view) {
+async function showOrPromptQuickstart(): Promise<void> {
+    if (isCloud9()) {
         vscode.commands.executeCommand('aws.quickStart')
+    } else {
+        const view = localize('AWS.command.quickStart', 'View Quick Start')
+        const prompt = await vscode.window.showInformationMessage(
+            localize(
+                'AWS.message.prompt.quickStart.toastMessage',
+                'You are now using AWS Toolkit version {0}',
+                pluginVersion
+            ),
+            view
+        )
+        if (prompt === view) {
+            vscode.commands.executeCommand('aws.quickStart')
+        }
     }
 }
 
@@ -212,12 +273,11 @@ export function showWelcomeMessage(context: vscode.ExtensionContext): void {
         )
         return
     }
-
     try {
         if (isDifferentVersion(context)) {
             setMostRecentVersion(context)
             // the welcome toast should be nonblocking.
-            showQuickstartPrompt()
+            showOrPromptQuickstart()
         }
     } catch (err) {
         // swallow error and don't block extension load
@@ -252,10 +312,11 @@ export function getToolkitEnvironmentDetails(): string {
     const vsCodeVersion = vscode.version
     const envDetails = localize(
         'AWS.message.toolkitInfo',
-        'OS:  {0} {1} {2}\nVisual Studio Code Version:  {3}\nAWS Toolkit Version:  {4}\n',
+        'OS:  {0} {1} {2}\n{3} Extension Host Version:  {4}\nAWS Toolkit Version:  {5}\n',
         osType,
         osArch,
         osRelease,
+        getIdeProperties().longName,
         vsCodeVersion,
         pluginVersion
     )

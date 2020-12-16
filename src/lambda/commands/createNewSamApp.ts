@@ -50,6 +50,7 @@ import { openLaunchJsonFile } from '../../shared/sam/debugger/commands/addSamDeb
 import { waitUntil } from '../../shared/utilities/timeoutUtils'
 import { launchConfigDocUrl } from '../../shared/constants'
 import { Runtime } from 'aws-sdk/clients/lambda'
+import { getIdeProperties } from '../../shared/extensionUtilities'
 
 export async function resumeCreateNewSamApp(
     extContext: ExtContext,
@@ -244,8 +245,9 @@ export async function createNewSamApplication(
                 .showWarningMessage(
                     localize(
                         'AWS.samcli.initWizard.launchConfigFail',
-                        'Created SAM application "{0}" but failed to generate launch configurations. You can generate these via CodeLens in the template or handler file.',
-                        config.name
+                        'Created SAM application "{0}" but failed to generate launch configurations. You can generate these via {1} in the template or handler file.',
+                        config.name,
+                        getIdeProperties().codelens
                     ),
                     helpText
                 )

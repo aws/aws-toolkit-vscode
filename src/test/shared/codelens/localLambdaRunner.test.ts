@@ -221,6 +221,7 @@ describe('localLambdaRunner', async () => {
                 templatePath: tempDir,
                 manifestPath: undefined, // not needed for testing
                 invoker: {
+                    stop: () => {},
                     invoke: async (): Promise<ChildProcessResult> =>
                         isSuccessfulBuild ? successfulChildProcess : failedChildProcess,
                 },

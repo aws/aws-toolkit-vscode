@@ -65,8 +65,8 @@ export class ChildProcess {
      * Calls `start()` with default listeners that resolve()/reject() on process end.
      */
     public async run(
-        onStdout?: (text: string) => void,
-        onStderr?: (text: string) => void
+        onStdout?: ChildProcessStartArguments['onStdout'],
+        onStderr?: ChildProcessStartArguments['onStderr']
     ): Promise<ChildProcessResult> {
         return await new Promise<ChildProcessResult>(async (resolve, reject) => {
             await this.start({

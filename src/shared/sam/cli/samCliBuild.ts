@@ -9,7 +9,7 @@ import { logAndThrowIfUnexpectedExitCode, SamCliProcessInvoker } from './samCliI
 import { DefaultSamCliProcessInvoker } from './samCliInvoker'
 import { pushIf } from '../../utilities/collectionUtils'
 import { ext } from '../../extensionGlobals'
-import { getChannelLogger } from '../../utilities/vsCodeUtils'
+import { getChannelLogger, localize } from '../../utilities/vsCodeUtils'
 
 export interface SamCliBuildInvocationArguments {
     /**
@@ -70,6 +70,8 @@ export interface FileFunctions {
  * An elaborate way to run `sam build`.
  */
 export class SamCliBuildInvocation {
+    private _failure: string | undefined
+
     public constructor(
         private readonly args: SamCliBuildInvocationArguments,
         private readonly context: { file: FileFunctions } = { file: getDefaultFileFunctions() }
@@ -79,9 +81,15 @@ export class SamCliBuildInvocation {
         this.args.skipPullImage = !!this.args.skipPullImage
     }
 
+    /** Gets the failure message, or undefined if no failure was detected.  */
+    public failure(): string | undefined {
+        return this._failure
+    }
+
     /**
+     * Invokes "sam build".
      *
-     * @returns process exit/status code
+     * @returns Process exit code, or -1 if `SamCliBuildInvocation` stopped the process and stored a failure message in `SamCliBuildInvocation.failure()`.
      */
     public async execute(): Promise<number> {
         await this.validate()
@@ -113,14 +121,28 @@ export class SamCliBuildInvocation {
             ...this.args.environmentVariables,
         }
 
+        const checkFailure = (text: string): void => {
+            if (text.match(/(RuntimeError: Container does not exist)/)) {
+                this.args.invoker.stop()
+                this._failure = localize(
+                    'AWS.sam.build.failure.diskSpace',
+                    '"sam build" failed. Check system disk space.'
+                )
+            }
+        }
+
         const childProcessResult = await this.args.invoker.invoke({
             spawnOptions: { env },
             arguments: invokeArgs,
             channelLogger: getChannelLogger(ext.outputChannel),
+            onStdout: checkFailure,
+            onStderr: checkFailure,
         })
 
+        if (this._failure) {
+            return -1
+        }
         logAndThrowIfUnexpectedExitCode(childProcessResult, 0)
-
         return childProcessResult.exitCode
     }
 

@@ -5,6 +5,7 @@
 
 import * as crypto from 'crypto'
 import { default as stripAnsi } from 'strip-ansi'
+import { isCloud9 } from '../extensionUtilities'
 import { getLogger } from '../logger'
 
 export function removeAnsi(text: string): string {
@@ -27,4 +28,11 @@ export function getStringHash(text: string): string {
     hash.update(text)
 
     return hash.digest('hex')
+}
+
+/**
+ * Temporary util while Cloud9 does not have codicon support
+ */
+export function addCodiconToString(codiconName: string, text: string): string {
+    return isCloud9() ? text : `$(${codiconName}) ${text}`
 }
