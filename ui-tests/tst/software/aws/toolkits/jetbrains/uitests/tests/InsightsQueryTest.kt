@@ -245,8 +245,8 @@ class InsightsQueryTest {
                         log.info("query returned no results, restarting query")
                         break
                     } else {
-                        log.info("no results yet, checking again")
-                        delay(500)
+                        log.info("no results yet, checking again in 2 seconds")
+                        delay(2000)
                     }
                 }
                 delay(2000)
