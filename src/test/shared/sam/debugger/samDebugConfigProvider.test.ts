@@ -1692,10 +1692,7 @@ Outputs:
 
             assertEqualLaunchConfigs(actual, expected)
             assertFileText(expected.envFile, '{"awsToolkitSamLocalResource":{}}')
-            assert.strictEqual(
-                readFileSync(actual.eventPayloadFile, 'utf-8'),
-                readFileSync(absPayloadPath, 'utf-8')
-            )
+            assert.strictEqual(readFileSync(actual.eventPayloadFile, 'utf-8'), readFileSync(absPayloadPath, 'utf-8'))
             assertFileText(
                 expected.templatePath,
                 `Resources:
@@ -2809,7 +2806,7 @@ Resources:
 
 describe('ensureRelativePaths', () => {
     it('ensures paths are relative', () => {
-        let workspace: vscode.WorkspaceFolder = {
+        const workspace: vscode.WorkspaceFolder = {
             uri: vscode.Uri.file('/test1/'),
             name: 'test workspace',
             index: 0,

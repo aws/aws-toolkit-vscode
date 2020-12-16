@@ -101,9 +101,9 @@ export async function createNewSamApplication(
     samCliContext: SamCliContext = getSamCliContext(),
     activationReloadState: ActivationReloadState = new ActivationReloadState()
 ): Promise<void> {
-    let channelLogger: ChannelLogger = extContext.chanLogger
-    let awsContext: AwsContext = extContext.awsContext
-    let regionProvider: RegionProvider = extContext.regionProvider
+    const channelLogger: ChannelLogger = extContext.chanLogger
+    const awsContext: AwsContext = extContext.awsContext
+    const regionProvider: RegionProvider = extContext.regionProvider
     let createResult: Result = 'Succeeded'
     let reason: createReason = 'unknown'
     let lambdaPackageType: 'Zip' | 'Image' | undefined
@@ -317,7 +317,7 @@ export async function addInitialLaunchConfiguration(
     runtime?: Runtime,
     launchConfiguration: LaunchConfiguration = new LaunchConfiguration(folder.uri)
 ): Promise<vscode.DebugConfiguration[] | undefined> {
-    let configurations = await new SamDebugConfigProvider(extContext).provideDebugConfigurations(folder)
+    const configurations = await new SamDebugConfigProvider(extContext).provideDebugConfigurations(folder)
     if (configurations) {
         // add configurations that target the new template file
         const filtered = configurations.filter(

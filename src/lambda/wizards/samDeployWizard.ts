@@ -451,9 +451,9 @@ export class DefaultSamDeployWizardContext implements SamDeployWizardContext {
             },
         })
 
-        let result = picker.verifySinglePickerOutput(choices)
-        let repository: EcrRepository | undefined = (result as any)?.repository
-        let label = result?.label
+        const result = picker.verifySinglePickerOutput(choices)
+        const repository: EcrRepository | undefined = (result as any)?.repository
+        const label = result?.label
 
         if (!repository || label === picker.IteratingQuickPickController.NO_ITEMS_ITEM.label) {
             return undefined
@@ -517,7 +517,7 @@ export class SamDeployWizard extends MultiStepWizard<SamDeployWizardResponse> {
     public constructor(private readonly context: SamDeployWizardContext, private readonly regionNode?: any) {
         super()
         // All nodes in the explorer should have a regionCode property, but let's make sure.
-        if (regionNode && regionNode.hasOwnProperty('regionCode')) {
+        if (regionNode && Object.prototype.hasOwnProperty.call(regionNode, 'regionCode')) {
             this.response.region = regionNode.regionCode
         }
     }
@@ -667,7 +667,9 @@ export class SamDeployWizard extends MultiStepWizard<SamDeployWizardResponse> {
     }
 
     private skipOrPromptRegion(skipToStep: WizardStep): WizardStep {
-        return this.regionNode && this.regionNode.hasOwnProperty('regionCode') ? skipToStep : this.REGION
+        return this.regionNode && Object.prototype.hasOwnProperty.call(this.regionNode, 'regionCode')
+            ? skipToStep
+            : this.REGION
     }
 }
 
