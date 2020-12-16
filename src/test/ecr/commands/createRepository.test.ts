@@ -13,7 +13,7 @@ import { MockEcrClient } from '../../shared/clients/mockClients'
 import { FakeCommands } from '../../shared/vscode/fakeCommands'
 
 describe('createRepositoryCommand', () => {
-    let ecr: EcrClient = new MockEcrClient({})
+    const ecr: EcrClient = new MockEcrClient({})
     let node: EcrNode
     let sandbox: sinon.SinonSandbox
 

@@ -400,7 +400,7 @@ vscode.debug.onDidTerminateDebugSession(session => {
 function requestLocalApi(ctx: ExtContext, api: APIGatewayProperties, apiPort: number, payload: any): Promise<void> {
     return new Promise((resolve, reject) => {
         const reqMethod = api?.httpMethod?.toUpperCase() ?? 'GET'
-        let reqOpts = {
+        const reqOpts = {
             // Sets body to JSON value and adds Content-type: application/json header.
             json: true,
             uri: `http://127.0.0.1:${apiPort}${api?.path}`,

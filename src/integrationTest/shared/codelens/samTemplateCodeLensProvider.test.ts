@@ -63,7 +63,7 @@ describe('SamTemplateCodeLensProvider', async () => {
     })
 
     it('provides no code lenses for a file with no resources', async () => {
-        let mockSymbolResolver: TemplateSymbolResolver = mock()
+        const mockSymbolResolver: TemplateSymbolResolver = mock()
         when(mockSymbolResolver.getResourcesOfKind('function', anything())).thenResolve([])
 
         const codeLenses = await codeLensProvider.provideCodeLenses(

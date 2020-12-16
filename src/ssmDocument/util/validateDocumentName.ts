@@ -21,7 +21,7 @@ export function validateDocumentName(name: string): string | undefined {
             )
         }
 
-        let docNameRegex: RegExp = /^[\_a-zA-Z0-9\-.]+$/
+        const docNameRegex: RegExp = /^[\_a-zA-Z0-9\-.]+$/
         if (!docNameRegex.test(name)) {
             return localize(
                 'AWS.ssmDocument.publishWizard.ssmDocumentName.validation.invalidCharacter',

@@ -31,7 +31,7 @@ export function getSamTemplateWizardOption(
     packageType: RuntimePackageType,
     samCliVersion: string
 ): ImmutableSet<SamTemplate> {
-    let templateOptions: Array<SamTemplate> = Array<SamTemplate>(helloWorldTemplate)
+    const templateOptions = Array<SamTemplate>(helloWorldTemplate)
 
     if (packageType === 'Image') {
         // only supports hello world for now

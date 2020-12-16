@@ -41,10 +41,10 @@ export function runTestsInFolder(testFolder: string, initTests: string[] = []): 
 
     return new Promise((c, e) => {
         // Read configuration for the coverage file
-        let coverOptions: TestRunnerOptions = _readCoverOptions(testsRoot)
+        const coverOptions: TestRunnerOptions = _readCoverOptions(testsRoot)
         if (coverOptions && coverOptions.enabled && !process.env['NO_COVERAGE']) {
             // Setup coverage pre-test, including post-test hook to report
-            let coverageRunner = new CoverageRunner(coverOptions, testsRoot)
+            const coverageRunner = new CoverageRunner(coverOptions, testsRoot)
             coverageRunner.setupCoverage()
         }
 
@@ -101,22 +101,22 @@ class CoverageRunner {
     public setupCoverage(): void {
         // Set up Code Coverage, hooking require so that instrumented code is returned
         // eslint-disable-next-line @typescript-eslint/no-this-alias
-        let self = this
+        const self = this
         self.instrumenter = new istanbul.Instrumenter({ coverageVariable: self.coverageVar })
-        let sourceRoot = path.join(self.testsRoot, self.options.relativeSourcePath)
+        const sourceRoot = path.join(self.testsRoot, self.options.relativeSourcePath)
 
         // Glob source files
-        let srcFiles = glob.sync('**/**.js', {
+        const srcFiles = glob.sync('**/**.js', {
             cwd: sourceRoot,
             ignore: self.options.ignorePatterns,
         })
 
         // Create a match function - taken from the run-with-cover.js in istanbul.
         // eslint-disable-next-line @typescript-eslint/no-var-requires
-        let decache = require('decache')
-        let fileMap = {}
+        const decache = require('decache')
+        const fileMap = {}
         srcFiles.forEach(file => {
-            let fullPath = path.join(sourceRoot, file)
+            const fullPath = path.join(sourceRoot, file)
             // @ts-ignore - Implicit any
             fileMap[fullPath] = true
 
@@ -146,7 +146,7 @@ class CoverageRunner {
         // are required, the instrumented version is pulled in instead. These instrumented versions
         // write to a global coverage variable with hit counts whenever they are accessed
         self.transformer = self.instrumenter.instrumentSync.bind(self.instrumenter)
-        let hookOpts = { verbose: false, extensions: ['.js'] }
+        const hookOpts = { verbose: false, extensions: ['.js'] }
         istanbul.hook.hookRequire(self.matchFn, self.transformer, hookOpts)
 
         // initialize the global variable to stop mocha from complaining about leaks
@@ -170,7 +170,7 @@ class CoverageRunner {
      */
     public reportCoverage(): void {
         // eslint-disable-next-line @typescript-eslint/no-this-alias
-        let self = this
+        const self = this
         istanbul.hook.unhookRequire()
         let cov: any
         // @ts-ignore - Implicit any
@@ -207,16 +207,16 @@ class CoverageRunner {
         })
 
         // TODO Allow config of reporting directory with
-        let reportingDir = path.join(self.testsRoot, self.options.relativeCoverageDir)
-        let includePid = self.options.includePid
-        let pidExt = includePid ? '-' + process.pid : ''
-        let coverageFile = path.resolve(reportingDir, 'coverage' + pidExt + '.json')
+        const reportingDir = path.join(self.testsRoot, self.options.relativeCoverageDir)
+        const includePid = self.options.includePid
+        const pidExt = includePid ? '-' + process.pid : ''
+        const coverageFile = path.resolve(reportingDir, 'coverage' + pidExt + '.json')
 
         _mkDirIfExists(reportingDir) // yes, do this again since some test runners could clean the dir initially created
 
         fs.writeFileSync(coverageFile, JSON.stringify(cov), 'utf8')
 
-        let remappedCollector = remapIstanbul.remap(cov, {
+        const remappedCollector = remapIstanbul.remap(cov, {
             // @ts-ignore - Implicit any
             warn: warning => {
                 // We expect some warnings as any JS file without a typescript mapping will cause this.
@@ -227,8 +227,8 @@ class CoverageRunner {
             },
         })
 
-        let reporter = new istanbul.Reporter(undefined, reportingDir)
-        let reportTypes = self.options.reports instanceof Array ? self.options.reports : ['lcov']
+        const reporter = new istanbul.Reporter(undefined, reportingDir)
+        const reportTypes = self.options.reports instanceof Array ? self.options.reports : ['lcov']
         reporter.addAll(reportTypes)
         reporter.write(remappedCollector, true, () => {
             console.log(`Code coverage reports written to ${reportingDir}`)
@@ -253,11 +253,11 @@ interface TestRunnerOptions {
 }
 
 function _readCoverOptions(testsRoot: string): TestRunnerOptions {
-    let coverConfigPath = path.join(testsRoot, '..', '..', 'coverconfig.json')
+    const coverConfigPath = path.join(testsRoot, '..', '..', 'coverconfig.json')
     // @ts-ignore - Type 'undefined' not assignable
     let coverConfig: ITestRunnerOptions = undefined
     if (fs.existsSync(coverConfigPath)) {
-        let configContent = fs.readFileSync(coverConfigPath, 'utf-8')
+        const configContent = fs.readFileSync(coverConfigPath, 'utf-8')
         coverConfig = JSON.parse(configContent)
     }
     return coverConfig
