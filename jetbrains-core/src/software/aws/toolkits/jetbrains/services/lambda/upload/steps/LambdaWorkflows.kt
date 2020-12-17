@@ -130,7 +130,7 @@ fun createDeployWorkflow(
     return StepWorkflow(
         BuildLambda(templatePath, buildDir, envVars, SamOptions(buildInContainer = useContainer)),
         PackageLambda(builtTemplate, packagedTemplate, null, envVars, s3Bucket, ecrRepo),
-        DeployLambda(packagedTemplate, stackName, s3Bucket, capabilities, parameters, envVars, region)
+        DeployLambda(packagedTemplate, stackName, s3Bucket, ecrRepo, capabilities, parameters, envVars, region)
     )
 }
 

@@ -141,7 +141,8 @@ fun GeneralCommandLine.samDeployCommand(
     templatePath: Path,
     parameters: Map<String, String>,
     capabilities: List<CreateCapabilities>,
-    s3Bucket: String
+    s3Bucket: String,
+    ecrRepo: String? = null
 ) = this.apply {
     withEnvironment(environmentVariables)
     withWorkDirectory(templatePath.parent.toAbsolutePath().toString())
@@ -153,6 +154,10 @@ fun GeneralCommandLine.samDeployCommand(
     addParameter(stackName)
     addParameter("--s3-bucket")
     addParameter(s3Bucket)
+    ecrRepo?.let {
+        addParameter("--image-repository")
+        addParameter(ecrRepo)
+    }
 
     if (capabilities.isNotEmpty()) {
         addParameter("--capabilities")
