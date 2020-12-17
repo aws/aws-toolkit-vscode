@@ -150,7 +150,8 @@ export class SsoAccessTokenProvider {
     }
 
     /**
-     * Takes a number of seconds and returns the number of milliseconds elapsed since January 1, 1970 00:00:00 UTC plus the passed seconds.
+     * Takes the current time and adds the param seconds, returns in milliseconds
+     * @param seconds Number of seconds to add
      */
     private currentTimePlusSecondsInMs(seconds: number) {
         return seconds * MILLISECONDS_PER_SECOND + Date.now()
