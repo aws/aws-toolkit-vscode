@@ -17,6 +17,7 @@ class DeployLambda(
     private val packagedTemplateFile: Path,
     private val stackName: String,
     private val s3Bucket: String,
+    private val ecrRepo: String?,
     private val capabilities: List<CreateCapabilities>,
     private val parameters: Map<String, String>,
     private val envVars: Map<String, String>,
@@ -30,6 +31,7 @@ class DeployLambda(
         templatePath = packagedTemplateFile,
         stackName = stackName,
         s3Bucket = s3Bucket,
+        ecrRepo = ecrRepo,
         capabilities = capabilities,
         parameters = parameters
     )
