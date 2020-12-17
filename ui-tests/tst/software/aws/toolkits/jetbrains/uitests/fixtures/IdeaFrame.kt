@@ -82,10 +82,7 @@ class IdeaFrame(remoteRobot: RemoteRobot, remoteComponent: RemoteComponent) : Co
     fun tryCloseTips() {
         step("Close Tip of the Day if it appears") {
             try {
-                val fixture = find<DialogFixture>(DialogFixture.byTitleContains("Tip"))
-                while (fixture.isShowing) {
-                    fixture.pressClose()
-                }
+                find<DialogFixture>(DialogFixture.byTitleContains("Tip")).close()
             } catch (e: Exception) {
             }
         }
