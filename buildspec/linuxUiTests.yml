@@ -45,7 +45,12 @@ phases:
       - Xvfb :99 -screen 0 1920x1080x24 &
       - export DISPLAY=:99
       - while [ ! -e /tmp/.X11-unix/X99 ]; do sleep 0.1; done
-      - icewm &
+      # The SAM cli tests crash the IDE in 2020.3 due to something with icewm. But in 2020.1/2020.2, tests fail without a WM. So, for now, special case it.
+      # this needs to be investigated further, especially when we onboard 2021.1
+      - >
+        if [ "$ALTERNATIVE_IDE_PROFILE_NAME" != "2020.3" ]; then 
+          icewm &
+        fi
       - chmod +x gradlew
       - ./gradlew buildPlugin --console plain --info
       - >
