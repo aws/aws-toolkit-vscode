@@ -15,6 +15,7 @@ import software.amazon.awssdk.services.lambda.model.Runtime
 import software.aws.toolkits.jetbrains.core.credentials.MockCredentialsManager
 import software.aws.toolkits.jetbrains.core.region.getDefaultRegion
 import software.aws.toolkits.jetbrains.services.lambda.execution.local.createHandlerBasedRunConfiguration
+import software.aws.toolkits.jetbrains.services.lambda.execution.local.createTemplateRunConfiguration
 import software.aws.toolkits.jetbrains.utils.executeRunConfiguration
 import software.aws.toolkits.jetbrains.utils.setSamExecutableFromEnvironment
 
@@ -132,10 +133,7 @@ abstract class DotnetLocalLambdaImageRunConfigurationIntegrationTestBase(private
 
     override fun getSolutionDirectoryName(): String = solutionName
 
-    // Cannot use assumeImage since Rider uses testNG, TODO enable when we have a SAM cli with support
-    /*
     @Test
-    @TestEnvironment(solution = "ImageLambda")
     fun samIsExecutedImage() {
         val template = "$tempTestDirectory/$solutionName/template.yaml"
 
@@ -148,10 +146,8 @@ abstract class DotnetLocalLambdaImageRunConfigurationIntegrationTestBase(private
             credentialsProviderId = mockId,
             isImage = true
         )
-        ModuleManager.getInstance(project).modules
 
         val executeLambda = executeRunConfiguration(runConfiguration)
         assertThat(executeLambda.exitCode).isEqualTo(0)
     }
-    */
 }
