@@ -49,7 +49,7 @@ class FileBrowserFixture(
         val absolutePath = path.toAbsolutePath()
         step("Select $absolutePath") {
             step("Refresh file explorer to make sure the file ${path.fileName} is loaded") {
-                waitForIgnoringError(duration = Duration.ofSeconds(15)) {
+                waitForIgnoringError(duration = Duration.ofSeconds(30), interval = Duration.ofSeconds(10)) {
                     setFilePath(absolutePath)
                     findAndClick("//div[@accessiblename='Refresh']")
                     tree.requireSelection(*absolutePath.toParts())

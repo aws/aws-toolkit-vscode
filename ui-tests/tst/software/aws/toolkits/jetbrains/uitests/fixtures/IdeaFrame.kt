@@ -30,13 +30,26 @@ class IdeaFrame(remoteRobot: RemoteRobot, remoteComponent: RemoteComponent) : Co
     val projectViewTree
         get() = find<ContainerFixture>(byXpath("ProjectViewTree", "//div[@class='ProjectViewTree']"))
 
-    val projectName
-        get() = step("Get project name") { return@step callJs<String>("component.getProject().getName()") }
+    init {
+        waitForProjectToBeAssigned()
+    }
+
+    private fun waitForProjectToBeAssigned() {
+        waitFor(duration = Duration.ofSeconds(30)) {
+            callJs(
+                """
+                var frameHelper = com.intellij.openapi.wm.impl.ProjectFrameHelper.getFrameHelper(component);
+                frameHelper.project != null
+                """.trimIndent(),
+                runInEdt = true
+            )
+        }
+    }
 
     fun dumbAware(timeout: Duration = Duration.ofMinutes(5), function: () -> Unit) {
         step("Wait for smart mode") {
             waitFor(duration = timeout, interval = Duration.ofSeconds(5)) {
-                runCatching { isDumbMode().not() }.getOrDefault(false)
+                isDumbMode().not()
             }
             function()
             step("..wait for smart mode again") {
@@ -58,7 +71,13 @@ class IdeaFrame(remoteRobot: RemoteRobot, remoteComponent: RemoteComponent) : Co
         }
     }
 
-    private fun isDumbMode(): Boolean = callJs("com.intellij.openapi. project.DumbService.isDumb(component.project);", true)
+    private fun isDumbMode(): Boolean = callJs(
+        """
+            var frameHelper = com.intellij.openapi.wm.impl.ProjectFrameHelper.getFrameHelper(component);
+            com.intellij.openapi.project.DumbService.isDumb(frameHelper.project);
+        """.trimIndent(),
+        runInEdt = true
+    )
 
     fun openProjectStructure() = step("Open Project Structure dialog") {
         if (remoteRobot.isMac()) {
