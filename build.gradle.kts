@@ -240,6 +240,11 @@ subprojects {
                 systemProperty("aws.sharedCredentialsFile", "/tmp/.aws/credentials")
             }
 
+            debugOptions {
+                enabled.set(true)
+                suspend.set(false)
+            }
+
             configure<JacocoTaskExtension> {
                 setDestinationFile(File("$buildDir/jacoco/${Instant.now()}-jacocoUiTests.exec"))
             }

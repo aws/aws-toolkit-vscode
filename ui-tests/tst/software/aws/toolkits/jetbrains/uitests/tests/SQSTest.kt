@@ -180,16 +180,6 @@ class SQSTest {
                         assertThat(it).contains("Started purging queue")
                     }
                 }
-                awsExplorer {
-                    openExplorerActionMenu(sqsNodeLabel, queueName)
-                }
-                actionMenuItem(purgeQueueText).click()
-                pressYes()
-                reattemptAssert {
-                    assertThat(findToastText()).anySatisfy {
-                        assertThat(it).contains("Purge queue request already in progress for queue")
-                    }
-                }
             }
             step("Subscribe queue to sns topic") {
                 awsExplorer {
