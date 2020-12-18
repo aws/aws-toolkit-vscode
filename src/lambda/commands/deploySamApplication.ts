@@ -217,6 +217,7 @@ async function deployOperation(params: {
                 region: params.deployParameters.region,
                 stackName: params.deployParameters.destinationStackName,
                 s3Bucket: params.deployParameters.packageBucketName,
+                ecrRepo: params.deployParameters.ecrRepo,
             },
             params.invoker
         )
