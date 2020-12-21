@@ -5,7 +5,7 @@ package software.aws.toolkits.jetbrains.core.region
 
 import com.intellij.openapi.components.ServiceManager
 import com.intellij.openapi.components.service
-import org.junit.rules.ExternalResource
+import org.junit.runner.Description
 import software.amazon.awssdk.regions.Region
 import software.aws.toolkits.core.region.AwsPartition
 import software.aws.toolkits.core.region.AwsRegion
@@ -14,6 +14,8 @@ import software.aws.toolkits.core.region.ToolkitRegionProvider
 import software.aws.toolkits.core.region.aRegionId
 import software.aws.toolkits.core.region.anAwsRegion
 import software.aws.toolkits.core.utils.test.aString
+import software.aws.toolkits.jetbrains.utils.rules.AppRule
+import software.aws.toolkits.jetbrains.utils.rules.ClearableLazy
 
 private class MockRegionProvider : ToolkitRegionProvider() {
     private val overrideRegions: MutableMap<String, AwsRegion> = mutableMapOf()
@@ -63,16 +65,13 @@ private class MockRegionProvider : ToolkitRegionProvider() {
     }
 }
 
-class MockRegionProviderRule : ExternalResource() {
-    private lateinit var regionManager: MockRegionProvider
-
-    override fun before() {
-        regionManager = service<ToolkitRegionProvider>() as MockRegionProvider
+class MockRegionProviderRule : AppRule() {
+    private val lazyRegionProvider = ClearableLazy {
+        MockRegionProvider.getInstance()
     }
 
-    override fun after() {
-        reset()
-    }
+    private val regionManager: MockRegionProvider
+        get() = lazyRegionProvider.value
 
     fun addRegion(region: AwsRegion): AwsRegion = regionManager.addRegion(region)
     fun addRegion(sdkRegion: Region): AwsRegion = regionManager.addRegion(
@@ -102,8 +101,14 @@ class MockRegionProviderRule : ExternalResource() {
 
     fun addService(serviceName: String, service: Service) = regionManager.addService(serviceName, service)
 
+    override fun finished(description: Description?) {
+        lazyRegionProvider.ifSet {
+            reset()
+            lazyRegionProvider.clear()
+        }
+    }
+
     fun reset() {
-        @Suppress("DEPRECATION")
         regionManager.reset()
     }
 }
