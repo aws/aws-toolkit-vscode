@@ -33,6 +33,7 @@ import com.intellij.util.io.readBytes
 import com.intellij.util.io.write
 import com.intellij.xdebugger.XDebuggerUtil
 import org.jetbrains.idea.maven.project.MavenProjectsManager
+import org.jetbrains.idea.maven.server.MavenServerManager
 import org.jetbrains.plugins.gradle.settings.GradleProjectSettings
 import org.jetbrains.plugins.gradle.util.GradleConstants
 import org.junit.Assert.fail
@@ -52,12 +53,7 @@ fun HeavyJavaCodeInsightTestFixtureRule.setUpJdk(jdkName: String = "Real JDK"): 
             val jdkHomeDir = LocalFileSystem.getInstance().refreshAndFindFileByPath(jdkHome)!!
             val jdk = SdkConfigurationUtil.setupSdk(emptyArray(), jdkHomeDir, JavaSdk.getInstance(), false, null, jdkName)!!
 
-            ProjectJdkTable.getInstance().addJdk(jdk)
-            Disposer.register(
-                this.fixture.testRootDisposable,
-                Disposable { runWriteAction { ProjectJdkTable.getInstance().removeJdk(jdk) } }
-            )
-
+            ProjectJdkTable.getInstance().addJdk(jdk, this.fixture.testRootDisposable)
             ModuleRootModificationUtil.setModuleSdk(this.module, jdk)
         }
     }
@@ -265,6 +261,11 @@ internal fun HeavyJavaCodeInsightTestFixtureRule.setUpMavenProject(): PsiClass {
                 }
             }
         """.trimIndent()
+    )
+
+    Disposer.register(
+        this.fixture.testRootDisposable,
+        Disposable { MavenServerManager.getInstance().shutdown(true) }
     )
 
     val projectsManager = MavenProjectsManager.getInstance(project)
