@@ -16,6 +16,7 @@ import com.intellij.psi.PsiManager
 import com.intellij.testFramework.ApplicationRule
 import com.intellij.testFramework.LightProjectDescriptor
 import com.intellij.testFramework.PlatformTestUtil
+import com.intellij.testFramework.ThreadTracker
 import com.intellij.testFramework.fixtures.CodeInsightTestFixture
 import com.intellij.testFramework.fixtures.IdeaTestFixtureFactory
 import com.intellij.testFramework.fixtures.impl.LightTempDirTestFixtureImpl
@@ -64,6 +65,12 @@ open class CodeInsightTestFixtureRule(protected val testDescription: LightProjec
             beforeMethod.invoke(appRule)
         }
         this.description = description
+
+        // We can't find fork join pool correctly on JDK 11, we have to match all fork join threads because we can only register by name prefixes unlike the
+        // actual JB logic
+        // https://github.com/JetBrains/intellij-community/commit/0a6c9e16e95983ae0786d7667290c07b420ce705
+        // TODO: Remove this FIX_WHEN_MIN_IS_203
+        ThreadTracker.longRunningThreadCreated(ApplicationManager.getApplication(), "ForkJoinPool.commonPool-worker-")
     }
 
     override fun finished(description: Description?) {
