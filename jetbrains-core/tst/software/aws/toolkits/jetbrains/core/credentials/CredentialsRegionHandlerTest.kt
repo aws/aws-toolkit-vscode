@@ -17,7 +17,7 @@ import software.aws.toolkits.jetbrains.core.region.MockRegionProviderRule
 import software.aws.toolkits.jetbrains.settings.AwsSettings
 import software.aws.toolkits.jetbrains.settings.AwsSettingsRule
 import software.aws.toolkits.jetbrains.settings.UseAwsCredentialRegion
-import software.aws.toolkits.jetbrains.utils.NotificationListenerRule
+import software.aws.toolkits.jetbrains.utils.rules.NotificationListenerRule
 import software.aws.toolkits.resources.message
 
 class CredentialsRegionHandlerTest {
