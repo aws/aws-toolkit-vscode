@@ -30,7 +30,7 @@ import software.aws.toolkits.jetbrains.core.awsClient
 import software.aws.toolkits.jetbrains.core.credentials.MockAwsConnectionManager.ProjectAccountSettingsManagerRule
 import software.aws.toolkits.jetbrains.core.credentials.MockCredentialManagerRule
 import software.aws.toolkits.jetbrains.core.credentials.activeRegion
-import software.aws.toolkits.jetbrains.core.region.MockRegionProviderRule
+import software.aws.toolkits.jetbrains.core.region.AwsRegionProvider
 import software.aws.toolkits.jetbrains.services.ecr.resources.EcrResources
 import software.aws.toolkits.jetbrains.services.ecr.resources.Repository
 import software.aws.toolkits.jetbrains.services.iam.Iam.createRoleWithPolicy
@@ -50,7 +50,6 @@ class CreateFunctionIntegrationTest {
     private val projectRule = HeavyJavaCodeInsightTestFixtureRule()
     private val resourceCache = MockResourceCacheRule()
     private val disposableRule = DisposableRule()
-    private val regionProvider = MockRegionProviderRule()
     private val credentialManager = MockCredentialManagerRule()
     private val settingsManager = ProjectAccountSettingsManagerRule(projectRule)
     private val temporaryBucket = S3TemporaryBucketRule { projectRule.project.awsClient() }
@@ -63,7 +62,6 @@ class CreateFunctionIntegrationTest {
         projectRule,
         disposableRule,
         credentialManager,
-        regionProvider,
         settingsManager,
         temporaryBucket
     )
@@ -85,7 +83,7 @@ class CreateFunctionIntegrationTest {
         // TODO: To defend against this we should make a AwsSdkClient that throws telling people to use this method
         MockClientManager.useRealImplementations(disposableRule.disposable)
 
-        val region = regionProvider.addRegion(Region.US_WEST_2)
+        val region = AwsRegionProvider.getInstance()[Region.US_WEST_2.id()]!!
         val credentials = credentialManager.addCredentials("ReadCreds", createIntegrationTestCredentialProvider(), region.id)
 
         settingsManager.settingsManager.changeRegion(region)
