@@ -78,6 +78,7 @@ class AwsSdkClientTest {
                 .dynamicHttpsPort()
                 .keystorePath(selfSignedJks.toString())
                 .keystorePassword("changeit")
+                .keyManagerPassword("changeit")
                 .keystoreType("jks")
         )
     }
