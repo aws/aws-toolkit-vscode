@@ -8,9 +8,13 @@ version: 0.2
 env:
   variables:
     CI: true
-    RECORD_UI: true
     LOCAL_ENV_RUN: true
     AWS_STS_REGIONAL_ENDPOINTS: regional
+
+    DISPLAY: :99
+    SCREEN_WIDTH: 1920
+    SCREEN_HEIGHT: 1080
+    SCREEN_DEPTH: 24
 
 phases:
   install:
@@ -20,7 +24,8 @@ phases:
 
     commands:
       - apt-get update
-      - apt-get install -y xvfb icewm procps ffmpeg libswt-gtk-3-java
+      - apt-get install -y xvfb fluxbox procps ffmpeg
+
       - mkdir -p /tmp/.aws
       - aws sts assume-role --role-arn $ASSUME_ROLE_ARN --role-session-name ui-test > /tmp/.aws/creds.json
       - export KEY_ID=`jq -r '.Credentials.AccessKeyId' /tmp/.aws/creds.json`
@@ -31,7 +36,9 @@ phases:
         aws_access_key_id=$KEY_ID
         aws_secret_access_key=$SECRET
         aws_session_token=$TOKEN"
+
       - pip3 install --user --upgrade  aws-sam-cli
+
       # login to DockerHub so we don't get throttled
       - export DOCKER_USERNAME=`echo $DOCKER_HUB_TOKEN | jq -r '.username'`
       - export DOCKER_PASSWORD=`echo $DOCKER_HUB_TOKEN | jq -r '.password'`
@@ -42,33 +49,29 @@ phases:
       - export SAM_CLI_EXEC=`which sam`
       - echo "SAM CLI location $SAM_CLI_EXEC"
       - $SAM_CLI_EXEC --version
-      - Xvfb :99 -screen 0 1920x1080x24 &
-      - export DISPLAY=:99
-      - while [ ! -e /tmp/.X11-unix/X99 ]; do sleep 0.1; done
-      # The SAM cli tests crash the IDE in 2020.3 due to something with icewm. But in 2020.1/2020.2, tests fail without a WM. So, for now, special case it.
-      # this needs to be investigated further, especially when we onboard 2021.1
-      - >
-        if [ "$ALTERNATIVE_IDE_PROFILE_NAME" != "2020.3" ]; then 
-          icewm &
-        fi
+
       - chmod +x gradlew
       - ./gradlew buildPlugin --console plain --info
-      - >
-        if [ "$RECORD_UI" ]; then
-        ffmpeg -loglevel warning -f x11grab -video_size 1920x1080 -i :99 -codec:v libx264 -r 12 /tmp/screen_recording.mp4 &
-        fi
+
+      - Xvfb ${DISPLAY} -screen 0 ${SCREEN_WIDTH}x${SCREEN_HEIGHT}x${SCREEN_DEPTH} &
+      - while [ ! -e /tmp/.X11-unix/X99 ]; do sleep 0.1; done
+      - fluxbox -display ${DISPLAY} &
+      - ffmpeg -loglevel warning -f x11grab -video_size ${SCREEN_WIDTH}x${SCREEN_HEIGHT} -i ${DISPLAY} -codec:v libx264 -pix_fmt yuv420p -framerate 12 -g 12 /tmp/screen_recording.mp4 &
+
       - env AWS_ACCESS_KEY_ID=$KEY_ID AWS_SECRET_ACCESS_KEY=$SECRET AWS_SESSION_TOKEN=$TOKEN ./gradlew uiTestCore coverageReport --console plain --info
 
   post_build:
     commands:
       - TEST_ARTIFACTS="/tmp/testArtifacts"
       - mkdir -p $TEST_ARTIFACTS/test-reports
+
+      - pkill -2 ffmpeg; while pgrep ffmpeg > /dev/null; do sleep 1; done;
+
       - rsync -rmq --include='*/' --include '**/build/idea-sandbox/system*/log/**' --exclude='*' . $TEST_ARTIFACTS/ || true
       - rsync -rmq --include='*/' --include '**/build/reports/**' --exclude='*' . $TEST_ARTIFACTS/ || true
       - rsync -rmq --include='*/' --include '**/test-results/**/*.xml' --exclude='*' . $TEST_ARTIFACTS/test-reports || true
 
-      - if [ "$RECORD_UI" ]; then pkill -2 ffmpeg; while pgrep ffmpeg > /dev/null; do sleep 1; done; fi
-      - if [ "$RECORD_UI" ]; then cp /tmp/screen_recording.mp4 $TEST_ARTIFACTS/; fi
+      - cp /tmp/screen_recording.mp4 $TEST_ARTIFACTS/
 
       - VCS_COMMIT_ID="${CODEBUILD_RESOLVED_SOURCE_VERSION}"
       - CI_BUILD_URL=$(echo $CODEBUILD_BUILD_URL | sed 's/#/%23/g') # Encode `#` in the URL because otherwise the url is clipped in the Codecov.io site
