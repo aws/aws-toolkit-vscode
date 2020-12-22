@@ -97,10 +97,7 @@ dependencies {
     implementation("com.fasterxml.jackson.dataformat:jackson-dataformat-yaml:$jacksonVersion")
 
     testImplementation(project(path = ":core", configuration = "testArtifacts"))
-    testImplementation("com.github.tomakehurst:wiremock-jre8:2.26.0")
+    testImplementation("com.github.tomakehurst:wiremock:2.27.2")
     testImplementation("org.jetbrains.kotlinx:kotlinx-coroutines-test:$coroutinesVersion")
     testImplementation("org.jetbrains.kotlinx:kotlinx-coroutines-debug:$coroutinesVersion")
-
-    integrationTestImplementation("org.eclipse.jetty:jetty-servlet:9.4.15.v20190215")
-    integrationTestImplementation("org.eclipse.jetty:jetty-proxy:9.4.15.v20190215")
 }
