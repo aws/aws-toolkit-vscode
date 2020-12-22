@@ -5,6 +5,7 @@
 
 import * as crypto from 'crypto'
 import { default as stripAnsi } from 'strip-ansi'
+import { isCloud9 } from '../extensionUtilities'
 import { getLogger } from '../logger'
 
 export function removeAnsi(text: string): string {
@@ -29,8 +30,15 @@ export function getStringHash(text: string): string {
     return hash.digest('hex')
 }
 
+
 export function getSHA1StringHash(text: string): string {
     const shasum = crypto.createHash('sha1')
     shasum.update(text) //lgtm [js/weak-cryptographic-algorithm]
     return shasum.digest('hex')
+
+/**
+ * Temporary util while Cloud9 does not have codicon support
+ */
+export function addCodiconToString(codiconName: string, text: string): string {
+    return isCloud9() ? text : `$(${codiconName}) ${text}`
 }

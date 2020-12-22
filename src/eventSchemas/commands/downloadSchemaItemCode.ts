@@ -324,9 +324,9 @@ export class CodeExtractor {
     public checkFileCollisions(codeZipFile: string, destinationDirectory: string): boolean {
         const zip = new admZip(codeZipFile)
         const zipEntries = zip.getEntries()
-        let detectedCollisions: string[] = []
+        const detectedCollisions: string[] = []
 
-        zipEntries.forEach(function(zipEntry) {
+        zipEntries.forEach(function (zipEntry) {
             if (zipEntry.isDirectory) {
                 // Ignore directories because those can/will merged
             } else {
@@ -353,7 +353,7 @@ export class CodeExtractor {
             )
         )
 
-        for (let filePath of detectedCollisions) {
+        for (const filePath of detectedCollisions) {
             this.outputChannel.appendLine(filePath)
         }
     }

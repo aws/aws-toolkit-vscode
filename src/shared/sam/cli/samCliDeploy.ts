@@ -14,6 +14,7 @@ export interface SamCliDeployParameters {
     region: string
     stackName: string
     s3Bucket: string
+    ecrRepo?: string
 }
 
 export async function runSamCliDeploy(
@@ -36,6 +37,11 @@ export async function runSamCliDeploy(
         '--s3-bucket',
         deployArguments.s3Bucket,
     ]
+
+    if (deployArguments.ecrRepo) {
+        args.push('--image-repository', deployArguments.ecrRepo)
+    }
+
     if (deployArguments.parameterOverrides.size > 0) {
         const overrides = [...map(deployArguments.parameterOverrides.entries(), ([key, value]) => `${key}=${value}`)]
         args.push('--parameter-overrides', ...overrides)

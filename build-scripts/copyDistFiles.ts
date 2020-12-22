@@ -16,7 +16,7 @@ const repoRoot = path.dirname(__dirname)
 async function copyFiles(name: string, files: Array<string[]>) {
     try {
         console.log(`copying artifacts for "${name}"...`)
-        for (let [from, to] of files) {
+        for (const [from, to] of files) {
             await fs.copy(path.resolve(repoRoot, from), path.resolve(repoRoot, to), {
                 overwrite: true,
                 errorOnExist: false,

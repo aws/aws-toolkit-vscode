@@ -25,11 +25,11 @@ export async function getLambdaHandlerCandidates(uri: vscode.Uri): Promise<Lambd
     }
     const filename = uri.fsPath
     const parsedPath = path.parse(filename)
-    // Python handler paths are period separated and don't include the file extension
+    // Python handler paths are slash separated and don't include the file extension
     const handlerPath = path
         .relative(path.parse(requirementsFile.fsPath).dir, path.join(parsedPath.dir, parsedPath.name))
         .split(path.sep)
-        .join('.')
+        .join('/')
 
     const symbols: vscode.DocumentSymbol[] =
         (await vscode.commands.executeCommand<vscode.DocumentSymbol[]>('vscode.executeDocumentSymbolProvider', uri)) ??

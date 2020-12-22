@@ -49,6 +49,7 @@ import { getSamCliVersion } from '../cli/samCliContext'
 import { ext } from '../../extensionGlobals'
 import * as pathutils from '../../utilities/pathUtils'
 import { MINIMUM_SAM_CLI_VERSION_INCLUSIVE_FOR_IMAGE_SUPPORT } from '../cli/samCliValidator'
+import { isCloud9 } from '../../extensionUtilities'
 
 const localize = nls.loadMessageBundle()
 
@@ -117,6 +118,7 @@ export interface SamLaunchRequestArgs extends AwsSamDebuggerConfiguration {
     //
     /** vscode implicit field, set if user invokes "Run (Start Without Debugging)". */
     noDebug?: boolean
+    // Local (host) directory given to "sam foo --debugger-path …"
     debuggerPath?: string
     debugArgs?: string[]
     /** Passed to SAM CLI --container-env-vars. For Toolkit use, not exposed to the user. */
@@ -139,6 +141,11 @@ export interface SamLaunchRequestArgs extends AwsSamDebuggerConfiguration {
      * parameter overrides specified in the `sam.template.parameters` field
      */
     parameterOverrides?: string[]
+
+    /**
+     * HACK: Forces use of `ikp3db` python debugger in Cloud9 (and in tests).
+     */
+    useIkpdb?: boolean
 
     //
     //  Invocation properties (for "execute" phase, after "config" phase).
@@ -451,6 +458,7 @@ export class SamDebugConfigProvider implements vscode.DebugConfigurationProvider
             },
             awsCredentials: awsCredentials,
             parameterOverrides: parameterOverrideArr,
+            useIkpdb: isCloud9() || !!(config as any).useIkpdb,
         }
 
         //

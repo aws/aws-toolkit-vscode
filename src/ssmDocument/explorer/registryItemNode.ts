@@ -71,7 +71,7 @@ export class RegistryItemNode extends AWSTreeNodeBase {
     }
 
     private async getDocumentByOwner(client: SsmDocumentClient): Promise<SSM.DocumentIdentifier[]> {
-        let request: SSM.ListDocumentsRequest = {
+        const request: SSM.ListDocumentsRequest = {
             Filters: [
                 {
                     Key: 'DocumentType',

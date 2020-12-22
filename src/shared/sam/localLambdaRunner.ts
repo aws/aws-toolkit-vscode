@@ -3,7 +3,7 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
-import { copyFile, unlink, readFile, writeFile } from 'fs-extra'
+import { copyFile, readFile, remove, writeFile } from 'fs-extra'
 import * as path from 'path'
 import * as request from 'request'
 import * as tcpPortUsed from 'tcp-port-used'
@@ -15,7 +15,6 @@ import { getLogger } from '../logger'
 import { SettingsConfiguration } from '../settingsConfiguration'
 import * as telemetry from '../telemetry/telemetry'
 import { SamTemplateGenerator } from '../templates/sam/samTemplateGenerator'
-import { ExtensionDisposableFiles } from '../utilities/disposableFiles'
 import * as pathutil from '../utilities/pathUtils'
 import { normalizeSeparator } from '../utilities/pathUtils'
 import { Timeout } from '../utilities/timeoutUtils'
@@ -63,7 +62,7 @@ function makeResourceName(config: SamLaunchRequestArgs): string {
 
 const SAM_LOCAL_PORT_CHECK_RETRY_INTERVAL_MILLIS: number = 125
 const SAM_LOCAL_PORT_CHECK_RETRY_TIMEOUT_MILLIS_DEFAULT: number = 30000
-const MAX_DEBUGGER_RETRIES_DEFAULT: number = 4
+const MAX_DEBUGGER_RETRIES: number = 4
 const ATTACH_DEBUGGER_RETRY_DELAY_MILLIS: number = 1000
 
 /** "sam local start-api" wrapper from the current debug-session. */
@@ -122,9 +121,7 @@ export async function makeInputTemplate(config: SamLaunchRequestArgs): Promise<s
                 Variables: config.lambda?.environmentVariables,
             })
         }
-        inputTemplatePath = path.join(config.baseBuildDir!, 'input', 'input-template.yaml')
-        // code type is fire-and-forget so we can add to disposable files
-        ExtensionDisposableFiles.getInstance().addFolder(inputTemplatePath)
+        inputTemplatePath = path.join(config.codeRoot, 'app___vsctk___template.yaml')
     }
 
     // additional overrides
@@ -196,23 +193,28 @@ export async function invokeLambdaFunction(
     }
 
     try {
-        await new SamCliBuildInvocation(samCliArgs).execute()
-    } finally {
-        // always delete temp template.
-        await unlink(config.templatePath)
+        const samBuild = new SamCliBuildInvocation(samCliArgs)
+        await samBuild.execute()
+        if (samBuild.failure()) {
+            ctx.chanLogger.emitMessage(samBuild.failure()!)
+            throw new Error(samBuild.failure())
+        }
+        // build successful: use output template path for invocation
+        // XXX: reassignment
+        await remove(config.templatePath)
+        config.templatePath = path.join(samBuildOutputFolder, 'template.yaml')
+        ctx.chanLogger.info('AWS.output.building.sam.application.complete', 'Build complete.')
+    } catch (err) {
+        // build unsuccessful: don't delete temp template and continue using it for invocation
+        // will be cleaned up in the last `finally` step
+        ctx.chanLogger.warn('AWS.samcli.build.failedBuild', '"sam build" failed: {0}', config.templatePath)
     }
-
-    ctx.chanLogger.info('AWS.output.building.sam.application.complete', 'Build complete.')
-
-    // XXX: reassignment
-    config.templatePath = path.join(samBuildOutputFolder, 'template.yaml')
 
     await onAfterBuild()
 
     ctx.chanLogger.info('AWS.output.starting.sam.app.locally', 'Starting SAM application locally')
     getLogger().debug(`localLambdaRunner.invokeLambdaFunction: ${config.name}`)
 
-    const maxRetries: number = getAttachDebuggerMaxRetryLimit(ctx.settings, MAX_DEBUGGER_RETRIES_DEFAULT)
     const timer = createInvokeTimer(ctx.settings)
     const debugPort = !config.noDebug ? config.debugPort?.toString() : undefined
     const lambdaPackageType = isImageLambdaConfig(config) ? 'Image' : 'Zip'
@@ -311,6 +313,7 @@ export async function invokeLambdaFunction(
                 err as Error
             )
         } finally {
+            await remove(config.templatePath)
             telemetry.recordLambdaInvokeLocal({
                 lambdaPackageType: lambdaPackageType,
                 result: invokeResult,
@@ -341,7 +344,6 @@ export async function invokeLambdaFunction(
 
         await attachDebugger({
             debugConfig: config,
-            maxRetries,
             retryDelayMillis: ATTACH_DEBUGGER_RETRY_DELAY_MILLIS,
             channelLogger: ctx.chanLogger,
             onRecordAttachDebuggerMetric: (attachResult: boolean | undefined, attempts: number): void => {
@@ -398,7 +400,7 @@ vscode.debug.onDidTerminateDebugSession(session => {
 function requestLocalApi(ctx: ExtContext, api: APIGatewayProperties, apiPort: number, payload: any): Promise<void> {
     return new Promise((resolve, reject) => {
         const reqMethod = api?.httpMethod?.toUpperCase() ?? 'GET'
-        let reqOpts = {
+        const reqOpts = {
             // Sets body to JSON value and adds Content-type: application/json header.
             json: true,
             uri: `http://127.0.0.1:${apiPort}${api?.path}`,
@@ -457,7 +459,6 @@ function requestLocalApi(ctx: ExtContext, api: APIGatewayProperties, apiPort: nu
 
 export interface AttachDebuggerContext {
     debugConfig: SamLaunchRequestArgs
-    maxRetries: number
     retryDelayMillis?: number
     channelLogger: Pick<ChannelLogger, 'info' | 'error'>
     onStartDebugging?: typeof vscode.debug.startDebugging
@@ -469,6 +470,7 @@ export async function attachDebugger({
     retryDelayMillis = ATTACH_DEBUGGER_RETRY_DELAY_MILLIS,
     onStartDebugging = vscode.debug.startDebugging,
     onWillRetry = async (): Promise<void> => {
+        getLogger().debug('attachDebugger: retrying...')
         await new Promise<void>(resolve => {
             setTimeout(resolve, retryDelayMillis)
         })
@@ -492,7 +494,7 @@ export async function attachDebugger({
     do {
         isDebuggerAttached = await onStartDebugging(undefined, params.debugConfig)
         if (!isDebuggerAttached) {
-            if (retries < params.maxRetries) {
+            if (retries < MAX_DEBUGGER_RETRIES) {
                 if (onWillRetry) {
                     await onWillRetry()
                 }
@@ -558,10 +560,6 @@ export async function waitForPort(
             channelLogger.warn('AWS.apig.portUnavailable', 'Failed to use API port: {0}', port.toString())
         }
     }
-}
-
-function getAttachDebuggerMaxRetryLimit(configuration: SettingsConfiguration, defaultValue: number): number {
-    return configuration.readSetting<number>('samcli.debug.attach.retry.maximum', defaultValue)!
 }
 
 export function shouldAppendRelativePathToFunctionHandler(runtime: string): boolean {
@@ -637,7 +635,7 @@ export async function makeJsonFiles(config: SamLaunchRequestArgs): Promise<void>
     if (payloadPath) {
         const fullpath = tryGetAbsolutePath(config.workspaceFolder, payloadPath)
         try {
-            JSON.parse(await readFile(payloadPath, { encoding: 'utf-8' }))
+            JSON.parse(await readFile(fullpath, { encoding: 'utf-8' }))
         } catch (e) {
             throw Error(`Invalid JSON in payload file: ${payloadPath}`)
         }

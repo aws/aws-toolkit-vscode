@@ -50,6 +50,7 @@ import { openLaunchJsonFile } from '../../shared/sam/debugger/commands/addSamDeb
 import { waitUntil } from '../../shared/utilities/timeoutUtils'
 import { launchConfigDocUrl } from '../../shared/constants'
 import { Runtime } from 'aws-sdk/clients/lambda'
+import { getIdeProperties } from '../../shared/extensionUtilities'
 
 export async function resumeCreateNewSamApp(
     extContext: ExtContext,
@@ -100,9 +101,9 @@ export async function createNewSamApplication(
     samCliContext: SamCliContext = getSamCliContext(),
     activationReloadState: ActivationReloadState = new ActivationReloadState()
 ): Promise<void> {
-    let channelLogger: ChannelLogger = extContext.chanLogger
-    let awsContext: AwsContext = extContext.awsContext
-    let regionProvider: RegionProvider = extContext.regionProvider
+    const channelLogger: ChannelLogger = extContext.chanLogger
+    const awsContext: AwsContext = extContext.awsContext
+    const regionProvider: RegionProvider = extContext.regionProvider
     let createResult: Result = 'Succeeded'
     let reason: createReason = 'unknown'
     let lambdaPackageType: 'Zip' | 'Image' | undefined
@@ -221,7 +222,7 @@ export async function createNewSamApplication(
         // Race condition where SAM app is created but template doesn't register in time.
         // Poll for 5 seconds, otherwise direct user to codelens.
         const isTemplateRegistered = await waitUntil(async () => {
-            return ext.templateRegistry.getRegisteredItem(uri.fsPath)
+            return ext.templateRegistry.getRegisteredItem(uri)
         })
 
         if (isTemplateRegistered) {
@@ -244,8 +245,9 @@ export async function createNewSamApplication(
                 .showWarningMessage(
                     localize(
                         'AWS.samcli.initWizard.launchConfigFail',
-                        'Created SAM application "{0}" but failed to generate launch configurations. You can generate these via CodeLens in the template or handler file.',
-                        config.name
+                        'Created SAM application "{0}" but failed to generate launch configurations. You can generate these via {1} in the template or handler file.',
+                        config.name,
+                        getIdeProperties().codelens
                     ),
                     helpText
                 )
@@ -315,7 +317,7 @@ export async function addInitialLaunchConfiguration(
     runtime?: Runtime,
     launchConfiguration: LaunchConfiguration = new LaunchConfiguration(folder.uri)
 ): Promise<vscode.DebugConfiguration[] | undefined> {
-    let configurations = await new SamDebugConfigProvider(extContext).provideDebugConfigurations(folder)
+    const configurations = await new SamDebugConfigProvider(extContext).provideDebugConfigurations(folder)
     if (configurations) {
         // add configurations that target the new template file
         const filtered = configurations.filter(

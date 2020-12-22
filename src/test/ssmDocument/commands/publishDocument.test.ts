@@ -86,14 +86,8 @@ describe('publishSSMDocument', async () => {
         sandbox.stub(vscode.window, 'activeTextEditor').value({
             document: textDocument,
         })
-        sandbox
-            .stub(picker, 'promptUser')
-            .onFirstCall()
-            .returns(Promise.resolve(fakeRegions))
-        sandbox
-            .stub(picker, 'verifySinglePickerOutput')
-            .onFirstCall()
-            .returns(fakeRegion)
+        sandbox.stub(picker, 'promptUser').onFirstCall().returns(Promise.resolve(fakeRegions))
+        sandbox.stub(picker, 'verifySinglePickerOutput').onFirstCall().returns(fakeRegion)
         initializeClientBuilders()
     })
 
@@ -157,13 +151,13 @@ describe('publishDocument', async () => {
     let textDocument: vscode.TextDocument
     let result: SSM.CreateDocumentResult | SSM.UpdateDocumentResult
     let client: SsmDocumentClient
-    let fakeCreateRequest: SSM.CreateDocumentRequest = {
+    const fakeCreateRequest: SSM.CreateDocumentRequest = {
         Content: 'MockDocumentTextOne',
         DocumentFormat: 'JSON',
         DocumentType: 'Automation',
         Name: 'test',
     }
-    let fakeUpdateRequest: SSM.UpdateDocumentRequest = {
+    const fakeUpdateRequest: SSM.UpdateDocumentRequest = {
         Content: 'MockDocumentTextOne',
         DocumentFormat: 'JSON',
         DocumentVersion: '$LATEST',

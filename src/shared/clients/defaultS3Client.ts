@@ -181,7 +181,7 @@ export class DefaultS3Client implements S3Client {
         const readStream = this.fileStreams.createReadStream(request.fileLocation)
         const contentType = mime.lookup(path.basename(request.fileLocation.fsPath)) || DEFAULT_CONTENT_TYPE
 
-        let managedUploaded = s3.upload({
+        const managedUploaded = s3.upload({
             Bucket: request.bucketName,
             Key: request.key,
             Body: readStream,

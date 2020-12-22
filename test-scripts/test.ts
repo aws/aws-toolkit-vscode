@@ -30,8 +30,8 @@ async function setupVSCode(): Promise<string> {
             vscodeExecutablePath: vsCodeExecutablePath,
             extensionDevelopmentPath: rootDir,
             extensionTestsPath: testEntrypoint,
-            // TODO: remove "--verbose --log ..." after some bake-time on master branch (ETA: 2020-12-15).
-            launchArgs: ['--verbose', '--log', 'debug', testWorkspace],
+            // For verbose VSCode logs, add "--verbose --log debug". c2165cf48e62c
+            launchArgs: [testWorkspace],
         })
 
         console.log(`Finished running Main test suite with result code: ${result}`)

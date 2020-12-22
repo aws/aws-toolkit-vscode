@@ -107,7 +107,7 @@ export class FakeExtensionContext implements vscode.ExtensionContext {
         const outputChannel = new MockOutputChannel()
         const channelLogger = new FakeChannelLogger()
         const fakeTelemetryPublisher = new FakeTelemetryPublisher()
-        const telemetryService = new DefaultTelemetryService(ctx, awsContext, fakeTelemetryPublisher)
+        const telemetryService = new DefaultTelemetryService(ctx, awsContext, undefined, fakeTelemetryPublisher)
         return {
             extensionContext: ctx,
             awsContext: awsContext,
@@ -148,7 +148,7 @@ class FakeMemento implements vscode.Memento {
     public get<T>(key: string): T | undefined
     public get<T>(key: string, defaultValue: T): T
     public get(key: any, defaultValue?: any) {
-        if (this._storage.hasOwnProperty(String(key))) {
+        if (Object.prototype.hasOwnProperty.call(this._storage, String(key))) {
             return this._storage[key]
         }
         if (defaultValue) {

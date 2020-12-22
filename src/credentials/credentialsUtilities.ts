@@ -10,6 +10,7 @@ import * as vscode from 'vscode'
 import { Credentials } from 'aws-sdk'
 import { credentialHelpUrl } from '../shared/constants'
 import { Profile } from '../shared/credentials/credentialsFile'
+import { isCloud9 } from '../shared/extensionUtilities'
 import { CredentialsProviderId, asString } from './providers/credentialsProviderId'
 
 export function asEnvironmentVariables(credentials: Credentials): NodeJS.ProcessEnv {
@@ -28,6 +29,8 @@ export function asEnvironmentVariables(credentials: Credentials): NodeJS.Process
 export function notifyUserInvalidCredentials(credentialProviderId: CredentialsProviderId): void {
     const getHelp = localize('AWS.generic.message.getHelp', 'Get Help...')
     const viewLogs = localize('AWS.generic.message.viewLogs', 'View Logs...')
+    // TODO: getHelp link does not have a corresponding doc page in Cloud9 as of initial launch.
+    const buttons = isCloud9() ? [viewLogs] : [getHelp, viewLogs]
 
     vscode.window
         .showErrorMessage(
@@ -36,8 +39,7 @@ export function notifyUserInvalidCredentials(credentialProviderId: CredentialsPr
                 'Invalid Credentials {0}, see logs for more information.',
                 asString(credentialProviderId)
             ),
-            getHelp,
-            viewLogs
+            ...buttons
         )
         .then((selection: string | undefined) => {
             if (selection === getHelp) {

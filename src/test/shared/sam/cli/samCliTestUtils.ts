@@ -14,6 +14,8 @@ import { ChildProcessResult } from '../../../../shared/utilities/childProcess'
 export class MockSamCliProcessInvoker implements SamCliProcessInvoker {
     public constructor(private readonly validateArgs: (args: string[]) => void) {}
 
+    public stop(): void {}
+
     public async invoke(options?: SamCliProcessInvokeOptions): Promise<ChildProcessResult> {
         const invokeSettings = makeRequiredSamCliProcessInvokeOptions(options)
 
