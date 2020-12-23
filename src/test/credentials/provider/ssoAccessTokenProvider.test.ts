@@ -14,7 +14,7 @@ import { SsoClientRegistration } from '../../../credentials/sso/ssoClientRegistr
 import { assertThrowsError } from '../../../test/shared/utilities/assertUtils'
 
 describe('SsoAccessTokenProvider', () => {
-    let sandbox = sinon.createSandbox()
+    const sandbox = sinon.createSandbox()
 
     const ssoRegion = 'fakeRegion'
     const ssoUrl = 'fakeUrl'

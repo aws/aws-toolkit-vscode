@@ -92,8 +92,8 @@ describe('SSO diskCache', () => {
             it('should save the client registration correctly with mode 0600', () => {
                 sut.saveClientRegistration(ssoRegion, validRegistration)
 
-                let fileDescriptor = fs.openSync(registrationFilename, 'r')
-                let fileStats = fstatSync(fileDescriptor)
+                const fileDescriptor = fs.openSync(registrationFilename, 'r')
+                const fileStats = fstatSync(fileDescriptor)
 
                 assert.strictEqual(fileStats.mode, 33152)
             })
@@ -162,8 +162,8 @@ describe('SSO diskCache', () => {
             it('should save the access token correctly with mode 0600', () => {
                 sut.saveAccessToken(startUrl, validAccessToken)
 
-                let fileDescriptor = fs.openSync(accessTokenFileName, 'r')
-                let fileStats = fstatSync(fileDescriptor)
+                const fileDescriptor = fs.openSync(accessTokenFileName, 'r')
+                const fileStats = fstatSync(fileDescriptor)
 
                 assert.strictEqual(fileStats.mode, 33152)
             })

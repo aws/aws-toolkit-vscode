@@ -14,7 +14,7 @@ import { assertThrowsError } from '../../../test/shared/utilities/assertUtils'
 
 describe('SsoCredentialProvider', () => {
     describe('refreshCredentials', () => {
-        let sandbox = sinon.createSandbox()
+        const sandbox = sinon.createSandbox()
 
         const ssoRegion = 'dummyRegion'
         const ssoUrl = '123abc.com/start'
@@ -43,7 +43,7 @@ describe('SsoCredentialProvider', () => {
             const stubAccessToken = sandbox.stub(ssoAccessTokenProvider, 'accessToken').resolves(validAccessToken)
             const stubSsoClient = sandbox.stub(ssoClient, 'getRoleCredentials')
 
-            let errToThrow = new Error() as SDK.AWSError
+            const errToThrow = new Error() as SDK.AWSError
             errToThrow.code = 'UnauthorizedException'
 
             stubSsoClient.returns(({
