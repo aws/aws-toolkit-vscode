@@ -423,7 +423,9 @@ function requestLocalApi(ctx: ExtContext, api: APIGatewayProperties, apiPort: nu
             qs: api?.querystring,
             // TODO: api?.stageVariables,
         }
-        getLogger('channel').info(localize('AWS.sam.localApi.request', `Sending request to local API: ${reqOpts.uri}`))
+        getLogger('channel').info(
+            localize('AWS.sam.localApi.request', 'Sending request to local API: {0}', reqOpts.uri)
+        )
 
         const retryRequest = async (retries: number, retriesRemaining: number) => {
             if (retriesRemaining !== retries) {
