@@ -14,23 +14,18 @@ interface LogEntry {
     [MESSAGE]: string
 }
 
-export class OutputChannelTransport extends Transport {
-    private readonly outputChannel: vscode.OutputChannel
-
+export class DebugConsoleTransport extends Transport {
     public constructor(
         options: Transport.TransportStreamOptions & {
-            outputChannel: vscode.OutputChannel
-            name?: string
+            name: string
         }
     ) {
         super(options)
-
-        this.outputChannel = options.outputChannel
     }
 
     public log(info: LogEntry, next: () => void): void {
         setImmediate(() => {
-            this.outputChannel.appendLine(info[MESSAGE])
+            vscode.debug.activeDebugConsole.append(info[MESSAGE])
         })
 
         next()

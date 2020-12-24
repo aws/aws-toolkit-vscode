@@ -15,6 +15,9 @@ import {
 } from './samCliInvokerUtils'
 import { DefaultSamCliLocationProvider } from './samCliLocator'
 
+import * as nls from 'vscode-nls'
+const localize = nls.loadMessageBundle()
+
 export interface SamCliProcessInvokerContext {
     cliConfig: SamCliConfiguration
 }
@@ -66,18 +69,18 @@ export class DefaultSamCliProcessInvoker implements SamCliProcessInvoker {
         const samCommand = sam.path ? sam.path : 'sam'
         this.childProcess = new ChildProcess(samCommand, invokeOptions.spawnOptions, ...invokeOptions.arguments)
 
-        options?.channelLogger?.info('AWS.running.command', 'Running command: {0}', `${this.childProcess}`)
+        getLogger('channel').info(localize('AWS.running.command', 'Running command: {0}', `${this.childProcess}`))
         logger.verbose(`running: ${this.childProcess}`)
         return await this.childProcess.run(
             (text: string) => {
-                options?.channelLogger?.emitMessage(text)
+                getLogger('debug').info(text)
                 logger.verbose(`stdout: ${text}`)
                 if (options?.onStdout) {
                     options.onStdout(text)
                 }
             },
             (text: string) => {
-                options?.channelLogger?.emitMessage(text)
+                getLogger('debug').info(text)
                 logger.verbose(`stderr: ${text}`)
                 if (options?.onStderr) {
                     options.onStderr(text)

@@ -103,7 +103,6 @@ async function registerServerlessCommands(ctx: ExtContext): Promise<void> {
 
             await deploySamApplication(
                 {
-                    channelLogger: ctx.chanLogger,
                     samDeployWizard: samDeployWizard,
                 },
                 { awsContext: ctx.awsContext }

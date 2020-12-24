@@ -25,40 +25,99 @@ const DEFAULT_LOG_LEVEL: LogLevel = 'info'
 /**
  * Activate Logger functionality for the extension.
  */
-export async function activate(extensionContext: vscode.ExtensionContext): Promise<void> {
-    const outputChannel = LOG_OUTPUT_CHANNEL
+export async function activate(
+    extensionContext: vscode.ExtensionContext,
+    outputChannel: vscode.OutputChannel
+): Promise<void> {
+    const logOutputChannel = LOG_OUTPUT_CHANNEL
     const logPath = LOG_PATH
-    const logLevel = getLogLevel()
 
+    getLogger().info(`log level: ${getLogLevel()}`)
     await fs.ensureDir(path.dirname(logPath))
-    setLogger(makeLogger(logLevel, logPath, outputChannel, extensionContext.subscriptions))
+
+    // default logger
+    setLogger(
+        makeLogger(
+            {
+                logPaths: [logPath],
+                outputChannels: [logOutputChannel],
+            },
+            extensionContext.subscriptions
+        )
+    )
+
+    // channel logger
+    setLogger(
+        makeLogger(
+            {
+                logPaths: [logPath],
+                outputChannels: [outputChannel, logOutputChannel],
+            },
+            extensionContext.subscriptions
+        ),
+        'channel'
+    )
+
+    // debug channel logger
+    setLogger(
+        makeLogger(
+            {
+                staticLogLevel: 'verbose', // verbose will log anything
+                outputChannels: [outputChannel, logOutputChannel],
+                useDebugConsole: true,
+            },
+            extensionContext.subscriptions
+        ),
+        'debug'
+    )
+
     await registerLoggerCommands(extensionContext)
-    getLogger().info(`log level: ${logLevel}`)
-    outputChannel.appendLine(
+    logOutputChannel.appendLine(
         localize('AWS.log.fileLocation', 'Error logs for this session are permanently stored in {0}', logPath)
     )
 }
 
+/**
+ * Creates a logger off of specified params
+ * @param {Object} opts Specified parameters, all optional:
+ * @param {string} staticLogLevel Static log level, overriding config value. Will persist overridden config value even if the config value changes.
+ * @param {string[]} logPaths Array of paths to output log entries to
+ * @param {string[]} outputChannels Array of output channels to log entries to
+ * @param {boolean} useDebugConsole If true, outputs log entries to currently-active debug console. As per VS Code API, cannot specify a debug console in particular.
+ * @param disposables Array of disposables to add a subscription to
+ */
 export function makeLogger(
-    logLevel: LogLevel,
-    logPath: string,
-    outputChannel: vscode.OutputChannel,
+    opts: {
+        staticLogLevel?: LogLevel
+        logPaths?: string[]
+        outputChannels?: vscode.OutputChannel[]
+        useDebugConsole?: boolean
+    },
     disposables?: vscode.Disposable[]
 ): Logger {
-    const logger = new WinstonToolkitLogger(logLevel)
-    logger.logToFile(logPath)
-    logger.logToOutputChannel(outputChannel)
+    const logger = new WinstonToolkitLogger(opts.staticLogLevel ?? getLogLevel())
+    for (const logPath of opts.logPaths ?? []) {
+        logger.logToFile(logPath)
+    }
+    for (const outputChannel of opts.outputChannels ?? []) {
+        logger.logToOutputChannel(outputChannel)
+    }
+    if (opts.useDebugConsole) {
+        logger.logToDebugConsole()
+    }
 
-    vscode.workspace.onDidChangeConfiguration(
-        configurationChangeEvent => {
-            if (configurationChangeEvent.affectsConfiguration('aws.logLevel')) {
-                const newLogLevel = vscode.workspace.getConfiguration('aws').get('logLevel', logLevel)
-                logger.setLogLevel(newLogLevel)
-            }
-        },
-        undefined,
-        disposables
-    )
+    if (!opts.staticLogLevel) {
+        vscode.workspace.onDidChangeConfiguration(
+            configurationChangeEvent => {
+                if (configurationChangeEvent.affectsConfiguration('aws.logLevel')) {
+                    const newLogLevel = getLogLevel()
+                    logger.setLogLevel(newLogLevel)
+                }
+            },
+            undefined,
+            disposables
+        )
+    }
 
     return logger
 }

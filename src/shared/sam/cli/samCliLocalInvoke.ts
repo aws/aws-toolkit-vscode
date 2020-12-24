@@ -10,9 +10,9 @@ import { fileExists } from '../../filesystemUtilities'
 import { getLogger, Logger } from '../../logger'
 import { ChildProcess } from '../../utilities/childProcess'
 import { Timeout } from '../../utilities/timeoutUtils'
-import { ChannelLogger } from '../../utilities/vsCodeUtils'
 import { DefaultSamCliProcessInvokerContext, SamCliProcessInvokerContext } from './samCliInvoker'
 import { removeAnsi } from '../../utilities/textUtilities'
+import { ext } from '../../extensionGlobals'
 
 const localize = nls.loadMessageBundle()
 
@@ -49,7 +49,6 @@ export class DefaultSamLocalInvokeCommand implements SamLocalInvokeCommand {
     private readonly logger: Logger = getLogger()
 
     public constructor(
-        private readonly channelLogger: ChannelLogger,
         private readonly debuggerAttachCues: string[] = [
             WAIT_FOR_DEBUGGER_MESSAGES.PYTHON,
             WAIT_FOR_DEBUGGER_MESSAGES.NODEJS,
@@ -58,7 +57,7 @@ export class DefaultSamLocalInvokeCommand implements SamLocalInvokeCommand {
 
     public async invoke({ options, ...params }: SamLocalInvokeCommandArgs): Promise<ChildProcess> {
         const childProcess = new ChildProcess(params.command, options, ...params.args)
-        this.channelLogger.info('AWS.running.command', 'Running: {0}', `${childProcess}`)
+        getLogger('channel').info('AWS.running.command', 'Running: {0}', `${childProcess}`)
         // "sam local invoke", "sam local start-api", etc.
         const samCommandName = `sam ${params.args[0]} ${params.args[1]}`
 
@@ -67,13 +66,13 @@ export class DefaultSamLocalInvokeCommand implements SamLocalInvokeCommand {
         const runDebugger = new Promise<void>((resolve, reject) => {
             return childProcess.start({
                 onStdout: (text: string): void => {
-                    this.channelLogger.emitMessage(text)
+                    getLogger('debug').info(text)
                     // If we have a timeout (as we do on debug) refresh the timeout as we receive text
                     params.timeout?.refresh()
                     this.logger.verbose('SAM: pid %d: stdout: %s', childProcess.pid(), removeAnsi(text))
                 },
                 onStderr: (text: string): void => {
-                    this.channelLogger.emitMessage(text)
+                    getLogger('debug').error(text)
                     // If we have a timeout (as we do on debug) refresh the timeout as we receive text
                     params.timeout?.refresh()
                     this.logger.verbose('SAM: pid %d: stderr: %s', childProcess.pid(), removeAnsi(text))
@@ -90,7 +89,7 @@ export class DefaultSamLocalInvokeCommand implements SamLocalInvokeCommand {
                 },
                 onClose: (code: number, _: string): void => {
                     this.logger.verbose(`SAM: command exited (code: ${code}): ${childProcess}`)
-                    this.channelLogger.channel.appendLine(
+                    ext.outputChannel.appendLine(
                         localize('AWS.samcli.stopped', 'Command stopped: "{0}"', samCommandName)
                     )
 
@@ -106,11 +105,8 @@ export class DefaultSamLocalInvokeCommand implements SamLocalInvokeCommand {
                     }
                 },
                 onError: (error: Error): void => {
-                    this.channelLogger.error(
-                        'AWS.samcli.error',
-                        'Error running command "{0}": {1}',
-                        samCommandName,
-                        error
+                    getLogger('channel').error(
+                        localize('AWS.samcli.error', 'Error running command "{0}": {1}', samCommandName, error.message)
                     )
                     reject(error)
                 },
@@ -123,10 +119,8 @@ export class DefaultSamLocalInvokeCommand implements SamLocalInvokeCommand {
 
         await Promise.race(awaitedPromises).catch(async () => {
             if (timeExpired) {
-                this.channelLogger.error(
-                    'AWS.samcli.timeout',
-                    'Timeout while waiting for command: "{0}"',
-                    samCommandName
+                getLogger('channel').error(
+                    localize('AWS.samcli.timeout', 'Timeout while waiting for command: "{0}"', samCommandName)
                 )
                 if (!childProcess.stopped) {
                     childProcess.stop()
