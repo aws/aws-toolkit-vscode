@@ -32,7 +32,6 @@ export async function activate(
     const logOutputChannel = LOG_OUTPUT_CHANNEL
     const logPath = LOG_PATH
 
-    getLogger().info(`log level: ${getLogLevel()}`)
     await fs.ensureDir(path.dirname(logPath))
 
     // default logger
@@ -45,6 +44,7 @@ export async function activate(
             extensionContext.subscriptions
         )
     )
+    getLogger().info(`log level: ${getLogLevel()}`)
 
     // channel logger
     setLogger(
