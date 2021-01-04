@@ -29,7 +29,7 @@ class JavaLambdaBuilder : LambdaBuilder() {
         return Paths.get(buildFileDir)
     }
 
-    override fun additionalEnvironmentVariables(module: Module, samOptions: SamOptions): Map<String, String> {
+    override fun additionalBuildEnvironmentVariables(module: Module, samOptions: SamOptions): Map<String, String> {
         if (samOptions.buildInContainer) {
             return emptyMap()
         }

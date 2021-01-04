@@ -163,7 +163,7 @@ class CreateFunctionDialog(private val project: Project, private val initialRunt
                     functionDetails = functionDetails,
                     codeDetails = codeDetails,
                     buildDir = lambdaBuilder.getBuildDirectory(module),
-                    buildEnvVars = lambdaBuilder.additionalEnvironmentVariables(module, samOptions),
+                    buildEnvVars = lambdaBuilder.additionalBuildEnvironmentVariables(module, samOptions),
                     codeStorageLocation = view.codeStorage.codeLocation(),
                     samOptions = samOptions
                 )
