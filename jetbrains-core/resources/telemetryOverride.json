@@ -1,45 +1,4 @@
 {
-    "types": [
-        {
-            "name": "lambdaPackageType",
-            "allowedValues": [
-                "Zip",
-                "Image"
-            ],
-            "description": "The Lambda Package type of the function"
-        }
-    ],
-    "metrics": [
-        {
-            "name": "lambda_invokeLocal",
-            "description": "Called when invoking lambdas locally (with SAM in most toolkits)",
-            "metadata": [{ "type": "runtime", "required": false }, {"type": "lambdaPackageType"}, { "type": "result" }, { "type": "debug" }]
-        },
-        {
-            "name": "lambda_editFunction",
-            "description": "Called when creating lambdas remotely",
-            "metadata": [{ "type": "update", "required": false }, {"type": "lambdaPackageType", "required": false }, { "type": "result" }]
-        },
-        {
-            "name": "sam_init",
-            "description": "Called when initing a sam application",
-            "metadata": [
-                { "type": "result" },
-                { "type": "lambdaPackageType", "required": false },
-                { "type": "name", "required": false },
-                { "type": "runtime", "required": false },
-                { "type": "templateName", "required": false },
-                { "type": "version", "required": false },
-                { "type": "reason", "required": false },
-                { "type": "eventBridgeSchema", "required": false }
-            ]
-        },
-        {
-            "name": "ecr_createRepository",
-            "description": "Called when creating a new ECR repo",
-            "metadata": [
-                { "type": "result" }
-            ]
-        }
-    ]
+    "types": [],
+    "metrics": []
 }
