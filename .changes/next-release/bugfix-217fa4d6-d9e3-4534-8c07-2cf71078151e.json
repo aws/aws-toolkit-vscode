@@ -1,0 +1,4 @@
+{
+  "type" : "bugfix",
+  "description" : "Fix exception thrown in the new project wizard when run immediately after the toolkit is installed"
+}
