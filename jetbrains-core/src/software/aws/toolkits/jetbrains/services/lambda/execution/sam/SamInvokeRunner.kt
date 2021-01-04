@@ -15,6 +15,8 @@ import com.intellij.openapi.application.runInEdt
 import com.intellij.openapi.fileEditor.FileDocumentManager
 import com.intellij.openapi.module.Module
 import com.intellij.openapi.module.ModuleUtil
+import com.intellij.openapi.project.Project
+import com.intellij.openapi.vfs.VirtualFile
 import com.intellij.psi.PsiFile
 import org.jetbrains.concurrency.AsyncPromise
 import org.jetbrains.concurrency.Promise
@@ -26,18 +28,25 @@ import software.aws.toolkits.core.utils.tryOrNull
 import software.aws.toolkits.core.utils.warn
 import software.aws.toolkits.jetbrains.core.AwsResourceCache
 import software.aws.toolkits.jetbrains.services.PathMapping
-import software.aws.toolkits.jetbrains.services.lambda.BuildLambdaFromHandler
-import software.aws.toolkits.jetbrains.services.lambda.BuildLambdaFromTemplate
-import software.aws.toolkits.jetbrains.services.lambda.LambdaBuilderUtils
+import software.aws.toolkits.jetbrains.services.lambda.Lambda
+import software.aws.toolkits.jetbrains.services.lambda.LambdaBuilder
 import software.aws.toolkits.jetbrains.services.lambda.execution.local.LocalLambdaRunConfiguration
 import software.aws.toolkits.jetbrains.services.lambda.runtimeGroup
+import software.aws.toolkits.jetbrains.services.lambda.sam.SamOptions
 import software.aws.toolkits.jetbrains.services.lambda.sam.SamTemplateUtils
+import software.aws.toolkits.jetbrains.services.lambda.upload.steps.BuildLambda
 import software.aws.toolkits.jetbrains.services.lambda.validOrNull
 import software.aws.toolkits.jetbrains.services.sts.StsResources
 import software.aws.toolkits.jetbrains.services.telemetry.MetricEventMetadata
+import software.aws.toolkits.jetbrains.utils.execution.steps.StepExecutor
+import software.aws.toolkits.jetbrains.utils.execution.steps.StepWorkflow
+import software.aws.toolkits.resources.message
 import software.aws.toolkits.telemetry.LambdaPackageType
 import software.aws.toolkits.telemetry.LambdaTelemetry
+import software.aws.toolkits.telemetry.Result
 import java.io.File
+import java.nio.file.Path
+import java.nio.file.Paths
 import software.aws.toolkits.telemetry.Runtime as TelemetryRuntime
 
 class SamInvokeRunner : AsyncProgramRunner<RunnerSettings>() {
@@ -83,94 +92,139 @@ class SamInvokeRunner : AsyncProgramRunner<RunnerSettings>() {
         val buildingPromise = AsyncPromise<RunContentDescriptor?>()
         val samState = state as SamRunningState
         val lambdaSettings = samState.settings
-        val module = when (lambdaSettings) {
-            // TODO long term module should be removed for Template based configurations
-            // So, we need a Module. Why? for build directory. We use handler for this to set build directory, and that's it.
-            // So, base it off of the template file for now. Later, we should more explicitly do this lower.
-            is TemplateRunSettings ->
-                ModuleUtil.findModuleForFile(lambdaSettings.templateFile, environment.project)
-                    ?: throw IllegalStateException("Failed to locate module for ${lambdaSettings.templateFile}")
-            is HandlerRunSettings -> getModule(lambdaSettings.handlerElement.containingFile)
-            is ImageTemplateRunSettings -> {
-                ModuleUtil.findModuleForFile(lambdaSettings.dockerFile, environment.project)
-                    ?: throw IllegalStateException("Failed to locate module for ${lambdaSettings.dockerFile}")
-            }
-        }
-        val runtimeGroup = lambdaSettings.runtimeGroup
+        val lambdaBuilder = LambdaBuilder.getInstance(lambdaSettings.runtimeGroup)
 
-        val buildRequest = when (lambdaSettings) {
+        val buildLambdaRequest = when (lambdaSettings) {
             is TemplateRunSettings ->
-                BuildLambdaFromTemplate(
+                buildLambdaFromTemplate(
                     lambdaSettings.templateFile,
                     lambdaSettings.logicalId,
                     lambdaSettings.samOptions
                 )
             is ImageTemplateRunSettings ->
-                BuildLambdaFromTemplate(
+                buildLambdaFromTemplate(
                     lambdaSettings.templateFile,
                     lambdaSettings.logicalId,
                     lambdaSettings.samOptions
                 )
             is HandlerRunSettings ->
-                BuildLambdaFromHandler(
-                    lambdaSettings.handlerElement,
-                    lambdaSettings.handler,
-                    lambdaSettings.runtime,
-                    lambdaSettings.timeout,
-                    lambdaSettings.memorySize,
-                    lambdaSettings.environmentVariables,
-                    lambdaSettings.samOptions
+                buildLambdaFromHandler(
+                    lambdaBuilder,
+                    environment.project,
+                    lambdaSettings
                 )
         }
 
-        LambdaBuilderUtils.buildAndReport(module, runtimeGroup, buildRequest)
-            .thenAccept { built ->
-                val builtLambda = if (lambdaSettings is ImageTemplateRunSettings) {
-                    // This needs to be a bit smart. If a user set local path matches a default path, we need to make sure that is the one set
-                    // by removing the default set one.
-                    val userMappings = lambdaSettings.pathMappings.map { PathMapping(it.localRoot, it.remoteRoot) }
-                    val mappings = userMappings + built.mappings.filterNot { defaultMapping -> userMappings.any { defaultMapping.localRoot == it.localRoot } }
-                    built.copy(mappings = mappings)
-                } else {
-                    built
-                }
-                samState.runner.checkDockerInstalled()
-                runInEdt {
-                    samState.builtLambda = builtLambda
-                    samState.runner.run(environment, samState)
-                        .onSuccess {
-                            buildingPromise.setResult(it)
-                        }.onError {
-                            buildingPromise.setError(it)
-                        }
-                }
-            }.exceptionally {
-                LOG.warn(it) { "Failed to create Lambda package" }
-                buildingPromise.setError(it)
-                throw it
-            }.whenComplete { _, exception ->
-                val account = AwsResourceCache.getInstance()
-                    .getResourceIfPresent(StsResources.ACCOUNT, lambdaSettings.connection)
+        val buildWorkflow = buildWorkflow(environment, buildLambdaRequest, lambdaSettings.samOptions)
+        buildWorkflow.onSuccess = { context ->
+            samState.runner.checkDockerInstalled()
 
-                LambdaTelemetry.invokeLocal(
-                    metadata = MetricEventMetadata(
-                        awsAccount = account ?: METADATA_INVALID,
-                        awsRegion = lambdaSettings.connection.region.id
-                    ),
-                    debug = environment.isDebug(),
-                    runtime = TelemetryRuntime.from(lambdaSettings.runtime.toString()),
-                    lambdaPackageType = if (lambdaSettings is ImageTemplateRunSettings) LambdaPackageType.Image else LambdaPackageType.Zip,
-                    success = exception == null
-                )
+            val builtLambda = context.getRequiredAttribute(BuildLambda.BUILT_LAMBDA)
+            samState.builtLambda = builtLambda
+            samState.pathMappings = createPathMappings(lambdaBuilder, lambdaSettings, buildLambdaRequest)
+
+            // TODO: This is too much to be on edt i.e. we get creds in here... https://github.com/aws/aws-toolkit-jetbrains/issues/2025
+            runInEdt {
+                samState.runner.run(environment, samState)
+                    .onSuccess {
+                        buildingPromise.setResult(it)
+                        reportMetric(lambdaSettings, Result.Succeeded, environment.isDebug())
+                    }.onError {
+                        buildingPromise.setError(it)
+                        reportMetric(lambdaSettings, Result.Failed, environment.isDebug())
+                    }
             }
+        }
+        buildWorkflow.onError = {
+            LOG.warn(it) { "Failed to create Lambda package" }
+            buildingPromise.setError(it)
+            reportMetric(lambdaSettings, Result.Failed, environment.isDebug())
+        }
+
+        buildWorkflow.startExecution()
 
         return buildingPromise
     }
 
+    private fun createPathMappings(lambdaBuilder: LambdaBuilder, settings: LocalLambdaRunSettings, buildRequest: BuildRequest): List<PathMapping> {
+        val defaultPathMappings = lambdaBuilder.defaultPathMappings(buildRequest.template, buildRequest.logicalId, buildRequest.buildDir)
+        return if (settings is ImageTemplateRunSettings) {
+            // This needs to be a bit smart. If a user set local path matches a default path, we need to make sure that is the one set
+            // by removing the default set one.
+            val userMappings = settings.pathMappings.map { PathMapping(it.localRoot, it.remoteRoot) }
+            userMappings + defaultPathMappings.filterNot { defaultMapping -> userMappings.any { defaultMapping.localRoot == it.localRoot } }
+        } else {
+            defaultPathMappings
+        }
+    }
+
+    private fun reportMetric(lambdaSettings: LocalLambdaRunSettings, result: Result, isDebug: Boolean) {
+        val account = AwsResourceCache.getInstance()
+            .getResourceIfPresent(StsResources.ACCOUNT, lambdaSettings.connection)
+
+        LambdaTelemetry.invokeLocal(
+            metadata = MetricEventMetadata(
+                awsAccount = account ?: METADATA_INVALID,
+                awsRegion = lambdaSettings.connection.region.id
+            ),
+            debug = isDebug,
+            runtime = TelemetryRuntime.from(lambdaSettings.runtime.toString()),
+            lambdaPackageType = if (lambdaSettings is ImageTemplateRunSettings) LambdaPackageType.Image else LambdaPackageType.Zip,
+            result = result
+        )
+    }
+
+    // TODO: We actually probably want to split this for image templates and handler templates to enable build env vars for handler based
+    private fun buildLambdaFromTemplate(templateFile: VirtualFile, logicalId: String, samOptions: SamOptions): BuildRequest {
+        val templatePath = Paths.get(templateFile.path)
+        val buildDir = templatePath.resolveSibling(".aws-sam").resolve("build")
+
+        return BuildRequest(templatePath, logicalId, emptyMap(), buildDir)
+    }
+
+    private fun buildLambdaFromHandler(lambdaBuilder: LambdaBuilder, project: Project, settings: HandlerRunSettings): BuildRequest {
+        val samOptions = settings.samOptions
+        val runtime = settings.runtime
+        val handler = settings.handler
+
+        val element = Lambda.findPsiElementsForHandler(project, runtime, handler).first()
+        val module = getModule(element.containingFile)
+
+        val buildDirectory = lambdaBuilder.getBuildDirectory(module)
+        val dummyTemplate = buildDirectory.parent.resolve("temp-template.yaml")
+        val dummyLogicalId = "Function"
+
+        SamTemplateUtils.writeDummySamTemplate(
+            tempFile = dummyTemplate,
+            logicalId = dummyLogicalId,
+            runtime = runtime,
+            handler = handler,
+            timeout = settings.timeout,
+            memorySize = settings.memorySize,
+            codeUri = lambdaBuilder.handlerBaseDirectory(module, element).toAbsolutePath().toString(),
+            envVars = settings.environmentVariables
+        )
+
+        return BuildRequest(
+            dummyTemplate,
+            dummyLogicalId,
+            lambdaBuilder.additionalBuildEnvironmentVariables(module, samOptions),
+            buildDirectory
+        )
+    }
+
+    private fun buildWorkflow(environment: ExecutionEnvironment, buildRequest: BuildRequest, samOptions: SamOptions): StepExecutor {
+        val buildStep = BuildLambda(buildRequest.template, buildRequest.logicalId, buildRequest.buildDir, buildRequest.buildEnvVars, samOptions)
+
+        return StepExecutor(environment.project, message("sam.build.running"), StepWorkflow(buildStep), environment.executionId.toString())
+    }
+
     private fun getModule(psiFile: PsiFile): Module = ModuleUtil.findModuleForFile(psiFile)
-        ?: throw java.lang.IllegalStateException("Failed to locate module for $psiFile")
+        ?: throw IllegalStateException("Failed to locate module for $psiFile")
 
     private fun ExecutionEnvironment.isDebug(): Boolean = (executor.id == DefaultDebugExecutor.EXECUTOR_ID)
+
+    private data class BuildRequest(val template: Path, val logicalId: String, val buildEnvVars: Map<String, String>, val buildDir: Path)
 
     private companion object {
         val LOG = getLogger<SamInvokeRunner>()

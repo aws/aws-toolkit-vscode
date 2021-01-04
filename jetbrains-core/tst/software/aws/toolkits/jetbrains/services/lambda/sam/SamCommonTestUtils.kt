@@ -4,6 +4,9 @@
 package software.aws.toolkits.jetbrains.services.lambda.sam
 
 import com.intellij.openapi.util.SystemInfo
+import com.intellij.psi.PsiFile
+import com.intellij.testFramework.fixtures.CodeInsightTestFixture
+import software.amazon.awssdk.services.lambda.model.Runtime
 import java.nio.file.Files
 import java.nio.file.Path
 import java.nio.file.Paths
@@ -53,4 +56,23 @@ object SamCommonTestUtils {
 
         return sam
     }
+
+    fun CodeInsightTestFixture.addSamTemplate(
+        logicalName: String = "Function",
+        codeUri: String,
+        handler: String,
+        runtime: Runtime
+    ): PsiFile = this.addFileToProject(
+        "template.yaml",
+        """
+        Resources:
+          $logicalName:
+            Type: AWS::Serverless::Function
+            Properties:
+              CodeUri: $codeUri
+              Handler: $handler
+              Runtime: $runtime
+              Timeout: 900
+        """.trimIndent()
+    )
 }

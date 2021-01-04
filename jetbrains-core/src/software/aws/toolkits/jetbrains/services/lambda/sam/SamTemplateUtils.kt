@@ -37,8 +37,7 @@ object SamTemplateUtils {
     private const val S3_URI_PREFIX = "s3://"
 
     fun getUploadedCodeUri(template: Path, logicalId: String): UploadedCode = readTemplate(template) {
-        val function = requiredAt("/Resources").get(logicalId)
-            ?: throw IllegalArgumentException("No resource with the logical ID $logicalId")
+        val function = findFunction(logicalId)
         if (function.isImageBased()) {
             UploadedEcrCode(function.requiredAt("/Properties/ImageUri").textValue())
         } else {
@@ -83,6 +82,25 @@ object SamTemplateUtils {
         version = codeUri.get("Version").textValue()
     )
 
+    /**
+     * Returns the location of the Lambda source code as per SAM build requirements
+     */
+    fun getCodeLocation(template: Path, logicalId: String): String = readTemplate(template) {
+        val function = findFunction(logicalId)
+        if (function.isServerlessFunction()) {
+            if (function.isImageBased()) {
+                function.requiredAt("/Metadata/DockerContext").textValue()
+            } else {
+                function.requiredAt("/Properties/CodeUri").textValue()
+            }
+        } else {
+            function.requiredAt("/Properties/Code").textValue()
+        }
+    }
+
+    private fun JsonNode.findFunction(logicalId: String): JsonNode = this.requiredAt("/Resources").get(logicalId)
+        ?: throw IllegalArgumentException("No resource with the logical ID $logicalId")
+
     private fun JsonNode.isImageBased(): Boolean = this.packageType() == PackageType.IMAGE
 
     private fun JsonNode.packageType(): PackageType {
@@ -90,6 +108,8 @@ object SamTemplateUtils {
         return PackageType.knownValues().firstOrNull { it.toString() == type }
             ?: throw IllegalStateException(message("cloudformation.invalid_property", "PackageType", type))
     }
+
+    private fun JsonNode.isServerlessFunction(): Boolean = this.get("Type")?.textValue() == SERVERLESS_FUNCTION_TYPE
 
     private fun <T> readTemplate(template: Path, function: JsonNode.() -> T): T = template.inputStream().use {
         function(MAPPER.readTree(it))

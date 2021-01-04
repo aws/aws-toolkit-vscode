@@ -48,7 +48,7 @@ class PythonSamDebugSupport : SamDebugSupport {
         debugPorts: List<Int>
     ): XDebugProcessStarter? = object : XDebugProcessStarter() {
         override fun start(session: XDebugSession): XDebugProcess {
-            val mappings = state.builtLambda.mappings.plus(
+            val mappings = state.pathMappings.plus(
                 listOf(
                     PathMapping(
                         PythonHelper.DEBUGGER.pythonPathEntry,

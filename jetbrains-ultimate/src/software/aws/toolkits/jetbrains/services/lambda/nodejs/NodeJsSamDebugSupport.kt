@@ -42,7 +42,7 @@ class NodeJsSamDebugSupport : SamDebugSupport {
         debugPorts: List<Int>
     ): XDebugProcessStarter? = object : XDebugProcessStarter() {
         override fun start(session: XDebugSession): XDebugProcess {
-            val mappings = createBiMapMappings(state.builtLambda.mappings)
+            val mappings = createBiMapMappings(state.pathMappings)
             val fileFinder = RemoteDebuggingFileFinder(mappings, LocalFileSystemFileFinder())
 
             val connection = WipLocalVmConnection()

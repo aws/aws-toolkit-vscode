@@ -15,9 +15,9 @@ import java.nio.file.Paths
 class DotNetLambdaBuilder : LambdaBuilder() {
     override fun handlerBaseDirectory(module: Module, handlerElement: PsiElement): Path {
         val element = handlerElement as RiderLambdaHandlerFakePsiElement
-        val solutionFolder = element.getContainingProjectFile()?.parent?.path
+        val projectFolder = element.getContainingProjectFile()?.parent?.path
             ?: throw IllegalStateException(message("lambda.run.configuration.handler_root_not_found"))
-        return Paths.get(solutionFolder)
+        return Paths.get(projectFolder)
     }
 
     override fun getBuildDirectory(module: Module): Path = Paths.get(module.project.solutionDirectory.path, ".aws-sam", "build")
