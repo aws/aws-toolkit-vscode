@@ -9,12 +9,13 @@ import software.aws.toolkits.core.region.AwsRegion
 import software.aws.toolkits.jetbrains.core.credentials.AwsConnectionManager
 import software.aws.toolkits.jetbrains.core.credentials.ConnectionSettings
 import software.aws.toolkits.jetbrains.core.credentials.CredentialManager
+import software.aws.toolkits.jetbrains.core.credentials.profiles.DEFAULT_PROFILE_ID
 import software.aws.toolkits.jetbrains.core.region.AwsRegionProvider
 import javax.swing.JComponent
 import javax.swing.event.PopupMenuEvent
 
 class AwsConnectionSettingsSelector(
-    project: Project,
+    project: Project?,
     private val settingsChangedListener: (ConnectionSettings?) -> Unit = { _ -> }
 ) {
     private val regionProvider = AwsRegionProvider.getInstance()
@@ -25,15 +26,25 @@ class AwsConnectionSettingsSelector(
         view.region.setRegions(regionProvider.allRegions().values.toMutableList())
         view.credentialProvider.setCredentialsProviders(credentialManager.getCredentialIdentifiers())
 
-        val accountSettingsManager = AwsConnectionManager.getInstance(project)
-        if (accountSettingsManager.isValidConnectionSettings()) {
-            view.region.selectedRegion = accountSettingsManager.activeRegion
-            accountSettingsManager.selectedCredentialIdentifier?.let {
+        // nullable; unfortunately we can't rely on connection manager instance being retrievable from the default project
+        if (project != null) {
+            val accountSettingsManager = AwsConnectionManager.getInstance(project)
+            if (accountSettingsManager.isValidConnectionSettings()) {
+                view.region.selectedRegion = accountSettingsManager.activeRegion
+                accountSettingsManager.selectedCredentialIdentifier?.let {
+                    view.credentialProvider.setSelectedCredentialsProvider(it)
+                }
+            }
+        } else {
+            view.region.selectedRegion = regionProvider.defaultRegion()
+
+            // pick default or the first one
+            (credentialManager.getCredentialIdentifierById(DEFAULT_PROFILE_ID) ?: credentialManager.getCredentialIdentifiers().firstOrNull())?.let {
                 view.credentialProvider.setSelectedCredentialsProvider(it)
             }
-
-            fireChange()
         }
+        fireChange()
+
         view.credentialProvider.addPopupMenuListener(
             object : PopupMenuListenerAdapter() {
                 override fun popupMenuWillBecomeInvisible(e: PopupMenuEvent?) {
