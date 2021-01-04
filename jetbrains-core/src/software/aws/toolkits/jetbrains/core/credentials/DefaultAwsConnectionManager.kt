@@ -47,7 +47,7 @@ class DefaultAwsConnectionManager(private val project: Project) :
         state.recentlyUsedProfiles.reversed()
             .forEach { recentlyUsedProfiles.add(it) }
 
-        // Load all the initial state on BG thread, so e don't block the UI or loading of other components
+        // Load all the initial state on BG thread, so we don't block the UI or loading of other components
         GlobalScope.launch(Dispatchers.Default) {
             val credentialId = state.activeProfile ?: DEFAULT_PROFILE_ID
             val credentials = tryOrNull {

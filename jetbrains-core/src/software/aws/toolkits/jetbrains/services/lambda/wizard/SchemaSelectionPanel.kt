@@ -4,7 +4,6 @@
 package software.aws.toolkits.jetbrains.services.lambda.wizard
 
 import com.intellij.openapi.progress.ProgressIndicator
-import com.intellij.openapi.project.DefaultProjectFactory
 import com.intellij.openapi.roots.ModifiableRootModel
 import com.intellij.openapi.ui.ValidationInfo
 import com.intellij.openapi.vfs.VfsUtil
@@ -26,7 +25,7 @@ import javax.swing.JComponent
 class SchemaSelectionPanel : WizardFragment {
     private val schemaSelector = SchemaResourceSelector()
     private val awsConnectionSelector = AwsConnectionSettingsSelector(
-        DefaultProjectFactory.getInstance().defaultProject,
+        null,
         schemaSelector::reloadSchemas
     )
     private val component = panel {
