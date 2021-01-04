@@ -1,4 +1,4 @@
-// Copyright 2019 Amazon.com, Inc. or its affiliates. All Rights Reserved.
+// Copyright 2020 Amazon.com, Inc. or its affiliates. All Rights Reserved.
 // SPDX-License-Identifier: Apache-2.0
 
 package software.aws.toolkits.jetbrains.utils
@@ -29,8 +29,6 @@ import com.intellij.psi.PsiJavaFile
 import com.intellij.testFramework.IdeaTestUtil
 import com.intellij.testFramework.runInEdtAndWait
 import com.intellij.util.io.isDirectory
-import com.intellij.util.io.readBytes
-import com.intellij.util.io.write
 import com.intellij.xdebugger.XDebuggerUtil
 import org.jetbrains.idea.maven.project.MavenProjectsManager
 import org.jetbrains.idea.maven.server.MavenServerManager
@@ -38,6 +36,7 @@ import org.jetbrains.plugins.gradle.settings.GradleProjectSettings
 import org.jetbrains.plugins.gradle.util.GradleConstants
 import org.junit.Assert.fail
 import software.aws.toolkits.core.utils.exists
+import software.aws.toolkits.core.utils.inputStream
 import software.aws.toolkits.jetbrains.utils.rules.HeavyJavaCodeInsightTestFixtureRule
 import software.aws.toolkits.jetbrains.utils.rules.addFileToModule
 import java.nio.file.Files
@@ -77,16 +76,11 @@ fun HeavyJavaCodeInsightTestFixtureRule.setUpGradleProject(compatibility: String
             
             sourceCompatibility = '$compatibility'
             targetCompatibility = '$compatibility'
-
-            dependencies {
-                compile 'com.amazonaws:aws-lambda-java-core:1.2.0'
-                testImplementation 'junit:junit:4.12'
-            }
         """.trimIndent()
     ).virtualFile
 
     // Use our project's own Gradle version
-    copyGradleFiles(this)
+    this.copyGradleFiles()
 
     val lambdaClass = fixture.addClass(
         """
@@ -168,34 +162,40 @@ fun HeavyJavaCodeInsightTestFixtureRule.addBreakpoint() {
     }
 }
 
-private fun copyGradleFiles(fixtureRule: HeavyJavaCodeInsightTestFixtureRule) {
+private fun HeavyJavaCodeInsightTestFixtureRule.copyGradleFiles() {
     val gradleRoot = findGradlew()
     val gradleFiles = setOf("gradle/", "gradlew.bat", "gradlew")
 
     gradleFiles.forEach {
         val gradleFile = gradleRoot.resolve(it)
         if (gradleFile.exists()) {
-            copyPath(fixtureRule, gradleRoot, gradleFile)
+            copyPath(gradleRoot, gradleFile)
         } else {
             throw IllegalStateException("Failed to locate $it")
         }
     }
 }
 
-private fun copyPath(fixtureRule: HeavyJavaCodeInsightTestFixtureRule, root: Path, path: Path) {
+private fun HeavyJavaCodeInsightTestFixtureRule.copyPath(root: Path, path: Path) {
     if (path.isDirectory()) {
         Files.list(path).forEach {
             // Skip over files like .DS_Store. No gradlew related files start with a "." so safe to skip
             if (it.fileName.toString().startsWith(".")) {
                 return@forEach
             }
-            copyPath(fixtureRule, root, it)
+            this@copyPath.copyPath(root, it)
         }
     } else {
-        fixtureRule.fixture.addFileToModule(fixtureRule.module, root.relativize(path).toString(), "").also { newFile ->
-            val newPath = Paths.get(newFile.virtualFile.path)
-            newPath.write(path.readBytes())
+        fixture.addFileToModule(module, root.relativize(path).toString(), "").also { newFile ->
+            runInEdtAndWait {
+                runWriteAction {
+                    newFile.virtualFile.getOutputStream(null).use { out ->
+                        path.inputStream().use { it.copyTo(out) }
+                    }
+                }
+            }
             if (SystemInfo.isUnix) {
+                val newPath = Paths.get(newFile.virtualFile.path)
                 Files.setPosixFilePermissions(newPath, Files.getPosixFilePermissions(path))
             }
         }
@@ -233,20 +233,6 @@ internal fun HeavyJavaCodeInsightTestFixtureRule.setUpMavenProject(): PsiClass {
                     <maven.compiler.source>1.8</maven.compiler.source>
                     <maven.compiler.target>1.8</maven.compiler.target>
                 </properties>
-
-                <dependencies>
-                    <dependency>
-                        <groupId>com.amazonaws</groupId>
-                        <artifactId>aws-lambda-java-core</artifactId>
-                        <version>1.2.0</version>
-                    </dependency>
-                    <dependency>
-                      <groupId>junit</groupId>
-                      <artifactId>junit</artifactId>
-                      <version>4.12</version>
-                      <scope>test</scope>
-                    </dependency>
-                </dependencies>
             </project>
         """.trimIndent()
     ).virtualFile

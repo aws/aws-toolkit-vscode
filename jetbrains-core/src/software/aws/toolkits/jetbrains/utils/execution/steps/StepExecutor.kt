@@ -44,31 +44,48 @@ class StepExecutor(
         ).apply {
             isActivateToolWindowWhenAdded = true
         }
+
         // FIX_WHEN_MIN_IS_202 add optional filters and use descriptor.withExecutionFilter
 
         val progressListener: BuildProgressListener = project.service<BuildViewManager>()
         val messageEmitter = DefaultMessageEmitter.createRoot(progressListener, uniqueId)
 
-        ApplicationManager.getApplication().executeOnPooledThread {
-            try {
-                executionStarted(descriptor, progressListener)
-                workflow.run(context, messageEmitter)
-                LOG.tryOrNull("Failed to invoke success callback") {
-                    onSuccess?.invoke(context)
-                }
-                executionFinishedSuccessfully(processHandler, progressListener)
-            } catch (e: Throwable) {
-                LOG.tryOrNull("Failed to invoke error callback") {
-                    onError?.invoke(e)
-                }
-                onError?.invoke(e)
-                executionFinishedExceptionally(processHandler, progressListener, e)
+        // Rider runs tests always on EDT so we will dead lock if anything does stuff on EDT in the callbacks, so run this on the callee thread if we are
+        // headless
+        if (ApplicationManager.getApplication().isHeadlessEnvironment) {
+            execute(descriptor, progressListener, context, messageEmitter, processHandler)
+        } else {
+            ApplicationManager.getApplication().executeOnPooledThread {
+                execute(descriptor, progressListener, context, messageEmitter, processHandler)
             }
         }
 
         processHandler.startNotify()
 
         return processHandler
+    }
+
+    private fun execute(
+        descriptor: DefaultBuildDescriptor,
+        progressListener: BuildProgressListener,
+        context: Context,
+        messageEmitter: MessageEmitter,
+        processHandler: DummyProcessHandler
+    ) {
+        try {
+            executionStarted(descriptor, progressListener)
+            workflow.run(context, messageEmitter)
+            LOG.tryOrNull("Failed to invoke success callback") {
+                onSuccess?.invoke(context)
+            }
+            executionFinishedSuccessfully(processHandler, progressListener)
+        } catch (e: Throwable) {
+            LOG.tryOrNull("Failed to invoke error callback") {
+                onError?.invoke(e)
+            }
+            onError?.invoke(e)
+            executionFinishedExceptionally(processHandler, progressListener, e)
+        }
     }
 
     private fun executionStarted(descriptor: BuildDescriptor, progressListener: BuildProgressListener) {

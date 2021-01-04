@@ -24,7 +24,6 @@ import com.intellij.testFramework.runInEdtAndGet
 import com.intellij.testFramework.runInEdtAndWait
 import com.intellij.util.text.SemVer
 import com.intellij.xdebugger.XDebuggerUtil
-import software.amazon.awssdk.services.lambda.model.Runtime
 
 /**
  * JUnit test Rule that will create a Light [Project] and [CodeInsightTestFixture] with NodeJs support. Projects are
@@ -69,7 +68,7 @@ class MockNodeJsInterpreter(private var version: SemVer) : NodeJsLocalInterprete
             NodeJsLocalInterpreterManager.getInstance().interpreters + listOf(this)
     }
 
-    override fun getCachedVersion(): Ref<SemVer>? = Ref(version)
+    override fun getCachedVersion(): Ref<SemVer> = Ref(version)
 }
 
 class HeavyNodeJsCodeInsightTestFixtureRule : CodeInsightTestFixtureRule() {
@@ -137,22 +136,3 @@ fun CodeInsightTestFixture.addPackageJsonFile(
         }
         """.trimIndent()
 ): PsiFile = this.addFileToProject("$subPath/package.json", content)
-
-fun CodeInsightTestFixture.addSamTemplate(
-    logicalName: String = "Function",
-    codeUri: String,
-    handler: String,
-    runtime: Runtime
-): PsiFile = this.addFileToProject(
-    "template.yaml",
-    """
-        Resources:
-          $logicalName:
-            Type: AWS::Serverless::Function
-            Properties:
-              CodeUri: $codeUri
-              Handler: $handler
-              Runtime: $runtime
-              Timeout: 900
-    """.trimIndent()
-)

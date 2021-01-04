@@ -13,13 +13,15 @@ import software.aws.toolkits.jetbrains.core.credentials.toEnvironmentVariables
 import software.aws.toolkits.jetbrains.core.executables.ExecutableInstance
 import software.aws.toolkits.jetbrains.core.executables.ExecutableManager
 import software.aws.toolkits.jetbrains.core.executables.getExecutableIfPresent
-import software.aws.toolkits.jetbrains.services.lambda.BuiltLambda
+import software.aws.toolkits.jetbrains.services.PathMapping
 import software.aws.toolkits.jetbrains.services.lambda.sam.SamExecutable
+import software.aws.toolkits.jetbrains.services.lambda.upload.steps.BuiltLambda
 
 class SamRunningState(
     environment: ExecutionEnvironment,
     val settings: LocalLambdaRunSettings
 ) : CommandLineState(environment) {
+    lateinit var pathMappings: List<PathMapping>
     lateinit var builtLambda: BuiltLambda
 
     val runner = if (environment.executor.id == DefaultDebugExecutor.EXECUTOR_ID) {
