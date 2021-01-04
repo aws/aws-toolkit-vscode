@@ -19,6 +19,7 @@ import software.aws.toolkits.jetbrains.core.help.HelpIds
 import software.aws.toolkits.jetbrains.services.lambda.LambdaFunction
 import software.aws.toolkits.jetbrains.utils.notifyInfo
 import software.aws.toolkits.resources.message
+import software.aws.toolkits.telemetry.LambdaPackageType
 import software.aws.toolkits.telemetry.LambdaTelemetry
 import software.aws.toolkits.telemetry.Result
 import javax.swing.JComponent
@@ -60,7 +61,12 @@ class UpdateFunctionConfigDialog(private val project: Project, private val initi
     override fun doValidate(): ValidationInfo? = view.validatePanel()
 
     override fun doCancelAction() {
-        LambdaTelemetry.editFunction(project, result = Result.Cancelled)
+        LambdaTelemetry.editFunction(
+            project,
+            update = true,
+            lambdaPackageType = LambdaPackageType.from(view.configSettings.packageType().toString()),
+            result = Result.Cancelled
+        )
         super.doCancelAction()
     }
 
@@ -85,10 +91,20 @@ class UpdateFunctionConfigDialog(private val project: Project, private val initi
                     content = message("lambda.function.configuration_updated.notification", functionDetails.name)
                 )
                 runInEdt(ModalityState.any()) { close(OK_EXIT_CODE) }
-                LambdaTelemetry.editFunction(project, update = true, result = Result.Succeeded)
+                LambdaTelemetry.editFunction(
+                    project,
+                    update = true,
+                    lambdaPackageType = LambdaPackageType.from(functionDetails.packageType.toString()),
+                    result = Result.Succeeded
+                )
             } catch (e: Exception) {
                 setErrorText(ExceptionUtil.getNonEmptyMessage(e, ExceptionUtil.getNonEmptyMessage(e, e::class.java.simpleName)))
-                LambdaTelemetry.editFunction(project, update = true, result = Result.Failed)
+                LambdaTelemetry.editFunction(
+                    project,
+                    update = true,
+                    lambdaPackageType = LambdaPackageType.from(functionDetails.packageType.toString()),
+                    result = Result.Failed
+                )
                 setOKButtonText(message("general.update_button"))
                 isOKActionEnabled = true
             }
