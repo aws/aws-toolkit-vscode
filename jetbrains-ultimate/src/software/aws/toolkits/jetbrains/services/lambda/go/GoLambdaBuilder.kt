@@ -3,13 +3,21 @@
 
 package software.aws.toolkits.jetbrains.services.lambda.go
 
+import com.intellij.openapi.application.ReadAction
 import com.intellij.openapi.module.Module
+import com.intellij.openapi.vfs.VirtualFile
 import com.intellij.psi.PsiElement
 import software.aws.toolkits.jetbrains.services.lambda.LambdaBuilder
 import java.nio.file.Path
+import java.nio.file.Paths
 
 class GoLambdaBuilder : LambdaBuilder() {
     override fun handlerBaseDirectory(module: Module, handlerElement: PsiElement): Path {
-        TODO("Not yet implemented")
+        val handlerVirtualFile = ReadAction.compute<VirtualFile, Throwable> {
+            handlerElement.containingFile?.virtualFile
+                ?: throw IllegalArgumentException("Handler file must be backed by a VirtualFile")
+        }
+        val source = inferSourceRoot(module.project, handlerVirtualFile) ?: throw IllegalStateException("Cannot locate content root for file")
+        return Paths.get(source.path)
     }
 }
