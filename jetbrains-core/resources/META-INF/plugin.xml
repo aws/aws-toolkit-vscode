@@ -52,7 +52,7 @@ with what features/services are supported.
 </ul>
     ]]></description>
 
-    <vendor email="aws-toolkit-jetbrains@amazon.com" url="https://aws.amazon.com/">AWS</vendor>
+    <vendor email="aws-toolkit-jetbrains@amazon.com" url="https://github.com/aws/aws-toolkit-jetbrains">AWS</vendor>
     <!-- 201.6668.113 is 2020.1 EAP 1 -->
     <idea-version since-build="201.6668.113" until-build="202.*"/>
 
