@@ -85,8 +85,8 @@ class NodeJsLambdaBuilderTest {
         verifyPathMappings(
             projectRule.module, actualMappings,
             listOf(
-                PathMapping(buildDir.resolve(logicalId).toString(), LambdaBuilder.TASK_PATH),
-                PathMapping(codeUri.toString(), LambdaBuilder.TASK_PATH)
+                PathMapping(codeUri.toString(), LambdaBuilder.TASK_PATH),
+                PathMapping(buildDir.resolve(logicalId).toString(), LambdaBuilder.TASK_PATH)
             )
         )
     }

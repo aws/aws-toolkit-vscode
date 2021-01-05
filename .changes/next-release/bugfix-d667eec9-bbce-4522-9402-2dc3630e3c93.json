@@ -1,0 +1,4 @@
+{
+  "type" : "bugfix",
+  "description" : "Fix NodeJS and Python breakpoints failing to hit sometimes"
+}
