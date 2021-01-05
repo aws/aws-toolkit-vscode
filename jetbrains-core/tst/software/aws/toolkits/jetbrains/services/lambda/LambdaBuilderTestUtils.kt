@@ -17,5 +17,6 @@ fun verifyPathMappings(module: Module, actualMappings: List<PathMapping>, expect
                 it.remoteRoot
             )
         }
-    assertThat(actualMappings).containsAll(updatedPaths)
+    // Path mapping order matters so we do not just check content, we also check order
+    assertThat(actualMappings).containsExactly(*updatedPaths.toTypedArray())
 }

@@ -42,10 +42,10 @@ abstract class LambdaBuilder {
      * @param buildDir The root directory where SAM built the function into
      */
     open fun defaultPathMappings(sourceTemplate: Path, logicalId: String, buildDir: Path): List<PathMapping> = buildList {
-        add(PathMapping(buildDir.resolve(logicalId).normalize().toString(), TASK_PATH))
-
         val codeLocation = SamTemplateUtils.getCodeLocation(sourceTemplate, logicalId)
+        // First one wins, so code needs to go before build
         add(PathMapping(sourceTemplate.resolveSibling(codeLocation).normalize().toString(), TASK_PATH))
+        add(PathMapping(buildDir.resolve(logicalId).normalize().toString(), TASK_PATH))
     }
 
     /**
