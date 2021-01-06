@@ -21,7 +21,7 @@ class RenameObjectAction(
     treeTable: S3TreeTable
 ) : SingleS3ObjectAction(treeTable, message("s3.rename.object.action"), AllIcons.Actions.RefactoringBulb) {
 
-    override fun enabled(node: S3TreeNode): Boolean = node is S3TreeObjectNode
+    override fun enabled(node: S3TreeNode): Boolean = node::class == S3TreeObjectNode::class
 
     override fun performAction(node: S3TreeNode) {
 

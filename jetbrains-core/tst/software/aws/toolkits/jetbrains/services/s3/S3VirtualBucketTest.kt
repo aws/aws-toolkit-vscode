@@ -179,7 +179,7 @@ class S3VirtualBucketTest {
 
         val sut = S3VirtualBucket(Bucket.builder().name("TestBucket").build(), s3Client)
         runBlocking {
-            sut.download(projectRule.project, "key", testFile.outputStream())
+            sut.download(projectRule.project, "key", null, testFile.outputStream())
         }
 
         val downloadRequestCapture = downloadCaptor.firstValue

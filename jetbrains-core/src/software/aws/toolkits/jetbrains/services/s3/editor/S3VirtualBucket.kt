@@ -14,6 +14,7 @@ import software.amazon.awssdk.services.s3.S3Client
 import software.amazon.awssdk.services.s3.model.Bucket
 import software.amazon.awssdk.services.s3.model.ListObjectsV2Response
 import software.amazon.awssdk.services.s3.model.ObjectIdentifier
+import software.amazon.awssdk.services.s3.paginators.ListObjectVersionsIterable
 import software.aws.toolkits.jetbrains.services.s3.download
 import software.aws.toolkits.jetbrains.services.s3.upload
 import java.io.InputStream
@@ -49,6 +50,12 @@ class S3VirtualBucket(val s3Bucket: Bucket, val client: S3Client) : LightVirtual
         }
     }
 
+    suspend fun listObjectVersionsPaginated(key: String): ListObjectVersionsIterable = withContext(Dispatchers.IO) {
+        client.listObjectVersionsPaginator {
+            it.bucket(s3Bucket.name()).prefix(key).maxKeys(MAX_ITEMS_TO_LOAD)
+        }
+    }
+
     suspend fun deleteObjects(keys: List<String>) {
         withContext(Dispatchers.IO) {
             val keysToDelete = keys.map { ObjectIdentifier.builder().key(it).build() }
@@ -69,9 +76,9 @@ class S3VirtualBucket(val s3Bucket: Bucket, val client: S3Client) : LightVirtual
         }
     }
 
-    suspend fun download(project: Project, key: String, output: OutputStream) {
+    suspend fun download(project: Project, key: String, versionId: String? = null, output: OutputStream) {
         withContext(Dispatchers.IO) {
-            client.download(project, s3Bucket.name(), key, output).await()
+            client.download(project, s3Bucket.name(), key, versionId, output).await()
         }
     }
 

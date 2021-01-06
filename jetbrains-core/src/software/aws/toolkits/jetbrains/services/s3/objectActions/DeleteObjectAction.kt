@@ -23,7 +23,8 @@ class DeleteObjectAction(private val project: Project, treeTable: S3TreeTable) :
         deleteNodes(project, treeTable, nodes.filterIsInstance<S3TreeObjectNode>())
     }
 
-    override fun enabled(nodes: List<S3TreeNode>): Boolean = nodes.all { it is S3TreeObjectNode }
+    // TODO enable for versioned objects.
+    override fun enabled(nodes: List<S3TreeNode>): Boolean = nodes.all { it::class == S3TreeObjectNode::class }
 }
 
 fun deleteSelectedObjects(project: Project, treeTable: S3TreeTable) {

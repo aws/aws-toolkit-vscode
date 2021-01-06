@@ -30,6 +30,7 @@ import software.aws.toolkits.jetbrains.services.s3.objectActions.RefreshSubTreeA
 import software.aws.toolkits.jetbrains.services.s3.objectActions.RefreshTreeAction
 import software.aws.toolkits.jetbrains.services.s3.objectActions.RenameObjectAction
 import software.aws.toolkits.jetbrains.services.s3.objectActions.UploadObjectAction
+import software.aws.toolkits.jetbrains.services.s3.objectActions.ViewObjectVersionAction
 import software.aws.toolkits.resources.message
 import javax.swing.JComponent
 import javax.swing.SwingConstants
@@ -88,6 +89,7 @@ class S3ViewerPanel(disposable: Disposable, private val project: Project, virtua
     // addCopy is here vs doing it in the `also`'s because it makes it easier to get actions in the right order
     private fun createCommonActionGroup(table: S3TreeTable, addCopy: Boolean): DefaultActionGroup = DefaultActionGroup().also {
         it.add(DownloadObjectAction(project, table))
+        it.add(ViewObjectVersionAction(table))
         it.add(UploadObjectAction(project, table))
         it.add(Separator())
         it.add(NewFolderAction(project, table))

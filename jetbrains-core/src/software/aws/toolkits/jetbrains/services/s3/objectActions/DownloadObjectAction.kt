@@ -18,6 +18,7 @@ import software.aws.toolkits.core.utils.getLogger
 import software.aws.toolkits.core.utils.info
 import software.aws.toolkits.jetbrains.services.s3.editor.S3TreeNode
 import software.aws.toolkits.jetbrains.services.s3.editor.S3TreeObjectNode
+import software.aws.toolkits.jetbrains.services.s3.editor.S3TreeObjectVersionNode
 import software.aws.toolkits.jetbrains.services.s3.editor.S3TreeTable
 import software.aws.toolkits.jetbrains.services.s3.objectActions.DownloadObjectAction.ConflictResolution.OVERWRITE
 import software.aws.toolkits.jetbrains.services.s3.objectActions.DownloadObjectAction.ConflictResolution.OVERWRITE_ALL
@@ -32,7 +33,13 @@ import java.nio.file.Paths
 class DownloadObjectAction constructor(private val project: Project, treeTable: S3TreeTable) :
     S3ObjectAction(treeTable, message("s3.download.object.action"), AllIcons.Actions.Download) {
 
-    private data class DownloadInfo(val s3Object: String, val diskLocation: Path)
+    private data class DownloadInfo(val s3Object: String, val diskLocation: Path, val versionId: String?) {
+        constructor(s3Object: S3TreeObjectNode, diskLocation: Path) : this(
+            s3Object.key,
+            diskLocation,
+            if (s3Object is S3TreeObjectVersionNode) s3Object.versionId else null
+        )
+    }
 
     enum class ConflictResolution(val message: String) {
         SKIP(message("s3.download.object.conflict.skip")),
@@ -72,7 +79,7 @@ class DownloadObjectAction constructor(private val project: Project, treeTable: 
             selectedLocation
         }
 
-        val downloads = listOf(DownloadInfo(file.key, destinationFile))
+        val downloads = listOf(DownloadInfo(file, destinationFile))
 
         val finalDownloads = if (selectedLocation.isDirectory()) {
             checkForConflicts(destinationFile, downloads)
@@ -87,7 +94,7 @@ class DownloadObjectAction constructor(private val project: Project, treeTable: 
     private fun downloadMultiple(project: Project, files: List<S3TreeObjectNode>) {
         val selectedLocation = getDownloadLocation(foldersOnly = true) ?: return
 
-        val downloads = files.map { DownloadInfo(it.key, selectedLocation.resolve(it.name)) }
+        val downloads = files.map { DownloadInfo(it, selectedLocation.resolve(it.name)) }
         val finalDownloads = checkForConflicts(selectedLocation, downloads)
 
         downloadAll(project, finalDownloads)
@@ -184,11 +191,11 @@ class DownloadObjectAction constructor(private val project: Project, treeTable: 
         // TODO: Get off global scope
         GlobalScope.launch {
             try {
-                files.forEach { (key, output) ->
+                files.forEach { (key, output, versionId) ->
                     try {
                         // TODO: Create 1 progress indicator for all files and pass it in
                         output.outputStream().use {
-                            bucket.download(project, key, it)
+                            bucket.download(project, key, versionId, it)
                         }
                     } catch (e: Exception) {
                         e.notifyError(message("s3.download.object.failed", key))
