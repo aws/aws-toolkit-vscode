@@ -29,6 +29,7 @@ import software.amazon.awssdk.services.s3.model.S3Exception
 import software.aws.toolkits.core.utils.test.retryableAssert
 import software.aws.toolkits.jetbrains.core.MockClientManagerRule
 import software.aws.toolkits.jetbrains.services.s3.editor.S3TreeObjectNode
+import software.aws.toolkits.jetbrains.services.s3.editor.S3TreeObjectVersionNode
 import software.aws.toolkits.jetbrains.services.s3.editor.S3TreeTable
 import software.aws.toolkits.jetbrains.services.s3.editor.S3VirtualBucket
 import software.aws.toolkits.jetbrains.services.s3.objectActions.DownloadObjectAction.ConflictResolution
@@ -292,6 +293,68 @@ class DownloadObjectActionTest {
         assertThat(destinationFolder.resolve("testFile-1")).hasContent("")
     }
 
+    @Test
+    fun downloadSingleVersionFileToFile() {
+        val destinationFile = tempFolder.newFile().toPath()
+
+        createMockFileChooser(testDisposable.disposable, destinationFile)
+
+        val (s3Client, countDownLatch) = setUpS3Mock(1)
+        val s3TreeTable = setUpS3TreeTable(s3Client, listOf(Pair("testFile-1", S3TreeObjectVersionNode::class)))
+
+        val action = DownloadObjectAction(projectRule.project, s3TreeTable)
+        action.actionPerformed(AnActionEvent.createFromDataContext(ActionPlaces.UNKNOWN, null, DataContext.EMPTY_CONTEXT))
+
+        assertThat(countDownLatch.await(5, TimeUnit.SECONDS)).isTrue()
+
+        assertThat(destinationFile).hasContent("testFile-1-content-old-version")
+    }
+
+    @Test
+    fun downloadSingleVersionFileToFolder() {
+        val destinationFolder = tempFolder.newFolder().toPath()
+
+        createMockFileChooser(testDisposable.disposable, destinationFolder)
+
+        val (s3Client, countDownLatch) = setUpS3Mock(1)
+        val s3TreeTable = setUpS3TreeTable(s3Client, listOf(Pair("testFile-1", S3TreeObjectVersionNode::class)))
+
+        val action = DownloadObjectAction(projectRule.project, s3TreeTable)
+        action.actionPerformed(AnActionEvent.createFromDataContext(ActionPlaces.UNKNOWN, null, DataContext.EMPTY_CONTEXT))
+
+        assertThat(countDownLatch.await(5, TimeUnit.SECONDS)).isTrue()
+
+        assertThat(destinationFolder.resolve("testFile-1testVersionId")).hasContent("testFile-1-content-old-version")
+    }
+
+    @Test
+    fun downloadMixOfVersionedFilesAndRootFilesToFolder() {
+        val destinationFolder = tempFolder.newFolder().toPath()
+
+        createMockFileChooser(testDisposable.disposable, destinationFolder)
+
+        val (s3Client, countDownLatch) = setUpS3Mock(4)
+        val s3TreeTable = setUpS3TreeTable(
+            s3Client,
+            listOf(
+                Pair("testFile-1", S3TreeObjectNode::class),
+                Pair("testFile-1", S3TreeObjectVersionNode::class),
+                Pair("testFile-2", S3TreeObjectNode::class),
+                Pair("testFile-3", S3TreeObjectVersionNode::class)
+            )
+        )
+
+        val action = DownloadObjectAction(projectRule.project, s3TreeTable)
+        action.actionPerformed(AnActionEvent.createFromDataContext(ActionPlaces.UNKNOWN, null, DataContext.EMPTY_CONTEXT))
+
+        assertThat(countDownLatch.await(5, TimeUnit.SECONDS)).isTrue()
+
+        assertThat(destinationFolder.resolve("testFile-1")).hasContent("testFile-1-content")
+        assertThat(destinationFolder.resolve("testFile-1testVersionId")).hasContent("testFile-1-content-old-version")
+        assertThat(destinationFolder.resolve("testFile-2")).hasContent("testFile-2-content")
+        assertThat(destinationFolder.resolve("testFile-3testVersionId")).hasContent("testFile-3-content-old-version")
+    }
+
     private fun setUpConflictResolutionResponses(choices: List<ConflictResolution>, vararg responses: ConflictResolution) {
         var responseNum = 0
         TestDialogService.setTestDialog(
@@ -301,15 +364,23 @@ class DownloadObjectActionTest {
         )
     }
 
-    private fun setUpS3TreeTable(s3Client: S3Client, vararg selectedFiles: String): S3TreeTable {
+    private fun setUpS3TreeTable(s3Client: S3Client, vararg selectedFiles: String) =
+        setUpS3TreeTable(s3Client, selectedFiles.map { Pair(it, S3TreeObjectNode::class) })
+
+    private fun setUpS3TreeTable(s3Client: S3Client, selectedFiles: List<Pair<String, Any>>): S3TreeTable {
+        val testBucket = S3VirtualBucket(Bucket.builder().name("testBucket").build(), s3Client)
+        val emptyParent = S3TreeObjectNode(testBucket, null, "testBucket", 1, Instant.now())
         val objectNodes = selectedFiles.map {
-            S3TreeObjectNode("testBucket", null, it, 1, Instant.now())
+            when (it.second) {
+                S3TreeObjectVersionNode::class -> S3TreeObjectVersionNode(testBucket, emptyParent, it.first, 1, Instant.now(), it.first + "testVersionId")
+                else -> S3TreeObjectNode(testBucket, null, it.first, 1, Instant.now())
+            }
         }
 
         return mock {
             on { getSelectedNodes() }.thenReturn(objectNodes)
 
-            on { bucket }.thenReturn(S3VirtualBucket(Bucket.builder().name("testBucket").build(), s3Client))
+            on { bucket }.thenReturn(testBucket)
         }
     }
 
@@ -330,7 +401,8 @@ class DownloadObjectActionTest {
                 @Suppress("UNCHECKED_CAST")
                 val transformer = it.arguments[1] as ResponseTransformer<GetObjectResponse, GetObjectResponse>
 
-                val content = "${request.key()}-content".toByteArray()
+                val contentPostfix = if (request.versionId() != null) "-old-version" else ""
+                val content = "${request.key()}-content$contentPostfix".toByteArray()
 
                 val delegate = object : ByteArrayInputStream(content) {
                     override fun close() {
