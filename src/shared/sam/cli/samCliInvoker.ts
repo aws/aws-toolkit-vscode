@@ -73,14 +73,14 @@ export class DefaultSamCliProcessInvoker implements SamCliProcessInvoker {
         logger.verbose(`running: ${this.childProcess}`)
         return await this.childProcess.run(
             (text: string) => {
-                getLogger('debug').info(text)
+                getLogger('debugConsole').info(text)
                 logger.verbose(`stdout: ${text}`)
                 if (options?.onStdout) {
                     options.onStdout(text)
                 }
             },
             (text: string) => {
-                getLogger('debug').info(text)
+                getLogger('debugConsole').info(text)
                 logger.verbose(`stderr: ${text}`)
                 if (options?.onStderr) {
                     options.onStderr(text)

@@ -77,7 +77,7 @@ function setupTestLogger(): TestLogger {
     const logger = new TestLogger()
     setLogger(logger, 'main')
     setLogger(logger, 'channel')
-    setLogger(logger, 'debug')
+    setLogger(logger, 'debugConsole')
 
     return logger
 }
@@ -87,7 +87,7 @@ function teardownTestLogger(testName: string) {
 
     setLogger(undefined, 'main')
     setLogger(undefined, 'channel')
-    setLogger(undefined, 'debug')
+    setLogger(undefined, 'debugConsole')
 }
 
 function writeLogsToFile(testName: string) {

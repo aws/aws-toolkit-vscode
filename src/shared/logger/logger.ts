@@ -6,8 +6,8 @@
 const toolkitLoggers: {
     main: Logger | undefined
     channel: Logger | undefined
-    debug: Logger | undefined
-} = { main: undefined, channel: undefined, debug: undefined }
+    debugConsole: Logger | undefined
+} = { main: undefined, channel: undefined, debugConsole: undefined }
 
 export interface Logger {
     debug(message: string, ...meta: any[]): void
@@ -61,7 +61,7 @@ export function compareLogLevel(l1: LogLevel, l2: LogLevel): number {
  * * `'channel'`: Channel Logger; default impl: logs to the `main` channels and the `AWS Toolkit` output channel
  * * `'debug'`: Debug Console Logger; default impl: logs to the `channel` channels and the currently-active VS Code Debug Console pane.
  */
-export function getLogger(type?: 'channel' | 'debug' | 'main'): Logger {
+export function getLogger(type?: 'channel' | 'debugConsole' | 'main'): Logger {
     const logger = toolkitLoggers[type ?? 'main']
     if (!logger) {
         throw new Error(
@@ -77,6 +77,6 @@ export function getLogger(type?: 'channel' | 'debug' | 'main'): Logger {
  * The Extension is expected to call this only once per log type.
  * Tests should call this to set up a logger prior to executing code that accesses a logger.
  */
-export function setLogger(logger: Logger | undefined, type?: 'channel' | 'debug' | 'main') {
+export function setLogger(logger: Logger | undefined, type?: 'channel' | 'debugConsole' | 'main') {
     toolkitLoggers[type ?? 'main'] = logger
 }

@@ -201,7 +201,7 @@ export async function invokeLambdaFunction(
         const samBuild = new SamCliBuildInvocation(samCliArgs)
         await samBuild.execute()
         if (samBuild.failure()) {
-            getLogger('debug').error(samBuild.failure()!)
+            getLogger('debugConsole').error(samBuild.failure()!)
             throw new Error(samBuild.failure())
         }
         // build successful: use output template path for invocation

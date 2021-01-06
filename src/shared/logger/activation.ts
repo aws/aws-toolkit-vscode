@@ -44,7 +44,7 @@ export async function activate(
             extensionContext.subscriptions
         )
     )
-    getLogger().info(`log level: ${getLogLevel()}`)
+    getLogger().error(`log level: ${getLogLevel()}`)
 
     // channel logger
     setLogger(
@@ -68,7 +68,7 @@ export async function activate(
             },
             extensionContext.subscriptions
         ),
-        'debug'
+        'debugConsole'
     )
 
     await registerLoggerCommands(extensionContext)
@@ -79,11 +79,11 @@ export async function activate(
 
 /**
  * Creates a logger off of specified params
- * @param {Object} opts Specified parameters, all optional:
- * @param {string} staticLogLevel Static log level, overriding config value. Will persist overridden config value even if the config value changes.
- * @param {string[]} logPaths Array of paths to output log entries to
- * @param {string[]} outputChannels Array of output channels to log entries to
- * @param {boolean} useDebugConsole If true, outputs log entries to currently-active debug console. As per VS Code API, cannot specify a debug console in particular.
+ * @param opts Specified parameters, all optional:
+ * @param opts.staticLogLevel Static log level, overriding config value. Will persist overridden config value even if the config value changes.
+ * @param opts.logPaths Array of paths to output log entries to
+ * @param opts.outputChannels Array of output channels to log entries to
+ * @param opts.useDebugConsole If true, outputs log entries to currently-active debug console. As per VS Code API, cannot specify a debug console in particular.
  * @param disposables Array of disposables to add a subscription to
  */
 export function makeLogger(
