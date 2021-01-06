@@ -47,10 +47,11 @@ export class WinstonToolkitLogger implements Logger, vscode.Disposable {
         this.logger.add(new winston.transports.File({ filename: logPath }))
     }
 
-    public logToOutputChannel(outputChannel: vscode.OutputChannel): void {
+    public logToOutputChannel(outputChannel: vscode.OutputChannel, stripAnsi: boolean): void {
         this.logger.add(
             new OutputChannelTransport({
                 outputChannel,
+                stripAnsi,
             })
         )
     }

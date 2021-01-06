@@ -199,7 +199,7 @@ describe('WinstonToolkitLogger', () => {
             const errorMessage = 'error message'
 
             testLogger = new WinstonToolkitLogger('error')
-            testLogger.logToOutputChannel(outputChannel)
+            testLogger.logToOutputChannel(outputChannel, false)
 
             const waitForMessage = waitForLoggedTextByCount(1)
 
@@ -214,7 +214,7 @@ describe('WinstonToolkitLogger', () => {
             const loggedVerboseEntry = 'verbose entry should be logged'
 
             testLogger = new WinstonToolkitLogger('info')
-            testLogger.logToOutputChannel(outputChannel)
+            testLogger.logToOutputChannel(outputChannel, false)
 
             testLogger.verbose(nonLoggedVerboseEntry)
             testLogger.setLogLevel('verbose')
@@ -229,7 +229,7 @@ describe('WinstonToolkitLogger', () => {
             it(scenario.name, async () => {
                 const message = `message for ${scenario.name}`
                 testLogger = new WinstonToolkitLogger('debug')
-                testLogger.logToOutputChannel(outputChannel)
+                testLogger.logToOutputChannel(outputChannel, false)
 
                 const waitForMessage = waitForLoggedTextByCount(1)
 
