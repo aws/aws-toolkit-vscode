@@ -28,6 +28,12 @@ phases:
 
     pre_build:
         commands:
+            # If present, log into CodeArtifact. Provides a nice safety net in case NPM is down.
+            # Should only affect tests run through IDEs team-hosted CodeBuild.
+            - |
+                if [ $CODEARTIFACT_DOMAIN ] && [ $CODEARTIFACT_REPO ] && [ $ACCOUNT_ID ]; then
+                  aws codeartifact login --tool npm --domain "$CODEARTIFACT_DOMAIN" --domain-owner "$ACCOUNT_ID" --repository "$CODEARTIFACT_REPO"
+                fi
             # make sure that SAM is in the path, is not automatically done on CodeBuild
             - USER_BASE_PATH=$(python -m site --user-base) && export PATH=$PATH:$USER_BASE_PATH/bin
             # start Docker
@@ -36,7 +42,7 @@ phases:
 
     build:
         commands:
-            - npm install --unsafe-perm
+            - npm ci --unsafe-perm
             - xvfb-run npm run integrationTest
 
 reports:

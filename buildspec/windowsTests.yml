@@ -14,7 +14,13 @@ phases:
 
     pre_build:
         commands:
-            - npm install
+            # If present, log into CodeArtifact. Provides a nice safety net in case NPM is down.
+            # Should only affect tests run through IDEs team-hosted CodeBuild.
+            - |
+                if [ $CODEARTIFACT_DOMAIN ] && [ $CODEARTIFACT_REPO ] && [ $ACCOUNT_ID ]; then
+                  aws codeartifact login --tool npm --domain "$CODEARTIFACT_DOMAIN" --domain-owner "$ACCOUNT_ID" --repository "$CODEARTIFACT_REPO"
+                fi
+            - npm ci
 
     build:
         commands:

@@ -13,8 +13,14 @@ phases:
 
     pre_build:
         commands:
+            # If present, log into CodeArtifact. Provides a nice safety net in case NPM is down.
+            # Should only affect tests run through IDEs team-hosted CodeBuild.
+            - |
+                if [ $CODEARTIFACT_DOMAIN ] && [ $CODEARTIFACT_REPO ] && [ $ACCOUNT_ID ]; then
+                  aws codeartifact login --tool npm --domain "$CODEARTIFACT_DOMAIN" --domain-owner "$ACCOUNT_ID" --repository "$CODEARTIFACT_REPO"
+                fi
             # --unsafe-perm is needed because we run as root
-            - npm install --unsafe-perm
+            - npm ci --unsafe-perm
 
     build:
         commands:
