@@ -44,7 +44,7 @@ class TransferUtilsIntegrationTest {
         s3Client.upload(projectRule.project, sourceFile.toPath(), bucket, "file", message = "uploading").value
 
         val destinationFile = folder.newFile()
-        s3Client.download(projectRule.project, bucket, "file", destinationFile.toPath(), message = "downloading").value
+        s3Client.download(projectRule.project, bucket, "file", null, destinationFile.toPath(), message = "downloading").value
 
         assertThat(destinationFile).hasSameTextualContentAs(sourceFile)
     }
