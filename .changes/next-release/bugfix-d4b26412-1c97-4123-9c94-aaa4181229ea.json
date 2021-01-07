@@ -1,0 +1,4 @@
+{
+  "type" : "bugfix",
+  "description" : "Re-add environment variable settings to SAM template based run configurations (#2282)"
+}

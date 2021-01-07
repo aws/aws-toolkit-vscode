@@ -31,13 +31,9 @@ class SamRunningState(
     }
 
     override fun startProcess(): ProcessHandler {
-        val totalEnvVars = when (settings) {
-            is HandlerRunSettings -> settings.environmentVariables.toMutableMap()
-            else -> mutableMapOf()
-        }
-
-        totalEnvVars += settings.connection.credentials.resolveCredentials().toEnvironmentVariables()
-        totalEnvVars += settings.connection.region.toEnvironmentVariables()
+        val totalEnvVars = settings.environmentVariables +
+            settings.connection.credentials.resolveCredentials().toEnvironmentVariables() +
+            settings.connection.region.toEnvironmentVariables()
 
         val samExecutable = ExecutableManager.getInstance().getExecutableIfPresent<SamExecutable>().let {
             when (it) {
