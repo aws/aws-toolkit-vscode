@@ -8,7 +8,6 @@ import { AwsContext } from './awsContext'
 import { RegionProvider } from './regions/regionProvider'
 import { SettingsConfiguration } from './settingsConfiguration'
 import { TelemetryService } from './telemetry/telemetryService'
-import { ChannelLogger } from './utilities/vsCodeUtils'
 import { CredentialsStore } from '../credentials/credentialsStore'
 import { SamCliContext } from './sam/cli/samCliContext'
 
@@ -31,7 +30,6 @@ export interface ExtContext {
     settings: SettingsConfiguration
     outputChannel: vscode.OutputChannel
     telemetryService: TelemetryService
-    chanLogger: ChannelLogger
     credentialsStore: CredentialsStore
 }
 

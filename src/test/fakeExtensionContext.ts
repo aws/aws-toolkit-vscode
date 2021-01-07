@@ -11,7 +11,6 @@ import { DefaultTelemetryService } from '../shared/telemetry/defaultTelemetrySer
 import { ExtContext } from '../shared/extensions'
 import { ExtensionDisposableFiles } from '../shared/utilities/disposableFiles'
 import { FakeAwsContext, FakeRegionProvider } from './utilities/fakeAwsContext'
-import { FakeChannelLogger } from './shared/fakeChannelLogger'
 import { FakeTelemetryPublisher } from './fake/fakeTelemetryService'
 import { MockOutputChannel } from './mockOutputChannel'
 import { SamCliContext } from '../shared/sam/cli/samCliContext'
@@ -105,7 +104,6 @@ export class FakeExtensionContext implements vscode.ExtensionContext {
         const regionProvider = new FakeRegionProvider()
         const settings = new DefaultSettingsConfiguration('aws')
         const outputChannel = new MockOutputChannel()
-        const channelLogger = new FakeChannelLogger()
         const fakeTelemetryPublisher = new FakeTelemetryPublisher()
         const telemetryService = new DefaultTelemetryService(ctx, awsContext, undefined, fakeTelemetryPublisher)
         return {
@@ -116,7 +114,6 @@ export class FakeExtensionContext implements vscode.ExtensionContext {
             settings: settings,
             outputChannel: outputChannel,
             telemetryService: telemetryService,
-            chanLogger: channelLogger,
             credentialsStore: new CredentialsStore(),
         }
     }

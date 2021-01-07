@@ -8,8 +8,7 @@ import { getLogger, Logger } from '../../logger'
 import { logAndThrowIfUnexpectedExitCode, SamCliProcessInvoker } from './samCliInvokerUtils'
 import { DefaultSamCliProcessInvoker } from './samCliInvoker'
 import { pushIf } from '../../utilities/collectionUtils'
-import { ext } from '../../extensionGlobals'
-import { getChannelLogger, localize } from '../../utilities/vsCodeUtils'
+import { localize } from '../../utilities/vsCodeUtils'
 
 export interface SamCliBuildInvocationArguments {
     /**
@@ -134,7 +133,6 @@ export class SamCliBuildInvocation {
         const childProcessResult = await this.args.invoker.invoke({
             spawnOptions: { env },
             arguments: invokeArgs,
-            channelLogger: getChannelLogger(ext.outputChannel),
             onStdout: checkFailure,
             onStderr: checkFailure,
         })

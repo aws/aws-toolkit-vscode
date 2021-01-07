@@ -9,8 +9,9 @@ import { getLogger, showLogOutputChannel } from '../../shared/logger'
 import { localize } from '../../shared/utilities/vsCodeUtils'
 import { Window } from '../../shared/vscode/window'
 
+const commandName = localize('AWS.command.viewLogs', 'View AWS Toolkit Logs')
+
 export function makeCheckLogsMessage(): string {
-    const commandName = localize('AWS.command.viewLogs', 'View AWS Toolkit Logs')
     const message = localize(
         'AWS.error.check.logs',
         'Check the logs for more information by running the "{0}" command from the {1}.',
@@ -22,7 +23,6 @@ export function makeCheckLogsMessage(): string {
 }
 
 export function makeFailedWriteMessage(filename: string): string {
-    const commandName = localize('AWS.command.viewLogs', 'View AWS Toolkit Logs')
     const message = localize(
         'AWS.failedToWrite',
         'AWS: Failed to write "{0}". Use the "{1}" command to see error details.',

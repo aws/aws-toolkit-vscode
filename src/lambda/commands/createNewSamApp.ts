@@ -31,7 +31,6 @@ import { throwAndNotifyIfInvalid } from '../../shared/sam/cli/samCliValidationUt
 import { SamCliValidator } from '../../shared/sam/cli/samCliValidator'
 import { recordSamInit, Result, Runtime as TelemetryRuntime } from '../../shared/telemetry/telemetry'
 import { makeCheckLogsMessage } from '../../shared/utilities/messages'
-import { ChannelLogger } from '../../shared/utilities/vsCodeUtils'
 import { addFolderToWorkspace } from '../../shared/utilities/workspaceUtils'
 import { getDependencyManager } from '../models/samLambdaRuntime'
 import { eventBridgeStarterAppTemplate } from '../models/samTemplates'
@@ -101,7 +100,6 @@ export async function createNewSamApplication(
     samCliContext: SamCliContext = getSamCliContext(),
     activationReloadState: ActivationReloadState = new ActivationReloadState()
 ): Promise<void> {
-    const channelLogger: ChannelLogger = extContext.chanLogger
     const awsContext: AwsContext = extContext.awsContext
     const regionProvider: RegionProvider = extContext.regionProvider
     let createResult: Result = 'Succeeded'
@@ -186,11 +184,13 @@ export async function createNewSamApplication(
                 schemaVersion: schemaTemplateParameters!.SchemaVersion,
                 destinationDirectory: vscode.Uri.file(destinationDirectory),
             }
-            schemaCodeDownloader = createSchemaCodeDownloaderObject(client!, channelLogger.channel)
-            channelLogger.info(
-                'AWS.message.info.schemas.downloadCodeBindings.start',
-                'Downloading code for schema {0}...',
-                config.schemaName!
+            schemaCodeDownloader = createSchemaCodeDownloaderObject(client!, ext.outputChannel)
+            getLogger('channel').info(
+                localize(
+                    'AWS.message.info.schemas.downloadCodeBindings.start',
+                    'Downloading code for schema {0}...',
+                    config.schemaName!
+                )
             )
 
             await schemaCodeDownloader!.downloadCode(request!)
@@ -266,11 +266,13 @@ export async function createNewSamApplication(
 
         const checkLogsMessage = makeCheckLogsMessage()
 
-        channelLogger.channel.show(true)
-        channelLogger.error(
-            'AWS.samcli.initWizard.general.error',
-            'An error occurred while creating a new SAM Application. {0}',
-            checkLogsMessage
+        ext.outputChannel.show(true)
+        getLogger('channel').error(
+            localize(
+                'AWS.samcli.initWizard.general.error',
+                'An error occurred while creating a new SAM Application. {0}',
+                checkLogsMessage
+            )
         )
 
         getLogger().error('Error creating new SAM Application: %O', err as Error)
