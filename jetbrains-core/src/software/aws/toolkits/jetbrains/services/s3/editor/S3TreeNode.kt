@@ -9,6 +9,7 @@ import com.intellij.openapi.util.io.FileUtilRt
 import com.intellij.ui.treeStructure.SimpleNode
 import kotlinx.coroutines.runBlocking
 import software.amazon.awssdk.services.s3.model.ListObjectVersionsResponse
+import software.aws.toolkits.jetbrains.services.s3.NOT_VERSIONED_VERSION_ID
 import software.aws.toolkits.resources.message
 import java.time.Instant
 
@@ -103,8 +104,10 @@ open class S3TreeObjectNode(val bucket: S3VirtualBucket, parent: S3LazyLoadParen
             }.iterator()
 
             val nextPage = responseIterator
+                ?.takeIf { it.hasNext() }
                 ?.next()
                 ?.versions()
+                ?.filter { it.versionId() != NOT_VERSIONED_VERSION_ID }
                 ?.map { S3TreeObjectVersionNode(bucket, this, key, it.size(), it.lastModified(), it.versionId()) as S3TreeNode }
                 ?: emptyList()
 
@@ -127,7 +130,7 @@ class S3TreeObjectVersionNode(bucket: S3VirtualBucket, parent: S3TreeObjectNode,
 
     override fun getName(): String {
         // For not versioned buckets api can return versionId as literal 'null' so we avoid propagating null string to UI.
-        val versionId = if (versionId != "null") versionId else (parent as S3TreeObjectNode).name
+        val versionId = if (versionId != NOT_VERSIONED_VERSION_ID) versionId else (parent as S3TreeObjectNode).name
         val originalExtension = FileUtilRt.getExtension((parent as S3TreeObjectNode).name)
         val extension = if (originalExtension.isNotBlank()) ".$originalExtension" else ""
 
