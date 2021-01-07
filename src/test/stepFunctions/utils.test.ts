@@ -18,7 +18,7 @@ const STORAGE_KEY = 'KEY'
 let tempFolder = ''
 
 describe('StateMachineGraphCache', () => {
-    before(async function() {
+    before(async function () {
         tempFolder = await makeTemporaryToolkitFolder()
     })
 
@@ -34,12 +34,7 @@ describe('StateMachineGraphCache', () => {
             }
 
             const getFileData = sinon.stub().resolves(REQUEST_BODY)
-            const fileExists = sinon
-                .stub()
-                .onFirstCall()
-                .resolves(false)
-                .onSecondCall()
-                .resolves(true)
+            const fileExists = sinon.stub().onFirstCall().resolves(false).onSecondCall().resolves(true)
 
             const writeFile = sinon.spy()
 
@@ -70,12 +65,7 @@ describe('StateMachineGraphCache', () => {
             }
 
             const getFileData = sinon.stub().resolves(REQUEST_BODY)
-            const fileExists = sinon
-                .stub()
-                .onFirstCall()
-                .resolves(true)
-                .onSecondCall()
-                .resolves(true)
+            const fileExists = sinon.stub().onFirstCall().resolves(true).onSecondCall().resolves(true)
 
             const writeFile = sinon.spy()
 
@@ -106,12 +96,7 @@ describe('StateMachineGraphCache', () => {
             }
 
             const getFileData = sinon.stub().resolves(REQUEST_BODY)
-            const fileExists = sinon
-                .stub()
-                .onFirstCall()
-                .resolves(true)
-                .onSecondCall()
-                .resolves(true)
+            const fileExists = sinon.stub().onFirstCall().resolves(true).onSecondCall().resolves(true)
 
             const writeFile = sinon.spy()
 
@@ -142,12 +127,7 @@ describe('StateMachineGraphCache', () => {
             }
 
             const getFileData = sinon.stub().resolves(REQUEST_BODY)
-            const fileExists = sinon
-                .stub()
-                .onFirstCall()
-                .resolves(false)
-                .onSecondCall()
-                .resolves(false)
+            const fileExists = sinon.stub().onFirstCall().resolves(false).onSecondCall().resolves(false)
 
             const writeFile = sinon.spy()
             const makeDir = sinon.spy()
@@ -244,7 +224,7 @@ describe('isDocumentValid', async () => {
                 }
             } `
 
-        let textDocument = await vscode.workspace.openTextDocument({ language: 'asl' })
+        const textDocument = await vscode.workspace.openTextDocument({ language: 'asl' })
 
         const isValid = await isDocumentValid(aslText, textDocument)
         assert.ok(isValid)
@@ -263,7 +243,7 @@ describe('isDocumentValid', async () => {
                 }
             } `
 
-        let textDocument = await vscode.workspace.openTextDocument({ language: 'asl' })
+        const textDocument = await vscode.workspace.openTextDocument({ language: 'asl' })
 
         const isValid = await isDocumentValid(aslText, textDocument)
         assert.ok(isValid)
@@ -282,7 +262,7 @@ describe('isDocumentValid', async () => {
                 }
             } `
 
-        let textDocument = await vscode.workspace.openTextDocument({ language: 'asl' })
+        const textDocument = await vscode.workspace.openTextDocument({ language: 'asl' })
 
         const isValid = await isDocumentValid(aslText, textDocument)
 

@@ -113,7 +113,7 @@ connection.onInitialize(
             const keys = name.split('.')
             let c: any = params.capabilities
             for (let i = 0; c && i < keys.length; i++) {
-                if (!c.hasOwnProperty(keys[i])) {
+                if (!Object.prototype.hasOwnProperty.call(c, keys[i])) {
                     return def
                 }
                 c = c[keys[i]]

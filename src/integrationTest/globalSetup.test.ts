@@ -14,7 +14,7 @@ import { WinstonToolkitLogger } from '../shared/logger/winstonToolkitLogger'
 
 // ASSUMPTION: Tests are not run concurrently
 
-let timeout: { id: NodeJS.Timeout | undefined; name: string | undefined } = { id: undefined, name: undefined }
+const timeout: { id: NodeJS.Timeout | undefined; name: string | undefined } = { id: undefined, name: undefined }
 function clearTestTimeout() {
     if (timeout.id !== undefined) {
         clearTimeout(timeout.id)

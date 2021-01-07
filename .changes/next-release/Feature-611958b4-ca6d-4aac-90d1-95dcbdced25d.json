@@ -1,0 +1,4 @@
+{
+	"type": "Feature",
+	"description": "SAM debug: Ignore build failures and attempt to continue invoke/deploy"
+}

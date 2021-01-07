@@ -41,7 +41,7 @@ export async function setupVSCodeTestInstance(): Promise<string> {
 export async function invokeVSCodeCli(vsCodeExecutablePath: string, args: string[]): Promise<Buffer> {
     const vsCodeCliPath = resolveCliPathFromVSCodeExecutablePath(vsCodeExecutablePath)
 
-    let cmdArgs = [...args]
+    const cmdArgs = [...args]
 
     // Workaround: set --user-data-dir to avoid this error in CI:
     // "You are trying to start Visual Studio Code as a super user …"
@@ -88,8 +88,8 @@ export async function getCliArgsToDisableExtensions(
     console.log(`Disabling all VS Code extensions *except*: ${params.except}`)
     const output = await invokeVSCodeCli(vsCodeExecutablePath, ['--list-extensions'])
     const foundExtensions = output.toString('utf8').split('\n')
-    let ids: string[] = []
-    for (let extId of foundExtensions) {
+    const ids: string[] = []
+    for (const extId of foundExtensions) {
         if (extId.trim() && !params.except.includes(extId)) {
             ids.push('--disable-extension')
             ids.push(extId)

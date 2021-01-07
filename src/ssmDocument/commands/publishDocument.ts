@@ -30,7 +30,7 @@ export async function publishSSMDocument(awsContext: AwsContext, regionProvider:
 
     const textDocument = vscode.window.activeTextEditor?.document
     if (!textDocument) {
-        let errorMsg = 'Could not get active text editor for local Systems Manager Document definition'
+        const errorMsg = 'Could not get active text editor for local Systems Manager Document definition'
         logger.error(errorMsg)
         vscode.window.showErrorMessage(
             localize(
@@ -42,8 +42,8 @@ export async function publishSSMDocument(awsContext: AwsContext, regionProvider:
     }
 
     if (textDocument.languageId !== ssmJson && textDocument.languageId !== ssmYaml) {
-        let supportedFormats = [ssmJson, ssmYaml]
-        let errorMsg = 'Current editor language does not match the supported formats: ' + supportedFormats.join(', ')
+        const supportedFormats = [ssmJson, ssmYaml]
+        const errorMsg = 'Current editor language does not match the supported formats: ' + supportedFormats.join(', ')
         logger.error(errorMsg)
         vscode.window.showErrorMessage(
             localize(
@@ -79,7 +79,7 @@ export async function createDocument(
     client: SsmDocumentClient = ext.toolkitClientBuilder.createSsmClient(wizardResponse.region)
 ) {
     let result: telemetry.Result = 'Succeeded'
-    let ssmOperation: telemetry.SsmOperation = wizardResponse.PublishSsmDocAction as telemetry.SsmOperation
+    const ssmOperation: telemetry.SsmOperation = wizardResponse.PublishSsmDocAction as telemetry.SsmOperation
 
     const logger: Logger = getLogger()
     logger.info(`Creating Systems Manager Document '${wizardResponse.name}'`)
@@ -114,7 +114,7 @@ export async function updateDocument(
     window = Window.vscode()
 ) {
     let result: telemetry.Result = 'Succeeded'
-    let ssmOperation: telemetry.SsmOperation = wizardResponse.PublishSsmDocAction as telemetry.SsmOperation
+    const ssmOperation: telemetry.SsmOperation = wizardResponse.PublishSsmDocAction as telemetry.SsmOperation
 
     const logger: Logger = getLogger()
     logger.info(`Updating Systems Manager Document '${wizardResponse.name}'`)
@@ -149,7 +149,7 @@ export async function updateDocument(
             logger.info('Declined update default version on update document success.')
         } else {
             try {
-                let documentVersion: string | undefined = updateResult.DocumentDescription?.DocumentVersion
+                const documentVersion: string | undefined = updateResult.DocumentDescription?.DocumentVersion
                 if (documentVersion !== undefined) {
                     await client.updateDocumentVersion(wizardResponse.name, documentVersion)
                     logger.info(`Updated Systems Manager Document default version successfully`)

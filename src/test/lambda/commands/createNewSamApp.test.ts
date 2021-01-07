@@ -67,7 +67,7 @@ describe('addInitialLaunchConfiguration', function () {
 
         // without runtime
         await ext.templateRegistry.addItemToRegistry(tempTemplate)
-        let launchConfigs = await addInitialLaunchConfiguration(
+        const launchConfigs = await addInitialLaunchConfiguration(
             fakeContext,
             fakeWorkspaceFolder,
             tempTemplate,
@@ -103,7 +103,7 @@ describe('addInitialLaunchConfiguration', function () {
 
         // without runtime
         await ext.templateRegistry.addItemToRegistry(tempTemplate)
-        let launchConfigs = (await addInitialLaunchConfiguration(
+        const launchConfigs = (await addInitialLaunchConfiguration(
             fakeContext,
             fakeWorkspaceFolder,
             tempTemplate,

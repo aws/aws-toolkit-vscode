@@ -38,7 +38,7 @@ async function setupVSCode(): Promise<string> {
             extensionTestsPath: testEntrypoint,
             launchArgs: [...disableExtensions, workspacePath],
         }
-        console.log(`runTests() args:\n${JSON.stringify(args, null, 2)}`)
+        console.log(`runTests() args:\n${JSON.stringify(args, undefined, 2)}`)
         const result = await runTests(args)
 
         console.log(`Finished running Integration test suite with result code: ${result}`)
