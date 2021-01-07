@@ -59,7 +59,7 @@ export async function activate(extensionContext: ExtensionContext) {
     const serverModule = extensionContext.asAbsolutePath(path.join('dist/src/stepFunctions/asl/', 'aslServer.js'))
     // The debug options for the server
     // --inspect=6009: runs the server in Node's Inspector mode so VS Code can attach to the server for debugging
-    const debugOptions = { execArgv: ['--nolazy', '--inspect=6009'] }
+    const debugOptions = { execArgv: ['--nolazy', '--inspect=6009', '--preserve-symlinks'] }
 
     // If the extension is launch in debug mode the debug server options are use
     // Otherwise the run options are used
@@ -71,6 +71,8 @@ export async function activate(extensionContext: ExtensionContext) {
     const documentSelector = [
         { schema: 'file', language: 'asl' },
         { schema: 'untitled', language: 'asl' },
+        { schema: 'file', language: 'asl-yaml' },
+        { schema: 'untitled', language: 'asl-yaml' },
     ]
 
     // Options to control the language client
@@ -83,8 +85,8 @@ export async function activate(extensionContext: ExtensionContext) {
         },
         synchronize: {
             // Synchronize the setting section 'json' to the server
-            configurationSection: ['asl'],
-            fileEvents: workspace.createFileSystemWatcher('**/*.{asl.json,asl}'),
+            configurationSection: ['asl', 'asl-yaml'],
+            fileEvents: workspace.createFileSystemWatcher('**/*.{asl,asl.json,asl.yml,asl.yaml}'),
         },
         middleware: {
             workspace: {
