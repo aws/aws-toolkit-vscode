@@ -216,7 +216,20 @@ class S3VirtualBucketTest {
         AwsClientManager().getClient<S3Client>(awsConnectionManager.activeCredentialProvider, awsConnectionManager.activeRegion).use {
             val sut = S3VirtualBucket(Bucket.builder().name("test-bucket").build(), it)
 
-            assertThat(sut.generateUrl("prefix/key")).isEqualTo(URL("https://test-bucket.s3.us-west-2.amazonaws.com/prefix/key"))
+            assertThat(sut.generateUrl("prefix/key", null)).isEqualTo(URL("https://test-bucket.s3.us-west-2.amazonaws.com/prefix/key"))
+        }
+    }
+
+    @Test
+    fun getUrlWithVersion() {
+        val awsConnectionManager = settingsManagerRule.settingsManager
+        awsConnectionManager.changeRegionAndWait(AwsRegion("us-west-2", "US West (Oregon)", "aws"))
+
+        // Use real manager for this since it can affect the S3Configuration that goes into S3Utilities
+        AwsClientManager().getClient<S3Client>(awsConnectionManager.activeCredentialProvider, awsConnectionManager.activeRegion).use {
+            val sut = S3VirtualBucket(Bucket.builder().name("test-bucket").build(), it)
+
+            assertThat(sut.generateUrl("prefix/key", "123")).isEqualTo(URL("https://test-bucket.s3.us-west-2.amazonaws.com/prefix/key?versionId=123"))
         }
     }
 
@@ -230,7 +243,7 @@ class S3VirtualBucketTest {
             val sut = S3VirtualBucket(Bucket.builder().name("test-bucket").build(), it)
 
             assertThatThrownBy {
-                sut.generateUrl("")
+                sut.generateUrl("", null)
             }
         }
     }

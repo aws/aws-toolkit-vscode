@@ -5,6 +5,7 @@ package software.aws.toolkits.jetbrains.services.s3.objectActions
 
 import com.intellij.openapi.ide.CopyPasteManager
 import com.intellij.openapi.project.Project
+import software.aws.toolkits.jetbrains.services.s3.NOT_VERSIONED_VERSION_ID
 import software.aws.toolkits.jetbrains.services.s3.editor.S3TreeNode
 import software.aws.toolkits.jetbrains.services.s3.editor.S3TreeObjectVersionNode
 import software.aws.toolkits.jetbrains.services.s3.editor.S3TreeTable
@@ -15,11 +16,8 @@ import java.awt.datatransfer.StringSelection
 
 class CopyUrlAction(private val project: Project, treeTable: S3TreeTable) : SingleS3ObjectAction(treeTable, message("s3.copy.url")) {
     override fun performAction(node: S3TreeNode) = try {
-        var url = treeTable.bucket.generateUrl(node.key).toString()
-        if (node is S3TreeObjectVersionNode) {
-            // TODO replace with api call one available https://github.com/aws/aws-sdk-java-v2/issues/2224
-            url += "?versionId=${node.versionId}"
-        }
+        val versionId = (node as? S3TreeObjectVersionNode)?.versionId?.takeIf { it != NOT_VERSIONED_VERSION_ID }
+        val url = treeTable.bucket.generateUrl(node.key, versionId).toString()
         CopyPasteManager.getInstance().setContents(StringSelection(url))
 
         S3Telemetry.copyUrl(project, presigned = false, success = true)

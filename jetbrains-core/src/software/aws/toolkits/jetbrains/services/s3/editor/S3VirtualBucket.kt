@@ -82,9 +82,10 @@ class S3VirtualBucket(val s3Bucket: Bucket, val client: S3Client) : LightVirtual
         }
     }
 
-    fun generateUrl(key: String): URL = client.utilities().getUrl {
+    fun generateUrl(key: String, versionId: String?): URL = client.utilities().getUrl {
         it.bucket(s3Bucket.name())
         it.key(key)
+        it.versionId(versionId)
     }
 
     private companion object {

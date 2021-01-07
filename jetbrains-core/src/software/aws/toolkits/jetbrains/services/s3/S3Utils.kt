@@ -6,3 +6,5 @@ package software.aws.toolkits.jetbrains.services.s3
 import software.aws.toolkits.core.region.AwsRegion
 
 fun bucketArn(bucketName: String, region: AwsRegion) = "arn:${region.partitionId}:s3:::$bucketName"
+
+const val NOT_VERSIONED_VERSION_ID = "null"
