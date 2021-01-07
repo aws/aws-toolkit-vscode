@@ -7,12 +7,22 @@ import com.intellij.remoterobot.RemoteRobot
 import com.intellij.remoterobot.data.RemoteComponent
 import com.intellij.remoterobot.fixtures.ComponentFixture
 import com.intellij.remoterobot.stepsProcessing.step
+import com.intellij.remoterobot.utils.waitFor
+import org.assertj.swing.timing.Pause
+import java.time.Duration
 
 class JTreeFixture(
     remoteRobot: RemoteRobot,
     remoteComponent: RemoteComponent
 ) : ComponentFixture(remoteRobot, remoteComponent) {
     var separator: String = "/"
+
+    fun hasPath(vararg paths: String) = try {
+        runJsPathMethod("node", *paths)
+        true
+    } catch (e: Exception) {
+        false
+    }
 
     fun clickPath(vararg paths: String) = runJsPathMethod("clickPath", *paths)
     fun expandPath(vararg paths: String) = runJsPathMethod("expandPath", *paths)
@@ -33,11 +43,8 @@ class JTreeFixture(
         }
     }
 
-    fun clickRow(row: Int) = runJsRowMethod("clickRow", row)
-    fun expandRow(row: Int) = runJsRowMethod("expandRow", row)
-
     private fun runJsPathMethod(name: String, vararg paths: String) {
-        val path = paths.joinToString("/")
+        val path = paths.joinToString(separator)
         step("$name $path") {
             runJs(
                 """
@@ -48,16 +55,15 @@ class JTreeFixture(
             )
         }
     }
+}
 
-    private fun runJsRowMethod(name: String, row: Int) {
-        step("$name $row") {
-            runJs(
-                """
-                const jTreeFixture = JTreeFixture(robot, component);
-                jTreeFixture.replaceSeparator('$separator')
-                jTreeFixture.$name($row) 
-                """.trimIndent()
-            )
+fun JTreeFixture.waitUntilLoaded() {
+    step("waiting for loading text to go away...") {
+        Pause.pause(100)
+        waitFor(duration = Duration.ofMinutes(1)) {
+            // Do not use hasText(String) https://github.com/JetBrains/intellij-ui-test-robot/issues/10
+            !hasText { txt -> txt.text == "loading..." }
         }
+        Pause.pause(100)
     }
 }

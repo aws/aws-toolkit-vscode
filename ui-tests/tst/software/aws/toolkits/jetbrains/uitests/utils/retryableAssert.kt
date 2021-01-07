@@ -29,17 +29,16 @@ fun recheckAssert(
 
 fun reattemptAssert(
     maxAttempts: Int = 5,
-    interval: Duration = Duration.ofMillis(100),
+    interval: Duration = Duration.ofSeconds(1),
     assertion: () -> Unit
 ) {
-    var attempts = 0
-    while (true) {
+    for (i in 0..maxAttempts) {
         try {
             assertion()
             return
         } catch (e: AssertionError) { // deliberately narrowed to an AssertionError - this is intended to be used in a test assertion
             when {
-                ++attempts >= maxAttempts -> throw e
+                i >= maxAttempts -> throw e
                 else -> Thread.sleep(interval.toMillis())
             }
         }

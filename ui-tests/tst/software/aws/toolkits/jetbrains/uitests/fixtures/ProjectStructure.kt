@@ -8,13 +8,21 @@ import com.intellij.remoterobot.data.RemoteComponent
 import com.intellij.remoterobot.fixtures.FixtureName
 import com.intellij.remoterobot.search.locators.byXpath
 import com.intellij.remoterobot.stepsProcessing.step
+import com.intellij.remoterobot.utils.keyboard
+import java.awt.event.KeyEvent
 import java.time.Duration
 
-fun RemoteRobot.projectStructureDialog(
+fun IdeaFrame.projectStructureDialog(
     timeout: Duration = Duration.ofSeconds(20),
     function: ProjectStructureDialog.() -> Unit
 ) {
-    step("Search for Project Structure dialog") {
+    step("Project Structure dialog") {
+        if (remoteRobot.isMac()) {
+            keyboard { hotKey(KeyEvent.VK_META, KeyEvent.VK_SEMICOLON) }
+        } else {
+            keyboard { hotKey(KeyEvent.VK_CONTROL, KeyEvent.VK_ALT, KeyEvent.VK_SHIFT, KeyEvent.VK_S) }
+        }
+
         val dialog = find<ProjectStructureDialog>(byXpath("//div[@accessiblename='Project Structure']"), timeout)
 
         dialog.apply(function)

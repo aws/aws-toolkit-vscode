@@ -20,6 +20,7 @@ plugins {
 
 dependencies {
     testImplementation(gradleApi())
+    testImplementation(project(":core"))
     testImplementation("org.jetbrains.kotlinx:kotlinx-coroutines-core:$coroutinesVersion")
     testImplementation("org.junit.jupiter:junit-jupiter-api:$junit5Version")
     testImplementation("org.jetbrains.kotlinx:kotlinx-coroutines-core:$coroutinesVersion")
