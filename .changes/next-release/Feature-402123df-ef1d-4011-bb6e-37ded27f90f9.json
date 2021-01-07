@@ -1,0 +1,4 @@
+{
+	"type": "Feature",
+	"description": "SAM debug: use debugpy instead of ptvsd #1365"
+}
