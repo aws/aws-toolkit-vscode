@@ -11,6 +11,7 @@ import { CloudWatchLogsNode } from '../cloudWatchLogs/explorer/cloudWatchLogsNod
 import { LambdaNode } from '../lambda/explorer/lambdaNodes'
 import { S3Node } from '../s3/explorer/s3Nodes'
 import { EcrNode } from '../ecr/explorer/ecrNode'
+import { isCloud9 } from '../shared/extensionUtilities'
 import { ext } from '../shared/extensionGlobals'
 import { Region } from '../shared/regions/endpoints'
 import { RegionProvider } from '../shared/regions/regionProvider'
@@ -54,12 +55,15 @@ export class RegionNode extends AWSTreeNodeBase {
                 serviceId: 'ecr',
                 createFn: () => new EcrNode(ext.toolkitClientBuilder.createEcrClient(this.regionCode)),
             },
-            { serviceId: 'logs', createFn: () => new CloudWatchLogsNode(this.regionCode) },
             { serviceId: 'lambda', createFn: () => new LambdaNode(this.regionCode) },
-            { serviceId: 's3', createFn: () => new S3Node(ext.toolkitClientBuilder.createS3Client(this.regionCode)) },
-            { serviceId: 'schemas', createFn: () => new SchemasNode(this.regionCode) },
-            { serviceId: 'states', createFn: () => new StepFunctionsNode(this.regionCode) },
-            { serviceId: 'ssm', createFn: () => new SsmDocumentNode(this.regionCode) },
+            ...(isCloud9() ? [] : [{ serviceId: 'logs', createFn: () => new CloudWatchLogsNode(this.regionCode) }]),
+            {
+                serviceId: 's3',
+                createFn: () => new S3Node(ext.toolkitClientBuilder.createS3Client(this.regionCode)),
+            },
+            ...(isCloud9() ? [] : [{ serviceId: 'schemas', createFn: () => new SchemasNode(this.regionCode) }]),
+            ...(isCloud9() ? [] : [{ serviceId: 'states', createFn: () => new StepFunctionsNode(this.regionCode) }]),
+            ...(isCloud9() ? [] : [{ serviceId: 'ssm', createFn: () => new SsmDocumentNode(this.regionCode) }]),
         ]
 
         for (const serviceCandidate of serviceCandidates) {

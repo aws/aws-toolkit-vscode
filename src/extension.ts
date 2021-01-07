@@ -34,6 +34,7 @@ import { ext } from './shared/extensionGlobals'
 import {
     aboutToolkit,
     getToolkitEnvironmentDetails,
+    isCloud9,
     showQuickStartWebview,
     showWelcomeMessage,
 } from './shared/extensionUtilities'
@@ -190,8 +191,6 @@ export async function activate(context: vscode.ExtensionContext) {
             })
         )
 
-        await activateCloudWatchLogs(context, toolkitSettings)
-
         await activateCloudFormationTemplateRegistry(context)
 
         await activateCdk({
@@ -214,11 +213,6 @@ export async function activate(context: vscode.ExtensionContext) {
 
         await activateLambda(context)
 
-        await activateSchemas({
-            context: extContext.extensionContext,
-            outputChannel: toolkitOutputChannel,
-        })
-
         await activateSsmDocument(context, awsContext, regionProvider, toolkitOutputChannel)
 
         await ExtensionDisposableFiles.initialize(context)
@@ -229,9 +223,19 @@ export async function activate(context: vscode.ExtensionContext) {
 
         await activateEcr(context)
 
-        setImmediate(async () => {
-            await activateStepFunctions(context, awsContext, toolkitOutputChannel)
-        })
+        // Features which aren't currently functional in Cloud9
+        if (!isCloud9()) {
+            await activateCloudWatchLogs(context, toolkitSettings)
+
+            await activateSchemas({
+                context: extContext.extensionContext,
+                outputChannel: toolkitOutputChannel,
+            })
+
+            setImmediate(async () => {
+                await activateStepFunctions(context, awsContext, toolkitOutputChannel)
+            })
+        }
 
         showWelcomeMessage(context)
 
@@ -249,8 +253,12 @@ export async function deactivate() {
 }
 
 function initializeIconPaths(context: vscode.ExtensionContext) {
-    ext.iconPaths.dark.help = context.asAbsolutePath('resources/dark/help.svg')
-    ext.iconPaths.light.help = context.asAbsolutePath('resources/light/help.svg')
+    ext.iconPaths.dark.help = isCloud9()
+        ? context.asAbsolutePath('resources/dark/cloud9/help.svg')
+        : context.asAbsolutePath('resources/dark/help.svg')
+    ext.iconPaths.light.help = isCloud9()
+        ? context.asAbsolutePath('resources/light/cloud9/help.svg')
+        : context.asAbsolutePath('resources/light/help.svg')
 
     ext.iconPaths.dark.cloudFormation = context.asAbsolutePath('resources/dark/cloudformation.svg')
     ext.iconPaths.light.cloudFormation = context.asAbsolutePath('resources/light/cloudformation.svg')
@@ -307,10 +315,17 @@ function makeEndpointsProvider(): EndpointsProvider {
         getLogger().error('Failure while loading Endpoints Manifest: %O', err)
 
         vscode.window.showErrorMessage(
-            localize(
-                'AWS.error.endpoint.load.failure',
-                'The AWS Toolkit was unable to load endpoints data. Toolkit functionality may be impacted until VS Code is restarted.'
-            )
+            `${localize('AWS.error.endpoint.load.failure', 'The AWS Toolkit was unable to load endpoints data.')} ${
+                isCloud9()
+                    ? localize(
+                          'AWS.error.impactedFunctionalityReset.cloud9',
+                          'Toolkit functionality may be impacted until the Cloud9 browser tab is refreshed.'
+                      )
+                    : localize(
+                          'AWS.error.impactedFunctionalityReset.vscode',
+                          'Toolkit functionality may be impacted until VS Code is restarted.'
+                      )
+            }`
         )
     })
 

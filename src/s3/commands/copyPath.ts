@@ -10,6 +10,7 @@ import { S3FolderNode } from '../explorer/s3FolderNode'
 import { S3FileNode } from '../explorer/s3FileNode'
 import * as telemetry from '../../shared/telemetry/telemetry'
 import { localize } from '../../shared/utilities/vsCodeUtils'
+import { addCodiconToString } from '../../shared/utilities/textUtilities'
 
 const COPY_PATH_DISPLAY_TIMEOUT_MS = 2000
 
@@ -31,7 +32,7 @@ export async function copyPathCommand(
     telemetry.recordS3CopyPath()
 
     window.setStatusBarMessage(
-        localize('AWS.explorerNode.copiedToClipboard', '$(clippy) Copied {0} to clipboard', 'path'),
+        addCodiconToString('clippy', localize('AWS.explorerNode.copiedToClipboard', 'Copied {0} to clipboard', 'path')),
         COPY_PATH_DISPLAY_TIMEOUT_MS
     )
 }

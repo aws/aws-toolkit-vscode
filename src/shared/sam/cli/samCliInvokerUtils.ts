@@ -5,7 +5,7 @@
 
 import { SpawnOptions } from 'child_process'
 import { getLogger } from '../../logger'
-import { ChildProcessResult } from '../../utilities/childProcess'
+import { ChildProcessResult, ChildProcessStartArguments } from '../../utilities/childProcess'
 import { ChannelLogger } from '../../utilities/vsCodeUtils'
 
 export interface SamCliProcessInvokeOptions {
@@ -13,11 +13,13 @@ export interface SamCliProcessInvokeOptions {
     arguments?: string[]
     /** Optionally log stdout and stderr to the specified logger */
     channelLogger?: ChannelLogger
+    onStdout?: ChildProcessStartArguments['onStdout']
+    onStderr?: ChildProcessStartArguments['onStderr']
 }
 
 export function makeRequiredSamCliProcessInvokeOptions(
     options?: SamCliProcessInvokeOptions
-): Required<Omit<SamCliProcessInvokeOptions, 'channelLogger'>> {
+): Required<Omit<SamCliProcessInvokeOptions, 'channelLogger' | 'onStdout' | 'onStderr'>> {
     options = options || {}
 
     return {
@@ -28,6 +30,7 @@ export function makeRequiredSamCliProcessInvokeOptions(
 
 export interface SamCliProcessInvoker {
     invoke(options?: SamCliProcessInvokeOptions): Promise<ChildProcessResult>
+    stop(): void
 }
 
 export function logAndThrowIfUnexpectedExitCode(processResult: ChildProcessResult, expectedExitCode: number): void {

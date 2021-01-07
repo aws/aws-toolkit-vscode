@@ -13,6 +13,7 @@ import { Env } from '../../shared/vscode/env'
 import { Window } from '../../shared/vscode/window'
 import { Commands } from '../../shared/vscode/commands'
 import { COPY_TO_CLIPBOARD_INFO_TIMEOUT_MS } from '../../shared/constants'
+import { addCodiconToString } from '../../shared/utilities/textUtilities'
 
 /**
  * Copies the arn of the resource represented by the given node.
@@ -30,7 +31,10 @@ export async function copyArnCommand(
         recordCopyArn({ result: 'Succeeded' })
 
         window.setStatusBarMessage(
-            localize('AWS.explorerNode.copiedToClipboard', '$(clippy) Copied {0} to clipboard', 'ARN'),
+            addCodiconToString(
+                'clippy',
+                localize('AWS.explorerNode.copiedToClipboard', 'Copied {0} to clipboard', 'ARN')
+            ),
             COPY_TO_CLIPBOARD_INFO_TIMEOUT_MS
         )
     } catch (e) {

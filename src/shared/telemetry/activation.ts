@@ -3,6 +3,7 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
+import { MetadataService } from 'aws-sdk'
 import * as vscode from 'vscode'
 import { AwsContext } from '../awsContext'
 import { SettingsConfiguration } from '../settingsConfiguration'
@@ -12,6 +13,7 @@ import { getLogger } from '../logger'
 import { TelemetryService } from './telemetryService'
 
 import * as nls from 'vscode-nls'
+import { isCloud9 } from '../extensionUtilities'
 const localize = nls.loadMessageBundle()
 
 const LEGACY_SETTINGS_TELEMETRY_VALUE_DISABLE = 'Disable'
@@ -43,7 +45,13 @@ export async function activate(activateArguments: {
     awsContext: AwsContext
     toolkitSettings: SettingsConfiguration
 }) {
-    ext.telemetry = new DefaultTelemetryService(activateArguments.extensionContext, activateArguments.awsContext)
+    const computeRegion = await getComputeRegion()
+
+    ext.telemetry = new DefaultTelemetryService(
+        activateArguments.extensionContext,
+        activateArguments.awsContext,
+        computeRegion
+    )
 
     // Convert setting to boolean if it is not already
     await sanitizeTelemetrySetting(activateArguments.toolkitSettings)
@@ -175,4 +183,32 @@ export async function handleTelemetryNoticeResponse(
     } catch (err) {
         getLogger().error('Error while handling response from telemetry notice: %O', err as Error)
     }
+}
+
+/**
+ * Returns the Cloud9 compute region or 'unknown' if we can't pull a region, or `undefined` if this is not Cloud9.
+ */
+export async function getComputeRegion(
+    metadataService: MetadataService = new MetadataService(),
+    isC9: boolean = isCloud9()
+): Promise<string | undefined> {
+    if (isC9) {
+        try {
+            const identity: { [key: string]: string; region: string } = await new Promise((resolve, reject) => {
+                // MetadataService.request() doesn't support .promise()...
+                metadataService.request('/latest/dynamic/instance-identity/document', (err, data) => {
+                    if (err) {
+                        reject(err)
+                    }
+                    resolve(JSON.parse(data))
+                })
+            })
+
+            return identity.region || 'unknown'
+        } catch (e) {
+            return 'unknown'
+        }
+    }
+    // not cloud9, region has no meaning
+    return undefined
 }

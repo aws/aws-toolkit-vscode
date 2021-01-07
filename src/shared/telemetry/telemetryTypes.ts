@@ -4,6 +4,7 @@
  */
 
 export const ACCOUNT_METADATA_KEY = 'awsAccount'
+export const COMPUTE_REGION_KEY = 'computeRegion'
 
 export enum AccountStatus {
     NotApplicable = 'n/a',

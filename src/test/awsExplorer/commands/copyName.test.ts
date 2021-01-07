@@ -21,6 +21,5 @@ describe('copyNameCommand', () => {
         await copyNameCommand(node, window, env)
 
         assert.strictEqual(env.clipboard.text, 'name')
-        assert.strictEqual(window.statusBar.message, '$(clippy) Copied name to clipboard')
     })
 })
