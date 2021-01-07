@@ -36,6 +36,7 @@ class LocalLambdaRunSettingsEditor(project: Project) : SettingsEditor<LocalLambd
                 view.templateSettings.runtime.selectedItem = configuration.runtime()
                 view.templateSettings.pathMappingsTable.setMappingSettings(PathMappingSettings(configuration.pathMappings))
             }
+            view.templateSettings.environmentVariables.envVars = configuration.environmentVariables()
         } else {
             view.rawSettings.runtime.model.selectedItem = configuration.runtime()
             view.rawSettings.handlerPanel.handler.text = configuration.handler() ?: ""
@@ -59,6 +60,7 @@ class LocalLambdaRunSettingsEditor(project: Project) : SettingsEditor<LocalLambd
                 configuration.runtime(view.templateSettings.runtime.selected())
                 configuration.pathMappings = view.templateSettings.pathMappingsTable.mappingSettings.pathMappings
             }
+            configuration.environmentVariables(view.templateSettings.environmentVariables.envVars)
         } else {
             configuration.useHandler(view.rawSettings.runtime.selected(), view.rawSettings.handlerPanel.handler.text)
             configuration.timeout(view.rawSettings.timeoutSlider.value)

@@ -4,7 +4,6 @@
 package software.aws.toolkits.jetbrains.services.lambda.execution.sam
 
 import com.intellij.openapi.vfs.VirtualFile
-import com.intellij.psi.NavigatablePsiElement
 import com.intellij.util.PathMappingSettings.PathMapping
 import software.amazon.awssdk.services.lambda.model.Runtime
 import software.aws.toolkits.jetbrains.core.credentials.ConnectionSettings
@@ -19,6 +18,7 @@ interface TemplateBasedSettings {
 sealed class LocalLambdaRunSettings(
     val connection: ConnectionSettings,
     val samOptions: SamOptions,
+    val environmentVariables: Map<String, String>,
     val runtime: Runtime,
     val debugHost: String,
     val input: String
@@ -31,24 +31,24 @@ class TemplateRunSettings(
     runtime: Runtime,
     val handler: String,
     override val logicalId: String,
+    environmentVariables: Map<String, String>,
     connection: ConnectionSettings,
     samOptions: SamOptions,
     debugHost: String,
     input: String
-) : TemplateBasedSettings, LocalLambdaRunSettings(connection, samOptions, runtime, debugHost, input)
+) : TemplateBasedSettings, LocalLambdaRunSettings(connection, samOptions, environmentVariables, runtime, debugHost, input)
 
 class HandlerRunSettings(
     runtime: Runtime,
     val handler: String,
     val timeout: Int,
     val memorySize: Int,
-    val handlerElement: NavigatablePsiElement,
-    val environmentVariables: Map<String, String>,
+    environmentVariables: Map<String, String>,
     connection: ConnectionSettings,
     samOptions: SamOptions,
     debugHost: String,
     input: String
-) : LocalLambdaRunSettings(connection, samOptions, runtime, debugHost, input)
+) : LocalLambdaRunSettings(connection, samOptions, environmentVariables, runtime, debugHost, input)
 
 class ImageTemplateRunSettings(
     override val templateFile: VirtualFile,
@@ -56,8 +56,9 @@ class ImageTemplateRunSettings(
     override val logicalId: String,
     val dockerFile: VirtualFile,
     val pathMappings: List<PathMapping>,
+    environmentVariables: Map<String, String>,
     connection: ConnectionSettings,
     samOptions: SamOptions,
     debugHost: String,
     input: String
-) : TemplateBasedSettings, LocalLambdaRunSettings(connection, samOptions, runtime, debugHost, input)
+) : TemplateBasedSettings, LocalLambdaRunSettings(connection, samOptions, environmentVariables, runtime, debugHost, input)

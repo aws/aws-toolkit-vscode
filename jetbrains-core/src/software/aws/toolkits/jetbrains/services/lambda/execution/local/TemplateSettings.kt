@@ -12,12 +12,16 @@ import com.intellij.util.PathMappingSettings
 import org.jetbrains.yaml.YAMLFileType
 import software.amazon.awssdk.services.lambda.model.PackageType
 import software.amazon.awssdk.services.lambda.model.Runtime
+import software.aws.toolkits.core.utils.getLogger
+import software.aws.toolkits.core.utils.warn
 import software.aws.toolkits.jetbrains.services.cloudformation.Function
 import software.aws.toolkits.jetbrains.services.cloudformation.SamFunction
 import software.aws.toolkits.jetbrains.services.lambda.LambdaBuilder
 import software.aws.toolkits.jetbrains.services.lambda.RuntimeGroup
 import software.aws.toolkits.jetbrains.services.lambda.runtimeGroup
 import software.aws.toolkits.jetbrains.services.lambda.sam.SamTemplateUtils
+import software.aws.toolkits.jetbrains.services.lambda.sam.SamTemplateUtils.getFunctionEnvironmentVariables
+import software.aws.toolkits.jetbrains.ui.EnvironmentVariablesTextField
 import software.aws.toolkits.jetbrains.ui.ProjectFileBrowseListener
 import software.aws.toolkits.jetbrains.utils.ui.find
 import software.aws.toolkits.jetbrains.utils.ui.selected
@@ -41,6 +45,8 @@ class TemplateSettings(val project: Project) {
     private lateinit var functionModels: DefaultComboBoxModel<Function>
     private lateinit var imageSettingsPanel: JPanel
     private lateinit var runtimeModel: SortedComboBoxModel<Runtime>
+    lateinit var environmentVariables: EnvironmentVariablesTextField
+        private set
 
     val isImage
         get() = function.selected()?.packageType() == PackageType.IMAGE
@@ -49,6 +55,7 @@ class TemplateSettings(val project: Project) {
         // by default, do not show the image settings or path mappings table
         imageSettingsPanel.isVisible = false
         pathMappingsTable.isVisible = false
+        environmentVariables.isEnabled = false
         templateFile.addBrowseFolderListener(
             ProjectFileBrowseListener(
                 project,
@@ -59,11 +66,13 @@ class TemplateSettings(val project: Project) {
         )
         function.addActionListener {
             val selected = function.selected()
-            if (selected !is SamFunction) {
-                imageSettingsPanel.isVisible = false
-                return@addActionListener
+            imageSettingsPanel.isVisible = selected is SamFunction && selected.packageType() == PackageType.IMAGE
+            if (selected == null) {
+                environmentVariables.isEnabled = false
+            } else {
+                environmentVariables.isEnabled = true
+                setEnvVars(selected)
             }
-            imageSettingsPanel.isVisible = selected.packageType() == PackageType.IMAGE
         }
         runtime.addActionListener {
             val pathMappingsApplicable = pathMappingsApplicable()
@@ -83,6 +92,7 @@ class TemplateSettings(val project: Project) {
         function = ComboBox(functionModels)
         runtimeModel = SortedComboBoxModel(compareBy(Comparator.naturalOrder()) { it: Runtime -> it.toString() })
         runtime = ComboBox(runtimeModel)
+        environmentVariables = EnvironmentVariablesTextField()
     }
 
     fun setTemplateFile(file: String?) {
@@ -101,6 +111,13 @@ class TemplateSettings(val project: Project) {
         functionModels.selectedItem = function
     }
 
+    private fun setEnvVars(function: Function) = try {
+        environmentVariables.envVars = getFunctionEnvironmentVariables(File(templateFile.text).toPath(), function.logicalName)
+    } catch (e: Exception) {
+        // We don't want to throw exceptions out to the UI when we fail to parse the template, so log and continue
+        LOG.warn(e) { "Failed to set environment variables field" }
+    }
+
     private fun updateFunctionModel(functions: List<Function>) {
         functionModels.removeAllElements()
         function.isEnabled = functions.isNotEmpty()
@@ -113,4 +130,8 @@ class TemplateSettings(val project: Project) {
     }
 
     private fun pathMappingsApplicable(): Boolean = runtime.selected()?.runtimeGroup?.supportsPathMappings ?: false
+
+    private companion object {
+        val LOG = getLogger<TemplateSettings>()
+    }
 }

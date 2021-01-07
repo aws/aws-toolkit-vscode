@@ -169,6 +169,7 @@ class LocalLambdaRunConfiguration(project: Project, factory: ConfigurationFactor
                         LocalFileSystem.getInstance().refreshAndFindFileByIoFile(dockerFilePath.toFile())
                             ?: throw IllegalStateException("Unable to get virtual file for path $dockerFilePath"),
                         pathMappings,
+                        environmentVariables(),
                         ConnectionSettings(resolveCredentials(), resolveRegion()),
                         serializableOptions.samOptions.copy(),
                         serializableOptions.debugHost,
@@ -182,6 +183,7 @@ class LocalLambdaRunConfiguration(project: Project, factory: ConfigurationFactor
                         runtime,
                         handler,
                         logicalId,
+                        environmentVariables(),
                         ConnectionSettings(resolveCredentials(), resolveRegion()),
                         serializableOptions.samOptions.copy(),
                         serializableOptions.debugHost,
@@ -190,14 +192,11 @@ class LocalLambdaRunConfiguration(project: Project, factory: ConfigurationFactor
                 }
             } else {
                 val (handler, runtime) = resolveLambdaInfo(project = project, functionOptions = serializableOptions.functionOptions)
-                val psiElement = handlerPsiElement(handler, runtime)
-                    ?: throw RuntimeConfigurationError(message("lambda.run_configuration.handler_not_found", handler))
                 HandlerRunSettings(
                     runtime,
                     handler,
                     timeout(),
                     memorySize(),
-                    psiElement,
                     environmentVariables(),
                     ConnectionSettings(resolveCredentials(), resolveRegion()),
                     serializableOptions.samOptions.copy(),
