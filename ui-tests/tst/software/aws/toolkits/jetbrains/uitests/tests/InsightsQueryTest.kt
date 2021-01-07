@@ -3,7 +3,6 @@
 
 package software.aws.toolkits.jetbrains.uitests.tests
 
-import com.intellij.remoterobot.RemoteRobot
 import com.intellij.remoterobot.fixtures.ComboBoxFixture
 import com.intellij.remoterobot.fixtures.ComponentFixture
 import com.intellij.remoterobot.fixtures.ContainerFixture
@@ -26,11 +25,13 @@ import software.amazon.awssdk.services.cloudwatchlogs.model.QueryStatus
 import software.amazon.awssdk.services.cloudwatchlogs.model.ResourceNotFoundException
 import software.aws.toolkits.jetbrains.uitests.CoreTest
 import software.aws.toolkits.jetbrains.uitests.extensions.uiTest
+import software.aws.toolkits.jetbrains.uitests.fixtures.IdeaFrame
 import software.aws.toolkits.jetbrains.uitests.fixtures.JTreeFixture
 import software.aws.toolkits.jetbrains.uitests.fixtures.awsExplorer
 import software.aws.toolkits.jetbrains.uitests.fixtures.findAndClick
 import software.aws.toolkits.jetbrains.uitests.fixtures.idea
 import software.aws.toolkits.jetbrains.uitests.fixtures.rightClick
+import software.aws.toolkits.jetbrains.uitests.fixtures.waitUntilLoaded
 import software.aws.toolkits.jetbrains.uitests.fixtures.welcomeFrame
 import java.nio.file.Path
 import java.time.Duration
@@ -115,24 +116,29 @@ class InsightsQueryTest {
         }
         idea {
             waitForBackgroundTasks()
-            showAwsExplorer()
             step("Expand log groups node") {
                 awsExplorer {
                     expandExplorerNode(cloudWatchExplorerLabel)
                 }
             }
+
             step("Query with default settings returns results") {
                 openInsightsQueryDialogFromExplorer(logGroupName)
                 step("Execute") {
                     findAndClick("//div[@text='$executeButtonText']")
                 }
-                assertThat(find<JTreeFixture>(byXpath("//div[@class='TableView']"), Duration.ofSeconds(5)).findAllText()).anySatisfy {
+
+                val logResults = find<JTreeFixture>(byXpath("//div[@class='TableView']"), Duration.ofSeconds(5))
+                logResults.waitUntilLoaded()
+
+                assertThat(logResults.findAllText()).anySatisfy {
                     assertThat(it.text).contains("group1")
                 }
                 assertThat(find<JTreeFixture>(byXpath("//div[@class='TableView']")).findAllText()).anySatisfy {
                     assertThat(it.text).contains("group2")
                 }
             }
+
             step("Revising query from current results") {
                 // Find query ID. Query ID is a GUID with dashes, which makes it 36 characters long.
                 val currentQueryId = findAll<JLabelFixture>(byXpath("//div[@class='ContentTabLabel']"))
@@ -148,14 +154,17 @@ class InsightsQueryTest {
                     .text
                 val currentTab = find<JLabelFixture>(byXpath("//div[@class='ContentTabLabel' and contains(@accessiblename, '$currentQueryId')]"))
                 openInsightsQueryDialogFromResults()
+
                 step("Change relative time values") {
                     find<JTextFieldFixture>(byXpath("//div[@class='JFormattedTextField' and @visible_text='$defaultRelativeTimeAmount']")).text =
                         testRelativeTimeAmount
                     find<ComboBoxFixture>(byXpath("//div[@class='ComboBox']")).selectItem("Hours")
                 }
+
                 step("Execute") {
                     findAndClick("//div[@text='$executeButtonText']")
                 }
+
                 step("Verify new result tab selected") {
                     // close the old one
                     currentTab.rightClick()
@@ -163,7 +172,11 @@ class InsightsQueryTest {
 
                     find<JLabelFixture>(byXpath("//div[@class='ContentTabLabel' and @visible_text!='$currentQueryId']")).click()
                 }
-                assertThat(find<JTreeFixture>(byXpath("//div[@class='TableView']"), Duration.ofSeconds(5)).findAllText()).anySatisfy {
+
+                val logResults = find<JTreeFixture>(byXpath("//div[@class='TableView']"), Duration.ofSeconds(5))
+                logResults.waitUntilLoaded()
+
+                assertThat(logResults.findAllText()).anySatisfy {
                     assertThat(it.text).contains("group1")
                 }
                 assertThat(find<JTreeFixture>(byXpath("//div[@class='TableView']")).findAllText()).anySatisfy {
@@ -189,7 +202,7 @@ class InsightsQueryTest {
         }
     }
 
-    private fun RemoteRobot.openInsightsQueryDialogFromExplorer(groupName: String) = step("Open insights query dialog") {
+    private fun IdeaFrame.openInsightsQueryDialogFromExplorer(groupName: String) = step("Open insights query dialog") {
         awsExplorer {
             openExplorerActionMenu(cloudWatchExplorerLabel, groupName)
         }

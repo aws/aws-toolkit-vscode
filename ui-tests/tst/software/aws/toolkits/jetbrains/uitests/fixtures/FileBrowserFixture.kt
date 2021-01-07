@@ -10,8 +10,8 @@ import com.intellij.remoterobot.fixtures.FixtureName
 import com.intellij.remoterobot.fixtures.JTextFieldFixture
 import com.intellij.remoterobot.search.locators.byXpath
 import com.intellij.remoterobot.stepsProcessing.step
-import com.intellij.remoterobot.utils.keyboard
 import com.intellij.remoterobot.utils.waitForIgnoringError
+import org.assertj.swing.timing.Pause
 import java.io.File
 import java.nio.file.Path
 import java.time.Duration
@@ -68,11 +68,17 @@ class FileBrowserFixture(
             } else {
                 find(byXpath("//div[@class='BorderlessTextField']"), Duration.ofSeconds(5))
             }
-            // clear the path box then type in the path. needs to be typed not set because sometimes it will fail
-            // to load properly if just set (and fail the tests)
+            // clear the path box then type in the path. needs to be set slowly and not typed due to the tree can steal focus when loading.
+            // so break the path up and set it in segments
             pathBox.text = ""
-            pathBox.click()
-            keyboard { this.enterText(path.toString()) }
+            step("Type path '$path'") {
+                val pathSoFar = mutableListOf<String>()
+                path.toParts().forEach {
+                    pathSoFar += it
+                    pathBox.text = pathSoFar.joinToString(separator = "/").replace("//", "/")
+                    Pause.pause(100)
+                }
+            }
         }
     }
 

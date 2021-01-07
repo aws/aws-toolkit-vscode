@@ -3,12 +3,12 @@
 
 package software.aws.toolkits.jetbrains.uitests.tests
 
-import com.intellij.remoterobot.RemoteRobot
 import com.intellij.remoterobot.fixtures.ComponentFixture
 import com.intellij.remoterobot.fixtures.JTextFieldFixture
 import com.intellij.remoterobot.search.locators.byXpath
 import com.intellij.remoterobot.stepsProcessing.log
 import com.intellij.remoterobot.stepsProcessing.step
+import com.intellij.remoterobot.utils.waitFor
 import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.AfterAll
 import org.junit.jupiter.api.BeforeAll
@@ -16,12 +16,16 @@ import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.TestInstance
 import org.junit.jupiter.api.TestInstance.Lifecycle
 import org.junit.jupiter.api.io.TempDir
+import software.amazon.awssdk.regions.Region
 import software.amazon.awssdk.services.s3.S3Client
 import software.amazon.awssdk.services.s3.model.NoSuchBucketException
+import software.aws.toolkits.core.s3.deleteBucketAndContents
 import software.aws.toolkits.jetbrains.uitests.CoreTest
 import software.aws.toolkits.jetbrains.uitests.extensions.uiTest
+import software.aws.toolkits.jetbrains.uitests.fixtures.IdeaFrame
 import software.aws.toolkits.jetbrains.uitests.fixtures.JTreeFixture
 import software.aws.toolkits.jetbrains.uitests.fixtures.actionButton
+import software.aws.toolkits.jetbrains.uitests.fixtures.actionMenuItem
 import software.aws.toolkits.jetbrains.uitests.fixtures.awsExplorer
 import software.aws.toolkits.jetbrains.uitests.fixtures.fileBrowser
 import software.aws.toolkits.jetbrains.uitests.fixtures.fillSingleTextField
@@ -29,6 +33,7 @@ import software.aws.toolkits.jetbrains.uitests.fixtures.findAndClick
 import software.aws.toolkits.jetbrains.uitests.fixtures.idea
 import software.aws.toolkits.jetbrains.uitests.fixtures.pressDelete
 import software.aws.toolkits.jetbrains.uitests.fixtures.pressOk
+import software.aws.toolkits.jetbrains.uitests.fixtures.waitUntilLoaded
 import software.aws.toolkits.jetbrains.uitests.fixtures.welcomeFrame
 import java.nio.file.Path
 import java.nio.file.Paths
@@ -63,7 +68,7 @@ class S3BrowserTest {
 
     @BeforeAll
     fun setUp() {
-        s3Client = S3Client.create()
+        s3Client = S3Client.builder().region(Region.US_WEST_2).build()
     }
 
     @Test
@@ -74,13 +79,12 @@ class S3BrowserTest {
         }
         idea {
             waitForBackgroundTasks()
-            showAwsExplorer()
 
             step("Create bucket named $bucket") {
                 awsExplorer {
                     openExplorerActionMenu(S3)
                 }
-                find<ComponentFixture>(byXpath("//div[@text='$createBucketText']")).click()
+                actionMenuItem(createBucketText).click()
                 find<JTextFieldFixture>(byXpath("//div[@class='JTextField']"), Duration.ofSeconds(5)).text = bucket
                 find<ComponentFixture>(byXpath("//div[@text='Create']")).click()
             }
@@ -96,10 +100,6 @@ class S3BrowserTest {
 
             // Click on the tree to make sure it's there + we aren't selecting anything else
             s3Tree { click() }
-
-            // If the project starts fast enough we start the test before the tip is shown, but if the tip is showing when we go to start using the file browser
-            // it will fail to find them. So check for it one last time.
-            tryCloseTips()
 
             step("Upload object to top-level") {
                 actionButton(upload).click()
@@ -138,12 +138,14 @@ class S3BrowserTest {
                 Thread.sleep(1000)
                 s3Tree {
                     findText(folder).doubleClick()
+                    waitUntilLoaded()
                     findText(jsonFile2)
                 }
             }
 
             step("Rename a file") {
                 s3Tree {
+                    waitUntilLoaded()
                     findText(jsonFile).click()
                 }
                 actionButton(rename).click()
@@ -152,6 +154,7 @@ class S3BrowserTest {
                 // Wait for the item to be renamed
                 Thread.sleep(1000)
                 s3Tree {
+                    waitUntilLoaded()
                     findText(newJsonName)
                 }
             }
@@ -160,6 +163,7 @@ class S3BrowserTest {
                 s3Tree {
                     // Reopen the folder
                     findText(folder).doubleClick()
+                    waitUntilLoaded()
                     findText(jsonFile2).click()
                 }
                 actionButton(delete).click()
@@ -170,22 +174,23 @@ class S3BrowserTest {
                 s3Tree {
                     // Attempt to reopen the folder
                     findText(folder).doubleClick()
+                    waitUntilLoaded()
                     assertThat(findAllText(jsonFile2)).isEmpty()
                 }
             }
 
             step("Open known file-types") {
                 s3Tree {
+                    waitUntilLoaded()
                     findText(newJsonName).doubleClick()
                 }
-                // Wait for the item to download and open
-                Thread.sleep(1000)
-                // Find the title bar
-                assertThat(findAll<ComponentFixture>(byXpath("//div[@accessiblename='$newJsonName']"))).isNotEmpty
+
+                waitFor {
+                    findAll<ComponentFixture>(byXpath("//div[@accessiblename='$newJsonName']")).isNotEmpty()
+                }
             }
 
             step("Delete bucket named $bucket") {
-                showAwsExplorer()
                 awsExplorer {
                     openExplorerActionMenu(S3, bucket)
                 }
@@ -200,7 +205,7 @@ class S3BrowserTest {
     @AfterAll
     fun cleanup() {
         try {
-            s3Client.deleteBucket { it.bucket(bucket) }
+            s3Client.deleteBucketAndContents(bucket)
             waitForS3BucketDeletion()
         } catch (e: Exception) {
             if (e is NoSuchBucketException) {
@@ -224,7 +229,7 @@ class S3BrowserTest {
         s3Client.waiter().waitUntilBucketExists { it.bucket(bucket) }
     }
 
-    private fun RemoteRobot.s3Tree(func: (JTreeFixture.() -> Unit)) {
+    private fun IdeaFrame.s3Tree(func: (JTreeFixture.() -> Unit)) {
         find<JTreeFixture>(byXpath("//div[@class='S3TreeTable']"), Duration.ofSeconds(5)).apply(func)
     }
 }

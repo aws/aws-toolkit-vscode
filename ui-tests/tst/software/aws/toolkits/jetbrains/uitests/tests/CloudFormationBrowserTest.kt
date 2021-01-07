@@ -76,7 +76,6 @@ class CloudFormationBrowserTest {
         }
         idea {
             waitForBackgroundTasks()
-            showAwsExplorer()
 
             step("Open stack") {
                 awsExplorer {
@@ -107,7 +106,6 @@ class CloudFormationBrowserTest {
                 }
             }
             step("Delete stack $stack") {
-                showAwsExplorer()
                 awsExplorer {
                     openExplorerActionMenu(cloudFormation, stack)
                 }
