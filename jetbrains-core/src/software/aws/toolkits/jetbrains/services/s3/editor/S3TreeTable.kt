@@ -76,7 +76,7 @@ class S3TreeTable(
     private val openFileListener = object : DoubleClickListener() {
         override fun onDoubleClick(e: MouseEvent): Boolean {
             val row = rowAtPoint(e.point).takeIf { it >= 0 } ?: return false
-            return handleOpeningFile(row)
+            return handleOpeningFile(row, isDoubleClick = true)
         }
     }
 
@@ -97,13 +97,19 @@ class S3TreeTable(
             deleteSelectedObjects(project, this@S3TreeTable)
         }
         if (e.keyCode == KeyEvent.VK_ENTER && selectedRowCount == 1) {
-            handleOpeningFile(selectedRow)
+            handleOpeningFile(selectedRow, isDoubleClick = false)
             handleLoadingMore(selectedRow)
         }
     }
 
-    private fun handleOpeningFile(row: Int): Boolean {
+    private fun handleOpeningFile(row: Int, isDoubleClick: Boolean): Boolean {
         val objectNode = (tree.getPathForRow(row).lastPathComponent as? DefaultMutableTreeNode)?.userObject as? S3TreeObjectNode ?: return false
+
+        // Don't process double click if it has children (i.e. versions) since it will trigger expansion as well
+        if (isDoubleClick && objectNode.childCount > 0) {
+            return false
+        }
+
         val maxFileSize = getUserContentLoadLimit()
         if (objectNode.size > maxFileSize) {
             notifyError(content = message("s3.open.file_too_big", StringUtil.formatFileSize(maxFileSize.toLong())))
