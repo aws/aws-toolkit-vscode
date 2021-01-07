@@ -96,7 +96,7 @@ async function waitUntilWebviewIsVisible(webviewPanel: vscode.WebviewPanel | und
 }
 
 describe('visualizeStateMachine', async () => {
-    before(async function () {
+    before(async function() {
         this.timeout(600000)
     })
 
@@ -208,10 +208,9 @@ describe('visualizeStateMachine', async () => {
         // Make sure nothing is open from previous tests.
         await vscode.commands.executeCommand('workbench.action.closeAllEditors')
 
-        const err = await assertThrowsError(
+        await assertThrowsError(
             async () => await vscode.commands.executeCommand<vscode.WebviewPanel>('aws.previewStateMachine')
         )
-        assert.deepStrictEqual(err.message, 'Could not get active text editor for state machine render.')
     })
 
     it('doesnt update the graph if a seperate file is opened or modified', async () => {
