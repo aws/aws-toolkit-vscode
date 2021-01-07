@@ -368,6 +368,162 @@ class SamTemplateUtilsTest {
         assertFunction(function, "MySamFunction", "hello.zip", "helloworld.App::handleRequest", "java8")
     }
 
+    @Test
+    fun `getFunctionEnvironmentVariables returns empty when globals is malformed`() {
+        val templateFile = tempFolder.newFile().toPath()
+        templateFile.writeText(
+            """
+            Globals:
+              Function:
+                Environment:
+                  Variables: string
+            Resources:
+              Function:
+                Type: AWS::Serverless::Function
+                Properties:
+                  Handler: helloworld.App::handleRequest
+                  CodeUri: src
+                  Runtime: java11
+            """.trimIndent()
+        )
+
+        assertThat(SamTemplateUtils.getFunctionEnvironmentVariables(templateFile, "Function")).isEqualTo(emptyMap<String, String>())
+    }
+
+    @Test
+    fun `getFunctionEnvironmentVariables returns empty when function env vars is malformed`() {
+        val templateFile = tempFolder.newFile().toPath()
+        templateFile.writeText(
+            """
+            Resources:
+              Function:
+                Type: AWS::Serverless::Function
+                Properties:
+                  Handler: helloworld.App::handleRequest
+                  CodeUri: src
+                  Runtime: java11
+                  Environment:
+                    Variables: string
+            """.trimIndent()
+        )
+
+        assertThat(SamTemplateUtils.getFunctionEnvironmentVariables(templateFile, "Function")).isEqualTo(emptyMap<String, String>())
+    }
+
+    @Test
+    fun `getFunctionEnvironmentVariables returns empty when there is neither globals nor function specific ones`() {
+        val templateFile = tempFolder.newFile().toPath()
+        templateFile.writeText(
+            """
+            Resources:
+              Function:
+                Type: AWS::Serverless::Function
+                Properties:
+                  Handler: helloworld.App::handleRequest
+                  CodeUri: src
+                  Runtime: java11
+            """.trimIndent()
+        )
+
+        assertThat(SamTemplateUtils.getFunctionEnvironmentVariables(templateFile, "Function")).isEqualTo(emptyMap<String, String>())
+    }
+
+    @Test
+    fun `getFunctionEnvironmentVariables returns globals`() {
+        val templateFile = tempFolder.newFile().toPath()
+        templateFile.writeText(
+            """
+            Globals:
+              Function:
+                Environment:
+                  Variables:
+                    VAR1: abc
+                    VAR2: def
+            Resources:
+              Function:
+                Type: AWS::Serverless::Function
+                Properties:
+                  Handler: helloworld.App::handleRequest
+                  CodeUri: src
+                  Runtime: java11
+            """.trimIndent()
+        )
+
+        assertThat(
+            SamTemplateUtils.getFunctionEnvironmentVariables(templateFile, "Function")
+        ).isEqualTo(
+            mapOf(
+                "VAR1" to "abc",
+                "VAR2" to "def"
+            )
+        )
+    }
+
+    @Test
+    fun `getFunctionEnvironmentVariables returns function env vars`() {
+        val templateFile = tempFolder.newFile().toPath()
+        templateFile.writeText(
+            """
+            Resources:
+              Function:
+                Type: AWS::Serverless::Function
+                Properties:
+                  Handler: helloworld.App::handleRequest
+                  CodeUri: src
+                  Runtime: java11
+                  Environment:
+                    Variables:
+                      VAR1: abc
+                      VAR2: def
+            """.trimIndent()
+        )
+
+        assertThat(
+            SamTemplateUtils.getFunctionEnvironmentVariables(templateFile, "Function")
+        ).isEqualTo(
+            mapOf(
+                "VAR1" to "abc",
+                "VAR2" to "def"
+            )
+        )
+    }
+
+    @Test
+    fun `getFunctionEnvironmentVariables returns global and function env vars overwriting globals`() {
+        val templateFile = tempFolder.newFile().toPath()
+        templateFile.writeText(
+            """
+            Globals:
+              Function:
+                Environment:
+                  Variables:
+                    VAR1: abc
+                    VAR2: def
+            Resources:
+              Function:
+                Type: AWS::Serverless::Function
+                Properties:
+                  Handler: helloworld.App::handleRequest
+                  CodeUri: src
+                  Runtime: java11
+                  Environment:
+                    Variables:
+                      VAR2: 123
+                      VAR3: ghi
+            """.trimIndent()
+        )
+
+        assertThat(
+            SamTemplateUtils.getFunctionEnvironmentVariables(templateFile, "Function")
+        ).isEqualTo(
+            mapOf(
+                "VAR1" to "abc",
+                "VAR2" to "123",
+                "VAR3" to "ghi"
+            )
+        )
+    }
+
     private fun yamlFile(): YAMLFile = runInEdtAndGet {
         PsiFileFactory.getInstance(projectRule.project).createFileFromText(
             YAMLLanguage.INSTANCE,
