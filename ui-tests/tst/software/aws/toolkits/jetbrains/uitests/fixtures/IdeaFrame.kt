@@ -7,14 +7,11 @@ import com.intellij.remoterobot.RemoteRobot
 import com.intellij.remoterobot.data.RemoteComponent
 import com.intellij.remoterobot.fixtures.CommonContainerFixture
 import com.intellij.remoterobot.fixtures.ComponentFixture
-import com.intellij.remoterobot.fixtures.ContainerFixture
 import com.intellij.remoterobot.fixtures.DefaultXpath
 import com.intellij.remoterobot.fixtures.FixtureName
 import com.intellij.remoterobot.search.locators.byXpath
 import com.intellij.remoterobot.stepsProcessing.step
-import com.intellij.remoterobot.utils.keyboard
 import com.intellij.remoterobot.utils.waitFor
-import java.awt.event.KeyEvent
 import java.time.Duration
 
 fun RemoteRobot.idea(function: IdeaFrame.() -> Unit) {
@@ -27,9 +24,6 @@ fun RemoteRobot.idea(function: IdeaFrame.() -> Unit) {
 @FixtureName("Idea frame")
 @DefaultXpath("IdeFrameImpl type", "//div[@class='IdeFrameImpl']")
 class IdeaFrame(remoteRobot: RemoteRobot, remoteComponent: RemoteComponent) : CommonContainerFixture(remoteRobot, remoteComponent) {
-    val projectViewTree
-        get() = find<ContainerFixture>(byXpath("ProjectViewTree", "//div[@class='ProjectViewTree']"))
-
     init {
         waitForProjectToBeAssigned()
     }
@@ -79,24 +73,6 @@ class IdeaFrame(remoteRobot: RemoteRobot, remoteComponent: RemoteComponent) : Co
         runInEdt = true
     )
 
-    fun openProjectStructure() = step("Open Project Structure dialog") {
-        if (remoteRobot.isMac()) {
-            keyboard { hotKey(KeyEvent.VK_META, KeyEvent.VK_SEMICOLON) }
-        } else {
-            keyboard { hotKey(KeyEvent.VK_CONTROL, KeyEvent.VK_ALT, KeyEvent.VK_SHIFT, KeyEvent.VK_S) }
-        }
-        find(ComponentFixture::class.java, byXpath("//div[@accessiblename='Project Structure']")).click()
-    }
-
-    // Show AWS Explorer, or leave it open if it is already open
-    fun showAwsExplorer() {
-        try {
-            find<AwsExplorer>(byXpath("//div[@class='ExplorerToolWindow']"))
-        } catch (e: Exception) {
-            find(ComponentFixture::class.java, byXpath("//div[@accessiblename='AWS Explorer' and @class='StripeButton' and @text='AWS Explorer']")).click()
-        }
-    }
-
     // Tips sometimes open when running, close it if it opens
     fun tryCloseTips() {
         step("Close Tip of the Day if it appears") {
@@ -104,18 +80,6 @@ class IdeaFrame(remoteRobot: RemoteRobot, remoteComponent: RemoteComponent) : Co
                 find<DialogFixture>(DialogFixture.byTitleContains("Tip")).close()
             } catch (e: Exception) {
             }
-        }
-    }
-
-    fun refreshExplorer() {
-        findAndClick("//div[@accessiblename='Refresh AWS Connection' and @class='ActionButton']")
-        // wait for loading to disappear
-        try {
-            while (true) {
-                findText("loading...")
-                Thread.sleep(100)
-            }
-        } catch (e: Exception) {
         }
     }
 

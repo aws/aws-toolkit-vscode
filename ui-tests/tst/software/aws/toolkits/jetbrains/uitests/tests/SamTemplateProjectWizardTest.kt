@@ -90,7 +90,6 @@ class SamTemplateProjectWizardTest {
                 }
 
                 step("Validate project structure") {
-                    openProjectStructure()
                     projectStructureDialog {
                         val fixture = comboBox(byXpath("//div[@class='JdkComboBox']"))
                         // TODO set based on Runtime

@@ -3,7 +3,6 @@
 
 package software.aws.toolkits.jetbrains.uitests.tests
 
-import com.intellij.remoterobot.RemoteRobot
 import com.intellij.remoterobot.fixtures.ComponentFixture
 import com.intellij.remoterobot.fixtures.JTextFieldFixture
 import com.intellij.remoterobot.search.locators.byXpath
@@ -23,6 +22,7 @@ import software.amazon.awssdk.services.sqs.model.QueueDoesNotExistException
 import software.amazon.awssdk.services.sqs.model.SendMessageBatchRequestEntry
 import software.aws.toolkits.jetbrains.uitests.CoreTest
 import software.aws.toolkits.jetbrains.uitests.extensions.uiTest
+import software.aws.toolkits.jetbrains.uitests.fixtures.IdeaFrame
 import software.aws.toolkits.jetbrains.uitests.fixtures.JTreeFixture
 import software.aws.toolkits.jetbrains.uitests.fixtures.actionMenuItem
 import software.aws.toolkits.jetbrains.uitests.fixtures.awsExplorer
@@ -74,9 +74,7 @@ class SQSTest {
         }
         idea {
             waitForBackgroundTasks()
-            showAwsExplorer()
-        }
-        idea {
+
             step("Create queues") {
                 step("Create queue $queueName") {
                     awsExplorer {
@@ -260,7 +258,7 @@ class SQSTest {
         }
     }
 
-    private fun RemoteRobot.openSendMessagePane(queueName: String) = step("Open send message pane") {
+    private fun IdeaFrame.openSendMessagePane(queueName: String) = step("Open send message pane") {
         awsExplorer {
             openExplorerActionMenu(sqsNodeLabel, queueName)
             actionMenuItem("Send a Message").click()
@@ -268,13 +266,13 @@ class SQSTest {
     }
 
     // If we don't do this, it fails to find the entry in the explorer
-    private fun RemoteRobot.closeToolWindowTab() = step("Close tool window so the robot can see the queues in the explorer") {
+    private fun IdeaFrame.closeToolWindowTab() = step("Close tool window so the robot can see the queues in the explorer") {
         val firstTab = findAll(ComponentFixture::class.java, byXpath("//div[contains(@accessiblename, 'uitest') and @class='ContentTabLabel']")).first()
         firstTab.rightClick()
         actionMenuItem("Close Tab").click()
     }
 
-    private fun RemoteRobot.openPollMessagePane(queueName: String) = step("Open view message pane") {
+    private fun IdeaFrame.openPollMessagePane(queueName: String) = step("Open view message pane") {
         awsExplorer {
             openExplorerActionMenu(sqsNodeLabel, queueName)
         }
