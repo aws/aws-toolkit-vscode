@@ -16,7 +16,12 @@ phases:
             # Should only affect tests run through IDEs team-hosted CodeBuild.
             - |
                 if [ $CODEARTIFACT_DOMAIN ] && [ $CODEARTIFACT_REPO ] && [ $ACCOUNT_ID ]; then
-                  aws codeartifact login --tool npm --domain "$CODEARTIFACT_DOMAIN" --domain-owner "$ACCOUNT_ID" --repository "$CODEARTIFACT_REPO"
+                  aws codeartifact login --tool npm --domain "$CODEARTIFACT_DOMAIN" --domain-owner "$ACCOUNT_ID" --repository "$CODEARTIFACT_REPO" > /dev/null 2>&1
+                  if [$? -eq 0 ]; then
+                    echo "Connected to CodeArtifact"
+                  else
+                    echo "CodeArtifact connection failed. Falling back to npm"
+                  fi
                 fi
             - npm ci --unsafe-perm
 

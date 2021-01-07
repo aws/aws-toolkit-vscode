@@ -16,10 +16,16 @@ phases:
         commands:
             # If present, log into CodeArtifact. Provides a nice safety net in case NPM is down.
             # Should only affect tests run through IDEs team-hosted CodeBuild.
-            - |
-                if ($Env:CODEARTIFACT_DOMAIN -and $Env:CODEARTIFACT_REPO -and $Env:ACCOUNT_ID) {
-                  aws codeartifact login --tool npm --domain "$CODEARTIFACT_DOMAIN" --domain-owner "$ACCOUNT_ID" --repository "$CODEARTIFACT_REPO"
-                }
+            # UNCOMMENT THE FOLLOWING WHEN VS CODE CAN BUILD IN WIN_SERVER_CORE_2019_BASE: https://github.com/microsoft/vscode/issues/77499
+            # - |
+            #     if ($Env:CODEARTIFACT_DOMAIN -and $Env:CODEARTIFACT_REPO -and $Env:ACCOUNT_ID) {
+            #       aws codeartifact login --tool npm --domain "$CODEARTIFACT_DOMAIN" --domain-owner "$ACCOUNT_ID" --repository "$CODEARTIFACT_REPO"
+            #         if ($?) {
+            #             echo "Connected to CodeArtifact"
+            #         } else {
+            #             echo "CodeArtifact connection failed. Falling back to npm"
+            #         }
+            #     }
             - npm ci
 
     build:
