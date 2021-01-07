@@ -1,4 +1,0 @@
-{
-	"type": "Bug Fix",
-	"description": "SAM debug: Fix deployment for image based lambdas in sam cli 1.14+ #1448"
-}
