@@ -46,7 +46,9 @@ tasks.register<Test>("uiTestCore") {
 
     systemProperty("robot-server.port", remoteRobotPort)
     systemProperty("junit.jupiter.extensions.autodetection.enabled", true)
+
     systemProperty("testDataPath", project.rootDir.toPath().resolve("testdata").toString())
+    systemProperty("testReportPath", project.buildDir.toPath().resolve("reports").resolve("tests").resolve("testRecordings").toString())
 
     systemProperty("GRADLE_PROJECT", "jetbrains-core")
     useJUnitPlatform {
