@@ -6,6 +6,7 @@
 import * as assert from 'assert'
 import * as sinon from 'sinon'
 import * as vscode from 'vscode'
+import * as path from 'path'
 import * as codeLensUtils from '../../../shared/codelens/codeLensUtils'
 import * as Picker from '../../../shared/ui/picker'
 import { API_TARGET_TYPE, CODE_TARGET_TYPE, TEMPLATE_TARGET_TYPE } from '../../../shared/sam/debugger/awsSamDebugConfiguration'
@@ -47,7 +48,7 @@ describe('codeLensUtils', () => {
 
         it('should use API_TARGET_TYPE when API template option is chosen', async () => {
             sandbox.stub(Picker, 'promptUser').resolves(undefined)
-            sandbox.stub(Picker, 'verifySinglePickerOutput').returns({label: '\\path:templateWithApi (API Event: eventName)'})
+            sandbox.stub(Picker, 'verifySinglePickerOutput').returns({label: `${path.sep}path:templateWithApi (API Event: eventName)`})
             const addSamStub = sandbox.stub(AddSamDebugConfiguration, 'addSamDebugConfiguration').resolves()
             const codeConfig: AddSamDebugConfiguration.AddSamDebugConfigurationInput = {resourceName: 'codeResource', rootUri: vscode.Uri.file('path')} 
             const templateConfigs: AddSamDebugConfiguration.AddSamDebugConfigurationInput[] = [{resourceName: 'templateWithApi', rootUri: vscode.Uri.file('path'), apiEvent: {name: 'eventName', event: {Type: 'Api'}}}]
@@ -59,7 +60,7 @@ describe('codeLensUtils', () => {
 
         it('should use TEMPLATE_TARGET_TYPE when non API template option is chosen', async () => {
             sandbox.stub(Picker, 'promptUser').resolves(undefined)
-            sandbox.stub(Picker, 'verifySinglePickerOutput').returns({label: '\\path:templateNoApi'})
+            sandbox.stub(Picker, 'verifySinglePickerOutput').returns({label: `${path.sep}path:templateNoApi`})
             const addSamStub = sandbox.stub(AddSamDebugConfiguration, 'addSamDebugConfiguration').resolves()
             const codeConfig: AddSamDebugConfiguration.AddSamDebugConfigurationInput = {resourceName: 'codeResource', rootUri: vscode.Uri.file('path')} 
             const templateConfigs: AddSamDebugConfiguration.AddSamDebugConfigurationInput[] = [{resourceName: 'templateNoApi', rootUri: vscode.Uri.file('path')}]
