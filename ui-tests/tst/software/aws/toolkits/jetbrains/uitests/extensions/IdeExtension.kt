@@ -26,7 +26,7 @@ import java.time.Duration
 import java.util.concurrent.atomic.AtomicBoolean
 
 private val initialSetup = AtomicBoolean(false)
-private val robotPort = System.getProperty("robot-server.port")?.toInt() ?: throw IllegalStateException("System Property 'robot-server.port' is not set")
+val robotPort = System.getProperty("robot-server.port")?.toInt() ?: throw IllegalStateException("System Property 'robot-server.port' is not set")
 
 fun uiTest(test: RemoteRobot.() -> Unit) {
     if (!initialSetup.getAndSet(true)) {
