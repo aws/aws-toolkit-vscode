@@ -24,7 +24,7 @@ phases:
 
     commands:
       - apt-get update
-      - apt-get install -y xvfb fluxbox procps ffmpeg
+      - apt-get install -y xvfb xfce4 procps ffmpeg xterm xinput
 
       - mkdir -p /tmp/.aws
       - aws sts assume-role --role-arn $ASSUME_ROLE_ARN --role-session-name ui-test > /tmp/.aws/creds.json
@@ -55,7 +55,9 @@ phases:
 
       - Xvfb ${DISPLAY} -screen 0 ${SCREEN_WIDTH}x${SCREEN_HEIGHT}x${SCREEN_DEPTH} &
       - while [ ! -e /tmp/.X11-unix/X99 ]; do sleep 0.1; done
-      - fluxbox -display ${DISPLAY} &
+      - XFCE_PANEL_MIGRATE_DEFAULT=1 xfce4-session --display=${DISPLAY} &
+      - xinput list
+      - xterm -e "xinput list | grep -Po 'id=\K\d+(?=.*slave\s*pointer)' | xargs -P0 -n1 xinput test" &
       - ffmpeg -loglevel quiet -f x11grab -video_size ${SCREEN_WIDTH}x${SCREEN_HEIGHT} -i ${DISPLAY} -codec:v libx264 -pix_fmt yuv420p -framerate 12 -g 12 /tmp/screen_recording.mp4 &
 
       - env AWS_ACCESS_KEY_ID=$KEY_ID AWS_SECRET_ACCESS_KEY=$SECRET AWS_SESSION_TOKEN=$TOKEN ./gradlew uiTestCore coverageReport --console plain --info
