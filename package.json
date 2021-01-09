@@ -835,12 +835,12 @@
                 {
                     "command": "aws.cdk.help",
                     "when": "view == aws.cdk.explorer",
-                    "group": "1_externalLinks@1"
+                    "group": "z_externalLinks@1"
                 },
                 {
                     "command": "aws.cdk.provideFeedback",
                     "when": "view == aws.cdk.explorer",
-                    "group": "1_externalLinks@2"
+                    "group": "z_externalLinks@2"
                 }
             ],
             "view/item/context": [
