@@ -62,6 +62,7 @@ class LogStreamTable(
             tableHeader.reorderingAllowed = false
             tableHeader.resizingAllowed = false
             autoResizeMode = JTable.AUTO_RESIZE_LAST_COLUMN
+            cellSelectionEnabled = true
             setPaintBusy(true)
             emptyText.text = message("loading_resource.loading")
             // Set the row height to 20. This is a magic number, so let me explain. This is
