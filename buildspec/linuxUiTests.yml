@@ -58,7 +58,7 @@ phases:
       - XFCE_PANEL_MIGRATE_DEFAULT=1 xfce4-session --display=${DISPLAY} &
       - xinput list
       - xterm -e "xinput list | grep -Po 'id=\K\d+(?=.*slave)' | xargs -P0 -n1 xinput test" &
-      - ffmpeg -loglevel quiet -f x11grab -video_size ${SCREEN_WIDTH}x${SCREEN_HEIGHT} -i ${DISPLAY} -codec:v libx264 -pix_fmt yuv420p -framerate 12 -g 12 /tmp/screen_recording.mp4 &
+      - ffmpeg -loglevel quiet -f x11grab -video_size ${SCREEN_WIDTH}x${SCREEN_HEIGHT} -i ${DISPLAY} -codec:v libx264 -pix_fmt yuv420p -vf drawtext="fontsize=48:box=1:boxcolor=black@0.75:boxborderw=5:fontcolor=white:x=0:y=h-text_h:text='%{gmtime\:%H\\\\\:%M\\\\\:%S}'" -framerate 12 -g 12 /tmp/screen_recording.mp4 &
 
       - env AWS_ACCESS_KEY_ID=$KEY_ID AWS_SECRET_ACCESS_KEY=$SECRET AWS_SESSION_TOKEN=$TOKEN ./gradlew uiTestCore coverageReport --console plain --info
 
