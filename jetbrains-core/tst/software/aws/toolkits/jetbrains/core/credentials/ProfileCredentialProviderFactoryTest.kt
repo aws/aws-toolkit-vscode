@@ -24,6 +24,7 @@ import com.nhaarman.mockitokotlin2.times
 import com.nhaarman.mockitokotlin2.verify
 import kotlinx.coroutines.runBlocking
 import org.assertj.core.api.Assertions.assertThat
+import org.assertj.core.api.Assertions.assertThatCode
 import org.assertj.core.api.Assertions.assertThatThrownBy
 import org.assertj.core.api.Condition
 import org.junit.After
@@ -527,6 +528,117 @@ class ProfileCredentialProviderFactoryTest {
             assertThat(secondValue.added).isEmpty()
             assertThat(secondValue.modified).isEmpty()
             assertThat(secondValue.removed).hasSize(1).has(profileName("foo"))
+        }
+    }
+
+    @Test
+    fun testRefreshDeleteWithASourceProfile() {
+        profileFile.writeToFile(
+            """
+            [profile foo]
+            aws_access_key_id=FooAccessKey
+            aws_secret_access_key=FooSecretKey
+            aws_session_token=FooSessionToken
+            
+            [profile bar]
+            source_profile=foo
+            role_arn=SomeArn
+            """.trimIndent()
+        )
+
+        val providerFactory = createProviderFactory()
+        val validProfile = findCredentialIdentifier("bar")
+        assertThatCode {
+            providerFactory.createProvider(validProfile)
+        }.doesNotThrowAnyException()
+
+        profileFile.writeToFile(
+            """
+            [profile foo]
+            aws_access_key_id=FooAccessKey
+            aws_secret_access_key=FooSecretKey
+            aws_session_token=FooSessionToken
+            """.trimIndent()
+        )
+
+        mockProfileWatcher.triggerListeners()
+
+        assertThatCode {
+            providerFactory.createProvider(validProfile)
+        }.isInstanceOf(IllegalStateException::class.java)
+
+        argumentCaptor<CredentialsChangeEvent>().apply {
+            verify(profileLoadCallback, times(2)).invoke(capture())
+
+            assertThat(firstValue.added).hasSize(2).has(profileName("foo")).has(profileName("bar"))
+            assertThat(firstValue.modified).isEmpty()
+            assertThat(firstValue.removed).isEmpty()
+
+            assertThat(secondValue.added).isEmpty()
+            assertThat(secondValue.modified).isEmpty()
+            assertThat(secondValue.removed).hasSize(1).has(profileName("bar"))
+        }
+    }
+
+    @Test
+    fun testRefreshDeleteWithMiddleOfProfileChain() {
+        profileFile.writeToFile(
+            """
+            [profile foo]
+            aws_access_key_id=FooAccessKey
+            aws_secret_access_key=FooSecretKey
+            aws_session_token=FooSessionToken
+            
+            [profile bar]
+            source_profile=foo
+            role_arn=SomeArn
+            
+            [profile baz]
+            source_profile=bar
+            role_arn=SomeArn
+            """.trimIndent()
+        )
+
+        val providerFactory = createProviderFactory()
+        val middleProfile = findCredentialIdentifier("baz")
+        val lastProfile = findCredentialIdentifier("bar")
+        assertThatCode {
+            providerFactory.createProvider(middleProfile)
+        }.doesNotThrowAnyException()
+
+        profileFile.writeToFile(
+            """
+            [profile foo]
+            aws_access_key_id=FooAccessKey
+            aws_secret_access_key=FooSecretKey
+            aws_session_token=FooSessionToken
+            
+            [profile baz]
+            source_profile=bar
+            role_arn=SomeArn
+            """.trimIndent()
+        )
+
+        mockProfileWatcher.triggerListeners()
+
+        assertThatCode {
+            providerFactory.createProvider(middleProfile)
+        }.isInstanceOf(IllegalStateException::class.java)
+
+        assertThatCode {
+            providerFactory.createProvider(lastProfile)
+        }.isInstanceOf(IllegalStateException::class.java)
+
+        argumentCaptor<CredentialsChangeEvent>().apply {
+            verify(profileLoadCallback, times(2)).invoke(capture())
+
+            assertThat(firstValue.added).hasSize(3).has(profileName("foo")).has(profileName("bar")).has(profileName("baz"))
+            assertThat(firstValue.modified).isEmpty()
+            assertThat(firstValue.removed).isEmpty()
+
+            assertThat(secondValue.added).isEmpty()
+            assertThat(secondValue.modified).isEmpty()
+            assertThat(secondValue.removed).hasSize(2).has(profileName("bar")).has(profileName("baz"))
         }
     }
 

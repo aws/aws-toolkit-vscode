@@ -1,0 +1,4 @@
+{
+  "type" : "bugfix",
+  "description" : "Fix error thrown on profile refresh if removing a profile that uses source_profile (#2309)"
+}
