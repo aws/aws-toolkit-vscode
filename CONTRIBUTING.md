@@ -1,39 +1,53 @@
 # Contributing Guidelines
 
-Thank you for your interest in contributing to our project. Whether it's a bug report, new feature, correction, or additional
-documentation, we greatly value feedback and contributions from our community.
+Thank you for your interest in contributing to our project. We greatly value
+feedback and contributions from our community!
 
-Please read through this document before submitting any issues or pull requests to ensure we have all the necessary
-information to effectively respond to your bug report or contribution.
+Reviewing this document will maximize your success in working with the
+codebase and sending pull requests.
 
 ## Getting Started
 
+### Find things to do
+
+If you're looking for ideas about where to contribute, consider
+[_good first issue_](https://github.com/aws/aws-toolkit-vscode/labels/good%20first%20issue)
+issues.
+
 ### Setup
 
-Before you start, install the following dependencies.
+To develop this project, install these dependencies:
 
 -   [Visual Studio Code](https://code.visualstudio.com/Download)
 -   [NodeJS and NPM](https://nodejs.org/)
-    -   NodeJS Version: 10.x
-    -   NPM version: 6.4.1 or higher
+    -   NodeJS Version: 12.x
+    -   NPM version: 7.x or higher
 -   [Typescript](https://www.typescriptlang.org/)
 -   [Git](https://git-scm.com/downloads)
 -   [AWS `git secrets`](https://github.com/awslabs/git-secrets)
 
-Then clone the repository and install npm dependencies:
+Then clone the repository and install NPM packages:
 
     cd ~/repos
     git clone git@github.com:aws/aws-toolkit-vscode.git
     cd aws-toolkit-vscode
     npm install
 
+### Run
+
+You can run the extension from Visual Studio Code:
+
+1. Select the Run panel from the sidebar.
+2. From the dropdown at the top of the Run pane, choose `Extension`.
+3. Press `F5` to launch a new instance of Visual Studio Code with the extension installed and the debugger attached.
+
 ### Build
 
 When you launch the extension or run tests from Visual Studio Code, it will automatically build the extension and watch for changes.
 
-Alternatively, these NPM tasks are defined:
+You can also use these NPM tasks (see `npm run` for the full list):
 
--   To build one time:
+-   To build once:
     ```
     npm run compile
     ```
@@ -41,22 +55,45 @@ Alternatively, these NPM tasks are defined:
     ```
     npm run watch
     ```
--   To build a release VSIX artifact:
+-   To build a release artifact (VSIX):
     ```
     npm run package
     ```
--   To build a "debug" VSIX artifact (faster, does not minify the webpack result):
+    - This uses webpack which may exhaust the default Node heap size on Linux.
+      To fix this set `--max-old-space-size`:
+
+      ```
+      export NODE_OPTIONS=--max-old-space-size=8192
+      ```
+-   To build a "debug" VSIX artifact (faster and does not minify):
     ```
     npm run package -- --debug
     ```
 
-#### If you run out of memory while building
+## Develop
 
-Webpack can exhaust the default heap size of Node on Linux. To fix this, add `--max-old-space-size` to the `NODE_OPTIONS` environment variable. For example,
+### Code guidelines
 
-```
-export NODE_OPTIONS=--max-old-space-size=8192
-```
+See [CODE_GUIDELINES.md](./docs/CODE_GUIDELINES.md) for coding conventions.
+
+### Technical notes
+
+- VSCode extensions have a [100MB](https://github.com/Microsoft/vscode-vsce/issues/179) file size limit.
+- `src/testFixtures/` is excluded in `.vscode/settings.json`, to prevent VSCode
+  from treating its files as project files.
+- VSCode extension examples: https://github.com/microsoft/vscode-extension-samples
+- How to debug unresolved promise rejections:
+    1. Declare a global unhandledRejection handler.
+       ```
+       process.on('unhandledRejection', (e) => {
+           channelLogger.error('AWS.channel.aws.toolkit.activation.error', 'Error Activating AWS Toolkit', e as Error)
+           if (e !== undefined) {
+               throw e
+           }
+       });
+       ```
+    2. Put a breakpoint on it.
+    3. Run all tests.
 
 ### Test
 
@@ -72,15 +109,9 @@ You can run tests directly from Visual Studio Code:
 You can also run tests from the command line:
 
     npm run test
-
-There are also integration tests, which can be run from the Run panel, or from the command line:
-
     npm run integrationTest
 
-Tests will output log output to `./.test-reports/testLog.log` for debugging
-
-Note: `src/testFixtures/` is excluded in `.vscode/settings.json`, to prevent VS
-Code from treating its files as project files.
+Tests will write logs to `./.test-reports/testLog.log`.
 
 #### Run a specific test
 
@@ -103,42 +134,22 @@ To run a single test in VSCode, do any one of:
     rootTestsPath: __dirname + '/shared/sam/debugger/'
     ```
 
-#### Checking coverage report
+#### Coverage report
 
-After running the tests, the coverage report can be found at ./coverage/index.html
-
-### Run
-
-You can run directly from Visual Studio Code:
-
-1. Select `View > Debug`, or select the Debug pane from the sidebar.
-2. From the dropdown at the top of the Debug pane, select the `Extension` configuration.
-3. Press `F5` to launch a new instance of Visual Studio Code with the extension installed and the debugger attached.
-
-## Reporting Bugs/Feature Requests
-
-We welcome you to use the GitHub issue tracker to report bugs or suggest features.
-
-When filing an issue, please check [existing open](https://github.com/aws/aws-vscode-toolkit/issues), or [recently closed](https://github.com/aws/aws-vscode-toolkit/issues?utf8=%E2%9C%93&q=is%3Aissue%20is%3Aclosed%20), issues to make sure somebody else hasn't already.
-reported the issue. Please try to include as much information as you can. Details like these are incredibly useful:
-
--   A reproducible test case or series of steps
--   The version of our code being used
--   Any modifications you've made relevant to the bug
--   Anything unusual about your environment or deployment
+You can find the coverage report at `./coverage/index.html` after running the tests.
 
 ## Pull Requests
 
-We appreciate contributions via pull requests! Before sending a pull request, ensure that:
+Before sending a pull request:
 
-1. You are working against the latest source on the _master_ branch.
-2. You check existing open, and recently merged, pull requests to make sure someone else hasn't addressed the problem already.
-3. You open an issue to discuss any significant work - we would hate for your time to be wasted.
+1. Check that you are working against the latest source on the `master` branch.
+2. Check existing open, and recently merged, pull requests to make sure someone else hasn't addressed the problem already.
+3. Open an issue to discuss any significant work.
 
-To send us a pull request, please:
+To send a pull request:
 
 1. Fork the repository.
-2. Modify the source; please focus on the specific change you are contributing. If you also reformat all the code, it will be hard for us to focus on your change.
+2. Modify the source; focus on the specific change you are contributing. If you also reformat all the code, it will be hard for us to focus on your change.
 3. Ensure local tests pass.
 4. Commit to your fork using clear commit messages.
 5. Once you are done with your change, run `npm run newChange`, follow the prompts, then commit the changelog item to your fork.
@@ -148,7 +159,44 @@ To send us a pull request, please:
 GitHub provides additional document on [forking a repository](https://help.github.com/articles/fork-a-repo/) and
 [creating a pull request](https://help.github.com/articles/creating-a-pull-request/).
 
-## CI artifact
+### Commit messages
+
+Generally, your pull request description should be a copy-paste of your commit
+message(s). If your PR description provides insight not found in a commit
+message, ask yourself why. Source control (Git) is our source-of-truth, not
+GitHub.
+
+Quick summary of commit message guidelines:
+
+- Subject: single line up to 50-72 characters
+    - Imperative voice ("Fix bug", not "Fixed"/"Fixes"/"Fixing").
+- Body: for non-trivial or uncommon changes, explain your motivation for the
+  change and contrast your implementation with previous behavior.
+    - Often you can save a _lot_ of words by using this simple template:
+      ```
+      Problem: …
+      Solution: …
+      ```
+
+A [good commit message](https://git-scm.com/book/en/v2/Distributed-Git-Contributing-to-a-Project)
+has a short subject line and unlimited detail in the body.
+[Good explanations](https://nav.al/explanations) are acts of creativity. The
+"tiny subject line" constraint reminds you to clarify the essence of the
+commit, and makes the log easy for humans to scan. The commit log is an
+artifact that will live longer than any code in the codebase.
+
+Consider prefixing the subject with a topic: this again helps humans (and
+scripts) scan and omit ranges of the history at a glance. For example if I'm
+looking for a code change, I can eliminate all of the `doc:` and `test:`
+commits when inspecting this commit log:
+
+    doc: update README.md
+    test: Deploy wizard
+    SAM debug: fix bug in foo
+    doc: explain SAM debug architecture
+    Lambda: add button to thing
+
+### CI artifact
 
 Each commit and pull request is processed by an automated system which runs
 all tests and provides the build result via the _Details_ link as shown below.
@@ -222,26 +270,21 @@ requests just from the model/types.
 
 If you are contribuing visual assets from other open source repos, the source repo must have a compatible license (such as MIT), and we need to document the source of the images. Follow these steps:
 
--   A separate location in this repo is used for every repo where images are sourced from. The location is in the form `third-party/resources/from-<BRIEF_REPO_NAME>`
--   Copy the source repo's licence into this destination location's LICENSE.txt file
--   Create a README.md in the destination location, and type in a copyright attribution:
+1.   Use a separate location in this repo for every repo where images are
+     sourced from, in the form `third-party/resources/from-<BRIEF_REPO_NAME>`.
+1.   Copy the source repo's licence into this destination location's LICENSE.txt file
+1.   Create a README.md in the destination location, and type in a copyright attribution:
+     ```text
+     The AWS Toolkit for VS Code includes the following third-party software/licensing:
 
-```text
-The AWS Toolkit for VS Code includes the following third-party software/licensing:
+     Icons contained in this folder and subfolders are from <SOURCE_REPO_NAME>: <SOURCE_REPO_URL>
 
-Icons contained in this folder and subfolders are from <SOURCE_REPO_NAME>: <SOURCE_REPO_URL>
+     <PASTE_SOURCE_LICENSE_HERE>
+     ```
+1.   Copy the SVG file(s) into a suitable place within the destination location, for example `.../dark/xyz.svg` and `.../light/xyz.svg`
+1.   Add an entry to `third-party/README.md` summarizing the new destination location, where the asserts were sourced from, and a brief rationale.
 
-<PASTE_SOURCE_LICENSE_HERE>
-```
-
--   Copy the SVG file(s) into a suitable place within the destination location, for example `.../dark/xyz.svg` and `.../light/xyz.svg`
--   Add an entry to `third-party/README.md` summarizing the new destination location, where the asserts were sourced from, and a brief rationale.
-
-[PR 227](https://github.com/aws/aws-toolkit-vscode/pull/227) illustrates what this looks like in practice.
-
-## Finding contributions to work on
-
-Looking at the existing issues is a great way to find something to contribute on. As our projects, by default, use the default GitHub issue labels ((enhancement/bug/duplicate/help wanted/good first issue/invalid/question/wontfix), looking at any [`good first issue`](https://github.com/aws/aws-toolkit-vscode/labels/good%20first%20issue) or [`help wanted`](https://github.com/aws/aws-toolkit-vscode/labels/help%20wanted) issues is a great place to start.
+[PR #227](https://github.com/aws/aws-toolkit-vscode/pull/227) shows an example.
 
 ## Code of Conduct
 
@@ -249,9 +292,12 @@ This project has adopted the [Amazon Open Source Code of Conduct](https://aws.gi
 For more information see the [Code of Conduct FAQ](https://aws.github.io/code-of-conduct-faq) or contact
 opensource-codeofconduct@amazon.com with any additional questions or comments.
 
-## Security issue notifications
+## Security issues
 
-If you discover a potential security issue in this project we ask that you notify AWS/Amazon Security via our [vulnerability reporting page](http://aws.amazon.com/security/vulnerability-reporting/). Please do **not** create a public github issue.
+If you discover a potential security issue in this project we ask that you
+notify AWS/Amazon Security via the [vulnerability reporting
+page](http://aws.amazon.com/security/vulnerability-reporting/). Please do
+**not** create a public issue.
 
 ## Licensing
 
