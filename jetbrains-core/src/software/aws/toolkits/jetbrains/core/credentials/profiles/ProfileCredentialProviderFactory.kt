@@ -89,9 +89,10 @@ class ProfileCredentialProviderFactory(private val ssoCache: SsoCache = diskCach
     private fun loadProfiles(credentialLoadCallback: CredentialsChangeListener, initialLoad: Boolean) {
         val profilesAdded = mutableListOf<ProfileCredentialsIdentifier>()
         val profilesModified = mutableListOf<ProfileCredentialsIdentifier>()
-        val profilesRemoved = mutableListOf<ProfileCredentialsIdentifier>()
 
         val previousProfilesSnapshot = profileHolder.snapshot()
+        val existingProfiles = profileHolder.snapshot()
+
         val newProfiles = try {
             validateAndGetProfiles()
         } catch (e: Exception) {
@@ -101,12 +102,12 @@ class ProfileCredentialProviderFactory(private val ssoCache: SsoCache = diskCach
         }
 
         newProfiles.validProfiles.forEach {
-            val previousProfile = previousProfilesSnapshot.remove(it.key)
+            val previousProfile = existingProfiles.remove(it.key)
             if (previousProfile == null) {
                 // It was not in the snapshot, so it must be new
                 profilesAdded.add(it.value.asId(newProfiles.validProfiles))
             } else {
-                // If the profile was modified, notify people, else do nothing
+                // If the profile was modified, notify listeners, else do nothing
                 if (previousProfile != it.value) {
                     profilesModified.add(it.value.asId(newProfiles.validProfiles))
                 }
@@ -114,7 +115,7 @@ class ProfileCredentialProviderFactory(private val ssoCache: SsoCache = diskCach
         }
 
         // Any remaining profiles must have either become invalid or removed from the cred/config files
-        previousProfilesSnapshot.values.asSequence().map { it.asId(previousProfilesSnapshot) }.toCollection(profilesRemoved)
+        val profilesRemoved = existingProfiles.values.map { it.asId(previousProfilesSnapshot) }
 
         profileHolder.update(newProfiles.validProfiles)
         credentialLoadCallback(CredentialsChangeEvent(profilesAdded, profilesModified, profilesRemoved))
