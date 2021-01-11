@@ -59,6 +59,7 @@ class LogGroupTable(
         groupTable = TableView(tableModel).apply {
             setPaintBusy(true)
             autoscrolls = true
+            cellSelectionEnabled = true
             emptyText.text = message("loading_resource.loading")
             tableHeader.reorderingAllowed = false
             tableHeader.resizingAllowed = false

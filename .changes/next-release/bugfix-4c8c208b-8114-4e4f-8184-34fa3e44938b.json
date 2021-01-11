@@ -1,0 +1,4 @@
+{
+  "type" : "bugfix",
+  "description" : "Fix cell based copying in CloudWatch Logs (#2333)"
+}
