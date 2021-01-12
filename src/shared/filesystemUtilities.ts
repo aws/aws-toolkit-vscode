@@ -4,6 +4,8 @@
  */
 
 import { access, mkdtemp, mkdirp, readFile, remove, existsSync } from 'fs-extra'
+import * as crypto from 'crypto'
+import * as fs from 'fs'
 import * as os from 'os'
 import * as path from 'path'
 import { getLogger } from './logger'
@@ -114,4 +116,34 @@ export function isInDirectory(d: string, p: string): boolean {
             ? value.toLowerCase() === containedPathPieces[index].toLowerCase()
             : value === containedPathPieces[index]
     })
+}
+
+/**
+ * Returns `name.suffix` if it does not already exist in directory `dir`, else appends
+ * a number ("foo-1.txt", "foo-2.txt", etc.).
+ *
+ * To avoid excessive filesystem activity, if all filenames up to `max` exist,
+ * the function instead appends a random string.
+ *
+ * @param dir  Path to a directory
+ * @param name  Filename without extension
+ * @param suffix  Filename suffix, typically an extension (".txt"), may be empty
+ * @param max  Stop searching if all permutations up to this number exist
+ */
+export function getNonexistentFilename(dir: string, name: string, suffix: string, max: number = 999): string {
+    if (!name) {
+        throw new Error(`name is empty`)
+    }
+    if (!fs.existsSync(dir)) {
+        throw new Error(`directory does not exist: ${dir}`)
+    }
+    for (let i = 0; true; i++) {
+        const filename = i == 0
+            ? `${name}${suffix}`
+            : `${name}-${i < max ? i : crypto.randomBytes(4).toString('hex')}${suffix}`
+        const fullpath = path.join(dir, filename)
+        if (!fs.existsSync(fullpath) || i >= max + 99) {
+            return filename
+        }
+    }
 }

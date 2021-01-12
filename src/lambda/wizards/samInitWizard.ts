@@ -37,6 +37,7 @@ import {
 } from '../models/samTemplates'
 import * as semver from 'semver'
 import { MINIMUM_SAM_CLI_VERSION_INCLUSIVE_FOR_IMAGE_SUPPORT } from '../../shared/sam/cli/samCliValidator'
+import * as fsutil from '../../shared/filesystemUtilities'
 
 const localize = nls.loadMessageBundle()
 
@@ -456,8 +457,11 @@ export class CreateNewSamAppWizard extends MultiStepWizard<CreateNewSamAppWizard
     }
 
     private readonly NAME: WizardStep = async () => {
+        // Default to a name like "lambda-python3.8-1".
+        const defaultName = this.location ? fsutil.getNonexistentFilename(
+            this.location.path, `lambda-${this.runtime}`, '', 99) : ''
         this.name = await this.context.promptUserForName(
-            this.name ?? (this.location ? path.basename(this.location.path) : '')
+            this.name ?? defaultName
         )
 
         return this.name ? WIZARD_TERMINATE : WIZARD_GOBACK
