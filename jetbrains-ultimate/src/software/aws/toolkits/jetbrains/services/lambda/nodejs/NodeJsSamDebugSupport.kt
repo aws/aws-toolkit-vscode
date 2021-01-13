@@ -35,12 +35,12 @@ class NodeJsSamDebugSupport : SamDebugSupport {
         )
     }
 
-    override fun createDebugProcess(
+    override suspend fun createDebugProcess(
         environment: ExecutionEnvironment,
         state: SamRunningState,
         debugHost: String,
         debugPorts: List<Int>
-    ): XDebugProcessStarter? = object : XDebugProcessStarter() {
+    ): XDebugProcessStarter = object : XDebugProcessStarter() {
         override fun start(session: XDebugSession): XDebugProcess {
             val mappings = createBiMapMappings(state.pathMappings)
             val fileFinder = RemoteDebuggingFileFinder(mappings, LocalFileSystemFileFinder())
