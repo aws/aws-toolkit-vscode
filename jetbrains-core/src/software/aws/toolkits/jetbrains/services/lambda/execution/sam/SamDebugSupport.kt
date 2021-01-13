@@ -4,14 +4,25 @@
 package software.aws.toolkits.jetbrains.services.lambda.execution.sam
 
 import com.intellij.execution.runners.ExecutionEnvironment
+import com.intellij.openapi.application.ExpirableExecutor
+import com.intellij.openapi.application.impl.coroutineDispatchingContext
+import com.intellij.openapi.application.runInEdt
 import com.intellij.openapi.extensions.ExtensionPointName
+import com.intellij.util.concurrency.AppExecutorUtil
 import com.intellij.util.net.NetUtils
 import com.intellij.xdebugger.XDebugProcessStarter
+import kotlinx.coroutines.launch
+import org.jetbrains.concurrency.AsyncPromise
 import org.jetbrains.concurrency.Promise
-import org.jetbrains.concurrency.resolvedPromise
 import software.amazon.awssdk.services.lambda.model.PackageType
 import software.amazon.awssdk.services.lambda.model.Runtime
+import software.aws.toolkits.core.utils.getLogger
+import software.aws.toolkits.core.utils.warn
 import software.aws.toolkits.jetbrains.services.lambda.RuntimeGroupExtensionPointObject
+import software.aws.toolkits.jetbrains.utils.ApplicationThreadPoolScope
+import software.aws.toolkits.resources.message
+import java.util.Timer
+import kotlin.concurrent.schedule
 
 interface SamDebugSupport {
 
@@ -45,9 +56,39 @@ interface SamDebugSupport {
         state: SamRunningState,
         debugHost: String,
         debugPorts: List<Int>
-    ): Promise<XDebugProcessStarter?> = resolvedPromise(createDebugProcess(environment, state, debugHost, debugPorts))
+    ): Promise<XDebugProcessStarter?> {
+        val promise = AsyncPromise<XDebugProcessStarter?>()
+        val bgContext = ExpirableExecutor.on(AppExecutorUtil.getAppExecutorService()).expireWith(environment).coroutineDispatchingContext()
 
-    fun createDebugProcess(
+        val timerTask = Timer("Debugger Worker launch timer", true).schedule(debuggerAttachTimeoutMs) {
+            if (!promise.isDone) {
+                runInEdt {
+                    promise.setError(message("lambda.debug.process.start.timeout"))
+                }
+            }
+        }
+
+        ApplicationThreadPoolScope(environment.runProfile.name).launch(bgContext) {
+            try {
+                val debugProcess = createDebugProcess(environment, state, debugHost, debugPorts)
+
+                runInEdt {
+                    promise.setResult(debugProcess)
+                }
+            } catch (t: Throwable) {
+                LOG.warn(t) { "Failed to start debugger" }
+                runInEdt {
+                    promise.setError(t)
+                }
+            } finally {
+                timerTask.cancel()
+            }
+        }
+
+        return promise
+    }
+
+    suspend fun createDebugProcess(
         environment: ExecutionEnvironment,
         state: SamRunningState,
         debugHost: String,
@@ -58,5 +99,7 @@ interface SamDebugSupport {
 
     fun getDebugPorts(): List<Int> = listOf(NetUtils.tryToFindAvailableSocketPort())
 
-    companion object : RuntimeGroupExtensionPointObject<SamDebugSupport>(ExtensionPointName("aws.toolkit.lambda.sam.debugSupport"))
+    companion object : RuntimeGroupExtensionPointObject<SamDebugSupport>(ExtensionPointName("aws.toolkit.lambda.sam.debugSupport")) {
+        private val LOG = getLogger<SamDebugSupport>()
+    }
 }
