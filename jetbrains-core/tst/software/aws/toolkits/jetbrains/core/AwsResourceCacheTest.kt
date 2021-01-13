@@ -32,6 +32,7 @@ import software.aws.toolkits.jetbrains.core.credentials.ConnectionSettings
 import software.aws.toolkits.jetbrains.core.credentials.CredentialManager
 import software.aws.toolkits.jetbrains.core.credentials.MockCredentialManagerRule
 import software.aws.toolkits.jetbrains.core.region.MockRegionProviderRule
+import software.aws.toolkits.jetbrains.core.utils.buildList
 import software.aws.toolkits.jetbrains.utils.hasException
 import software.aws.toolkits.jetbrains.utils.hasValue
 import software.aws.toolkits.jetbrains.utils.value
@@ -329,6 +330,30 @@ class AwsResourceCacheTest {
             executor.shutdown()
         }
 
+        verifyResourceCalled(times = 1)
+    }
+
+    @Test
+    fun multipleCallsWhileFetchPendingCallTheUnderlyingResourceOnce() {
+        val latch = CountDownLatch(1)
+        whenever(mockResource.fetch(any(), any())).thenAnswer {
+            // don't allow the task to finish until all futures have been created
+            latch.await()
+            return@thenAnswer "hello"
+        }
+
+        val futures = buildList<CompletableFuture<String>> {
+            repeat(20) {
+                // simulate multiple calls to the same resource
+                add(sut.getResource(mockResource, connectionSettings).toCompletableFuture())
+            }
+        }.toTypedArray()
+        latch.countDown()
+
+        // all futures should complete
+        CompletableFuture.allOf(*futures).value
+
+        // and we should have reused the same task for all of the requests
         verifyResourceCalled(times = 1)
     }
 
