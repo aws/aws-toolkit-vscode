@@ -25,7 +25,6 @@ class GoHelperTest {
         )
 
         runInEdtAndWait {
-            val contentRoot = ProjectFileIndex.getInstance(projectRule.project).getContentRootForFile(element.containingFile.virtualFile)
             val sourceRoot = inferSourceRoot(projectRule.project, element.containingFile.virtualFile)
             assertThat(sourceRoot).isNull()
         }

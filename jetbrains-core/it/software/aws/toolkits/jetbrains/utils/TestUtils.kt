@@ -47,6 +47,7 @@ fun executeRunConfiguration(
     val executor = ExecutorRegistry.getInstance().getExecutorById(executorId)
     assertNotNull(executor)
     val executionFuture = CompletableFuture<Output>()
+    // In the real world create and execute runs on EDT
     runInEdt {
         val executionEnvironment = ExecutionEnvironmentBuilder.create(executor, runConfiguration).build()
         try {

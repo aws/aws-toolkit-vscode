@@ -13,14 +13,15 @@ import com.intellij.psi.PsiFile
 import com.intellij.testFramework.LightProjectDescriptor
 import com.intellij.testFramework.PsiTestUtil
 import com.intellij.testFramework.fixtures.CodeInsightTestFixture
+import com.intellij.testFramework.fixtures.IdeaTestFixtureFactory
 import com.intellij.testFramework.runInEdtAndGet
+import com.intellij.testFramework.runInEdtAndWait
+import com.intellij.xdebugger.XDebuggerUtil
 
 class GoCodeInsightTestFixtureRule : CodeInsightTestFixtureRule(GoLightProjectDescriptor()) {
     override fun createTestFixture(): CodeInsightTestFixture {
         val codeInsightFixture = super.createTestFixture()
-
         PsiTestUtil.addContentRoot(codeInsightFixture.module, codeInsightFixture.tempDirFixture.getFile(".")!!)
-
         return codeInsightFixture
     }
 }
@@ -28,6 +29,32 @@ class GoCodeInsightTestFixtureRule : CodeInsightTestFixtureRule(GoLightProjectDe
 class GoLightProjectDescriptor : LightProjectDescriptor() {
     override fun getSdk(): Sdk? = null
     override fun getModuleTypeId(): String = GoConstants.MODULE_TYPE_ID
+}
+
+class HeavyGoCodeInsightTestFixtureRule : CodeInsightTestFixtureRule() {
+    override fun createTestFixture(): CodeInsightTestFixture {
+        val fixtureFactory = IdeaTestFixtureFactory.getFixtureFactory()
+        val projectFixture = fixtureFactory.createFixtureBuilder(testName)
+        val codeInsightFixture = fixtureFactory.createCodeInsightFixture(projectFixture.fixture)
+        codeInsightFixture.setUp()
+        codeInsightFixture.testDataPath = testDataPath
+
+        return codeInsightFixture
+    }
+
+    fun addBreakpoint() {
+        runInEdtAndWait {
+            val document = fixture.editor.document
+            val psiFile = fixture.file as GoFile
+            val lineNumber = document.getLineNumber(psiFile.functions.first().textOffset)
+
+            XDebuggerUtil.getInstance().toggleLineBreakpoint(
+                project,
+                fixture.file.virtualFile,
+                lineNumber
+            )
+        }
+    }
 }
 
 fun CodeInsightTestFixture.addGoLambdaHandler(
