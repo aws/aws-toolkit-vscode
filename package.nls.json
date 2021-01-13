@@ -138,7 +138,6 @@
     "AWS.command.configureLambda": "Configure",
     "AWS.command.refreshAwsExplorer": "Refresh AWS Explorer",
     "AWS.command.refreshCdkExplorer": "Refresh CDK Explorer",
-    "AWS.command.cdk.provideFeedback": "Provide Feedback",
     "AWS.command.cdk.help": "View CDK Documentation",
     "AWS.command.ecr.copyTagUri": "Copy Tag URI",
     "AWS.command.ecr.copyRepositoryUri": "Copy Repository URI",
