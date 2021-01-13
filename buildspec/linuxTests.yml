@@ -15,13 +15,12 @@ phases:
             # If present, log into CodeArtifact. Provides a nice safety net in case NPM is down.
             # Should only affect tests run through IDEs team-hosted CodeBuild.
             - |
-                if [ $TOOLKITS_CODEARTIFACT_DOMAIN ] && [ $TOOLKITS_CODEARTIFACT_REPO ] && [ $ACCOUNT_ID ]; then
-                  aws codeartifact login --tool npm --domain "$TOOLKITS_CODEARTIFACT_DOMAIN" --domain-owner "$ACCOUNT_ID" --repository "$TOOLKITS_CODEARTIFACT_REPO" > /dev/null 2>&1
-                  if [ $? -eq 0 ]; then
-                    echo "Connected to CodeArtifact"
-                  else
-                    echo "CodeArtifact connection failed. Falling back to npm"
-                  fi
+                if [ "$TOOLKITS_CODEARTIFACT_DOMAIN" ] && [ "$TOOLKITS_CODEARTIFACT_REPO" ] && [ "$ACCOUNT_ID" ]; then
+                    if aws codeartifact login --tool npm --domain "$TOOLKITS_CODEARTIFACT_DOMAIN" --domain-owner "$ACCOUNT_ID" --repository "$TOOLKITS_CODEARTIFACT_REPO" > /dev/null 2>&1; then
+                        echo "Connected to CodeArtifact"
+                    else
+                        echo "CodeArtifact connection failed. Falling back to npm"
+                    fi
                 fi
             - npm ci --unsafe-perm
 
