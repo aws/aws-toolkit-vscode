@@ -5,9 +5,10 @@
 
 import { SettingsConfiguration } from '../../settingsConfiguration'
 import { DefaultSamCliConfiguration } from './samCliConfiguration'
-import { DefaultSamCliProcessInvoker, SamCliProcessInvokerContext } from './samCliInvoker'
+import { DefaultSamCliProcessInvoker } from './samCliInvoker'
 import { SamCliProcessInvoker } from './samCliInvokerUtils'
 import { DefaultSamCliLocationProvider } from './samCliLocator'
+import { SamCliProcessInvokerContext } from './samCliProcessInvokerContext'
 import { throwAndNotifyIfInvalid } from './samCliValidationUtils'
 import { DefaultSamCliValidator, DefaultSamCliValidatorContext, SamCliValidator } from './samCliValidator'
 

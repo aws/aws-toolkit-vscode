@@ -95,13 +95,11 @@ abstract class BaseSamCliLocator {
                     const validationResult = await validator.getVersionValidatorResult()
                     if (validationResult.validation === SamCliVersionValidation.Valid) {
                         return fullPath
-                    } else {
-                        this.logger.info(
-                            `Detected SAM executable at ${fullPath} invalid: ${validationResult.validation}`
-                        )
                     }
+                    this.logger.info(`Found invalid SAM executable (${validationResult.validation}): ${fullPath}`)
                 } catch (e) {
-                    /*swallow err*/
+                    const err = e as Error
+                    this.logger.error(err)
                 }
             }
         }

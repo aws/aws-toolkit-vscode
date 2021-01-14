@@ -25,10 +25,11 @@ import { SamCliLocalInvokeInvocation, SamCliLocalInvokeInvocationArguments } fro
 import { SamLaunchRequestArgs } from './debugger/awsSamDebugger'
 import { asEnvironmentVariables } from '../../credentials/credentialsUtilities'
 import { buildSamCliStartApiArguments } from './cli/samCliStartApi'
-import { DefaultSamCliProcessInvoker, DefaultSamCliProcessInvokerContext } from './cli/samCliInvoker'
+import { DefaultSamCliProcessInvoker } from './cli/samCliInvoker'
 import { APIGatewayProperties } from './debugger/awsSamDebugConfiguration.gen'
 import { ChildProcess } from '../utilities/childProcess'
 import { ext } from '../extensionGlobals'
+import { DefaultSamCliProcessInvokerContext } from './cli/samCliProcessInvokerContext'
 
 const localize = nls.loadMessageBundle()
 

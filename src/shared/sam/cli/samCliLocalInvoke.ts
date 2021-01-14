@@ -10,9 +10,9 @@ import { fileExists } from '../../filesystemUtilities'
 import { getLogger, Logger } from '../../logger'
 import { ChildProcess } from '../../utilities/childProcess'
 import { Timeout } from '../../utilities/timeoutUtils'
-import { DefaultSamCliProcessInvokerContext, SamCliProcessInvokerContext } from './samCliInvoker'
 import { removeAnsi } from '../../utilities/textUtilities'
 import { ext } from '../../extensionGlobals'
+import { DefaultSamCliProcessInvokerContext, SamCliProcessInvokerContext } from './samCliProcessInvokerContext'
 
 const localize = nls.loadMessageBundle()
 

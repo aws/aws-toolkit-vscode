@@ -3,31 +3,17 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
-import { extensionSettingsPrefix } from '../../constants'
 import { getLogger } from '../../logger'
-import { DefaultSettingsConfiguration } from '../../settingsConfiguration'
 import { ChildProcess, ChildProcessResult } from '../../utilities/childProcess'
-import { DefaultSamCliConfiguration, SamCliConfiguration } from './samCliConfiguration'
 import {
     makeRequiredSamCliProcessInvokeOptions,
     SamCliProcessInvokeOptions,
     SamCliProcessInvoker,
 } from './samCliInvokerUtils'
-import { DefaultSamCliLocationProvider } from './samCliLocator'
+import { DefaultSamCliProcessInvokerContext } from './samCliProcessInvokerContext'
 
 import * as nls from 'vscode-nls'
 const localize = nls.loadMessageBundle()
-
-export interface SamCliProcessInvokerContext {
-    cliConfig: SamCliConfiguration
-}
-
-export class DefaultSamCliProcessInvokerContext implements SamCliProcessInvokerContext {
-    public cliConfig: SamCliConfiguration = new DefaultSamCliConfiguration(
-        new DefaultSettingsConfiguration(extensionSettingsPrefix),
-        new DefaultSamCliLocationProvider()
-    )
-}
 
 /**
  * Yet another `sam` CLI wrapper.
