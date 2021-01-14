@@ -7,6 +7,9 @@ import * as path from 'path'
 import { EnvironmentVariables } from '../../environmentVariables'
 import * as filesystemUtilities from '../../filesystemUtilities'
 import { getLogger, Logger } from '../../logger'
+import { SamCliInfoInvocation } from './samCliInfo'
+import { DefaultSamCliProcessInvoker } from './samCliInvoker'
+import { DefaultSamCliValidator, SamCliValidatorContext, SamCliVersionValidation } from './samCliValidator'
 
 export interface SamCliLocationProvider {
     getLocation(): Promise<string | undefined>
@@ -69,8 +72,37 @@ abstract class BaseSamCliLocator {
 
         for (const fullPath of fullPaths) {
             this.logger.verbose(`Searching for SAM CLI in: ${fullPath}`)
+            const context: SamCliValidatorContext = {
+                samCliLocation: async () => fullPath,
+                getSamCliExecutableId: async () => 'temp',
+                getSamCliInfo: async () => {
+                    const samCliInfo = new SamCliInfoInvocation(
+                        new DefaultSamCliProcessInvoker({
+                            cliConfig: {
+                                getOrDetectSamCli: async () => {
+                                    return { path: fullPath, autoDetected: false }
+                                },
+                            },
+                        })
+                    )
+
+                    return await samCliInfo.execute()
+                },
+            }
+            const validator = new DefaultSamCliValidator(context)
             if (await filesystemUtilities.fileExists(fullPath)) {
-                return fullPath
+                try {
+                    const validationResult = await validator.getVersionValidatorResult()
+                    if (validationResult.validation === SamCliVersionValidation.Valid) {
+                        return fullPath
+                    } else {
+                        this.logger.info(
+                            `Detected SAM executable at ${fullPath} invalid: ${validationResult.validation}`
+                        )
+                    }
+                } catch (e) {
+                    /*swallow err*/
+                }
             }
         }
 

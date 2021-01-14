@@ -4,7 +4,7 @@
  */
 
 import { SettingsConfiguration } from '../../settingsConfiguration'
-import { DefaultSamCliConfiguration } from './samCliConfiguration'
+import { DefaultSamCliConfiguration, SamCliConfiguration } from './samCliConfiguration'
 import { DefaultSamCliProcessInvoker, SamCliProcessInvokerContext } from './samCliInvoker'
 import { SamCliProcessInvoker } from './samCliInvokerUtils'
 import { DefaultSamCliLocationProvider } from './samCliLocator'
@@ -53,12 +53,12 @@ export async function getSamCliVersion(context: SamCliContext): Promise<string> 
     return result.versionValidation!.version!
 }
 
-function makeSamCliContext(): SamCliContext {
-    const samCliConfiguration = new DefaultSamCliConfiguration(
+export function makeSamCliContext(
+    samCliConfiguration: SamCliConfiguration = new DefaultSamCliConfiguration(
         settingsConfiguration,
         new DefaultSamCliLocationProvider()
     )
-
+): SamCliContext {
     const invokerContext: SamCliProcessInvokerContext = {
         cliConfig: samCliConfiguration,
     }

@@ -29,16 +29,6 @@ export class DefaultSamCliProcessInvokerContext implements SamCliProcessInvokerC
     )
 }
 
-export function resolveSamCliProcessInvokerContext(
-    params: Partial<SamCliProcessInvokerContext> = {}
-): SamCliProcessInvokerContext {
-    const defaults = new DefaultSamCliProcessInvokerContext()
-
-    return {
-        cliConfig: params.cliConfig || defaults.cliConfig,
-    }
-}
-
 /**
  * Yet another `sam` CLI wrapper.
  *
@@ -46,7 +36,11 @@ export function resolveSamCliProcessInvokerContext(
  */
 export class DefaultSamCliProcessInvoker implements SamCliProcessInvoker {
     private childProcess?: ChildProcess
-    public constructor(private readonly context: SamCliProcessInvokerContext = resolveSamCliProcessInvokerContext()) {}
+    public constructor(
+        private readonly context: {
+            cliConfig: { getOrDetectSamCli(): Promise<{ path: string; autoDetected: boolean }> }
+        } = new DefaultSamCliProcessInvokerContext()
+    ) {}
 
     public stop(): void {
         if (!this.childProcess) {
@@ -60,9 +54,7 @@ export class DefaultSamCliProcessInvoker implements SamCliProcessInvoker {
         const logger = getLogger()
 
         const sam = await this.context.cliConfig.getOrDetectSamCli()
-        if (!sam.path) {
-            logger.warn('SAM CLI not found and not configured')
-        } else if (sam.autoDetected) {
+        if (sam.autoDetected) {
             logger.info('SAM CLI not configured, using SAM found at: %O', sam.path)
         }
 
