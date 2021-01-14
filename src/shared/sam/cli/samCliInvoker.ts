@@ -40,7 +40,9 @@ export class DefaultSamCliProcessInvoker implements SamCliProcessInvoker {
         const logger = getLogger()
 
         const sam = await this.context.cliConfig.getOrDetectSamCli()
-        if (sam.autoDetected) {
+        if (!sam.path) {
+            logger.warn('SAM CLI not found and not configured')
+        } else if (sam.autoDetected) {
             logger.info('SAM CLI not configured, using SAM found at: %O', sam.path)
         }
 
