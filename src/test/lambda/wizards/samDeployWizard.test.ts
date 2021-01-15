@@ -644,11 +644,12 @@ describe('SamDeployWizard', async () => {
 })
 
 describe('DefaultSamDeployWizardContext', async () => {
-    const context = new DefaultSamDeployWizardContext(await FakeExtensionContext.getFakeExtContext())
+    let context: DefaultSamDeployWizardContext
     let sandbox: sinon.SinonSandbox
 
-    beforeEach(() => {
+    beforeEach(async () => {
         sandbox = sinon.createSandbox()
+        context = new DefaultSamDeployWizardContext(await FakeExtensionContext.getFakeExtContext())
     })
 
     afterEach(() => {
