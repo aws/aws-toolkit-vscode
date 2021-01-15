@@ -10,6 +10,8 @@ import com.intellij.openapi.vfs.LocalFileSystem
 import com.intellij.openapi.vfs.impl.local.LocalFileSystemImpl
 import com.intellij.openapi.vfs.newvfs.ManagingFS
 import com.intellij.openapi.vfs.newvfs.RefreshQueue
+import com.intellij.testFramework.ApplicationRule
+import com.intellij.testFramework.DisposableRule
 import org.assertj.core.api.Assertions.assertThat
 import org.junit.Before
 import org.junit.Rule
@@ -17,7 +19,6 @@ import org.junit.Test
 import org.junit.rules.TemporaryFolder
 import software.aws.toolkits.core.rules.SystemPropertyHelper
 import software.aws.toolkits.jetbrains.core.credentials.profiles.DefaultProfileWatcher
-import software.aws.toolkits.jetbrains.utils.rules.HeavyJavaCodeInsightTestFixtureRule
 import software.aws.toolkits.jetbrains.utils.spinUntil
 import java.io.File
 import java.time.Duration
@@ -27,7 +28,11 @@ import java.util.concurrent.TimeUnit
 class ProfileWatcherTest {
     @Rule
     @JvmField
-    val projectRule = HeavyJavaCodeInsightTestFixtureRule()
+    val application = ApplicationRule()
+
+    @Rule
+    @JvmField
+    val disposableRule = DisposableRule()
 
     @Rule
     @JvmField
@@ -99,7 +104,7 @@ class ProfileWatcherTest {
     private fun assertFileChange(block: () -> Unit) {
         val fileWatcher = (LocalFileSystem.getInstance() as LocalFileSystemImpl).fileWatcher
         Disposer.register(
-            projectRule.fixture.testRootDisposable,
+            disposableRule.disposable,
             Disposable {
                 fileWatcher.shutdown()
 
@@ -122,6 +127,7 @@ class ProfileWatcherTest {
         }
 
         val sut = DefaultProfileWatcher()
+        Disposer.register(disposableRule.disposable, sut)
 
         spinUntil(Duration.ofSeconds(10)) {
             !fileWatcher.isSettingRoots
