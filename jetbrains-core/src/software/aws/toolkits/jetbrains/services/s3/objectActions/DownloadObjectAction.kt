@@ -16,9 +16,9 @@ import kotlinx.coroutines.launch
 import software.aws.toolkits.core.utils.deleteIfExists
 import software.aws.toolkits.core.utils.getLogger
 import software.aws.toolkits.core.utils.info
+import software.aws.toolkits.jetbrains.services.s3.editor.S3Object
 import software.aws.toolkits.jetbrains.services.s3.editor.S3TreeNode
 import software.aws.toolkits.jetbrains.services.s3.editor.S3TreeObjectNode
-import software.aws.toolkits.jetbrains.services.s3.editor.S3TreeObjectVersionNode
 import software.aws.toolkits.jetbrains.services.s3.editor.S3TreeTable
 import software.aws.toolkits.jetbrains.services.s3.objectActions.DownloadObjectAction.ConflictResolution.OVERWRITE
 import software.aws.toolkits.jetbrains.services.s3.objectActions.DownloadObjectAction.ConflictResolution.OVERWRITE_ALL
@@ -33,11 +33,11 @@ import java.nio.file.Paths
 class DownloadObjectAction constructor(private val project: Project, treeTable: S3TreeTable) :
     S3ObjectAction(treeTable, message("s3.download.object.action"), AllIcons.Actions.Download) {
 
-    private data class DownloadInfo(val s3Object: String, val diskLocation: Path, val versionId: String?) {
-        constructor(s3Object: S3TreeObjectNode, diskLocation: Path) : this(
+    private data class DownloadInfo(val s3Object: String, val versionId: String?, val diskLocation: Path) {
+        constructor(s3Object: S3Object, diskLocation: Path) : this(
             s3Object.key,
-            diskLocation,
-            if (s3Object is S3TreeObjectVersionNode) s3Object.versionId else null
+            s3Object.versionId,
+            diskLocation
         )
     }
 
@@ -63,18 +63,18 @@ class DownloadObjectAction constructor(private val project: Project, treeTable: 
     override fun enabled(nodes: List<S3TreeNode>): Boolean = nodes.all { it is S3TreeObjectNode }
 
     override fun performAction(nodes: List<S3TreeNode>) {
-        val files = nodes.filterIsInstance<S3TreeObjectNode>()
+        val files = nodes.filterIsInstance<S3Object>()
         when (files.size) {
             1 -> downloadSingle(project, files.first())
             else -> downloadMultiple(project, files)
         }
     }
 
-    private fun downloadSingle(project: Project, file: S3TreeObjectNode) {
+    private fun downloadSingle(project: Project, file: S3Object) {
         val selectedLocation = getDownloadLocation(foldersOnly = false) ?: return
 
         val destinationFile = if (selectedLocation.isDirectory()) {
-            selectedLocation.resolve(file.name)
+            selectedLocation.resolve(file.fileName())
         } else {
             selectedLocation
         }
@@ -91,10 +91,10 @@ class DownloadObjectAction constructor(private val project: Project, treeTable: 
         downloadAll(project, finalDownloads)
     }
 
-    private fun downloadMultiple(project: Project, files: List<S3TreeObjectNode>) {
+    private fun downloadMultiple(project: Project, files: List<S3Object>) {
         val selectedLocation = getDownloadLocation(foldersOnly = true) ?: return
 
-        val downloads = files.map { DownloadInfo(it, selectedLocation.resolve(it.name)) }
+        val downloads = files.map { DownloadInfo(it, selectedLocation.resolve(it.fileName())) }
         val finalDownloads = checkForConflicts(selectedLocation, downloads)
 
         downloadAll(project, finalDownloads)
@@ -191,7 +191,7 @@ class DownloadObjectAction constructor(private val project: Project, treeTable: 
         // TODO: Get off global scope
         GlobalScope.launch {
             try {
-                files.forEach { (key, output, versionId) ->
+                files.forEach { (key, versionId, output) ->
                     try {
                         // TODO: Create 1 progress indicator for all files and pass it in
                         output.outputStream().use {

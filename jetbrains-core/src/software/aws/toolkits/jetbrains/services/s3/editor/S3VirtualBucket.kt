@@ -12,9 +12,9 @@ import kotlinx.coroutines.withContext
 import software.amazon.awssdk.core.sync.RequestBody
 import software.amazon.awssdk.services.s3.S3Client
 import software.amazon.awssdk.services.s3.model.Bucket
+import software.amazon.awssdk.services.s3.model.ListObjectVersionsResponse
 import software.amazon.awssdk.services.s3.model.ListObjectsV2Response
 import software.amazon.awssdk.services.s3.model.ObjectIdentifier
-import software.amazon.awssdk.services.s3.paginators.ListObjectVersionsIterable
 import software.aws.toolkits.jetbrains.services.s3.download
 import software.aws.toolkits.jetbrains.services.s3.upload
 import java.io.InputStream
@@ -50,9 +50,9 @@ class S3VirtualBucket(val s3Bucket: Bucket, val client: S3Client) : LightVirtual
         }
     }
 
-    suspend fun listObjectVersionsPaginated(key: String): ListObjectVersionsIterable = withContext(Dispatchers.IO) {
-        client.listObjectVersionsPaginator {
-            it.bucket(s3Bucket.name()).prefix(key).maxKeys(MAX_ITEMS_TO_LOAD)
+    suspend fun listObjectVersions(key: String, keyMarker: String?, versionIdMarker: String?): ListObjectVersionsResponse? = withContext(Dispatchers.IO) {
+        client.listObjectVersions {
+            it.bucket(s3Bucket.name()).prefix(key).delimiter("/").maxKeys(MAX_ITEMS_TO_LOAD).keyMarker(keyMarker).versionIdMarker(versionIdMarker)
         }
     }
 

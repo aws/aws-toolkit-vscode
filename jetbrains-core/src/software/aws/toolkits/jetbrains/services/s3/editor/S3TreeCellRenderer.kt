@@ -2,7 +2,6 @@
 // SPDX-License-Identifier: Apache-2.0
 package software.aws.toolkits.jetbrains.services.s3.editor
 
-import com.intellij.icons.AllIcons
 import com.intellij.ui.ColoredTreeCellRenderer
 import com.intellij.ui.LoadingNode
 import com.intellij.ui.SimpleTextAttributes
@@ -25,18 +24,13 @@ class S3TreeCellRenderer(private val speedSearchTarget: JComponent) : ColoredTre
         val selectedNode = value as? DefaultMutableTreeNode
         val node = selectedNode?.userObject as? S3TreeNode ?: return
 
-        when {
-            node.isDirectory -> {
-                icon = AllIcons.Nodes.Folder
-                append(node.name.trimEnd('/'))
-            }
-            node is S3TreeContinuationNode -> {
-                icon = AllIcons.Nodes.EmptyNode
-                append(node.name, SimpleTextAttributes.LINK_ATTRIBUTES)
+        icon = node.icon
+        when (node) {
+            is S3TreeContinuationNode<*> -> {
+                append(node.displayName(), SimpleTextAttributes.LINK_ATTRIBUTES)
             }
             else -> {
-                icon = node.icon ?: AllIcons.FileTypes.Unknown
-                append(node.name)
+                append(node.displayName())
             }
         }
 
