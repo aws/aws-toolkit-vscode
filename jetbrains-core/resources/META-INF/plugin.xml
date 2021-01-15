@@ -83,7 +83,7 @@ with what features/services are supported.
                   topic="software.aws.toolkits.jetbrains.core.credentials.ConnectionSettingsStateChangeNotifier"/>
     </projectListeners>
     <extensionPoints>
-        <extensionPoint name="credentialProviderFactory" interface="software.aws.toolkits.core.credentials.CredentialProviderFactory"/>
+        <extensionPoint name="credentialProviderFactory" interface="software.aws.toolkits.core.credentials.CredentialProviderFactory" dynamic="true"/>
 
         <extensionPoint name="lambda.runtimeGroup" interface="software.aws.toolkits.jetbrains.services.lambda.RuntimeGroup" dynamic="true"/>
 
@@ -109,7 +109,7 @@ with what features/services are supported.
 
         <extensionPoint name="executable" interface="software.aws.toolkits.jetbrains.core.executables.ExecutableType" dynamic="true"/>
 
-        <extensionPoint name="clouddebug.debuggerSupport" interface="software.aws.toolkits.jetbrains.services.clouddebug.DebuggerSupport"/>
+        <extensionPoint name="clouddebug.debuggerSupport" interface="software.aws.toolkits.jetbrains.services.clouddebug.DebuggerSupport" dynamic="true"/>
         <extensionPoint name="notice" interface="software.aws.toolkits.jetbrains.core.notification.NoticeType" dynamic="true"/>
 
         <extensionPoint name="explorer.serviceNode" interface="software.aws.toolkits.jetbrains.core.explorer.nodes.AwsExplorerServiceNode" dynamic="true"/>
