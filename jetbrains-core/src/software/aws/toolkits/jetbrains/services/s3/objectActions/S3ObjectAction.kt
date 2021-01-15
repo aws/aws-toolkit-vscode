@@ -18,10 +18,10 @@ abstract class S3ObjectAction(protected val treeTable: S3TreeTable, title: Strin
 
     override fun update(e: AnActionEvent) {
         val selected = selected()
-        e.presentation.isEnabled = selected.none { it is S3TreeContinuationNode } && enabled(selected)
+        e.presentation.isEnabled = selected.none { it is S3TreeContinuationNode<*> } && enabled(selected)
     }
 
-    override fun actionPerformed(e: AnActionEvent) = performAction(selected().filter { it !is S3TreeContinuationNode })
+    override fun actionPerformed(e: AnActionEvent) = performAction(selected().filter { it !is S3TreeContinuationNode<*> })
 
     private fun selected(): List<S3TreeNode> = treeTable.getSelectedNodes().takeIf { it.isNotEmpty() } ?: listOf(treeTable.rootNode)
 }

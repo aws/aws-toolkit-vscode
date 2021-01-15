@@ -10,7 +10,6 @@ import kotlinx.coroutines.GlobalScope
 import kotlinx.coroutines.launch
 import software.aws.toolkits.jetbrains.services.s3.editor.S3TreeNode
 import software.aws.toolkits.jetbrains.services.s3.editor.S3TreeTable
-import software.aws.toolkits.jetbrains.services.s3.editor.getDirectoryKey
 import software.aws.toolkits.jetbrains.utils.notifyError
 import software.aws.toolkits.resources.message
 
@@ -22,7 +21,7 @@ class NewFolderAction(
         Messages.showInputDialog(project, message("s3.new.folder.name"), message("s3.new.folder"), null)?.let { key ->
             GlobalScope.launch {
                 try {
-                    treeTable.bucket.newFolder(node.getDirectoryKey() + key)
+                    treeTable.bucket.newFolder(node.directoryPath() + key)
                     treeTable.invalidateLevel(node)
                     treeTable.refresh()
                 } catch (e: Exception) {

@@ -24,13 +24,12 @@ class RenameObjectAction(
     override fun enabled(node: S3TreeNode): Boolean = node::class == S3TreeObjectNode::class
 
     override fun performAction(node: S3TreeNode) {
-
         val newName = Messages.showInputDialog(
             project,
-            message("s3.rename.object.title", node.name),
+            message("s3.rename.object.title", node.displayName()),
             message("s3.rename.object.action"),
             null,
-            node.name,
+            node.displayName(),
             object : InputValidator {
                 override fun checkInput(inputString: String?): Boolean = true
 

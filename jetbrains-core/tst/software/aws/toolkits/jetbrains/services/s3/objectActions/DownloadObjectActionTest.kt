@@ -28,6 +28,8 @@ import software.amazon.awssdk.services.s3.model.GetObjectResponse
 import software.amazon.awssdk.services.s3.model.S3Exception
 import software.aws.toolkits.core.utils.test.retryableAssert
 import software.aws.toolkits.jetbrains.core.MockClientManagerRule
+import software.aws.toolkits.jetbrains.services.s3.editor.S3TreeDirectoryNode
+import software.aws.toolkits.jetbrains.services.s3.editor.S3TreeNode
 import software.aws.toolkits.jetbrains.services.s3.editor.S3TreeObjectNode
 import software.aws.toolkits.jetbrains.services.s3.editor.S3TreeObjectVersionNode
 import software.aws.toolkits.jetbrains.services.s3.editor.S3TreeTable
@@ -324,7 +326,7 @@ class DownloadObjectActionTest {
 
         assertThat(countDownLatch.await(5, TimeUnit.SECONDS)).isTrue()
 
-        assertThat(destinationFolder.resolve("testFile-1testVersionId")).hasContent("testFile-1-content-old-version")
+        assertThat(destinationFolder.resolve("testFile-1@testVersionId")).hasContent("testFile-1-content-old-version")
     }
 
     @Test
@@ -350,16 +352,16 @@ class DownloadObjectActionTest {
         assertThat(countDownLatch.await(5, TimeUnit.SECONDS)).isTrue()
 
         assertThat(destinationFolder.resolve("testFile-1")).hasContent("testFile-1-content")
-        assertThat(destinationFolder.resolve("testFile-1testVersionId")).hasContent("testFile-1-content-old-version")
+        assertThat(destinationFolder.resolve("testFile-1@testVersionId")).hasContent("testFile-1-content-old-version")
         assertThat(destinationFolder.resolve("testFile-2")).hasContent("testFile-2-content")
-        assertThat(destinationFolder.resolve("testFile-3testVersionId")).hasContent("testFile-3-content-old-version")
+        assertThat(destinationFolder.resolve("testFile-3@testVersionId")).hasContent("testFile-3-content-old-version")
     }
 
     private fun setUpConflictResolutionResponses(choices: List<ConflictResolution>, vararg responses: ConflictResolution) {
         var responseNum = 0
         TestDialogService.setTestDialog(
             TestDialog {
-                choices.indexOf(responses.get(responseNum++))
+                choices.indexOf(responses[responseNum++])
             }
         )
     }
@@ -369,11 +371,14 @@ class DownloadObjectActionTest {
 
     private fun setUpS3TreeTable(s3Client: S3Client, selectedFiles: List<Pair<String, Any>>): S3TreeTable {
         val testBucket = S3VirtualBucket(Bucket.builder().name("testBucket").build(), s3Client)
-        val emptyParent = S3TreeObjectNode(testBucket, null, "testBucket", 1, Instant.now())
-        val objectNodes = selectedFiles.map {
+        val dirNode = S3TreeDirectoryNode(testBucket, null, "")
+        val objectNodes: List<S3TreeNode> = selectedFiles.map {
             when (it.second) {
-                S3TreeObjectVersionNode::class -> S3TreeObjectVersionNode(testBucket, emptyParent, it.first, 1, Instant.now(), it.first + "testVersionId")
-                else -> S3TreeObjectNode(testBucket, null, it.first, 1, Instant.now())
+                S3TreeObjectVersionNode::class -> {
+                    val parent = S3TreeObjectNode(dirNode, it.first, 1, Instant.now())
+                    S3TreeObjectVersionNode(parent, "testVersionId", 1, Instant.now()) as S3TreeNode
+                }
+                else -> S3TreeObjectNode(dirNode, it.first, 1, Instant.now()) as S3TreeNode
             }
         }
 
