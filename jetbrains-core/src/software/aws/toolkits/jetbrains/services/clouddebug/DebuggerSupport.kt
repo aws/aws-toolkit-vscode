@@ -122,7 +122,7 @@ abstract class DebuggerSupport {
 
         @JvmStatic
         fun debuggers(): EnumMap<CloudDebuggingPlatform, DebuggerSupport> {
-            val items = EP_NAME.extensions.map {
+            val items = EP_NAME.extensionList.map {
                 it.platform to it
             }
             return if (items.isEmpty()) {

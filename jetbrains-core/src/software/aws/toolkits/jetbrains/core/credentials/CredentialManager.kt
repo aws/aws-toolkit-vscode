@@ -108,11 +108,10 @@ abstract class CredentialManager : SimpleModificationTracker() {
 }
 
 class DefaultCredentialManager : CredentialManager() {
-    private val extensionMap: Map<String, CredentialProviderFactory> by lazy {
-        EP_NAME.extensionList.associateBy {
+    private val extensionMap: Map<String, CredentialProviderFactory>
+        get() = EP_NAME.extensionList.associateBy {
             it.id
         }
-    }
 
     init {
         extensionMap.values.forEach { providerFactory ->
