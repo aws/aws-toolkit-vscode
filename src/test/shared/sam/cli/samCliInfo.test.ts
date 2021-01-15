@@ -17,6 +17,13 @@ import {
 } from './testSamCliProcessInvoker'
 
 describe('SamCliInfoInvocation', async () => {
+    const successfulInvoker: TestSamCliProcessInvoker = new TestSamCliProcessInvoker(
+        (spawnOptions, args: any[]): ChildProcessResult => {
+            return new FakeChildProcessResult({
+                stdout: '{"version": "1.2.3"}',
+            })
+        }
+    )
     class TestSamCliInfoCommand extends SamCliInfoInvocation {
         public convertOutput(text: string): SamCliInfoResponse | undefined {
             return super.convertOutput(text)
@@ -24,25 +31,27 @@ describe('SamCliInfoInvocation', async () => {
     }
 
     it('converts sam info response to SamCliInfoResponse', async () => {
-        const response: SamCliInfoResponse | undefined = new TestSamCliInfoCommand().convertOutput(
-            '{"version": "1.2.3"}'
-        )
+        const response: SamCliInfoResponse | undefined = new TestSamCliInfoCommand({
+            invoker: successfulInvoker,
+        }).convertOutput('{"version": "1.2.3"}')
 
         assert.ok(response)
         assert.strictEqual(response!.version, '1.2.3')
     })
 
     it('converts sam info response containing unexpected fields to SamCliInfoResponse', async () => {
-        const response: SamCliInfoResponse | undefined = new TestSamCliInfoCommand().convertOutput(
-            '{"version": "1.2.3", "bananas": "123"}'
-        )
+        const response: SamCliInfoResponse | undefined = new TestSamCliInfoCommand({
+            invoker: successfulInvoker,
+        }).convertOutput('{"version": "1.2.3", "bananas": "123"}')
 
         assert.ok(response)
         assert.strictEqual(response!.version, '1.2.3')
     })
 
     it('converts sam info response without version to SamCliInfoResponse', async () => {
-        const response: SamCliInfoResponse | undefined = new TestSamCliInfoCommand().convertOutput('{}')
+        const response: SamCliInfoResponse | undefined = new TestSamCliInfoCommand({
+            invoker: successfulInvoker,
+        }).convertOutput('{}')
 
         assert.ok(response)
         assert.strictEqual(response!.version, undefined)
@@ -50,21 +59,16 @@ describe('SamCliInfoInvocation', async () => {
 
     it('converts non-response to undefined', async () => {
         ;['qwerty', '{"version": "1.2.3"} you have no new email messages'].forEach(output => {
-            const response: SamCliInfoResponse | undefined = new TestSamCliInfoCommand().convertOutput(output)
+            const response: SamCliInfoResponse | undefined = new TestSamCliInfoCommand({
+                invoker: successfulInvoker,
+            }).convertOutput(output)
 
             assert.strictEqual(response, undefined, `Expected text to not parse: ${output}`)
         })
     })
 
     it('handles successful errorcode and output', async () => {
-        const invoker: TestSamCliProcessInvoker = new TestSamCliProcessInvoker(
-            (spawnOptions, args: any[]): ChildProcessResult => {
-                return new FakeChildProcessResult({
-                    stdout: '{"version": "1.2.3"}',
-                })
-            }
-        )
-        const samInfo: SamCliInfoInvocation = new SamCliInfoInvocation(invoker)
+        const samInfo: SamCliInfoInvocation = new SamCliInfoInvocation({ invoker: successfulInvoker })
 
         const response = await samInfo.execute()
         assert.ok(response)
@@ -79,7 +83,7 @@ describe('SamCliInfoInvocation', async () => {
                 })
             }
         )
-        const samInfo: SamCliInfoInvocation = new SamCliInfoInvocation(invoker)
+        const samInfo: SamCliInfoInvocation = new SamCliInfoInvocation({ invoker })
 
         await assertThrowsError(async () => {
             await samInfo.execute()
@@ -90,7 +94,7 @@ describe('SamCliInfoInvocation', async () => {
         const badExitCodeProcessInvoker = new BadExitCodeSamCliProcessInvoker({})
 
         const error = await assertThrowsError(async () => {
-            const samInfo: SamCliInfoInvocation = new SamCliInfoInvocation(badExitCodeProcessInvoker)
+            const samInfo: SamCliInfoInvocation = new SamCliInfoInvocation({ invoker: badExitCodeProcessInvoker })
             await samInfo.execute()
         }, 'Expected an error to be thrown')
 

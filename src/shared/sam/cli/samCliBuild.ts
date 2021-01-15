@@ -9,6 +9,10 @@ import { logAndThrowIfUnexpectedExitCode, SamCliProcessInvoker } from './samCliI
 import { DefaultSamCliProcessInvoker } from './samCliInvoker'
 import { pushIf } from '../../utilities/collectionUtils'
 import { localize } from '../../utilities/vsCodeUtils'
+import { DefaultSamCliConfiguration } from './samCliConfiguration'
+import { DefaultSettingsConfiguration } from '../../settingsConfiguration'
+import { DefaultSamCliLocationProvider } from './samCliLocator'
+import { extensionSettingsPrefix } from '../../constants'
 
 export interface SamCliBuildInvocationArguments {
     /**
@@ -75,7 +79,14 @@ export class SamCliBuildInvocation {
         private readonly args: SamCliBuildInvocationArguments,
         private readonly context: { file: FileFunctions } = { file: getDefaultFileFunctions() }
     ) {
-        this.args.invoker = this.args.invoker ?? new DefaultSamCliProcessInvoker()
+        this.args.invoker =
+            this.args.invoker ??
+            new DefaultSamCliProcessInvoker({
+                preloadedConfig: new DefaultSamCliConfiguration(
+                    new DefaultSettingsConfiguration(extensionSettingsPrefix),
+                    new DefaultSamCliLocationProvider()
+                ),
+            })
         this.args.useContainer = !!this.args.useContainer
         this.args.skipPullImage = !!this.args.skipPullImage
     }

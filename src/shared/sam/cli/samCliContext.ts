@@ -8,7 +8,6 @@ import { DefaultSamCliConfiguration } from './samCliConfiguration'
 import { DefaultSamCliProcessInvoker } from './samCliInvoker'
 import { SamCliProcessInvoker } from './samCliInvokerUtils'
 import { DefaultSamCliLocationProvider } from './samCliLocator'
-import { SamCliProcessInvokerContext } from './samCliProcessInvokerContext'
 import { throwAndNotifyIfInvalid } from './samCliValidationUtils'
 import { DefaultSamCliValidator, DefaultSamCliValidatorContext, SamCliValidator } from './samCliValidator'
 
@@ -59,13 +58,9 @@ function makeSamCliContext(): SamCliContext {
         settingsConfiguration,
         new DefaultSamCliLocationProvider()
     )
+    const invoker = new DefaultSamCliProcessInvoker({ preloadedConfig: samCliConfiguration })
 
-    const invokerContext: SamCliProcessInvokerContext = {
-        cliConfig: samCliConfiguration,
-    }
-    const invoker = new DefaultSamCliProcessInvoker(invokerContext)
-
-    const validatorContext = new DefaultSamCliValidatorContext(samCliConfiguration, invoker)
+    const validatorContext = new DefaultSamCliValidatorContext(samCliConfiguration)
     const validator = new DefaultSamCliValidator(validatorContext)
 
     const context: SamCliContext = {

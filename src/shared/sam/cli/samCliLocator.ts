@@ -8,7 +8,6 @@ import { EnvironmentVariables } from '../../environmentVariables'
 import * as filesystemUtilities from '../../filesystemUtilities'
 import { getLogger, Logger } from '../../logger'
 import { SamCliInfoInvocation } from './samCliInfo'
-import { DefaultSamCliProcessInvoker } from './samCliInvoker'
 import { DefaultSamCliValidator, SamCliValidatorContext, SamCliVersionValidation } from './samCliValidator'
 
 export interface SamCliLocationProvider {
@@ -76,15 +75,9 @@ abstract class BaseSamCliLocator {
                 samCliLocation: async () => fullPath,
                 getSamCliExecutableId: async () => 'temp',
                 getSamCliInfo: async () => {
-                    const samCliInfo = new SamCliInfoInvocation(
-                        new DefaultSamCliProcessInvoker({
-                            cliConfig: {
-                                getOrDetectSamCli: async () => {
-                                    return { path: fullPath, autoDetected: false }
-                                },
-                            },
-                        })
-                    )
+                    const samCliInfo = new SamCliInfoInvocation({
+                        locationProvider: { getLocation: async () => fullPath },
+                    })
 
                     return await samCliInfo.execute()
                 },

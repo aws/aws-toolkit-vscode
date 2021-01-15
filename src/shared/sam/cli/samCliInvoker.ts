@@ -10,9 +10,11 @@ import {
     SamCliProcessInvokeOptions,
     SamCliProcessInvoker,
 } from './samCliInvokerUtils'
-import { DefaultSamCliProcessInvokerContext } from './samCliProcessInvokerContext'
 
 import * as nls from 'vscode-nls'
+import { DefaultSamCliConfiguration, SamCliConfiguration } from './samCliConfiguration'
+import { DefaultSettingsConfiguration } from '../../settingsConfiguration'
+import { extensionSettingsPrefix } from '../../constants'
 const localize = nls.loadMessageBundle()
 
 /**
@@ -22,11 +24,22 @@ const localize = nls.loadMessageBundle()
  */
 export class DefaultSamCliProcessInvoker implements SamCliProcessInvoker {
     private childProcess?: ChildProcess
-    public constructor(
-        private readonly context: {
-            cliConfig: { getOrDetectSamCli(): Promise<{ path: string; autoDetected: boolean }> }
-        } = new DefaultSamCliProcessInvokerContext()
-    ) {}
+    private readonly context: SamCliConfiguration
+    public constructor(params: {
+        preloadedConfig?: SamCliConfiguration
+        locationProvider?: { getLocation(): Promise<string | undefined> }
+    }) {
+        if (params.preloadedConfig) {
+            this.context = params.preloadedConfig
+        } else if (params.locationProvider) {
+            this.context = new DefaultSamCliConfiguration(
+                new DefaultSettingsConfiguration(extensionSettingsPrefix),
+                params.locationProvider
+            )
+        } else {
+            throw new Error('Invalid constructor args for DefaultSamCliProcessInvoker')
+        }
+    }
 
     public stop(): void {
         if (!this.childProcess) {
@@ -39,7 +52,7 @@ export class DefaultSamCliProcessInvoker implements SamCliProcessInvoker {
         const invokeOptions = makeRequiredSamCliProcessInvokeOptions(options)
         const logger = getLogger()
 
-        const sam = await this.context.cliConfig.getOrDetectSamCli()
+        const sam = await this.context.getOrDetectSamCli()
         if (!sam.path) {
             logger.warn('SAM CLI not found and not configured')
         } else if (sam.autoDetected) {

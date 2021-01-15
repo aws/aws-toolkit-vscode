@@ -13,7 +13,7 @@ import { getTemplate, getTemplateResource, isImageLambdaConfig } from '../../lam
 import { getFamily, RuntimeFamily } from '../../lambda/models/samLambdaRuntime'
 import { ExtContext } from '../extensions'
 import { getLogger } from '../logger'
-import { SettingsConfiguration } from '../settingsConfiguration'
+import { DefaultSettingsConfiguration, SettingsConfiguration } from '../settingsConfiguration'
 import * as telemetry from '../telemetry/telemetry'
 import { SamTemplateGenerator } from '../templates/sam/samTemplateGenerator'
 import * as pathutil from '../utilities/pathUtils'
@@ -30,6 +30,9 @@ import { APIGatewayProperties } from './debugger/awsSamDebugConfiguration.gen'
 import { ChildProcess } from '../utilities/childProcess'
 import { ext } from '../extensionGlobals'
 import { DefaultSamCliProcessInvokerContext } from './cli/samCliProcessInvokerContext'
+import { DefaultSamCliConfiguration } from './cli/samCliConfiguration'
+import { extensionSettingsPrefix } from '../constants'
+import { DefaultSamCliLocationProvider } from './cli/samCliLocator'
 
 const localize = nls.loadMessageBundle()
 
@@ -166,7 +169,12 @@ export async function invokeLambdaFunction(
         )
     }
 
-    const processInvoker = new DefaultSamCliProcessInvoker()
+    const processInvoker = new DefaultSamCliProcessInvoker({
+        preloadedConfig: new DefaultSamCliConfiguration(
+            new DefaultSettingsConfiguration(extensionSettingsPrefix),
+            new DefaultSamCliLocationProvider()
+        ),
+    })
 
     getLogger('channel').info(localize('AWS.output.building.sam.application', 'Building SAM application...'))
     const samBuildOutputFolder = path.join(config.baseBuildDir!, 'output')
