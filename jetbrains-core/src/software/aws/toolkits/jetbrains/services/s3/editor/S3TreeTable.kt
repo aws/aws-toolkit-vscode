@@ -59,7 +59,7 @@ class S3TreeTable(
                 val list = dropEvent.transferable.getTransferData(DataFlavor.javaFileListFlavor) as List<*>
                 list.filterIsInstance<File>()
             } catch (e: UnsupportedFlavorException) {
-                // When the drag and drop data is not what we expect (like when it is text) this is thrown and can be safey ignored
+                // When the drag and drop data is not what we expect (like when it is text) this is thrown and can be safely ignored
                 LOG.info(e) { "Unsupported flavor attempted to be dragged and dropped" }
                 return
             }
@@ -103,10 +103,10 @@ class S3TreeTable(
     }
 
     private fun handleOpeningFile(row: Int, isDoubleClick: Boolean): Boolean {
-        val objectNode = (tree.getPathForRow(row).lastPathComponent as? DefaultMutableTreeNode)?.userObject as? S3TreeObjectNode ?: return false
+        val objectNode = (tree.getPathForRow(row).lastPathComponent as? DefaultMutableTreeNode)?.userObject as? S3Object ?: return false
 
         // Don't process double click if it has children (i.e. versions) since it will trigger expansion as well
-        if (isDoubleClick && objectNode.childCount > 0) {
+        if (isDoubleClick && objectNode is S3LazyLoadParentNode<*> && objectNode.childCount > 0) {
             return false
         }
 
@@ -116,8 +116,7 @@ class S3TreeTable(
             S3Telemetry.downloadObject(project, false)
             return true
         }
-        val versionPostfix = if (objectNode is S3TreeObjectVersionNode) "_${objectNode.versionId}" else ""
-        val fileWrapper = VirtualFileWrapper(File("${FileUtil.getTempDirectory()}${File.separator}${objectNode.key.replace('/', '_')}$versionPostfix"))
+        val fileWrapper = VirtualFileWrapper(File("${FileUtil.getTempDirectory()}${File.separator}${objectNode.fileName()}"))
         // set the file to not be read only so that the S3Client can write to the file
         ApplicationManager.getApplication().runWriteAction {
             fileWrapper.virtualFile?.isWritable = true
@@ -125,10 +124,7 @@ class S3TreeTable(
 
         launch {
             try {
-                when (objectNode) {
-                    is S3TreeObjectVersionNode -> bucket.download(project, objectNode.key, objectNode.versionId, fileWrapper.file.outputStream())
-                    else -> bucket.download(project, objectNode.key, null, fileWrapper.file.outputStream())
-                }
+                bucket.download(project, objectNode.key, objectNode.versionId, fileWrapper.file.outputStream())
                 withContext(edt) {
                     // If the file type is not associated, prompt user to associate. Returns null on cancel
                     fileWrapper.virtualFile?.let {
@@ -153,11 +149,10 @@ class S3TreeTable(
     }
 
     private fun handleLoadingMore(row: Int): Boolean {
-        val continuationNode = (tree.getPathForRow(row).lastPathComponent as? DefaultMutableTreeNode)?.userObject as? S3TreeContinuationNode ?: return false
-        val parent = continuationNode.parent ?: return false
+        val continuationNode = (tree.getPathForRow(row).lastPathComponent as? DefaultMutableTreeNode)?.userObject as? S3TreeContinuationNode<*> ?: return false
 
         launch {
-            parent.loadMore(continuationNode.continuationMarker)
+            continuationNode.loadMore()
             refresh()
         }
 
@@ -172,8 +167,8 @@ class S3TreeTable(
             Convertor { obj ->
                 val node = obj.lastPathComponent as DefaultMutableTreeNode
                 val userObject = node.userObject as? S3TreeNode ?: return@Convertor null
-                return@Convertor if (userObject !is S3TreeContinuationNode) {
-                    userObject.name
+                return@Convertor if (userObject !is S3TreeContinuationNode<*>) {
+                    userObject.displayName()
                 } else {
                     null
                 }
@@ -202,7 +197,7 @@ class S3TreeTable(
                     }
 
                     try {
-                        bucket.upload(project, it.inputStream, it.length, node.getDirectoryKey() + it.name)
+                        bucket.upload(project, it.inputStream, it.length, node.directoryPath() + it.name)
                         invalidateLevel(node)
                         refresh()
                     } catch (e: Exception) {
