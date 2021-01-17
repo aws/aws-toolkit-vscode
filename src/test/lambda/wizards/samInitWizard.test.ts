@@ -22,6 +22,7 @@ import {
 } from '../../../lambda/wizards/samInitWizard'
 import { RuntimePackageType } from '../../../lambda/models/samLambdaRuntime'
 import { makeTemporaryToolkitFolder } from '../../../shared/filesystemUtilities'
+import { assertEqualPaths } from '../../testUtil'
 
 function isMultiDimensionalArray(array: any[] | any[][] | undefined): boolean {
     if (!array) {
@@ -397,7 +398,7 @@ describe('CreateNewSamAppWizard', async () => {
             describe('location', async () => {
                 it('uses user response as schema', async () => {
                     assert.ok(args)
-                    assert.strictEqual(args!.location.fsPath, locationPath)
+                    assertEqualPaths(args!.location.fsPath, locationPath)
                 })
 
                 it('backtracks when cancelled', async () => {
@@ -416,7 +417,7 @@ describe('CreateNewSamAppWizard', async () => {
 
                     assert.ok(args)
                     assert.strictEqual(args!.schemaName, 'AWSBatchJobStateChange')
-                    assert.strictEqual(args!.location.fsPath, locationPath)
+                    assertEqualPaths(args!.location.fsPath, locationPath)
                 })
             })
         })
@@ -438,7 +439,7 @@ describe('CreateNewSamAppWizard', async () => {
             const args = await wizard.run()
 
             assert.ok(args)
-            assert.strictEqual(args!.location.fsPath, dir)
+            assertEqualPaths(args!.location.fsPath, dir)
         })
 
         it('backtracks when cancelled', async () => {
@@ -457,7 +458,7 @@ describe('CreateNewSamAppWizard', async () => {
 
             assert.ok(args)
             assert.strictEqual(args!.template, eventBridgeHelloWorldTemplate)
-            assert.strictEqual(args!.location.fsPath, dir)
+            assertEqualPaths(args!.location.fsPath, dir)
         })
 
         it("contains a 'browse' option", async () => {
@@ -476,7 +477,7 @@ describe('CreateNewSamAppWizard', async () => {
             const args = await wizard.run()
 
             assert.ok(args)
-            assert.strictEqual(args!.location.fsPath, dir)
+            assertEqualPaths(args!.location.fsPath, dir)
         })
 
         it('contains an option for each workspace folder', async () => {
@@ -501,7 +502,7 @@ describe('CreateNewSamAppWizard', async () => {
             const args = await wizard.run()
 
             assert.ok(args)
-            assert.strictEqual(args!.location.fsPath, workspaceFolderPaths[0])
+            assertEqualPaths(args!.location.fsPath, workspaceFolderPaths[0])
         })
     })
 
@@ -539,7 +540,7 @@ describe('CreateNewSamAppWizard', async () => {
             const args = await wizard.run()
 
             assert.ok(args)
-            assert.strictEqual(args!.location.fsPath, dir2)
+            assertEqualPaths(args!.location.fsPath, dir2)
             assert.strictEqual(args!.name, 'myName')
         })
     })

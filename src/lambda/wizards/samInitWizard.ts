@@ -458,7 +458,7 @@ export class CreateNewSamAppWizard extends MultiStepWizard<CreateNewSamAppWizard
 
     private readonly NAME: WizardStep = async () => {
         // Default to a name like "lambda-python3.8-1".
-        const defaultName = fsutil.getNonexistentFilename(this.location!.path, `lambda-${this.runtime}`, '', 99)
+        const defaultName = fsutil.getNonexistentFilename(this.location!.fsPath, `lambda-${this.runtime}`, '', 99)
         this.name = await this.context.promptUserForName(this.name ?? defaultName)
 
         return this.name ? WIZARD_TERMINATE : WIZARD_GOBACK
