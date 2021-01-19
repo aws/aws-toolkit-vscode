@@ -7,18 +7,16 @@ import com.intellij.openapi.fileChooser.FileChooserDescriptorFactory
 import com.intellij.openapi.project.Project
 import com.intellij.openapi.ui.ComboBox
 import com.intellij.openapi.ui.TextFieldWithBrowseButton
+import com.intellij.ui.SimpleListCellRenderer
 import com.intellij.ui.SortedComboBoxModel
 import com.intellij.util.PathMappingSettings
 import org.jetbrains.yaml.YAMLFileType
 import software.amazon.awssdk.services.lambda.model.PackageType
-import software.amazon.awssdk.services.lambda.model.Runtime
 import software.aws.toolkits.core.utils.getLogger
 import software.aws.toolkits.core.utils.warn
 import software.aws.toolkits.jetbrains.services.cloudformation.Function
 import software.aws.toolkits.jetbrains.services.cloudformation.SamFunction
-import software.aws.toolkits.jetbrains.services.lambda.LambdaBuilder
-import software.aws.toolkits.jetbrains.services.lambda.RuntimeGroup
-import software.aws.toolkits.jetbrains.services.lambda.runtimeGroup
+import software.aws.toolkits.jetbrains.services.lambda.execution.sam.ImageDebugSupport
 import software.aws.toolkits.jetbrains.services.lambda.sam.SamTemplateUtils
 import software.aws.toolkits.jetbrains.services.lambda.sam.SamTemplateUtils.getFunctionEnvironmentVariables
 import software.aws.toolkits.jetbrains.ui.EnvironmentVariablesTextField
@@ -38,15 +36,14 @@ class TemplateSettings(val project: Project) {
         private set
     lateinit var function: JComboBox<Function>
         private set
-    lateinit var runtime: JComboBox<Runtime>
-        private set
     lateinit var pathMappingsTable: PathMappingsComponent
         private set
     private lateinit var functionModels: DefaultComboBoxModel<Function>
     private lateinit var imageSettingsPanel: JPanel
-    private lateinit var runtimeModel: SortedComboBoxModel<Runtime>
     lateinit var environmentVariables: EnvironmentVariablesTextField
         private set
+    private lateinit var imageDebuggerModel: SortedComboBoxModel<ImageDebugSupport>
+    lateinit var imageDebugger: JComboBox<ImageDebugSupport>
 
     val isImage
         get() = function.selected()?.packageType() == PackageType.IMAGE
@@ -74,7 +71,7 @@ class TemplateSettings(val project: Project) {
                 setEnvVars(selected)
             }
         }
-        runtime.addActionListener {
+        imageDebugger.addActionListener {
             val pathMappingsApplicable = pathMappingsApplicable()
             pathMappingsTable.isVisible = pathMappingsApplicable
             if (!pathMappingsApplicable) {
@@ -82,17 +79,16 @@ class TemplateSettings(val project: Project) {
                 pathMappingsTable.setMappingSettings(PathMappingSettings())
             }
         }
-        val supportedRuntimes = LambdaBuilder.supportedRuntimeGroups().flatMap { it.runtimes }.sorted()
-        runtimeModel.setAll(supportedRuntimes)
-        runtime.selectedItem = RuntimeGroup.determineRuntime(project)?.let { if (it in supportedRuntimes) it else null }
+        imageDebuggerModel.setAll(ImageDebugSupport.debuggers().values)
     }
 
     private fun createUIComponents() {
         functionModels = DefaultComboBoxModel()
         function = ComboBox(functionModels)
-        runtimeModel = SortedComboBoxModel(compareBy(Comparator.naturalOrder()) { it: Runtime -> it.toString() })
-        runtime = ComboBox(runtimeModel)
         environmentVariables = EnvironmentVariablesTextField()
+        imageDebuggerModel = SortedComboBoxModel(compareBy(Comparator.naturalOrder()) { it: ImageDebugSupport -> it.displayName() })
+        imageDebugger = ComboBox(imageDebuggerModel)
+        imageDebugger.renderer = SimpleListCellRenderer.create { label, value, _ -> label.text = value?.displayName() }
     }
 
     fun setTemplateFile(file: String?) {
@@ -129,7 +125,7 @@ class TemplateSettings(val project: Project) {
         }
     }
 
-    private fun pathMappingsApplicable(): Boolean = runtime.selected()?.runtimeGroup?.supportsPathMappings ?: false
+    private fun pathMappingsApplicable(): Boolean = imageDebugger.selected()?.supportsPathMappings() ?: false
 
     private companion object {
         val LOG = getLogger<TemplateSettings>()

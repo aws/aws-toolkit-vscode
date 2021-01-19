@@ -32,11 +32,11 @@ class LocalLambdaRunSettingsEditor(project: Project) : SettingsEditor<LocalLambd
         if (useTemplate) {
             view.templateSettings.setTemplateFile(configuration.templateFile())
             view.templateSettings.selectFunction(configuration.logicalId())
+            view.rawSettings.environmentVariables.envVars = configuration.environmentVariables()
             if (view.templateSettings.isImage) {
-                view.templateSettings.runtime.selectedItem = configuration.runtime()
+                view.templateSettings.imageDebugger.selectedItem = configuration.imageDebugger()
                 view.templateSettings.pathMappingsTable.setMappingSettings(PathMappingSettings(configuration.pathMappings))
             }
-            view.templateSettings.environmentVariables.envVars = configuration.environmentVariables()
         } else {
             view.rawSettings.runtime.model.selectedItem = configuration.runtime()
             view.rawSettings.handlerPanel.handler.text = configuration.handler() ?: ""
@@ -56,11 +56,11 @@ class LocalLambdaRunSettingsEditor(project: Project) : SettingsEditor<LocalLambd
         if (view.useTemplate) {
             configuration.useTemplate(view.templateSettings.templateFile.text, view.templateSettings.function.selected()?.logicalName)
             configuration.isImage = view.templateSettings.isImage
+            configuration.environmentVariables(view.templateSettings.environmentVariables.envVars)
             if (view.templateSettings.isImage) {
-                configuration.runtime(view.templateSettings.runtime.selected())
+                configuration.imageDebugger(view.templateSettings.imageDebugger.selected())
                 configuration.pathMappings = view.templateSettings.pathMappingsTable.mappingSettings.pathMappings
             }
-            configuration.environmentVariables(view.templateSettings.environmentVariables.envVars)
         } else {
             configuration.useHandler(view.rawSettings.runtime.selected(), view.rawSettings.handlerPanel.handler.text)
             configuration.timeout(view.rawSettings.timeoutSlider.value)

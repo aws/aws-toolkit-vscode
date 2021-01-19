@@ -10,7 +10,11 @@
         <runtimeGroup implementation="software.aws.toolkits.jetbrains.services.lambda.python.PythonRuntimeGroup"/>
         <builder id="PYTHON" implementationClass="software.aws.toolkits.jetbrains.services.lambda.python.PythonLambdaBuilder"/>
         <handlerResolver id="PYTHON" implementationClass="software.aws.toolkits.jetbrains.services.lambda.python.PythonLambdaHandlerResolver"/>
-        <sam.debugSupport id="PYTHON" implementationClass="software.aws.toolkits.jetbrains.services.lambda.python.PythonSamDebugSupport"/>
+        <sam.runtimeDebugSupport id="PYTHON" implementationClass="software.aws.toolkits.jetbrains.services.lambda.python.PythonRuntimeDebugSupport"/>
+        <sam.imageDebuggerSupport implementation="software.aws.toolkits.jetbrains.services.lambda.python.Python27ImageDebugSupport"/>
+        <sam.imageDebuggerSupport implementation="software.aws.toolkits.jetbrains.services.lambda.python.Python36ImageDebugSupport"/>
+        <sam.imageDebuggerSupport implementation="software.aws.toolkits.jetbrains.services.lambda.python.Python37ImageDebugSupport"/>
+        <sam.imageDebuggerSupport implementation="software.aws.toolkits.jetbrains.services.lambda.python.Python38ImageDebugSupport"/>
         <sam.projectWizard id="PYTHON" implementationClass="software.aws.toolkits.jetbrains.services.lambda.python.PythonSamProjectWizard"/>
     </extensions>
     <extensions defaultExtensionNs="aws.toolkit.clouddebug">

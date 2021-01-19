@@ -12,8 +12,8 @@ import org.jetbrains.concurrency.Promise
 import org.jetbrains.concurrency.resolvedPromise
 import software.aws.toolkits.resources.message
 
-open class SamRunner {
-    open fun patchCommandLine(commandLine: GeneralCommandLine, settings: LocalLambdaRunSettings) {}
+open class SamRunner(protected val settings: LocalLambdaRunSettings) {
+    open fun patchCommandLine(commandLine: GeneralCommandLine) {}
 
     open fun run(environment: ExecutionEnvironment, state: SamRunningState): Promise<RunContentDescriptor> {
         val executionResult = state.execute(environment.executor, environment.runner)
