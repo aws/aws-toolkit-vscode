@@ -34,6 +34,7 @@ import software.aws.toolkits.jetbrains.services.lambda.execution.LambdaRunConfig
 import software.aws.toolkits.jetbrains.services.lambda.execution.LambdaRunConfigurationType
 import software.aws.toolkits.jetbrains.services.lambda.execution.resolveLambdaFromTemplate
 import software.aws.toolkits.jetbrains.services.lambda.execution.sam.HandlerRunSettings
+import software.aws.toolkits.jetbrains.services.lambda.execution.sam.ImageDebugSupport
 import software.aws.toolkits.jetbrains.services.lambda.execution.sam.ImageTemplateRunSettings
 import software.aws.toolkits.jetbrains.services.lambda.execution.sam.LocalLambdaRunSettings
 import software.aws.toolkits.jetbrains.services.lambda.execution.sam.SamRunningState
@@ -85,7 +86,7 @@ class LocalLambdaRunConfiguration(project: Project, factory: ConfigurationFactor
         if (isImage) {
             validateSamTemplateDetails(templateFile(), logicalId())
             checkImageSamVersion()
-            runtimeString().validateSupportedRuntime()
+            checkImageDebugger()
         } else {
             val (handler, runtime) = resolveLambdaInfo(project = project, functionOptions = serializableOptions.functionOptions)
             checkSamVersion(runtime)
@@ -104,6 +105,10 @@ class LocalLambdaRunConfiguration(project: Project, factory: ConfigurationFactor
                 throw RuntimeConfigurationError(message("lambda.image.sam_version_too_low", semVer, SamCommon.minImageVersion))
             }
         }
+    }
+
+    private fun checkImageDebugger() {
+        imageDebugger() ?: throw RuntimeConfigurationError(message("lambda.image.missing_debugger", rawImageDebugger().toString()))
     }
 
     private fun checkSamVersion(runtime: Runtime) {
@@ -159,12 +164,14 @@ class LocalLambdaRunConfiguration(project: Project, factory: ConfigurationFactor
                         .first { it.logicalName == logicalId() } as? SamFunction
                         ?: throw IllegalStateException("Image functions must be SAM functions")
 
+                    val debugger = imageDebugger() ?: throw IllegalStateException("No image debugger with ID ${rawImageDebugger()}")
+
                     // TODO FIX_WHEN_MIN_IS_202 use templateFile.toNioPath()
                     val dockerFile = function.dockerFile() ?: "Dockerfile"
                     val dockerFilePath = Paths.get(templateFile.path).parent.resolve(function.codeLocation()).resolve(dockerFile)
                     ImageTemplateRunSettings(
                         templateFile,
-                        runtimeString().validateSupportedRuntime(),
+                        debugger,
                         logicalName,
                         LocalFileSystem.getInstance().refreshAndFindFileByIoFile(dockerFilePath.toFile())
                             ?: throw IllegalStateException("Unable to get virtual file for path $dockerFilePath"),
@@ -270,16 +277,21 @@ class LocalLambdaRunConfiguration(project: Project, factory: ConfigurationFactor
     fun runtime(): Runtime? = Runtime.fromValue(serializableOptions.functionOptions.runtime)?.validOrNull
 
     /*
-     * Return raw runtime string to be validated. Used for validating Image run config
-     */
-    fun runtimeString(): String? = serializableOptions.functionOptions.runtime
-
-    /*
      * This is only to be called for Image functions, otherwise we do not store the runtime for ZIP based template functions
      * This is one of the things that needs to be cleaned up when we migrate the underlying representation
      */
     fun runtime(runtime: Runtime?) {
         serializableOptions.functionOptions.runtime = runtime?.toString()
+    }
+
+    fun imageDebugger(): ImageDebugSupport? = serializableOptions.functionOptions.runtime?.let {
+        ImageDebugSupport.debuggers().get(it)
+    }
+
+    private fun rawImageDebugger(): String? = serializableOptions.functionOptions.runtime
+
+    fun imageDebugger(imageDebugger: ImageDebugSupport?) {
+        serializableOptions.functionOptions.runtime = imageDebugger?.id
     }
 
     fun timeout() = serializableOptions.functionOptions.timeout

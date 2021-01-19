@@ -25,9 +25,9 @@ class SamRunningState(
     lateinit var builtLambda: BuiltLambda
 
     val runner = if (environment.executor.id == DefaultDebugExecutor.EXECUTOR_ID) {
-        SamDebugger(settings.runtimeGroup)
+        SamDebugger(settings)
     } else {
-        SamRunner()
+        SamRunner(settings)
     }
 
     override fun startProcess(): ProcessHandler {
@@ -45,7 +45,7 @@ class SamRunningState(
             .withParameters("local")
             .withParameters("invoke")
             .apply {
-                if (settings is TemplateBasedSettings) {
+                if (settings is TemplateSettings) {
                     withParameters(settings.logicalId)
                 }
             }
@@ -74,7 +74,7 @@ class SamRunningState(
             }
         }
 
-        runner.patchCommandLine(commandLine, settings)
+        runner.patchCommandLine(commandLine)
 
         // Unix: Sends SIGINT on destroy so Docker container is shut down
         // Windows: Run with mediator to allow for Cntrl+C to be used
