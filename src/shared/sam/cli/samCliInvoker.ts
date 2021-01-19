@@ -29,6 +29,9 @@ export class DefaultSamCliProcessInvoker implements SamCliProcessInvoker {
         preloadedConfig?: SamCliConfiguration
         locationProvider?: { getLocation(): Promise<string | undefined> }
     }) {
+        if (params.preloadedConfig && params.locationProvider) {
+            throw new Error('Invalid constructor args for DefaultSamCliProcessInvoker')
+        }
         if (params.preloadedConfig) {
             this.context = params.preloadedConfig
         } else if (params.locationProvider) {

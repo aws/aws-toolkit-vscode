@@ -73,7 +73,7 @@ abstract class BaseSamCliLocator {
             this.logger.verbose(`Searching for SAM CLI in: ${fullPath}`)
             const context: SamCliValidatorContext = {
                 samCliLocation: async () => fullPath,
-                getSamCliExecutableId: async () => 'temp',
+                getSamCliExecutableId: async () => 'bogus',
                 getSamCliInfo: async () => {
                     const samCliInfo = new SamCliInfoInvocation({
                         locationProvider: { getLocation: async () => fullPath },

@@ -22,6 +22,13 @@ export class SamCliInfoInvocation {
         preloadedConfig?: SamCliConfiguration
         locationProvider?: { getLocation(): Promise<string | undefined> }
     }) {
+        if (
+            (params.invoker && params.preloadedConfig) ||
+            (params.invoker && params.locationProvider) ||
+            (params.preloadedConfig && params.locationProvider)
+        ) {
+            throw new Error('Invalid constructor args for SamCliInfoInvocation')
+        }
         if (params.invoker) {
             this.invoker = params.invoker
         } else if (params.preloadedConfig) {
@@ -29,7 +36,7 @@ export class SamCliInfoInvocation {
         } else if (params.locationProvider) {
             this.invoker = new DefaultSamCliProcessInvoker({ locationProvider: params.locationProvider })
         } else {
-            throw new Error('Invalid constructor args for DefaultSamCliProcessInvoker')
+            throw new Error('Invalid constructor args for SamCliInfoInvocation')
         }
     }
 
