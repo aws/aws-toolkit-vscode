@@ -91,9 +91,11 @@ with what features/services are supported.
             <with attribute="implementationClass" implements="software.aws.toolkits.jetbrains.services.lambda.LambdaBuilder"/>
         </extensionPoint>
 
-        <extensionPoint name="lambda.sam.debugSupport" beanClass="software.aws.toolkits.jetbrains.core.IdBasedExtensionPoint" dynamic="true">
-            <with attribute="implementationClass" implements="software.aws.toolkits.jetbrains.services.lambda.execution.sam.SamDebugSupport"/>
+        <extensionPoint name="lambda.sam.runtimeDebugSupport" beanClass="software.aws.toolkits.jetbrains.core.IdBasedExtensionPoint" dynamic="true">
+            <with attribute="implementationClass" implements="software.aws.toolkits.jetbrains.services.lambda.execution.sam.RuntimeDebugSupport"/>
         </extensionPoint>
+
+        <extensionPoint name="lambda.sam.imageDebuggerSupport" interface="software.aws.toolkits.jetbrains.services.lambda.execution.sam.ImageDebugSupport" dynamic="true"/>
 
         <extensionPoint name="lambda.handlerResolver" beanClass="software.aws.toolkits.jetbrains.core.IdBasedExtensionPoint" dynamic="true">
             <with attribute="implementationClass" implements="software.aws.toolkits.jetbrains.services.lambda.LambdaHandlerResolver"/>
@@ -209,7 +211,9 @@ with what features/services are supported.
         <fileEditorProvider implementation="software.aws.toolkits.jetbrains.services.s3.S3ViewerEditorProvider"/>
         <!-- See this post why order="first" is required https://intellij-support.jetbrains.com/hc/en-us/community/posts/360003460619-fileIconProvider-is-not-showing-Icon-for-custom-LightVirtualFile -->
         <fileIconProvider order="first" implementation="software.aws.toolkits.jetbrains.services.s3.editor.S3FileIconProvider"/>
+
         <registryKey key="aws.credentialProcess.timeout" description="AWS Credential Process timeout (ms)" restartRequired="false" defaultValue="30000"/>
+        <registryKey key="aws.debuggerAttach.timeout" description="Time allowed for debuggers to attach before timing out (ms)" restartRequired="false" defaultValue="60000"/>
     </extensions>
 
     <extensions defaultExtensionNs="JavaScript.JsonSchema">

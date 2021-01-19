@@ -1,4 +1,4 @@
-// Copyright 2019 Amazon.com, Inc. or its affiliates. All Rights Reserved.
+// Copyright 2021 Amazon.com, Inc. or its affiliates. All Rights Reserved.
 // SPDX-License-Identifier: Apache-2.0
 
 package software.aws.toolkits.jetbrains.services.lambda.dotnet
@@ -18,7 +18,6 @@ import com.intellij.openapi.application.impl.coroutineDispatchingContext
 import com.intellij.openapi.application.runInEdt
 import com.intellij.openapi.rd.defineNestedLifetime
 import com.intellij.util.concurrency.AppExecutorUtil
-import com.intellij.util.net.NetUtils
 import com.intellij.util.text.nullize
 import com.intellij.xdebugger.XDebugProcessStarter
 import com.jetbrains.rd.framework.IdKind
@@ -43,11 +42,9 @@ import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 import org.jetbrains.concurrency.AsyncPromise
 import org.jetbrains.concurrency.Promise
-import software.amazon.awssdk.services.lambda.model.PackageType
-import software.amazon.awssdk.services.lambda.model.Runtime
 import software.aws.toolkits.core.utils.getLogger
 import software.aws.toolkits.core.utils.warn
-import software.aws.toolkits.jetbrains.services.lambda.execution.sam.SamDebugSupport
+import software.aws.toolkits.jetbrains.services.lambda.execution.sam.SamDebugger.Companion.debuggerConnectTimeoutMs
 import software.aws.toolkits.jetbrains.services.lambda.execution.sam.SamRunningState
 import software.aws.toolkits.jetbrains.utils.ApplicationThreadPoolScope
 import software.aws.toolkits.jetbrains.utils.DotNetDebuggerUtils
@@ -58,64 +55,25 @@ import java.time.Duration
 import java.util.Timer
 import kotlin.concurrent.schedule
 
-/**
- * Rider uses it's own DebuggerWorker process that run under .NET with extra parameters to configure:
- *    - debugger mode (client/server)
- *    - frontend port
- *    - backend port
- *
- * Workflow:
- * 1. Find the correct container by filtering `docker ps` for one of the published port of the debugger
- * 2. Use `docker exec` and a shell script to locate the dotnet PID of the runtime.
- * 3. Launch the Debugger worker in server mode using `docker exec`
- * 4. Send the command to the worker to attach to the correct PID.
- */
-class DotNetSamDebugSupport : SamDebugSupport {
-    private companion object {
-        val LOG = getLogger<DotNetSamDebugSupport>()
-        const val DEBUGGER_MODE = "server"
+object DotnetDebugUtils {
+    private val LOG = getLogger<DotnetDebugUtils>()
+    private const val DEBUGGER_MODE = "server"
 
-        const val REMOTE_DEBUGGER_DIR = "/tmp/lambci_debug_files"
-        const val REMOTE_NETCORE_CLI_PATH = "/var/lang/bin/dotnet"
-        const val NUMBER_OF_DEBUG_PORTS = 2
+    private const val REMOTE_DEBUGGER_DIR = "/tmp/lambci_debug_files"
+    private const val REMOTE_NETCORE_CLI_PATH = "/var/lang/bin/dotnet"
+    const val NUMBER_OF_DEBUG_PORTS = 2
 
-        const val FIND_PID_SCRIPT =
-            """
-                for i in `ls /proc/*/exe` ; do
-                    symlink=`readlink  ${'$'}i 2>/dev/null`;
-                    if [[ "${'$'}symlink" == *"/dotnet" ]]; then
-                        echo  ${'$'}i | sed -n 's/.*\/proc\/\(.*\)\/exe.*/\1/p'
-                    fi;
-                done;
-            """
-    }
+    const val FIND_PID_SCRIPT =
+        """
+            for i in `ls /proc/*/exe` ; do
+                symlink=`readlink  ${'$'}i 2>/dev/null`;
+                if [[ "${'$'}symlink" == *"/dotnet" ]]; then
+                    echo  ${'$'}i | sed -n 's/.*\/proc\/\(.*\)\/exe.*/\1/p'
+                fi;
+            done;
+        """
 
-    override fun getDebugPorts(): List<Int> = NetUtils.findAvailableSocketPorts(NUMBER_OF_DEBUG_PORTS).toList()
-
-    override fun samArguments(runtime: Runtime, packageType: PackageType, debugPorts: List<Int>): List<String> = listOf(
-        "--debugger-path",
-        DotNetDebuggerUtils.debuggerBinDir.path
-    )
-
-    override fun containerEnvVars(runtime: Runtime, packageType: PackageType, debugPorts: List<Int>): Map<String, String> {
-        if (packageType != PackageType.IMAGE) {
-            return mapOf()
-        }
-        return mapOf(
-            "_AWS_LAMBDA_DOTNET_DEBUGGING" to "1"
-        )
-    }
-
-    override suspend fun createDebugProcess(
-        environment: ExecutionEnvironment,
-        state: SamRunningState,
-        debugHost: String,
-        debugPorts: List<Int>
-    ): XDebugProcessStarter? {
-        throw UnsupportedOperationException("Use 'createDebugProcessAsync' instead")
-    }
-
-    override fun createDebugProcessAsync(
+    fun createDebugProcessAsync(
         environment: ExecutionEnvironment,
         state: SamRunningState,
         debugHost: String,
@@ -233,7 +191,7 @@ class DotNetSamDebugSupport : SamDebugSupport {
             }
         }
 
-        val checkDebuggerTask = Timer("Debugger Worker launch timer", true).schedule(debuggerAttachTimeoutMs) {
+        val checkDebuggerTask = Timer("Debugger Worker launch timer", true).schedule(debuggerConnectTimeoutMs()) {
             if (debuggerLifetimeDefinition.isAlive && !protocol.wire.connected.value) {
                 runInEdt {
                     debuggerLifetimeDefinition.terminate()
