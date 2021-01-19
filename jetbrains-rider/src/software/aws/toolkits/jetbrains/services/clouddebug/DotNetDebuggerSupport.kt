@@ -44,7 +44,6 @@ import software.aws.toolkits.core.utils.info
 import software.aws.toolkits.core.utils.trace
 import software.aws.toolkits.jetbrains.services.clouddebug.execution.steps.ResourceTransferStep
 import software.aws.toolkits.jetbrains.services.ecs.execution.ImmutableContainerOptions
-import software.aws.toolkits.jetbrains.services.lambda.dotnet.DotNetSamDebugSupport
 import software.aws.toolkits.jetbrains.utils.DotNetDebuggerUtils
 import software.aws.toolkits.jetbrains.utils.DotNetRuntimeUtils
 import software.aws.toolkits.jetbrains.utils.execution.steps.Context
@@ -58,7 +57,7 @@ import kotlin.concurrent.schedule
 
 class DotNetDebuggerSupport : DebuggerSupport() {
     companion object {
-        private val logger = getLogger<DotNetSamDebugSupport>()
+        private val logger = getLogger<DotNetDebuggerSupport>()
 
         private const val DOTNET_EXECUTABLE = "dotnet"
         private const val START_COMMAND_ASSEMBLY_PLACEHOLDER = "$DOTNET_EXECUTABLE <path_to_assembly>"

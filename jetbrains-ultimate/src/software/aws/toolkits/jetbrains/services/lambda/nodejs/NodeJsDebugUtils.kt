@@ -1,4 +1,4 @@
-// Copyright 2019 Amazon.com, Inc. or its affiliates. All Rights Reserved.
+// Copyright 2021 Amazon.com, Inc. or its affiliates. All Rights Reserved.
 // SPDX-License-Identifier: Apache-2.0
 
 package software.aws.toolkits.jetbrains.services.lambda.nodejs
@@ -18,24 +18,14 @@ import com.intellij.xdebugger.XDebugSession
 import com.jetbrains.debugger.wip.WipLocalVmConnection
 import com.jetbrains.nodeJs.NodeChromeDebugProcess
 import org.jetbrains.io.LocalFileFinder
-import software.amazon.awssdk.services.lambda.model.PackageType
-import software.amazon.awssdk.services.lambda.model.Runtime
 import software.aws.toolkits.jetbrains.services.PathMapping
-import software.aws.toolkits.jetbrains.services.lambda.execution.sam.SamDebugSupport
 import software.aws.toolkits.jetbrains.services.lambda.execution.sam.SamRunningState
 import java.net.InetSocketAddress
 
-class NodeJsSamDebugSupport : SamDebugSupport {
-    override fun containerEnvVars(runtime: Runtime, packageType: PackageType, debugPorts: List<Int>): Map<String, String> {
-        if (packageType != PackageType.IMAGE) {
-            return mapOf()
-        }
-        return mapOf(
-            "NODE_OPTIONS" to "--inspect-brk=0.0.0.0:${debugPorts.first()} --max-http-header-size 81920"
-        )
-    }
+object NodeJsDebugUtils {
+    private const val NODE_MODULES = "node_modules"
 
-    override suspend fun createDebugProcess(
+    fun createDebugProcess(
         environment: ExecutionEnvironment,
         state: SamRunningState,
         debugHost: String,
@@ -87,9 +77,5 @@ class NodeJsSamDebugSupport : SamDebugSupport {
         }
 
         return mappings
-    }
-
-    private companion object {
-        const val NODE_MODULES = "node_modules"
     }
 }
