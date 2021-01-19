@@ -146,7 +146,7 @@ class LocalLambdaRunConfigurationTest {
             assertThat(runConfiguration).isNotNull
             assertThatThrownBy { runConfiguration.checkConfiguration() }
                 .isInstanceOf(RuntimeConfigurationError::class.java)
-                .hasMessage(message("lambda.run_configuration.no_runtime_specified"))
+                .hasMessage(message("lambda.image.missing_debugger", "null"))
         }
     }
 
@@ -167,7 +167,7 @@ class LocalLambdaRunConfigurationTest {
             assertThatThrownBy { runConfiguration.checkConfiguration() }
                 .isInstanceOf(RuntimeConfigurationError::class.java)
                 // "null" comes from runtime UNKNOWN_TO_SDK_VERSION we use since we know it will never be supported
-                .hasMessage(message("lambda.run_configuration.unsupported_runtime", "null"))
+                .hasMessage(message("lambda.image.missing_debugger", "null"))
         }
     }
 
