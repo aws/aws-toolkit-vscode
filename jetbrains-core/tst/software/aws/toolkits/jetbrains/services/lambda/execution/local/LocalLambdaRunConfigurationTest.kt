@@ -23,6 +23,7 @@ import org.junit.Test
 import org.junit.rules.TemporaryFolder
 import software.amazon.awssdk.auth.credentials.AwsBasicCredentials
 import software.amazon.awssdk.services.lambda.model.Runtime
+import software.aws.toolkits.core.lambda.LambdaRuntime
 import software.aws.toolkits.core.rules.EnvironmentVariableHelper
 import software.aws.toolkits.jetbrains.core.credentials.MockCredentialManagerRule
 import software.aws.toolkits.jetbrains.core.executables.ExecutableManager
@@ -637,7 +638,7 @@ class LocalLambdaRunConfigurationTest {
             assertThat(runConfiguration.templateFile()).isNull()
             assertThat(runConfiguration.logicalId()).isNull()
             assertThat(runConfiguration.handler()).isEqualTo("helloworld.App::handleRequest")
-            assertThat(runConfiguration.runtime()).isEqualTo(Runtime.PYTHON3_6)
+            assertThat(runConfiguration.runtime()).isEqualTo(LambdaRuntime.PYTHON3_6)
             assertThat(runConfiguration.environmentVariables()).containsAllEntriesOf(mapOf("Foo" to "Bar"))
             assertThat(runConfiguration.regionId()).isEqualTo("us-west-2")
             assertThat(runConfiguration.credentialProviderId()).isEqualTo("profile:default")
