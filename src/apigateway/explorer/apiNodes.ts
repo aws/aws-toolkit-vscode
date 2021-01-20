@@ -21,7 +21,7 @@ export class RestApiNode extends AWSTreeNodeBase implements AWSResourceNode {
 
     public update(api: RestApi): void {
         this.api = api
-        this.label = this.api.name || ''
+        this.label = `${this.api.name} (${this.api.id})` || ''
         this.tooltip = this.api.description
     }
 

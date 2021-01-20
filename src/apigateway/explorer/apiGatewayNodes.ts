@@ -46,7 +46,7 @@ export class ApiGatewayNode extends AWSTreeNodeBase {
                     this,
                     localize('AWS.explorerNode.apigateway.noApis', '[No API Gateway REST APIs found]')
                 ),
-            sort: (nodeA: RestApiNode, nodeB: RestApiNode) => nodeA.name.localeCompare(nodeB.name),
+            sort: (nodeA: RestApiNode, nodeB: RestApiNode) => nodeA.label!.localeCompare(nodeB.label!),
         })
     }
 
@@ -54,7 +54,7 @@ export class ApiGatewayNode extends AWSTreeNodeBase {
         const client: ApiGatewayClient = ext.toolkitClientBuilder.createApiGatewayClient(this.regionCode)
         const apis: Map<string, RestApi> = toMap(
             await toArrayAsync(client.listApis()),
-            configuration => configuration.name
+            configuration => `${configuration.name} (${configuration.id})`
         )
 
         updateInPlace(
