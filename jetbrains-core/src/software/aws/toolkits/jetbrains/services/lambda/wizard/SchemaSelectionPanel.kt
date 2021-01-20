@@ -8,7 +8,7 @@ import com.intellij.openapi.roots.ModifiableRootModel
 import com.intellij.openapi.ui.ValidationInfo
 import com.intellij.openapi.vfs.VfsUtil
 import com.intellij.ui.layout.panel
-import software.amazon.awssdk.services.lambda.model.Runtime
+import software.aws.toolkits.core.lambda.LambdaRuntime
 import software.aws.toolkits.jetbrains.services.lambda.BuiltInRuntimeGroups
 import software.aws.toolkits.jetbrains.services.lambda.RuntimeGroup
 import software.aws.toolkits.jetbrains.services.lambda.runtimeGroup
@@ -56,7 +56,7 @@ class SchemaSelectionPanel : WizardFragment {
 
     override fun isApplicable(template: SamProjectTemplate?): Boolean = template?.supportsDynamicSchemas() == true
 
-    override fun postProjectGeneration(model: ModifiableRootModel, template: SamProjectTemplate, runtime: Runtime, progressIndicator: ProgressIndicator) {
+    override fun postProjectGeneration(model: ModifiableRootModel, template: SamProjectTemplate, runtime: LambdaRuntime, progressIndicator: ProgressIndicator) {
         if (!template.supportsDynamicSchemas()) {
             return
         }
@@ -70,7 +70,7 @@ class SchemaSelectionPanel : WizardFragment {
             // We take the first since we don't have any way to say generate this schema for this function
             val codeUris = SamCommon.getCodeUrisFromTemplate(model.project, templateFile).firstOrNull() ?: return
             val connectionSettings = awsConnectionSelector.connectionSettings() ?: return
-            val runtimeGroup = runtime.runtimeGroup ?: return
+            val runtimeGroup = runtime.toSdkRuntime()?.runtimeGroup ?: return
 
             SamSchemaDownloadPostCreationAction().downloadCodeIntoWorkspace(
                 it,

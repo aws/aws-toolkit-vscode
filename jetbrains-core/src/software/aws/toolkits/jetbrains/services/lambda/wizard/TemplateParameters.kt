@@ -3,10 +3,10 @@
 
 package software.aws.toolkits.jetbrains.services.lambda.wizard
 
-import software.amazon.awssdk.services.lambda.model.Runtime
+import software.aws.toolkits.core.lambda.LambdaRuntime
 
 sealed class TemplateParameters
 
-data class AppBasedZipTemplate(val name: String, val runtime: Runtime, val appTemplate: String, val dependencyManager: String) : TemplateParameters()
+data class AppBasedZipTemplate(val name: String, val runtime: LambdaRuntime, val appTemplate: String, val dependencyManager: String) : TemplateParameters()
 data class AppBasedImageTemplate(val name: String, val baseImage: String, val dependencyManager: String) : TemplateParameters()
 data class LocationBasedTemplate(val location: String) : TemplateParameters()
