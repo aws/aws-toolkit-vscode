@@ -23,6 +23,8 @@ class Dotnet21LocalLambdaImageRunConfigurationIntegrationTest :
     DotnetLocalLambdaImageRunConfigurationIntegrationTestBase("ImageLambda2X", Runtime.DOTNETCORE2_1)
 // TODO: Fix test not running on CodeBuild
 // class Dotnet31LocalLambdaRunConfigurationIntegrationTest : DotnetLocalLambdaRunConfigurationIntegrationTestBase("EchoLambda3X", Runtime.DOTNETCORE3_1)
+// class Dotnet31LocalLambdaImageRunConfigurationIntegrationTest : DotnetLocalLambdaRunConfigurationIntegrationTestBase("ImageLambda3X", Runtime.DOTNETCORE3_1)
+// class Dotnet50LocalLambdaImageRunConfigurationIntegrationTest : DotnetLocalLambdaRunConfigurationIntegrationTestBase("ImageLambda3X", Runtime.DOTNETCORE5_0)
 
 abstract class DotnetLocalLambdaRunConfigurationIntegrationTestBase(private val solutionName: String, private val runtime: Runtime) :
     AwsReuseSolutionTestBase() {
