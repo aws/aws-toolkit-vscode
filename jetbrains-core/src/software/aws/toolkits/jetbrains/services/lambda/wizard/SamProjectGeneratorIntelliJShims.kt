@@ -24,7 +24,7 @@ import com.intellij.openapi.vfs.VfsUtil
 import com.intellij.openapi.vfs.VirtualFile
 import com.intellij.platform.ProjectTemplatesFactory
 import icons.AwsIcons
-import software.amazon.awssdk.services.lambda.model.Runtime
+import software.aws.toolkits.core.lambda.LambdaRuntime
 import software.aws.toolkits.core.utils.getLogger
 import software.aws.toolkits.core.utils.warn
 import software.aws.toolkits.jetbrains.services.lambda.execution.local.LocalLambdaRunConfiguration
@@ -60,7 +60,9 @@ class SamProjectBuilder(private val generator: SamProjectGenerator) : ModuleBuil
 
         // Set module type
         val selectedRuntime = settings.runtime
-        val moduleType = selectedRuntime.runtimeGroup?.getModuleType() ?: ModuleType.EMPTY
+        // TODO luckily this works for dotnet5.0 but if we ever need a module type for a runtime that is
+        // not supported by zip and image we will need ot reexamine this
+        val moduleType = selectedRuntime.toSdkRuntime()?.runtimeGroup?.getModuleType() ?: ModuleType.EMPTY
         rootModel.module.setModuleType(moduleType.id)
 
         val contentEntry = doAddContentEntry(rootModel) ?: throw Exception(message("sam.init.error.no.project.basepath"))
@@ -139,7 +141,7 @@ class SamProjectBuilder(private val generator: SamProjectGenerator) : ModuleBuil
         }
     }
 
-    private fun createRunConfigurations(project: Project, contentRoot: VirtualFile, runtime: Runtime) {
+    private fun createRunConfigurations(project: Project, contentRoot: VirtualFile, runtime: LambdaRuntime) {
         val template = SamCommon.getTemplateFromDirectory(contentRoot) ?: return
 
         val factory = LocalLambdaRunConfigurationProducer.getFactory()
@@ -159,7 +161,7 @@ class SamProjectBuilder(private val generator: SamProjectGenerator) : ModuleBuil
         }
     }
 
-    override fun modifySettingsStep(settingsStep: SettingsStep): ModuleWizardStep? {
+    override fun modifySettingsStep(settingsStep: SettingsStep): ModuleWizardStep {
         generator.peer.buildUI(settingsStep)
 
         // need to return an object with validate() implemented for validation

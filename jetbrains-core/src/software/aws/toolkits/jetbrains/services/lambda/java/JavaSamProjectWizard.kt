@@ -15,8 +15,7 @@ import com.intellij.openapi.vfs.VirtualFile
 import org.jetbrains.idea.maven.project.MavenProjectsManager
 import org.jetbrains.plugins.gradle.settings.GradleProjectSettings
 import org.jetbrains.plugins.gradle.util.GradleConstants
-import software.amazon.awssdk.services.lambda.model.PackageType
-import software.amazon.awssdk.services.lambda.model.Runtime
+import software.aws.toolkits.core.lambda.LambdaRuntime
 import software.aws.toolkits.core.utils.getLogger
 import software.aws.toolkits.core.utils.logWhenNull
 import software.aws.toolkits.jetbrains.services.lambda.BuiltInRuntimeGroups
@@ -42,7 +41,8 @@ class JavaSamProjectWizard : SamProjectWizard {
 }
 
 abstract class JavaSamProjectTemplate : SamAppTemplateBased() {
-    override fun supportedRuntimes() = setOf(Runtime.JAVA8, Runtime.JAVA8_AL2, Runtime.JAVA11)
+    override fun supportedZipRuntimes() = setOf(LambdaRuntime.JAVA8, LambdaRuntime.JAVA8_AL2, LambdaRuntime.JAVA11)
+    override fun supportedImageRuntimes() = setOf(LambdaRuntime.JAVA8, LambdaRuntime.JAVA8_AL2, LambdaRuntime.JAVA11)
 
     // Helper method to locate the build file, such as pom.xml in the project content root.
     protected fun locateBuildFile(contentRoot: VirtualFile, buildFileName: String): VirtualFile? {
@@ -111,8 +111,6 @@ class SamHelloWorldMaven : JavaMavenSamProjectTemplate() {
 
     override fun description() = message("sam.init.template.hello_world.description")
 
-    override fun supportedPackagingTypes(): Set<PackageType> = setOf(PackageType.IMAGE, PackageType.ZIP)
-
     override val appTemplateName: String = "hello-world"
 }
 
@@ -120,8 +118,6 @@ class SamHelloWorldGradle : JavaGradleSamProjectTemplate() {
     override fun displayName() = message("sam.init.template.hello_world_gradle.name")
 
     override fun description() = message("sam.init.template.hello_world.description")
-
-    override fun supportedPackagingTypes(): Set<PackageType> = setOf(PackageType.IMAGE, PackageType.ZIP)
 
     override val appTemplateName: String = "hello-world"
 }

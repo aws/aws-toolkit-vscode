@@ -23,6 +23,8 @@ import com.intellij.util.PathMappingSettings.PathMapping
 import com.intellij.util.text.SemVer
 import org.jetbrains.concurrency.isPending
 import software.amazon.awssdk.services.lambda.model.Runtime
+import software.aws.toolkits.core.lambda.LambdaRuntime
+import software.aws.toolkits.core.lambda.validOrNull
 import software.aws.toolkits.jetbrains.core.credentials.ConnectionSettings
 import software.aws.toolkits.jetbrains.core.executables.ExecutableInstance
 import software.aws.toolkits.jetbrains.core.executables.ExecutableManager
@@ -47,7 +49,6 @@ import software.aws.toolkits.jetbrains.services.lambda.runtimeGroup
 import software.aws.toolkits.jetbrains.services.lambda.sam.SamCommon
 import software.aws.toolkits.jetbrains.services.lambda.sam.SamExecutable
 import software.aws.toolkits.jetbrains.services.lambda.sam.SamTemplateUtils
-import software.aws.toolkits.jetbrains.services.lambda.validOrNull
 import software.aws.toolkits.jetbrains.services.lambda.validation.LambdaHandlerEvaluationListener
 import software.aws.toolkits.jetbrains.services.lambda.validation.LambdaHandlerValidator
 import software.aws.toolkits.jetbrains.ui.connection.AwsConnectionSettingsEditor
@@ -274,7 +275,7 @@ class LocalLambdaRunConfiguration(project: Project, factory: ConfigurationFactor
 
     fun handler() = serializableOptions.functionOptions.handler
 
-    fun runtime(): Runtime? = Runtime.fromValue(serializableOptions.functionOptions.runtime)?.validOrNull
+    fun runtime(): LambdaRuntime? = LambdaRuntime.fromValue(serializableOptions.functionOptions.runtime)
 
     /*
      * This is only to be called for Image functions, otherwise we do not store the runtime for ZIP based template functions
@@ -373,6 +374,8 @@ class LocalLambdaRunConfiguration(project: Project, factory: ConfigurationFactor
     private fun handlerDisplayName(): String? {
         val handler = serializableOptions.functionOptions.handler ?: return null
         return runtime()
+            ?.toSdkRuntime()
+            .validOrNull
             ?.runtimeGroup
             ?.let { LambdaHandlerResolver.getInstanceOrNull(it) }
             ?.handlerDisplayName(handler) ?: handler
@@ -398,7 +401,7 @@ class LocalLambdaRunConfiguration(project: Project, factory: ConfigurationFactor
             )
         }
 
-    private fun handlerPsiElement(handler: String? = handler(), runtime: Runtime? = runtime()) = try {
+    private fun handlerPsiElement(handler: String? = handler(), runtime: Runtime? = runtime()?.toSdkRuntime().validOrNull) = try {
         runtime?.let {
             handler?.let {
                 findPsiElementsForHandler(project, runtime, handler).firstOrNull()

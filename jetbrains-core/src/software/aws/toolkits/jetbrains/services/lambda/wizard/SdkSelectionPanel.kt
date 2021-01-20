@@ -15,7 +15,7 @@ import com.intellij.ui.ErrorLabel
 import com.intellij.ui.components.panels.Wrapper
 import com.intellij.ui.layout.panel
 import com.intellij.util.ThrowableRunnable
-import software.amazon.awssdk.services.lambda.model.Runtime
+import software.aws.toolkits.core.lambda.LambdaRuntime
 import software.aws.toolkits.jetbrains.services.lambda.RuntimeGroup
 import javax.swing.JComponent
 import javax.swing.JLabel
@@ -84,7 +84,7 @@ class SdkSelectionPanel : WizardFragment {
         }
     }
 
-    override fun postProjectGeneration(model: ModifiableRootModel, template: SamProjectTemplate, runtime: Runtime, progressIndicator: ProgressIndicator) {
+    override fun postProjectGeneration(model: ModifiableRootModel, template: SamProjectTemplate, runtime: LambdaRuntime, progressIndicator: ProgressIndicator) {
         sdkSelector?.let {
             progressIndicator.text = "Setting up SDK"
             ApplicationManager.getApplication().invokeAndWait {

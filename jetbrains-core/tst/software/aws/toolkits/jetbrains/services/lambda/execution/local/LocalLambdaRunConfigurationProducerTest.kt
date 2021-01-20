@@ -18,7 +18,7 @@ import org.assertj.core.api.Assertions.assertThat
 import org.jetbrains.yaml.psi.YAMLFile
 import org.junit.Rule
 import org.junit.Test
-import software.amazon.awssdk.services.lambda.model.Runtime
+import software.aws.toolkits.core.lambda.LambdaRuntime
 import software.aws.toolkits.jetbrains.services.lambda.sam.findByLocation
 import software.aws.toolkits.jetbrains.utils.rules.JavaCodeInsightTestFixtureRule
 import software.aws.toolkits.jetbrains.utils.rules.openClass
@@ -49,7 +49,7 @@ class LocalLambdaRunConfigurationProducerTest {
             assertThat(runConfiguration).isNotNull
             val configuration = runConfiguration?.configuration as LocalLambdaRunConfiguration
             assertThat(configuration.isUsingTemplate()).isFalse()
-            assertThat(configuration.runtime()).isEqualTo(Runtime.JAVA8_AL2)
+            assertThat(configuration.runtime()).isEqualTo(LambdaRuntime.JAVA8_AL2)
             assertThat(configuration.handler()).isEqualTo("com.example.LambdaHandler::handleRequest")
             assertThat(configuration.name).isEqualTo("[Local] LambdaHandler.handleRequest")
         }

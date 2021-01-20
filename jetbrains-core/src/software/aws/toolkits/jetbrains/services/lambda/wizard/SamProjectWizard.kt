@@ -11,7 +11,7 @@ import com.intellij.openapi.ui.TextFieldWithBrowseButton
 import com.intellij.openapi.vfs.VfsUtilCore
 import com.intellij.openapi.vfs.VirtualFile
 import software.amazon.awssdk.services.lambda.model.PackageType
-import software.amazon.awssdk.services.lambda.model.Runtime
+import software.aws.toolkits.core.lambda.LambdaRuntime
 import software.aws.toolkits.jetbrains.services.lambda.RuntimeGroup
 import software.aws.toolkits.jetbrains.services.lambda.RuntimeGroupExtensionPointObject
 import software.aws.toolkits.jetbrains.services.lambda.sam.SamCommon
@@ -36,7 +36,7 @@ interface SamProjectWizard {
 
 data class SamNewProjectSettings(
     val template: SamProjectTemplate,
-    val runtime: Runtime,
+    val runtime: LambdaRuntime,
     val packagingType: PackageType
 )
 
@@ -47,15 +47,15 @@ abstract class SamProjectTemplate {
 
     override fun toString() = displayName()
 
-    abstract fun supportedRuntimes(): Set<Runtime>
+    abstract fun supportedZipRuntimes(): Set<LambdaRuntime>
 
-    open fun supportedPackagingTypes(): Set<PackageType> = setOf(PackageType.ZIP)
+    abstract fun supportedImageRuntimes(): Set<LambdaRuntime>
 
     // Gradual opt-in for Schema support on a template by-template basis.
     // All SAM templates should support schema selection, but for launch include only EventBridge for most optimal customer experience
     open fun supportsDynamicSchemas(): Boolean = false
 
-    abstract fun templateParameters(projectName: String, runtime: Runtime, packagingType: PackageType): TemplateParameters
+    abstract fun templateParameters(projectName: String, runtime: LambdaRuntime, packagingType: PackageType): TemplateParameters
 
     open fun postCreationAction(
         settings: SamNewProjectSettings,
@@ -109,7 +109,7 @@ abstract class SamAppTemplateBased : SamProjectTemplate() {
     abstract val dependencyManager: String
     abstract val appTemplateName: String
 
-    override fun templateParameters(projectName: String, runtime: Runtime, packagingType: PackageType): TemplateParameters = when (packagingType) {
+    override fun templateParameters(projectName: String, runtime: LambdaRuntime, packagingType: PackageType): TemplateParameters = when (packagingType) {
         PackageType.IMAGE -> AppBasedImageTemplate(
             name = projectName,
             baseImage = "amazon/$runtime-base",

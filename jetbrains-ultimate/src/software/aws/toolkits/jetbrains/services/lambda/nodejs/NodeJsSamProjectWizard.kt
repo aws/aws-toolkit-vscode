@@ -12,8 +12,7 @@ import com.intellij.openapi.project.ProjectManager
 import com.intellij.openapi.roots.ModifiableRootModel
 import com.intellij.openapi.ui.TextFieldWithBrowseButton
 import com.intellij.openapi.ui.ValidationInfo
-import software.amazon.awssdk.services.lambda.model.PackageType
-import software.amazon.awssdk.services.lambda.model.Runtime
+import software.aws.toolkits.core.lambda.LambdaRuntime
 import software.aws.toolkits.jetbrains.services.lambda.wizard.SamAppTemplateBased
 import software.aws.toolkits.jetbrains.services.lambda.wizard.SamProjectTemplate
 import software.aws.toolkits.jetbrains.services.lambda.wizard.SamProjectWizard
@@ -60,9 +59,9 @@ class SamHelloWorldNodeJs : SamAppTemplateBased() {
 
     override fun description() = message("sam.init.template.hello_world.description")
 
-    override fun supportedRuntimes(): Set<Runtime> = setOf(Runtime.NODEJS10_X, Runtime.NODEJS12_X)
+    override fun supportedZipRuntimes(): Set<LambdaRuntime> = setOf(LambdaRuntime.NODEJS10_X, LambdaRuntime.NODEJS12_X)
 
-    override fun supportedPackagingTypes(): Set<PackageType> = setOf(PackageType.IMAGE, PackageType.ZIP)
+    override fun supportedImageRuntimes(): Set<LambdaRuntime> = setOf(LambdaRuntime.NODEJS10_X, LambdaRuntime.NODEJS12_X)
 
     override val appTemplateName: String = "hello-world"
 

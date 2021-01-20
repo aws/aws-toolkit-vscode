@@ -14,11 +14,11 @@ import com.intellij.ui.layout.panel
 import com.intellij.util.text.SemVer
 import software.amazon.awssdk.services.lambda.model.PackageType
 import software.amazon.awssdk.services.lambda.model.Runtime
+import software.aws.toolkits.core.lambda.LambdaRuntime
 import software.aws.toolkits.jetbrains.core.executables.ExecutableInstance.BadExecutable
 import software.aws.toolkits.jetbrains.core.executables.ExecutableManager
 import software.aws.toolkits.jetbrains.core.executables.ExecutableType.Companion.getExecutable
 import software.aws.toolkits.jetbrains.services.lambda.RuntimeGroup
-import software.aws.toolkits.jetbrains.services.lambda.RuntimeGroup.Companion.find
 import software.aws.toolkits.jetbrains.services.lambda.runtimeGroup
 import software.aws.toolkits.jetbrains.services.lambda.sam.SamCommon
 import software.aws.toolkits.jetbrains.services.lambda.sam.SamExecutable
@@ -34,11 +34,11 @@ import javax.swing.JTextField
 class SamInitSelectionPanel(
     wizardFragmentList: List<WizardFragment>,
     private val projectLocation: TextFieldWithBrowseButton? = null, /* Only available in PyCharm! */
-    private val runtimeFilter: (Runtime) -> Boolean = { true }
+    private val runtimeFilter: (LambdaRuntime) -> Boolean = { true }
 ) {
     lateinit var mainPanel: JPanel
 
-    private lateinit var runtimeComboBox: ComboBox<Runtime>
+    private lateinit var runtimeComboBox: ComboBox<LambdaRuntime>
     private lateinit var samExecutableField: JTextField
     private lateinit var editSamExecutableButton: JButton
     private lateinit var samLabel: JBLabel
@@ -92,13 +92,17 @@ class SamInitSelectionPanel(
         wizardUpdate()
     }
 
-    private fun supportedRuntimes(): MutableList<Runtime> {
+    private fun supportedRuntimes(): MutableList<LambdaRuntime> {
         // Source all templates, find all the runtimes they support, then filter those by what the IDE supports
         val supportedRuntimeGroups = RuntimeGroup.registeredRuntimeGroups()
         return SamProjectTemplate.supportedTemplates().asSequence()
-            .flatMap { it.supportedRuntimes().asSequence() }
+            .flatMap {
+                when (packageType()) {
+                    PackageType.ZIP -> it.supportedZipRuntimes().asSequence()
+                    else -> it.supportedImageRuntimes().asSequence()
+                }
+            }
             .filter(runtimeFilter)
-            .filter { supportedRuntimeGroups.contains(find { runtimeGroup -> runtimeGroup.runtimes.contains(it) }) }
             .distinct()
             .sorted()
             .toMutableList()
@@ -109,19 +113,27 @@ class SamInitSelectionPanel(
         else -> PackageType.IMAGE
     }
 
-    fun setRuntime(runtime: Runtime) {
+    fun setRuntime(runtime: LambdaRuntime) {
         runtimeComboBox.selectedItem = runtime
     }
 
     private fun runtimeUpdate() {
+        // Refresh the runtimes list since zip and image differ
+        runtimes.removeAll()
+        runtimes.add(supportedRuntimes())
+
         val selectedTemplate = templateComboBox.selectedItem as? SamProjectTemplate
         templateComboBox.removeAllItems()
-        val selectedRuntime = runtimeComboBox.selectedItem as? Runtime ?: return
+        val selectedRuntime = runtimeComboBox.selectedItem as? LambdaRuntime ?: return
 
         val packagingType = packageType()
         SamProjectTemplate.supportedTemplates().asSequence()
-            .filter { it.supportedRuntimes().contains(selectedRuntime) }
-            .filter { it.supportedPackagingTypes().contains(packagingType) }
+            .filter {
+                when (packagingType) {
+                    PackageType.ZIP -> it.supportedZipRuntimes().contains(selectedRuntime)
+                    else -> it.supportedImageRuntimes().contains(selectedRuntime)
+                }
+            }
             .forEach { templateComboBox.addItem(it) }
 
         // repopulate template after runtime updates
@@ -177,7 +189,7 @@ class SamInitSelectionPanel(
     }
 
     fun getNewProjectSettings(): SamNewProjectSettings {
-        val lambdaRuntime = runtimeComboBox.selectedItem as? Runtime
+        val lambdaRuntime = runtimeComboBox.selectedItem as? LambdaRuntime
             ?: throw RuntimeException("No Runtime is supported in this Platform.")
         val samProjectTemplate = templateComboBox.selectedItem as? SamProjectTemplate
             ?: throw RuntimeException("No SAM template is supported for this runtime: $lambdaRuntime")
