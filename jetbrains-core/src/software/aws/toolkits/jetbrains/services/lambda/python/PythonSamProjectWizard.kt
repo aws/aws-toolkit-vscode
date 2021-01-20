@@ -9,7 +9,7 @@ import com.intellij.openapi.ui.TextFieldWithBrowseButton
 import com.intellij.openapi.vfs.VirtualFile
 import com.intellij.util.PlatformUtils
 import software.amazon.awssdk.services.lambda.model.PackageType
-import software.amazon.awssdk.services.lambda.model.Runtime
+import software.aws.toolkits.core.lambda.LambdaRuntime
 import software.aws.toolkits.jetbrains.services.lambda.BuiltInRuntimeGroups
 import software.aws.toolkits.jetbrains.services.lambda.wizard.IntelliJSdkSelectionPanel
 import software.aws.toolkits.jetbrains.services.lambda.wizard.LocationBasedTemplate
@@ -21,7 +21,8 @@ import software.aws.toolkits.jetbrains.services.lambda.wizard.SdkSelector
 import software.aws.toolkits.jetbrains.services.lambda.wizard.TemplateParameters
 import software.aws.toolkits.resources.message
 
-private val pythonTemplateRuntimes = setOf(Runtime.PYTHON2_7, Runtime.PYTHON3_6, Runtime.PYTHON3_7, Runtime.PYTHON3_8)
+private val pythonTemplateRuntimes = setOf(LambdaRuntime.PYTHON2_7, LambdaRuntime.PYTHON3_6, LambdaRuntime.PYTHON3_7, LambdaRuntime.PYTHON3_8)
+private val eventBridgeTemplateRuntimes = setOf(LambdaRuntime.PYTHON3_6, LambdaRuntime.PYTHON3_7, LambdaRuntime.PYTHON3_8)
 
 class PythonSamProjectWizard : SamProjectWizard {
     override fun createSdkSelectionPanel(projectLocation: TextFieldWithBrowseButton?): SdkSelector? = when {
@@ -38,7 +39,8 @@ class PythonSamProjectWizard : SamProjectWizard {
 }
 
 abstract class PythonSamProjectTemplate : SamAppTemplateBased() {
-    override fun supportedRuntimes() = pythonTemplateRuntimes
+    override fun supportedZipRuntimes() = pythonTemplateRuntimes
+    override fun supportedImageRuntimes() = pythonTemplateRuntimes
 
     override val dependencyManager: String = "pip"
 
@@ -58,8 +60,6 @@ class SamHelloWorldPython : PythonSamProjectTemplate() {
 
     override fun description() = message("sam.init.template.hello_world.description")
 
-    override fun supportedPackagingTypes(): Set<PackageType> = setOf(PackageType.IMAGE, PackageType.ZIP)
-
     override val appTemplateName: String = "hello-world"
 }
 
@@ -68,7 +68,8 @@ class SamDynamoDBCookieCutter : SamProjectTemplate() {
 
     override fun description() = message("sam.init.template.dynamodb_cookiecutter.description")
 
-    override fun supportedRuntimes() = pythonTemplateRuntimes
+    override fun supportedZipRuntimes() = pythonTemplateRuntimes
+    override fun supportedImageRuntimes() = pythonTemplateRuntimes
 
     override fun postCreationAction(
         settings: SamNewProjectSettings,
@@ -80,13 +81,14 @@ class SamDynamoDBCookieCutter : SamProjectTemplate() {
         addSourceRoots(rootModel.project, rootModel, contentRoot)
     }
 
-    override fun templateParameters(projectName: String, runtime: Runtime, packagingType: PackageType): TemplateParameters = LocationBasedTemplate(
+    override fun templateParameters(projectName: String, runtime: LambdaRuntime, packagingType: PackageType): TemplateParameters = LocationBasedTemplate(
         "gh:aws-samples/cookiecutter-aws-sam-dynamodb-python"
     )
 }
 
 class SamEventBridgeHelloWorld : PythonSamProjectTemplate() {
-    override fun supportedRuntimes() = setOf(Runtime.PYTHON3_6, Runtime.PYTHON3_7, Runtime.PYTHON3_8)
+    override fun supportedZipRuntimes() = eventBridgeTemplateRuntimes
+    override fun supportedImageRuntimes() = eventBridgeTemplateRuntimes
 
     override fun displayName() = message("sam.init.template.event_bridge_hello_world.name")
 
@@ -96,7 +98,8 @@ class SamEventBridgeHelloWorld : PythonSamProjectTemplate() {
 }
 
 class SamEventBridgeStarterApp : PythonSamProjectTemplate() {
-    override fun supportedRuntimes() = setOf(Runtime.PYTHON3_6, Runtime.PYTHON3_7, Runtime.PYTHON3_8)
+    override fun supportedZipRuntimes() = eventBridgeTemplateRuntimes
+    override fun supportedImageRuntimes() = eventBridgeTemplateRuntimes
 
     override fun displayName() = message("sam.init.template.event_bridge_starter_app.name")
 

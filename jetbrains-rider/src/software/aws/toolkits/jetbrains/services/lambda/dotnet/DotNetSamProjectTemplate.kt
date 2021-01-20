@@ -3,8 +3,7 @@
 
 package software.aws.toolkits.jetbrains.services.lambda.dotnet
 
-import software.amazon.awssdk.services.lambda.model.PackageType
-import software.amazon.awssdk.services.lambda.model.Runtime
+import software.aws.toolkits.core.lambda.LambdaRuntime
 import software.aws.toolkits.jetbrains.services.lambda.wizard.SamAppTemplateBased
 import software.aws.toolkits.resources.message
 
@@ -17,7 +16,6 @@ class DotNetSamProjectTemplate : SamAppTemplateBased() {
 
     override fun description(): String = message("sam.init.template.hello_world.description")
 
-    override fun supportedRuntimes(): Set<Runtime> = setOf(Runtime.DOTNETCORE2_1, Runtime.DOTNETCORE3_1)
-
-    override fun supportedPackagingTypes(): Set<PackageType> = setOf(PackageType.IMAGE, PackageType.ZIP)
+    override fun supportedZipRuntimes(): Set<LambdaRuntime> = setOf(LambdaRuntime.DOTNETCORE2_1, LambdaRuntime.DOTNETCORE3_1)
+    override fun supportedImageRuntimes(): Set<LambdaRuntime> = setOf(LambdaRuntime.DOTNETCORE2_1, LambdaRuntime.DOTNETCORE3_1, LambdaRuntime.DOTNET5_0)
 }

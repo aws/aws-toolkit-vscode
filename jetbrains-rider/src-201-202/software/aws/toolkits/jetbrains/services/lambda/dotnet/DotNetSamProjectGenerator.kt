@@ -23,11 +23,10 @@ import com.jetbrains.rider.projectView.actions.projectTemplating.backend.ReSharp
 import com.jetbrains.rider.projectView.actions.projectTemplating.impl.ProjectTemplateDialogContext
 import com.jetbrains.rider.projectView.actions.projectTemplating.impl.ProjectTemplateTransferableModel
 import com.jetbrains.rider.ui.themes.RiderTheme
+import software.aws.toolkits.core.lambda.LambdaRuntime
 import software.aws.toolkits.jetbrains.core.executables.ExecutableInstance
 import software.aws.toolkits.jetbrains.core.executables.ExecutableManager
 import software.aws.toolkits.jetbrains.core.executables.getExecutableIfPresent
-import software.aws.toolkits.jetbrains.services.lambda.BuiltInRuntimeGroups
-import software.aws.toolkits.jetbrains.services.lambda.RuntimeGroup
 import software.aws.toolkits.jetbrains.services.lambda.sam.SamExecutable
 import software.aws.toolkits.jetbrains.services.lambda.wizard.SamInitSelectionPanel
 import software.aws.toolkits.jetbrains.services.lambda.wizard.SamProjectGenerator
@@ -58,7 +57,11 @@ class DotNetSamProjectGenerator(
     private val generator = SamProjectGenerator()
     private val samPanel = SamInitSelectionPanel(generator.wizardFragments) {
         // Only show templates for DotNet in Rider
-        RuntimeGroup.getById(BuiltInRuntimeGroups.Dotnet).runtimes.contains(it)
+        // Restore this -> RuntimeGroup.getById(BuiltInRuntimeGroups.Dotnet).runtimes.contains(it)
+        // TODO fix this to work properly (and the 203 version), the issue is that RuntimeGroup contains the sdk
+        // built in Runtime so, dotnet5 will not show up if we do not do some additional check. Inverting the
+        // runtime group so it pulls from LambdaRuntime will fix this but needs additional testing/changes
+        it.toString().startsWith("dotnet")
     }
 
     private val projectStructurePanel: JTabbedPane
@@ -242,7 +245,9 @@ class DotNetSamProjectGenerator(
 
     private fun initSamPanel() {
         val availableRuntime = DotNetRuntimeUtils.getCurrentDotNetCoreRuntime()
-        samPanel.setRuntime(availableRuntime)
+        val runtime = LambdaRuntime.fromValue(availableRuntime)
+            ?: throw IllegalStateException("DotNetRuntimeUtils.getCurrentDotNetCoreRuntime() returned invalid runtime $availableRuntime")
+        samPanel.setRuntime(runtime)
     }
 
     private fun htmlText(baseDir: String, relativePath: String) =

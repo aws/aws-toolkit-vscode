@@ -8,7 +8,7 @@ import org.assertj.core.api.Assertions.assertThat
 import org.junit.Rule
 import org.junit.Test
 import org.junit.rules.TemporaryFolder
-import software.amazon.awssdk.services.lambda.model.Runtime
+import software.aws.toolkits.core.lambda.LambdaRuntime
 import software.aws.toolkits.jetbrains.services.lambda.deploy.CreateCapabilities
 import software.aws.toolkits.jetbrains.services.lambda.wizard.AppBasedImageTemplate
 import software.aws.toolkits.jetbrains.services.lambda.wizard.AppBasedZipTemplate
@@ -355,7 +355,7 @@ class SamExecutableTest {
             outputDir = outputDir.toPath(),
             parameters = AppBasedZipTemplate(
                 name = "Hello",
-                runtime = Runtime.JAVA11,
+                runtime = LambdaRuntime.JAVA11,
                 appTemplate = "HelloWorldTemplate",
                 dependencyManager = "maven"
             ),
@@ -444,7 +444,7 @@ class SamExecutableTest {
             outputDir = outputDir.toPath(),
             parameters = AppBasedZipTemplate(
                 name = "Hello",
-                runtime = Runtime.JAVA11,
+                runtime = LambdaRuntime.JAVA11,
                 appTemplate = "HelloWorldTemplate",
                 dependencyManager = "maven"
             ),
