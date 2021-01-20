@@ -4,6 +4,7 @@
  */
 
 import { getLogger, Logger } from '../../logger'
+import { SamCliConfiguration } from './samCliConfiguration'
 import { DefaultSamCliProcessInvoker } from './samCliInvoker'
 import { logAndThrowIfUnexpectedExitCode, SamCliProcessInvoker } from './samCliInvokerUtils'
 
@@ -15,7 +16,29 @@ export interface SamCliInfoResponse {
 }
 
 export class SamCliInfoInvocation {
-    public constructor(private readonly invoker: SamCliProcessInvoker = new DefaultSamCliProcessInvoker()) {}
+    private readonly invoker: SamCliProcessInvoker
+    public constructor(params: {
+        invoker?: SamCliProcessInvoker
+        preloadedConfig?: SamCliConfiguration
+        locationProvider?: { getLocation(): Promise<string | undefined> }
+    }) {
+        if (
+            (params.invoker && params.preloadedConfig) ||
+            (params.invoker && params.locationProvider) ||
+            (params.preloadedConfig && params.locationProvider)
+        ) {
+            throw new Error('Invalid constructor args for SamCliInfoInvocation')
+        }
+        if (params.invoker) {
+            this.invoker = params.invoker
+        } else if (params.preloadedConfig) {
+            this.invoker = new DefaultSamCliProcessInvoker({ preloadedConfig: params.preloadedConfig })
+        } else if (params.locationProvider) {
+            this.invoker = new DefaultSamCliProcessInvoker({ locationProvider: params.locationProvider })
+        } else {
+            throw new Error('Invalid constructor args for SamCliInfoInvocation')
+        }
+    }
 
     public async execute(): Promise<SamCliInfoResponse> {
         const childProcessResult = await this.invoker.invoke({ arguments: ['--info'] })

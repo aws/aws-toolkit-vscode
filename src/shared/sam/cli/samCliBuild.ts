@@ -6,7 +6,6 @@
 import { fileExists } from '../../filesystemUtilities'
 import { getLogger, Logger } from '../../logger'
 import { logAndThrowIfUnexpectedExitCode, SamCliProcessInvoker } from './samCliInvokerUtils'
-import { DefaultSamCliProcessInvoker } from './samCliInvoker'
 import { pushIf } from '../../utilities/collectionUtils'
 import { localize } from '../../utilities/vsCodeUtils'
 
@@ -75,7 +74,6 @@ export class SamCliBuildInvocation {
         private readonly args: SamCliBuildInvocationArguments,
         private readonly context: { file: FileFunctions } = { file: getDefaultFileFunctions() }
     ) {
-        this.args.invoker = this.args.invoker ?? new DefaultSamCliProcessInvoker()
         this.args.useContainer = !!this.args.useContainer
         this.args.skipPullImage = !!this.args.skipPullImage
     }

@@ -5,7 +5,6 @@
 
 import * as vscode from 'vscode'
 import { SettingsConfiguration } from '../../settingsConfiguration'
-import { SamCliLocationProvider } from './samCliLocator'
 
 export interface SamCliConfiguration {
     /** Gets the current SAM CLI location from the VSCode settings store. */
@@ -34,9 +33,12 @@ export interface SamCliConfiguration {
 export class DefaultSamCliConfiguration implements SamCliConfiguration {
     public static readonly CONFIGURATION_KEY_SAMCLI_LOCATION: string = 'samcli.location'
     private readonly _configuration: SettingsConfiguration
-    private readonly _samCliLocationProvider: SamCliLocationProvider
+    private readonly _samCliLocationProvider: { getLocation(): Promise<string | undefined> }
 
-    public constructor(configuration: SettingsConfiguration, samCliLocationProvider: SamCliLocationProvider) {
+    public constructor(
+        configuration: SettingsConfiguration,
+        samCliLocationProvider: { getLocation(): Promise<string | undefined> }
+    ) {
         this._configuration = configuration
         this._samCliLocationProvider = samCliLocationProvider
     }
