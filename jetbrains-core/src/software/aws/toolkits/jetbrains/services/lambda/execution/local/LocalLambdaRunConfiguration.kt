@@ -119,7 +119,7 @@ class LocalLambdaRunConfiguration(project: Project, factory: ConfigurationFactor
             SemVer.parseFromText(executable.version)?.let { semVer ->
                 // TODO: Executable manager should better expose the VersionScheme of the Executable...
                 try {
-                    runtimeGroup.validateSamVersion(runtime, semVer)
+                    runtimeGroup.validateSamVersionForZipDebugging(runtime, semVer)
                 } catch (e: Exception) {
                     throw RuntimeConfigurationError(e.message)
                 }

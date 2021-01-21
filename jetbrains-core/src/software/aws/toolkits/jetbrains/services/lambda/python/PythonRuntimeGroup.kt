@@ -11,8 +11,8 @@ import com.jetbrains.python.PythonModuleTypeBase
 import com.jetbrains.python.psi.LanguageLevel
 import com.jetbrains.python.sdk.PythonSdkType
 import software.amazon.awssdk.services.lambda.model.Runtime
+import software.aws.toolkits.core.lambda.LambdaRuntime
 import software.aws.toolkits.jetbrains.services.lambda.BuiltInRuntimeGroups
-import software.aws.toolkits.jetbrains.services.lambda.RuntimeInfo
 import software.aws.toolkits.jetbrains.services.lambda.SdkBasedRuntimeGroup
 
 class PythonRuntimeGroup : SdkBasedRuntimeGroup() {
@@ -21,10 +21,10 @@ class PythonRuntimeGroup : SdkBasedRuntimeGroup() {
     override val supportsPathMappings: Boolean = true
 
     override val supportedRuntimes = listOf(
-        RuntimeInfo(Runtime.PYTHON2_7),
-        RuntimeInfo(Runtime.PYTHON3_6),
-        RuntimeInfo(Runtime.PYTHON3_7),
-        RuntimeInfo(Runtime.PYTHON3_8)
+        LambdaRuntime.PYTHON2_7,
+        LambdaRuntime.PYTHON3_6,
+        LambdaRuntime.PYTHON3_7,
+        LambdaRuntime.PYTHON3_8
     )
 
     override fun runtimeForSdk(sdk: Sdk): Runtime? = when {
