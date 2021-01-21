@@ -161,9 +161,6 @@ class S3BrowserTest {
 
             step("Delete a file") {
                 s3Tree {
-                    // Reopen the folder
-                    findText(folder).doubleClick()
-                    waitUntilLoaded()
                     findText(jsonFile2).click()
                 }
                 actionButton(delete).click()
