@@ -114,6 +114,21 @@ class ProfileCredentialProviderFactory(private val ssoCache: SsoCache = diskCach
             }
         }
 
+        // any profiles with a modified 'source_profile' need to be marked as well
+        newProfiles.validProfiles.forEach { (_, profile) ->
+            val profileId = profile.asId(newProfiles.validProfiles)
+            if (profileId in profilesModified) {
+                // already marked; skip
+                return@forEach
+            }
+            for (source in profile.traverseCredentialChain(newProfiles.validProfiles)) {
+                if (source != profile && source.asId(newProfiles.validProfiles) in profilesModified) {
+                    profilesModified.add(profileId)
+                    break
+                }
+            }
+        }
+
         // Any remaining profiles must have either become invalid or removed from the cred/config files
         val profilesRemoved = existingProfiles.values.map { it.asId(previousProfilesSnapshot) }
 
