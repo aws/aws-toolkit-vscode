@@ -818,6 +818,354 @@ class ProfileCredentialProviderFactoryTest {
         assertThat(runBlocking { (findCredentialIdentifier("chain") as InteractiveCredential).userActionRequired() }).isFalse()
     }
 
+    @Test
+    fun testModifyingASourceProfile() {
+        profileFile.writeToFile(
+            """
+            [profile role]
+            role_arn=arn1
+            source_profile=source_profile
+
+            [profile source_profile]
+            aws_access_key_id=BarAccessKey
+            aws_secret_access_key=BarSecretKey
+            """.trimIndent()
+        )
+
+        mockSdkHttpClient.stub {
+            on { prepareRequest(any()) }
+                .thenReturn(
+                    createAssumeRoleResponse(
+                        "AccessKey",
+                        "SecretKey",
+                        "SessionToken",
+                        ZonedDateTime.now().plus(1, ChronoUnit.HOURS)
+                    )
+                )
+        }
+
+        val providerFactory = createProviderFactory()
+        val roleProfile = findCredentialIdentifier("role")
+
+        providerFactory.createProvider(roleProfile).resolveCredentials()
+
+        profileFile.writeToFile(
+            """
+            [profile role]
+            role_arn=arn1
+            source_profile=source_profile
+
+            [profile source_profile]
+            aws_access_key_id=BarAccessKey2
+            aws_secret_access_key=BarSecretKey2
+            """.trimIndent()
+        )
+
+        mockProfileWatcher.triggerListeners()
+
+        providerFactory.createProvider(roleProfile).resolveCredentials()
+
+        argumentCaptor<CredentialsChangeEvent>().apply {
+            verify(profileLoadCallback, times(2)).invoke(capture())
+
+            assertThat(firstValue.added).hasSize(2).has(profileName("role")).has(profileName("source_profile"))
+            assertThat(firstValue.modified).isEmpty()
+            assertThat(firstValue.removed).isEmpty()
+
+            assertThat(secondValue.added).isEmpty()
+            assertThat(secondValue.modified).hasSize(2).has(profileName("role")).has(profileName("source_profile"))
+            assertThat(secondValue.removed).isEmpty()
+        }
+
+        verify(mockSdkHttpClient, times(2)).prepareRequest(any())
+    }
+
+    @Test
+    fun testModifyingSourceProfileOrder() {
+        profileFile.writeToFile(
+            """
+            [profile role]
+            role_arn=arn1
+            source_profile=source_profile
+
+            [profile source_profile]
+            aws_access_key_id=BarAccessKey
+            aws_secret_access_key=BarSecretKey
+            """.trimIndent()
+        )
+
+        mockSdkHttpClient.stub {
+            on { prepareRequest(any()) }
+                .thenReturn(
+                    createAssumeRoleResponse(
+                        "AccessKey",
+                        "SecretKey",
+                        "SessionToken",
+                        ZonedDateTime.now().plus(1, ChronoUnit.HOURS)
+                    )
+                )
+        }
+
+        val providerFactory = createProviderFactory()
+        val roleProfile = findCredentialIdentifier("role")
+
+        providerFactory.createProvider(roleProfile).resolveCredentials()
+
+        profileFile.writeToFile(
+            """
+            [profile source_profile]
+            aws_access_key_id=BarAccessKey2
+            aws_secret_access_key=BarSecretKey2
+
+            [profile role]
+            role_arn=arn1
+            source_profile=source_profile
+            """.trimIndent()
+        )
+
+        mockProfileWatcher.triggerListeners()
+
+        providerFactory.createProvider(roleProfile).resolveCredentials()
+
+        argumentCaptor<CredentialsChangeEvent>().apply {
+            verify(profileLoadCallback, times(2)).invoke(capture())
+
+            assertThat(firstValue.added).hasSize(2).has(profileName("role")).has(profileName("source_profile"))
+            assertThat(firstValue.modified).isEmpty()
+            assertThat(firstValue.removed).isEmpty()
+
+            assertThat(secondValue.added).isEmpty()
+            assertThat(secondValue.modified).hasSize(2).has(profileName("role")).has(profileName("source_profile"))
+            assertThat(secondValue.removed).isEmpty()
+        }
+
+        verify(mockSdkHttpClient, times(2)).prepareRequest(any())
+    }
+
+    @Test
+    fun testModifyingAnIntermediateSourceProfile() {
+        profileFile.writeToFile(
+            """
+            [profile leaf_role]
+            role_arn=arn2
+            source_profile=intermediate_role
+
+            [profile intermediate_role]
+            role_arn=arn1
+            source_profile=root_role
+
+            [profile root_role]
+            aws_access_key_id=BarAccessKey
+            aws_secret_access_key=BarSecretKey
+            """.trimIndent()
+        )
+
+        mockSdkHttpClient.stub {
+            on { prepareRequest(any()) }
+                .thenReturn(
+                    createAssumeRoleResponse(
+                        "AccessKey",
+                        "SecretKey",
+                        "SessionToken",
+                        ZonedDateTime.now().plus(1, ChronoUnit.HOURS)
+                    )
+                )
+        }
+
+        val providerFactory = createProviderFactory()
+        val roleProfile = findCredentialIdentifier("leaf_role")
+
+        providerFactory.createProvider(roleProfile).resolveCredentials()
+
+        profileFile.writeToFile(
+            """
+            [profile leaf_role]
+            role_arn=arn2
+            source_profile=intermediate_role
+
+            [profile intermediate_role]
+            role_arn=a_different_arn
+            source_profile=root_role
+
+            [profile root_role]
+            aws_access_key_id=BarAccessKey
+            aws_secret_access_key=BarSecretKey
+            """.trimIndent()
+        )
+
+        mockProfileWatcher.triggerListeners()
+
+        providerFactory.createProvider(roleProfile).resolveCredentials()
+
+        argumentCaptor<CredentialsChangeEvent>().apply {
+            verify(profileLoadCallback, times(2)).invoke(capture())
+
+            assertThat(firstValue.added).hasSize(3).has(profileName("leaf_role")).has(profileName("intermediate_role")).has(profileName("root_role"))
+            assertThat(firstValue.modified).isEmpty()
+            assertThat(firstValue.removed).isEmpty()
+
+            assertThat(secondValue.added).isEmpty()
+            assertThat(secondValue.modified).hasSize(2).has(profileName("leaf_role")).has(profileName("intermediate_role"))
+            assertThat(secondValue.removed).isEmpty()
+        }
+
+        // 1: assume middle_role using source_profile
+        // 2: assume leaf_role using middle_role
+        // trigger revalidation
+        // 3: assume middle_role using source_profile
+        // 4: assume leaf_role using middle_role
+        verify(mockSdkHttpClient, times(4)).prepareRequest(any())
+    }
+
+    @Test
+    fun testModifyingRootSourceProfile() {
+        profileFile.writeToFile(
+            """
+            [profile leaf_role]
+            role_arn=arn2
+            source_profile=intermediate_role
+
+            [profile intermediate_role]
+            role_arn=arn1
+            source_profile=root_role
+
+            [profile root_role]
+            aws_access_key_id=BarAccessKey
+            aws_secret_access_key=BarSecretKey
+            """.trimIndent()
+        )
+
+        mockSdkHttpClient.stub {
+            on { prepareRequest(any()) }
+                .thenReturn(
+                    createAssumeRoleResponse(
+                        "AccessKey",
+                        "SecretKey",
+                        "SessionToken",
+                        ZonedDateTime.now().plus(1, ChronoUnit.HOURS)
+                    )
+                )
+        }
+
+        val providerFactory = createProviderFactory()
+        val roleProfile = findCredentialIdentifier("leaf_role")
+
+        providerFactory.createProvider(roleProfile).resolveCredentials()
+
+        profileFile.writeToFile(
+            """
+            [profile leaf_role]
+            role_arn=arn2
+            source_profile=intermediate_role
+
+            [profile intermediate_role]
+            role_arn=arn1
+            source_profile=root_role
+
+            [profile root_role]
+            aws_access_key_id=BarAccessKey2
+            aws_secret_access_key=BarSecretKey2
+            """.trimIndent()
+        )
+
+        mockProfileWatcher.triggerListeners()
+
+        providerFactory.createProvider(roleProfile).resolveCredentials()
+
+        argumentCaptor<CredentialsChangeEvent>().apply {
+            verify(profileLoadCallback, times(2)).invoke(capture())
+
+            assertThat(firstValue.added).hasSize(3).has(profileName("leaf_role")).has(profileName("intermediate_role")).has(profileName("root_role"))
+            assertThat(firstValue.modified).isEmpty()
+            assertThat(firstValue.removed).isEmpty()
+
+            assertThat(secondValue.added).isEmpty()
+            assertThat(secondValue.modified).hasSize(3).has(profileName("leaf_role")).has(profileName("intermediate_role")).has(profileName("root_role"))
+            assertThat(secondValue.removed).isEmpty()
+        }
+
+        // 1: assume middle_role using source_profile
+        // 2: assume leaf_role using middle_role
+        // trigger revalidation
+        // 3: assume middle_role using source_profile
+        // 4: assume leaf_role using middle_role
+        verify(mockSdkHttpClient, times(4)).prepareRequest(any())
+    }
+
+    @Test
+    fun testModifyingMultipleRolesWithSourceProfile() {
+        profileFile.writeToFile(
+            """
+            [profile role1]
+            role_arn=arn2
+            source_profile=source_profile
+
+            [profile role2]
+            role_arn=arn1
+            source_profile=source_profile
+
+            [profile source_profile]
+            aws_access_key_id=BarAccessKey
+            aws_secret_access_key=BarSecretKey
+            """.trimIndent()
+        )
+
+        mockSdkHttpClient.stub {
+            on { prepareRequest(any()) }
+                .thenReturn(
+                    createAssumeRoleResponse(
+                        "AccessKey",
+                        "SecretKey",
+                        "SessionToken",
+                        ZonedDateTime.now().plus(1, ChronoUnit.HOURS)
+                    )
+                )
+        }
+
+        val providerFactory = createProviderFactory()
+        val roleProfile = findCredentialIdentifier("role1")
+
+        providerFactory.createProvider(roleProfile).resolveCredentials()
+
+        profileFile.writeToFile(
+            """
+            [profile role1]
+            role_arn=arn2
+            source_profile=role2
+
+            [profile role2]
+            role_arn=a_different_arn
+            source_profile=source_profile
+
+            [profile source_profile]
+            aws_access_key_id=BarAccessKey
+            aws_secret_access_key=BarSecretKey
+            """.trimIndent()
+        )
+
+        mockProfileWatcher.triggerListeners()
+
+        providerFactory.createProvider(roleProfile).resolveCredentials()
+
+        argumentCaptor<CredentialsChangeEvent>().apply {
+            verify(profileLoadCallback, times(2)).invoke(capture())
+
+            assertThat(firstValue.added).hasSize(3).has(profileName("role1")).has(profileName("role2")).has(profileName("source_profile"))
+            assertThat(firstValue.modified).isEmpty()
+            assertThat(firstValue.removed).isEmpty()
+
+            assertThat(secondValue.added).isEmpty()
+            assertThat(secondValue.modified).hasSize(2).has(profileName("role1")).has(profileName("role2"))
+            assertThat(secondValue.removed).isEmpty()
+        }
+
+        // 1: assume role1 using source_profile
+        // trigger revalidation
+        // 2: assume role2 using source_profile
+        // 3: assume role1 using role2
+        verify(mockSdkHttpClient, times(3)).prepareRequest(any())
+    }
+
     private fun File.writeToFile(content: String) {
         WriteCommandAction.runWriteCommandAction(projectRule.project) {
             FileUtil.createIfDoesntExist(this)
