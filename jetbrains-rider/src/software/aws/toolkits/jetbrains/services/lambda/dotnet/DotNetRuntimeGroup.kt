@@ -8,9 +8,9 @@ import com.intellij.openapi.projectRoots.Sdk
 import com.jetbrains.rider.ideaInterop.fileTypes.csharp.CSharpLanguage
 import com.jetbrains.rider.ideaInterop.fileTypes.vb.VbLanguage
 import software.amazon.awssdk.services.lambda.model.Runtime
+import software.aws.toolkits.core.lambda.LambdaRuntime
 import software.aws.toolkits.core.lambda.validOrNull
 import software.aws.toolkits.jetbrains.services.lambda.BuiltInRuntimeGroups
-import software.aws.toolkits.jetbrains.services.lambda.RuntimeInfo
 import software.aws.toolkits.jetbrains.services.lambda.SdkBasedRuntimeGroup
 import software.aws.toolkits.jetbrains.utils.DotNetRuntimeUtils
 
@@ -22,9 +22,10 @@ class DotNetRuntimeGroup : SdkBasedRuntimeGroup() {
         CSharpLanguage.id,
         VbLanguage.id
     )
-    override val supportedRuntimes: List<RuntimeInfo> = listOf(
-        RuntimeInfo(Runtime.DOTNETCORE2_1),
-        RuntimeInfo(Runtime.DOTNETCORE3_1)
+    override val supportedRuntimes = listOf(
+        LambdaRuntime.DOTNETCORE2_1,
+        LambdaRuntime.DOTNETCORE3_1,
+        LambdaRuntime.DOTNET5_0
     )
 
     override fun runtimeForSdk(sdk: Sdk): Runtime? = null
