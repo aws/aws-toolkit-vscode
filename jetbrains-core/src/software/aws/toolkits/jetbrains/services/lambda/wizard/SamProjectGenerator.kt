@@ -79,7 +79,7 @@ class SamProjectGenerator :
     // these overrides will give us a section for non-IntelliJ IDEs
     override fun getName() = message("sam.init.name")
 
-    override fun getDescription(): String? = message("sam.init.description")
+    override fun getDescription(): String = message("sam.init.description")
 
     override fun getLogo(): Icon = AwsIcons.Resources.SERVERLESS_APP
 
@@ -90,7 +90,7 @@ class SamProjectGenerator :
     // validation is done in the peer
     override fun validateSettings(): ValidationInfo? = null
 
-    override fun getHelpId(): String? = HelpIds.NEW_SERVERLESS_PROJECT_DIALOG.id
+    override fun getHelpId(): String = HelpIds.NEW_SERVERLESS_PROJECT_DIALOG.id
 }
 
 /**

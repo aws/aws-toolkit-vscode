@@ -11,10 +11,9 @@ import com.intellij.openapi.projectRoots.JavaSdkType
 import com.intellij.openapi.projectRoots.JavaSdkVersion
 import com.intellij.openapi.projectRoots.Sdk
 import com.intellij.openapi.projectRoots.SdkType
-import com.intellij.util.text.SemVer
 import software.amazon.awssdk.services.lambda.model.Runtime
+import software.aws.toolkits.core.lambda.LambdaRuntime
 import software.aws.toolkits.jetbrains.services.lambda.BuiltInRuntimeGroups
-import software.aws.toolkits.jetbrains.services.lambda.RuntimeInfo
 import software.aws.toolkits.jetbrains.services.lambda.SdkBasedRuntimeGroup
 
 class JavaRuntimeGroup : SdkBasedRuntimeGroup() {
@@ -22,10 +21,10 @@ class JavaRuntimeGroup : SdkBasedRuntimeGroup() {
     override val languageIds = setOf(JavaLanguage.INSTANCE.id)
     override val supportsPathMappings: Boolean = false
 
-    override val supportedRuntimes: List<RuntimeInfo> = listOf(
-        RuntimeInfo(Runtime.JAVA8),
-        RuntimeInfo(Runtime.JAVA8_AL2, SemVer("1.2.0", 1, 2, 0)),
-        RuntimeInfo(Runtime.JAVA11)
+    override val supportedRuntimes: List<LambdaRuntime> = listOf(
+        LambdaRuntime.JAVA8,
+        LambdaRuntime.JAVA8_AL2,
+        LambdaRuntime.JAVA11
     )
 
     override fun runtimeForSdk(sdk: Sdk): Runtime? {
