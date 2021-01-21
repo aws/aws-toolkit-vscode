@@ -18,8 +18,8 @@ import com.intellij.openapi.roots.ProjectRootManager
 import com.intellij.openapi.util.KeyedExtensionCollector
 import com.intellij.util.text.SemVer
 import software.amazon.awssdk.services.lambda.model.Runtime
+import software.aws.toolkits.core.lambda.LambdaRuntime
 import software.aws.toolkits.jetbrains.core.IdBasedExtensionPoint
-import software.aws.toolkits.jetbrains.services.lambda.sam.SamExecutable
 import software.aws.toolkits.resources.message
 
 /**
@@ -32,8 +32,6 @@ object BuiltInRuntimeGroups {
     const val NodeJs = "NODEJS"
 }
 
-data class RuntimeInfo(val runtime: Runtime, val minimumVersion: SemVer = SamExecutable.minVersion)
-
 /**
  * Grouping of Lambda [Runtime] by parent language.
  *
@@ -44,11 +42,11 @@ abstract class RuntimeGroup {
     abstract val languageIds: Set<String>
     abstract val supportsPathMappings: Boolean
 
-    val runtimes: List<Runtime> by lazy {
-        supportedRuntimes.map { it.runtime }
+    val supportedSdkRuntimes: List<Runtime> by lazy {
+        supportedRuntimes.mapNotNull { it.toSdkRuntime() }
     }
 
-    protected abstract val supportedRuntimes: List<RuntimeInfo>
+    abstract val supportedRuntimes: List<LambdaRuntime>
 
     open fun determineRuntime(project: Project): Runtime? = null
     open fun determineRuntime(module: Module): Runtime? = null
@@ -57,8 +55,9 @@ abstract class RuntimeGroup {
 
     open fun supportsSamBuild(): Boolean = true
 
-    fun validateSamVersion(runtime: Runtime, samVersion: SemVer) {
-        val minVersion = supportedRuntimes.first { it.runtime == runtime }.minimumVersion
+    // This only works with Zip and is only called on that path since image is based on what debugger EPs we have
+    fun validateSamVersionForZipDebugging(runtime: Runtime, samVersion: SemVer) {
+        val minVersion = supportedRuntimes.first { it.toSdkRuntime() == runtime }.minSamDebuggingVersion()
         if (samVersion < minVersion) {
             throw RuntimeException(message("sam.executable.minimum_too_low_runtime", runtime, minVersion))
         }
@@ -96,7 +95,8 @@ abstract class SdkBasedRuntimeGroup : RuntimeGroup() {
     override fun determineRuntime(module: Module): Runtime? = ModuleRootManager.getInstance(module).sdk?.let { runtimeForSdk(it) }
 }
 
-val Runtime.runtimeGroup: RuntimeGroup? get() = RuntimeGroup.find { this in it.runtimes }
+val Runtime.runtimeGroup: RuntimeGroup? get() = RuntimeGroup.find { this in it.supportedSdkRuntimes }
+val LambdaRuntime.runtimeGroup: RuntimeGroup? get() = RuntimeGroup.find { this in it.supportedRuntimes }
 
 /**
  * For a given [com.intellij.lang.Language] determine the corresponding Lambda [RuntimeGroup]

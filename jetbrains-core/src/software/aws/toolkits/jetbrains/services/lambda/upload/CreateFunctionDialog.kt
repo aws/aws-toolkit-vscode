@@ -51,7 +51,7 @@ class CreateFunctionDialog(private val project: Project, private val initialRunt
             memorySlider.value = DEFAULT_MEMORY_SIZE
 
             // show a filtered list of runtimes to only ones we can build (since we have to build)
-            runtimeModel.setAll(LambdaBuilder.supportedRuntimeGroups().flatMap { it.runtimes })
+            runtimeModel.setAll(LambdaBuilder.supportedRuntimeGroups().flatMap { it.supportedSdkRuntimes })
 
             handlerName?.let { handler ->
                 handlerPanel.handler.text = handler

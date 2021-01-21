@@ -56,7 +56,7 @@ class RawSettings(private val project: Project) {
             lastSelectedRuntime = selectedRuntime
             handlerPanel.setRuntime(selectedRuntime)
         }
-        val supportedRuntimes = LambdaBuilder.supportedRuntimeGroups().flatMap { it.runtimes }.sorted()
+        val supportedRuntimes = LambdaBuilder.supportedRuntimeGroups().flatMap { it.supportedSdkRuntimes }.sorted()
         runtimeModel.setAll(supportedRuntimes)
         runtime.selectedItem = RuntimeGroup.determineRuntime(project)?.let { if (it in supportedRuntimes) it else null }
     }

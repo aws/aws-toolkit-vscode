@@ -21,6 +21,6 @@ class CreateFunctionDialogTest {
             CreateFunctionDialog(project = projectRule.project, initialRuntime = null, handlerName = null)
         }
         assertThat(dialog.getViewForTestAssertions().configSettings.runtimeModel.items)
-            .containsExactlyInAnyOrderElementsOf(LambdaBuilder.supportedRuntimeGroups().flatMap { it.runtimes })
+            .containsExactlyInAnyOrderElementsOf(LambdaBuilder.supportedRuntimeGroups().flatMap { it.supportedSdkRuntimes })
     }
 }

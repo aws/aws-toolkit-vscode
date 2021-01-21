@@ -5,11 +5,16 @@ package software.aws.toolkits.core.lambda
 
 import software.amazon.awssdk.services.lambda.model.Runtime
 
-enum class LambdaRuntime(private val runtime: Runtime?, private val runtimeOverride: String? = null) {
+enum class LambdaRuntime(
+    private val runtime: Runtime?,
+    val minSamInit: String? = null,
+    val minSamDebugging: String? = null,
+    private val runtimeOverride: String? = null
+) {
     NODEJS10_X(Runtime.NODEJS10_X),
     NODEJS12_X(Runtime.NODEJS12_X),
     JAVA8(Runtime.JAVA8),
-    JAVA8_AL2(Runtime.JAVA8_AL2),
+    JAVA8_AL2(Runtime.JAVA8_AL2, minSamDebugging = "1.2.0"),
     JAVA11(Runtime.JAVA11),
     PYTHON2_7(Runtime.PYTHON2_7),
     PYTHON3_6(Runtime.PYTHON3_6),
@@ -17,7 +22,7 @@ enum class LambdaRuntime(private val runtime: Runtime?, private val runtimeOverr
     PYTHON3_8(Runtime.PYTHON3_8),
     DOTNETCORE2_1(Runtime.DOTNETCORE2_1),
     DOTNETCORE3_1(Runtime.DOTNETCORE3_1),
-    DOTNET5_0(null, "dotnet5.0");
+    DOTNET5_0(null, minSamInit = "1.16.0", runtimeOverride = "dotnet5.0");
 
     override fun toString() = runtime?.toString() ?: runtimeOverride ?: throw IllegalStateException("LambdaRuntime has no runtime or override string")
 
