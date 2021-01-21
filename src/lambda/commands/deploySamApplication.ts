@@ -167,6 +167,15 @@ async function packageOperation(
     },
     buildSuccessful: boolean
 ): Promise<void> {
+    if (!buildSuccessful) {
+        vscode.window.showInformationMessage(
+            localize(
+                'AWS.samcli.deploy.workflow.packaging.noBuild',
+                'Attempting to package source template directory directly since "sam build" failed'
+            )
+        )
+    }
+
     getLogger('channel').info(
         localize(
             'AWS.samcli.deploy.workflow.packaging',
@@ -179,15 +188,6 @@ async function packageOperation(
     const buildTemplatePath = buildSuccessful
         ? getBuildTemplatePath(params.deployParameters.deployRootFolder)
         : params.deployParameters.sourceTemplatePath
-
-    if (!buildSuccessful) {
-        vscode.window.showInformationMessage(
-            localize(
-                'AWS.samcli.deploy.workflow.packaging.noBuild',
-                'Build unsuccessful. AWS Toolkit will attempt to package source template directory directly.'
-            )
-        )
-    }
     const packageTemplatePath = getPackageTemplatePath(params.deployParameters.deployRootFolder)
 
     await runSamCliPackage(

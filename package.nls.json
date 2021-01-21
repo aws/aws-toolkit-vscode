@@ -419,7 +419,7 @@
     "AWS.samcli.deploy.general.error": "An error occurred while deploying a SAM Application. {0}",
     "AWS.samcli.deploy.workflow.init": "Building SAM Application...",
     "AWS.samcli.deploy.workflow.packaging": "Packaging SAM Application to S3 Bucket: {0}",
-    "AWS.samcli.deploy.workflow.packaging.noBuild": "Build unsuccessful. AWS Toolkit will attempt to package source template directory directly.",
+    "AWS.samcli.deploy.workflow.packaging.noBuild": "Attempting to package source template directory directly since \"sam build\" failed",
     "AWS.samcli.deploy.workflow.stackName.initiated": "Deploying SAM Application to CloudFormation Stack: {0}",
     "AWS.samcli.deploy.workflow.start": "Starting SAM Application deployment...",
     "AWS.samcli.deploy.workflow.success": "Successfully deployed SAM Application to CloudFormation Stack: {0}",
