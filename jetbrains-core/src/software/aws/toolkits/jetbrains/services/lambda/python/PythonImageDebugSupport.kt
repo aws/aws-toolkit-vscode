@@ -7,7 +7,7 @@ import com.intellij.execution.runners.ExecutionEnvironment
 import com.intellij.xdebugger.XDebugProcessStarter
 import com.jetbrains.python.PythonHelper
 import com.jetbrains.python.PythonLanguage
-import software.amazon.awssdk.services.lambda.model.Runtime
+import software.aws.toolkits.core.lambda.LambdaRuntime
 import software.aws.toolkits.jetbrains.core.utils.buildList
 import software.aws.toolkits.jetbrains.services.lambda.execution.sam.ImageDebugSupport
 import software.aws.toolkits.jetbrains.services.lambda.execution.sam.SamRunningState
@@ -42,33 +42,29 @@ abstract class PythonImageDebugSupport : ImageDebugSupport {
 }
 
 class Python27ImageDebugSupport : PythonImageDebugSupport() {
-    override val id: String = Runtime.PYTHON2_7.toString()
+    override val id: String = LambdaRuntime.PYTHON2_7.toString()
+    override fun displayName() = LambdaRuntime.PYTHON2_7.toString().capitalize()
     override val pythonPath: String = "/usr/bin/python2.7"
     override val bootstrapPath: String = "/var/runtime/awslambda/bootstrap.py"
-
-    override fun displayName() = Runtime.PYTHON2_7.toString().capitalize()
 }
 
 class Python36ImageDebugSupport : PythonImageDebugSupport() {
-    override val id: String = Runtime.PYTHON3_6.toString()
+    override val id: String = LambdaRuntime.PYTHON3_6.toString()
+    override fun displayName() = LambdaRuntime.PYTHON3_6.toString().capitalize()
     override val pythonPath: String = "/var/lang/bin/python3.6"
     override val bootstrapPath: String = "/var/runtime/awslambda/bootstrap.py"
-
-    override fun displayName() = Runtime.PYTHON3_6.toString().capitalize()
 }
 
 class Python37ImageDebugSupport : PythonImageDebugSupport() {
-    override val id: String = Runtime.PYTHON3_7.toString()
+    override val id: String = LambdaRuntime.PYTHON3_7.toString()
+    override fun displayName() = LambdaRuntime.PYTHON3_7.toString().capitalize()
     override val pythonPath: String = "/var/lang/bin/python3.7"
     override val bootstrapPath: String = "/var/runtime/bootstrap"
-
-    override fun displayName() = Runtime.PYTHON3_7.toString().capitalize()
 }
 
 class Python38ImageDebugSupport : PythonImageDebugSupport() {
-    override val id: String = Runtime.PYTHON3_8.toString()
+    override val id: String = LambdaRuntime.PYTHON3_8.toString()
+    override fun displayName() = LambdaRuntime.PYTHON3_8.toString().capitalize()
     override val pythonPath: String = "/var/lang/bin/python3.8"
     override val bootstrapPath: String = "/var/runtime/bootstrap.py"
-
-    override fun displayName() = Runtime.PYTHON3_8.toString().capitalize()
 }

@@ -11,7 +11,6 @@ import com.intellij.openapi.module.ModuleType
 import com.intellij.openapi.module.WebModuleTypeBase
 import com.intellij.openapi.project.Project
 import com.intellij.openapi.projectRoots.Sdk
-import software.amazon.awssdk.services.lambda.model.Runtime
 import software.aws.toolkits.core.lambda.LambdaRuntime
 import software.aws.toolkits.jetbrains.services.lambda.BuiltInRuntimeGroups
 import software.aws.toolkits.jetbrains.services.lambda.SdkBasedRuntimeGroup
@@ -29,13 +28,13 @@ class NodeJsRuntimeGroup : SdkBasedRuntimeGroup() {
         LambdaRuntime.NODEJS12_X
     )
 
-    override fun determineRuntime(module: Module): Runtime? = determineRuntime(module.project)
+    override fun determineRuntime(module: Module): LambdaRuntime? = determineRuntime(module.project)
 
-    override fun determineRuntime(project: Project): Runtime? =
+    override fun determineRuntime(project: Project): LambdaRuntime? =
         NodeJsInterpreterManager.getInstance(project).interpreter?.cachedVersion?.get()?.let {
             when {
-                it.major <= 10 -> Runtime.NODEJS10_X
-                it.major <= 12 -> Runtime.NODEJS12_X
+                it.major <= 10 -> LambdaRuntime.NODEJS10_X
+                it.major <= 12 -> LambdaRuntime.NODEJS12_X
                 else -> null
             }
         }
@@ -43,9 +42,9 @@ class NodeJsRuntimeGroup : SdkBasedRuntimeGroup() {
     /**
      * JavaScript does not define SDK. We override [determineRuntime] for fetching the correct Runtime.
      */
-    override fun runtimeForSdk(sdk: Sdk): Runtime? = null
+    override fun runtimeForSdk(sdk: Sdk): LambdaRuntime? = null
 
-    override fun getModuleType(): ModuleType<*>? = WebModuleTypeBase.getInstance()
+    override fun getModuleType(): ModuleType<*> = WebModuleTypeBase.getInstance()
 
     override fun supportsSamBuild(): Boolean = true
 }

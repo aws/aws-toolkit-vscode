@@ -6,7 +6,7 @@ package software.aws.toolkits.jetbrains.services.lambda.nodejs
 import com.intellij.execution.runners.ExecutionEnvironment
 import com.intellij.lang.javascript.JavascriptLanguage
 import com.intellij.xdebugger.XDebugProcessStarter
-import software.amazon.awssdk.services.lambda.model.Runtime
+import software.aws.toolkits.core.lambda.LambdaRuntime
 import software.aws.toolkits.jetbrains.services.lambda.execution.sam.ImageDebugSupport
 import software.aws.toolkits.jetbrains.services.lambda.execution.sam.SamRunningState
 
@@ -26,11 +26,11 @@ abstract class NodeJsImageDebugSupport : ImageDebugSupport {
 }
 
 class NodeJs10ImageDebug : NodeJsImageDebugSupport() {
-    override val id: String = Runtime.NODEJS10_X.toString()
-    override fun displayName() = Runtime.NODEJS10_X.toString().capitalize()
+    override val id: String = LambdaRuntime.NODEJS10_X.toString()
+    override fun displayName() = LambdaRuntime.NODEJS10_X.toString().capitalize()
 }
 
 class NodeJs12ImageDebug : NodeJsImageDebugSupport() {
-    override val id: String = Runtime.NODEJS12_X.toString()
-    override fun displayName() = Runtime.NODEJS12_X.toString().capitalize()
+    override val id: String = LambdaRuntime.NODEJS12_X.toString()
+    override fun displayName() = LambdaRuntime.NODEJS12_X.toString().capitalize()
 }

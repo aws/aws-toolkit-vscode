@@ -11,7 +11,6 @@ import com.intellij.openapi.projectRoots.JavaSdkType
 import com.intellij.openapi.projectRoots.JavaSdkVersion
 import com.intellij.openapi.projectRoots.Sdk
 import com.intellij.openapi.projectRoots.SdkType
-import software.amazon.awssdk.services.lambda.model.Runtime
 import software.aws.toolkits.core.lambda.LambdaRuntime
 import software.aws.toolkits.jetbrains.services.lambda.BuiltInRuntimeGroups
 import software.aws.toolkits.jetbrains.services.lambda.SdkBasedRuntimeGroup
@@ -27,7 +26,7 @@ class JavaRuntimeGroup : SdkBasedRuntimeGroup() {
         LambdaRuntime.JAVA11
     )
 
-    override fun runtimeForSdk(sdk: Sdk): Runtime? {
+    override fun runtimeForSdk(sdk: Sdk): LambdaRuntime? {
         if (sdk.sdkType is JavaSdkType) {
             val javaSdkVersion = JavaSdk.getInstance().getVersion(sdk) ?: return null
             return determineRuntimeForSdk(javaSdkVersion)
@@ -36,8 +35,8 @@ class JavaRuntimeGroup : SdkBasedRuntimeGroup() {
     }
 
     private fun determineRuntimeForSdk(sdk: JavaSdkVersion) = when {
-        sdk <= JavaSdkVersion.JDK_1_8 -> Runtime.JAVA8_AL2
-        sdk <= JavaSdkVersion.JDK_11 -> Runtime.JAVA11
+        sdk <= JavaSdkVersion.JDK_1_8 -> LambdaRuntime.JAVA8_AL2
+        sdk <= JavaSdkVersion.JDK_11 -> LambdaRuntime.JAVA11
         else -> null
     }
 

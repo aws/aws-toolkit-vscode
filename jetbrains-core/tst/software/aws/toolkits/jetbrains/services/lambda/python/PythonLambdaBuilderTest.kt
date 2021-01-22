@@ -11,7 +11,7 @@ import org.assertj.core.api.Assertions.assertThat
 import org.assertj.core.api.Assertions.assertThatThrownBy
 import org.junit.Rule
 import org.junit.Test
-import software.amazon.awssdk.services.lambda.model.Runtime
+import software.aws.toolkits.core.lambda.LambdaRuntime
 import software.aws.toolkits.jetbrains.services.PathMapping
 import software.aws.toolkits.jetbrains.services.lambda.LambdaBuilder
 import software.aws.toolkits.jetbrains.services.lambda.sam.SamCommon
@@ -72,7 +72,7 @@ class PythonLambdaBuilderTest {
         val buildDir = sut.getBuildDirectory(projectRule.module)
 
         val logicalId = "SomeFunction"
-        val template = projectRule.fixture.addSamTemplate(logicalId, codeUri.toString(), "hello_world/app.handle", Runtime.PYTHON3_8)
+        val template = projectRule.fixture.addSamTemplate(logicalId, codeUri.toString(), "hello_world/app.handle", LambdaRuntime.PYTHON3_8)
         val templatePath = Paths.get(template.virtualFile.path)
 
         val actualMappings = sut.defaultPathMappings(templatePath, logicalId, buildDir)

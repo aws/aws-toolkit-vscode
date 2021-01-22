@@ -6,7 +6,7 @@ package software.aws.toolkits.jetbrains.services.lambda.java
 import org.junit.Assert.assertFalse
 import org.junit.Rule
 import org.junit.Test
-import software.amazon.awssdk.services.lambda.model.Runtime
+import software.aws.toolkits.core.lambda.LambdaRuntime
 import software.aws.toolkits.jetbrains.services.lambda.completion.HandlerCompletionProvider
 import software.aws.toolkits.jetbrains.utils.rules.JavaCodeInsightTestFixtureRule
 
@@ -18,13 +18,13 @@ class JavaHandlerCompletionProviderTest {
 
     @Test
     fun completionIsNotSupportedJava8() {
-        val provider = HandlerCompletionProvider(projectRule.project, Runtime.JAVA8)
+        val provider = HandlerCompletionProvider(projectRule.project, LambdaRuntime.JAVA8)
         assertFalse(provider.isCompletionSupported)
     }
 
     @Test
     fun completionIsNotSupportedJava11() {
-        val provider = HandlerCompletionProvider(projectRule.project, Runtime.JAVA11)
+        val provider = HandlerCompletionProvider(projectRule.project, LambdaRuntime.JAVA11)
         assertFalse(provider.isCompletionSupported)
     }
 }

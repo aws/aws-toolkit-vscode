@@ -16,6 +16,7 @@ import org.assertj.core.api.Assertions.assertThat
 import org.junit.Rule
 import org.junit.Test
 import software.amazon.awssdk.services.lambda.model.Runtime
+import software.aws.toolkits.core.lambda.LambdaRuntime
 import software.aws.toolkits.core.lambda.validOrNull
 import software.aws.toolkits.jetbrains.utils.rules.PyTestSdk
 import software.aws.toolkits.jetbrains.utils.rules.PythonCodeInsightTestFixtureRule
@@ -34,7 +35,7 @@ class RuntimeGroupTest {
             on { getData(LangDataKeys.MODULE) }.thenReturn(projectRule.module)
         }
 
-        assertThat(event.runtime()).isEqualTo(Runtime.PYTHON2_7)
+        assertThat(event.runtime()).isEqualTo(LambdaRuntime.PYTHON2_7)
     }
 
     @Test
@@ -55,7 +56,7 @@ class RuntimeGroupTest {
                 on { getData(LangDataKeys.PROJECT) }.thenReturn(projectRule.project)
             }
 
-            assertThat(event.runtime()).isEqualTo(Runtime.PYTHON3_6)
+            assertThat(event.runtime()).isEqualTo(LambdaRuntime.PYTHON3_6)
         }
     }
 

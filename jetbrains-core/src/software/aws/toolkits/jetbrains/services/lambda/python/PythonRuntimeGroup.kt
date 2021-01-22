@@ -10,7 +10,6 @@ import com.jetbrains.python.PythonLanguage
 import com.jetbrains.python.PythonModuleTypeBase
 import com.jetbrains.python.psi.LanguageLevel
 import com.jetbrains.python.sdk.PythonSdkType
-import software.amazon.awssdk.services.lambda.model.Runtime
 import software.aws.toolkits.core.lambda.LambdaRuntime
 import software.aws.toolkits.jetbrains.services.lambda.BuiltInRuntimeGroups
 import software.aws.toolkits.jetbrains.services.lambda.SdkBasedRuntimeGroup
@@ -27,11 +26,11 @@ class PythonRuntimeGroup : SdkBasedRuntimeGroup() {
         LambdaRuntime.PYTHON3_8
     )
 
-    override fun runtimeForSdk(sdk: Sdk): Runtime? = when {
-        sdk.sdkType is PythonSdkType && PythonSdkType.getLanguageLevelForSdk(sdk).isAtLeast(LanguageLevel.PYTHON38) -> Runtime.PYTHON3_8
-        sdk.sdkType is PythonSdkType && PythonSdkType.getLanguageLevelForSdk(sdk).isAtLeast(LanguageLevel.PYTHON37) -> Runtime.PYTHON3_7
-        sdk.sdkType is PythonSdkType && PythonSdkType.getLanguageLevelForSdk(sdk).isPy3K -> Runtime.PYTHON3_6
-        sdk.sdkType is PythonSdkType && PythonSdkType.getLanguageLevelForSdk(sdk).isPython2 -> Runtime.PYTHON2_7
+    override fun runtimeForSdk(sdk: Sdk): LambdaRuntime? = when {
+        sdk.sdkType is PythonSdkType && PythonSdkType.getLanguageLevelForSdk(sdk).isAtLeast(LanguageLevel.PYTHON38) -> LambdaRuntime.PYTHON3_8
+        sdk.sdkType is PythonSdkType && PythonSdkType.getLanguageLevelForSdk(sdk).isAtLeast(LanguageLevel.PYTHON37) -> LambdaRuntime.PYTHON3_7
+        sdk.sdkType is PythonSdkType && PythonSdkType.getLanguageLevelForSdk(sdk).isPy3K -> LambdaRuntime.PYTHON3_6
+        sdk.sdkType is PythonSdkType && PythonSdkType.getLanguageLevelForSdk(sdk).isPython2 -> LambdaRuntime.PYTHON2_7
         else -> null
     }
 
