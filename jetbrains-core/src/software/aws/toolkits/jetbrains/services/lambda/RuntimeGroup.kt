@@ -48,8 +48,8 @@ abstract class RuntimeGroup {
 
     abstract val supportedRuntimes: List<LambdaRuntime>
 
-    open fun determineRuntime(project: Project): Runtime? = null
-    open fun determineRuntime(module: Module): Runtime? = null
+    open fun determineRuntime(project: Project): LambdaRuntime? = null
+    open fun determineRuntime(module: Module): LambdaRuntime? = null
     open fun getModuleType(): ModuleType<*>? = null
     open fun getIdeSdkType(): SdkType? = null
 
@@ -71,11 +71,11 @@ abstract class RuntimeGroup {
 
         fun getById(id: String?): RuntimeGroup = id?.let { find { it.id == id } } ?: throw IllegalStateException("No RuntimeGroup with id '$id' is registered")
 
-        fun determineRuntime(project: Project?): Runtime? = project?.let { _ ->
+        fun determineRuntime(project: Project?): LambdaRuntime? = project?.let { _ ->
             registeredRuntimeGroups().asSequence().mapNotNull { it.determineRuntime(project) }.firstOrNull()
         }
 
-        fun determineRuntime(module: Module?): Runtime? = module?.let { _ ->
+        fun determineRuntime(module: Module?): LambdaRuntime? = module?.let { _ ->
             registeredRuntimeGroups().asSequence().mapNotNull { it.determineRuntime(module) }.firstOrNull()
         }
 
@@ -88,11 +88,11 @@ abstract class RuntimeGroup {
 }
 
 abstract class SdkBasedRuntimeGroup : RuntimeGroup() {
-    protected abstract fun runtimeForSdk(sdk: Sdk): Runtime?
+    protected abstract fun runtimeForSdk(sdk: Sdk): LambdaRuntime?
 
-    override fun determineRuntime(project: Project): Runtime? = ProjectRootManager.getInstance(project).projectSdk?.let { runtimeForSdk(it) }
+    override fun determineRuntime(project: Project): LambdaRuntime? = ProjectRootManager.getInstance(project).projectSdk?.let { runtimeForSdk(it) }
 
-    override fun determineRuntime(module: Module): Runtime? = ModuleRootManager.getInstance(module).sdk?.let { runtimeForSdk(it) }
+    override fun determineRuntime(module: Module): LambdaRuntime? = ModuleRootManager.getInstance(module).sdk?.let { runtimeForSdk(it) }
 }
 
 val Runtime.runtimeGroup: RuntimeGroup? get() = RuntimeGroup.find { this in it.supportedSdkRuntimes }
@@ -106,7 +106,7 @@ val Language.runtimeGroup: RuntimeGroup? get() = RuntimeGroup.find { this.id in 
 /**
  * Given [AnActionEvent] attempt to determine the [Runtime]
  */
-fun AnActionEvent.runtime(): Runtime? {
+fun AnActionEvent.runtime(): LambdaRuntime? {
     val runtimeGroup = getData(LangDataKeys.LANGUAGE)?.runtimeGroup ?: return null
     return getData(LangDataKeys.MODULE)?.let { runtimeGroup.determineRuntime(it) } ?: getData(LangDataKeys.PROJECT)?.let { runtimeGroup.determineRuntime(it) }
 }

@@ -42,7 +42,7 @@ class CreateLambdaFunctionAction(
             return
         }
 
-        CreateFunctionDialog(project = project, initialRuntime = runtime, handlerName = handlerName).show()
+        CreateFunctionDialog(project = project, initialRuntime = runtime?.toSdkRuntime(), handlerName = handlerName).show()
     }
 
     override fun update(e: AnActionEvent) {

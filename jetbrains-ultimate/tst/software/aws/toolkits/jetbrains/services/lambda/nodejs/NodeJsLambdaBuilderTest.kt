@@ -11,7 +11,7 @@ import org.assertj.core.api.Assertions.assertThatThrownBy
 import org.junit.Before
 import org.junit.Rule
 import org.junit.Test
-import software.amazon.awssdk.services.lambda.model.Runtime
+import software.aws.toolkits.core.lambda.LambdaRuntime
 import software.aws.toolkits.jetbrains.services.PathMapping
 import software.aws.toolkits.jetbrains.services.lambda.LambdaBuilder
 import software.aws.toolkits.jetbrains.services.lambda.sam.SamCommon
@@ -78,7 +78,7 @@ class NodeJsLambdaBuilderTest {
         val buildDir = sut.getBuildDirectory(projectRule.module)
 
         val logicalId = "SomeFunction"
-        val template = projectRule.fixture.addSamTemplate(logicalId, codeUri.toString(), "app.handle", Runtime.NODEJS12_X)
+        val template = projectRule.fixture.addSamTemplate(logicalId, codeUri.toString(), "app.handle", LambdaRuntime.NODEJS12_X)
         val templatePath = Paths.get(template.virtualFile.path)
 
         val actualMappings = sut.defaultPathMappings(templatePath, logicalId, buildDir)

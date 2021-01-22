@@ -8,13 +8,13 @@ import com.intellij.codeInsight.completion.CompletionResultSet
 import com.intellij.codeInsight.lookup.CharFilter.Result
 import com.intellij.openapi.project.Project
 import com.intellij.util.textCompletion.TextCompletionProvider
-import software.amazon.awssdk.services.lambda.model.Runtime
+import software.aws.toolkits.core.lambda.LambdaRuntime
 import software.aws.toolkits.core.utils.getLogger
 import software.aws.toolkits.core.utils.info
 import software.aws.toolkits.jetbrains.services.lambda.RuntimeGroup
 import software.aws.toolkits.jetbrains.services.lambda.runtimeGroup
 
-class HandlerCompletionProvider(private val project: Project, runtime: Runtime?) : TextCompletionProvider {
+class HandlerCompletionProvider(private val project: Project, runtime: LambdaRuntime?) : TextCompletionProvider {
 
     private val logger = getLogger<HandlerCompletionProvider>()
 
@@ -41,7 +41,7 @@ class HandlerCompletionProvider(private val project: Project, runtime: Runtime?)
 
     override fun getAdvertisement(): String? = null
 
-    override fun getPrefix(text: String, offset: Int): String? = text
+    override fun getPrefix(text: String, offset: Int): String = text
 
     override fun fillCompletionVariants(parameters: CompletionParameters, prefix: String, result: CompletionResultSet) {
         if (!isCompletionSupported) return

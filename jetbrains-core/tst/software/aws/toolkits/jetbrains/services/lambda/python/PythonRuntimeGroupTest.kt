@@ -7,7 +7,7 @@ import com.intellij.openapi.roots.ModuleRootModificationUtil
 import org.assertj.core.api.Assertions.assertThat
 import org.junit.Rule
 import org.junit.Test
-import software.amazon.awssdk.services.lambda.model.Runtime
+import software.aws.toolkits.core.lambda.LambdaRuntime
 import software.aws.toolkits.jetbrains.utils.rules.PyTestSdk
 import software.aws.toolkits.jetbrains.utils.rules.PythonCodeInsightTestFixtureRule
 
@@ -23,7 +23,7 @@ class PythonRuntimeGroupTest {
         val module = projectRule.module
         ModuleRootModificationUtil.setModuleSdk(module, PyTestSdk("2.7.0"))
 
-        assertThat(sut.determineRuntime(module)).isEqualTo(Runtime.PYTHON2_7)
+        assertThat(sut.determineRuntime(module)).isEqualTo(LambdaRuntime.PYTHON2_7)
     }
 
     @Test
@@ -31,7 +31,7 @@ class PythonRuntimeGroupTest {
         val module = projectRule.module
         ModuleRootModificationUtil.setModuleSdk(module, PyTestSdk("3.6.0"))
 
-        assertThat(sut.determineRuntime(module)).isEqualTo(Runtime.PYTHON3_6)
+        assertThat(sut.determineRuntime(module)).isEqualTo(LambdaRuntime.PYTHON3_6)
     }
 
     @Test
@@ -39,6 +39,6 @@ class PythonRuntimeGroupTest {
         val module = projectRule.module
         ModuleRootModificationUtil.setModuleSdk(module, PyTestSdk("3.7.0"))
 
-        assertThat(sut.determineRuntime(module)).isEqualTo(Runtime.PYTHON3_7)
+        assertThat(sut.determineRuntime(module)).isEqualTo(LambdaRuntime.PYTHON3_7)
     }
 }
