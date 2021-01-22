@@ -23,12 +23,8 @@ import com.jetbrains.rider.projectView.actions.projectTemplating.backend.ReSharp
 import com.jetbrains.rider.projectView.actions.projectTemplating.impl.ProjectTemplateDialogContext
 import com.jetbrains.rider.projectView.actions.projectTemplating.impl.ProjectTemplateTransferableModel
 import com.jetbrains.rider.ui.themes.RiderTheme
-import software.aws.toolkits.jetbrains.core.executables.ExecutableInstance
-import software.aws.toolkits.jetbrains.core.executables.ExecutableManager
-import software.aws.toolkits.jetbrains.core.executables.getExecutableIfPresent
 import software.aws.toolkits.jetbrains.services.lambda.BuiltInRuntimeGroups
 import software.aws.toolkits.jetbrains.services.lambda.RuntimeGroup
-import software.aws.toolkits.jetbrains.services.lambda.sam.SamExecutable
 import software.aws.toolkits.jetbrains.services.lambda.wizard.SamInitSelectionPanel
 import software.aws.toolkits.jetbrains.services.lambda.wizard.SamProjectGenerator
 import software.aws.toolkits.jetbrains.utils.DotNetRuntimeUtils
@@ -56,9 +52,13 @@ class DotNetSamProjectGenerator(
 
     // TODO: Decouple SamProjectGenerator from the framework wizards so we can re-use its panels
     private val generator = SamProjectGenerator()
-    private val samPanel = SamInitSelectionPanel(generator.wizardFragments) {
-        RuntimeGroup.getById(BuiltInRuntimeGroups.Dotnet).supportedRuntimes.contains(it)
-    }
+    private val samPanel = SamInitSelectionPanel(
+        generator.wizardFragments,
+        // Only show templates for DotNet in Rider
+        runtimeFilter = { RuntimeGroup.getById(BuiltInRuntimeGroups.Dotnet).supportedRuntimes.contains(it) },
+        // needed to rerun the validation when the wizard is changed
+        wizardUpdateCallback = { validateData() }
+    )
 
     private val projectStructurePanel: JTabbedPane
 
@@ -98,11 +98,14 @@ class DotNetSamProjectGenerator(
 
     override fun validateData() {
         super.validateData()
-        ExecutableManager.getInstance().getExecutableIfPresent<SamExecutable>().let {
-            if (it is ExecutableInstance.BadExecutable) {
-                validationError.set(it.validationError)
-            }
+        if (validationError.value != null) {
+            return
         }
+        samPanel.validate()?.let {
+            validationError.set(it.message)
+            return
+        }
+        validationError.set(null)
     }
 
     override fun updateInfo() {
@@ -240,10 +243,7 @@ class DotNetSamProjectGenerator(
     }
 
     private fun initSamPanel() {
-        val availableRuntime = DotNetRuntimeUtils.getCurrentDotNetCoreRuntime()
-        val runtime = LambdaRuntime.fromValue(availableRuntime)
-            ?: throw IllegalStateException("DotNetRuntimeUtils.getCurrentDotNetCoreRuntime() returned invalid runtime $availableRuntime")
-        samPanel.setRuntime(runtime)
+        samPanel.setRuntime(DotNetRuntimeUtils.getCurrentDotNetCoreRuntime())
     }
 
     private fun htmlText(baseDir: String, relativePath: String) =
