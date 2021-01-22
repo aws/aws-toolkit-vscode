@@ -110,7 +110,7 @@ class LambdaDaemonHost(project: Project) : LifetimedProjectComponent(project) {
             val runtime = DotNetRuntimeUtils.getCurrentDotNetCoreRuntime()
 
             LocalLambdaRunConfigurationProducer.setAccountOptions(configuration)
-            configuration.useHandler(runtime, handler)
+            configuration.useHandler(runtime.toSdkRuntime(), handler)
 
             val configurationToAdd = factory.createConfiguration("[Local] $methodName", configuration)
             settings = runManager.createConfiguration(configurationToAdd, factory)

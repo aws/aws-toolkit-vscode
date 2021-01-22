@@ -15,14 +15,14 @@ import org.junit.Test
 import org.junit.runner.RunWith
 import org.junit.runners.Parameterized
 import org.junit.runners.Parameterized.Parameters
-import software.amazon.awssdk.services.lambda.model.Runtime
+import software.aws.toolkits.core.lambda.LambdaRuntime
 import software.aws.toolkits.jetbrains.utils.rules.JavaCodeInsightTestFixtureRule
 
 @RunWith(Parameterized::class)
 class JavaRuntimeGroupTest(
     @Suppress("unused") private val name: String,
     private val sdk: () -> Sdk,
-    private val expectedRuntime: Runtime?
+    private val expectedRuntime: LambdaRuntime?
 ) {
     @Rule
     @JvmField
@@ -47,11 +47,11 @@ class JavaRuntimeGroupTest(
         @Parameters(name = "{0}")
         @JvmStatic
         fun parameters(): Collection<Array<*>> = listOf(
-            arrayOf<Any?>("Java 7", { IdeaTestUtil.getMockJdk17() }, Runtime.JAVA8_AL2),
-            arrayOf<Any?>("Java 8", { IdeaTestUtil.getMockJdk18() }, Runtime.JAVA8_AL2),
-            arrayOf<Any?>("Java 9", { IdeaTestUtil.getMockJdk9() }, Runtime.JAVA11),
-            arrayOf<Any?>("Java 10", { IdeaTestUtil.getMockJdk(LanguageLevel.JDK_10.toJavaVersion()) }, Runtime.JAVA11),
-            arrayOf<Any?>("Java 11", { IdeaTestUtil.getMockJdk(LanguageLevel.JDK_11.toJavaVersion()) }, Runtime.JAVA11),
+            arrayOf<Any?>("Java 7", { IdeaTestUtil.getMockJdk17() }, LambdaRuntime.JAVA8_AL2),
+            arrayOf<Any?>("Java 8", { IdeaTestUtil.getMockJdk18() }, LambdaRuntime.JAVA8_AL2),
+            arrayOf<Any?>("Java 9", { IdeaTestUtil.getMockJdk9() }, LambdaRuntime.JAVA11),
+            arrayOf<Any?>("Java 10", { IdeaTestUtil.getMockJdk(LanguageLevel.JDK_10.toJavaVersion()) }, LambdaRuntime.JAVA11),
+            arrayOf<Any?>("Java 11", { IdeaTestUtil.getMockJdk(LanguageLevel.JDK_11.toJavaVersion()) }, LambdaRuntime.JAVA11),
             arrayOf<Any?>("Java 12", { IdeaTestUtil.getMockJdk(LanguageLevel.JDK_12.toJavaVersion()) }, null)
         )
     }
