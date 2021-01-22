@@ -60,7 +60,7 @@ class LocalLambdaRunConfigurationProducer : LazyRunConfigurationProducer<LocalLa
         val runtime = RuntimeGroup.determineRuntime(context.module) ?: RuntimeGroup.determineRuntime(context.project)
 
         setAccountOptions(configuration)
-        configuration.useHandler(runtime, handler)
+        configuration.useHandler(runtime?.toSdkRuntime(), handler)
 
         return true
     }

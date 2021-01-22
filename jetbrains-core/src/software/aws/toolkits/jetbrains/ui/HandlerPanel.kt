@@ -11,6 +11,7 @@ import com.intellij.util.text.nullize
 import com.intellij.util.textCompletion.TextFieldWithCompletion
 import net.miginfocom.swing.MigLayout
 import software.amazon.awssdk.services.lambda.model.Runtime
+import software.aws.toolkits.core.lambda.LambdaRuntime
 import software.aws.toolkits.jetbrains.services.lambda.Lambda.findPsiElementsForHandler
 import software.aws.toolkits.jetbrains.services.lambda.completion.HandlerCompletionProvider
 import software.aws.toolkits.jetbrains.utils.ui.validationInfo
@@ -61,7 +62,7 @@ class HandlerPanel(private val project: Project) : JPanel(MigLayout("novisualpad
 
     fun setRuntime(runtime: Runtime?) {
         this.runtime = runtime
-        handlerCompletionProvider = HandlerCompletionProvider(project, runtime)
+        handlerCompletionProvider = HandlerCompletionProvider(project, runtime?.let { LambdaRuntime.fromValue(it) })
         switchCompletion()
     }
 
