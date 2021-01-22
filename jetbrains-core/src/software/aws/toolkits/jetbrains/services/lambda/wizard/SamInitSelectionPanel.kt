@@ -34,7 +34,8 @@ import javax.swing.JTextField
 class SamInitSelectionPanel(
     wizardFragmentList: List<WizardFragment>,
     private val projectLocation: TextFieldWithBrowseButton? = null, /* Only available in PyCharm! */
-    private val runtimeFilter: (LambdaRuntime) -> Boolean = { true }
+    private val runtimeFilter: (LambdaRuntime) -> Boolean = { true },
+    private val wizardUpdateCallback: () -> Unit = {} /* Used in Rider to refresh the validation */
 ) {
     lateinit var mainPanel: JPanel
 
@@ -153,6 +154,7 @@ class SamInitSelectionPanel(
             wizardFragment.updateUi(projectLocation, selectedRuntime?.runtimeGroup, selectedTemplate)
             jComponent.isVisible = wizardFragment.isApplicable(selectedTemplate)
         }
+        wizardUpdateCallback()
     }
 
     fun validate(): ValidationInfo? {
