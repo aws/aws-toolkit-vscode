@@ -16,6 +16,8 @@ env:
     SCREEN_HEIGHT: 1080
     SCREEN_DEPTH: 24
 
+    DEBIAN_FRONTEND: noninteractive
+
 phases:
   install:
     runtime-versions:
