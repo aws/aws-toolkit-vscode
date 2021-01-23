@@ -40,7 +40,7 @@ class UpdateFunctionConfigDialog(private val project: Project, private val initi
                 packageImage.isSelected = true
             } else {
                 packageZip.isSelected
-                runtime.selectedItem = initialSettings.runtime
+                runtimeModel.selectedItem = initialSettings.runtime
                 handlerPanel.setRuntime(initialSettings.runtime)
                 initialSettings.handler?.let {
                     handlerPanel.handler.text = initialSettings.handler

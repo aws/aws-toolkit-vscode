@@ -34,11 +34,11 @@ class LocalLambdaRunSettingsEditor(project: Project) : SettingsEditor<LocalLambd
             view.templateSettings.selectFunction(configuration.logicalId())
             view.rawSettings.environmentVariables.envVars = configuration.environmentVariables()
             if (view.templateSettings.isImage) {
-                view.templateSettings.imageDebugger.selectedItem = configuration.imageDebugger()
+                view.templateSettings.imageDebuggerModel.selectedItem = configuration.imageDebugger()
                 view.templateSettings.pathMappingsTable.setMappingSettings(PathMappingSettings(configuration.pathMappings))
             }
         } else {
-            view.rawSettings.runtime.model.selectedItem = configuration.runtime()
+            view.rawSettings.runtimeModel.selectedItem = configuration.runtime()?.toSdkRuntime()
             view.rawSettings.handlerPanel.handler.text = configuration.handler() ?: ""
             view.rawSettings.timeoutSlider.value = configuration.timeout()
             view.rawSettings.memorySlider.value = configuration.memorySize()

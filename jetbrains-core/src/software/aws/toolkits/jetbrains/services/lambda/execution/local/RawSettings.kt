@@ -31,7 +31,8 @@ class RawSettings(private val project: Project) {
         private set
     lateinit var environmentVariables: EnvironmentVariablesTextField
         private set
-    private lateinit var runtimeModel: SortedComboBoxModel<Runtime>
+    lateinit var runtimeModel: SortedComboBoxModel<Runtime>
+        private set
 
     var lastSelectedRuntime: Runtime? = null
 
@@ -58,6 +59,6 @@ class RawSettings(private val project: Project) {
         }
         val supportedRuntimes = LambdaBuilder.supportedRuntimeGroups().flatMap { it.supportedSdkRuntimes }.sorted()
         runtimeModel.setAll(supportedRuntimes)
-        runtime.selectedItem = RuntimeGroup.determineRuntime(project)?.let { if (it.toSdkRuntime() in supportedRuntimes) it else null }
+        runtimeModel.selectedItem = RuntimeGroup.determineRuntime(project)?.let { if (it.toSdkRuntime() in supportedRuntimes) it.toSdkRuntime() else null }
     }
 }
