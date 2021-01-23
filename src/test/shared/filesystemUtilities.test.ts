@@ -54,7 +54,7 @@ describe('filesystemUtilities', () => {
             await writeFile(path.join(dir, 'foo.txt'), '', 'utf8')
             await writeFile(path.join(dir, 'foo-1.txt'), '', 'utf8')
             // Looks like "foo-75446d5d.txt".
-            assert.ok(/foo-[a-fA-F0-9]{8}/.test(getNonexistentFilename(dir, 'foo', '.txt', 1)))
+            assert.ok(/^foo-[a-fA-F0-9]{8}.txt$/.test(getNonexistentFilename(dir, 'foo', '.txt', 1)))
         })
     })
 

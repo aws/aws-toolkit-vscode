@@ -130,7 +130,7 @@ export function isInDirectory(d: string, p: string): boolean {
  * @param suffix  Filename suffix, typically an extension (".txt"), may be empty
  * @param max  Stop searching if all permutations up to this number exist
  */
-export function getNonexistentFilename(dir: string, name: string, suffix: string, max: number = 999): string {
+export function getNonexistentFilename(dir: string, name: string, suffix: string, max: number = 99): string {
     if (!name) {
         throw new Error(`name is empty`)
     }
