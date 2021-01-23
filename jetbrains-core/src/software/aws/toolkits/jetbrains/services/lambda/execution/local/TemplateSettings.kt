@@ -42,8 +42,10 @@ class TemplateSettings(val project: Project) {
     private lateinit var imageSettingsPanel: JPanel
     lateinit var environmentVariables: EnvironmentVariablesTextField
         private set
-    private lateinit var imageDebuggerModel: SortedComboBoxModel<ImageDebugSupport>
     lateinit var imageDebugger: JComboBox<ImageDebugSupport>
+        private set
+    lateinit var imageDebuggerModel: SortedComboBoxModel<ImageDebugSupport>
+        private set
 
     val isImage
         get() = function.selected()?.packageType() == PackageType.IMAGE

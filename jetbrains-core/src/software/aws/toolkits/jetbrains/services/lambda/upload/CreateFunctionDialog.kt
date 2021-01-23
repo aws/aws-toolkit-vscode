@@ -57,7 +57,7 @@ class CreateFunctionDialog(private val project: Project, private val initialRunt
                 handlerPanel.handler.text = handler
             }
             initialRuntime?.validOrNull?.let {
-                runtime.selectedItem = it
+                runtimeModel.selectedItem = it
                 handlerPanel.setRuntime(it)
             }
         }
