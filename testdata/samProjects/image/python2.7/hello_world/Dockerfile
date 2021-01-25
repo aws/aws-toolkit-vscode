@@ -2,7 +2,7 @@ FROM public.ecr.aws/lambda/python:2.7
 
 COPY app.py requirements.txt ./
 
-RUN curl https://bootstrap.pypa.io/get-pip.py -o get-pip.py
+RUN curl https://bootstrap.pypa.io/2.7/get-pip.py -o get-pip.py
 
 RUN python2.7 get-pip.py
 
