@@ -107,7 +107,7 @@ allprojects {
 }
 
 // Kotlin plugin seems to be bugging out when there are no kotlin sources
-configure(subprojects.filter { it.name != "telemetry-client" }) {
+configure(subprojects.filter { it.name != "sdk-codegen" }) {
     apply(plugin = "kotlin")
 
     sourceSets {

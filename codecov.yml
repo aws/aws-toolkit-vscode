@@ -38,6 +38,6 @@ comment: false
 ignore:
   - "ktlint-rules/**/*"
   - "resources/**/*"
-  - "telemetry-client/**/*"
+  - "sdk-codegen/**/*"
   - "jetbrains-rider/**/*.Generated.kt"
   - "**/TelemetryDefinitions.kt"

@@ -18,10 +18,9 @@ import org.gradle.plugins.ide.idea.model.IdeaModel
 import software.amazon.awssdk.codegen.C2jModels
 import software.amazon.awssdk.codegen.CodeGenerator
 import software.amazon.awssdk.codegen.model.config.customization.CustomizationConfig
-import software.amazon.awssdk.codegen.model.service.Paginators
 import software.amazon.awssdk.codegen.model.service.ServiceModel
-import software.amazon.awssdk.codegen.model.service.Waiters
 import software.amazon.awssdk.codegen.utils.ModelLoaderUtils
+import java.io.File
 
 open class GenerateSdkExtension(project: Project) {
     val c2jFolder: DirectoryProperty = project.objects.directoryProperty()
@@ -32,7 +31,7 @@ open class GenerateSdkExtension(project: Project) {
     fun tsDir() = outputDir.dir("tst")
 }
 
-@Suppress("unused") // Plugin is created by buildSrc/build.gradle
+@Suppress("unused") // Plugin is created by buildSrc/build.gradle.kts
 class GenerateSdkPlugin : Plugin<Project> {
     override fun apply(project: Project) {
         project.pluginManager.apply(JavaPlugin::class.java)
@@ -70,44 +69,31 @@ open class GenerateSdk : DefaultTask() {
         srcDir.deleteRecursively()
         testDir.deleteRecursively()
 
-        logger.info("Generating SDK from ${c2jFolder.get().asFile}")
-        val models = C2jModels.builder()
-            .serviceModel(loadServiceModel())
-            .paginatorsModel(loadPaginatorsModel())
-            .customizationConfig(loadCustomizationConfig())
-            .waitersModel(loadWaitersModel())
-            .build()
+        c2jFolder.get().asFileTree.visit {
+            if (isDirectory) {
+                with(file) {
+                    logger.info("Generating SDK from $this")
+                    val models = C2jModels.builder()
+                        .serviceModel(loadServiceModel())
+                        .paginatorsModel(loadOptionalModel("paginators-1.json"))
+                        .customizationConfig(loadOptionalModel("customization.config") ?: CustomizationConfig.create())
+                        .waitersModel(loadOptionalModel("waiters-2.json"))
+                        .build()
 
-        CodeGenerator.builder()
-            .models(models)
-            .sourcesDirectory(srcDir.absolutePath)
-            .testsDirectory(testDir.absolutePath)
-            .build()
-            .execute()
-    }
-
-    private fun loadServiceModel(): ServiceModel? = ModelLoaderUtils.loadModel(ServiceModel::class.java, c2jFolder.file("service-2.json").get().asFile)
-
-    private fun loadPaginatorsModel(): Paginators? {
-        val paginatorsFile = c2jFolder.file("paginators-1.json").orNull?.asFile
-        return if (paginatorsFile?.exists() == true) {
-            ModelLoaderUtils.loadModel(Paginators::class.java, paginatorsFile)
-        } else {
-            null
+                    CodeGenerator.builder()
+                        .models(models)
+                        .sourcesDirectory(srcDir.absolutePath)
+                        .testsDirectory(testDir.absolutePath)
+                        .build()
+                        .execute()
+                }
+            }
         }
     }
 
-    private fun loadWaitersModel(): Waiters? {
-        val waitersFile = c2jFolder.file("waiters-2.json").orNull?.asFile
-        return if (waitersFile?.exists() == true) {
-            ModelLoaderUtils.loadModel(Waiters::class.java, waitersFile)
-        } else {
-            null
-        }
-    }
+    private fun File.loadServiceModel(): ServiceModel? = ModelLoaderUtils.loadModel(ServiceModel::class.java, resolve("service-2.json"))
 
-    private fun loadCustomizationConfig(): CustomizationConfig = ModelLoaderUtils.loadOptionalModel(
-        CustomizationConfig::class.java,
-        c2jFolder.file("customization.config").get().asFile
-    ).orElse(CustomizationConfig.create())
+    private inline fun <reified T> File.loadOptionalModel(fileName: String): T? = resolve(fileName).takeIf { it.exists() }?.let {
+        ModelLoaderUtils.loadModel(T::class.java, it)
+    }
 }
