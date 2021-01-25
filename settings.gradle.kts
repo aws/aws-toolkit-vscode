@@ -4,7 +4,7 @@ rootProject.name = "aws-jetbrains-toolkit"
 
 include("ktlint-rules")
 include("resources")
-include("telemetry-client")
+include("sdk-codegen")
 include("core")
 include("jetbrains-core")
 include("jetbrains-ultimate")
