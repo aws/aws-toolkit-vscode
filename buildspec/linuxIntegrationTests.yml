@@ -14,12 +14,18 @@ phases:
             dotnet: 3.1
 
         commands:
+            # For Python2.x on Ubuntu 20.4:
+            - add-apt-repository universe
             - '>/dev/null add-apt-repository universe'
             - '>/dev/null apt-get -qq install -y apt-transport-https'
             - '>/dev/null apt-get -qq update'
             # Install other needed dependencies
-            - '>/dev/null apt-get -qq install -y jq python2.7 python-pip python3.6 python3.7 python3.8 python3-pip python3-distutils'
+            - '>/dev/null apt-get -qq install -y jq python2.7 python3.6 python3.7 python3.8 python3-pip python3-distutils'
             - '>/dev/null apt-get -qq install -y libgtk-3-dev libxss1 xvfb libnss3-dev libasound2 libasound2-plugins libsecret-1-0'
+            # For Python2.x on Ubuntu 20.4:
+            - curl https://bootstrap.pypa.io/2.7/get-pip.py --output get-pip.py
+            # For Python2.x on Ubuntu 20.4:
+            - python2 get-pip.py
             - '>/dev/null pip3 install --upgrade aws-sam-cli'
             - '>/dev/null pip3 install --upgrade awscli'
             - '>/dev/null pip3 install pylint'
