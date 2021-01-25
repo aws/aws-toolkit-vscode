@@ -8,7 +8,7 @@ val kotlinVersion: String by project
 
 dependencies {
     api(project(":resources"))
-    api(project(":telemetry-client"))
+    api(project(":sdk-codegen"))
     api("com.fasterxml.jackson.module:jackson-module-kotlin:$jacksonVersion")
     api("com.fasterxml.jackson.datatype:jackson-datatype-jsr310:$jacksonVersion")
     api("com.fasterxml.jackson.dataformat:jackson-dataformat-xml:$jacksonVersion")
