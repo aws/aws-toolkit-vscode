@@ -18,8 +18,13 @@ phases:
       dotnet: 3.1
 
     commands:
+      # Added for Python2 for Ubuntu 20.4
+      - add-apt-repository universe
       - apt-get update
-      - apt-get install -y jq python2.7 python-pip python3.6 python3.7 python3.8 python3-pip python3-distutils
+      - apt-get install -y jq python2.7 python3.6 python3.7 python3.8 python3-pip python3-distutils
+      # As of Ubuntu 20.4, there is no longer pip for Python 2, so we need to install it manually
+      - curl https://bootstrap.pypa.io/2.7/get-pip.py --output get-pip.py
+      - python2 get-pip.py
       - aws sts assume-role --role-arn $ASSUME_ROLE_ARN --role-session-name integ-test > creds.json
       - export KEY_ID=`jq -r '.Credentials.AccessKeyId' creds.json`
       - export SECRET=`jq -r '.Credentials.SecretAccessKey' creds.json`
