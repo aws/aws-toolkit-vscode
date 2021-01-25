@@ -1,0 +1,4 @@
+{
+  "type" : "bugfix",
+  "description" : "Fix not invalidating credentials when a `source_profile` is updated"
+}
