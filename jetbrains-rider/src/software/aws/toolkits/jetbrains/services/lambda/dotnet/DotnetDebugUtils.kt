@@ -39,6 +39,7 @@ import com.jetbrains.rider.run.IDebuggerOutputListener
 import com.jetbrains.rider.run.bindToSettings
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.runBlocking
 import kotlinx.coroutines.withContext
 import org.jetbrains.concurrency.AsyncPromise
 import org.jetbrains.concurrency.Promise
@@ -82,6 +83,8 @@ object DotnetDebugUtils {
         val frontendPort = debugPorts[0]
         val backendPort = debugPorts[1]
         val promise = AsyncPromise<XDebugProcessStarter?>()
+        val edtContext = getCoroutineUiContext(ModalityState.any(), environment)
+        val bgContext = ExpirableExecutor.on(AppExecutorUtil.getAppExecutorService()).expireWith(environment).coroutineDispatchingContext()
 
         // Define a debugger lifetime to be able to dispose the debugger process and all nested component on termination
         // Using the environment as the disposable root seems to make 2nd usage of debug to fail since the lifetime is already terminated
@@ -101,7 +104,9 @@ object DotnetDebugUtils {
             lifetime = debuggerLifetime
         )
 
-        val workerModel = RiderDebuggerWorkerModelManager.createDebuggerModel(debuggerLifetime, protocol)
+        val workerModel = runBlocking(edtContext) {
+            RiderDebuggerWorkerModelManager.createDebuggerModel(debuggerLifetime, protocol)
+        }
 
         val executionResult = state.execute(environment.executor, environment.runner)
         val console = TextConsoleBuilderFactory.getInstance().createBuilder(environment.project).console
@@ -113,9 +118,6 @@ object DotnetDebugUtils {
         if (!samProcessHandle.isStartNotified) {
             samProcessHandle.startNotify()
         }
-
-        val bgContext = ExpirableExecutor.on(AppExecutorUtil.getAppExecutorService()).expireWith(environment).coroutineDispatchingContext()
-        val edtContext = getCoroutineUiContext(ModalityState.any(), environment)
 
         ApplicationThreadPoolScope(environment.runProfile.name).launch(bgContext) {
             try {
@@ -187,13 +189,15 @@ object DotnetDebugUtils {
             } catch (t: Throwable) {
                 LOG.warn(t) { "Failed to start debugger" }
                 debuggerLifetimeDefinition.terminate(true)
-                promise.setError(t)
+                withContext(edtContext) {
+                    promise.setError(t)
+                }
             }
         }
 
         val checkDebuggerTask = Timer("Debugger Worker launch timer", true).schedule(debuggerConnectTimeoutMs()) {
             if (debuggerLifetimeDefinition.isAlive && !protocol.wire.connected.value) {
-                runInEdt {
+                runBlocking(edtContext) {
                     debuggerLifetimeDefinition.terminate()
                     promise.setError(message("lambda.debug.process.start.timeout"))
                 }
