@@ -167,6 +167,15 @@ async function packageOperation(
     },
     buildSuccessful: boolean
 ): Promise<void> {
+    if (!buildSuccessful) {
+        vscode.window.showInformationMessage(
+            localize(
+                'AWS.samcli.deploy.workflow.packaging.noBuild',
+                'Attempting to package source template directory directly since "sam build" failed'
+            )
+        )
+    }
+
     getLogger('channel').info(
         localize(
             'AWS.samcli.deploy.workflow.packaging',
