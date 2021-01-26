@@ -18,6 +18,7 @@ import org.junit.runners.Parameterized
 import software.amazon.awssdk.auth.credentials.AwsBasicCredentials
 import software.amazon.awssdk.auth.credentials.AwsSessionCredentials
 import software.amazon.awssdk.services.lambda.model.Runtime
+import software.aws.toolkits.core.lambda.LambdaRuntime
 import software.aws.toolkits.core.utils.RuleUtils
 import software.aws.toolkits.jetbrains.core.credentials.MockCredentialsManager
 import software.aws.toolkits.jetbrains.core.region.getDefaultRegion
@@ -321,7 +322,7 @@ class PythonLocalLambdaRunConfigurationIntegrationTest(private val runtime: Runt
         projectRule = projectRule,
         relativePath = "samProjects/image/$runtime",
         sourceFileName = "app.py",
-        runtime = runtime,
+        runtime = LambdaRuntime.fromValue(runtime)!!,
         mockCredentialsId = mockId,
         input = input,
         expectedOutput = input.toUpperCase()
@@ -332,7 +333,7 @@ class PythonLocalLambdaRunConfigurationIntegrationTest(private val runtime: Runt
         projectRule = projectRule,
         relativePath = "samProjects/image/$runtime",
         sourceFileName = "app.py",
-        runtime = runtime,
+        runtime = LambdaRuntime.fromValue(runtime)!!,
         mockCredentialsId = mockId,
         input = input,
         expectedOutput = input.toUpperCase(),

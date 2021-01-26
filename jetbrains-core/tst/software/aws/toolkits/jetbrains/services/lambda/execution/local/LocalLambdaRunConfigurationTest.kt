@@ -122,7 +122,7 @@ class LocalLambdaRunConfigurationTest {
                 isImage = true,
                 credentialsProviderId = mockId,
                 templateFile = template,
-                runtime = Runtime.JAVA11,
+                runtime = LambdaRuntime.JAVA11,
                 logicalId = "SomeFunction"
             )
 
@@ -161,7 +161,7 @@ class LocalLambdaRunConfigurationTest {
                 credentialsProviderId = mockId,
                 templateFile = createImageTemplate(),
                 logicalId = "SomeFunction",
-                runtime = Runtime.fromValue("NotValid")
+                runtime = null
             )
 
             assertThat(runConfiguration).isNotNull

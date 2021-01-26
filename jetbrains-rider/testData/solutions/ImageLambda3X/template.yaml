@@ -1,0 +1,13 @@
+AWSTemplateFormatVersion: '2010-09-09'
+Transform: AWS::Serverless-2016-10-31
+
+Resources:
+  HelloWorldFunction:
+    Type: AWS::Serverless::Function
+    Properties:
+      PackageType: Image
+      Timeout: 900
+    Metadata:
+      DockerTag: dotnetcore3.1-v1
+      DockerContext: ./src/HelloWorld
+      Dockerfile: Dockerfile

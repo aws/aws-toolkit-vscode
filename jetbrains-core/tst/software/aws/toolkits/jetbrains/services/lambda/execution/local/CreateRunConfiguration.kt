@@ -8,6 +8,7 @@ import com.intellij.openapi.components.service
 import com.intellij.openapi.project.Project
 import com.intellij.util.PathMappingSettings.PathMapping
 import software.amazon.awssdk.services.lambda.model.Runtime
+import software.aws.toolkits.core.lambda.LambdaRuntime
 import software.aws.toolkits.core.region.AwsRegion
 import software.aws.toolkits.jetbrains.core.executables.ExecutableManager
 import software.aws.toolkits.jetbrains.core.executables.setExecutablePath
@@ -27,7 +28,7 @@ fun createTemplateRunConfiguration(
     input: String? = "inputText",
     templateFile: String? = null,
     isImage: Boolean = false,
-    runtime: Runtime? = null,
+    runtime: LambdaRuntime? = null,
     pathMappings: List<PathMapping> = listOf(),
     logicalId: String? = null,
     inputIsFile: Boolean = false,
