@@ -18,5 +18,5 @@ interface InteractiveCredential : CredentialIdentifier {
     /**
      * Determines if user action is required at this time (e.g. may check expiry of cookies, etc)
      */
-    suspend fun userActionRequired(): Boolean
+    fun userActionRequired(): Boolean
 }
