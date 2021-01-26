@@ -10,9 +10,8 @@ import com.intellij.testFramework.ApplicationRule
 import kotlinx.coroutines.runBlocking
 import software.aws.toolkits.core.credentials.ToolkitCredentialsProvider
 import software.aws.toolkits.core.region.AwsRegion
+import software.aws.toolkits.jetbrains.core.credentials.AwsConnectionManager
 import software.aws.toolkits.jetbrains.core.credentials.ConnectionSettings
-import software.aws.toolkits.jetbrains.core.credentials.activeCredentialProvider
-import software.aws.toolkits.jetbrains.core.credentials.activeRegion
 import java.util.concurrent.CompletableFuture
 import java.util.concurrent.CompletionStage
 import java.util.concurrent.ConcurrentHashMap
@@ -109,11 +108,15 @@ class MockResourceCacheRule : ApplicationRule() {
         runBlocking { cache.clear() }
     }
 
-    fun <T> addEntry(project: Project, resource: Resource.Cached<T>, value: T) =
-        cache.addEntry(resource, project.activeRegion().id, project.activeCredentialProvider().id, value)
+    fun <T> addEntry(project: Project, resource: Resource.Cached<T>, value: T) {
+        val connectionManager = AwsConnectionManager.getInstance(project)
+        cache.addEntry(resource, connectionManager.selectedRegion!!.id, connectionManager.selectedCredentialIdentifier!!.id, value)
+    }
 
-    fun <T> addEntry(project: Project, resource: Resource.Cached<T>, value: CompletableFuture<T>) =
-        cache.addEntry(resource, project.activeRegion().id, project.activeCredentialProvider().id, value)
+    fun <T> addEntry(project: Project, resource: Resource.Cached<T>, value: CompletableFuture<T>) {
+        val connectionManager = AwsConnectionManager.getInstance(project)
+        cache.addEntry(resource, connectionManager.selectedRegion!!.id, connectionManager.selectedCredentialIdentifier!!.id, value)
+    }
 
     fun <T> addEntry(resource: Resource.Cached<T>, regionId: String, credentialsId: String, value: T) {
         cache.addEntry(resource, regionId, credentialsId, value)
