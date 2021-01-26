@@ -1573,7 +1573,7 @@
     },
     "dependencies": {
         "adm-zip": "^0.4.13",
-        "amazon-states-language-service": "^1.6.3",
+        "amazon-states-language-service": "^1.6.4",
         "async-lock": "^1.1.3",
         "aws-sdk": "^2.581.0",
         "aws-ssm-document-language-service": "^1.0.0",
@@ -1595,7 +1595,7 @@
         "strip-ansi": "^5.2.0",
         "tcp-port-used": "^1.0.1",
         "typescript": "^3.7.2",
-        "uuid": "^8.3.1",
+        "uuid": "^8.3.2",
         "vscode-languageclient": "^6.1.1",
         "vscode-languageserver": "^6.1.1",
         "vscode-languageserver-textdocument": "^1.0.1",

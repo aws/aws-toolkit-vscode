@@ -7,6 +7,7 @@ import * as assert from 'assert'
 import { Runtime } from 'aws-sdk/clients/lambda'
 import { Set } from 'immutable'
 import * as path from 'path'
+import * as fs from 'fs'
 import * as vscode from 'vscode'
 import {
     eventBridgeHelloWorldTemplate,
@@ -20,6 +21,8 @@ import {
     CreateNewSamAppWizardResponse,
 } from '../../../lambda/wizards/samInitWizard'
 import { RuntimePackageType } from '../../../lambda/models/samLambdaRuntime'
+import { makeTemporaryToolkitFolder } from '../../../shared/filesystemUtilities'
+import { assertEqualPaths } from '../../testUtil'
 
 function isMultiDimensionalArray(array: any[] | any[][] | undefined): boolean {
     if (!array) {
@@ -203,13 +206,22 @@ class MockCreateNewSamAppWizardContext implements CreateNewSamAppWizardContext {
 }
 
 describe('CreateNewSamAppWizard', async () => {
+    let dir: string
+    let dir2: string
+    before(async () => {
+        dir = await makeTemporaryToolkitFolder()
+        dir2 = await makeTemporaryToolkitFolder()
+    })
+    after(async () => {
+        fs.rmdirSync(dir)
+    })
     describe('runtime', async () => {
         it('uses user response as runtime', async () => {
             const context: CreateNewSamAppWizardContext = new MockCreateNewSamAppWizardContext(
                 [],
                 Set<Runtime>(['nodejs8.10']),
                 'myName',
-                [vscode.Uri.file(path.join('my', 'workspace', 'folder'))],
+                [vscode.Uri.file(dir)],
                 Set<SamTemplate>([helloWorldTemplate]),
                 [],
                 [],
@@ -227,7 +239,7 @@ describe('CreateNewSamAppWizard', async () => {
                 [],
                 Set<Runtime>(),
                 'myName',
-                [vscode.Uri.file(path.join('my', 'workspace', 'folder'))],
+                [vscode.Uri.file(dir)],
                 [],
                 [],
                 [],
@@ -242,12 +254,11 @@ describe('CreateNewSamAppWizard', async () => {
 
     describe('template', async () => {
         it('uses user response as template', async () => {
-            const locationPath = path.join('my', 'quick', 'pick', 'result')
             const context: CreateNewSamAppWizardContext = new MockCreateNewSamAppWizardContext(
                 [],
                 Set<Runtime>(['nodejs8.10']),
                 'myName',
-                [vscode.Uri.file(locationPath)],
+                [vscode.Uri.file(dir)],
                 Set<SamTemplate>([helloWorldTemplate]),
                 [],
                 [],
@@ -261,12 +272,11 @@ describe('CreateNewSamAppWizard', async () => {
         })
 
         it('backtracks when cancelled', async () => {
-            const locationPath = path.join('my', 'quick', 'pick', 'result')
             const context: CreateNewSamAppWizardContext = new MockCreateNewSamAppWizardContext(
                 [],
                 [Set<Runtime>(['python3.6']), Set<Runtime>(['nodejs8.10'])],
                 'myName',
-                [vscode.Uri.file(locationPath)],
+                [vscode.Uri.file(dir)],
                 [undefined, Set<SamTemplate>([helloWorldTemplate])],
                 [],
                 [],
@@ -281,7 +291,13 @@ describe('CreateNewSamAppWizard', async () => {
         })
 
         describe('eventBridge-schema-app template', async () => {
-            const locationPath = path.join('my', 'quick', 'pick', 'result')
+            let locationPath: string
+            before(async () => {
+                locationPath = await makeTemporaryToolkitFolder()
+            })
+            after(async () => {
+                fs.rmdirSync(locationPath)
+            })
             let context: CreateNewSamAppWizardContext
             let wizard: CreateNewSamAppWizard
             let args: CreateNewSamAppWizardResponse | undefined
@@ -382,7 +398,7 @@ describe('CreateNewSamAppWizard', async () => {
             describe('location', async () => {
                 it('uses user response as schema', async () => {
                     assert.ok(args)
-                    assert.strictEqual(args!.location.fsPath, `${path.sep}${locationPath}`)
+                    assertEqualPaths(args!.location.fsPath, locationPath)
                 })
 
                 it('backtracks when cancelled', async () => {
@@ -401,7 +417,7 @@ describe('CreateNewSamAppWizard', async () => {
 
                     assert.ok(args)
                     assert.strictEqual(args!.schemaName, 'AWSBatchJobStateChange')
-                    assert.strictEqual(args!.location.fsPath, `${path.sep}${locationPath}`)
+                    assertEqualPaths(args!.location.fsPath, locationPath)
                 })
             })
         })
@@ -409,12 +425,11 @@ describe('CreateNewSamAppWizard', async () => {
 
     describe('location', async () => {
         it('uses user response as location', async () => {
-            const locationPath = path.join('my', 'quick', 'pick', 'result')
             const context: CreateNewSamAppWizardContext = new MockCreateNewSamAppWizardContext(
                 [],
                 Set<Runtime>(['nodejs8.10']),
                 'myName',
-                [vscode.Uri.file(locationPath)],
+                [vscode.Uri.file(dir)],
                 Set<SamTemplate>([helloWorldTemplate]),
                 [],
                 [],
@@ -424,16 +439,15 @@ describe('CreateNewSamAppWizard', async () => {
             const args = await wizard.run()
 
             assert.ok(args)
-            assert.strictEqual(args!.location.fsPath, `${path.sep}${locationPath}`)
+            assertEqualPaths(args!.location.fsPath, dir)
         })
 
         it('backtracks when cancelled', async () => {
-            const locationPath = path.join('my', 'quick', 'pick', 'result')
             const context: CreateNewSamAppWizardContext = new MockCreateNewSamAppWizardContext(
                 [],
                 [Set<Runtime>(['python3.6']), Set<Runtime>(['nodejs8.10'])],
                 'myName',
-                [undefined, [vscode.Uri.file(locationPath)]],
+                [undefined, [vscode.Uri.file(dir)]],
                 [Set<SamTemplate>([helloWorldTemplate]), Set<SamTemplate>([eventBridgeHelloWorldTemplate])],
                 [],
                 [],
@@ -444,18 +458,16 @@ describe('CreateNewSamAppWizard', async () => {
 
             assert.ok(args)
             assert.strictEqual(args!.template, eventBridgeHelloWorldTemplate)
-            assert.strictEqual(args!.location.fsPath, `${path.sep}${locationPath}`)
+            assertEqualPaths(args!.location.fsPath, dir)
         })
 
         it("contains a 'browse' option", async () => {
             const name = 'myInputBoxResult'
-            const locationPath = path.join('my', 'quick', 'pick', 'result')
-
             const context: CreateNewSamAppWizardContext = new MockCreateNewSamAppWizardContext(
                 [],
                 Set<Runtime>(['nodejs8.10']),
                 name,
-                [vscode.Uri.file(locationPath)],
+                [vscode.Uri.file(dir)],
                 Set<SamTemplate>([helloWorldTemplate]),
                 [],
                 [],
@@ -465,11 +477,11 @@ describe('CreateNewSamAppWizard', async () => {
             const args = await wizard.run()
 
             assert.ok(args)
-            assert.strictEqual(args!.location.fsPath, `${path.sep}${locationPath}`)
+            assertEqualPaths(args!.location.fsPath, dir)
         })
 
         it('contains an option for each workspace folder', async () => {
-            const workspaceFolderPaths = [path.join('workspace', 'folder', '1'), path.join('workspace', 'folder', '2')]
+            const workspaceFolderPaths = [dir, dir2]
 
             let index = 0
             const context: CreateNewSamAppWizardContext = new MockCreateNewSamAppWizardContext(
@@ -490,7 +502,7 @@ describe('CreateNewSamAppWizard', async () => {
             const args = await wizard.run()
 
             assert.ok(args)
-            assert.strictEqual(args!.location.fsPath, `${path.sep}${workspaceFolderPaths[0]}`)
+            assertEqualPaths(args!.location.fsPath, workspaceFolderPaths[0])
         })
     })
 
@@ -500,7 +512,7 @@ describe('CreateNewSamAppWizard', async () => {
                 [],
                 Set<Runtime>(['nodejs8.10']),
                 'myName',
-                [vscode.Uri.file(path.join('my', 'quick', 'pick', 'result'))],
+                [vscode.Uri.file(dir)],
                 Set<SamTemplate>([helloWorldTemplate]),
                 [],
                 [],
@@ -518,10 +530,7 @@ describe('CreateNewSamAppWizard', async () => {
                 [],
                 Set<Runtime>(['nodejs8.10']),
                 ['', 'myName'],
-                [
-                    [vscode.Uri.file(path.join('my', 'quick', 'pick', 'result', '1'))],
-                    [vscode.Uri.file(path.join('my', 'quick', 'pick', 'result', '2'))],
-                ],
+                [[vscode.Uri.file(dir)], [vscode.Uri.file(dir2)]],
                 Set<SamTemplate>([helloWorldTemplate]),
                 [],
                 [],
@@ -531,7 +540,7 @@ describe('CreateNewSamAppWizard', async () => {
             const args = await wizard.run()
 
             assert.ok(args)
-            assert.strictEqual(args!.location.fsPath, `${path.sep}${path.join('my', 'quick', 'pick', 'result', '2')}`)
+            assertEqualPaths(args!.location.fsPath, dir2)
             assert.strictEqual(args!.name, 'myName')
         })
     })
