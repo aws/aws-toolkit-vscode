@@ -10,7 +10,7 @@ import org.assertj.core.api.Assertions.assertThat
 import org.testng.annotations.BeforeMethod
 import org.testng.annotations.Test
 import software.amazon.awssdk.auth.credentials.AwsBasicCredentials
-import software.amazon.awssdk.services.lambda.model.Runtime
+import software.aws.toolkits.core.lambda.LambdaRuntime
 import software.aws.toolkits.jetbrains.core.credentials.MockCredentialsManager
 import software.aws.toolkits.jetbrains.core.region.getDefaultRegion
 import software.aws.toolkits.jetbrains.services.lambda.execution.local.createHandlerBasedRunConfiguration
@@ -18,15 +18,16 @@ import software.aws.toolkits.jetbrains.services.lambda.execution.local.createTem
 import software.aws.toolkits.jetbrains.utils.executeRunConfiguration
 import software.aws.toolkits.jetbrains.utils.setSamExecutableFromEnvironment
 
-class Dotnet21LocalLambdaRunConfigurationIntegrationTest : DotnetLocalLambdaRunConfigurationIntegrationTestBase("EchoLambda2X", Runtime.DOTNETCORE2_1)
+class Dotnet21LocalLambdaRunConfigurationIntegrationTest : DotnetLocalLambdaRunConfigurationIntegrationTestBase("EchoLambda2X", LambdaRuntime.DOTNETCORE2_1)
 class Dotnet21LocalLambdaImageRunConfigurationIntegrationTest :
-    DotnetLocalLambdaImageRunConfigurationIntegrationTestBase("ImageLambda2X", Runtime.DOTNETCORE2_1)
-// TODO: Fix test not running on CodeBuild
-// class Dotnet31LocalLambdaRunConfigurationIntegrationTest : DotnetLocalLambdaRunConfigurationIntegrationTestBase("EchoLambda3X", Runtime.DOTNETCORE3_1)
-// class Dotnet31LocalLambdaImageRunConfigurationIntegrationTest : DotnetLocalLambdaRunConfigurationIntegrationTestBase("ImageLambda3X", Runtime.DOTNETCORE3_1)
-// class Dotnet50LocalLambdaImageRunConfigurationIntegrationTest : DotnetLocalLambdaRunConfigurationIntegrationTestBase("ImageLambda3X", Runtime.DOTNETCORE5_0)
+    DotnetLocalLambdaImageRunConfigurationIntegrationTestBase("ImageLambda2X", LambdaRuntime.DOTNETCORE2_1)
+class Dotnet31LocalLambdaRunConfigurationIntegrationTest : DotnetLocalLambdaRunConfigurationIntegrationTestBase("EchoLambda3X", LambdaRuntime.DOTNETCORE3_1)
+class Dotnet31LocalLambdaImageRunConfigurationIntegrationTest :
+    DotnetLocalLambdaImageRunConfigurationIntegrationTestBase("ImageLambda3X", LambdaRuntime.DOTNETCORE3_1)
+class Dotnet50LocalLambdaImageRunConfigurationIntegrationTest :
+    DotnetLocalLambdaImageRunConfigurationIntegrationTestBase("ImageLambda5X", LambdaRuntime.DOTNET5_0)
 
-abstract class DotnetLocalLambdaRunConfigurationIntegrationTestBase(private val solutionName: String, private val runtime: Runtime) :
+abstract class DotnetLocalLambdaRunConfigurationIntegrationTestBase(private val solutionName: String, private val runtime: LambdaRuntime) :
     AwsReuseSolutionTestBase() {
 
     override val waitForCaches = false
@@ -48,7 +49,7 @@ abstract class DotnetLocalLambdaRunConfigurationIntegrationTestBase(private val 
     fun samIsExecuted() {
         val runConfiguration = createHandlerBasedRunConfiguration(
             project = project,
-            runtime = runtime,
+            runtime = runtime.toSdkRuntime(),
             credentialsProviderId = mockId,
             handler = handler
         )
@@ -63,7 +64,7 @@ abstract class DotnetLocalLambdaRunConfigurationIntegrationTestBase(private val 
 
         val runConfiguration = createHandlerBasedRunConfiguration(
             project = project,
-            runtime = runtime,
+            runtime = runtime.toSdkRuntime(),
             credentialsProviderId = mockId,
             handler = handler,
             environmentVariables = envVars
@@ -81,7 +82,7 @@ abstract class DotnetLocalLambdaRunConfigurationIntegrationTestBase(private val 
     fun regionIsPassed() {
         val runConfiguration = createHandlerBasedRunConfiguration(
             project = project,
-            runtime = runtime,
+            runtime = runtime.toSdkRuntime(),
             credentialsProviderId = mockId,
             handler = handler
         )
@@ -97,7 +98,7 @@ abstract class DotnetLocalLambdaRunConfigurationIntegrationTestBase(private val 
     fun credentialsArePassed() {
         val runConfiguration = createHandlerBasedRunConfiguration(
             project = project,
-            runtime = runtime,
+            runtime = runtime.toSdkRuntime(),
             credentialsProviderId = mockId,
             handler = handler
         )
@@ -113,7 +114,7 @@ abstract class DotnetLocalLambdaRunConfigurationIntegrationTestBase(private val 
     private fun jsonToMap(data: String) = jacksonObjectMapper().readValue<Map<String, Any>>(data)
 }
 
-abstract class DotnetLocalLambdaImageRunConfigurationIntegrationTestBase(private val solutionName: String, private val runtime: Runtime) :
+abstract class DotnetLocalLambdaImageRunConfigurationIntegrationTestBase(private val solutionName: String, private val runtime: LambdaRuntime) :
     AwsReuseSolutionTestBase() {
 
     override val waitForCaches = false
