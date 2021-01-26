@@ -16,6 +16,7 @@ import org.junit.runner.RunWith
 import org.junit.runners.Parameterized
 import software.amazon.awssdk.auth.credentials.AwsBasicCredentials
 import software.amazon.awssdk.services.lambda.model.Runtime
+import software.aws.toolkits.core.lambda.LambdaRuntime
 import software.aws.toolkits.core.utils.RuleUtils
 import software.aws.toolkits.jetbrains.core.credentials.MockCredentialsManager
 import software.aws.toolkits.jetbrains.services.lambda.execution.local.createHandlerBasedRunConfiguration
@@ -222,7 +223,7 @@ class NodeJsLocalLambdaRunConfigurationIntegrationTest(private val runtime: Runt
         projectRule = projectRule,
         relativePath = "samProjects/image/$runtime",
         sourceFileName = "app.js",
-        runtime = runtime,
+        runtime = LambdaRuntime.fromValue(runtime)!!,
         mockCredentialsId = mockId,
         input = input,
         expectedOutput = input.toUpperCase()
@@ -233,7 +234,7 @@ class NodeJsLocalLambdaRunConfigurationIntegrationTest(private val runtime: Runt
         projectRule = projectRule,
         relativePath = "samProjects/image/$runtime",
         sourceFileName = "app.js",
-        runtime = runtime,
+        runtime = LambdaRuntime.fromValue(runtime)!!,
         mockCredentialsId = mockId,
         input = input,
         expectedOutput = input.toUpperCase(),

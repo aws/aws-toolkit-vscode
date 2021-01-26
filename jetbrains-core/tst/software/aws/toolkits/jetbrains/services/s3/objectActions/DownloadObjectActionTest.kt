@@ -378,7 +378,7 @@ class DownloadObjectActionTest {
                     val parent = S3TreeObjectNode(dirNode, it.first, 1, Instant.now())
                     S3TreeObjectVersionNode(parent, "testVersionId", 1, Instant.now()) as S3TreeNode
                 }
-                else -> S3TreeObjectNode(dirNode, it.first, 1, Instant.now()) as S3TreeNode
+                else -> S3TreeObjectNode(dirNode, it.first, 1, Instant.now())
             }
         }
 
