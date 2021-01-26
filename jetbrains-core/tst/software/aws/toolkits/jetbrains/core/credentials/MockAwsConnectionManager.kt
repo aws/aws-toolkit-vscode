@@ -49,7 +49,7 @@ class MockAwsConnectionManager(project: Project) : AwsConnectionManager(project)
         connectionState = state
     }
 
-    override suspend fun validate(credentialsProvider: ToolkitCredentialsProvider, region: AwsRegion) {}
+    override fun validate(credentialsProvider: ToolkitCredentialsProvider, region: AwsRegion) {}
 
     companion object {
         fun getInstance(project: Project): MockAwsConnectionManager =

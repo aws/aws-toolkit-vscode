@@ -56,5 +56,5 @@ interface SsoRequiredInteractiveCredentials : InteractiveCredential {
 
     override val userAction: AnAction get() = RefreshConnectionAction(message("credentials.sso.action"))
 
-    override suspend fun userActionRequired(): Boolean = ssoCache.loadAccessToken(ssoUrl) == null
+    override fun userActionRequired(): Boolean = ssoCache.loadAccessToken(ssoUrl) == null
 }
