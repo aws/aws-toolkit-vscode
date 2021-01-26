@@ -342,8 +342,6 @@ class QueryEditorDialogTest {
 
     @Test
     fun `startQuery with search term`() {
-        val end = Instant.now()
-        val start = end.minus(Duration.ofDays(1))
         val query = queryDetails(
             connectionSettings = connectionSettings,
             query = QueryString.SearchTermQueryString("query")
@@ -362,8 +360,6 @@ class QueryEditorDialogTest {
 
     @Test
     fun `startQuery with Insights query language query`() {
-        val end = Instant.now()
-        val start = end.minus(Duration.ofDays(1))
         val query = queryDetails(
             connectionSettings = connectionSettings,
             query = QueryString.InsightsQueryString("query")

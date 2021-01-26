@@ -284,6 +284,9 @@ class LocalLambdaRunConfiguration(project: Project, factory: ConfigurationFactor
     fun runtime(runtime: Runtime?) {
         serializableOptions.functionOptions.runtime = runtime?.toString()
     }
+    fun runtime(runtime: LambdaRuntime?) {
+        serializableOptions.functionOptions.runtime = runtime?.toString()
+    }
 
     fun imageDebugger(): ImageDebugSupport? = serializableOptions.functionOptions.runtime?.let {
         ImageDebugSupport.debuggers().get(it)

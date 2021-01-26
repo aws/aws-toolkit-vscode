@@ -26,7 +26,7 @@ import com.intellij.xdebugger.XDebuggerManager
 import com.intellij.xdebugger.XDebuggerManagerListener
 import org.assertj.core.api.Assertions.assertThat
 import org.junit.Assume.assumeTrue
-import software.amazon.awssdk.services.lambda.model.Runtime
+import software.aws.toolkits.core.lambda.LambdaRuntime
 import software.aws.toolkits.jetbrains.core.executables.ExecutableManager
 import software.aws.toolkits.jetbrains.core.executables.getExecutableIfPresent
 import software.aws.toolkits.jetbrains.services.lambda.execution.local.createTemplateRunConfiguration
@@ -149,7 +149,7 @@ fun samImageRunDebugTest(
     projectRule: CodeInsightTestFixtureRule,
     relativePath: String,
     sourceFileName: String,
-    runtime: Runtime,
+    runtime: LambdaRuntime,
     mockCredentialsId: String,
     input: String,
     expectedOutput: String = input.toUpperCase(),

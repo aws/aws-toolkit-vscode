@@ -13,6 +13,7 @@ import org.junit.Rule
 import org.junit.Test
 import org.junit.rules.TemporaryFolder
 import software.amazon.awssdk.services.lambda.model.Runtime
+import software.aws.toolkits.core.lambda.LambdaRuntime
 import software.aws.toolkits.jetbrains.services.lambda.execution.local.createHandlerBasedRunConfiguration
 import software.aws.toolkits.jetbrains.services.lambda.execution.local.createTemplateRunConfiguration
 import software.aws.toolkits.jetbrains.services.lambda.execution.remote.RemoteLambdaRunConfiguration
@@ -115,7 +116,7 @@ class SamInvokeRunnerTest {
             project = projectRule.project,
             templateFile = template,
             isImage = true,
-            runtime = Runtime.JAVA11,
+            runtime = LambdaRuntime.JAVA11,
             logicalId = "SomeFunction"
         )
 
@@ -165,7 +166,7 @@ class SamInvokeRunnerTest {
             project = projectRule.project,
             templateFile = template,
             isImage = true,
-            runtime = Runtime.fromValue("NotAValidPlatform"),
+            runtime = null,
             logicalId = "SomeFunction"
         )
 
@@ -215,7 +216,7 @@ class SamInvokeRunnerTest {
             project = projectRule.project,
             templateFile = template,
             isImage = true,
-            runtime = Runtime.JAVA11,
+            runtime = LambdaRuntime.JAVA11,
             logicalId = "SomeFunction"
         )
 
@@ -265,7 +266,7 @@ class SamInvokeRunnerTest {
             project = projectRule.project,
             templateFile = template,
             isImage = true,
-            runtime = Runtime.fromValue("NotAValidPlatform"),
+            runtime = null,
             logicalId = "SomeFunction"
         )
 
