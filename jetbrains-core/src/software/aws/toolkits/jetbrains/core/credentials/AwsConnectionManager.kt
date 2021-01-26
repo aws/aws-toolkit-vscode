@@ -12,13 +12,7 @@ import com.intellij.openapi.project.Project
 import com.intellij.openapi.util.SimpleModificationTracker
 import com.intellij.util.ExceptionUtil
 import com.intellij.util.messages.Topic
-import kotlinx.coroutines.CancellationException
-import kotlinx.coroutines.Dispatchers
-import kotlinx.coroutines.GlobalScope
-import kotlinx.coroutines.Job
-import kotlinx.coroutines.future.await
-import kotlinx.coroutines.launch
-import kotlinx.coroutines.withContext
+import org.jetbrains.concurrency.AsyncPromise
 import software.aws.toolkits.core.credentials.CredentialIdentifier
 import software.aws.toolkits.core.credentials.CredentialProviderNotFoundException
 import software.aws.toolkits.core.credentials.ToolkitCredentialsChangeListener
@@ -32,19 +26,21 @@ import software.aws.toolkits.jetbrains.services.sts.StsResources
 import software.aws.toolkits.jetbrains.utils.MRUList
 import software.aws.toolkits.resources.message
 import software.aws.toolkits.telemetry.AwsTelemetry
+import java.util.concurrent.atomic.AtomicReference
 
 abstract class AwsConnectionManager(private val project: Project) : SimpleModificationTracker(), Disposable {
     private val resourceCache = AwsResourceCache.getInstance()
     private val regionProvider = AwsRegionProvider.getInstance()
     private val credentialsRegionHandler = CredentialsRegionHandler.getInstance(project)
 
-    @Volatile
-    private var validationJob: Job? = null
+    private val validationJob = AtomicReference<AsyncPromise<ConnectionState>>()
 
     @Volatile
     var connectionState: ConnectionState = ConnectionState.InitializingToolkit
         internal set(value) {
             field = value
+            incModificationCount()
+
             if (!project.isDisposed) {
                 project.messageBus.syncPublisher(CONNECTION_SETTINGS_STATE_CHANGED).settingsStateChanged(value)
             }
@@ -56,8 +52,6 @@ abstract class AwsConnectionManager(private val project: Project) : SimpleModifi
     // Internal state is visible for AwsSettingsPanel and ChangeAccountSettingsActionGroup
     internal var selectedCredentialIdentifier: CredentialIdentifier? = null
     internal var selectedRegion: AwsRegion? = null
-
-    private var selectedCredentialsProvider: ToolkitCredentialsProvider? = null
 
     init {
         @Suppress("LeakingThis")
@@ -137,49 +131,61 @@ abstract class AwsConnectionManager(private val project: Project) : SimpleModifi
 
     @Synchronized
     private fun changeFieldsAndNotify(fieldUpdateBlock: () -> Unit) {
-        incModificationCount()
-
-        validationJob?.cancel(CancellationException("Newer connection settings chosen"))
         val isInitial = connectionState is ConnectionState.InitializingToolkit
         connectionState = ConnectionState.ValidatingConnection
 
+        // Grab the current state stamp
+        val modificationStamp = this.modificationCount
+
         fieldUpdateBlock()
 
-        validationJob = GlobalScope.launch(Dispatchers.IO) {
-            val credentialsIdentifier = selectedCredentialIdentifier
-            val region = selectedRegion
+        val validateCredentialsResult = validateCredentials(selectedCredentialIdentifier, selectedRegion, isInitial)
+        validationJob.getAndSet(validateCredentialsResult)?.cancel()
+
+        validateCredentialsResult.onSuccess {
+            // Validate we are still operating in the latest view of the world
+            if (modificationStamp == this.modificationCount) {
+                connectionState = it
+            } else {
+                LOGGER.warn("validateCredentials returned but the account manager state has been manipulated before results were back, ignoring")
+            }
+        }
+    }
+
+    private fun validateCredentials(credentialsIdentifier: CredentialIdentifier?, region: AwsRegion?, isInitial: Boolean): AsyncPromise<ConnectionState> {
+        val promise = AsyncPromise<ConnectionState>()
+        ApplicationManager.getApplication().executeOnPooledThread {
             if (credentialsIdentifier == null || region == null) {
-                connectionState = ConnectionState.IncompleteConfiguration(credentialsIdentifier, region)
-                incModificationCount()
-                return@launch
+                promise.setResult(ConnectionState.IncompleteConfiguration(credentialsIdentifier, region))
+                return@executeOnPooledThread
             }
 
             if (isInitial && credentialsIdentifier is InteractiveCredential && credentialsIdentifier.userActionRequired()) {
-                connectionState = ConnectionState.RequiresUserAction(credentialsIdentifier)
-
-                incModificationCount()
-                return@launch
+                promise.setResult(ConnectionState.RequiresUserAction(credentialsIdentifier))
+                return@executeOnPooledThread
             }
 
+            var success = true
             try {
                 val credentialsProvider = CredentialManager.getInstance().getAwsCredentialProvider(credentialsIdentifier, region)
 
                 validate(credentialsProvider, region)
-                selectedCredentialsProvider = credentialsProvider
-                connectionState = ConnectionState.ValidConnection(credentialsProvider, region)
+
+                promise.setResult(ConnectionState.ValidConnection(credentialsProvider, region))
             } catch (e: Exception) {
-                connectionState = ConnectionState.InvalidConnection(e)
                 LOGGER.warn(e) { message("credentials.profile.validation_error", credentialsIdentifier.displayName) }
+                success = false
+                promise.setResult(ConnectionState.InvalidConnection(e))
             } finally {
-                incModificationCount()
                 AwsTelemetry.validateCredentials(
                     project,
-                    success = isValidConnectionSettings(),
+                    success = success,
                     credentialType = credentialsIdentifier.credentialType.toTelemetryType()
                 )
-                validationJob = null
             }
         }
+
+        return promise
     }
 
     /**
@@ -195,8 +201,19 @@ abstract class AwsConnectionManager(private val project: Project) : SimpleModifi
      */
     val activeCredentialProvider: ToolkitCredentialsProvider
         @Throws(CredentialProviderNotFoundException::class)
-        get() = selectedCredentialsProvider ?: throw CredentialProviderNotFoundException(message("credentials.profile.not_configured")).also {
-            LOGGER.warn(IllegalStateException()) { "Using activeCredentialProvider when credentials is null, calling code needs to be migrated to handle null" }
+        get() {
+            val state = connectionState
+            return if (state is ConnectionState.ValidConnection) {
+                state.credentials
+            } else {
+                if (selectedCredentialIdentifier == null) {
+                    LOGGER.warn(IllegalStateException()) {
+                        "Using activeCredentialProvider when credentials is null, calling code needs to be migrated to handle null"
+                    }
+                }
+
+                throw CredentialProviderNotFoundException(message("credentials.profile.not_configured"))
+            }
         }
 
     /**
@@ -215,17 +232,14 @@ abstract class AwsConnectionManager(private val project: Project) : SimpleModifi
     /**
      * Internal method that executes the actual validation of credentials
      */
-    protected open suspend fun validate(credentialsProvider: ToolkitCredentialsProvider, region: AwsRegion) {
-        withContext(Dispatchers.IO) {
-            // TODO: Convert the cache over to suspend methods
-            resourceCache.getResource(
-                StsResources.ACCOUNT,
-                region = region,
-                credentialProvider = credentialsProvider,
-                useStale = false,
-                forceFetch = true
-            ).await()
-        }
+    protected open fun validate(credentialsProvider: ToolkitCredentialsProvider, region: AwsRegion) {
+        resourceCache.getResource(
+            StsResources.ACCOUNT,
+            region = region,
+            credentialProvider = credentialsProvider,
+            useStale = false,
+            forceFetch = true
+        ).toCompletableFuture().get()
     }
 
     override fun dispose() {

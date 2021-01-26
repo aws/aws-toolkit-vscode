@@ -17,7 +17,7 @@ interface MfaRequiredInteractiveCredentials : InteractiveCredential {
 
     override val userAction: AnAction get() = RefreshConnectionAction(message("credentials.mfa.action"))
 
-    override suspend fun userActionRequired(): Boolean = true
+    override fun userActionRequired(): Boolean = true
 }
 
 fun promptForMfaToken(name: String, mfaSerial: String): String = runBlocking {
