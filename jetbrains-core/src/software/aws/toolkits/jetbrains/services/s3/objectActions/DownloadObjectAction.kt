@@ -11,7 +11,7 @@ import com.intellij.openapi.vfs.VfsUtil
 import com.intellij.util.io.exists
 import com.intellij.util.io.isDirectory
 import com.intellij.util.io.outputStream
-import kotlinx.coroutines.GlobalScope
+import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.launch
 import software.aws.toolkits.core.utils.deleteIfExists
 import software.aws.toolkits.core.utils.getLogger
@@ -24,14 +24,19 @@ import software.aws.toolkits.jetbrains.services.s3.objectActions.DownloadObjectA
 import software.aws.toolkits.jetbrains.services.s3.objectActions.DownloadObjectAction.ConflictResolution.OVERWRITE_ALL
 import software.aws.toolkits.jetbrains.services.s3.objectActions.DownloadObjectAction.ConflictResolution.SKIP
 import software.aws.toolkits.jetbrains.services.s3.objectActions.DownloadObjectAction.ConflictResolution.SKIP_ALL
+import software.aws.toolkits.jetbrains.utils.ApplicationThreadPoolScope
 import software.aws.toolkits.jetbrains.utils.notifyError
 import software.aws.toolkits.resources.message
 import software.aws.toolkits.telemetry.S3Telemetry
 import java.nio.file.Path
 import java.nio.file.Paths
 
-class DownloadObjectAction constructor(private val project: Project, treeTable: S3TreeTable) :
-    S3ObjectAction(treeTable, message("s3.download.object.action"), AllIcons.Actions.Download) {
+class DownloadObjectAction(
+    private val project: Project,
+    treeTable: S3TreeTable
+) :
+    S3ObjectAction(treeTable, message("s3.download.object.action"), AllIcons.Actions.Download),
+    CoroutineScope by ApplicationThreadPoolScope("DownloadObjectAction") {
 
     private data class DownloadInfo(val s3Object: String, val versionId: String?, val diskLocation: Path) {
         constructor(s3Object: S3Object, diskLocation: Path) : this(
@@ -188,8 +193,7 @@ class DownloadObjectAction constructor(private val project: Project, treeTable: 
     }
 
     private fun downloadAll(project: Project, files: List<DownloadInfo>) {
-        // TODO: Get off global scope
-        GlobalScope.launch {
+        launch {
             try {
                 files.forEach { (key, versionId, output) ->
                     try {
