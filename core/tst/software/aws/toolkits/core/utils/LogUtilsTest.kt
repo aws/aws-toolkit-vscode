@@ -45,7 +45,7 @@ class LogUtilsTest {
 
     @Test
     fun nullableIsNotOkInTryOrThrow() {
-        val exception = catch { log.tryOrThrow("message") { mightBeNull(shouldBeNull = true) } }
+        val exception = catch { log.tryOrThrow<String?>("message") { mightBeNull(shouldBeNull = true) } }
         verify(log).error(any(), eq(exception))
     }
 
