@@ -6,11 +6,11 @@ package software.aws.toolkits.jetbrains.services.s3.objectActions
 import com.intellij.icons.AllIcons
 import com.intellij.openapi.project.Project
 import com.intellij.openapi.ui.Messages
-import kotlinx.coroutines.GlobalScope
 import kotlinx.coroutines.launch
 import software.aws.toolkits.jetbrains.services.s3.editor.S3TreeNode
 import software.aws.toolkits.jetbrains.services.s3.editor.S3TreeObjectNode
 import software.aws.toolkits.jetbrains.services.s3.editor.S3TreeTable
+import software.aws.toolkits.jetbrains.utils.ApplicationThreadPoolScope
 import software.aws.toolkits.jetbrains.utils.notifyError
 import software.aws.toolkits.resources.message
 import software.aws.toolkits.telemetry.Result
@@ -45,7 +45,7 @@ private fun deleteNodes(project: Project, treeTable: S3TreeTable, nodes: List<S3
     if (response != Messages.OK) {
         S3Telemetry.deleteObject(project, Result.Cancelled)
     } else {
-        GlobalScope.launch {
+        ApplicationThreadPoolScope("DeleteObjectAction").launch {
             try {
                 treeTable.bucket.deleteObjects(nodes.map { it.key })
                 nodes.forEach { treeTable.invalidateLevel(it) }
