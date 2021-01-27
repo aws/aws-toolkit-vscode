@@ -13,6 +13,7 @@ import com.intellij.execution.process.ProcessEvent
 import com.intellij.execution.process.ProcessOutputType
 import com.intellij.execution.process.ProcessOutputTypes
 import com.intellij.execution.runners.ExecutionEnvironmentBuilder
+import com.intellij.execution.runners.ProgramRunner
 import com.intellij.openapi.application.runInEdt
 import com.intellij.openapi.project.Project
 import com.intellij.openapi.util.Key
@@ -40,17 +41,13 @@ import java.util.concurrent.CompletableFuture
 import java.util.concurrent.TimeUnit
 import kotlin.test.assertNotNull
 
-fun executeRunConfiguration(
-    runConfiguration: RunConfiguration,
-    executorId: String = DefaultRunExecutor.EXECUTOR_ID
-): Output {
+fun executeRunConfiguration(runConfiguration: RunConfiguration, executorId: String = DefaultRunExecutor.EXECUTOR_ID): Output {
     val executor = ExecutorRegistry.getInstance().getExecutorById(executorId)
     assertNotNull(executor)
     val executionFuture = CompletableFuture<Output>()
     runInEdt {
-        val executionEnvironment = ExecutionEnvironmentBuilder.create(executor, runConfiguration).build()
-        try {
-            executionEnvironment.runner.execute(executionEnvironment) {
+        val executionEnvironment = ExecutionEnvironmentBuilder.create(executor, runConfiguration).build(
+            ProgramRunner.Callback {
                 it.processHandler?.addProcessListener(
                     object : OutputListener() {
                         override fun onTextAvailable(event: ProcessEvent, outputType: Key<*>) {
@@ -70,6 +67,10 @@ fun executeRunConfiguration(
                     }
                 )
             }
+        )
+
+        try {
+            executionEnvironment.runner.execute(executionEnvironment)
         } catch (e: Exception) {
             executionFuture.completeExceptionally(e)
         }
