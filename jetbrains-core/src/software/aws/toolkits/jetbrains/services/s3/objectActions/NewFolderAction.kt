@@ -6,20 +6,21 @@ package software.aws.toolkits.jetbrains.services.s3.objectActions
 import com.intellij.icons.AllIcons
 import com.intellij.openapi.project.Project
 import com.intellij.openapi.ui.Messages
-import kotlinx.coroutines.GlobalScope
+import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.launch
 import software.aws.toolkits.jetbrains.services.s3.editor.S3TreeNode
 import software.aws.toolkits.jetbrains.services.s3.editor.S3TreeTable
+import software.aws.toolkits.jetbrains.utils.ApplicationThreadPoolScope
 import software.aws.toolkits.jetbrains.utils.notifyError
 import software.aws.toolkits.resources.message
 
 class NewFolderAction(
     private val project: Project,
     treeTable: S3TreeTable
-) : SingleS3ObjectAction(treeTable, message("s3.new.folder"), AllIcons.Actions.NewFolder) {
+) : SingleS3ObjectAction(treeTable, message("s3.new.folder"), AllIcons.Actions.NewFolder), CoroutineScope by ApplicationThreadPoolScope("NewFolderAction") {
     override fun performAction(node: S3TreeNode) {
         Messages.showInputDialog(project, message("s3.new.folder.name"), message("s3.new.folder"), null)?.let { key ->
-            GlobalScope.launch {
+            launch {
                 try {
                     treeTable.bucket.newFolder(node.directoryPath() + key)
                     treeTable.invalidateLevel(node)
