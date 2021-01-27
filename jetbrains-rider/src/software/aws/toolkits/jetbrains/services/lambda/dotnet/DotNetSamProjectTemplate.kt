@@ -17,5 +17,5 @@ class DotNetSamProjectTemplate : SamAppTemplateBased() {
     override fun description(): String = message("sam.init.template.hello_world.description")
 
     override fun supportedZipRuntimes(): Set<LambdaRuntime> = setOf(LambdaRuntime.DOTNETCORE2_1, LambdaRuntime.DOTNETCORE3_1)
-    override fun supportedImageRuntimes(): Set<LambdaRuntime> = setOf(LambdaRuntime.DOTNETCORE2_1, LambdaRuntime.DOTNETCORE3_1, LambdaRuntime.DOTNET5_0)
+    override fun supportedImageRuntimes(): Set<LambdaRuntime> = setOf(LambdaRuntime.DOTNETCORE2_1, LambdaRuntime.DOTNETCORE3_1)
 }
