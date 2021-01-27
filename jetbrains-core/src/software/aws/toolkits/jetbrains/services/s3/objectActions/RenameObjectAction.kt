@@ -6,11 +6,12 @@ import com.intellij.icons.AllIcons
 import com.intellij.openapi.project.Project
 import com.intellij.openapi.ui.InputValidator
 import com.intellij.openapi.ui.Messages
-import kotlinx.coroutines.GlobalScope
+import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.launch
 import software.aws.toolkits.jetbrains.services.s3.editor.S3TreeNode
 import software.aws.toolkits.jetbrains.services.s3.editor.S3TreeObjectNode
 import software.aws.toolkits.jetbrains.services.s3.editor.S3TreeTable
+import software.aws.toolkits.jetbrains.utils.ApplicationThreadPoolScope
 import software.aws.toolkits.jetbrains.utils.notifyError
 import software.aws.toolkits.resources.message
 import software.aws.toolkits.telemetry.Result
@@ -19,7 +20,8 @@ import software.aws.toolkits.telemetry.S3Telemetry
 class RenameObjectAction(
     private val project: Project,
     treeTable: S3TreeTable
-) : SingleS3ObjectAction(treeTable, message("s3.rename.object.action"), AllIcons.Actions.RefactoringBulb) {
+) : SingleS3ObjectAction(treeTable, message("s3.rename.object.action"), AllIcons.Actions.RefactoringBulb),
+    CoroutineScope by ApplicationThreadPoolScope("RenameObjectAction") {
 
     override fun enabled(node: S3TreeNode): Boolean = node::class == S3TreeObjectNode::class
 
@@ -39,7 +41,7 @@ class RenameObjectAction(
         if (newName == null) {
             S3Telemetry.renameObject(project, Result.Cancelled)
         } else {
-            GlobalScope.launch {
+            launch {
                 try {
                     treeTable.bucket.renameObject(node.key, "${node.parent?.key}$newName")
                     treeTable.invalidateLevel(node)
