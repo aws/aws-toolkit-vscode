@@ -27,8 +27,6 @@ import software.aws.toolkits.jetbrains.services.clouddebug.actions.DeinstrumentR
 import software.aws.toolkits.jetbrains.services.clouddebug.actions.InstrumentResourceAction
 import software.aws.toolkits.jetbrains.services.ecs.EcsUtils
 import software.aws.toolkits.jetbrains.services.ecs.resources.EcsResources
-import software.aws.toolkits.jetbrains.services.ecs.waitForServicesInactive
-import software.aws.toolkits.jetbrains.services.ecs.waitForServicesStable
 import software.aws.toolkits.jetbrains.utils.rules.CloudFormationLazyInitRule
 import java.nio.file.Paths
 import java.util.concurrent.CountDownLatch
@@ -73,7 +71,10 @@ abstract class CloudDebugTestCase(private val taskDefName: String) {
             instrumentService()
             val instrumentedServiceName = "cloud-debug-${EcsUtils.serviceArnToName(service.serviceArn())}"
             println("Waiting for $instrumentedServiceName to stabilize")
-            ecsRule.ecsClient.waitForServicesStable(service.clusterArn(), instrumentedServiceName, waitForMissingServices = true)
+            ecsRule.ecsClient.waiter().waitUntilServicesStable {
+                it.cluster(service.clusterArn())
+                it.services(instrumentedServiceName)
+            }
             instrumentedService = ecsRule.ecsClient.describeServices {
                 it.cluster(service.clusterArn())
                 it.services(instrumentedServiceName)
@@ -91,7 +92,10 @@ abstract class CloudDebugTestCase(private val taskDefName: String) {
             runUnderRealCredentials(getProject()) {
                 deinstrumentService()
                 println("Waiting for ${instrumentedService.serviceArn()} to be deinstrumented")
-                ecsClient.waitForServicesInactive(instrumentedService.clusterArn(), instrumentedService.serviceArn())
+                ecsClient.waiter().waitUntilServicesInactive {
+                    it.cluster(instrumentedService.clusterArn())
+                    it.services(instrumentedService.serviceArn())
+                }
             }
             // TODO: verify that no error toasts were created, or similar mechanism
         }
@@ -113,7 +117,10 @@ abstract class CloudDebugTestCase(private val taskDefName: String) {
             }
         }
         println("Waiting for ${service.serviceArn()} to be stable")
-        ecsRule.ecsClient.waitForServicesStable(service.clusterArn(), service.serviceArn(), waitForMissingServices = true)
+        ecsRule.ecsClient.waiter().waitUntilServicesStable {
+            it.cluster(service.clusterArn())
+            it.services(service.serviceArn())
+        }
 
         return service
     }
