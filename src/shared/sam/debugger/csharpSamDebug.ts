@@ -16,11 +16,15 @@ import { RuntimeFamily } from '../../../lambda/models/samLambdaRuntime'
 import * as pathutil from '../../../shared/utilities/pathUtils'
 import { ExtContext } from '../../extensions'
 import { DefaultSamLocalInvokeCommand, WAIT_FOR_DEBUGGER_MESSAGES } from '../cli/samCliLocalInvoke'
-import { ChannelLogger, getChannelLogger } from '../../utilities/vsCodeUtils'
 import { invokeLambdaFunction, makeInputTemplate, waitForPort } from '../localLambdaRunner'
 import { SamLaunchRequestArgs } from './awsSamDebugger'
 import { ChildProcess } from '../../utilities/childProcess'
 import { HttpResourceFetcher } from '../../resourcefetcher/httpResourceFetcher'
+import { ext } from '../../extensionGlobals'
+import { getLogger } from '../../logger'
+
+import * as nls from 'vscode-nls'
+const localize = nls.loadMessageBundle()
 
 /**
  * Gathers and sets launch-config info by inspecting the workspace and creating
@@ -61,16 +65,13 @@ export async function makeCsharpConfig(config: SamLaunchRequestArgs): Promise<Sa
  * have a `.vsdbg` dir after the first run.
  */
 export async function invokeCsharpLambda(ctx: ExtContext, config: SamLaunchRequestArgs): Promise<SamLaunchRequestArgs> {
-    config.samLocalInvokeCommand = new DefaultSamLocalInvokeCommand(getChannelLogger(ctx.outputChannel), [
-        WAIT_FOR_DEBUGGER_MESSAGES.DOTNET,
-    ])
+    config.samLocalInvokeCommand = new DefaultSamLocalInvokeCommand([WAIT_FOR_DEBUGGER_MESSAGES.DOTNET])
     // eslint-disable-next-line @typescript-eslint/unbound-method
     config.onWillAttachDebugger = waitForPort
     return await invokeLambdaFunction(ctx, config, async () => {
         if (!config.noDebug) {
             await _installDebugger({
                 debuggerPath: config.debuggerPath!!,
-                channelLogger: ctx.chanLogger,
             })
         }
     })
@@ -78,21 +79,22 @@ export async function invokeCsharpLambda(ctx: ExtContext, config: SamLaunchReque
 
 interface InstallDebuggerArgs {
     debuggerPath: string
-    channelLogger: ChannelLogger
 }
 
 function getDebuggerPath(parentFolder: string): string {
     return path.resolve(parentFolder, '.vsdbg')
 }
 
-async function _installDebugger({ debuggerPath, channelLogger }: InstallDebuggerArgs): Promise<void> {
+async function _installDebugger({ debuggerPath }: InstallDebuggerArgs): Promise<void> {
     await ensureDir(debuggerPath)
 
     try {
-        channelLogger.info(
-            'AWS.samcli.local.invoke.debugger.install',
-            'Installing .NET Core Debugger to {0}...',
-            debuggerPath
+        getLogger('channel').info(
+            localize(
+                'AWS.samcli.local.invoke.debugger.install',
+                'Installing .NET Core Debugger to {0}...',
+                debuggerPath
+            )
         )
 
         const vsDbgVersion = 'latest'
@@ -135,10 +137,10 @@ async function _installDebugger({ debuggerPath, channelLogger }: InstallDebugger
         const installPromise = new Promise<void>(async (resolve, reject) => {
             await childProcess.start({
                 onStdout: (text: string) => {
-                    channelLogger.channel.append(text)
+                    ext.outputChannel.append(text)
                 },
                 onStderr: (text: string) => {
-                    channelLogger.channel.append(text)
+                    ext.outputChannel.append(text)
                 },
                 onClose(code: number) {
                     if (code) {
@@ -152,10 +154,12 @@ async function _installDebugger({ debuggerPath, channelLogger }: InstallDebugger
 
         await installPromise
     } catch (err) {
-        channelLogger.info(
-            'AWS.samcli.local.invoke.debugger.install.failed',
-            'Error installing .NET Core Debugger: {0}',
-            err instanceof Error ? (err as Error) : String(err)
+        getLogger('channel').info(
+            localize(
+                'AWS.samcli.local.invoke.debugger.install.failed',
+                'Error installing .NET Core Debugger: {0}',
+                err instanceof Error ? (err as Error).message : String(err)
+            )
         )
 
         throw err

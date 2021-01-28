@@ -9,6 +9,7 @@ import * as nls from 'vscode-nls'
 
 import { asEnvironmentVariables } from '../../credentials/credentialsUtilities'
 import { AwsContext, NoActiveCredentialError } from '../../shared/awsContext'
+import { ext } from '../../shared/extensionGlobals'
 import { makeTemporaryToolkitFolder, tryRemoveFolder } from '../../shared/filesystemUtilities'
 import { getLogger } from '../../shared/logger'
 import { SamCliBuildInvocation } from '../../shared/sam/cli/samCliBuild'
@@ -20,7 +21,6 @@ import { throwAndNotifyIfInvalid } from '../../shared/sam/cli/samCliValidationUt
 import { recordSamDeploy, Result } from '../../shared/telemetry/telemetry'
 import { makeCheckLogsMessage } from '../../shared/utilities/messages'
 import { addCodiconToString } from '../../shared/utilities/textUtilities'
-import { ChannelLogger } from '../../shared/utilities/vsCodeUtils'
 import { SamDeployWizardResponse } from '../wizards/samDeployWizard'
 
 const localize = nls.loadMessageBundle()
@@ -45,11 +45,9 @@ export interface WindowFunctions {
 export async function deploySamApplication(
     {
         samCliContext = getSamCliContext(),
-        channelLogger,
         samDeployWizard,
     }: {
         samCliContext?: SamCliContext
-        channelLogger: ChannelLogger
         samDeployWizard: () => Promise<SamDeployWizardResponse | undefined>
     },
     {
@@ -91,7 +89,6 @@ export async function deploySamApplication(
 
         const deployApplicationPromise = deploy({
             deployParameters,
-            channelLogger,
             invoker: samCliContext.invoker,
             window,
         })
@@ -111,7 +108,7 @@ export async function deploySamApplication(
         await deployApplicationPromise
     } catch (err) {
         deployResult = 'Failed'
-        outputDeployError(err as Error, channelLogger)
+        outputDeployError(err as Error)
     } finally {
         await tryRemoveFolder(deployFolder)
         recordSamDeploy({ result: deployResult })
@@ -135,10 +132,9 @@ function getPackageTemplatePath(deployRootFolder: string): string {
 async function buildOperation(params: {
     deployParameters: DeploySamApplicationParameters
     invoker: SamCliProcessInvoker
-    channelLogger: ChannelLogger
 }): Promise<boolean> {
     try {
-        params.channelLogger.info('AWS.samcli.deploy.workflow.init', 'Building SAM Application...')
+        getLogger('channel').info(localize('AWS.samcli.deploy.workflow.init', 'Building SAM Application...'))
 
         const buildDestination = getBuildRootFolder(params.deployParameters.deployRootFolder)
 
@@ -153,10 +149,12 @@ async function buildOperation(params: {
 
         return true
     } catch (err) {
-        params.channelLogger.warn(
-            'AWS.samcli.build.failedBuild',
-            '"sam build" failed: {0}',
-            params.deployParameters.sourceTemplatePath
+        getLogger('channel').warn(
+            localize(
+                'AWS.samcli.build.failedBuild',
+                '"sam build" failed: {0}',
+                params.deployParameters.sourceTemplatePath
+            )
         )
         return false
     }
@@ -166,14 +164,24 @@ async function packageOperation(
     params: {
         deployParameters: DeploySamApplicationParameters
         invoker: SamCliProcessInvoker
-        channelLogger: ChannelLogger
     },
     buildSuccessful: boolean
 ): Promise<void> {
-    params.channelLogger.info(
-        'AWS.samcli.deploy.workflow.packaging',
-        'Packaging SAM Application to S3 Bucket: {0}',
-        params.deployParameters.packageBucketName
+    if (!buildSuccessful) {
+        vscode.window.showInformationMessage(
+            localize(
+                'AWS.samcli.deploy.workflow.packaging.noBuild',
+                'Attempting to package source template directory directly since "sam build" failed'
+            )
+        )
+    }
+
+    getLogger('channel').info(
+        localize(
+            'AWS.samcli.deploy.workflow.packaging',
+            'Packaging SAM Application to S3 Bucket: {0}',
+            params.deployParameters.packageBucketName
+        )
     )
 
     // HACK: Attempt to package the initial template if the build fails.
@@ -198,13 +206,14 @@ async function packageOperation(
 async function deployOperation(params: {
     deployParameters: DeploySamApplicationParameters
     invoker: SamCliProcessInvoker
-    channelLogger: ChannelLogger
 }): Promise<void> {
     try {
-        params.channelLogger.info(
-            'AWS.samcli.deploy.workflow.stackName.initiated',
-            'Deploying SAM Application to CloudFormation Stack: {0}',
-            params.deployParameters.destinationStackName
+        getLogger('channel').info(
+            localize(
+                'AWS.samcli.deploy.workflow.stackName.initiated',
+                'Deploying SAM Application to CloudFormation Stack: {0}',
+                params.deployParameters.destinationStackName
+            )
         )
 
         const packageTemplatePath = getPackageTemplatePath(params.deployParameters.deployRootFolder)
@@ -228,7 +237,7 @@ async function deployOperation(params: {
         getLogger().error(error)
 
         const errorMessage = enhanceAwsCloudFormationInstructions(String(err), params.deployParameters)
-        params.channelLogger.channel.appendLine(errorMessage)
+        ext.outputChannel.appendLine(errorMessage)
 
         throw new Error('Deploy failed')
     }
@@ -237,28 +246,31 @@ async function deployOperation(params: {
 async function deploy(params: {
     deployParameters: DeploySamApplicationParameters
     invoker: SamCliProcessInvoker
-    channelLogger: ChannelLogger
     window: WindowFunctions
 }): Promise<void> {
     try {
-        params.channelLogger.channel.show(true)
-        params.channelLogger.info('AWS.samcli.deploy.workflow.start', 'Starting SAM Application deployment...')
+        ext.outputChannel.show(true)
+        getLogger('channel').info(
+            localize('AWS.samcli.deploy.workflow.start', 'Starting SAM Application deployment...')
+        )
 
         const buildSuccessful = await buildOperation(params)
         await packageOperation(params, buildSuccessful)
         await deployOperation(params)
 
-        params.channelLogger.info(
-            'AWS.samcli.deploy.workflow.success',
-            'Successfully deployed SAM Application to CloudFormation Stack: {0}',
-            params.deployParameters.destinationStackName
+        getLogger('channel').info(
+            localize(
+                'AWS.samcli.deploy.workflow.success',
+                'Successfully deployed SAM Application to CloudFormation Stack: {0}',
+                params.deployParameters.destinationStackName
+            )
         )
 
         params.window.showInformationMessage(
             localize('AWS.samcli.deploy.workflow.success.general', 'SAM Application deployment succeeded.')
         )
     } catch (err) {
-        outputDeployError(err as Error, params.channelLogger)
+        outputDeployError(err as Error)
 
         params.window.showErrorMessage(
             localize('AWS.samcli.deploy.workflow.error', 'Failed to deploy SAM application.')
@@ -284,17 +296,13 @@ function enhanceAwsCloudFormationInstructions(
     return message
 }
 
-function outputDeployError(error: Error, channelLogger: ChannelLogger) {
-    getLogger().error(error)
-
-    if (error.message) {
-        channelLogger.channel.appendLine(error.message)
-    }
+function outputDeployError(error: Error) {
+    getLogger('channel').error(error)
 
     const checkLogsMessage = makeCheckLogsMessage()
 
-    channelLogger.channel.show(true)
-    channelLogger.error(
+    ext.outputChannel.show(true)
+    getLogger('channel').error(
         'AWS.samcli.deploy.general.error',
         'An error occurred while deploying a SAM Application. {0}',
         checkLogsMessage

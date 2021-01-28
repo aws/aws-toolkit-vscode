@@ -7,7 +7,6 @@ import { stat } from 'fs-extra'
 import * as semver from 'semver'
 import { SamCliConfiguration } from './samCliConfiguration'
 import { SamCliInfoInvocation, SamCliInfoResponse } from './samCliInfo'
-import { SamCliProcessInvoker } from './samCliInvokerUtils'
 
 export const MINIMUM_SAM_CLI_VERSION_INCLUSIVE = '0.47.0'
 export const MINIMUM_SAM_CLI_VERSION_INCLUSIVE_FOR_IMAGE_SUPPORT = '1.13.0'
@@ -129,10 +128,7 @@ export class DefaultSamCliValidator implements SamCliValidator {
 }
 
 export class DefaultSamCliValidatorContext implements SamCliValidatorContext {
-    public constructor(
-        private readonly samCliConfiguration: SamCliConfiguration,
-        private readonly invoker: SamCliProcessInvoker
-    ) {}
+    public constructor(private readonly samCliConfiguration: SamCliConfiguration) {}
 
     public async samCliLocation(): Promise<string> {
         return (await this.samCliConfiguration.getOrDetectSamCli()).path
@@ -151,7 +147,7 @@ export class DefaultSamCliValidatorContext implements SamCliValidatorContext {
     }
 
     public async getSamCliInfo(): Promise<SamCliInfoResponse> {
-        const samCliInfo = new SamCliInfoInvocation(this.invoker)
+        const samCliInfo = new SamCliInfoInvocation({ preloadedConfig: this.samCliConfiguration })
 
         return await samCliInfo.execute()
     }

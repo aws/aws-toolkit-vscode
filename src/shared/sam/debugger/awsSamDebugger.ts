@@ -17,7 +17,6 @@ import {
 } from '../../../lambda/local/debugConfiguration'
 import { getDefaultRuntime, getFamily, getRuntimeFamily, RuntimeFamily } from '../../../lambda/models/samLambdaRuntime'
 import { Timeout } from '../../utilities/timeoutUtils'
-import { ChannelLogger } from '../../utilities/vsCodeUtils'
 import * as csharpDebug from './csharpSamDebug'
 import * as pythonDebug from './pythonSamDebug'
 import * as tsDebug from './typescriptSamDebug'
@@ -152,7 +151,7 @@ export interface SamLaunchRequestArgs extends AwsSamDebuggerConfiguration {
     //  Non-serializable...
     //
     samLocalInvokeCommand?: SamLocalInvokeCommand
-    onWillAttachDebugger?(debugPort: number, timeout: Timeout, channelLogger: ChannelLogger): Promise<void>
+    onWillAttachDebugger?(debugPort: number, timeout: Timeout): Promise<void>
 }
 
 /**

@@ -10,6 +10,7 @@ import * as vscode from 'vscode'
 import { deploySamApplication, WindowFunctions } from '../../../lambda/commands/deploySamApplication'
 import { SamDeployWizardResponse } from '../../../lambda/wizards/samDeployWizard'
 import { AwsContext } from '../../../shared/awsContext'
+import { ext } from '../../../shared/extensionGlobals'
 import { makeTemporaryToolkitFolder } from '../../../shared/filesystemUtilities'
 import { SamCliContext } from '../../../shared/sam/cli/samCliContext'
 import { SamCliProcessInvoker } from '../../../shared/sam/cli/samCliInvokerUtils'
@@ -20,8 +21,7 @@ import {
     SamCliVersionValidatorResult,
 } from '../../../shared/sam/cli/samCliValidator'
 import { ChildProcessResult } from '../../../shared/utilities/childProcess'
-import { getTestLogger } from '../../globalSetup.test'
-import { FakeChannelLogger } from '../../shared/fakeChannelLogger'
+import { assertLogsContain, getTestLogger } from '../../globalSetup.test'
 import { FakeChildProcessResult, TestSamCliProcessInvoker } from '../../shared/sam/cli/testSamCliProcessInvoker'
 
 describe('deploySamApplication', async () => {
@@ -113,8 +113,6 @@ describe('deploySamApplication', async () => {
         getCredentials: async () => testCredentials,
     }
 
-    let channelLogger: FakeChannelLogger
-
     let samDeployWizardResponse: SamDeployWizardResponse | undefined
     const samDeployWizard = async (): Promise<SamDeployWizardResponse | undefined> => {
         return samDeployWizardResponse
@@ -122,11 +120,13 @@ describe('deploySamApplication', async () => {
 
     let tempToolkitFolder: string
     beforeEach(async () => {
-        channelLogger = new FakeChannelLogger()
-
         tempToolkitFolder = await makeTemporaryToolkitFolder()
         const templatePath = path.join(tempToolkitFolder, 'template.yaml')
         writeFile(templatePath)
+
+        // TODO: is this safe? will add output channel across all tests
+        // we are using this pattern in other tests...
+        ext.outputChannel = vscode.window.createOutputChannel('test channel')
 
         testCredentials = placeholderCredentials
         invokerCalledCount = 0
@@ -149,7 +149,6 @@ describe('deploySamApplication', async () => {
         await deploySamApplication(
             {
                 samCliContext: goodSamCliContext(),
-                channelLogger,
                 samDeployWizard,
             },
             {
@@ -168,7 +167,6 @@ describe('deploySamApplication', async () => {
         await deploySamApplication(
             {
                 samCliContext: goodSamCliContext(),
-                channelLogger,
                 samDeployWizard,
             },
             {
@@ -177,14 +175,13 @@ describe('deploySamApplication', async () => {
             }
         )
 
-        assertGeneralErrorLogged(channelLogger)
+        assertGeneralErrorLogged()
     })
 
     it('informs user of error when sam cli is invalid', async () => {
         await deploySamApplication(
             {
                 samCliContext: invalidSamCliContext,
-                channelLogger,
                 samDeployWizard,
             },
             {
@@ -193,7 +190,7 @@ describe('deploySamApplication', async () => {
             }
         )
 
-        assertGeneralErrorLogged(channelLogger)
+        assertGeneralErrorLogged()
     })
 
     it('exits if the wizard is cancelled', async () => {
@@ -202,7 +199,6 @@ describe('deploySamApplication', async () => {
         await deploySamApplication(
             {
                 samCliContext: goodSamCliContext(),
-                channelLogger,
                 samDeployWizard,
             },
             {
@@ -231,7 +227,6 @@ describe('deploySamApplication', async () => {
         await deploySamApplication(
             {
                 samCliContext: goodSamCliContext(),
-                channelLogger,
                 samDeployWizard,
             },
             {
@@ -262,7 +257,6 @@ describe('deploySamApplication', async () => {
         await deploySamApplication(
             {
                 samCliContext: goodSamCliContext(),
-                channelLogger,
                 samDeployWizard,
             },
             {
@@ -273,8 +267,8 @@ describe('deploySamApplication', async () => {
 
         await waitForDeployToComplete()
         assert.strictEqual(invokerCalledCount, 2, 'Unexpected sam cli invoke count')
-        assertErrorLogsContain('broken package', false)
-        assertGeneralErrorLogged(channelLogger)
+        assertLogsContain('broken package', false, 'error')
+        assertGeneralErrorLogged()
     })
 
     it('informs user of error if invoking sam deploy fails', async () => {
@@ -294,7 +288,6 @@ describe('deploySamApplication', async () => {
         await deploySamApplication(
             {
                 samCliContext: goodSamCliContext(),
-                channelLogger,
                 samDeployWizard,
             },
             {
@@ -305,8 +298,8 @@ describe('deploySamApplication', async () => {
 
         await waitForDeployToComplete()
         assert.strictEqual(invokerCalledCount, 3, 'Unexpected sam cli invoke count')
-        assertErrorLogsContain('broken deploy', false)
-        assertGeneralErrorLogged(channelLogger)
+        assertLogsContain('broken deploy', false, 'error')
+        assertGeneralErrorLogged()
     })
 
     async function waitForDeployToComplete(): Promise<void> {
@@ -315,20 +308,9 @@ describe('deploySamApplication', async () => {
     }
 })
 
-function assertGeneralErrorLogged(channelLogger: FakeChannelLogger) {
-    assert.ok(
-        channelLogger.loggedErrorKeys.has('AWS.samcli.deploy.general.error'),
-        'Expected the deploy general error to be reported'
-    )
-}
-
-function assertErrorLogsContain(text: string, exactMatch: boolean) {
-    assert.ok(
-        getTestLogger()
-            .getLoggedEntries('error')
-            .some(e => e instanceof Error && (exactMatch ? e.message === text : e.message.includes(text))),
-        `Expected to find "${text}" in the error logs`
-    )
+function assertGeneralErrorLogged() {
+    // match string 'AWS.samcli.deploy.general.error'
+    assertLogsContain('An error occurred while deploying a SAM Application.', false, 'error')
 }
 
 function assertErrorLogsSwallowed(text: string, exactMatch: boolean) {

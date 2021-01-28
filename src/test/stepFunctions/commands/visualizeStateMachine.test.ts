@@ -125,7 +125,7 @@ const mockTextDocumentYaml: vscode.TextDocument = {
     isClosed: false,
     isDirty: false,
     isUntitled: false,
-    languageId: 'yaml',
+    languageId: 'asl-yaml',
     lineCount: 0,
     uri: mockUriThree,
     version: 0,

@@ -3,38 +3,19 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
-import { extensionSettingsPrefix } from '../../constants'
 import { getLogger } from '../../logger'
-import { DefaultSettingsConfiguration } from '../../settingsConfiguration'
 import { ChildProcess, ChildProcessResult } from '../../utilities/childProcess'
-import { DefaultSamCliConfiguration, SamCliConfiguration } from './samCliConfiguration'
 import {
     makeRequiredSamCliProcessInvokeOptions,
     SamCliProcessInvokeOptions,
     SamCliProcessInvoker,
 } from './samCliInvokerUtils'
-import { DefaultSamCliLocationProvider } from './samCliLocator'
 
-export interface SamCliProcessInvokerContext {
-    cliConfig: SamCliConfiguration
-}
-
-export class DefaultSamCliProcessInvokerContext implements SamCliProcessInvokerContext {
-    public cliConfig: SamCliConfiguration = new DefaultSamCliConfiguration(
-        new DefaultSettingsConfiguration(extensionSettingsPrefix),
-        new DefaultSamCliLocationProvider()
-    )
-}
-
-export function resolveSamCliProcessInvokerContext(
-    params: Partial<SamCliProcessInvokerContext> = {}
-): SamCliProcessInvokerContext {
-    const defaults = new DefaultSamCliProcessInvokerContext()
-
-    return {
-        cliConfig: params.cliConfig || defaults.cliConfig,
-    }
-}
+import * as nls from 'vscode-nls'
+import { DefaultSamCliConfiguration, SamCliConfiguration } from './samCliConfiguration'
+import { DefaultSettingsConfiguration } from '../../settingsConfiguration'
+import { extensionSettingsPrefix } from '../../constants'
+const localize = nls.loadMessageBundle()
 
 /**
  * Yet another `sam` CLI wrapper.
@@ -43,7 +24,25 @@ export function resolveSamCliProcessInvokerContext(
  */
 export class DefaultSamCliProcessInvoker implements SamCliProcessInvoker {
     private childProcess?: ChildProcess
-    public constructor(private readonly context: SamCliProcessInvokerContext = resolveSamCliProcessInvokerContext()) {}
+    private readonly context: SamCliConfiguration
+    public constructor(params: {
+        preloadedConfig?: SamCliConfiguration
+        locationProvider?: { getLocation(): Promise<string | undefined> }
+    }) {
+        if (params.preloadedConfig && params.locationProvider) {
+            throw new Error('Invalid constructor args for DefaultSamCliProcessInvoker')
+        }
+        if (params.preloadedConfig) {
+            this.context = params.preloadedConfig
+        } else if (params.locationProvider) {
+            this.context = new DefaultSamCliConfiguration(
+                new DefaultSettingsConfiguration(extensionSettingsPrefix),
+                params.locationProvider
+            )
+        } else {
+            throw new Error('Invalid constructor args for DefaultSamCliProcessInvoker')
+        }
+    }
 
     public stop(): void {
         if (!this.childProcess) {
@@ -56,7 +55,7 @@ export class DefaultSamCliProcessInvoker implements SamCliProcessInvoker {
         const invokeOptions = makeRequiredSamCliProcessInvokeOptions(options)
         const logger = getLogger()
 
-        const sam = await this.context.cliConfig.getOrDetectSamCli()
+        const sam = await this.context.getOrDetectSamCli()
         if (!sam.path) {
             logger.warn('SAM CLI not found and not configured')
         } else if (sam.autoDetected) {
@@ -66,18 +65,18 @@ export class DefaultSamCliProcessInvoker implements SamCliProcessInvoker {
         const samCommand = sam.path ? sam.path : 'sam'
         this.childProcess = new ChildProcess(samCommand, invokeOptions.spawnOptions, ...invokeOptions.arguments)
 
-        options?.channelLogger?.info('AWS.running.command', 'Running command: {0}', `${this.childProcess}`)
+        getLogger('channel').info(localize('AWS.running.command', 'Running command: {0}', `${this.childProcess}`))
         logger.verbose(`running: ${this.childProcess}`)
         return await this.childProcess.run(
             (text: string) => {
-                options?.channelLogger?.emitMessage(text)
+                getLogger('debugConsole').info(text)
                 logger.verbose(`stdout: ${text}`)
                 if (options?.onStdout) {
                     options.onStdout(text)
                 }
             },
             (text: string) => {
-                options?.channelLogger?.emitMessage(text)
+                getLogger('debugConsole').info(text)
                 logger.verbose(`stderr: ${text}`)
                 if (options?.onStderr) {
                     options.onStderr(text)

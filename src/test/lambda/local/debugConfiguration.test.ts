@@ -11,7 +11,6 @@ import { RuntimeFamily } from '../../../lambda/models/samLambdaRuntime'
 import { makeTemporaryToolkitFolder } from '../../../shared/filesystemUtilities'
 import { DefaultSamLocalInvokeCommand } from '../../../shared/sam/cli/samCliLocalInvoke'
 import { makeCoreCLRDebugConfiguration } from '../../../shared/sam/debugger/csharpSamDebug'
-import { FakeExtensionContext } from '../../fakeExtensionContext'
 import * as testutil from '../../testUtil'
 import { SamLaunchRequestArgs } from '../../../shared/sam/debugger/awsSamDebugger'
 import * as pathutil from '../../../shared/utilities/pathUtils'
@@ -38,7 +37,6 @@ describe('makeCoreCLRDebugConfiguration', async () => {
     })
 
     async function makeFakeSamLaunchConfig() {
-        const fakeExtCtx = await FakeExtensionContext.getFakeExtContext()
         const config: SamLaunchRequestArgs = {
             name: 'fake-launch-config',
             workspaceFolder: fakeWorkspaceFolder,
@@ -58,7 +56,7 @@ describe('makeCoreCLRDebugConfiguration', async () => {
             eventPayloadFile: '/fake/build/dir/event.json',
             documentUri: vscode.Uri.parse('/fake/path/foo.txt'),
             templatePath: '/fake/sam/path',
-            samLocalInvokeCommand: new DefaultSamLocalInvokeCommand(fakeExtCtx.chanLogger),
+            samLocalInvokeCommand: new DefaultSamLocalInvokeCommand(),
 
             //debuggerPath?:
 

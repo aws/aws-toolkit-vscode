@@ -3,12 +3,13 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
+import { types } from 'util'
 import * as vscode from 'vscode'
 import * as winston from 'winston'
 import { ConsoleLogTransport } from './consoleLogTransport'
+import { DebugConsoleTransport } from './debugConsoleTransport'
 import { Logger, LogLevel, compareLogLevel } from './logger'
 import { OutputChannelTransport } from './outputChannelTransport'
-import { isError } from 'util'
 
 export class WinstonToolkitLogger implements Logger, vscode.Disposable {
     private readonly logger: winston.Logger
@@ -46,12 +47,17 @@ export class WinstonToolkitLogger implements Logger, vscode.Disposable {
         this.logger.add(new winston.transports.File({ filename: logPath }))
     }
 
-    public logToOutputChannel(outputChannel: vscode.OutputChannel): void {
+    public logToOutputChannel(outputChannel: vscode.OutputChannel, stripAnsi: boolean): void {
         this.logger.add(
             new OutputChannelTransport({
                 outputChannel,
+                stripAnsi,
             })
         )
+    }
+
+    public logToDebugConsole(): void {
+        this.logger.add(new DebugConsoleTransport({ name: 'ActiveDebugConsole' }))
     }
 
     public logToConsole(): void {
@@ -91,9 +97,9 @@ export class WinstonToolkitLogger implements Logger, vscode.Disposable {
             throw new Error('Cannot write to disposed logger')
         }
 
-        meta.filter(item => isError(item)).forEach(error => coerceNameToString(error))
+        meta.filter(item => types.isNativeError(item)).forEach(error => coerceNameToString(error))
 
-        if (isError(message)) {
+        if (types.isNativeError(message)) {
             coerceNameToString(message)
             this.logger.log(level, '%O', message, ...meta)
         } else {

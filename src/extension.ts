@@ -58,7 +58,6 @@ import {
     recordToolkitInit,
 } from './shared/telemetry/telemetry'
 import { ExtensionDisposableFiles } from './shared/utilities/disposableFiles'
-import { getChannelLogger } from './shared/utilities/vsCodeUtils'
 import { ExtContext } from './shared/extensions'
 import { activate as activateApiGateway } from './apigateway/activation'
 import { activate as activateStepFunctions } from './stepFunctions/activation'
@@ -74,12 +73,11 @@ export async function activate(context: vscode.ExtensionContext) {
     localize = nls.loadMessageBundle()
 
     ext.context = context
-    await activateLogger(context)
     const toolkitOutputChannel = vscode.window.createOutputChannel(localize('AWS.channel.aws.toolkit', 'AWS Toolkit'))
+    await activateLogger(context, toolkitOutputChannel)
     const remoteInvokeOutputChannel = vscode.window.createOutputChannel(
         localize('AWS.channel.aws.remoteInvoke', 'AWS Remote Invocations')
     )
-    const channelLogger = getChannelLogger(toolkitOutputChannel)
     ext.outputChannel = toolkitOutputChannel
 
     try {
@@ -132,7 +130,6 @@ export async function activate(context: vscode.ExtensionContext) {
             settings: toolkitSettings,
             outputChannel: toolkitOutputChannel,
             telemetryService: ext.telemetry,
-            chanLogger: getChannelLogger(toolkitOutputChannel),
             credentialsStore,
         }
 
@@ -243,7 +240,13 @@ export async function activate(context: vscode.ExtensionContext) {
 
         recordToolkitInitialization(activationStartedOn, getLogger())
     } catch (error) {
-        channelLogger.error('AWS.channel.aws.toolkit.activation.error', 'Error Activating AWS Toolkit', error as Error)
+        getLogger('channel').error(
+            localize(
+                'AWS.channel.aws.toolkit.activation.error',
+                'Error Activating AWS Toolkit: {0}',
+                (error as Error).message
+            )
+        )
         throw error
     }
 }

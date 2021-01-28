@@ -3,7 +3,11 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
-let toolkitLogger: Logger | undefined
+const toolkitLoggers: {
+    main: Logger | undefined
+    channel: Logger | undefined
+    debugConsole: Logger | undefined
+} = { main: undefined, channel: undefined, debugConsole: undefined }
 
 export interface Logger {
     debug(message: string, ...meta: any[]): void
@@ -52,22 +56,27 @@ export function compareLogLevel(l1: LogLevel, l2: LogLevel): number {
 
 /**
  * Gets the logger if it has been initialized
+ * @param type Gets the logger type:
+ * * `'main'` or `undefined`: Main logger; default impl: logs to log file and log output channel
+ * * `'channel'`: Channel Logger; default impl: logs to the `main` channels and the `AWS Toolkit` output channel
+ * * `'debug'`: Debug Console Logger; default impl: logs to the `channel` channels and the currently-active VS Code Debug Console pane.
  */
-export function getLogger(): Logger {
-    if (!toolkitLogger) {
+export function getLogger(type?: 'channel' | 'debugConsole' | 'main'): Logger {
+    const logger = toolkitLoggers[type ?? 'main']
+    if (!logger) {
         throw new Error(
             'Logger not initialized. Extension code should call initialize() from shared/logger/activation, test code should call setLogger().'
         )
     }
 
-    return toolkitLogger
+    return logger
 }
 
 /**
  * Sets (or clears) the logger that is accessible to code.
- * The Extension is expected to call this only once.
+ * The Extension is expected to call this only once per log type.
  * Tests should call this to set up a logger prior to executing code that accesses a logger.
  */
-export function setLogger(logger: Logger | undefined) {
-    toolkitLogger = logger
+export function setLogger(logger: Logger | undefined, type?: 'channel' | 'debugConsole' | 'main') {
+    toolkitLoggers[type ?? 'main'] = logger
 }

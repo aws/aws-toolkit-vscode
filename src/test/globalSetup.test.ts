@@ -12,7 +12,7 @@ import { join } from 'path'
 import { CodelensRootRegistry } from '../shared/sam/codelensRootRegistry'
 import { CloudFormationTemplateRegistry } from '../shared/cloudformation/templateRegistry'
 import { ext } from '../shared/extensionGlobals'
-import { getLogger } from '../shared/logger'
+import { getLogger, LogLevel } from '../shared/logger'
 import { setLogger } from '../shared/logger/logger'
 import { DefaultTelemetryService } from '../shared/telemetry/defaultTelemetryService'
 import { TelemetryFeedback } from '../shared/telemetry/telemetryFeedback'
@@ -68,19 +68,26 @@ export function getTestLogger(): TestLogger {
     assert.strictEqual(logger, testLogger, 'The expected test logger is not the current logger')
     assert.ok(testLogger, 'TestLogger was expected to exist')
 
-    return testLogger!
+    return logger!
 }
 
 function setupTestLogger(): TestLogger {
+    // write the same logger to each channel.
+    // That way, we don't have to worry about which channel is being logged to for inspection.
     const logger = new TestLogger()
-    setLogger(logger)
+    setLogger(logger, 'main')
+    setLogger(logger, 'channel')
+    setLogger(logger, 'debugConsole')
 
     return logger
 }
 
 function teardownTestLogger(testName: string) {
     writeLogsToFile(testName)
-    setLogger(undefined)
+
+    setLogger(undefined, 'main')
+    setLogger(undefined, 'channel')
+    setLogger(undefined, 'debugConsole')
 }
 
 function writeLogsToFile(testName: string) {
@@ -88,4 +95,21 @@ function writeLogsToFile(testName: string) {
     entries?.unshift(`=== Starting test "${testName}" ===`)
     entries?.push(`=== Ending test "${testName}" ===\n\n`)
     appendFileSync(testLogOutput, entries?.join('\n'), 'utf8')
+}
+
+export function assertLogsContain(text: string, exactMatch: boolean, severity: LogLevel) {
+    assert.ok(
+        getTestLogger()
+            .getLoggedEntries(severity)
+            .some(e =>
+                e instanceof Error
+                    ? exactMatch
+                        ? e.message === text
+                        : e.message.includes(text)
+                    : exactMatch
+                    ? e === text
+                    : e.includes(text)
+            ),
+        `Expected to find "${text}" in the logs as type "${severity}"`
+    )
 }
