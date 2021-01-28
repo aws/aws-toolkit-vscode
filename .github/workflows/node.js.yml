@@ -16,7 +16,7 @@ jobs:
         strategy:
             matrix:
                 node-version: [12.x]
-                vscode-version: [minimum, stable]
+                vscode-version: [minimum, stable, insiders]
         steps:
             - env:
                   NODE_OPTIONS: '--max-old-space-size=8192'
@@ -42,7 +42,7 @@ jobs:
         strategy:
             matrix:
                 node-version: [12.x]
-                vscode-version: [minimum, stable]
+                vscode-version: [minimum, stable, insiders]
         steps:
             - env:
                   NODE_OPTIONS: '--max-old-space-size=8192'
