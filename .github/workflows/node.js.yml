@@ -32,7 +32,7 @@ jobs:
               with:
                   run: npm test
               env:
-                  VSCODE_TEST_VERSION: ${{ vscode-version }}
+                  VSCODE_TEST_VERSION: ${{ matrix.vscode-version }}
             - name: Code coverage
               if: ${{ github.repository == 'aws/aws-toolkit-vscode' && ( github.ref == 'master' || github.event_name == 'pull_request' ) }}
               run: bash <(curl -s https://codecov.io/bash) -s .coverage
@@ -57,4 +57,4 @@ jobs:
             - name: Tests
               run: npm test
               env:
-                  VSCODE_TEST_VERSION: ${{ vscode-version }}
+                  VSCODE_TEST_VERSION: ${{ matrix.vscode-version }}
