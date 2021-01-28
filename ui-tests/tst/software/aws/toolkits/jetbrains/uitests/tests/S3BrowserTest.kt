@@ -20,7 +20,6 @@ import software.amazon.awssdk.regions.Region
 import software.amazon.awssdk.services.s3.S3Client
 import software.amazon.awssdk.services.s3.model.NoSuchBucketException
 import software.aws.toolkits.core.s3.deleteBucketAndContents
-import software.aws.toolkits.core.utils.unwrapResponse
 import software.aws.toolkits.jetbrains.uitests.CoreTest
 import software.aws.toolkits.jetbrains.uitests.extensions.uiTest
 import software.aws.toolkits.jetbrains.uitests.fixtures.IdeaFrame
@@ -195,6 +194,7 @@ class S3BrowserTest {
                 findAndClick("//div[@text='$deleteBucketText']")
                 fillSingleTextField(bucket)
                 pressOk()
+                waitForS3BucketDeletion()
             }
         }
     }
@@ -203,6 +203,7 @@ class S3BrowserTest {
     fun cleanup() {
         try {
             s3Client.deleteBucketAndContents(bucket)
+            waitForS3BucketDeletion()
         } catch (e: Exception) {
             if (e is NoSuchBucketException) {
                 return
@@ -213,8 +214,16 @@ class S3BrowserTest {
         }
     }
 
+    private fun waitForS3BucketDeletion() {
+// TODO: This is consistently timing out starting 12/7
+//        s3Client.waiter().waitUntilBucketNotExists(
+//            { it.bucket(bucket) },
+//            { it.maxAttempts(30) }
+//        )
+    }
+
     private fun waitForS3BucketCreation() {
-        s3Client.waiter().waitUntilBucketExists { it.bucket(bucket) }.unwrapResponse()
+        s3Client.waiter().waitUntilBucketExists { it.bucket(bucket) }
     }
 
     private fun IdeaFrame.s3Tree(func: (JTreeFixture.() -> Unit)) {
