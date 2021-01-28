@@ -8,6 +8,7 @@ import software.amazon.awssdk.services.s3.S3Client
 import software.amazon.awssdk.services.s3.model.NoSuchBucketException
 import software.aws.toolkits.core.s3.deleteBucketAndContents
 import software.aws.toolkits.core.utils.RuleUtils
+import software.aws.toolkits.core.utils.unwrapResponse
 
 class S3TemporaryBucketRule(private val s3ClientSupplier: () -> S3Client) : ExternalResource() {
     constructor(s3Client: S3Client) : this({ s3Client })
@@ -24,7 +25,7 @@ class S3TemporaryBucketRule(private val s3ClientSupplier: () -> S3Client) : Exte
         client.createBucket { it.bucket(bucketName) }
 
         // Wait for bucket to be ready
-        client.waiter().waitUntilBucketExists { it.bucket(bucketName) }
+        client.waiter().waitUntilBucketExists { it.bucket(bucketName) }.unwrapResponse()
 
         buckets.add(bucketName)
 
