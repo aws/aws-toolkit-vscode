@@ -432,6 +432,7 @@
     "AWS.samcli.deploy.s3bucket.picker.loading": "Loading S3 buckets...",
     "AWS.samcli.deploy.s3bucket.picker.noBuckets": "No buckets found.",
     "AWS.samcli.deploy.s3bucket.picker.error": "There was an error loading S3 buckets.",
+    "AWS.samcli.deploy.s3bucket.picker.createNewBucket": "Create New S3 Bucket...",
     "AWS.samcli.deploy.s3Bucket.prompt": "Select an AWS S3 Bucket to deploy code to",
     "AWS.samcli.deploy.stackName.prompt": "Enter the name to use for the deployed stack",
     "AWS.samcli.deploy.stackName.error.invalidCharacters": "A stack name may contain only alphanumeric characters (case sensitive) and hyphens",

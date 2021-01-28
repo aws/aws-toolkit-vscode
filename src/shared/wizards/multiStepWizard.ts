@@ -31,6 +31,8 @@ export enum WizardNextState {
     GO_BACK,
     /** Instruct the wizard to terminate. Consider using the const {@link WIZARD_TERMINATE} instead. */
     TERMINATE,
+    /** Instruct the wizardt to go back two previous steps. Consider using the {@link WIZARD_GOBACK_2_STEPS} */
+    GOBACK_2_STEPS
 }
 
 export const WIZARD_RETRY: Transition = {
@@ -43,6 +45,10 @@ export const WIZARD_TERMINATE: Transition = {
 
 export const WIZARD_GOBACK: Transition = {
     nextState: WizardNextState.GO_BACK,
+}
+
+export const WIZARD_GOBACK_2_STEPS: Transition = {
+    nextState: WizardNextState.GOBACK_2_STEPS
 }
 
 export function wizardContinue(step: WizardStep): Transition {
@@ -83,6 +89,11 @@ export abstract class MultiStepWizard<TResult> {
                 case WizardNextState.CONTINUE:
                     // push the next step to run
                     steps.push(result.nextStep!)
+                    break
+                case WizardNextState.GOBACK_2_STEPS:
+                    // unwind two steps
+                    steps.pop()
+                    steps.pop()
                     break
                 default:
                     throw new Error(`unhandled transition in MultiStepWizard: ${result.nextState}`)

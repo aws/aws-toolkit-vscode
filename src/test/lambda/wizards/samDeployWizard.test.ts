@@ -56,6 +56,7 @@ class MockSamDeployWizardContext implements SamDeployWizardContext {
         private readonly promptForSamTemplateResponses: (QuickPickUriResponseItem | undefined)[] = [],
         private readonly promptForRegionResponses: (QuickPickRegionResponseItem | undefined)[] = [],
         private readonly promptForS3BucketResponses: (string | undefined)[] = [],
+        private readonly promptForNewS3BucketNameResponses: (string | undefined)[] = [],
         private readonly promptForEcrRepoResponses: (EcrRepository | undefined)[] = [],
         private readonly promptForStackNameResponses: (string | undefined)[] = [],
         private readonly hasImages: boolean = false
@@ -64,6 +65,7 @@ class MockSamDeployWizardContext implements SamDeployWizardContext {
         this.promptForSamTemplateResponses = promptForSamTemplateResponses.reverse()
         this.promptForRegionResponses = promptForRegionResponses.reverse()
         this.promptForS3BucketResponses = promptForS3BucketResponses.reverse()
+        this.promptForNewS3BucketNameResponses = promptForNewS3BucketNameResponses.reverse()
         this.promptForEcrRepoResponses = promptForEcrRepoResponses.reverse()
         this.promptForStackNameResponses = promptForStackNameResponses.reverse()
     }
@@ -102,6 +104,14 @@ class MockSamDeployWizardContext implements SamDeployWizardContext {
         }
 
         return this.promptForS3BucketResponses.pop()
+    }
+
+    public async promptForNewS3BucketName(step: number, selectedRegion: string): Promise<string | undefined> {
+        if (this.promptForNewS3BucketNameResponses.length <= 0) {
+            throw new Error('promptForNewS3BucketName was called more times than expected')
+        }
+
+        return this.promptForNewS3BucketNameResponses.pop()
     }
 
     public async promptUserForEcrRepo(
@@ -192,6 +202,7 @@ describe('SamDeployWizard', async () => {
                     [createQuickPickRegionResponseItem('asdf')],
                     ['mys3bucketname'],
                     [],
+                    [],
                     ['myStackName']
                 )
             )
@@ -234,6 +245,7 @@ describe('SamDeployWizard', async () => {
                 promptUserForSamTemplate: async () => vscode.Uri.file(templatePath),
                 promptUserForRegion: async () => region,
                 promptUserForS3Bucket: async () => s3Bucket,
+                promptForNewS3BucketName: async () => undefined,
                 promptUserForEcrRepo: async () => undefined,
                 promptUserForStackName: async () => stackName,
                 determineIfTemplateHasImages: async () => hasImages,
@@ -415,6 +427,7 @@ describe('SamDeployWizard', async () => {
                     [createQuickPickRegionResponseItem(region)],
                     ['mys3bucketname'],
                     [],
+                    [],
                     ['myStackName']
                 )
             )
@@ -444,6 +457,7 @@ describe('SamDeployWizard', async () => {
                         createQuickPickRegionResponseItem(region),
                     ],
                     ['mys3bucketname'],
+                    [],
                     [],
                     ['myStackName']
                 )
@@ -478,6 +492,7 @@ describe('SamDeployWizard', async () => {
                         'mys3bucketname',
                     ],
                     [],
+                    [],
                     ['myStackName']
                 )
             )
@@ -498,6 +513,7 @@ describe('SamDeployWizard', async () => {
                     [createQuickPickUriResponseItem(vscode.Uri.file(templatePath))],
                     [createQuickPickRegionResponseItem('asdf')],
                     ['mys3bucketname'],
+                    [],
                     [],
                     ['myStackName']
                 )
@@ -521,6 +537,7 @@ describe('SamDeployWizard', async () => {
                     [createQuickPickUriResponseItem(vscode.Uri.file(templatePath))],
                     [createQuickPickRegionResponseItem('asdf')],
                     ['mys3bucketname', 'mys3bucketname'],
+                    [],
                     // go back the first time
                     [undefined, { repositoryUri: 'uri', repositoryName: 'name', repositoryArn: 'arn' }],
                     ['myStackName'],
@@ -543,6 +560,7 @@ describe('SamDeployWizard', async () => {
                     [createQuickPickUriResponseItem(vscode.Uri.file(templatePath))],
                     [createQuickPickRegionResponseItem('asdf')],
                     ['mys3bucketname'],
+                    [],
                     [{ repositoryUri: 'uri', repositoryName: 'name', repositoryArn: 'arn' }],
                     ['myStackName'],
                     true
@@ -567,6 +585,7 @@ describe('SamDeployWizard', async () => {
                     [createQuickPickRegionResponseItem('asdf')],
                     ['mys3bucketname1', 'mys3bucketname2'],
                     [],
+                    [],
                     [undefined, 'myStackName']
                 )
             )
@@ -586,6 +605,7 @@ describe('SamDeployWizard', async () => {
                     [createQuickPickUriResponseItem(vscode.Uri.file(templatePath))],
                     [createQuickPickRegionResponseItem('asdf')],
                     ['mys3bucketname'],
+                    [],
                     [],
                     ['myStackName']
                 )
@@ -609,6 +629,7 @@ describe('SamDeployWizard', async () => {
                             [createQuickPickUriResponseItem(vscode.Uri.file(templatePath))],
                             [createQuickPickRegionResponseItem('asdf')],
                             ['myBucketName'],
+                            [],
                             [],
                             [stackName]
                         )
