@@ -1,17 +1,11 @@
-// Copyright 2021 Amazon.com, Inc. or its affiliates. All Rights Reserved.
+// Copyright 2020 Amazon.com, Inc. or its affiliates. All Rights Reserved.
 // SPDX-License-Identifier: Apache-2.0
 
-package software.aws.toolkits.core.utils
+package software.aws.toolkits.jetbrains.utils
 
 import software.amazon.awssdk.core.waiters.WaiterResponse
 
-/**
- * Unwraps the last waiter result.
- *
- * If it was successful, return the SDK response.
- * If it was an error, throw it
- */
-fun <T> WaiterResponse<T>.unwrapResponse(): T {
+fun <T> WaiterResponse<T>.response(): T {
     val responseOrException = this.matched()
     if (responseOrException.response().isPresent) {
         return responseOrException.response().get()
