@@ -30,8 +30,7 @@ class SchemaCodeDownloader(
     private val generator: CodeGenerator,
     private val poller: CodeGenerationStatusPoller,
     private val downloader: CodeDownloader,
-    private val extractor: CodeExtractor,
-    private val progressUpdater: ProgressUpdater
+    private val extractor: CodeExtractor
 ) {
     fun downloadCode(
         schemaDownloadRequest: SchemaCodeDownloadRequestDetails,
@@ -39,7 +38,7 @@ class SchemaCodeDownloader(
     ): CompletionStage<File?> {
 
         val schemaName = schemaDownloadRequest.schema.name
-        progressUpdater.updateProgress(indicator, message("schemas.schema.download_code_bindings.notification.start", schemaName))
+        indicator.updateProgress(message("schemas.schema.download_code_bindings.notification.start", schemaName))
 
         return downloader.download(schemaDownloadRequest) // Try to get code directly
             .handle { downloadedSchemaCode, exception ->
@@ -48,21 +47,26 @@ class SchemaCodeDownloader(
                     !is NotFoundException -> throw exception // Unexpected exception, throw
                 }
 
-                progressUpdater.updateProgress(indicator, message("schemas.schema.download_code_bindings.notification.generating", schemaName))
+                indicator.updateProgress(message("schemas.schema.download_code_bindings.notification.generating", schemaName))
                 generator.generate(schemaDownloadRequest) // If the code generation status wasn't previously requested, trigger it now
                     .thenCompose { initialCodeGenerationStatus ->
                         poller.pollForCompletion(schemaDownloadRequest, initialCodeGenerationStatus) // Then, poll for completion
                     }
                     .thenCompose {
-                        progressUpdater.updateProgress(indicator, message("schemas.schema.download_code_bindings.notification.downloading", schemaName))
+                        indicator.updateProgress(message("schemas.schema.download_code_bindings.notification.downloading", schemaName))
                         downloader.download(schemaDownloadRequest) // Download the code zip file
                     }
                     .toCompletableFuture().get()
             }
             .thenCompose { code ->
-                progressUpdater.updateProgress(indicator, message("schemas.schema.download_code_bindings.notification.extracting", schemaName))
+                indicator.updateProgress(message("schemas.schema.download_code_bindings.notification.extracting", schemaName))
                 extractor.extractAndPlace(schemaDownloadRequest, code) // Extract and place in workspace
             }
+    }
+
+    private fun ProgressIndicator.updateProgress(newStatus: String) {
+        text = newStatus
+        isIndeterminate = true
     }
 
     companion object {
@@ -78,8 +82,7 @@ class SchemaCodeDownloader(
                 CodeGenerator(clientManager.getClient(connectionSettings.credentials, connectionSettings.region)),
                 CodeGenerationStatusPoller(clientManager.getClient(connectionSettings.credentials, connectionSettings.region)),
                 CodeDownloader(clientManager.getClient(connectionSettings.credentials, connectionSettings.region)),
-                CodeExtractor(),
-                ProgressUpdater()
+                CodeExtractor()
             )
         }
     }
@@ -244,21 +247,6 @@ class CodeExtractor {
                 }
             }
         }
-    }
-}
-
-class ProgressUpdater {
-    fun updateProgress(
-        indicator: ProgressIndicator,
-        newStatus: String
-    ): CompletionStage<Void> {
-
-        indicator.text = newStatus
-        indicator.isIndeterminate = true
-
-        val future = CompletableFuture<Void>()
-        future.complete(null)
-        return future
     }
 }
 
