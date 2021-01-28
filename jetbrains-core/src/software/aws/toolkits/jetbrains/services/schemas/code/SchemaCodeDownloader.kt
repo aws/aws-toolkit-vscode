@@ -14,6 +14,7 @@ import software.amazon.awssdk.services.schemas.model.DescribeCodeBindingRequest
 import software.amazon.awssdk.services.schemas.model.GetCodeBindingSourceRequest
 import software.amazon.awssdk.services.schemas.model.NotFoundException
 import software.amazon.awssdk.services.schemas.model.PutCodeBindingRequest
+import software.aws.toolkits.core.utils.unwrapResponse
 import software.aws.toolkits.jetbrains.core.AwsClientManager
 import software.aws.toolkits.jetbrains.core.credentials.AwsConnectionManager
 import software.aws.toolkits.jetbrains.core.credentials.ConnectionSettings
@@ -126,7 +127,7 @@ class CodeGenerationStatusPoller(private val schemasClient: SchemasClient) {
                         it.schemaName(schemaDownload.schema.name)
                         it.schemaVersion(schemaDownload.version)
                         it.language(schemaDownload.language.apiValue)
-                    }
+                    }.unwrapResponse()
                 }
 
                 future.complete(schemaDownload.schema.name)

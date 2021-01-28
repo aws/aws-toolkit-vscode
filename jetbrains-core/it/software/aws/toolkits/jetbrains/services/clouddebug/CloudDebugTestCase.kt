@@ -18,6 +18,7 @@ import software.amazon.awssdk.services.ecs.model.LaunchType
 import software.amazon.awssdk.services.ecs.model.Service
 import software.aws.toolkits.core.region.AwsRegion
 import software.aws.toolkits.core.rules.ECSTemporaryServiceRule
+import software.aws.toolkits.core.utils.unwrapResponse
 import software.aws.toolkits.jetbrains.core.MockResourceCacheRule
 import software.aws.toolkits.jetbrains.core.Resource
 import software.aws.toolkits.jetbrains.core.credentials.AwsConnectionManager
@@ -71,14 +72,10 @@ abstract class CloudDebugTestCase(private val taskDefName: String) {
             instrumentService()
             val instrumentedServiceName = "cloud-debug-${EcsUtils.serviceArnToName(service.serviceArn())}"
             println("Waiting for $instrumentedServiceName to stabilize")
-            ecsRule.ecsClient.waiter().waitUntilServicesStable {
+            instrumentedService = ecsRule.ecsClient.waiter().waitUntilServicesStable {
                 it.cluster(service.clusterArn())
                 it.services(instrumentedServiceName)
-            }
-            instrumentedService = ecsRule.ecsClient.describeServices {
-                it.cluster(service.clusterArn())
-                it.services(instrumentedServiceName)
-            }.services().first()
+            }.unwrapResponse().services().first()
             // TODO: verify that no error toasts were created, or similar mechanism
         }
 
@@ -95,7 +92,7 @@ abstract class CloudDebugTestCase(private val taskDefName: String) {
                 ecsClient.waiter().waitUntilServicesInactive {
                     it.cluster(instrumentedService.clusterArn())
                     it.services(instrumentedService.serviceArn())
-                }
+                }.unwrapResponse()
             }
             // TODO: verify that no error toasts were created, or similar mechanism
         }
@@ -120,7 +117,7 @@ abstract class CloudDebugTestCase(private val taskDefName: String) {
         ecsRule.ecsClient.waiter().waitUntilServicesStable {
             it.cluster(service.clusterArn())
             it.services(service.serviceArn())
-        }
+        }.unwrapResponse()
 
         return service
     }
