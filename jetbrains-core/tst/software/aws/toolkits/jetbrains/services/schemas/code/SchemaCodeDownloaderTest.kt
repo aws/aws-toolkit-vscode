@@ -89,7 +89,6 @@ class SchemaCodeDownloaderTest {
     private val codePoller = mock<CodeGenerationStatusPoller>()
     private val codeDownloader = mock<CodeDownloader>()
     private val codeExtractor = mock<CodeExtractor>()
-    private val progressUpdater = mock<ProgressUpdater>()
     private val progressIndicator = mock<ProgressIndicator>()
     private val downloadedSchemaCode = mock<DownloadedSchemaCode>()
     private val schemaCodeCoreFile = mock<File>()
@@ -373,21 +372,10 @@ class SchemaCodeDownloaderTest {
     }
 
     @Test
-    fun canUpdateProgress() {
-        val progressIndicator = mock<ProgressIndicator>()
-        val newStatus = "new status"
-
-        ProgressUpdater().updateProgress(progressIndicator, newStatus).toCompletableFuture().get()
-
-        verify(progressIndicator).isIndeterminate = true
-        verify(progressIndicator).text = newStatus
-    }
-
-    @Test
     fun canDownloadCodeFirstInvocationPath() {
         standardDependencyMockInitialization()
 
-        val schema = SchemaCodeDownloader(codeGenerator, codePoller, codeDownloader, codeExtractor, progressUpdater)
+        val schema = SchemaCodeDownloader(codeGenerator, codePoller, codeDownloader, codeExtractor)
             .downloadCode(REQUEST, progressIndicator).toCompletableFuture().get()
         assertThat(schema).isEqualTo(schemaCodeCoreFile)
 
@@ -398,7 +386,7 @@ class SchemaCodeDownloaderTest {
         verify(codePoller).pollForCompletion(REQUEST)
         verify(codeDownloader, times(2)).download(REQUEST)
         verify(codeExtractor).extractAndPlace(REQUEST, downloadedSchemaCode)
-        verify(progressUpdater, times(4)).updateProgress(eq(progressIndicator), any())
+        verify(progressIndicator, times(4)).text = any()
     }
 
     @Test
@@ -409,7 +397,7 @@ class SchemaCodeDownloaderTest {
             on { generate(REQUEST) }.thenReturn(completedFuture(CodeGenerationStatus.CREATE_COMPLETE))
         }
 
-        val schema = SchemaCodeDownloader(codeGenerator, codePoller, codeDownloader, codeExtractor, progressUpdater)
+        val schema = SchemaCodeDownloader(codeGenerator, codePoller, codeDownloader, codeExtractor)
             .downloadCode(REQUEST, progressIndicator).toCompletableFuture().get()
         assertThat(schema).isEqualTo(schemaCodeCoreFile)
 
@@ -420,7 +408,7 @@ class SchemaCodeDownloaderTest {
         verify(codePoller, times(0)).pollForCompletion(REQUEST)
         verify(codeDownloader, times(2)).download(REQUEST)
         verify(codeExtractor).extractAndPlace(REQUEST, downloadedSchemaCode)
-        verify(progressUpdater, times(4)).updateProgress(eq(progressIndicator), any())
+        verify(progressIndicator, times(4)).text = any()
     }
 
     @Test
@@ -431,7 +419,7 @@ class SchemaCodeDownloaderTest {
             on { download(REQUEST) }.thenReturn(completedFuture(downloadedSchemaCode))
         }
 
-        val schema = SchemaCodeDownloader(codeGenerator, codePoller, codeDownloader, codeExtractor, progressUpdater)
+        val schema = SchemaCodeDownloader(codeGenerator, codePoller, codeDownloader, codeExtractor)
             .downloadCode(REQUEST, progressIndicator).toCompletableFuture().get()
         assertThat(schema).isEqualTo(schemaCodeCoreFile)
 
@@ -442,7 +430,7 @@ class SchemaCodeDownloaderTest {
         verify(codePoller, times(0)).pollForCompletion(REQUEST)
         verify(codeDownloader).download(REQUEST)
         verify(codeExtractor).extractAndPlace(REQUEST, downloadedSchemaCode)
-        verify(progressUpdater, times(2)).updateProgress(eq(progressIndicator), any())
+        verify(progressIndicator, times(2)).text = any()
     }
 
     @Test
@@ -456,7 +444,7 @@ class SchemaCodeDownloaderTest {
         }
 
         assertThatThrownBy {
-            SchemaCodeDownloader(codeGenerator, codePoller, codeDownloader, codeExtractor, progressUpdater)
+            SchemaCodeDownloader(codeGenerator, codePoller, codeDownloader, codeExtractor)
                 .downloadCode(REQUEST, progressIndicator).toCompletableFuture().get()
         }.hasRootCause(someException)
 
@@ -467,7 +455,7 @@ class SchemaCodeDownloaderTest {
         verify(codePoller, times(0)).pollForCompletion(REQUEST)
         verify(codeDownloader).download(REQUEST)
         verify(codeExtractor, times(0)).extractAndPlace(REQUEST, downloadedSchemaCode)
-        verify(progressUpdater, times(2)).updateProgress(eq(progressIndicator), any())
+        verify(progressIndicator, times(2)).text = any()
     }
 
     @Test
@@ -481,7 +469,7 @@ class SchemaCodeDownloaderTest {
         }
 
         assertThatThrownBy {
-            SchemaCodeDownloader(codeGenerator, codePoller, codeDownloader, codeExtractor, progressUpdater)
+            SchemaCodeDownloader(codeGenerator, codePoller, codeDownloader, codeExtractor)
                 .downloadCode(REQUEST, progressIndicator).toCompletableFuture().get()
         }.hasRootCause(someException)
 
@@ -492,7 +480,7 @@ class SchemaCodeDownloaderTest {
         verify(codeDownloader).download(REQUEST)
         verify(codePoller).pollForCompletion(REQUEST)
         verify(codeExtractor, times(0)).extractAndPlace(REQUEST, downloadedSchemaCode)
-        verify(progressUpdater, times(2)).updateProgress(eq(progressIndicator), any())
+        verify(progressIndicator, times(2)).text = any()
     }
 
     @Test
@@ -506,7 +494,7 @@ class SchemaCodeDownloaderTest {
         }
 
         assertThatThrownBy {
-            SchemaCodeDownloader(codeGenerator, codePoller, codeDownloader, codeExtractor, progressUpdater)
+            SchemaCodeDownloader(codeGenerator, codePoller, codeDownloader, codeExtractor)
                 .downloadCode(REQUEST, progressIndicator).toCompletableFuture().get()
         }.hasRootCause(waiterTimeoutException)
 
@@ -517,7 +505,7 @@ class SchemaCodeDownloaderTest {
         verify(codePoller).pollForCompletion(REQUEST)
         verify(codeDownloader).download(REQUEST)
         verify(codeExtractor, times(0)).extractAndPlace(REQUEST, downloadedSchemaCode)
-        verify(progressUpdater, times(2)).updateProgress(eq(progressIndicator), any())
+        verify(progressIndicator, times(2)).text = any()
     }
 
     @Test
@@ -530,7 +518,7 @@ class SchemaCodeDownloaderTest {
         }
 
         assertThatThrownBy {
-            SchemaCodeDownloader(codeGenerator, codePoller, codeDownloader, codeExtractor, progressUpdater)
+            SchemaCodeDownloader(codeGenerator, codePoller, codeDownloader, codeExtractor)
                 .downloadCode(REQUEST, progressIndicator).toCompletableFuture().get()
         }.hasRootCause(someException)
 
@@ -541,7 +529,7 @@ class SchemaCodeDownloaderTest {
         verify(codePoller, times(0)).pollForCompletion(REQUEST)
         verify(codeDownloader).download(REQUEST)
         verify(codeExtractor, times(0)).extractAndPlace(REQUEST, downloadedSchemaCode)
-        verify(progressUpdater).updateProgress(eq(progressIndicator), any())
+        verify(progressIndicator).text = any()
     }
 
     @Test
@@ -554,7 +542,7 @@ class SchemaCodeDownloaderTest {
         }
 
         assertThatThrownBy {
-            SchemaCodeDownloader(codeGenerator, codePoller, codeDownloader, codeExtractor, progressUpdater)
+            SchemaCodeDownloader(codeGenerator, codePoller, codeDownloader, codeExtractor)
                 .downloadCode(REQUEST, progressIndicator).toCompletableFuture().get()
         }.hasRootCause(notFoundException)
 
@@ -565,7 +553,7 @@ class SchemaCodeDownloaderTest {
         verify(codePoller).pollForCompletion(REQUEST)
         verify(codeDownloader, times(2)).download(REQUEST)
         verify(codeExtractor, times(0)).extractAndPlace(REQUEST, downloadedSchemaCode)
-        verify(progressUpdater, times(3)).updateProgress(eq(progressIndicator), any())
+        verify(progressIndicator, times(3)).text = any()
     }
 
     @Test
@@ -579,7 +567,7 @@ class SchemaCodeDownloaderTest {
         }
 
         assertThatThrownBy {
-            SchemaCodeDownloader(codeGenerator, codePoller, codeDownloader, codeExtractor, progressUpdater)
+            SchemaCodeDownloader(codeGenerator, codePoller, codeDownloader, codeExtractor)
                 .downloadCode(REQUEST, progressIndicator).toCompletableFuture().get()
         }.hasRootCause(someException)
 
@@ -590,7 +578,7 @@ class SchemaCodeDownloaderTest {
         verify(codePoller).pollForCompletion(REQUEST)
         verify(codeDownloader, times(2)).download(REQUEST)
         verify(codeExtractor).extractAndPlace(REQUEST, downloadedSchemaCode)
-        verify(progressUpdater, times(4)).updateProgress(eq(progressIndicator), any())
+        verify(progressIndicator, times(4)).text = any()
     }
 
     @Test
@@ -604,7 +592,7 @@ class SchemaCodeDownloaderTest {
         }
 
         assertThatThrownBy {
-            SchemaCodeDownloader(codeGenerator, codePoller, codeDownloader, codeExtractor, progressUpdater)
+            SchemaCodeDownloader(codeGenerator, codePoller, codeDownloader, codeExtractor)
                 .downloadCode(REQUEST, progressIndicator).toCompletableFuture().get()
         }.hasRootCause(schemaCodeDownloadFileCollisionException)
 
@@ -615,7 +603,7 @@ class SchemaCodeDownloaderTest {
         verify(codePoller).pollForCompletion(REQUEST)
         verify(codeDownloader, times(2)).download(REQUEST)
         verify(codeExtractor).extractAndPlace(REQUEST, downloadedSchemaCode)
-        verify(progressUpdater, times(4)).updateProgress(eq(progressIndicator), any())
+        verify(progressIndicator, times(4)).text = any()
     }
 
     private fun initializeRealSourceAndDestinationFolders() {
@@ -653,10 +641,6 @@ class SchemaCodeDownloaderTest {
 
         codeExtractor.stub {
             on { extractAndPlace(REQUEST, downloadedSchemaCode) }.thenReturn(completedFuture(schemaCodeCoreFile))
-        }
-
-        progressUpdater.stub {
-            on { updateProgress(eq(progressIndicator), any()) }.thenReturn(completedFuture(null))
         }
     }
 
