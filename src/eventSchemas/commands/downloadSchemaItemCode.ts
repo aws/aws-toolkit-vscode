@@ -136,7 +136,7 @@ export class SchemaCodeDownloader {
             zipContents = await this.downloader.download(request)
         } catch (err) {
             const error = err as Error
-            if (error.stack && error.stack.includes('NotFoundException')) {
+            if (error.name == 'ResourceNotFound') {
                 //If the code generation wasn't previously kicked off, do so
                 vscode.window.showInformationMessage(
                     localize(
