@@ -13,6 +13,7 @@ import org.junit.jupiter.api.TestInstance
 import org.junit.jupiter.api.TestInstance.Lifecycle
 import org.junit.jupiter.api.io.TempDir
 import software.amazon.awssdk.services.cloudformation.CloudFormationClient
+import software.aws.toolkits.core.utils.unwrapResponse
 import software.aws.toolkits.jetbrains.uitests.CoreTest
 import software.aws.toolkits.jetbrains.uitests.extensions.uiTest
 import software.aws.toolkits.jetbrains.uitests.fixtures.IdeaFrame
@@ -45,7 +46,7 @@ class CloudFormationBrowserTest {
         log.info("Deploying stack $stack before the test run")
         cloudFormationClient = CloudFormationClient.create()
         cloudFormationClient.createStack { it.templateBody(templateFile.toFile().readText()).stackName(stack) }
-        cloudFormationClient.waiter().waitUntilStackCreateComplete { it.stackName(stack) }
+        cloudFormationClient.waiter().waitUntilStackCreateComplete { it.stackName(stack) }.unwrapResponse()
         log.info("Successfully deployed $stack")
     }
 
@@ -124,7 +125,7 @@ class CloudFormationBrowserTest {
 
     private fun waitForStackDeletion() {
         log.info("Waiting for the deletion of stack $stack")
-        cloudFormationClient.waiter().waitUntilStackDeleteComplete { it.stackName(stack) }
+        cloudFormationClient.waiter().waitUntilStackDeleteComplete { it.stackName(stack) }.unwrapResponse()
         log.info("Finished deleting stack $stack")
     }
 }
