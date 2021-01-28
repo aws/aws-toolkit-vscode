@@ -14,7 +14,6 @@ import software.amazon.awssdk.services.schemas.model.DescribeCodeBindingRequest
 import software.amazon.awssdk.services.schemas.model.GetCodeBindingSourceRequest
 import software.amazon.awssdk.services.schemas.model.NotFoundException
 import software.amazon.awssdk.services.schemas.model.PutCodeBindingRequest
-import software.aws.toolkits.core.utils.wait
 import software.aws.toolkits.jetbrains.core.AwsClientManager
 import software.aws.toolkits.jetbrains.core.credentials.AwsConnectionManager
 import software.aws.toolkits.jetbrains.core.credentials.ConnectionSettings
@@ -22,7 +21,6 @@ import software.aws.toolkits.resources.message
 import java.io.File
 import java.io.FileOutputStream
 import java.nio.file.Paths
-import java.time.Duration
 import java.util.Collections
 import java.util.concurrent.CompletableFuture
 import java.util.concurrent.CompletionStage
@@ -111,11 +109,7 @@ class CodeGenerator(private val schemasClient: SchemasClient) {
     }
 }
 
-class CodeGenerationStatusPoller(
-    private val schemasClient: SchemasClient,
-    private val pollingSettings: PollingSettings = PollingSettings(DEFAULT_POLLING_DELAY, DEFAULT_POLLING_MAX_ATTEMPTS)
-) {
-
+class CodeGenerationStatusPoller(private val schemasClient: SchemasClient) {
     fun pollForCompletion(
         schemaDownload: SchemaCodeDownloadRequestDetails,
         initialCodeGenerationStatus: CodeGenerationStatus = CodeGenerationStatus.CREATE_IN_PROGRESS
@@ -124,22 +118,12 @@ class CodeGenerationStatusPoller(
         ApplicationManager.getApplication().executeOnPooledThread {
             try {
                 if (initialCodeGenerationStatus != CodeGenerationStatus.CREATE_COMPLETE) {
-                    wait(
-                        call = { getCurrentStatus(schemaDownload).toCompletableFuture().get() },
-                        success = { codeGenerationStatus -> codeGenerationStatus == CodeGenerationStatus.CREATE_COMPLETE },
-                        fail = { codeGenerationStatus ->
-                            if (codeGenerationStatus != CodeGenerationStatus.CREATE_IN_PROGRESS &&
-                                codeGenerationStatus != CodeGenerationStatus.CREATE_COMPLETE
-                            ) {
-                                message("schemas.schema.download_code_bindings.invalid_code_generation_status", codeGenerationStatus)
-                            } else {
-                                null
-                            }
-                        },
-                        timeoutErrorMessage = message("schemas.schema.download_code_bindings.timeout", schemaDownload.schema.name),
-                        attempts = pollingSettings.maxAttempts,
-                        delay = pollingSettings.delay
-                    )
+                    schemasClient.waiter().waitUntilCodeBindingExists {
+                        it.registryName(schemaDownload.schema.registryName)
+                        it.schemaName(schemaDownload.schema.name)
+                        it.schemaVersion(schemaDownload.version)
+                        it.language(schemaDownload.language.apiValue)
+                    }
                 }
 
                 future.complete(schemaDownload.schema.name)
@@ -174,16 +158,6 @@ class CodeGenerationStatusPoller(
         }
         return future
     }
-
-    companion object {
-        private val DEFAULT_POLLING_DELAY: Duration = Duration.ofSeconds(2)
-        private val DEFAULT_POLLING_MAX_ATTEMPTS: Int = 30 // p90 of code generation for most use cases [O(schemaSize)] is ~45 seconds. Retry for 60 seconds
-    }
-
-    data class PollingSettings(
-        val delay: Duration,
-        val maxAttempts: Int
-    )
 }
 
 class CodeDownloader(private val schemasClient: SchemasClient) {
@@ -257,23 +231,19 @@ class CodeExtractor {
 
     // Ensure that the downloaded code hierarchy has no collisions with the destination directory
     private fun validateNoFileCollisions(codeZipFile: File, destinationDirectory: File) {
-        ZipFile(codeZipFile).use(
-            { zipFile ->
-                val zipEntries = zipFile.entries()
-                Collections.list(zipEntries).forEach { zipEntry ->
-                    if (zipEntry.isDirectory()) {
-// Ignore directories because those can/will be merged
-                    } else {
-                        val intendedDestinationPath = Paths.get(destinationDirectory.path, zipEntry.name)
-                        val intendedDestinationFile = intendedDestinationPath.toFile()
-                        if (intendedDestinationFile.exists() && !intendedDestinationFile.isDirectory) {
-                            val name = intendedDestinationFile.name
-                            throw SchemaCodeDownloadFileCollisionException(name)
-                        }
+        ZipFile(codeZipFile).use { zipFile ->
+            val zipEntries = zipFile.entries()
+            Collections.list(zipEntries).forEach { zipEntry ->
+                // Ignore directories because those can/will be merged
+                if (!zipEntry.isDirectory) {
+                    val intendedDestinationPath = Paths.get(destinationDirectory.path, zipEntry.name)
+                    val intendedDestinationFile = intendedDestinationPath.toFile()
+                    if (intendedDestinationFile.exists() && !intendedDestinationFile.isDirectory) {
+                        throw SchemaCodeDownloadFileCollisionException(intendedDestinationFile.name)
                     }
                 }
             }
-        )
+        }
     }
 }
 
@@ -284,7 +254,7 @@ class ProgressUpdater {
     ): CompletionStage<Void> {
 
         indicator.text = newStatus
-        indicator.setIndeterminate(true)
+        indicator.isIndeterminate = true
 
         val future = CompletableFuture<Void>()
         future.complete(null)
