@@ -387,7 +387,7 @@ describe('SchemaCodeDownload', () => {
             assert.strictEqual(response, fileContent, `${expectedFilePath} :file content do not match`)
         })
 
-        it('should return error if downloading code fails with anything other than NotFoundException', async () => {
+        it('should return error if downloading code fails with anything other than ResourceNotFound', async () => {
             const customError = new Error('Custom error')
             const codeDownloaderStub = sandbox.stub(downloader, 'download').returns(Promise.reject(customError))
 
@@ -399,7 +399,7 @@ describe('SchemaCodeDownload', () => {
             assert.strictEqual(customError, error, 'Should throw Custom error')
         })
 
-        it('should generate code if download fails with NotFoundException and place it into requested directory', async () => {
+        it('should generate code if download fails with ResourceNotFound and place it into requested directory', async () => {
             sandbox.stub(poller, 'pollForCompletion').returns(Promise.resolve('CREATE_COMPLETE'))
             const codeDownloaderStub = sandbox.stub(downloader, 'download')
             const codeGeneratorResponse: Schemas.PutCodeBindingResponse = {
@@ -408,7 +408,7 @@ describe('SchemaCodeDownload', () => {
             sandbox.stub(generator, 'generate').returns(Promise.resolve(codeGeneratorResponse))
 
             const customError = new Error('Resource Not Found Exception')
-            customError.stack = 'This should trigger the code in catch block - NotFoundException'
+            customError.name = 'ResourceNotFound'
 
             codeDownloaderStub.onCall(0).returns(Promise.reject(customError)) // should fail on first call
             codeDownloaderStub.onCall(1).returns(Promise.resolve(arrayBuffer)) // should succeed on second
