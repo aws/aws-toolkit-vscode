@@ -17,10 +17,10 @@ jobs:
             matrix:
                 node-version: [12.x]
                 vscode-version: [minimum, stable, insiders]
+        env:
+            NODE_OPTIONS: '--max-old-space-size=8192'
+            VSCODE_TEST_VERSION: ${{ vscode-version }}
         steps:
-            - env:
-                  NODE_OPTIONS: '--max-old-space-size=8192'
-                  VSCODE_TEST_VERSION: ${{ vscode-version }}
             - uses: actions/checkout@v2
             - name: Use Node.js ${{ matrix.node-version }}
               uses: actions/setup-node@v2
@@ -43,10 +43,10 @@ jobs:
             matrix:
                 node-version: [12.x]
                 vscode-version: [minimum, stable, insiders]
+        env:
+            NODE_OPTIONS: '--max-old-space-size=8192'
+            VSCODE_TEST_VERSION: ${{ vscode-version }}
         steps:
-            - env:
-                  NODE_OPTIONS: '--max-old-space-size=8192'
-                  VSCODE_TEST_VERSION: ${{ vscode-version }}
             - uses: actions/checkout@v2
             - name: Use Node.js ${{ matrix.node-version }}
               uses: actions/setup-node@v2
