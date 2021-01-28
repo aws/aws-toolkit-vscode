@@ -9,8 +9,8 @@ import software.amazon.awssdk.services.cloudformation.model.Capability
 import software.amazon.awssdk.services.cloudformation.model.ChangeSetType
 import software.amazon.awssdk.services.cloudformation.model.CloudFormationException
 import software.amazon.awssdk.services.cloudformation.model.Parameter
-import software.aws.toolkits.core.utils.unwrapResponse
 import software.aws.toolkits.jetbrains.services.cloudformation.executeChangeSetAndWait
+import software.aws.toolkits.jetbrains.services.cloudformation.waitForChangeSetCreateComplete
 import java.util.UUID
 
 class CloudFormationLazyInitRule(
@@ -53,10 +53,7 @@ class CloudFormationLazyInitRule(
 
         // wait for changeset creation to complete
         try {
-            cloudformationClient.waiter().waitUntilChangeSetCreateComplete {
-                it.stackName(stackName)
-                it.changeSetName(changeSetArn)
-            }.unwrapResponse()
+            cloudformationClient.waitForChangeSetCreateComplete(stackName, changeSetArn)
         } catch (e: Exception) {
             if (e.message?.contains("The submitted information didn't contain changes") == true) {
                 cloudformationClient.deleteChangeSet {
