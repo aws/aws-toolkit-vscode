@@ -4,7 +4,6 @@
 package software.aws.toolkits.jetbrains.services.lambda.upload.steps
 
 import software.amazon.awssdk.services.lambda.LambdaClient
-import software.aws.toolkits.core.utils.unwrapResponse
 import software.aws.toolkits.jetbrains.services.lambda.upload.steps.PackageLambda.Companion.UPLOADED_CODE_LOCATION
 import software.aws.toolkits.jetbrains.utils.execution.steps.Context
 import software.aws.toolkits.jetbrains.utils.execution.steps.MessageEmitter
@@ -38,6 +37,6 @@ class UpdateLambdaCode(private val lambdaClient: LambdaClient, private val funct
         }
 
         messageEmitter.emitMessage(message("lambda.workflow.update_code.wait_for_stable"), isError = false)
-        lambdaClient.waiter().waitUntilFunctionUpdated { it.functionName(functionName) }.unwrapResponse()
+        lambdaClient.waiter().waitUntilFunctionUpdated { it.functionName(functionName) }
     }
 }
