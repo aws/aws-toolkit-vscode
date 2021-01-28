@@ -34,6 +34,7 @@ import software.amazon.awssdk.services.schemas.model.NotFoundException
 import software.amazon.awssdk.services.schemas.model.PutCodeBindingRequest
 import software.amazon.awssdk.services.schemas.model.PutCodeBindingResponse
 import software.aws.toolkits.core.utils.WaiterTimeoutException
+import software.aws.toolkits.core.utils.delegateMock
 import software.aws.toolkits.core.utils.failedFuture
 import software.aws.toolkits.jetbrains.core.MockClientManagerRule
 import software.aws.toolkits.jetbrains.services.schemas.SchemaCodeLangs
@@ -43,7 +44,6 @@ import java.io.FileOutputStream
 import java.nio.ByteBuffer
 import java.nio.file.Files
 import java.nio.file.Paths
-import java.time.Duration
 import java.util.concurrent.CompletableFuture.completedFuture
 
 class SchemaCodeDownloaderTest {
@@ -84,7 +84,7 @@ class SchemaCodeDownloaderTest {
     private val REQUEST = SchemaCodeDownloadRequestDetails(SCHEMA_SUMMARY, VERSION, LANGUAGE, FAKE_DESTINATION)
     private val ZIP_FILE_SCHEMA_CORE_CODE_FILE_NAME = REQUEST.schemaCoreCodeFileName()
 
-    private val mockSchemasClient = mock<SchemasClient>()
+    private val mockSchemasClient = delegateMock<SchemasClient>()
     private val codeGenerator = mock<CodeGenerator>()
     private val codePoller = mock<CodeGenerationStatusPoller>()
     private val codeDownloader = mock<CodeDownloader>()
@@ -167,7 +167,7 @@ class SchemaCodeDownloaderTest {
             .build()
 
         mockSchemasClient.stub {
-            on { describeCodeBinding(describeCodeBindingRequest) }.thenReturn(inProgressResponse)
+            on { describeCodeBinding(any<DescribeCodeBindingRequest>()) }.thenReturn(inProgressResponse)
                 .thenReturn(inProgressResponse)
                 .thenReturn(inProgressResponse)
                 .thenReturn(completedResponse)
@@ -175,42 +175,8 @@ class SchemaCodeDownloaderTest {
 
         val createdSchemaName = CodeGenerationStatusPoller(mockSchemasClient).pollForCompletion(REQUEST).toCompletableFuture().get()
 
-        verify(mockSchemasClient, times(4)).describeCodeBinding(describeCodeBindingRequest)
+        verify(mockSchemasClient, times(4)).describeCodeBinding(any<DescribeCodeBindingRequest>())
         assertThat(createdSchemaName).isEqualTo(SCHEMA)
-    }
-
-    @Test
-    fun pollForCurrentCodeGenerationStatusMaxAttempts() {
-        val describeCodeBindingRequest = DescribeCodeBindingRequest.builder()
-            .schemaName(SCHEMA)
-            .registryName(REGISTRY)
-            .language(LANGUAGE.apiValue)
-            .schemaVersion(VERSION)
-            .build()
-
-        val inProgressResponse = DescribeCodeBindingResponse.builder()
-            .status(CodeGenerationStatus.CREATE_IN_PROGRESS)
-            .schemaVersion(VERSION)
-            .build()
-        val completedResponse = DescribeCodeBindingResponse.builder()
-            .status(CodeGenerationStatus.CREATE_COMPLETE)
-            .schemaVersion(VERSION)
-            .build()
-
-        val maxAttempts = 2
-
-        mockSchemasClient.stub {
-            on { describeCodeBinding(describeCodeBindingRequest) }.thenReturn(inProgressResponse)
-                .thenReturn(inProgressResponse)
-                .thenReturn(completedResponse)
-        }
-
-        assertThatThrownBy {
-            val pollingSettings = CodeGenerationStatusPoller.PollingSettings(Duration.ofMillis(10), maxAttempts)
-            CodeGenerationStatusPoller(mockSchemasClient, pollingSettings).pollForCompletion(REQUEST).toCompletableFuture().get()
-        }.hasRootCauseInstanceOf(WaiterTimeoutException::class.java)
-
-        verify(mockSchemasClient, times(2)).describeCodeBinding(describeCodeBindingRequest)
     }
 
     @Test
