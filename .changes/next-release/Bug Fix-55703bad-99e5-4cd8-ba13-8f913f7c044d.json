@@ -1,0 +1,4 @@
+{
+	"type": "Bug Fix",
+	"description": "When download operation fails, detemine if code generation was not previously kicked of using the error name"
+}
