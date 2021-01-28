@@ -16,7 +16,11 @@ jobs:
         strategy:
             matrix:
                 node-version: [12.x]
+                vscode-version: [minimum, stable]
         steps:
+            - env:
+                  NODE_OPTIONS: '--max-old-space-size=8192'
+                  VSCODE_TEST_VERSION: ${{ vscode-version }}
             - uses: actions/checkout@v2
             - name: Use Node.js ${{ matrix.node-version }}
               uses: actions/setup-node@v2
@@ -24,8 +28,6 @@ jobs:
                   node-version: ${{ matrix.node-version }}
             - run: npm install
             - run: npm run vscode:prepublish
-              env:
-                  NODE_OPTIONS: '--max-old-space-size=8192'
             - name: Tests
               uses: GabrielBB/xvfb-action@v1
               with:
@@ -40,7 +42,11 @@ jobs:
         strategy:
             matrix:
                 node-version: [12.x]
+                vscode-version: [minimum, stable]
         steps:
+            - env:
+                  NODE_OPTIONS: '--max-old-space-size=8192'
+                  VSCODE_TEST_VERSION: ${{ vscode-version }}
             - uses: actions/checkout@v2
             - name: Use Node.js ${{ matrix.node-version }}
               uses: actions/setup-node@v2
@@ -48,7 +54,5 @@ jobs:
                   node-version: ${{ matrix.node-version }}
             - run: npm install
             - run: npm run vscode:prepublish
-              env:
-                  NODE_OPTIONS: '--max-old-space-size=8192'
             - name: Tests
               run: npm test
