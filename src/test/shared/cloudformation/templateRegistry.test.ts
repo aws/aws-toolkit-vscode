@@ -16,7 +16,7 @@ import {
 import { makeTemporaryToolkitFolder } from '../../../shared/filesystemUtilities'
 import { assertThrowsError } from '../utilities/assertUtils'
 import { badYaml, makeSampleSamTemplateYaml, strToYamlFile } from './cloudformationTestUtils'
-import { assertEqualPaths } from '../../testUtil'
+import { assertEqualPaths, toFile } from '../../testUtil'
 import { CloudFormation } from '../../../shared/cloudformation/cloudformation'
 import { WatchedItem } from '../../../shared/watchedFiles'
 import { writeFile } from 'fs-extra'
@@ -350,8 +350,6 @@ describe('CloudFormation Template Registry', async () => {
             tempFolder = await makeTemporaryToolkitFolder()
             helloPath = path.join(tempFolder, 'hello-world')
             nestedPath = path.join(helloPath, 'nested')
-            await fs.mkdirp(nestedPath)
-            await fs.mkdirp(helloPath)
         })
 
         afterEach(async () => {
@@ -378,8 +376,8 @@ describe('CloudFormation Template Registry', async () => {
         }
 
         it('checks for an exact handler match to a relative path in a Dockerfile for image functions', async () => {
-            await writeFile(path.join(helloPath, 'Dockerfile'), 'CMD: ["index.handler"]', 'utf8')
-            await writeFile(path.join(nestedPath, 'Dockerfile'), 'CMD: ["index.handler"]', 'utf8')
+            toFile('CMD: ["index.handler"]', path.join(helloPath, 'Dockerfile'))
+            toFile('CMD: ["index.handler"]', path.join(nestedPath, 'Dockerfile'))
 
             const helloWorldResource = {
                 ...resource,
@@ -448,16 +446,8 @@ describe('CloudFormation Template Registry', async () => {
         })
 
         it('checks for an exact handler match for C# files in a Dockerfile for image functions', async () => {
-            await writeFile(
-                path.join(helloPath, 'Dockerfile'),
-                'CMD: ["HelloWorld::HelloWorld.Function::FunctionHandler"]',
-                'utf8'
-            )
-            await writeFile(
-                path.join(nestedPath, 'Dockerfile'),
-                'CMD: ["HelloWorld::HelloWorld.Function::FunctionHandler"]',
-                'utf8'
-            )
+            toFile('CMD: ["HelloWorld::HelloWorld.Function::FunctionHandler"]', path.join(helloPath, 'Dockerfile'))
+            toFile('CMD: ["HelloWorld::HelloWorld.Function::FunctionHandler"]', path.join(nestedPath, 'Dockerfile'))
 
             const helloWorldResource = {
                 ...resource,
