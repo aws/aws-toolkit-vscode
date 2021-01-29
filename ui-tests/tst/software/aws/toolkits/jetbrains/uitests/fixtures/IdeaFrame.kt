@@ -16,8 +16,16 @@ import java.time.Duration
 
 fun RemoteRobot.idea(function: IdeaFrame.() -> Unit) {
     val frame = find<IdeaFrame>(timeout = Duration.ofSeconds(10))
-    // FIX_WHEN_MIN_IS_203 remove this and set the system property "ide.show.tips.on.startup.default.value"
-    frame.apply { dumbAware { tryCloseTips() } }
+    // FIX_WHEN_MIN_IS_203 remove closing tips
+    // Wait for tips to appear. Otherwise, they might show up after the test starts, especially in
+    // S3 tests. This does not actually slow down all tests as we wait for smart mode which takes longer
+    // in most other tests
+    frame.apply {
+        dumbAware {
+            Thread.sleep(5000)
+            tryCloseTips()
+        }
+    }
     frame.apply(function)
 }
 
@@ -74,6 +82,7 @@ class IdeaFrame(remoteRobot: RemoteRobot, remoteComponent: RemoteComponent) : Co
     )
 
     // Tips sometimes open when running, close it if it opens
+    // FIX_WHEN_MIN_IS_203 remove this
     fun tryCloseTips() {
         step("Close Tip of the Day if it appears") {
             try {
