@@ -21,8 +21,8 @@ import software.aws.toolkits.resources.message
 
 class RemoteLambdaRunConfigurationFactory(configuration: LambdaRunConfigurationType) : ConfigurationFactory(configuration) {
     override fun createTemplateConfiguration(project: Project) = RemoteLambdaRunConfiguration(project, this)
-
     override fun getName(): String = "Remote"
+    override fun getId(): String = name
 }
 
 class RemoteLambdaRunConfiguration(project: Project, factory: ConfigurationFactory) :
