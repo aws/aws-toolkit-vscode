@@ -19,7 +19,6 @@ import { badYaml, makeSampleSamTemplateYaml, strToYamlFile } from './cloudformat
 import { assertEqualPaths, toFile } from '../../testUtil'
 import { CloudFormation } from '../../../shared/cloudformation/cloudformation'
 import { WatchedItem } from '../../../shared/watchedFiles'
-import { writeFile } from 'fs-extra'
 
 // TODO almost all of these tests should be moved to test WatchedFiles instead
 describe('CloudFormation Template Registry', async () => {
