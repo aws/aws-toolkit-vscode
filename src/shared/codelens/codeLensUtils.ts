@@ -5,6 +5,7 @@
 
 import * as vscode from 'vscode'
 import { RuntimeFamily } from '../../lambda/models/samLambdaRuntime'
+import { CloudFormation } from '../cloudformation/cloudformation'
 import { getResourcesForHandler } from '../cloudformation/templateRegistry'
 import { LambdaHandlerCandidate } from '../lambdaHandlerSearch'
 import { getLogger } from '../logger'
@@ -57,9 +58,11 @@ export async function makeCodeLenses({
 
             if (associatedResources.length > 0) {
                 for (const resource of associatedResources) {
+                    const isImage = CloudFormation.isImageLambdaResource(resource.resourceData.Properties)
                     templateConfigs.push({
                         resourceName: resource.name,
                         rootUri: vscode.Uri.file(resource.templateDatum.path),
+                        runtimeFamily: isImage ? runtimeFamily : undefined,
                     })
                     const events = resource.resourceData.Properties?.Events
                     if (events) {
@@ -71,6 +74,7 @@ export async function makeCodeLenses({
                                     resourceName: resource.name,
                                     rootUri: vscode.Uri.file(resource.templateDatum.path),
                                     apiEvent: { name: key, event: value },
+                                    runtimeFamily: isImage ? runtimeFamily : undefined,
                                 })
                             }
                         }
