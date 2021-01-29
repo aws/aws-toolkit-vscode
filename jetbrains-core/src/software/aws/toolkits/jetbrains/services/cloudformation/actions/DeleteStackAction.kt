@@ -26,6 +26,6 @@ class DeleteStackAction : DeleteResourceAction<CloudFormationStackNode>(
             StackWindowManager.getInstance(selected.nodeProject).openStack(selected.stackName, selected.stackId)
         }
         client.waitForStackDeletionComplete(selected.stackName)
-        selected.nodeProject.refreshAwsTree(CloudFormationResources.LIST_STACKS)
+        selected.nodeProject.refreshAwsTree(CloudFormationResources.ACTIVE_STACKS)
     }
 }

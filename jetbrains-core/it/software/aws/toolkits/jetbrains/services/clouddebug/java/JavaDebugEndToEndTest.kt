@@ -28,7 +28,7 @@ import software.aws.toolkits.jetbrains.services.ecs.execution.EcsCloudDebugRunCo
 import software.aws.toolkits.jetbrains.services.ecs.execution.EcsCloudDebugRunConfigurationProducer
 import software.aws.toolkits.jetbrains.utils.addBreakpoint
 import software.aws.toolkits.jetbrains.utils.checkBreakPointHit
-import software.aws.toolkits.jetbrains.utils.executeRunConfiguration
+import software.aws.toolkits.jetbrains.utils.executeRunConfigurationAndWait
 import software.aws.toolkits.jetbrains.utils.rules.HeavyJavaCodeInsightTestFixtureRule
 import software.aws.toolkits.jetbrains.utils.rules.addClass
 import software.aws.toolkits.jetbrains.utils.rules.addModule
@@ -112,7 +112,7 @@ class JavaDebugEndToEndTest : CloudDebugTestCase("CloudDebugTestECSClusterTaskDe
             configuration.regionId(projectRule.project.activeRegion().id)
             configuration.credentialProviderId(projectRule.project.activeCredentialProvider().id)
             configuration.checkConfiguration()
-            executeRunConfiguration(configuration, DefaultDebugExecutor.EXECUTOR_ID)
+            executeRunConfigurationAndWait(configuration, DefaultDebugExecutor.EXECUTOR_ID)
         }
 
         // check breakpoint hit

@@ -50,14 +50,8 @@ class StepExecutor(
         val progressListener: BuildProgressListener = project.service<BuildViewManager>()
         val messageEmitter = DefaultMessageEmitter.createRoot(progressListener, uniqueId)
 
-        // Rider runs tests always on EDT so we will dead lock if anything does stuff on EDT in the callbacks, so run this on the callee thread if we are
-        // headless
-        if (ApplicationManager.getApplication().isHeadlessEnvironment) {
+        ApplicationManager.getApplication().executeOnPooledThread {
             execute(descriptor, progressListener, context, messageEmitter, processHandler)
-        } else {
-            ApplicationManager.getApplication().executeOnPooledThread {
-                execute(descriptor, progressListener, context, messageEmitter, processHandler)
-            }
         }
 
         processHandler.startNotify()
