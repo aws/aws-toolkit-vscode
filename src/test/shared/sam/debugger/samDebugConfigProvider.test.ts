@@ -2966,6 +2966,7 @@ describe('createTemplateAwsSamDebugConfig', () => {
 describe('createApiAwsSamDebugConfig', () => {
     const name = 'my body is a template'
     const templatePath = path.join('two', 'roads', 'diverged', 'in', 'a', 'yellow', 'wood')
+    const runtime = 'timeToRun'
 
     it('creates a API-type SAM debugger configuration with minimal configurations', () => {
         const config = createApiAwsSamDebugConfig(undefined, undefined, name, templatePath)
@@ -2989,13 +2990,13 @@ describe('createApiAwsSamDebugConfig', () => {
     })
 
     it('creates a API-type SAM debugger configuration with additional params', () => {
-        const config = createApiAwsSamDebugConfig(undefined, undefined, name, templatePath, {
+        const config = createApiAwsSamDebugConfig(undefined, runtime, name, templatePath, {
             payload: { json: { key: 'value' } },
             httpMethod: 'OPTIONS',
             path: '/api',
         })
         assert.deepStrictEqual(config, {
-            name: `API yellow:${name}`,
+            name: `API yellow:${name} (${runtime})`,
             type: AWS_SAM_DEBUG_TYPE,
             request: DIRECT_INVOKE_TYPE,
             invokeTarget: {
@@ -3009,6 +3010,9 @@ describe('createApiAwsSamDebugConfig', () => {
                 payload: {
                     json: { key: 'value' },
                 },
+            },
+            lambda: {
+                runtime,
             },
         })
     })
