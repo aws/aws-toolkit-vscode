@@ -37,7 +37,7 @@ open class DialogFixture(
 ) : CommonContainerFixture(remoteRobot, remoteComponent) {
     companion object {
         fun byTitle(title: String) = byXpath("title $title", "//div[@title='$title' and @class='MyDialog']")
-        fun byTitleContains(partial: String) = byXpath("partial title $partial", "//div[contains(@accessiblename, $partial) and @class='MyDialog']")
+        fun byTitleContains(partial: String) = byXpath("partial title '$partial'", "//div[contains(@accessiblename, '$partial') and @class='MyDialog']")
     }
 
     val title: String
