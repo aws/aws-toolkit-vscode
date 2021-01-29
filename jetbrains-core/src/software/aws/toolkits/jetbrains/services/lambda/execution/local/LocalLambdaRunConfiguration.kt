@@ -59,8 +59,6 @@ import java.nio.file.Paths
 class LocalLambdaRunConfigurationFactory(configuration: LambdaRunConfigurationType) : ConfigurationFactory(configuration) {
     override fun createTemplateConfiguration(project: Project) = LocalLambdaRunConfiguration(project, this)
     override fun getName(): String = "Local"
-
-    // Overwritten because it was deprecated in 2020.1 FIX_WHEN_MIN_IS_201 remove this message, it is only here for 2019.3
     override fun getId(): String = name
 }
 
