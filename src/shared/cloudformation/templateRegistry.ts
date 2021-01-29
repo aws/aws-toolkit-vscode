@@ -12,6 +12,7 @@ import { dotNetRuntimes } from '../../lambda/models/samLambdaRuntime'
 import { getLambdaDetails } from '../../lambda/utils'
 import { ext } from '../extensionGlobals'
 import { WatchedFiles, WatchedItem } from '../watchedFiles'
+import { getLogger } from '../logger'
 
 export interface TemplateDatum {
     path: string
@@ -97,6 +98,20 @@ export function getResourcesForHandlerFromTemplateDatum(
                 templateDatum.item
             )
 
+            // properties for image type templates
+            const registeredPackageType = CloudFormation.getStringForProperty(
+                resource.Properties?.PackageType,
+                templateDatum.item
+            )
+            const registeredDockerContext = CloudFormation.getStringForProperty(
+                resource.Metadata?.DockerContext,
+                templateDatum.item
+            )
+            const registeredDockerFile = CloudFormation.getStringForProperty(
+                resource.Metadata?.Dockerfile,
+                templateDatum.item
+            )
+
             if (registeredRuntime && registeredHandler && registeredCodeUri) {
                 // .NET is currently a special case in that the filepath and handler aren't specific.
                 // For now: check if handler matches and check if the code URI contains the filepath.
@@ -131,37 +146,27 @@ export function getResourcesForHandlerFromTemplateDatum(
                             matchingResources.push({ name: key, resourceData: resource })
                         }
                     } catch (e) {
-                        // swallow error from getLambdaDetails: handler not a valid runtime, so skip to the next one
+                        getLogger().warn(
+                            `Resource ${key} in template ${templateDirname} has invalid runtime for handler ${handler}: ${registeredRuntime}`
+                        )
                     }
                 }
                 // not direct-invoke type, attempt image type
-            } else {
-                const registeredPackageType = CloudFormation.getStringForProperty(
-                    resource.Properties?.PackageType,
-                    templateDatum.item
-                )
-                const registeredDockerContext = CloudFormation.getStringForProperty(
-                    resource.Metadata?.DockerContext,
-                    templateDatum.item
-                )
-                const registeredDockerFile = CloudFormation.getStringForProperty(
-                    resource.Metadata?.Dockerfile,
-                    templateDatum.item
-                )
-                if (registeredPackageType === 'Image' && registeredDockerContext && registeredDockerFile) {
-                    // path must be inside dockerDir
-                    const dockerDir = path.join(templateDirname, registeredDockerContext)
-                    if (isInDirectory(dockerDir, filepath)) {
-                        let adjustedHandler: string = handler
-                        if (!filepath.endsWith('.cs')) {
-                            // reframe path to be relative to dockerDir instead of package.json
-                            // omit filename and append filename + function name from handler
-                            const relPath = path.relative(dockerDir, path.dirname(filepath))
-                            const handlerParts = pathutils.normalizeSeparator(handler).split('/')
-                            adjustedHandler = pathutils.normalizeSeparator(
-                                path.join(relPath, handlerParts[handlerParts.length - 1])
-                            )
-                        }
+            } else if (registeredPackageType === 'Image' && registeredDockerContext && registeredDockerFile) {
+                // path must be inside dockerDir
+                const dockerDir = path.join(templateDirname, registeredDockerContext)
+                if (isInDirectory(dockerDir, filepath)) {
+                    let adjustedHandler: string = handler
+                    if (!filepath.endsWith('.cs')) {
+                        // reframe path to be relative to dockerDir instead of package.json
+                        // omit filename and append filename + function name from handler
+                        const relPath = path.relative(dockerDir, path.dirname(filepath))
+                        const handlerParts = pathutils.normalizeSeparator(handler).split('/')
+                        adjustedHandler = pathutils.normalizeSeparator(
+                            path.join(relPath, handlerParts[handlerParts.length - 1])
+                        )
+                    }
+                    try {
                         // open dockerfile and see if it has a handler that matches the handler represented by this file
                         const fileText = readFileSync(path.join(dockerDir, registeredDockerFile)).toString()
                         // exact match within quotes to avoid shorter paths being picked up
@@ -170,8 +175,13 @@ export function getResourcesForHandlerFromTemplateDatum(
                         ) {
                             matchingResources.push({ name: key, resourceData: resource })
                         }
+                    } catch (e) {
+                        // file read error
+                        getLogger().error(e as Error)
                     }
                 }
+            } else {
+                getLogger().verbose(`Resource ${key} in template ${templateDirname} does not match handler ${handler}`)
             }
         }
     }
