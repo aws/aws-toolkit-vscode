@@ -30,6 +30,13 @@ export function getStringHash(text: string): string {
     return hash.digest('hex')
 }
 
+
+export function getSHA1StringHash(text: string): string {
+    const shasum = crypto.createHash('sha1')
+    shasum.update(text) //lgtm [js/weak-cryptographic-algorithm]
+    return shasum.digest('hex')
+}
+
 /**
  * Temporary util while Cloud9 does not have codicon support
  */
