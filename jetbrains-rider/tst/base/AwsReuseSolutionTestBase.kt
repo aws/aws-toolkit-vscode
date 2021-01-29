@@ -6,8 +6,11 @@ package base
 import com.intellij.ide.GeneralSettings
 import com.intellij.openapi.project.Project
 import com.intellij.openapi.util.SystemInfo
+import com.jetbrains.rider.projectView.solutionDirectory
 import com.jetbrains.rider.test.base.BaseTestWithSolutionBase
 import com.jetbrains.rider.test.base.PrepareTestEnvironment
+import com.jetbrains.rider.test.debugger.XDebuggerTestHelper
+import com.jetbrains.rider.test.scriptingApi.getVirtualFileFromPath
 import com.jetbrains.rider.test.scriptingApi.setUpCustomToolset
 import com.jetbrains.rider.test.scriptingApi.setUpDotNetCoreCliPath
 import com.jetbrains.rider.test.scriptingApi.useCachedTemplates
@@ -67,6 +70,15 @@ abstract class AwsReuseSolutionTestBase : BaseTestWithSolutionBase() {
         } finally {
             myProject = null
         }
+    }
+
+    // 15 is a magic number (it's the return statement since they are all the same), but the only
+    // example of it used that I could find it is used that way:
+    // https://github.com/JetBrains/fsharp-support/blob/93ab17493a34a0bc0fd4c70b11adde02f81455c4/rider-fsharp/src/test/kotlin/debugger/AsyncDebuggerTest.kt#L6
+    // Unlike our other projects we do not have a document to work with, so there might not be a nice way to do it.
+    fun setBreakpoint(line: Int = 15) {
+        // Same as com.jetbrains.rider.test.scriptingApi.toggleBreakpoint, but with the correct base directory
+        XDebuggerTestHelper.toggleBreakpoint(project, getVirtualFileFromPath("src/HelloWorld/Function.cs", project.solutionDirectory), line - 1)
     }
 
     private fun openSolution(solutionDirName: String) {

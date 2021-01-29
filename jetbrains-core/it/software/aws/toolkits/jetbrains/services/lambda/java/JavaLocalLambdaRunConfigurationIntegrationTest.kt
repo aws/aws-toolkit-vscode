@@ -21,7 +21,7 @@ import software.aws.toolkits.jetbrains.services.lambda.execution.local.createHan
 import software.aws.toolkits.jetbrains.services.lambda.execution.local.createTemplateRunConfiguration
 import software.aws.toolkits.jetbrains.utils.addBreakpoint
 import software.aws.toolkits.jetbrains.utils.checkBreakPointHit
-import software.aws.toolkits.jetbrains.utils.executeRunConfiguration
+import software.aws.toolkits.jetbrains.utils.executeRunConfigurationAndWait
 import software.aws.toolkits.jetbrains.utils.rules.HeavyJavaCodeInsightTestFixtureRule
 import software.aws.toolkits.jetbrains.utils.rules.addClass
 import software.aws.toolkits.jetbrains.utils.rules.addFileToModule
@@ -103,7 +103,7 @@ class JavaLocalLambdaRunConfigurationIntegrationTest(private val runtime: Lambda
         )
         assertThat(runConfiguration).isNotNull
 
-        val executeLambda = executeRunConfiguration(runConfiguration)
+        val executeLambda = executeRunConfigurationAndWait(runConfiguration)
 
         assertThat(executeLambda.exitCode).isEqualTo(0)
         assertThat(executeLambda.stdout).contains("HELLO WORLD")
@@ -136,7 +136,7 @@ class JavaLocalLambdaRunConfigurationIntegrationTest(private val runtime: Lambda
 
         assertThat(runConfiguration).isNotNull
 
-        val executeLambda = executeRunConfiguration(runConfiguration)
+        val executeLambda = executeRunConfigurationAndWait(runConfiguration)
 
         assertThat(executeLambda.exitCode).isEqualTo(0)
         assertThat(executeLambda.stdout).contains("HELLO WORLD")
@@ -169,7 +169,7 @@ class JavaLocalLambdaRunConfigurationIntegrationTest(private val runtime: Lambda
 
         assertThat(runConfiguration).isNotNull
 
-        val executeLambda = executeRunConfiguration(runConfiguration)
+        val executeLambda = executeRunConfigurationAndWait(runConfiguration)
 
         assertThat(executeLambda.exitCode).isEqualTo(0)
         assertThat(executeLambda.stdout).contains("HELLO WORLD")
@@ -189,7 +189,7 @@ class JavaLocalLambdaRunConfigurationIntegrationTest(private val runtime: Lambda
 
         val debuggerIsHit = checkBreakPointHit(projectRule.project)
 
-        val executeLambda = executeRunConfiguration(runConfiguration, DefaultDebugExecutor.EXECUTOR_ID)
+        val executeLambda = executeRunConfigurationAndWait(runConfiguration, DefaultDebugExecutor.EXECUTOR_ID)
 
         assertThat(executeLambda.exitCode).isEqualTo(0)
         assertThat(executeLambda.stdout).contains("HELLO WORLD")
