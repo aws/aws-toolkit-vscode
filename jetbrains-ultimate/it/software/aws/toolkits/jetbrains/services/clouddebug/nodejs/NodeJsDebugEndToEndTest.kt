@@ -25,7 +25,7 @@ import software.aws.toolkits.jetbrains.services.ecs.execution.EcsCloudDebugRunCo
 import software.aws.toolkits.jetbrains.services.ecs.execution.EcsCloudDebugRunConfigurationProducer
 import software.aws.toolkits.jetbrains.utils.WebStormTestUtils
 import software.aws.toolkits.jetbrains.utils.checkBreakPointHit
-import software.aws.toolkits.jetbrains.utils.executeRunConfiguration
+import software.aws.toolkits.jetbrains.utils.executeRunConfigurationAndWait
 import software.aws.toolkits.jetbrains.utils.rules.HeavyNodeJsCodeInsightTestFixtureRule
 
 class NodeJsDebugEndToEndTest : CloudDebugTestCase("CloudDebugTestECSClusterTaskDefinitionWithNode") {
@@ -105,7 +105,7 @@ class NodeJsDebugEndToEndTest : CloudDebugTestCase("CloudDebugTestECSClusterTask
             configuration.regionId(projectRule.project.activeRegion().id)
             configuration.credentialProviderId(projectRule.project.activeCredentialProvider().id)
             configuration.checkConfiguration()
-            executeRunConfiguration(configuration, DefaultDebugExecutor.EXECUTOR_ID)
+            executeRunConfigurationAndWait(configuration, DefaultDebugExecutor.EXECUTOR_ID)
         }
         assertThat(debuggerIsHit.get()).isTrue()
     }

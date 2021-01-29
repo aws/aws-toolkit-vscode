@@ -1,0 +1,4 @@
+{
+  "type" : "bugfix",
+  "description" : "Speed up loading CloudFormation resources"
+}

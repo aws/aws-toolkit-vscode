@@ -6,6 +6,8 @@ package software.aws.toolkits.jetbrains.services.lambda.dotnet
 import base.AwsReuseSolutionTestBase
 import com.fasterxml.jackson.module.kotlin.jacksonObjectMapper
 import com.fasterxml.jackson.module.kotlin.readValue
+import com.intellij.execution.executors.DefaultDebugExecutor
+import com.jetbrains.rider.projectView.solutionDirectory
 import org.assertj.core.api.Assertions.assertThat
 import org.testng.annotations.BeforeMethod
 import org.testng.annotations.Test
@@ -15,15 +17,18 @@ import software.aws.toolkits.jetbrains.core.credentials.MockCredentialsManager
 import software.aws.toolkits.jetbrains.core.region.getDefaultRegion
 import software.aws.toolkits.jetbrains.services.lambda.execution.local.createHandlerBasedRunConfiguration
 import software.aws.toolkits.jetbrains.services.lambda.execution.local.createTemplateRunConfiguration
-import software.aws.toolkits.jetbrains.utils.executeRunConfiguration
+import software.aws.toolkits.jetbrains.utils.checkBreakPointHit
+import software.aws.toolkits.jetbrains.utils.executeRunConfigurationAndWaitRider
 import software.aws.toolkits.jetbrains.utils.setSamExecutableFromEnvironment
 
 class Dotnet21LocalLambdaRunConfigurationIntegrationTest : DotnetLocalLambdaRunConfigurationIntegrationTestBase("EchoLambda2X", LambdaRuntime.DOTNETCORE2_1)
 class Dotnet21LocalLambdaImageRunConfigurationIntegrationTest :
     DotnetLocalLambdaImageRunConfigurationIntegrationTestBase("ImageLambda2X", LambdaRuntime.DOTNETCORE2_1)
+
 class Dotnet31LocalLambdaRunConfigurationIntegrationTest : DotnetLocalLambdaRunConfigurationIntegrationTestBase("EchoLambda3X", LambdaRuntime.DOTNETCORE3_1)
 class Dotnet31LocalLambdaImageRunConfigurationIntegrationTest :
     DotnetLocalLambdaImageRunConfigurationIntegrationTestBase("ImageLambda3X", LambdaRuntime.DOTNETCORE3_1)
+
 class Dotnet50LocalLambdaImageRunConfigurationIntegrationTest :
     DotnetLocalLambdaImageRunConfigurationIntegrationTestBase("ImageLambda5X", LambdaRuntime.DOTNET5_0)
 
@@ -54,8 +59,26 @@ abstract class DotnetLocalLambdaRunConfigurationIntegrationTestBase(private val 
             handler = handler
         )
 
-        val executeLambda = executeRunConfiguration(runConfiguration)
+        val executeLambda = executeRunConfigurationAndWaitRider(runConfiguration)
         assertThat(executeLambda.exitCode).isEqualTo(0)
+    }
+
+    @Test
+    fun samIsExecutedDebugger() {
+        setBreakpoint()
+
+        val runConfiguration = createHandlerBasedRunConfiguration(
+            project = project,
+            runtime = runtime.toSdkRuntime(),
+            credentialsProviderId = mockId,
+            handler = handler
+        )
+
+        val debuggerIsHit = checkBreakPointHit(project)
+
+        val executeLambda = executeRunConfigurationAndWaitRider(runConfiguration, DefaultDebugExecutor.EXECUTOR_ID)
+        assertThat(executeLambda.exitCode).isEqualTo(0)
+        assertThat(debuggerIsHit.get()).isTrue
     }
 
     @Test
@@ -70,7 +93,7 @@ abstract class DotnetLocalLambdaRunConfigurationIntegrationTestBase(private val 
             environmentVariables = envVars
         )
 
-        val executeLambda = executeRunConfiguration(runConfiguration)
+        val executeLambda = executeRunConfigurationAndWaitRider(runConfiguration)
 
         assertThat(executeLambda.exitCode).isEqualTo(0)
         assertThat(jsonToMap(executeLambda.stdout))
@@ -87,7 +110,7 @@ abstract class DotnetLocalLambdaRunConfigurationIntegrationTestBase(private val 
             handler = handler
         )
 
-        val executeLambda = executeRunConfiguration(runConfiguration)
+        val executeLambda = executeRunConfigurationAndWaitRider(runConfiguration)
 
         assertThat(executeLambda.exitCode).isEqualTo(0)
         assertThat(jsonToMap(executeLambda.stdout))
@@ -103,7 +126,7 @@ abstract class DotnetLocalLambdaRunConfigurationIntegrationTestBase(private val 
             handler = handler
         )
 
-        val executeLambda = executeRunConfiguration(runConfiguration)
+        val executeLambda = executeRunConfigurationAndWaitRider(runConfiguration)
 
         assertThat(executeLambda.exitCode).isEqualTo(0)
         assertThat(jsonToMap(executeLambda.stdout))
@@ -133,7 +156,7 @@ abstract class DotnetLocalLambdaImageRunConfigurationIntegrationTestBase(private
 
     @Test
     fun samIsExecutedImage() {
-        val template = "$tempTestDirectory/$solutionName/template.yaml"
+        val template = "${project.solutionDirectory}/template.yaml"
 
         val runConfiguration = createTemplateRunConfiguration(
             project = project,
@@ -145,7 +168,30 @@ abstract class DotnetLocalLambdaImageRunConfigurationIntegrationTestBase(private
             isImage = true
         )
 
-        val executeLambda = executeRunConfiguration(runConfiguration)
+        val executeLambda = executeRunConfigurationAndWaitRider(runConfiguration)
         assertThat(executeLambda.exitCode).isEqualTo(0)
+    }
+
+    @Test
+    fun samIsExecutedDebuggerImage() {
+        setBreakpoint()
+
+        val template = "${project.solutionDirectory}/template.yaml"
+
+        val runConfiguration = createTemplateRunConfiguration(
+            project = project,
+            runtime = runtime,
+            templateFile = template,
+            logicalId = "HelloWorldFunction",
+            input = "\"Hello World\"",
+            credentialsProviderId = mockId,
+            isImage = true
+        )
+
+        val debuggerIsHit = checkBreakPointHit(project)
+
+        val executeLambda = executeRunConfigurationAndWaitRider(runConfiguration, DefaultDebugExecutor.EXECUTOR_ID)
+        assertThat(executeLambda.exitCode).isEqualTo(0)
+        assertThat(debuggerIsHit.get()).isTrue
     }
 }
