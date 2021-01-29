@@ -10,7 +10,7 @@ export interface CloudFormationClient {
 
     deleteStack(name: string): Promise<void>
 
-    listStacks(statusFilter?: string[]): AsyncIterableIterator<CloudFormation.StackSummary>
+    listStacks(): AsyncIterableIterator<CloudFormation.StackSummary>
 
     describeStackResources(name: string): Promise<CloudFormation.DescribeStackResourcesOutput>
 }

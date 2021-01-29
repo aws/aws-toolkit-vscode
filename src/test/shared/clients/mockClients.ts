@@ -154,9 +154,9 @@ export class MockCloudFormationClient implements CloudFormationClient {
 
         public readonly deleteStack: (name: string) => Promise<void> = async (name: string) => {},
 
-        public readonly listStacks: (statusFilter?: string[]) => AsyncIterableIterator<CloudFormation.StackSummary> = (
+        public readonly listStacks: (
             statusFilter?: string[]
-        ) => asyncGenerator([]),
+        ) => AsyncIterableIterator<CloudFormation.StackSummary> = () => asyncGenerator([]),
 
         public readonly describeStackResources: (
             name: string

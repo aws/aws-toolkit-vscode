@@ -21,13 +21,34 @@ export class DefaultCloudFormationClient implements CloudFormationClient {
             .promise()
     }
 
-    public async *listStacks(
-        statusFilter: string[] = ['CREATE_COMPLETE', 'UPDATE_COMPLETE']
-    ): AsyncIterableIterator<CloudFormation.StackSummary> {
+    public async *listStacks(): AsyncIterableIterator<CloudFormation.StackSummary> {
         const client = await this.createSdkClient()
 
         const request: CloudFormation.ListStacksInput = {
-            StackStatusFilter: statusFilter,
+            // Every StackStatus except for DELETE_COMPLETE
+            StackStatusFilter: [
+                'CREATE_IN_PROGRESS',
+                'CREATE_FAILED',
+                'CREATE_COMPLETE',
+                'ROLLBACK_IN_PROGRESS',
+                'ROLLBACK_FAILED',
+                'ROLLBACK_COMPLETE',
+                'DELETE_IN_PROGRESS',
+                'DELETE_FAILED',
+                'UPDATE_IN_PROGRESS',
+                'UPDATE_COMPLETE_CLEANUP_IN_PROGRESS',
+                'UPDATE_COMPLETE',
+                'UPDATE_ROLLBACK_IN_PROGRESS',
+                'UPDATE_ROLLBACK_FAILED',
+                'UPDATE_ROLLBACK_COMPLETE_CLEANUP_IN_PROGRESS',
+                'UPDATE_ROLLBACK_COMPLETE',
+                'REVIEW_IN_PROGRESS',
+                'IMPORT_IN_PROGRESS',
+                'IMPORT_COMPLETE',
+                'IMPORT_ROLLBACK_IN_PROGRESS',
+                'IMPORT_ROLLBACK_FAILED',
+                'IMPORT_ROLLBACK_COMPLETE',
+            ],
         }
 
         do {
