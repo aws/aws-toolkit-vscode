@@ -213,6 +213,14 @@ export function createApiAwsSamDebugConfig(
     const workspaceRelativePath = folder ? getNormalizedRelativePath(folder.uri.fsPath, templatePath) : templatePath
     const templateParentDir = path.basename(path.dirname(templatePath))
 
+    const withRuntime = runtimeName
+        ? {
+              lambda: {
+                  runtime: runtimeName,
+              },
+          }
+        : undefined
+
     return {
         type: AWS_SAM_DEBUG_TYPE,
         request: DIRECT_INVOKE_TYPE,
@@ -229,5 +237,6 @@ export function createApiAwsSamDebugConfig(
             httpMethod: (preloadedConfig?.httpMethod as APIGatewayProperties['httpMethod']) ?? 'get',
             payload: preloadedConfig?.payload ?? { json: {} },
         },
+        ...withRuntime,
     }
 }

@@ -3,6 +3,7 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
+import { readFileSync } from 'fs'
 import { CloudFormation } from './cloudformation'
 import * as pathutils from '../utilities/pathUtils'
 import * as path from 'path'
@@ -131,6 +132,44 @@ export function getResourcesForHandlerFromTemplateDatum(
                         }
                     } catch (e) {
                         // swallow error from getLambdaDetails: handler not a valid runtime, so skip to the next one
+                    }
+                }
+                // not direct-invoke type, attempt image type
+            } else {
+                const registeredPackageType = CloudFormation.getStringForProperty(
+                    resource.Properties?.PackageType,
+                    templateDatum.item
+                )
+                const registeredDockerContext = CloudFormation.getStringForProperty(
+                    resource.Metadata?.DockerContext,
+                    templateDatum.item
+                )
+                const registeredDockerFile = CloudFormation.getStringForProperty(
+                    resource.Metadata?.Dockerfile,
+                    templateDatum.item
+                )
+                if (registeredPackageType && registeredDockerContext && registeredDockerFile) {
+                    // path must be inside dockerDir
+                    const dockerDir = path.join(templateDirname, registeredDockerContext)
+                    if (isInDirectory(dockerDir, filepath)) {
+                        let adjustedHandler: string = handler
+                        if (!filepath.endsWith('.cs')) {
+                            // reframe path to be relative to dockerDir instead of package.json
+                            // omit filename and append filename + function name from handler
+                            const relPath = path.relative(dockerDir, path.dirname(filepath))
+                            const handlerParts = pathutils.normalizeSeparator(handler).split('/')
+                            adjustedHandler = pathutils.normalizeSeparator(
+                                path.join(relPath, handlerParts[handlerParts.length - 1])
+                            )
+                        }
+                        // open dockerfile and see if it has a handler that matches the handler represented by this file
+                        const fileText = readFileSync(path.join(dockerDir, registeredDockerFile)).toString()
+                        // exact match within quotes to avoid shorter paths being picked up
+                        if (
+                            new RegExp(`['"]${adjustedHandler}['"]`, 'g').test(pathutils.normalizeSeparator(fileText))
+                        ) {
+                            matchingResources.push({ name: key, resourceData: resource })
+                        }
                     }
                 }
             }
