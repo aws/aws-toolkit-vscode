@@ -19,6 +19,7 @@ import { badYaml, makeSampleSamTemplateYaml, strToYamlFile } from './cloudformat
 import { assertEqualPaths } from '../../testUtil'
 import { CloudFormation } from '../../../shared/cloudformation/cloudformation'
 import { WatchedItem } from '../../../shared/watchedFiles'
+import { writeFile } from 'fs-extra'
 
 // TODO almost all of these tests should be moved to test WatchedFiles instead
 describe('CloudFormation Template Registry', async () => {
@@ -248,7 +249,7 @@ describe('CloudFormation Template Registry', async () => {
         })
     })
 
-    describe('getResourceAssociatedWithHandlerFromTemplateDatum', () => {
+    describe('getResourcesForHandlerFromTemplateDatum', () => {
         it('returns an empty array if the given template is not a parent of the handler file in question', () => {
             const val = getResourcesForHandlerFromTemplateDatum(
                 path.join(rootPath, 'index.js'),
@@ -337,6 +338,202 @@ describe('CloudFormation Template Registry', async () => {
                     resourceData: matchingResource,
                 },
             ])
+        })
+    })
+
+    describe('getResourcesForHandlerFromTemplateDatum (image tests)', async () => {
+        let tempFolder: string
+        let helloPath: string
+        let nestedPath: string
+
+        beforeEach(async () => {
+            tempFolder = await makeTemporaryToolkitFolder()
+            helloPath = path.join(tempFolder, 'hello-world')
+            nestedPath = path.join(helloPath, 'nested')
+            await fs.mkdirp(nestedPath)
+            await fs.mkdirp(helloPath)
+        })
+
+        afterEach(async () => {
+            await fs.remove(tempFolder)
+        })
+
+        const resource: {
+            Type: 'AWS::Serverless::Function'
+            Properties: CloudFormation.ImageResourceProperties
+        } = {
+            Type: 'AWS::Serverless::Function',
+            Properties: {
+                PackageType: 'Image',
+                Events: {
+                    HelloWorld: {
+                        Type: 'Api',
+                        Properties: {
+                            Path: '/hello',
+                            Method: 'get',
+                        },
+                    },
+                },
+            },
+        }
+
+        it('checks for an exact handler match to a relative path in a Dockerfile for image functions', async () => {
+            await writeFile(path.join(helloPath, 'Dockerfile'), 'CMD: ["index.handler"]', 'utf8')
+            await writeFile(path.join(nestedPath, 'Dockerfile'), 'CMD: ["index.handler"]', 'utf8')
+
+            const helloWorldResource = {
+                ...resource,
+                ...{
+                    Metadata: {
+                        DockerTag: 'nodejs12.x-v1',
+                        DockerContext: './hello-world',
+                        Dockerfile: 'Dockerfile',
+                    },
+                },
+            }
+
+            const helloWorldNestedResource = {
+                ...resource,
+                ...{
+                    Metadata: {
+                        DockerTag: 'nodejs12.x-v1',
+                        DockerContext: './hello-world/nested',
+                        Dockerfile: 'Dockerfile',
+                    },
+                },
+            }
+
+            const template = {
+                path: path.join(tempFolder, 'template.yaml'),
+                item: {
+                    Resources: {
+                        helloWorldResource,
+                        helloWorldNestedResource,
+                    },
+                },
+            }
+            const val = getResourcesForHandlerFromTemplateDatum(
+                path.join(helloPath, 'index.js'),
+                'index.handler',
+                template
+            )
+
+            assert.deepStrictEqual(
+                val,
+                [
+                    {
+                        name: 'helloWorldResource',
+                        resourceData: helloWorldResource,
+                    },
+                ],
+                'non-nested case failed'
+            )
+
+            const val2 = getResourcesForHandlerFromTemplateDatum(
+                path.join(nestedPath, 'index.js'),
+                'index.handler',
+                template
+            )
+
+            assert.deepStrictEqual(
+                val2,
+                [
+                    {
+                        name: 'helloWorldNestedResource',
+                        resourceData: helloWorldNestedResource,
+                    },
+                ],
+                'nested case failed'
+            )
+        })
+
+        it('checks for an exact handler match for C# files in a Dockerfile for image functions', async () => {
+            await writeFile(
+                path.join(helloPath, 'Dockerfile'),
+                'CMD: ["HelloWorld::HelloWorld.Function::FunctionHandler"]',
+                'utf8'
+            )
+            await writeFile(
+                path.join(nestedPath, 'Dockerfile'),
+                'CMD: ["HelloWorld::HelloWorld.Function::FunctionHandler"]',
+                'utf8'
+            )
+
+            const helloWorldResource = {
+                ...resource,
+                ...{
+                    Metadata: {
+                        DockerTag: 'dotnetcore3.1-v1',
+                        DockerContext: './hello-world',
+                        Dockerfile: 'Dockerfile',
+                        DockerBuildArgs: {
+                            SAM_BUILD_MODE: 'run',
+                        },
+                    },
+                },
+            }
+
+            const helloWorldNestedResource = {
+                ...resource,
+                ...{
+                    Metadata: {
+                        DockerTag: 'dotnetcore3.1-v1',
+                        DockerContext: './hello-world/nested',
+                        Dockerfile: 'Dockerfile',
+                        DockerBuildArgs: {
+                            SAM_BUILD_MODE: 'run',
+                        },
+                    },
+                },
+            }
+
+            const template = {
+                path: path.join(tempFolder, 'template.yaml'),
+                item: {
+                    Resources: {
+                        helloWorldResource,
+                        helloWorldNestedResource,
+                    },
+                },
+            }
+            const val = getResourcesForHandlerFromTemplateDatum(
+                path.join(helloPath, 'HelloWorld.cs'),
+                'HelloWorld::HelloWorld.Function::FunctionHandler',
+                template
+            )
+
+            assert.deepStrictEqual(
+                val,
+                [
+                    {
+                        name: 'helloWorldResource',
+                        resourceData: helloWorldResource,
+                    },
+                ],
+                'non-nested case failed'
+            )
+
+            const val2 = getResourcesForHandlerFromTemplateDatum(
+                path.join(nestedPath, 'HelloWorld.cs'),
+                'HelloWorld::HelloWorld.Function::FunctionHandler',
+                template
+            )
+
+            // checks all Dockerfiles in parent paths
+            assert.deepStrictEqual(
+                val2,
+                [
+                    {
+                        name: 'helloWorldResource',
+                        resourceData: helloWorldResource,
+                    },
+                    {
+                        name: 'helloWorldNestedResource',
+                        resourceData: helloWorldNestedResource,
+                    },
+                ],
+                'nested case failed'
+            )
         })
     })
 })

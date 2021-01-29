@@ -148,7 +148,7 @@ export function getResourcesForHandlerFromTemplateDatum(
                     resource.Metadata?.Dockerfile,
                     templateDatum.item
                 )
-                if (registeredPackageType && registeredDockerContext && registeredDockerFile) {
+                if (registeredPackageType === 'Image' && registeredDockerContext && registeredDockerFile) {
                     // path must be inside dockerDir
                     const dockerDir = path.join(templateDirname, registeredDockerContext)
                     if (isInDirectory(dockerDir, filepath)) {
