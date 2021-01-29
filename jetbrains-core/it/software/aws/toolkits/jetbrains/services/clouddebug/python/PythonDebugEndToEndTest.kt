@@ -20,7 +20,7 @@ import software.aws.toolkits.jetbrains.services.ecs.execution.ContainerOptions
 import software.aws.toolkits.jetbrains.services.ecs.execution.EcsCloudDebugRunConfiguration
 import software.aws.toolkits.jetbrains.services.ecs.execution.EcsCloudDebugRunConfigurationProducer
 import software.aws.toolkits.jetbrains.utils.checkBreakPointHit
-import software.aws.toolkits.jetbrains.utils.executeRunConfiguration
+import software.aws.toolkits.jetbrains.utils.executeRunConfigurationAndWait
 import software.aws.toolkits.jetbrains.utils.rules.PythonCodeInsightTestFixtureRule
 import software.aws.toolkits.jetbrains.utils.rules.addBreakpoint
 import java.nio.file.Path
@@ -101,7 +101,7 @@ class PythonDebugEndToEndTest : CloudDebugTestCase("CloudDebugTestECSClusterTask
             } catch (_: RuntimeConfigurationWarning) {
                 // ignore warnings because we know what we're doing
             }
-            executeRunConfiguration(configuration, DefaultDebugExecutor.EXECUTOR_ID)
+            executeRunConfigurationAndWait(configuration, DefaultDebugExecutor.EXECUTOR_ID)
         }
 
         // check breakpoint hit

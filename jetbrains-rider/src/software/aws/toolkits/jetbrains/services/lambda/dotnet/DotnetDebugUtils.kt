@@ -4,7 +4,6 @@
 package software.aws.toolkits.jetbrains.services.lambda.dotnet
 
 import com.intellij.execution.configurations.GeneralCommandLine
-import com.intellij.execution.filters.TextConsoleBuilderFactory
 import com.intellij.execution.process.OSProcessHandler
 import com.intellij.execution.process.ProcessAdapter
 import com.intellij.execution.process.ProcessEvent
@@ -109,9 +108,7 @@ object DotnetDebugUtils {
         }
 
         val executionResult = state.execute(environment.executor, environment.runner)
-        val console = TextConsoleBuilderFactory.getInstance().createBuilder(environment.project).console
         val samProcessHandle = executionResult.processHandler
-        console.attachToProcess(samProcessHandle)
 
         // If we have not started the process's notification system, start it now.
         // This is needed to pipe the SAM output to the Console view of the debugger panel
@@ -170,7 +167,7 @@ object DotnetDebugUtils {
 
                             promise.setResult(
                                 DotNetDebuggerUtils.createAndStartSession(
-                                    executionConsole = console,
+                                    executionConsole = executionResult.executionConsole,
                                     env = environment,
                                     sessionLifetime = debuggerLifetime,
                                     processHandler = samProcessHandle,

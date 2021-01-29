@@ -25,7 +25,7 @@ import software.amazon.awssdk.services.lambda.model.LogType
 import software.aws.toolkits.jetbrains.core.MockClientManagerRule
 import software.aws.toolkits.jetbrains.core.credentials.MockCredentialManagerRule
 import software.aws.toolkits.jetbrains.core.region.getDefaultRegion
-import software.aws.toolkits.jetbrains.utils.executeRunConfiguration
+import software.aws.toolkits.jetbrains.utils.executeRunConfigurationAndWait
 import java.nio.charset.StandardCharsets
 import java.util.Base64
 
@@ -126,7 +126,7 @@ class RemoteLambdaExecutionTest {
             regionId = getDefaultRegion()
         )
 
-        return executeRunConfiguration(runConfiguration)
+        return executeRunConfigurationAndWait(runConfiguration)
     }
 
     private companion object {
