@@ -21,7 +21,7 @@ fun ContainerFixture.fileBrowser(
     timeout: Duration = Duration.ofSeconds(20),
     function: FileBrowserFixture.() -> Unit = {}
 ) {
-    step("Search for file explorer with title matching $partialTitle") {
+    step("Search for file explorer with title matching '$partialTitle'") {
         val dialog = find<FileBrowserFixture>(DialogFixture.byTitleContains(partialTitle), timeout)
 
         dialog.apply(function)
