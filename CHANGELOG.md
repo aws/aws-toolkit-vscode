@@ -1,3 +1,11 @@
+## 1.19.0 2021-02-01
+
+- **Bug Fix** Schemas: download failure would not trigger code generation under certain conditions
+- **Feature** "Create new SAM Application" command suggests a more-intuitive name
+- **Feature** Support for SAM CLI 1.16: SAM create/run dotnet5.0
+- **Feature** List API Gateway names with their ID (so Toolkit can list APIs with identical names)
+- **Feature** Improved validation when searching for SAM CLI #1465
+
 ## 1.18.0 2021-01-07
 
 - **Bug Fix** WatchedFiles improvements (Windows) #1416

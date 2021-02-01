@@ -1,0 +1,26 @@
+{
+	"date": "2021-02-01",
+	"version": "1.19.0",
+	"entries": [
+		{
+			"type": "Bug Fix",
+			"description": "Schemas: download failure would not trigger code generation under certain conditions"
+		},
+		{
+			"type": "Feature",
+			"description": "\"Create new SAM Application\" command suggests a more-intuitive name"
+		},
+		{
+			"type": "Feature",
+			"description": "Support for SAM CLI 1.16: SAM create/run dotnet5.0"
+		},
+		{
+			"type": "Feature",
+			"description": "List API Gateway names with their ID (so Toolkit can list APIs with identical names)"
+		},
+		{
+			"type": "Feature",
+			"description": "Improved validation when searching for SAM CLI #1465"
+		}
+	]
+}
