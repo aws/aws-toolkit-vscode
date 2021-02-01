@@ -1,4 +1,0 @@
-{
-	"type": "Feature",
-	"description": "List API Gateway names with their ID (so Toolkit can list APIs with identical names)"
-}
