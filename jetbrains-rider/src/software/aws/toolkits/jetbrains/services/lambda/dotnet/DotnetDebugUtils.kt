@@ -209,7 +209,7 @@ object DotnetDebugUtils {
     }
 
     private suspend fun findDockerContainer(frontendPort: Int): String = runProcessUntil(
-        duration = Duration.ofSeconds(30),
+        duration = Duration.ofMillis(debuggerConnectTimeoutMs()),
         cmd = GeneralCommandLine(
             "docker",
             "ps",
@@ -222,7 +222,7 @@ object DotnetDebugUtils {
     }
 
     private suspend fun findDotnetPid(dockerContainer: String): Int = runProcessUntil(
-        duration = Duration.ofSeconds(30),
+        duration = Duration.ofMillis(debuggerConnectTimeoutMs()),
         cmd = GeneralCommandLine(
             "docker",
             "exec",
