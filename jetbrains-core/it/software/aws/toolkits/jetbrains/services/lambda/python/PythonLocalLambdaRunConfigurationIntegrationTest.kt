@@ -90,24 +90,6 @@ class PythonLocalLambdaRunConfigurationIntegrationTest(private val runtime: Runt
     }
 
     @Test
-    fun samIsExecuted() {
-        projectRule.fixture.addFileToProject("requirements.txt", "")
-
-        val runConfiguration = createHandlerBasedRunConfiguration(
-            project = projectRule.project,
-            runtime = runtime,
-            handler = "src/hello_world.app.lambda_handler",
-            input = "\"Hello World\"",
-            credentialsProviderId = mockId
-        )
-        assertThat(runConfiguration).isNotNull
-
-        val executeLambda = executeRunConfigurationAndWait(runConfiguration)
-        assertThat(executeLambda.exitCode).isEqualTo(0)
-        assertThat(executeLambda.stdout).contains("Hello world")
-    }
-
-    @Test
     fun samIsExecutedWithContainer() {
         projectRule.fixture.addFileToProject("requirements.txt", "")
 
@@ -132,7 +114,7 @@ class PythonLocalLambdaRunConfigurationIntegrationTest(private val runtime: Runt
     }
 
     @Test
-    fun envVarsArePassed() {
+    fun samIsExecuted() {
         projectRule.fixture.addFileToProject("requirements.txt", "")
 
         val envVars = mutableMapOf("Foo" to "Bar", "Bat" to "Baz")
@@ -151,47 +133,14 @@ class PythonLocalLambdaRunConfigurationIntegrationTest(private val runtime: Runt
 
         assertThat(executeLambda.exitCode).isEqualTo(0)
         assertThat(jsonToMap(executeLambda.stdout))
+            .describedAs("Environment variables are passed")
             .containsEntry("Foo", "Bar")
             .containsEntry("Bat", "Baz")
-    }
-
-    @Test
-    fun regionIsPassed() {
-        projectRule.fixture.addFileToProject("requirements.txt", "")
-
-        val runConfiguration = createHandlerBasedRunConfiguration(
-            project = projectRule.project,
-            runtime = runtime,
-            handler = "src/hello_world.app.env_print",
-            input = "\"Hello World\"",
-            credentialsProviderId = mockId
-        )
-        assertThat(runConfiguration).isNotNull
-
-        val executeLambda = executeRunConfigurationAndWait(runConfiguration)
-
-        assertThat(executeLambda.exitCode).isEqualTo(0)
         assertThat(jsonToMap(executeLambda.stdout))
+            .describedAs("Region is set")
             .containsEntry("AWS_REGION", getDefaultRegion().id)
-    }
-
-    @Test
-    fun credentialsArePassed() {
-        projectRule.fixture.addFileToProject("requirements.txt", "")
-
-        val runConfiguration = createHandlerBasedRunConfiguration(
-            project = projectRule.project,
-            runtime = runtime,
-            handler = "src/hello_world.app.env_print",
-            input = "\"Hello World\"",
-            credentialsProviderId = mockId
-        )
-        assertThat(runConfiguration).isNotNull
-
-        val executeLambda = executeRunConfigurationAndWait(runConfiguration)
-
-        assertThat(executeLambda.exitCode).isEqualTo(0)
         assertThat(jsonToMap(executeLambda.stdout))
+            .describedAs("Credentials are passed")
             .containsEntry("AWS_ACCESS_KEY_ID", mockCreds.accessKeyId())
             .containsEntry("AWS_SECRET_ACCESS_KEY", mockCreds.secretAccessKey())
             // An empty AWS_SESSION_TOKEN is inserted by Samcli/the Lambda runtime as of 1.13.1
