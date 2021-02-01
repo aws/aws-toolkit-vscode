@@ -5,7 +5,7 @@
 
 import * as vscode from 'vscode'
 import * as fs from 'fs'
-import { samZipLambdaRuntimes } from '../../../lambda/models/samLambdaRuntime'
+import { samImageLambdaRuntimes, samZipLambdaRuntimes } from '../../../lambda/models/samLambdaRuntime'
 import { CloudFormation } from '../../cloudformation/cloudformation'
 import { localize } from '../../utilities/vsCodeUtils'
 import {
@@ -171,13 +171,13 @@ export class DefaultAwsSamDebugConfigurationValidator implements AwsSamDebugConf
                 }
             }
             // can't infer the runtime for image-based lambdas
-            if (!config.lambda?.runtime || !samZipLambdaRuntimes.has(config.lambda.runtime)) {
+            if (!config.lambda?.runtime || !samImageLambdaRuntimes.has(config.lambda.runtime)) {
                 return {
                     isValid: false,
                     message: localize(
                         'AWS.sam.debugger.missingRuntimeForImage',
                         'Run configurations for Image-based Lambdas require a valid Lambda runtime value, expected one of [{0}]',
-                        Array.from(samZipLambdaRuntimes).join(', ')
+                        Array.from(samImageLambdaRuntimes).join(', ')
                     ),
                 }
             }

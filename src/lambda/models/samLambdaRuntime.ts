@@ -65,8 +65,7 @@ export const samLambdaCreatableRuntimes: ImmutableSet<Runtime> = isCloud9()
 const dotnet50 = 'dotnet5.0'
 export const samImageLambdaRuntimes = ImmutableSet<Runtime>([
     ...samLambdaCreatableRuntimes,
-    // TODO enable to allow dotnet 5 support
-    // dotnet50,
+    dotnet50,
     // SAM also supports ruby, go, java, but toolkit does not support
 ])
 
