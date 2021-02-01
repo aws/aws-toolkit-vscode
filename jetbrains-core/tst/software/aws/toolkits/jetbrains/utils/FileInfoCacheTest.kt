@@ -113,8 +113,9 @@ class FileInfoCacheTest {
 
         assertThat(pathPromise.blockingGet(0)!!.result).isEqualTo("tempFile")
 
-        assertThat(infoProvider.testOnlyGetRequestCache()).hasSize(1)
+        assertThat(infoProvider.testOnlyGetRequestCache())
             .describedAs("Cache size does not match expected value")
+            .hasSize(1)
     }
 
     @Test
@@ -128,8 +129,9 @@ class FileInfoCacheTest {
         val samePathPromise = infoProvider.evaluate(tempFile.absolutePath).blockingGet(0)!!.result
         assertThat(samePathPromise).isEqualTo("tempFile")
 
-        assertThat(infoProvider.testOnlyGetRequestCache()).hasSize(1)
+        assertThat(infoProvider.testOnlyGetRequestCache())
             .describedAs("Cache size does not match expected value")
+            .hasSize(1)
     }
 
     @Test
@@ -145,8 +147,9 @@ class FileInfoCacheTest {
         assertThat(pathTempFile1Promise.blockingGet(0)!!.result).isEqualTo("tempFile1")
         assertThat(pathTempFile2Promise.blockingGet(0)!!.result).isEqualTo("tempFile2")
 
-        assertThat(infoProvider.testOnlyGetRequestCache()).hasSize(2)
+        assertThat(infoProvider.testOnlyGetRequestCache())
             .describedAs("Cache size does not match expected value")
+            .hasSize(2)
     }
 
     @Test
@@ -171,14 +174,15 @@ class FileInfoCacheTest {
 
         waitAll(results)
 
-        assertThat(results).hasSize(1).describedAs("Number of threads does not match expected value")
+        assertThat(results).describedAs("Number of threads does not match expected value").hasSize(1)
 
         for (result in results) {
             assertThat(result.blockingGet(0)!!.result).isEqualTo(info)
         }
 
-        assertThat(infoProvider.testOnlyGetRequestCache()).hasSize(1)
+        assertThat(infoProvider.testOnlyGetRequestCache())
             .describedAs("Cache size does not match expected value")
+            .hasSize(1)
     }
 
     @Test
