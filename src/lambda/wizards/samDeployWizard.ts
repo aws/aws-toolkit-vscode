@@ -24,7 +24,7 @@ import {
     WIZARD_TERMINATE,
     wizardContinue,
     WizardStep,
-    WIZARD_GOBACK_2_STEPS,
+    WIZARD_RETRY,
 } from '../../shared/wizards/multiStepWizard'
 import { configureParameterOverrides } from '../config/configureParameterOverrides'
 import { getOverriddenParameters, getParameters } from '../utilities/parameterUtils'
@@ -172,6 +172,7 @@ export class DefaultSamDeployWizardContext implements SamDeployWizardContext {
 
     private readonly totalSteps: number = 4
     public additionalSteps: number = 0
+    public newBucketCalled = false
 
     public constructor(readonly extContext: ExtContext) {}
 
@@ -432,13 +433,17 @@ export class DefaultSamDeployWizardContext implements SamDeployWizardContext {
 
     public async promptForNewS3BucketName(step: number, selectedRegion: string): Promise<string | undefined>
     {
-        this.additionalSteps++
+        
+        if (!this.newBucketCalled) {
+            this.additionalSteps++
+            this.newBucketCalled = true
+        }
         const inputBox = input.createInputBox({
             buttons: [this.helpButton, vscode.QuickInputButtons.Back],
             options: {
                 title: localize('AWS.s3.createBucket.prompt', 'Enter a new bucket name'),
                 ignoreFocusOut: true,
-                step: step,
+                step: step + 1,
                 totalSteps: this.totalSteps + this.additionalSteps
             }
         })
@@ -446,7 +451,6 @@ export class DefaultSamDeployWizardContext implements SamDeployWizardContext {
         const response = await input.promptUser({
             inputBox: inputBox,
             onDidTriggerButton: (button, resolve, reject) => {
-                this.additionalSteps--
                 if (button === vscode.QuickInputButtons.Back) {
                     resolve(undefined)
                 } else if (button === this.helpButton) {
@@ -458,11 +462,9 @@ export class DefaultSamDeployWizardContext implements SamDeployWizardContext {
         
         if(!response) {
             return undefined
+        } else {
+            return response
         }
-
-        const newBucketName = await createNewS3Bucket(response, selectedRegion)
-       
-        return newBucketName
     } 
 
     public async promptUserForEcrRepo(
@@ -561,8 +563,6 @@ export class SamDeployWizard extends MultiStepWizard<SamDeployWizardResponse> {
      * an ECR repo to push the images to
      */
     private hasImages: boolean = false
-
-    private previousStepWasCreateBucket: boolean = false
 
     public constructor(private readonly context: SamDeployWizardContext, private readonly regionNode?: any) {
         super()
@@ -686,32 +686,26 @@ export class SamDeployWizard extends MultiStepWizard<SamDeployWizardResponse> {
     private readonly S3_BUCKET: WizardStep = async step => {
         const response = await this.context.promptUserForS3Bucket(step, this.response.region, this.response.s3Bucket)
         
+        if (!response) {
+            return WIZARD_GOBACK
+        }
+
         if(response === CREATE_NEW_BUCKET) {
-            return wizardContinue(this.CREATE_S3_BUCKET)
-        }
-        
-        this.response.s3Bucket = response
-
-        if (!response) {
-            return WIZARD_GOBACK
-        }
-
-        return this.hasImages ? wizardContinue(this.ECR_REPO) : wizardContinue(this.STACK_NAME)
-    }
-
-    private readonly CREATE_S3_BUCKET: WizardStep = async step => {
-        this.previousStepWasCreateBucket = true
-        const response = await this.context.promptForNewS3BucketName(step, this.response.region)
-
-        this.response.s3Bucket = response
-
-        if (!response) {
-            this.previousStepWasCreateBucket = false
-            return WIZARD_GOBACK
-        }
+            const newBucketRequest = await this.context.promptForNewS3BucketName(step, this.response.region)
+            if (!newBucketRequest) {
+                return WIZARD_RETRY
+            }    
+            const newBucketName = await createNewS3Bucket(newBucketRequest, this.response.region!)
+            if (!newBucketName) {
+                return WIZARD_RETRY
+            }    
+            this.response.s3Bucket = newBucketName
+            
+        } else {
+            this.response.s3Bucket = response
+        }    
 
         return this.hasImages ? wizardContinue(this.ECR_REPO) : wizardContinue(this.STACK_NAME)
-
     }
 
     private readonly ECR_REPO: WizardStep = async step => {
@@ -719,17 +713,7 @@ export class SamDeployWizard extends MultiStepWizard<SamDeployWizardResponse> {
 
         this.response.ecrRepo = response
 
-        if (!response) {
-            if (this.previousStepWasCreateBucket) {
-                this.previousStepWasCreateBucket = false
-                return WIZARD_GOBACK_2_STEPS
-            } else {
-                return WIZARD_GOBACK
-            }
-
-        }
-
-        return wizardContinue(this.STACK_NAME)
+        return response ? wizardContinue(this.STACK_NAME) : WIZARD_GOBACK
     }
 
     private readonly STACK_NAME: WizardStep = async () => {
@@ -738,14 +722,7 @@ export class SamDeployWizard extends MultiStepWizard<SamDeployWizardResponse> {
             validateInput: validateStackName,
         })
 
-        if(this.response.stackName) {
-            return WIZARD_TERMINATE
-        } else if (this.previousStepWasCreateBucket) {
-            this.previousStepWasCreateBucket = false
-            return WIZARD_GOBACK_2_STEPS
-        } else {
-            return WIZARD_GOBACK
-        }
+        return this.response.stackName ? WIZARD_TERMINATE : WIZARD_GOBACK
     }
 
     private skipOrPromptRegion(skipToStep: WizardStep): WizardStep {
@@ -906,17 +883,21 @@ async function populateS3QuickPick(
     })
 }
 
-async function createNewS3Bucket(name: string, selectedRegion: string): Promise<string> {
-    return new Promise(async resolve => {
+/**
+ * Creates a new S3 bucket and returns its name
+ * @param name What the new bucket will be named
+ * @param selectedRegion Region for the S3 client
+ * @returns If successful, returns the new name of the bucket created, undefined if not
+ */
+async function createNewS3Bucket(name: string, selectedRegion: string): Promise<string | undefined> {
         try{
             const s3Client = ext.toolkitClientBuilder.createS3Client(selectedRegion)
             const newBucketRequest: CreateBucketRequest = {bucketName: name}
-            const newBucketName = (await s3Client.createBucket(newBucketRequest)).bucket.name
-
-            resolve(newBucketName)
+            return (await s3Client.createBucket(newBucketRequest)).bucket.name
         } catch (e) {
             getLogger().error(e)
+            vscode.window.showErrorMessage('Error creating S3 bucket, see AWS Toolkit Logs for details.')
             return undefined
         }
-    })
+    
 }
