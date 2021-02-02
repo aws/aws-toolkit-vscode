@@ -14,16 +14,19 @@ import com.intellij.openapi.util.registry.Registry
 import com.intellij.util.net.NetUtils
 import com.intellij.xdebugger.XDebuggerManager
 import com.jetbrains.rd.util.spinUntil
+import kotlinx.coroutines.runBlocking
 import org.jetbrains.concurrency.AsyncPromise
 import org.jetbrains.concurrency.Promise
 import software.aws.toolkits.core.utils.error
 import software.aws.toolkits.core.utils.getLogger
+import software.aws.toolkits.jetbrains.utils.getCoroutineUiContext
 import software.aws.toolkits.jetbrains.utils.notifyError
 import software.aws.toolkits.resources.message
 
 class SamDebugger(settings: LocalLambdaRunSettings) : SamRunner(settings) {
     private val debugExtension = resolveDebuggerSupport(settings)
     private val debugPorts = NetUtils.findAvailableSocketPorts(debugExtension.numberOfDebugPorts()).toList()
+    private val edtContext = getCoroutineUiContext()
 
     override fun patchCommandLine(commandLine: GeneralCommandLine) {
         commandLine.addParameters(debugExtension.samArguments(debugPorts))
@@ -59,8 +62,13 @@ class SamDebugger(settings: LocalLambdaRunSettings) : SamRunner(settings) {
         resolveDebuggerSupport(state.settings).createDebugProcessAsync(environment, state, state.settings.debugHost, debugPorts)
             .onSuccess { debugProcessStarter ->
                 val debugManager = XDebuggerManager.getInstance(environment.project)
-                val runContentDescriptor = debugProcessStarter?.let {
-                    return@let debugManager.startSession(environment, debugProcessStarter).runContentDescriptor
+                val runContentDescriptor = runBlocking(edtContext) {
+                    if (debugProcessStarter == null) {
+                        null
+                    } else {
+                        // Requires EDT on some paths, so always requires to be run on EDT
+                        debugManager.startSession(environment, debugProcessStarter).runContentDescriptor
+                    }
                 }
                 if (runContentDescriptor == null) {
                     promise.setError(IllegalStateException("Failed to create debug process"))
