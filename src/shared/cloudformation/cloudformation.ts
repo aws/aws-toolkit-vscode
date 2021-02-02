@@ -402,23 +402,14 @@ export namespace CloudFormation {
         }
         if (resource.Properties) {
             if (resource.Properties.PackageType === LAMBDA_PACKAGE_TYPE_IMAGE) {
-                if (
-                    !resource.Metadata?.Dockerfile ||
-                    !validatePropertyType(resource.Metadata, 'Dockerfile', template, 'string')
-                ) {
+                if (!validatePropertyType(resource.Metadata, 'Dockerfile', template, 'string')) {
                     throw new Error('Missing or invalid value in Template for key: Metadata.Dockerfile')
                 }
-                if (
-                    !resource.Metadata.DockerContext ||
-                    !validatePropertyType(resource.Metadata, 'DockerContext', template, 'string')
-                ) {
+                if (!validatePropertyType(resource.Metadata, 'DockerContext', template, 'string')) {
                     throw new Error('Missing or invalid value in Template for key: Metadata.DockerContext')
                 }
             } else {
-                if (
-                    !resource.Properties.Handler ||
-                    !validatePropertyType(resource.Properties, 'Handler', template, 'string')
-                ) {
+                if (!validatePropertyType(resource.Properties, 'Handler', template, 'string')) {
                     throw new Error('Missing or invalid value in Template for key: Handler')
                 }
                 if (!resource.Properties.CodeUri) {
@@ -520,10 +511,11 @@ export namespace CloudFormation {
     /**
      * Gets the string value for a property in a template.
      * If the value is a Ref to a parameter, returns the default value of the ref; this may be undefined.
-     * Also returns undefined if the property is neither string nor Ref.
-     * @param property Property value to check
-     * @param template Template object to parse through
-     * @param globalKey Property's key; if populated, will check for a Global value to fall back on.
+     * If the value is not defined in the `targetObj` (`undefined` Ref counts as a definition), will attempt to find a value in Globals.
+     * Returns undefined if the value is not found in `targetObj` or `Globals`.
+     * @param targetObj Object containing a key to check
+     * @param key Key to look up in `targetObj`. If not present in `targetObj`, will fall back to a value in `Globals`.
+     * @param template Full template object. Required for `Ref` and `Globals` lookup.
      */
     export function getStringForProperty(
         targetObj: { [key: string]: string | number | object | undefined } | undefined,
@@ -536,10 +528,11 @@ export namespace CloudFormation {
     /**
      * Gets the numeric value for a property in a template.
      * If the value is a Ref to a parameter, returns the default value of the ref; this may be undefined.
-     * Also returns undefined if the property is neither number nor Ref.
-     * @param property Property value to check
-     * @param template Template object to parse through
-     * @param globalKey Property's key; if populated, will check for a Global value to fall back on.
+     * If the value is not defined in the `targetObj` (`undefined` Ref counts as a definition), will attempt to find a value in Globals.
+     * Returns undefined if the value is not found in `targetObj` or `Globals`.
+     * @param targetObj Object containing a key to check
+     * @param key Key to look up in `targetObj`. If not present in `targetObj`, will fall back to a value in `Globals`.
+     * @param template Full template object. Required for `Ref` and `Globals` lookup.
      */
     export function getNumberForProperty(
         targetObj: { [key: string]: string | number | object | undefined } | undefined,
@@ -550,16 +543,17 @@ export namespace CloudFormation {
     }
 
     /**
-     * Returns the "thing" that represents the property:
+     * Returns the "thing" that represents the property within `targetObj` or `Globals`:
      * * string if a string is requested and (the property is a string or if the property is a ref that is not a Number and has a default value)
      * * number if a number is requested and (the property is a number or if the property is a ref that is Number and has a default value)
      * * undefined in all other cases
      *
      * Ultimately it is up to the caller to ensure the type matches but this should do a more-than-reasonable job.
-     * @param property Property to validate the type of
-     * @param template Template object to parse through
+     * @param targetObj Object containing a key to check
+     * @param key Key to look up in `targetObj`. If not present in `targetObj`, will fall back to a value in `Globals`.
+     * @param template Full template object. Required for `Ref` and `Globals` lookup.
      * @param type Type to validate the property's type against
-     * @param globalKey Property's key; if populated, will check for a Global value to fall back on.
+     * @param globalLookup Whether or not this is currently looking at `Globals` fields. Internal for recursion prevention.
      */
     function getThingForProperty(
         targetObj: { [key: string]: string | number | object | undefined } | undefined,
@@ -599,10 +593,13 @@ export namespace CloudFormation {
 
     /**
      * Returns whether or not a property or its underlying ref matches the specified type
+     * Checks `targetObj` and `Globals` in that priority order. Will fail if `targetObj` is not valid but `Globals` is.
      * Does not validate a default value for a template parameter; just checks the value's type
-     * @param property Property to validate the type of
-     * @param template Template object to parse through
+     * @param targetObj Object containing a key to check
+     * @param key Key to look up in `targetObj`. If not present in `targetObj`, will fall back to a value in `Globals`.
+     * @param template Full template object. Required for `Ref` and `Globals` lookup.
      * @param type Type to validate the property's type against
+     * @param globalLookup Whether or not this is currently looking at `Globals` fields. Internal for recursion prevention.
      */
     function validatePropertyType(
         targetObj: { [key: string]: string | number | object | undefined } | undefined,
