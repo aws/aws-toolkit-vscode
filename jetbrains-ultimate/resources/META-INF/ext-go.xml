@@ -11,7 +11,8 @@
         <runtimeGroup implementation="software.aws.toolkits.jetbrains.services.lambda.go.GoRuntimeGroup"/>
         <builder id="GO" implementationClass="software.aws.toolkits.jetbrains.services.lambda.go.GoLambdaBuilder"/>
         <handlerResolver id="GO" implementationClass="software.aws.toolkits.jetbrains.services.lambda.go.GoLambdaHandlerResolver"/>
-        <sam.debugSupport id="GO" implementationClass="software.aws.toolkits.jetbrains.services.lambda.go.GoSamDebugSupport"/>
+        <sam.runtimeDebugSupport id="GO" implementationClass="software.aws.toolkits.jetbrains.services.lambda.go.GoSamDebugSupport"/>
+        <sam.imageDebuggerSupport implementation="software.aws.toolkits.jetbrains.services.lambda.go.GoImageDebugSupport"/>
         <sam.projectWizard id="GO" implementationClass="software.aws.toolkits.jetbrains.services.lambda.go.GoSamProjectWizard"/>
     </extensions>
 </idea-plugin>

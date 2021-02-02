@@ -9,7 +9,7 @@ import com.intellij.openapi.roots.ModuleRootModificationUtil
 import org.assertj.core.api.Assertions.assertThat
 import org.junit.Rule
 import org.junit.Test
-import software.amazon.awssdk.services.lambda.model.Runtime
+import software.aws.toolkits.core.lambda.LambdaRuntime
 import software.aws.toolkits.jetbrains.utils.rules.GoCodeInsightTestFixtureRule
 import software.aws.toolkits.jetbrains.utils.rules.createMockSdk
 
@@ -45,7 +45,7 @@ class GoRuntimeGroupTest {
         }
 
         val runtime = sut.determineRuntime(module)
-        assertThat(runtime).isEqualTo(Runtime.GO1_X)
+        assertThat(runtime).isEqualTo(LambdaRuntime.GO1_X)
     }
 
     @Test

@@ -3,6 +3,7 @@
 
 package software.aws.toolkits.jetbrains.services.lambda.go
 
+import com.goide.project.GoProjectLibrariesService
 import com.goide.sdk.GoSdkService
 import com.goide.sdk.combobox.GoSdkChooserCombo
 import com.goide.vgo.configuration.VgoProjectSettings
@@ -12,8 +13,7 @@ import com.intellij.openapi.roots.ModifiableRootModel
 import com.intellij.openapi.ui.TextFieldWithBrowseButton
 import com.intellij.openapi.ui.ValidationInfo
 import com.intellij.openapi.vfs.VirtualFile
-import software.amazon.awssdk.services.lambda.model.PackageType
-import software.amazon.awssdk.services.lambda.model.Runtime
+import software.aws.toolkits.core.lambda.LambdaRuntime
 import software.aws.toolkits.jetbrains.services.lambda.wizard.SamAppTemplateBased
 import software.aws.toolkits.jetbrains.services.lambda.wizard.SamNewProjectSettings
 import software.aws.toolkits.jetbrains.services.lambda.wizard.SamProjectTemplate
@@ -53,18 +53,18 @@ class GoSdkSelectionPanel : SdkSelector {
 
 class SamHelloWorldGo : SamAppTemplateBased() {
     override fun postCreationAction(settings: SamNewProjectSettings, contentRoot: VirtualFile, rootModel: ModifiableRootModel, indicator: ProgressIndicator) {
+        super.postCreationAction(settings, contentRoot, rootModel, indicator)
+        // Turn off indexing entire gopath for the project since we are using go modules
+        GoProjectLibrariesService.getInstance(rootModel.project).isIndexEntireGopath = false
         // Turn on vgo integration, required for it to resolve dependencies properly
         VgoProjectSettings.getInstance(rootModel.project).isIntegrationEnabled = true
-        super.postCreationAction(settings, contentRoot, rootModel, indicator)
     }
 
     override fun displayName() = message("sam.init.template.hello_world.name")
-
     override fun description() = message("sam.init.template.hello_world.description")
 
-    override fun supportedRuntimes(): Set<Runtime> = setOf(Runtime.GO1_X)
-
-    override fun supportedPackagingTypes(): Set<PackageType> = setOf(PackageType.IMAGE, PackageType.ZIP)
+    override fun supportedZipRuntimes(): Set<LambdaRuntime> = setOf(LambdaRuntime.GO1_X)
+    override fun supportedImageRuntimes(): Set<LambdaRuntime> = setOf(LambdaRuntime.GO1_X)
 
     override val appTemplateName: String = "hello-world"
 
