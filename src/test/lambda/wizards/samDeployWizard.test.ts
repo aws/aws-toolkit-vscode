@@ -104,7 +104,7 @@ class MockSamDeployWizardContext implements SamDeployWizardContext {
         return this.promptForS3BucketResponses.pop()
     }
 
-    public async promptForNewS3BucketName(step: number, selectedRegion: string): Promise<string | undefined> {
+    public async promptUserForNewS3Bucket(step: number, selectedRegion: string): Promise<string | undefined> {
         //TODO WIP
         return undefined
     }
@@ -239,7 +239,7 @@ describe('SamDeployWizard', async () => {
                 promptUserForSamTemplate: async () => vscode.Uri.file(templatePath),
                 promptUserForRegion: async () => region,
                 promptUserForS3Bucket: async () => s3Bucket,
-                promptForNewS3BucketName: async () => undefined,
+                promptUserForNewS3Bucket: async () => undefined,
                 promptUserForEcrRepo: async () => undefined,
                 promptUserForStackName: async () => stackName,
                 determineIfTemplateHasImages: async () => hasImages,

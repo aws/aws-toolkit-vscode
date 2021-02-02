@@ -121,7 +121,7 @@ export interface SamDeployWizardContext {
      *
      * @returns S3 Bucket name. Undefined represents cancel.
      */
-    promptForNewS3BucketName(step: number, selectedRegion?: string): Promise<string | undefined>
+    promptUserForNewS3Bucket(step: number, selectedRegion?: string): Promise<string | undefined>
 
     /**
      * Retrieves an ECR Repo to deploy to from the user.
@@ -431,7 +431,7 @@ export class DefaultSamDeployWizardContext implements SamDeployWizardContext {
         : undefined
     }
 
-    public async promptForNewS3BucketName(step: number, selectedRegion: string): Promise<string | undefined>
+    public async promptUserForNewS3Bucket(step: number, selectedRegion: string): Promise<string | undefined>
     {
         
         if (!this.newBucketCalled) {
@@ -691,7 +691,7 @@ export class SamDeployWizard extends MultiStepWizard<SamDeployWizardResponse> {
         }
 
         if(response === CREATE_NEW_BUCKET) {
-            const newBucketRequest = await this.context.promptForNewS3BucketName(step, this.response.region)
+            const newBucketRequest = await this.context.promptUserForNewS3Bucket(step, this.response.region)
             if (!newBucketRequest) {
                 return WIZARD_RETRY
             }    
