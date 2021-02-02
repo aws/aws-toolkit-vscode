@@ -106,10 +106,6 @@ export async function sanitizeTelemetrySetting(toolkitSettings: SettingsConfigur
 }
 
 export function isTelemetryEnabled(toolkitSettings: SettingsConfiguration): boolean {
-    if (isCloud9()) {
-        return false
-    }
-
     // Setting used to be an enum, but is now a boolean.
     // We don't have api-based strong type support, so we have to process this value manually.
     const value = toolkitSettings.readSetting<any>(AWS_TELEMETRY_KEY)
