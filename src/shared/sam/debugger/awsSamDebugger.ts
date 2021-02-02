@@ -198,12 +198,16 @@ export class SamDebugConfigProvider implements vscode.DebugConfigurationProvider
                         if (resource) {
                             // we do not know enough to populate the runtime field for Image-based Lambdas
                             const runtimeName = CloudFormation.isZipLambdaResource(resource?.Properties)
-                                ? resource?.Properties?.Runtime
+                                ? CloudFormation.getStringForProperty(
+                                      resource?.Properties,
+                                      'Runtime',
+                                      templateDatum.item
+                                  ) ?? ''
                                 : ''
                             configs.push(
                                 createTemplateAwsSamDebugConfig(
                                     folder,
-                                    CloudFormation.getStringForProperty(runtimeName, templateDatum.item),
+                                    runtimeName,
                                     false,
                                     resourceKey,
                                     templateDatum.path
@@ -219,7 +223,7 @@ export class SamDebugConfigProvider implements vscode.DebugConfigurationProvider
                                         configs.push(
                                             createApiAwsSamDebugConfig(
                                                 folder,
-                                                CloudFormation.getStringForProperty(runtimeName, templateDatum.item),
+                                                runtimeName,
                                                 resourceKey,
                                                 templateDatum.path,
                                                 {
@@ -346,17 +350,17 @@ export class SamDebugConfigProvider implements vscode.DebugConfigurationProvider
         const runtime: string | undefined =
             config.lambda?.runtime ??
             (template && isZip
-                ? CloudFormation.getStringForProperty(templateResource?.Properties?.Runtime, template)
+                ? CloudFormation.getStringForProperty(templateResource?.Properties, 'Runtime', template)
                 : undefined) ??
             getDefaultRuntime(getRuntimeFamily(editor?.document?.languageId ?? 'unknown'))
 
         const lambdaMemory =
             (template
-                ? CloudFormation.getNumberForProperty(templateResource?.Properties?.MemorySize, template)
+                ? CloudFormation.getNumberForProperty(templateResource?.Properties, 'MemorySize', template)
                 : undefined) ?? config.lambda?.memoryMb
         const lambdaTimeout =
             (template
-                ? CloudFormation.getNumberForProperty(templateResource?.Properties?.Timeout, template)
+                ? CloudFormation.getNumberForProperty(templateResource?.Properties, 'Timeout', template)
                 : undefined) ?? config.lambda?.timeoutSec
 
         // TODO: Remove this when min sam version is > 1.13.0

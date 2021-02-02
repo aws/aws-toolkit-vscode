@@ -86,29 +86,35 @@ export function getResourcesForHandlerFromTemplateDatum(
         ) {
             // parse template values that could potentially be refs
             const registeredRuntime = CloudFormation.getStringForProperty(
-                resource.Properties?.Runtime,
+                resource.Properties,
+                'Runtime',
                 templateDatum.item
             )
             const registeredCodeUri = CloudFormation.getStringForProperty(
-                resource.Properties?.CodeUri,
+                resource.Properties,
+                'CodeUri',
                 templateDatum.item
             )
             const registeredHandler = CloudFormation.getStringForProperty(
-                resource.Properties?.Handler,
+                resource.Properties,
+                'Handler',
                 templateDatum.item
             )
 
             // properties for image type templates
             const registeredPackageType = CloudFormation.getStringForProperty(
-                resource.Properties?.PackageType,
+                resource.Properties,
+                'PackageType',
                 templateDatum.item
             )
             const registeredDockerContext = CloudFormation.getStringForProperty(
-                resource.Metadata?.DockerContext,
+                resource.Metadata,
+                'DockerContext',
                 templateDatum.item
             )
             const registeredDockerFile = CloudFormation.getStringForProperty(
-                resource.Metadata?.Dockerfile,
+                resource.Metadata,
+                'Dockerfile',
                 templateDatum.item
             )
 
