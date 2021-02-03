@@ -66,7 +66,8 @@ export async function addSamDebugConfiguration(
                 if (CloudFormation.isZipLambdaResource(resource.Properties)) {
                     if (type === TEMPLATE_TARGET_TYPE) {
                         const handler = CloudFormation.getStringForProperty(
-                            resource.Properties.Handler,
+                            resource.Properties,
+                            'Handler',
                             templateDatum.item
                         )
                         const existingConfig = await getExistingConfiguration(workspaceFolder, handler ?? '', rootUri)
