@@ -115,9 +115,10 @@ export function getCodeRoot(
             // Image lambda or ZIP lambda?
             const isImageLambda = CloudFormation.isImageLambdaResource(templateResource.Properties)
             const uri = isImageLambda
-                ? CloudFormation.getStringForProperty(templateResource?.Metadata?.DockerContext, template)
+                ? CloudFormation.getStringForProperty(templateResource?.Metadata, 'DockerContext', template)
                 : CloudFormation.getStringForProperty(
-                      (templateResource.Properties as CloudFormation.ZipResourceProperties)?.CodeUri,
+                      templateResource.Properties as CloudFormation.ZipResourceProperties,
+                      'CodeUri',
                       template
                   )
             return uri !== undefined ? pathutil.normalize(path.resolve(templateDir ?? '', uri)) : undefined

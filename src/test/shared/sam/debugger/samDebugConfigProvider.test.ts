@@ -803,7 +803,7 @@ describe('SamDebugConfigurationProvider', async () => {
                     ...input.lambda,
                     environmentVariables: {},
                     memoryMb: undefined,
-                    timeoutSec: undefined,
+                    timeoutSec: 3,
                 },
                 localRoot: appDir,
                 name: input.name,
@@ -1209,7 +1209,7 @@ Outputs:
                         'test-envvar-1': 'test value 1',
                     },
                     memoryMb: 42,
-                    timeoutSec: 717,
+                    timeoutSec: 10,
                     payload: {
                         json: {
                             'test-payload-key-1': 'test payload value 1',
@@ -1409,7 +1409,7 @@ Outputs:
                         'test-envvar-1': 'test value 1',
                     },
                     memoryMb: 42,
-                    timeoutSec: 717,
+                    timeoutSec: 10,
                     payload: {
                         json: {
                             'test-payload-key-1': 'test payload value 1',
@@ -1807,7 +1807,7 @@ Outputs:
                 lambda: {
                     environmentVariables: {},
                     memoryMb: undefined,
-                    timeoutSec: undefined,
+                    timeoutSec: 3,
                 },
                 name: input.name,
                 templatePath: pathutil.normalize(
@@ -2005,7 +2005,7 @@ Outputs:
                 lambda: {
                     environmentVariables: {},
                     memoryMb: undefined,
-                    timeoutSec: undefined,
+                    timeoutSec: 3,
                 },
                 name: input.name,
                 templatePath: pathutil.normalize(
@@ -2163,7 +2163,7 @@ Outputs:
                 lambda: {
                     environmentVariables: {},
                     memoryMb: undefined,
-                    timeoutSec: undefined,
+                    timeoutSec: 3,
                     runtime: 'python3.7',
                 },
                 name: input.name,
@@ -2459,7 +2459,7 @@ Outputs:
                 lambda: {
                     environmentVariables: {},
                     memoryMb: undefined,
-                    timeoutSec: undefined,
+                    timeoutSec: 3,
                 },
                 sam: {
                     containerBuild: true,
@@ -3089,7 +3089,7 @@ describe('debugConfiguration', () => {
         }
 
         // Template with relative path:
-        testutil.toFile(makeSampleSamTemplateYaml(true, { codeUri: relativePath }), tempFile.fsPath)
+        testutil.toFile(makeSampleSamTemplateYaml(true, { codeUri: relativePath, handler: 'handler' }), tempFile.fsPath)
         await ext.templateRegistry.addItemToRegistry(tempFile)
         assert.strictEqual(debugConfiguration.getCodeRoot(folder, config), fullPath)
         assert.strictEqual(debugConfiguration.getHandlerName(folder, config), 'handler')
@@ -3114,7 +3114,10 @@ describe('debugConfiguration', () => {
                 Default: 'notDoingAnything',
             },
         })
-        testutil.toFile(makeSampleSamTemplateYaml(true, { codeUri: fullPath }, paramStr), tempFileRefs.fsPath)
+        testutil.toFile(
+            makeSampleSamTemplateYaml(true, { codeUri: fullPath, handler: 'handler' }, paramStr),
+            tempFileRefs.fsPath
+        )
         await ext.templateRegistry.addItemToRegistry(tempFileRefs)
         assert.strictEqual(debugConfiguration.getCodeRoot(folder, fileRefsConfig), fullPath)
         assert.strictEqual(debugConfiguration.getHandlerName(folder, fileRefsConfig), 'handler')
