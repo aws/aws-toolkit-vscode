@@ -20,6 +20,9 @@ phases:
     commands:
       # Added for Python2 for Ubuntu 20.4
       - add-apt-repository universe
+      # WORKAROUND for yarn key being out of date, update keys so we can run builds TODO remove dirmngr and apt-key
+      - apt-get install dirmngr
+      - apt-key adv --refresh-keys --keyserver keyserver.ubuntu.com
       - apt-get update
       - apt-get install -y jq python2.7 python3.6 python3.7 python3.8 python3-pip python3-distutils
       # As of Ubuntu 20.4, there is no longer pip for Python 2, so we need to install it manually
