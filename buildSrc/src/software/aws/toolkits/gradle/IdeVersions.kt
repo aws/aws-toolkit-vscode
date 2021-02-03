@@ -67,9 +67,8 @@ object IdeVersions {
                 "org.jetbrains.plugins.go:203.5981.114"
             ),
             ijSdkOverride = "2020.3",
-            riderSdkOverride = "2020.3-SNAPSHOT",
             rdGenVersion = "0.203.161",
-            nugetVersion = "2020.3.0-eap04"
+            nugetVersion = "2020.3.0"
         )
     ).associateBy { it.name }
 
