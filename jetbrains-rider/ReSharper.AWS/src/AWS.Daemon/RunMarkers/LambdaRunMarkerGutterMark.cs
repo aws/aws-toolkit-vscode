@@ -27,7 +27,11 @@ namespace AWS.Daemon.RunMarkers
     {
         private static readonly ILogger ourLogger = Logger.GetLogger<LambdaRunMarkerGutterMark>();
 
+#if !PROFILE_2020_3 // TODO: Remove preprocessor conditions FIX_WHEN_MIN_IS_203
         public override IAnchor Anchor => BulbMenuAnchors.PermanentBackgroundItems;
+#else
+        public override IAnchor Priority => BulbMenuAnchors.PermanentBackgroundItems;
+#endif
 
         protected LambdaRunMarkerGutterMark([NotNull] IconId iconId) : base(iconId)
         {
