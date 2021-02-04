@@ -59,9 +59,9 @@ class SamHelloWorldNodeJs : SamAppTemplateBased() {
 
     override fun description() = message("sam.init.template.hello_world.description")
 
-    override fun supportedZipRuntimes(): Set<LambdaRuntime> = setOf(LambdaRuntime.NODEJS10_X, LambdaRuntime.NODEJS12_X)
+    override fun supportedZipRuntimes(): Set<LambdaRuntime> = setOf(LambdaRuntime.NODEJS10_X, LambdaRuntime.NODEJS12_X, LambdaRuntime.NODEJS14_X)
 
-    override fun supportedImageRuntimes(): Set<LambdaRuntime> = setOf(LambdaRuntime.NODEJS10_X, LambdaRuntime.NODEJS12_X)
+    override fun supportedImageRuntimes(): Set<LambdaRuntime> = setOf(LambdaRuntime.NODEJS10_X, LambdaRuntime.NODEJS12_X, LambdaRuntime.NODEJS14_X)
 
     override val appTemplateName: String = "hello-world"
 
