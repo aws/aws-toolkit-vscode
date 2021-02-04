@@ -7,8 +7,10 @@ import base.AwsReuseSolutionTestBase
 import com.fasterxml.jackson.module.kotlin.jacksonObjectMapper
 import com.fasterxml.jackson.module.kotlin.readValue
 import com.intellij.execution.executors.DefaultDebugExecutor
+import com.intellij.openapi.application.ApplicationInfo
 import com.jetbrains.rider.projectView.solutionDirectory
 import org.assertj.core.api.Assertions.assertThat
+import org.testng.SkipException
 import org.testng.annotations.BeforeMethod
 import org.testng.annotations.Test
 import software.amazon.awssdk.auth.credentials.AwsBasicCredentials
@@ -25,7 +27,10 @@ class Dotnet21LocalLambdaRunConfigurationIntegrationTest : DotnetLocalLambdaRunC
 class Dotnet21LocalLambdaImageRunConfigurationIntegrationTest :
     DotnetLocalLambdaImageRunConfigurationIntegrationTestBase("ImageLambda2X", LambdaRuntime.DOTNETCORE2_1)
 
-class Dotnet31LocalLambdaRunConfigurationIntegrationTest : DotnetLocalLambdaRunConfigurationIntegrationTestBase("EchoLambda3X", LambdaRuntime.DOTNETCORE3_1)
+class Dotnet31LocalLambdaRunConfigurationIntegrationTest : DotnetLocalLambdaRunConfigurationIntegrationTestBase("EchoLambda3X", LambdaRuntime.DOTNETCORE3_1) {
+    override val disableOn203 = false // At least run one test suite, running more than one will trigger failures
+}
+
 class Dotnet31LocalLambdaImageRunConfigurationIntegrationTest :
     DotnetLocalLambdaImageRunConfigurationIntegrationTestBase("ImageLambda3X", LambdaRuntime.DOTNETCORE3_1)
 
@@ -41,6 +46,8 @@ abstract class DotnetLocalLambdaRunConfigurationIntegrationTestBase(private val 
     private val mockCreds = AwsBasicCredentials.create("Access", "ItsASecret")
     private val handler = "EchoLambda::EchoLambda.Function::FunctionHandler"
 
+    protected open val disableOn203 = true
+
     @BeforeMethod
     fun setUp() {
         setSamExecutableFromEnvironment()
@@ -52,6 +59,10 @@ abstract class DotnetLocalLambdaRunConfigurationIntegrationTestBase(private val 
 
     @Test
     fun samIsExecutedDebugger() {
+        if (disableOn203 && ApplicationInfo.getInstance().build.baselineVersion >= 203) {
+            throw SkipException("Test skipped due to double release of editor on 203")
+        }
+
         setBreakpoint()
 
         val runConfiguration = createHandlerBasedRunConfiguration(
@@ -138,6 +149,10 @@ abstract class DotnetLocalLambdaImageRunConfigurationIntegrationTestBase(private
 
     @Test
     fun samIsExecutedDebuggerImage() {
+        if (ApplicationInfo.getInstance().build.baselineVersion >= 203) {
+            throw SkipException("Test skipped due to double release of editor on 203")
+        }
+
         setBreakpoint()
 
         val template = "${project.solutionDirectory}/template.yaml"
