@@ -1,4 +1,0 @@
-{
-  "type" : "bugfix",
-  "description" : "Fix certain S3 buckets being unable to be shown in the explorer (#2342)"
-}

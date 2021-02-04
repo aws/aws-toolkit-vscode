@@ -1,4 +1,0 @@
-{
-  "type" : "bugfix",
-  "description" : "Fixing issue with SSO refresh locking UI thread (#2224)"
-}
