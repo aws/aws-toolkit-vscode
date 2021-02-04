@@ -10,7 +10,8 @@ import * as vscode from 'vscode'
 import {
     ACTIVATION_LAUNCH_PATH_KEY,
     ActivationReloadState,
-    SAM_INIT_IMAGE_RUNTIME_KEY,
+    SAM_INIT_RUNTIME_KEY,
+    SAM_INIT_IMAGE_BOOLEAN_KEY,
 } from '../../shared/activationReloadState'
 import { FakeExtensionContext } from '../fakeExtensionContext'
 
@@ -37,7 +38,8 @@ describe('ActivationReloadState', async () => {
         it('without runtime', async () => {
             activationReloadState.setSamInitState({
                 path: 'somepath',
-                imageRuntime: undefined,
+                runtime: undefined,
+                isImage: false,
             })
 
             assert.strictEqual(
@@ -46,16 +48,22 @@ describe('ActivationReloadState', async () => {
                 'Unexpected Launch Path value was set'
             )
             assert.strictEqual(
-                extensionContext.globalState.get(SAM_INIT_IMAGE_RUNTIME_KEY),
+                extensionContext.globalState.get(SAM_INIT_RUNTIME_KEY),
                 undefined,
-                'Unexpected init image runtime key value was set'
+                'Unexpected init runtime key value was set'
+            )
+            assert.strictEqual(
+                extensionContext.globalState.get(SAM_INIT_IMAGE_BOOLEAN_KEY),
+                false,
+                'Unexpected init image boolean value was set'
             )
         })
 
         it('with runtime', async () => {
             activationReloadState.setSamInitState({
                 path: 'somepath',
-                imageRuntime: 'someruntime',
+                runtime: 'someruntime',
+                isImage: false,
             })
 
             assert.strictEqual(
@@ -64,9 +72,38 @@ describe('ActivationReloadState', async () => {
                 'Unexpected Launch Path value was set'
             )
             assert.strictEqual(
-                extensionContext.globalState.get(SAM_INIT_IMAGE_RUNTIME_KEY),
+                extensionContext.globalState.get(SAM_INIT_RUNTIME_KEY),
                 'someruntime',
-                'Unexpected init image runtime value was set'
+                'Unexpected init runtime value was set'
+            )
+            assert.strictEqual(
+                extensionContext.globalState.get(SAM_INIT_IMAGE_BOOLEAN_KEY),
+                false,
+                'Unexpected init image boolean value was set'
+            )
+        })
+
+        it('with image', async () => {
+            activationReloadState.setSamInitState({
+                path: 'somepath',
+                runtime: 'someruntime',
+                isImage: true,
+            })
+
+            assert.strictEqual(
+                extensionContext.globalState.get(ACTIVATION_LAUNCH_PATH_KEY),
+                'somepath',
+                'Unexpected Launch Path value was set'
+            )
+            assert.strictEqual(
+                extensionContext.globalState.get(SAM_INIT_RUNTIME_KEY),
+                'someruntime',
+                'Unexpected init runtime value was set'
+            )
+            assert.strictEqual(
+                extensionContext.globalState.get(SAM_INIT_IMAGE_BOOLEAN_KEY),
+                true,
+                'Unexpected init image boolean value was set'
             )
         })
     })
@@ -74,7 +111,7 @@ describe('ActivationReloadState', async () => {
     describe('getSamInitState', async () => {
         it('path defined, without runtime', async () => {
             await extensionContext.globalState.update(ACTIVATION_LAUNCH_PATH_KEY, 'getsomepath')
-            await extensionContext.globalState.update(SAM_INIT_IMAGE_RUNTIME_KEY, undefined)
+            await extensionContext.globalState.update(SAM_INIT_RUNTIME_KEY, undefined)
 
             assert.strictEqual(
                 activationReloadState.getSamInitState()?.path,
@@ -82,15 +119,20 @@ describe('ActivationReloadState', async () => {
                 'Unexpected Launch Path value was retrieved'
             )
             assert.strictEqual(
-                activationReloadState.getSamInitState()?.imageRuntime,
+                activationReloadState.getSamInitState()?.runtime,
                 undefined,
-                'Unexpected init image runtime value was retrieved'
+                'Unexpected init runtime value was retrieved'
+            )
+            assert.strictEqual(
+                activationReloadState.getSamInitState()?.isImage,
+                undefined,
+                'Unexpected init image boolean value was retrieved'
             )
         })
 
         it('path defined, with runtime', async () => {
             await extensionContext.globalState.update(ACTIVATION_LAUNCH_PATH_KEY, 'getsomepath')
-            await extensionContext.globalState.update(SAM_INIT_IMAGE_RUNTIME_KEY, 'getsomeruntime')
+            await extensionContext.globalState.update(SAM_INIT_RUNTIME_KEY, 'getsomeruntime')
 
             assert.strictEqual(
                 activationReloadState.getSamInitState()?.path,
@@ -98,9 +140,36 @@ describe('ActivationReloadState', async () => {
                 'Unexpected Launch Path value was retrieved'
             )
             assert.strictEqual(
-                activationReloadState.getSamInitState()?.imageRuntime,
+                activationReloadState.getSamInitState()?.runtime,
                 'getsomeruntime',
-                'Unexpected init image runtime value was retrieved'
+                'Unexpected init runtime value was retrieved'
+            )
+            assert.strictEqual(
+                activationReloadState.getSamInitState()?.isImage,
+                undefined,
+                'Unexpected init image boolean value was retrieved'
+            )
+        })
+
+        it('path defined, with runtime and isImage', async () => {
+            await extensionContext.globalState.update(ACTIVATION_LAUNCH_PATH_KEY, 'getsomepath')
+            await extensionContext.globalState.update(SAM_INIT_RUNTIME_KEY, 'getsomeruntime')
+            await extensionContext.globalState.update(SAM_INIT_IMAGE_BOOLEAN_KEY, true)
+
+            assert.strictEqual(
+                activationReloadState.getSamInitState()?.path,
+                'getsomepath',
+                'Unexpected Launch Path value was retrieved'
+            )
+            assert.strictEqual(
+                activationReloadState.getSamInitState()?.runtime,
+                'getsomeruntime',
+                'Unexpected init runtime value was retrieved'
+            )
+            assert.strictEqual(
+                activationReloadState.getSamInitState()?.isImage,
+                true,
+                'Unexpected init image boolean value was retrieved'
             )
         })
 
@@ -118,7 +187,8 @@ describe('ActivationReloadState', async () => {
     it('clearLaunchPath', async () => {
         activationReloadState.setSamInitState({
             path: 'somepath',
-            imageRuntime: 'someruntime',
+            runtime: 'someruntime',
+            isImage: true,
         })
         activationReloadState.clearSamInitState()
 
@@ -129,9 +199,15 @@ describe('ActivationReloadState', async () => {
         )
 
         assert.strictEqual(
-            extensionContext.globalState.get(SAM_INIT_IMAGE_RUNTIME_KEY),
+            extensionContext.globalState.get(SAM_INIT_RUNTIME_KEY),
             undefined,
             'Expected runtime key to be cleared (undefined)'
+        )
+
+        assert.strictEqual(
+            extensionContext.globalState.get(SAM_INIT_IMAGE_BOOLEAN_KEY),
+            undefined,
+            'Expected isImage key to be cleared (undefined)'
         )
     })
 })
