@@ -8,11 +8,13 @@ import { ext } from './extensionGlobals'
 import { Runtime } from 'aws-sdk/clients/lambda'
 
 export const ACTIVATION_LAUNCH_PATH_KEY = 'ACTIVATION_LAUNCH_PATH_KEY'
-export const SAM_INIT_IMAGE_RUNTIME_KEY = 'SAM_INIT_IMAGE_RUNTIME_KEY'
+export const SAM_INIT_RUNTIME_KEY = 'SAM_INIT_RUNTIME_KEY'
+export const SAM_INIT_IMAGE_BOOLEAN_KEY = 'SAM_INIT_IMAGE_BOOLEAN_KEY'
 
 export interface SamInitState {
     path: string | undefined
-    imageRuntime: Runtime | undefined
+    runtime: Runtime | undefined
+    isImage: boolean | undefined
 }
 
 /**
@@ -25,19 +27,22 @@ export class ActivationReloadState {
         return activationPath
             ? {
                   path: activationPath,
-                  imageRuntime: this.extensionContext.globalState.get<string>(SAM_INIT_IMAGE_RUNTIME_KEY),
+                  runtime: this.extensionContext.globalState.get<string>(SAM_INIT_RUNTIME_KEY),
+                  isImage: this.extensionContext.globalState.get<boolean>(SAM_INIT_IMAGE_BOOLEAN_KEY) ?? false,
               }
             : undefined
     }
 
     public setSamInitState(state: SamInitState): void {
         this.extensionContext.globalState.update(ACTIVATION_LAUNCH_PATH_KEY, state.path)
-        this.extensionContext.globalState.update(SAM_INIT_IMAGE_RUNTIME_KEY, state.imageRuntime)
+        this.extensionContext.globalState.update(SAM_INIT_RUNTIME_KEY, state.runtime)
+        this.extensionContext.globalState.update(SAM_INIT_IMAGE_BOOLEAN_KEY, state.isImage)
     }
 
     public clearSamInitState(): void {
         this.extensionContext.globalState.update(ACTIVATION_LAUNCH_PATH_KEY, undefined)
-        this.extensionContext.globalState.update(SAM_INIT_IMAGE_RUNTIME_KEY, undefined)
+        this.extensionContext.globalState.update(SAM_INIT_RUNTIME_KEY, undefined)
+        this.extensionContext.globalState.update(SAM_INIT_IMAGE_BOOLEAN_KEY, undefined)
     }
 
     protected get extensionContext(): vscode.ExtensionContext {

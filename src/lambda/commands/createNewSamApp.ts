@@ -18,7 +18,7 @@ import {
     buildSchemaTemplateParameters,
     SchemaTemplateParameters,
 } from '../../eventSchemas/templates/schemasAppTemplateUtils'
-import { ActivationReloadState } from '../../shared/activationReloadState'
+import { ActivationReloadState, SamInitState } from '../../shared/activationReloadState'
 import { AwsContext } from '../../shared/awsContext'
 import { ext } from '../../shared/extensionGlobals'
 import { fileExists } from '../../shared/filesystemUtilities'
@@ -51,12 +51,17 @@ import { launchConfigDocUrl } from '../../shared/constants'
 import { Runtime } from 'aws-sdk/clients/lambda'
 import { getIdeProperties } from '../../shared/extensionUtilities'
 
+type CreateReason = 'unknown' | 'userCancelled' | 'fileNotFound' | 'complete' | 'error'
+
 export async function resumeCreateNewSamApp(
     extContext: ExtContext,
     activationReloadState: ActivationReloadState = new ActivationReloadState()
 ) {
+    let createResult: Result = 'Succeeded'
+    let reason: CreateReason = 'complete'
+    let samInitState: SamInitState | undefined
     try {
-        const samInitState = activationReloadState.getSamInitState()
+        samInitState = activationReloadState.getSamInitState()
         const pathToLaunch = samInitState?.path
         if (!pathToLaunch) {
             return
@@ -65,6 +70,8 @@ export async function resumeCreateNewSamApp(
         const uri = vscode.Uri.file(pathToLaunch)
         const folder = vscode.workspace.getWorkspaceFolder(uri)
         if (!folder) {
+            createResult = 'Failed'
+            reason = 'error'
             // This should never happen, as `pathToLaunch` will only be set if `uri` is in
             // the newly added workspace folder.
             vscode.window.showErrorMessage(
@@ -78,10 +85,16 @@ export async function resumeCreateNewSamApp(
             return
         }
 
-        await addInitialLaunchConfiguration(extContext, folder, uri, samInitState?.imageRuntime)
+        await addInitialLaunchConfiguration(extContext, folder, uri, samInitState?.runtime)
         await vscode.window.showTextDocument(uri)
     } finally {
         activationReloadState.clearSamInitState()
+        recordSamInit({
+            lambdaPackageType: samInitState?.isImage ? 'Image' : 'Zip',
+            result: createResult,
+            reason: reason,
+            runtime: samInitState?.runtime as TelemetryRuntime,
+        })
     }
 }
 
@@ -89,8 +102,6 @@ export interface CreateNewSamApplicationResults {
     runtime: string
     result: Result
 }
-
-type createReason = 'unknown' | 'userCancelled' | 'fileNotFound' | 'complete' | 'error'
 
 /**
  * Runs `sam init` in the given context and returns useful metadata about its invocation
@@ -103,7 +114,7 @@ export async function createNewSamApplication(
     const awsContext: AwsContext = extContext.awsContext
     const regionProvider: RegionProvider = extContext.regionProvider
     let createResult: Result = 'Succeeded'
-    let reason: createReason = 'unknown'
+    let reason: CreateReason = 'unknown'
     let lambdaPackageType: 'Zip' | 'Image' | undefined
     let createRuntime: Runtime | undefined
     let config: CreateNewSamAppWizardResponse | undefined
@@ -204,11 +215,11 @@ export async function createNewSamApplication(
             )
         }
 
-        const templateRuntime = config.packageType === 'Image' ? config.runtime : undefined
         // In case adding the workspace folder triggers a VS Code restart, persist relevant state to be used after reload
         activationReloadState.setSamInitState({
             path: uri.fsPath,
-            imageRuntime: templateRuntime,
+            runtime: createRuntime,
+            isImage: config.packageType === 'Image',
         })
 
         await addFolderToWorkspace(
@@ -230,7 +241,7 @@ export async function createNewSamApplication(
                 extContext,
                 vscode.workspace.getWorkspaceFolder(uri)!,
                 uri,
-                templateRuntime
+                createRuntime
             )
             if (newLaunchConfigs && newLaunchConfigs.length > 0) {
                 showCompletionNotification(config.name, `"${newLaunchConfigs.map(config => config.name).join('", "')}"`)
@@ -285,7 +296,6 @@ export async function createNewSamApplication(
             result: createResult,
             reason: reason,
             runtime: createRuntime as TelemetryRuntime,
-            name: config?.name,
         })
     }
 }
