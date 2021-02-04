@@ -60,7 +60,7 @@ class AddSecretsManagerConnection : SingleExplorerNodeAction<AwsExplorerNode<*>>
 
     private fun recordTelemetry(selected: AwsExplorerNode<*>, result: Result, engine: String? = null) {
         val dbEngine = engine ?: if (selected is RdsNode) {
-            selected.dbInstance.engine()
+            selected.database.engine
         } else {
             null
         }

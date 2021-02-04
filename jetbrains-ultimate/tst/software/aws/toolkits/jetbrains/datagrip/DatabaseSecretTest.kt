@@ -18,8 +18,11 @@ import software.amazon.awssdk.services.secretsmanager.model.GetSecretValueReques
 import software.amazon.awssdk.services.secretsmanager.model.GetSecretValueResponse
 import software.amazon.awssdk.services.secretsmanager.model.SecretListEntry
 import software.aws.toolkits.core.utils.RuleUtils
+import software.aws.toolkits.core.utils.test.aString
 import software.aws.toolkits.jetbrains.core.MockClientManagerRule
 import software.aws.toolkits.jetbrains.datagrip.auth.SecretsManagerDbSecret
+import software.aws.toolkits.jetbrains.services.rds.Endpoint
+import software.aws.toolkits.jetbrains.services.rds.RdsDatabase
 import software.aws.toolkits.jetbrains.services.rds.RdsNode
 import software.aws.toolkits.jetbrains.services.redshift.RedshiftExplorerNode
 import software.aws.toolkits.jetbrains.services.redshift.RedshiftResources.redshiftEngineType
@@ -170,11 +173,18 @@ class DatabaseSecretTest {
         validEndpoint: Boolean = true,
         validEngine: Boolean = true
     ): RdsNode = mock {
-        on { dbInstance } doAnswer {
-            mock {
-                on { engine() } doAnswer { if (validEngine) randomEngine else "notAValidEngine" }
-                on { endpoint() } doAnswer { mock { on { address() } doReturn if (validEndpoint) randomHost else "invalidHost" } }
-            }
+        on { database } doAnswer {
+            RdsDatabase(
+                identifier = aString(),
+                engine = if (validEngine) randomEngine else "notAValidEngine",
+                arn = aString(),
+                iamDatabaseAuthenticationEnabled = true,
+                endpoint = Endpoint(
+                    host = if (validEndpoint) randomHost else "invalidHost",
+                    port = -1
+                ),
+                masterUsername = aString(),
+            )
         }
     }
 
