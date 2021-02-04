@@ -1,0 +1,47 @@
+{
+  "date" : "2021-02-04",
+  "version" : "1.23",
+  "entries" : [ {
+    "type" : "feature",
+    "description" : "Add \"Copy S3 URI\" to S3 objects (#2208)"
+  }, {
+    "type" : "feature",
+    "description" : "Add Dotnet5 Lambda support (Image only)"
+  }, {
+    "type" : "feature",
+    "description" : "Add option to view past object versions in S3 file editor"
+  }, {
+    "type" : "feature",
+    "description" : "Nodejs14.x Lambda support"
+  }, {
+    "type" : "feature",
+    "description" : "Update Lambda max memory to 10240"
+  }, {
+    "type" : "bugfix",
+    "description" : "Re-add environment variable settings to SAM template based run configurations (#2282)"
+  }, {
+    "type" : "bugfix",
+    "description" : "Fix error thrown on profile refresh if removing a profile that uses source_profile (#2309)"
+  }, {
+    "type" : "bugfix",
+    "description" : "Fix NodeJS and Python breakpoints failing to hit sometimes"
+  }, {
+    "type" : "bugfix",
+    "description" : "Speed up loading CloudFormation resources"
+  }, {
+    "type" : "bugfix",
+    "description" : "Fix not invalidating credentials when a `source_profile` is updated"
+  }, {
+    "type" : "bugfix",
+    "description" : "Fix cell based copying in CloudWatch Logs (#2333)"
+  }, {
+    "type" : "bugfix",
+    "description" : "Fix certain S3 buckets being unable to be shown in the explorer (#2342)"
+  }, {
+    "type" : "bugfix",
+    "description" : "Fix exception thrown in the new project wizard when run immediately after the toolkit is installed"
+  }, {
+    "type" : "bugfix",
+    "description" : "Fixing issue with SSO refresh locking UI thread (#2224)"
+  } ]
+}
