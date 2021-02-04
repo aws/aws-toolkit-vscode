@@ -20,7 +20,7 @@ phases:
     commands:
       # Added for Python2 for Ubuntu 20.4
       - add-apt-repository universe
-      # WORKAROUND for yarn key being out of date, update keys so we can run builds TODO remove dirmngr and apt-key
+      # WORKAROUND for yarn key being out of date, update keys so we can run builds TODO remove dirmngr and apt-key commands
       - apt-get install dirmngr
       - apt-key adv --refresh-keys --keyserver keyserver.ubuntu.com
       - apt-get update
