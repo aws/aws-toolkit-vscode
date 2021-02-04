@@ -6,7 +6,6 @@
 import * as assert from 'assert'
 import { Runtime } from 'aws-sdk/clients/lambda'
 import { mkdirpSync, mkdtemp, removeSync } from 'fs-extra'
-import * as fs from 'fs-extra'
 import * as path from 'path'
 import * as vscode from 'vscode'
 import { getDependencyManager } from '../../src/lambda/models/samLambdaRuntime'
@@ -300,20 +299,6 @@ describe('SAM Integration Tests', async function () {
                 let appPath: string
                 let cfnTemplatePath: string
 
-                /**
-                 * TEMPORARY hack for python2.7
-                 * see https://github.com/aws/aws-toolkit-vscode/pull/1478
-                 */
-                function fixPython27Dockerfile(dir: string) {
-                    const dockerfile = path.join(dir, samApplicationName, 'hello_world/Dockerfile')
-                    const text = fs.readFileSync(dockerfile, { encoding: 'utf-8' })
-                    const text2 = text.replace(
-                        'https://bootstrap.pypa.io/get-pip.py',
-                        'https://bootstrap.pypa.io/2.7/get-pip.py'
-                    )
-                    fs.writeFileSync(dockerfile, text2, { encoding: 'utf-8' })
-                }
-
                 before(async function () {
                     testDir = await mkdtemp(path.join(runtimeTestRoot, 'samapp-'))
                     log(`testDir: ${testDir}`)
@@ -322,9 +307,6 @@ describe('SAM Integration Tests', async function () {
                     appPath = path.join(testDir, samApplicationName, scenario.path)
                     cfnTemplatePath = path.join(testDir, samApplicationName, 'template.yaml')
                     assert.ok(await fileExists(cfnTemplatePath), `Expected SAM template to exist at ${cfnTemplatePath}`)
-                    if (scenario.baseImage && scenario.runtime === 'python2.7') {
-                        fixPython27Dockerfile(testDir)
-                    }
                     samAppCodeUri = await openSamAppFile(appPath)
                 })
 
