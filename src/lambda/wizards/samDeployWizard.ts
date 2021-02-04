@@ -34,12 +34,11 @@ import { getSamCliVersion } from '../../shared/sam/cli/samCliContext'
 import * as semver from 'semver'
 import { MINIMUM_SAM_CLI_VERSION_INCLUSIVE_FOR_IMAGE_SUPPORT } from '../../shared/sam/cli/samCliValidator'
 import { ExtContext } from '../../shared/extensions'
-import { CreateBucketRequest } from '../../shared/clients/s3Client'
 import { addCodiconToString } from '../../shared/utilities/textUtilities'
 import { validateBucketName } from '../../s3/util'
 
 
-const CREATE_NEW_BUCKET = addCodiconToString('plus', localize("AWS.samcli.deploy.s3bucket.picker.createNewBucket", "Create New S3 Bucket..." ))
+const CREATE_NEW_BUCKET = addCodiconToString('plus', localize('AWS.command.s3.createBucket', 'Create Bucket...' ))
 export interface SamDeployWizardResponse {
     parameterOverrides: Map<string, string>
     region: string
@@ -121,7 +120,7 @@ export interface SamDeployWizardContext {
      *
      * @returns S3 Bucket name. Undefined represents cancel.
      */
-    promptUserForNewS3Bucket(step: number, selectedRegion?: string): Promise<string | undefined>
+    promptUserForNewS3Bucket(step: number): Promise<string | undefined>
 
     /**
      * Retrieves an ECR Repo to deploy to from the user.
@@ -431,7 +430,7 @@ export class DefaultSamDeployWizardContext implements SamDeployWizardContext {
         : undefined
     }
 
-    public async promptUserForNewS3Bucket(step: number, selectedRegion: string): Promise<string | undefined>
+    public async promptUserForNewS3Bucket(step: number): Promise<string | undefined>
     {
         
         if (!this.newBucketCalled) {
@@ -691,16 +690,19 @@ export class SamDeployWizard extends MultiStepWizard<SamDeployWizardResponse> {
         }
 
         if(response === CREATE_NEW_BUCKET) {
-            const newBucketRequest = await this.context.promptUserForNewS3Bucket(step, this.response.region)
+            const newBucketRequest = await this.context.promptUserForNewS3Bucket(step)
             if (!newBucketRequest) {
                 return WIZARD_RETRY
             }    
-            const newBucketName = await createNewS3Bucket(newBucketRequest, this.response.region!)
-            if (!newBucketName) {
+
+            try{
+                const s3Client = ext.toolkitClientBuilder.createS3Client(this.response.region!)
+                this.response.s3Bucket = (await s3Client.createBucket({bucketName: newBucketRequest})).bucket.name
+            } catch (e) {
+                vscode.window.showErrorMessage(localize('AWS.s3.createBucket.error.general', 'Failed to create bucket {0}', newBucketRequest))
+                getLogger().error(e)
                 return WIZARD_RETRY
-            }    
-            this.response.s3Bucket = newBucketName
-            
+            }
         } else {
             this.response.s3Bucket = response
         }    
@@ -881,23 +883,4 @@ async function populateS3QuickPick(
             resolve()
         }
     })
-}
-
-/**
- * Creates a new S3 bucket and returns its name
- * @param name What the new bucket will be named
- * @param selectedRegion Region for the S3 client
- * @returns If successful, returns the new name of the bucket created, undefined if not
- */
-async function createNewS3Bucket(name: string, selectedRegion: string): Promise<string | undefined> {
-        try{
-            const s3Client = ext.toolkitClientBuilder.createS3Client(selectedRegion)
-            const newBucketRequest: CreateBucketRequest = {bucketName: name}
-            return (await s3Client.createBucket(newBucketRequest)).bucket.name
-        } catch (e) {
-            getLogger().error(e)
-            vscode.window.showErrorMessage('Error creating S3 bucket, see AWS Toolkit Logs for details.')
-            return undefined
-        }
-    
 }
