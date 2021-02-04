@@ -5,6 +5,7 @@ package software.aws.toolkits.jetbrains.services.lambda.wizard
 
 import com.intellij.openapi.progress.ProgressIndicator
 import com.intellij.openapi.roots.ModifiableRootModel
+import com.intellij.openapi.ui.TextFieldWithBrowseButton
 import com.intellij.openapi.ui.ValidationInfo
 import com.intellij.openapi.vfs.VfsUtil
 import com.intellij.ui.layout.panel
@@ -23,17 +24,26 @@ import javax.swing.JComponent
  * A panel encapsulating  AWS credential selection during SAM new project creation wizard
   */
 class SchemaSelectionPanel : WizardFragment {
-    private val schemaSelector = SchemaResourceSelector()
-    private val awsConnectionSelector = AwsConnectionSettingsSelector(
-        null,
-        schemaSelector::reloadSchemas
-    )
-    private val component = panel {
-        row {
-            awsConnectionSelector.selectorPanel()(grow)
+    private val schemaSelector by lazy { SchemaResourceSelector() }
+    private val awsConnectionSelector by lazy {
+        AwsConnectionSettingsSelector(
+            null
+        ) {
+            val prev = schemaSelector.awsConnection
+            schemaSelector.awsConnection = it
+            if (prev != null) {
+                schemaSelector.reload()
+            }
         }
-        row(message("sam.init.schema.label")) {
-            schemaSelector.component(grow)
+    }
+    private val component by lazy {
+        panel {
+            row {
+                awsConnectionSelector.selectorPanel()(grow)
+            }
+            row(message("sam.init.schema.label")) {
+                schemaSelector.component(grow)
+            }
         }
     }
 
@@ -55,6 +65,11 @@ class SchemaSelectionPanel : WizardFragment {
     }
 
     override fun isApplicable(template: SamProjectTemplate?): Boolean = template?.supportsDynamicSchemas() == true
+
+    override fun updateUi(projectLocation: TextFieldWithBrowseButton?, runtimeGroup: RuntimeGroup?, template: SamProjectTemplate?) {
+        super.updateUi(projectLocation, runtimeGroup, template)
+        schemaSelector.reload()
+    }
 
     override fun postProjectGeneration(model: ModifiableRootModel, template: SamProjectTemplate, runtime: LambdaRuntime, progressIndicator: ProgressIndicator) {
         if (!template.supportsDynamicSchemas()) {
