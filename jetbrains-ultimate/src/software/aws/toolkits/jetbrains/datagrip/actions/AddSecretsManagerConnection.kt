@@ -87,7 +87,6 @@ fun DataSourceRegistry.createDatasource(project: Project, secret: SecretsManager
         .withJdbcAdditionalProperty(CREDENTIAL_ID_PROPERTY, connectionSettings?.credentials?.id)
         .withJdbcAdditionalProperty(REGION_ID_PROPERTY, connectionSettings?.region?.id)
         .withJdbcAdditionalProperty(SECRET_ID_PROPERTY, secretArn)
-        .withUrl(secret.host)
         .withUser(secret.username)
         .withUrl("jdbc:$jdbcAdapter://${secret.host}:${secret.port}")
         .commit()

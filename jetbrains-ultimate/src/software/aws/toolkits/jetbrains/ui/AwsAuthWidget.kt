@@ -22,7 +22,7 @@ import software.aws.toolkits.resources.message
 import javax.swing.JPanel
 import javax.swing.event.DocumentListener
 
-abstract class AwsAuthWidget(private val userField: Boolean = true) : DatabaseCredentialsAuthProvider.UserWidget() {
+abstract class AwsAuthWidget(private val userFieldEnabled: Boolean = true) : DatabaseCredentialsAuthProvider.UserWidget() {
     private val credentialSelector = CredentialProviderSelector()
     private val regionSelector = RegionSelector()
 
@@ -37,9 +37,11 @@ abstract class AwsAuthWidget(private val userField: Boolean = true) : DatabaseCr
 
     override fun createPanel(): JPanel {
         val panel = JPanel(GridLayoutManager(rowCount, columnCount))
-        if (userField) {
-            addUserField(panel, 0)
-        }
+        addUserField(panel, 0)
+
+        // Disable the user field if we treat it as immutable
+        myUserField.isEnabled = userFieldEnabled
+
         val credsLabel = JBLabel(message("aws_connection.credentials.label"))
         val regionLabel = JBLabel(message("aws_connection.region.label"))
         panel.add(credsLabel, UrlPropertiesPanel.createLabelConstraints(1, 0, credsLabel.preferredSize.getWidth()))
@@ -51,10 +53,7 @@ abstract class AwsAuthWidget(private val userField: Boolean = true) : DatabaseCr
     }
 
     override fun save(dataSource: LocalDataSource, copyCredentials: Boolean) {
-        // Tries to set username so if we don't have one, don't set
-        if (userField) {
-            super.save(dataSource, copyCredentials)
-        }
+        super.save(dataSource, copyCredentials)
 
         DataSourceUiUtil.putOrRemove(
             dataSource.additionalJdbcProperties,
@@ -69,10 +68,7 @@ abstract class AwsAuthWidget(private val userField: Boolean = true) : DatabaseCr
     }
 
     override fun reset(dataSource: LocalDataSource, resetCredentials: Boolean) {
-        // Tries to set username so if we don't have one, don't set
-        if (userField) {
-            super.reset(dataSource, resetCredentials)
-        }
+        super.reset(dataSource, resetCredentials)
 
         val regionProvider = AwsRegionProvider.getInstance()
         val allRegions = regionProvider.allRegions()
@@ -102,7 +98,7 @@ abstract class AwsAuthWidget(private val userField: Boolean = true) : DatabaseCr
     override fun isPasswordChanged(): Boolean = false
     override fun onChanged(r: DocumentListener) {
         // Tries to set username so if we don't have one, don't set
-        if (userField) {
+        if (userFieldEnabled) {
             super.onChanged(r)
         }
     }
