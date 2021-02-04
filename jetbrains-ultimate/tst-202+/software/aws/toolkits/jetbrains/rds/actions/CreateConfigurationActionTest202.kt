@@ -4,17 +4,15 @@
 import com.intellij.database.autoconfig.DataSourceRegistry
 import com.intellij.database.remote.jdbc.helpers.JdbcSettings.SslMode
 import com.intellij.testFramework.ProjectRule
-import com.nhaarman.mockitokotlin2.doAnswer
-import com.nhaarman.mockitokotlin2.mock
 import org.assertj.core.api.Assertions.assertThat
 import org.junit.Rule
 import org.junit.Test
-import software.amazon.awssdk.services.rds.model.DBInstance
-import software.amazon.awssdk.services.rds.model.Endpoint
 import software.aws.toolkits.core.utils.RuleUtils
+import software.aws.toolkits.core.utils.test.aString
 import software.aws.toolkits.jetbrains.core.MockResourceCacheRule
 import software.aws.toolkits.jetbrains.core.credentials.DUMMY_PROVIDER_IDENTIFIER
 import software.aws.toolkits.jetbrains.core.region.getDefaultRegion
+import software.aws.toolkits.jetbrains.services.rds.RdsDatabase
 import software.aws.toolkits.jetbrains.services.rds.RdsDatasourceConfiguration
 import software.aws.toolkits.jetbrains.services.rds.actions.createRdsDatasource
 import software.aws.toolkits.jetbrains.services.rds.jdbcMysqlAurora
@@ -37,14 +35,14 @@ class CreateConfigurationActionTest202 {
 
     @Test
     fun `Add Aurora MySQL data source`() {
-        val instance = createDbInstance(address = address, port = port, engineType = "aurora")
+        val database = createDbInstance(address = address, port = port, engineType = "aurora")
         val registry = DataSourceRegistry(projectRule.project)
         registry.createRdsDatasource(
             RdsDatasourceConfiguration(
                 username = username,
                 credentialId = DUMMY_PROVIDER_IDENTIFIER.id,
                 regionId = getDefaultRegion().id,
-                dbInstance = instance
+                database = database
             )
         )
         assertThat(registry.newDataSources).hasOnlyOneElementSatisfying {
@@ -57,14 +55,14 @@ class CreateConfigurationActionTest202 {
 
     @Test
     fun `Add Aurora MySQL 5_7 data source`() {
-        val instance = createDbInstance(address = address, port = port, engineType = "aurora-mysql")
+        val database = createDbInstance(address = address, port = port, engineType = "aurora-mysql")
         val registry = DataSourceRegistry(projectRule.project)
         registry.createRdsDatasource(
             RdsDatasourceConfiguration(
                 username = username,
                 credentialId = DUMMY_PROVIDER_IDENTIFIER.id,
                 regionId = getDefaultRegion().id,
-                dbInstance = instance
+                database = database
             )
         )
         assertThat(registry.newDataSources).hasOnlyOneElementSatisfying {
@@ -81,13 +79,15 @@ class CreateConfigurationActionTest202 {
         dbName: String = RuleUtils.randomName(),
         iamAuthEnabled: Boolean = true,
         engineType: String = postgresEngineType
-    ): DBInstance = mock {
-        on { iamDatabaseAuthenticationEnabled() } doAnswer { iamAuthEnabled }
-        on { endpoint() } doAnswer {
-            Endpoint.builder().address(address).port(port).build()
-        }
-        on { engine() } doAnswer { engineType }
-        on { dbInstanceIdentifier() } doAnswer { dbName }
-        on { masterUsername() } doAnswer { masterUsername }
-    }
+    ): RdsDatabase = RdsDatabase(
+        identifier = dbName,
+        engine = engineType,
+        arn = aString(),
+        iamDatabaseAuthenticationEnabled = iamAuthEnabled,
+        endpoint = software.aws.toolkits.jetbrains.services.rds.Endpoint(
+            host = address,
+            port = port
+        ),
+        masterUsername = masterUsername,
+    )
 }

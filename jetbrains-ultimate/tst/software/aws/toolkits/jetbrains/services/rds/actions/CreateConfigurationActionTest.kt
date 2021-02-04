@@ -11,15 +11,15 @@ import com.nhaarman.mockitokotlin2.mock
 import org.assertj.core.api.Assertions.assertThat
 import org.junit.Rule
 import org.junit.Test
-import software.amazon.awssdk.services.rds.model.DBInstance
-import software.amazon.awssdk.services.rds.model.Endpoint
 import software.aws.toolkits.core.utils.RuleUtils
+import software.aws.toolkits.core.utils.test.aString
 import software.aws.toolkits.jetbrains.core.MockResourceCacheRule
 import software.aws.toolkits.jetbrains.core.credentials.DUMMY_PROVIDER_IDENTIFIER
 import software.aws.toolkits.jetbrains.core.credentials.MockCredentialManagerRule
 import software.aws.toolkits.jetbrains.core.region.getDefaultRegion
 import software.aws.toolkits.jetbrains.datagrip.CREDENTIAL_ID_PROPERTY
 import software.aws.toolkits.jetbrains.datagrip.REGION_ID_PROPERTY
+import software.aws.toolkits.jetbrains.services.rds.RdsDatabase
 import software.aws.toolkits.jetbrains.services.rds.RdsDatasourceConfiguration
 import software.aws.toolkits.jetbrains.services.rds.RdsNode
 import software.aws.toolkits.jetbrains.services.rds.auth.IamAuth
@@ -93,14 +93,14 @@ class CreateConfigurationActionTest {
     // This tests common properties. The ones below test driver specific properties
     @Test
     fun `Add data source`() {
-        val instance = createDbInstance(address = address, port = port)
+        val database = createDbInstance(address = address, port = port)
         val registry = DataSourceRegistry(projectRule.project)
         registry.createRdsDatasource(
             RdsDatasourceConfiguration(
                 username = username,
                 credentialId = DUMMY_PROVIDER_IDENTIFIER.id,
                 regionId = getDefaultRegion().id,
-                dbInstance = instance
+                database = database
             )
         )
         assertThat(registry.newDataSources).hasOnlyOneElementSatisfying {
@@ -115,14 +115,14 @@ class CreateConfigurationActionTest {
 
     @Test
     fun `Add postgres data source`() {
-        val instance = createDbInstance(port = port, address = address, engineType = postgresEngineType)
+        val database = createDbInstance(port = port, address = address, engineType = postgresEngineType)
         val registry = DataSourceRegistry(projectRule.project)
         registry.createRdsDatasource(
             RdsDatasourceConfiguration(
                 username = username,
                 credentialId = DUMMY_PROVIDER_IDENTIFIER.id,
                 regionId = getDefaultRegion().id,
-                dbInstance = instance
+                database = database
             )
         )
         assertThat(registry.newDataSources).hasOnlyOneElementSatisfying {
@@ -134,14 +134,14 @@ class CreateConfigurationActionTest {
 
     @Test
     fun `Add Aurora PostgreSQL data source`() {
-        val instance = createDbInstance(port = port, address = address, engineType = "aurora-postgresql")
+        val database = createDbInstance(port = port, address = address, engineType = "aurora-postgresql")
         val registry = DataSourceRegistry(projectRule.project)
         registry.createRdsDatasource(
             RdsDatasourceConfiguration(
                 username = username,
                 credentialId = DUMMY_PROVIDER_IDENTIFIER.id,
                 regionId = getDefaultRegion().id,
-                dbInstance = instance
+                database = database
             )
         )
         assertThat(registry.newDataSources).hasOnlyOneElementSatisfying {
@@ -153,14 +153,14 @@ class CreateConfigurationActionTest {
 
     @Test
     fun `Add mysql data source`() {
-        val instance = createDbInstance(address = address, port = port, engineType = mysqlEngineType)
+        val database = createDbInstance(address = address, port = port, engineType = mysqlEngineType)
         val registry = DataSourceRegistry(projectRule.project)
         registry.createRdsDatasource(
             RdsDatasourceConfiguration(
                 username = username,
                 credentialId = DUMMY_PROVIDER_IDENTIFIER.id,
                 regionId = getDefaultRegion().id,
-                dbInstance = instance
+                database = database
             )
         )
         assertThat(registry.newDataSources).hasOnlyOneElementSatisfying {
@@ -173,14 +173,14 @@ class CreateConfigurationActionTest {
 
     @Test(expected = IllegalArgumentException::class)
     fun `Bad engine throws`() {
-        val instance = createDbInstance(engineType = "NOT SUPPORTED")
+        val database = createDbInstance(engineType = "NOT SUPPORTED")
         val registry = DataSourceRegistry(projectRule.project)
         registry.createRdsDatasource(
             RdsDatasourceConfiguration(
                 username = username,
                 credentialId = DUMMY_PROVIDER_IDENTIFIER.id,
                 regionId = getDefaultRegion().id,
-                dbInstance = instance
+                database = database
             )
         )
     }
@@ -193,7 +193,7 @@ class CreateConfigurationActionTest {
         engineType: String = mysqlEngineType
     ): RdsNode = mock {
         on { nodeProject } doAnswer { projectRule.project }
-        on { dbInstance } doAnswer {
+        on { database } doAnswer {
             createDbInstance(address, port, dbName, iamAuthEnabled, engineType)
         }
     }
@@ -204,13 +204,15 @@ class CreateConfigurationActionTest {
         dbName: String = RuleUtils.randomName(),
         iamAuthEnabled: Boolean = true,
         engineType: String = postgresEngineType
-    ): DBInstance = mock {
-        on { iamDatabaseAuthenticationEnabled() } doAnswer { iamAuthEnabled }
-        on { endpoint() } doAnswer {
-            Endpoint.builder().address(address).port(port).build()
-        }
-        on { engine() } doAnswer { engineType }
-        on { dbInstanceIdentifier() } doAnswer { dbName }
-        on { masterUsername() } doAnswer { masterUsername }
-    }
+    ): RdsDatabase = RdsDatabase(
+        identifier = dbName,
+        engine = engineType,
+        arn = aString(),
+        iamDatabaseAuthenticationEnabled = iamAuthEnabled,
+        endpoint = software.aws.toolkits.jetbrains.services.rds.Endpoint(
+            host = address,
+            port = port
+        ),
+        masterUsername = masterUsername,
+    )
 }
