@@ -85,7 +85,12 @@ export async function resumeCreateNewSamApp(
             return
         }
 
-        await addInitialLaunchConfiguration(extContext, folder, uri, samInitState?.runtime)
+        await addInitialLaunchConfiguration(
+            extContext,
+            folder,
+            uri,
+            samInitState?.isImage ? samInitState?.runtime : undefined
+        )
         await vscode.window.showTextDocument(uri)
     } finally {
         activationReloadState.clearSamInitState()
