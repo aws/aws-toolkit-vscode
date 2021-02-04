@@ -8,6 +8,7 @@ import com.intellij.testFramework.ProjectRule
 import com.nhaarman.mockitokotlin2.any
 import com.nhaarman.mockitokotlin2.argumentCaptor
 import com.nhaarman.mockitokotlin2.doReturn
+import com.nhaarman.mockitokotlin2.doThrow
 import com.nhaarman.mockitokotlin2.times
 import com.nhaarman.mockitokotlin2.verify
 import org.assertj.core.api.Assertions.assertThat
@@ -147,6 +148,61 @@ class S3TreeDirectoryNodeTest {
         assertThat(secondRequest.prefix()).isEqualTo("my/folder/")
         assertThat(secondRequest.delimiter()).isEqualTo("/")
         assertThat(secondRequest.continuationToken()).isEqualTo("Token")
+    }
+
+    @Test
+    fun `get children fails shows error node`() {
+        val s3Client = delegateMock<S3Client> {
+            on { listObjectsV2(any<ListObjectsV2Request>()) } doThrow IllegalStateException("Bad!")
+        }
+
+        val bucket = S3VirtualBucket(s3Bucket, s3Client)
+        val sut = S3TreeDirectoryNode(bucket, null, "my/folder")
+
+        assertThat(sut.children).containsExactly(
+            S3TreeErrorNode(bucket, sut)
+        )
+    }
+
+    @Test
+    fun `load more fails once then succeeds`() {
+        val s3Client = delegateMock<S3Client> {
+            on { listObjectsV2(any<ListObjectsV2Request>()) }
+                .thenReturn(
+                    ListObjectsV2Response.builder()
+                        .contents(createS3Object("my/folder/file.txt"))
+                        .nextContinuationToken("Token")
+                        .build()
+                )
+                .thenThrow(IllegalStateException("Bad!"))
+                .thenReturn(
+                    ListObjectsV2Response.builder()
+                        .contents(createS3Object("my/folder/picture.png"))
+                        .build()
+                )
+        }
+
+        val bucket = S3VirtualBucket(s3Bucket, s3Client)
+        val sut = S3TreeDirectoryNode(bucket, null, "my/folder/")
+
+        assertThat(sut.children).containsExactly(
+            S3TreeObjectNode(sut, "my/folder/file.txt", objectSize, lastModifiedTime),
+            S3TreeContinuationNode(bucket, sut, sut.key, "Token")
+        )
+
+        (sut.children.last() as S3TreeContinuationNode<*>).loadMore()
+
+        assertThat(sut.children).containsExactly(
+            S3TreeObjectNode(sut, "my/folder/file.txt", objectSize, lastModifiedTime),
+            S3TreeErrorContinuationNode(bucket, sut, sut.key, "Token")
+        )
+
+        (sut.children.last() as S3TreeContinuationNode<*>).loadMore()
+
+        assertThat(sut.children).containsExactly(
+            S3TreeObjectNode(sut, "my/folder/file.txt", objectSize, lastModifiedTime),
+            S3TreeObjectNode(sut, "my/folder/picture.png", objectSize, lastModifiedTime)
+        )
     }
 
     @Test
