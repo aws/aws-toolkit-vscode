@@ -1,0 +1,4 @@
+{
+	"type": "Feature",
+	"description": "Support for SAM CLI 1.17: SAM create/run nodejs14.x"
+}
