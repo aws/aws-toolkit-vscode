@@ -44,8 +44,7 @@ class DeinstrumentResourceFromExplorerAction : SingleResourceNodeAction<EcsServi
             project: Project,
             clusterArn: String,
             instrumentedResourceName: String,
-            selected: EcsServiceNode?,
-            callback: ((Boolean) -> Unit)? = null
+            selected: EcsServiceNode?
         ) {
             val originalServiceName = EcsUtils.originalServiceName(instrumentedResourceName)
             DeinstrumentAction(
@@ -55,7 +54,7 @@ class DeinstrumentResourceFromExplorerAction : SingleResourceNodeAction<EcsServi
                 message("cloud_debug.instrument_resource.disable"),
                 message("cloud_debug.instrument_resource.disable.success", originalServiceName),
                 message("cloud_debug.instrument_resource.disable.failed", originalServiceName)
-            ).runAction(selected, callback)
+            ).runAction(selected)
         }
     }
 }
