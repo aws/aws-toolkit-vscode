@@ -25,6 +25,9 @@ phases:
       dotnet: 3.1
 
     commands:
+      # WORKAROUND for yarn key being out of date, update keys so we can run builds TODO remove dirmngr and apt-key commands
+      - apt-get install dirmngr
+      - apt-key adv --refresh-keys --keyserver keyserver.ubuntu.com
       - apt-get update
       - apt-get install -y xvfb xfce4 procps ffmpeg xterm xinput
 
