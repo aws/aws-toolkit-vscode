@@ -5,6 +5,8 @@ package software.aws.toolkits.jetbrains.services.s3.objectActions
 
 import com.intellij.openapi.ide.CopyPasteManager
 import com.intellij.openapi.project.Project
+import software.aws.toolkits.jetbrains.services.s3.editor.S3TreeContinuationNode
+import software.aws.toolkits.jetbrains.services.s3.editor.S3TreeErrorNode
 import software.aws.toolkits.jetbrains.services.s3.editor.S3TreeNode
 import software.aws.toolkits.jetbrains.services.s3.editor.S3TreeObjectVersionNode
 import software.aws.toolkits.jetbrains.services.s3.editor.S3TreeTable
@@ -18,5 +20,5 @@ class CopyPathAction(private val project: Project, treeTable: S3TreeTable) : Sin
         S3Telemetry.copyPath(project)
     }
 
-    override fun enabled(node: S3TreeNode): Boolean = node !is S3TreeObjectVersionNode
+    override fun enabled(node: S3TreeNode): Boolean = node !is S3TreeObjectVersionNode && node !is S3TreeContinuationNode<*> && node !is S3TreeErrorNode
 }

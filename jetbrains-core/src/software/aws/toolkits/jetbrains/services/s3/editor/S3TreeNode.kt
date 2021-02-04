@@ -8,6 +8,9 @@ import com.intellij.openapi.fileTypes.FileTypeRegistry
 import com.intellij.openapi.util.io.FileUtilRt
 import com.intellij.ui.treeStructure.SimpleNode
 import kotlinx.coroutines.runBlocking
+import software.aws.toolkits.core.utils.error
+import software.aws.toolkits.core.utils.getLogger
+import software.aws.toolkits.jetbrains.core.utils.buildList
 import software.aws.toolkits.jetbrains.services.s3.NOT_VERSIONED_VERSION_ID
 import software.aws.toolkits.resources.message
 import java.time.Instant
@@ -61,8 +64,12 @@ abstract class S3LazyLoadParentNode<T>(bucket: S3VirtualBucket, parent: S3LazyLo
                 return
             }
 
-            loadedPages.add(continuationMarker)
-            cachedList = children.dropLastWhile { it is S3TreeContinuationNode<*> } + loadObjects(continuationMarker)
+            val more = loadObjects(continuationMarker)
+            // Only say it has loaded before if it loaded successfully
+            if (more.none { it is S3TreeErrorNode || it is S3TreeErrorContinuationNode<*> }) {
+                loadedPages.add(continuationMarker)
+            }
+            cachedList = children.dropLastWhile { it is S3TreeContinuationNode<*> || it is S3TreeErrorNode } + more
         }
     }
 
@@ -77,26 +84,41 @@ class S3TreeDirectoryNode(bucket: S3VirtualBucket, parent: S3TreeDirectoryNode?,
     override fun directoryPath(): String = key
 
     override fun loadObjects(continuationMarker: String?): List<S3TreeNode> {
-        val response = runBlocking {
-            bucket.listObjects(key, continuationMarker)
-        }
-
-        val continuation = listOfNotNull(
-            response.nextContinuationToken()?.let {
-                S3TreeContinuationNode(bucket, this, this.key, it)
+        try {
+            val response = runBlocking {
+                bucket.listObjects(key, continuationMarker)
             }
-        )
 
-        val folders = response.commonPrefixes()?.map { S3TreeDirectoryNode(bucket, this, it.prefix()) } ?: emptyList()
+            val continuation = listOfNotNull(
+                response.nextContinuationToken()?.let {
+                    S3TreeContinuationNode(bucket, this, this.key, it)
+                }
+            )
 
-        val s3Objects = response
-            .contents()
-            ?.filterNotNull()
-            ?.filterNot { it.key() == key }
-            ?.map { S3TreeObjectNode(this, it.key(), it.size(), it.lastModified()) as S3TreeNode }
-            ?: emptyList()
+            val folders = response.commonPrefixes()?.map { S3TreeDirectoryNode(bucket, this, it.prefix()) } ?: emptyList()
 
-        return (folders + s3Objects).sortedBy { it.key } + continuation
+            val s3Objects = response
+                .contents()
+                ?.filterNotNull()
+                ?.filterNot { it.key() == key }
+                ?.map { S3TreeObjectNode(this, it.key(), it.size(), it.lastModified()) as S3TreeNode }
+                ?: emptyList()
+
+            return (folders + s3Objects).sortedBy { it.key } + continuation
+        } catch (e: Exception) {
+            LOG.error(e) { "Loading objects failed!" }
+            return buildList {
+                if (continuationMarker != null) {
+                    add(S3TreeErrorContinuationNode(bucket, this@S3TreeDirectoryNode, this@S3TreeDirectoryNode.key, continuationMarker))
+                } else {
+                    add(S3TreeErrorNode(bucket, this@S3TreeDirectoryNode))
+                }
+            }
+        }
+    }
+
+    companion object {
+        private val LOG = getLogger<S3TreeDirectoryNode>()
     }
 }
 
@@ -129,12 +151,16 @@ class S3TreeObjectNode(parent: S3TreeDirectoryNode, key: String, override val si
     override fun fileName() = key.substringAfterLast("/")
 
     override fun loadObjects(continuationMarker: VersionContinuationToken?): List<S3TreeNode> {
-        if (showHistory) {
+        if (!showHistory) {
+            return emptyList()
+        }
+
+        try {
             val response = runBlocking {
                 bucket.listObjectVersions(key, continuationMarker?.keyMarker, continuationMarker?.versionId)
             }
 
-            return mutableListOf<S3TreeNode>().apply {
+            return buildList {
                 response?.versions()
                     ?.filter { it.key() == key && it.versionId() != NOT_VERSIONED_VERSION_ID }
                     ?.map { S3TreeObjectVersionNode(this@S3TreeObjectNode, it.versionId(), it.size(), it.lastModified()) }
@@ -154,9 +180,27 @@ class S3TreeObjectNode(parent: S3TreeDirectoryNode, key: String, override val si
                     )
                 }
             }
+        } catch (e: Exception) {
+            LOG.error(e) { "Loading objects failed!" }
+            return buildList {
+                if (continuationMarker != null) {
+                    add(
+                        S3TreeErrorContinuationNode(
+                            bucket,
+                            this@S3TreeObjectNode,
+                            this@S3TreeObjectNode.key,
+                            continuationMarker
+                        )
+                    )
+                } else {
+                    add(S3TreeErrorNode(bucket, this@S3TreeObjectNode))
+                }
+            }
         }
+    }
 
-        return emptyList()
+    companion object {
+        private val LOG = getLogger<S3TreeObjectNode>()
     }
 }
 
@@ -190,7 +234,7 @@ class S3TreeObjectVersionNode(parent: S3TreeObjectNode, override val versionId: 
     override fun toString(): String = "S3TreeObjectVersionNode(key='$key', versionId='$versionId')"
 }
 
-class S3TreeContinuationNode<T>(
+open class S3TreeContinuationNode<T>(
     bucket: S3VirtualBucket,
     private val parentNode: S3LazyLoadParentNode<T>,
     key: String,
@@ -207,4 +251,28 @@ class S3TreeContinuationNode<T>(
     }
 
     override fun getEqualityObjects(): Array<Any?> = arrayOf(bucket, key, continuationMarker)
+}
+
+class S3TreeErrorContinuationNode<T>(
+    bucket: S3VirtualBucket,
+    parentNode: S3LazyLoadParentNode<T>,
+    key: String,
+    continuationMarker: T
+) : S3TreeContinuationNode<T>(bucket, parentNode, key, continuationMarker) {
+    init {
+        icon = AllIcons.General.Error
+    }
+
+    override fun displayName(): String = message("s3.load_more_failed")
+}
+
+class S3TreeErrorNode(
+    bucket: S3VirtualBucket,
+    parentNode: S3LazyLoadParentNode<*>
+) : S3TreeNode(bucket, parentNode, "${parentNode.key}error") {
+    init {
+        icon = AllIcons.General.Error
+    }
+
+    override fun displayName(): String = message("s3.error_loading")
 }

@@ -8,6 +8,7 @@ import com.intellij.testFramework.ProjectRule
 import com.nhaarman.mockitokotlin2.any
 import com.nhaarman.mockitokotlin2.argumentCaptor
 import com.nhaarman.mockitokotlin2.doReturn
+import com.nhaarman.mockitokotlin2.doThrow
 import com.nhaarman.mockitokotlin2.times
 import com.nhaarman.mockitokotlin2.verify
 import org.assertj.core.api.Assertions.assertThat
@@ -172,6 +173,66 @@ class S3TreeObjectNodeTest {
         assertThat(sut.children).containsExactly(
             S3TreeObjectVersionNode(sut, "1", objectSize, lastModifiedTime),
             S3TreeContinuationNode(bucket, sut, sut.key, VersionContinuationToken("KeyToken", "VersionToken"))
+        )
+    }
+
+    @Test
+    fun `get children fails`() {
+        val s3Client = delegateMock<S3Client> {
+            on { listObjectVersions(any<ListObjectVersionsRequest>()) } doThrow IllegalStateException("Network broke")
+        }
+        val bucket = S3VirtualBucket(s3Bucket, s3Client)
+        val parent = S3TreeDirectoryNode(bucket, null, "my/folder/")
+        val sut = S3TreeObjectNode(parent, "my/folder/picture.png", objectSize, lastModifiedTime).apply { showHistory = true }
+
+        assertThat(sut.children).containsExactly(
+            S3TreeErrorNode(bucket, sut)
+        )
+    }
+
+    @Test
+    fun `get children fails with pagination`() {
+        val s3Client = delegateMock<S3Client> {
+            on { listObjectVersions(any<ListObjectVersionsRequest>()) }
+                .thenReturn(
+                    ListObjectVersionsResponse.builder()
+                        .versions(createS3ObjectVersion("my/folder/picture.png", "1"))
+                        .nextKeyMarker("KeyToken")
+                        .nextVersionIdMarker("VersionToken")
+                        .isTruncated(true)
+                        .build()
+                )
+                .thenThrow(IllegalStateException("Network broke"))
+                .thenReturn(
+                    ListObjectVersionsResponse.builder()
+                        .versions(createS3ObjectVersion("my/folder/picture.png", "2"))
+                        .isTruncated(false)
+                        .build()
+                )
+        }
+
+        val bucket = S3VirtualBucket(s3Bucket, s3Client)
+        val parent = S3TreeDirectoryNode(bucket, null, "my/folder/")
+        val sut = S3TreeObjectNode(parent, "my/folder/picture.png", objectSize, lastModifiedTime)
+        sut.showHistory = true
+
+        assertThat(sut.children).containsExactly(
+            S3TreeObjectVersionNode(sut, "1", objectSize, lastModifiedTime),
+            S3TreeContinuationNode(bucket, sut, sut.key, VersionContinuationToken("KeyToken", "VersionToken"))
+        )
+
+        (sut.children.last() as S3TreeContinuationNode<*>).loadMore()
+
+        assertThat(sut.children).containsExactly(
+            S3TreeObjectVersionNode(sut, "1", objectSize, lastModifiedTime),
+            S3TreeErrorContinuationNode(bucket, sut, sut.key, VersionContinuationToken("KeyToken", "VersionToken"))
+        )
+
+        (sut.children.last() as S3TreeContinuationNode<*>).loadMore()
+
+        assertThat(sut.children).containsExactly(
+            S3TreeObjectVersionNode(sut, "1", objectSize, lastModifiedTime),
+            S3TreeObjectVersionNode(sut, "2", objectSize, lastModifiedTime)
         )
     }
 
