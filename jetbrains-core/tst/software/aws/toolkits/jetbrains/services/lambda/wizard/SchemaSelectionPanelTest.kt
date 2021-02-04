@@ -228,7 +228,8 @@ class SchemaSelectionPanelTest {
 
     private fun load() {
         initMockResourceCache()
-        schemaSelectionPanel.reloadSchemas(connectionManager.settingsManager.connectionSettings())
+        schemaSelectionPanel.awsConnection = connectionManager.settingsManager.connectionSettings()
+        schemaSelectionPanel.reload()
         schemaSelectionPanel.schemasSelector.waitToLoad()
     }
 }
