@@ -4,6 +4,7 @@
 package software.aws.toolkits.jetbrains.services.lambda.wizard
 
 import com.fasterxml.jackson.databind.JsonNode
+import org.jetbrains.annotations.TestOnly
 import software.aws.toolkits.jetbrains.core.credentials.ConnectionSettings
 import software.aws.toolkits.jetbrains.services.schemas.SchemaDownloader
 import software.aws.toolkits.jetbrains.services.schemas.SchemaSummary
@@ -16,7 +17,9 @@ import javax.swing.JComponent
 class SchemaResourceSelector {
     private var currentAwsConnection: ConnectionSettings? = null
 
-    private val schemasSelector = initializeSchemasSelector()
+    internal val schemasSelector = initializeSchemasSelector()
+        @TestOnly
+        get() = field
 
     val component: JComponent = schemasSelector
 
