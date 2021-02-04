@@ -23,7 +23,12 @@ export type RuntimePackageType = 'Image' | 'Zip'
 
 // TODO: Consolidate all of the runtime constructs into a single <Runtime, Set<Runtime>> map
 //       We should be able to eliminate a fair amount of redundancy with that.
-export const nodeJsRuntimes: ImmutableSet<Runtime> = ImmutableSet<Runtime>(['nodejs12.x', 'nodejs10.x', 'nodejs8.10'])
+export const nodeJsRuntimes: ImmutableSet<Runtime> = ImmutableSet<Runtime>([
+    'nodejs14.x',
+    'nodejs12.x',
+    'nodejs10.x',
+    'nodejs8.10',
+])
 export const pythonRuntimes: ImmutableSet<Runtime> = ImmutableSet<Runtime>([
     'python3.8',
     'python3.7',
@@ -56,10 +61,10 @@ const cloud9SupportedCreateRuntimes = cloud9SupportedBaseRuntimes.filter(
 export const samLambdaImportableRuntimes: ImmutableSet<Runtime> = ImmutableSet.union([nodeJsRuntimes, pythonRuntimes])
 
 export const samLambdaCreatableRuntimes: ImmutableSet<Runtime> = isCloud9()
-        ? cloud9SupportedCreateRuntimes
-        // Filter out node8 until local debugging is no longer supported, and
-        // it can be removed from samLambdaRuntimes
-        : samZipLambdaRuntimes.filter((runtime: string) => runtime !== 'nodejs8.10')
+    ? cloud9SupportedCreateRuntimes
+    : // Filter out node8 until local debugging is no longer supported, and
+      // it can be removed from samLambdaRuntimes
+      samZipLambdaRuntimes.filter((runtime: string) => runtime !== 'nodejs8.10')
 
 // Image runtimes are not a direct subset of valid ZIP lambda types
 const dotnet50 = 'dotnet5.0'

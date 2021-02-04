@@ -1,4 +1,0 @@
-{
-	"type": "Feature",
-	"description": "SAM templates handle Global values correctly when Resource-level fields are missing."
-}

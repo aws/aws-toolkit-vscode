@@ -1,0 +1,14 @@
+{
+	"date": "2021-02-04",
+	"version": "1.20.0",
+	"entries": [
+		{
+			"type": "Feature",
+			"description": "SAM templates handle Global values correctly when Resource-level fields are missing."
+		},
+		{
+			"type": "Feature",
+			"description": "Support for SAM CLI 1.17: SAM create/run nodejs14.x"
+		}
+	]
+}

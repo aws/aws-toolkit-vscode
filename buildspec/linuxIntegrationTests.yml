@@ -14,6 +14,8 @@ phases:
             dotnet: 3.1
 
         commands:
+            # WORKAROUND for out-of-date yarn key. https://github.com/yarnpkg/yarn/issues/7866
+            - '>/dev/null apt-get install dirmngr && apt-key adv --refresh-keys --keyserver keyserver.ubuntu.com'
             - '>/dev/null add-apt-repository universe'
             - '>/dev/null apt-get -qq install -y apt-transport-https'
             - '>/dev/null apt-get -qq update'
