@@ -20,7 +20,7 @@ import javax.swing.JPanel
 const val SECRET_ID_PROPERTY = "AWS.SecretId"
 const val GET_URL_FROM_SECRET = "AWS.getUrlFromSecret"
 
-class SecretsManagerAuthWidget : AwsAuthWidget(userField = false) {
+class SecretsManagerAuthWidget : AwsAuthWidget(userFieldEnabled = false) {
     private val secretIdSelector = JBTextField()
     private val urlFromSecret = JBCheckBox(message("datagrip.secret_host"))
 
