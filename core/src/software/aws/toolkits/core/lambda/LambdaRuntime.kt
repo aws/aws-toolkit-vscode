@@ -13,6 +13,7 @@ enum class LambdaRuntime(
 ) {
     NODEJS10_X(Runtime.NODEJS10_X),
     NODEJS12_X(Runtime.NODEJS12_X),
+    NODEJS14_X(Runtime.NODEJS14_X, minSamDebugging = "1.17.0", minSamInit = "1.17.0"),
     JAVA8(Runtime.JAVA8),
     JAVA8_AL2(Runtime.JAVA8_AL2, minSamDebugging = "1.2.0"),
     JAVA11(Runtime.JAVA11),

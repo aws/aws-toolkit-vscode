@@ -13,6 +13,7 @@
         <sam.runtimeDebugSupport id="NODEJS" implementationClass="software.aws.toolkits.jetbrains.services.lambda.nodejs.NodeJsRuntimeDebugSupport"/>
         <sam.imageDebuggerSupport implementation="software.aws.toolkits.jetbrains.services.lambda.nodejs.NodeJs10ImageDebug"/>
         <sam.imageDebuggerSupport implementation="software.aws.toolkits.jetbrains.services.lambda.nodejs.NodeJs12ImageDebug"/>
+        <sam.imageDebuggerSupport implementation="software.aws.toolkits.jetbrains.services.lambda.nodejs.NodeJs14ImageDebug"/>
         <sam.projectWizard id="NODEJS" implementationClass="software.aws.toolkits.jetbrains.services.lambda.nodejs.NodeJsSamProjectWizard"/>
     </extensions>
 
