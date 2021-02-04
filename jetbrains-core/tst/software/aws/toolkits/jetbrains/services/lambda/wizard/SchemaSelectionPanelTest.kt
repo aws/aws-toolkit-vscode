@@ -4,31 +4,21 @@
 package software.aws.toolkits.jetbrains.services.lambda.wizard
 
 import com.intellij.testFramework.ProjectRule
-import com.intellij.testFramework.runInEdtAndWait
-import com.intellij.ui.ColoredListCellRenderer
-import com.nhaarman.mockitokotlin2.any
-import com.nhaarman.mockitokotlin2.mock
-import com.nhaarman.mockitokotlin2.stub
 import org.assertj.core.api.Assertions.assertThat
 import org.junit.Before
-import org.junit.Ignore
 import org.junit.Rule
 import org.junit.Test
 import software.amazon.awssdk.services.schemas.model.DescribeSchemaResponse
 import software.aws.toolkits.jetbrains.core.MockResourceCacheRule
-import software.aws.toolkits.jetbrains.core.Resource
-import software.aws.toolkits.jetbrains.core.credentials.ConnectionSettings
 import software.aws.toolkits.jetbrains.core.credentials.MockAwsConnectionManager.ProjectAccountSettingsManagerRule
 import software.aws.toolkits.jetbrains.services.lambda.wizard.SchemaResourceSelector.Companion.DEFAULT_EVENT_DETAIL_TYPE
 import software.aws.toolkits.jetbrains.services.lambda.wizard.SchemaResourceSelector.Companion.DEFAULT_EVENT_SOURCE
 import software.aws.toolkits.jetbrains.services.schemas.SchemaTemplateParameters
 import software.aws.toolkits.jetbrains.services.schemas.resources.SchemasResources
 import software.aws.toolkits.jetbrains.services.schemas.resources.SchemasResources.LIST_REGISTRIES_AND_SCHEMAS
-import software.aws.toolkits.jetbrains.ui.ConnectionSettingsSupplier
-import software.aws.toolkits.jetbrains.ui.ResourceSelector
+import software.aws.toolkits.jetbrains.utils.waitToLoad
 import java.io.File
 
-@Ignore
 class SchemaSelectionPanelTest {
 
     @Rule
@@ -71,22 +61,11 @@ class SchemaSelectionPanelTest {
     private val CUSTOMER_UPLOADED_SCHEMA_MULTIPLE_TYPES =
         File(javaClass.getResource("/customerUploadedEventSchemaMultipleTypes.json.txt").toURI()).readText(Charsets.UTF_8)
 
-    private val mockResourceSelector = mock<ResourceSelector<SchemaSelectionItem>>()
-
-    private val mockResourceBuilderOptions = mock<ResourceSelector.ResourceBuilderOptions<SchemaSelectionItem>>()
-    private val mockResourceSelectorBuilder = mock<ResourceSelector.ResourceBuilder>()
-
     private lateinit var schemaSelectionPanel: SchemaResourceSelector
 
     @Before
     fun setUp() {
-        initMockResourceCache()
-//        initMockResourceSelector()
-
         schemaSelectionPanel = SchemaResourceSelector()
-        runInEdtAndWait {
-            schemaSelectionPanel.reloadSchemas(connectionManager.settingsManager.connectionSettings())
-        }
     }
 
     private fun initMockResourceCache() {
@@ -133,76 +112,37 @@ class SchemaSelectionPanelTest {
         )
     }
 
-    private fun initMockResourceSelector() {
-        mockResourceBuilderOptions.stub {
-            on { comboBoxModel(any()) }.thenReturn(mockResourceBuilderOptions)
-            on { customRenderer(any<ColoredListCellRenderer<SchemaSelectionItem>>()) }.thenReturn(mockResourceBuilderOptions)
-            on { disableAutomaticLoading() }.thenReturn(mockResourceBuilderOptions)
-            on { disableAutomaticSorting() }.thenReturn(mockResourceBuilderOptions)
-            on { awsConnection(any<ConnectionSettings>()) }.thenReturn(mockResourceBuilderOptions)
-            on { awsConnection(any<ConnectionSettingsSupplier>()) }.thenReturn(mockResourceBuilderOptions)
-            on { build() }.thenReturn(mockResourceSelector)
-        }
-
-        mockResourceSelectorBuilder.stub {
-            on { resource(any<Resource<List<SchemaSelectionItem>>>()) }.thenReturn(mockResourceBuilderOptions)
-        }
-    }
-
     @Test
     fun schemaTemplateParametersNullWithoutSelection() {
-        mockResourceSelector.stub {
-            on { selected() }.thenReturn(null)
-        }
-
         val schemaTemplateParameters = schemaSelectionPanel.buildSchemaTemplateParameters()
 
         assertThat(schemaTemplateParameters).isNull()
     }
 
     @Test
-    fun schemaTemplateParametersNullIfRegistrySelected() {
-        mockResourceSelector.stub {
-            on { selected() }.thenReturn(REGISTRY_ITEM)
-        }
+    fun schemaTemplateParametersFirstIfRegistrySelected() {
+        load()
+        schemaSelectionPanel.schemasSelector.selectedItem = REGISTRY_ITEM
 
         val schemaTemplateParameters = schemaSelectionPanel.buildSchemaTemplateParameters()
 
-        assertThat(schemaTemplateParameters).isNull()
+        assertThat(schemaTemplateParameters?.schema?.name).isEqualTo(AWS_SCHEMA_NAME)
     }
 
     @Test
     fun schemaTemplateParametersBuiltAfterSelectionAwsSchema() {
-        mockResourceSelector.stub {
-            on { selected() }.thenReturn(AWS_SCHEMA_ITEM)
-        }
+        load()
+        schemaSelectionPanel.schemasSelector.selectedItem = AWS_SCHEMA_ITEM
 
         val schemaTemplateParameters = schemaSelectionPanel.buildSchemaTemplateParameters()
 
         assertAwsSchemaParameters(schemaTemplateParameters)
     }
 
-    private fun assertAwsSchemaParameters(schemaTemplateParameters: SchemaTemplateParameters?) {
-        assertThat(schemaTemplateParameters).isNotNull
-        assertThat(schemaTemplateParameters?.schema?.registryName).isEqualTo(REGISTRY_NAME)
-        assertThat(schemaTemplateParameters?.schemaVersion).isEqualTo(SCHEMA_VERSION)
-
-        assertThat(schemaTemplateParameters?.schema?.name).isEqualTo(AWS_SCHEMA_NAME)
-
-        assertThat(schemaTemplateParameters?.templateExtraContext).isNotNull
-        assertThat(schemaTemplateParameters?.templateExtraContext?.schemaRegistry).isEqualTo(REGISTRY_NAME)
-        assertThat(schemaTemplateParameters?.templateExtraContext?.schemaRootEventName).isEqualTo("EC2InstanceStateChangeNotification")
-        assertThat(schemaTemplateParameters?.templateExtraContext?.schemaPackageHierarchy).isEqualTo(AWS_SCHEMA_EXPECTED_PACKAGE_NAME)
-        assertThat(schemaTemplateParameters?.templateExtraContext?.source).isEqualTo("aws.ec2")
-        assertThat(schemaTemplateParameters?.templateExtraContext?.detailType).isEqualTo("EC2 Instance State-change Notification")
-        assertThat(schemaTemplateParameters?.templateExtraContext?.userAgent).isEqualTo(AWSToolkitUserAgent)
-    }
-
     @Test
     fun schemaTemplateParametersBuiltAfterSelectionPartnerSchema() {
-        mockResourceSelector.stub {
-            on { selected() }.thenReturn(PARTNER_SCHEMA_ITEM)
-        }
+        load()
+        schemaSelectionPanel.schemasSelector.selectedItem = PARTNER_SCHEMA_ITEM
 
         val schemaTemplateParameters = schemaSelectionPanel.buildSchemaTemplateParameters()
 
@@ -223,9 +163,8 @@ class SchemaSelectionPanelTest {
 
     @Test
     fun schemaTemplateParametersBuiltAfterSelectionCustomerUploadedSchema() {
-        mockResourceSelector.stub {
-            on { selected() }.thenReturn(CUSTOMER_UPLOADED_SCHEMA_ITEM)
-        }
+        load()
+        schemaSelectionPanel.schemasSelector.selectedItem = CUSTOMER_UPLOADED_SCHEMA_ITEM
 
         val schemaTemplateParameters = schemaSelectionPanel.buildSchemaTemplateParameters()
         assertCustomerUploadedSchemaParameters(
@@ -238,9 +177,8 @@ class SchemaSelectionPanelTest {
 
     @Test
     fun schemaTemplateParametersBuiltAfterSelectionCustomerUploadedSchemaMultipleTypes() {
-        mockResourceSelector.stub {
-            on { selected() }.thenReturn(CUSTOMER_UPLOADED_SCHEMA_MULTIPLE_TYPES_ITEM)
-        }
+        load()
+        schemaSelectionPanel.schemasSelector.selectedItem = CUSTOMER_UPLOADED_SCHEMA_MULTIPLE_TYPES_ITEM
 
         val schemaTemplateParameters = schemaSelectionPanel.buildSchemaTemplateParameters()
         assertCustomerUploadedSchemaParameters(
@@ -249,6 +187,22 @@ class SchemaSelectionPanelTest {
             CUSTOMER_UPLOADED_SCHEMA_MULTIPLE_TYPES_EXPECTED_PACKAGE_NAME,
             schemaTemplateParameters
         )
+    }
+
+    private fun assertAwsSchemaParameters(schemaTemplateParameters: SchemaTemplateParameters?) {
+        assertThat(schemaTemplateParameters).isNotNull
+        assertThat(schemaTemplateParameters?.schema?.registryName).isEqualTo(REGISTRY_NAME)
+        assertThat(schemaTemplateParameters?.schemaVersion).isEqualTo(SCHEMA_VERSION)
+
+        assertThat(schemaTemplateParameters?.schema?.name).isEqualTo(AWS_SCHEMA_NAME)
+
+        assertThat(schemaTemplateParameters?.templateExtraContext).isNotNull
+        assertThat(schemaTemplateParameters?.templateExtraContext?.schemaRegistry).isEqualTo(REGISTRY_NAME)
+        assertThat(schemaTemplateParameters?.templateExtraContext?.schemaRootEventName).isEqualTo("EC2InstanceStateChangeNotification")
+        assertThat(schemaTemplateParameters?.templateExtraContext?.schemaPackageHierarchy).isEqualTo(AWS_SCHEMA_EXPECTED_PACKAGE_NAME)
+        assertThat(schemaTemplateParameters?.templateExtraContext?.source).isEqualTo("aws.ec2")
+        assertThat(schemaTemplateParameters?.templateExtraContext?.detailType).isEqualTo("EC2 Instance State-change Notification")
+        assertThat(schemaTemplateParameters?.templateExtraContext?.userAgent).isEqualTo(AWSToolkitUserAgent)
     }
 
     private fun assertCustomerUploadedSchemaParameters(
@@ -270,5 +224,11 @@ class SchemaSelectionPanelTest {
         assertThat(schemaTemplateParameters?.templateExtraContext?.source).isEqualTo(DEFAULT_EVENT_SOURCE)
         assertThat(schemaTemplateParameters?.templateExtraContext?.detailType).isEqualTo(DEFAULT_EVENT_DETAIL_TYPE)
         assertThat(schemaTemplateParameters?.templateExtraContext?.userAgent).isEqualTo(AWSToolkitUserAgent)
+    }
+
+    private fun load() {
+        initMockResourceCache()
+        schemaSelectionPanel.reloadSchemas(connectionManager.settingsManager.connectionSettings())
+        schemaSelectionPanel.schemasSelector.waitToLoad()
     }
 }
