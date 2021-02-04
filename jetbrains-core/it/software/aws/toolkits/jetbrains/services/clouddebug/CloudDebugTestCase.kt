@@ -9,11 +9,13 @@ import com.nhaarman.mockitokotlin2.mock
 import org.junit.After
 import org.junit.Before
 import org.junit.Rule
+import software.amazon.awssdk.core.waiters.WaiterOverrideConfiguration
 import software.amazon.awssdk.http.apache.ApacheHttpClient
 import software.amazon.awssdk.regions.Region
 import software.amazon.awssdk.services.cloudformation.CloudFormationClient
 import software.amazon.awssdk.services.ecs.EcsClient
 import software.amazon.awssdk.services.ecs.model.AssignPublicIp
+import software.amazon.awssdk.services.ecs.model.DescribeServicesRequest
 import software.amazon.awssdk.services.ecs.model.LaunchType
 import software.amazon.awssdk.services.ecs.model.Service
 import software.aws.toolkits.core.region.AwsRegion
@@ -29,8 +31,7 @@ import software.aws.toolkits.jetbrains.services.ecs.EcsUtils
 import software.aws.toolkits.jetbrains.services.ecs.resources.EcsResources
 import software.aws.toolkits.jetbrains.utils.rules.CloudFormationLazyInitRule
 import java.nio.file.Paths
-import java.util.concurrent.CountDownLatch
-import java.util.concurrent.TimeUnit
+import java.time.Duration
 
 abstract class CloudDebugTestCase(private val taskDefName: String) {
     protected lateinit var service: Service
@@ -69,7 +70,7 @@ abstract class CloudDebugTestCase(private val taskDefName: String) {
         runUnderRealCredentials(getProject()) {
             println("Instrumenting service")
             instrumentService()
-            val instrumentedServiceName = "cloud-debug-${EcsUtils.serviceArnToName(service.serviceArn())}"
+            val instrumentedServiceName = instrumentedServiceName()
             println("Waiting for $instrumentedServiceName to stabilize")
             ecsRule.ecsClient.waiter().waitUntilServicesStable {
                 it.cluster(service.clusterArn())
@@ -87,15 +88,30 @@ abstract class CloudDebugTestCase(private val taskDefName: String) {
 
     @After
     open fun tearDown() {
+        try {
+            deinstrumentService()
+        } finally {
+            // If deinstrumenting fails, or initialization doesn't work properly, we still want to try to delete the services, so kick that off
+            runCatching { ecsClient.deleteService { it.cluster(service.clusterArn()).service(service.serviceArn()).force(true) } }
+            runCatching { ecsClient.deleteService { it.cluster(service.clusterArn()).service(instrumentedServiceName()).force(true) } }
+        }
+    }
+
+    private fun deinstrumentService() {
         // TODO: this doesn't wait for the revert command to complete but fulfills our need to cleanup
         if (::instrumentedService.isInitialized) {
             runUnderRealCredentials(getProject()) {
-                deinstrumentService()
+                DeinstrumentResourceFromExplorerAction.performAction(
+                    getProject(),
+                    service.clusterArn(),
+                    EcsUtils.originalServiceName(instrumentedService.serviceName()),
+                    null
+                )
                 println("Waiting for ${instrumentedService.serviceArn()} to be deinstrumented")
-                ecsClient.waiter().waitUntilServicesInactive {
-                    it.cluster(instrumentedService.clusterArn())
-                    it.services(instrumentedService.serviceArn())
-                }
+                ecsClient.waiter().waitUntilServicesInactive(
+                    DescribeServicesRequest.builder().cluster(instrumentedService.clusterArn()).services(instrumentedService.serviceArn()).build(),
+                    WaiterOverrideConfiguration.builder().waitTimeout(Duration.ofMinutes(5)).build()
+                )
             }
             // TODO: verify that no error toasts were created, or similar mechanism
         }
@@ -146,30 +162,16 @@ abstract class CloudDebugTestCase(private val taskDefName: String) {
         }
     }
 
-    private fun awaitCli(latch: CountDownLatch) = { result: Boolean ->
-        latch.countDown()
-        if (!result) {
-            throw RuntimeException("CLI didn't complete successfully!")
-        }
-    }
-
     private fun instrumentService() {
-        val latch = CountDownLatch(1)
-        InstrumentResourceAction.performAction(getProject(), service.clusterArn(), service.serviceArn(), instrumentationRole, null, awaitCli(latch))
-        latch.await(5, TimeUnit.MINUTES)
+        InstrumentResourceAction.performAction(getProject(), service.clusterArn(), service.serviceArn(), instrumentationRole, null)
+        println("Waiting for ${service.serviceArn()} to be instrumented")
+        ecsClient.waiter().waitUntilServicesStable(
+            DescribeServicesRequest.builder().cluster(service.clusterArn()).services(instrumentedServiceName()).build(),
+            WaiterOverrideConfiguration.builder().waitTimeout(Duration.ofMinutes(5)).build()
+        )
     }
 
-    private fun deinstrumentService() {
-        val latch = CountDownLatch(1)
-        DeinstrumentResourceFromExplorerAction.performAction(
-            getProject(),
-            service.clusterArn(),
-            EcsUtils.originalServiceName(instrumentedService.serviceName()),
-            null,
-            awaitCli(latch)
-        )
-        latch.await(5, TimeUnit.MINUTES)
-    }
+    private fun instrumentedServiceName() = "cloud-debug-${EcsUtils.serviceArnToName(service.serviceArn())}"
 
     abstract fun getProject(): Project
 

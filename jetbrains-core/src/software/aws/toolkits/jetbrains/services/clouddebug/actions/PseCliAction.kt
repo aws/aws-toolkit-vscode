@@ -58,7 +58,7 @@ abstract class PseCliAction(val project: Project, val actionName: String, privat
     abstract fun buildCommandLine(cmd: GeneralCommandLine)
     protected abstract fun produceTelemetry(startTime: Instant, result: Result, version: String?)
 
-    fun runAction(selectedNode: AbstractTreeNode<*>? = null, callback: ((Boolean) -> Unit)? = null) {
+    fun runAction(selectedNode: AbstractTreeNode<*>? = null) {
         ProgressManager.getInstance().run(
             object : Task.Backgroundable(
                 project,
@@ -105,7 +105,6 @@ abstract class PseCliAction(val project: Project, val actionName: String, privat
                             null
                         }
                     }.toCompletableFuture().join() ?: run {
-                        callback?.invoke(false)
                         return
                     }
 
@@ -162,14 +161,12 @@ abstract class PseCliAction(val project: Project, val actionName: String, privat
                         )
                         // reset the cache
                         project.clearResourceForCurrentConnection(CloudDebuggingResources.LIST_INSTRUMENTED_RESOURCES)
-                        callback?.invoke(true)
                     } else {
                         notifyError(
                             actionName,
                             failureMessage,
                             project
                         )
-                        callback?.invoke(false)
                     }
 
                     // Redraw cluster level if the action was taken from a node
