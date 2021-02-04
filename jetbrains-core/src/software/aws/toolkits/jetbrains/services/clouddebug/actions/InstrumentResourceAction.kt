@@ -74,8 +74,7 @@ class InstrumentResourceAction(
             clusterArn: String,
             serviceArn: String,
             roleArn: String,
-            selected: EcsServiceNode?,
-            callback: ((Boolean) -> Unit)? = null
+            selected: EcsServiceNode?
         ) {
             InstrumentAction(
                 project,
@@ -85,7 +84,7 @@ class InstrumentResourceAction(
                 message("cloud_debug.instrument_resource.enable"),
                 message("cloud_debug.instrument_resource.enable.success", EcsUtils.serviceArnToName(serviceArn)),
                 message("cloud_debug.instrument_resource.enable.fail", EcsUtils.serviceArnToName(serviceArn))
-            ).runAction(selected, callback)
+            ).runAction(selected)
         }
     }
 }
