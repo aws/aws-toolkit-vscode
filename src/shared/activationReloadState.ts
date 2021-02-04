@@ -28,7 +28,7 @@ export class ActivationReloadState {
             ? {
                   path: activationPath,
                   runtime: this.extensionContext.globalState.get<string>(SAM_INIT_RUNTIME_KEY),
-                  isImage: this.extensionContext.globalState.get<boolean>(SAM_INIT_IMAGE_BOOLEAN_KEY) ?? false,
+                  isImage: this.extensionContext.globalState.get<boolean>(SAM_INIT_IMAGE_BOOLEAN_KEY),
               }
             : undefined
     }
