@@ -1,3 +1,8 @@
+## 1.20.0 2021-02-04
+
+- **Feature** SAM templates handle Global values correctly when Resource-level fields are missing.
+- **Feature** Support for SAM CLI 1.17: SAM create/run nodejs14.x
+
 ## 1.19.0 2021-02-01
 
 - **Bug Fix** Schemas: download failure would not trigger code generation under certain conditions
