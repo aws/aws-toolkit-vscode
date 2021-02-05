@@ -53,7 +53,7 @@ describe('runSamCliInit', async () => {
     const sampleSamInitArgs: SamCliInitArgs = {
         name: 'qwerty',
         location: '/some/path/to/code.js',
-        runtime: 'nodejs8.10',
+        runtime: 'nodejs10.x',
         template: helloWorldTemplate,
         dependencyManager: sampleDependencyManager,
     }
