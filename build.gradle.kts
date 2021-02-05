@@ -24,7 +24,6 @@ buildscript {
     repositories {
         maven("https://plugins.gradle.org/m2/")
         mavenCentral()
-        jcenter()
     }
     val kotlinVersion: String by project
     val ideaPluginVersion: String by project
@@ -67,7 +66,6 @@ allprojects {
     repositories {
         mavenLocal()
         mavenCentral()
-        jcenter()
     }
 
     apply(plugin = "com.adarshr.test-logger")
