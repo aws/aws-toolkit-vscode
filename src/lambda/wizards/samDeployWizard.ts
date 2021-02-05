@@ -37,6 +37,7 @@ import { MINIMUM_SAM_CLI_VERSION_INCLUSIVE_FOR_IMAGE_SUPPORT } from '../../share
 import { ExtContext } from '../../shared/extensions'
 import { addCodiconToString } from '../../shared/utilities/textUtilities'
 import { validateBucketName } from '../../s3/util'
+import { showErrorWithLogs } from '../../shared/utilities/messages'
 
 
 const CREATE_NEW_BUCKET = addCodiconToString('plus', localize('AWS.command.s3.createBucket', 'Create Bucket...' ))
@@ -701,11 +702,10 @@ export class SamDeployWizard extends MultiStepWizard<SamDeployWizardResponse> {
                 const newBucketName = (await s3Client.createBucket({bucketName: newBucketRequest})).bucket.name
                 this.response.s3Bucket = newBucketName
                 getLogger().info('Created bucket: %O', newBucketName)
-                vscode.window.showInformationMessage(localize('AWS.s3.createBucket.success', 'Created bucket {0}', newBucketName))
+                vscode.window.showInformationMessage(localize('AWS.s3.createBucket.success', 'Created bucket: {0}', newBucketName))
                 telemetry.recordS3CreateBucket({ result: 'Succeeded' })
             } catch (e) {
-                vscode.window.showErrorMessage(localize('AWS.s3.createBucket.error.general', 'Failed to create bucket {0}', newBucketRequest))
-                getLogger().error(e)
+                showErrorWithLogs(localize('AWS.s3.createBucket.error.general', 'Failed to create bucket: {0}', newBucketRequest), vscode.window)
                 telemetry.recordS3CreateBucket({result: 'Failed'})
                 return WIZARD_RETRY
             }
