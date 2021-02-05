@@ -263,7 +263,7 @@ subprojects {
     }
 
     val testJar = tasks.register<Jar>("testJar") {
-        baseName = "${project.name}-test"
+        archiveBaseName.set("${project.name}-test")
         from(sourceSets.test.get().output)
         from(sourceSets.getByName("integrationTest").output)
     }
