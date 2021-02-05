@@ -220,7 +220,7 @@ fun getNugetPackagesPath(): File {
 }
 
 dependencies {
-    compile(project(":jetbrains-core"))
+    implementation(project(":jetbrains-core"))
     testImplementation(project(":jetbrains-core", "testArtifacts"))
 }
 
