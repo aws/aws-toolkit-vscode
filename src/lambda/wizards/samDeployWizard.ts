@@ -17,6 +17,7 @@ import { getRegionsForActiveCredentials } from '../../shared/regions/regionUtili
 import { createHelpButton } from '../../shared/ui/buttons'
 import * as input from '../../shared/ui/input'
 import * as picker from '../../shared/ui/picker'
+import * as telemetry from '../../shared/telemetry/telemetry'
 import { difference, filter, IteratorTransformer } from '../../shared/utilities/collectionUtils'
 import {
     MultiStepWizard,
@@ -697,10 +698,15 @@ export class SamDeployWizard extends MultiStepWizard<SamDeployWizardResponse> {
 
             try{
                 const s3Client = ext.toolkitClientBuilder.createS3Client(this.response.region!)
-                this.response.s3Bucket = (await s3Client.createBucket({bucketName: newBucketRequest})).bucket.name
+                const newBucketName = (await s3Client.createBucket({bucketName: newBucketRequest})).bucket.name
+                this.response.s3Bucket = newBucketName
+                getLogger().info('Successfully created bucket %O', newBucketName)
+                vscode.window.showInformationMessage(localize('AWS.s3.createBucket.success', 'Created bucket {0}', newBucketName))
+                telemetry.recordS3CreateBucket({ result: 'Succeeded' })
             } catch (e) {
                 vscode.window.showErrorMessage(localize('AWS.s3.createBucket.error.general', 'Failed to create bucket {0}', newBucketRequest))
                 getLogger().error(e)
+                telemetry.recordS3CreateBucket({result: 'Failed'})
                 return WIZARD_RETRY
             }
         } else {
