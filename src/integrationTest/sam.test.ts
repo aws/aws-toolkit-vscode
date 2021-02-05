@@ -54,6 +54,13 @@ const scenarios: TestScenario[] = [
         language: 'javascript',
     },
     {
+        runtime: 'nodejs14.x',
+        displayName: 'nodejs14.x (ZIP)',
+        path: 'hello-world/app.js',
+        debugSessionType: 'pwa-node',
+        language: 'javascript',
+    },
+    {
         runtime: 'python2.7',
         displayName: 'python2.7 (ZIP)',
         path: 'hello_world/app.py',
@@ -97,6 +104,14 @@ const scenarios: TestScenario[] = [
         runtime: 'nodejs12.x',
         displayName: 'nodejs12.x (Image)',
         baseImage: `amazon/nodejs12.x-base`,
+        path: 'hello-world/app.js',
+        debugSessionType: 'pwa-node',
+        language: 'javascript',
+    },
+    {
+        runtime: 'nodejs14.x',
+        displayName: 'nodejs14.x (Image)',
+        baseImage: `amazon/nodejs14.x-base`,
         path: 'hello-world/app.js',
         debugSessionType: 'pwa-node',
         language: 'javascript',
