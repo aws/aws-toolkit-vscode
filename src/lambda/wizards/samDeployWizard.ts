@@ -700,7 +700,7 @@ export class SamDeployWizard extends MultiStepWizard<SamDeployWizardResponse> {
                 const s3Client = ext.toolkitClientBuilder.createS3Client(this.response.region!)
                 const newBucketName = (await s3Client.createBucket({bucketName: newBucketRequest})).bucket.name
                 this.response.s3Bucket = newBucketName
-                getLogger().info('Successfully created bucket %O', newBucketName)
+                getLogger().info('Created bucket: %O', newBucketName)
                 vscode.window.showInformationMessage(localize('AWS.s3.createBucket.success', 'Created bucket {0}', newBucketName))
                 telemetry.recordS3CreateBucket({ result: 'Succeeded' })
             } catch (e) {
