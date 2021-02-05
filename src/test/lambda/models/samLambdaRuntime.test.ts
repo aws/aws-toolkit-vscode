@@ -18,9 +18,9 @@ describe('compareSamLambdaRuntime', async () => {
         lowerRuntime: Runtime
         higherRuntime: Runtime
     }[] = [
-        { lowerRuntime: 'nodejs8.10', higherRuntime: 'nodejs10.x' },
-        { lowerRuntime: 'nodejs8.10', higherRuntime: 'nodejs12.x' },
+        { lowerRuntime: 'nodejs12.x', higherRuntime: 'nodejs14.x' },
         { lowerRuntime: 'nodejs10.x', higherRuntime: 'nodejs12.x' },
+        { lowerRuntime: 'nodejs10.x', higherRuntime: 'nodejs14.x' },
         { lowerRuntime: 'nodejs10.x', higherRuntime: 'nodejs10.x (Image)' },
         { lowerRuntime: 'nodejs10.x (Image)', higherRuntime: 'nodejs12.x' },
     ]

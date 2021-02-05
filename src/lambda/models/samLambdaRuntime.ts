@@ -27,7 +27,6 @@ export const nodeJsRuntimes: ImmutableSet<Runtime> = ImmutableSet<Runtime>([
     'nodejs14.x',
     'nodejs12.x',
     'nodejs10.x',
-    'nodejs8.10',
 ])
 export const pythonRuntimes: ImmutableSet<Runtime> = ImmutableSet<Runtime>([
     'python3.8',
@@ -48,23 +47,20 @@ export const samZipLambdaRuntimes: ImmutableSet<Runtime> = ImmutableSet.union([
     dotNetRuntimes,
 ])
 
-// cloud9 supports a subset of runtimes for debugging, so we limit specifically to that.
+// Cloud9 supports a subset of runtimes for debugging.
 // * .NET is not supported
-// * Node8 is deprecated (and shouldn't be creatable via UI)
 // * Python2.7 + 3.6 are not supported for debugging by IKP3db
 // for some reason, ImmutableSet does not like `ImmutableSet.union().filter()`; initialize union set here.
 const cloud9SupportedBaseRuntimes: ImmutableSet<Runtime> = ImmutableSet.union([nodeJsRuntimes, pythonRuntimes])
 const cloud9SupportedCreateRuntimes = cloud9SupportedBaseRuntimes.filter(
-    (runtime: string) => !['nodejs8.10', 'python3.6', 'python2.7'].includes(runtime)
+    (runtime: string) => !['python3.6', 'python2.7'].includes(runtime)
 )
 // only interpreted languages are importable as compiled languages won't provide a useful artifact for editing.
 export const samLambdaImportableRuntimes: ImmutableSet<Runtime> = ImmutableSet.union([nodeJsRuntimes, pythonRuntimes])
 
 export const samLambdaCreatableRuntimes: ImmutableSet<Runtime> = isCloud9()
     ? cloud9SupportedCreateRuntimes
-    : // Filter out node8 until local debugging is no longer supported, and
-      // it can be removed from samLambdaRuntimes
-      samZipLambdaRuntimes.filter((runtime: string) => runtime !== 'nodejs8.10')
+    : samZipLambdaRuntimes
 
 // Image runtimes are not a direct subset of valid ZIP lambda types
 const dotnet50 = 'dotnet5.0'
