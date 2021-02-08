@@ -7,6 +7,8 @@ import { join } from 'path'
 import * as vscode from 'vscode'
 import * as nls from 'vscode-nls'
 
+import { activate as activateWebview } from './webviews/activation'
+
 import { activate as activateAwsExplorer } from './awsexplorer/activation'
 import { activate as activateCdk } from './cdk/activation'
 import { activate as activateCloudWatchLogs } from './cloudWatchLogs/activation'
@@ -219,6 +221,8 @@ export async function activate(context: vscode.ExtensionContext) {
         await activateS3(context)
 
         await activateEcr(context)
+
+        await activateWebview(context)
 
         // Features which aren't currently functional in Cloud9
         if (!isCloud9()) {

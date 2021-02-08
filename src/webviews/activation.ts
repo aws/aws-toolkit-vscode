@@ -8,11 +8,11 @@ import * as vscode from 'vscode'
 import { ExtensionUtilities } from '../shared/extensionUtilities'
 
 export async function activate(context: vscode.ExtensionContext): Promise<void> {
-    vscode.commands.registerCommand('aws.lambda.createNewSamAppReact', async () => {
+    vscode.commands.registerCommand('aws.lambda.vueTest', async () => {
         await createVueWebview({
             id: 'create',
-            name: 'Create New Sam App',
-            webviewJs: 'createSamApp.js',
+            name: 'VueTest',
+            webviewJs: 'testVue.js',
             onDidReceiveMessageFunction: handleMessage,
             context,
         })
@@ -25,6 +25,7 @@ async function handleMessage(
     destroyWebviewFn: () => any
 ): Promise<any> {
     // message handler here!
+    // https://github.com/aws/aws-toolkit-vscode/blob/experiments/react-hooks/src/webviews/activation.ts#L39 for inspiration
 }
 
 interface WebviewParams {
@@ -60,11 +61,9 @@ async function createVueWebview(params: WebviewParams) {
         retainContextWhenHidden: params.persistWithoutFocus,
     })
 
-    const loadLibs = ExtensionUtilities.getFilesAsVsCodeResources(
-        libsPath,
-        ['react.development.js', 'react-dom.development.js'],
-        view.webview
-    ).concat(ExtensionUtilities.getFilesAsVsCodeResources(jsPath, ['loadVsCodeApi.js'], view.webview))
+    const loadLibs = ExtensionUtilities.getFilesAsVsCodeResources(libsPath, ['vue.min.js'], view.webview).concat(
+        ExtensionUtilities.getFilesAsVsCodeResources(jsPath, ['loadVsCodeApi.js'], view.webview)
+    )
 
     let scripts: string = ''
 
@@ -90,7 +89,7 @@ async function createVueWebview(params: WebviewParams) {
         >
     </head>
     <body>
-        <div id="reactApp"></div>
+        <div id="vueApp">{{ book.title }}</div>
         <!-- Dependencies -->
         ${scripts}
         <!-- Main -->
