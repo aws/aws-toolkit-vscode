@@ -116,6 +116,15 @@ export class ExtensionUtilities {
 
         return scripts
     }
+
+    public static getFilesAsVsCodeResources(rootdir: string, filenames: string[], webview: vscode.Webview) {
+        const arr: vscode.Uri[] = []
+        for (const filename of filenames) {
+            arr.push(webview.asWebviewUri(vscode.Uri.file(path.join(rootdir, filename))))
+        }
+
+        return arr
+    }
 }
 
 /**
