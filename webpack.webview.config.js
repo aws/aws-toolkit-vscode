@@ -28,6 +28,9 @@ const config = {
     resolve: {
         // Add '.ts' and '.tsx' as resolvable extensions.
         extensions: ['.ts', '.tsx', '.js', '.json'],
+        alias: {
+            vue$: require.resolve('vue/dist/vue.esm.js'),
+        },
     },
     module: {
         rules: [

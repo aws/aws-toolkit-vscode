@@ -3,17 +3,39 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
-import defineComponent from 'vue'
+import Vue, { VNode } from 'vue'
+import { VsCode } from './activation'
 
-// interface Book {
-//   title: string
-//   author: string
-//   year: number
-// }
+declare const vscode: VsCode
 
-export const Component = new defineComponent({
-    render(h) {
-        return h('div', 'hello world')
+export const Component = Vue.extend({
+    data() {
+        return {
+            msg: 'Hello',
+        }
     },
+    methods: {
+        // need annotation due to `this` in return type
+        greet(): string {
+            return this.msg + ' world'
+        },
+        alertBackend: () => {
+            vscode.postMessage({ test: 'hello world' })
+        },
+    },
+    computed: {
+        // need annotation
+        greeting(): string {
+            return this.greet() + '!'
+        },
+    },
+    // `createElement` is inferred, but `render` needs return type
+    template: '<div> {{ this.greeting }} <button v-on:click="alertBackend">Click me!</button> </div>',
+})
+
+new Vue({
     el: '#vueApp',
+    render: (createElement): VNode => {
+        return createElement(Component)
+    },
 })

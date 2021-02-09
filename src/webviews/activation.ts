@@ -19,6 +19,12 @@ export async function activate(context: vscode.ExtensionContext): Promise<void> 
     })
 }
 
+export interface VsCode {
+    postMessage(output: any): void
+    setState(state: any): void
+    getState(): any | undefined
+}
+
 async function handleMessage(
     message: any,
     postMessageFn: (response: any) => Thenable<boolean>,
@@ -26,6 +32,7 @@ async function handleMessage(
 ): Promise<any> {
     // message handler here!
     // https://github.com/aws/aws-toolkit-vscode/blob/experiments/react-hooks/src/webviews/activation.ts#L39 for inspiration
+    vscode.window.showInformationMessage(message.test)
 }
 
 interface WebviewParams {
@@ -78,18 +85,20 @@ async function createVueWebview(params: WebviewParams) {
     <head>
         <meta charset="UTF-8">
         <meta name="viewport" content="width=device-width, initial-scale=1.0">
+        
+        <!-- how do we not require unsafe eval? -->
         <meta
             http-equiv="Content-Security-Policy"
             content=
                 "default-src 'none';
                 img-src ${view.webview.cspSource} https:;
-                script-src ${view.webview.cspSource};
+                script-src ${view.webview.cspSource} 'unsafe-eval';
                 style-src ${view.webview.cspSource};
                 font-src 'self' data:;"
         >
     </head>
     <body>
-        <div id="vueApp">{{ book.title }}</div>
+        <div id="vueApp">{{ counter }}</div>
         <!-- Dependencies -->
         ${scripts}
         <!-- Main -->
