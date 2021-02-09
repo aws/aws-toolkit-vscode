@@ -11,6 +11,7 @@ import { uploadLambdaCommand } from './commands/uploadLambda'
 import { LambdaFunctionNode } from './explorer/lambdaFunctionNode'
 import { importLambdaCommand } from './commands/importLambda'
 import { tryRemoveFolder } from '../shared/filesystemUtilities'
+import { registerSamInvokeVueCommand } from './vue/samInvoke'
 
 /**
  * Activates Lambda components.
@@ -53,6 +54,7 @@ export async function activate(extensionContext: vscode.ExtensionContext): Promi
         ),
         vscode.commands.registerCommand('aws.uploadLambda', async (node: LambdaFunctionNode) => {
             await uploadLambdaCommand(node)
-        })
+        }),
+        registerSamInvokeVueCommand(extensionContext)
     )
 }

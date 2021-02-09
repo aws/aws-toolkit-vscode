@@ -13,7 +13,7 @@ const config = {
 
     entry: {
         // invokeRemote: path.resolve(__dirname, 'src', 'webviews', 'tsx', 'invokeRemote.tsx'),
-        testVue: path.resolve(__dirname, 'src', 'webviews', 'testVue.ts'),
+        samInvokeVue: path.resolve(__dirname, 'src', 'lambda', 'vue', 'samInvokeVue.ts'),
         // createSamApp: path.resolve(__dirname, 'src', 'webviews', 'tsx', 'createSamApp.tsx')
         // createSamApp: path.resolve(__dirname, 'src', 'webviews', 'tsx', 'reducerCreateSamApp.tsx')
     },

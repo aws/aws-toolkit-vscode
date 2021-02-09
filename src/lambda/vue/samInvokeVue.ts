@@ -4,21 +4,22 @@
  */
 
 import Vue, { VNode } from 'vue'
-import { BackendToFrontend, FrontendToBackend, VsCode } from './activation'
+import { VsCode } from '../../webviews/main'
+import { BackendToFrontend, FrontendToBackend } from './samInvoke'
 
-declare const vscode: VsCode<FrontendToBackend>
+declare const vscode: VsCode<FrontendToBackend, any>
 
 export const Component = Vue.extend({
-    data() {
-        return {
-            msg: 'Hello',
-        }
-    },
     created() {
         window.addEventListener('message', ev => {
             const data = ev.data as BackendToFrontend
             this.msg = data.newText
         })
+    },
+    data() {
+        return {
+            msg: 'Hello',
+        }
     },
     methods: {
         // need annotation due to `this` in return type
