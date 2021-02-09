@@ -19,20 +19,42 @@ export async function activate(context: vscode.ExtensionContext): Promise<void> 
     })
 }
 
-export interface VsCode {
-    postMessage(output: any): void
+export interface VsCode<T> {
+    postMessage(output: T): void
     setState(state: any): void
     getState(): any | undefined
 }
 
+export interface BackendToFrontend {
+    newText: string
+}
+
+export interface FrontendToBackend {
+    messageText: string
+}
+
 async function handleMessage(
-    message: any,
-    postMessageFn: (response: any) => Thenable<boolean>,
+    message: FrontendToBackend,
+    postMessageFn: (response: BackendToFrontend) => Thenable<boolean>,
     destroyWebviewFn: () => any
 ): Promise<any> {
     // message handler here!
     // https://github.com/aws/aws-toolkit-vscode/blob/experiments/react-hooks/src/webviews/activation.ts#L39 for inspiration
-    vscode.window.showInformationMessage(message.test)
+    const val = await vscode.window.showInformationMessage(message.messageText, 'Reply', 'Close Webview')
+
+    if (val === 'Reply') {
+        const reply = await vscode.window.showInputBox({ prompt: 'Write somethin will ya?' })
+        if (reply) {
+            const success = await postMessageFn({ newText: reply })
+            if (!success) {
+                vscode.window.showInformationMessage('webview message fail')
+            }
+        } else {
+            vscode.window.showInformationMessage('You should type something...')
+        }
+    } else if (val === 'Close Webview') {
+        destroyWebviewFn()
+    }
 }
 
 interface WebviewParams {

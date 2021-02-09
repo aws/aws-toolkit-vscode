@@ -4,9 +4,9 @@
  */
 
 import Vue, { VNode } from 'vue'
-import { VsCode } from './activation'
+import { BackendToFrontend, FrontendToBackend, VsCode } from './activation'
 
-declare const vscode: VsCode
+declare const vscode: VsCode<FrontendToBackend>
 
 export const Component = Vue.extend({
     data() {
@@ -14,13 +14,19 @@ export const Component = Vue.extend({
             msg: 'Hello',
         }
     },
+    created() {
+        window.addEventListener('message', ev => {
+            const data = ev.data as BackendToFrontend
+            this.msg = data.newText
+        })
+    },
     methods: {
         // need annotation due to `this` in return type
         greet(): string {
             return this.msg + ' world'
         },
-        alertBackend: () => {
-            vscode.postMessage({ test: 'hello world' })
+        alertBackend() {
+            vscode.postMessage({ messageText: 'hello world' })
         },
     },
     computed: {
