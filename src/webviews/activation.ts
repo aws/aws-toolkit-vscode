@@ -19,12 +19,6 @@ export async function activate(context: vscode.ExtensionContext): Promise<void> 
     })
 }
 
-export interface VsCode<T> {
-    postMessage(output: T): void
-    setState(state: any): void
-    getState(): any | undefined
-}
-
 export interface BackendToFrontend {
     newText: string
 }
@@ -57,6 +51,8 @@ async function handleMessage(
     }
 }
 
+// everything over this should move to a different file!!! Potentially a different dir (leave the 'src/webviews' dir for webview-only utils)
+
 interface WebviewParams {
     id: string
     name: string
@@ -71,6 +67,13 @@ interface WebviewParams {
         destroyWebviewFn: () => any
     ): void
     onDidDisposeFunction?(): void
+}
+
+// TODO: add types for the state functions
+export interface VsCode<T> {
+    postMessage(output: T): void
+    setState(state: any): void
+    getState(): any | undefined
 }
 
 async function createVueWebview(params: WebviewParams) {
