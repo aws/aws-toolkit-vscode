@@ -3,9 +3,17 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
+import _ = require('lodash')
+import xml2js = require('xml2js')
 import * as vscode from 'vscode'
 import { LaunchConfiguration } from '../../shared/debug/launchConfiguration'
+import { ext } from '../../shared/extensionGlobals'
 import { ExtContext } from '../../shared/extensions'
+import { getLogger } from '../../shared/logger'
+import { CompositeResourceFetcher } from '../../shared/resourcefetcher/compositeResourceFetcher'
+import { FileResourceFetcher } from '../../shared/resourcefetcher/fileResourceFetcher'
+import { HttpResourceFetcher } from '../../shared/resourcefetcher/httpResourceFetcher'
+import { ResourceFetcher } from '../../shared/resourcefetcher/resourcefetcher'
 import {
     AwsSamDebuggerConfiguration,
     isCodeTargetProperties,
@@ -17,6 +25,7 @@ import * as input from '../../shared/ui/input'
 import * as picker from '../../shared/ui/picker'
 import { addCodiconToString } from '../../shared/utilities/textUtilities'
 import { createVueWebview } from '../../webviews/main'
+import { sampleRequestManifestPath, sampleRequestPath } from '../constants'
 
 export function registerSamInvokeVueCommand(context: ExtContext): vscode.Disposable {
     return vscode.commands.registerCommand('aws.lambda.vueTest', async () => {
@@ -87,7 +96,7 @@ async function loadSamLaunchConfig(postMessageFn: (response: SamInvokerResponse)
     if (!workspaceFolder) {
         // TODO Localize
         vscode.window.showErrorMessage('No workspace folder found.')
-        return undefined
+        return
     }
     const uri = workspaceFolder.uri
     const launchConfig = new LaunchConfiguration(uri)
@@ -95,7 +104,7 @@ async function loadSamLaunchConfig(postMessageFn: (response: SamInvokerResponse)
     if (pickerItems.length === 0) {
         // TODO Localize
         vscode.window.showErrorMessage('No launch configurations found')
-        return undefined
+        return
     }
     const qp = picker.createQuickPick({
         items: pickerItems,
@@ -106,7 +115,6 @@ async function loadSamLaunchConfig(postMessageFn: (response: SamInvokerResponse)
 
     const choices = await picker.promptUser({
         picker: qp,
-        onDidTriggerButton: (button, resolve, reject) => {},
     })
     const pickerResponse = picker.verifySinglePickerOutput<LaunchConfigPickItem>(choices)
 
@@ -120,19 +128,97 @@ async function loadSamLaunchConfig(postMessageFn: (response: SamInvokerResponse)
     })
 }
 
+interface SampleRequestManifest {
+    requests: {
+        request: {
+            name?: string
+            filename?: string
+        }[]
+    }
+}
+
+interface SampleQuickPickItem extends vscode.QuickPickItem {
+    filename: string
+}
+
 /**
  * Open a quick pick containing upstream sample payloads.
  * Call back into the webview with the contents of the payload to add to the JSON field.
  * @param postMessageFn
  */
-async function getSamplePayload(postMessageFn: (response: SamInvokerResponse) => Thenable<boolean>): Promise<void> {}
+async function getSamplePayload(postMessageFn: (response: SamInvokerResponse) => Thenable<boolean>): Promise<void> {
+    // stolen from invokeLambda.ts
+    try {
+        const sampleInput = await makeSampleRequestManifestResourceFetcher().get()
+
+        if (!sampleInput) {
+            throw new Error('Unable to retrieve Sample Request manifest')
+        }
+
+        getLogger().debug(`Loaded: ${sampleInput}`)
+
+        const inputs: SampleQuickPickItem[] = []
+
+        await new Promise<void>((resolve, reject) => {
+            xml2js.parseString(sampleInput, { explicitArray: false }, (err: Error, result: SampleRequestManifest) => {
+                if (err) {
+                    reject()
+                }
+
+                _.forEach(result.requests.request, r => {
+                    inputs.push({ label: r.name ?? '', filename: r.filename ?? '' })
+                })
+                resolve()
+            })
+        })
+
+        const qp = picker.createQuickPick({
+            items: inputs,
+            options: {
+                title: 'Pick a sample input',
+            },
+        })
+
+        const choices = await picker.promptUser({
+            picker: qp,
+        })
+        const pickerResponse = picker.verifySinglePickerOutput<SampleQuickPickItem>(choices)
+
+        if (!pickerResponse) {
+            return
+        }
+        const sampleUrl = `${sampleRequestPath}${pickerResponse.filename}`
+        const sample = (await new HttpResourceFetcher(sampleUrl, { showUrl: true }).get()) ?? ''
+        // declaring here so we don't get an error
+        sample
+
+        postMessageFn({
+            command: 'TODO: Define events that the frontend can use',
+            // data: {
+            //     payload: sample
+            // }
+        })
+    } catch (err) {
+        getLogger().error('Error getting manifest data..: %O', err as Error)
+    }
+}
+
+function makeSampleRequestManifestResourceFetcher(): ResourceFetcher {
+    return new CompositeResourceFetcher(
+        new HttpResourceFetcher(sampleRequestManifestPath, { showUrl: true }),
+        new FileResourceFetcher(ext.manifestPaths.lambdaSampleRequests)
+    )
+}
 
 /**
  * Get all templates in the registry.
  * Call back into the webview with the registry contents.
  * @param postMessageFn
  */
-async function getTemplates(postMessageFn: (response: SamInvokerResponse) => Thenable<boolean>): Promise<void> {}
+async function getTemplates(postMessageFn: (response: SamInvokerResponse) => Thenable<boolean>): Promise<void> {
+    const items = ext.templateRegistry.registeredItems
+    items[0].item
+}
 
 interface LaunchConfigPickItem extends vscode.QuickPickItem {
     index: number
@@ -149,7 +235,7 @@ async function saveLaunchConfig(config: AwsSamDebuggerConfiguration): Promise<vo
     if (!uri) {
         // TODO Localize
         vscode.window.showErrorMessage('Toolkit requires a target resource in order to save a debug configuration')
-        return undefined
+        return
     }
     const launchConfig = new LaunchConfiguration(uri)
     const pickerItems = getLaunchConfigQuickPickItems(launchConfig, uri)
@@ -168,7 +254,6 @@ async function saveLaunchConfig(config: AwsSamDebuggerConfiguration): Promise<vo
 
     const choices = await picker.promptUser({
         picker: qp,
-        onDidTriggerButton: (button, resolve, reject) => {},
     })
     const pickerResponse = picker.verifySinglePickerOutput<LaunchConfigPickItem>(choices)
 
@@ -190,7 +275,14 @@ async function saveLaunchConfig(config: AwsSamDebuggerConfiguration): Promise<vo
             })
         }
     } else {
-        launchConfig.editDebugConfiguration(config, pickerResponse.index)
+        // use existing label
+        launchConfig.editDebugConfiguration(
+            {
+                ...config,
+                name: pickerResponse.label,
+            },
+            pickerResponse.index
+        )
     }
 }
 
