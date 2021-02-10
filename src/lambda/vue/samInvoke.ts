@@ -81,7 +81,44 @@ async function handleFrontendToBackendMessage(
  * Call back into the webview with the selected launch config.
  * @param postMessageFn
  */
-async function loadSamLaunchConfig(postMessageFn: (response: SamInvokerResponse) => Thenable<boolean>): Promise<void> {}
+async function loadSamLaunchConfig(postMessageFn: (response: SamInvokerResponse) => Thenable<boolean>): Promise<void> {
+    // TODO: Find a better way to infer this. Might need another arg from the frontend (depends on the context in which the launch config is made?)
+    const workspaceFolder = vscode.workspace.workspaceFolders?.length ? vscode.workspace.workspaceFolders[0] : undefined
+    if (!workspaceFolder) {
+        // TODO Localize
+        vscode.window.showErrorMessage('No workspace folder found.')
+        return undefined
+    }
+    const uri = workspaceFolder.uri
+    const launchConfig = new LaunchConfiguration(uri)
+    const pickerItems = getLaunchConfigQuickPickItems(launchConfig, uri)
+    if (pickerItems.length === 0) {
+        // TODO Localize
+        vscode.window.showErrorMessage('No launch configurations found')
+        return undefined
+    }
+    const qp = picker.createQuickPick({
+        items: pickerItems,
+        options: {
+            title: 'Select Debug Configuration',
+        },
+    })
+
+    const choices = await picker.promptUser({
+        picker: qp,
+        onDidTriggerButton: (button, resolve, reject) => {},
+    })
+    const pickerResponse = picker.verifySinglePickerOutput<LaunchConfigPickItem>(choices)
+
+    if (!pickerResponse) {
+        return
+    }
+    postMessageFn({
+        command: 'TODO: Define events that the frontend can use',
+        // also add response item
+        // data: pickerResponse.data
+    })
+}
 
 /**
  * Open a quick pick containing upstream sample payloads.
@@ -97,7 +134,7 @@ async function getSamplePayload(postMessageFn: (response: SamInvokerResponse) =>
  */
 async function getTemplates(postMessageFn: (response: SamInvokerResponse) => Thenable<boolean>): Promise<void> {}
 
-interface SaveLaunchConfigPickItem extends vscode.QuickPickItem {
+interface LaunchConfigPickItem extends vscode.QuickPickItem {
     index: number
 }
 
@@ -115,25 +152,10 @@ async function saveLaunchConfig(config: AwsSamDebuggerConfiguration): Promise<vo
         return undefined
     }
     const launchConfig = new LaunchConfiguration(uri)
-    const samValidator = new DefaultAwsSamDebugConfigurationValidator(vscode.workspace.getWorkspaceFolder(uri))
-    const existingConfigs = launchConfig.getDebugConfigurations()
-    const pickerItems: SaveLaunchConfigPickItem[] = existingConfigs
-        .map((val, index) => {
-            return {
-                config: val,
-                index,
-            }
-        })
-        .filter(o => samValidator.validate(((o as any) as AwsSamDebuggerConfiguration).config)?.isValid)
-        .map(val => {
-            return {
-                index: val.index,
-                label: val.config.name,
-            }
-        })
+    const pickerItems = getLaunchConfigQuickPickItems(launchConfig, uri)
 
     pickerItems.unshift({
-        label: addCodiconToString('plus', 'Create New Debug Configuration'),
+        label: addCodiconToString('add', 'Create New Debug Configuration'),
         index: -1,
     })
 
@@ -148,7 +170,7 @@ async function saveLaunchConfig(config: AwsSamDebuggerConfiguration): Promise<vo
         picker: qp,
         onDidTriggerButton: (button, resolve, reject) => {},
     })
-    const pickerResponse = picker.verifySinglePickerOutput<SaveLaunchConfigPickItem>(choices)
+    const pickerResponse = picker.verifySinglePickerOutput<LaunchConfigPickItem>(choices)
 
     if (!pickerResponse) {
         return
@@ -191,4 +213,23 @@ function getUriFromLaunchConfig(config: AwsSamDebuggerConfiguration): vscode.Uri
     } else if (isCodeTargetProperties(config.invokeTarget)) {
         return vscode.Uri.file(config.invokeTarget.target)
     }
+}
+
+function getLaunchConfigQuickPickItems(launchConfig: LaunchConfiguration, uri: vscode.Uri): LaunchConfigPickItem[] {
+    const existingConfigs = launchConfig.getDebugConfigurations()
+    const samValidator = new DefaultAwsSamDebugConfigurationValidator(vscode.workspace.getWorkspaceFolder(uri))
+    return existingConfigs
+        .map((val, index) => {
+            return {
+                config: val,
+                index,
+            }
+        })
+        .filter(o => samValidator.validate(((o as any) as AwsSamDebuggerConfiguration).config)?.isValid)
+        .map(val => {
+            return {
+                index: val.index,
+                label: val.config.name,
+            }
+        })
 }
