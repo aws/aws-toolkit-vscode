@@ -4,6 +4,7 @@
  */
 
 import * as vscode from 'vscode'
+import { AwsSamDebuggerConfiguration } from '../../shared/sam/debugger/awsSamDebugConfiguration'
 import { createVueWebview } from '../../webviews/main'
 
 export function registerSamInvokeVueCommand(context: vscode.ExtensionContext): vscode.Disposable {
@@ -12,40 +13,83 @@ export function registerSamInvokeVueCommand(context: vscode.ExtensionContext): v
             id: 'create',
             name: 'VueTest',
             webviewJs: 'samInvokeVue.js',
-            onDidReceiveMessageFunction: handleMessage,
+            onDidReceiveMessageFunction: handleFrontendToBackendMessage,
             context,
         })
     })
 }
 
 export interface BackendToFrontend {
-    newText: string
+    command: 'loadLaunchConfig' | 'loadSamplePayload' | 'loadTemplates'
 }
 
-export interface FrontendToBackend {
-    messageText: string
+export interface FrontendToBackendBasicRequest {
+    command: 'loadSamLaunchConfig' | 'getSamplePayload' | 'getTemplates'
 }
 
-export async function handleMessage(
-    message: FrontendToBackend,
+export interface FrontendToBackendLaunchConfigRequest {
+    command: 'saveLaunchConfig' | 'invokeLaunchConfig'
+    data: {
+        launchConfig: AwsSamDebuggerConfiguration
+    }
+}
+
+async function handleFrontendToBackendMessage(
+    message: FrontendToBackendBasicRequest | FrontendToBackendLaunchConfigRequest,
     postMessageFn: (response: BackendToFrontend) => Thenable<boolean>,
     destroyWebviewFn: () => any
 ): Promise<any> {
-    // message handler here!
-    // https://github.com/aws/aws-toolkit-vscode/blob/experiments/react-hooks/src/webviews/activation.ts#L39 for inspiration
-    const val = await vscode.window.showInformationMessage(message.messageText, 'Reply', 'Close Webview')
-
-    if (val === 'Reply') {
-        const reply = await vscode.window.showInputBox({ prompt: 'Write somethin will ya?' })
-        if (reply) {
-            const success = await postMessageFn({ newText: reply })
-            if (!success) {
-                vscode.window.showInformationMessage('webview message fail')
-            }
-        } else {
-            vscode.window.showInformationMessage('You should type something...')
-        }
-    } else if (val === 'Close Webview') {
-        destroyWebviewFn()
+    switch (message.command) {
+        case 'loadSamLaunchConfig':
+            loadSamLaunchConfig(postMessageFn)
+            break
+        case 'getSamplePayload':
+            getSamplePayload(postMessageFn)
+            break
+        case 'getTemplates':
+            getTemplates(postMessageFn)
+            break
+        case 'saveLaunchConfig':
+            saveLaunchConfig(message.data.launchConfig)
+            break
+        case 'invokeLaunchConfig':
+            invokeLaunchConfig(message.data.launchConfig)
+            break
     }
 }
+
+/**
+ * Open a quick pick containing the names of launch configs in the `launch.json` array.
+ * Filter out non-supported launch configs.
+ * Call back into the webview with the selected launch config.
+ * @param postMessageFn
+ */
+async function loadSamLaunchConfig(postMessageFn: (response: BackendToFrontend) => Thenable<boolean>) {}
+
+/**
+ * Open a quick pick containing upstream sample payloads.
+ * Call back into the webview with the contents of the payload to add to the JSON field.
+ * @param postMessageFn
+ */
+async function getSamplePayload(postMessageFn: (response: BackendToFrontend) => Thenable<boolean>) {}
+
+/**
+ * Get all templates in the registry.
+ * Call back into the webview with the registry contents.
+ * @param postMessageFn
+ */
+async function getTemplates(postMessageFn: (response: BackendToFrontend) => Thenable<boolean>) {}
+
+/**
+ * Open a quick pick containing the names of launch configs in the `launch.json` array, plus a "Create New Entry" entry.
+ * On selecting a name, overwrite the existing entry in the `launch.json` array and resave the file.
+ * On selecting "Create New Entry", prompt the user for a name and save the contents to the end of the `launch.json` array.
+ * @param config Config to save
+ */
+async function saveLaunchConfig(config: AwsSamDebuggerConfiguration) {}
+
+/**
+ * Validate and execute the provided launch config.
+ * @param config
+ */
+async function invokeLaunchConfig(config: AwsSamDebuggerConfiguration) {}
