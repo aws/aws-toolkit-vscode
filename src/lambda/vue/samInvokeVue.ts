@@ -5,14 +5,13 @@
 
 import Vue, { VNode } from 'vue'
 import { VsCode } from '../../webviews/main'
-import { BackendToFrontend, FrontendToBackend } from './samInvoke'
 
-declare const vscode: VsCode<FrontendToBackend, any>
+declare const vscode: VsCode<any, any>
 
 export const Component = Vue.extend({
     created() {
         window.addEventListener('message', ev => {
-            const data = ev.data as BackendToFrontend
+            const data = ev.data
             this.msg = data.newText
         })
     },
