@@ -11,7 +11,11 @@ import {
     isCodeTargetProperties,
     isTemplateTargetProperties,
 } from '../../shared/sam/debugger/awsSamDebugConfiguration'
+import { DefaultAwsSamDebugConfigurationValidator } from '../../shared/sam/debugger/awsSamDebugConfigurationValidator'
 import { SamDebugConfigProvider } from '../../shared/sam/debugger/awsSamDebugger'
+import * as input from '../../shared/ui/input'
+import * as picker from '../../shared/ui/picker'
+import { addCodiconToString } from '../../shared/utilities/textUtilities'
 import { createVueWebview } from '../../webviews/main'
 
 export function registerSamInvokeVueCommand(context: ExtContext): vscode.Disposable {
@@ -93,6 +97,10 @@ async function getSamplePayload(postMessageFn: (response: SamInvokerResponse) =>
  */
 async function getTemplates(postMessageFn: (response: SamInvokerResponse) => Thenable<boolean>): Promise<void> {}
 
+interface SaveLaunchConfigPickItem extends vscode.QuickPickItem {
+    index: number
+}
+
 /**
  * Open a quick pick containing the names of launch configs in the `launch.json` array, plus a "Create New Entry" entry.
  * On selecting a name, overwrite the existing entry in the `launch.json` array and resave the file.
@@ -107,9 +115,61 @@ async function saveLaunchConfig(config: AwsSamDebuggerConfiguration): Promise<vo
         return undefined
     }
     const launchConfig = new LaunchConfiguration(uri)
-    const existingConfigs = launchConfig.getSamDebugConfigurations()
-    // TODO: Create quick pick
-    //
+    const samValidator = new DefaultAwsSamDebugConfigurationValidator(vscode.workspace.getWorkspaceFolder(uri))
+    const existingConfigs = launchConfig.getDebugConfigurations()
+    const pickerItems: SaveLaunchConfigPickItem[] = existingConfigs
+        .map((val, index) => {
+            return {
+                config: val,
+                index,
+            }
+        })
+        .filter(o => samValidator.validate(((o as any) as AwsSamDebuggerConfiguration).config)?.isValid)
+        .map(val => {
+            return {
+                index: val.index,
+                label: val.config.name,
+            }
+        })
+
+    pickerItems.unshift({
+        label: addCodiconToString('plus', 'Create New Debug Configuration'),
+        index: -1,
+    })
+
+    const qp = picker.createQuickPick({
+        items: pickerItems,
+        options: {
+            title: 'Select Debug Configuration',
+        },
+    })
+
+    const choices = await picker.promptUser({
+        picker: qp,
+        onDidTriggerButton: (button, resolve, reject) => {},
+    })
+    const pickerResponse = picker.verifySinglePickerOutput<SaveLaunchConfigPickItem>(choices)
+
+    if (!pickerResponse) {
+        return
+    }
+
+    if (pickerResponse.index === -1) {
+        const ib = input.createInputBox({
+            options: {
+                prompt: 'Enter Name For Debug Configuration',
+            },
+        })
+        const response = await input.promptUser({ inputBox: ib })
+        if (response) {
+            launchConfig.addDebugConfiguration({
+                ...config,
+                name: response,
+            })
+        }
+    } else {
+        launchConfig.editDebugConfiguration(config, pickerResponse.index)
+    }
 }
 
 /**
@@ -118,13 +178,11 @@ async function saveLaunchConfig(config: AwsSamDebuggerConfiguration): Promise<vo
  * @param config Config to invoke
  */
 async function invokeLaunchConfig(config: AwsSamDebuggerConfiguration, context: ExtContext): Promise<void> {
-    const provider = new SamDebugConfigProvider(context)
-
     const targetUri = getUriFromLaunchConfig(config)
 
     const folder = targetUri ? vscode.workspace.getWorkspaceFolder(targetUri) : undefined
 
-    await provider.resolveDebugConfiguration(folder, config)
+    await new SamDebugConfigProvider(context).resolveDebugConfiguration(folder, config)
 }
 
 function getUriFromLaunchConfig(config: AwsSamDebuggerConfiguration): vscode.Uri | undefined {
