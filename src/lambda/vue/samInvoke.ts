@@ -16,7 +16,7 @@ import { createVueWebview } from '../../webviews/main'
 
 export function registerSamInvokeVueCommand(context: ExtContext): vscode.Disposable {
     return vscode.commands.registerCommand('aws.lambda.vueTest', async () => {
-        await createVueWebview<SamInvokerRequest | SamInvokerLaunchRequest, SamInvokerResponse, any>({
+        await createVueWebview<SamInvokerRequest, SamInvokerResponse, any>({
             id: 'create',
             name: 'VueTest',
             webviewJs: 'samInvokeVue.js',
@@ -33,7 +33,7 @@ export interface SamInvokerResponse {
     command: 'TODO: Define events that the frontend can use'
 }
 
-export interface SamInvokerRequest {
+export interface SamInvokerBasicRequest {
     command: 'loadSamLaunchConfig' | 'getSamplePayload' | 'getTemplates'
 }
 
@@ -44,8 +44,10 @@ export interface SamInvokerLaunchRequest {
     }
 }
 
+export type SamInvokerRequest = SamInvokerBasicRequest | SamInvokerLaunchRequest
+
 async function handleFrontendToBackendMessage(
-    message: SamInvokerRequest | SamInvokerLaunchRequest,
+    message: SamInvokerRequest,
     postMessageFn: (response: SamInvokerResponse) => Thenable<boolean>,
     destroyWebviewFn: () => any,
     context: ExtContext
