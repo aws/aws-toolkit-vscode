@@ -12,14 +12,15 @@ import { LambdaFunctionNode } from './explorer/lambdaFunctionNode'
 import { importLambdaCommand } from './commands/importLambda'
 import { tryRemoveFolder } from '../shared/filesystemUtilities'
 import { registerSamInvokeVueCommand } from './vue/samInvoke'
+import { ExtContext } from '../shared/extensions'
 
 /**
  * Activates Lambda components.
  */
-export async function activate(extensionContext: vscode.ExtensionContext): Promise<void> {
+export async function activate(context: ExtContext): Promise<void> {
     const outputChannel = vscode.window.createOutputChannel('AWS Lambda')
 
-    extensionContext.subscriptions.push(
+    context.extensionContext.subscriptions.push(
         vscode.commands.registerCommand(
             'aws.deleteLambda',
             async (node: LambdaFunctionNode) =>
@@ -55,6 +56,6 @@ export async function activate(extensionContext: vscode.ExtensionContext): Promi
         vscode.commands.registerCommand('aws.uploadLambda', async (node: LambdaFunctionNode) => {
             await uploadLambdaCommand(node)
         }),
-        registerSamInvokeVueCommand(extensionContext)
+        registerSamInvokeVueCommand(context)
     )
 }
