@@ -45,8 +45,26 @@ export function registerSamInvokeVueCommand(context: ExtContext): vscode.Disposa
 
 // TODO: Better names for all the interfaces
 
-export interface SamInvokerResponse {
-    command: 'loadSamLaunchConfig' | 'getSamplePayload' | 'getTemplate'
+export interface LoadSamLaunchConfigResponse {
+    command: 'loadSamLaunchConfig'
+    data: {
+        launchConfig: AwsSamDebuggerConfiguration
+    }
+}
+
+export interface GetSamplePayloadResponse {
+    command: 'getSamplePayload'
+    data: {
+        payload: string
+    }
+}
+
+export interface GetTemplateResponse {
+    command: 'getTemplate'
+    data: {
+        template: string
+        logicalId: string
+    }
 }
 
 export interface SamInvokerBasicRequest {
@@ -61,6 +79,7 @@ export interface SamInvokerLaunchRequest {
 }
 
 export type SamInvokerRequest = SamInvokerBasicRequest | SamInvokerLaunchRequest
+export type SamInvokerResponse = LoadSamLaunchConfigResponse | GetSamplePayloadResponse | GetTemplateResponse
 
 async function handleFrontendToBackendMessage(
     message: SamInvokerRequest,
@@ -126,8 +145,9 @@ async function loadSamLaunchConfig(postMessageFn: (response: SamInvokerResponse)
     }
     postMessageFn({
         command: 'loadSamLaunchConfig',
-        // also add response item
-        // data: pickerResponse.data
+        data: {
+            launchConfig: pickerResponse.config!,
+        },
     })
 }
 
@@ -197,9 +217,9 @@ async function getSamplePayload(postMessageFn: (response: SamInvokerResponse) =>
 
         postMessageFn({
             command: 'getSamplePayload',
-            // data: {
-            //     payload: sample
-            // }
+            data: {
+                payload: sample,
+            },
         })
     } catch (err) {
         getLogger().error('Error getting manifest data..: %O', err as Error)
@@ -218,6 +238,7 @@ async function getTemplates(postMessageFn: (response: SamInvokerResponse) => The
 
 interface LaunchConfigPickItem extends vscode.QuickPickItem {
     index: number
+    config?: AwsSamDebuggerConfiguration
 }
 
 /**
@@ -340,6 +361,7 @@ function getLaunchConfigQuickPickItems(launchConfig: LaunchConfiguration, uri: v
             return {
                 index: val.index,
                 label: val.config.name,
+                config: val.config as AwsSamDebuggerConfiguration,
             }
         })
 }
