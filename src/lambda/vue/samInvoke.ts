@@ -29,6 +29,7 @@ import { addCodiconToString } from '../../shared/utilities/textUtilities'
 import { createVueWebview } from '../../webviews/main'
 import { sampleRequestManifestPath, sampleRequestPath } from '../constants'
 import { tryGetAbsolutePath } from '../../shared/utilities/workspaceUtils'
+import { CloudFormation } from '../../shared/cloudformation/cloudformation'
 
 export function registerSamInvokeVueCommand(context: ExtContext): vscode.Disposable {
     return vscode.commands.registerCommand('aws.lambda.vueTest', async () => {
@@ -95,7 +96,7 @@ async function handleFrontendToBackendMessage(
             getSamplePayload(postMessageFn)
             break
         case 'getTemplate':
-            getTemplates(postMessageFn)
+            getTemplate(postMessageFn)
             break
         case 'saveLaunchConfig':
             saveLaunchConfig(message.data.launchConfig)
@@ -231,9 +232,55 @@ async function getSamplePayload(postMessageFn: (response: SamInvokerResponse) =>
  * Call back into the webview with the registry contents.
  * @param postMessageFn
  */
-async function getTemplates(postMessageFn: (response: SamInvokerResponse) => Thenable<boolean>): Promise<void> {
-    const items = ext.templateRegistry.registeredItems
-    items[0].item
+async function getTemplate(postMessageFn: (response: SamInvokerResponse) => Thenable<boolean>): Promise<void> {
+    const items: (vscode.QuickPickItem & { templatePath: string })[] = []
+    for (const template of ext.templateRegistry.registeredItems) {
+        const resources = template.item.Resources
+        if (resources) {
+            for (const resource of Object.keys(resources)) {
+                if (
+                    resources[resource]?.Type === CloudFormation.LAMBDA_FUNCTION_TYPE ||
+                    resources[resource]?.Type === CloudFormation.SERVERLESS_FUNCTION_TYPE ||
+                    resources[resource]?.Type === CloudFormation.SERVERLESS_API_TYPE
+                ) {
+                    items.push({
+                        label: resource,
+                        detail: `Template: ${template.path}`,
+                        templatePath: template.path,
+                    })
+                }
+            }
+        }
+    }
+
+    if (items.length === 0) {
+        vscode.window.showWarningMessage('No templates with valid SAM functions found.')
+        return
+    }
+
+    const qp = picker.createQuickPick({
+        items,
+        options: {
+            title: 'Select Resource',
+        },
+    })
+
+    const choices = await picker.promptUser({
+        picker: qp,
+    })
+    const selectedTemplate = picker.verifySinglePickerOutput(choices)
+
+    if (!selectedTemplate) {
+        return
+    }
+
+    postMessageFn({
+        command: 'getTemplate',
+        data: {
+            logicalId: selectedTemplate.label,
+            template: selectedTemplate.templatePath,
+        },
+    })
 }
 
 interface LaunchConfigPickItem extends vscode.QuickPickItem {

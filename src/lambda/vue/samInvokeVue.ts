@@ -6,20 +6,30 @@
 import Vue, { VNode } from 'vue'
 import { AwsSamDebuggerConfiguration } from '../../shared/sam/debugger/awsSamDebugConfiguration'
 import { VsCode } from '../../webviews/main'
-import { SamInvokerRequest } from './samInvoke'
+import { SamInvokerRequest, SamInvokerResponse } from './samInvoke'
 
 declare const vscode: VsCode<SamInvokerRequest, any>
 
 interface Data {
-    msg: string
+    msg: any
     launchConfig: AwsSamDebuggerConfiguration
 }
 
 export const Component = Vue.extend({
     created() {
         window.addEventListener('message', ev => {
-            const data = ev.data
-            this.msg = data.newText
+            const event = ev.data as SamInvokerResponse
+            switch (event.command) {
+                case 'getSamplePayload':
+                    this.msg = event.data.payload
+                    break
+                case 'getTemplate':
+                    this.msg = `${event.data.template} ${event.data.logicalId}`
+                    break
+                case 'loadSamLaunchConfig':
+                    this.msg = `${event.data.launchConfig.name} ${event.data.launchConfig.type} ${event.data.launchConfig.invokeTarget}`
+                    break
+            }
         })
     },
     data(): Data {
@@ -43,10 +53,6 @@ export const Component = Vue.extend({
         }
     },
     methods: {
-        // need annotation due to `this` in return type
-        greet(): string {
-            return this.msg + ' world'
-        },
         launch() {
             vscode.postMessage({
                 // command: 'saveLaunchConfig',
@@ -65,16 +71,30 @@ export const Component = Vue.extend({
                 },
             })
         },
-    },
-    computed: {
-        // need annotation
-        greeting(): string {
-            return this.greet() + '!'
+        loadConfig() {
+            vscode.postMessage({
+                command: 'loadSamLaunchConfig',
+            })
+        },
+        loadPayload() {
+            vscode.postMessage({
+                command: 'getSamplePayload',
+            })
+        },
+        loadResource() {
+            vscode.postMessage({
+                command: 'getTemplate',
+            })
         },
     },
     // `createElement` is inferred, but `render` needs return type
-    template:
-        '<div> {{ this.greeting }} <button v-on:click="launch">Invoke</button> <button v-on:click="save">Save</button> </div>',
+    template: `<div> {{ this.msg }} </nbsp>
+            <button v-on:click="launch">Invoke</button>
+            <button v-on:click="save">Save</button>
+            <button v-on:click="loadConfig">Load Config</button>
+            <button v-on:click="loadPayload">Load Payload</button>
+            <button v-on:click="loadResource">Load Resource</button>
+        </div>`,
 })
 
 new Vue({
