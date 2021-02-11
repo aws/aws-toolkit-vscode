@@ -203,13 +203,6 @@ async function getSamplePayload(postMessageFn: (response: SamInvokerResponse) =>
     }
 }
 
-function makeSampleRequestManifestResourceFetcher(): ResourceFetcher {
-    return new CompositeResourceFetcher(
-        new HttpResourceFetcher(sampleRequestManifestPath, { showUrl: true }),
-        new FileResourceFetcher(ext.manifestPaths.lambdaSampleRequests)
-    )
-}
-
 /**
  * Get all templates in the registry.
  * Call back into the webview with the registry contents.
@@ -305,6 +298,13 @@ function getUriFromLaunchConfig(config: AwsSamDebuggerConfiguration): vscode.Uri
     } else if (isCodeTargetProperties(config.invokeTarget)) {
         return vscode.Uri.file(config.invokeTarget.target)
     }
+}
+
+function makeSampleRequestManifestResourceFetcher(): ResourceFetcher {
+    return new CompositeResourceFetcher(
+        new HttpResourceFetcher(sampleRequestManifestPath, { showUrl: true }),
+        new FileResourceFetcher(ext.manifestPaths.lambdaSampleRequests)
+    )
 }
 
 function getLaunchConfigQuickPickItems(launchConfig: LaunchConfiguration, uri: vscode.Uri): LaunchConfigPickItem[] {

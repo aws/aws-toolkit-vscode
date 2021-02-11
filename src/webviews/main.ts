@@ -15,6 +15,9 @@ interface WebviewParams<TRequest, TResponse, TState> {
     initialState?: TState
     persistSessions?: boolean
     persistWithoutFocus?: boolean
+    cssFiles?: string[]
+    jsFiles?: string[]
+    libFiles?: string[]
     onDidReceiveMessageFunction(
         request: TRequest,
         postMessageFn: (response: TResponse) => Thenable<boolean>,
@@ -49,14 +52,29 @@ export async function createVueWebview<TRequest, TResponse, TState>(
         retainContextWhenHidden: params.persistWithoutFocus,
     })
 
-    const loadLibs = ExtensionUtilities.getFilesAsVsCodeResources(libsPath, ['vue.min.js'], view.webview).concat(
-        ExtensionUtilities.getFilesAsVsCodeResources(jsPath, ['loadVsCodeApi.js'], view.webview)
+    const loadLibs = ExtensionUtilities.getFilesAsVsCodeResources(
+        libsPath,
+        ['vue.min.js', ...(params.libFiles ?? [])],
+        view.webview
+    ).concat(
+        ExtensionUtilities.getFilesAsVsCodeResources(
+            jsPath,
+            ['loadVsCodeApi.js', ...(params.jsFiles ?? [])],
+            view.webview
+        )
     )
 
+    const loadCss = ExtensionUtilities.getFilesAsVsCodeResources(cssPath, [...(params.cssFiles ?? [])], view.webview)
+
     let scripts: string = ''
+    let stylesheets: string = ''
 
     loadLibs.forEach(element => {
         scripts = scripts.concat(`<script src="${element}"></script>\n\n`)
+    })
+
+    loadCss.forEach(element => {
+        stylesheets = stylesheets.concat(`<link rel="stylesheet" href="${element}">\n\n`)
     })
 
     const mainScript: vscode.Uri = view.webview.asWebviewUri(vscode.Uri.file(path.join(webviewPath, params.webviewJs)))
