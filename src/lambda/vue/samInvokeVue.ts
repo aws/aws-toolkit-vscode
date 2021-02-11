@@ -8,13 +8,40 @@ import { AwsSamDebuggerConfiguration } from '../../shared/sam/debugger/awsSamDeb
 import { VsCode } from '../../webviews/main'
 import { SamInvokerRequest, SamInvokerResponse } from './samInvoke'
 
-declare const vscode: VsCode<SamInvokerRequest, any>
+declare const vscode: VsCode<SamInvokerRequest, Data>
 
 interface Data {
     msg: any
-    launchConfig: AwsSamDebuggerConfiguration
+    launchConfig: MorePermissiveAwsSamDebuggerConfiguration
 }
-
+interface MorePermissiveAwsSamDebuggerConfiguration extends AwsSamDebuggerConfiguration {
+    invokeTarget: {
+        target: 'template' | 'api' | 'code'
+        templatePath: string
+        logicalId: string
+        lambdaHandler: string
+        projectRoot: string
+    }
+}
+function newLaunchConfig(): MorePermissiveAwsSamDebuggerConfiguration {
+    return {
+        type: 'aws-sam',
+        request: 'direct-invoke',
+        name: '',
+        invokeTarget: {
+            target: 'template',
+            templatePath: '',
+            logicalId: '',
+            lambdaHandler: '',
+            projectRoot: '',
+        },
+        lambda: {
+            payload: {},
+            environmentVariables: {},
+            runtime: '',
+        },
+    }
+}
 export const Component = Vue.extend({
     created() {
         window.addEventListener('message', ev => {
@@ -27,7 +54,8 @@ export const Component = Vue.extend({
                     this.msg = `${event.data.template} ${event.data.logicalId}`
                     break
                 case 'loadSamLaunchConfig':
-                    this.msg = `${event.data.launchConfig.name} ${event.data.launchConfig.type} ${event.data.launchConfig.invokeTarget}`
+                    this.launchConfig = event.data.launchConfig as MorePermissiveAwsSamDebuggerConfiguration
+                    this.msg = `Loaded config ${event.data.launchConfig.name}`
                     break
             }
         })
@@ -35,21 +63,7 @@ export const Component = Vue.extend({
     data(): Data {
         return {
             msg: 'Hello',
-            launchConfig: {
-                type: 'aws-sam',
-                request: 'direct-invoke',
-                name: 'testapp:HelloWorldFunction (nodejs12.x)',
-                invokeTarget: {
-                    target: 'template',
-                    templatePath: 'testapp/template.yaml',
-                    logicalId: 'HelloWorldFunction',
-                },
-                lambda: {
-                    payload: {},
-                    environmentVariables: {},
-                    runtime: 'nodejs12.x',
-                },
-            },
+            launchConfig: newLaunchConfig(),
         }
     },
     methods: {
@@ -88,7 +102,7 @@ export const Component = Vue.extend({
         },
     },
     // `createElement` is inferred, but `render` needs return type
-    template: `<div> {{ this.msg }} </nbsp>
+    template: `<div> {{ this.launchConfig.invokeTarget.projectRoot }} <nbsp />
             <button v-on:click="launch">Invoke</button>
             <button v-on:click="save">Save</button>
             <button v-on:click="loadConfig">Load Config</button>
