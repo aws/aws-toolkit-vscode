@@ -5,6 +5,8 @@
 
 import _ = require('lodash')
 import xml2js = require('xml2js')
+import * as fs from 'fs-extra'
+import * as path from 'path'
 import * as vscode from 'vscode'
 import { LaunchConfiguration } from '../../shared/debug/launchConfiguration'
 import { ext } from '../../shared/extensionGlobals'
@@ -26,6 +28,7 @@ import * as picker from '../../shared/ui/picker'
 import { addCodiconToString } from '../../shared/utilities/textUtilities'
 import { createVueWebview } from '../../webviews/main'
 import { sampleRequestManifestPath, sampleRequestPath } from '../constants'
+import { tryGetAbsolutePath } from '../../shared/utilities/workspaceUtils'
 
 export function registerSamInvokeVueCommand(context: ExtContext): vscode.Disposable {
     return vscode.commands.registerCommand('aws.lambda.vueTest', async () => {
@@ -43,11 +46,11 @@ export function registerSamInvokeVueCommand(context: ExtContext): vscode.Disposa
 // TODO: Better names for all the interfaces
 
 export interface SamInvokerResponse {
-    command: 'TODO: Define events that the frontend can use'
+    command: 'loadSamLaunchConfig' | 'getSamplePayload' | 'getTemplate'
 }
 
 export interface SamInvokerBasicRequest {
-    command: 'loadSamLaunchConfig' | 'getSamplePayload' | 'getTemplates'
+    command: 'loadSamLaunchConfig' | 'getSamplePayload' | 'getTemplate'
 }
 
 export interface SamInvokerLaunchRequest {
@@ -72,7 +75,7 @@ async function handleFrontendToBackendMessage(
         case 'getSamplePayload':
             getSamplePayload(postMessageFn)
             break
-        case 'getTemplates':
+        case 'getTemplate':
             getTemplates(postMessageFn)
             break
         case 'saveLaunchConfig':
@@ -122,7 +125,7 @@ async function loadSamLaunchConfig(postMessageFn: (response: SamInvokerResponse)
         return
     }
     postMessageFn({
-        command: 'TODO: Define events that the frontend can use',
+        command: 'loadSamLaunchConfig',
         // also add response item
         // data: pickerResponse.data
     })
@@ -193,7 +196,7 @@ async function getSamplePayload(postMessageFn: (response: SamInvokerResponse) =>
         sample
 
         postMessageFn({
-            command: 'TODO: Define events that the frontend can use',
+            command: 'getSamplePayload',
             // data: {
             //     payload: sample
             // }
@@ -293,11 +296,26 @@ async function invokeLaunchConfig(config: AwsSamDebuggerConfiguration, context: 
 }
 
 function getUriFromLaunchConfig(config: AwsSamDebuggerConfiguration): vscode.Uri | undefined {
+    let targetPath: string
     if (isTemplateTargetProperties(config.invokeTarget)) {
-        return vscode.Uri.file(config.invokeTarget.templatePath)
+        targetPath = config.invokeTarget.templatePath
     } else if (isCodeTargetProperties(config.invokeTarget)) {
-        return vscode.Uri.file(config.invokeTarget.target)
+        targetPath = config.invokeTarget.projectRoot
+    } else {
+        // error
+        return undefined
     }
+    if (!path.isAbsolute(targetPath)) {
+        const workspaceFolders = vscode.workspace.workspaceFolders || []
+        for (const workspaceFolder of workspaceFolders) {
+            const absolutePath = tryGetAbsolutePath(workspaceFolder, targetPath)
+            if (fs.pathExistsSync(absolutePath)) {
+                return vscode.Uri.file(absolutePath)
+            }
+        }
+    }
+
+    return undefined
 }
 
 function makeSampleRequestManifestResourceFetcher(): ResourceFetcher {
@@ -317,7 +335,7 @@ function getLaunchConfigQuickPickItems(launchConfig: LaunchConfiguration, uri: v
                 index,
             }
         })
-        .filter(o => samValidator.validate(((o as any) as AwsSamDebuggerConfiguration).config)?.isValid)
+        .filter(o => samValidator.validate((o.config as any) as AwsSamDebuggerConfiguration)?.isValid)
         .map(val => {
             return {
                 index: val.index,
