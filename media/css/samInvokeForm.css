@@ -1,0 +1,44 @@
+form {
+    background-color: rgb(209, 218, 215);
+    color: black;
+    padding: 15px;
+}
+
+div {
+    margin: 20px;
+}
+
+button {
+    margin-right: 20px;
+    margin-bottom: 15px;
+}
+
+.config-item {
+    border: solid rgb(51, 51, 51) 2px;
+}
+
+.config-details {
+    border: rgb(211, 130, 38) dashed 3px;
+    padding: 15px;
+}
+
+.payload-section{
+    border: rgb(211, 130, 38) dashed 3px;
+    padding: 15px;
+}
+
+.data-view {
+    border: dashed rgb(218, 31, 31) 1px;
+    color: rgb(218, 31, 31)
+}
+
+.invoke-button-container {
+    display: flex;
+    flex-direction: row;
+    justify-content: flex-end;
+}
+
+#form-title {
+    font-size: large;
+    font-weight: bold;
+}

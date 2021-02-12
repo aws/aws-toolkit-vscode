@@ -40,6 +40,7 @@ export function registerSamInvokeVueCommand(context: ExtContext): vscode.Disposa
             onDidReceiveMessageFunction: async (message, postMessageFn, destroyWebviewFn) =>
                 handleFrontendToBackendMessage(message, postMessageFn, destroyWebviewFn, context),
             context: context.extensionContext,
+            cssFiles: ['samInvokeForm.css']
         })
     })
 }

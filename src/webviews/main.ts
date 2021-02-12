@@ -100,6 +100,7 @@ export async function createVueWebview<TRequest, TResponse, TState>(
         <div id="vueApp">{{ counter }}</div>
         <!-- Dependencies -->
         ${scripts}
+        ${stylesheets}
         <!-- Main -->
         <script src="${mainScript}"></script>
     </body>
