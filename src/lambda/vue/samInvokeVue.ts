@@ -8,7 +8,13 @@ import { AwsSamDebuggerConfiguration } from '../../shared/sam/debugger/awsSamDeb
 import { VsCode } from '../../webviews/main'
 import { SamInvokerRequest, SamInvokerResponse } from './samInvoke'
 
-declare const vscode: VsCode<SamInvokerRequest, MorePermissiveAwsSamDebuggerConfiguration>
+declare const vscode: VsCode<
+    SamInvokerRequest,
+    {
+        launchConfig: MorePermissiveAwsSamDebuggerConfiguration
+        payload: string
+    }
+>
 
 interface Data {
     msg: any
@@ -53,7 +59,8 @@ export const Component = Vue.extend({
     created() {
         const oldState = vscode.getState()
         if (oldState) {
-            this.launchConfig = oldState
+            this.launchConfig = oldState.launchConfig
+            this.payload = oldState.payload
         }
         window.addEventListener('message', ev => {
             const event = ev.data as SamInvokerResponse
@@ -99,7 +106,16 @@ export const Component = Vue.extend({
     },
     watch: {
         launchConfig: function (newval: MorePermissiveAwsSamDebuggerConfiguration) {
-            vscode.setState(newval)
+            vscode.setState({
+                payload: this.payload,
+                launchConfig: newval,
+            })
+        },
+        payload: function (newval: string) {
+            vscode.setState({
+                payload: newval,
+                launchConfig: this.launchConfig,
+            })
         },
     },
     methods: {

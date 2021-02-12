@@ -35,7 +35,7 @@ export function registerSamInvokeVueCommand(context: ExtContext): vscode.Disposa
     return vscode.commands.registerCommand('aws.lambda.vueTest', async () => {
         await createVueWebview<SamInvokerRequest, SamInvokerResponse, any>({
             id: 'create',
-            name: 'VueTest',
+            name: 'Invoke Local SAM Application',
             webviewJs: 'samInvokeVue.js',
             onDidReceiveMessageFunction: async (message, postMessageFn, destroyWebviewFn) =>
                 handleFrontendToBackendMessage(message, postMessageFn, destroyWebviewFn, context),

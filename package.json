@@ -71,7 +71,8 @@
         "onLanguage:javascript",
         "onLanguage:python",
         "onLanguage:csharp",
-        "onLanguage:yaml"
+        "onLanguage:yaml",
+        "onCommand:aws.lambda.vueTest"
     ],
     "main": "./extensionMain",
     "contributes": {

@@ -517,5 +517,6 @@
     "AWS.ssmDocument.ssm.maxItemsComputed.desc": "Controls the maximum number of problems produced by the SSM Document language server.",
     "AWS.picker.dynamic.noItemsFound.detail": "Click here to go back",
     "AWS.picker.dynamic.noItemsFound.label": "[No items found]",
-    "AWS.picker.dynamic.errorNode.label": "There was an error retrieving more items."
+    "AWS.picker.dynamic.errorNode.label": "There was an error retrieving more items.",
+    "AWS.command.vueTest": "Invoke Local SAM Application"
 }
