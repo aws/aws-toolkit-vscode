@@ -14,9 +14,10 @@
             <option :value="type.value" v-for="(type, index) in targetTypes" :key="index">{{ type.name }}</option>
         </select>
         <div class="config-details">
-            <button v-on:click.prevent="loadResource">Load Resource</button><br>
+            
             <div class="target-code" v-if="launchConfig.invokeTarget.target === 'code'">
-            <h2>Target: Code</h2>
+                <h2>Target: Code</h2>
+                <button v-on:click.prevent="loadResource">Load Resource</button><br>
                 <div class="config-item">
                     <label for="select-directory">Project Root</label>
                     <input id="select-directory" placeholder="Enter a directory"/>
@@ -29,6 +30,7 @@
                 <div class="config-item">
                     <label for="runtime-selector">Runtime</label>
                     <select name="runtimeType" id="target-code-runtime" v-model="launchConfig.lambda.runtime">
+                        <option disabled>Choose a runtime...</option>
                         <option v-for="(runtime, index) in runtimes" v-bind:value="runtime" :key="index">{{ runtime }}</option>
                     </select>
                         <span class="data-view">runtime in data:  {{ launchConfig.lambda.runtime }}</span>
@@ -36,6 +38,7 @@
             </div>
             <div class="target-template" v-else-if="launchConfig.invokeTarget.target === 'template'">
                 <h2>Target: Template</h2>
+                <button v-on:click.prevent="loadResource">Load Resource</button><br>
                 <div class="config-item">
                     <label for="template-path">Template Path</label>
                     <input id="template-path-button" v-model="launchConfig.invokeTarget.templatePath" placeholder="Enter the template path..."/><span class="data-view">Template path from data: {{launchConfig.invokeTarget.templatePath}}</span>
@@ -48,6 +51,7 @@
             </div>
             <div class="target-apigw" v-else-if="launchConfig.invokeTarget.target === 'api'" >
                 <h2>Target: API Gateway</h2>
+                <button v-on:click.prevent="loadResource">Load Resource</button><br>
                 <div class="config-item">
                     <label for="template-path-api">Template Path</label>
                     <button id="template-path-api-button">Select Template...</button>
@@ -75,13 +79,13 @@
         </div>
         <div class="payload-section">
             <h2>Payload</h2>
-            <button v-on:click.prevent="loadPayload">Load Payload</button><br>
+            <button v-on:click.prevent="loadPayload">Load Sample Payload</button><br>
             <textarea name="lambda-payload" id="lambda-payload" cols="30" rows="10" v-model="launchConfig.lambda.payload.json"></textarea>
             <span class="data-view">payload from data: {{launchConfig.lambda.payload.json}} </span>
         </div>
         <div class="invoke-button-container">
-            <button v-on:click.prevent="save">Save</button>
-            <button v-on:click.prevent="launch">Invoke</button>
+            <button v-on:click.prevent="save">Save Debug Configuration</button>
+            <button id="invoke-button" v-on:click.prevent="launch">Invoke Debug Configuration</button>
         </div>
     </form>
 </template>

@@ -3,7 +3,7 @@ form {
 }
 
 div {
-    margin: 20px;
+    margin-bottom: 20px;
 }
 
 button {
@@ -12,20 +12,23 @@ button {
 }
 
 .config-item {
-    border: solid rgb(51, 51, 51) 2px;
+    border-bottom: solid rgb(51, 51, 51) 1px;
+    display: grid;
+    grid-template-columns: 1fr 3fr;
 }
 
 .config-details {
-    border: rgb(211, 130, 38) dashed 3px;
+    margin-top: 20px;
+    border: rgb(211, 130, 38) dashed 1px;
     padding: 15px;
 }
 
 .payload-section{
-    border: rgb(211, 130, 38) dashed 3px;
-    padding: 15px;
+    padding-left: 15px;
 }
 
 .data-view {
+    display: none;
     border: dashed rgb(218, 31, 31) 1px;
     color: rgb(218, 31, 31)
 }
@@ -34,6 +37,7 @@ button {
     display: flex;
     flex-direction: row;
     justify-content: flex-end;
+    padding-right: 40px;
 }
 
 #form-title {
