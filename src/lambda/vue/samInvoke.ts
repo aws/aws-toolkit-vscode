@@ -40,7 +40,7 @@ export function registerSamInvokeVueCommand(context: ExtContext): vscode.Disposa
             onDidReceiveMessageFunction: async (message, postMessageFn, destroyWebviewFn) =>
                 handleFrontendToBackendMessage(message, postMessageFn, destroyWebviewFn, context),
             context: context.extensionContext,
-            cssFiles: ['samInvokeForm.css']
+            cssFiles: ['samInvokeForm.css'],
         })
     })
 }
@@ -374,13 +374,14 @@ function getUriFromLaunchConfig(config: AwsSamDebuggerConfiguration): vscode.Uri
         // error
         return undefined
     }
-    if (!path.isAbsolute(targetPath)) {
-        const workspaceFolders = vscode.workspace.workspaceFolders || []
-        for (const workspaceFolder of workspaceFolders) {
-            const absolutePath = tryGetAbsolutePath(workspaceFolder, targetPath)
-            if (fs.pathExistsSync(absolutePath)) {
-                return vscode.Uri.file(absolutePath)
-            }
+    if (path.isAbsolute(targetPath)) {
+        return vscode.Uri.file(targetPath)
+    }
+    const workspaceFolders = vscode.workspace.workspaceFolders || []
+    for (const workspaceFolder of workspaceFolders) {
+        const absolutePath = tryGetAbsolutePath(workspaceFolder, targetPath)
+        if (fs.pathExistsSync(absolutePath)) {
+            return vscode.Uri.file(absolutePath)
         }
     }
 

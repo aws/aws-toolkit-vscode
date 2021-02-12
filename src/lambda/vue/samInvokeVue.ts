@@ -8,11 +8,11 @@ import { AwsSamDebuggerConfiguration } from '../../shared/sam/debugger/awsSamDeb
 import { VsCode } from '../../webviews/main'
 import { SamInvokerRequest, SamInvokerResponse } from './samInvoke'
 
-declare const vscode: VsCode<SamInvokerRequest, Data>
+declare const vscode: VsCode<SamInvokerRequest, MorePermissiveAwsSamDebuggerConfiguration>
 
 interface Data {
     msg: any
-    targetTypes: {[k: string]: string}[]
+    targetTypes: { [k: string]: string }[]
     runtimes: string[]
     httpMethods: ['GET', 'POST', 'PUT']
     launchConfig: MorePermissiveAwsSamDebuggerConfiguration
@@ -40,8 +40,8 @@ function newLaunchConfig(): MorePermissiveAwsSamDebuggerConfiguration {
         },
         lambda: {
             payload: {
-                json:{},
-                path: ''
+                json: {},
+                path: '',
             },
             environmentVariables: {},
             runtime: '',
@@ -50,6 +50,10 @@ function newLaunchConfig(): MorePermissiveAwsSamDebuggerConfiguration {
 }
 export const Component = Vue.extend({
     created() {
+        const oldState = vscode.getState()
+        if (oldState) {
+            this.launchConfig = oldState
+        }
         window.addEventListener('message', ev => {
             const event = ev.data as SamInvokerResponse
             switch (event.command) {
@@ -70,11 +74,30 @@ export const Component = Vue.extend({
     data(): Data {
         return {
             msg: 'Hello',
-            targetTypes: [{name: 'Code', value: 'code'}, {name: 'Template' , value: 'template'}, {name: 'API Gateway (Template)', value: 'api'}],
-            runtimes: ['nodejs10.x','nodejs12.x', 'nodejs14.x', 'python2.7', 'python3.6', 'python3.7', 'python3.8', 'dotnetcore2.1', 'dotnetcore3.1'],
+            targetTypes: [
+                { name: 'Code', value: 'code' },
+                { name: 'Template', value: 'template' },
+                { name: 'API Gateway (Template)', value: 'api' },
+            ],
+            runtimes: [
+                'nodejs10.x',
+                'nodejs12.x',
+                'nodejs14.x',
+                'python2.7',
+                'python3.6',
+                'python3.7',
+                'python3.8',
+                'dotnetcore2.1',
+                'dotnetcore3.1',
+            ],
             httpMethods: ['GET', 'POST', 'PUT'],
             launchConfig: newLaunchConfig(),
         }
+    },
+    watch: {
+        launchConfig: function (newval: MorePermissiveAwsSamDebuggerConfiguration) {
+            vscode.setState(newval)
+        },
     },
     methods: {
         launch() {
@@ -109,6 +132,11 @@ export const Component = Vue.extend({
             vscode.postMessage({
                 command: 'getTemplate',
             })
+        },
+    },
+    computed: {
+        stringifyJson(): string {
+            return JSON.stringify(this.launchConfig.lambda?.payload?.json, undefined, 4)
         },
     },
     // `createElement` is inferred, but `render` needs return type
@@ -188,8 +216,8 @@ export const Component = Vue.extend({
            <div class="payload-section">
                <h3>Payload</h3>
                <button v-on:click.prevent="loadPayload">Load Payload</button><br>
-               <textarea name="lambda-payload" id="lambda-payload" cols="30" rows="10" v-model="launchConfig.lambda.payload.json"></textarea>
-               <span class="data-view">payload from data: {{launchConfig.lambda.payload.json}} </span>
+               <textarea name="lambda-payload" id="lambda-payload" cols="30" rows="10" v-model="stringifyJson"></textarea>
+               <span class="data-view">payload from data: {{stringifyJson}} </span>
                <div class="invoke-button-container">
                    <button v-on:click.prevent="save">Save</button>
                    <button v-on:click.prevent="launch">Invoke</button>
