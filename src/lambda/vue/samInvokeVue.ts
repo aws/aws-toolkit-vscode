@@ -4,19 +4,17 @@
  */
 
 import Vue, { VNode } from 'vue'
-import { AwsSamDebuggerConfiguration } from '../../shared/sam/debugger/awsSamDebugConfiguration'
 import { VsCode } from '../../webviews/main'
-import { SamInvokerRequest, SamInvokerResponse } from './samInvoke'
-
-declare const vscode: VsCode<
+import {
+    MorePermissiveAwsSamDebuggerConfiguration,
     SamInvokerRequest,
-    {
-        launchConfig: MorePermissiveAwsSamDebuggerConfiguration
-        payload: string
-    }
->
+    SamInvokerResponse,
+    SamInvokeVueState,
+} from './samInvoke'
 
-interface Data {
+declare const vscode: VsCode<SamInvokerRequest, SamInvokeVueState>
+
+export interface SamInvokeVueData {
     msg: any
     targetTypes: { [k: string]: string }[]
     runtimes: string[]
@@ -24,15 +22,7 @@ interface Data {
     launchConfig: MorePermissiveAwsSamDebuggerConfiguration
     payload: string
 }
-interface MorePermissiveAwsSamDebuggerConfiguration extends AwsSamDebuggerConfiguration {
-    invokeTarget: {
-        target: 'template' | 'api' | 'code'
-        templatePath: string
-        logicalId: string
-        lambdaHandler: string
-        projectRoot: string
-    }
-}
+
 function newLaunchConfig(): MorePermissiveAwsSamDebuggerConfiguration {
     return {
         type: 'aws-sam',
@@ -80,7 +70,7 @@ export const Component = Vue.extend({
             }
         })
     },
-    data(): Data {
+    data(): SamInvokeVueData {
         return {
             msg: 'Hello',
             targetTypes: [
@@ -120,13 +110,16 @@ export const Component = Vue.extend({
     },
     methods: {
         launch() {
-            let payloadJson: { [k: string]: any }
-            try {
-                payloadJson = JSON.parse(this.payload)
-            } catch (e) {
-                // swallow error for now...
-                return
+            let payloadJson: { [k: string]: any } = {}
+            if (this.payload !== '') {
+                try {
+                    payloadJson = JSON.parse(this.payload)
+                } catch (e) {
+                    // swallow error for now...
+                    return
+                }
             }
+
             vscode.postMessage({
                 command: 'invokeLaunchConfig',
                 data: {
@@ -144,12 +137,14 @@ export const Component = Vue.extend({
             })
         },
         save() {
-            let payloadJson: { [k: string]: any }
-            try {
-                payloadJson = JSON.parse(this.payload)
-            } catch (e) {
-                // swallow error for now...
-                return
+            let payloadJson: { [k: string]: any } = {}
+            if (this.payload !== '') {
+                try {
+                    payloadJson = JSON.parse(this.payload)
+                } catch (e) {
+                    // swallow error for now...
+                    return
+                }
             }
             vscode.postMessage({
                 command: 'saveLaunchConfig',

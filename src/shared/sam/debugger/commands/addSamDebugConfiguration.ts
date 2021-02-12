@@ -8,7 +8,7 @@ import * as vscode from 'vscode'
 import { Runtime } from 'aws-sdk/clients/lambda'
 import { getExistingConfiguration } from '../../../../lambda/config/templates'
 import { createRuntimeQuickPick, getDefaultRuntime, RuntimeFamily } from '../../../../lambda/models/samLambdaRuntime'
-import { LaunchConfiguration } from '../../../debug/launchConfiguration'
+// import { LaunchConfiguration } from '../../../debug/launchConfiguration'
 import * as picker from '../../../ui/picker'
 import { localize } from '../../../utilities/vsCodeUtils'
 import {
@@ -181,10 +181,12 @@ export async function addSamDebugConfiguration(
         throw new Error('Unrecognized debug target type')
     }
 
-    const launchConfig = new LaunchConfiguration(rootUri)
-    await launchConfig.addDebugConfiguration(samDebugConfig)
+    vscode.commands.executeCommand('aws.lambda.vueTest', samDebugConfig)
 
-    await openLaunchJsonFile()
+    // const launchConfig = new LaunchConfiguration(rootUri)
+    // await launchConfig.addDebugConfiguration(samDebugConfig)
+
+    // await openLaunchJsonFile()
 }
 
 export async function openLaunchJsonFile(): Promise<void> {

@@ -32,8 +32,8 @@ import { tryGetAbsolutePath } from '../../shared/utilities/workspaceUtils'
 import { CloudFormation } from '../../shared/cloudformation/cloudformation'
 
 export function registerSamInvokeVueCommand(context: ExtContext): vscode.Disposable {
-    return vscode.commands.registerCommand('aws.lambda.vueTest', async () => {
-        await createVueWebview<SamInvokerRequest, SamInvokerResponse, any>({
+    return vscode.commands.registerCommand('aws.lambda.vueTest', async (launchConfig?: AwsSamDebuggerConfiguration) => {
+        await createVueWebview<SamInvokerRequest, SamInvokerResponse, SamInvokerResponse>({
             id: 'create',
             name: 'Invoke Local SAM Application',
             webviewJs: 'samInvokeVue.js',
@@ -41,11 +41,32 @@ export function registerSamInvokeVueCommand(context: ExtContext): vscode.Disposa
                 handleFrontendToBackendMessage(message, postMessageFn, destroyWebviewFn, context),
             context: context.extensionContext,
             cssFiles: ['samInvokeForm.css'],
+            initialState: launchConfig
+                ? {
+                      command: 'loadSamLaunchConfig',
+                      data: {
+                          launchConfig: launchConfig,
+                      },
+                  }
+                : undefined,
         })
     })
 }
 
-// TODO: Better names for all the interfaces
+export interface SamInvokeVueState {
+    launchConfig: MorePermissiveAwsSamDebuggerConfiguration
+    payload: string
+}
+
+export interface MorePermissiveAwsSamDebuggerConfiguration extends AwsSamDebuggerConfiguration {
+    invokeTarget: {
+        target: 'template' | 'api' | 'code'
+        templatePath: string
+        logicalId: string
+        lambdaHandler: string
+        projectRoot: string
+    }
+}
 
 export interface LoadSamLaunchConfigResponse {
     command: 'loadSamLaunchConfig'
