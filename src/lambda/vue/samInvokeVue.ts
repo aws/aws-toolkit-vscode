@@ -149,19 +149,19 @@ export const Component = Vue.extend({
    
    <template>
        <form class="invoke-lambda-form">
-           <label id="form-title" for="invoke-lambda-form">Invoke Local Lambda</label><br>
-           <button v-on:click.prevent="loadConfig">Load Config</button>
-           <button v-on:click.prevent="loadResource">Load Resource</button><br>
+           <h1>Invoke Local Lambda</h1>
+           <button v-on:click.prevent="loadConfig">Load Existing Debug Configuration</button><br>
            <label  for="target-type-selector">Invoke Target Type</label>
            <select  name="target-types" id="target-type-selector" v-model="launchConfig.invokeTarget.target">
                <option :value="type.value" v-for="(type, index) in targetTypes" :key="index">{{ type.name }}</option>
            </select>
            <div class="config-details">
-               <div>Target type: {{ launchConfig.invokeTarget.target }}</div>
+               <button v-on:click.prevent="loadResource">Load Resource</button><br>
                <div class="target-code" v-if="launchConfig.invokeTarget.target === 'code'">
+               <h2>Target: Code</h2>
                    <div class="config-item">
                        <label for="select-directory">Project Root</label>
-                       <button id="select-directory">Select Directory...</button>
+                       <input id="select-directory" placeholder="Enter a directory"/>
                        <span class="data-view">the selected directory:  {{launchConfig.invokeTarget.projectRoot}}</span>
                    </div>
                    <div class="config-item">
@@ -177,23 +177,25 @@ export const Component = Vue.extend({
                    </div>
                </div>
                <div class="target-template" v-else-if="launchConfig.invokeTarget.target === 'template'">
+                   <h2>Target: Template</h2>
                    <div class="config-item">
                        <label for="template-path">Template Path</label>
-                       <button id="template-path-button">Select Template...</button><span class="data-view">Template path from data: {{launchConfig.invokeTarget.templatePath}}</span>
+                       <input id="template-path-button" v-model="launchConfig.invokeTarget.templatePath" placeholder="Enter the template path..."/><span class="data-view">Template path from data: {{launchConfig.invokeTarget.templatePath}}</span>
                        
                    </div>
                    <div class="config-item">
-                       <label for="logicalID">Logical ID</label>
+                       <label for="logicalID">Resource (Logical Id)</label>
                        <input name="template-logical-id" id="template-logical-id"/><span class="data-view"> Logical Id from data: {{launchConfig.invokeTarget.logicalId}}</span>
                    </div>
                </div>
                <div class="target-apigw" v-else-if="launchConfig.invokeTarget.target === 'api'" >
+                   <h2>Target: API Gateway</h2>
                    <div class="config-item">
                        <label for="template-path-api">Template Path</label>
                        <button id="template-path-api-button">Select Template...</button>
                    </div>
                    <div class="config-item">
-                       <label for="logicalID">Logical ID</label>
+                       <label for="logicalID">Resource (Logical Id)</label>
                        <textarea name="template-logical-id" id="template-logical-id" cols="15" rows="2"></textarea>
                    </div>
                    <div class="config-item">
@@ -214,17 +216,18 @@ export const Component = Vue.extend({
                <div v-else>Select an Invoke Target</div>
            </div>
            <div class="payload-section">
-               <h3>Payload</h3>
+               <h2>Payload</h2>
                <button v-on:click.prevent="loadPayload">Load Payload</button><br>
-               <textarea name="lambda-payload" id="lambda-payload" cols="30" rows="10" v-model="stringifyJson"></textarea>
-               <span class="data-view">payload from data: {{stringifyJson}} </span>
-               <div class="invoke-button-container">
-                   <button v-on:click.prevent="save">Save</button>
-                   <button v-on:click.prevent="launch">Invoke</button>
-               </div>
+               <textarea name="lambda-payload" id="lambda-payload" cols="30" rows="10" v-model="launchConfig.lambda.payload.json"></textarea>
+               <span class="data-view">payload from data: {{launchConfig.lambda.payload.json}} </span>
+           </div>
+           <div class="invoke-button-container">
+               <button v-on:click.prevent="save">Save</button>
+               <button v-on:click.prevent="launch">Invoke</button>
            </div>
        </form>
-   </template>`,
+   </template>
+   `,
 })
 
 new Vue({
