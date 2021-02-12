@@ -16,6 +16,7 @@ interface Data {
     runtimes: string[]
     httpMethods: ['GET', 'POST', 'PUT']
     launchConfig: MorePermissiveAwsSamDebuggerConfiguration
+    payload: string
 }
 interface MorePermissiveAwsSamDebuggerConfiguration extends AwsSamDebuggerConfiguration {
     invokeTarget: {
@@ -58,11 +59,12 @@ export const Component = Vue.extend({
             const event = ev.data as SamInvokerResponse
             switch (event.command) {
                 case 'getSamplePayload':
-                    console.log(event.data)
-                    this.launchConfig.lambda!.payload!.json = JSON.parse(event.data.payload)
+                    this.payload = JSON.stringify(JSON.parse(event.data.payload), undefined, 4)
                     break
                 case 'getTemplate':
-                    this.msg = `${event.data.template} ${event.data.logicalId}`
+                    this.launchConfig.invokeTarget.target = 'template'
+                    this.launchConfig.invokeTarget.logicalId = event.data.logicalId
+                    this.launchConfig.invokeTarget.templatePath = event.data.template
                     break
                 case 'loadSamLaunchConfig':
                     this.launchConfig = event.data.launchConfig as MorePermissiveAwsSamDebuggerConfiguration
@@ -92,6 +94,7 @@ export const Component = Vue.extend({
             ],
             httpMethods: ['GET', 'POST', 'PUT'],
             launchConfig: newLaunchConfig(),
+            payload: '',
         }
     },
     watch: {
@@ -101,20 +104,50 @@ export const Component = Vue.extend({
     },
     methods: {
         launch() {
+            let payloadJson: { [k: string]: any }
+            try {
+                payloadJson = JSON.parse(this.payload)
+            } catch (e) {
+                // swallow error for now...
+                return
+            }
             vscode.postMessage({
-                // command: 'saveLaunchConfig',
                 command: 'invokeLaunchConfig',
                 data: {
-                    launchConfig: this.launchConfig,
+                    launchConfig: {
+                        ...this.launchConfig,
+                        lambda: {
+                            ...this.launchConfig.lambda,
+                            payload: {
+                                ...this.launchConfig.payload,
+                                json: payloadJson,
+                            },
+                        },
+                    },
                 },
             })
         },
         save() {
+            let payloadJson: { [k: string]: any }
+            try {
+                payloadJson = JSON.parse(this.payload)
+            } catch (e) {
+                // swallow error for now...
+                return
+            }
             vscode.postMessage({
                 command: 'saveLaunchConfig',
-                // command: 'invokeLaunchConfig',
                 data: {
-                    launchConfig: this.launchConfig,
+                    launchConfig: {
+                        ...this.launchConfig,
+                        lambda: {
+                            ...this.launchConfig.lambda,
+                            payload: {
+                                ...this.launchConfig.payload,
+                                json: payloadJson,
+                            },
+                        },
+                    },
                 },
             })
         },
@@ -132,11 +165,6 @@ export const Component = Vue.extend({
             vscode.postMessage({
                 command: 'getTemplate',
             })
-        },
-    },
-    computed: {
-        stringifyJson(): string {
-            return JSON.stringify(this.launchConfig.lambda?.payload?.json, undefined, 4)
         },
     },
     // `createElement` is inferred, but `render` needs return type
@@ -216,8 +244,8 @@ export const Component = Vue.extend({
            <div class="payload-section">
                <h3>Payload</h3>
                <button v-on:click.prevent="loadPayload">Load Payload</button><br>
-               <textarea name="lambda-payload" id="lambda-payload" cols="30" rows="10" v-model="stringifyJson"></textarea>
-               <span class="data-view">payload from data: {{stringifyJson}} </span>
+               <textarea name="lambda-payload" id="lambda-payload" cols="30" rows="10" v-model="payload"></textarea>
+               <span class="data-view">payload from data: {{payload}} </span>
                <div class="invoke-button-container">
                    <button v-on:click.prevent="save">Save</button>
                    <button v-on:click.prevent="launch">Invoke</button>
