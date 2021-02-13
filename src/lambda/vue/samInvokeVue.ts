@@ -65,6 +65,9 @@ export const Component = Vue.extend({
                     break
                 case 'loadSamLaunchConfig':
                     this.launchConfig = event.data.launchConfig as MorePermissiveAwsSamDebuggerConfiguration
+                    if (event.data.launchConfig.lambda?.payload) {
+                        this.payload = JSON.stringify(event.data.launchConfig.lambda.payload, undefined, 4)
+                    }
                     this.msg = `Loaded config ${event.data.launchConfig.name}`
                     break
             }
@@ -261,8 +264,8 @@ export const Component = Vue.extend({
            <div class="payload-section">
                <h2>Payload</h2>
                <button v-on:click.prevent="loadPayload">Load Sample Payload</button><br>
-               <textarea name="lambda-payload" id="lambda-payload" cols="30" rows="10" v-model="launchConfig.lambda.payload.json"></textarea>
-               <span class="data-view">payload from data: {{launchConfig.lambda.payload.json}} </span>
+               <textarea name="lambda-payload" id="lambda-payload" cols="30" rows="10" v-model="payload"></textarea>
+               <span class="data-view">payload from data: {{payload}} </span>
            </div>
            <div class="invoke-button-container">
                <button v-on:click.prevent="save">Save Debug Configuration</button>
