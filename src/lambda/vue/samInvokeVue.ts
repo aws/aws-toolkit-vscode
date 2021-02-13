@@ -207,7 +207,7 @@ export const Component = Vue.extend({
                    <button v-on:click.prevent="loadResource">Load Resource</button><br>
                    <div class="config-item">
                        <label for="select-directory">Project Root</label>
-                       <input id="select-directory" placeholder="Enter a directory"/>
+                       <input id="select-directory" v-model="launchConfig.invokeTarget.projectRoot" placeholder="Enter a directory"/>
                        <span class="data-view">the selected directory:  {{launchConfig.invokeTarget.projectRoot}}</span>
                    </div>
                    <div class="config-item">

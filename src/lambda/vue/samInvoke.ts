@@ -347,6 +347,21 @@ async function saveLaunchConfig(config: AwsSamDebuggerConfiguration): Promise<vo
         return
     }
 
+    // Recast invoke targets to undo the MorePermissiveAwsSamDebuggerConfiguration.
+    if (isTemplateTargetProperties(config.invokeTarget)) {
+        config.invokeTarget = {
+            target: config.invokeTarget.target,
+            logicalId: config.invokeTarget.logicalId,
+            templatePath: config.invokeTarget.templatePath,
+        }
+    } else if (isCodeTargetProperties(config.invokeTarget)) {
+        config.invokeTarget = {
+            target: config.invokeTarget.target,
+            lambdaHandler: config.invokeTarget.lambdaHandler,
+            projectRoot: config.invokeTarget.projectRoot,
+        }
+    }
+
     if (pickerResponse.index === -1) {
         const ib = input.createInputBox({
             options: {
