@@ -23,13 +23,13 @@ export interface SamInvokeVueData {
     payload: string
 }
 
-function newLaunchConfig(): MorePermissiveAwsSamDebuggerConfiguration {
+function newLaunchConfig(target: 'template' | 'code' | 'api' = 'template'): MorePermissiveAwsSamDebuggerConfiguration {
     return {
         type: 'aws-sam',
         request: 'direct-invoke',
         name: '',
         invokeTarget: {
-            target: 'template',
+            target,
             templatePath: '',
             logicalId: '',
             lambdaHandler: '',
@@ -98,11 +98,14 @@ export const Component = Vue.extend({
         }
     },
     watch: {
-        launchConfig: function (newval: MorePermissiveAwsSamDebuggerConfiguration) {
-            vscode.setState({
-                payload: this.payload,
-                launchConfig: newval,
-            })
+        launchConfig: {
+            handler(newval: MorePermissiveAwsSamDebuggerConfiguration) {
+                vscode.setState({
+                    payload: this.payload,
+                    launchConfig: newval,
+                })
+            },
+            deep: true,
         },
         payload: function (newval: string) {
             vscode.setState({
