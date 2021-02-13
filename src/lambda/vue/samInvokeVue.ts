@@ -227,7 +227,7 @@ export const Component = Vue.extend({
                    </div>
                    <div class="config-item">
                        <label for="logicalID">Resource (Logical Id)</label>
-                       <input name="template-logical-id" id="template-logical-id"/><span class="data-view"> Logical Id from data: {{launchConfig.invokeTarget.logicalId}}</span>
+                       <input name="template-logical-id" id="template-logical-id" v-model="launchConfig.invokeTarget.logicalId"/><span class="data-view"> Logical Id from data: {{launchConfig.invokeTarget.logicalId}}</span>
                    </div>
                </div>
                <div class="target-apigw" v-else-if="launchConfig.invokeTarget.target === 'api'" >
@@ -239,7 +239,7 @@ export const Component = Vue.extend({
                    </div>
                    <div class="config-item">
                        <label for="logicalID">Resource (Logical Id)</label>
-                       <textarea name="template-logical-id" id="template-logical-id" cols="15" rows="2"></textarea>
+                       <input name="template-logical-id" id="template-logical-id" cols="15" rows="2"  v-model="launchConfig.invokeTarget.logicalId"/>
                    </div>
                    <div class="config-item">
                        <label for="http-method-selector">HTTP Method</label>
@@ -249,7 +249,7 @@ export const Component = Vue.extend({
                    </div>
                    <div class="config-item">
                        <label for="query-string">Query String</label>
-                       <textarea name="query-string" id="query-string" cols="15" rows="2" placeholder="Enter a query"></textarea>
+                       <input name="query-string" id="query-string" cols="15" rows="2" placeholder="Enter a query"/>
                    </div>
                    <div class="config-item">
                        <label for="">Headers</label>
@@ -261,8 +261,8 @@ export const Component = Vue.extend({
            <div class="payload-section">
                <h2>Payload</h2>
                <button v-on:click.prevent="loadPayload">Load Sample Payload</button><br>
-               <textarea name="lambda-payload" id="lambda-payload" cols="30" rows="10" v-model="launchConfig.lambda.payload.json"></textarea>
-               <span class="data-view">payload from data: {{launchConfig.lambda.payload.json}} </span>
+               <textarea name="lambda-payload" id="lambda-payload" cols="60" rows="5" v-model="payload"></textarea>
+               <span class="data-view">payload from data: {{payload}} </span>
            </div>
            <div class="invoke-button-container">
                <button v-on:click.prevent="save">Save Debug Configuration</button>

@@ -2,13 +2,21 @@ form {
     padding: 15px;
 }
 
+h2 {
+    margin: 0px;
+    margin-bottom: 10px;
+}
+
 div {
     margin-bottom: 20px;
 }
 
 button {
-    margin-right: 20px;
     margin-bottom: 15px;
+}
+
+textarea {
+    max-width: 100%;
 }
 
 .config-item {
@@ -20,11 +28,13 @@ button {
 .config-details {
     margin-top: 20px;
     border: rgb(211, 130, 38) dashed 1px;
-    padding: 15px;
+    padding: 5px 15px;
 }
 
 .payload-section{
     padding-left: 15px;
+    border: rgb(211, 130, 38) dashed 1px;
+    padding: 5px 15px;
 }
 
 .data-view {
@@ -37,10 +47,14 @@ button {
     display: flex;
     flex-direction: row;
     justify-content: flex-end;
-    padding-right: 40px;
+    padding-right: 0px;
 }
 
 #form-title {
     font-size: large;
     font-weight: bold;
+}
+
+#invoke-button {
+    margin-left: 20px;
 }
