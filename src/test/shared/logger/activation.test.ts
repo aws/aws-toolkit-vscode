@@ -10,7 +10,6 @@ import { makeTemporaryToolkitFolder } from '../../../shared/filesystemUtilities'
 import { Logger } from '../../../shared/logger'
 import { makeLogger } from '../../../shared/logger/activation'
 import { WinstonToolkitLogger } from '../../../shared/logger/winstonToolkitLogger'
-import { MockOutputChannel } from '../../mockOutputChannel'
 
 describe('makeLogger', () => {
     let tempFolder: string
@@ -18,7 +17,7 @@ describe('makeLogger', () => {
 
     before(async () => {
         tempFolder = await makeTemporaryToolkitFolder()
-        testLogger = makeLogger('debug', join(tempFolder, 'log.txt'), new MockOutputChannel())
+        testLogger = makeLogger({ staticLogLevel: 'debug', logPaths: [join(tempFolder, 'log.txt')] })
     })
 
     after(async () => {

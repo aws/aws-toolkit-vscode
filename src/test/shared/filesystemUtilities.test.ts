@@ -7,7 +7,7 @@ import * as assert from 'assert'
 import * as os from 'os'
 import { writeFile, remove } from 'fs-extra'
 import * as path from 'path'
-import { fileExists, isInDirectory, makeTemporaryToolkitFolder, tempDirPath } from '../../shared/filesystemUtilities'
+import { fileExists, getNonexistentFilename, isInDirectory, makeTemporaryToolkitFolder, tempDirPath } from '../../shared/filesystemUtilities'
 
 describe('filesystemUtilities', () => {
     const targetFilename = 'findThisFile12345.txt'
@@ -30,8 +30,35 @@ describe('filesystemUtilities', () => {
             await remove(folder)
         }
     })
+    
+    describe('getNonexistentFilename()', () => {
+        it('failure modes', async () => {
+            assert.throws(() => {
+                getNonexistentFilename('/bogus/directory/', 'foo', '.txt', 99)
+            })
+            assert.throws(() => {
+                getNonexistentFilename('', 'foo', '.txt', 99)
+            })
+        })
+        it('returns a filename that does not exist in the directory', async () => {
+            const dir = tempFolder
+            await writeFile(path.join(dir, 'foo.txt'), '', 'utf8')
+            await writeFile(path.join(dir, 'foo-0.txt'), '', 'utf8')
+            await writeFile(path.join(dir, 'foo-1.txt'), '', 'utf8')
+            await writeFile(path.join(dir, 'foo-2.txt'), '', 'utf8')
+            assert.strictEqual(getNonexistentFilename(dir, 'foo', '.txt', 99), 'foo-3.txt')
+            assert.strictEqual(getNonexistentFilename(dir, 'foo', '', 99), 'foo')
+        })
+        it('returns "foo-RANDOM.txt" if max is reached', async () => {
+            const dir = tempFolder
+            await writeFile(path.join(dir, 'foo.txt'), '', 'utf8')
+            await writeFile(path.join(dir, 'foo-1.txt'), '', 'utf8')
+            // Looks like "foo-75446d5d.txt".
+            assert.ok(/^foo-[a-fA-F0-9]{8}.txt$/.test(getNonexistentFilename(dir, 'foo', '.txt', 1)))
+        })
+    })
 
-    describe('makeTemporaryToolkitFolder', () => {
+    describe('makeTemporaryToolkitFolder()', () => {
         it(`makes temp dirs as children to filesystemUtilities.tempDirPath ('${tempDirPath}')`, async () => {
             const parentFolder = path.dirname(tempFolder)
 

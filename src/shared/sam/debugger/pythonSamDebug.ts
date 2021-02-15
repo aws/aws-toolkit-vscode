@@ -20,7 +20,6 @@ import { getLogger } from '../../logger'
 import * as pathutil from '../../utilities/pathUtils'
 import { getLocalRootVariants } from '../../utilities/pathUtils'
 import { Timeout } from '../../utilities/timeoutUtils'
-import { ChannelLogger } from '../../utilities/vsCodeUtils'
 import { DefaultSamLocalInvokeCommand, WAIT_FOR_DEBUGGER_MESSAGES } from '../cli/samCliLocalInvoke'
 import { invokeLambdaFunction, makeInputTemplate } from '../localLambdaRunner'
 import { SamLaunchRequestArgs } from './awsSamDebugger'
@@ -213,7 +212,7 @@ export async function invokePythonLambda(
     ctx: ExtContext,
     config: PythonDebugConfiguration
 ): Promise<PythonDebugConfiguration> {
-    config.samLocalInvokeCommand = new DefaultSamLocalInvokeCommand(ctx.chanLogger, [
+    config.samLocalInvokeCommand = new DefaultSamLocalInvokeCommand([
         WAIT_FOR_DEBUGGER_MESSAGES.PYTHON,
         WAIT_FOR_DEBUGGER_MESSAGES.PYTHON_IKPDB,
     ])
@@ -227,7 +226,7 @@ export async function invokePythonLambda(
     return c
 }
 
-async function waitForIkpdb(debugPort: number, timeout: Timeout, channelLogger: ChannelLogger) {
+async function waitForIkpdb(debugPort: number, timeout: Timeout) {
     // HACK:
     // - We cannot consumed the first message on the socket.
     // - We must wait for the debugger to be ready, else cloud9 startDebugging() waits forever.
@@ -237,7 +236,7 @@ async function waitForIkpdb(debugPort: number, timeout: Timeout, channelLogger: 
     })
 }
 
-export async function waitForPythonDebugAdapter(debugPort: number, timeout: Timeout, channelLogger: ChannelLogger) {
+export async function waitForPythonDebugAdapter(debugPort: number, timeout: Timeout) {
     await new Promise<void>(resolve => {
         setTimeout(resolve, 1000)
     })

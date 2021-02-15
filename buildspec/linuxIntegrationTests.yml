@@ -14,6 +14,8 @@ phases:
             dotnet: 3.1
 
         commands:
+            # WORKAROUND for out-of-date yarn key. https://github.com/yarnpkg/yarn/issues/7866
+            - '>/dev/null apt-get install dirmngr && apt-key adv --refresh-keys --keyserver keyserver.ubuntu.com'
             - '>/dev/null add-apt-repository universe'
             - '>/dev/null apt-get -qq install -y apt-transport-https'
             - '>/dev/null apt-get -qq update'
@@ -28,6 +30,16 @@ phases:
 
     pre_build:
         commands:
+            # If present, log into CodeArtifact. Provides a nice safety net in case NPM is down.
+            # Should only affect tests run through IDEs team-hosted CodeBuild.
+            - |
+                if [ "$TOOLKITS_CODEARTIFACT_DOMAIN" ] && [ "$TOOLKITS_CODEARTIFACT_REPO" ] && [ "TOOLKITS_$ACCOUNT_ID" ]; then
+                    if aws codeartifact login --tool npm --domain "$TOOLKITS_CODEARTIFACT_DOMAIN" --domain-owner "$TOOLKITS_ACCOUNT_ID" --repository "$TOOLKITS_CODEARTIFACT_REPO" > /dev/null 2>&1; then
+                        echo "Connected to CodeArtifact"
+                    else
+                        echo "CodeArtifact connection failed. Falling back to npm"
+                    fi
+                fi
             # make sure that SAM is in the path, is not automatically done on CodeBuild
             - USER_BASE_PATH=$(python -m site --user-base) && export PATH=$PATH:$USER_BASE_PATH/bin
             # start Docker
@@ -36,7 +48,7 @@ phases:
 
     build:
         commands:
-            - npm install --unsafe-perm
+            - npm ci --unsafe-perm
             - xvfb-run npm run integrationTest
 
 reports:

@@ -265,7 +265,11 @@ describe('CloudFormation', () => {
                 assert.ok(resource)
                 // Verify runtimes as a way of seeing if we got the correct resource when there is more
                 // than one entry with the same handler.
-                const runtime = CloudFormation.getRuntime(resource, createBaseTemplate())
+                const runtime = CloudFormation.getStringForProperty(
+                    resource.Properties,
+                    'Runtime',
+                    createBaseTemplate()
+                )
                 assert.strictEqual(runtime, scenario.expectedRuntime, 'Unexpected runtime resolved from SAM Template')
             })
         }
@@ -298,7 +302,11 @@ describe('CloudFormation', () => {
                 assert.ok(resource)
                 // Verify runtimes as a way of seeing if we got the correct resource when there is more
                 // than one entry with the same handler.
-                const runtime = CloudFormation.getRuntime(resource, createBaseTemplate())
+                const runtime = CloudFormation.getStringForProperty(
+                    resource.Properties,
+                    'Runtime',
+                    createBaseTemplate()
+                )
                 assert.strictEqual(runtime, scenario.expectedRuntime, 'Unexpected runtime resolved from SAM Template')
             })
         }
@@ -318,128 +326,275 @@ describe('CloudFormation', () => {
         }
     })
 
-    describe('getRuntime', async () => {
-        it('throws if resource does not specify properties', async () => {
-            const resource = createBaseResource()
-            delete resource.Properties
-
-            assert.throws(() => CloudFormation.getRuntime(resource, createBaseTemplate()))
-        })
-
-        it('throws if resource does not specify a runtime', async () => {
-            const resource = createBaseResource()
-            assert.ok(CloudFormation.isZipLambdaResource(resource.Properties))
-
-            delete resource.Properties!.Runtime
-
-            assert.throws(() => CloudFormation.getRuntime(resource, createBaseTemplate()))
-        })
-
-        it('returns runtime if specified', async () => {
-            const resource = createBaseResource()
-            const runtime = CloudFormation.getRuntime(resource, createBaseTemplate())
-
-            assert.strictEqual(runtime, 'nodejs12.x')
-        })
-    })
-
     describe('Ref handlers', () => {
-        const template: CloudFormation.Template = {
-            Parameters: {
-                strParamVal: {
-                    Type: 'String',
-                    Default: 'asdf',
+        const newTemplate: () => CloudFormation.Template = () => {
+            return {
+                Globals: {
+                    Function: {
+                        Runtime: 'GLOBAL HANDLER',
+                        Timeout: 12345,
+                        Description: {
+                            Ref: 'strParamVal',
+                        },
+                        MemorySize: {
+                            Ref: 'numParamVal',
+                        },
+                    },
                 },
-                strParamNoVal: {
-                    Type: 'String',
+                Parameters: {
+                    strParamVal: {
+                        Type: 'String',
+                        Default: 'asdf',
+                    },
+                    strParamNoVal: {
+                        Type: 'String',
+                    },
+                    numParamVal: {
+                        Type: 'Number',
+                        Default: 999,
+                    },
+                    numParamNoVal: {
+                        Type: 'Number',
+                    },
                 },
-                numParamVal: {
-                    Type: 'Number',
-                    Default: 1,
+                Resources: {
+                    resource: {
+                        Type: 'lol',
+                        Properties: {
+                            Handler: 'myHandler',
+                            CodeUri: 'myUri',
+                        },
+                    },
                 },
-                numParamNoVal: {
-                    Type: 'Number',
-                },
-            },
+            }
         }
 
         describe('getStringForProperty', () => {
             it('returns a string', () => {
-                const property: string = 'good'
-                assert.strictEqual(CloudFormation.getStringForProperty(property, template), property)
+                const template = newTemplate()
+                assert.strictEqual(
+                    CloudFormation.getStringForProperty(template.Resources!.resource?.Properties, 'Handler', template),
+                    'myHandler'
+                )
             })
 
             it('returns a string from a ref with a default value', () => {
                 const property: CloudFormation.Ref = {
                     Ref: 'strParamVal',
                 }
-                assert.strictEqual(CloudFormation.getStringForProperty(property, template), 'asdf')
+                const template = newTemplate()
+                template.Resources!.resource!.Properties!.Handler = property
+                assert.strictEqual(
+                    CloudFormation.getStringForProperty(template.Resources!.resource!.Properties, 'Handler', template),
+                    'asdf'
+                )
             })
 
             it('returns undefined if the ref does not have a default value', () => {
                 const property: CloudFormation.Ref = {
                     Ref: 'strParamNoVal',
                 }
-                assert.strictEqual(CloudFormation.getStringForProperty(property, template), undefined)
+                const template = newTemplate()
+                template.Resources!.resource!.Properties!.Handler = property
+                assert.strictEqual(
+                    CloudFormation.getStringForProperty(template.Resources!.resource!.Properties, 'Handler', template),
+                    undefined
+                )
             })
 
             it('returns undefined if a number is provided', () => {
                 const property: number = 1
-                assert.strictEqual(CloudFormation.getStringForProperty(property, template), undefined)
+                const template = newTemplate()
+                template.Resources!.resource!.Properties!.MemorySize = property
+                assert.strictEqual(
+                    CloudFormation.getStringForProperty(
+                        template.Resources!.resource!.Properties,
+                        'MemorySize',
+                        template
+                    ),
+                    undefined
+                )
             })
 
             it('returns undefined if a ref to a number is provided', () => {
                 const property: CloudFormation.Ref = {
                     Ref: 'numParamVal',
                 }
-                assert.strictEqual(CloudFormation.getStringForProperty(property, template), undefined)
+                const template = newTemplate()
+                template.Resources!.resource!.Properties!.MemorySize = property
+                assert.strictEqual(
+                    CloudFormation.getStringForProperty(
+                        template.Resources!.resource!.Properties,
+                        'MemorySize',
+                        template
+                    ),
+                    undefined
+                )
             })
 
             it('returns undefined if undefined is provided', () => {
-                assert.strictEqual(CloudFormation.getStringForProperty(undefined, template), undefined)
+                const template = newTemplate()
+                assert.strictEqual(CloudFormation.getStringForProperty(undefined, 'dont-matter', template), undefined)
+            })
+
+            it('returns a global value', () => {
+                const template = newTemplate()
+                assert.strictEqual(
+                    CloudFormation.getStringForProperty(template.Resources!.resource?.Properties, 'Runtime', template),
+                    'GLOBAL HANDLER'
+                )
+            })
+
+            it('returns a global Ref value', () => {
+                const template = newTemplate()
+                assert.strictEqual(
+                    CloudFormation.getStringForProperty(
+                        template.Resources!.resource?.Properties,
+                        'Description',
+                        template
+                    ),
+                    'asdf'
+                )
+            })
+
+            it('returns undefined for a global number value', () => {
+                const template = newTemplate()
+                assert.strictEqual(
+                    CloudFormation.getStringForProperty(template.Resources!.resource?.Properties, 'Timeout', template),
+                    undefined
+                )
+            })
+
+            it('returns undefined for a global Ref number value', () => {
+                const template = newTemplate()
+                assert.strictEqual(
+                    CloudFormation.getStringForProperty(
+                        template.Resources!.resource?.Properties,
+                        'MemorySize',
+                        template
+                    ),
+                    undefined
+                )
             })
         })
 
         describe('getNumberForProperty', () => {
             it('returns a number', () => {
                 const property: number = 1
-                assert.strictEqual(CloudFormation.getNumberForProperty(property, template), 1)
+                const template = newTemplate()
+                template.Resources!.resource!.Properties!.MemorySize = property
+                assert.strictEqual(
+                    CloudFormation.getNumberForProperty(
+                        template.Resources!.resource!.Properties,
+                        'MemorySize',
+                        template
+                    ),
+                    property
+                )
             })
 
             it('returns a number from a ref with a default value', () => {
                 const property: CloudFormation.Ref = {
                     Ref: 'numParamVal',
                 }
-                assert.strictEqual(CloudFormation.getNumberForProperty(property, template), 1)
+                const template = newTemplate()
+                template.Resources!.resource!.Properties!.MemorySize = property
+                assert.strictEqual(
+                    CloudFormation.getNumberForProperty(
+                        template.Resources!.resource!.Properties,
+                        'MemorySize',
+                        template
+                    ),
+                    999
+                )
             })
 
             it('returns undefined if the ref does not have a default value', () => {
                 const property: CloudFormation.Ref = {
                     Ref: 'numParamNoVal',
                 }
-                assert.strictEqual(CloudFormation.getNumberForProperty(property, template), undefined)
+                const template = newTemplate()
+                template.Resources!.resource!.Properties!.MemorySize = property
+                assert.strictEqual(
+                    CloudFormation.getNumberForProperty(
+                        template.Resources!.resource!.Properties,
+                        'MemorySize',
+                        template
+                    ),
+                    undefined
+                )
             })
 
             it('returns undefined is a string', () => {
-                const property: string = 'good'
-                assert.strictEqual(CloudFormation.getNumberForProperty(property, template), undefined)
+                const template = newTemplate()
+                assert.strictEqual(
+                    CloudFormation.getNumberForProperty(template.Resources!.resource!.Properties, 'Handler', template),
+                    undefined
+                )
             })
 
             it('returns undefined if a ref to a string is provided', () => {
                 const property: CloudFormation.Ref = {
                     Ref: 'strParamVal',
                 }
-                assert.strictEqual(CloudFormation.getNumberForProperty(property, template), undefined)
+                const template = newTemplate()
+                template.Resources!.resource!.Properties!.Handler = property
+                assert.strictEqual(
+                    CloudFormation.getNumberForProperty(template.Resources!.resource!.Properties, 'Handler', template),
+                    undefined
+                )
             })
 
             it('returns undefined if undefined is provided', () => {
-                assert.strictEqual(CloudFormation.getNumberForProperty(undefined, template), undefined)
+                const template = newTemplate()
+                assert.strictEqual(CloudFormation.getNumberForProperty(undefined, 'dont-matter', template), undefined)
+            })
+
+            it('returns a global value', () => {
+                const template = newTemplate()
+                assert.strictEqual(
+                    CloudFormation.getNumberForProperty(template.Resources!.resource?.Properties, 'Timeout', template),
+                    12345
+                )
+            })
+
+            it('returns a global Ref value', () => {
+                const template = newTemplate()
+                assert.strictEqual(
+                    CloudFormation.getNumberForProperty(
+                        template.Resources!.resource?.Properties,
+                        'MemorySize',
+                        template
+                    ),
+                    999
+                )
+            })
+
+            it('returns undefined for a global string value', () => {
+                const template = newTemplate()
+                assert.strictEqual(
+                    CloudFormation.getNumberForProperty(template.Resources!.resource?.Properties, 'Runtime', template),
+                    undefined
+                )
+            })
+
+            it('returns undefined for a global Ref string value', () => {
+                const template = newTemplate()
+                assert.strictEqual(
+                    CloudFormation.getNumberForProperty(
+                        template.Resources!.resource?.Properties,
+                        'Description',
+                        template
+                    ),
+                    undefined
+                )
             })
         })
 
         describe('resolvePropertyWithOverrides', () => {
             it('returns a string', () => {
                 const property: string = 'good'
+                const template = newTemplate()
                 assert.strictEqual(CloudFormation.resolvePropertyWithOverrides(property, template), property)
             })
 
@@ -447,11 +602,13 @@ describe('CloudFormation', () => {
                 const property: CloudFormation.Ref = {
                     Ref: 'strParamVal',
                 }
+                const template = newTemplate()
                 assert.strictEqual(CloudFormation.resolvePropertyWithOverrides(property, template), 'asdf')
             })
 
             it('returns a number', () => {
                 const property: number = 1
+                const template = newTemplate()
                 assert.strictEqual(CloudFormation.resolvePropertyWithOverrides(property, template), 1)
             })
 
@@ -459,10 +616,12 @@ describe('CloudFormation', () => {
                 const property: CloudFormation.Ref = {
                     Ref: 'numParamVal',
                 }
-                assert.strictEqual(CloudFormation.resolvePropertyWithOverrides(property, template), 1)
+                const template = newTemplate()
+                assert.strictEqual(CloudFormation.resolvePropertyWithOverrides(property, template), 999)
             })
 
             it('returns undefined if undefined is provided', () => {
+                const template = newTemplate()
                 assert.strictEqual(CloudFormation.resolvePropertyWithOverrides(undefined, template), undefined)
             })
 
@@ -470,6 +629,7 @@ describe('CloudFormation', () => {
                 const property: CloudFormation.Ref = {
                     Ref: 'strParamNoVal',
                 }
+                const template = newTemplate()
                 assert.strictEqual(CloudFormation.resolvePropertyWithOverrides(property, template), undefined)
             })
 
@@ -480,6 +640,7 @@ describe('CloudFormation', () => {
                 const overrideParams = {
                     strParamNoVal: 'surprise!',
                 }
+                const template = newTemplate()
                 assert.strictEqual(
                     CloudFormation.resolvePropertyWithOverrides(property, template, overrideParams),
                     'surprise!'
@@ -493,6 +654,7 @@ describe('CloudFormation', () => {
                 const overrideParams = {
                     strParamVal: 'surprise!',
                 }
+                const template = newTemplate()
                 assert.strictEqual(
                     CloudFormation.resolvePropertyWithOverrides(property, template, overrideParams),
                     'surprise!'

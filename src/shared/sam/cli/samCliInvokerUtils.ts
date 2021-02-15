@@ -6,13 +6,10 @@
 import { SpawnOptions } from 'child_process'
 import { getLogger } from '../../logger'
 import { ChildProcessResult, ChildProcessStartArguments } from '../../utilities/childProcess'
-import { ChannelLogger } from '../../utilities/vsCodeUtils'
 
 export interface SamCliProcessInvokeOptions {
     spawnOptions?: SpawnOptions
     arguments?: string[]
-    /** Optionally log stdout and stderr to the specified logger */
-    channelLogger?: ChannelLogger
     onStdout?: ChildProcessStartArguments['onStdout']
     onStderr?: ChildProcessStartArguments['onStderr']
 }

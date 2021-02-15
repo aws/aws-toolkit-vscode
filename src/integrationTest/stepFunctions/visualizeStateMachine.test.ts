@@ -96,7 +96,7 @@ async function waitUntilWebviewIsVisible(webviewPanel: vscode.WebviewPanel | und
 }
 
 describe('visualizeStateMachine', async () => {
-    before(async function () {
+    before(async function() {
         this.timeout(600000)
     })
 
@@ -148,7 +148,7 @@ describe('visualizeStateMachine', async () => {
     })
 
     it('correctly displays content when given a sample state machine in yaml', async () => {
-        const fileName = 'mysamplestatemachine.yaml'
+        const fileName = 'mysamplestatemachine.asl.yaml'
         const textEditor = await openATextEditorWithText(samleStateMachineYaml, fileName)
 
         const result = await vscode.commands.executeCommand<vscode.WebviewPanel>('aws.previewStateMachine')

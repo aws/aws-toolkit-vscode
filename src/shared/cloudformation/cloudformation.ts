@@ -213,7 +213,139 @@ export namespace CloudFormation {
         Resources?: TemplateResources
     }
 
-    export type TemplateGlobals = any
+    // Globals section of the template. Provides default values for functions, APIs, HTTP APIs, and SimpleTables.
+    // https://docs.aws.amazon.com/serverless-application-model/latest/developerguide/sam-specification-template-anatomy-globals.html#sam-specification-template-anatomy-globals-supported-resources-and-properties
+    export interface TemplateGlobals {
+        Function?: FunctionGlobals
+        Api?: ApiGlobals
+        HttpApi?: HttpApiGlobals
+        SimpleTable?: SimpleTableGlobals
+    }
+
+    type FunctionKeys =
+        | 'Handler'
+        | 'Runtime'
+        | 'CodeUri'
+        | 'DeadLetterQueue'
+        | 'Description'
+        | 'MemorySize'
+        | 'Timeout'
+        | 'VpcConfig'
+        | 'Environment'
+        | 'Tags'
+        | 'Tracing'
+        | 'KmsKeyArn'
+        | 'Layers'
+        | 'AutoPublishAlias'
+        | 'DeploymentPreference'
+        | 'PermissionsBoundary'
+        | 'ReservedConcurrentExecutions'
+        | 'EventInvokeConfig'
+    const functionKeysSet: Set<string> = new Set([
+        'Handler',
+        'Runtime',
+        'CodeUri',
+        'DeadLetterQueue',
+        'Description',
+        'MemorySize',
+        'Timeout',
+        'VpcConfig',
+        'Environment',
+        'Tags',
+        'Tracing',
+        'KmsKeyArn',
+        'Layers',
+        'AutoPublishAlias',
+        'DeploymentPreference',
+        'PermissionsBoundary',
+        'ReservedConcurrentExecutions',
+        'EventInvokeConfig',
+    ])
+    type FunctionGlobals = {
+        [key in FunctionKeys]?: string | number | object | undefined
+    }
+
+    type ApiKeys =
+        | 'Auth'
+        | 'Name'
+        | 'DefinitionUri'
+        | 'CacheClusterEnabled'
+        | 'CacheClusterSize'
+        | 'Variables'
+        | 'EndpointConfiguration'
+        | 'MethodSettings'
+        | 'BinaryMediaTypes'
+        | 'MinimumCompressionSize'
+        | 'Cors'
+        | 'GatewayResponses'
+        | 'AccessLogSetting'
+        | 'CanarySetting'
+        | 'TracingEnabled'
+        | 'OpenApiVersion'
+        | 'Domain'
+    const apiKeysSet: Set<string> = new Set([
+        'Auth',
+        'Name',
+        'DefinitionUri',
+        'CacheClusterEnabled',
+        'CacheClusterSize',
+        'Variables',
+        'EndpointConfiguration',
+        'MethodSettings',
+        'BinaryMediaTypes',
+        'MinimumCompressionSize',
+        'Cors',
+        'GatewayResponses',
+        'AccessLogSetting',
+        'CanarySetting',
+        'TracingEnabled',
+        'OpenApiVersion',
+        'Domain',
+    ])
+    type ApiGlobals = {
+        [key in ApiKeys]?: string | number | object | undefined
+    }
+
+    type HttpApiKeys =
+        | 'Auth'
+        | 'CorsConfiguration'
+        | 'AccessLogSettings'
+        | 'Tags'
+        | 'DefaultRouteSettings'
+        | 'RouteSettings'
+        | 'Domain'
+    const HttpApiKeysSet: Set<string> = new Set([
+        'Auth',
+        'CorsConfiguration',
+        'AccessLogSettings',
+        'Tags',
+        'DefaultRouteSettings',
+        'RouteSettings',
+        'Domain',
+    ])
+    type HttpApiGlobals = {
+        [key in HttpApiKeys]?: string | number | object | undefined
+    }
+
+    type SimpleTableKeys = 'SSESpecification'
+    const simpleTableKeysSet: Set<string> = new Set(['SSESpecification'])
+    type SimpleTableGlobals = {
+        [key in SimpleTableKeys]?: string | number | object | undefined
+    }
+
+    function globalPropForKey(key: string): keyof TemplateGlobals | undefined {
+        if (functionKeysSet.has(key)) {
+            return 'Function'
+        } else if (apiKeysSet.has(key)) {
+            return 'Api'
+        } else if (HttpApiKeysSet.has(key)) {
+            return 'HttpApi'
+        } else if (simpleTableKeysSet.has(key)) {
+            return 'SimpleTable'
+        } else {
+            return undefined
+        }
+    }
 
     export interface TemplateResources {
         [key: string]: Resource | undefined
@@ -270,35 +402,25 @@ export namespace CloudFormation {
         }
         if (resource.Properties) {
             if (resource.Properties.PackageType === LAMBDA_PACKAGE_TYPE_IMAGE) {
-                if (
-                    !resource.Metadata?.Dockerfile ||
-                    !validatePropertyType(resource.Metadata.Dockerfile, template, 'string')
-                ) {
+                if (!validatePropertyType(resource.Metadata, 'Dockerfile', template, 'string')) {
                     throw new Error('Missing or invalid value in Template for key: Metadata.Dockerfile')
                 }
-                if (
-                    !resource.Metadata.DockerContext ||
-                    !validatePropertyType(resource.Metadata.DockerContext, template, 'string')
-                ) {
+                if (!validatePropertyType(resource.Metadata, 'DockerContext', template, 'string')) {
                     throw new Error('Missing or invalid value in Template for key: Metadata.DockerContext')
                 }
             } else {
-                if (
-                    !resource.Properties.Handler ||
-                    !validatePropertyType(resource.Properties.Handler, template, 'string')
-                ) {
+                if (!validatePropertyType(resource.Properties, 'Handler', template, 'string')) {
                     throw new Error('Missing or invalid value in Template for key: Handler')
                 }
                 if (!resource.Properties.CodeUri) {
                     // Missing codeUri is allowed, (SAM pulls from the handler instead). Set as empty string.
                     resource.Properties.CodeUri = ''
-                }
-                if (!validatePropertyType(resource.Properties.CodeUri, template, 'string')) {
+                } else if (!validatePropertyType(resource.Properties, 'CodeUri', template, 'string')) {
                     throw new Error('Invalid value in Template for key: CodeUri')
                 }
                 if (
                     !!resource.Properties.Runtime &&
-                    !validatePropertyType(resource.Properties.Runtime, template, 'string')
+                    !validatePropertyType(resource.Properties, 'Runtime', template, 'string')
                 ) {
                     throw new Error('Invalid value in Template for key: Runtime')
                 }
@@ -306,25 +428,11 @@ export namespace CloudFormation {
 
             if (
                 !!resource.Properties.Timeout &&
-                !validatePropertyType(resource.Properties.Timeout, template, 'number')
+                !validatePropertyType(resource.Properties, 'Timeout', template, 'number')
             ) {
                 throw new Error('Invalid value in Template for key: Timeout')
             }
         }
-    }
-
-    export function getRuntime(resource: Pick<Resource, 'Properties'>, template: Template): string {
-        const properties = resource.Properties as ZipResourceProperties
-        if (!properties || !validatePropertyType(properties.Runtime, template, 'string')) {
-            throw new Error('Resource does not specify a Runtime')
-        }
-
-        const reffedVal = getStringForProperty(properties.Runtime! as Ref, template)
-        // TODO: should we handle this a different way? User could still override in this state.
-        if (!reffedVal) {
-            throw new Error('Resource references a parameter without a default value')
-        }
-        return reffedVal
     }
 
     export async function getResourceFromTemplate(
@@ -403,48 +511,62 @@ export namespace CloudFormation {
     /**
      * Gets the string value for a property in a template.
      * If the value is a Ref to a parameter, returns the default value of the ref; this may be undefined.
-     * Also returns undefined if the property is neither string nor Ref.
-     * @param property Property value to check
-     * @param template Template object to parse through
+     * If the value is not defined in the `targetObj` (`undefined` Ref counts as a definition), will attempt to find a value in Globals.
+     * Returns undefined if the value is not found in `targetObj` or `Globals`.
+     * @param targetObj Object containing a key to check
+     * @param key Key to look up in `targetObj`. If not present in `targetObj`, will fall back to a value in `Globals`.
+     * @param template Full template object. Required for `Ref` and `Globals` lookup.
      */
     export function getStringForProperty(
-        property: string | number | object | undefined,
+        targetObj: { [key: string]: string | number | object | undefined } | undefined,
+        key: string,
         template: Template
     ): string | undefined {
-        return getThingForProperty(property, template, 'string') as string | undefined
+        return getThingForProperty(targetObj, key, template, 'string') as string | undefined
     }
 
     /**
      * Gets the numeric value for a property in a template.
      * If the value is a Ref to a parameter, returns the default value of the ref; this may be undefined.
-     * Also returns undefined if the property is neither number nor Ref.
-     * @param property Property value to check
-     * @param template Template object to parse through
+     * If the value is not defined in the `targetObj` (`undefined` Ref counts as a definition), will attempt to find a value in Globals.
+     * Returns undefined if the value is not found in `targetObj` or `Globals`.
+     * @param targetObj Object containing a key to check
+     * @param key Key to look up in `targetObj`. If not present in `targetObj`, will fall back to a value in `Globals`.
+     * @param template Full template object. Required for `Ref` and `Globals` lookup.
      */
     export function getNumberForProperty(
-        property: string | number | object | undefined,
+        targetObj: { [key: string]: string | number | object | undefined } | undefined,
+        key: string,
         template: Template
     ): number | undefined {
-        return getThingForProperty(property, template, 'number') as number | undefined
+        return getThingForProperty(targetObj, key, template, 'number') as number | undefined
     }
 
     /**
-     * Returns the "thing" that represents the property:
+     * Returns the "thing" that represents the property within `targetObj` or `Globals`:
      * * string if a string is requested and (the property is a string or if the property is a ref that is not a Number and has a default value)
      * * number if a number is requested and (the property is a number or if the property is a ref that is Number and has a default value)
      * * undefined in all other cases
      *
      * Ultimately it is up to the caller to ensure the type matches but this should do a more-than-reasonable job.
-     * @param property Property to validate the type of
-     * @param template Template object to parse through
+     * @param targetObj Object containing a key to check
+     * @param key Key to look up in `targetObj`. If not present in `targetObj`, will fall back to a value in `Globals`.
+     * @param template Full template object. Required for `Ref` and `Globals` lookup.
      * @param type Type to validate the property's type against
+     * @param globalLookup Whether or not this is currently looking at `Globals` fields. Internal for recursion prevention.
      */
     function getThingForProperty(
-        property: string | number | object | undefined,
+        targetObj: { [key: string]: string | number | object | undefined } | undefined,
+        key: string,
         template: Template,
-        type: 'string' | 'number'
+        type: 'string' | 'number',
+        globalLookup?: boolean
     ): string | number | undefined {
-        if (validatePropertyType(property, template, type)) {
+        if (!targetObj) {
+            return undefined
+        }
+        const property: string | number | object | undefined = targetObj[key]
+        if (validatePropertyType(targetObj, key, template, type)) {
             if (typeof property !== 'object' && typeof property === type) {
                 return property
             } else if (isRef(property)) {
@@ -457,21 +579,39 @@ export namespace CloudFormation {
             }
         }
 
+        // only look if we're not already looking at globals
+        if (!globalLookup) {
+            const globalProp = globalPropForKey(key)
+
+            if (globalProp && template.Globals && template.Globals[globalProp]) {
+                return getThingForProperty(template.Globals![globalProp], key, template, type, true)
+            }
+        }
+
         return undefined
     }
 
     /**
      * Returns whether or not a property or its underlying ref matches the specified type
+     * Checks `targetObj` and `Globals` in that priority order. Will fail if `targetObj` is not valid but `Globals` is.
      * Does not validate a default value for a template parameter; just checks the value's type
-     * @param property Property to validate the type of
-     * @param template Template object to parse through
+     * @param targetObj Object containing a key to check
+     * @param key Key to look up in `targetObj`. If not present in `targetObj`, will fall back to a value in `Globals`.
+     * @param template Full template object. Required for `Ref` and `Globals` lookup.
      * @param type Type to validate the property's type against
+     * @param globalLookup Whether or not this is currently looking at `Globals` fields. Internal for recursion prevention.
      */
     function validatePropertyType(
-        property: string | number | object | undefined,
+        targetObj: { [key: string]: string | number | object | undefined } | undefined,
+        key: string,
         template: Template,
-        type: 'string' | 'number'
+        type: 'string' | 'number',
+        globalLookup?: boolean
     ): boolean {
+        if (!targetObj) {
+            return false
+        }
+        const property: string | number | object | undefined = targetObj[key]
         if (typeof property === type) {
             return true
         } else if (isRef(property)) {
@@ -481,6 +621,15 @@ export namespace CloudFormation {
             const paramType = param.Type === 'Number' ? 'number' : 'string'
 
             return paramType === type
+        }
+
+        // only look if we're not already looking at globals
+        if (!globalLookup) {
+            const globalProp = globalPropForKey(key)
+
+            if (globalProp && template.Globals && template.Globals[globalProp]) {
+                return validatePropertyType(template.Globals![globalProp], key, template, type, true)
+            }
         }
 
         return false

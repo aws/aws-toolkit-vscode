@@ -9,6 +9,7 @@ const localize = nls.loadMessageBundle()
 import * as vscode from 'vscode'
 import { Credentials } from 'aws-sdk'
 import { credentialHelpUrl } from '../shared/constants'
+import { Profile } from '../shared/credentials/credentialsFile'
 import { isCloud9 } from '../shared/extensionUtilities'
 import { CredentialsProviderId, asString } from './providers/credentialsProviderId'
 
@@ -47,4 +48,8 @@ export function notifyUserInvalidCredentials(credentialProviderId: CredentialsPr
                 vscode.commands.executeCommand('aws.viewLogs')
             }
         })
+}
+
+export function hasProfileProperty(profile: Profile, propertyName: string): boolean {
+    return !!profile[propertyName]
 }

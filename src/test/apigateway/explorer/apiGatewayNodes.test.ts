@@ -18,19 +18,34 @@ import { RestApiNode } from '../../../apigateway/explorer/apiNodes'
 
 const FAKE_PARTITION_ID = 'aws'
 const FAKE_REGION_CODE = 'someregioncode'
-const UNSORTED_TEXT = ['zebra', 'Antelope', 'aardvark', 'elephant']
-const SORTED_TEXT = ['aardvark', 'Antelope', 'elephant', 'zebra']
+const UNSORTED_TEXT = [
+    { name: 'zebra', id: "it's zee not zed" },
+    { name: 'zebra', id: "it's actually zed" },
+    { name: 'Antelope', id: 'anti-antelope' },
+    { name: 'aardvark', id: 'a-a-r-d-vark' },
+    { name: 'elephant', id: 'trunk capacity' },
+]
+const SORTED_TEXT = [
+    'aardvark (a-a-r-d-vark)',
+    'Antelope (anti-antelope)',
+    'elephant (trunk capacity)',
+    "zebra (it's actually zed)",
+    "zebra (it's zee not zed)",
+]
 
 describe('ApiGatewayNode', () => {
     let sandbox: sinon.SinonSandbox
     let testNode: ApiGatewayNode
 
-    let apiNames: string[]
+    let apiNames: { name: string; id: string }[]
 
     beforeEach(() => {
         sandbox = sinon.createSandbox()
 
-        apiNames = ['api1', 'api2']
+        apiNames = [
+            { name: 'api1', id: '11111' },
+            { name: 'api2', id: '22222' },
+        ]
 
         initializeClientBuilders()
 
@@ -79,9 +94,10 @@ describe('ApiGatewayNode', () => {
         const apiGatewayClient = {
             listApis: sandbox.stub().callsFake(() => {
                 return asyncGenerator<RestApi>(
-                    apiNames.map<RestApi>(name => {
+                    apiNames.map<RestApi>(({ name, id }) => {
                         return {
-                            name: name,
+                            name,
+                            id,
                         }
                     })
                 )

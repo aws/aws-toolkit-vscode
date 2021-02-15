@@ -5,7 +5,7 @@
 
 import * as vscode from 'vscode'
 import * as fs from 'fs'
-import { samZipLambdaRuntimes } from '../../../lambda/models/samLambdaRuntime'
+import { samImageLambdaRuntimes, samZipLambdaRuntimes } from '../../../lambda/models/samLambdaRuntime'
 import { CloudFormation } from '../../cloudformation/cloudformation'
 import { localize } from '../../utilities/vsCodeUtils'
 import {
@@ -171,13 +171,13 @@ export class DefaultAwsSamDebugConfigurationValidator implements AwsSamDebugConf
                 }
             }
             // can't infer the runtime for image-based lambdas
-            if (!config.lambda?.runtime || !samZipLambdaRuntimes.has(config.lambda.runtime)) {
+            if (!config.lambda?.runtime || !samImageLambdaRuntimes.has(config.lambda.runtime)) {
                 return {
                     isValid: false,
                     message: localize(
                         'AWS.sam.debugger.missingRuntimeForImage',
                         'Run configurations for Image-based Lambdas require a valid Lambda runtime value, expected one of [{0}]',
-                        Array.from(samZipLambdaRuntimes).join(', ')
+                        Array.from(samImageLambdaRuntimes).join(', ')
                     ),
                 }
             }
@@ -185,7 +185,8 @@ export class DefaultAwsSamDebugConfigurationValidator implements AwsSamDebugConf
             // TODO: Decide what to do with this re: refs.
             // As of now, this has to be directly declared without a ref, despite the fact that SAM will handle a ref.
             // Should we just pass validation off to SAM and ignore validation at this point, or should we directly process the value (like the handler)?
-            if (!resource?.Properties?.Runtime || !samZipLambdaRuntimes.has(resource?.Properties?.Runtime as string)) {
+            const runtime = CloudFormation.getStringForProperty(resource?.Properties, 'Runtime', cfnTemplate)
+            if (!runtime || !samZipLambdaRuntimes.has(runtime)) {
                 return {
                     isValid: false,
                     message: localize(
@@ -198,7 +199,7 @@ export class DefaultAwsSamDebugConfigurationValidator implements AwsSamDebugConf
             }
         }
 
-        const templateEnv = resource?.Properties.Environment
+        const templateEnv = resource?.Properties?.Environment
         if (templateEnv?.Variables) {
             const templateEnvVars = Object.keys(templateEnv.Variables)
             const missingVars: string[] = []

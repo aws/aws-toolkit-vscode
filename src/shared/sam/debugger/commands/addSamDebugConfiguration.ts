@@ -51,7 +51,8 @@ export async function addSamDebugConfiguration(
     let runtimeName = runtimeFamily ? getDefaultRuntime(runtimeFamily) : undefined
     let addRuntimeNameToConfig = false
 
-    if (type === TEMPLATE_TARGET_TYPE) {
+    // both of these config types use templates
+    if (type === TEMPLATE_TARGET_TYPE || type === API_TARGET_TYPE) {
         let preloadedConfig = undefined
 
         if (workspaceFolder) {
@@ -63,36 +64,43 @@ export async function addSamDebugConfiguration(
                 }
 
                 if (CloudFormation.isZipLambdaResource(resource.Properties)) {
-                    const handler = CloudFormation.getStringForProperty(resource.Properties.Handler, templateDatum.item)
-                    const existingConfig = await getExistingConfiguration(workspaceFolder, handler ?? '', rootUri)
-                    if (existingConfig) {
-                        const responseMigrate: string = localize(
-                            'AWS.sam.debugger.useExistingConfig.migrate',
-                            'Create based on the legacy config'
+                    if (type === TEMPLATE_TARGET_TYPE) {
+                        const handler = CloudFormation.getStringForProperty(
+                            resource.Properties,
+                            'Handler',
+                            templateDatum.item
                         )
-                        const responseNew: string = localize(
-                            'AWS.sam.debugger.useExistingConfig.doNotMigrate',
-                            'Create new config only'
-                        )
-                        const prompt = await vscode.window.showInformationMessage(
-                            localize(
-                                'AWS.sam.debugger.useExistingConfig',
-                                'AWS Toolkit detected an existing legacy configuration for this function. Create the debug config based on the legacy config?'
-                            ),
-                            { modal: true },
-                            responseMigrate,
-                            responseNew
-                        )
-                        if (!prompt) {
-                            // User selected "Cancel". Abandon config creation
-                            return
-                        } else if (prompt === responseMigrate) {
-                            preloadedConfig = existingConfig
+                        const existingConfig = await getExistingConfiguration(workspaceFolder, handler ?? '', rootUri)
+                        if (existingConfig) {
+                            const responseMigrate: string = localize(
+                                'AWS.sam.debugger.useExistingConfig.migrate',
+                                'Create based on the legacy config'
+                            )
+                            const responseNew: string = localize(
+                                'AWS.sam.debugger.useExistingConfig.doNotMigrate',
+                                'Create new config only'
+                            )
+                            const prompt = await vscode.window.showInformationMessage(
+                                localize(
+                                    'AWS.sam.debugger.useExistingConfig',
+                                    'AWS Toolkit detected an existing legacy configuration for this function. Create the debug config based on the legacy config?'
+                                ),
+                                { modal: true },
+                                responseMigrate,
+                                responseNew
+                            )
+                            if (!prompt) {
+                                // User selected "Cancel". Abandon config creation
+                                return
+                            } else if (prompt === responseMigrate) {
+                                preloadedConfig = existingConfig
+                            }
                         }
                     }
-                } else if (CloudFormation.isImageLambdaResource(resource.Properties) && runtimeFamily === undefined) {
+                } else if (CloudFormation.isImageLambdaResource(resource.Properties)) {
                     const quickPick = createRuntimeQuickPick({
                         showImageRuntimes: false,
+                        runtimeFamily,
                     })
 
                     const choices = await picker.promptUser({
@@ -113,14 +121,32 @@ export async function addSamDebugConfiguration(
                 }
             }
         }
-        samDebugConfig = createTemplateAwsSamDebugConfig(
-            workspaceFolder,
-            runtimeName,
-            addRuntimeNameToConfig,
-            resourceName,
-            rootUri.fsPath,
-            preloadedConfig
-        )
+
+        if (type === TEMPLATE_TARGET_TYPE) {
+            samDebugConfig = createTemplateAwsSamDebugConfig(
+                workspaceFolder,
+                runtimeName,
+                addRuntimeNameToConfig,
+                resourceName,
+                rootUri.fsPath,
+                preloadedConfig
+            )
+        } else {
+            // If the event has no properties, the default will be used
+            const apiConfig = {
+                path: apiEvent?.event.Properties?.Path,
+                httpMethod: apiEvent?.event.Properties?.Method,
+                payload: apiEvent?.event.Properties?.Payload,
+            }
+
+            samDebugConfig = createApiAwsSamDebugConfig(
+                workspaceFolder,
+                runtimeName,
+                resourceName,
+                rootUri.fsPath,
+                apiConfig
+            )
+        }
     } else if (type === CODE_TARGET_TYPE) {
         const quickPick = createRuntimeQuickPick({
             showImageRuntimes: false,
@@ -151,21 +177,6 @@ export async function addSamDebugConfiguration(
             // User backed out of runtime selection. Abandon config creation.
             return
         }
-    } else if (type === API_TARGET_TYPE) {
-        // If the event has no properties, the default will be used
-        const preloadedConfig = {
-            path: apiEvent?.event.Properties?.Path,
-            httpMethod: apiEvent?.event.Properties?.Method,
-            payload: apiEvent?.event.Properties?.Payload,
-        }
-
-        samDebugConfig = createApiAwsSamDebugConfig(
-            workspaceFolder,
-            runtimeName,
-            resourceName,
-            rootUri.fsPath,
-            preloadedConfig
-        )
     } else {
         throw new Error('Unrecognized debug target type')
     }

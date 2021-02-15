@@ -22,7 +22,7 @@ export async function invokeTypescriptLambda(
     ctx: ExtContext,
     config: NodejsDebugConfiguration
 ): Promise<NodejsDebugConfiguration> {
-    config.samLocalInvokeCommand = new DefaultSamLocalInvokeCommand(ctx.chanLogger, [WAIT_FOR_DEBUGGER_MESSAGES.NODEJS])
+    config.samLocalInvokeCommand = new DefaultSamLocalInvokeCommand([WAIT_FOR_DEBUGGER_MESSAGES.NODEJS])
     // eslint-disable-next-line @typescript-eslint/unbound-method
     config.onWillAttachDebugger = waitForPort
     const c = (await invokeLambdaFunction(ctx, config, async () => {})) as NodejsDebugConfiguration

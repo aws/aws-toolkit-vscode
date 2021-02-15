@@ -3,6 +3,7 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
+import { readFileSync } from 'fs'
 import { CloudFormation } from './cloudformation'
 import * as pathutils from '../utilities/pathUtils'
 import * as path from 'path'
@@ -11,6 +12,7 @@ import { dotNetRuntimes } from '../../lambda/models/samLambdaRuntime'
 import { getLambdaDetails } from '../../lambda/utils'
 import { ext } from '../extensionGlobals'
 import { WatchedFiles, WatchedItem } from '../watchedFiles'
+import { getLogger } from '../logger'
 
 export interface TemplateDatum {
     path: string
@@ -84,15 +86,35 @@ export function getResourcesForHandlerFromTemplateDatum(
         ) {
             // parse template values that could potentially be refs
             const registeredRuntime = CloudFormation.getStringForProperty(
-                resource.Properties?.Runtime,
+                resource.Properties,
+                'Runtime',
                 templateDatum.item
             )
             const registeredCodeUri = CloudFormation.getStringForProperty(
-                resource.Properties?.CodeUri,
+                resource.Properties,
+                'CodeUri',
                 templateDatum.item
             )
             const registeredHandler = CloudFormation.getStringForProperty(
-                resource.Properties?.Handler,
+                resource.Properties,
+                'Handler',
+                templateDatum.item
+            )
+
+            // properties for image type templates
+            const registeredPackageType = CloudFormation.getStringForProperty(
+                resource.Properties,
+                'PackageType',
+                templateDatum.item
+            )
+            const registeredDockerContext = CloudFormation.getStringForProperty(
+                resource.Metadata,
+                'DockerContext',
+                templateDatum.item
+            )
+            const registeredDockerFile = CloudFormation.getStringForProperty(
+                resource.Metadata,
+                'Dockerfile',
                 templateDatum.item
             )
 
@@ -130,9 +152,42 @@ export function getResourcesForHandlerFromTemplateDatum(
                             matchingResources.push({ name: key, resourceData: resource })
                         }
                     } catch (e) {
-                        // swallow error from getLambdaDetails: handler not a valid runtime, so skip to the next one
+                        getLogger().warn(
+                            `Resource ${key} in template ${templateDirname} has invalid runtime for handler ${handler}: ${registeredRuntime}`
+                        )
                     }
                 }
+                // not direct-invoke type, attempt image type
+            } else if (registeredPackageType === 'Image' && registeredDockerContext && registeredDockerFile) {
+                // path must be inside dockerDir
+                const dockerDir = path.join(templateDirname, registeredDockerContext)
+                if (isInDirectory(dockerDir, filepath)) {
+                    let adjustedHandler: string = handler
+                    if (!filepath.endsWith('.cs')) {
+                        // reframe path to be relative to dockerDir instead of package.json
+                        // omit filename and append filename + function name from handler
+                        const relPath = path.relative(dockerDir, path.dirname(filepath))
+                        const handlerParts = pathutils.normalizeSeparator(handler).split('/')
+                        adjustedHandler = pathutils.normalizeSeparator(
+                            path.join(relPath, handlerParts[handlerParts.length - 1])
+                        )
+                    }
+                    try {
+                        // open dockerfile and see if it has a handler that matches the handler represented by this file
+                        const fileText = readFileSync(path.join(dockerDir, registeredDockerFile)).toString()
+                        // exact match within quotes to avoid shorter paths being picked up
+                        if (
+                            new RegExp(`['"]${adjustedHandler}['"]`, 'g').test(pathutils.normalizeSeparator(fileText))
+                        ) {
+                            matchingResources.push({ name: key, resourceData: resource })
+                        }
+                    } catch (e) {
+                        // file read error
+                        getLogger().error(e as Error)
+                    }
+                }
+            } else {
+                getLogger().verbose(`Resource ${key} in template ${templateDirname} does not match handler ${handler}`)
             }
         }
     }
