@@ -9,6 +9,8 @@ import com.intellij.xdebugger.XDebugProcessStarter
 import com.intellij.xdebugger.XDebugSession
 import com.jetbrains.python.PythonHelper
 import com.jetbrains.python.debugger.PyDebugProcess
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.withContext
 import software.aws.toolkits.jetbrains.services.PathMapper
 import software.aws.toolkits.jetbrains.services.PathMapping
 import software.aws.toolkits.jetbrains.services.lambda.execution.sam.SamRunningState
@@ -16,32 +18,38 @@ import software.aws.toolkits.jetbrains.services.lambda.execution.sam.SamRunningS
 object PythonDebugUtils {
     const val DEBUGGER_VOLUME_PATH = "/tmp/lambci_debug_files"
 
-    fun createDebugProcess(
+    suspend fun createDebugProcess(
         environment: ExecutionEnvironment,
         state: SamRunningState,
         debugHost: String,
         debugPorts: List<Int>
-    ): XDebugProcessStarter = object : XDebugProcessStarter() {
-        override fun start(session: XDebugSession): XDebugProcess {
+    ): XDebugProcessStarter {
+        val executionResult = withContext(Dispatchers.IO) {
+            // needs to run off EDT since it resolves credentials
+            state.execute(environment.executor, environment.runner)
+        }
 
-            val mappings = state.pathMappings.plus(
-                listOf(
-                    PathMapping(
-                        PythonHelper.DEBUGGER.pythonPathEntry,
-                        DEBUGGER_VOLUME_PATH
+        return object : XDebugProcessStarter() {
+            override fun start(session: XDebugSession): XDebugProcess {
+
+                val mappings = state.pathMappings.plus(
+                    listOf(
+                        PathMapping(
+                            PythonHelper.DEBUGGER.pythonPathEntry,
+                            DEBUGGER_VOLUME_PATH
+                        )
                     )
                 )
-            )
 
-            val executionResult = state.execute(environment.executor, environment.runner)
-            return PyDebugProcess(
-                session,
-                executionResult.executionConsole,
-                executionResult.processHandler,
-                debugHost,
-                debugPorts.first()
-            ).also {
-                it.positionConverter = PathMapper.PositionConverter(PathMapper(mappings))
+                return PyDebugProcess(
+                    session,
+                    executionResult.executionConsole,
+                    executionResult.processHandler,
+                    debugHost,
+                    debugPorts.first()
+                ).also {
+                    it.positionConverter = PathMapper.PositionConverter(PathMapper(mappings))
+                }
             }
         }
     }
