@@ -7,6 +7,7 @@ import com.intellij.openapi.fileChooser.FileChooserDescriptorFactory
 import com.intellij.openapi.project.Project
 import com.intellij.openapi.ui.ComboBox
 import com.intellij.openapi.ui.TextFieldWithBrowseButton
+import com.intellij.ui.DocumentAdapter
 import com.intellij.ui.SimpleListCellRenderer
 import com.intellij.ui.SortedComboBoxModel
 import com.intellij.util.PathMappingSettings
@@ -28,6 +29,7 @@ import java.util.Comparator
 import javax.swing.DefaultComboBoxModel
 import javax.swing.JComboBox
 import javax.swing.JPanel
+import javax.swing.event.DocumentEvent
 
 class TemplateSettings(val project: Project) {
     lateinit var panel: JPanel
@@ -60,9 +62,14 @@ class TemplateSettings(val project: Project) {
                 project,
                 FileChooserDescriptorFactory.createSingleFileDescriptor(YAMLFileType.YML)
             ) {
-                setTemplateFile(it.canonicalPath)
+                templateFile.text = it.canonicalPath ?: ""
             }
         )
+        templateFile.textField.document.addDocumentListener(object : DocumentAdapter() {
+            override fun textChanged(e: DocumentEvent) {
+                updateFunctionModel(templateFile.text)
+            }
+        })
         function.addActionListener {
             val selected = function.selected()
             imageSettingsPanel.isVisible = selected is SamFunction && selected.packageType() == PackageType.IMAGE
@@ -93,13 +100,22 @@ class TemplateSettings(val project: Project) {
         imageDebugger.renderer = SimpleListCellRenderer.create { label, value, _ -> label.text = value?.displayName() }
     }
 
-    fun setTemplateFile(file: String?) {
-        if (file == null) {
+    fun setTemplateFile(path: String?) {
+        templateFile.text = path ?: ""
+        updateFunctionModel(path)
+    }
+
+    private fun updateFunctionModel(path: String?) {
+        if (path.isNullOrBlank()) {
             templateFile.text = ""
             updateFunctionModel(emptyList())
+            return
+        }
+        val file = File(path)
+        if (!file.exists() || !file.isFile) {
+            updateFunctionModel(emptyList())
         } else {
-            templateFile.text = file
-            val functions = SamTemplateUtils.findFunctionsFromTemplate(project, File(file))
+            val functions = SamTemplateUtils.findFunctionsFromTemplate(project, file)
             updateFunctionModel(functions)
         }
     }
