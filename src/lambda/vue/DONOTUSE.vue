@@ -111,6 +111,7 @@
             <button v-on:click.prevent="loadPayload">Load Sample Payload</button><br />
             <textarea name="lambda-payload" id="lambda-payload" cols="60" rows="5" v-model="payload"></textarea>
             <span class="data-view">payload from data: {{ payload }} </span>
+            <div class="json-parse-error" v-if="jsonError && payload">Error parsing JSON: {{jsonError}}</div>
         </div>
         <div class="invoke-button-container">
             <button v-on:click.prevent="save">Save Debug Configuration</button>

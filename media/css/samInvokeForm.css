@@ -81,7 +81,15 @@ textarea {
 .tooltip:hover .tooltip-text {
     visibility: visible;
     cursor: pointer;
-  }
+}
+
+.json-parse-error {
+    margin-top: 10px;
+    color: red;
+    border: red solid 1px;
+    width:  90%;
+    padding: 5px 10px;
+}
 
 #form-title {
     font-size: large;

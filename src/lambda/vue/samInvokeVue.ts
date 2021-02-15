@@ -16,6 +16,7 @@ declare const vscode: VsCode<SamInvokerRequest, SamInvokeVueState>
 
 export interface SamInvokeVueData {
     msg: any
+    jsonError: string
     targetTypes: { [k: string]: string }[]
     runtimes: string[]
     httpMethods: string[]
@@ -76,6 +77,7 @@ export const Component = Vue.extend({
     data(): SamInvokeVueData {
         return {
             msg: 'Hello',
+            jsonError: '',
             targetTypes: [
                 { name: 'Code', value: 'code' },
                 { name: 'Template', value: 'template' },
@@ -108,6 +110,7 @@ export const Component = Vue.extend({
             deep: true,
         },
         payload: function (newval: string) {
+            this.resetJsonError()
             vscode.setState({
                 payload: newval,
                 launchConfig: this.launchConfig,
@@ -115,13 +118,18 @@ export const Component = Vue.extend({
         },
     },
     methods: {
+        resetJsonError() {
+            this.jsonError = ''
+        },
         launch() {
+            this.resetJsonError()
             let payloadJson: { [k: string]: any } = {}
             if (this.payload !== '') {
                 try {
                     payloadJson = JSON.parse(this.payload)
                 } catch (e) {
-                    // swallow error for now...
+                    this.jsonError = e
+                    console.log(e)
                     return
                 }
             }
@@ -143,12 +151,14 @@ export const Component = Vue.extend({
             })
         },
         save() {
+            this.resetJsonError()
             let payloadJson: { [k: string]: any } = {}
             if (this.payload !== '') {
                 try {
                     payloadJson = JSON.parse(this.payload)
                 } catch (e) {
-                    // swallow error for now...
+                    this.jsonError = e
+                    console.log(e)
                     return
                 }
             }
@@ -169,20 +179,23 @@ export const Component = Vue.extend({
             })
         },
         loadConfig() {
+            this.resetJsonError()
             vscode.postMessage({
                 command: 'loadSamLaunchConfig',
             })
         },
         loadPayload() {
+            this.resetJsonError()
             vscode.postMessage({
                 command: 'getSamplePayload',
             })
         },
         loadResource() {
+            this.resetJsonError()
             vscode.postMessage({
                 command: 'getTemplate',
             })
-        },
+        }
     },
     // `createElement` is inferred, but `render` needs return type
     template: `<!--
@@ -298,6 +311,7 @@ export const Component = Vue.extend({
             <button v-on:click.prevent="loadPayload">Load Sample Payload</button><br />
             <textarea name="lambda-payload" id="lambda-payload" cols="60" rows="5" v-model="payload"></textarea>
             <span class="data-view">payload from data: {{ payload }} </span>
+            <div class="json-parse-error" v-if="jsonError && payload">Error parsing JSON: {{jsonError}}</div>
         </div>
         <div class="invoke-button-container">
             <button v-on:click.prevent="save">Save Debug Configuration</button>
