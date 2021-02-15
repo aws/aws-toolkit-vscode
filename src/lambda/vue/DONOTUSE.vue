@@ -18,7 +18,7 @@
                 <h2>Target: Code</h2>
                 <button v-on:click.prevent="loadResource">Load Resource</button><br />
                 <div class="config-item">
-                    <label for="select-directory">Project Root</label>
+                    <label for="select-directory">Project Root  <span class="tooltip">i<span class="tooltip-text"> Heplful tooltip with explanation and example: <br>Example path: home/folder/file</span></span></label>
                     <input
                         id="select-directory"
                         v-model="launchConfig.invokeTarget.projectRoot"
@@ -52,7 +52,7 @@
                 <h2>Target: Template</h2>
                 <button v-on:click.prevent="loadResource">Load Resource</button><br />
                 <div class="config-item">
-                    <label for="template-path">Template Path</label>
+                    <label for="template-path">Template Path  <span class="tooltip">i<span class="tooltip-text"> Heplful tooltip with explanation and example: <br>Example path: home/folder/file</span></span></label>
                     <input
                         id="template-path-button"
                         v-model="launchConfig.invokeTarget.templatePath"
@@ -66,6 +66,7 @@
                     <input
                         name="template-logical-id"
                         id="template-logical-id"
+                        placeholder="Enter a resource"
                         v-model="launchConfig.invokeTarget.logicalId"
                     /><span class="data-view"> Logical Id from data: {{ launchConfig.invokeTarget.logicalId }}</span>
                 </div>
@@ -82,8 +83,7 @@
                     <input
                         name="template-logical-id"
                         id="template-logical-id"
-                        cols="15"
-                        rows="2"
+                        placeholder="Enter a resource"
                         v-model="launchConfig.invokeTarget.logicalId"
                     />
                 </div>
