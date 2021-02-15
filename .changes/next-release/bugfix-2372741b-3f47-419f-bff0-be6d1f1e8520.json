@@ -1,0 +1,4 @@
+{
+  "type" : "bugfix",
+  "description" : "Fix being unable to type/copy paste into the SAM local run config's template path textbox"
+}
