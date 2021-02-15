@@ -9,6 +9,7 @@ val remoteRobotVersion: String by project
 val uiTestFixturesVersion: String by project
 val awsSdkVersion: String by project
 val coroutinesVersion: String by project
+val apacheCommonsVersion: String by project
 
 repositories {
     maven { url = URI("https://jetbrains.bintray.com/intellij-third-party-dependencies") }
@@ -32,6 +33,7 @@ dependencies {
     testImplementation("software.amazon.awssdk:sns:$awsSdkVersion")
     testImplementation("software.amazon.awssdk:sqs:$awsSdkVersion")
 
+    testImplementation("commons-io:commons-io:$apacheCommonsVersion")
     testRuntimeOnly("org.junit.jupiter:junit-jupiter-engine:$junit5Version")
 }
 
