@@ -78,7 +78,16 @@ class SamRunningState(
 
         // Unix: Sends SIGINT on destroy so Docker container is shut down
         // Windows: Run with mediator to allow for Cntrl+C to be used
-        return KillableColoredProcessHandler(commandLine, true)
+        return object : KillableColoredProcessHandler(commandLine, true) {
+            override fun doDestroyProcess() {
+                // send signal only if user explicitly requests termination
+                if (this.getUserData(ProcessHandler.TERMINATION_REQUESTED) == true) {
+                    super.doDestroyProcess()
+                } else {
+                    detachProcess()
+                }
+            }
+        }
     }
 
     private fun createEventFile(): String {
