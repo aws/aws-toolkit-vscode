@@ -1,0 +1,4 @@
+{
+  "type" : "bugfix",
+  "description" : "Fix transient 'Aborted!' message on successful SAM CLI local Lambda execution"
+}
