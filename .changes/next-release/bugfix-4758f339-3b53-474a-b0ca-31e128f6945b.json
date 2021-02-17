@@ -1,4 +1,0 @@
-{
-  "type" : "bugfix",
-  "description" : "Fix Secrets Manager-based databse auth throwing NullPointer when editing settings in 2020.3.2 (Fixes #2403)"
-}
