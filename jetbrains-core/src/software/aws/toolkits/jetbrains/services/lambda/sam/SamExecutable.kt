@@ -23,7 +23,7 @@ import java.nio.file.Paths
 class SamExecutable : ExecutableType<SemVer>, AutoResolvable, Validatable {
     companion object {
         // inclusive
-        val minVersion = SemVer("0.47.0", 0, 47, 0)
+        val minVersion = SemVer("1.0.0", 1, 0, 0)
 
         // exclusive
         val maxVersion = SemVer("2.0.0", 2, 0, 0)
