@@ -9,8 +9,10 @@ import com.intellij.build.BuildViewManager
 import com.intellij.build.DefaultBuildDescriptor
 import com.intellij.build.events.impl.FailureResultImpl
 import com.intellij.build.events.impl.FinishBuildEventImpl
+import com.intellij.build.events.impl.SkippedResultImpl
 import com.intellij.build.events.impl.StartBuildEventImpl
 import com.intellij.build.events.impl.SuccessResultImpl
+import com.intellij.build.process.BuildProcessHandler
 import com.intellij.execution.process.ProcessHandler
 import com.intellij.openapi.application.ApplicationManager
 import com.intellij.openapi.components.service
@@ -28,14 +30,15 @@ class StepExecutor(
     private val project: Project,
     private val title: String,
     private val workflow: StepWorkflow,
-    private val uniqueId: String
+    private val uniqueId: String,
+    private val progressListener: BuildProgressListener = project.service<BuildViewManager>()
 ) {
     var onSuccess: ((Context) -> Unit)? = null
     var onError: ((Throwable) -> Unit)? = null
 
     fun startExecution(): ProcessHandler {
         val context = Context(project)
-        val processHandler = DummyProcessHandler(context)
+        val processHandler = DummyProcessHandler(title, context)
         val descriptor = DefaultBuildDescriptor(
             uniqueId,
             title,
@@ -46,8 +49,6 @@ class StepExecutor(
         }
 
         // FIX_WHEN_MIN_IS_202 add optional filters and use descriptor.withExecutionFilter
-
-        val progressListener: BuildProgressListener = project.service<BuildViewManager>()
         val messageEmitter = DefaultMessageEmitter.createRoot(progressListener, uniqueId)
 
         ApplicationManager.getApplication().executeOnPooledThread {
@@ -67,23 +68,24 @@ class StepExecutor(
         processHandler: DummyProcessHandler
     ) {
         try {
-            executionStarted(descriptor, progressListener)
+            executionStarted(descriptor, progressListener, processHandler)
             workflow.run(context, messageEmitter)
-            LOG.tryOrNull("Failed to invoke success callback") {
-                onSuccess?.invoke(context)
-            }
+
+            // If the dummy process was cancelled (or any step got cancelled), we need to rethrow the cancel
+            context.throwIfCancelled()
+
+            onSuccess?.invoke(context)
             executionFinishedSuccessfully(processHandler, progressListener)
         } catch (e: Throwable) {
             LOG.tryOrNull("Failed to invoke error callback") {
                 onError?.invoke(e)
             }
-            onError?.invoke(e)
             executionFinishedExceptionally(processHandler, progressListener, e)
         }
     }
 
-    private fun executionStarted(descriptor: BuildDescriptor, progressListener: BuildProgressListener) {
-        progressListener.onEvent(uniqueId, StartBuildEventImpl(descriptor, message("general.execution.running")))
+    private fun executionStarted(descriptor: BuildDescriptor, progressListener: BuildProgressListener, processHandler: DummyProcessHandler) {
+        progressListener.onEvent(uniqueId, StartBuildEventImpl(descriptor, message("general.execution.running")).withProcessHandler(processHandler, null))
     }
 
     private fun executionFinishedSuccessfully(processHandler: DummyProcessHandler, progressListener: BuildProgressListener) {
@@ -103,7 +105,7 @@ class StepExecutor(
 
     private fun executionFinishedExceptionally(processHandler: DummyProcessHandler, progressListener: BuildProgressListener, e: Throwable) {
         val message = if (e is ProcessCanceledException) {
-            message("general.execution.cancelled")
+            message("general.execution.canceled")
         } else {
             message("general.execution.failed")
         }
@@ -115,7 +117,7 @@ class StepExecutor(
                 null,
                 System.currentTimeMillis(),
                 message,
-                FailureResultImpl()
+                if (e is ProcessCanceledException) SkippedResultImpl() else FailureResultImpl()
             )
         )
 
@@ -126,8 +128,10 @@ class StepExecutor(
      * Fake process handle that acts as the "wrapper" for all steps. Any cancelled step will "kill" this process and vice versa.
      * For example, in a run config this process handle can be tied to the red Stop button thus stopping it cancels the step execution flow.
      */
-    private class DummyProcessHandler(private val context: Context) : ProcessHandler() {
+    private class DummyProcessHandler(private val title: String, private val context: Context) : BuildProcessHandler() {
         override fun getProcessInput(): OutputStream? = null
+
+        override fun getExecutionName(): String = title
 
         override fun detachIsDefault() = false
 
