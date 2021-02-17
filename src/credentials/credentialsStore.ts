@@ -44,7 +44,7 @@ export class CredentialsStore {
 
         if (!credentials) {
             credentials = await this.setCredentials(credentialsProviderId, credentialsProvider)
-        } else if (credentialsProvider.getHashCode() !== credentials.credentialsHashCode) {
+        } else if (credentialsProvider.getHashCode() !== credentials.credentialsHashCode || credentialsProvider.isSsoProfile()) {
             getLogger().verbose(`Using updated credentials: ${asString(credentialsProviderId)}`)
             this.invalidateCredentials(credentialsProviderId)
             credentials = await this.setCredentials(credentialsProviderId, credentialsProvider)

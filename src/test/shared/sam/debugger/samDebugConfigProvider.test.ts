@@ -307,6 +307,7 @@ describe('SamDebugConfigurationProvider', async () => {
                 getDefaultRegion: sandbox.stub().returns('someRegion'),
                 getHashCode: sandbox.stub().returns('1234'),
                 canAutoConnect: sandbox.stub().returns(true),
+                isSsoProfile: sandbox.stub().returns(false)
             }
             const getCredentialsProviderStub = sandbox.stub(
                 CredentialsProviderManager.getInstance(),
@@ -2691,6 +2692,7 @@ Resources:
                 getDefaultRegion: sandbox.stub().returns('someRegion'),
                 getHashCode: sandbox.stub().returns('1234'),
                 canAutoConnect: sandbox.stub().returns(true),
+                isSsoProfile: sandbox.stub().returns(false)
             }
             const getCredentialsProviderStub = sandbox.stub(
                 CredentialsProviderManager.getInstance(),

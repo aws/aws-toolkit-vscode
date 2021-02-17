@@ -7,7 +7,7 @@ import * as AWS from 'aws-sdk'
 import { Profile } from '../../shared/credentials/credentialsFile'
 import { getLogger } from '../../shared/logger'
 import { getStringHash } from '../../shared/utilities/textUtilities'
-import { isSsoProfile, validateSsoProfile } from '../sso/ssoSupport'
+import { SSO_PROFILE_PROPERTIES, validateSsoProfile } from '../sso/ssoSupport'
 import { getMfaTokenFromUser } from '../credentialsCreator'
 import { CredentialsProvider } from './credentialsProvider'
 import { CredentialsProviderId } from './credentialsProviderId'
@@ -73,7 +73,7 @@ export class SharedCredentialsProvider implements CredentialsProvider {
      * should _not_ attempt to auto-connect).
      */
     public canAutoConnect(): boolean {
-        return !hasProfileProperty(this.profile, SHARED_CREDENTIAL_PROPERTIES.MFA_SERIAL) && !isSsoProfile(this.profile)
+        return !hasProfileProperty(this.profile, SHARED_CREDENTIAL_PROPERTIES.MFA_SERIAL) && !this.isSsoProfile()
     }
 
     /**
@@ -94,7 +94,7 @@ export class SharedCredentialsProvider implements CredentialsProvider {
             )
         } else if (hasProfileProperty(this.profile, SHARED_CREDENTIAL_PROPERTIES.AWS_ACCESS_KEY_ID)) {
             expectedProperties.push(SHARED_CREDENTIAL_PROPERTIES.AWS_SECRET_ACCESS_KEY)
-        } else if (isSsoProfile(this.profile)) {
+        } else if (this.isSsoProfile()) {
             return validateSsoProfile(this.profile, this.profileName)
         } else {
             return `Profile ${this.profileName} is not supported by the Toolkit.`
@@ -123,7 +123,7 @@ export class SharedCredentialsProvider implements CredentialsProvider {
             // Profiles with references involving non-aws partitions need help getting the right STS endpoint
             this.applyProfileRegionToGlobalStsConfig()
             //  SSO entry point
-            if (isSsoProfile(this.profile)) {
+            if (this.isSsoProfile()) {
                 const ssoCredentialProvider = this.makeSsoProvider()
                 return await ssoCredentialProvider.refreshCredentials()
             }
@@ -246,5 +246,14 @@ export class SharedCredentialsProvider implements CredentialsProvider {
 
     public static getCredentialsType(): string {
         return SharedCredentialsProvider.CREDENTIALS_TYPE
+    }
+
+    public isSsoProfile(): boolean {
+        for (const propertyName of SSO_PROFILE_PROPERTIES) {
+            if (hasProfileProperty(this.profile, propertyName)) {
+                return true
+            }
+        }
+        return false
     }
 }
