@@ -6,11 +6,9 @@ package software.aws.toolkits.jetbrains.settings
 import com.intellij.openapi.options.ConfigurationException
 import com.intellij.openapi.util.SystemInfo
 import com.intellij.testFramework.ProjectRule
-import org.junit.Assume
-import org.junit.Before
+import org.assertj.core.api.Assertions.assertThatThrownBy
 import org.junit.Rule
 import org.junit.Test
-import org.junit.rules.ExpectedException
 import software.aws.toolkits.jetbrains.services.lambda.sam.SamCommonTestUtils
 import java.nio.file.Path
 
@@ -19,18 +17,6 @@ class AwsSettingsConfigurableTest : ExecutableDetectorTestBase() {
     @JvmField
     @Rule
     val projectRule = ProjectRule()
-
-    @JvmField
-    @Rule
-    val expectedException: ExpectedException = ExpectedException.none()
-
-    @Before
-    override fun setUp() {
-        // TODO: Make the tests work on Windows
-        Assume.assumeFalse(SystemInfo.isWindows)
-
-        super.setUp()
-    }
 
     @Test
     fun validate_ok_noOp() {
@@ -88,11 +74,10 @@ class AwsSettingsConfigurableTest : ExecutableDetectorTestBase() {
         val settings = AwsSettingsConfigurable(projectRule.project)
         settings.apply()
 
-        // use a rule instead of the annotation to ensure that test passes
-        // only if exception is thrown on the second invocation of `apply`
         settings.samExecutablePath.text = sam.toAbsolutePath().toString()
-        expectedException.expect(ConfigurationException::class.java)
-        settings.apply()
+        assertThatThrownBy {
+            settings.apply()
+        }.isInstanceOf(ConfigurationException::class.java)
     }
 
     @Test
