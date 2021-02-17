@@ -66,6 +66,7 @@ object IdeVersions {
                 "Pythonid:203.5981.165",
                 "org.jetbrains.plugins.go:203.5981.114"
             ),
+            riderSdkOverride = "2020.3.2",
             ijSdkOverride = "2020.3",
             rdGenVersion = "0.203.161",
             nugetVersion = "2020.3.0"
