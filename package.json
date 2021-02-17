@@ -72,7 +72,7 @@
         "onLanguage:python",
         "onLanguage:csharp",
         "onLanguage:yaml",
-        "onCommand:aws.lambda.vueTest"
+        "onCommand:aws.lambda.invokeForm"
     ],
     "main": "./extensionMain",
     "contributes": {
@@ -1065,8 +1065,8 @@
         },
         "commands": [
             {
-                "command": "aws.lambda.vueTest",
-                "title": "%AWS.command.vueTest%",
+                "command": "aws.lambda.invokeForm",
+                "title": "%AWS.command.lambda.invokeForm%",
                 "category": "AWS"
             },
             {
