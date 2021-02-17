@@ -1,0 +1,23 @@
+{
+  "date" : "2021-02-17",
+  "version" : "1.24",
+  "entries" : [ {
+    "type" : "feature",
+    "description" : "RDS serverless databases are now visible in the RDS node in the explorer"
+  }, {
+    "type" : "bugfix",
+    "description" : "Fix transient 'Aborted!' message on successful SAM CLI local Lambda execution"
+  }, {
+    "type" : "bugfix",
+    "description" : "Fix being unable to open the file browser in the Schemas download panel"
+  }, {
+    "type" : "bugfix",
+    "description" : "Fix being unable to type/copy paste into the SAM local run config's template path textbox"
+  }, {
+    "type" : "bugfix",
+    "description" : "Fix Secrets Manager-based databse auth throwing NullPointer when editing settings in 2020.3.2 (Fixes #2403)"
+  }, {
+    "type" : "bugfix",
+    "description" : "Fix making an un-needed service call on IDE startup (#2426)"
+  } ]
+}

@@ -1,3 +1,11 @@
+# _1.24_ (2021-02-17)
+- **(Feature)** RDS serverless databases are now visible in the RDS node in the explorer
+- **(Bug Fix)** Fix transient 'Aborted!' message on successful SAM CLI local Lambda execution
+- **(Bug Fix)** Fix being unable to open the file browser in the Schemas download panel
+- **(Bug Fix)** Fix being unable to type/copy paste into the SAM local run config's template path textbox
+- **(Bug Fix)** Fix Secrets Manager-based databse auth throwing NullPointer when editing settings in 2020.3.2 (Fixes [#2403](https://github.com/aws/aws-toolkit-jetbrains/issues/2403))
+- **(Bug Fix)** Fix making an un-needed service call on IDE startup ([#2426](https://github.com/aws/aws-toolkit-jetbrains/issues/2426))
+
 # _1.23_ (2021-02-04)
 - **(Feature)** Add "Copy S3 URI" to S3 objects ([#2208](https://github.com/aws/aws-toolkit-jetbrains/issues/2208))
 - **(Feature)** Add Dotnet5 Lambda support (Image only)

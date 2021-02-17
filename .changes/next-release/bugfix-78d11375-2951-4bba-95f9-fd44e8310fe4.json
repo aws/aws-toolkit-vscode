@@ -1,4 +1,0 @@
-{
-  "type" : "bugfix",
-  "description" : "Fix making an un-needed service call on IDE startup (#2426)"
-}
