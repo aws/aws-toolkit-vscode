@@ -1,0 +1,4 @@
+{
+  "type" : "bugfix",
+  "description" : "Fix being unable to open the file browser in the Schemas download panel"
+}

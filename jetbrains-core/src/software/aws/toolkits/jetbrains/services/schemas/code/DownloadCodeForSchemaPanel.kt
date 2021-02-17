@@ -38,12 +38,7 @@ class DownloadCodeForSchemaPanel(project: Project) {
     }
 
     init {
-        location.addActionListener(
-            ProjectFileBrowseListener(
-                project,
-                FileChooserDescriptorFactory.createSingleFolderDescriptor()
-            )
-        )
+        location.addBrowseFolderListener(ProjectFileBrowseListener(project, FileChooserDescriptorFactory.createSingleFolderDescriptor()))
     }
 
     fun setLanguages(languages: List<SchemaCodeLangs>) {
