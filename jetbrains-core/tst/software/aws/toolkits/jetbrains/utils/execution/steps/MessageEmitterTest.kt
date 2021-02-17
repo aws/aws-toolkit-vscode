@@ -10,6 +10,7 @@ import com.intellij.build.events.FinishEvent
 import com.intellij.build.events.OutputBuildEvent
 import com.intellij.build.events.StartEvent
 import com.intellij.build.events.SuccessResult
+import com.intellij.openapi.progress.ProcessCanceledException
 import com.nhaarman.mockitokotlin2.argumentCaptor
 import com.nhaarman.mockitokotlin2.eq
 import com.nhaarman.mockitokotlin2.mock
@@ -89,14 +90,14 @@ class MessageEmitterTest {
             assertThat(firstValue).satisfies {
                 assertThat(it.parentId).isEqualTo(parentId)
             }.isInstanceOfSatisfying(OutputBuildEvent::class.java) {
-                assertThat(it.message).isEqualTo("ChildStep finished exceptionally: Test exception")
+                assertThat(it.message).isEqualTo("ChildStep has failed: Test exception")
                 assertThat(it.isStdOut).isFalse()
             }
 
             assertThat(secondValue).satisfies {
                 assertThat(it.parentId).isEqualTo(stepId)
             }.isInstanceOfSatisfying(OutputBuildEvent::class.java) {
-                assertThat(it.message).isEqualTo("ChildStep finished exceptionally: Test exception")
+                assertThat(it.message).isEqualTo("ChildStep has failed: Test exception")
                 assertThat(it.isStdOut).isFalse()
             }
 
@@ -122,7 +123,25 @@ class MessageEmitterTest {
             assertThat(firstValue).satisfies {
                 assertThat(it.parentId).isEqualTo(parentId)
             }.isInstanceOfSatisfying(OutputBuildEvent::class.java) {
-                assertThat(it.message).contains("ParentStep finished exceptionally: java.lang.NullPointerException", "at")
+                assertThat(it.message).contains("ParentStep has failed: java.lang.NullPointerException", "at")
+                assertThat(it.isStdOut).isFalse()
+            }
+        }
+    }
+
+    @Test
+    fun cancelledExceptionsPrintHelpfulMessage() {
+        val parentId = "ParentStep"
+
+        rootEmitter.finishExceptionally(ProcessCanceledException())
+
+        argumentCaptor<BuildEvent>().apply {
+            verify(buildView, times(2)).onEvent(eq(PARENT_ID), capture())
+
+            assertThat(firstValue).satisfies {
+                assertThat(it.parentId).isEqualTo(parentId)
+            }.isInstanceOfSatisfying(OutputBuildEvent::class.java) {
+                assertThat(it.message).contains("ParentStep has been canceled")
                 assertThat(it.isStdOut).isFalse()
             }
         }
