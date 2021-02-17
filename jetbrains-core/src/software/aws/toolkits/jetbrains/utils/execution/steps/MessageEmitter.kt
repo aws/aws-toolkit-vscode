@@ -7,9 +7,12 @@ import com.intellij.build.BuildProgressListener
 import com.intellij.build.events.impl.FailureResultImpl
 import com.intellij.build.events.impl.FinishEventImpl
 import com.intellij.build.events.impl.OutputBuildEventImpl
+import com.intellij.build.events.impl.SkippedResultImpl
 import com.intellij.build.events.impl.StartEventImpl
 import com.intellij.build.events.impl.SuccessResultImpl
+import com.intellij.openapi.progress.ProcessCanceledException
 import com.intellij.util.ExceptionUtil
+import software.aws.toolkits.resources.message
 
 interface MessageEmitter {
     fun createChild(stepName: String, hidden: Boolean = false): MessageEmitter
@@ -64,7 +67,11 @@ class DefaultMessageEmitter private constructor(
     }
 
     override fun finishExceptionally(e: Throwable) {
-        emitMessage("$stepName finished exceptionally: ${ExceptionUtil.getNonEmptyMessage(e, ExceptionUtil.getThrowableText(e))}", true)
+        if (e is ProcessCanceledException) {
+            emitMessage(message("general.step.canceled", stepName), true)
+        } else {
+            emitMessage(message("general.step.failed", stepName, ExceptionUtil.getNonEmptyMessage(e, ExceptionUtil.getThrowableText(e))), true)
+        }
         if (hidden) return
         buildListener.onEvent(
             rootObject,
@@ -73,7 +80,7 @@ class DefaultMessageEmitter private constructor(
                 parentId,
                 System.currentTimeMillis(),
                 stepName,
-                FailureResultImpl()
+                if (e is ProcessCanceledException) SkippedResultImpl() else FailureResultImpl()
             )
         )
     }
