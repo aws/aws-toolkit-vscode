@@ -16,6 +16,7 @@ declare const vscode: VsCode<SamInvokerRequest, SamInvokeVueState>
 
 export interface SamInvokeVueData {
     msg: any
+    showAllFields: boolean
     jsonError: string
     targetTypes: { [k: string]: string }[]
     runtimes: string[]
@@ -29,6 +30,10 @@ function newLaunchConfig(target: 'template' | 'code' | 'api' = 'template'): More
         type: 'aws-sam',
         request: 'direct-invoke',
         name: '',
+        aws: {
+            credentials: '',
+            region: '',
+        },
         invokeTarget: {
             target,
             templatePath: '',
@@ -77,6 +82,7 @@ export const Component = Vue.extend({
     data(): SamInvokeVueData {
         return {
             msg: 'Hello',
+            showAllFields: false,
             jsonError: '',
             targetTypes: [
                 { name: 'Code', value: 'code' },
@@ -195,6 +201,9 @@ export const Component = Vue.extend({
             vscode.postMessage({
                 command: 'getTemplate',
             })
+        },
+        toggleShowAllFields() {
+            this.showAllFields = !this.showAllFields
         }
     },
     // `createElement` is inferred, but `render` needs return type
@@ -209,14 +218,13 @@ export const Component = Vue.extend({
     <form class="invoke-lambda-form">
         <h1>Invoke Local Lambda</h1>
         <button v-on:click.prevent="loadConfig">Load Existing Debug Configuration</button><br />
-        <label for="target-type-selector">Invoke Target Type</label>
-        <select name="target-types" id="target-type-selector" v-model="launchConfig.invokeTarget.target">
-            <option :value="type.value" v-for="(type, index) in targetTypes" :key="index">{{ type.name }}</option>
-        </select>
         <div class="config-details">
+            <h2>Configuration Details</h2>
+            <label for="target-type-selector">Invoke Target Type</label>
+            <select name="target-types" id="target-type-selector" v-model="launchConfig.invokeTarget.target">
+                <option :value="type.value" v-for="(type, index) in targetTypes" :key="index">{{ type.name }}</option>
+            </select>
             <div class="target-code" v-if="launchConfig.invokeTarget.target === 'code'">
-                <h2>Target: Code</h2>
-                <button v-on:click.prevent="loadResource">Load Resource</button><br />
                 <div class="config-item">
                     <label for="select-directory">Project Root  <span class="tooltip">i<span class="tooltip-text"> Heplful tooltip with explanation and example: <br>Example path: home/folder/file</span></span></label>
                     <input
@@ -249,7 +257,6 @@ export const Component = Vue.extend({
                 </div>
             </div>
             <div class="target-template" v-else-if="launchConfig.invokeTarget.target === 'template'">
-                <h2>Target: Template</h2>
                 <button v-on:click.prevent="loadResource">Load Resource</button><br />
                 <div class="config-item">
                     <label for="template-path">Template Path  <span class="tooltip">i<span class="tooltip-text"> Heplful tooltip with explanation and example: <br>Example path: home/folder/file</span></span></label>
@@ -272,7 +279,6 @@ export const Component = Vue.extend({
                 </div>
             </div>
             <div class="target-apigw" v-else-if="launchConfig.invokeTarget.target === 'api'">
-                <h2>Target: API Gateway</h2>
                 <button v-on:click.prevent="loadResource">Load Resource</button><br />
                 <div class="config-item">
                     <label for="template-path-api">Template Path</label>
@@ -305,6 +311,18 @@ export const Component = Vue.extend({
                 </div>
             </div>
             <div v-else>Select an Invoke Target</div>
+            <button @click="toggleShowAllFields">{{showAllFields ? "Less Fields" : "More Fields"}}</button>
+            <div v-if="showAllFields">
+                <h3>aws</h3>
+                <div class="config-item">
+                    <label for="awsConnection">Credentials:</label>
+                    <input type="text" v-model="launchConfig.aws.credentials" >
+                </div>
+                <div class="config-item">
+                    <label for="region">Region</label>
+                    <input type="text" v-model="launchConfig.aws.region" >
+                </div>
+            </div>
         </div>
         <div class="payload-section">
             <h2>Payload</h2>
@@ -319,7 +337,8 @@ export const Component = Vue.extend({
         </div>
     </form>
 </template>
-   `,
+
+`,
 })
 
 new Vue({
