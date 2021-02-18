@@ -48,7 +48,32 @@ function newLaunchConfig(target: 'template' | 'code' | 'api' = 'template'): More
             },
             environmentVariables: {},
             runtime: '',
+            memoryMb: undefined,
+            timeoutSec: undefined,
+            pathMappings: undefined
         },
+        sam: {
+            buildArguments: undefined,
+            containerBuild: false,
+            dockerNetwork: '',
+            localArguments: undefined,
+            skipNewImageCheck: false,
+            template: {
+                parameters: undefined
+            }
+        },
+        api: {
+            path: '',
+            httpMethod: 'get',
+            payload: {
+                json: undefined,
+                path: ''
+            },
+            headers: undefined,
+            querystring: '',
+            stageVariables: undefined,
+            clientCertificateId: ''
+        }
     }
 }
 export const Component = Vue.extend({
@@ -72,7 +97,7 @@ export const Component = Vue.extend({
                 case 'loadSamLaunchConfig':
                     this.launchConfig = event.data.launchConfig as MorePermissiveAwsSamDebuggerConfiguration
                     if (event.data.launchConfig.lambda?.payload) {
-                        this.payload = JSON.stringify(event.data.launchConfig.lambda.payload, undefined, 4)
+                        this.payload = JSON.stringify(event.data.launchConfig.lambda.payload.json, undefined, 4)
                     }
                     this.msg = `Loaded config ${event.data.launchConfig.name}`
                     break
@@ -247,7 +272,7 @@ export const Component = Vue.extend({
                 </div>
                 <div class="config-item">
                     <label for="runtime-selector">Runtime</label>
-                    <select name="runtimeType" id="target-code-runtime" v-model="launchConfig.lambda.runtime">
+                    <select name="runtimeType" v-model="launchConfig.lambda.runtime">
                         <option disabled>Choose a runtime...</option>
                         <option v-for="(runtime, index) in runtimes" v-bind:value="runtime" :key="index">
                             {{ runtime }}
@@ -321,6 +346,44 @@ export const Component = Vue.extend({
                 <div class="config-item">
                     <label for="region">Region</label>
                     <input type="text" v-model="launchConfig.aws.region" >
+                </div>
+                <h3>lambda</h3>
+                <div class="config-item">
+                    <label for="">Environment Variables</label>
+                    <input type="text" v-model="launchConfig.lambda.environmentVariables" >
+                </div>
+                <div class="config-item">
+                    <label for="runtime-selector">Runtime</label>
+                    <select name="runtimeType" v-model="launchConfig.lambda.runtime">
+                        <option disabled>Choose a runtime...</option>
+                        <option v-for="(runtime, index) in runtimes" v-bind:value="runtime" :key="index">
+                            {{ runtime }}
+                        </option>
+                    </select>
+                </div>
+                <div class="config-item">
+                    <label for="memory">Memory</label>
+                    <input type="text" v-model="launchConfig.lambda.memoryMb" >
+                </div>
+                <div class="config-item">
+                    <label for="timeoutSec">Timeout (s)</label>
+                    <input type="text" v-model="launchConfig.lambda.timeoutSec" >
+                </div>
+                <div class="config-item">
+                    <label for="pathMappings">Path Mappings</label>
+                    <input type="text" v-model="launchConfig.lambda.pathMappings" >
+                </div>
+                <h3>sam</h3>
+                <div class="config-item">
+                    <label for="buildArguments">Build Arguments</label>
+                    <input type="text" v-model="launchConfig.sam.buildArguments" >
+                </div>
+                <div class="config-item">
+                    <label for="containerBuild">Container Build</label>
+                    <input type="radio" id="containerBuildTrue" value=true  v-model="launchConfig.sam.buildArguments" >
+                    <label for="containerBuildTrue">True</label>
+                    <input type="radio" id="containerBuildFalse" value=false  v-model="launchConfig.sam.buildArguments" >
+                    <label for="containerBuildFalse">False</label>
                 </div>
             </div>
         </div>

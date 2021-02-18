@@ -38,7 +38,7 @@
                 </div>
                 <div class="config-item">
                     <label for="runtime-selector">Runtime</label>
-                    <select name="runtimeType" id="target-code-runtime" v-model="launchConfig.lambda.runtime">
+                    <select name="runtimeType" v-model="launchConfig.lambda.runtime">
                         <option disabled>Choose a runtime...</option>
                         <option v-for="(runtime, index) in runtimes" v-bind:value="runtime" :key="index">
                             {{ runtime }}
@@ -112,6 +112,43 @@
                 <div class="config-item">
                     <label for="region">Region</label>
                     <input type="text" v-model="launchConfig.aws.region" >
+                </div>
+                <h3>lambda</h3>
+                <div class="config-item">
+                    <label for="">Environment Variables</label>
+                    <input type="text" v-model="launchConfig.lambda.environmentVariables" >
+                </div>
+                <div class="config-item">
+                    <label for="runtime-selector">Runtime</label>
+                    <select name="runtimeType" v-model="launchConfig.lambda.runtime">
+                        <option disabled>Choose a runtime...</option>
+                        <option v-for="(runtime, index) in runtimes" v-bind:value="runtime" :key="index">
+                            {{ runtime }}
+                        </option>
+                    </select>
+                </div>
+                <div class="config-item">
+                    <label for="memory">Memory</label>
+                    <input type="text" v-model="launchConfig.lambda.memoryMb" >
+                </div>
+                <div class="config-item">
+                    <label for="timeoutSec">Timeout (s)</label>
+                    <input type="text" v-model="launchConfig.lambda.timeoutSec" >
+                </div>
+                <div class="config-item">
+                    <label for="pathMappings">Path Mappings</label>
+                    <input type="text" v-model="launchConfig.lambda.pathMappings" >
+                </div>
+                <h3>sam</h3>
+                <div class="config-item">
+                    <label for="buildArguments">Build Arguments</label>
+                    <input type="text" v-model="launchConfig.sam.buildArguments" >
+                </div>
+                <div class="config-item">
+                    <label for="containerBuild">Container Build</label>
+                    <select name="containerBuild" id="containerBuild" v-model="launchConfig.sam.containerBuild">
+                        <option value=false :key=0>False</option>
+                    </select>
                 </div>
             </div>
         </div>
