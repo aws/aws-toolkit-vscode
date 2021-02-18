@@ -41,9 +41,10 @@ class DelegateSdkConsumers(private val sdkClass: Class<*>) : Answer<Any> {
     }
 }
 
-inline fun <reified T : SdkClient> delegateMock(): T = Mockito.mock(
+inline fun <reified T : SdkClient> delegateMock(verboseLogging: Boolean = false): T = Mockito.mock(
     T::class.java,
     withSettings(
+        verboseLogging = verboseLogging,
         defaultAnswer = DelegateSdkConsumers(T::class.java)
     )
 )

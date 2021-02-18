@@ -3,93 +3,92 @@
 
 package software.aws.toolkits.jetbrains.services.s3.objectActions
 
-import com.intellij.testFramework.ProjectRule
-import com.intellij.testFramework.TestActionEvent
-import com.nhaarman.mockitokotlin2.any
-import com.nhaarman.mockitokotlin2.anyOrNull
-import com.nhaarman.mockitokotlin2.mock
-import com.nhaarman.mockitokotlin2.times
 import com.nhaarman.mockitokotlin2.verify
 import org.assertj.core.api.Assertions.assertThat
-import org.junit.Rule
 import org.junit.Test
-import software.amazon.awssdk.services.s3.model.ListObjectVersionsResponse
-import software.amazon.awssdk.services.s3.model.ObjectVersion
+import software.aws.toolkits.jetbrains.services.s3.editor.S3TreeContinuationNode
 import software.aws.toolkits.jetbrains.services.s3.editor.S3TreeDirectoryNode
+import software.aws.toolkits.jetbrains.services.s3.editor.S3TreeErrorNode
 import software.aws.toolkits.jetbrains.services.s3.editor.S3TreeObjectNode
-import software.aws.toolkits.jetbrains.services.s3.editor.S3TreeObjectVersionNode
-import software.aws.toolkits.jetbrains.services.s3.editor.S3TreeTable
-import software.aws.toolkits.jetbrains.services.s3.editor.S3VirtualBucket
 import java.time.Instant
 
-class ViewObjectVersionActionTest {
-
-    @Rule
-    @JvmField
-    val projectRule = ProjectRule()
+class ViewObjectVersionActionTest : ObjectActionTestBase() {
+    private val sut = ViewObjectVersionAction()
 
     @Test
-    fun showObjectHistoryOnObjectNode() {
-        val bucket = setUpVirtualBucket(emptyList())
-        val dirNode = S3TreeDirectoryNode(bucket, null, "")
+    fun `show history is disabled on empty selection`() {
+        assertThat(sut.updateAction(emptyList()).isEnabled).isFalse
+    }
+
+    @Test
+    fun `show history is disabled on directory selection`() {
+        val nodes = listOf(
+            S3TreeDirectoryNode(s3Bucket, null, "path1/")
+        )
+
+        assertThat(sut.updateAction(nodes).isEnabled).isFalse
+    }
+
+    @Test
+    fun `show history is enabled on object selection`() {
+        val dirNode = S3TreeDirectoryNode(s3Bucket, null, "")
+        val nodes = listOf(
+            S3TreeObjectNode(dirNode, "testKey", 1, Instant.now())
+        )
+
+        assertThat(sut.updateAction(nodes).isEnabled).isTrue
+    }
+
+    @Test
+    fun `show history is disabled on object version selection`() {
+        val nodes = listOf(
+            S3TreeDirectoryNode(s3Bucket, null, "path1/")
+        )
+
+        assertThat(sut.updateAction(nodes).isEnabled).isFalse
+    }
+
+    @Test
+    fun `show history is disabled on multiple selection`() {
+        val dirNode = S3TreeDirectoryNode(s3Bucket, null, "")
+        val nodes = listOf(
+            S3TreeObjectNode(dirNode, "testKey2", 1, Instant.now()),
+            S3TreeObjectNode(dirNode, "testKey", 1, Instant.now())
+        )
+
+        assertThat(sut.updateAction(nodes).isEnabled).isFalse
+    }
+
+    @Test
+    fun `show history action is disabled on error node`() {
+        val dir = S3TreeDirectoryNode(s3Bucket, null, "path1/")
+        val nodes = listOf(
+            S3TreeErrorNode(s3Bucket, dir)
+        )
+
+        assertThat(sut.updateAction(nodes).isEnabled).isFalse
+    }
+
+    @Test
+    fun `show history action is disabled on continuation node`() {
+        val dir = S3TreeDirectoryNode(s3Bucket, null, "path1/")
+        val nodes = listOf(
+            S3TreeContinuationNode(s3Bucket, dir, "path1/", "marker")
+        )
+
+        assertThat(sut.updateAction(nodes).isEnabled).isFalse
+    }
+
+    @Test
+    fun `show object history on object node`() {
+        val dirNode = S3TreeDirectoryNode(s3Bucket, null, "")
         val objectNode = S3TreeObjectNode(dirNode, "testKey", 1, Instant.now())
-        val s3TreeTable = setUpS3TreeTable(objectNode)
-        val showHistoryFlagBeforeAction = objectNode.showHistory
-        val nodeChildrenBeforeAction = objectNode.children
-        val viewObjectVersionAction = ViewObjectVersionAction(s3TreeTable)
 
-        viewObjectVersionAction.actionPerformed(TestActionEvent { projectRule.project })
+        assertThat(objectNode.showHistory).isFalse
 
-        val showHistoryFlagAfterAction = objectNode.showHistory
+        sut.executeAction(listOf(objectNode))
 
-        assertThat(showHistoryFlagBeforeAction).isFalse()
-        assertThat(showHistoryFlagAfterAction).isTrue()
-        assertThat(nodeChildrenBeforeAction).isEmpty()
-        verify(s3TreeTable, times(1)).refresh()
+        assertThat(objectNode.showHistory).isTrue
+        verify(treeTable).refresh()
     }
-
-    @Test
-    fun populateChildrenOnShowObjectHistoryAction() {
-        val testKey = "testKey"
-        val testObjectVersion1 = ObjectVersion.builder().size(111).key(testKey).versionId("testVersionKey").lastModified(Instant.MIN).build()
-        val testObjectVersion2 = ObjectVersion.builder().size(222).key(testKey).versionId("testVersionKey2").lastModified(Instant.now()).build()
-        val bucket = setUpVirtualBucket(listOf(testObjectVersion1, testObjectVersion2))
-        val dirNode = S3TreeDirectoryNode(bucket, null, "")
-        val objectNode = S3TreeObjectNode(dirNode, testKey, 1, Instant.now())
-        val viewObjectVersionAction = ViewObjectVersionAction(setUpS3TreeTable(objectNode))
-
-        val nodeChildrenBeforeAction = objectNode.children
-
-        viewObjectVersionAction.actionPerformed(TestActionEvent { projectRule.project })
-
-        val nodeChildrenAfterAction = objectNode.children
-
-        assertThat(nodeChildrenBeforeAction).isEmpty()
-        assertThat(nodeChildrenAfterAction.size).isEqualTo(2)
-        assertThat(nodeChildrenAfterAction[0]).isInstanceOf(S3TreeObjectVersionNode::class.java)
-        assertThat(nodeChildrenAfterAction[1]).isInstanceOf(S3TreeObjectVersionNode::class.java)
-        assertThat(nodeChildrenAfterAction[0].key).isEqualTo(testKey)
-        assertThat(nodeChildrenAfterAction[1].key).isEqualTo(testKey)
-
-        assertNodeEqualToObjectVersionResponse(nodeChildrenAfterAction[0] as S3TreeObjectVersionNode, testObjectVersion1)
-        assertNodeEqualToObjectVersionResponse(nodeChildrenAfterAction[1] as S3TreeObjectVersionNode, testObjectVersion2)
-    }
-
-    private fun assertNodeEqualToObjectVersionResponse(node: S3TreeObjectVersionNode, objectVersion: ObjectVersion) {
-        assertThat(node.size).isEqualTo(objectVersion.size())
-        assertThat(node.versionId).isEqualTo(objectVersion.versionId())
-        assertThat(node.lastModified).isEqualTo(objectVersion.lastModified())
-    }
-
-    private fun setUpS3TreeTable(objectNode: S3TreeObjectNode): S3TreeTable =
-        mock {
-            on { getSelectedNodes() }.thenReturn(listOf(objectNode))
-        }
-
-    private fun setUpVirtualBucket(objectVersions: List<ObjectVersion>): S3VirtualBucket =
-        mock {
-            onBlocking { listObjectVersions(any(), anyOrNull(), anyOrNull()) }.thenReturn(ListObjectVersionsResponse.builder().versions(objectVersions).build())
-
-            on { name }.thenReturn("testBucket")
-        }
 }
