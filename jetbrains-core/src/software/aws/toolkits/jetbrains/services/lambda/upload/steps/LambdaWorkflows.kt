@@ -8,7 +8,9 @@ import com.intellij.openapi.vfs.VirtualFile
 import software.aws.toolkits.jetbrains.core.awsClient
 import software.aws.toolkits.jetbrains.core.credentials.AwsConnectionManager
 import software.aws.toolkits.jetbrains.core.credentials.toEnvironmentVariables
+import software.aws.toolkits.jetbrains.core.utils.buildList
 import software.aws.toolkits.jetbrains.services.lambda.deploy.CreateCapabilities
+import software.aws.toolkits.jetbrains.services.lambda.execution.sam.ValidateDocker
 import software.aws.toolkits.jetbrains.services.lambda.sam.SamCommon
 import software.aws.toolkits.jetbrains.services.lambda.sam.SamOptions
 import software.aws.toolkits.jetbrains.services.lambda.sam.SamTemplateUtils
@@ -35,23 +37,35 @@ fun createLambdaWorkflowForZip(
     val envVars = createAwsEnvVars(project)
 
     return StepWorkflow(
-        BuildLambda(
-            templatePath = dummyTemplate,
-            buildDir = buildDir,
-            buildEnvVars = buildEnvVars,
-            samOptions = samOptions
-        ),
-        PackageLambda(
-            templatePath = builtTemplate,
-            packagedTemplatePath = packagedTemplate,
-            logicalId = dummyLogicalId,
-            envVars = envVars,
-            s3Bucket = codeStorageLocation
-        ),
-        CreateLambda(
-            lambdaClient = project.awsClient(),
-            details = functionDetails
-        )
+        buildList {
+            if (samOptions.buildInContainer) {
+                add(ValidateDocker())
+            }
+
+            add(
+                BuildLambda(
+                    templatePath = dummyTemplate,
+                    buildDir = buildDir,
+                    buildEnvVars = buildEnvVars,
+                    samOptions = samOptions
+                ),
+            )
+            add(
+                PackageLambda(
+                    templatePath = builtTemplate,
+                    packagedTemplatePath = packagedTemplate,
+                    logicalId = dummyLogicalId,
+                    envVars = envVars,
+                    s3Bucket = codeStorageLocation
+                ),
+            )
+            add(
+                CreateLambda(
+                    lambdaClient = project.awsClient(),
+                    details = functionDetails
+                )
+            )
+        }
     )
 }
 
@@ -69,6 +83,7 @@ fun createLambdaWorkflowForImage(
     val envVars = createAwsEnvVars(project)
 
     return StepWorkflow(
+        ValidateDocker(),
         BuildLambda(
             templatePath = dummyTemplate,
             buildDir = buildDir,
@@ -106,24 +121,36 @@ fun updateLambdaCodeWorkflowForZip(
     val envVars = createAwsEnvVars(project)
 
     return StepWorkflow(
-        BuildLambda(
-            templatePath = dummyTemplate,
-            buildDir = buildDir,
-            buildEnvVars = buildEnvVars,
-            samOptions = samOptions
-        ),
-        PackageLambda(
-            templatePath = builtTemplate,
-            packagedTemplatePath = packagedTemplate,
-            logicalId = dummyLogicalId,
-            envVars = envVars,
-            s3Bucket = codeStorageLocation
-        ),
-        UpdateLambdaCode(
-            lambdaClient = project.awsClient(),
-            functionName = functionName,
-            updatedHandler = updatedHandler
-        )
+        buildList {
+            if (samOptions.buildInContainer) {
+                add(ValidateDocker())
+            }
+
+            add(
+                BuildLambda(
+                    templatePath = dummyTemplate,
+                    buildDir = buildDir,
+                    buildEnvVars = buildEnvVars,
+                    samOptions = samOptions
+                ),
+            )
+            add(
+                PackageLambda(
+                    templatePath = builtTemplate,
+                    packagedTemplatePath = packagedTemplate,
+                    logicalId = dummyLogicalId,
+                    envVars = envVars,
+                    s3Bucket = codeStorageLocation
+                ),
+            )
+            add(
+                UpdateLambdaCode(
+                    lambdaClient = project.awsClient(),
+                    functionName = functionName,
+                    updatedHandler = updatedHandler
+                )
+            )
+        }
     )
 }
 
@@ -141,6 +168,7 @@ fun updateLambdaCodeWorkflowForImage(
     val envVars = createAwsEnvVars(project)
 
     return StepWorkflow(
+        ValidateDocker(),
         BuildLambda(
             templatePath = dummyTemplate,
             buildDir = buildDir,
@@ -181,31 +209,43 @@ fun createDeployWorkflow(
     Files.createDirectories(buildDir)
 
     return StepWorkflow(
-        BuildLambda(
-            templatePath = templatePath,
-            logicalId = null,
-            buildDir = buildDir,
-            buildEnvVars = envVars,
-            samOptions = SamOptions(buildInContainer = useContainer)
-        ),
-        PackageLambda(
-            templatePath = builtTemplate,
-            packagedTemplatePath = packagedTemplate,
-            logicalId = null,
-            envVars = envVars,
-            s3Bucket = s3Bucket,
-            ecrRepo = ecrRepo
-        ),
-        DeployLambda(
-            packagedTemplateFile = packagedTemplate,
-            stackName = stackName,
-            ecrRepo = ecrRepo,
-            s3Bucket = s3Bucket,
-            capabilities = capabilities,
-            parameters = parameters,
-            envVars = envVars,
-            region = region
-        )
+        buildList {
+            if (useContainer) {
+                add(ValidateDocker())
+            }
+
+            add(
+                BuildLambda(
+                    templatePath = templatePath,
+                    logicalId = null,
+                    buildDir = buildDir,
+                    buildEnvVars = envVars,
+                    samOptions = SamOptions(buildInContainer = useContainer)
+                )
+            )
+            add(
+                PackageLambda(
+                    templatePath = builtTemplate,
+                    packagedTemplatePath = packagedTemplate,
+                    logicalId = null,
+                    envVars = envVars,
+                    s3Bucket = s3Bucket,
+                    ecrRepo = ecrRepo
+                )
+            )
+            add(
+                DeployLambda(
+                    packagedTemplateFile = packagedTemplate,
+                    stackName = stackName,
+                    ecrRepo = ecrRepo,
+                    s3Bucket = s3Bucket,
+                    capabilities = capabilities,
+                    parameters = parameters,
+                    envVars = envVars,
+                    region = region
+                )
+            )
+        }
     )
 }
 
