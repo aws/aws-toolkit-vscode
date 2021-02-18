@@ -101,3 +101,7 @@ textarea {
 #invoke-button {
     margin-left: 20px;
 }
+
+#target-type-selector {
+    margin-bottom: 15px;
+}
