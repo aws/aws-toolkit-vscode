@@ -342,12 +342,16 @@ async function saveLaunchConfig(config: AwsSamDebuggerConfiguration): Promise<vo
         return
     }
     const launchConfig = new LaunchConfiguration(uri)
-    const pickerItems = getLaunchConfigQuickPickItems(launchConfig, uri)
-
-    pickerItems.unshift({
-        label: addCodiconToString('add', localize('AWS.command.addSamDebugConfiguration', 'Add Debug Configuration')),
-        index: -1,
-    })
+    const pickerItems = [
+        {
+            label: addCodiconToString(
+                'add',
+                localize('AWS.command.addSamDebugConfiguration', 'Add Debug Configuration')
+            ),
+            index: -1,
+        },
+        ...getLaunchConfigQuickPickItems(launchConfig, uri),
+    ]
 
     const qp = picker.createQuickPick({
         items: pickerItems,

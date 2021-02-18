@@ -166,7 +166,7 @@ function tryRemoveFolder(fullPath: string) {
     }
 }
 
-async function getAddConfigCodeLens(documentUri: vscode.Uri): Promise<vscode.CodeLens> {
+async function getAddConfigCodeLens(documentUri: vscode.Uri): Promise<vscode.CodeLens[]> {
     while (true) {
         try {
             // this works without a sleep locally, but not on CodeBuild
@@ -179,14 +179,14 @@ async function getAddConfigCodeLens(documentUri: vscode.Uri): Promise<vscode.Cod
             // omnisharp spits out some undefined code lenses for some reason, we filter them because they are
             // not shown to the user and do not affect how our extension is working
             codeLenses = codeLenses.filter(codeLens => {
-                if (codeLens.command && codeLens.command.arguments && codeLens.command.arguments.length === 2) {
+                if (codeLens.command && codeLens.command.arguments && codeLens.command.arguments.length === 3) {
                     return codeLens.command.command === 'aws.pickAddSamDebugConfiguration'
                 }
 
                 return false
             })
-            if (codeLenses.length === 1) {
-                return codeLenses[0]
+            if (codeLenses.length > 0) {
+                return codeLenses || []
             }
         } catch (e) {
             console.log(`sam.test.ts: getAddConfigCodeLens(): failed, retrying:\n${e}`)
@@ -346,8 +346,8 @@ describe('SAM Integration Tests', async function () {
 
                 it('produces an Add Debug Configuration codelens', async function () {
                     setTestTimeout(this.test?.fullTitle(), 60000)
-                    const codeLens = await getAddConfigCodeLens(samAppCodeUri)
-                    assert.ok(codeLens)
+                    const codeLenses = await getAddConfigCodeLens(samAppCodeUri)
+                    assert.ok(codeLenses && codeLenses.length === 2)
 
                     let manifestFile: RegExp
                     switch (scenario.language) {
@@ -366,7 +366,9 @@ describe('SAM Integration Tests', async function () {
 
                     const projectRoot = await findParentProjectFile(samAppCodeUri, manifestFile)
                     assert.ok(projectRoot, 'projectRoot not found')
-                    assertCodeLensReferencesHasSameRoot(codeLens, projectRoot!)
+                    for (const codeLens of codeLenses) {
+                        assertCodeLensReferencesHasSameRoot(codeLens, projectRoot!)
+                    }
                 })
 
                 it('invokes and attaches on debug request (F5)', async function () {
