@@ -136,7 +136,7 @@ export class SsoAccessTokenProvider {
             clientName: CLIENT_NAME,
         }
         const registerResponse = await this.ssoOidcClient.registerClient(registerParams).promise()
-        const formattedExpiry = new Date(registerResponse.clientSecretExpiresAt!).toISOString()
+        const formattedExpiry = new Date(registerResponse.clientSecretExpiresAt! * MILLISECONDS_PER_SECOND).toISOString()
 
         const registration: SsoClientRegistration = {
             clientId: registerResponse.clientId!,
