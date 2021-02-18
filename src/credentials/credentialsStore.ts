@@ -29,7 +29,7 @@ export class CredentialsStore {
      */
     public async getCredentials(credentialsProviderId: CredentialsProviderId): Promise<CachedCredentials | undefined> {
         if (
-            this.credentialsCache[asString(credentialsProviderId)].credentials &&
+            this.credentialsCache[asString(credentialsProviderId)] &&
             !this.credentialsCache[asString(credentialsProviderId)].credentials.expired
         ) {
             return this.credentialsCache[asString(credentialsProviderId)]
