@@ -379,9 +379,13 @@ export class SamDebugConfigProvider implements vscode.DebugConfigurationProvider
         }
 
         if (!runtime) {
-            getLogger().error(`SAM debug: failed to launch config: ${config})`)
+            getLogger().error(`SAM debug: failed to launch config (missing runtime): ${config})`)
             vscode.window.showErrorMessage(
-                localize('AWS.sam.debugger.failedLaunch', 'AWS SAM failed to launch. Try creating launch.json')
+                localize(
+                    'AWS.sam.debugger.failedLaunch.missingRuntime',
+                    'Toolkit could not infer a runtime for config: {0}. Add a "lambda.runtime" field to your launch configuration.',
+                    config.name
+                )
             )
             return undefined
         }
