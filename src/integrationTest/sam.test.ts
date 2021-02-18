@@ -526,7 +526,7 @@ describe('SAM Integration Tests', async function () {
             assert.ok(command.arguments, 'CodeLens command had no arguments')
             const commandArguments = command.arguments!
 
-            assert.strictEqual(commandArguments.length, 2, 'CodeLens command had unexpected arg count')
+            assert.strictEqual(commandArguments.length, 3, 'CodeLens command had unexpected arg count')
             const params: AddSamDebugConfigurationInput = commandArguments[0]
             assert.ok(params, 'unexpected non-defined command argument')
 
