@@ -347,21 +347,6 @@ async function saveLaunchConfig(config: AwsSamDebuggerConfiguration): Promise<vo
         return
     }
 
-    // Recast invoke targets to undo the MorePermissiveAwsSamDebuggerConfiguration.
-    if (isTemplateTargetProperties(config.invokeTarget)) {
-        config.invokeTarget = {
-            target: config.invokeTarget.target,
-            logicalId: config.invokeTarget.logicalId,
-            templatePath: config.invokeTarget.templatePath,
-        }
-    } else if (isCodeTargetProperties(config.invokeTarget)) {
-        config.invokeTarget = {
-            target: config.invokeTarget.target,
-            lambdaHandler: config.invokeTarget.lambdaHandler,
-            projectRoot: config.invokeTarget.projectRoot,
-        }
-    }
-
     if (pickerResponse.index === -1) {
         const ib = input.createInputBox({
             options: {
@@ -370,20 +355,11 @@ async function saveLaunchConfig(config: AwsSamDebuggerConfiguration): Promise<vo
         })
         const response = await input.promptUser({ inputBox: ib })
         if (response) {
-            launchConfig.addDebugConfiguration({
-                ...config,
-                name: response,
-            })
+            launchConfig.addDebugConfiguration(pruneConfig(config, response))
         }
     } else {
         // use existing label
-        launchConfig.editDebugConfiguration(
-            {
-                ...config,
-                name: pickerResponse.label,
-            },
-            pickerResponse.index
-        )
+        launchConfig.editDebugConfiguration(pruneConfig(config, pickerResponse.label), pickerResponse.index)
     }
 }
 
@@ -449,4 +425,48 @@ function getLaunchConfigQuickPickItems(launchConfig: LaunchConfiguration, uri: v
                 config: val.config as AwsSamDebuggerConfiguration,
             }
         })
+}
+
+function pruneConfig(config: AwsSamDebuggerConfiguration, name: string): AwsSamDebuggerConfiguration {
+    const newConfig = pruneConfigHelper(config)
+    newConfig.name = name
+
+    if (isTemplateTargetProperties(config.invokeTarget)) {
+        newConfig.invokeTarget = {
+            target: config.invokeTarget.target,
+            logicalId: config.invokeTarget.logicalId,
+            templatePath: config.invokeTarget.templatePath,
+        }
+    } else if (isCodeTargetProperties(config.invokeTarget)) {
+        newConfig.invokeTarget = {
+            target: config.invokeTarget.target,
+            lambdaHandler: config.invokeTarget.lambdaHandler,
+            projectRoot: config.invokeTarget.projectRoot,
+        }
+    }
+
+    return newConfig
+}
+
+function pruneConfigHelper(object: { [key: string]: any }): any | undefined {
+    const keys = Object.keys(object)
+    const final: any = {}
+    for (const key of keys) {
+        const val = object[key]
+        if (val !== undefined && val !== '' && !(Array.isArray(val) && val.length === 0)) {
+            if (typeof val === 'object') {
+                const pruned = pruneConfigHelper(val)
+                if (pruned) {
+                    final[key] = pruned
+                }
+            } else {
+                final[key] = val
+            }
+        }
+    }
+    if (Object.keys(final).length === 0) {
+        return undefined
+    }
+
+    return final
 }
