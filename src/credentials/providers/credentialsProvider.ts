@@ -11,5 +11,4 @@ export interface CredentialsProvider {
     getHashCode(): string
     getCredentials(): Promise<AWS.Credentials>
     canAutoConnect(): boolean
-    isSsoProfile(): boolean
 }

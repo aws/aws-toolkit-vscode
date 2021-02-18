@@ -28,7 +28,14 @@ export class CredentialsStore {
      * Returns undefined if credentials are not stored for given ID
      */
     public async getCredentials(credentialsProviderId: CredentialsProviderId): Promise<CachedCredentials | undefined> {
-        return this.credentialsCache[asString(credentialsProviderId)]
+        if (
+            this.credentialsCache[asString(credentialsProviderId)].credentials &&
+            !this.credentialsCache[asString(credentialsProviderId)].credentials.expired
+        ) {
+            return this.credentialsCache[asString(credentialsProviderId)]
+        } else {
+            return undefined
+        }
     }
 
     /**
@@ -44,7 +51,7 @@ export class CredentialsStore {
 
         if (!credentials) {
             credentials = await this.setCredentials(credentialsProviderId, credentialsProvider)
-        } else if (credentialsProvider.getHashCode() !== credentials.credentialsHashCode || credentialsProvider.isSsoProfile()) {
+        } else if (credentialsProvider.getHashCode() !== credentials.credentialsHashCode) {
             getLogger().verbose(`Using updated credentials: ${asString(credentialsProviderId)}`)
             this.invalidateCredentials(credentialsProviderId)
             credentials = await this.setCredentials(credentialsProviderId, credentialsProvider)
