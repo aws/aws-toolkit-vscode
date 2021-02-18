@@ -22,7 +22,7 @@ class DeleteBucketAction : DeleteResourceAction<S3BucketNode>(message("s3.delete
 
         val fileEditorManager = FileEditorManager.getInstance(selected.nodeProject)
         fileEditorManager.openFiles.forEach {
-            if (it is S3VirtualBucket && it.s3Bucket.name() == selected.displayName()) {
+            if (it is S3VirtualBucket && it.name == selected.displayName()) {
                 // Wait so that we know it closes successfully, otherwise this operation is not a success
                 runInEdtAndWait {
                     fileEditorManager.closeFile(it)

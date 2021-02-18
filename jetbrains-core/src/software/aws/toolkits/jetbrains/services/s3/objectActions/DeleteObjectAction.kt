@@ -4,9 +4,13 @@
 package software.aws.toolkits.jetbrains.services.s3.objectActions
 
 import com.intellij.icons.AllIcons
+import com.intellij.openapi.actionSystem.CommonDataKeys
+import com.intellij.openapi.actionSystem.DataContext
 import com.intellij.openapi.project.Project
 import com.intellij.openapi.ui.Messages
 import kotlinx.coroutines.launch
+import software.aws.toolkits.jetbrains.core.utils.getRequiredData
+import software.aws.toolkits.jetbrains.services.s3.editor.S3EditorDataKeys
 import software.aws.toolkits.jetbrains.services.s3.editor.S3TreeNode
 import software.aws.toolkits.jetbrains.services.s3.editor.S3TreeObjectNode
 import software.aws.toolkits.jetbrains.services.s3.editor.S3TreeTable
@@ -16,15 +20,15 @@ import software.aws.toolkits.resources.message
 import software.aws.toolkits.telemetry.Result
 import software.aws.toolkits.telemetry.S3Telemetry
 
-class DeleteObjectAction(private val project: Project, treeTable: S3TreeTable) :
-    S3ObjectAction(treeTable, message("s3.delete.object.action"), AllIcons.Actions.Cancel) {
-
-    override fun performAction(nodes: List<S3TreeNode>) {
+class DeleteObjectAction : S3ObjectAction(message("s3.delete.object.action"), AllIcons.Actions.Cancel) {
+    override fun performAction(dataContext: DataContext, nodes: List<S3TreeNode>) {
+        val project = dataContext.getRequiredData(CommonDataKeys.PROJECT)
+        val treeTable = dataContext.getRequiredData(S3EditorDataKeys.BUCKET_TABLE)
         deleteNodes(project, treeTable, nodes.filterIsInstance<S3TreeObjectNode>())
     }
 
     // TODO enable for versioned objects.
-    override fun enabled(nodes: List<S3TreeNode>): Boolean = nodes.all { it::class == S3TreeObjectNode::class }
+    override fun enabled(nodes: List<S3TreeNode>): Boolean = nodes.isNotEmpty() && nodes.all { it::class == S3TreeObjectNode::class }
 }
 
 fun deleteSelectedObjects(project: Project, treeTable: S3TreeTable) {
@@ -52,7 +56,7 @@ private fun deleteNodes(project: Project, treeTable: S3TreeTable, nodes: List<S3
                 treeTable.refresh()
                 S3Telemetry.deleteObject(project, Result.Succeeded)
             } catch (e: Exception) {
-                e.notifyError(message("s3.delete.object.failed"))
+                e.notifyError(project = project, title = message("s3.delete.object.failed"))
                 S3Telemetry.deleteObject(project, Result.Failed)
             }
         }

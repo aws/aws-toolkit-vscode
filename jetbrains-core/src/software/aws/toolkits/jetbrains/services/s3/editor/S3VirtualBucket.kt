@@ -21,7 +21,7 @@ import java.io.InputStream
 import java.io.OutputStream
 import java.net.URL
 
-class S3VirtualBucket(val s3Bucket: Bucket, val client: S3Client) : LightVirtualFile(s3Bucket.name()) {
+class S3VirtualBucket(private val s3Bucket: Bucket, val client: S3Client) : LightVirtualFile(s3Bucket.name()) {
     override fun isWritable(): Boolean = false
     override fun getPath(): String = s3Bucket.name()
     override fun isValid(): Boolean = true
