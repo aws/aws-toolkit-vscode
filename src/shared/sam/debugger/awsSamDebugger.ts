@@ -383,7 +383,7 @@ export class SamDebugConfigProvider implements vscode.DebugConfigurationProvider
             vscode.window.showErrorMessage(
                 localize(
                     'AWS.sam.debugger.failedLaunch.missingRuntime',
-                    'Toolkit could not assume a runtime for config: {0}. Add a "lambda.runtime" field to your launch configuration.',
+                    'Toolkit could not infer a runtime for config: {0}. Add a "lambda.runtime" field to your launch configuration.',
                     config.name
                 )
             )
