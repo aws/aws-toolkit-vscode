@@ -3,6 +3,7 @@
 
 package software.aws.toolkits.jetbrains.services.lambda.execution.sam
 
+import com.intellij.execution.ExecutionException
 import com.intellij.execution.configurations.GeneralCommandLine
 import com.intellij.execution.process.OSProcessHandler
 import com.intellij.execution.runners.ExecutionEnvironment
@@ -56,10 +57,10 @@ open class SamRunner(protected val settings: LocalLambdaRunSettings) {
             processHandler.waitFor()
             val exitValue = processHandler.exitCode
             if (exitValue != 0) {
-                throw Exception(message("lambda.debug.docker.not_connected"))
+                throw ExecutionException(message("lambda.debug.docker.not_connected"))
             }
         } catch (t: Throwable) {
-            throw Exception(message("lambda.debug.docker.not_connected"), t)
+            throw ExecutionException(message("lambda.debug.docker.not_connected"), t)
         }
     }
 }

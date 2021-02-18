@@ -1,0 +1,4 @@
+{
+  "type" : "bugfix",
+  "description" : "Docker is now validated before building the Lambda when running and debugging locally (Fixes #2418)"
+}

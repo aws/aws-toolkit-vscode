@@ -121,8 +121,6 @@ class SamInvokeRunner : AsyncProgramRunner<RunnerSettings>() {
 
         val buildWorkflow = buildWorkflow(environment, buildLambdaRequest, lambdaSettings.samOptions)
         buildWorkflow.onSuccess = { context ->
-            samState.runner.checkDockerInstalled()
-
             val builtLambda = context.getRequiredAttribute(BuildLambda.BUILT_LAMBDA)
             samState.builtLambda = builtLambda
             samState.pathMappings = createPathMappings(lambdaBuilder, lambdaSettings, buildLambdaRequest)
@@ -229,7 +227,7 @@ class SamInvokeRunner : AsyncProgramRunner<RunnerSettings>() {
     private fun buildWorkflow(environment: ExecutionEnvironment, buildRequest: BuildRequest, samOptions: SamOptions): StepExecutor {
         val buildStep = BuildLambda(buildRequest.template, buildRequest.logicalId, buildRequest.buildDir, buildRequest.buildEnvVars, samOptions)
 
-        return StepExecutor(environment.project, message("sam.build.running"), StepWorkflow(buildStep), environment.executionId.toString())
+        return StepExecutor(environment.project, message("sam.build.running"), StepWorkflow(ValidateDocker(), buildStep), environment.executionId.toString())
     }
 
     private fun getModule(psiFile: PsiFile): Module = ModuleUtil.findModuleForFile(psiFile)
