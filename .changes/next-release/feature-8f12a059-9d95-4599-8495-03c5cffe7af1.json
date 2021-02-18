@@ -1,0 +1,4 @@
+{
+  "type" : "feature",
+  "description" : "Debugging Python based Lambdas locally now have the Python interactive console enabled (Fixes #1165)"
+}
