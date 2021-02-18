@@ -2,9 +2,11 @@ form {
     padding: 15px;
 }
 
-h2 {
+.section-header {
     margin: 0px;
     margin-bottom: 10px;
+    display: flex;
+    justify-content: flex-start;
 }
 
 div {

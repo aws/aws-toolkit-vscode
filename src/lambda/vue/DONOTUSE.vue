@@ -10,7 +10,9 @@
         <h1>Invoke Local Lambda</h1>
         <button v-on:click.prevent="loadConfig">Load Existing Debug Configuration</button><br />
         <div class="config-details">
-            <h2>Configuration Details</h2>
+            <div class="section-header">
+                <h2>Configuration Details</h2>
+            </div>
             <label for="target-type-selector">Invoke Target Type</label>
             <select name="target-types" id="target-type-selector" v-model="launchConfig.invokeTarget.target">
                 <option :value="type.value" v-for="(type, index) in targetTypes" :key="index">{{ type.name }}</option>
@@ -147,13 +149,16 @@
                 <div class="config-item">
                     <label for="containerBuild">Container Build</label>
                     <select name="containerBuild" id="containerBuild" v-model="launchConfig.sam.containerBuild">
-                        <option value=false :key=0>False</option>
+                        <option value=false :key="0">False</option>
+                        <option value=true :key="1">True</option>
                     </select>
                 </div>
             </div>
         </div>
         <div class="payload-section">
-            <h2>Payload</h2>
+            <div class="section-header">
+                <h2>Payload</h2>
+            </div>
             <button v-on:click.prevent="loadPayload">Load Sample Payload</button><br />
             <textarea name="lambda-payload" id="lambda-payload" cols="60" rows="5" v-model="payload"></textarea>
             <span class="data-view">payload from data: {{ payload }} </span>
