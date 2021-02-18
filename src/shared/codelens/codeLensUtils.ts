@@ -108,7 +108,7 @@ function makeAddCodeSamDebugCodeLens(
     openWebview: boolean
 ): vscode.CodeLens {
     const title = openWebview
-        ? localize('AWS.codelens.lambda.invoke', 'Invoke (Beta)')
+        ? localize('AWS.codelens.lambda.configEditor', 'Edit Debug Configuration (Beta)')
         : localize('AWS.command.addSamDebugConfiguration', 'Add Debug Configuration')
     const command: vscode.Command = {
         title,
