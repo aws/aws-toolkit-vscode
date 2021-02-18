@@ -179,7 +179,7 @@
     "AWS.command.ssmDocument.openLocalDocumentJson": "Download as JSON",
     "AWS.command.ssmDocument.openLocalDocumentYaml": "Download as YAML",
     "AWS.command.ssmDocument.publishDocument": "Publish a Systems Manager Document",
-    "AWS.command.lambda.invokeForm": "Invoke Local SAM Application",
+    "AWS.command.lambda.editor.title": "SAM Debug Configuration Editor",
     "AWS.stepFunctions.graph.titlePrefix": "Graph: {0}",
     "AWS.credentials.statusbar.no.credentials": "(not connected)",
     "AWS.credentials.statusbar.text": "AWS: {0}",

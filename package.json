@@ -1066,7 +1066,7 @@
         "commands": [
             {
                 "command": "aws.lambda.invokeForm",
-                "title": "%AWS.command.lambda.invokeForm%",
+                "title": "%AWS.command.lambda.editor.title%",
                 "category": "AWS"
             },
             {
