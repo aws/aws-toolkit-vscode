@@ -3,12 +3,15 @@
 
 package software.aws.toolkits.jetbrains.services.lambda.execution.sam
 
+import com.intellij.execution.Executor
 import com.intellij.execution.configurations.CommandLineState
 import com.intellij.execution.executors.DefaultDebugExecutor
 import com.intellij.execution.process.KillableColoredProcessHandler
 import com.intellij.execution.process.ProcessHandler
 import com.intellij.execution.runners.ExecutionEnvironment
+import com.intellij.execution.ui.ConsoleView
 import com.intellij.openapi.util.io.FileUtil
+import kotlinx.coroutines.runBlocking
 import software.aws.toolkits.jetbrains.core.credentials.toEnvironmentVariables
 import software.aws.toolkits.jetbrains.core.executables.ExecutableInstance
 import software.aws.toolkits.jetbrains.core.executables.ExecutableManager
@@ -16,6 +19,7 @@ import software.aws.toolkits.jetbrains.core.executables.getExecutableIfPresent
 import software.aws.toolkits.jetbrains.services.PathMapping
 import software.aws.toolkits.jetbrains.services.lambda.sam.SamExecutable
 import software.aws.toolkits.jetbrains.services.lambda.upload.steps.BuiltLambda
+import software.aws.toolkits.jetbrains.utils.getCoroutineUiContext
 
 class SamRunningState(
     environment: ExecutionEnvironment,
@@ -95,4 +99,12 @@ class SamRunningState(
         eventFile.writeText(settings.input)
         return eventFile.absolutePath
     }
+
+    override fun createConsole(executor: Executor): ConsoleView? =
+        /*
+         * Certain consoles must be created on EDT (like the python interactive console) so make sure we are on the UI thread for that segment.
+         */
+        runBlocking(getCoroutineUiContext(disposable = environment)) {
+            super.createConsole(executor)
+        }
 }
