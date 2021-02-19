@@ -102,13 +102,21 @@ object SamTemplateUtils {
         val function = findFunction(logicalId)
         if (function.isServerlessFunction()) {
             if (function.isImageBased()) {
-                function.requiredAt("/Metadata/DockerContext").textValue()
+                function.getPathOrThrow(logicalId, "/Metadata/DockerContext").textValue()
             } else {
-                function.requiredAt("/Properties/CodeUri").textValue()
+                function.getPathOrThrow(logicalId, "/Properties/CodeUri").textValue()
             }
         } else {
-            function.requiredAt("/Properties/Code").textValue()
+            function.getPathOrThrow(logicalId, "/Properties/Code").textValue()
         }
+    }
+
+    private fun JsonNode.getPathOrThrow(logicalId: String, path: String): JsonNode {
+        val node = at(path)
+        if (node.isMissingNode) {
+            throw RuntimeException(message("cloudformation.key_not_found", path, logicalId))
+        }
+        return node
     }
 
     private fun JsonNode.findFunction(logicalId: String): JsonNode = this.requiredAt("/Resources").get(logicalId)
