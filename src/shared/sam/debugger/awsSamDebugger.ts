@@ -266,11 +266,6 @@ export class SamDebugConfigProvider implements vscode.DebugConfigurationProvider
      *
      * If `launch.json` is missing, attempts to generate a config dynamically.
      *
-     * TECHNICALLY this isn't the correct way to implement a runner...
-     * We should be returning a vscode.ProviderResult<AwsSamDebuggerConfiguration>.
-     * That should be picked up by a vscode.DebugAdapter (https://www.npmjs.com/package/vscode-debugadapter).
-     * The adapter should contain the execution code (this.makeConfig and this.invokeConfig).
-     *
      * @param folder Workspace folder
      * @param config User-provided config (from launch.json)
      * @param token  Cancellation token
