@@ -4,6 +4,7 @@
 package software.aws.toolkits.jetbrains.services.lambda.execution.sam
 
 import com.intellij.execution.configurations.GeneralCommandLine
+import com.intellij.execution.process.ProcessListener
 import software.aws.toolkits.jetbrains.utils.execution.steps.CliBasedStep
 import software.aws.toolkits.jetbrains.utils.execution.steps.Context
 import software.aws.toolkits.jetbrains.utils.execution.steps.MessageEmitter
@@ -17,4 +18,7 @@ class ValidateDocker : CliBasedStep() {
     override fun handleErrorResult(exitCode: Int, output: String, messageEmitter: MessageEmitter): Nothing? {
         throw Exception(message("lambda.debug.docker.not_connected"))
     }
+
+    // Change logger to not log std out since we dont actually want the output of docker
+    override fun createProcessEmitter(messageEmitter: MessageEmitter): ProcessListener = CliOutputEmitter(messageEmitter, printStdOut = false)
 }

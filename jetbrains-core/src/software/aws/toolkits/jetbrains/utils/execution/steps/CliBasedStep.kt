@@ -62,7 +62,7 @@ abstract class CliBasedStep : Step() {
 
     protected open fun createProcessEmitter(messageEmitter: MessageEmitter): ProcessListener = CliOutputEmitter(messageEmitter)
 
-    private class CliOutputEmitter(private val messageEmitter: MessageEmitter) : ProcessAdapter() {
+    protected class CliOutputEmitter(private val messageEmitter: MessageEmitter, private val printStdOut: Boolean = true) : ProcessAdapter() {
         override fun onTextAvailable(event: ProcessEvent, outputType: Key<*>) {
             LOG.debug {
                 val prefix = if (outputType == ProcessOutputTypes.STDERR) {
@@ -73,7 +73,14 @@ abstract class CliBasedStep : Step() {
 
                 "$prefix ${event.text.trim()}"
             }
-            messageEmitter.emitMessage(event.text, outputType == ProcessOutputTypes.STDERR)
+
+            if (outputType == ProcessOutputTypes.STDOUT) {
+                if (printStdOut) {
+                    messageEmitter.emitMessage(event.text, isError = false)
+                }
+            } else {
+                messageEmitter.emitMessage(event.text, outputType == ProcessOutputTypes.STDERR)
+            }
         }
     }
 
