@@ -22,6 +22,7 @@ import {
 } from '../awsSamDebugConfiguration'
 import { CloudFormation } from '../../../cloudformation/cloudformation'
 import { ext } from '../../../extensionGlobals'
+import { LaunchConfiguration } from '../../../debug/launchConfiguration'
 
 /**
  * Holds information required to create a launch config
@@ -41,6 +42,7 @@ export interface AddSamDebugConfigurationInput {
 export async function addSamDebugConfiguration(
     { resourceName, rootUri, apiEvent, runtimeFamily }: AddSamDebugConfigurationInput,
     type: typeof CODE_TARGET_TYPE | typeof TEMPLATE_TARGET_TYPE | typeof API_TARGET_TYPE,
+    openWebview: boolean,
     step?: { step: number; totalSteps: number }
 ): Promise<void> {
     // emit without waiting
@@ -181,12 +183,14 @@ export async function addSamDebugConfiguration(
         throw new Error('Unrecognized debug target type')
     }
 
-    vscode.commands.executeCommand('aws.lambda.vueTest', samDebugConfig)
+    if (openWebview) {
+        vscode.commands.executeCommand('aws.lambda.invokeForm', samDebugConfig)
+    } else {
+        const launchConfig = new LaunchConfiguration(rootUri)
+        await launchConfig.addDebugConfiguration(samDebugConfig)
 
-    // const launchConfig = new LaunchConfiguration(rootUri)
-    // await launchConfig.addDebugConfiguration(samDebugConfig)
-
-    // await openLaunchJsonFile()
+        await openLaunchJsonFile()
+    }
 }
 
 export async function openLaunchJsonFile(): Promise<void> {

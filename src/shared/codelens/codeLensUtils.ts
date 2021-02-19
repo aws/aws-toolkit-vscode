@@ -86,7 +86,10 @@ export async function makeCodeLenses({
                 rootUri: handler.manifestUri,
                 runtimeFamily,
             }
-            lenses.push(makeAddCodeSamDebugCodeLens(range, codeConfig, templateConfigs))
+            lenses.push(
+                makeAddCodeSamDebugCodeLens(range, codeConfig, templateConfigs, false),
+                makeAddCodeSamDebugCodeLens(range, codeConfig, templateConfigs, true)
+            )
         } catch (err) {
             getLogger().error(
                 `Could not generate 'configure' code lens for handler '${handler.handlerName}': %O`,
@@ -101,14 +104,18 @@ export async function makeCodeLenses({
 function makeAddCodeSamDebugCodeLens(
     range: vscode.Range,
     codeConfig: AddSamDebugConfigurationInput,
-    templateConfigs: AddSamDebugConfigurationInput[]
+    templateConfigs: AddSamDebugConfigurationInput[],
+    openWebview: boolean
 ): vscode.CodeLens {
+    const title = openWebview
+        ? localize('AWS.codelens.lambda.configEditor', 'Edit Debug Configuration (Beta)')
+        : localize('AWS.command.addSamDebugConfiguration', 'Add Debug Configuration')
     const command: vscode.Command = {
-        title: localize('AWS.command.addSamDebugConfiguration', 'Add Debug Configuration'),
+        title,
         command: 'aws.pickAddSamDebugConfiguration',
         // Values provided by makeTypescriptCodeLensProvider(),
         // makeCSharpCodeLensProvider(), makePythonCodeLensProvider().
-        arguments: [codeConfig, templateConfigs],
+        arguments: [codeConfig, templateConfigs, openWebview],
     }
 
     return new vscode.CodeLens(range, command)
@@ -123,10 +130,11 @@ function makeAddCodeSamDebugCodeLens(
  */
 export async function pickAddSamDebugConfiguration(
     codeConfig: AddSamDebugConfigurationInput,
-    templateConfigs: AddSamDebugConfigurationInput[]
+    templateConfigs: AddSamDebugConfigurationInput[],
+    openWebview: boolean
 ): Promise<void> {
     if (templateConfigs.length === 0) {
-        await addSamDebugConfiguration(codeConfig, CODE_TARGET_TYPE)
+        await addSamDebugConfiguration(codeConfig, CODE_TARGET_TYPE, openWebview)
 
         return
     }
@@ -183,16 +191,16 @@ export async function pickAddSamDebugConfiguration(
         return undefined
     }
     if (val.label === noTemplate) {
-        await addSamDebugConfiguration(codeConfig, CODE_TARGET_TYPE, { step: 2, totalSteps: 2 })
+        await addSamDebugConfiguration(codeConfig, CODE_TARGET_TYPE, openWebview, { step: 2, totalSteps: 2 })
     } else {
         const templateItem = templateItemsMap.get(val.label)
         if (!templateItem) {
             return undefined
         }
         if (templateItem.apiEvent) {
-            await addSamDebugConfiguration(templateItem, API_TARGET_TYPE)
+            await addSamDebugConfiguration(templateItem, API_TARGET_TYPE, openWebview)
         } else {
-            await addSamDebugConfiguration(templateItem, TEMPLATE_TARGET_TYPE)
+            await addSamDebugConfiguration(templateItem, TEMPLATE_TARGET_TYPE, openWebview)
         }
     }
 }
