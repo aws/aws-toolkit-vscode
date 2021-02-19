@@ -3,6 +3,7 @@
 
 package software.aws.toolkits.jetbrains.services.lambda.execution.sam
 
+import com.intellij.execution.ExecutionException
 import com.intellij.execution.configurations.RunProfile
 import com.intellij.execution.configurations.RunProfileState
 import com.intellij.execution.configurations.RunnerSettings
@@ -135,8 +136,15 @@ class SamInvokeRunner : AsyncProgramRunner<RunnerSettings>() {
                 }
         }
         buildWorkflow.onError = {
+            // Remap to ExecutionException so our run configuration fails properly
+            // instead of showing up as an IDE Fatal error
+            val exception = if (it is ExecutionException) {
+                it
+            } else {
+                ExecutionException(it)
+            }
             LOG.warn(it) { "Failed to create Lambda package" }
-            buildingPromise.setError(it)
+            buildingPromise.setError(exception)
             reportMetric(lambdaSettings, Result.Failed, environment.isDebug())
         }
 
