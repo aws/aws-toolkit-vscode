@@ -232,7 +232,8 @@ export const Component = Vue.extend({
         }
     },
     // `createElement` is inferred, but `render` needs return type
-    template: `<template>
+    template: `
+<template>
     <form class="invoke-lambda-form">
         <h1>Invoke Local Lambda</h1>
         <button v-on:click.prevent="loadConfig">Load Existing Debug Configuration</button><br />
@@ -279,7 +280,7 @@ export const Component = Vue.extend({
             <div class="target-template" v-else-if="launchConfig.invokeTarget.target === 'template'">
                 <button v-on:click.prevent="loadResource">Load Resource</button><br />
                 <div class="config-item">
-                    <label for="template-path">Template Path  <span class="tooltip">i<span class="tooltip-text"> Heplful tooltip with explanation and example: <br>Example path: home/folder/file</span></span></label>
+                    <label for="template-path">Template Path</label>
                     <input
                         id="template-path-button"
                         v-model="launchConfig.invokeTarget.templatePath"
@@ -301,8 +302,14 @@ export const Component = Vue.extend({
             <div class="target-apigw" v-else-if="launchConfig.invokeTarget.target === 'api'">
                 <button v-on:click.prevent="loadResource">Load Resource</button><br />
                 <div class="config-item">
-                    <label for="template-path-api">Template Path</label>
-                    <button id="template-path-api-button">Select Template...</button>
+                    <label for="template-path">Template Path</label>
+                    <input
+                        id="template-path-button"
+                        v-model="launchConfig.invokeTarget.templatePath"
+                        placeholder="Enter the template path..."
+                    /><span class="data-view"
+                        >Template path from data: {{ launchConfig.invokeTarget.templatePath }}</span
+                    >
                 </div>
                 <div class="config-item">
                     <label for="logicalID">Resource (Logical Id)</label>
@@ -314,9 +321,13 @@ export const Component = Vue.extend({
                     />
                 </div>
                 <div class="config-item">
+                    <label for="path">Path</label>
+                    <input type="text" v-model="launchConfig.api.path" >
+                </div>
+                <div class="config-item">
                     <label for="http-method-selector">HTTP Method</label>
-                    <select name="http-method" id="http-method-selector">
-                        <option :value="method" v-for="(method, index) in httpMethods" :key="index">
+                    <select name="http-method"  v-model="launchConfig.api.httpMethod">
+                        <option v-for="(method, index) in httpMethods" v-bind:value="method" :key="index">
                             {{ method }}
                         </option>
                     </select>
@@ -326,12 +337,12 @@ export const Component = Vue.extend({
                     <input name="query-string" id="query-string" cols="15" rows="2" placeholder="Enter a query" />
                 </div>
                 <div class="config-item">
-                    <label for="">Headers</label>
-                    <button id="template-path-api-button">Add Header...</button>
+                    <label for="headers">Headers</label>
+                    <input type="text" v-model="launchConfig.api.headers" >
                 </div>
             </div>
             <div v-else>Select an Invoke Target</div>
-            <button @click="toggleShowAllFields">{{showAllFields ? "Less Fields" : "More Fields"}}</button>
+            <button @click="toggleShowAllFields">{{showAllFields ? "Show Less Fields" : "Show All Fields"}}</button>
             <div v-if="showAllFields">
                 <h3>aws</h3>
                 <div class="config-item">
@@ -358,11 +369,11 @@ export const Component = Vue.extend({
                 </div>
                 <div class="config-item">
                     <label for="memory">Memory</label>
-                    <input type="text" v-model="launchConfig.lambda.memoryMb" >
+                    <input type="number" v-model="launchConfig.lambda.memoryMb" >
                 </div>
                 <div class="config-item">
                     <label for="timeoutSec">Timeout (s)</label>
-                    <input type="text" v-model="launchConfig.lambda.timeoutSec" >
+                    <input type="number" v-model="launchConfig.lambda.timeoutSec" >
                 </div>
                 <div class="config-item">
                     <label for="pathMappings">Path Mappings</label>
@@ -380,6 +391,54 @@ export const Component = Vue.extend({
                         <option value=true :key="1">True</option>
                     </select>
                 </div>
+                <div class="config-item">
+                    <label for="dockerNetork">Docker Network</label>
+                    <input type="text" v-model="launchConfig.sam.dockerNetork">
+                </div>
+                <div class="config-item">
+                    <label for="localArugments">Local Arguments</label>
+                    <input type="text" v-model="launchConfig.sam.localArugments" >
+                </div>
+                <div class="config-item">
+                    <label for="skipNewImageCheck">Skip New Image Check</label>
+                    <select name="skipNewImageCheck" id="skipNewImageCheck" v-model="launchConfig.sam.skipNewImageCheck">
+                        <option value=false :key="0">False</option>
+                        <option value=true :key="1">True</option>
+                    </select>
+                </div>
+                <div class="config-item">
+                    <label for="templateParameters">Template - Parameters</label>
+                    <input type="text" v-model="launchConfig.sam.template.parameters" >
+                </div>
+                <h3>api</h3>
+                <div class="config-item">
+                    <label for="path">Path</label>
+                    <input type="text" v-model="launchConfig.api.path" >
+                </div>
+                <div class="config-item">
+                    <label for="http-method-selector">HTTP Method</label>
+                    <select name="http-method" v-model="launchConfig.api.httpMethod">
+                        <option v-for="(method, index) in httpMethods" v-bind:value="method" :key="index">
+                            {{ method }}
+                        </option>
+                    </select>
+                </div>
+                <div class="config-item">
+                    <label for="headers">Headers</label>
+                    <input type="text" v-model="launchConfig.api.headers" >
+                </div>
+                <div class="config-item">
+                    <label for="querystring">Query String</label>
+                    <input type="text" v-model="launchConfig.api.querystring" >
+                </div>
+                <div class="config-item">
+                    <label for="stageVariables">Stage Variables []</label>
+                    <input type="text" v-model="launchConfig.api.stageVariables" >
+                </div>
+                <div class="config-item">
+                    <label for="clientCerificateId">Client Certificate ID</label>
+                    <input type="text" v-model="launchConfig.api.clientCerificateId" >
+                </div>
             </div>
         </div>
         <div class="payload-section">
@@ -391,6 +450,7 @@ export const Component = Vue.extend({
             <span class="data-view">payload from data: {{ payload }} </span>
             <div class="json-parse-error" v-if="jsonError && payload">Error parsing JSON: {{jsonError}}</div>
         </div>
+        <div class="required">*Required</div>
         <div class="invoke-button-container">
             <button v-on:click.prevent="save">Save Debug Configuration</button>
             <button id="invoke-button" v-on:click.prevent="launch">Invoke Debug Configuration</button>

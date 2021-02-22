@@ -93,6 +93,10 @@ textarea {
     padding: 5px 10px;
 }
 
+.required {
+    color: red;
+}
+
 #form-title {
     font-size: large;
     font-weight: bold;
