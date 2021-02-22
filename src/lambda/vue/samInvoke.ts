@@ -349,6 +349,7 @@ async function saveLaunchConfig(config: AwsSamDebuggerConfiguration): Promise<vo
                 localize('AWS.command.addSamDebugConfiguration', 'Add Debug Configuration')
             ),
             index: -1,
+            alwaysShow: true,
         },
         ...getLaunchConfigQuickPickItems(launchConfig, uri),
     ]
@@ -378,12 +379,13 @@ async function saveLaunchConfig(config: AwsSamDebuggerConfiguration): Promise<vo
         const response = await input.promptUser({ inputBox: ib })
         if (response) {
             launchConfig.addDebugConfiguration(finalizeConfig(config, response))
+            await openLaunchJsonFile()
         }
     } else {
         // use existing label
         launchConfig.editDebugConfiguration(finalizeConfig(config, pickerResponse.label), pickerResponse.index)
+        await openLaunchJsonFile()
     }
-    await openLaunchJsonFile()
 }
 
 /**
