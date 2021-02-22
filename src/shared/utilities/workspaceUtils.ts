@@ -121,7 +121,7 @@ export async function findParentProjectFile(
         return undefined
     }
 
-    return vscode.Uri.parse(parentProjectFiles[0])
+    return vscode.Uri.file(parentProjectFiles[0])
 }
 
 /**

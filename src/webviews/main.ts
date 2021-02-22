@@ -7,12 +7,12 @@ import * as path from 'path'
 import * as vscode from 'vscode'
 import { ExtensionUtilities } from '../shared/extensionUtilities'
 
-interface WebviewParams<TRequest, TResponse, TState> {
+interface WebviewParams<TRequest, TResponse> {
     id: string
     name: string
     webviewJs: string
     context: vscode.ExtensionContext
-    initialState?: TState
+    initialCalls?: TResponse[]
     persistSessions?: boolean
     persistWithoutFocus?: boolean
     cssFiles?: string[]
@@ -33,9 +33,7 @@ export interface VsCode<TRequest, State> {
     getState(): State | undefined
 }
 
-export async function createVueWebview<TRequest, TResponse, TState>(
-    params: WebviewParams<TRequest, TResponse, TState>
-) {
+export async function createVueWebview<TRequest, TResponse>(params: WebviewParams<TRequest, TResponse>) {
     const libsPath: string = path.join(params.context.extensionPath, 'media', 'libs')
     const jsPath: string = path.join(params.context.extensionPath, 'media', 'js')
     const cssPath: string = path.join(params.context.extensionPath, 'media', 'css')
@@ -106,10 +104,8 @@ export async function createVueWebview<TRequest, TResponse, TState>(
     </body>
 </html>`
 
-    // message in initial state since we don't have access to the ReactDOM call at this level (since we webpack separately).
-    // TODO: Is there a better way to do this?
-    if (params.initialState) {
-        view.webview.postMessage(params.initialState)
+    if (params.initialCalls) {
+        for (const call of params.initialCalls) view.webview.postMessage(call)
     }
 
     view.webview.onDidReceiveMessage(
