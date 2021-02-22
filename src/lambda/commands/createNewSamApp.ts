@@ -343,7 +343,8 @@ export async function addInitialLaunchConfiguration(
                 pathutils.areEqual(
                     folder.uri.fsPath,
                     (config.invokeTarget as TemplateTargetProperties).templatePath,
-                    targetUri.fsPath
+                    targetUri.fsPath,
+                    true
                 )
         )
 
