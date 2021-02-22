@@ -355,11 +355,11 @@ async function saveLaunchConfig(config: AwsSamDebuggerConfiguration): Promise<vo
         })
         const response = await input.promptUser({ inputBox: ib })
         if (response) {
-            launchConfig.addDebugConfiguration(pruneConfig(config, response))
+            launchConfig.addDebugConfiguration(finalizeConfig(config, response))
         }
     } else {
         // use existing label
-        launchConfig.editDebugConfiguration(pruneConfig(config, pickerResponse.label), pickerResponse.index)
+        launchConfig.editDebugConfiguration(finalizeConfig(config, pickerResponse.label), pickerResponse.index)
     }
 }
 
@@ -369,11 +369,13 @@ async function saveLaunchConfig(config: AwsSamDebuggerConfiguration): Promise<vo
  * @param config Config to invoke
  */
 async function invokeLaunchConfig(config: AwsSamDebuggerConfiguration, context: ExtContext): Promise<void> {
-    const targetUri = getUriFromLaunchConfig(config)
+    const finalConfig = finalizeConfig(config, 'Editor-Created Debug Config')
+
+    const targetUri = getUriFromLaunchConfig(finalConfig)
 
     const folder = targetUri ? vscode.workspace.getWorkspaceFolder(targetUri) : undefined
 
-    await new SamDebugConfigProvider(context).resolveDebugConfiguration(folder, config)
+    await new SamDebugConfigProvider(context).resolveDebugConfiguration(folder, finalConfig)
 }
 
 function getUriFromLaunchConfig(config: AwsSamDebuggerConfiguration): vscode.Uri | undefined {
@@ -427,8 +429,8 @@ function getLaunchConfigQuickPickItems(launchConfig: LaunchConfiguration, uri: v
         })
 }
 
-function pruneConfig(config: AwsSamDebuggerConfiguration, name: string): AwsSamDebuggerConfiguration {
-    const newConfig = pruneConfigHelper(config)
+function finalizeConfig(config: AwsSamDebuggerConfiguration, name: string): AwsSamDebuggerConfiguration {
+    const newConfig = doTraverseAndPrune(config)
     newConfig.name = name
 
     if (isTemplateTargetProperties(config.invokeTarget)) {
@@ -448,25 +450,24 @@ function pruneConfig(config: AwsSamDebuggerConfiguration, name: string): AwsSamD
     return newConfig
 }
 
-function pruneConfigHelper(object: { [key: string]: any }): any | undefined {
+function doTraverseAndPrune(object: { [key: string]: any }): any | undefined {
     const keys = Object.keys(object)
-    const final: any = {}
+    const final = JSON.parse(JSON.stringify(object))
     for (const key of keys) {
         const val = object[key]
-        if (val !== undefined && val !== '' && !(Array.isArray(val) && val.length === 0)) {
-            if (typeof val === 'object') {
-                const pruned = pruneConfigHelper(val)
-                if (pruned) {
-                    final[key] = pruned
-                }
+        if (val === undefined || val === '' || (Array.isArray(val) && val.length === 0)) {
+            delete final[key]
+        } else if (typeof val === 'object') {
+            const pruned = doTraverseAndPrune(val)
+            if (pruned) {
+                final[key] = pruned
             } else {
-                final[key] = val
+                delete final[key]
             }
         }
     }
     if (Object.keys(final).length === 0) {
         return undefined
     }
-
     return final
 }
