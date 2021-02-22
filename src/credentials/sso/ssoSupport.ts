@@ -8,7 +8,7 @@ import { StartDeviceAuthorizationResponse } from 'aws-sdk/clients/ssooidc'
 import { Profile } from '../../shared/credentials/credentialsFile'
 import { hasProfileProperty } from '../credentialsUtilities'
 
-const SSO_PROFILE_PROPERTIES = ['sso_start_url', 'sso_region', 'sso_account_id', 'sso_role_name']
+export const SSO_PROFILE_PROPERTIES = ['sso_start_url', 'sso_region', 'sso_account_id', 'sso_role_name']
 
 export function validateSsoProfile(profile: Profile, profileName: string): string | undefined {
     const missingProperties = []
@@ -24,15 +24,6 @@ export function validateSsoProfile(profile: Profile, profileName: string): strin
     }
 
     return undefined
-}
-
-export function isSsoProfile(profile: Profile): boolean {
-    for (const propertyName of SSO_PROFILE_PROPERTIES) {
-        if (hasProfileProperty(profile, propertyName)) {
-            return true
-        }
-    }
-    return false
 }
 
 export async function openSsoPortalLink(authorization: StartDeviceAuthorizationResponse): Promise<boolean> {
