@@ -8,6 +8,7 @@ import xml2js = require('xml2js')
 import * as fs from 'fs-extra'
 import * as path from 'path'
 import * as vscode from 'vscode'
+import * as nls from 'vscode-nls'
 import { LaunchConfiguration } from '../../shared/debug/launchConfiguration'
 import { ext } from '../../shared/extensionGlobals'
 import { ExtContext } from '../../shared/extensions'
@@ -30,27 +31,35 @@ import { createVueWebview } from '../../webviews/main'
 import { sampleRequestManifestPath, sampleRequestPath } from '../constants'
 import { tryGetAbsolutePath } from '../../shared/utilities/workspaceUtils'
 import { CloudFormation } from '../../shared/cloudformation/cloudformation'
+import { openLaunchJsonFile } from '../../shared/sam/debugger/commands/addSamDebugConfiguration'
+
+const localize = nls.loadMessageBundle()
 
 export function registerSamInvokeVueCommand(context: ExtContext): vscode.Disposable {
-    return vscode.commands.registerCommand('aws.lambda.vueTest', async (launchConfig?: AwsSamDebuggerConfiguration) => {
-        await createVueWebview<SamInvokerRequest, SamInvokerResponse, SamInvokerResponse>({
-            id: 'create',
-            name: 'Invoke Local SAM Application',
-            webviewJs: 'samInvokeVue.js',
-            onDidReceiveMessageFunction: async (message, postMessageFn, destroyWebviewFn) =>
-                handleFrontendToBackendMessage(message, postMessageFn, destroyWebviewFn, context),
-            context: context.extensionContext,
-            cssFiles: ['samInvokeForm.css'],
-            initialState: launchConfig
-                ? {
-                      command: 'loadSamLaunchConfig',
-                      data: {
-                          launchConfig: launchConfig,
-                      },
-                  }
-                : undefined,
-        })
-    })
+    return vscode.commands.registerCommand(
+        'aws.lambda.invokeForm',
+        async (launchConfig?: AwsSamDebuggerConfiguration) => {
+            await createVueWebview<SamInvokerRequest, SamInvokerResponse>({
+                id: 'createLambda',
+                name: localize('AWS.command.lambda.editor.title', 'SAM Debug Configuration Editor'),
+                webviewJs: 'samInvokeVue.js',
+                onDidReceiveMessageFunction: async (message, postMessageFn, destroyWebviewFn) =>
+                    handleFrontendToBackendMessage(message, postMessageFn, destroyWebviewFn, context),
+                context: context.extensionContext,
+                cssFiles: ['samInvokeForm.css'],
+                initialCalls: launchConfig
+                    ? [
+                          {
+                              command: 'loadSamLaunchConfig',
+                              data: {
+                                  launchConfig: launchConfig,
+                              },
+                          },
+                      ]
+                    : undefined,
+            })
+        }
+    )
 }
 
 export interface SamInvokeVueState {
@@ -140,21 +149,23 @@ async function loadSamLaunchConfig(postMessageFn: (response: SamInvokerResponse)
     const workspaceFolder = vscode.workspace.workspaceFolders?.length ? vscode.workspace.workspaceFolders[0] : undefined
     if (!workspaceFolder) {
         // TODO Localize
-        vscode.window.showErrorMessage('No workspace folder found.')
+        vscode.window.showErrorMessage(localize('AWS.lambda.form.noFolder', 'No workspace folder found.'))
         return
     }
     const uri = workspaceFolder.uri
     const launchConfig = new LaunchConfiguration(uri)
     const pickerItems = getLaunchConfigQuickPickItems(launchConfig, uri)
     if (pickerItems.length === 0) {
-        // TODO Localize
-        vscode.window.showErrorMessage('No launch configurations found')
-        return
+        pickerItems.push({
+            index: -1,
+            label: localize('AWS.lambda.form.noDebugConfigs', 'No aws-sam debug configurations found.'),
+            detail: localize('AWS.picker.dynamic.noItemsFound.detail', 'Click here to go back'),
+        })
     }
     const qp = picker.createQuickPick({
         items: pickerItems,
         options: {
-            title: 'Select Debug Configuration',
+            title: localize('AWS.lambda.form.selectDebugConfig', 'Select Debug Configuration'),
         },
     })
 
@@ -163,7 +174,7 @@ async function loadSamLaunchConfig(postMessageFn: (response: SamInvokerResponse)
     })
     const pickerResponse = picker.verifySinglePickerOutput<LaunchConfigPickItem>(choices)
 
-    if (!pickerResponse) {
+    if (!pickerResponse || pickerResponse.index === -1) {
         return
     }
     postMessageFn({
@@ -221,7 +232,7 @@ async function getSamplePayload(postMessageFn: (response: SamInvokerResponse) =>
         const qp = picker.createQuickPick({
             items: inputs,
             options: {
-                title: 'Pick a sample input',
+                title: localize('AWS.lambda.form.pickSampleInput', 'Pick a Sample Input'),
             },
         })
 
@@ -256,6 +267,7 @@ async function getSamplePayload(postMessageFn: (response: SamInvokerResponse) =>
  */
 async function getTemplate(postMessageFn: (response: SamInvokerResponse) => Thenable<boolean>): Promise<void> {
     const items: (vscode.QuickPickItem & { templatePath: string })[] = []
+    const NO_TEMPLATE = 'NOTEMPLATEFOUND'
     for (const template of ext.templateRegistry.registeredItems) {
         const resources = template.item.Resources
         if (resources) {
@@ -267,7 +279,7 @@ async function getTemplate(postMessageFn: (response: SamInvokerResponse) => Then
                 ) {
                     items.push({
                         label: resource,
-                        detail: `Template: ${template.path}`,
+                        detail: localize('AWS.lambda.form.selectResource.detail', 'Template: {0}', template.path),
                         templatePath: template.path,
                     })
                 }
@@ -276,14 +288,20 @@ async function getTemplate(postMessageFn: (response: SamInvokerResponse) => Then
     }
 
     if (items.length === 0) {
-        vscode.window.showWarningMessage('No templates with valid SAM functions found.')
-        return
+        items.push({
+            label: localize(
+                'AWS.lambda.form.selectResource.noTemplates',
+                'No templates with valid SAM functions found.'
+            ),
+            detail: localize('AWS.picker.dynamic.noItemsFound.detail', 'Click here to go back'),
+            templatePath: NO_TEMPLATE,
+        })
     }
 
     const qp = picker.createQuickPick({
         items,
         options: {
-            title: 'Select Resource',
+            title: localize('AWS.lambda.form.selectResource', 'Select Resource'),
         },
     })
 
@@ -292,7 +310,7 @@ async function getTemplate(postMessageFn: (response: SamInvokerResponse) => Then
     })
     const selectedTemplate = picker.verifySinglePickerOutput(choices)
 
-    if (!selectedTemplate) {
+    if (!selectedTemplate || selectedTemplate.templatePath === NO_TEMPLATE) {
         return
     }
 
@@ -324,17 +342,22 @@ async function saveLaunchConfig(config: AwsSamDebuggerConfiguration): Promise<vo
         return
     }
     const launchConfig = new LaunchConfiguration(uri)
-    const pickerItems = getLaunchConfigQuickPickItems(launchConfig, uri)
-
-    pickerItems.unshift({
-        label: addCodiconToString('add', 'Create New Debug Configuration'),
-        index: -1,
-    })
+    const pickerItems = [
+        {
+            label: addCodiconToString(
+                'add',
+                localize('AWS.command.addSamDebugConfiguration', 'Add Debug Configuration')
+            ),
+            index: -1,
+            alwaysShow: true,
+        },
+        ...getLaunchConfigQuickPickItems(launchConfig, uri),
+    ]
 
     const qp = picker.createQuickPick({
         items: pickerItems,
         options: {
-            title: 'Select Debug Configuration',
+            title: localize('AWS.lambda.form.selectDebugConfig', 'Select Debug Configuration'),
         },
     })
 
@@ -347,43 +370,21 @@ async function saveLaunchConfig(config: AwsSamDebuggerConfiguration): Promise<vo
         return
     }
 
-    // Recast invoke targets to undo the MorePermissiveAwsSamDebuggerConfiguration.
-    if (isTemplateTargetProperties(config.invokeTarget)) {
-        config.invokeTarget = {
-            target: config.invokeTarget.target,
-            logicalId: config.invokeTarget.logicalId,
-            templatePath: config.invokeTarget.templatePath,
-        }
-    } else if (isCodeTargetProperties(config.invokeTarget)) {
-        config.invokeTarget = {
-            target: config.invokeTarget.target,
-            lambdaHandler: config.invokeTarget.lambdaHandler,
-            projectRoot: config.invokeTarget.projectRoot,
-        }
-    }
-
     if (pickerResponse.index === -1) {
         const ib = input.createInputBox({
             options: {
-                prompt: 'Enter Name For Debug Configuration',
+                prompt: localize('AWS.lambda.form.debugConfigName', 'Enter Name For Debug Configuration'),
             },
         })
         const response = await input.promptUser({ inputBox: ib })
         if (response) {
-            launchConfig.addDebugConfiguration({
-                ...config,
-                name: response,
-            })
+            launchConfig.addDebugConfiguration(finalizeConfig(config, response))
+            await openLaunchJsonFile()
         }
     } else {
         // use existing label
-        launchConfig.editDebugConfiguration(
-            {
-                ...config,
-                name: pickerResponse.label,
-            },
-            pickerResponse.index
-        )
+        launchConfig.editDebugConfiguration(finalizeConfig(config, pickerResponse.label), pickerResponse.index)
+        await openLaunchJsonFile()
     }
 }
 
@@ -393,11 +394,13 @@ async function saveLaunchConfig(config: AwsSamDebuggerConfiguration): Promise<vo
  * @param config Config to invoke
  */
 async function invokeLaunchConfig(config: AwsSamDebuggerConfiguration, context: ExtContext): Promise<void> {
-    const targetUri = getUriFromLaunchConfig(config)
+    const finalConfig = finalizeConfig(config, 'Editor-Created Debug Config')
+
+    const targetUri = getUriFromLaunchConfig(finalConfig)
 
     const folder = targetUri ? vscode.workspace.getWorkspaceFolder(targetUri) : undefined
 
-    await new SamDebugConfigProvider(context).resolveDebugConfiguration(folder, config)
+    await new SamDebugConfigProvider(context).resolveDebugConfiguration(folder, finalConfig)
 }
 
 function getUriFromLaunchConfig(config: AwsSamDebuggerConfiguration): vscode.Uri | undefined {
@@ -449,4 +452,47 @@ function getLaunchConfigQuickPickItems(launchConfig: LaunchConfiguration, uri: v
                 config: val.config as AwsSamDebuggerConfiguration,
             }
         })
+}
+
+export function finalizeConfig(config: AwsSamDebuggerConfiguration, name: string): AwsSamDebuggerConfiguration {
+    const newConfig = doTraverseAndPrune(config)
+    newConfig.name = name
+
+    if (isTemplateTargetProperties(config.invokeTarget)) {
+        newConfig.invokeTarget = {
+            target: config.invokeTarget.target,
+            logicalId: config.invokeTarget.logicalId,
+            templatePath: config.invokeTarget.templatePath,
+        }
+    } else if (isCodeTargetProperties(config.invokeTarget)) {
+        newConfig.invokeTarget = {
+            target: config.invokeTarget.target,
+            lambdaHandler: config.invokeTarget.lambdaHandler,
+            projectRoot: config.invokeTarget.projectRoot,
+        }
+    }
+
+    return newConfig
+}
+
+function doTraverseAndPrune(object: { [key: string]: any }): any | undefined {
+    const keys = Object.keys(object)
+    const final = JSON.parse(JSON.stringify(object))
+    for (const key of keys) {
+        const val = object[key]
+        if (val === undefined || val === '' || (Array.isArray(val) && val.length === 0)) {
+            delete final[key]
+        } else if (typeof val === 'object') {
+            const pruned = doTraverseAndPrune(val)
+            if (pruned) {
+                final[key] = pruned
+            } else {
+                delete final[key]
+            }
+        }
+    }
+    if (Object.keys(final).length === 0) {
+        return undefined
+    }
+    return final
 }

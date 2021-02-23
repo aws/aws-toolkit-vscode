@@ -1,0 +1,4 @@
+{
+	"type": "Bug Fix",
+	"description": "Launch configurations created by the Toolkit use correct relative paths"
+}
