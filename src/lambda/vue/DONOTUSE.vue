@@ -19,7 +19,7 @@
             </select>
             <div class="target-code" v-if="launchConfig.invokeTarget.target === 'code'">
                 <div class="config-item">
-                    <label for="select-directory">Project Root  <span class="tooltip">i<span class="tooltip-text"> Heplful tooltip with explanation and example: <br>Example path: home/folder/file</span></span></label>
+                    <label for="select-directory">Project Root</label>
                     <input
                         id="select-directory"
                         v-model="launchConfig.invokeTarget.projectRoot"
@@ -128,19 +128,11 @@
                 <h3>lambda</h3>
                 <div class="config-item">
                     <label for="">Environment Variables</label>
-                    <input type="text" v-model="launchConfig.lambda.environmentVariables" >
+                    <input type="text" placeholder="Enter as valid JSON" v-model="launchConfig.lambda.environmentVariables" >
+                    <div class="json-parse-error" v-if="envVarsJsonError.length > 0">Error parsing JSON: {{envVarsJsonError}}</div>
                 </div>
                 <div class="config-item">
-                    <label for="runtime-selector">Runtime</label>
-                    <select name="runtimeType" v-model="launchConfig.lambda.runtime">
-                        <option disabled>Choose a runtime...</option>
-                        <option v-for="(runtime, index) in runtimes" v-bind:value="runtime" :key="index">
-                            {{ runtime }}
-                        </option>
-                    </select>
-                </div>
-                <div class="config-item">
-                    <label for="memory">Memory</label>
+                    <label for="memory">Memory (MB)</label>
                     <input type="number" v-model="launchConfig.lambda.memoryMb" >
                 </div>
                 <div class="config-item">
@@ -164,12 +156,12 @@
                     </select>
                 </div>
                 <div class="config-item">
-                    <label for="dockerNetork">Docker Network</label>
-                    <input type="text" v-model="launchConfig.sam.dockerNetork">
+                    <label for="dockerNetwork">Docker Network</label>
+                    <input type="text" v-model="launchConfig.sam.dockerNetwork">
                 </div>
                 <div class="config-item">
-                    <label for="localArugments">Local Arguments</label>
-                    <input type="text" v-model="launchConfig.sam.localArugments" >
+                    <label for="localArguments">Local Arguments</label>
+                    <input type="text" v-model="launchConfig.sam.localArguments" >
                 </div>
                 <div class="config-item">
                     <label for="skipNewImageCheck">Skip New Image Check</label>
@@ -182,19 +174,11 @@
                     <label for="templateParameters">Template - Parameters</label>
                     <input type="text" v-model="launchConfig.sam.template.parameters" >
                 </div>
+                <div class="config-item">
+                    <label for="pathMappings">Path Mappings</label>
+                    <input type="text" v-model="launchConfig.sam.template.pathMappings" >
+                </div>
                 <h3>api</h3>
-                <div class="config-item">
-                    <label for="path">Path</label>
-                    <input type="text" v-model="launchConfig.api.path" >
-                </div>
-                <div class="config-item">
-                    <label for="http-method-selector">HTTP Method</label>
-                    <select name="http-method" v-model="launchConfig.api.httpMethod">
-                        <option v-for="(method, index) in httpMethods" v-bind:value="method" :key="index">
-                            {{ method }}
-                        </option>
-                    </select>
-                </div>
                 <div class="config-item">
                     <label for="headers">Headers</label>
                     <input type="text" v-model="launchConfig.api.headers" >
