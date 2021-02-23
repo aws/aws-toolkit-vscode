@@ -349,6 +349,7 @@ async function saveLaunchConfig(config: AwsSamDebuggerConfiguration): Promise<vo
                 localize('AWS.command.addSamDebugConfiguration', 'Add Debug Configuration')
             ),
             index: -1,
+            alwaysShow: true,
         },
         ...getLaunchConfigQuickPickItems(launchConfig, uri),
     ]
@@ -369,21 +370,6 @@ async function saveLaunchConfig(config: AwsSamDebuggerConfiguration): Promise<vo
         return
     }
 
-    // Recast invoke targets to undo the MorePermissiveAwsSamDebuggerConfiguration.
-    if (isTemplateTargetProperties(config.invokeTarget)) {
-        config.invokeTarget = {
-            target: config.invokeTarget.target,
-            logicalId: config.invokeTarget.logicalId,
-            templatePath: config.invokeTarget.templatePath,
-        }
-    } else if (isCodeTargetProperties(config.invokeTarget)) {
-        config.invokeTarget = {
-            target: config.invokeTarget.target,
-            lambdaHandler: config.invokeTarget.lambdaHandler,
-            projectRoot: config.invokeTarget.projectRoot,
-        }
-    }
-
     if (pickerResponse.index === -1) {
         const ib = input.createInputBox({
             options: {
@@ -392,22 +378,14 @@ async function saveLaunchConfig(config: AwsSamDebuggerConfiguration): Promise<vo
         })
         const response = await input.promptUser({ inputBox: ib })
         if (response) {
-            launchConfig.addDebugConfiguration({
-                ...config,
-                name: response,
-            })
+            launchConfig.addDebugConfiguration(finalizeConfig(config, response))
+            await openLaunchJsonFile()
         }
     } else {
         // use existing label
-        launchConfig.editDebugConfiguration(
-            {
-                ...config,
-                name: pickerResponse.label,
-            },
-            pickerResponse.index
-        )
+        launchConfig.editDebugConfiguration(finalizeConfig(config, pickerResponse.label), pickerResponse.index)
+        await openLaunchJsonFile()
     }
-    await openLaunchJsonFile()
 }
 
 /**
@@ -416,11 +394,13 @@ async function saveLaunchConfig(config: AwsSamDebuggerConfiguration): Promise<vo
  * @param config Config to invoke
  */
 async function invokeLaunchConfig(config: AwsSamDebuggerConfiguration, context: ExtContext): Promise<void> {
-    const targetUri = getUriFromLaunchConfig(config)
+    const finalConfig = finalizeConfig(config, 'Editor-Created Debug Config')
+
+    const targetUri = getUriFromLaunchConfig(finalConfig)
 
     const folder = targetUri ? vscode.workspace.getWorkspaceFolder(targetUri) : undefined
 
-    await new SamDebugConfigProvider(context).resolveDebugConfiguration(folder, config)
+    await new SamDebugConfigProvider(context).resolveDebugConfiguration(folder, finalConfig)
 }
 
 function getUriFromLaunchConfig(config: AwsSamDebuggerConfiguration): vscode.Uri | undefined {
@@ -472,4 +452,47 @@ function getLaunchConfigQuickPickItems(launchConfig: LaunchConfiguration, uri: v
                 config: val.config as AwsSamDebuggerConfiguration,
             }
         })
+}
+
+export function finalizeConfig(config: AwsSamDebuggerConfiguration, name: string): AwsSamDebuggerConfiguration {
+    const newConfig = doTraverseAndPrune(config)
+    newConfig.name = name
+
+    if (isTemplateTargetProperties(config.invokeTarget)) {
+        newConfig.invokeTarget = {
+            target: config.invokeTarget.target,
+            logicalId: config.invokeTarget.logicalId,
+            templatePath: config.invokeTarget.templatePath,
+        }
+    } else if (isCodeTargetProperties(config.invokeTarget)) {
+        newConfig.invokeTarget = {
+            target: config.invokeTarget.target,
+            lambdaHandler: config.invokeTarget.lambdaHandler,
+            projectRoot: config.invokeTarget.projectRoot,
+        }
+    }
+
+    return newConfig
+}
+
+function doTraverseAndPrune(object: { [key: string]: any }): any | undefined {
+    const keys = Object.keys(object)
+    const final = JSON.parse(JSON.stringify(object))
+    for (const key of keys) {
+        const val = object[key]
+        if (val === undefined || val === '' || (Array.isArray(val) && val.length === 0)) {
+            delete final[key]
+        } else if (typeof val === 'object') {
+            const pruned = doTraverseAndPrune(val)
+            if (pruned) {
+                final[key] = pruned
+            } else {
+                delete final[key]
+            }
+        }
+    }
+    if (Object.keys(final).length === 0) {
+        return undefined
+    }
+    return final
 }
