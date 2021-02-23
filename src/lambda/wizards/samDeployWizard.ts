@@ -17,6 +17,7 @@ import { getRegionsForActiveCredentials } from '../../shared/regions/regionUtili
 import { createHelpButton } from '../../shared/ui/buttons'
 import * as input from '../../shared/ui/input'
 import * as picker from '../../shared/ui/picker'
+import * as telemetry from '../../shared/telemetry/telemetry'
 import { difference, filter, IteratorTransformer } from '../../shared/utilities/collectionUtils'
 import {
     MultiStepWizard,
@@ -24,6 +25,7 @@ import {
     WIZARD_TERMINATE,
     wizardContinue,
     WizardStep,
+    WIZARD_RETRY,
 } from '../../shared/wizards/multiStepWizard'
 import { configureParameterOverrides } from '../config/configureParameterOverrides'
 import { getOverriddenParameters, getParameters } from '../utilities/parameterUtils'
@@ -33,7 +35,12 @@ import { getSamCliVersion } from '../../shared/sam/cli/samCliContext'
 import * as semver from 'semver'
 import { MINIMUM_SAM_CLI_VERSION_INCLUSIVE_FOR_IMAGE_SUPPORT } from '../../shared/sam/cli/samCliValidator'
 import { ExtContext } from '../../shared/extensions'
+import { addCodiconToString } from '../../shared/utilities/textUtilities'
+import { validateBucketName } from '../../s3/util'
+import { showErrorWithLogs } from '../../shared/utilities/messages'
 
+
+const CREATE_NEW_BUCKET = addCodiconToString('plus', localize('AWS.command.s3.createBucket', 'Create Bucket...' ))
 export interface SamDeployWizardResponse {
     parameterOverrides: Map<string, string>
     region: string
@@ -111,6 +118,13 @@ export interface SamDeployWizardContext {
     promptUserForS3Bucket(step: number, selectedRegion?: string, initialValue?: string): Promise<string | undefined>
 
     /**
+     * Prompts user to name a new bucket
+     *
+     * @returns S3 Bucket name. Undefined represents cancel.
+     */
+    promptUserForNewS3Bucket(step: number): Promise<string | undefined>
+
+    /**
      * Retrieves an ECR Repo to deploy to from the user.
      *
      * @param initialValue Optional, Initial value to prompt with
@@ -159,6 +173,7 @@ export class DefaultSamDeployWizardContext implements SamDeployWizardContext {
 
     private readonly totalSteps: number = 4
     public additionalSteps: number = 0
+    public newBucketCalled = false
 
     public constructor(readonly extContext: ExtContext) {}
 
@@ -413,9 +428,45 @@ export class DefaultSamDeployWizardContext implements SamDeployWizardContext {
         const val = picker.verifySinglePickerOutput(choices)
 
         return val?.label && ![loadingBuckets, messages.noBuckets, messages.bucketError].includes(val.label)
-            ? val.label
-            : undefined
+        ? val.label
+        : undefined
     }
+
+    public async promptUserForNewS3Bucket(step: number): Promise<string | undefined>
+    {
+        
+        if (!this.newBucketCalled) {
+            this.additionalSteps++
+            this.newBucketCalled = true
+        }
+        const inputBox = input.createInputBox({
+            buttons: [this.helpButton, vscode.QuickInputButtons.Back],
+            options: {
+                title: localize('AWS.s3.createBucket.prompt', 'Enter a new bucket name'),
+                ignoreFocusOut: true,
+                step: step + 1,
+                totalSteps: this.totalSteps + this.additionalSteps
+            }
+        })
+
+        const response = await input.promptUser({
+            inputBox: inputBox,
+            onDidTriggerButton: (button, resolve, reject) => {
+                if (button === vscode.QuickInputButtons.Back) {
+                    resolve(undefined)
+                } else if (button === this.helpButton) {
+                    vscode.env.openExternal(vscode.Uri.parse(samDeployDocUrl))
+                }
+            },
+            onValidateInput: validateBucketName
+        })
+        
+        if(!response) {
+            return undefined
+        } else {
+            return response
+        }
+    } 
 
     public async promptUserForEcrRepo(
         step: number,
@@ -635,12 +686,32 @@ export class SamDeployWizard extends MultiStepWizard<SamDeployWizardResponse> {
 
     private readonly S3_BUCKET: WizardStep = async step => {
         const response = await this.context.promptUserForS3Bucket(step, this.response.region, this.response.s3Bucket)
-
-        this.response.s3Bucket = response
-
+        
         if (!response) {
             return WIZARD_GOBACK
         }
+
+        if(response === CREATE_NEW_BUCKET) {
+            const newBucketRequest = await this.context.promptUserForNewS3Bucket(step)
+            if (!newBucketRequest) {
+                return WIZARD_RETRY
+            }    
+
+            try{
+                const s3Client = ext.toolkitClientBuilder.createS3Client(this.response.region!)
+                const newBucketName = (await s3Client.createBucket({bucketName: newBucketRequest})).bucket.name
+                this.response.s3Bucket = newBucketName
+                getLogger().info('Created bucket: %O', newBucketName)
+                vscode.window.showInformationMessage(localize('AWS.s3.createBucket.success', 'Created bucket: {0}', newBucketName))
+                telemetry.recordS3CreateBucket({ result: 'Succeeded' })
+            } catch (e) {
+                showErrorWithLogs(localize('AWS.s3.createBucket.error.general', 'Failed to create bucket: {0}', newBucketRequest), vscode.window)
+                telemetry.recordS3CreateBucket({result: 'Failed'})
+                return WIZARD_RETRY
+            }
+        } else {
+            this.response.s3Bucket = response
+        }    
 
         return this.hasImages ? wizardContinue(this.ECR_REPO) : wizardContinue(this.STACK_NAME)
     }
@@ -650,11 +721,7 @@ export class SamDeployWizard extends MultiStepWizard<SamDeployWizardResponse> {
 
         this.response.ecrRepo = response
 
-        if (!response) {
-            return WIZARD_GOBACK
-        }
-
-        return wizardContinue(this.STACK_NAME)
+        return response ? wizardContinue(this.STACK_NAME) : WIZARD_GOBACK
     }
 
     private readonly STACK_NAME: WizardStep = async () => {
@@ -791,11 +858,13 @@ async function populateS3QuickPick(
 
             const buckets = await s3Client.listBuckets()
 
-            quickPick.items = buckets.buckets.map(bucket => {
+            const bucketItems = buckets.buckets.map(bucket => {
                 return {
                     label: bucket.name,
                 }
             })
+
+            quickPick.items = [{label: CREATE_NEW_BUCKET}, ...bucketItems]
 
             if (quickPick.items.length === 0) {
                 quickPick.items = [
