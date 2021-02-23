@@ -245,6 +245,6 @@ function makeWorkspaceRelativePath(folder: vscode.WorkspaceFolder | undefined, t
     if (vscode.workspace.workspaceFolders && vscode.workspace.workspaceFolders.length <= 1) {
         return folder ? `\${workspaceFolder}/${getNormalizedRelativePath(folder.uri.fsPath, target)}` : target
     }
-    // is this absolute?
+
     return target
 }

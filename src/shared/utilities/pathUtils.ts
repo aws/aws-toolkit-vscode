@@ -26,11 +26,11 @@ export function areEqual(
     logicalRoot: string | undefined,
     path1: string,
     path2: string,
-    stripLeadingVar?: boolean
+    stripLeadingVar: boolean = true
 ): boolean {
     if (stripLeadingVar) {
-        path1 = path1.replace(/^\${[a-zA-Z]{1,}}\//, '')
-        path2 = path2.replace(/^\${[a-zA-Z]{1,}}\//, '')
+        path1 = path1.replace(/^\${[a-zA-Z]{1,}}[\/\\]/, '')
+        path2 = path2.replace(/^\${[a-zA-Z]{1,}}[\/\\]/, '')
     }
     const fullPath1 = _path.resolve(logicalRoot ? logicalRoot + '/' : '', path1)
     const fullPath2 = _path.resolve(logicalRoot ? logicalRoot + '/' : '', path2)

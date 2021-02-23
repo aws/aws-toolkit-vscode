@@ -150,8 +150,7 @@ export function getConfigsMappedToTemplates(
             pathutils.areEqual(
                 folder?.uri.fsPath,
                 (t.invokeTarget as any).templatePath,
-                launchConfig.scopedResource.fsPath,
-                true
+                launchConfig.scopedResource.fsPath
             )
     )
     return _(filtered)
