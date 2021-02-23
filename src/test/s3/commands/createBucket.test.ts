@@ -33,7 +33,7 @@ describe('createBucketCommand', () => {
         assert.strictEqual(window.inputBox.options?.prompt, 'Enter a new bucket name')
         assert.strictEqual(window.inputBox.options?.placeHolder, 'Bucket Name')
 
-        assert.strictEqual(window.message.information, 'Created bucket buc.ket-n4.m3')
+        assert.strictEqual(window.message.information, 'Created bucket: buc.ket-n4.m3')
 
         assert.strictEqual(commands.command, 'aws.refreshAwsExplorerNode')
         assert.deepStrictEqual(commands.args, [node])
