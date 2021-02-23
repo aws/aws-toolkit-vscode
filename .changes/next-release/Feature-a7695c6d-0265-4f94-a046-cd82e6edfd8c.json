@@ -1,0 +1,4 @@
+{
+	"type": "Feature",
+	"description": "SAM deploy wizard: optionally create a new S3 bucket"
+}
