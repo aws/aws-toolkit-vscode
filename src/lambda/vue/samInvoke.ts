@@ -454,7 +454,7 @@ function getLaunchConfigQuickPickItems(launchConfig: LaunchConfiguration, uri: v
         })
 }
 
-function finalizeConfig(config: AwsSamDebuggerConfiguration, name: string): AwsSamDebuggerConfiguration {
+export function finalizeConfig(config: AwsSamDebuggerConfiguration, name: string): AwsSamDebuggerConfiguration {
     const newConfig = doTraverseAndPrune(config)
     newConfig.name = name
 
