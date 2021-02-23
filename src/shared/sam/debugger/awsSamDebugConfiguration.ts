@@ -125,9 +125,7 @@ export function createTemplateAwsSamDebugConfig(
         useContainer?: boolean
     }
 ): AwsSamDebuggerConfiguration {
-    const workspaceRelativePath = folder
-        ? `\${workspaceFolder}/${getNormalizedRelativePath(folder.uri.fsPath, templatePath)}`
-        : templatePath
+    const workspaceRelativePath = makeWorkspaceRelativePath(folder, templatePath)
     const templateParentDir = path.basename(path.dirname(templatePath))
 
     const response: AwsSamDebuggerConfiguration = {
@@ -181,9 +179,7 @@ export function createCodeAwsSamDebugConfig(
     projectRoot: string,
     runtime: Runtime
 ): AwsSamDebuggerConfiguration {
-    const workspaceRelativePath = folder
-        ? `\${workspaceFolder}/${getNormalizedRelativePath(folder.uri.fsPath, projectRoot)}`
-        : projectRoot
+    const workspaceRelativePath = makeWorkspaceRelativePath(folder, projectRoot)
     const parentDir = path.basename(path.dirname(projectRoot))
 
     return {
@@ -214,9 +210,7 @@ export function createApiAwsSamDebugConfig(
         payload?: APIGatewayProperties['payload']
     }
 ): AwsSamDebuggerConfiguration {
-    const workspaceRelativePath = folder
-        ? `\${workspaceFolder}/${getNormalizedRelativePath(folder.uri.fsPath, templatePath)}`
-        : templatePath
+    const workspaceRelativePath = makeWorkspaceRelativePath(folder, templatePath)
     const templateParentDir = path.basename(path.dirname(templatePath))
 
     const withRuntime = runtimeName
@@ -245,4 +239,12 @@ export function createApiAwsSamDebugConfig(
         },
         ...withRuntime,
     }
+}
+
+function makeWorkspaceRelativePath(folder: vscode.WorkspaceFolder | undefined, target: string): string {
+    if (vscode.workspace.workspaceFolders && vscode.workspace.workspaceFolders.length <= 1) {
+        return folder ? `\${workspaceFolder}/${getNormalizedRelativePath(folder.uri.fsPath, target)}` : target
+    }
+    // is this absolute?
+    return target
 }
