@@ -8,7 +8,7 @@ import { finalizeConfig } from '../../../lambda/vue/samInvoke'
 import { AwsSamDebuggerConfiguration } from '../../../shared/sam/debugger/awsSamDebugConfiguration'
 
 describe('Sam Invoke Vue Backend', () => {
-    describe.only('finalizeConfig', () => {
+    describe('finalizeConfig', () => {
         it('prunes configs correctly', () => {
             const configs: { input: AwsSamDebuggerConfiguration; output: AwsSamDebuggerConfiguration }[] = [
                 {
