@@ -18,12 +18,14 @@ import { runSamCliDeploy } from '../../shared/sam/cli/samCliDeploy'
 import { SamCliProcessInvoker } from '../../shared/sam/cli/samCliInvokerUtils'
 import { runSamCliPackage } from '../../shared/sam/cli/samCliPackage'
 import { throwAndNotifyIfInvalid } from '../../shared/sam/cli/samCliValidationUtils'
+import { SettingsConfiguration } from '../../shared/settingsConfiguration'
 import { recordSamDeploy, Result } from '../../shared/telemetry/telemetry'
 import { makeCheckLogsMessage } from '../../shared/utilities/messages'
 import { addCodiconToString } from '../../shared/utilities/textUtilities'
-import { SamDeployWizardResponse } from '../wizards/samDeployWizard'
+import { CHOSEN_BUCKET_KEY, SamDeployWizardResponse } from '../wizards/samDeployWizard'
 
 const localize = nls.loadMessageBundle()
+const MAX_SAVED_BUCKETS = 3
 
 interface DeploySamApplicationParameters {
     sourceTemplatePath: string
@@ -52,9 +54,11 @@ export async function deploySamApplication(
     },
     {
         awsContext,
+        settings,
         window = getDefaultWindowFunctions(),
     }: {
-        awsContext: Pick<AwsContext, 'getCredentials'>
+        awsContext: Pick<AwsContext, 'getCredentials' | 'getCredentialProfileName'>
+        settings: SettingsConfiguration
         window?: WindowFunctions
     }
 ): Promise<void> {
@@ -106,13 +110,86 @@ export async function deploySamApplication(
         )
 
         await deployApplicationPromise
+
+        // successful deploy: retain S3 bucket for quick future access
+        // JSON object of type: { [key: string]: { bucket: string, region: string }[] }
+        const bucketsJson = settings.readSetting<string | undefined>(CHOSEN_BUCKET_KEY)
+        const profile = awsContext.getCredentialProfileName()
+        if (profile) {
+            try {
+                const buckets = bucketsJson ? JSON.parse(bucketsJson) : undefined
+                if (!bucketsJson || !buckets[profile] || !Array.isArray(buckets[profile])) {
+                    writeFreshJson(profile, deployWizardResponse, settings)
+                } else {
+                    let unique: boolean = true
+                    for (const json of buckets[profile]) {
+                        try {
+                            if (
+                                json.bucket === deployWizardResponse.s3Bucket &&
+                                json.region === deployWizardResponse.region
+                            ) {
+                                unique = false
+                                break
+                            }
+                        } catch (e) {
+                            getLogger().warn(e)
+                        }
+                    }
+                    if (unique) {
+                        const newVal = {
+                            bucket: deployWizardResponse.s3Bucket,
+                            region: deployWizardResponse.region,
+                        }
+                        const arr = Array.isArray(buckets[profile]) ? [...buckets[profile], newVal] : [newVal]
+                        if (arr.length > MAX_SAVED_BUCKETS) {
+                            arr.shift()
+                        }
+                        settings.writeSetting(
+                            CHOSEN_BUCKET_KEY,
+                            JSON.stringify({
+                                ...buckets,
+                                [profile]: arr,
+                            }),
+                            vscode.ConfigurationTarget.Global
+                        )
+                    }
+                }
+            } catch (e) {
+                getLogger().error('Recent bucket JSON not parseable. Rewriting recent buckets from scratch...', e)
+                writeFreshJson(profile, deployWizardResponse, settings)
+            }
+        } else {
+            getLogger().warn('Profile not provided; cannot write recent buckets.')
+        }
     } catch (err) {
         deployResult = 'Failed'
         outputDeployError(err as Error)
+        vscode.window.showErrorMessage(
+            localize('AWS.samcli.deploy.workflow.error', 'Failed to deploy SAM application.')
+        )
     } finally {
         await tryRemoveFolder(deployFolder)
         recordSamDeploy({ result: deployResult })
     }
+}
+
+function writeFreshJson(
+    profile: string,
+    deployWizardResponse: SamDeployWizardResponse,
+    settings: SettingsConfiguration
+): void {
+    settings.writeSetting(
+        CHOSEN_BUCKET_KEY,
+        JSON.stringify({
+            [profile]: [
+                {
+                    bucket: deployWizardResponse.s3Bucket,
+                    region: deployWizardResponse.region,
+                },
+            ],
+        }),
+        vscode.ConfigurationTarget.Global
+    )
 }
 
 function getBuildRootFolder(deployRootFolder: string): string {
@@ -248,34 +325,24 @@ async function deploy(params: {
     invoker: SamCliProcessInvoker
     window: WindowFunctions
 }): Promise<void> {
-    try {
-        ext.outputChannel.show(true)
-        getLogger('channel').info(
-            localize('AWS.samcli.deploy.workflow.start', 'Starting SAM Application deployment...')
-        )
+    ext.outputChannel.show(true)
+    getLogger('channel').info(localize('AWS.samcli.deploy.workflow.start', 'Starting SAM Application deployment...'))
 
-        const buildSuccessful = await buildOperation(params)
-        await packageOperation(params, buildSuccessful)
-        await deployOperation(params)
+    const buildSuccessful = await buildOperation(params)
+    await packageOperation(params, buildSuccessful)
+    await deployOperation(params)
 
-        getLogger('channel').info(
-            localize(
-                'AWS.samcli.deploy.workflow.success',
-                'Successfully deployed SAM Application to CloudFormation Stack: {0}',
-                params.deployParameters.destinationStackName
-            )
+    getLogger('channel').info(
+        localize(
+            'AWS.samcli.deploy.workflow.success',
+            'Successfully deployed SAM Application to CloudFormation Stack: {0}',
+            params.deployParameters.destinationStackName
         )
+    )
 
-        params.window.showInformationMessage(
-            localize('AWS.samcli.deploy.workflow.success.general', 'SAM Application deployment succeeded.')
-        )
-    } catch (err) {
-        outputDeployError(err as Error)
-
-        params.window.showErrorMessage(
-            localize('AWS.samcli.deploy.workflow.error', 'Failed to deploy SAM application.')
-        )
-    }
+    params.window.showInformationMessage(
+        localize('AWS.samcli.deploy.workflow.success.general', 'SAM Application deployment succeeded.')
+    )
 }
 
 function enhanceAwsCloudFormationInstructions(

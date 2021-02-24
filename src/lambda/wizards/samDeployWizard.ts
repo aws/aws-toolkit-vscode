@@ -38,9 +38,16 @@ import { ExtContext } from '../../shared/extensions'
 import { addCodiconToString } from '../../shared/utilities/textUtilities'
 import { validateBucketName } from '../../s3/util'
 import { showErrorWithLogs } from '../../shared/utilities/messages'
+import { isCloud9 } from '../../shared/extensionUtilities'
+import { SettingsConfiguration } from '../../shared/settingsConfiguration'
 
+const CREATE_NEW_BUCKET = addCodiconToString('plus', localize('AWS.command.s3.createBucket', 'Create Bucket...'))
+const ENTER_BUCKET = addCodiconToString(
+    'edit',
+    localize('AWS.samcli.deploy.bucket.existingLabel', 'Enter Existing Bucket Name...')
+)
+export const CHOSEN_BUCKET_KEY = 'manuallySelectedBuckets'
 
-const CREATE_NEW_BUCKET = addCodiconToString('plus', localize('AWS.command.s3.createBucket', 'Create Bucket...' ))
 export interface SamDeployWizardResponse {
     parameterOverrides: Map<string, string>
     region: string
@@ -115,14 +122,34 @@ export interface SamDeployWizardContext {
      *
      * @returns S3 Bucket name. Undefined represents cancel.
      */
-    promptUserForS3Bucket(step: number, selectedRegion?: string, initialValue?: string): Promise<string | undefined>
+    promptUserForS3Bucket(
+        step: number,
+        selectedRegion: string,
+        accountId?: string,
+        initialValue?: string
+    ): Promise<string | undefined>
 
     /**
-     * Prompts user to name a new bucket
+     * Prompts user to enter a bucket name
      *
      * @returns S3 Bucket name. Undefined represents cancel.
      */
-    promptUserForNewS3Bucket(step: number): Promise<string | undefined>
+    promptUserForS3BucketName(
+        step: number,
+        bucketProps: {
+            title: string
+            prompt?: string
+            placeHolder?: string
+            value?: string
+            buttons?: vscode.QuickInputButton[]
+            buttonHandler?: (
+                button: vscode.QuickInputButton,
+                inputBox: vscode.InputBox,
+                resolve: (value: string | PromiseLike<string | undefined> | undefined) => void,
+                reject: (value: string | PromiseLike<string | undefined> | undefined) => void
+            ) => void
+        }
+    ): Promise<string | undefined>
 
     /**
      * Retrieves an ECR Repo to deploy to from the user.
@@ -378,17 +405,18 @@ export class DefaultSamDeployWizardContext implements SamDeployWizardContext {
     public async promptUserForS3Bucket(
         step: number,
         selectedRegion: string,
+        accountId: string,
         initialValue: string | undefined = undefined,
         messages: {
             noBuckets: string
             bucketError: string
+            loadingBuckets: string
         } = {
             noBuckets: localize('AWS.samcli.deploy.s3bucket.picker.noBuckets', 'No buckets found.'),
             bucketError: localize('AWS.samcli.deploy.s3bucket.picker.error', 'There was an error loading S3 buckets.'),
+            loadingBuckets: localize('AWS.samcli.deploy.s3bucket.picker.loading', 'Loading S3 buckets...'),
         }
     ): Promise<string | undefined> {
-        const loadingBuckets: string = localize('AWS.samcli.deploy.s3bucket.picker.loading', 'Loading S3 buckets...')
-
         const quickPick = picker.createQuickPick<vscode.QuickPickItem>({
             buttons: [this.helpButton, vscode.QuickInputButtons.Back],
             options: {
@@ -399,21 +427,19 @@ export class DefaultSamDeployWizardContext implements SamDeployWizardContext {
                 step: step,
                 totalSteps: this.totalSteps + this.additionalSteps,
             },
-            items: [
-                {
-                    label: loadingBuckets,
-                },
-            ],
         })
 
         quickPick.busy = true
+        // TODO: Find a better way to implement this so we don't have to disable the quick pick.
+        // This made sense previously before we added always-loaded boxes to the quick pick.
+        // Either do that or remove the `loadingBuckets` label so we can present the busy quick pick with only valid values.
         quickPick.enabled = false
 
         // NOTE: Do not await this promise.
         // This will background load the S3 buckets and load them all (in one chunk) when the operation completes.
         // Not awaiting lets us display a "loading" quick pick for immediate feedback.
         // Does not use an IteratingQuickPick because listing S3 buckets by region is not a paginated operation.
-        populateS3QuickPick(quickPick, selectedRegion, messages)
+        populateS3QuickPick(quickPick, selectedRegion, accountId, this.extContext.settings, messages)
 
         const choices = await picker.promptUser<vscode.QuickPickItem>({
             picker: quickPick,
@@ -427,26 +453,46 @@ export class DefaultSamDeployWizardContext implements SamDeployWizardContext {
         })
         const val = picker.verifySinglePickerOutput(choices)
 
-        return val?.label && ![loadingBuckets, messages.noBuckets, messages.bucketError].includes(val.label)
-        ? val.label
-        : undefined
+        return val?.label && ![messages.loadingBuckets, messages.noBuckets, messages.bucketError].includes(val.label)
+            ? val.label
+            : undefined
     }
 
-    public async promptUserForNewS3Bucket(step: number): Promise<string | undefined>
-    {
-        
+    public async promptUserForS3BucketName(
+        step: number,
+        bucketProps: {
+            title: string
+            prompt?: string
+            placeHolder?: string
+            value?: string
+            buttons?: vscode.QuickInputButton[]
+            buttonHandler?: (
+                button: vscode.QuickInputButton,
+                inputBox: vscode.InputBox,
+                resolve: (value: string | PromiseLike<string | undefined> | undefined) => void,
+                reject: (value: string | PromiseLike<string | undefined> | undefined) => void
+            ) => void
+        }
+    ): Promise<string | undefined> {
         if (!this.newBucketCalled) {
             this.additionalSteps++
             this.newBucketCalled = true
         }
         const inputBox = input.createInputBox({
-            buttons: [this.helpButton, vscode.QuickInputButtons.Back],
+            buttons: [
+                this.helpButton,
+                vscode.QuickInputButtons.Back,
+                ...(bucketProps.buttons ? bucketProps.buttons : []),
+            ],
             options: {
-                title: localize('AWS.s3.createBucket.prompt', 'Enter a new bucket name'),
+                title: bucketProps.title,
                 ignoreFocusOut: true,
                 step: step + 1,
-                totalSteps: this.totalSteps + this.additionalSteps
-            }
+                totalSteps: this.totalSteps + this.additionalSteps,
+                value: bucketProps.value,
+                prompt: bucketProps.prompt,
+                placeHolder: bucketProps.placeHolder,
+            },
         })
 
         const response = await input.promptUser({
@@ -456,17 +502,19 @@ export class DefaultSamDeployWizardContext implements SamDeployWizardContext {
                     resolve(undefined)
                 } else if (button === this.helpButton) {
                     vscode.env.openExternal(vscode.Uri.parse(samDeployDocUrl))
+                } else if (bucketProps.buttonHandler) {
+                    bucketProps.buttonHandler(button, inputBox, resolve, reject)
                 }
             },
-            onValidateInput: validateBucketName
+            onValidateInput: validateBucketName,
         })
-        
-        if(!response) {
+
+        if (!response) {
             return undefined
         } else {
             return response
         }
-    } 
+    }
 
     public async promptUserForEcrRepo(
         step: number,
@@ -685,33 +733,75 @@ export class SamDeployWizard extends MultiStepWizard<SamDeployWizardResponse> {
     }
 
     private readonly S3_BUCKET: WizardStep = async step => {
-        const response = await this.context.promptUserForS3Bucket(step, this.response.region, this.response.s3Bucket)
-        
+        const profile = this.context.extContext.awsContext.getCredentialProfileName() || ''
+        const accountId = this.context.extContext.awsContext.getCredentialAccountId() || ''
+        const response = await this.context.promptUserForS3Bucket(
+            step,
+            this.response.region!,
+            profile,
+            this.response.s3Bucket
+        )
+
         if (!response) {
             return WIZARD_GOBACK
         }
 
-        if(response === CREATE_NEW_BUCKET) {
-            const newBucketRequest = await this.context.promptUserForNewS3Bucket(step)
+        if (response === CREATE_NEW_BUCKET) {
+            const newBucketRequest = await this.context.promptUserForS3BucketName(step, {
+                title: localize('AWS.s3.createBucket.prompt', 'Enter a new bucket name'),
+            })
             if (!newBucketRequest) {
                 return WIZARD_RETRY
-            }    
+            }
 
-            try{
+            try {
                 const s3Client = ext.toolkitClientBuilder.createS3Client(this.response.region!)
-                const newBucketName = (await s3Client.createBucket({bucketName: newBucketRequest})).bucket.name
+                const newBucketName = (await s3Client.createBucket({ bucketName: newBucketRequest })).bucket.name
                 this.response.s3Bucket = newBucketName
                 getLogger().info('Created bucket: %O', newBucketName)
-                vscode.window.showInformationMessage(localize('AWS.s3.createBucket.success', 'Created bucket: {0}', newBucketName))
+                vscode.window.showInformationMessage(
+                    localize('AWS.s3.createBucket.success', 'Created bucket: {0}', newBucketName)
+                )
                 telemetry.recordS3CreateBucket({ result: 'Succeeded' })
             } catch (e) {
-                showErrorWithLogs(localize('AWS.s3.createBucket.error.general', 'Failed to create bucket: {0}', newBucketRequest), vscode.window)
-                telemetry.recordS3CreateBucket({result: 'Failed'})
+                showErrorWithLogs(
+                    localize('AWS.s3.createBucket.error.general', 'Failed to create bucket: {0}', newBucketRequest),
+                    vscode.window
+                )
+                telemetry.recordS3CreateBucket({ result: 'Failed' })
                 return WIZARD_RETRY
             }
+        } else if (response === ENTER_BUCKET) {
+            // TODO: Get a Cloud9 Icon! I don't think this will work with Cloud9...
+            // CONSIDER: Make the Cloud9 button available on VS Code as well?
+            const cloudIcon = new vscode.ThemeIcon('cloud')
+            const bucket = await this.context.promptUserForS3BucketName(step, {
+                title: localize('AWS.samcli.deploy.bucket.existingTitle', 'Enter Existing Bucket Name'),
+                value: this.response.s3Bucket,
+                buttons:
+                    isCloud9() && accountId
+                        ? [
+                              {
+                                  iconPath: cloudIcon,
+                                  tooltip: localize('AWS.samcli.deploy.bucket.cloud9name', 'Use Cloud9 default value'),
+                              },
+                          ]
+                        : undefined,
+                buttonHandler: (button, inputBox, resolve, reject) => {
+                    if (button.iconPath === cloudIcon) {
+                        inputBox.value = `cloud9-${accountId}-sam-deployments-${this.response.region}`
+                    }
+                },
+            })
+
+            if (!bucket) {
+                return WIZARD_RETRY
+            }
+
+            this.response.s3Bucket = bucket
         } else {
             this.response.s3Bucket = response
-        }    
+        }
 
         return this.hasImages ? wizardContinue(this.ECR_REPO) : wizardContinue(this.STACK_NAME)
     }
@@ -843,40 +933,71 @@ async function getTemplateChoices(...workspaceFolders: vscode.Uri[]): Promise<Sa
  * Operation is not paginated as S3 does not offer paginated listing of regionalized buckets.
  * @param quickPick Quick pick to modify the items and busy/enabled state of.
  * @param selectedRegion AWS region to display buckets for
+ * @param settings SettingsConfiguration object to get stored settings
  * @param messages Messages to denote no available buckets and errors.
  */
 async function populateS3QuickPick(
     quickPick: vscode.QuickPick<vscode.QuickPickItem>,
     selectedRegion: string,
-    messages: { noBuckets: string; bucketError: string }
+    profile: string,
+    settings: SettingsConfiguration,
+    messages: { noBuckets: string; bucketError: string; loadingBuckets: string }
 ): Promise<void> {
     return new Promise(async resolve => {
         const goBack: string = localize('AWS.picker.dynamic.noItemsFound.detail', 'Click here to go back')
+        const baseItems: vscode.QuickPickItem[] = [{ label: CREATE_NEW_BUCKET }, { label: ENTER_BUCKET }]
 
         try {
             const s3Client = ext.toolkitClientBuilder.createS3Client(selectedRegion)
 
-            const buckets = await s3Client.listBuckets()
+            const bucketsJson = settings.readSetting<string | undefined>(CHOSEN_BUCKET_KEY)
+            const existingBuckets = bucketsJson ? JSON.parse(bucketsJson) : undefined
+            // JSON object of type: { [key: string]: { bucket: string, region: string }[] }
+            let chosenItems: vscode.QuickPickItem[] = []
+            const seenBuckets = new Set<string>()
+            if (existingBuckets && existingBuckets[profile] && Array.isArray(existingBuckets[profile])) {
+                chosenItems = existingBuckets[profile]
+                    .filter((json: { bucket?: string; region?: string }) => {
+                        return json && json.region && json.bucket && json.region === selectedRegion
+                    })
+                    .map((json: { bucket: string; region: string }) => {
+                        seenBuckets.add(json.bucket)
+                        return {
+                            label: json.bucket,
+                            description: localize('AWS.profile.recentlyUsed', 'recently used'),
+                        }
+                    })
+            }
 
-            const bucketItems = buckets.buckets.map(bucket => {
-                return {
-                    label: bucket.name,
-                }
-            })
+            baseItems.push(...chosenItems)
 
-            quickPick.items = [{label: CREATE_NEW_BUCKET}, ...bucketItems]
+            quickPick.items = [...baseItems, { label: messages.loadingBuckets }]
 
-            if (quickPick.items.length === 0) {
+            const buckets = (await s3Client.listBuckets()).buckets
+
+            if (buckets.length === 0) {
                 quickPick.items = [
+                    ...baseItems,
                     {
                         label: messages.noBuckets,
                         description: goBack,
                     },
                 ]
+            } else {
+                const bucketItems = buckets
+                    .filter(bucket => !seenBuckets.has(bucket.name))
+                    .map(bucket => {
+                        return {
+                            label: bucket.name,
+                        }
+                    })
+
+                quickPick.items = [...baseItems, ...bucketItems]
             }
         } catch (e) {
             const err = e as Error
             quickPick.items = [
+                ...baseItems,
                 {
                     label: messages.bucketError,
                     description: goBack,
