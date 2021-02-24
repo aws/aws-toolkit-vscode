@@ -951,22 +951,26 @@ async function populateS3QuickPick(
             const s3Client = ext.toolkitClientBuilder.createS3Client(selectedRegion)
 
             const bucketsJson = settings.readSetting<string | undefined>(CHOSEN_BUCKET_KEY)
-            const existingBuckets = bucketsJson ? JSON.parse(bucketsJson) : undefined
-            // JSON object of type: { [key: string]: { bucket: string, region: string }[] }
             let chosenItems: vscode.QuickPickItem[] = []
             const seenBuckets = new Set<string>()
-            if (existingBuckets && existingBuckets[profile] && Array.isArray(existingBuckets[profile])) {
-                chosenItems = existingBuckets[profile]
-                    .filter((json: { bucket?: string; region?: string }) => {
-                        return json && json.region && json.bucket && json.region === selectedRegion
-                    })
-                    .map((json: { bucket: string; region: string }) => {
-                        seenBuckets.add(json.bucket)
-                        return {
-                            label: json.bucket,
-                            description: localize('AWS.profile.recentlyUsed', 'recently used'),
-                        }
-                    })
+            try {
+                const existingBuckets = bucketsJson ? JSON.parse(bucketsJson) : undefined
+                // JSON object of type: { [key: string]: { bucket: string, region: string }[] }
+                if (existingBuckets && existingBuckets[profile] && Array.isArray(existingBuckets[profile])) {
+                    chosenItems = existingBuckets[profile]
+                        .filter((json: { bucket?: string; region?: string }) => {
+                            return json && json.region && json.bucket && json.region === selectedRegion
+                        })
+                        .map((json: { bucket: string; region: string }) => {
+                            seenBuckets.add(json.bucket)
+                            return {
+                                label: json.bucket,
+                                description: localize('AWS.profile.recentlyUsed', 'recently used'),
+                            }
+                        })
+                }
+            } catch (e) {
+                getLogger().error('Recent bucket JSON not parseable.', e)
             }
 
             baseItems.push(...chosenItems)
