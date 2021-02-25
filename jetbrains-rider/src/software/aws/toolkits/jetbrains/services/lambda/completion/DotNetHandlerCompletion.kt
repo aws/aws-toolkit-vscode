@@ -9,13 +9,11 @@ import com.intellij.codeInsight.lookup.LookupElement
 import com.intellij.codeInsight.lookup.LookupElementBuilder
 import com.intellij.openapi.project.Project
 import com.jetbrains.rd.framework.impl.RpcTimeouts
-import com.jetbrains.rdclient.icons.FrontendIconHost
 import com.jetbrains.rider.projectView.solution
 import software.aws.toolkits.jetbrains.protocol.HandlerCompletionItem
 import software.aws.toolkits.jetbrains.protocol.lambdaPsiModel
 
 class DotNetHandlerCompletion : HandlerCompletion {
-
     override fun getPrefixMatcher(prefix: String): PrefixMatcher = CamelHumpMatcher(prefix)
 
     override fun getLookupElements(project: Project): Collection<LookupElement> {
@@ -23,7 +21,7 @@ class DotNetHandlerCompletion : HandlerCompletion {
         return completionItems.map { completionItem ->
             LookupElementBuilder.create(completionItem.handler).let { element ->
                 if (completionItem.iconId != null)
-                    element.withIcon(FrontendIconHost.getInstance(project).toIdeaIcon(completionItem.iconId))
+                    element.withIcon(completionItemToIcon(project, completionItem.iconId))
                 else
                     element
             }.withInsertHandler { context, item -> context.document.setText(item.lookupString) }
