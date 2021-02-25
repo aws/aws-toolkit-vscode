@@ -30,7 +30,6 @@ import com.jetbrains.rider.RiderEnvironment
 import com.jetbrains.rider.debugger.DebuggerHelperHost
 import com.jetbrains.rider.debugger.RiderDebuggerWorkerModelManager
 import com.jetbrains.rider.model.debuggerWorker.DotNetCoreExeStartInfo
-import com.jetbrains.rider.model.debuggerWorker.DotNetCoreInfo
 import com.jetbrains.rider.model.debuggerWorker.DotNetDebuggerSessionModel
 import com.jetbrains.rider.model.debuggerWorkerConnectionHelperModel
 import com.jetbrains.rider.projectView.solution
@@ -333,7 +332,7 @@ class DotNetDebuggerSupport : DebuggerSupport() {
 
     private fun createNetCoreStartInfo(exePath: String): DotNetCoreExeStartInfo =
         DotNetCoreExeStartInfo(
-            dotNetCoreInfo = DotNetCoreInfo(null, null),
+            dotNetCoreInfo = makeDotnetCoreInfo(),
             exePath = exePath,
             workingDirectory = "",
             arguments = "",

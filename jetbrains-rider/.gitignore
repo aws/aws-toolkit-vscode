@@ -1,4 +1,5 @@
 /NuGet.Config
+/testData/NuGet.Config
 
 # Generated files
 *Generated.kt

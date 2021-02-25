@@ -201,12 +201,14 @@ class ToolkitCredentialProcessProviderTest {
         } else {
             "sleep 5"
         }
-        Registry.get("aws.credentialProcess.timeout").setValue(200)
+        val timeoutSetting = Registry.get("aws.credentialProcess.timeout")
+        val timeout = timeoutSetting.asInteger().toLong()
+        timeoutSetting.setValue(200)
         val time = measureTime {
             assertThatThrownBy { createSut(cmd).resolveCredentials() }.hasMessageContaining("timed out")
         }
 
-        assertThat(time.toJavaDuration()).isLessThan(Duration.ofMillis(2000))
+        assertThat(time.toJavaDuration()).isLessThan(Duration.ofMillis(timeout))
     }
 
     private fun stubParser(output: CredentialProcessOutput = CredentialProcessOutput("foo", "bar", null, null)) {
