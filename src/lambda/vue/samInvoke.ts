@@ -64,7 +64,7 @@ export function registerSamInvokeVueCommand(context: ExtContext): vscode.Disposa
 
 export interface SamInvokeVueState {
     launchConfig: MorePermissiveAwsSamDebuggerConfiguration
-    payload: string
+    payload: {value: string, errorMsg: string}
 }
 
 export interface MorePermissiveAwsSamDebuggerConfiguration extends AwsSamDebuggerConfiguration {

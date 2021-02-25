@@ -7,7 +7,7 @@
 
 <template>
     <form class="invoke-lambda-form">
-        <h1>Invoke Local Lambda</h1>
+        <h1>SAM Debug Configuration Editor</h1>
         <button v-on:click.prevent="loadConfig">Load Existing Debug Configuration</button><br />
         <div class="config-details">
             <div class="section-header">
@@ -15,8 +15,8 @@
             </div>
             <label for="target-type-selector">Invoke Target Type</label>
             <select name="target-types" id="target-type-selector" v-model="launchConfig.invokeTarget.target">
-                <option :value="type.value" v-for="(type, index) in targetTypes" :key="index">{{ type.name }}</option>
-            </select>
+                <option v-bind:value="type.value" v-for="(type, index) in targetTypes" :key="index">{{ type.name }}</option>
+            </select><span class="data-view">{{launchConfig.invokeTarget.target}}</span>
             <div class="target-code" v-if="launchConfig.invokeTarget.target === 'code'">
                 <div class="config-item">
                     <label for="select-directory">Project Root</label>
@@ -99,10 +99,10 @@
                 <div class="config-item">
                     <label for="http-method-selector">HTTP Method</label>
                     <select name="http-method"  v-model="launchConfig.api.httpMethod">
-                        <option v-for="(method, index) in httpMethods" v-bind:value="method" :key="index">
+                        <option v-for="(method, index) in httpMethods" v-bind:value="method.toLowerCase()" :key="index">
                             {{ method }}
                         </option>
-                    </select>
+                    </select><span class="data-view">{{launchConfig.api.httpMethod}}</span>
                 </div>
                 <div class="config-item">
                     <label for="query-string">Query String</label>
@@ -110,7 +110,8 @@
                 </div>
                 <div class="config-item">
                     <label for="headers">Headers</label>
-                    <input type="text" v-model="launchConfig.api.headers" >
+                    <input type="text" v-model="headers.value" placeholder="Enter as valid JSON" >
+                    <div class="json-parse-error" v-if="headers.errorMsg">Error parsing JSON: {{headers.errorMsg}}</div>
                 </div>
             </div>
             <div v-else>Select an Invoke Target</div>
@@ -128,8 +129,8 @@
                 <h3>lambda</h3>
                 <div class="config-item">
                     <label for="">Environment Variables</label>
-                    <input type="text" placeholder="Enter as valid JSON" v-model="launchConfig.lambda.environmentVariables" >
-                    <div class="json-parse-error" v-if="envVarsJsonError.length > 0">Error parsing JSON: {{envVarsJsonError}}</div>
+                    <input type="text" placeholder="Enter as valid JSON" v-model="environmentVariables.value">
+                    <div class="json-parse-error" v-if="environmentVariables.errorMsg">Error parsing JSON: {{environmentVariables.errorMsg}}</div>
                 </div>
                 <div class="config-item">
                     <label for="memory">Memory (MB)</label>
@@ -139,10 +140,10 @@
                     <label for="timeoutSec">Timeout (s)</label>
                     <input type="number" v-model="launchConfig.lambda.timeoutSec" >
                 </div>
-                <div class="config-item">
+                <!-- <div class="config-item">
                     <label for="pathMappings">Path Mappings</label>
                     <input type="text" v-model="launchConfig.lambda.pathMappings" >
-                </div>
+                </div> -->
                 <h3>sam</h3>
                 <div class="config-item">
                     <label for="buildArguments">Build Arguments</label>
@@ -151,8 +152,8 @@
                 <div class="config-item">
                     <label for="containerBuild">Container Build</label>
                     <select name="containerBuild" id="containerBuild" v-model="launchConfig.sam.containerBuild">
-                        <option value=false :key="0">False</option>
-                        <option value=true :key="1">True</option>
+                        <option v-bind:value=false :key="0">False</option>
+                        <option v-bind:value=true :key="1">True</option>
                     </select>
                 </div>
                 <div class="config-item">
@@ -170,26 +171,19 @@
                         <option value=true :key="1">True</option>
                     </select>
                 </div>
-                <div class="config-item">
+                <!-- <div class="config-item">
                     <label for="templateParameters">Template - Parameters</label>
                     <input type="text" v-model="launchConfig.sam.template.parameters" >
-                </div>
-                <div class="config-item">
-                    <label for="pathMappings">Path Mappings</label>
-                    <input type="text" v-model="launchConfig.sam.template.pathMappings" >
-                </div>
+                </div> -->
                 <h3>api</h3>
-                <div class="config-item">
-                    <label for="headers">Headers</label>
-                    <input type="text" v-model="launchConfig.api.headers" >
-                </div>
                 <div class="config-item">
                     <label for="querystring">Query String</label>
                     <input type="text" v-model="launchConfig.api.querystring" >
                 </div>
                 <div class="config-item">
-                    <label for="stageVariables">Stage Variables []</label>
-                    <input type="text" v-model="launchConfig.api.stageVariables" >
+                    <label for="stageVariables">Stage Variables</label>
+                    <input type="text" v-model="stageVariables.value" placeholder="Enter as valid JSON">
+                    <div class="json-parse-error" v-if="stageVariables.errorMsg">Error parsing JSON: {{stageVariables.errorMsg}}</div>
                 </div>
                 <div class="config-item">
                     <label for="clientCerificateId">Client Certificate ID</label>
@@ -202,11 +196,10 @@
                 <h2>Payload</h2>
             </div>
             <button v-on:click.prevent="loadPayload">Load Sample Payload</button><br />
-            <textarea name="lambda-payload" id="lambda-payload" cols="60" rows="5" v-model="payload"></textarea>
+            <textarea name="lambda-payload" id="lambda-payload" cols="60" rows="5" v-model="payload.value"></textarea>
             <span class="data-view">payload from data: {{ payload }} </span>
-            <div class="json-parse-error" v-if="jsonError && payload">Error parsing JSON: {{jsonError}}</div>
+            <div class="json-parse-error" v-if="payload.errorMsg">Error parsing JSON: {{payload.errorMsg}}</div>
         </div>
-        <div class="required">*Required</div>
         <div class="invoke-button-container">
             <button v-on:click.prevent="save">Save Debug Configuration</button>
             <button id="invoke-button" v-on:click.prevent="launch">Invoke Debug Configuration</button>

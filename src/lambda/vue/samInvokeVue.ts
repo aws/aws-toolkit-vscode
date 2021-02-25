@@ -14,6 +14,10 @@ import {
 
 declare const vscode: VsCode<SamInvokerRequest, SamInvokeVueState>
 
+interface VueDataLaunchPropertyObject {
+    value: string
+    errorMsg: string
+}
 export interface SamInvokeVueData {
     msg: any
     showAllFields: boolean
@@ -23,7 +27,11 @@ export interface SamInvokeVueData {
     runtimes: string[]
     httpMethods: string[]
     launchConfig: MorePermissiveAwsSamDebuggerConfiguration
-    payload: string
+    payload: VueDataLaunchPropertyObject
+    environmentVariables: VueDataLaunchPropertyObject
+    headers: VueDataLaunchPropertyObject
+    stageVariables: VueDataLaunchPropertyObject
+    // parameters: VueDataLaunchPropertyObject
 }
 
 function newLaunchConfig(target: 'template' | 'code' | 'api' = 'template'): MorePermissiveAwsSamDebuggerConfiguration {
@@ -47,11 +55,11 @@ function newLaunchConfig(target: 'template' | 'code' | 'api' = 'template'): More
                 json: {},
                 path: '',
             },
-            environmentVariables: {},
+            environmentVariables: undefined,
             runtime: '',
             memoryMb: undefined,
             timeoutSec: undefined,
-            pathMappings: undefined
+            // pathMappings: undefined
         },
         sam: {
             buildArguments: undefined,
@@ -88,7 +96,7 @@ export const Component = Vue.extend({
             const event = ev.data as SamInvokerResponse
             switch (event.command) {
                 case 'getSamplePayload':
-                    this.payload = JSON.stringify(JSON.parse(event.data.payload), undefined, 4)
+                    this.payload.value = JSON.stringify(JSON.parse(event.data.payload), undefined, 4)
                     break
                 case 'getTemplate':
                     this.launchConfig.invokeTarget.target = 'template'
@@ -98,7 +106,19 @@ export const Component = Vue.extend({
                 case 'loadSamLaunchConfig':
                     this.launchConfig = event.data.launchConfig as MorePermissiveAwsSamDebuggerConfiguration
                     if (event.data.launchConfig.lambda?.payload) {
-                        this.payload = JSON.stringify(event.data.launchConfig.lambda.payload.json, undefined, 4)
+                        this.payload.value = JSON.stringify(event.data.launchConfig.lambda.payload.json, undefined, 4)
+                    }
+                    if (event.data.launchConfig.lambda?.environmentVariables) {
+                        this.environmentVariables.value = JSON.stringify(event.data.launchConfig.lambda?.environmentVariables)
+                    }
+                    // if (event.data.launchConfig.sam?.template?.parameters) {
+                    //     this.parameters = JSON.stringify(event.data.launchConfig.sam?.template?.parameters)
+                    // }
+                    if (event.data.launchConfig.api?.headers) {
+                        this.headers.value = JSON.stringify(event.data.launchConfig.api?.headers)
+                    }
+                    if (event.data.launchConfig.api?.stageVariables) {
+                        this.stageVariables.value = JSON.stringify(event.data.launchConfig.api?.stageVariables)
                     }
                     this.msg = `Loaded config ${event.data.launchConfig.name}`
                     break
@@ -127,9 +147,13 @@ export const Component = Vue.extend({
                 'dotnetcore2.1',
                 'dotnetcore3.1',
             ],
-            httpMethods: ['GET', 'POST', 'PUT', 'DELETE'],
+            httpMethods: ['GET', 'POST', 'PUT', 'DELETE', 'HEAD', 'OPTIONS', 'PATCH'],
             launchConfig: newLaunchConfig(),
-            payload: '',
+            payload: {value: '', errorMsg: ''},
+            environmentVariables: {value: '', errorMsg: ''},
+            // parameters: {value: '', errorMsg: ''},
+            headers: {value: '', errorMsg: ''},
+            stageVariables: {value: '', errorMsg: ''}
         }
     },
     watch: {
@@ -142,7 +166,7 @@ export const Component = Vue.extend({
             },
             deep: true,
         },
-        payload: function (newval: string) {
+        payload: function (newval: {value: string, errorMsg: string}) {
             this.resetJsonErrors()
             vscode.setState({
                 payload: newval,
@@ -152,81 +176,16 @@ export const Component = Vue.extend({
     },
     methods: {
         resetJsonErrors() {
-            this.jsonError = ''
-            this.envVarsJsonError = ''
+            this.payload.errorMsg = ''
+            this.environmentVariables.errorMsg = ''
+            this.headers.errorMsg = ''
+            this.stageVariables.errorMsg = ''
         },
         launch() {
-            this.resetJsonErrors()
-            let payloadJson: { [k: string]: any } = {}
-            if (this.payload !== '') {
-                try {
-                    payloadJson = JSON.parse(this.payload)
-                } catch (e) {
-                    this.jsonError = e
-                    console.log(e)
-                    return
-                }
-            }
-
-            vscode.postMessage({
-                command: 'invokeLaunchConfig',
-                data: {
-                    launchConfig: {
-                        ...this.launchConfig,
-                        lambda: {
-                            ...this.launchConfig.lambda,
-                            payload: {
-                                ...this.launchConfig.payload,
-                                json: payloadJson,
-                            },
-                        },
-                    },
-                },
-            })
+            this.formatDataAndExecute('invokeLaunchConfig')
         },
         save() {
-            this.resetJsonErrors()
-            let payloadJson: { [k: string]: any } = {}
-            if (this.payload !== '') {
-                try {
-                    payloadJson = JSON.parse(this.payload)
-                } catch (e) {
-                    this.jsonError = e
-                    console.log(e)
-                    return
-                }
-            }
-            let envVars: { [k: string]: any } = {}
-            if (this.launchConfig.lambda?.environmentVariables?.toString() !== '') {
-                try {
-                    envVars = JSON.parse(this.launchConfig.lambda?.environmentVariables!.toString()!)
-                } catch (e) {
-                    this.envVarsJsonError = e
-                    console.log(e)
-                    return
-                }
-            }
-            vscode.postMessage({
-                command: 'saveLaunchConfig',
-                data: {
-                    launchConfig: {
-                        ...this.launchConfig,
-                        lambda: {
-                            ...this.launchConfig.lambda,
-                            payload: {
-                                ...this.launchConfig.payload,
-                                json: payloadJson,
-                            },
-                            environmentVariables: envVars
-                        },
-                        sam: {
-                            ...this.launchConfig.sam,
-                            buildArguments: this.formatFieldToStringArray(this.launchConfig.sam?.buildArguments?.toString()),
-                            localArguments: this.formatFieldToStringArray(this.launchConfig.sam?.localArguments?.toString())
-                        }
-                    },
-                },
-            })
+            this.formatDataAndExecute('saveLaunchConfig')
         },
         loadConfig() {
             this.resetJsonErrors()
@@ -253,17 +212,74 @@ export const Component = Vue.extend({
             if(!field){
                 return undefined
             }
-            console.log(field)
             //Reg ex for a comma with 0 or more whitespace before and/or after
             const re = /\s*,\s*/g
-            return field.split(re)
+            return field.trim().split(re)
+        },
+        formatStringtoJSON(field: VueDataLaunchPropertyObject) {
+            field.errorMsg = ''
+            if (field.value !== '') {
+                try {
+                    return JSON.parse(this.payload.value)
+                } catch (e) {
+                    field.errorMsg = e
+                    throw e
+                }
+            } 
+        },
+        formatDataAndExecute(command: 'saveLaunchConfig' | 'invokeLaunchConfig') {
+            this.resetJsonErrors()
+
+            let payloadJson, environmentVariablesJson, headersJson, stageVariablesJson 
+
+            try {
+            payloadJson = this.formatStringtoJSON(this.payload)
+            environmentVariablesJson = this.formatStringtoJSON(this.environmentVariables)
+            headersJson = this.formatStringtoJSON(this.headers)
+            stageVariablesJson = this.formatStringtoJSON(this.stageVariables)
+            } catch {
+                return
+            }  
+
+            vscode.postMessage({
+                command: command,
+                data: {
+                    launchConfig: {
+                        ...this.launchConfig,
+                        lambda: {
+                            ...this.launchConfig.lambda,
+                            payload: {
+                                ...this.launchConfig.payload,
+                                json: payloadJson,
+                            },
+                            environmentVariables: environmentVariablesJson
+                        },
+                        sam: {
+                            ...this.launchConfig.sam,
+                            buildArguments: this.formatFieldToStringArray(this.launchConfig.sam?.buildArguments?.toString()),
+                            localArguments: this.formatFieldToStringArray(this.launchConfig.sam?.localArguments?.toString())
+                        },
+                        api: this.launchConfig.api ?  {
+                            ...this.launchConfig.api,
+                            headers: headersJson,
+                            stageVariables: stageVariablesJson,
+                        } : undefined
+                    },
+                },
+            })
         }
     },
     // `createElement` is inferred, but `render` needs return type
-    template: `
+    template: `<!--
+    * Copyright 2021 Amazon.com, Inc. or its affiliates. All Rights Reserved.
+    * SPDX-License-Identifier: Apache-2.0
+    -->
+
+<!--This is an experimental template that is not used directly.  -->
+
 <template>
     <form class="invoke-lambda-form">
-        <h1>Invoke Local Lambda</h1>
+        <h1>SAM Debug Configuration Editor</h1>
         <button v-on:click.prevent="loadConfig">Load Existing Debug Configuration</button><br />
         <div class="config-details">
             <div class="section-header">
@@ -271,11 +287,11 @@ export const Component = Vue.extend({
             </div>
             <label for="target-type-selector">Invoke Target Type</label>
             <select name="target-types" id="target-type-selector" v-model="launchConfig.invokeTarget.target">
-                <option :value="type.value" v-for="(type, index) in targetTypes" :key="index">{{ type.name }}</option>
-            </select>
+                <option v-bind:value="type.value" v-for="(type, index) in targetTypes" :key="index">{{ type.name }}</option>
+            </select><span class="data-view">{{launchConfig.invokeTarget.target}}</span>
             <div class="target-code" v-if="launchConfig.invokeTarget.target === 'code'">
                 <div class="config-item">
-                    <label for="select-directory">Project Root  <span class="tooltip">i<span class="tooltip-text"> Heplful tooltip with explanation and example: <br>Example path: home/folder/file</span></span></label>
+                    <label for="select-directory">Project Root</label>
                     <input
                         id="select-directory"
                         v-model="launchConfig.invokeTarget.projectRoot"
@@ -355,10 +371,10 @@ export const Component = Vue.extend({
                 <div class="config-item">
                     <label for="http-method-selector">HTTP Method</label>
                     <select name="http-method"  v-model="launchConfig.api.httpMethod">
-                        <option v-for="(method, index) in httpMethods" v-bind:value="method" :key="index">
+                        <option v-for="(method, index) in httpMethods" v-bind:value="method.toLowerCase()" :key="index">
                             {{ method }}
                         </option>
-                    </select>
+                    </select><span class="data-view">{{launchConfig.api.httpMethod}}</span>
                 </div>
                 <div class="config-item">
                     <label for="query-string">Query String</label>
@@ -366,7 +382,8 @@ export const Component = Vue.extend({
                 </div>
                 <div class="config-item">
                     <label for="headers">Headers</label>
-                    <input type="text" v-model="launchConfig.api.headers" >
+                    <input type="text" v-model="headers.value" placeholder="Enter as valid JSON" >
+                    <div class="json-parse-error" v-if="headers.errorMsg">Error parsing JSON: {{headers.errorMsg}}</div>
                 </div>
             </div>
             <div v-else>Select an Invoke Target</div>
@@ -384,8 +401,8 @@ export const Component = Vue.extend({
                 <h3>lambda</h3>
                 <div class="config-item">
                     <label for="">Environment Variables</label>
-                    <input type="text" placeholder="Enter as valid JSON" v-model="launchConfig.lambda.environmentVariables" >
-                    <div class="json-parse-error" v-if="envVarsJsonError.length > 0">Error parsing JSON: {{envVarsJsonError}}</div>
+                    <input type="text" placeholder="Enter as valid JSON" v-model="environmentVariables.value">
+                    <div class="json-parse-error" v-if="environmentVariables.errorMsg">Error parsing JSON: {{environmentVariables.errorMsg}}</div>
                 </div>
                 <div class="config-item">
                     <label for="memory">Memory (MB)</label>
@@ -395,10 +412,10 @@ export const Component = Vue.extend({
                     <label for="timeoutSec">Timeout (s)</label>
                     <input type="number" v-model="launchConfig.lambda.timeoutSec" >
                 </div>
-                <div class="config-item">
+                <!-- <div class="config-item">
                     <label for="pathMappings">Path Mappings</label>
                     <input type="text" v-model="launchConfig.lambda.pathMappings" >
-                </div>
+                </div> -->
                 <h3>sam</h3>
                 <div class="config-item">
                     <label for="buildArguments">Build Arguments</label>
@@ -407,13 +424,13 @@ export const Component = Vue.extend({
                 <div class="config-item">
                     <label for="containerBuild">Container Build</label>
                     <select name="containerBuild" id="containerBuild" v-model="launchConfig.sam.containerBuild">
-                        <option value=false :key="0">False</option>
-                        <option value=true :key="1">True</option>
+                        <option v-bind:value=false :key="0">False</option>
+                        <option v-bind:value=true :key="1">True</option>
                     </select>
                 </div>
                 <div class="config-item">
-                    <label for="dockerNetork">Docker Network</label>
-                    <input type="text" v-model="launchConfig.sam.dockerNetork">
+                    <label for="dockerNetwork">Docker Network</label>
+                    <input type="text" v-model="launchConfig.sam.dockerNetwork">
                 </div>
                 <div class="config-item">
                     <label for="localArguments">Local Arguments</label>
@@ -426,26 +443,19 @@ export const Component = Vue.extend({
                         <option value=true :key="1">True</option>
                     </select>
                 </div>
-                <div class="config-item">
+                <!-- <div class="config-item">
                     <label for="templateParameters">Template - Parameters</label>
                     <input type="text" v-model="launchConfig.sam.template.parameters" >
-                </div>
-                <div class="config-item">
-                    <label for="pathMappings">Path Mappings</label>
-                    <input type="text" v-model="launchConfig.sam.template.pathMappings" >
-                </div>
+                </div> -->
                 <h3>api</h3>
-                <div class="config-item">
-                    <label for="headers">Headers</label>
-                    <input type="text" v-model="launchConfig.api.headers" >
-                </div>
                 <div class="config-item">
                     <label for="querystring">Query String</label>
                     <input type="text" v-model="launchConfig.api.querystring" >
                 </div>
                 <div class="config-item">
-                    <label for="stageVariables">Stage Variables []</label>
-                    <input type="text" v-model="launchConfig.api.stageVariables" >
+                    <label for="stageVariables">Stage Variables</label>
+                    <input type="text" v-model="stageVariables.value" placeholder="Enter as valid JSON">
+                    <div class="json-parse-error" v-if="stageVariables.errorMsg">Error parsing JSON: {{stageVariables.errorMsg}}</div>
                 </div>
                 <div class="config-item">
                     <label for="clientCerificateId">Client Certificate ID</label>
@@ -458,18 +468,19 @@ export const Component = Vue.extend({
                 <h2>Payload</h2>
             </div>
             <button v-on:click.prevent="loadPayload">Load Sample Payload</button><br />
-            <textarea name="lambda-payload" id="lambda-payload" cols="60" rows="5" v-model="payload"></textarea>
+            <textarea name="lambda-payload" id="lambda-payload" cols="60" rows="5" v-model="payload.value"></textarea>
             <span class="data-view">payload from data: {{ payload }} </span>
-            <div class="json-parse-error" v-if="jsonError && payload">Error parsing JSON: {{jsonError}}</div>
+            <div class="json-parse-error" v-if="payload.errorMsg">Error parsing JSON: {{payload.errorMsg}}</div>
         </div>
-        <div class="required">*Required</div>
         <div class="invoke-button-container">
             <button v-on:click.prevent="save">Save Debug Configuration</button>
             <button id="invoke-button" v-on:click.prevent="launch">Invoke Debug Configuration</button>
         </div>
     </form>
 </template>
-`,
+
+`
+,
 })
 
 new Vue({
