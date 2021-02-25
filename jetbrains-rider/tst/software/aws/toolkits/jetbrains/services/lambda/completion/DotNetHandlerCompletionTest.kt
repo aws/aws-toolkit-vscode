@@ -5,9 +5,9 @@ package software.aws.toolkits.jetbrains.services.lambda.completion
 
 import base.allowCustomDotnetRoots
 import base.msBuild
+import com.intellij.openapi.application.ApplicationInfo
 import com.intellij.openapi.util.IconLoader
 import com.intellij.openapi.util.SystemInfo
-import com.jetbrains.rdclient.icons.toIdeaIcon
 import com.jetbrains.rider.test.annotations.TestEnvironment
 import com.jetbrains.rider.test.base.BaseTestWithSolution
 import com.jetbrains.rider.test.base.PrepareTestEnvironment
@@ -40,7 +40,7 @@ class DotNetHandlerCompletionTest : BaseTestWithSolution() {
         }
     }
 
-    @Test(description = "Check a single handler is show in lookup when one is defined in a project.")
+    @Test(description = "Check a single handler is shown in lookup when one is defined in a project.")
     @TestEnvironment(solution = "SamHelloWorldApp")
     fun testDetermineHandlers_SingleHandler() {
         val handlers = DotNetHandlerCompletion().getHandlersFromBackend(project)
@@ -72,8 +72,15 @@ class DotNetHandlerCompletionTest : BaseTestWithSolution() {
     @Suppress("SameParameterValue")
     private fun assertIconPath(iconModel: IconModel?, expectedPath: String) {
         assertThat(iconModel).isNotNull
-        val ideaIconSecond = iconModel?.toIdeaIcon(project) as? IconLoader.CachedImageIcon
+        val ideaIconSecond = iconModel?.let { completionItemToIcon(project, iconModel) as? IconLoader.CachedImageIcon }
         assertThat(ideaIconSecond).isNotNull
-        assertThat(ideaIconSecond?.originalPath).isEqualTo(expectedPath)
+        // FIX_WHEN_MIN_IS_211 The icon path changed on 211 to not have a leading slash. This comes
+        // straight from the backend (`_psiIconManager.GetImage(method.GetElementType())`). For what it's worth
+        // originalPath is probably marked unstable for a reason
+        if (ApplicationInfo.getInstance().let { info -> info.majorVersion == "2020" }) {
+            assertThat(ideaIconSecond?.originalPath).isEqualTo(expectedPath)
+        } else {
+            assertThat(ideaIconSecond?.originalPath).isEqualTo(expectedPath.trimStart('/'))
+        }
     }
 }

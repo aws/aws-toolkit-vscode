@@ -4,6 +4,7 @@ import com.jetbrains.rd.generator.gradle.RdGenExtension
 import com.jetbrains.rd.generator.gradle.RdGenTask
 import org.jetbrains.intellij.tasks.PrepareSandboxTask
 import software.aws.toolkits.gradle.IdeVersions
+import java.nio.file.Path
 
 buildscript {
     // Cannot be removed or else it will fail to compile
@@ -158,9 +159,11 @@ val prepareNuGetConfig = tasks.register("prepareNuGetConfig") {
     group = backendGroup
 
     val nugetConfigPath = File(projectDir, "NuGet.Config")
+    // FIX_WHEN_MIN_IS_211 remove the projectDir one above
+    val nugetConfigPath211 = Path.of(projectDir.absolutePath, "testData", "NuGet.config").toFile()
 
     inputs.property("rdVersion", ideProfile.rider.sdkVersion)
-    outputs.file(nugetConfigPath)
+    outputs.files(nugetConfigPath, nugetConfigPath211)
 
     doLast {
         val nugetPath = getNugetPackagesPath()
@@ -172,6 +175,7 @@ val prepareNuGetConfig = tasks.register("prepareNuGetConfig") {
 </configuration>
 """
         nugetConfigPath.writeText(configText)
+        nugetConfigPath211.writeText(configText)
     }
 }
 

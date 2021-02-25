@@ -67,6 +67,28 @@ object IdeVersions {
             ijSdkOverride = "2020.3",
             rdGenVersion = "0.203.161",
             nugetVersion = "2020.3.0"
+        ),
+        Profile(
+            name = "2021.1",
+            communityPlugins = listOf(
+                "java",
+                "com.intellij.gradle",
+                "org.jetbrains.idea.maven",
+                "PythonCore:211.6085.26",
+                "Docker:211.6085.26"
+            ),
+            ultimatePlugins = listOf(
+                "JavaScript",
+                // Transitive dependency needed for javascript
+                "com.intellij.css",
+                "JavaScriptDebugger",
+                "com.intellij.database",
+                "Pythonid:211.6085.26"
+            ),
+            riderSdkOverride = "2021.1-SNAPSHOT",
+            ijSdkOverride = "211.6085-EAP-CANDIDATE-SNAPSHOT",
+            rdGenVersion = "0.211.214",
+            nugetVersion = "2021.1.0-eap03"
         )
     ).associateBy { it.name }
 
