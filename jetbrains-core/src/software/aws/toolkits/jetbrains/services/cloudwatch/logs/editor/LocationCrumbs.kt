@@ -42,7 +42,7 @@ class LocationBreadcrumbs : Breadcrumbs() {
     }
 }
 
-// This is different from LocationBreadcrumbs becuase createUiComponents in Kotlin does not have access to the constructor arguments
+// This is different from LocationBreadcrumbs because createUiComponents in Kotlin does not have access to the constructor arguments
 class LocationCrumbs(project: Project, logGroup: String, logStream: String? = null) {
     // This is made available instead of set because it needs to be on different components depending on the window
     val border: Border = IdeBorderFactory.createBorder(SideBorder.BOTTOM)

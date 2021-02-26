@@ -15,7 +15,7 @@
         <properties>
           <horizontalAlignment value="2"/>
           <horizontalTextPosition value="2"/>
-          <text resource-bundle="software/aws/toolkits/resources/localized_messages" key="aws_connection.credentials.label"/>
+          <text resource-bundle="software/aws/toolkits/resources/MessagesBundle" key="aws_connection.credentials.label"/>
         </properties>
       </component>
       <component id="e121a" class="com.intellij.ui.components.JBLabel">
@@ -25,7 +25,7 @@
         <properties>
           <horizontalAlignment value="2"/>
           <horizontalTextPosition value="2"/>
-          <text resource-bundle="software/aws/toolkits/resources/localized_messages" key="aws_connection.region.label"/>
+          <text resource-bundle="software/aws/toolkits/resources/MessagesBundle" key="aws_connection.region.label"/>
         </properties>
       </component>
       <component id="bcea6" class="software.aws.toolkits.jetbrains.ui.CredentialProviderSelector" binding="credentialProvider">

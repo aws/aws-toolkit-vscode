@@ -3,18 +3,12 @@
 
 package software.aws.toolkits.jetbrains.services.s3.editor
 
-import com.intellij.icons.AllIcons
 import com.intellij.ide.DataManager
 import com.intellij.openapi.Disposable
 import com.intellij.openapi.actionSystem.ActionGroup
 import com.intellij.openapi.actionSystem.ActionManager
 import com.intellij.openapi.actionSystem.ActionPlaces
 import com.intellij.openapi.actionSystem.ActionToolbar
-import com.intellij.openapi.actionSystem.AnAction
-import com.intellij.openapi.actionSystem.AnActionEvent
-import com.intellij.openapi.actionSystem.CommonShortcuts
-import com.intellij.openapi.actionSystem.DefaultActionGroup
-import com.intellij.openapi.actionSystem.Separator
 import com.intellij.openapi.project.Project
 import com.intellij.ui.IdeBorderFactory
 import com.intellij.ui.PopupHandler
@@ -24,17 +18,6 @@ import com.intellij.ui.tree.AsyncTreeModel
 import com.intellij.ui.tree.StructureTreeModel
 import com.intellij.ui.treeStructure.SimpleTreeStructure
 import com.intellij.util.concurrency.Invoker
-import software.aws.toolkits.jetbrains.services.s3.objectActions.CopyPathAction
-import software.aws.toolkits.jetbrains.services.s3.objectActions.CopyUriAction
-import software.aws.toolkits.jetbrains.services.s3.objectActions.CopyUrlAction
-import software.aws.toolkits.jetbrains.services.s3.objectActions.DeleteObjectAction
-import software.aws.toolkits.jetbrains.services.s3.objectActions.DownloadObjectAction
-import software.aws.toolkits.jetbrains.services.s3.objectActions.NewFolderAction
-import software.aws.toolkits.jetbrains.services.s3.objectActions.RefreshTreeAction
-import software.aws.toolkits.jetbrains.services.s3.objectActions.RenameObjectAction
-import software.aws.toolkits.jetbrains.services.s3.objectActions.UploadObjectAction
-import software.aws.toolkits.jetbrains.services.s3.objectActions.ViewObjectVersionAction
-import software.aws.toolkits.resources.message
 import java.awt.BorderLayout
 import javax.swing.JComponent
 import javax.swing.JPanel
@@ -52,11 +35,7 @@ class S3ViewerPanel(disposable: Disposable, private val project: Project, virtua
         val toolbarComponent = createToolbar(treeTable).component
         toolbarComponent.border = IdeBorderFactory.createBorder(SideBorder.TOP)
 
-        PopupHandler.installPopupHandler(
-            treeTable,
-            createCommonActionGroup(treeTable, addCopy = true),
-            ActionPlaces.UNKNOWN,
-        )
+        setupContextMenu(treeTable)
 
         DataManager.registerDataProvider(component) {
             when {
@@ -104,43 +83,21 @@ class S3ViewerPanel(disposable: Disposable, private val project: Project, virtua
     }
 
     private fun createToolbar(s3TreeTable: S3TreeTable): ActionToolbar {
-        val group = createCommonActionGroup(s3TreeTable, addCopy = false)
-        val toolbar = ActionManager.getInstance().createActionToolbar(ActionPlaces.UNKNOWN, group, true)
+        val actionManager = ActionManager.getInstance()
+        val group = actionManager.getAction("aws.toolkit.s3viewer.toolbar") as ActionGroup
+        val toolbar = actionManager.createActionToolbar(ActionPlaces.UNKNOWN, group, true)
         toolbar.setTargetComponent(s3TreeTable)
         return toolbar
     }
 
-    // addCopy is here vs doing it in the `also`'s because it makes it easier to get actions in the right order
-    private fun createCommonActionGroup(table: S3TreeTable, addCopy: Boolean): DefaultActionGroup = DefaultActionGroup().also {
-        it.add(DownloadObjectAction())
-        it.add(UploadObjectAction())
-        it.add(Separator())
-        it.add(ViewObjectVersionAction())
-        it.add(Separator())
-        it.add(NewFolderAction())
-        it.add(
-            RenameObjectAction().apply {
-                registerCustomShortcutSet(CommonShortcuts.getRename(), table)
-            }
-        )
-        if (addCopy) {
-            it.add(object : ActionGroup(message("s3.copy.actiongroup.label"), null, AllIcons.Actions.Copy) {
-                override fun isPopup(): Boolean = true
-                override fun update(e: AnActionEvent) {
-                    // Only enable it if we have some selection. We hide the root node so it means we have no selection if that is the node passed in
-                    val selected = treeTable.getSelectedNodes().firstOrNull()
-                    e.presentation.isEnabled = selected != null && selected != treeTable.rootNode
-                }
+    private fun setupContextMenu(treeTable: S3TreeTable) {
+        val actionManager = ActionManager.getInstance()
+        val group = actionManager.getAction("aws.toolkit.s3viewer.contextMenu") as ActionGroup
 
-                override fun getChildren(e: AnActionEvent?): Array<AnAction> = arrayOf(
-                    CopyPathAction(),
-                    CopyUrlAction(),
-                    CopyUriAction()
-                )
-            })
-        }
-        it.add(DeleteObjectAction())
-        it.add(Separator())
-        it.add(RefreshTreeAction())
+        PopupHandler.installPopupHandler(
+            treeTable,
+            group,
+            ActionPlaces.UNKNOWN,
+        )
     }
 }

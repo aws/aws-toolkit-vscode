@@ -23,7 +23,7 @@
           <grid row="0" column="0" row-span="1" col-span="1" vsize-policy="3" hsize-policy="3" anchor="0" fill="0" indent="0" use-parent-layout="false"/>
         </constraints>
         <properties>
-          <text resource-bundle="software/aws/toolkits/resources/localized_messages" key="cloud_debug.deinstrument_resource.confirm"/>
+          <text resource-bundle="software/aws/toolkits/resources/MessagesBundle" key="cloud_debug.deinstrument_resource.confirm"/>
         </properties>
       </component>
     </children>

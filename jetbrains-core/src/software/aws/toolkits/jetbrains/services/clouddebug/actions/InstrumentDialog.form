@@ -21,8 +21,8 @@
               <grid row="0" column="1" row-span="1" col-span="1" vsize-policy="0" hsize-policy="3" anchor="8" fill="0" indent="0" use-parent-layout="false"/>
             </constraints>
             <properties>
-              <text resource-bundle="software/aws/toolkits/resources/localized_messages" key="cloud_debug.ecs.run_config.service.enable.iamRole"/>
-              <toolTipText resource-bundle="software/aws/toolkits/resources/localized_messages" key="cloud_debug.ecs.run_config.service.enable.iamRole.tooltip"/>
+              <text resource-bundle="software/aws/toolkits/resources/MessagesBundle" key="cloud_debug.ecs.run_config.service.enable.iamRole"/>
+              <toolTipText resource-bundle="software/aws/toolkits/resources/MessagesBundle" key="cloud_debug.ecs.run_config.service.enable.iamRole.tooltip"/>
             </properties>
           </component>
           <component id="ef4a9" class="software.aws.toolkits.jetbrains.ui.ResourceSelector" binding="iamRole" custom-create="true">
@@ -32,7 +32,7 @@
               </grid>
             </constraints>
             <properties>
-              <toolTipText resource-bundle="software/aws/toolkits/resources/localized_messages" key="cloud_debug.ecs.run_config.service.enable.iamRole.tooltip"/>
+              <toolTipText resource-bundle="software/aws/toolkits/resources/MessagesBundle" key="cloud_debug.ecs.run_config.service.enable.iamRole.tooltip"/>
             </properties>
           </component>
           <hspacer id="e24ca">
