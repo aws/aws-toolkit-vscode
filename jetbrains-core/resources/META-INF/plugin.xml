@@ -56,6 +56,8 @@ with what features/services are supported.
     <!-- 201.6668.113 is 2020.1 EAP 1 -->
     <idea-version since-build="201.6668.113" until-build="202.*"/>
 
+    <resource-bundle>software.aws.toolkits.resources.MessagesBundle</resource-bundle>
+
     <!-- please see http://www.jetbrains.org/intellij/sdk/docs/basics/getting_started/plugin_compatibility.html
          on how to target different products -->
     <!-- All dependencies have to be defined here, you can't define more in an optional config-file,
@@ -178,14 +180,12 @@ with what features/services are supported.
         <projectService serviceImplementation="software.aws.toolkits.jetbrains.services.cloudwatch.logs.CloudWatchLogWindow" />
         <projectService serviceImplementation="software.aws.toolkits.jetbrains.services.sqs.toolwindow.SqsWindow" />
         <projectService serviceImplementation="software.aws.toolkits.jetbrains.services.cloudwatch.logs.insights.QueryResultsWindow" />
-      
+
         <toolWindow id="aws.explorer" anchor="left" secondary="true"
                     factoryClass="software.aws.toolkits.jetbrains.core.explorer.AwsExplorerFactory"
                     icon="AwsIcons.Logos.AWS"/>
 
-        <projectConfigurable id="aws" groupId="tools" bundle="software.aws.toolkits.resources.localized_messages"
-                             key="aws.settings.title"
-                             instance="software.aws.toolkits.jetbrains.settings.AwsSettingsConfigurable"/>
+        <projectConfigurable id="aws" groupId="tools" key="aws.settings.title" instance="software.aws.toolkits.jetbrains.settings.AwsSettingsConfigurable"/>
 
         <programRunner implementation="software.aws.toolkits.jetbrains.services.lambda.execution.sam.SamInvokeRunner"/>
         <programRunner implementation="software.aws.toolkits.jetbrains.services.lambda.execution.remote.RemoteLambdaRunner"/>
@@ -206,7 +206,7 @@ with what features/services are supported.
         <projectTemplatesFactory implementation="software.aws.toolkits.jetbrains.services.lambda.wizard.SamProjectGeneratorIntelliJAdapter" />
 
         <webHelpProvider implementation="software.aws.toolkits.jetbrains.core.help.HelpIdTranslator"/>
-        
+
         <!-- S3 -->
         <fileEditorProvider implementation="software.aws.toolkits.jetbrains.services.s3.S3ViewerEditorProvider"/>
         <!-- See this post why order="first" is required https://intellij-support.jetbrains.com/hc/en-us/community/posts/360003460619-fileIconProvider-is-not-showing-Icon-for-custom-LightVirtualFile -->
@@ -241,7 +241,6 @@ with what features/services are supported.
         <explorer.serviceNode implementation="software.aws.toolkits.jetbrains.core.explorer.nodes.EcsExplorerRootNode"/>
         <explorer.serviceNode implementation="software.aws.toolkits.jetbrains.core.explorer.nodes.SchemasExplorerRootNode"/>
         <explorer.serviceNode implementation="software.aws.toolkits.jetbrains.core.explorer.nodes.SqsExplorerRootNode"/>
-
     </extensions>
 
     <actions>
@@ -379,6 +378,51 @@ with what features/services are supported.
             <separator/>
             <reference id="serverless.application.deploy"/>
             <separator/>
+        </group>
+
+        <group id="aws.toolkit.s3viewer.transferActions">
+            <action class="software.aws.toolkits.jetbrains.services.s3.objectActions.DownloadObjectAction"/>
+            <action class="software.aws.toolkits.jetbrains.services.s3.objectActions.UploadObjectAction"/>
+        </group>
+
+        <group id="aws.toolkit.s3viewer.versionActions">
+            <action class="software.aws.toolkits.jetbrains.services.s3.objectActions.ViewObjectVersionAction"/>
+        </group>
+
+        <group id="aws.toolkit.s3viewer.mutateActions">
+            <action class="software.aws.toolkits.jetbrains.services.s3.objectActions.NewFolderAction"/>
+            <action class="software.aws.toolkits.jetbrains.services.s3.objectActions.RenameObjectAction" use-shortcut-of="RenameElement"/>
+            <action class="software.aws.toolkits.jetbrains.services.s3.objectActions.DeleteObjectAction" use-shortcut-of="$Delete"/>
+        </group>
+
+        <group id="aws.toolkit.s3viewer.miscActions">
+            <action class="software.aws.toolkits.jetbrains.services.s3.objectActions.RefreshTreeAction" use-shortcut-of="Refresh"/>
+        </group>
+
+        <group id="aws.toolkit.s3viewer.toolbar">
+            <reference ref="aws.toolkit.s3viewer.transferActions"/>
+            <separator/>
+            <reference ref="aws.toolkit.s3viewer.versionActions"/>
+            <separator/>
+            <reference ref="aws.toolkit.s3viewer.mutateActions"/>
+            <separator/>
+            <reference ref="aws.toolkit.s3viewer.miscActions"/>
+        </group>
+
+        <group id="aws.toolkit.s3viewer.contextMenu">
+            <reference ref="aws.toolkit.s3viewer.transferActions"/>
+            <separator/>
+            <reference ref="aws.toolkit.s3viewer.versionActions"/>
+            <separator/>
+            <group popup="true" id="aws.toolkit.s3viewer.contextMenu.copyGroup" icon="AllIcons.Actions.Copy">
+                <action class="software.aws.toolkits.jetbrains.services.s3.objectActions.CopyPathAction"/>
+                <action class="software.aws.toolkits.jetbrains.services.s3.objectActions.CopyUrlAction"/>
+                <action class="software.aws.toolkits.jetbrains.services.s3.objectActions.CopyUriAction"/>
+            </group>
+            <separator/>
+            <reference ref="aws.toolkit.s3viewer.mutateActions"/>
+            <separator/>
+            <reference ref="aws.toolkit.s3viewer.miscActions"/>
         </group>
     </actions>
 

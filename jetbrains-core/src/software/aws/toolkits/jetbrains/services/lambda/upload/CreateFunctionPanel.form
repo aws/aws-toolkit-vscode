@@ -35,8 +35,8 @@
           <grid row="0" column="0" row-span="1" col-span="1" vsize-policy="0" hsize-policy="0" anchor="8" fill="0" indent="0" use-parent-layout="false"/>
         </constraints>
         <properties>
-          <text resource-bundle="software/aws/toolkits/resources/localized_messages" key="lambda.create.function_name.label"/>
-          <toolTipText resource-bundle="software/aws/toolkits/resources/localized_messages" key="lambda.function.name.tooltip"/>
+          <text resource-bundle="software/aws/toolkits/resources/MessagesBundle" key="lambda.create.function_name.label"/>
+          <toolTipText resource-bundle="software/aws/toolkits/resources/MessagesBundle" key="lambda.function.name.tooltip"/>
         </properties>
       </component>
       <component id="fe525" class="javax.swing.JTextField" binding="name">
@@ -46,7 +46,7 @@
           </grid>
         </constraints>
         <properties>
-          <toolTipText resource-bundle="software/aws/toolkits/resources/localized_messages" key="lambda.function.name.tooltip"/>
+          <toolTipText resource-bundle="software/aws/toolkits/resources/MessagesBundle" key="lambda.function.name.tooltip"/>
         </properties>
       </component>
       <component id="f8190" class="javax.swing.JLabel">
@@ -54,7 +54,7 @@
           <grid row="1" column="0" row-span="1" col-span="1" vsize-policy="0" hsize-policy="0" anchor="8" fill="0" indent="0" use-parent-layout="false"/>
         </constraints>
         <properties>
-          <text resource-bundle="software/aws/toolkits/resources/localized_messages" key="lambda.create.description.label"/>
+          <text resource-bundle="software/aws/toolkits/resources/MessagesBundle" key="lambda.create.description.label"/>
         </properties>
       </component>
       <component id="195bc" class="javax.swing.JTextField" binding="description">

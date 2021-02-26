@@ -22,7 +22,6 @@ import kotlinx.coroutines.withContext
 import software.aws.toolkits.core.utils.error
 import software.aws.toolkits.core.utils.getLogger
 import software.aws.toolkits.core.utils.info
-import software.aws.toolkits.jetbrains.services.s3.objectActions.deleteSelectedObjects
 import software.aws.toolkits.jetbrains.services.s3.objectActions.uploadObjects
 import software.aws.toolkits.jetbrains.utils.ApplicationThreadPoolScope
 import software.aws.toolkits.jetbrains.utils.getCoroutineUiContext
@@ -90,10 +89,6 @@ class S3TreeTable(
     }
 
     private fun doProcessKeyEvent(e: KeyEvent) {
-        if (!e.isConsumed && (e.keyCode == KeyEvent.VK_DELETE || e.keyCode == KeyEvent.VK_BACK_SPACE)) {
-            e.consume()
-            deleteSelectedObjects(project, this@S3TreeTable)
-        }
         if (e.keyCode == KeyEvent.VK_ENTER && selectedRowCount == 1) {
             handleOpeningFile(selectedRow, isDoubleClick = false)
             handleLoadingMore(selectedRow)
