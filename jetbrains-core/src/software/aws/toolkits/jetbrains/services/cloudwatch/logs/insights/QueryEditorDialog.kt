@@ -16,6 +16,7 @@ import software.amazon.awssdk.services.cloudwatchlogs.CloudWatchLogsClient
 import software.aws.toolkits.jetbrains.core.AwsClientManager
 import software.aws.toolkits.jetbrains.core.AwsResourceCache
 import software.aws.toolkits.jetbrains.core.credentials.ConnectionSettings
+import software.aws.toolkits.jetbrains.services.cloudwatch.logs.CloudWatchLogWindow
 import software.aws.toolkits.jetbrains.services.cloudwatch.logs.resources.CloudWatchResources
 import software.aws.toolkits.jetbrains.utils.ApplicationThreadPoolScope
 import software.aws.toolkits.jetbrains.utils.getCoroutineUiContext
@@ -106,7 +107,7 @@ class QueryEditorDialog(
         val fieldList = getFields(queryDetails.getQueryString())
         launch {
             val queryId = startQueryAsync(queryDetails).await()
-            QueryResultsWindow.getInstance(project).showResults(queryDetails, queryId, fieldList)
+            CloudWatchLogWindow.getInstance(project).showQueryResults(queryDetails, queryId, fieldList)
         }
     }
 

@@ -10,12 +10,16 @@ import icons.AwsIcons
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
+import software.amazon.awssdk.services.cloudwatchlogs.CloudWatchLogsClient
 import software.aws.toolkits.core.utils.error
 import software.aws.toolkits.core.utils.getLogger
 import software.aws.toolkits.jetbrains.core.toolwindow.ToolkitToolWindowManager
 import software.aws.toolkits.jetbrains.core.toolwindow.ToolkitToolWindowType
 import software.aws.toolkits.jetbrains.services.cloudwatch.logs.editor.CloudWatchLogGroup
 import software.aws.toolkits.jetbrains.services.cloudwatch.logs.editor.CloudWatchLogStream
+import software.aws.toolkits.jetbrains.services.cloudwatch.logs.insights.DetailedLogRecord
+import software.aws.toolkits.jetbrains.services.cloudwatch.logs.insights.QueryDetails
+import software.aws.toolkits.jetbrains.services.cloudwatch.logs.insights.QueryResultList
 import software.aws.toolkits.jetbrains.utils.ApplicationThreadPoolScope
 import software.aws.toolkits.jetbrains.utils.getCoroutineUiContext
 import software.aws.toolkits.resources.message
@@ -30,11 +34,7 @@ class CloudWatchLogWindow(private val project: Project) : CoroutineScope by Appl
     fun showLogGroup(logGroup: String) = launch {
         var result = Result.Succeeded
         try {
-            val existingWindow = toolWindow.find(logGroup)
-            if (existingWindow != null) {
-                withContext(edtContext) {
-                    existingWindow.show(refresh = true)
-                }
+            if (showWindow(logGroup)) {
                 return@launch
             }
             val group = CloudWatchLogGroup(project, logGroup)
@@ -60,11 +60,7 @@ class CloudWatchLogWindow(private val project: Project) : CoroutineScope by Appl
         var result = Result.Succeeded
         try {
             val id = "$logGroup/$logStream/${previousEvent?.timestamp}/${previousEvent?.message}/$duration"
-            val existingWindow = toolWindow.find(id)
-            if (existingWindow != null) {
-                withContext(edtContext) {
-                    existingWindow.show(refresh = true)
-                }
+            if (showWindow(id)) {
                 return@launch
             }
             val title = if (previousEvent != null && duration != null) {
@@ -90,12 +86,46 @@ class CloudWatchLogWindow(private val project: Project) : CoroutineScope by Appl
         }
     }
 
+    fun showQueryResults(queryDetails: QueryDetails, queryId: String, fields: List<String>) = launch {
+        if (showWindow(queryId)) {
+            return@launch
+        }
+
+        val queryResult = QueryResultList(project, fields, queryId, queryDetails)
+        val title = message("cloudwatch.logs.query_tab_title", queryId)
+        withContext(edtContext) {
+            toolWindow.addTab(title, queryResult.resultsPanel, activate = true, id = queryId, disposable = queryResult)
+        }
+    }
+
+    fun showDetailedEvent(client: CloudWatchLogsClient, identifier: String) = launch {
+        if (showWindow(identifier)) {
+            return@launch
+        }
+
+        val detailedLogEvent = DetailedLogRecord(project, client, identifier)
+        withContext(edtContext) {
+            toolWindow.addTab(detailedLogEvent.title, detailedLogEvent.getComponent(), activate = true, id = identifier, disposable = detailedLogEvent)
+        }
+    }
+
     fun closeLogGroup(logGroup: String) = launch {
         toolWindow.findPrefix(logGroup).forEach {
             withContext(edtContext) {
                 it.dispose()
             }
         }
+    }
+
+    private suspend fun showWindow(identifier: String): Boolean {
+        val existingWindow = toolWindow.find(identifier)
+        if (existingWindow != null) {
+            withContext(edtContext) {
+                existingWindow.show(refresh = true)
+            }
+            return true
+        }
+        return false
     }
 
     companion object {
