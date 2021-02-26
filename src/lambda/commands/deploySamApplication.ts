@@ -25,7 +25,6 @@ import { addCodiconToString } from '../../shared/utilities/textUtilities'
 import { CHOSEN_BUCKET_KEY, SamDeployWizardResponse } from '../wizards/samDeployWizard'
 
 const localize = nls.loadMessageBundle()
-const MAX_SAVED_BUCKETS = 3
 
 interface DeploySamApplicationParameters {
     sourceTemplatePath: string
@@ -112,47 +111,26 @@ export async function deploySamApplication(
         await deployApplicationPromise
 
         // successful deploy: retain S3 bucket for quick future access
-        // JSON object of type: { [key: string]: { bucket: string, region: string }[] }
+        // JSON object of type: { [profile: string]: { [region: string]: bucket } }
         const bucketsJson = settings.readSetting<string | undefined>(CHOSEN_BUCKET_KEY)
         const profile = awsContext.getCredentialProfileName()
         if (profile) {
             try {
                 const buckets = bucketsJson ? JSON.parse(bucketsJson) : undefined
-                if (!bucketsJson || !buckets[profile] || !Array.isArray(buckets[profile])) {
+                if (!bucketsJson) {
                     writeFreshJson(profile, deployWizardResponse, settings)
                 } else {
-                    let unique: boolean = true
-                    for (const json of buckets[profile]) {
-                        try {
-                            if (
-                                json.bucket === deployWizardResponse.s3Bucket &&
-                                json.region === deployWizardResponse.region
-                            ) {
-                                unique = false
-                                break
-                            }
-                        } catch (e) {
-                            getLogger().warn(e)
-                        }
-                    }
-                    if (unique) {
-                        const newVal = {
-                            bucket: deployWizardResponse.s3Bucket,
-                            region: deployWizardResponse.region,
-                        }
-                        const arr = Array.isArray(buckets[profile]) ? [...buckets[profile], newVal] : [newVal]
-                        if (arr.length > MAX_SAVED_BUCKETS) {
-                            arr.shift()
-                        }
-                        settings.writeSetting(
-                            CHOSEN_BUCKET_KEY,
-                            JSON.stringify({
-                                ...buckets,
-                                [profile]: arr,
-                            }),
-                            vscode.ConfigurationTarget.Global
-                        )
-                    }
+                    settings.writeSetting(
+                        CHOSEN_BUCKET_KEY,
+                        JSON.stringify({
+                            ...buckets,
+                            [profile]: {
+                                ...(buckets[profile] ? buckets[profile] : {}),
+                                [deployWizardResponse.region]: deployWizardResponse.s3Bucket,
+                            },
+                        }),
+                        vscode.ConfigurationTarget.Global
+                    )
                 }
             } catch (e) {
                 getLogger().error('Recent bucket JSON not parseable. Rewriting recent buckets from scratch...', e)
@@ -181,12 +159,9 @@ function writeFreshJson(
     settings.writeSetting(
         CHOSEN_BUCKET_KEY,
         JSON.stringify({
-            [profile]: [
-                {
-                    bucket: deployWizardResponse.s3Bucket,
-                    region: deployWizardResponse.region,
-                },
-            ],
+            [profile]: {
+                [deployWizardResponse.region]: deployWizardResponse.s3Bucket,
+            },
         }),
         vscode.ConfigurationTarget.Global
     )
