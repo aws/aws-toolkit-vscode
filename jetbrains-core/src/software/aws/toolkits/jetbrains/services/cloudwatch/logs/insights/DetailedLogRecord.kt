@@ -6,6 +6,7 @@ package software.aws.toolkits.jetbrains.services.cloudwatch.logs.insights
 import com.intellij.openapi.Disposable
 import com.intellij.openapi.project.Project
 import com.intellij.ui.TableSpeedSearch
+import com.intellij.ui.components.breadcrumbs.Breadcrumbs
 import com.intellij.ui.table.TableView
 import com.intellij.util.ExceptionUtil
 import com.intellij.util.ui.ListTableModel
@@ -18,13 +19,13 @@ import org.jetbrains.annotations.TestOnly
 import software.amazon.awssdk.services.cloudwatchlogs.CloudWatchLogsClient
 import software.aws.toolkits.core.utils.getLogger
 import software.aws.toolkits.core.utils.warn
-import software.aws.toolkits.jetbrains.services.cloudwatch.logs.CloudWatchLogWindow
+import software.aws.toolkits.jetbrains.services.cloudwatch.logs.editor.LocationCrumbs
+import software.aws.toolkits.jetbrains.services.cloudwatch.logs.editor.installClickListener
 import software.aws.toolkits.jetbrains.utils.ApplicationThreadPoolScope
 import software.aws.toolkits.jetbrains.utils.notifyError
 import software.aws.toolkits.resources.message
 import software.aws.toolkits.telemetry.CloudwatchinsightsTelemetry
 import software.aws.toolkits.telemetry.Result
-import javax.swing.JButton
 import javax.swing.JPanel
 
 class DetailedLogRecord(
@@ -34,11 +35,12 @@ class DetailedLogRecord(
 ) : CoroutineScope by ApplicationThreadPoolScope("DetailedLogEvents"), Disposable {
     val title = message("cloudwatch.logs.log_record", logRecordPointer)
 
+    private lateinit var breadcrumbHolder: JPanel
+    private lateinit var locationInformation: Breadcrumbs
     lateinit var basePanel: JPanel
         private set
     lateinit var tableView: TableView<LogRecordFieldPair>
         private set
-    private lateinit var openStream: JButton
     private val recordLoadTask: Deferred<LogRecord>
 
     private fun createUIComponents() {
@@ -50,11 +52,13 @@ class DetailedLogRecord(
             setPaintBusy(true)
             emptyText.text = message("loading_resource.loading")
         }
+        tableView.emptyText.text = StatusText.getDefaultEmptyText()
         TableSpeedSearch(tableView)
     }
 
     init {
         recordLoadTask = loadLogRecordAsync()
+        locationInformation.isVisible = false
         launch {
             val record = recordLoadTask.await()
             val items = record.map { it.key to it.value }
@@ -62,25 +66,14 @@ class DetailedLogRecord(
             tableView.setPaintBusy(false)
 
             if (items.isNotEmpty()) {
-                addOpenStreamListener(record)
-            } else {
-                tableView.emptyText.text = StatusText.DEFAULT_EMPTY_TEXT
+                val logGroup = record["@log"] ?: return@launch
+                val logStream = record["@logStream"] ?: return@launch
+                val locationCrumbs = LocationCrumbs(project, extractLogGroup(logGroup), logStream)
+                locationInformation.crumbs = locationCrumbs.crumbs
+                breadcrumbHolder.border = locationCrumbs.border
+                locationInformation.installClickListener()
+                locationInformation.isVisible = true
             }
-        }
-
-        openStream.isEnabled = false
-    }
-
-    private fun addOpenStreamListener(record: LogRecord) {
-        openStream.isEnabled = true
-        openStream.addActionListener {
-            val logGroup = record["@log"] ?: throw IllegalStateException("@log was not defined in log record")
-            val logStream = record["@logStream"] ?: throw IllegalStateException("@logStream was not defined in log record")
-
-            CloudWatchLogWindow.getInstance(project).showLogStream(
-                logGroup = extractLogGroup(logGroup),
-                logStream = logStream
-            )
         }
     }
 
