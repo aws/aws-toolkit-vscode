@@ -39,7 +39,7 @@
           <grid row="1" column="7" row-span="1" col-span="1" vsize-policy="3" hsize-policy="3" anchor="0" fill="0" indent="0" use-parent-layout="false"/>
         </constraints>
         <properties>
-          <text resource-bundle="software/aws/toolkits/resources/localized_messages" key="sqs.send.message.send.button"/>
+          <text resource-bundle="software/aws/toolkits/resources/MessagesBundle" key="sqs.send.message.send.button"/>
         </properties>
       </component>
       <component id="7165c" class="javax.swing.JButton" binding="clearButton">
@@ -47,7 +47,7 @@
           <grid row="1" column="6" row-span="1" col-span="1" vsize-policy="0" hsize-policy="0" anchor="0" fill="0" indent="0" use-parent-layout="false"/>
         </constraints>
         <properties>
-          <text resource-bundle="software/aws/toolkits/resources/localized_messages" key="sqs.send.message.clear.button"/>
+          <text resource-bundle="software/aws/toolkits/resources/MessagesBundle" key="sqs.send.message.clear.button"/>
         </properties>
       </component>
       <hspacer id="a108d">

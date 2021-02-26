@@ -26,7 +26,7 @@
         </constraints>
         <properties>
           <enabled value="true"/>
-          <toolTipText resource-bundle="software/aws/toolkits/resources/localized_messages" key="lambda.run_configuration.fromTemplate.tooltip"/>
+          <toolTipText resource-bundle="software/aws/toolkits/resources/MessagesBundle" key="lambda.run_configuration.fromTemplate.tooltip"/>
         </properties>
       </component>
       <grid id="5d494" binding="imageSettingsPanel" layout-manager="GridLayoutManager" row-count="2" column-count="2" same-size-horizontally="false" same-size-vertically="false" hgap="-1" vgap="-1">
@@ -42,8 +42,8 @@
               <grid row="0" column="0" row-span="1" col-span="1" vsize-policy="0" hsize-policy="0" anchor="8" fill="0" indent="0" use-parent-layout="false"/>
             </constraints>
             <properties>
-              <text resource-bundle="software/aws/toolkits/resources/localized_messages" key="lambda.runtime.label"/>
-              <toolTipText resource-bundle="software/aws/toolkits/resources/localized_messages" key="lambda.function.runtime.tooltip"/>
+              <text resource-bundle="software/aws/toolkits/resources/MessagesBundle" key="lambda.runtime.label"/>
+              <toolTipText resource-bundle="software/aws/toolkits/resources/MessagesBundle" key="lambda.function.runtime.tooltip"/>
             </properties>
           </component>
           <component id="f1e21" class="com.intellij.execution.util.PathMappingsComponent" binding="pathMappingsTable">
@@ -60,7 +60,7 @@
               <grid row="0" column="1" row-span="1" col-span="1" vsize-policy="0" hsize-policy="2" anchor="0" fill="1" indent="0" use-parent-layout="false"/>
             </constraints>
             <properties>
-              <toolTipText resource-bundle="software/aws/toolkits/resources/localized_messages" key="lambda.function.runtime.tooltip"/>
+              <toolTipText resource-bundle="software/aws/toolkits/resources/MessagesBundle" key="lambda.function.runtime.tooltip"/>
             </properties>
           </component>
         </children>
@@ -78,8 +78,8 @@
               <grid row="0" column="0" row-span="1" col-span="1" vsize-policy="0" hsize-policy="0" anchor="8" fill="0" indent="0" use-parent-layout="false"/>
             </constraints>
             <properties>
-              <text resource-bundle="software/aws/toolkits/resources/localized_messages" key="lambda.create.env_vars.label"/>
-              <toolTipText resource-bundle="software/aws/toolkits/resources/localized_messages" key="lambda.function.env_vars.tooltip"/>
+              <text resource-bundle="software/aws/toolkits/resources/MessagesBundle" key="lambda.create.env_vars.label"/>
+              <toolTipText resource-bundle="software/aws/toolkits/resources/MessagesBundle" key="lambda.function.env_vars.tooltip"/>
             </properties>
           </component>
           <component id="15ae8" class="software.aws.toolkits.jetbrains.ui.EnvironmentVariablesTextField" binding="environmentVariables" custom-create="true">
@@ -87,7 +87,7 @@
               <grid row="0" column="1" row-span="1" col-span="1" vsize-policy="0" hsize-policy="3" anchor="0" fill="1" indent="0" use-parent-layout="false"/>
             </constraints>
             <properties>
-              <toolTipText resource-bundle="software/aws/toolkits/resources/localized_messages" key="lambda.function.env_vars.tooltip"/>
+              <toolTipText resource-bundle="software/aws/toolkits/resources/MessagesBundle" key="lambda.function.env_vars.tooltip"/>
             </properties>
           </component>
         </children>

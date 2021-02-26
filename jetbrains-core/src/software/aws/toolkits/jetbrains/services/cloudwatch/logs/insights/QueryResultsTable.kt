@@ -16,6 +16,7 @@ import kotlinx.coroutines.launch
 import software.amazon.awssdk.services.cloudwatchlogs.CloudWatchLogsClient
 import software.aws.toolkits.jetbrains.core.AwsClientManager
 import software.aws.toolkits.jetbrains.core.credentials.ConnectionSettings
+import software.aws.toolkits.jetbrains.services.cloudwatch.logs.CloudWatchLogWindow
 import software.aws.toolkits.jetbrains.services.cloudwatch.logs.InsightsQueryResultsActor
 import software.aws.toolkits.jetbrains.utils.ApplicationThreadPoolScope
 import software.aws.toolkits.resources.message
@@ -65,8 +66,7 @@ class QueryResultsTable(
             override fun onDoubleClick(e: MouseEvent): Boolean {
                 // assume you can't double click multiple selection
                 val identifier = resultsTable.selectedObject?.identifier() ?: return false
-                launch { QueryResultsWindow.getInstance(project).showDetailedEvent(client, identifier) }
-
+                launch { CloudWatchLogWindow.getInstance(project).showDetailedEvent(client, identifier) }
                 return true
             }
         }.installOn(resultsTable)

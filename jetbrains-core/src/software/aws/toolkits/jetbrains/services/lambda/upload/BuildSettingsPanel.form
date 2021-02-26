@@ -21,8 +21,8 @@
         </constraints>
         <properties>
           <selected value="false"/>
-          <text resource-bundle="software/aws/toolkits/resources/localized_messages" key="serverless.application.deploy.use_container"/>
-          <toolTipText resource-bundle="software/aws/toolkits/resources/localized_messages" key="lambda.sam.buildInContainer.tooltip"/>
+          <text resource-bundle="software/aws/toolkits/resources/MessagesBundle" key="serverless.application.deploy.use_container"/>
+          <toolTipText resource-bundle="software/aws/toolkits/resources/MessagesBundle" key="lambda.sam.buildInContainer.tooltip"/>
         </properties>
       </component>
     </children>

@@ -29,35 +29,30 @@ class DeleteObjectAction : S3ObjectAction(message("s3.delete.object.action"), Al
 
     // TODO enable for versioned objects.
     override fun enabled(nodes: List<S3TreeNode>): Boolean = nodes.isNotEmpty() && nodes.all { it::class == S3TreeObjectNode::class }
-}
 
-fun deleteSelectedObjects(project: Project, treeTable: S3TreeTable) {
-    val nodes = treeTable.getSelectedNodes().filterIsInstance<S3TreeObjectNode>()
-    deleteNodes(project, treeTable, nodes)
-}
+    private fun deleteNodes(project: Project, treeTable: S3TreeTable, nodes: List<S3TreeObjectNode>) {
+        val response = Messages.showOkCancelDialog(
+            project,
+            message("s3.delete.object.description", nodes.size),
+            message("s3.delete.object.action"),
+            message("general.delete"),
+            message("s3.delete.object.cancel"),
+            Messages.getWarningIcon()
+        )
 
-private fun deleteNodes(project: Project, treeTable: S3TreeTable, nodes: List<S3TreeObjectNode>) {
-    val response = Messages.showOkCancelDialog(
-        project,
-        message("s3.delete.object.description", nodes.size),
-        message("s3.delete.object.action"),
-        message("general.delete"),
-        message("s3.delete.object.cancel"),
-        Messages.getWarningIcon()
-    )
-
-    if (response != Messages.OK) {
-        S3Telemetry.deleteObject(project, Result.Cancelled)
-    } else {
-        ApplicationThreadPoolScope("DeleteObjectAction").launch {
-            try {
-                treeTable.bucket.deleteObjects(nodes.map { it.key })
-                nodes.forEach { treeTable.invalidateLevel(it) }
-                treeTable.refresh()
-                S3Telemetry.deleteObject(project, Result.Succeeded)
-            } catch (e: Exception) {
-                e.notifyError(project = project, title = message("s3.delete.object.failed"))
-                S3Telemetry.deleteObject(project, Result.Failed)
+        if (response != Messages.OK) {
+            S3Telemetry.deleteObject(project, Result.Cancelled)
+        } else {
+            ApplicationThreadPoolScope("DeleteObjectAction").launch {
+                try {
+                    treeTable.bucket.deleteObjects(nodes.map { it.key })
+                    nodes.forEach { treeTable.invalidateLevel(it) }
+                    treeTable.refresh()
+                    S3Telemetry.deleteObject(project, Result.Succeeded)
+                } catch (e: Exception) {
+                    e.notifyError(project = project, title = message("s3.delete.object.failed"))
+                    S3Telemetry.deleteObject(project, Result.Failed)
+                }
             }
         }
     }
