@@ -15,7 +15,7 @@
           <component id="fb0bb" class="javax.swing.JButton" binding="openStream">
             <constraints border-constraint="East"/>
             <properties>
-              <text resource-bundle="software/aws/toolkits/resources/localized_messages" key="cloudwatch.logs.log_record_open_log_stream"/>
+              <text resource-bundle="software/aws/toolkits/resources/MessagesBundle" key="cloudwatch.logs.log_record_open_log_stream"/>
             </properties>
           </component>
         </children>

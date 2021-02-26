@@ -21,7 +21,7 @@
               <grid row="0" column="0" row-span="1" col-span="1" vsize-policy="0" hsize-policy="0" anchor="8" fill="0" indent="0" use-parent-layout="false"/>
             </constraints>
             <properties>
-              <text resource-bundle="software/aws/toolkits/resources/localized_messages" key="aws.settings.sam.location"/>
+              <text resource-bundle="software/aws/toolkits/resources/MessagesBundle" key="aws.settings.sam.location"/>
             </properties>
           </component>
           <component id="93255" class="com.intellij.openapi.ui.TextFieldWithBrowseButton" binding="samExecutablePath" custom-create="true">
@@ -41,8 +41,8 @@
               <grid row="1" column="0" row-span="1" col-span="3" vsize-policy="3" hsize-policy="3" anchor="8" fill="0" indent="0" use-parent-layout="false"/>
             </constraints>
             <properties>
-              <text resource-bundle="software/aws/toolkits/resources/localized_messages" key="aws.settings.sam.show_all_gutter_icons"/>
-              <toolTipText resource-bundle="software/aws/toolkits/resources/localized_messages" key="aws.settings.sam.show_all_gutter_icons_tooltip"/>
+              <text resource-bundle="software/aws/toolkits/resources/MessagesBundle" key="aws.settings.sam.show_all_gutter_icons"/>
+              <toolTipText resource-bundle="software/aws/toolkits/resources/MessagesBundle" key="aws.settings.sam.show_all_gutter_icons_tooltip"/>
             </properties>
           </component>
         </children>
@@ -60,8 +60,8 @@
               <grid row="2" column="0" row-span="1" col-span="5" vsize-policy="3" hsize-policy="3" anchor="8" fill="0" indent="0" use-parent-layout="false"/>
             </constraints>
             <properties>
-              <text resource-bundle="software/aws/toolkits/resources/localized_messages" key="aws.settings.telemetry.option"/>
-              <toolTipText resource-bundle="software/aws/toolkits/resources/localized_messages" key="aws.settings.telemetry.description"/>
+              <text resource-bundle="software/aws/toolkits/resources/MessagesBundle" key="aws.settings.telemetry.option"/>
+              <toolTipText resource-bundle="software/aws/toolkits/resources/MessagesBundle" key="aws.settings.telemetry.description"/>
             </properties>
           </component>
           <component id="d1bbb" class="javax.swing.JLabel">
@@ -69,7 +69,7 @@
               <grid row="0" column="0" row-span="1" col-span="1" vsize-policy="0" hsize-policy="0" anchor="8" fill="0" indent="0" use-parent-layout="false"/>
             </constraints>
             <properties>
-              <text resource-bundle="software/aws/toolkits/resources/localized_messages" key="settings.credentials.prompt_for_default_region_switch.setting_label"/>
+              <text resource-bundle="software/aws/toolkits/resources/MessagesBundle" key="settings.credentials.prompt_for_default_region_switch.setting_label"/>
             </properties>
           </component>
           <hspacer id="a2f16">
@@ -88,7 +88,7 @@
               <grid row="1" column="0" row-span="1" col-span="1" vsize-policy="0" hsize-policy="0" anchor="8" fill="0" indent="0" use-parent-layout="false"/>
             </constraints>
             <properties>
-              <text resource-bundle="software/aws/toolkits/resources/localized_messages" key="settings.profiles.label"/>
+              <text resource-bundle="software/aws/toolkits/resources/MessagesBundle" key="settings.profiles.label"/>
             </properties>
           </component>
           <component id="6287e" class="com.intellij.openapi.ui.ComboBox" binding="profilesNotification" custom-create="true">
@@ -117,7 +117,7 @@
               <grid row="0" column="0" row-span="1" col-span="1" vsize-policy="0" hsize-policy="0" anchor="8" fill="0" indent="0" use-parent-layout="false"/>
             </constraints>
             <properties>
-              <text resource-bundle="software/aws/toolkits/resources/localized_messages" key="aws.settings.clouddebug.location"/>
+              <text resource-bundle="software/aws/toolkits/resources/MessagesBundle" key="aws.settings.clouddebug.location"/>
             </properties>
           </component>
           <component id="f49bd" class="com.intellij.openapi.ui.TextFieldWithBrowseButton" binding="cloudDebugExecutablePath" custom-create="true">

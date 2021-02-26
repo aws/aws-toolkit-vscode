@@ -13,8 +13,8 @@
           <grid row="0" column="0" row-span="1" col-span="2" vsize-policy="0" hsize-policy="3" anchor="8" fill="0" indent="0" use-parent-layout="false"/>
         </constraints>
         <properties>
-          <text resource-bundle="software/aws/toolkits/resources/localized_messages" key="serverless.application.deploy.use_container"/>
-          <toolTipText resource-bundle="software/aws/toolkits/resources/localized_messages" key="lambda.sam.buildInContainer.tooltip"/>
+          <text resource-bundle="software/aws/toolkits/resources/MessagesBundle" key="serverless.application.deploy.use_container"/>
+          <toolTipText resource-bundle="software/aws/toolkits/resources/MessagesBundle" key="lambda.sam.buildInContainer.tooltip"/>
         </properties>
       </component>
       <component id="31eed" class="javax.swing.JCheckBox" binding="skipPullImage">
@@ -22,8 +22,8 @@
           <grid row="1" column="0" row-span="1" col-span="2" vsize-policy="0" hsize-policy="3" anchor="8" fill="0" indent="0" use-parent-layout="false"/>
         </constraints>
         <properties>
-          <text resource-bundle="software/aws/toolkits/resources/localized_messages" key="lambda.run_configuration.sam.skip_image_pull"/>
-          <toolTipText resource-bundle="software/aws/toolkits/resources/localized_messages" key="lambda.sam.skipCheckingNewerContainerImage.tooltip"/>
+          <text resource-bundle="software/aws/toolkits/resources/MessagesBundle" key="lambda.run_configuration.sam.skip_image_pull"/>
+          <toolTipText resource-bundle="software/aws/toolkits/resources/MessagesBundle" key="lambda.sam.skipCheckingNewerContainerImage.tooltip"/>
         </properties>
       </component>
       <component id="ed3e4" class="com.intellij.ui.components.JBLabel">
@@ -31,8 +31,8 @@
           <grid row="2" column="0" row-span="1" col-span="1" vsize-policy="0" hsize-policy="0" anchor="8" fill="0" indent="0" use-parent-layout="false"/>
         </constraints>
         <properties>
-          <text resource-bundle="software/aws/toolkits/resources/localized_messages" key="lambda.run_configuration.sam.docker_network"/>
-          <toolTipText resource-bundle="software/aws/toolkits/resources/localized_messages" key="lambda.sam.dockerNetwork.tooltip"/>
+          <text resource-bundle="software/aws/toolkits/resources/MessagesBundle" key="lambda.run_configuration.sam.docker_network"/>
+          <toolTipText resource-bundle="software/aws/toolkits/resources/MessagesBundle" key="lambda.sam.dockerNetwork.tooltip"/>
         </properties>
       </component>
       <component id="eb8o8" class="com.intellij.ui.components.JBLabel">
@@ -40,8 +40,8 @@
           <grid row="4" column="0" row-span="1" col-span="1" vsize-policy="0" hsize-policy="0" anchor="8" fill="0" indent="0" use-parent-layout="false"/>
         </constraints>
         <properties>
-          <text resource-bundle="software/aws/toolkits/resources/localized_messages" key="lambda.run_configuration.sam.additional_build_args"/>
-          <toolTipText resource-bundle="software/aws/toolkits/resources/localized_messages" key="lambda.sam.additionalBuildArgs.tooltip"/>
+          <text resource-bundle="software/aws/toolkits/resources/MessagesBundle" key="lambda.run_configuration.sam.additional_build_args"/>
+          <toolTipText resource-bundle="software/aws/toolkits/resources/MessagesBundle" key="lambda.sam.additionalBuildArgs.tooltip"/>
         </properties>
       </component>
       <component id="gg7a3" class="com.intellij.ui.components.fields.ExpandableTextField" binding="additionalBuildArgs">
@@ -51,7 +51,7 @@
           </grid>
         </constraints>
         <properties>
-          <toolTipText resource-bundle="software/aws/toolkits/resources/localized_messages" key="lambda.sam.additionalBuildArgs.tooltip"/>
+          <toolTipText resource-bundle="software/aws/toolkits/resources/MessagesBundle" key="lambda.sam.additionalBuildArgs.tooltip"/>
         </properties>
       </component>
       <component id="ff810" class="javax.swing.JTextField" binding="dockerNetwork">
@@ -61,7 +61,7 @@
           </grid>
         </constraints>
         <properties>
-          <toolTipText resource-bundle="software/aws/toolkits/resources/localized_messages" key="lambda.sam.dockerNetwork.tooltip"/>
+          <toolTipText resource-bundle="software/aws/toolkits/resources/MessagesBundle" key="lambda.sam.dockerNetwork.tooltip"/>
         </properties>
       </component>
       <component id="4f23b" class="com.intellij.ui.components.JBLabel">
@@ -69,8 +69,8 @@
           <grid row="5" column="0" row-span="1" col-span="1" vsize-policy="0" hsize-policy="0" anchor="8" fill="0" indent="0" use-parent-layout="false"/>
         </constraints>
         <properties>
-          <text resource-bundle="software/aws/toolkits/resources/localized_messages" key="lambda.run_configuration.sam.additional_local_args"/>
-          <toolTipText resource-bundle="software/aws/toolkits/resources/localized_messages" key="lambda.sam.additionalLocalArgs.tooltip"/>
+          <text resource-bundle="software/aws/toolkits/resources/MessagesBundle" key="lambda.run_configuration.sam.additional_local_args"/>
+          <toolTipText resource-bundle="software/aws/toolkits/resources/MessagesBundle" key="lambda.sam.additionalLocalArgs.tooltip"/>
         </properties>
       </component>
       <vspacer id="5fa1c">
@@ -85,7 +85,7 @@
           </grid>
         </constraints>
         <properties>
-          <toolTipText resource-bundle="software/aws/toolkits/resources/localized_messages" key="lambda.sam.additionalLocalArgs.tooltip"/>
+          <toolTipText resource-bundle="software/aws/toolkits/resources/MessagesBundle" key="lambda.sam.additionalLocalArgs.tooltip"/>
         </properties>
       </component>
       <component id="e3cd6" class="com.intellij.openapi.ui.ComboBox" binding="debugHostChooser">
@@ -95,7 +95,7 @@
           </grid>
         </constraints>
         <properties>
-          <toolTipText resource-bundle="software/aws/toolkits/resources/localized_messages" key="lambda.sam.debugHost.tooltip"/>
+          <toolTipText resource-bundle="software/aws/toolkits/resources/MessagesBundle" key="lambda.sam.debugHost.tooltip"/>
         </properties>
       </component>
       <component id="3d543" class="com.intellij.ui.components.JBLabel">
@@ -103,8 +103,8 @@
           <grid row="3" column="0" row-span="1" col-span="1" vsize-policy="0" hsize-policy="0" anchor="8" fill="0" indent="0" use-parent-layout="false"/>
         </constraints>
         <properties>
-          <text resource-bundle="software/aws/toolkits/resources/localized_messages" key="lambda.run_configuration.debug_host"/>
-          <toolTipText resource-bundle="software/aws/toolkits/resources/localized_messages" key="lambda.sam.debugHost.tooltip"/>
+          <text resource-bundle="software/aws/toolkits/resources/MessagesBundle" key="lambda.run_configuration.debug_host"/>
+          <toolTipText resource-bundle="software/aws/toolkits/resources/MessagesBundle" key="lambda.sam.debugHost.tooltip"/>
         </properties>
       </component>
     </children>
