@@ -1,0 +1,4 @@
+{
+  "type" : "bugfix",
+  "description" : "Fix showing stack status notification on opening existing CloudFormation stack (#2157)"
+}
