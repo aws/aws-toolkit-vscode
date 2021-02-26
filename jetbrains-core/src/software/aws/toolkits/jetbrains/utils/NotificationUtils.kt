@@ -65,6 +65,9 @@ fun notifyWarn(title: String, content: String = "", project: Project? = null, li
 fun notifyError(title: String, content: String = "", project: Project? = null, action: AnAction) =
     notify(NotificationType.ERROR, title, content, project, listOf(action))
 
+fun notifyError(title: String, content: String = "", project: Project? = null, notificationActions: Collection<AnAction>) =
+    notify(NotificationType.ERROR, title, content, project, notificationActions)
+
 fun notifyError(title: String = message("aws.notification.title"), content: String = "", project: Project? = null, listener: NotificationListener? = null) =
     notify(Notification(GROUP_DISPLAY_ID, title, content, NotificationType.ERROR, listener), project)
 
