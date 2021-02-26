@@ -5,6 +5,7 @@
 
 import Vue, { VNode } from 'vue'
 import { VsCode } from '../../webviews/main'
+import { AwsSamDebuggerConfiguration } from '../../shared/sam/debugger/awsSamDebugConfiguration'
 import {
     MorePermissiveAwsSamDebuggerConfiguration,
     SamInvokerRequest,
@@ -31,10 +32,10 @@ export interface SamInvokeVueData {
     environmentVariables: VueDataLaunchPropertyObject
     headers: VueDataLaunchPropertyObject
     stageVariables: VueDataLaunchPropertyObject
-    // parameters: VueDataLaunchPropertyObject
+    parameters: VueDataLaunchPropertyObject
 }
 
-function newLaunchConfig(target: 'template' | 'code' | 'api' = 'template'): MorePermissiveAwsSamDebuggerConfiguration {
+function newLaunchConfig(existingConfig?: AwsSamDebuggerConfiguration): MorePermissiveAwsSamDebuggerConfiguration {
     return {
         type: 'aws-sam',
         request: 'direct-invoke',
@@ -42,23 +43,27 @@ function newLaunchConfig(target: 'template' | 'code' | 'api' = 'template'): More
         aws: {
             credentials: '',
             region: '',
+            ...(existingConfig?.aws ? existingConfig.aws : {})
         },
         invokeTarget: {
-            target,
+            target: 'template',
             templatePath: '',
             logicalId: '',
             lambdaHandler: '',
             projectRoot: '',
+            ...existingConfig?.invokeTarget
         },
         lambda: {
-            payload: {
-                json: {},
-                path: '',
-            },
-            environmentVariables: undefined,
             runtime: '',
             memoryMb: undefined,
             timeoutSec: undefined,
+            environmentVariables: {},
+            ...existingConfig?.lambda,
+            payload: {
+                json: (existingConfig?.lambda?.payload?.json ? existingConfig.lambda.payload.json : {}),
+                path: (existingConfig?.lambda?.payload?.path ? existingConfig.lambda.payload.path : ''),
+            }
+            
             // pathMappings: undefined
         },
         sam: {
@@ -67,21 +72,22 @@ function newLaunchConfig(target: 'template' | 'code' | 'api' = 'template'): More
             dockerNetwork: '',
             localArguments: undefined,
             skipNewImageCheck: false,
+            ...(existingConfig?.sam ? existingConfig.sam : {}),
             template: {
-                parameters: undefined
+                parameters: (existingConfig?.sam?.template?.parameters ? existingConfig.sam.template.parameters : {})
             }
         },
         api: {
             path: '',
             httpMethod: 'get',
-            payload: {
-                json: undefined,
-                path: ''
-            },
-            headers: undefined,
+            clientCertificateId: '',
             querystring: '',
-            stageVariables: undefined,
-            clientCertificateId: ''
+            headers: {},
+            stageVariables: {},
+            ...(existingConfig?.api ? existingConfig.api : {}),
+            payload: {
+                json: (existingConfig?.api?.payload?.json ? existingConfig.api.payload.json : {}),
+                path: (existingConfig?.api?.payload?.path ? existingConfig.api.payload.path : ''),            },
         }
     }
 }
@@ -104,16 +110,16 @@ export const Component = Vue.extend({
                     this.launchConfig.invokeTarget.templatePath = event.data.template
                     break
                 case 'loadSamLaunchConfig':
-                    this.launchConfig = event.data.launchConfig as MorePermissiveAwsSamDebuggerConfiguration
+                    this.launchConfig = newLaunchConfig(event.data.launchConfig)
                     if (event.data.launchConfig.lambda?.payload) {
                         this.payload.value = JSON.stringify(event.data.launchConfig.lambda.payload.json, undefined, 4)
                     }
                     if (event.data.launchConfig.lambda?.environmentVariables) {
                         this.environmentVariables.value = JSON.stringify(event.data.launchConfig.lambda?.environmentVariables)
                     }
-                    // if (event.data.launchConfig.sam?.template?.parameters) {
-                    //     this.parameters = JSON.stringify(event.data.launchConfig.sam?.template?.parameters)
-                    // }
+                    if (event.data.launchConfig.sam?.template?.parameters) {
+                        this.parameters.value = JSON.stringify(event.data.launchConfig.sam?.template?.parameters)
+                    }
                     if (event.data.launchConfig.api?.headers) {
                         this.headers.value = JSON.stringify(event.data.launchConfig.api?.headers)
                     }
@@ -151,7 +157,7 @@ export const Component = Vue.extend({
             launchConfig: newLaunchConfig(),
             payload: {value: '', errorMsg: ''},
             environmentVariables: {value: '', errorMsg: ''},
-            // parameters: {value: '', errorMsg: ''},
+            parameters: {value: '', errorMsg: ''},
             headers: {value: '', errorMsg: ''},
             stageVariables: {value: '', errorMsg: ''}
         }
@@ -220,7 +226,7 @@ export const Component = Vue.extend({
             field.errorMsg = ''
             if (field.value !== '') {
                 try {
-                    return JSON.parse(this.payload.value)
+                    return JSON.parse(field.value)
                 } catch (e) {
                     field.errorMsg = e
                     throw e
@@ -230,13 +236,14 @@ export const Component = Vue.extend({
         formatDataAndExecute(command: 'saveLaunchConfig' | 'invokeLaunchConfig') {
             this.resetJsonErrors()
 
-            let payloadJson, environmentVariablesJson, headersJson, stageVariablesJson 
+            let payloadJson, environmentVariablesJson, headersJson, stageVariablesJson, parametersJson 
 
             try {
             payloadJson = this.formatStringtoJSON(this.payload)
             environmentVariablesJson = this.formatStringtoJSON(this.environmentVariables)
             headersJson = this.formatStringtoJSON(this.headers)
             stageVariablesJson = this.formatStringtoJSON(this.stageVariables)
+            parametersJson = this.formatStringtoJSON(this.parameters)
             } catch {
                 return
             }  
@@ -252,12 +259,17 @@ export const Component = Vue.extend({
                                 ...this.launchConfig.payload,
                                 json: payloadJson,
                             },
-                            environmentVariables: environmentVariablesJson
+                            environmentVariables: environmentVariablesJson,
+                            // timeoutSec: (this.launchConfig.lambda?.timeoutSec ? parseInt(this.launchConfig.lambda.timeoutSec) : undefined),
+                            // memoryMb: (this.launchConfig.lambda?.memoryMb ? parseInt(this.launchConfig.lambda.memoryMb) : undefined)
                         },
                         sam: {
                             ...this.launchConfig.sam,
                             buildArguments: this.formatFieldToStringArray(this.launchConfig.sam?.buildArguments?.toString()),
-                            localArguments: this.formatFieldToStringArray(this.launchConfig.sam?.localArguments?.toString())
+                            localArguments: this.formatFieldToStringArray(this.launchConfig.sam?.localArguments?.toString()),
+                            template: {
+                                parameters: parametersJson
+                            }
                         },
                         api: this.launchConfig.api ?  {
                             ...this.launchConfig.api,
@@ -443,10 +455,11 @@ export const Component = Vue.extend({
                         <option value=true :key="1">True</option>
                     </select>
                 </div>
-                <!-- <div class="config-item">
+                <div class="config-item">
                     <label for="templateParameters">Template - Parameters</label>
-                    <input type="text" v-model="launchConfig.sam.template.parameters" >
-                </div> -->
+                    <input type="text" v-model="parameters.value" >
+                    <div class="json-parse-error" v-if="parameters.errorMsg">Error parsing JSON: {{parameters.errorMsg}}</div>
+                </div>
                 <h3>api</h3>
                 <div class="config-item">
                     <label for="querystring">Query String</label>

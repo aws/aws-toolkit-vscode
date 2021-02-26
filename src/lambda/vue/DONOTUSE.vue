@@ -171,10 +171,11 @@
                         <option value=true :key="1">True</option>
                     </select>
                 </div>
-                <!-- <div class="config-item">
+                <div class="config-item">
                     <label for="templateParameters">Template - Parameters</label>
-                    <input type="text" v-model="launchConfig.sam.template.parameters" >
-                </div> -->
+                    <input type="text" v-model="parameters.value" >
+                    <div class="json-parse-error" v-if="parameters.errorMsg">Error parsing JSON: {{parameters.errorMsg}}</div>
+                </div>
                 <h3>api</h3>
                 <div class="config-item">
                     <label for="querystring">Query String</label>
