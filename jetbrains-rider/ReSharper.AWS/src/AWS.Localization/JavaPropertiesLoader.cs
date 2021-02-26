@@ -9,7 +9,7 @@ namespace AWS.Localization
 {
     /// <summary>
     /// Simple loader for Java .properties files with localized strings.
-    /// Currently, this class is used to get string constants that persists in Java code in localized_messages.properties file.
+    /// Currently, this class is used to get string constants that persists in Java code in MessagesBundle.properties file.
     /// We would like to use same localized strings to share values between IDEA and R#.
     /// Note: the original .properties file is added to AWS.Localization project as a static resource.
     /// </summary>
@@ -21,11 +21,11 @@ namespace AWS.Localization
         private readonly object myLock = new object();
 
         /// <summary>
-        /// Get value by key from "localized_messages.properties" Java file.
+        /// Get value by key from "MessagesBundle.properties" Java file.
         /// </summary>
         /// <exception cref="T:System.Collections.Generic.KeyNotFoundException">When key is not found.</exception>
         /// <param name="key">Key to search for</param>
-        /// <returns>Value from the "localized_messages.properties" file associated with a provided key.</returns>
+        /// <returns>Value from the "MessagesBundle.properties" file associated with a provided key.</returns>
         public string GetLocalizedString(string key)
         {
             lock (myLock)
@@ -33,7 +33,7 @@ namespace AWS.Localization
                 if (myLocalizedStrings.IsNullOrEmpty())
                 {
                     using (var stream = Assembly.GetExecutingAssembly()
-                        .GetManifestResourceStream("AWS.Localization.Resources.localized_messages.properties"))
+                        .GetManifestResourceStream("AWS.Localization.Resources.MessagesBundle.properties"))
                     {
                         Load(stream);
                     }

@@ -21,7 +21,7 @@
           <horizontalAlignment value="0"/>
           <horizontalTextPosition value="11"/>
           <selected value="false"/>
-          <text resource-bundle="software/aws/toolkits/resources/localized_messages" key="cloud_debug.instrument.production_warning.checkbox_label"/>
+          <text resource-bundle="software/aws/toolkits/resources/MessagesBundle" key="cloud_debug.instrument.production_warning.checkbox_label"/>
         </properties>
       </component>
       <component id="3bc42" class="com.intellij.ui.components.JBLabel" binding="warning">

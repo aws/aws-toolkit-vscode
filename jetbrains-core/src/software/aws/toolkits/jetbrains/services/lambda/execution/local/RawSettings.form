@@ -13,8 +13,8 @@
           <grid row="0" column="0" row-span="1" col-span="1" vsize-policy="0" hsize-policy="0" anchor="8" fill="0" indent="0" use-parent-layout="false"/>
         </constraints>
         <properties>
-          <text resource-bundle="software/aws/toolkits/resources/localized_messages" key="lambda.runtime.label"/>
-          <toolTipText resource-bundle="software/aws/toolkits/resources/localized_messages" key="lambda.function.runtime.tooltip"/>
+          <text resource-bundle="software/aws/toolkits/resources/MessagesBundle" key="lambda.runtime.label"/>
+          <toolTipText resource-bundle="software/aws/toolkits/resources/MessagesBundle" key="lambda.function.runtime.tooltip"/>
         </properties>
       </component>
       <component id="11192" class="javax.swing.JComboBox" binding="runtime" custom-create="true">
@@ -22,7 +22,7 @@
           <grid row="0" column="1" row-span="1" col-span="1" vsize-policy="0" hsize-policy="2" anchor="0" fill="1" indent="0" use-parent-layout="false"/>
         </constraints>
         <properties>
-          <toolTipText resource-bundle="software/aws/toolkits/resources/localized_messages" key="lambda.function.runtime.tooltip"/>
+          <toolTipText resource-bundle="software/aws/toolkits/resources/MessagesBundle" key="lambda.function.runtime.tooltip"/>
         </properties>
       </component>
       <component id="eaebe" class="javax.swing.JLabel">
@@ -30,8 +30,8 @@
           <grid row="1" column="0" row-span="1" col-span="1" vsize-policy="0" hsize-policy="0" anchor="8" fill="0" indent="0" use-parent-layout="false"/>
         </constraints>
         <properties>
-          <text resource-bundle="software/aws/toolkits/resources/localized_messages" key="lambda.handler.label"/>
-          <toolTipText resource-bundle="software/aws/toolkits/resources/localized_messages" key="lambda.function.handler.tooltip"/>
+          <text resource-bundle="software/aws/toolkits/resources/MessagesBundle" key="lambda.handler.label"/>
+          <toolTipText resource-bundle="software/aws/toolkits/resources/MessagesBundle" key="lambda.function.handler.tooltip"/>
         </properties>
       </component>
       <component id="9990d" class="software.aws.toolkits.jetbrains.ui.HandlerPanel" binding="handlerPanel" custom-create="true">
@@ -47,8 +47,8 @@
           <grid row="2" column="0" row-span="1" col-span="1" vsize-policy="0" hsize-policy="0" anchor="8" fill="0" indent="0" use-parent-layout="false"/>
         </constraints>
         <properties>
-          <text resource-bundle="software/aws/toolkits/resources/localized_messages" key="lambda.create.timeout.label"/>
-          <toolTipText resource-bundle="software/aws/toolkits/resources/localized_messages" key="lambda.function.timeout.tooltip"/>
+          <text resource-bundle="software/aws/toolkits/resources/MessagesBundle" key="lambda.create.timeout.label"/>
+          <toolTipText resource-bundle="software/aws/toolkits/resources/MessagesBundle" key="lambda.function.timeout.tooltip"/>
         </properties>
       </component>
       <nested-form id="b6c95" form-file="software/aws/toolkits/jetbrains/ui/SliderPanel.form" binding="timeoutSlider" custom-create="true">
@@ -61,8 +61,8 @@
           <grid row="3" column="0" row-span="1" col-span="1" vsize-policy="0" hsize-policy="0" anchor="8" fill="0" indent="0" use-parent-layout="false"/>
         </constraints>
         <properties>
-          <text resource-bundle="software/aws/toolkits/resources/localized_messages" key="lambda.create.memory.label"/>
-          <toolTipText resource-bundle="software/aws/toolkits/resources/localized_messages" key="lambda.function.memory.tooltip"/>
+          <text resource-bundle="software/aws/toolkits/resources/MessagesBundle" key="lambda.create.memory.label"/>
+          <toolTipText resource-bundle="software/aws/toolkits/resources/MessagesBundle" key="lambda.function.memory.tooltip"/>
         </properties>
       </component>
       <nested-form id="96fc9" form-file="software/aws/toolkits/jetbrains/ui/SliderPanel.form" binding="memorySlider" custom-create="true">
@@ -75,8 +75,8 @@
           <grid row="4" column="0" row-span="1" col-span="1" vsize-policy="0" hsize-policy="0" anchor="8" fill="0" indent="0" use-parent-layout="false"/>
         </constraints>
         <properties>
-          <text resource-bundle="software/aws/toolkits/resources/localized_messages" key="lambda.create.env_vars.label"/>
-          <toolTipText resource-bundle="software/aws/toolkits/resources/localized_messages" key="lambda.function.env_vars.tooltip"/>
+          <text resource-bundle="software/aws/toolkits/resources/MessagesBundle" key="lambda.create.env_vars.label"/>
+          <toolTipText resource-bundle="software/aws/toolkits/resources/MessagesBundle" key="lambda.function.env_vars.tooltip"/>
         </properties>
       </component>
       <component id="e988" class="software.aws.toolkits.jetbrains.ui.EnvironmentVariablesTextField" binding="environmentVariables" custom-create="true">
@@ -84,7 +84,7 @@
           <grid row="4" column="1" row-span="1" col-span="1" vsize-policy="0" hsize-policy="3" anchor="0" fill="1" indent="0" use-parent-layout="false"/>
         </constraints>
         <properties>
-          <toolTipText resource-bundle="software/aws/toolkits/resources/localized_messages" key="lambda.function.env_vars.tooltip"/>
+          <toolTipText resource-bundle="software/aws/toolkits/resources/MessagesBundle" key="lambda.function.env_vars.tooltip"/>
         </properties>
       </component>
     </children>
