@@ -13,7 +13,7 @@
           <grid row="1" column="0" row-span="1" col-span="1" vsize-policy="3" hsize-policy="3" anchor="8" fill="0" indent="0" use-parent-layout="false"/>
         </constraints>
         <properties>
-          <text resource-bundle="software/aws/toolkits/resources/localized_messages" key="sqs.create.queue.type.label"/>
+          <text resource-bundle="software/aws/toolkits/resources/MessagesBundle" key="sqs.create.queue.type.label"/>
         </properties>
       </component>
       <component id="fa13c" class="com.intellij.ui.components.JBLabel">
@@ -21,7 +21,7 @@
           <grid row="0" column="0" row-span="1" col-span="1" vsize-policy="3" hsize-policy="3" anchor="8" fill="0" indent="0" use-parent-layout="false"/>
         </constraints>
         <properties>
-          <text resource-bundle="software/aws/toolkits/resources/localized_messages" key="sqs.create.queue.name.label"/>
+          <text resource-bundle="software/aws/toolkits/resources/MessagesBundle" key="sqs.create.queue.name.label"/>
         </properties>
       </component>
       <component id="707cf" class="javax.swing.JLabel" binding="queueNameContextHelp">
@@ -72,8 +72,8 @@
             </constraints>
             <properties>
               <selected value="true"/>
-              <text resource-bundle="software/aws/toolkits/resources/localized_messages" key="sqs.create.standard.label"/>
-              <toolTipText resource-bundle="software/aws/toolkits/resources/localized_messages" key="sqs.standard.queue.tooltip"/>
+              <text resource-bundle="software/aws/toolkits/resources/MessagesBundle" key="sqs.create.standard.label"/>
+              <toolTipText resource-bundle="software/aws/toolkits/resources/MessagesBundle" key="sqs.standard.queue.tooltip"/>
             </properties>
           </component>
           <component id="e4856" class="javax.swing.JRadioButton" binding="fifoType">
@@ -82,8 +82,8 @@
             </constraints>
             <properties>
               <selected value="false"/>
-              <text resource-bundle="software/aws/toolkits/resources/localized_messages" key="sqs.create.fifo.label"/>
-              <toolTipText resource-bundle="software/aws/toolkits/resources/localized_messages" key="sqs.fifo.queue.tooltip"/>
+              <text resource-bundle="software/aws/toolkits/resources/MessagesBundle" key="sqs.create.fifo.label"/>
+              <toolTipText resource-bundle="software/aws/toolkits/resources/MessagesBundle" key="sqs.fifo.queue.tooltip"/>
             </properties>
           </component>
           <hspacer id="fdc11">

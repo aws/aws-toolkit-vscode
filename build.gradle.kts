@@ -331,7 +331,7 @@ val ktlintTask = tasks.register<JavaExec>("ktlint") {
 }
 
 val validateLocalizedMessages = tasks.register<ValidateMessages>("validateLocalizedMessages") {
-    paths.set(listOf("${project.rootDir}/resources/resources/software/aws/toolkits/resources/localized_messages.properties"))
+    paths.set(listOf("${project.rootDir}/resources/resources/software/aws/toolkits/resources/MessagesBundle.properties"))
 }
 
 val coverageReport = tasks.register<JacocoReport>("coverageReport") {
