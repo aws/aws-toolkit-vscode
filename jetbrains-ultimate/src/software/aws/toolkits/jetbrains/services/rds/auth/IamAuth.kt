@@ -12,11 +12,8 @@ import com.intellij.database.dataSource.DatabaseCredentialsAuthProvider
 import com.intellij.database.dataSource.LocalDataSource
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.future.future
-import software.amazon.awssdk.auth.signer.Aws4Signer
-import software.amazon.awssdk.auth.signer.params.Aws4PresignerParams
-import software.amazon.awssdk.http.SdkHttpFullRequest
-import software.amazon.awssdk.http.SdkHttpMethod
 import software.amazon.awssdk.regions.Region
+import software.amazon.awssdk.services.rds.RdsUtilities
 import software.aws.toolkits.core.utils.getLogger
 import software.aws.toolkits.core.utils.info
 import software.aws.toolkits.jetbrains.core.credentials.ConnectionSettings
@@ -31,8 +28,6 @@ import software.aws.toolkits.resources.message
 import software.aws.toolkits.telemetry.DatabaseCredentials.IAM
 import software.aws.toolkits.telemetry.RdsTelemetry
 import software.aws.toolkits.telemetry.Result
-import java.time.Instant
-import java.time.temporal.ChronoUnit
 import java.util.concurrent.CompletionStage
 
 data class RdsAuth(
@@ -44,6 +39,8 @@ data class RdsAuth(
 
 // [DatabaseAuthProvider] is marked as internal, but JetBrains advised this was a correct usage
 class IamAuth : DatabaseAuthProvider, CoroutineScope by ApplicationThreadPoolScope("RdsIamAuth") {
+    private val rdsUtilities = RdsUtilities.builder().build()
+
     override fun getId(): String = providerId
     override fun getDisplayName(): String = message("rds.iam_connection_display_name")
 
@@ -91,28 +88,12 @@ class IamAuth : DatabaseAuthProvider, CoroutineScope by ApplicationThreadPoolSco
         )
     }
 
-    internal fun generateAuthToken(auth: RdsAuth): String {
-        // TODO: Replace when SDK V2 backfills the pre-signer for rds auth token
-        val httpRequest = SdkHttpFullRequest.builder()
-            .method(SdkHttpMethod.GET)
-            .protocol("https")
-            .host(auth.address)
-            .port(auth.port)
-            .encodedPath("/")
-            .putRawQueryParameter("DBUser", auth.user)
-            .putRawQueryParameter("Action", "connect")
-            .build()
-
-        // TODO consider configurable expiration time (but 15 is the max)
-        val expirationTime = Instant.now().plus(15, ChronoUnit.MINUTES)
-        val presignRequest = Aws4PresignerParams.builder()
-            .expirationTime(expirationTime)
-            .awsCredentials(auth.connectionSettings.credentials.resolveCredentials())
-            .signingName("rds-db")
-            .signingRegion(Region.of(auth.connectionSettings.region.id))
-            .build()
-
-        return Aws4Signer.create().presign(httpRequest, presignRequest).uri.toString().removePrefix("https://")
+    internal fun generateAuthToken(auth: RdsAuth): String = rdsUtilities.generateAuthenticationToken {
+        it.credentialsProvider(auth.connectionSettings.credentials)
+        it.region(Region.of(auth.connectionSettings.region.id))
+        it.hostname(auth.address)
+        it.port(auth.port)
+        it.username(auth.user)
     }
 
     private fun getCredentials(connection: ProtoConnection): Credentials {
