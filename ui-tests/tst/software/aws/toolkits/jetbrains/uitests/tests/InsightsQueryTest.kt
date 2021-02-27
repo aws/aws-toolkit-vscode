@@ -140,19 +140,9 @@ class InsightsQueryTest {
             }
 
             step("Revising query from current results") {
-                // Find query ID. Query ID is a GUID with dashes, which makes it 36 characters long.
-                val currentQueryId = findAll<JLabelFixture>(byXpath("//div[@class='ContentTabLabel']"))
-                    .first {
-                        try {
-                            it.findAllText().firstOrNull()?.text?.length == 36
-                        } catch (e: Exception) {
-                            false
-                        }
-                    }
-                    .findAllText()
-                    .first()
-                    .text
-                val currentTab = find<JLabelFixture>(byXpath("//div[@class='ContentTabLabel' and contains(@accessiblename, '$currentQueryId')]"))
+                val currentTab = find<JLabelFixture>(byXpath("//div[@class='ContentTabLabel' and starts-with(@accessiblename, 'Query:')]"))
+                val currentQueryId = currentTab.value.removePrefix("Query: ")
+
                 openInsightsQueryDialogFromResults()
 
                 step("Change relative time values") {
