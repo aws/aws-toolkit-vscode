@@ -28,6 +28,7 @@ import software.aws.toolkits.jetbrains.uitests.fixtures.actionButton
 import software.aws.toolkits.jetbrains.uitests.fixtures.actionMenuItem
 import software.aws.toolkits.jetbrains.uitests.fixtures.awsExplorer
 import software.aws.toolkits.jetbrains.uitests.fixtures.fileBrowser
+import software.aws.toolkits.jetbrains.uitests.fixtures.fillAllJBTextFields
 import software.aws.toolkits.jetbrains.uitests.fixtures.fillSingleTextField
 import software.aws.toolkits.jetbrains.uitests.fixtures.findAndClick
 import software.aws.toolkits.jetbrains.uitests.fixtures.idea
@@ -192,7 +193,7 @@ class S3BrowserTest {
                     openExplorerActionMenu(S3, bucket)
                 }
                 findAndClick("//div[@text='$deleteBucketText']")
-                fillSingleTextField(bucket)
+                fillAllJBTextFields("delete me")
                 pressOk()
                 waitForS3BucketDeletion()
             }

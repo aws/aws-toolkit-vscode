@@ -17,7 +17,7 @@ import software.aws.toolkits.jetbrains.uitests.CoreTest
 import software.aws.toolkits.jetbrains.uitests.extensions.uiTest
 import software.aws.toolkits.jetbrains.uitests.fixtures.IdeaFrame
 import software.aws.toolkits.jetbrains.uitests.fixtures.awsExplorer
-import software.aws.toolkits.jetbrains.uitests.fixtures.fillSingleTextField
+import software.aws.toolkits.jetbrains.uitests.fixtures.fillAllJBTextFields
 import software.aws.toolkits.jetbrains.uitests.fixtures.findAndClick
 import software.aws.toolkits.jetbrains.uitests.fixtures.idea
 import software.aws.toolkits.jetbrains.uitests.fixtures.pressOk
@@ -91,7 +91,7 @@ class CloudFormationBrowserTest {
                     openExplorerActionMenu(cloudFormation, stack)
                 }
                 findAndClick("//div[@text='$deleteStackText']")
-                fillSingleTextField(stack)
+                fillAllJBTextFields("delete me")
                 pressOk()
             }
 

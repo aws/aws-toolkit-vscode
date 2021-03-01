@@ -7,8 +7,7 @@ import com.intellij.icons.AllIcons
 import com.intellij.openapi.actionSystem.AnActionEvent
 import com.intellij.openapi.application.ApplicationManager
 import com.intellij.openapi.project.DumbAware
-import com.intellij.openapi.ui.InputValidator
-import com.intellij.openapi.ui.Messages
+import software.aws.toolkits.jetbrains.core.explorer.DeleteResourceDialog
 import software.aws.toolkits.jetbrains.core.explorer.nodes.AwsExplorerResourceNode
 import software.aws.toolkits.jetbrains.utils.Operation
 import software.aws.toolkits.jetbrains.utils.TaggingResourceType
@@ -24,23 +23,11 @@ abstract class DeleteResourceAction<in T : AwsExplorerResourceNode<*>>(text: Str
     SingleResourceNodeAction<T>(text, icon = AllIcons.Actions.Cancel), DumbAware {
     final override fun actionPerformed(selected: T, e: AnActionEvent) {
         warnResourceOperationAgainstCodePipeline(selected.nodeProject, selected.displayName(), selected.resourceArn(), taggingResourceType, Operation.DELETE) {
+
             val resourceType = selected.resourceType()
             val resourceName = selected.displayName()
-
-            val response = Messages.showInputDialog(
-                selected.project,
-                message("delete_resource.message", resourceType, resourceName),
-                message("delete_resource.title", resourceType, resourceName),
-                Messages.getWarningIcon(),
-                null,
-                object : InputValidator {
-                    override fun checkInput(inputString: String?): Boolean = inputString == resourceName
-
-                    override fun canClose(inputString: String?): Boolean = checkInput(inputString)
-                }
-            )
-
-            if (response == null) {
+            val response = DeleteResourceDialog(selected.nodeProject, resourceType, resourceName).showAndGet()
+            if (!response) {
                 AwsTelemetry.deleteResource(selected.project, ServiceType.from(selected.serviceId), Result.Cancelled)
             } else {
                 ApplicationManager.getApplication().executeOnPooledThread {
