@@ -28,6 +28,11 @@ fun ContainerFixture.fillSingleTextField(text: String) = step("Fill single text 
     find<JTextFieldFixture>(byXpath("//div[@class='JTextField']"), Duration.ofSeconds(5)).text = text
 }
 
+fun ContainerFixture.fillDeletionAndConfirm() = step("Fill in delete me and delete") {
+    find<JTextFieldFixture>(byXpath("//div[@accessiblename='Delete confirmation box']"), Duration.ofSeconds(5)).text = "delete me"
+    pressOk()
+}
+
 // There is no function to write text to this directly :(
 fun ContainerFixture.fillSingleJBTextArea(text: String) = step("Fill single JBTextArea with $text") {
     find<JTextAreaFixture>(byXpath("//div[@class='JBTextArea']")).click()
