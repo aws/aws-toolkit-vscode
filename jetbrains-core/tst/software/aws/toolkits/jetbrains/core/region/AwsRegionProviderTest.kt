@@ -152,6 +152,64 @@ class AwsRegionProviderTest {
     }
 
     @Test
+    fun allRegionsForServiceWorks() {
+        createRegionDataProvider(
+            """
+            {
+                "partitions": [
+                    {
+                        "defaults": {
+                            "hostname": "{service}.{region}.{dnsSuffix}",
+                            "protocols": ["https"],
+                            "signatureVersions": ["v4"]
+                        },
+                        "dnsSuffix": "amazonaws.com",
+                        "partition": "aws",
+                        "partitionName": "AWS Standard",
+                        "regionRegex": "^(us|eu|ap|sa|ca|me)\\-\\w+\\-\\d+$",
+                        "regions": {
+                            "us-west-2": {
+                                "description": "US West (Oregon)"
+                            }
+                        },
+                        "services": {
+                            "a4b" : {
+                                "endpoints" : {
+                                    "us-west-2" : { }
+                                }
+                            }
+                        }
+                    },
+                    {
+                        "defaults": {
+                            "hostname": "{service}.{region}.{dnsSuffix}",
+                            "protocols": ["https"],
+                            "signatureVersions": ["v4"]
+                        },
+                        "dnsSuffix": "amazonaws.com.cn",
+                        "partition": "aws-cn",
+                        "partitionName": "AWS China",
+                        "regionRegex": "^cn\\-\\w+\\-\\d+$",
+                        "regions": {
+                            "cn-north-1": {
+                                "description": "China (Beijing)"
+                            }
+                        },
+                        "services": {}
+                    }
+                ],
+                "version": 3
+            }
+            """.trimIndent()
+        )
+
+        val awsRegionProvider = AwsRegionProvider()
+        assertThat(awsRegionProvider.allRegionsForService("a4b"))
+            .doesNotContainKey("cn-north-1")
+            .containsKey("us-west-2")
+    }
+
+    @Test
     fun noDefaultRegionFallsBackToUsEast1() {
         createRegionDataProvider(
             """

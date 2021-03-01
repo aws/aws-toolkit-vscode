@@ -16,6 +16,7 @@ import com.intellij.openapi.options.SettingsEditor
 import com.intellij.openapi.options.SettingsEditorGroup
 import com.intellij.openapi.project.Project
 import org.jdom.Element
+import software.amazon.awssdk.services.ecs.EcsClient
 import software.aws.toolkits.core.utils.error
 import software.aws.toolkits.core.utils.getLogger
 import software.aws.toolkits.jetbrains.core.AwsResourceCache
@@ -57,7 +58,7 @@ class EcsCloudDebugRunConfiguration(project: Project, private val configFactory:
 
         val editor = EcsCloudDebugSettingsEditor(project)
         group.addEditor(ExecutionBundle.message("run.configuration.configuration.tab.title"), editor)
-        group.addAwsConnectionEditor(AwsConnectionSettingsEditor(project, editor::awsConnectionUpdated))
+        group.addAwsConnectionEditor(AwsConnectionSettingsEditor(project, EcsClient.SERVICE_NAME, editor::awsConnectionUpdated))
 
         return group
     }

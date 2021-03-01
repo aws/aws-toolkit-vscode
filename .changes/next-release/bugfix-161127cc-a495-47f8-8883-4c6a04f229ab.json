@@ -1,0 +1,4 @@
+{
+  "type" : "bugfix",
+  "description" : "Fix resource selectors assuming every region has every service (#2435)"
+}

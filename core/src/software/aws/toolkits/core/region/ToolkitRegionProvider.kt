@@ -21,6 +21,11 @@ abstract class ToolkitRegionProvider {
     fun allRegions(): Map<String, AwsRegion> = partitionData().flatMap { it.value.regions.asIterable() }.associate { it.key to it.value }
 
     /**
+     * Returns a map of region ID([AwsRegion.id]) to [AwsRegion], filtering by if the service is supported
+     */
+    fun allRegionsForService(serviceId: String): Map<String, AwsRegion> = allRegions().filter { isServiceSupported(it.value, serviceId) }
+
+    /**
      * Returns a map of region ID([AwsRegion.id]) to [AwsRegion] for the specified partition
      */
     fun regions(partitionId: String): Map<String, AwsRegion> = partitionData()[partitionId]?.regions

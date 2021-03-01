@@ -9,6 +9,7 @@ import com.intellij.openapi.ui.TextFieldWithBrowseButton
 import com.intellij.openapi.ui.ValidationInfo
 import com.intellij.openapi.vfs.VfsUtil
 import com.intellij.ui.layout.panel
+import software.amazon.awssdk.services.schemas.SchemasClient
 import software.aws.toolkits.core.lambda.LambdaRuntime
 import software.aws.toolkits.jetbrains.services.lambda.BuiltInRuntimeGroups
 import software.aws.toolkits.jetbrains.services.lambda.RuntimeGroup
@@ -27,7 +28,8 @@ class SchemaSelectionPanel : WizardFragment {
     private val schemaSelector by lazy { SchemaResourceSelector() }
     private val awsConnectionSelector by lazy {
         AwsConnectionSettingsSelector(
-            null
+            project = null,
+            serviceId = SchemasClient.SERVICE_NAME
         ) {
             val prev = schemaSelector.awsConnection
             schemaSelector.awsConnection = it
