@@ -19,7 +19,10 @@ class DeleteResourceDialog(
     private val resourceType: String,
     private val resourceName: String
 ) : DialogWrapper(project) {
-    private val deleteResourceConfirmation = JBTextField().apply { emptyText.text = message("delete_resource.confirmation_text") }
+    private val deleteResourceConfirmation = JBTextField().apply {
+        emptyText.text = message("delete_resource.confirmation_text")
+        accessibleContext.accessibleName = message("general.delete_accessible_name")
+    }
     private val warningIcon = JBLabel(Messages.getWarningIcon())
     private val component by lazy {
         panel {

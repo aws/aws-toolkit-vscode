@@ -28,13 +28,13 @@ import software.aws.toolkits.jetbrains.uitests.fixtures.actionMenuItem
 import software.aws.toolkits.jetbrains.uitests.fixtures.awsExplorer
 import software.aws.toolkits.jetbrains.uitests.fixtures.dialog
 import software.aws.toolkits.jetbrains.uitests.fixtures.fillAllJBTextFields
+import software.aws.toolkits.jetbrains.uitests.fixtures.fillDeletionAndConfirm
 import software.aws.toolkits.jetbrains.uitests.fixtures.fillSingleJBTextArea
 import software.aws.toolkits.jetbrains.uitests.fixtures.fillSingleTextField
 import software.aws.toolkits.jetbrains.uitests.fixtures.findAndClick
 import software.aws.toolkits.jetbrains.uitests.fixtures.findByXpath
 import software.aws.toolkits.jetbrains.uitests.fixtures.idea
 import software.aws.toolkits.jetbrains.uitests.fixtures.pressCreate
-import software.aws.toolkits.jetbrains.uitests.fixtures.pressOk
 import software.aws.toolkits.jetbrains.uitests.fixtures.pressSave
 import software.aws.toolkits.jetbrains.uitests.fixtures.pressYes
 import software.aws.toolkits.jetbrains.uitests.fixtures.rightClick
@@ -220,8 +220,7 @@ class SQSTest {
                         openExplorerActionMenu(sqsNodeLabel, queueName)
                     }
                     actionMenuItem(deleteQueueText).click()
-                    fillAllJBTextFields("delete me")
-                    pressOk()
+                    fillDeletionAndConfirm()
                     client.waitForDeletion(queueName)
                 }
                 step("Delete queue $fifoQueueName") {
@@ -229,8 +228,7 @@ class SQSTest {
                         openExplorerActionMenu(sqsNodeLabel, fifoQueueName)
                     }
                     actionMenuItem(deleteQueueText).click()
-                    fillAllJBTextFields("delete me")
-                    pressOk()
+                    fillDeletionAndConfirm()
                     client.waitForDeletion(fifoQueueName)
                 }
             }
@@ -240,6 +238,7 @@ class SQSTest {
     @AfterAll
     // Make sure the two queues and sns topic are deleted, and if not, delete them
     fun cleanup() {
+        log.info("Running final cleanup")
         try {
             SqsClient.create().use { client ->
                 client.verifyDeleted(queueName)
