@@ -11,6 +11,7 @@ import com.intellij.execution.configurations.RuntimeConfigurationError
 import com.intellij.execution.runners.ExecutionEnvironment
 import com.intellij.openapi.options.SettingsEditorGroup
 import com.intellij.openapi.project.Project
+import software.amazon.awssdk.services.lambda.LambdaClient
 import software.aws.toolkits.core.credentials.ToolkitCredentialsProvider
 import software.aws.toolkits.core.region.AwsRegion
 import software.aws.toolkits.jetbrains.services.lambda.execution.LambdaRunConfigurationBase
@@ -34,7 +35,7 @@ class RemoteLambdaRunConfiguration(project: Project, factory: ConfigurationFacto
         val group = SettingsEditorGroup<RemoteLambdaRunConfiguration>()
         val remoteLambdaSettings = RemoteLambdaRunSettingsEditor(project)
         group.addEditor(ExecutionBundle.message("run.configuration.configuration.tab.title"), remoteLambdaSettings)
-        group.addAwsConnectionEditor(AwsConnectionSettingsEditor(project, remoteLambdaSettings::updateFunctions))
+        group.addAwsConnectionEditor(AwsConnectionSettingsEditor(project, LambdaClient.SERVICE_NAME, remoteLambdaSettings::updateFunctions))
         return group
     }
 

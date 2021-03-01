@@ -31,6 +31,7 @@ abstract class AwsAuthWidget(private val userFieldEnabled: Boolean = true) : Dat
     protected val portParameter = "port"
 
     abstract fun getRegionFromUrl(url: String?): String?
+    abstract val serviceId: String
 
     open val rowCount: Int = 3
     open val columnCount: Int = 6
@@ -71,7 +72,13 @@ abstract class AwsAuthWidget(private val userFieldEnabled: Boolean = true) : Dat
         super.reset(dataSource, resetCredentials)
 
         val regionProvider = AwsRegionProvider.getInstance()
-        val allRegions = regionProvider.allRegions()
+        val allRegions = serviceId.let {
+            if (it != null) {
+                regionProvider.allRegionsForService(it)
+            } else {
+                regionProvider.allRegions()
+            }
+        }
         regionSelector.setRegions(allRegions.values.toMutableList())
         val regionId = dataSource.additionalJdbcProperties[REGION_ID_PROPERTY]?.nullize()
         regionId?.let {

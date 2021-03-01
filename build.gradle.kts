@@ -52,6 +52,7 @@ val publishChannel: String by project
 plugins {
     java
     id("de.undercouch.download") apply false
+    id("org.gradle.test-retry") version "1.2.0"
 }
 
 group = "software.aws.toolkits"
@@ -71,6 +72,7 @@ allprojects {
     apply(plugin = "com.adarshr.test-logger")
     apply(plugin = "java")
     apply(plugin = "jacoco")
+    apply(plugin = "org.gradle.test-retry")
 
     java.sourceCompatibility = JavaVersion.VERSION_1_8
     java.targetCompatibility = JavaVersion.VERSION_1_8
@@ -179,6 +181,13 @@ subprojects {
         reports {
             junitXml.isEnabled = true
             html.isEnabled = true
+        }
+
+        retry {
+            failOnPassedAfterRetry.set(false)
+            // If there are 5 failures, don't even attempt a retry
+            maxFailures.set(5)
+            maxRetries.set(2)
         }
     }
 

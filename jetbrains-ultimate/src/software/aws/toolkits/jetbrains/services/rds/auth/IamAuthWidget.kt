@@ -9,6 +9,7 @@ import com.intellij.database.dataSource.url.template.ParametersHolder
 import com.intellij.database.dataSource.url.ui.UrlPropertiesPanel
 import com.intellij.ui.components.JBLabel
 import com.intellij.ui.components.JBTextField
+import software.amazon.awssdk.services.rds.RdsClient
 import software.aws.toolkits.jetbrains.services.rds.RdsResources
 import software.aws.toolkits.jetbrains.ui.AwsAuthWidget
 import software.aws.toolkits.resources.message
@@ -23,6 +24,7 @@ class IamAuthWidget : AwsAuthWidget() {
 
     override val rowCount = 4
     override fun getRegionFromUrl(url: String?): String? = RdsResources.extractRegionFromUrl(url)
+    override val serviceId: String = RdsClient.SERVICE_NAME
 
     override fun createPanel(): JPanel {
         val panel = super.createPanel()

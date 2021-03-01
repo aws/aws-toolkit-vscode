@@ -17,10 +17,9 @@ import software.aws.toolkits.jetbrains.uitests.CoreTest
 import software.aws.toolkits.jetbrains.uitests.extensions.uiTest
 import software.aws.toolkits.jetbrains.uitests.fixtures.IdeaFrame
 import software.aws.toolkits.jetbrains.uitests.fixtures.awsExplorer
-import software.aws.toolkits.jetbrains.uitests.fixtures.fillAllJBTextFields
+import software.aws.toolkits.jetbrains.uitests.fixtures.fillDeletionAndConfirm
 import software.aws.toolkits.jetbrains.uitests.fixtures.findAndClick
 import software.aws.toolkits.jetbrains.uitests.fixtures.idea
-import software.aws.toolkits.jetbrains.uitests.fixtures.pressOk
 import software.aws.toolkits.jetbrains.uitests.fixtures.welcomeFrame
 import java.nio.file.Path
 import java.nio.file.Paths
@@ -91,8 +90,7 @@ class CloudFormationBrowserTest {
                     openExplorerActionMenu(cloudFormation, stack)
                 }
                 findAndClick("//div[@text='$deleteStackText']")
-                fillAllJBTextFields("delete me")
-                pressOk()
+                fillDeletionAndConfirm()
             }
 
             waitForStackDeletion()
@@ -107,7 +105,7 @@ class CloudFormationBrowserTest {
 
     @AfterAll
     fun cleanup() {
-        // Make sure that we delete the stack even if it fails in the UIs
+        log.info("Running final cleanup")
         try {
             cloudFormationClient.deleteStack { it.stackName(stack) }
             waitForStackDeletion()
@@ -124,7 +122,9 @@ class CloudFormationBrowserTest {
 
     private fun waitForStackDeletion() {
         log.info("Waiting for the deletion of stack $stack")
-        cloudFormationClient.waiter().waitUntilStackDeleteComplete { it.stackName(stack) }
+        if (cloudFormationClient.describeStacks { it.stackName(stack) }.hasStacks()) {
+            cloudFormationClient.waiter().waitUntilStackDeleteComplete { it.stackName(stack) }
+        }
         log.info("Finished deleting stack $stack")
     }
 }
