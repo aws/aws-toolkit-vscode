@@ -295,6 +295,12 @@ function initializeIconPaths(context: vscode.ExtensionContext) {
 
     ext.iconPaths.dark.cloudWatchLogGroup = context.asAbsolutePath('resources/dark/log-group.svg')
     ext.iconPaths.light.cloudWatchLogGroup = context.asAbsolutePath('resources/light/log-group.svg')
+
+    ext.iconPaths.dark.createBucket = context.asAbsolutePath('resources/dark/s3/create-bucket.svg')
+    ext.iconPaths.light.createBucket = context.asAbsolutePath('resources/light/s3/create-bucket.svg')
+
+    ext.iconPaths.dark.bucket = context.asAbsolutePath('resources/dark/s3/bucket.svg')
+    ext.iconPaths.light.bucket = context.asAbsolutePath('resources/light/s3/bucket.svg')
 }
 
 function initializeManifestPaths(extensionContext: vscode.ExtensionContext) {

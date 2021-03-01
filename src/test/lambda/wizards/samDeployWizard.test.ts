@@ -714,7 +714,6 @@ describe('DefaultSamDeployWizardContext', async () => {
 
         it('returns undefined if the user selects a no items/error message', async () => {
             const messages = {
-                loadingBuckets: 'Yeaaaahhhhh? Whaddya want?',
                 noBuckets: "NO! We're out of bear claws",
                 bucketError: 'One box of one dozen, starving, crazed weasels',
             }
@@ -724,10 +723,24 @@ describe('DefaultSamDeployWizardContext', async () => {
                 .returns(Promise.resolve([{ label: messages.noBuckets }]))
                 .onSecondCall()
                 .returns(Promise.resolve([{ label: messages.bucketError }]))
-            const firstOutput = await context.promptUserForS3Bucket(1, 'us-weast-1', 'accountId', undefined, messages)
+            const firstOutput = await context.promptUserForS3Bucket(
+                1,
+                'us-weast-1',
+                'profile',
+                'accountId',
+                undefined,
+                messages
+            )
             assert.strictEqual(firstOutput, undefined)
 
-            const secondOutput = await context.promptUserForS3Bucket(1, 'us-weast-1', 'accountId', undefined, messages)
+            const secondOutput = await context.promptUserForS3Bucket(
+                1,
+                'us-weast-1',
+                'profile',
+                'accountId',
+                undefined,
+                messages
+            )
             assert.strictEqual(secondOutput, undefined)
         })
     })

@@ -111,7 +111,7 @@ describe('deploySamApplication', async () => {
     // Other support stubs
     const placeholderCredentials = ({} as any) as AWS.Credentials
     let testCredentials: AWS.Credentials | undefined
-    const profile = 'testAcct'
+    let profile: string = ''
     const awsContext: Pick<AwsContext, 'getCredentials' | 'getCredentialProfileName'> = {
         getCredentials: async () => testCredentials,
         getCredentialProfileName: () => profile,
@@ -128,6 +128,7 @@ describe('deploySamApplication', async () => {
     let tempToolkitFolder: string
     beforeEach(async () => {
         settings = new TestSettingsConfiguration()
+        profile = 'testAcct'
         tempToolkitFolder = await makeTemporaryToolkitFolder()
         templatePath = path.join(tempToolkitFolder, 'template.yaml')
         writeFile(templatePath)
@@ -170,18 +171,14 @@ describe('deploySamApplication', async () => {
         assert.strictEqual(invokerCalledCount, 3, 'Unexpected sam cli invoke count')
         assert.deepStrictEqual(
             settings.readSetting(CHOSEN_BUCKET_KEY, ''),
-            JSON.stringify({
-                [profile]: [{ bucket: 'bucket', region: 'region' }],
-            })
+            JSON.stringify({ [profile]: { region: 'bucket' } })
         )
     })
 
-    it('does not add a duplicate manuallySelectedBucket if it already exists', async () => {
+    it('overwrites recently selected bucket', async () => {
         settings.writeSetting(
             CHOSEN_BUCKET_KEY,
-            JSON.stringify({
-                [profile]: [{ bucket: 'bucket', region: 'region' }],
-            }),
+            JSON.stringify({ [profile]: { region: 'oldBucket' } }),
             vscode.ConfigurationTarget.Global
         )
         await deploySamApplication(
@@ -200,23 +197,14 @@ describe('deploySamApplication', async () => {
         assert.strictEqual(invokerCalledCount, 3, 'Unexpected sam cli invoke count')
         assert.deepStrictEqual(
             settings.readSetting(CHOSEN_BUCKET_KEY, ''),
-            JSON.stringify({
-                [profile]: [{ bucket: 'bucket', region: 'region' }],
-            })
+            JSON.stringify({ [profile]: { region: 'bucket' } })
         )
     })
 
-    it('maxes out at the most recent three recent buckets per profile', async () => {
-        settings.writeSetting(
-            CHOSEN_BUCKET_KEY,
-            JSON.stringify({
-                [profile]: [{ bucket: 'bucket', region: 'region' }],
-            }),
-            vscode.ConfigurationTarget.Global
-        )
+    it('saves one bucket max to multiple regions', async () => {
         samDeployWizardResponse = {
             parameterOverrides: new Map<string, string>(),
-            region: 'region',
+            region: 'region0',
             s3Bucket: 'bucket0',
             stackName: 'stack',
             template: vscode.Uri.file(templatePath),
@@ -237,7 +225,7 @@ describe('deploySamApplication', async () => {
         await waitForDeployToComplete()
         samDeployWizardResponse = {
             parameterOverrides: new Map<string, string>(),
-            region: 'region',
+            region: 'region1',
             s3Bucket: 'bucket1',
             stackName: 'stack',
             template: vscode.Uri.file(templatePath),
@@ -257,7 +245,7 @@ describe('deploySamApplication', async () => {
         await waitForDeployToComplete()
         samDeployWizardResponse = {
             parameterOverrides: new Map<string, string>(),
-            region: 'region',
+            region: 'region2',
             s3Bucket: 'bucket2',
             stackName: 'stack',
             template: vscode.Uri.file(templatePath),
@@ -277,7 +265,7 @@ describe('deploySamApplication', async () => {
         await waitForDeployToComplete()
         samDeployWizardResponse = {
             parameterOverrides: new Map<string, string>(),
-            region: 'region',
+            region: 'region0',
             s3Bucket: 'bucket3',
             stackName: 'stack',
             template: vscode.Uri.file(templatePath),
@@ -299,11 +287,69 @@ describe('deploySamApplication', async () => {
         assert.deepStrictEqual(
             settings.readSetting(CHOSEN_BUCKET_KEY, ''),
             JSON.stringify({
-                [profile]: [
-                    { bucket: 'bucket1', region: 'region' },
-                    { bucket: 'bucket2', region: 'region' },
-                    { bucket: 'bucket3', region: 'region' },
-                ],
+                [profile]: {
+                    region0: 'bucket3',
+                    region1: 'bucket1',
+                    region2: 'bucket2',
+                },
+            })
+        )
+    })
+
+    it('saves one bucket per region per profile', async () => {
+        profile = 'testAcct0'
+        samDeployWizardResponse = {
+            parameterOverrides: new Map<string, string>(),
+            region: 'region0',
+            s3Bucket: 'bucket0',
+            stackName: 'stack',
+            template: vscode.Uri.file(templatePath),
+        }
+
+        await deploySamApplication(
+            {
+                samCliContext: goodSamCliContext(),
+                samDeployWizard,
+            },
+            {
+                awsContext,
+                settings,
+                window,
+            }
+        )
+
+        await waitForDeployToComplete()
+        profile = 'testAcct1'
+        samDeployWizardResponse = {
+            parameterOverrides: new Map<string, string>(),
+            region: 'region0',
+            s3Bucket: 'bucket1',
+            stackName: 'stack',
+            template: vscode.Uri.file(templatePath),
+        }
+        await deploySamApplication(
+            {
+                samCliContext: goodSamCliContext(),
+                samDeployWizard,
+            },
+            {
+                awsContext,
+                settings,
+                window,
+            }
+        )
+
+        await waitForDeployToComplete()
+        assert.strictEqual(invokerCalledCount, 6, 'Unexpected sam cli invoke count')
+        assert.deepStrictEqual(
+            settings.readSetting(CHOSEN_BUCKET_KEY, ''),
+            JSON.stringify({
+                testAcct0: {
+                    region0: 'bucket0',
+                },
+                testAcct1: {
+                    region0: 'bucket1',
+                },
             })
         )
     })

@@ -63,6 +63,8 @@ export interface IconPaths {
     file: string
     schema: string
     cloudWatchLogGroup: string
+    bucket: string
+    createBucket: string
 }
 
 function makeIconPathsObject(): IconPaths {
@@ -79,5 +81,7 @@ function makeIconPathsObject(): IconPaths {
         schema: '',
         statemachine: '',
         cloudWatchLogGroup: '',
+        bucket: '',
+        createBucket: '',
     }
 }
