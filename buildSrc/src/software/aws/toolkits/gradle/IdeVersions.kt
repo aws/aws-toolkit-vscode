@@ -83,10 +83,12 @@ object IdeVersions {
             ultimatePlugins = listOf(
                 "JavaScript",
                 // Transitive dependency needed for javascript
+                // Can remove when https://github.com/JetBrains/gradle-intellij-plugin/issues/608 is fixed
                 "com.intellij.css",
                 "JavaScriptDebugger",
                 "com.intellij.database",
-                "Pythonid:211.6085.26"
+                "Pythonid:211.6085.26",
+                "org.jetbrains.plugins.go:211.6085.26"
             ),
             riderSdkOverride = "2021.1-SNAPSHOT",
             ijSdkOverride = "211.6085-EAP-CANDIDATE-SNAPSHOT",

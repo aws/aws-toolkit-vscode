@@ -5,13 +5,15 @@ package software.aws.toolkits.jetbrains.services.lambda.go
 
 import com.fasterxml.jackson.module.kotlin.jacksonObjectMapper
 import com.fasterxml.jackson.module.kotlin.readValue
+import com.goide.vgo.VgoTestUtil
 import com.intellij.execution.executors.DefaultDebugExecutor
-import com.intellij.openapi.module.ModuleType
+import com.intellij.openapi.application.ApplicationInfo
+import com.intellij.openapi.module.WebModuleTypeBase
 import com.intellij.testFramework.PsiTestUtil
 import com.intellij.testFramework.fixtures.CodeInsightTestFixture
 import com.intellij.testFramework.runInEdtAndWait
 import org.assertj.core.api.Assertions.assertThat
-import org.junit.Assume.assumeTrue
+import org.junit.Assume.assumeFalse
 import org.junit.Before
 import org.junit.Rule
 import org.junit.Test
@@ -25,10 +27,12 @@ import software.aws.toolkits.jetbrains.core.credentials.MockCredentialManagerRul
 import software.aws.toolkits.jetbrains.core.credentials.MockCredentialsManager
 import software.aws.toolkits.jetbrains.core.region.getDefaultRegion
 import software.aws.toolkits.jetbrains.services.lambda.execution.local.createHandlerBasedRunConfiguration
+import software.aws.toolkits.jetbrains.utils.UltimateTestUtils
 import software.aws.toolkits.jetbrains.utils.checkBreakPointHit
 import software.aws.toolkits.jetbrains.utils.executeRunConfigurationAndWait
 import software.aws.toolkits.jetbrains.utils.rules.HeavyGoCodeInsightTestFixtureRule
 import software.aws.toolkits.jetbrains.utils.rules.addGoModFile
+import software.aws.toolkits.jetbrains.utils.samImageRunDebugTest
 import software.aws.toolkits.jetbrains.utils.setSamExecutableFromEnvironment
 
 @RunWith(Parameterized::class)
@@ -96,10 +100,19 @@ class GoLocalRunConfigurationIntegrationTest(private val runtime: LambdaRuntime)
     @Before
     fun setUp() {
         setSamExecutableFromEnvironment()
+        UltimateTestUtils.ensureBuiltInServerStarted()
 
         val fixture = projectRule.fixture
 
-        PsiTestUtil.addModule(projectRule.project, ModuleType.EMPTY, "main", fixture.tempDirFixture.findOrCreateDir("."))
+        PsiTestUtil.addModule(projectRule.project, WebModuleTypeBase.getInstance(), "main", fixture.tempDirFixture.findOrCreateDir("."))
+        projectRule.fixture.addGoModFile("hello-world")
+
+        // This block does 2 things:
+        // 1. sets up vgo support which is required for sam cli
+        // 2. Makes VgoDlvPositionConverter#toRemotePath work so we can set breakpoints
+        runInEdtAndWait {
+            VgoTestUtil.setupVgoIntegration(fixture)
+        }
 
         credentialManager.addCredentials(mockId, mockCreds)
     }
@@ -107,7 +120,6 @@ class GoLocalRunConfigurationIntegrationTest(private val runtime: LambdaRuntime)
     @Test
     fun sessionCredentialsArePassed() {
         projectRule.fixture.addLambdaFile(envVarsFileContents)
-        projectRule.fixture.addGoModFile("hello-world")
 
         val mockSessionId = "mockSessionId"
         val mockSessionCreds = AwsSessionCredentials.create("access", "secret", "session")
@@ -135,7 +147,6 @@ class GoLocalRunConfigurationIntegrationTest(private val runtime: LambdaRuntime)
     @Test
     fun samIsExecuted() {
         projectRule.fixture.addLambdaFile(envVarsFileContents)
-        projectRule.fixture.addGoModFile("hello-world")
 
         val envVars = mutableMapOf("Foo" to "Bar", "Bat" to "Baz")
 
@@ -170,11 +181,9 @@ class GoLocalRunConfigurationIntegrationTest(private val runtime: LambdaRuntime)
 
     @Test
     fun samIsExecutedWithDebugger() {
-        // TODO enable when go debugging is fixed on sam cli public release
-        // see: https://github.com/aws/aws-sam-cli/issues/2462
-        assumeTrue(false)
+        // only run this test on > 2020.1. FIX_WHEN_MIN_IS_202
+        assumeFalse(ApplicationInfo.getInstance().let { info -> (info.majorVersion == "2020" && info.minorVersionMainPart == "1") })
         projectRule.fixture.addLambdaFile(fileContents)
-        projectRule.fixture.addGoModFile("hello-world")
 
         val runConfiguration = createHandlerBasedRunConfiguration(
             project = projectRule.project,
@@ -192,9 +201,38 @@ class GoLocalRunConfigurationIntegrationTest(private val runtime: LambdaRuntime)
         val executeLambda = executeRunConfigurationAndWait(runConfiguration, DefaultDebugExecutor.EXECUTOR_ID)
 
         assertThat(executeLambda.exitCode).isEqualTo(0)
-        assertThat(executeLambda.stdout).contains(input.toUpperCase())
+        // TODO checking stdout doesn't work on sam cli 1.18.1
+        // assertThat(executeLambda.stdout).contains(input.toUpperCase())
 
-        assertThat(debuggerIsHit.get()).isTrue()
+        assertThat(debuggerIsHit.get()).isTrue
+    }
+
+    @Test
+    fun samIsExecutedImage(): Unit = samImageRunDebugTest(
+        projectRule = projectRule,
+        relativePath = "samProjects/image/$runtime",
+        sourceFileName = "main.go",
+        runtime = runtime,
+        mockCredentialsId = mockId,
+        input = input,
+        expectedOutput = input.toUpperCase()
+    )
+
+    @Test
+    fun samIsExecutedWithDebuggerImage() {
+        // only run this test on > 2020.1
+        assumeFalse(ApplicationInfo.getInstance().let { info -> (info.majorVersion == "2020" && info.minorVersionMainPart == "1") })
+        samImageRunDebugTest(
+            projectRule = projectRule,
+            relativePath = "samProjects/image/$runtime",
+            sourceFileName = "main.go",
+            runtime = runtime,
+            mockCredentialsId = mockId,
+            input = input,
+            // TODO skip this for now because it doesn't work on SAM cli 1.18.1
+            expectedOutput = null,
+            addBreakpoint = { projectRule.addBreakpoint() }
+        )
     }
 
     private fun jsonToMap(data: String) = jacksonObjectMapper().readValue<Map<String, String>>(data)

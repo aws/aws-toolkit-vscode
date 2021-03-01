@@ -73,8 +73,7 @@ suspend fun createGoDebugProcess(
                                 // Delve takes quite a while to start in the sam cli images hence long sleep
                                 // See https://youtrack.jetbrains.com/issue/GO-10279
                                 // TODO revisit this to see if higher IDE versions help FIX_WHEN_MIN_IS_211 (?)
-                                // 2000 is what JB uses in this scenario, so use it as our default
-                                delay(Registry.intValue("aws.sam.goDebuggerDelay", 2000).toLong())
+                                delay(Registry.intValue("aws.sam.goDebuggerDelay", 5000).toLong())
                                 process.connect(socketAddress)
                             }
                         }

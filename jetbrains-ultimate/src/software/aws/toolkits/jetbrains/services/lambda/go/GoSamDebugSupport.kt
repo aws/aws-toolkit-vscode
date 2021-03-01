@@ -22,6 +22,6 @@ class GoSamDebugSupport : RuntimeDebugSupport {
         add("--debugger-path")
         add(debugger)
         add("--debug-args")
-        add("-delveApi=2")
+        add("-delveAPI=2")
     }
 }
