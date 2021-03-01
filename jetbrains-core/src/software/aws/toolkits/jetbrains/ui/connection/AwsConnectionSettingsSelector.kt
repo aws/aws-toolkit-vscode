@@ -16,14 +16,20 @@ import javax.swing.event.PopupMenuEvent
 
 class AwsConnectionSettingsSelector(
     project: Project?,
-    private val settingsChangedListener: (ConnectionSettings?) -> Unit = { _ -> }
+    serviceId: String? = null,
+    private val settingsChangedListener: (ConnectionSettings?) -> Unit = { _ -> },
 ) {
     private val regionProvider = AwsRegionProvider.getInstance()
     private val credentialManager = CredentialManager.getInstance()
     val view = AwsConnectionSettings()
 
     init {
-        view.region.setRegions(regionProvider.allRegions().values.toMutableList())
+        val regions = if (serviceId != null) {
+            regionProvider.allRegionsForService(serviceId).values.toMutableList()
+        } else {
+            regionProvider.allRegions().values.toMutableList()
+        }
+        view.region.setRegions(regions)
         view.credentialProvider.setCredentialsProviders(credentialManager.getCredentialIdentifiers())
 
         // nullable; unfortunately we can't rely on connection manager instance being retrievable from the default project

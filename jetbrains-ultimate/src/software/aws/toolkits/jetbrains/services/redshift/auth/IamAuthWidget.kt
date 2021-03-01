@@ -11,6 +11,7 @@ import com.intellij.database.dataSource.url.ui.UrlPropertiesPanel
 import com.intellij.ui.components.JBLabel
 import com.intellij.ui.components.JBTextField
 import org.jetbrains.annotations.TestOnly
+import software.amazon.awssdk.services.redshift.RedshiftClient
 import software.aws.toolkits.jetbrains.services.redshift.RedshiftUtils
 import software.aws.toolkits.jetbrains.ui.AwsAuthWidget
 import software.aws.toolkits.resources.message
@@ -23,6 +24,7 @@ class IamAuthWidget : AwsAuthWidget() {
 
     override val rowCount = 4
     override fun getRegionFromUrl(url: String?): String? = RedshiftUtils.extractRegionFromUrl(url)
+    override val serviceId: String = RedshiftClient.SERVICE_NAME
 
     override fun createPanel(): JPanel {
         val panel = super.createPanel()

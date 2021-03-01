@@ -22,6 +22,7 @@ import com.intellij.refactoring.listeners.RefactoringElementListener
 import com.intellij.util.PathMappingSettings.PathMapping
 import com.intellij.util.text.SemVer
 import org.jetbrains.concurrency.isPending
+import software.amazon.awssdk.services.lambda.LambdaClient
 import software.amazon.awssdk.services.lambda.model.Runtime
 import software.aws.toolkits.core.lambda.LambdaRuntime
 import software.aws.toolkits.core.lambda.validOrNull
@@ -74,7 +75,7 @@ class LocalLambdaRunConfiguration(project: Project, factory: ConfigurationFactor
         val group = SettingsEditorGroup<LocalLambdaRunConfiguration>()
         group.addEditor(ExecutionBundle.message("run.configuration.configuration.tab.title"), LocalLambdaRunSettingsEditor(project))
         group.addEditor(message("lambda.run_configuration.sam"), SamSettingsEditor())
-        group.addAwsConnectionEditor(AwsConnectionSettingsEditor(project))
+        group.addAwsConnectionEditor(AwsConnectionSettingsEditor(project, LambdaClient.SERVICE_NAME))
         return group
     }
 

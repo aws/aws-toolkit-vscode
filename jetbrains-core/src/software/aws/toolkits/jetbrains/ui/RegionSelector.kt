@@ -37,7 +37,11 @@ class RegionSelector : ComboBox<AwsRegion>() {
     var selectedRegion: AwsRegion?
         get() = selected()
         set(value) {
-            selectedItem = value
+            selectedItem = if (comboBoxModel.items.contains(value)) {
+                value
+            } else {
+                null
+            }
         }
 
     private companion object {
