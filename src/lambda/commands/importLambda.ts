@@ -190,8 +190,6 @@ async function downloadAndUnzipLambda(
         if (!val) {
             throw zipErr
         }
-    } catch (e) {
-        throw new ImportError()
     } finally {
         tryRemoveFolder(tempDir)
     }
@@ -251,5 +249,3 @@ function computeLambdaRoot(lambdaLocation: string, functionNode: LambdaFunctionN
 
     return lambdaIndex > -1 ? normalizedLocation.substr(0, lambdaIndex) : path.dirname(normalizedLocation)
 }
-
-class ImportError extends Error {}
