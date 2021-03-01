@@ -185,7 +185,6 @@ subprojects {
 
         retry {
             failOnPassedAfterRetry.set(false)
-            // If there are 5 failures, don't even attempt a retry
             maxFailures.set(5)
             maxRetries.set(2)
         }
@@ -227,6 +226,12 @@ subprojects {
         systemProperty("testDataPath", project.rootDir.toPath().resolve("testdata").toString())
 
         mustRunAfter(tasks.test)
+
+        retry {
+            failOnPassedAfterRetry.set(false)
+            maxFailures.set(5)
+            maxRetries.set(2)
+        }
     }
 
     project.plugins.withId("org.jetbrains.intellij") {
