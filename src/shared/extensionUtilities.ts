@@ -86,7 +86,7 @@ export function getIdeProperties(): IdeProperties {
  * Returns whether or not this is Cloud9
  */
 export function isCloud9(): boolean {
-    const settings = new DefaultSettingsConfiguration('aws-debug')
+    const settings = new DefaultSettingsConfiguration('aws')
 
     return getIdeType() === IDE.cloud9 || !!settings.readSetting<boolean>('forceCloud9', false)
 }
