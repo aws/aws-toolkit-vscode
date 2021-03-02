@@ -10,20 +10,25 @@ import com.intellij.openapi.actionSystem.PlatformDataKeys
 import com.intellij.openapi.application.ApplicationManager
 import com.intellij.openapi.application.runInEdt
 import com.intellij.openapi.application.runReadAction
+import com.intellij.openapi.fileChooser.FileChooser
+import com.intellij.openapi.fileChooser.FileChooserDescriptorFactory
 import com.intellij.openapi.fileEditor.FileDocumentManager
 import com.intellij.openapi.module.ModuleUtil
 import com.intellij.openapi.project.Project
+import com.intellij.openapi.project.guessProjectDir
 import com.intellij.openapi.roots.ModuleRootManager
 import com.intellij.openapi.vfs.VirtualFile
 import icons.AwsIcons
 import kotlinx.coroutines.runBlocking
 import kotlinx.coroutines.withContext
+import org.jetbrains.yaml.YAMLFileType
 import software.amazon.awssdk.services.cloudformation.CloudFormationClient
 import software.aws.toolkits.jetbrains.core.awsClient
 import software.aws.toolkits.jetbrains.core.credentials.AwsConnectionManager
 import software.aws.toolkits.jetbrains.core.executables.ExecutableInstance
 import software.aws.toolkits.jetbrains.core.executables.ExecutableManager
 import software.aws.toolkits.jetbrains.core.executables.getExecutable
+import software.aws.toolkits.jetbrains.core.explorer.ExplorerToolWindow
 import software.aws.toolkits.jetbrains.core.explorer.refreshAwsTree
 import software.aws.toolkits.jetbrains.services.cloudformation.describeStack
 import software.aws.toolkits.jetbrains.services.cloudformation.executeChangeSetAndWait
@@ -67,21 +72,30 @@ class DeployServerlessApplicationAction : AnAction(
         }
 
         ExecutableManager.getInstance().getExecutable<SamExecutable>().thenAccept { samExecutable ->
-            when (samExecutable) {
-                is ExecutableInstance.InvalidExecutable, is ExecutableInstance.UnresolvedExecutable -> {
-                    notifySamCliNotValidError(
-                        project = project,
-                        content = (samExecutable as ExecutableInstance.BadExecutable).validationError
-                    )
-                    return@thenAccept
-                }
+            if (samExecutable is ExecutableInstance.InvalidExecutable || samExecutable is ExecutableInstance.UnresolvedExecutable) {
+                notifySamCliNotValidError(
+                    project = project,
+                    content = (samExecutable as ExecutableInstance.BadExecutable).validationError
+                )
+                return@thenAccept
             }
 
-            val templateFile = getSamTemplateFile(e)
-            if (templateFile == null) {
-                Exception(message("serverless.application.deploy.toast.template_file_failure"))
-                    .notifyError(message("aws.notification.title"), project)
-                return@thenAccept
+            val templateFile = if (e.place == ExplorerToolWindow.explorerToolWindowPlace) {
+                runBlocking(edtContext) {
+                    FileChooser.chooseFile(
+                        FileChooserDescriptorFactory.createSingleFileDescriptor(YAMLFileType.YML),
+                        project,
+                        project.guessProjectDir()
+                    )
+                } ?: return@thenAccept
+            } else {
+                val file = getSamTemplateFile(e)
+                if (file == null) {
+                    Exception(message("serverless.application.deploy.toast.template_file_failure"))
+                        .notifyError(message("aws.notification.title"), project)
+                    return@thenAccept
+                }
+                file
             }
 
             validateTemplateFile(project, templateFile)?.let {
@@ -196,7 +210,11 @@ class DeployServerlessApplicationAction : AnAction(
         e.presentation.isVisible = if (LambdaHandlerResolver.supportedRuntimeGroups().isEmpty()) {
             false
         } else {
-            getSamTemplateFile(e) != null
+            if (e.place == ExplorerToolWindow.explorerToolWindowPlace) {
+                true
+            } else {
+                getSamTemplateFile(e) != null
+            }
         }
     }
 
