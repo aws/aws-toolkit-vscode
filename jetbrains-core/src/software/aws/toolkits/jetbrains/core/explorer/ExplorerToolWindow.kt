@@ -224,7 +224,7 @@ class ExplorerToolWindow(project: Project) : SimpleToolWindowPanel(true, true), 
 
                     val actionGroup = DefaultActionGroup(totalActions)
                     if (actionGroup.childrenCount > 0) {
-                        val popupMenu = actionManager.createActionPopupMenu("ExplorerToolWindow", actionGroup)
+                        val popupMenu = actionManager.createActionPopupMenu(explorerToolWindowPlace, actionGroup)
                         popupMenu.component.show(comp, x, y)
                     }
                 }
@@ -304,6 +304,7 @@ class ExplorerToolWindow(project: Project) : SimpleToolWindowPanel(true, true), 
 
     companion object {
         fun getInstance(project: Project): ExplorerToolWindow = ServiceManager.getService(project, ExplorerToolWindow::class.java)
+        const val explorerToolWindowPlace = "ExplorerToolWindow"
     }
 }
 
