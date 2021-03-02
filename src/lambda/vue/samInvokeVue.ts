@@ -22,17 +22,18 @@ interface VueDataLaunchPropertyObject {
 export interface SamInvokeVueData {
     msg: any
     showAllFields: boolean
-    jsonError: string
-    envVarsJsonError: string
     targetTypes: { [k: string]: string }[]
     runtimes: string[]
     httpMethods: string[]
     launchConfig: MorePermissiveAwsSamDebuggerConfiguration
     payload: VueDataLaunchPropertyObject
+    apiPayload: VueDataLaunchPropertyObject
     environmentVariables: VueDataLaunchPropertyObject
     headers: VueDataLaunchPropertyObject
     stageVariables: VueDataLaunchPropertyObject
     parameters: VueDataLaunchPropertyObject
+    containerBuildStr: string
+    skipNewImageCheckStr: string
 }
 
 function newLaunchConfig(existingConfig?: AwsSamDebuggerConfiguration): MorePermissiveAwsSamDebuggerConfiguration {
@@ -79,7 +80,7 @@ function newLaunchConfig(existingConfig?: AwsSamDebuggerConfiguration): MorePerm
         },
         api: {
             path: '',
-            httpMethod: 'get',
+            httpMethod: undefined,
             clientCertificateId: '',
             querystring: '',
             headers: {},
@@ -126,6 +127,16 @@ export const Component = Vue.extend({
                     if (event.data.launchConfig.api?.stageVariables) {
                         this.stageVariables.value = JSON.stringify(event.data.launchConfig.api?.stageVariables)
                     }
+                    if (event.data.launchConfig.sam?.containerBuild === true) {
+                        this.containerBuildStr = 'True'
+                    } else if (event.data.launchConfig.sam?.containerBuild === false) {
+                        this.containerBuildStr = 'False'
+                    }
+                    if (event.data.launchConfig.sam?.skipNewImageCheck === true) {
+                        this.skipNewImageCheckStr = 'True'
+                    } else if (event.data.launchConfig.sam?.skipNewImageCheck === false) {
+                        this.skipNewImageCheckStr = 'False'
+                    }
                     this.msg = `Loaded config ${event.data.launchConfig.name}`
                     break
             }
@@ -135,13 +146,13 @@ export const Component = Vue.extend({
         return {
             msg: 'Hello',
             showAllFields: false,
-            jsonError: '',
-            envVarsJsonError: '',
             targetTypes: [
                 { name: 'Code', value: 'code' },
                 { name: 'Template', value: 'template' },
                 { name: 'API Gateway (Template)', value: 'api' },
             ],
+            containerBuildStr: '',
+            skipNewImageCheckStr: '',
             runtimes: [
                 'nodejs10.x',
                 'nodejs12.x',
@@ -156,6 +167,7 @@ export const Component = Vue.extend({
             httpMethods: ['GET', 'POST', 'PUT', 'DELETE', 'HEAD', 'OPTIONS', 'PATCH'],
             launchConfig: newLaunchConfig(),
             payload: {value: '', errorMsg: ''},
+            apiPayload: {value: '', errorMsg: ''},
             environmentVariables: {value: '', errorMsg: ''},
             parameters: {value: '', errorMsg: ''},
             headers: {value: '', errorMsg: ''},
@@ -214,6 +226,13 @@ export const Component = Vue.extend({
         toggleShowAllFields() {
             this.showAllFields = !this.showAllFields
         },
+        stringToBoolean(field: string){
+            if (field === "True") {
+                return true
+            } else if (field === "False") {
+                return false
+            }
+        },
         formatFieldToStringArray(field: string | undefined) {
             if(!field){
                 return undefined
@@ -236,7 +255,7 @@ export const Component = Vue.extend({
         formatDataAndExecute(command: 'saveLaunchConfig' | 'invokeLaunchConfig') {
             this.resetJsonErrors()
 
-            let payloadJson, environmentVariablesJson, headersJson, stageVariablesJson, parametersJson 
+            let payloadJson, environmentVariablesJson, headersJson, stageVariablesJson, parametersJson, apiPayloadJson
 
             try {
             payloadJson = this.formatStringtoJSON(this.payload)
@@ -244,6 +263,7 @@ export const Component = Vue.extend({
             headersJson = this.formatStringtoJSON(this.headers)
             stageVariablesJson = this.formatStringtoJSON(this.stageVariables)
             parametersJson = this.formatStringtoJSON(this.parameters)
+            apiPayloadJson = this.formatStringtoJSON(this.apiPayload)
             } catch {
                 return
             }  
@@ -260,13 +280,13 @@ export const Component = Vue.extend({
                                 json: payloadJson,
                             },
                             environmentVariables: environmentVariablesJson,
-                            // timeoutSec: (this.launchConfig.lambda?.timeoutSec ? parseInt(this.launchConfig.lambda.timeoutSec) : undefined),
-                            // memoryMb: (this.launchConfig.lambda?.memoryMb ? parseInt(this.launchConfig.lambda.memoryMb) : undefined)
                         },
                         sam: {
                             ...this.launchConfig.sam,
                             buildArguments: this.formatFieldToStringArray(this.launchConfig.sam?.buildArguments?.toString()),
                             localArguments: this.formatFieldToStringArray(this.launchConfig.sam?.localArguments?.toString()),
+                            containerBuild: this.stringToBoolean(this.containerBuildStr),
+                            skipNewImageCheck: this.stringToBoolean(this.skipNewImageCheckStr),
                             template: {
                                 parameters: parametersJson
                             }
@@ -275,6 +295,9 @@ export const Component = Vue.extend({
                             ...this.launchConfig.api,
                             headers: headersJson,
                             stageVariables: stageVariablesJson,
+                            payload: {
+                                json: apiPayloadJson
+                            }
                         } : undefined
                     },
                 },
@@ -383,6 +406,7 @@ export const Component = Vue.extend({
                 <div class="config-item">
                     <label for="http-method-selector">HTTP Method</label>
                     <select name="http-method"  v-model="launchConfig.api.httpMethod">
+                        <option disabled>Choose an HTTP Method</option>
                         <option v-for="(method, index) in httpMethods" v-bind:value="method.toLowerCase()" :key="index">
                             {{ method }}
                         </option>
@@ -418,11 +442,11 @@ export const Component = Vue.extend({
                 </div>
                 <div class="config-item">
                     <label for="memory">Memory (MB)</label>
-                    <input type="number" v-model="launchConfig.lambda.memoryMb" >
+                    <input type="number" v-model.number="launchConfig.lambda.memoryMb" >
                 </div>
                 <div class="config-item">
                     <label for="timeoutSec">Timeout (s)</label>
-                    <input type="number" v-model="launchConfig.lambda.timeoutSec" >
+                    <input type="number" v-model.number="launchConfig.lambda.timeoutSec" >
                 </div>
                 <!-- <div class="config-item">
                     <label for="pathMappings">Path Mappings</label>
@@ -435,9 +459,9 @@ export const Component = Vue.extend({
                 </div>
                 <div class="config-item">
                     <label for="containerBuild">Container Build</label>
-                    <select name="containerBuild" id="containerBuild" v-model="launchConfig.sam.containerBuild">
-                        <option v-bind:value=false :key="0">False</option>
-                        <option v-bind:value=true :key="1">True</option>
+                    <select name="containerBuild" id="containerBuild" v-model="containerBuildStr">
+                        <option value="False" :key="0">False</option>
+                        <option value="True" :key="1">True</option>
                     </select>
                 </div>
                 <div class="config-item">
@@ -450,9 +474,9 @@ export const Component = Vue.extend({
                 </div>
                 <div class="config-item">
                     <label for="skipNewImageCheck">Skip New Image Check</label>
-                    <select name="skipNewImageCheck" id="skipNewImageCheck" v-model="launchConfig.sam.skipNewImageCheck">
-                        <option value=false :key="0">False</option>
-                        <option value=true :key="1">True</option>
+                    <select name="skipNewImageCheck" id="skipNewImageCheck" v-model="skipNewImageCheckStr">
+                        <option value="False" :key="0">False</option>
+                        <option value="True" :key="1">True</option>
                     </select>
                 </div>
                 <div class="config-item">
@@ -474,6 +498,11 @@ export const Component = Vue.extend({
                     <label for="clientCerificateId">Client Certificate ID</label>
                     <input type="text" v-model="launchConfig.api.clientCerificateId" >
                 </div>
+                <div class="config-item">
+                    <label for="apiPayload">API Payload</label>
+                    <input type="text" v-model="apiPayload.value" placeholder="Enter as valid JSON">
+                    <div class="json-parse-error" v-if="apiPayload.errorMsg">Error parsing JSON: {{apiPayload.errorMsg}}</div>
+                </div>
             </div>
         </div>
         <div class="payload-section">
@@ -491,7 +520,6 @@ export const Component = Vue.extend({
         </div>
     </form>
 </template>
-
 `
 ,
 })

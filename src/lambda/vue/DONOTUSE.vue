@@ -99,6 +99,7 @@
                 <div class="config-item">
                     <label for="http-method-selector">HTTP Method</label>
                     <select name="http-method"  v-model="launchConfig.api.httpMethod">
+                        <option disabled>Choose an HTTP Method</option>
                         <option v-for="(method, index) in httpMethods" v-bind:value="method.toLowerCase()" :key="index">
                             {{ method }}
                         </option>
@@ -134,11 +135,11 @@
                 </div>
                 <div class="config-item">
                     <label for="memory">Memory (MB)</label>
-                    <input type="number" v-model="launchConfig.lambda.memoryMb" >
+                    <input type="number" v-model.number="launchConfig.lambda.memoryMb" >
                 </div>
                 <div class="config-item">
                     <label for="timeoutSec">Timeout (s)</label>
-                    <input type="number" v-model="launchConfig.lambda.timeoutSec" >
+                    <input type="number" v-model.number="launchConfig.lambda.timeoutSec" >
                 </div>
                 <!-- <div class="config-item">
                     <label for="pathMappings">Path Mappings</label>
@@ -151,9 +152,9 @@
                 </div>
                 <div class="config-item">
                     <label for="containerBuild">Container Build</label>
-                    <select name="containerBuild" id="containerBuild" v-model="launchConfig.sam.containerBuild">
-                        <option v-bind:value=false :key="0">False</option>
-                        <option v-bind:value=true :key="1">True</option>
+                    <select name="containerBuild" id="containerBuild" v-model="containerBuildStr">
+                        <option value="False" :key="0">False</option>
+                        <option value="True" :key="1">True</option>
                     </select>
                 </div>
                 <div class="config-item">
@@ -166,9 +167,9 @@
                 </div>
                 <div class="config-item">
                     <label for="skipNewImageCheck">Skip New Image Check</label>
-                    <select name="skipNewImageCheck" id="skipNewImageCheck" v-model="launchConfig.sam.skipNewImageCheck">
-                        <option value=false :key="0">False</option>
-                        <option value=true :key="1">True</option>
+                    <select name="skipNewImageCheck" id="skipNewImageCheck" v-model="skipNewImageCheckStr">
+                        <option value="False" :key="0">False</option>
+                        <option value="True" :key="1">True</option>
                     </select>
                 </div>
                 <div class="config-item">
@@ -189,6 +190,11 @@
                 <div class="config-item">
                     <label for="clientCerificateId">Client Certificate ID</label>
                     <input type="text" v-model="launchConfig.api.clientCerificateId" >
+                </div>
+                <div class="config-item">
+                    <label for="apiPayload">API Payload</label>
+                    <input type="text" v-model="apiPayload.value" placeholder="Enter as valid JSON">
+                    <div class="json-parse-error" v-if="apiPayload.errorMsg">Error parsing JSON: {{apiPayload.errorMsg}}</div>
                 </div>
             </div>
         </div>
