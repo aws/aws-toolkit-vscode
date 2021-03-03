@@ -24,7 +24,7 @@ export async function createBucketCommand(
     window = Window.vscode(),
     commands = Commands.vscode()
 ): Promise<void> {
-    getLogger().debug('CreateBucket called for %O', node)
+    getLogger().debug('CreateBucket called for: %O', node)
 
     const bucketName = await window.showInputBox({
         prompt: localize('AWS.s3.createBucket.prompt', 'Enter a new bucket name'),
@@ -38,17 +38,17 @@ export async function createBucketCommand(
         return
     }
 
-    getLogger().info(`Creating bucket ${bucketName}`)
+    getLogger().info(`Creating bucket: ${bucketName}`)
     try {
         const bucket = await node.createBucket({ bucketName })
 
-        getLogger().info('Successfully created bucket %O', bucket)
-        window.showInformationMessage(localize('AWS.s3.createBucket.success', 'Created bucket {0}', bucketName))
+        getLogger().info('Created bucket: %O', bucket)
+        window.showInformationMessage(localize('AWS.s3.createBucket.success', 'Created bucket: {0}', bucketName))
         telemetry.recordS3CreateBucket({ result: 'Succeeded' })
     } catch (e) {
         getLogger().error(`Failed to create bucket ${bucketName}: %O`, e)
         showErrorWithLogs(
-            localize('AWS.s3.createBucket.error.general', 'Failed to create bucket {0}', bucketName),
+            localize('AWS.s3.createBucket.error.general', 'Failed to create bucket: {0}', bucketName),
             window
         )
         telemetry.recordS3CreateBucket({ result: 'Failed' })
