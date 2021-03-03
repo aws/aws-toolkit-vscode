@@ -284,7 +284,7 @@ export class SamDebugConfigProvider implements vscode.DebugConfigurationProvider
         return undefined
     }
 
-    private async configResolver(
+    private async makeAndInvokeConfig(
         folder: vscode.WorkspaceFolder | undefined,
         config: AwsSamDebuggerConfiguration,
         token?: vscode.CancellationToken
