@@ -16,15 +16,16 @@ export class DefaultStsClient implements StsClient {
 
     public async getCallerIdentity(): Promise<STS.GetCallerIdentityResponse> {
         const sdkClient = await this.createSdkClient()
-
         const response = await sdkClient.getCallerIdentity().promise()
-
         return response
     }
 
     private async createSdkClient(): Promise<STS> {
         return await ext.sdkClientBuilder.createAndConfigureServiceClient(
-            options => new STS(options),
+            options => {
+                options.stsRegionalEndpoints = 'regional'
+                return new STS(options)
+            },
             this.credentials,
             this.regionCode
         )
