@@ -14,6 +14,7 @@ import {
     TemplateTargetProperties,
 } from './awsSamDebugConfiguration.gen'
 import { getLogger } from '../../logger'
+import { isCloud9 } from '../../extensionUtilities'
 
 export * from './awsSamDebugConfiguration.gen'
 
@@ -243,7 +244,11 @@ export function createApiAwsSamDebugConfig(
 
 function makeWorkspaceRelativePath(folder: vscode.WorkspaceFolder | undefined, target: string): string {
     if (vscode.workspace.workspaceFolders && vscode.workspace.workspaceFolders.length <= 1) {
-        return folder ? `\${workspaceFolder}/${getNormalizedRelativePath(folder.uri.fsPath, target)}` : target
+        return folder
+            ? isCloud9()
+                ? getNormalizedRelativePath(folder.uri.fsPath, target)
+                : `\${workspaceFolder}/${getNormalizedRelativePath(folder.uri.fsPath, target)}`
+            : target
     }
 
     return target

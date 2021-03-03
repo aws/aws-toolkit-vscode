@@ -252,11 +252,15 @@ export class SamDebugConfigProvider implements vscode.DebugConfigurationProvider
      * @param config User-provided config (from launch.json)
      * @param token  Cancellation token
      */
-    public resolveDebugConfiguration(
+    public async resolveDebugConfiguration(
         folder: vscode.WorkspaceFolder | undefined,
         config: AwsSamDebuggerConfiguration,
         token?: vscode.CancellationToken
-    ): vscode.ProviderResult<AwsSamDebuggerConfiguration> {
+    ): Promise<AwsSamDebuggerConfiguration | undefined> {
+        if (isCloud9()) {
+            await this.configResolver(folder, config, token)
+            return undefined
+        }
         return config
     }
 
@@ -282,6 +286,18 @@ export class SamDebugConfigProvider implements vscode.DebugConfigurationProvider
         await this.invokeConfig(resolvedConfig)
         // TODO: return config here, and remove use of `startDebugging()` in `localLambdaRunner.ts`.
         return undefined
+    }
+
+    private async configResolver(
+        folder: vscode.WorkspaceFolder | undefined,
+        config: AwsSamDebuggerConfiguration,
+        token?: vscode.CancellationToken
+    ): Promise<undefined> {
+        const resolvedConfig = await this.makeConfig(folder, config, token)
+        if (!resolvedConfig) {
+            return undefined
+        }
+        await this.invokeConfig(resolvedConfig)
     }
 
     /**
