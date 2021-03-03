@@ -246,20 +246,35 @@ export class SamDebugConfigProvider implements vscode.DebugConfigurationProvider
     }
 
     /**
+     * Necessary to get the debug configuration over to the resolveDebugConfigurationWithSubstitutedVariables function below
+     *
+     * @param folder Workspace folder
+     * @param config User-provided config (from launch.json)
+     * @param token  Cancellation token
+     */
+    public resolveDebugConfiguration(
+        folder: vscode.WorkspaceFolder | undefined,
+        config: AwsSamDebuggerConfiguration,
+        token?: vscode.CancellationToken
+    ): vscode.ProviderResult<AwsSamDebuggerConfiguration> {
+        return config
+    }
+
+    /**
      * Generates a full run-config from a user-provided config, then
      * runs/debugs it (essentially `sam build` + `sam local invoke`).
      *
      * If `launch.json` is missing, attempts to generate a config dynamically.
      *
-     * @param folder  Workspace folder
+     * @param folder Workspace folder
      * @param config User-provided config (from launch.json)
      * @param token  Cancellation token
      */
-    public async resolveDebugConfiguration(
+    public async resolveDebugConfigurationWithSubstitutedVariables(
         folder: vscode.WorkspaceFolder | undefined,
         config: AwsSamDebuggerConfiguration,
         token?: vscode.CancellationToken
-    ): Promise<SamLaunchRequestArgs | undefined> {
+    ): Promise<undefined> {
         const resolvedConfig = await this.makeConfig(folder, config, token)
         if (!resolvedConfig) {
             return undefined
