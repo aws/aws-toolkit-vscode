@@ -245,7 +245,7 @@ export function createApiAwsSamDebugConfig(
 function makeWorkspaceRelativePath(folder: vscode.WorkspaceFolder | undefined, target: string): string {
     if (vscode.workspace.workspaceFolders && vscode.workspace.workspaceFolders.length <= 1) {
         return folder
-            ? isCloud9()
+            ? isCloud9()  // TODO: remove when Cloud9 supports ${workspaceFolder}.
                 ? getNormalizedRelativePath(folder.uri.fsPath, target)
                 : `\${workspaceFolder}/${getNormalizedRelativePath(folder.uri.fsPath, target)}`
             : target
