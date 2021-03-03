@@ -48,7 +48,7 @@ describe('addInitialLaunchConfiguration', function () {
                 request: 'direct-invoke',
                 invokeTarget: {
                     target: 'template',
-                    templatePath: '/test.yaml',
+                    templatePath: '${workspaceFolder}/test.yaml',
                     logicalId: 'resource',
                 },
             },
@@ -81,7 +81,8 @@ describe('addInitialLaunchConfiguration', function () {
             pathutils.areEqual(
                 fakeWorkspaceFolder.uri.fsPath,
                 (arg[0].invokeTarget as TemplateTargetProperties).templatePath,
-                tempTemplate.fsPath
+                tempTemplate.fsPath,
+                true
             )
         )
         assert.ok(launchConfigs)
@@ -89,7 +90,8 @@ describe('addInitialLaunchConfiguration', function () {
             return pathutils.areEqual(
                 fakeWorkspaceFolder.uri.fsPath,
                 (config.invokeTarget as TemplateTargetProperties).templatePath,
-                tempTemplate.fsPath
+                tempTemplate.fsPath,
+                true
             )
         })
         assert.ok(matchingConfigs)
@@ -117,7 +119,8 @@ describe('addInitialLaunchConfiguration', function () {
             pathutils.areEqual(
                 fakeWorkspaceFolder.uri.fsPath,
                 (arg[0].invokeTarget as TemplateTargetProperties).templatePath,
-                tempTemplate.fsPath
+                tempTemplate.fsPath,
+                true
             )
         )
         assert.ok(launchConfigs)
@@ -126,7 +129,8 @@ describe('addInitialLaunchConfiguration', function () {
                 pathutils.areEqual(
                     fakeWorkspaceFolder.uri.fsPath,
                     (config.invokeTarget as TemplateTargetProperties).templatePath,
-                    tempTemplate.fsPath
+                    tempTemplate.fsPath,
+                    true
                 ) && config.lambda?.runtime === 'someruntime'
             )
         })
