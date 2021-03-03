@@ -279,11 +279,7 @@ export class SamDebugConfigProvider implements vscode.DebugConfigurationProvider
         config: AwsSamDebuggerConfiguration,
         token?: vscode.CancellationToken
     ): Promise<undefined> {
-        const resolvedConfig = await this.makeConfig(folder, config, token)
-        if (!resolvedConfig) {
-            return undefined
-        }
-        await this.invokeConfig(resolvedConfig)
+        await this.configResolver(folder, config, token)
         // TODO: return config here, and remove use of `startDebugging()` in `localLambdaRunner.ts`.
         return undefined
     }
