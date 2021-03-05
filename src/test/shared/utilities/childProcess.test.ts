@@ -145,7 +145,7 @@ describe('ChildProcess', async () => {
             const childProcess = new ChildProcess(batchFile)
 
             const result = await childProcess.run()
-            
+
             assert.notStrictEqual(result.exitCode, 0)
             assert.notStrictEqual(result.error, undefined)
         })

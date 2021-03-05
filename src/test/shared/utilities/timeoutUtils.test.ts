@@ -106,6 +106,7 @@ describe('timeoutUtils', async () => {
     describe('waitUntil', async () => {
         const testSettings = {callCounter: 0, callGoal: 0, functionDelay: 10}
 
+        // Test function, increments a counter every time it is called
         async function testFunction(): Promise<number | undefined> {
             if (++testSettings.callCounter == testSettings.callGoal) {
                 return testSettings.callCounter
@@ -114,6 +115,7 @@ describe('timeoutUtils', async () => {
             }
         }
 
+        // Simple wrapper that waits until calling testFunction
         async function slowTestFunction(): Promise<number | undefined> {
             await new Promise(r => setTimeout(r, testSettings.functionDelay))
             return testFunction()

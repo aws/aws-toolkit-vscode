@@ -87,7 +87,7 @@ export class Timeout {
  *
  * @returns Result of `fn()`, or `undefined` if timeout was reached.
  */
- export async function waitUntil<T>(
+export async function waitUntil<T>(
     fn: () => Promise<T>,
     opt: { timeout: number; interval: number } = { timeout: 5000, interval: 500 }
 ): Promise<T | undefined> {
