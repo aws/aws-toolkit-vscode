@@ -12,6 +12,7 @@ import { ext } from '../shared/extensionGlobals'
 import { readFileAsString } from './filesystemUtilities'
 import { getLogger } from './logger'
 import { VSCODE_EXTENSION_ID, EXTENSION_ALPHA_VERSION } from './extensions'
+import { DefaultSettingsConfiguration } from './settingsConfiguration'
 
 const localize = nls.loadMessageBundle()
 
@@ -85,7 +86,9 @@ export function getIdeProperties(): IdeProperties {
  * Returns whether or not this is Cloud9
  */
 export function isCloud9(): boolean {
-    return getIdeType() === IDE.cloud9
+    const settings = new DefaultSettingsConfiguration('aws')
+
+    return getIdeType() === IDE.cloud9 || !!settings.readSetting<boolean>('forceCloud9', false)
 }
 
 export class ExtensionUtilities {

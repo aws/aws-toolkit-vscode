@@ -421,15 +421,15 @@ vscode.debug.onDidTerminateDebugSession(session => {
 function requestLocalApi(ctx: ExtContext, api: APIGatewayProperties, apiPort: number, payload: any): Promise<void> {
     return new Promise((resolve, reject) => {
         const reqMethod = api?.httpMethod?.toUpperCase() ?? 'GET'
+        const qs = (api?.querystring?.startsWith('?') ? '' : '?') + (api?.querystring ?? '')
         const reqOpts = {
             // Sets body to JSON value and adds Content-type: application/json header.
             json: true,
-            uri: `http://127.0.0.1:${apiPort}${api?.path}`,
+            uri: `http://127.0.0.1:${apiPort}${api?.path}${qs}`,
             method: reqMethod,
             timeout: 4000,
             headers: api?.headers,
             body: payload,
-            qs: api?.querystring,
             // TODO: api?.stageVariables,
         }
         getLogger('channel').info(

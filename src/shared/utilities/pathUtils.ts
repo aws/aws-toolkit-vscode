@@ -20,8 +20,18 @@ function isUncPath(path: string) {
  * @param logicalRoot Resolve relative paths against this directory
  * @param path1 Path to compare
  * @param path2 Path to compare
+ * @param stripLeadingVar Optionally strip leading VS Code launch config variables
  */
-export function areEqual(logicalRoot: string | undefined, path1: string, path2: string): boolean {
+export function areEqual(
+    logicalRoot: string | undefined,
+    path1: string,
+    path2: string,
+    stripLeadingVar: boolean = true
+): boolean {
+    if (stripLeadingVar) {
+        path1 = path1.replace(/^\${[a-zA-Z]{1,}}[\/\\]/, '')
+        path2 = path2.replace(/^\${[a-zA-Z]{1,}}[\/\\]/, '')
+    }
     const fullPath1 = _path.resolve(logicalRoot ? logicalRoot + '/' : '', path1)
     const fullPath2 = _path.resolve(logicalRoot ? logicalRoot + '/' : '', path2)
     const normalized1 = normalize(fullPath1)
