@@ -94,6 +94,7 @@ export async function waitUntil<T>(
     for (let i = 0; true; i++) {
         const start: number = Date.now()
         const result: T = await Promise.race([fn(), new Promise<T>(r => setTimeout(r, opt.timeout))])
+        // Ensures that we never overrun the timeout
         opt.timeout -= (Date.now() - start)
 
         if (result != undefined) {

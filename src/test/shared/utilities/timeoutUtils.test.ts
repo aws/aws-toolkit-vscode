@@ -146,6 +146,17 @@ describe('timeoutUtils', async () => {
             assert.strictEqual(returnValue, undefined)
         })
 
+        it('returns true/false values correctly', async () => {
+            assert.strictEqual(true, await timeoutUtils.waitUntil(async () => true, { timeout: 30, interval: 10 }))
+            assert.strictEqual(false, await timeoutUtils.waitUntil(async () => false, { timeout: 30, interval: 10 }))
+        })
+
+        it('timeout when function takes longer than timeout parameter', async () => {
+            testSettings.functionDelay = 100
+            const returnValue: number | undefined = await timeoutUtils.waitUntil(slowTestFunction, { timeout: 50, interval: 10 })
+            assert.strictEqual(returnValue, undefined)
+        })
+
         it('timeout from slow function calls', async () => {
             testSettings.callGoal = 10
             const returnValue: number | undefined = await timeoutUtils.waitUntil(slowTestFunction, { timeout: 50, interval: 10 })
