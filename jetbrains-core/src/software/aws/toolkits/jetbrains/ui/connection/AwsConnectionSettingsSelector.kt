@@ -78,7 +78,6 @@ class AwsConnectionSettingsSelector(
         if (regionId != null) {
             view.region.selectedRegion = regionProvider[regionId]
         }
-
         if (credentialProviderId == null) {
             return
         }
@@ -91,6 +90,7 @@ class AwsConnectionSettingsSelector(
         } catch (_: Exception) {
             view.credentialProvider.setSelectedInvalidCredentialsProvider(credentialProviderId)
         }
+        fireChange()
     }
 
     fun selectedCredentialProvider(): String? = view.credentialProvider.getSelectedCredentialsProvider()
