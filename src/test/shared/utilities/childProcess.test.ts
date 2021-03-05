@@ -311,7 +311,7 @@ describe('ChildProcess', async () => {
                 childProcess.stop()
                 await waitUntil(
                     async () => {
-                        return childProcess.stopped === true
+                        return (childProcess.stopped === true) ? true : undefined
                     },
                     { timeout: 1000, interval: 100 }
                 )
@@ -330,7 +330,7 @@ describe('ChildProcess', async () => {
                 childProcess.stop()
                 await waitUntil(
                     async () => {
-                        return childProcess.stopped === true
+                        return (childProcess.stopped === true) ? true : undefined
                     },
                     { timeout: 1000, interval: 100 }
                 )
@@ -355,7 +355,7 @@ describe('ChildProcess', async () => {
                 childProcess.stop()
                 await waitUntil(
                     async () => {
-                        return childProcess.stopped === true
+                        return (childProcess.stopped === true) ? true : undefined
                     },
                     { timeout: 1000, interval: 100 }
                 )
@@ -374,7 +374,7 @@ describe('ChildProcess', async () => {
                 childProcess.stop()
                 await waitUntil(
                     async () => {
-                        return childProcess.stopped === true
+                        return (childProcess.stopped === true) ? true : undefined
                     },
                     { timeout: 1000, interval: 100 }
                 )
