@@ -36,6 +36,7 @@ import software.aws.toolkits.jetbrains.services.cloudformation.stack.StackWindow
 import software.aws.toolkits.jetbrains.services.cloudformation.validateSamTemplateHasResources
 import software.aws.toolkits.jetbrains.services.lambda.LambdaHandlerResolver
 import software.aws.toolkits.jetbrains.services.lambda.deploy.DeployServerlessApplicationDialog
+import software.aws.toolkits.jetbrains.services.lambda.sam.SamCommon
 import software.aws.toolkits.jetbrains.services.lambda.sam.SamExecutable
 import software.aws.toolkits.jetbrains.services.lambda.upload.UploadFunctionContinueDialog
 import software.aws.toolkits.jetbrains.services.lambda.upload.steps.DeployLambda
@@ -110,7 +111,11 @@ class DeployServerlessApplicationAction : AnAction(
                 val stackDialog = DeployServerlessApplicationDialog(project, templateFile)
                 stackDialog.show()
                 if (!stackDialog.isOK) {
-                    SamTelemetry.deploy(project, Result.Cancelled)
+                    SamTelemetry.deploy(
+                        project = project,
+                        version = SamCommon.getVersionString(),
+                        result = Result.Cancelled
+                    )
                     return@runInEdt
                 }
 
@@ -156,7 +161,7 @@ class DeployServerlessApplicationAction : AnAction(
                     if (!response) {
                         // TODO this telemetry needs to be improved. The user can finish the deployment later so we do not know if
                         // it is actually cancelled or not
-                        SamTelemetry.deploy(project = project, result = Result.Cancelled)
+                        SamTelemetry.deploy(project = project, version = SamCommon.getVersionString(), result = Result.Cancelled)
                         return@runBlocking
                     }
                 }
@@ -178,12 +183,20 @@ class DeployServerlessApplicationAction : AnAction(
                             message("cloudformation.execute_change_set.success", stackName),
                             project
                         )
-                        SamTelemetry.deploy(project, Result.Succeeded)
+                        SamTelemetry.deploy(
+                            project = project,
+                            version = SamCommon.getVersionString(),
+                            result = Result.Succeeded
+                        )
                         // Since we could update anything, do a full refresh of the resource cache and explorer
                         project.refreshAwsTree()
                     } catch (e: Exception) {
                         e.notifyError(message("cloudformation.execute_change_set.failed", stackName), project)
-                        SamTelemetry.deploy(project, Result.Failed)
+                        SamTelemetry.deploy(
+                            project = project,
+                            version = SamCommon.getVersionString(),
+                            result = Result.Failed
+                        )
                     }
                 }
 
@@ -197,7 +210,11 @@ class DeployServerlessApplicationAction : AnAction(
 
         workflow.onError = {
             it.notifyError(project = project, title = message("lambda.service_name"))
-            SamTelemetry.deploy(project = project, result = Result.Failed)
+            SamTelemetry.deploy(
+                project = project,
+                version = SamCommon.getVersionString(),
+                result = Result.Failed
+            )
         }
 
         workflow.startExecution()
