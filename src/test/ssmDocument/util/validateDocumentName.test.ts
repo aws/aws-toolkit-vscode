@@ -6,7 +6,7 @@
 import * as assert from 'assert'
 import { validateDocumentName } from '../../../ssmDocument/util/validateDocumentName'
 
-describe('validateDocumenttName', () => {
+describe('validateDocumenttName', function() {
     const invalidErrors: { documentNames: string[]; error: string }[] = [
         { documentNames: [''], error: 'Document name cannot be empty' },
         {
@@ -22,7 +22,7 @@ describe('validateDocumenttName', () => {
             error: 'Document name length must be between 3 and 128 characters',
         },
     ]
-    it('returns undefined for a valid document name', () => {
+    it('returns undefined for a valid document name', function() {
         assert.strictEqual(validateDocumentName('Aaaaa'), undefined)
     })
 

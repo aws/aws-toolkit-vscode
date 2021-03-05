@@ -28,7 +28,7 @@ let mockAws: FakeAwsContext
 let mockPublisher: FakeTelemetryPublisher
 let service: DefaultTelemetryService
 
-beforeEach(() => {
+beforeEach(function() {
     mockContext = new FakeExtensionContext()
     mockAws = new FakeAwsContext()
     mockPublisher = new FakeTelemetryPublisher()
@@ -36,28 +36,28 @@ beforeEach(() => {
     ext.telemetry = service
 })
 
-afterEach(async () => {
+afterEach(async function() {
     // Remove the persist file as it is saved
     await fs.remove(ext.telemetry.persistFilePath)
     ext.telemetry = originalTelemetryClient
 })
 
-describe('DefaultTelemetryService', () => {
+describe('DefaultTelemetryService', function() {
     const testFlushPeriod = 10
     let clock: lolex.InstalledClock
     let sandbox: sinon.SinonSandbox
 
-    before(() => {
+    before(function() {
         sandbox = sinon.createSandbox()
         clock = lolex.install()
     })
 
-    after(() => {
+    after(function() {
         clock.uninstall()
         sandbox.restore()
     })
 
-    it('posts feedback', async () => {
+    it('posts feedback', async function() {
         service.telemetryEnabled = false
         const feedback = { comment: '', sentiment: '' }
         await service.postFeedback(feedback)
@@ -65,7 +65,7 @@ describe('DefaultTelemetryService', () => {
         assert.strictEqual(mockPublisher.feedback, feedback)
     })
 
-    it('publishes periodically if user has said ok', async () => {
+    it('publishes periodically if user has said ok', async function() {
         service.clearRecords()
         service.telemetryEnabled = true
         service.flushPeriod = testFlushPeriod
@@ -82,7 +82,7 @@ describe('DefaultTelemetryService', () => {
         assert.strictEqual(mockPublisher.enqueueCount, mockPublisher.flushCount)
     })
 
-    it('events automatically inject the active account id into the metadata', async () => {
+    it('events automatically inject the active account id into the metadata', async function() {
         const mockAwsWithIds = makeFakeAwsContextWithPlaceholderIds(({} as any) as AWS.Credentials)
         service = new DefaultTelemetryService(mockContext, mockAwsWithIds, undefined, mockPublisher)
         ext.telemetry = service
@@ -98,7 +98,7 @@ describe('DefaultTelemetryService', () => {
         assertMetadataContainsTestAccount(metricDatum, DEFAULT_TEST_ACCOUNT_ID)
     })
 
-    it('events with `session` namespace do not have an account tied to them', async () => {
+    it('events with `session` namespace do not have an account tied to them', async function() {
         service.clearRecords()
         service.telemetryEnabled = true
         service.flushPeriod = testFlushPeriod
@@ -119,7 +119,7 @@ describe('DefaultTelemetryService', () => {
         assertMetadataContainsTestAccount(shutdownEvent, AccountStatus.NotApplicable)
     })
 
-    it('events created with a bad active account produce metadata mentioning the bad account', async () => {
+    it('events created with a bad active account produce metadata mentioning the bad account', async function() {
         const mockAwsBad = ({
             getCredentialAccountId: () => 'this is bad!',
         } as any) as AwsContext
@@ -143,7 +143,7 @@ describe('DefaultTelemetryService', () => {
         assertMetadataContainsTestAccount(metricDatum, AccountStatus.Invalid)
     })
 
-    it('events created prior to signing in do not have an account attached', async () => {
+    it('events created prior to signing in do not have an account attached', async function() {
         service.clearRecords()
         service.telemetryEnabled = true
         service.flushPeriod = testFlushPeriod
@@ -162,7 +162,7 @@ describe('DefaultTelemetryService', () => {
         assertMetadataContainsTestAccount(metricDatum, AccountStatus.NotSet)
     })
 
-    it('events are never recorded if telemetry has been disabled', async () => {
+    it('events are never recorded if telemetry has been disabled', async function() {
         service.clearRecords()
         service.telemetryEnabled = false
         service.flushPeriod = testFlushPeriod

@@ -9,7 +9,7 @@ import { S3BucketNode } from '../../../s3/explorer/s3BucketNode'
 import { S3_DATE_FORMAT, S3FileNode } from '../../../s3/explorer/s3FileNode'
 import { S3Client } from '../../../shared/clients/s3Client'
 
-describe('S3FileNode', () => {
+describe('S3FileNode', function() {
     const arn = 'arn'
     const name = 'file.jpg'
     const key = 'path/to/file.jpg'
@@ -18,7 +18,7 @@ describe('S3FileNode', () => {
     const now = new Date(2020, 6, 4)
     const lastModifiedReadable = moment(lastModified).format(S3_DATE_FORMAT)
 
-    it('creates an S3 File Node', async () => {
+    it('creates an S3 File Node', async function() {
         const node = new S3FileNode(
             { name: 'bucket-name', region: 'region', arn: 'arn' },
             { name, key, arn, sizeBytes, lastModified },

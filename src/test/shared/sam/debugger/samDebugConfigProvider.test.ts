@@ -128,7 +128,7 @@ async function assertEqualNoDebugTemplateTarget(
     assertEqualLaunchConfigs(actualNoDebug, expectedNoDebug)
 }
 
-describe('SamDebugConfigurationProvider', async () => {
+describe('SamDebugConfigurationProvider', async function() {
     let debugConfigProvider: SamDebugConfigProvider
     let tempFolder: string
     let tempFolderSimilarName: string | undefined
@@ -139,7 +139,7 @@ describe('SamDebugConfigurationProvider', async () => {
     const resourceName = 'myResource'
     const mockedCredentials = new Credentials('access', 'secret', 'session')
 
-    beforeEach(async () => {
+    beforeEach(async function() {
         fakeContext = await FakeExtensionContext.getFakeExtContext()
         debugConfigProvider = new SamDebugConfigProvider(fakeContext)
         sandbox = sinon.createSandbox()
@@ -150,7 +150,7 @@ describe('SamDebugConfigurationProvider', async () => {
         tempFolderSimilarName = undefined
     })
 
-    afterEach(async () => {
+    afterEach(async function() {
         await remove(tempFolder)
         if (tempFolderSimilarName) {
             await remove(tempFolderSimilarName)
@@ -159,8 +159,8 @@ describe('SamDebugConfigurationProvider', async () => {
         sandbox.restore()
     })
 
-    describe('provideDebugConfig', async () => {
-        it('failure modes', async () => {
+    describe('provideDebugConfig', async function() {
+        it('failure modes', async function() {
             // No workspace folder:
             assert.deepStrictEqual(await debugConfigProvider.provideDebugConfigurations(undefined), [])
             // Workspace with no templates:
@@ -172,7 +172,7 @@ describe('SamDebugConfigurationProvider', async () => {
             assert.deepStrictEqual(await debugConfigProvider.provideDebugConfigurations(fakeWorkspaceFolder), [])
         })
 
-        it('Ignores non function type resources', async () => {
+        it('Ignores non function type resources', async function() {
             const bigYamlStr = `${makeSampleSamTemplateYaml(true)}\nTestResource2:\n .   Type: AWS::Serverless::Api`
 
             testutil.toFile(bigYamlStr, tempFile.fsPath)
@@ -181,7 +181,7 @@ describe('SamDebugConfigurationProvider', async () => {
             assert.strictEqual(provided!.length, 1)
         })
 
-        it('returns one item if a template with one resource is in the workspace', async () => {
+        it('returns one item if a template with one resource is in the workspace', async function() {
             testutil.toFile(makeSampleSamTemplateYaml(true), tempFile.fsPath)
             await ext.templateRegistry.addItemToRegistry(tempFile)
             const provided = await debugConfigProvider.provideDebugConfigurations(fakeWorkspaceFolder)
@@ -193,7 +193,7 @@ describe('SamDebugConfigurationProvider', async () => {
             )
         })
 
-        it('returns multiple items if a template with multiple resources is in the workspace', async () => {
+        it('returns multiple items if a template with multiple resources is in the workspace', async function() {
             const resources = ['resource1', 'resource2']
             const bigYamlStr = `${makeSampleSamTemplateYaml(true, {
                 resourceName: resources[0],
@@ -209,7 +209,7 @@ describe('SamDebugConfigurationProvider', async () => {
             }
         })
 
-        it('only detects the specifically targeted workspace folder (and its subfolders)', async () => {
+        it('only detects the specifically targeted workspace folder (and its subfolders)', async function() {
             const resources = ['resource1', 'resource2']
             const badResourceName = 'notIt'
 
@@ -239,7 +239,7 @@ describe('SamDebugConfigurationProvider', async () => {
             }
         })
 
-        it('Returns api function type resources as additional api configurations', async () => {
+        it('Returns api function type resources as additional api configurations', async function() {
             const bigYamlStr = `${makeSampleSamTemplateYaml(true)}
             Events:
                 HelloWorld2:
@@ -258,7 +258,7 @@ describe('SamDebugConfigurationProvider', async () => {
             assert.strictEqual(provided![1].api?.httpMethod, 'get')
         })
 
-        it('Ignores HttpApi events', async () => {
+        it('Ignores HttpApi events', async function() {
             const bigYamlStr = `${makeSampleSamTemplateYaml(true)}
             Events:
                 HelloWorld2:
@@ -272,8 +272,8 @@ describe('SamDebugConfigurationProvider', async () => {
         })
     })
 
-    describe('makeConfig', async () => {
-        it('failure modes', async () => {
+    describe('makeConfig', async function() {
+        it('failure modes', async function() {
             const config = await getConfig(
                 debugConfigProvider,
                 ext.templateRegistry,
@@ -329,7 +329,7 @@ describe('SamDebugConfigurationProvider', async () => {
             )
         })
 
-        it('returns undefined when resolving debug configurations with an invalid request type', async () => {
+        it('returns undefined when resolving debug configurations with an invalid request type', async function() {
             const resolved = await debugConfigProvider.makeConfig(undefined, {
                 type: AWS_SAM_DEBUG_TYPE,
                 name: 'whats in a name',
@@ -343,7 +343,7 @@ describe('SamDebugConfigurationProvider', async () => {
             assert.strictEqual(resolved, undefined)
         })
 
-        it('returns undefined when resolving debug configurations with an invalid target type', async () => {
+        it('returns undefined when resolving debug configurations with an invalid target type', async function() {
             const tgt = 'not-code' as 'code'
             const resolved = await debugConfigProvider.makeConfig(undefined, {
                 type: AWS_SAM_DEBUG_TYPE,
@@ -372,7 +372,7 @@ describe('SamDebugConfigurationProvider', async () => {
             assert.strictEqual(resolved, undefined)
         })
 
-        it('returns undefined when resolving template debug configurations with a resource that has an invalid runtime in template', async () => {
+        it('returns undefined when resolving template debug configurations with a resource that has an invalid runtime in template', async function() {
             await createAndRegisterYaml(
                 { resourceName, runtime: 'moreLikeRanOutOfTime' },
                 tempFile,
@@ -388,7 +388,7 @@ describe('SamDebugConfigurationProvider', async () => {
             assert.strictEqual(resolved, undefined)
         })
 
-        it('returns undefined when resolving template debug configurations with a resource that has an invalid runtime in template', async () => {
+        it('returns undefined when resolving template debug configurations with a resource that has an invalid runtime in template', async function() {
             testutil.toFile(
                 makeSampleSamTemplateYaml(true, { resourceName, runtime: 'moreLikeRanOutOfTime' }),
                 tempFile.fsPath
@@ -407,7 +407,7 @@ describe('SamDebugConfigurationProvider', async () => {
             assert.strictEqual(resolved, undefined)
         })
 
-        it('returns undefined when resolving code debug configurations with invalid runtimes', async () => {
+        it('returns undefined when resolving code debug configurations with invalid runtimes', async function() {
             const resolved = await debugConfigProvider.makeConfig(undefined, {
                 ...createBaseCodeConfig({}),
                 lambda: {
@@ -417,7 +417,7 @@ describe('SamDebugConfigurationProvider', async () => {
             assert.strictEqual(resolved, undefined)
         })
 
-        it('supports workspace-relative template path ("./foo.yaml")', async () => {
+        it('supports workspace-relative template path ("./foo.yaml")', async function() {
             testutil.toFile(makeSampleSamTemplateYaml(true, { runtime: 'nodejs12.x' }), tempFile.fsPath)
             // Register with *full* path.
             await ext.templateRegistry.addItemToRegistry(tempFile)
@@ -444,7 +444,7 @@ describe('SamDebugConfigurationProvider', async () => {
             assert.strictEqual(resolved!.name, name)
         })
 
-        it('target=code: javascript', async () => {
+        it('target=code: javascript', async function() {
             const appDir = pathutil.normalize(
                 path.join(testutil.getProjectDir(), 'testFixtures/workspaceFolder/js-manifest-in-root/')
             )
@@ -597,7 +597,7 @@ describe('SamDebugConfigurationProvider', async () => {
             assertEqualLaunchConfigs(actualNoDebug, expectedNoDebug)
         })
 
-        it('target=template: javascript', async () => {
+        it('target=template: javascript', async function() {
             const appDir = pathutil.normalize(
                 path.join(testutil.getProjectDir(), 'testFixtures/workspaceFolder/js-manifest-in-root')
             )
@@ -752,7 +752,7 @@ describe('SamDebugConfigurationProvider', async () => {
             assertEqualLaunchConfigs(actualNoDebug, expectedNoDebug)
         })
 
-        it('target=template: Image javascript', async () => {
+        it('target=template: Image javascript', async function() {
             const appDir = pathutil.normalize(
                 path.join(testutil.getProjectDir(), 'testFixtures/workspaceFolder/js-image-sam-app')
             )
@@ -915,7 +915,7 @@ Outputs:
             assertEqualNoDebugTemplateTarget(input, expected, folder, debugConfigProvider)
         })
 
-        it('target=api: javascript', async () => {
+        it('target=api: javascript', async function() {
             const appDir = pathutil.normalize(
                 path.join(testutil.getProjectDir(), 'testFixtures/workspaceFolder/js-manifest-in-root')
             )
@@ -1033,7 +1033,7 @@ Outputs:
             assertEqualNoDebugTemplateTarget(input, expected, folder, debugConfigProvider)
         })
 
-        it('target=code: dotnet/csharp', async () => {
+        it('target=code: dotnet/csharp', async function() {
             const appDir = pathutil.normalize(
                 path.join(testutil.getProjectDir(), 'testFixtures/workspaceFolder/csharp2.1-plain-sam-app/')
             )
@@ -1190,7 +1190,7 @@ Outputs:
             assertEqualLaunchConfigs(actualNoDebug, expectedNoDebug)
         })
 
-        it('target=template: dotnet/csharp', async () => {
+        it('target=template: dotnet/csharp', async function() {
             const appDir = pathutil.normalize(
                 path.join(testutil.getProjectDir(), 'testFixtures/workspaceFolder/csharp2.1-plain-sam-app')
             )
@@ -1389,7 +1389,7 @@ Outputs:
             assertEqualLaunchConfigs(actualNoDebug, expectedNoDebug)
         })
 
-        it('target=template: Image dotnet/csharp', async () => {
+        it('target=template: Image dotnet/csharp', async function() {
             const appDir = pathutil.normalize(
                 path.join(testutil.getProjectDir(), 'testFixtures/workspaceFolder/csharp2.1-image-sam-app')
             )
@@ -1605,7 +1605,7 @@ Outputs:
             assertEqualLaunchConfigs(actualNoDebug, expectedNoDebug)
         })
 
-        it('target=code: python 3.7', async () => {
+        it('target=code: python 3.7', async function() {
             const appDir = pathutil.normalize(
                 path.join(testutil.getProjectDir(), 'testFixtures/workspaceFolder/python3.7-plain-sam-app')
             )
@@ -1760,7 +1760,7 @@ Outputs:
             assertEqualLaunchConfigs(actualNoDebug, expectedNoDebug)
         })
 
-        it('target=template: python 3.7 (deep project tree)', async () => {
+        it('target=template: python 3.7 (deep project tree)', async function() {
             // To test a deeper tree, use "testFixtures/workspaceFolder/" as the root.
             const appDir = pathutil.normalize(path.join(testutil.getProjectDir(), 'testFixtures/workspaceFolder/'))
             const folder = testutil.getWorkspaceFolder(appDir)
@@ -1946,7 +1946,7 @@ Outputs:
             assertEqualNoDebugTemplateTarget(input, expected, folder, debugConfigProvider)
         })
 
-        it('target=api: python 3.7 (deep project tree)', async () => {
+        it('target=api: python 3.7 (deep project tree)', async function() {
             // Use "testFixtures/workspaceFolder/" as the project root to test
             // a deeper tree.
             const appDir = pathutil.normalize(path.join(testutil.getProjectDir(), 'testFixtures/workspaceFolder/'))
@@ -2112,7 +2112,7 @@ Outputs:
             assertEqualNoDebugTemplateTarget(input, expected, folder, debugConfigProvider)
         })
 
-        it('target=template: Image python 3.7', async () => {
+        it('target=template: Image python 3.7', async function() {
             // Use "testFixtures/workspaceFolder/" as the project root to test
             // a deeper tree.
             const appDir = pathutil.normalize(path.join(testutil.getProjectDir(), 'testFixtures/workspaceFolder/'))
@@ -2297,7 +2297,7 @@ Outputs:
             assertEqualLaunchConfigs(actualNoDebug, expectedNoDebug)
         })
 
-        it('target=code: ikpdb, python 3.7', async () => {
+        it('target=code: ikpdb, python 3.7', async function() {
             const appDir = pathutil.normalize(
                 path.join(testutil.getProjectDir(), 'testFixtures/workspaceFolder/python3.7-plain-sam-app')
             )
@@ -2410,7 +2410,7 @@ Outputs:
             assertEqualLaunchConfigs(actualNoDebug, expectedNoDebug)
         })
 
-        it('target=template: ikpdb, python 3.7 (deep project tree)', async () => {
+        it('target=template: ikpdb, python 3.7 (deep project tree)', async function() {
             // To test a deeper tree, use "testFixtures/workspaceFolder/" as the root.
             const appDir = pathutil.normalize(path.join(testutil.getProjectDir(), 'testFixtures/workspaceFolder/'))
             const folder = testutil.getWorkspaceFolder(appDir)
@@ -2568,7 +2568,7 @@ Outputs:
             assertEqualLaunchConfigs(actualNoDebug, expectedNoDebug)
         })
 
-        it('debugconfig with extraneous env vars', async () => {
+        it('debugconfig with extraneous env vars', async function() {
             const appDir = pathutil.normalize(
                 path.join(testutil.getProjectDir(), 'testFixtures/workspaceFolder/js-manifest-in-root/')
             )
@@ -2679,7 +2679,7 @@ Resources:
             )
         })
 
-        it('debugconfig with aws section', async () => {
+        it('debugconfig with aws section', async function() {
             const mockCredentialsStore: CredentialsStore = new CredentialsStore()
 
             const credentialsProvider: CredentialsProvider = {
@@ -2804,8 +2804,8 @@ Resources:
     })
 })
 
-describe('ensureRelativePaths', () => {
-    it('ensures paths are relative', () => {
+describe('ensureRelativePaths', function() {
+    it('ensures paths are relative', function() {
         const workspace: vscode.WorkspaceFolder = {
             uri: vscode.Uri.file('/test1/'),
             name: 'test workspace',
@@ -2918,11 +2918,11 @@ async function createAndRegisterYaml(
     await registry.addItemToRegistry(file)
 }
 
-describe('createTemplateAwsSamDebugConfig', () => {
+describe('createTemplateAwsSamDebugConfig', function() {
     const name = 'my body is a template'
     const templatePath = path.join('two', 'roads', 'diverged', 'in', 'a', 'yellow', 'wood')
 
-    it('creates a template-type SAM debugger configuration with minimal configurations', () => {
+    it('creates a template-type SAM debugger configuration with minimal configurations', function() {
         const config = createTemplateAwsSamDebugConfig(undefined, undefined, false, name, templatePath)
         assert.deepStrictEqual(config, {
             name: `yellow:${name}`,
@@ -2940,7 +2940,7 @@ describe('createTemplateAwsSamDebugConfig', () => {
         })
     })
 
-    it('creates a template-type SAM debugger configuration with additional params', () => {
+    it('creates a template-type SAM debugger configuration with additional params', function() {
         const params = {
             eventJson: {
                 payload: 'uneventufl',
@@ -2957,18 +2957,18 @@ describe('createTemplateAwsSamDebugConfig', () => {
         assert.strictEqual(config.sam?.containerBuild, undefined)
     })
 
-    it('creates a template-type SAM debugger configuration with a runtime', () => {
+    it('creates a template-type SAM debugger configuration with a runtime', function() {
         const config = createTemplateAwsSamDebugConfig(undefined, 'runtime', true, name, templatePath, undefined)
         assert.deepStrictEqual(config.lambda?.runtime, 'runtime')
     })
 })
 
-describe('createApiAwsSamDebugConfig', () => {
+describe('createApiAwsSamDebugConfig', function() {
     const name = 'my body is a template'
     const templatePath = path.join('two', 'roads', 'diverged', 'in', 'a', 'yellow', 'wood')
     const runtime = 'timeToRun'
 
-    it('creates a API-type SAM debugger configuration with minimal configurations', () => {
+    it('creates a API-type SAM debugger configuration with minimal configurations', function() {
         const config = createApiAwsSamDebugConfig(undefined, undefined, name, templatePath)
         assert.deepStrictEqual(config, {
             name: `API yellow:${name}`,
@@ -2989,7 +2989,7 @@ describe('createApiAwsSamDebugConfig', () => {
         })
     })
 
-    it('creates a API-type SAM debugger configuration with additional params', () => {
+    it('creates a API-type SAM debugger configuration with additional params', function() {
         const config = createApiAwsSamDebugConfig(undefined, runtime, name, templatePath, {
             payload: { json: { key: 'value' } },
             httpMethod: 'OPTIONS',
@@ -3018,21 +3018,21 @@ describe('createApiAwsSamDebugConfig', () => {
     })
 })
 
-describe('debugConfiguration', () => {
+describe('debugConfiguration', function() {
     let tempFolder: string
     let tempFile: vscode.Uri
 
-    beforeEach(async () => {
+    beforeEach(async function() {
         tempFolder = await makeTemporaryToolkitFolder()
         tempFile = vscode.Uri.file(path.join(tempFolder, 'test.yaml'))
     })
 
-    afterEach(async () => {
+    afterEach(async function() {
         await remove(tempFolder)
         ext.templateRegistry.reset()
     })
 
-    it('getCodeRoot(), getHandlerName() with invokeTarget=code', async () => {
+    it('getCodeRoot(), getHandlerName() with invokeTarget=code', async function() {
         const folder = testutil.getWorkspaceFolder(tempFolder)
         const relativePath = 'src'
         const fullPath = pathutil.normalize(path.join(tempFolder, relativePath))
@@ -3062,7 +3062,7 @@ describe('debugConfiguration', () => {
         assert.strictEqual(debugConfiguration.getCodeRoot(folder, config), fullPath)
     })
 
-    it('getCodeRoot(), getHandlerName() with invokeTarget=template', async () => {
+    it('getCodeRoot(), getHandlerName() with invokeTarget=template', async function() {
         const folder = testutil.getWorkspaceFolder(tempFolder)
         const relativePath = 'src'
         const fullPath = pathutil.normalize(path.join(tempFolder, relativePath))

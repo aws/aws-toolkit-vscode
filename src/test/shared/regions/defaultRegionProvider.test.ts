@@ -43,14 +43,14 @@ const sampleEndpoints = {
     ],
 }
 
-describe('DefaultRegionProvider', async () => {
+describe('DefaultRegionProvider', async function() {
     const resourceFetcher: ResourceFetcher = {
         get: async () => {
             return JSON.stringify(sampleEndpoints)
         },
     }
 
-    describe('isServiceInRegion', async () => {
+    describe('isServiceInRegion', async function() {
         let sandbox: sinon.SinonSandbox
 
         let endpoints: Endpoints
@@ -59,7 +59,7 @@ describe('DefaultRegionProvider', async () => {
         const regionCode = 'someRegion'
         const serviceId = 'someService'
 
-        beforeEach(() => {
+        beforeEach(function() {
             sandbox = sinon.createSandbox()
 
             endpoints = {
@@ -93,17 +93,17 @@ describe('DefaultRegionProvider', async () => {
             sandbox.stub(endpointsProvider, 'getEndpoints').returns(endpoints)
         })
 
-        afterEach(() => {
+        afterEach(function() {
             sandbox.restore()
         })
 
-        it('indicates when a service is in a region', async () => {
+        it('indicates when a service is in a region', async function() {
             const regionProvider = new DefaultRegionProvider(endpointsProvider)
 
             assert.ok(regionProvider.isServiceInRegion(serviceId, regionCode), 'Expected service to be in region')
         })
 
-        it('indicates when a service is not in a region', async () => {
+        it('indicates when a service is not in a region', async function() {
             const regionProvider = new DefaultRegionProvider(endpointsProvider)
 
             assert.ok(
@@ -113,68 +113,68 @@ describe('DefaultRegionProvider', async () => {
         })
     })
 
-    describe('getDnsSuffixForRegion', async () => {
+    describe('getDnsSuffixForRegion', async function() {
         let endpointsProvider: EndpointsProvider
         let regionProvider: DefaultRegionProvider
 
-        beforeEach(async () => {
+        beforeEach(async function() {
             endpointsProvider = new EndpointsProvider(resourceFetcher, resourceFetcher)
             await endpointsProvider.load()
 
             regionProvider = new DefaultRegionProvider(endpointsProvider)
         })
 
-        it('gets DNS suffix for a known region', async () => {
+        it('gets DNS suffix for a known region', async function() {
             const partitionId = regionProvider.getDnsSuffixForRegion('region1')
             assert.strictEqual(partitionId, 'totallyLegit.tld')
         })
 
-        it('returns undefined for an unknown region', async () => {
+        it('returns undefined for an unknown region', async function() {
             const partitionId = regionProvider.getDnsSuffixForRegion('foo')
             assert.strictEqual(partitionId, undefined)
         })
     })
 
-    describe('getPartitionId', async () => {
+    describe('getPartitionId', async function() {
         let endpointsProvider: EndpointsProvider
         let regionProvider: DefaultRegionProvider
 
-        beforeEach(async () => {
+        beforeEach(async function() {
             endpointsProvider = new EndpointsProvider(resourceFetcher, resourceFetcher)
             await endpointsProvider.load()
 
             regionProvider = new DefaultRegionProvider(endpointsProvider)
         })
 
-        it('gets partition for a known region', async () => {
+        it('gets partition for a known region', async function() {
             const partitionId = regionProvider.getPartitionId('awscnregion1')
             assert.strictEqual(partitionId, 'aws-cn')
         })
 
-        it('returns undefined for an unknown region', async () => {
+        it('returns undefined for an unknown region', async function() {
             const partitionId = regionProvider.getPartitionId('foo')
             assert.strictEqual(partitionId, undefined)
         })
     })
 
-    describe('getRegions', async () => {
+    describe('getRegions', async function() {
         let endpointsProvider: EndpointsProvider
         let regionProvider: DefaultRegionProvider
 
-        beforeEach(async () => {
+        beforeEach(async function() {
             endpointsProvider = new EndpointsProvider(resourceFetcher, resourceFetcher)
             await endpointsProvider.load()
 
             regionProvider = new DefaultRegionProvider(endpointsProvider)
         })
 
-        it('gets regions for a known partition', async () => {
+        it('gets regions for a known partition', async function() {
             const regions = regionProvider.getRegions('aws')
             assert.ok(regions)
             assert.strictEqual(regions.length, 3, 'Unexpected amount of regions returned')
         })
 
-        it('returns empty array for an unknown partition', async () => {
+        it('returns empty array for an unknown partition', async function() {
             const regions = regionProvider.getRegions('foo')
             assert.ok(regions)
             assert.strictEqual(regions.length, 0, 'Unexpected regions returned')

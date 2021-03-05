@@ -17,17 +17,17 @@ import * as fsUtilities from '../../../shared/filesystemUtilities'
 import * as YAML from 'yaml'
 import { FakeExtensionContext } from '../../fakeExtensionContext'
 
-describe('createDocumentFromTemplate', async () => {
+describe('createDocumentFromTemplate', async function() {
     let mockContext: vscode.ExtensionContext
     let sandbox: sinon.SinonSandbox
-    before(() => {
+    before(function() {
         mockContext = new FakeExtensionContext()
     })
-    beforeEach(() => {
+    beforeEach(function() {
         sandbox = sinon.createSandbox()
     })
 
-    afterEach(() => {
+    afterEach(function() {
         sandbox.restore()
     })
 
@@ -46,7 +46,7 @@ describe('createDocumentFromTemplate', async () => {
     const fakeSelection: SsmDocumentTemplateQuickPickItem[] = []
     fakeSelection.push(fakeSelectionResult)
 
-    it('open and save document based on selected template', async () => {
+    it('open and save document based on selected template', async function() {
         sandbox.stub(picker, 'promptUser').returns(Promise.resolve(fakeSelection))
         sandbox.stub(picker, 'verifySinglePickerOutput').returns(fakeSelectionResult)
         sandbox.stub(fsUtilities, 'readFileAsString').returns(Promise.resolve(fakeContent))

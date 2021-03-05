@@ -7,19 +7,19 @@ import * as assert from 'assert'
 import * as lolex from 'lolex'
 import * as timeoutUtils from '../../../shared/utilities/timeoutUtils'
 
-describe('timeoutUtils', async () => {
+describe('timeoutUtils', async function() {
     let clock: lolex.InstalledClock
 
-    before(() => {
+    before(function() {
         clock = lolex.install()
     })
 
-    after(() => {
+    after(function() {
         clock.uninstall()
     })
 
-    describe('Timeout', async () => {
-        it('returns > 0 if the timer is still active', async () => {
+    describe('Timeout', async function() {
+        it('returns > 0 if the timer is still active', async function() {
             const timerLengthMs = 100
             const longTimer = new timeoutUtils.Timeout(timerLengthMs)
             clock.tick(timerLengthMs / 2)
@@ -28,7 +28,7 @@ describe('timeoutUtils', async () => {
             longTimer.killTimer()
         })
 
-        it('returns 0 if timer is expired', async () => {
+        it('returns 0 if timer is expired', async function() {
             const timerLengthMs = 10
             const shortTimer = new timeoutUtils.Timeout(timerLengthMs)
             clock.tick(timerLengthMs + 1)
@@ -37,14 +37,14 @@ describe('timeoutUtils', async () => {
             }, 10)
         })
 
-        it('returns a Promise if a timer is active', async () => {
+        it('returns a Promise if a timer is active', async function() {
             const longTimer = new timeoutUtils.Timeout(300)
             assert.strictEqual(longTimer.timer instanceof Promise, true)
             // kill the timer to not mess with other tests
             longTimer.killTimer()
         })
 
-        it('timer object rejects if a timer is expired', async () => {
+        it('timer object rejects if a timer is expired', async function() {
             const timerLengthMs = 10
             const shortTimer = new timeoutUtils.Timeout(timerLengthMs)
             clock.tick(timerLengthMs + 1)
@@ -53,7 +53,7 @@ describe('timeoutUtils', async () => {
             })
         })
 
-        it('successfully kills active timers', async () => {
+        it('successfully kills active timers', async function() {
             const longTimer = new timeoutUtils.Timeout(300)
             // make sure this is an active Promise
             assert.strictEqual(longTimer.timer instanceof Promise, true)
@@ -67,7 +67,7 @@ describe('timeoutUtils', async () => {
             }
         })
 
-        it('correctly reports an elapsed time', async () => {
+        it('correctly reports an elapsed time', async function() {
             const checkTimerMs = 50
             const longTimer = new timeoutUtils.Timeout(checkTimerMs * 6)
 
@@ -80,7 +80,7 @@ describe('timeoutUtils', async () => {
             longTimer.killTimer()
         })
 
-        it('Correctly reports elapsed time with refresh', async () => {
+        it('Correctly reports elapsed time with refresh', async function() {
             const longTimer = new timeoutUtils.Timeout(10)
             clock.tick(5)
             longTimer.refresh()
@@ -92,7 +92,7 @@ describe('timeoutUtils', async () => {
             longTimer.killTimer()
         })
 
-        it('Refresh pushes back the start time', async () => {
+        it('Refresh pushes back the start time', async function() {
             const longTimer = new timeoutUtils.Timeout(10)
             clock.tick(5)
             longTimer.refresh()
@@ -103,7 +103,7 @@ describe('timeoutUtils', async () => {
         })
     })
 
-    describe('waitUntil', async () => {
+    describe('waitUntil', async function() {
         const testSettings = {callCounter: 0, callGoal: 0, functionDelay: 10}
 
         async function testFunction(): Promise<number | undefined> {
@@ -119,38 +119,38 @@ describe('timeoutUtils', async () => {
             return testFunction()
         }
 
-        before(() => {
+        before(function() {
             clock.uninstall()
         })
 
-        after(() => {
+        after(function() {
             clock = lolex.install()
         })
 
-        beforeEach(() => {
+        beforeEach(function() {
             testSettings.callCounter = 0
             testSettings.functionDelay = 10
         })
 
-        it('returns value after multiple function calls', async () => {
+        it('returns value after multiple function calls', async function() {
             testSettings.callGoal = 4
             const returnValue: number | undefined = await timeoutUtils.waitUntil(testFunction, { timeout: 60, interval: 10 })
             assert.strictEqual(returnValue, testSettings.callGoal)
         })
 
-        it('timeout before function returns defined value', async () => {
+        it('timeout before function returns defined value', async function() {
             testSettings.callGoal = 7
             const returnValue: number | undefined = await timeoutUtils.waitUntil(testFunction, { timeout: 30, interval: 10 })
             assert.strictEqual(returnValue, undefined)
         })
 
-        it('timeout from slow function calls', async () => {
+        it('timeout from slow function calls', async function() {
             testSettings.callGoal = 10
             const returnValue: number | undefined = await timeoutUtils.waitUntil(slowTestFunction, { timeout: 50, interval: 10 })
             assert.strictEqual(returnValue, undefined)
         })
 
-        it('returns value with after multiple calls and function delay ', async () => {
+        it('returns value with after multiple calls and function delay ', async function() {
             testSettings.callGoal = 3
             testSettings.functionDelay = 5
             const returnValue: number | undefined = await timeoutUtils.waitUntil(slowTestFunction, { timeout: 60, interval: 5 })

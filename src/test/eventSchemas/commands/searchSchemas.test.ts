@@ -26,13 +26,13 @@ import { asyncGenerator } from '../../utilities/collectionUtils'
 
 import * as vscode from 'vscode'
 
-describe('Search Schemas', () => {
+describe('Search Schemas', function() {
     let sandbox: sinon.SinonSandbox
-    beforeEach(() => {
+    beforeEach(function() {
         sandbox = sinon.createSandbox()
     })
 
-    afterEach(() => {
+    afterEach(function() {
         sandbox.restore()
     })
 
@@ -67,8 +67,8 @@ describe('Search Schemas', () => {
         SchemaVersions: [versionSummary1],
     }
 
-    describe('getSearchListForSingleRegistry', () => {
-        it('should return summaries', async () => {
+    describe('getSearchListForSingleRegistry', function() {
+        it('should return summaries', async function() {
             const searchSummaryList = [searchSummary1, searchSummary2]
 
             sandbox
@@ -101,7 +101,7 @@ describe('Search Schemas', () => {
             assert.strictEqual(results[1].RegistryName, TEST_REGISTRY, 'summary should belong to requested registry')
         })
 
-        it('should display an error message when search api call fails', async () => {
+        it('should display an error message when search api call fails', async function() {
             const searchSummaryList = [searchSummary1, searchSummary2]
 
             const vscodeSpy = sandbox.spy(vscode.window, 'showErrorMessage')
@@ -121,8 +121,8 @@ describe('Search Schemas', () => {
         })
     })
 
-    describe('getSearchResults', () => {
-        it('should display error message for failed registries and return summaries for successful ones', async () => {
+    describe('getSearchResults', function() {
+        it('should display error message for failed registries and return summaries for successful ones', async function() {
             const vscodeSpy = sandbox.spy(vscode.window, 'showErrorMessage')
             const displayMessage = `Unable to search registry ${FAIL_REGISTRY}`
             const displayMessage2 = `Unable to search registry ${FAIL_REGISTRY2}`
@@ -174,9 +174,9 @@ describe('Search Schemas', () => {
         })
     })
 
-    describe('createMessageReceivedFunc', () => {
+    describe('createMessageReceivedFunc', function() {
         let postMessageSpy: sinon.SinonSpy<[any], Thenable<boolean>>
-        beforeEach(() => {
+        beforeEach(function() {
             postMessageSpy = sandbox.spy(onPostMessage)
         })
 
@@ -193,7 +193,7 @@ describe('Search Schemas', () => {
             Content: AWS_EVENT_SCHEMA_RAW,
         }
 
-        it('shows schema content for latest matching schema version by default', async () => {
+        it('shows schema content for latest matching schema version by default', async function() {
             const versionedSummary = {
                 RegistryName: TEST_REGISTRY,
                 Title: getPageHeader(singleRegistryName),
@@ -245,7 +245,7 @@ describe('Search Schemas', () => {
             )
         })
 
-        it('shows schema content for user selected version', async () => {
+        it('shows schema content for user selected version', async function() {
             const versionedSummary = {
                 RegistryName: TEST_REGISTRY,
                 Title: getPageHeader(multipleRegistryNames),
@@ -287,7 +287,7 @@ describe('Search Schemas', () => {
             )
         })
 
-        it('shows schema list when user makes a search', async () => {
+        it('shows schema list when user makes a search', async function() {
             const fakeMessage: CommandMessage = { command: 'searchSchemas', keyword: 'searchText' }
 
             const expectResults1 = {
@@ -331,7 +331,7 @@ describe('Search Schemas', () => {
             )
         })
 
-        it('throws an error for an invalid command message', async () => {
+        it('throws an error for an invalid command message', async function() {
             const fakeMessage: CommandMessage = { command: 'invalidCommand' }
             const errorMessage = `Search webview command ${fakeMessage.command} is invalid`
             const returnedFunc = createMessageReceivedFunc({
@@ -356,8 +356,8 @@ describe('Search Schemas', () => {
         }
     })
 
-    describe('getRegistryNameList', () => {
-        it('should return list with single registry name for registryItemNode', async () => {
+    describe('getRegistryNameList', function() {
+        it('should return list with single registry name for registryItemNode', async function() {
             const fakeRegistryNew = {
                 RegistryName: TEST_REGISTRY,
                 RegistryArn: 'arn:aws:schemas:us-west-2:19930409:registry/testRegistry',
@@ -369,7 +369,7 @@ describe('Search Schemas', () => {
             assert.deepStrictEqual(result, [TEST_REGISTRY], 'should have a single registry name in it')
         })
 
-        it('should return list with multiple registry names for schemasNode', async () => {
+        it('should return list with multiple registry names for schemasNode', async function() {
             const schemasNode = new SchemasNode(fakeRegion)
             const registrySummary1 = { RegistryArn: 'arn:aws:registry/' + TEST_REGISTRY, RegistryName: TEST_REGISTRY }
             const registrySummary2 = { RegistryArn: 'arn:aws:registry/' + TEST_REGISTRY2, RegistryName: TEST_REGISTRY2 }
@@ -380,7 +380,7 @@ describe('Search Schemas', () => {
             assert.deepStrictEqual(result, [TEST_REGISTRY, TEST_REGISTRY2], 'should have two registry names in it')
         })
 
-        it('should return an empty list and display error message if schemas service not available in the region', async () => {
+        it('should return an empty list and display error message if schemas service not available in the region', async function() {
             const vscodeSpy = sandbox.spy(vscode.window, 'showErrorMessage')
             const displayMessage = 'Error loading Schemas resources'
 

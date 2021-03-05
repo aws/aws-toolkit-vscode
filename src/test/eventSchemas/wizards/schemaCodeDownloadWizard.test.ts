@@ -132,9 +132,9 @@ class MockSchemaCodeDownloadWizardContext implements SchemaCodeDownloadWizardCon
     }
 }
 
-describe('SchemaCodeDownloadWizard', async () => {
-    describe('version', async () => {
-        it('uses user response as schemaVersion', async () => {
+describe('SchemaCodeDownloadWizard', async function() {
+    describe('version', async function() {
+        it('uses user response as schemaVersion', async function() {
             const context: SchemaCodeDownloadWizardContext = new MockSchemaCodeDownloadWizardContext(
                 [],
                 Set<SchemaCodeLangs>([JAVA]),
@@ -149,7 +149,7 @@ describe('SchemaCodeDownloadWizard', async () => {
             assert.strictEqual(args!.schemaVersion, 'schemaVersion3')
         })
 
-        it('exits when cancelled', async () => {
+        it('exits when cancelled', async function() {
             const context: SchemaCodeDownloadWizardContext = new MockSchemaCodeDownloadWizardContext(
                 [],
                 Set<SchemaCodeLangs>([JAVA]),
@@ -163,8 +163,8 @@ describe('SchemaCodeDownloadWizard', async () => {
         })
     })
 
-    describe('language', async () => {
-        it('uses user response as language', async () => {
+    describe('language', async function() {
+        it('uses user response as language', async function() {
             const context: SchemaCodeDownloadWizardContext = new MockSchemaCodeDownloadWizardContext(
                 [],
                 Set<SchemaCodeLangs>([JAVA]),
@@ -178,7 +178,7 @@ describe('SchemaCodeDownloadWizard', async () => {
             assert.strictEqual(args!.language, JAVA)
         })
 
-        it('backtracks when cancelled', async () => {
+        it('backtracks when cancelled', async function() {
             const context: SchemaCodeDownloadWizardContext = new MockSchemaCodeDownloadWizardContext(
                 [],
                 Set(),
@@ -192,8 +192,8 @@ describe('SchemaCodeDownloadWizard', async () => {
         })
     })
 
-    describe('location', async () => {
-        it('uses user response as location', async () => {
+    describe('location', async function() {
+        it('uses user response as location', async function() {
             const locationPath = path.join('my', 'quick', 'pick', 'result')
             const context: SchemaCodeDownloadWizardContext = new MockSchemaCodeDownloadWizardContext(
                 [],
@@ -208,7 +208,7 @@ describe('SchemaCodeDownloadWizard', async () => {
             assert.strictEqual(args!.location.fsPath, `${path.sep}${locationPath}`)
         })
 
-        it('backtracks when cancelled', async () => {
+        it('backtracks when cancelled', async function() {
             const locationPath = path.join('my', 'quick', 'pick', 'result')
             const context: SchemaCodeDownloadWizardContext = new MockSchemaCodeDownloadWizardContext(
                 [],
@@ -241,7 +241,7 @@ describe('SchemaCodeDownloadWizard', async () => {
             assert.strictEqual(args!.location.fsPath, `${path.sep}${locationPath}`)
         })
 
-        it('contains an option for each workspace folder', async () => {
+        it('contains an option for each workspace folder', async function() {
             const workspaceFolderPaths = [path.join('workspace', 'folder', '1'), path.join('workspace', 'folder', '2')]
 
             let index = 0

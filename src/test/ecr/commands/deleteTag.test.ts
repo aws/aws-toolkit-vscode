@@ -13,7 +13,7 @@ import { EcrClient, EcrRepository } from '../../../shared/clients/ecrClient'
 import { MockEcrClient } from '../../shared/clients/mockClients'
 import { deleteTag } from '../../../ecr/commands/deleteTag'
 
-describe('deleteTag', () => {
+describe('deleteTag', function() {
     const repositoryName = 'reponame'
     const tagName = 'tag'
     const parentNode = {} as EcrRepositoryNode
@@ -21,16 +21,16 @@ describe('deleteTag', () => {
     let node: EcrTagNode
     let sandbox: sinon.SinonSandbox
 
-    beforeEach(() => {
+    beforeEach(function() {
         sandbox = sinon.createSandbox()
         node = new EcrTagNode(parentNode, ecr, { repositoryName: repositoryName } as EcrRepository, tagName)
     })
 
-    afterEach(() => {
+    afterEach(function() {
         sandbox.restore()
     })
 
-    it('confirms deletion, deletes file, shows status bar confirmation, and refreshes parent node', async () => {
+    it('confirms deletion, deletes file, shows status bar confirmation, and refreshes parent node', async function() {
         const window = new FakeWindow({ message: { warningSelection: 'Delete' } })
         const commands = new FakeCommands()
         const stub = sandbox.stub(ecr, 'deleteTag').callsFake(async (name, tag) => {
@@ -50,7 +50,7 @@ describe('deleteTag', () => {
         assert.deepStrictEqual(commands.args, [parentNode])
     })
 
-    it('does nothing when deletion is cancelled', async () => {
+    it('does nothing when deletion is cancelled', async function() {
         const window = new FakeWindow({ message: { warningSelection: 'Cancel' } })
         const commands = new FakeCommands()
         const spy = sandbox.spy(ecr, 'deleteTag')
@@ -64,7 +64,7 @@ describe('deleteTag', () => {
         assert.strictEqual(commands.command, undefined)
     })
 
-    it('shows an error message and refreshes node when file deletion fails', async () => {
+    it('shows an error message and refreshes node when file deletion fails', async function() {
         sandbox.stub(ecr, 'deleteTag').callsFake(async () => {
             throw new Error('network broke')
         })

@@ -23,23 +23,23 @@ import {
 import { DefaultSettingsConfiguration } from '../../../shared/settingsConfiguration'
 import { extensionSettingsPrefix } from '../../../shared/constants'
 
-describe('handleTelemetryNoticeResponse', () => {
+describe('handleTelemetryNoticeResponse', function() {
     let extensionContext: vscode.ExtensionContext
     let sandbox: sinon.SinonSandbox
 
-    before(() => {
+    before(function() {
         sandbox = sinon.createSandbox()
     })
 
-    after(() => {
+    after(function() {
         sandbox.restore()
     })
 
-    beforeEach(() => {
+    beforeEach(function() {
         extensionContext = new FakeExtensionContext()
     })
 
-    it('does nothing when notice is discarded', async () => {
+    it('does nothing when notice is discarded', async function() {
         await handleTelemetryNoticeResponse(undefined, extensionContext)
 
         assert.strictEqual(
@@ -49,7 +49,7 @@ describe('handleTelemetryNoticeResponse', () => {
         )
     })
 
-    it('handles View Settings response', async () => {
+    it('handles View Settings response', async function() {
         const executeCommand = sandbox.stub(vscode.commands, 'executeCommand')
 
         await handleTelemetryNoticeResponse(noticeResponseViewSettings, extensionContext)
@@ -62,7 +62,7 @@ describe('handleTelemetryNoticeResponse', () => {
         )
     })
 
-    it('handles Ok response', async () => {
+    it('handles Ok response', async function() {
         await handleTelemetryNoticeResponse(noticeResponseOk, extensionContext)
 
         assert.strictEqual(
@@ -73,7 +73,7 @@ describe('handleTelemetryNoticeResponse', () => {
     })
 })
 
-describe('Telemetry on activation', () => {
+describe('Telemetry on activation', function() {
     let settings: vscode.WorkspaceConfiguration
     const toolkitSettings = new DefaultSettingsConfiguration(extensionSettingsPrefix)
 
@@ -81,12 +81,12 @@ describe('Telemetry on activation', () => {
     // Restore the initial value after testing is complete.
     let originalTelemetryValue: any
 
-    before(async () => {
+    before(async function() {
         settings = vscode.workspace.getConfiguration(extensionSettingsPrefix)
         originalTelemetryValue = settings.get('telemetry')
     })
 
-    after(async () => {
+    after(async function() {
         await settings.update('telemetry', originalTelemetryValue, vscode.ConfigurationTarget.Global)
     })
 
@@ -137,7 +137,7 @@ describe('Telemetry on activation', () => {
         }, // The 'expectedSanitizedValue' is true based on the package.json configuration declaration
     ]
 
-    describe('isTelemetryEnabled', () => {
+    describe('isTelemetryEnabled', function() {
         scenarios.forEach(scenario => {
             it(scenario.desc, async () => {
                 await settings.update('telemetry', scenario.initialSettingValue, vscode.ConfigurationTarget.Global)
@@ -148,7 +148,7 @@ describe('Telemetry on activation', () => {
         })
     })
 
-    describe('sanitizeTelemetrySetting', () => {
+    describe('sanitizeTelemetrySetting', function() {
         scenarios.forEach(scenario => {
             it(scenario.desc, async () => {
                 await settings.update('telemetry', scenario.initialSettingValue, vscode.ConfigurationTarget.Global)
@@ -161,23 +161,23 @@ describe('Telemetry on activation', () => {
     })
 })
 
-describe('hasUserSeenTelemetryNotice', async () => {
+describe('hasUserSeenTelemetryNotice', async function() {
     let extensionContext: vscode.ExtensionContext
     let sandbox: sinon.SinonSandbox
 
-    before(() => {
+    before(function() {
         sandbox = sinon.createSandbox()
     })
 
-    after(() => {
+    after(function() {
         sandbox.restore()
     })
 
-    beforeEach(() => {
+    beforeEach(function() {
         extensionContext = new FakeExtensionContext()
     })
 
-    it('is affected by setHasUserSeenTelemetryNotice', async () => {
+    it('is affected by setHasUserSeenTelemetryNotice', async function() {
         assert.ok(!hasUserSeenTelemetryNotice(extensionContext))
         await setHasUserSeenTelemetryNotice(extensionContext)
         assert.ok(hasUserSeenTelemetryNotice(extensionContext))
@@ -198,41 +198,41 @@ describe('hasUserSeenTelemetryNotice', async () => {
     })
 })
 
-describe('getComputeRegion', async () => {
+describe('getComputeRegion', async function() {
     const metadataService = new MetadataService()
 
     let sandbox: sinon.SinonSandbox
 
-    before(() => {
+    before(function() {
         sandbox = sinon.createSandbox()
     })
 
-    afterEach(() => {
+    afterEach(function() {
         sandbox.restore()
     })
 
-    it('returns a compute region', async () => {
+    it('returns a compute region', async function() {
         sandbox.stub(metadataService, 'request').callsArgWith(1, undefined, '{"region": "us-weast-1"}')
 
         const val = await getComputeRegion(metadataService, true)
         assert.strictEqual(val, 'us-weast-1')
     })
 
-    it('returns "unknown" if cloud9 and the MetadataService request fails', async () => {
+    it('returns "unknown" if cloud9 and the MetadataService request fails', async function() {
         sandbox.stub(metadataService, 'request').callsArgWith(1, {} as AWSError, 'lol')
 
         const val = await getComputeRegion(metadataService, true)
         assert.strictEqual(val, 'unknown')
     })
 
-    it('returns "unknown" if cloud9 and can not find a region', async () => {
+    it('returns "unknown" if cloud9 and can not find a region', async function() {
         sandbox.stub(metadataService, 'request').callsArgWith(1, undefined, '{"legion": "d\'honneur"}')
 
         const val = await getComputeRegion(metadataService, true)
         assert.strictEqual(val, 'unknown')
     })
 
-    it('returns undefined if not cloud9', async () => {
+    it('returns undefined if not cloud9', async function() {
         sandbox.stub(metadataService, 'request').callsArgWith(1, undefined, 'lol')
 
         const val = await getComputeRegion(metadataService, false)

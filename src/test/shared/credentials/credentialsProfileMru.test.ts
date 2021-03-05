@@ -7,8 +7,8 @@ import * as assert from 'assert'
 import { CredentialsProfileMru } from '../../../shared/credentials/credentialsProfileMru'
 import { FakeExtensionContext } from '../../fakeExtensionContext'
 
-describe('CredentialsProfileMru', () => {
-    it('lists no profile when none exist', async () => {
+describe('CredentialsProfileMru', function() {
+    it('lists no profile when none exist', async function() {
         const credentialsMru = new CredentialsProfileMru(new FakeExtensionContext())
 
         const mru = credentialsMru.getMruList()
@@ -17,7 +17,7 @@ describe('CredentialsProfileMru', () => {
         assert.strictEqual(mru.length, 0)
     })
 
-    it('lists single profile when only one exists', async () => {
+    it('lists single profile when only one exists', async function() {
         const credentialsMru = new CredentialsProfileMru(new FakeExtensionContext())
 
         await credentialsMru.setMostRecentlyUsedProfile('apples')
@@ -29,7 +29,7 @@ describe('CredentialsProfileMru', () => {
         assert.strictEqual(mru[0], 'apples')
     })
 
-    it('lists multiple profiles when multiple exist', async () => {
+    it('lists multiple profiles when multiple exist', async function() {
         const credentialsMru = new CredentialsProfileMru(new FakeExtensionContext())
 
         await credentialsMru.setMostRecentlyUsedProfile('dogs')
@@ -43,7 +43,7 @@ describe('CredentialsProfileMru', () => {
         assert.strictEqual(mru[1], 'dogs')
     })
 
-    it('does not list duplicate profiles', async () => {
+    it('does not list duplicate profiles', async function() {
         const credentialsMru = new CredentialsProfileMru(new FakeExtensionContext())
 
         await credentialsMru.setMostRecentlyUsedProfile('bbq')
@@ -60,7 +60,7 @@ describe('CredentialsProfileMru', () => {
         assert.strictEqual(mru[2], 'dill')
     })
 
-    it('does not list more than MAX_CRENDTIAL_MRU_SIZE profiles', async () => {
+    it('does not list more than MAX_CRENDTIAL_MRU_SIZE profiles', async function() {
         const credentialsMru = new CredentialsProfileMru(new FakeExtensionContext())
 
         for (let i = 0; i < CredentialsProfileMru.MAX_CREDENTIAL_MRU_SIZE + 1; i++) {
