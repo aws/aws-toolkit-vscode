@@ -92,13 +92,18 @@ export async function waitUntil<T>(
     opt: { timeout: number; interval: number } = { timeout: 5000, interval: 500 }
 ): Promise<T | undefined> {
     for (let i = 0; true; i++) {
-        const result: T = await fn()
-        if (result) {
+        const start: number = Date.now()
+        const result: T = await Promise.race([fn(), new Promise<T>(r => setTimeout(r, opt.timeout))])
+        // Ensures that we never overrun the timeout
+        opt.timeout -= (Date.now() - start)
+
+        if (result != undefined) {
             return result
         }
         if (i * opt.interval >= opt.timeout) {
             return undefined
         }
+
         await new Promise(r => setTimeout(r, opt.interval))
     }
 }
