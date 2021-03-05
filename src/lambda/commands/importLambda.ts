@@ -86,11 +86,30 @@ async function runImportLambda(functionNode: LambdaFunctionNode, window = Window
             ),
         },
         async progress => {
-            const lambdaLocation = path.join(importLocation, getLambdaDetails(functionNode.configuration).fileName)
-            try {
-                await downloadAndUnzipLambda(progress, functionNode, importLocation)
-                await openLambdaFile(lambdaLocation)
+            let lambdaLocation: string
 
+            try {
+                lambdaLocation = path.join(importLocation, getLambdaDetails(functionNode.configuration).fileName)
+                await downloadAndUnzipLambda(progress, functionNode, importLocation)
+            } catch (e) {
+                // initial download failed or runtime is unsupported.
+                // show error and return a failure
+                const err = e as Error
+                getLogger().error(err)
+                window.showErrorMessage(
+                    localize(
+                        'AWS.lambda.import.importError',
+                        'Error importing Lambda function {0}: {1}',
+                        functionNode.configuration.FunctionArn!,
+                        err.message
+                    )
+                )
+
+                return 'Failed'
+            }
+
+            try {
+                await openLambdaFile(lambdaLocation)
                 if (
                     workspaceFolders.filter(val => {
                         return selectedUri === val.uri
@@ -104,11 +123,6 @@ async function runImportLambda(functionNode: LambdaFunctionNode, window = Window
 
                 return 'Succeeded'
             } catch (e) {
-                if (e instanceof ImportError) {
-                    // failed the download/unzip step. Non-functional, definite failure
-                    return 'Failed'
-                }
-
                 // failed to open handler file or add launch config.
                 // not a failure since the function is downloaded to a workspace directory.
                 return 'Succeeded'
@@ -159,7 +173,7 @@ async function downloadAndUnzipLambda(
                         if (err) {
                             // err unzipping
                             zipErr = err
-                            resolve(undefined)
+                            resolve(false)
                         } else {
                             progress.report({ increment: 10 })
                             resolve(true)
@@ -168,7 +182,7 @@ async function downloadAndUnzipLambda(
                 } catch (err) {
                     // err loading zip into AdmZip, prior to attempting an unzip
                     zipErr = err
-                    resolve(undefined)
+                    resolve(false)
                 }
             })
         })
@@ -176,19 +190,6 @@ async function downloadAndUnzipLambda(
         if (!val) {
             throw zipErr
         }
-    } catch (e) {
-        const err = e as Error
-        getLogger().error(err)
-        window.showErrorMessage(
-            localize(
-                'AWS.lambda.import.importError',
-                'Error importing Lambda function {0}: {1}',
-                functionArn,
-                err.message
-            )
-        )
-
-        throw new ImportError()
     } finally {
         tryRemoveFolder(tempDir)
     }
@@ -248,5 +249,3 @@ function computeLambdaRoot(lambdaLocation: string, functionNode: LambdaFunctionN
 
     return lambdaIndex > -1 ? normalizedLocation.substr(0, lambdaIndex) : path.dirname(normalizedLocation)
 }
-
-class ImportError extends Error {}
