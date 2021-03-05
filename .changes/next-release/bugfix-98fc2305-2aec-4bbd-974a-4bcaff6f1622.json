@@ -1,0 +1,4 @@
+{
+  "type" : "bugfix",
+  "description" : "Fixed the Remote Lambda Run Configuration failing to load the list of functions if not in active region"
+}
