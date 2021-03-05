@@ -400,7 +400,7 @@
                                     },
                                     "httpMethod": {
                                         "description": "%AWS.configuration.description.awssam.debug.api.httpMethod%",
-                                        "type": "string",
+                                        "type": ["string", "undefined"],
                                         "enum": [
                                             "delete",
                                             "get",
