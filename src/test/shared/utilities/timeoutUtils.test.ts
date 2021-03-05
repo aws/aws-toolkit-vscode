@@ -102,4 +102,59 @@ describe('timeoutUtils', async () => {
             longTimer.killTimer()
         })
     })
+
+    describe('waitUntil', async () => {
+        const testSettings = {callCounter: 0, callGoal: 0, functionDelay: 10}
+
+        async function testFunction(): Promise<number | undefined> {
+            if (++testSettings.callCounter == testSettings.callGoal) {
+                return testSettings.callCounter
+            } else {
+                return undefined
+            }
+        }
+
+        async function slowTestFunction(): Promise<number | undefined> {
+            await new Promise(r => setTimeout(r, testSettings.functionDelay))
+            return testFunction()
+        }
+
+        before(() => {
+            clock.uninstall()
+        })
+
+        after(() => {
+            clock = lolex.install()
+        })
+
+        beforeEach(() => {
+            testSettings.callCounter = 0
+            testSettings.functionDelay = 10
+        })
+
+        it('returns value after multiple function calls', async () => {
+            testSettings.callGoal = 4
+            const returnValue: number | undefined = await timeoutUtils.waitUntil(testFunction, { timeout: 60, interval: 10 })
+            assert.strictEqual(returnValue, testSettings.callGoal)
+        })
+
+        it('timeout before function returns defined value', async () => {
+            testSettings.callGoal = 7
+            const returnValue: number | undefined = await timeoutUtils.waitUntil(testFunction, { timeout: 30, interval: 10 })
+            assert.strictEqual(returnValue, undefined)
+        })
+
+        it('timeout from slow function calls', async () => {
+            testSettings.callGoal = 10
+            const returnValue: number | undefined = await timeoutUtils.waitUntil(slowTestFunction, { timeout: 50, interval: 10 })
+            assert.strictEqual(returnValue, undefined)
+        })
+
+        it('returns value with after multiple calls and function delay ', async () => {
+            testSettings.callGoal = 3
+            testSettings.functionDelay = 5
+            const returnValue: number | undefined = await timeoutUtils.waitUntil(slowTestFunction, { timeout: 60, interval: 5 })
+            assert.strictEqual(returnValue, testSettings.callGoal)
+        })
+    })
 })
