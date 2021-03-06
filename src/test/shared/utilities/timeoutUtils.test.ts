@@ -136,7 +136,7 @@ describe('timeoutUtils', async () => {
 
         it('returns value after multiple function calls', async () => {
             testSettings.callGoal = 4
-            const returnValue: number | undefined = await timeoutUtils.waitUntil(testFunction, { timeout: 200, interval: 10 })
+            const returnValue: number | undefined = await timeoutUtils.waitUntil(testFunction, { timeout: 10000, interval: 10 })
             assert.strictEqual(returnValue, testSettings.callGoal)
         })
 
@@ -147,8 +147,8 @@ describe('timeoutUtils', async () => {
         })
 
         it('returns true/false values correctly', async () => {
-            assert.strictEqual(true, await timeoutUtils.waitUntil(async () => true, { timeout: 100, interval: 10 }))
-            assert.strictEqual(false, await timeoutUtils.waitUntil(async () => false, { timeout: 100, interval: 10 }))
+            assert.strictEqual(true, await timeoutUtils.waitUntil(async () => true, { timeout: 10000, interval: 10 }))
+            assert.strictEqual(false, await timeoutUtils.waitUntil(async () => false, { timeout: 10000, interval: 10 }))
         })
 
         it('timeout when function takes longer than timeout parameter', async () => {
@@ -166,7 +166,7 @@ describe('timeoutUtils', async () => {
         it('returns value with after multiple calls and function delay ', async () => {
             testSettings.callGoal = 3
             testSettings.functionDelay = 5
-            const returnValue: number | undefined = await timeoutUtils.waitUntil(slowTestFunction, { timeout: 200, interval: 5 })
+            const returnValue: number | undefined = await timeoutUtils.waitUntil(slowTestFunction, { timeout: 10000, interval: 5 })
             assert.strictEqual(returnValue, testSettings.callGoal)
         })
     })
