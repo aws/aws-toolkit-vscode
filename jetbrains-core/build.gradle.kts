@@ -14,7 +14,6 @@ buildscript {
     val telemetryVersion: String by project
     repositories {
         mavenCentral()
-        maven { setUrl("https://jitpack.io") }
     }
     dependencies {
         classpath("software.aws.toolkits:telemetry-generator:$telemetryVersion")
