@@ -37,3 +37,12 @@ fun SourceSetContainer.getOrCreate(sourceSet: String, block: SourceSet.() -> Uni
         create(sourceSet).block()
     }
 }
+
+/**
+ * Only run the given block if this build is running within a CI system (e.g. GitHub actions, CodeBuild etc)
+ */
+fun Project.ciOnly(block: () -> Unit) {
+    if (System.getenv("CI") != null) {
+        block()
+    }
+}
