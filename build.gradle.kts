@@ -15,6 +15,7 @@ import software.aws.toolkits.gradle.IdeVersions
 import software.aws.toolkits.gradle.changelog.tasks.GenerateGithubChangeLog
 import software.aws.toolkits.gradle.findFolders
 import software.aws.toolkits.gradle.getOrCreate
+import software.aws.toolkits.gradle.ciOnly
 import software.aws.toolkits.gradle.intellij
 import software.aws.toolkits.gradle.removeTask
 import software.aws.toolkits.gradle.resources.ValidateMessages
@@ -183,10 +184,12 @@ subprojects {
             html.isEnabled = true
         }
 
-        retry {
-            failOnPassedAfterRetry.set(false)
-            maxFailures.set(5)
-            maxRetries.set(2)
+        ciOnly {
+            retry {
+                failOnPassedAfterRetry.set(false)
+                maxFailures.set(5)
+                maxRetries.set(2)
+            }
         }
     }
 
@@ -227,10 +230,12 @@ subprojects {
 
         mustRunAfter(tasks.test)
 
-        retry {
-            failOnPassedAfterRetry.set(false)
-            maxFailures.set(5)
-            maxRetries.set(2)
+        ciOnly {
+            retry {
+                failOnPassedAfterRetry.set(false)
+                maxFailures.set(5)
+                maxRetries.set(2)
+            }
         }
     }
 
@@ -251,7 +256,7 @@ subprojects {
             systemProperty("ide.show.tips.on.startup.default.value", false)
 
             systemProperty("aws.telemetry.skip_prompt", "true")
-            if (System.getenv("CI") != null) {
+            ciOnly {
                 systemProperty("aws.sharedCredentialsFile", "/tmp/.aws/credentials")
             }
 
@@ -303,7 +308,6 @@ intellij {
     version = ideProfile.community.sdkVersion
     pluginName = "aws-jetbrains-toolkit"
     updateSinceUntilBuild = false
-    downloadSources = System.getenv("CI") == null
 }
 
 tasks.getByName<PrepareSandboxTask>("prepareSandbox") {
