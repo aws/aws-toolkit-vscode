@@ -108,8 +108,8 @@ describe('timeoutUtils', async () => {
 
         // Test function, increments a counter every time it is called
         async function testFunction(): Promise<number | undefined> {
-            if (++testSettings.callCounter == testSettings.callGoal) {
-                return testSettings.callCounter
+            if (++testSettings.callCounter >= testSettings.callGoal) {
+                return testSettings.callGoal
             } else {
                 return undefined
             }
