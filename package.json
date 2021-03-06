@@ -400,7 +400,7 @@
                                     },
                                     "httpMethod": {
                                         "description": "%AWS.configuration.description.awssam.debug.api.httpMethod%",
-                                        "type": ["string", "undefined"],
+                                        "type": "string",
                                         "enum": [
                                             "delete",
                                             "get",
@@ -408,7 +408,8 @@
                                             "options",
                                             "patch",
                                             "post",
-                                            "put"
+                                            "put",
+                                            ""
                                         ]
                                     },
                                     "payload": {

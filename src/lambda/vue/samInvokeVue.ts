@@ -80,7 +80,7 @@ function newLaunchConfig(existingConfig?: AwsSamDebuggerConfiguration): MorePerm
         },
         api: {
             path: '',
-            httpMethod: undefined,
+            httpMethod: "",
             clientCertificateId: '',
             querystring: '',
             headers: {},
