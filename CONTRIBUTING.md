@@ -155,69 +155,6 @@ all tests and provides the build result via the _Details_ link as shown below.
 
 <img src="./docs/images/ci-artifact.png" alt="CI artifact" width="512"/>
 
-## Tooling
-
-Besides the typical develop/test/run cycle describe above, there are
-some tools for special cases such as build tasks, generating telemetry,
-generating SDKs, etc.
-
-### AWS SDK generator
-
-When the AWS SDK does not (yet) support a service but you have an API
-model file (`*.api.json`), use `generateServiceClient.ts` to generate
-a TypeScript `*.d.ts` file and pass that to the AWS JS SDK to create
-requests just from the model/types.
-
-1. Add an entry to the list in `generateServiceClient.ts`:
-   ```diff
-    diff --git a/build-scripts/generateServiceClient.ts b/build-scripts/generateServiceClient.ts
-    index 8bb278972d29..6c6914ec8812 100644
-    --- a/build-scripts/generateServiceClient.ts
-    +++ b/build-scripts/generateServiceClient.ts
-    @@ -199,6 +199,10 @@ ${fileContents}
-     ;(async () => {
-         const serviceClientDefinitions: ServiceClientDefinition[] = [
-    +        {
-    +            serviceJsonPath: 'src/shared/foo.api.json',
-    +            serviceName: 'ClientFoo'
-    +        },
-             {
-                 serviceJsonPath: 'src/shared/telemetry/service-2.json',
-                 serviceName: 'ClientTelemetry',
-   ```
-2. Run the script:
-   ```
-   $ ./node_modules/.bin/ts-node ./build-scripts/generateServiceClient.ts
-   ```
-3. The script produces a `*.d.ts` file (used only for IDE
-   code-completion, not required to actually make requests):
-   ```
-   src/shared/foo.d.ts
-   ```
-4. To make requests with the SDK, pass the `*.api.json` service model to
-   `ext.sdkClientBuilder.createAndConfigureServiceClient` as a generic
-   `Service` with `apiConfig=require('foo.api.json')`.
-   ```
-   // Import the `*.d.ts` file for code-completion convenience.
-   import * as ClientFoo from '../shared/clientfoo'
-   // The AWS JS SDK uses this to dynamically build service requests.
-   import apiConfig = require('../shared/foo.api.json')
-
-   ...
-
-   const c = await ext.sdkClientBuilder.createAndConfigureServiceClient(
-       opts => new Service(opts),
-       {
-           apiConfig: apiConfig,
-           region: 'us-west-2',
-           credentials: credentials,
-           correctClockSkew: true,
-           endpoint: 'foo-beta.aws.dev',
-       }) as ClientFoo
-   const req = c.getThing({ id: 'asdf' })
-   req.send(function (err, data) { ... });
-   ```
-
 ## Importing icons from other open source repos
 
 If you are contribuing visual assets from other open source repos, the source repo must have a compatible license (such as MIT), and we need to document the source of the images. Follow these steps:

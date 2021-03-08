@@ -374,9 +374,9 @@ describe('SAM Integration Tests', async function () {
                     // Allow previous sessions to go away.
                     await waitUntil(
                         async function () {
-                            return (vscode.debug.activeDebugSession === undefined) ? true : undefined
+                            return vscode.debug.activeDebugSession === undefined
                         },
-                        { timeout: 1000, interval: 100 }
+                        { timeout: 100, interval: 300 }
                     )
                     // FIXME: This assert is disabled to unblock CI.
                     // assert.strictEqual(
