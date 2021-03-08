@@ -209,7 +209,7 @@ export class ChildProcess {
             child.kill(signal)
 
             if (force === true) {
-                waitUntil(async () => this.stopped === true, { timeout: 3000, interval: 200, truthy: true })
+                waitUntil(async () => this.stopped, { timeout: 3000, interval: 200, truthy: true })
                     .then(stopped => {
                         if (!stopped) {
                             child.kill('SIGKILL')

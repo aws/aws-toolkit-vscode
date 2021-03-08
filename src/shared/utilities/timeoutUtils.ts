@@ -7,7 +7,7 @@
  * Timeout that can handle both cancellation token-style and time limit-style timeout situations.
  * @param timeoutLength Length of timeout duration (in ms)
  */
- export class Timeout {
+export class Timeout {
     private originalStartTime: number
     private startTime: number
     private endTime: number
@@ -84,7 +84,7 @@
  * @param fn  Function whose result is checked
  * @param opt.timeout  Timeout in ms (default: 5000)
  * @param opt.interval  Interval in ms between fn() checks (default: 500)
- * @param opt.truthy  Treats a false return value as undefined when set to true (default: true)
+ * @param opt.truthy  Wait for "truthy" result, else wait for any defined result including `false` (default: true)
  *
  * @returns Result of `fn()`, or `undefined` if timeout was reached.
  */
