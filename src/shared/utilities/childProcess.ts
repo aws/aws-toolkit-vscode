@@ -211,7 +211,7 @@ export class ChildProcess {
             if (force === true) {
                 waitUntil(
                     async () => {
-                        return this.stopped
+                        return (this.stopped === true) ? true : undefined
                     },
                     { timeout: 3000, interval: 200 }
                 )

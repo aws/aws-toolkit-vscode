@@ -167,13 +167,13 @@ async function downloadAndUnzipLambda(
         // keep attempting the unzip until the zip is fully built or fail after 5 seconds
         let zipErr: Error | undefined
         const val = await waitUntil(async () => {
-            return await new Promise<boolean>(resolve => {
+            return await new Promise<boolean | undefined>(resolve => {
                 try {
                     new AdmZip(downloadLocation).extractAllToAsync(importLocation, true, err => {
                         if (err) {
                             // err unzipping
                             zipErr = err
-                            resolve(false)
+                            resolve(undefined)
                         } else {
                             progress.report({ increment: 10 })
                             resolve(true)
@@ -182,7 +182,7 @@ async function downloadAndUnzipLambda(
                 } catch (err) {
                     // err loading zip into AdmZip, prior to attempting an unzip
                     zipErr = err
-                    resolve(false)
+                    resolve(undefined)
                 }
             })
         })
