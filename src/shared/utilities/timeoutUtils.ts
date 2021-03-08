@@ -7,7 +7,7 @@
  * Timeout that can handle both cancellation token-style and time limit-style timeout situations.
  * @param timeoutLength Length of timeout duration (in ms)
  */
-export class Timeout {
+ export class Timeout {
     private originalStartTime: number
     private startTime: number
     private endTime: number
@@ -93,7 +93,15 @@ export async function waitUntil<T>(
 ): Promise<T | undefined> {
     for (let i = 0; true; i++) {
         const start: number = Date.now()
-        const result: T = await Promise.race([fn(), new Promise<T>(r => setTimeout(r, opt.timeout))])
+        let result: T
+
+        // Needed in case a caller uses a 0 timeout (function is only called once)
+        if (opt.timeout > 0) {
+            result = await Promise.race([fn(), new Promise<T>(r => setTimeout(r, opt.timeout))])
+        } else {
+            result = await fn()
+        }
+
         // Ensures that we never overrun the timeout
         opt.timeout -= (Date.now() - start)
 
@@ -106,4 +114,30 @@ export async function waitUntil<T>(
 
         await new Promise(r => setTimeout(r, opt.interval))
     }
+}
+
+/**
+ * Invokes `fn()` until it returns true
+ * Should be used to continously check the state of objects when events are not feasible
+ * `fn()` should terminate quickly, otherwise the timeout time will not hold true
+ *
+ * @param fn  Function whose result is checked
+ * @param opt.timeout  Timeout in ms (default: 1000)
+ * @param opt.interval  Interval in ms between fn() checks (default: 100)
+ *
+ * @returns true for successful polling, false otherwise
+ */
+ export async function poll(
+    fn: () => boolean,
+    opt: { timeout: number; interval: number } = { timeout: 1000, interval: 100 }
+): Promise<boolean> {
+    for (let i = 0; i < opt.timeout; i += opt.interval) {
+        if (fn()) {
+            return true
+        }
+
+        await new Promise(r => setTimeout(r, opt.interval))
+    }
+
+    return false
 }

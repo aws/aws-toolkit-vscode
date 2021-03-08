@@ -9,7 +9,7 @@ import * as os from 'os'
 import * as path from 'path'
 import { makeTemporaryToolkitFolder } from '../../../shared/filesystemUtilities'
 import { ChildProcess, ChildProcessResult } from '../../../shared/utilities/childProcess'
-import { waitUntil } from '../../../shared/utilities/timeoutUtils'
+import { poll } from '../../../shared/utilities/timeoutUtils'
 
 describe('ChildProcess', async () => {
     let tempFolder: string
@@ -309,12 +309,7 @@ describe('ChildProcess', async () => {
 
                 assert.strictEqual(childProcess.stopped, false)
                 childProcess.stop()
-                await waitUntil(
-                    async () => {
-                        return (childProcess.stopped === true) ? true : undefined
-                    },
-                    { timeout: 1000, interval: 100 }
-                )
+                await poll(() => childProcess.stopped)
                 assert.strictEqual(childProcess.stopped, true)
             })
 
@@ -328,12 +323,7 @@ describe('ChildProcess', async () => {
                 childProcess.run()
 
                 childProcess.stop()
-                await waitUntil(
-                    async () => {
-                        return (childProcess.stopped === true) ? true : undefined
-                    },
-                    { timeout: 1000, interval: 100 }
-                )
+                await poll(() => childProcess.stopped)
                 assert.strictEqual(childProcess.stopped, true)
                 assert.throws(() => {
                     childProcess.stop()
@@ -353,12 +343,7 @@ describe('ChildProcess', async () => {
 
                 assert.strictEqual(childProcess.stopped, false)
                 childProcess.stop()
-                await waitUntil(
-                    async () => {
-                        return (childProcess.stopped === true) ? true : undefined
-                    },
-                    { timeout: 1000, interval: 100 }
-                )
+                await poll(() => childProcess.stopped)
                 assert.strictEqual(childProcess.stopped, true)
             })
 
@@ -372,12 +357,7 @@ describe('ChildProcess', async () => {
                 childProcess.run()
 
                 childProcess.stop()
-                await waitUntil(
-                    async () => {
-                        return (childProcess.stopped === true) ? true : undefined
-                    },
-                    { timeout: 1000, interval: 100 }
-                )
+                await poll(() => childProcess.stopped)
                 assert.strictEqual(childProcess.stopped, true)
                 assert.throws(() => {
                     childProcess.stop()

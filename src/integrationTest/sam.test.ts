@@ -20,7 +20,7 @@ import { AddSamDebugConfigurationInput } from '../shared/sam/debugger/commands/a
 import { findParentProjectFile } from '../shared/utilities/workspaceUtils'
 import { activateExtension, getCodeLenses, getTestWorkspaceFolder, sleep } from './integrationTestsUtilities'
 import { setTestTimeout } from './globalSetup.test'
-import { waitUntil } from '../shared/utilities/timeoutUtils'
+import { poll } from '../shared/utilities/timeoutUtils'
 import { AwsSamDebuggerConfiguration } from '../shared/sam/debugger/awsSamDebugConfiguration.gen'
 import { ext } from '../shared/extensionGlobals'
 
@@ -372,22 +372,17 @@ describe('SAM Integration Tests', async function () {
                 it('invokes and attaches on debug request (F5)', async function () {
                     setTestTimeout(this.test?.fullTitle(), 90000)
                     // Allow previous sessions to go away.
-                    await waitUntil(
-                        async function () {
-                            return (vscode.debug.activeDebugSession === undefined) ? true : undefined
-                        },
-                        { timeout: 1000, interval: 100 }
+                    const noDebugSession: boolean = await poll(() => vscode.debug.activeDebugSession === undefined)
+
+                    assert.strictEqual(
+                         noDebugSession,
+                         true,
+                         `unexpected debug session in progress: ${JSON.stringify(
+                             vscode.debug.activeDebugSession,
+                             undefined,
+                             2
+                         )}`
                     )
-                    // FIXME: This assert is disabled to unblock CI.
-                    // assert.strictEqual(
-                    //     vscode.debug.activeDebugSession,
-                    //     undefined,
-                    //     `unexpected debug session in progress: ${JSON.stringify(
-                    //         vscode.debug.activeDebugSession,
-                    //         undefined,
-                    //         2
-                    //     )}`
-                    // )
 
                     const testConfig = {
                         type: 'aws-sam',

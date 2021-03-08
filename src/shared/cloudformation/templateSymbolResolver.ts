@@ -121,7 +121,7 @@ export class TemplateSymbolProvider {
                     document.uri
                 )
             },
-            { timeout: waitForSymbols ? 5000 : 0, interval: 500 }
+            { timeout: waitForSymbols ? 10000 : 0, interval: 500 }
         )
         return symbols ?? []
     }

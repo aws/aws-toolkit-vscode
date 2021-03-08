@@ -170,4 +170,27 @@ describe('timeoutUtils', async () => {
             assert.strictEqual(returnValue, testSettings.callGoal)
         })
     })
+
+    describe('poll', async () => {
+        before(() => {
+            clock.uninstall()
+        })
+
+        after(() => {
+            clock = lolex.install()
+        })
+
+        it('polling successful', async () => {
+            let counter: number = 0
+            const result: boolean = await timeoutUtils.poll(() => counter++ == 5, { timeout: 100, interval: 5 })
+            assert.strictEqual(result, true)
+        })
+
+        it('polling timeout', async () => {
+            let counter: number = 0
+            const result: boolean = await timeoutUtils.poll(() => counter++ == 5, { timeout: 25, interval: 5 })
+            assert.strictEqual(result, false)
+        })
+    })
 })
+

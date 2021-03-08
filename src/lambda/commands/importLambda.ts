@@ -185,7 +185,7 @@ async function downloadAndUnzipLambda(
                     resolve(undefined)
                 }
             })
-        })
+        }, { timeout: 10000, interval: 1000 })
 
         if (!val) {
             throw zipErr
