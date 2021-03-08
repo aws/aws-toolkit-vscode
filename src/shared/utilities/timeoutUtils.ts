@@ -84,12 +84,13 @@
  * @param fn  Function whose result is checked
  * @param opt.timeout  Timeout in ms (default: 5000)
  * @param opt.interval  Interval in ms between fn() checks (default: 500)
+ * @param opt.truthy  Treats a false return value as undefined when set to true (default: true)
  *
  * @returns Result of `fn()`, or `undefined` if timeout was reached.
  */
 export async function waitUntil<T>(
     fn: () => Promise<T>,
-    opt: { timeout: number; interval: number } = { timeout: 5000, interval: 500 }
+    opt: { timeout: number; interval: number; truthy: boolean } = { timeout: 5000, interval: 500, truthy: true }
 ): Promise<T | undefined> {
     for (let i = 0; true; i++) {
         const start: number = Date.now()
@@ -105,7 +106,7 @@ export async function waitUntil<T>(
         // Ensures that we never overrun the timeout
         opt.timeout -= (Date.now() - start)
 
-        if (result != undefined) {
+        if ((opt.truthy && result) || (!opt.truthy && result !== undefined)) {
             return result
         }
         if (i * opt.interval >= opt.timeout) {
@@ -114,30 +115,4 @@ export async function waitUntil<T>(
 
         await new Promise(r => setTimeout(r, opt.interval))
     }
-}
-
-/**
- * Invokes `fn()` until it returns true
- * Should be used to continously check the state of objects when events are not feasible
- * `fn()` should terminate quickly, otherwise the timeout time will not hold true
- *
- * @param fn  Function whose result is checked
- * @param opt.timeout  Timeout in ms (default: 1000)
- * @param opt.interval  Interval in ms between fn() checks (default: 100)
- *
- * @returns true for successful polling, false otherwise
- */
- export async function poll(
-    fn: () => boolean,
-    opt: { timeout: number; interval: number } = { timeout: 1000, interval: 100 }
-): Promise<boolean> {
-    for (let i = 0; i < opt.timeout; i += opt.interval) {
-        if (fn()) {
-            return true
-        }
-
-        await new Promise(r => setTimeout(r, opt.interval))
-    }
-
-    return false
 }

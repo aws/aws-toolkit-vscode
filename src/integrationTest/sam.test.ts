@@ -20,7 +20,7 @@ import { AddSamDebugConfigurationInput } from '../shared/sam/debugger/commands/a
 import { findParentProjectFile } from '../shared/utilities/workspaceUtils'
 import { activateExtension, getCodeLenses, getTestWorkspaceFolder, sleep } from './integrationTestsUtilities'
 import { setTestTimeout } from './globalSetup.test'
-import { poll } from '../shared/utilities/timeoutUtils'
+import { waitUntil } from '../shared/utilities/timeoutUtils'
 import { AwsSamDebuggerConfiguration } from '../shared/sam/debugger/awsSamDebugConfiguration.gen'
 import { ext } from '../shared/extensionGlobals'
 
@@ -372,7 +372,10 @@ describe('SAM Integration Tests', async function () {
                 it('invokes and attaches on debug request (F5)', async function () {
                     setTestTimeout(this.test?.fullTitle(), 90000)
                     // Allow previous sessions to go away.
-                    const noDebugSession: boolean = await poll(() => vscode.debug.activeDebugSession === undefined)
+                    const noDebugSession: boolean | undefined = await waitUntil(
+                        async () => vscode.debug.activeDebugSession === undefined,
+                        { timeout: 1000, interval: 100, truthy: true }
+                    )
 
                     assert.strictEqual(
                          noDebugSession,

@@ -136,60 +136,50 @@ describe('timeoutUtils', async () => {
 
         it('returns value after multiple function calls', async () => {
             testSettings.callGoal = 4
-            const returnValue: number | undefined = await timeoutUtils.waitUntil(testFunction, { timeout: 10000, interval: 10 })
+            const returnValue: number | undefined = await timeoutUtils.waitUntil(testFunction, { timeout: 10000, interval: 10, truthy: false })
             assert.strictEqual(returnValue, testSettings.callGoal)
         })
 
         it('timeout before function returns defined value', async () => {
             testSettings.callGoal = 7
-            const returnValue: number | undefined = await timeoutUtils.waitUntil(testFunction, { timeout: 30, interval: 10 })
+            const returnValue: number | undefined = await timeoutUtils.waitUntil(testFunction, { timeout: 30, interval: 10, truthy: false })
             assert.strictEqual(returnValue, undefined)
         })
 
         it('returns true/false values correctly', async () => {
-            assert.strictEqual(true, await timeoutUtils.waitUntil(async () => true, { timeout: 10000, interval: 10 }))
-            assert.strictEqual(false, await timeoutUtils.waitUntil(async () => false, { timeout: 10000, interval: 10 }))
+            assert.strictEqual(true, await timeoutUtils.waitUntil(async () => true, { timeout: 10000, interval: 10, truthy: false }))
+            assert.strictEqual(false, await timeoutUtils.waitUntil(async () => false, { timeout: 10000, interval: 10, truthy: false }))
         })
 
         it('timeout when function takes longer than timeout parameter', async () => {
             testSettings.functionDelay = 100
-            const returnValue: number | undefined = await timeoutUtils.waitUntil(slowTestFunction, { timeout: 50, interval: 10 })
+            const returnValue: number | undefined = await timeoutUtils.waitUntil(slowTestFunction, { timeout: 50, interval: 10, truthy: false })
             assert.strictEqual(returnValue, undefined)
         })
 
         it('timeout from slow function calls', async () => {
             testSettings.callGoal = 10
-            const returnValue: number | undefined = await timeoutUtils.waitUntil(slowTestFunction, { timeout: 50, interval: 10 })
+            const returnValue: number | undefined = await timeoutUtils.waitUntil(slowTestFunction, { timeout: 50, interval: 10, truthy: false })
             assert.strictEqual(returnValue, undefined)
         })
 
         it('returns value with after multiple calls and function delay ', async () => {
             testSettings.callGoal = 3
             testSettings.functionDelay = 5
-            const returnValue: number | undefined = await timeoutUtils.waitUntil(slowTestFunction, { timeout: 10000, interval: 5 })
+            const returnValue: number | undefined = await timeoutUtils.waitUntil(slowTestFunction, { timeout: 10000, interval: 5, truthy: false })
             assert.strictEqual(returnValue, testSettings.callGoal)
         })
-    })
 
-    describe('poll', async () => {
-        before(() => {
-            clock.uninstall()
-        })
-
-        after(() => {
-            clock = lolex.install()
-        })
-
-        it('polling successful', async () => {
+        it('returns value after setting truthy parameter to true', async () => {
             let counter: number = 0
-            const result: boolean = await timeoutUtils.poll(() => counter++ == 5, { timeout: 100, interval: 5 })
+            const result: boolean | undefined = await timeoutUtils.waitUntil(async () => counter++ == 5, { timeout: 1000, interval: 5, truthy: true })
             assert.strictEqual(result, true)
         })
 
-        it('polling timeout', async () => {
+        it('timeout after setting truthy parameter to true', async () => {
             let counter: number = 0
-            const result: boolean = await timeoutUtils.poll(() => counter++ == 5, { timeout: 25, interval: 5 })
-            assert.strictEqual(result, false)
+            const result: boolean | undefined = await timeoutUtils.waitUntil(async () => counter++ == 5, { timeout: 15, interval: 5, truthy: true })
+            assert.strictEqual(result, undefined)
         })
     })
 })

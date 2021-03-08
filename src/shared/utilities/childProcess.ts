@@ -6,7 +6,7 @@
 import * as child_process from 'child_process'
 import * as crossSpawn from 'cross-spawn'
 import { getLogger } from '../logger'
-import { poll } from './timeoutUtils'
+import { waitUntil } from './timeoutUtils'
 
 export interface ChildProcessStartArguments {
     /** Controls whether stdout/stderr is collected and returned in the `ChildProcessResult`. */
@@ -209,7 +209,7 @@ export class ChildProcess {
             child.kill(signal)
 
             if (force === true) {
-                poll(() => this.stopped === true, { timeout: 3000, interval: 200 })
+                waitUntil(async () => this.stopped === true, { timeout: 3000, interval: 200, truthy: true })
                     .then(stopped => {
                         if (!stopped) {
                             child.kill('SIGKILL')

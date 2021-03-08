@@ -173,7 +173,7 @@ async function downloadAndUnzipLambda(
                         if (err) {
                             // err unzipping
                             zipErr = err
-                            resolve(undefined)
+                            resolve(false)
                         } else {
                             progress.report({ increment: 10 })
                             resolve(true)
@@ -182,10 +182,10 @@ async function downloadAndUnzipLambda(
                 } catch (err) {
                     // err loading zip into AdmZip, prior to attempting an unzip
                     zipErr = err
-                    resolve(undefined)
+                    resolve(false)
                 }
             })
-        }, { timeout: 10000, interval: 1000 })
+        }, { timeout: 10000, interval: 1000, truthy: true })
 
         if (!val) {
             throw zipErr
