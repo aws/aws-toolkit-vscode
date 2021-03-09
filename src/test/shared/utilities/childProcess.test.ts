@@ -310,10 +310,8 @@ describe('ChildProcess', async () => {
                 assert.strictEqual(childProcess.stopped, false)
                 childProcess.stop()
                 await waitUntil(
-                    async () => {
-                        return (childProcess.stopped === true) ? true : undefined
-                    },
-                    { timeout: 1000, interval: 100 }
+                    async () => childProcess.stopped,
+                    { timeout: 1000, interval: 100, truthy: true }
                 )
                 assert.strictEqual(childProcess.stopped, true)
             })
@@ -329,10 +327,8 @@ describe('ChildProcess', async () => {
 
                 childProcess.stop()
                 await waitUntil(
-                    async () => {
-                        return (childProcess.stopped === true) ? true : undefined
-                    },
-                    { timeout: 1000, interval: 100 }
+                    async () => childProcess.stopped,
+                    { timeout: 1000, interval: 100, truthy: true }
                 )
                 assert.strictEqual(childProcess.stopped, true)
                 assert.throws(() => {
@@ -354,10 +350,8 @@ describe('ChildProcess', async () => {
                 assert.strictEqual(childProcess.stopped, false)
                 childProcess.stop()
                 await waitUntil(
-                    async () => {
-                        return (childProcess.stopped === true) ? true : undefined
-                    },
-                    { timeout: 1000, interval: 100 }
+                    async () => childProcess.stopped,
+                    { timeout: 1000, interval: 100, truthy: true }
                 )
                 assert.strictEqual(childProcess.stopped, true)
             })
@@ -373,10 +367,8 @@ describe('ChildProcess', async () => {
 
                 childProcess.stop()
                 await waitUntil(
-                    async () => {
-                        return (childProcess.stopped === true) ? true : undefined
-                    },
-                    { timeout: 1000, interval: 100 }
+                    async () => childProcess.stopped,
+                    { timeout: 1000, interval: 100, truthy: true }
                 )
                 assert.strictEqual(childProcess.stopped, true)
                 assert.throws(() => {
