@@ -237,9 +237,10 @@ export async function createNewSamApplication(
 
         // Race condition where SAM app is created but template doesn't register in time.
         // Poll for 5 seconds, otherwise direct user to codelens.
-        const isTemplateRegistered = await waitUntil(async () => {
-            return ext.templateRegistry.getRegisteredItem(uri)
-        })
+        const isTemplateRegistered = await waitUntil(
+            async () => ext.templateRegistry.getRegisteredItem(uri),
+            { timeout: 5000, interval: 500, truthy: false }
+        )
 
         if (isTemplateRegistered) {
             const newLaunchConfigs = await addInitialLaunchConfiguration(
