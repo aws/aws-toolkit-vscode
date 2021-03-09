@@ -117,14 +117,6 @@ const scenarios: TestScenario[] = [
         language: 'javascript',
     },
     {
-        runtime: 'python2.7',
-        displayName: 'python2.7 (Image)',
-        baseImage: `amazon/python2.7-base`,
-        path: 'hello_world/app.py',
-        debugSessionType: 'python',
-        language: 'python',
-    },
-    {
         runtime: 'python3.6',
         displayName: 'python3.6 (Image)',
         baseImage: `amazon/python3.6-base`,
