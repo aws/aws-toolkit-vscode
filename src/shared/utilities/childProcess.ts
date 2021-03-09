@@ -198,7 +198,7 @@ export class ChildProcess {
      * @param signal  Signal to send, defaults to SIGTERM.
      *
      */
-    public stop(force?: boolean, signal?: string): void {
+    public stop(force: boolean = false, signal: string = "SIGTERM"): void {
         const child = this.childProcess
         if (!child) {
             return
@@ -209,12 +209,7 @@ export class ChildProcess {
             child.kill(signal)
 
             if (force === true) {
-                waitUntil(
-                    async () => {
-                        return (this.stopped === true) ? true : undefined
-                    },
-                    { timeout: 3000, interval: 200 }
-                )
+                waitUntil(async () => this.stopped, { timeout: 3000, interval: 200, truthy: true })
                     .then(stopped => {
                         if (!stopped) {
                             child.kill('SIGKILL')
