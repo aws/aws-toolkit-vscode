@@ -72,14 +72,14 @@ export class ChildProcess {
             await this.start({
                 collect: true,
                 onClose: () => {
-                    resolve(this.processResult)
+                    resolve(this.processResult as ChildProcessResult)
                 },
                 onExit: () => {
                     const didClose = !!this.processResult
                     // Race: 'close' may happen after 'exit'. Do not resolve
                     // before 'close' (the streams may have pending data).
                     if (!didClose) {
-                        resolve(this.processResult)
+                        resolve(this.processResult as ChildProcessResult)
                     }
                 },
                 onStderr: onStderr,
@@ -104,6 +104,23 @@ export class ChildProcess {
         // [2] https://nodejs.org/api/child_process.html
         this.childProcess = crossSpawn.spawn(this.command, this.args, this.options)
 
+        function errorHandler(process: ChildProcess, params: ChildProcessStartArguments, error: Error): void {
+            process.processError = error
+            if (params.onError) {
+                params.onError(error)
+            }
+        }
+
+        // Emitted whenever:
+        //  1. Process could not be spawned, or
+        //  2. Process could not be killed, or
+        //  3. Sending a message to the child process failed.
+        // https://nodejs.org/api/child_process.html#child_process_class_childprocess
+        // We also register error event handlers on the output/error streams in case a lower level library fails
+        this.childProcess.on('error', (err) => { errorHandler(this, params, err) })
+        this.childProcess.stdout?.on('error', (err) => { errorHandler(this, params, err) })
+        this.childProcess.stderr?.on('error', (err) => { errorHandler(this, params, err) })
+
         this.childProcess.stdout?.on('data', (data: { toString(): string }) => {
             if (params.collect) {
                 this.stdoutChunks.push(data.toString())
@@ -121,18 +138,6 @@ export class ChildProcess {
 
             if (params.onStderr) {
                 params.onStderr(data.toString())
-            }
-        })
-
-        // Emitted whenever:
-        //  1. Process could not be spawned, or
-        //  2. Process could not be killed, or
-        //  3. Sending a message to the child process failed.
-        // https://nodejs.org/api/child_process.html#child_process_class_childprocess
-        this.childProcess.on('error', error => {
-            this.processError = error
-            if (params.onError) {
-                params.onError(error)
             }
         })
 
@@ -193,7 +198,7 @@ export class ChildProcess {
      * @param signal  Signal to send, defaults to SIGTERM.
      *
      */
-    public stop(force?: boolean, signal?: string): void {
+    public stop(force: boolean = false, signal: string = "SIGTERM"): void {
         const child = this.childProcess
         if (!child) {
             return
@@ -204,12 +209,7 @@ export class ChildProcess {
             child.kill(signal)
 
             if (force === true) {
-                waitUntil(
-                    async () => {
-                        return this.stopped
-                    },
-                    { timeout: 3000, interval: 200 }
-                )
+                waitUntil(async () => this.stopped, { timeout: 3000, interval: 200, truthy: true })
                     .then(stopped => {
                         if (!stopped) {
                             child.kill('SIGKILL')
