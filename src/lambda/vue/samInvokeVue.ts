@@ -80,7 +80,7 @@ function newLaunchConfig(existingConfig?: AwsSamDebuggerConfiguration): MorePerm
         },
         api: {
             path: '',
-            httpMethod: "",
+            httpMethod: '',
             clientCertificateId: '',
             querystring: '',
             headers: {},
@@ -227,11 +227,7 @@ export const Component = Vue.extend({
             this.showAllFields = !this.showAllFields
         },
         stringToBoolean(field: string){
-            if (field === "True") {
-                return true
-            } else if (field === "False") {
-                return false
-            }
+            return field === "True"
         },
         formatFieldToStringArray(field: string | undefined) {
             if(!field){
@@ -455,7 +451,7 @@ export const Component = Vue.extend({
                 <h3>sam</h3>
                 <div class="config-item">
                     <label for="buildArguments">Build Arguments</label>
-                    <input type="text" v-model="launchConfig.sam.buildArguments" >
+                    <input type="text" v-model="launchConfig.sam.buildArguments" placeholder="Enter as a comma separated list" >
                 </div>
                 <div class="config-item">
                     <label for="containerBuild">Container Build</label>
@@ -470,7 +466,7 @@ export const Component = Vue.extend({
                 </div>
                 <div class="config-item">
                     <label for="localArguments">Local Arguments</label>
-                    <input type="text" v-model="launchConfig.sam.localArguments" >
+                    <input type="text" v-model="launchConfig.sam.localArguments" placeholder="Enter as a comma separated list" >
                 </div>
                 <div class="config-item">
                     <label for="skipNewImageCheck">Skip New Image Check</label>
