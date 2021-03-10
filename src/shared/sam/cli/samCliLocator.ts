@@ -35,6 +35,8 @@ export class DefaultSamCliLocationProvider implements SamCliLocationProvider {
 }
 
 abstract class BaseSamCliLocator {
+    /** Indicates that findFileInFolders() returned at least once. */
+    static didFind = false
     protected readonly logger: Logger = getLogger()
 
     public constructor() {
@@ -70,7 +72,9 @@ abstract class BaseSamCliLocator {
             })
 
         for (const fullPath of fullPaths) {
-            this.logger.verbose(`Searching for SAM CLI in: ${fullPath}`)
+            if (!BaseSamCliLocator.didFind) {
+                this.logger.verbose(`Searching for SAM CLI in: ${fullPath}`)
+            }
             const context: SamCliValidatorContext = {
                 samCliLocation: async () => fullPath,
                 getSamCliExecutableId: async () => 'bogus',
@@ -87,9 +91,10 @@ abstract class BaseSamCliLocator {
                 try {
                     const validationResult = await validator.getVersionValidatorResult()
                     if (validationResult.validation === SamCliVersionValidation.Valid) {
+                        BaseSamCliLocator.didFind = true
                         return fullPath
                     }
-                    this.logger.info(`Found invalid SAM executable (${validationResult.validation}): ${fullPath}`)
+                    this.logger.warn(`Found invalid SAM executable (${validationResult.validation}): ${fullPath}`)
                 } catch (e) {
                     const err = e as Error
                     this.logger.error(err)
@@ -97,6 +102,7 @@ abstract class BaseSamCliLocator {
             }
         }
 
+        BaseSamCliLocator.didFind = true
         return undefined
     }
 
