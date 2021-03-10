@@ -408,7 +408,8 @@
                                             "options",
                                             "patch",
                                             "post",
-                                            "put"
+                                            "put",
+                                            ""
                                         ]
                                     },
                                     "payload": {
