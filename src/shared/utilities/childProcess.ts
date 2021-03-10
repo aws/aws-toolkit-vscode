@@ -5,6 +5,8 @@
 
 import * as child_process from 'child_process'
 import * as crossSpawn from 'cross-spawn'
+import * as semver from 'semver'
+import * as vscode from 'vscode'
 import { getLogger } from '../logger'
 import { waitUntil } from './timeoutUtils'
 
@@ -117,9 +119,17 @@ export class ChildProcess {
         //  3. Sending a message to the child process failed.
         // https://nodejs.org/api/child_process.html#child_process_class_childprocess
         // We also register error event handlers on the output/error streams in case a lower level library fails
-        this.childProcess.on('error', (err) => { errorHandler(this, params, err) })
-        this.childProcess.stdout?.on('error', (err) => { errorHandler(this, params, err) })
-        this.childProcess.stderr?.on('error', (err) => { errorHandler(this, params, err) })
+        this.childProcess.on('error', err => {
+            errorHandler(this, params, err)
+        })
+        if (semver.gte(vscode.version, '1.54')) {
+            this.childProcess.stdout?.on('error', err => {
+                errorHandler(this, params, err)
+            })
+            this.childProcess.stderr?.on('error', err => {
+                errorHandler(this, params, err)
+            })
+        }
 
         this.childProcess.stdout?.on('data', (data: { toString(): string }) => {
             if (params.collect) {
@@ -198,7 +208,7 @@ export class ChildProcess {
      * @param signal  Signal to send, defaults to SIGTERM.
      *
      */
-    public stop(force: boolean = false, signal: string = "SIGTERM"): void {
+    public stop(force: boolean = false, signal: string = 'SIGTERM'): void {
         const child = this.childProcess
         if (!child) {
             return
