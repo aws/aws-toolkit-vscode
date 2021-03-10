@@ -1,0 +1,47 @@
+{
+  "date" : "2021-03-10",
+  "version" : "1.25",
+  "entries" : [ {
+    "type" : "breaking",
+    "description" : "Minimum SAM CLI version is now 1.0.0"
+  }, {
+    "type" : "feature",
+    "description" : "Debugging Python based Lambdas locally now have the Python interactive console enabled (Fixes #1165)"
+  }, {
+    "type" : "feature",
+    "description" : "Add a setting for how the AWS profiles notification is shown (#2408)"
+  }, {
+    "type" : "feature",
+    "description" : "Deleting resources now requires typing \"delete me\" instead of the resource name"
+  }, {
+    "type" : "feature",
+    "description" : "Add support for 2021.1"
+  }, {
+    "type" : "feature",
+    "description" : "Allow deploying SAM templates from the CloudFormaton node (#2166)"
+  }, {
+    "type" : "bugfix",
+    "description" : "Improve error messages when properties are not found in templates (#2449)"
+  }, {
+    "type" : "bugfix",
+    "description" : "Fix resource selectors assuming every region has every service (#2435)"
+  }, {
+    "type" : "bugfix",
+    "description" : "Docker is now validated before building the Lambda when running and debugging locally (Fixes #2418)"
+  }, {
+    "type" : "bugfix",
+    "description" : "Fixed several UI inconsistencies in the S3 bucket viewer actions"
+  }, {
+    "type" : "bugfix",
+    "description" : "Fix showing stack status notification on opening existing CloudFormation stack (#2157)"
+  }, {
+    "type" : "bugfix",
+    "description" : "Processes using the Step system (e.g. SAM build) can now be stopped (#2418)"
+  }, {
+    "type" : "bugfix",
+    "description" : "Fixed the Remote Lambda Run Configuration failing to load the list of functions if not in active region"
+  }, {
+    "type" : "deprecation",
+    "description" : "2020.1 support will be removed in the next release"
+  } ]
+}

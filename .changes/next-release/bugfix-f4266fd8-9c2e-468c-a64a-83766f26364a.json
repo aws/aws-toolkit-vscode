@@ -1,4 +1,0 @@
-{
-  "type" : "bugfix",
-  "description" : "Improve error messages when properties are not found in templates (#2449)"
-}

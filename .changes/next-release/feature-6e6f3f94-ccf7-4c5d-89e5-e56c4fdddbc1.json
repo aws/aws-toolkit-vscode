@@ -1,4 +1,0 @@
-{
-  "type" : "feature",
-  "description" : "Deleting resources now requires typing \"delete me\" instead of the resource name"
-}

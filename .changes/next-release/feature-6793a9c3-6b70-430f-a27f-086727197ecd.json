@@ -1,4 +1,0 @@
-{
-  "type" : "feature",
-  "description" : "Allow deploying SAM templates from the CloudFormaton node (#2166)"
-}
