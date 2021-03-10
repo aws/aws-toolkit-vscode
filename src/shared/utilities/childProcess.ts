@@ -122,7 +122,8 @@ export class ChildProcess {
         this.childProcess.on('error', err => {
             errorHandler(this, params, err)
         })
-        if (semver.gte(vscode.version, '1.54')) {
+        if (semver.gte(vscode.version, '1.54.0')) {
+            // #1539
             this.childProcess.stdout?.on('error', err => {
                 errorHandler(this, params, err)
             })
