@@ -94,9 +94,7 @@ abstract class BaseSamCliLocator {
                         BaseSamCliLocator.didFind = true
                         return fullPath
                     }
-                    if (!BaseSamCliLocator.didFind) {
-                        this.logger.warn(`Found invalid SAM executable (${validationResult.validation}): ${fullPath}`)
-                    }
+                    this.logger.warn(`Found invalid SAM executable (${validationResult.validation}): ${fullPath}`)
                 } catch (e) {
                     const err = e as Error
                     this.logger.error(err)
