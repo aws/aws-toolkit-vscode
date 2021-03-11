@@ -99,6 +99,7 @@ export async function resumeCreateNewSamApp(
             result: createResult,
             reason: reason,
             runtime: samInitState?.runtime as TelemetryRuntime,
+            version: await getSamCliVersion(getSamCliContext()),
         })
     }
 }
@@ -302,6 +303,7 @@ export async function createNewSamApplication(
             result: createResult,
             reason: reason,
             runtime: createRuntime as TelemetryRuntime,
+            version: await getSamCliVersion(samCliContext),
         })
     }
 }

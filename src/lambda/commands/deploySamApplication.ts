@@ -13,7 +13,7 @@ import { ext } from '../../shared/extensionGlobals'
 import { makeTemporaryToolkitFolder, tryRemoveFolder } from '../../shared/filesystemUtilities'
 import { getLogger } from '../../shared/logger'
 import { SamCliBuildInvocation } from '../../shared/sam/cli/samCliBuild'
-import { getSamCliContext, SamCliContext } from '../../shared/sam/cli/samCliContext'
+import { getSamCliContext, SamCliContext, getSamCliVersion } from '../../shared/sam/cli/samCliContext'
 import { runSamCliDeploy } from '../../shared/sam/cli/samCliDeploy'
 import { SamCliProcessInvoker } from '../../shared/sam/cli/samCliInvokerUtils'
 import { runSamCliPackage } from '../../shared/sam/cli/samCliPackage'
@@ -111,7 +111,7 @@ export async function deploySamApplication(
         outputDeployError(err as Error)
     } finally {
         await tryRemoveFolder(deployFolder)
-        recordSamDeploy({ result: deployResult })
+        recordSamDeploy({ result: deployResult, version: await getSamCliVersion(samCliContext) })
     }
 }
 
