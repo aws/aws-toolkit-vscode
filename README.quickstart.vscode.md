@@ -11,6 +11,7 @@ See [Setup](#additional-setup-steps) for installation requirements, or [Get help
     -   API Gateway
     -   CloudFormation stacks
     -   CloudWatch Logs
+    -   ECR
     -   EventBridge schemas
     -   Lambda functions
     -   S3 explorer
@@ -210,7 +211,7 @@ palette_, available by selecting _View > Command Palette_ or by typing
 | `AWS: Create a new Issue on Github`                  | Opens the AWS Toolkit's [New Issue page on Github](https://github.com/aws/aws-toolkit-vscode/issues/new/choose).                                                                                                                                                                                               |
 | `AWS: Create a new Systems Manager Document locally` | Creates a new Systems Manager Document from a template in either YAML or JSON                                                                                                                                                                                                                                  |
 | `AWS: Create Credentials Profile`                    | Creates an AWS credentials profile. For more information, see [Setting Up Your AWS Credentials](https://docs.aws.amazon.com/console/toolkit-for-vscode/setup-credentials) in the user guide.                                                                                                                   |
-| `AWS: Create new SAM Application`                    | Generates a set of code files for a new AWS serverless application. For more information, see [Creating a Serverless Application](https://docs.aws.amazon.com/console/toolkit-for-vscode/create-sam) in the user guide.                                                                                        |
+| `AWS: Create Lambda SAM Application`                 | Generates code files for a new AWS serverless Lambda application. For more information, see [Creating a Serverless Application](https://docs.aws.amazon.com/console/toolkit-for-vscode/create-sam) in the user guide.                                                                                        |
 | `AWS: Deploy SAM Application`                        | Deploys a local serverless application to an AWS account. For more information, see [Deploying a Serverless Application](https://docs.aws.amazon.com/console/toolkit-for-vscode/deploy-serverless-app) in the user guide.                                                                                      |
 | `AWS: Detect SAM CLI`                                | Checks whether the Toolkit can communicate correctly with the AWS SAM CLI that is installed.                                                                                                                                                                                                                   |
 | `AWS: Focus on Explorer View`                        | Opens the **AWS: Explorer** Side Bar, which we will simply call [_the **AWS Explorer**_](#ui-components-aws-expl), and then moves the focus there.                                                                                                                                                             |
