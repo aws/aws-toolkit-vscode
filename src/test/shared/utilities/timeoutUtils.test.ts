@@ -4,14 +4,14 @@
  */
 
 import * as assert from 'assert'
-import * as lolex from 'lolex'
+import * as FakeTimers from '@sinonjs/fake-timers'
 import * as timeoutUtils from '../../../shared/utilities/timeoutUtils'
 
 describe('timeoutUtils', async () => {
-    let clock: lolex.InstalledClock
+    let clock: sinon.SinonFakeTimers
 
     before(() => {
-        clock = lolex.install()
+        clock = FakeTimers.install()
     })
 
     after(() => {
@@ -123,10 +123,6 @@ describe('timeoutUtils', async () => {
 
         before(() => {
             clock.uninstall()
-        })
-
-        after(() => {
-            clock = lolex.install()
         })
 
         beforeEach(() => {
