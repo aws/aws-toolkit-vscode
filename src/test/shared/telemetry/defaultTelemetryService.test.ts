@@ -4,7 +4,7 @@
  */
 
 import * as assert from 'assert'
-import * as lolex from 'lolex'
+import * as FakeTimers from '@sinonjs/fake-timers'
 import * as sinon from 'sinon'
 import * as fs from 'fs-extra'
 import { AwsContext } from '../../../shared/awsContext'
@@ -44,12 +44,12 @@ afterEach(async () => {
 
 describe('DefaultTelemetryService', () => {
     const testFlushPeriod = 10
-    let clock: lolex.InstalledClock
+    let clock: sinon.SinonFakeTimers
     let sandbox: sinon.SinonSandbox
 
     before(() => {
         sandbox = sinon.createSandbox()
-        clock = lolex.install()
+        clock = FakeTimers.install()
     })
 
     after(() => {

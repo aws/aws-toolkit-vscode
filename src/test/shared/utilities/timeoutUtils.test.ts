@@ -4,14 +4,14 @@
  */
 
 import * as assert from 'assert'
-import * as lolex from 'lolex'
+import * as FakeTimers from '@sinonjs/fake-timers'
 import * as timeoutUtils from '../../../shared/utilities/timeoutUtils'
 
 describe('timeoutUtils', async () => {
-    let clock: lolex.InstalledClock
+    let clock: sinon.SinonFakeTimers
 
     before(() => {
-        clock = lolex.install()
+        clock = FakeTimers.install()
     })
 
     after(() => {
@@ -104,7 +104,15 @@ describe('timeoutUtils', async () => {
     })
 
     describe('waitUntil', async () => {
-        const testSettings = {callCounter: 0, callGoal: 0, functionDelay: 10}
+        const testSettings = {
+            callCounter: 0, 
+            callGoal: 0, 
+            functionDelay: 10,
+            clockInterval: 1,
+            clockSpeed: 5,
+        }
+
+        let fastClock: sinon.SinonTimerId
 
         // Test function, increments a counter every time it is called
         async function testFunction(): Promise<number | undefined> {
@@ -123,10 +131,18 @@ describe('timeoutUtils', async () => {
 
         before(() => {
             clock.uninstall()
+
+            // Makes a clock that runs clockSpeed times as fast as a normal clock (uses 1ms intervals)
+            // This works since we create an interval with the system clock, then trigger our fake clock with it
+            fastClock = setInterval(() => {
+                clock.tick(testSettings.clockSpeed  * testSettings.clockInterval)
+            }, testSettings.clockInterval)
+
+            clock = FakeTimers.install()
         })
 
         after(() => {
-            clock = lolex.install()
+            clearInterval(fastClock)
         })
 
         beforeEach(() => {
