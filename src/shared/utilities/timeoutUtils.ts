@@ -84,21 +84,35 @@ export class Timeout {
  * @param fn  Function whose result is checked
  * @param opt.timeout  Timeout in ms (default: 5000)
  * @param opt.interval  Interval in ms between fn() checks (default: 500)
+ * @param opt.truthy  Wait for "truthy" result, else wait for any defined result including `false` (default: true)
  *
  * @returns Result of `fn()`, or `undefined` if timeout was reached.
  */
 export async function waitUntil<T>(
     fn: () => Promise<T>,
-    opt: { timeout: number; interval: number } = { timeout: 5000, interval: 500 }
+    opt: { timeout: number; interval: number; truthy: boolean } = { timeout: 5000, interval: 500, truthy: true }
 ): Promise<T | undefined> {
     for (let i = 0; true; i++) {
-        const result: T = await fn()
-        if (result) {
+        const start: number = Date.now()
+        let result: T
+
+        // Needed in case a caller uses a 0 timeout (function is only called once)
+        if (opt.timeout > 0) {
+            result = await Promise.race([fn(), new Promise<T>(r => setTimeout(r, opt.timeout))])
+        } else {
+            result = await fn()
+        }
+
+        // Ensures that we never overrun the timeout
+        opt.timeout -= (Date.now() - start)
+
+        if ((opt.truthy && result) || (!opt.truthy && result !== undefined)) {
             return result
         }
         if (i * opt.interval >= opt.timeout) {
             return undefined
         }
+
         await new Promise(r => setTimeout(r, opt.interval))
     }
 }

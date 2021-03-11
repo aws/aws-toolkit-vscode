@@ -246,12 +246,9 @@ export class SamDebugConfigProvider implements vscode.DebugConfigurationProvider
     }
 
     /**
-     * Generates a full run-config from a user-provided config, then
-     * runs/debugs it (essentially `sam build` + `sam local invoke`).
+     * Necessary to get the debug configuration over to the resolveDebugConfigurationWithSubstitutedVariables function below
      *
-     * If `launch.json` is missing, attempts to generate a config dynamically.
-     *
-     * @param folder  Workspace folder
+     * @param folder Workspace folder
      * @param config User-provided config (from launch.json)
      * @param token  Cancellation token
      */
@@ -259,14 +256,45 @@ export class SamDebugConfigProvider implements vscode.DebugConfigurationProvider
         folder: vscode.WorkspaceFolder | undefined,
         config: AwsSamDebuggerConfiguration,
         token?: vscode.CancellationToken
-    ): Promise<SamLaunchRequestArgs | undefined> {
+    ): Promise<AwsSamDebuggerConfiguration | undefined> {
+        if (isCloud9()) {
+            // TODO: remove when Cloud9 supports ${workspaceFolder}.
+            await this.makeAndInvokeConfig(folder, config, token)
+            return undefined
+        }
+        return config
+    }
+
+    /**
+     * Generates a full run-config from a user-provided config, then
+     * runs/debugs it (essentially `sam build` + `sam local invoke`).
+     *
+     * If `launch.json` is missing, attempts to generate a config dynamically.
+     *
+     * @param folder Workspace folder
+     * @param config User-provided config (from launch.json)
+     * @param token  Cancellation token
+     */
+    public async resolveDebugConfigurationWithSubstitutedVariables(
+        folder: vscode.WorkspaceFolder | undefined,
+        config: AwsSamDebuggerConfiguration,
+        token?: vscode.CancellationToken
+    ): Promise<undefined> {
+        await this.makeAndInvokeConfig(folder, config, token)
+        // TODO: return config here, and remove use of `startDebugging()` in `localLambdaRunner.ts`.
+        return undefined
+    }
+
+    private async makeAndInvokeConfig(
+        folder: vscode.WorkspaceFolder | undefined,
+        config: AwsSamDebuggerConfiguration,
+        token?: vscode.CancellationToken
+    ): Promise<undefined> {
         const resolvedConfig = await this.makeConfig(folder, config, token)
         if (!resolvedConfig) {
             return undefined
         }
         await this.invokeConfig(resolvedConfig)
-        // TODO: return config here, and remove use of `startDebugging()` in `localLambdaRunner.ts`.
-        return undefined
     }
 
     /**
