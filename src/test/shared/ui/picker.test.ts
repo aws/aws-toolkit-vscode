@@ -4,7 +4,7 @@
  */
 
 import * as assert from 'assert'
-import * as lolex from 'lolex'
+import * as FakeTimers from '@sinonjs/fake-timers'
 import * as sinon from 'sinon'
 import * as vscode from 'vscode'
 import * as picker from '../../../shared/ui/picker'
@@ -377,10 +377,10 @@ describe('IteratingQuickPickController', async () => {
     const interval = 30
 
     let quickPick: vscode.QuickPick<vscode.QuickPickItem>
-    let clock: lolex.InstalledClock
+    let clock: sinon.SinonFakeTimers
 
     before(() => {
-        clock = lolex.install()
+        clock = FakeTimers.install()
     })
 
     after(() => {
@@ -398,7 +398,7 @@ describe('IteratingQuickPickController', async () => {
 
     async function* iteratorFn(): AsyncIterator<string> {
         for (const [i, value] of values.entries()) {
-            await new Promise(resolve => {
+            await new Promise<void>(resolve => {
                 clock.setTimeout(() => {
                     resolve()
                 }, interval)
@@ -446,7 +446,7 @@ describe('IteratingQuickPickController', async () => {
         await clock.nextAsync()
         await clock.nextAsync()
         await clock.nextAsync()
-        new Promise(resolve => {
+        new Promise<void>(resolve => {
             clock.setTimeout(() => {
                 assert.strictEqual(quickPick.items.length, 3)
                 assert.deepStrictEqual(quickPick.items, result)
@@ -459,7 +459,7 @@ describe('IteratingQuickPickController', async () => {
         controller.startRequests()
 
         await clock.nextAsync()
-        new Promise(resolve => {
+        new Promise<void>(resolve => {
             clock.setTimeout(() => {
                 assert.strictEqual(quickPick.items.length, 1)
                 assert.deepStrictEqual(quickPick.items, [{ label: 'A' }])
@@ -470,7 +470,7 @@ describe('IteratingQuickPickController', async () => {
         await clock.nextAsync()
         await clock.nextAsync()
         await clock.nextAsync()
-        new Promise(resolve => {
+        new Promise<void>(resolve => {
             clock.setTimeout(() => {
                 assert.strictEqual(quickPick.items.length, 3)
                 assert.deepStrictEqual(quickPick.items, result)
@@ -491,7 +491,7 @@ describe('IteratingQuickPickController', async () => {
         await clock.nextAsync()
         await clock.nextAsync()
         await clock.nextAsync()
-        new Promise(resolve => {
+        new Promise<void>(resolve => {
             clock.setTimeout(() => {
                 assert.strictEqual(quickPick.items.length, 3)
                 assert.deepStrictEqual(quickPick.items, result)
@@ -502,7 +502,7 @@ describe('IteratingQuickPickController', async () => {
 
         controller.startRequests()
         await clock.nextAsync()
-        new Promise(resolve => {
+        new Promise<void>(resolve => {
             clock.setTimeout(() => {
                 assert.strictEqual(quickPick.items.length, 3)
                 assert.deepStrictEqual(quickPick.items, result)
@@ -520,7 +520,7 @@ describe('IteratingQuickPickController', async () => {
 
         // pause almost immediately. This should cause this to output a single item.
         controller.startRequests()
-        new Promise(resolve => {
+        new Promise<void>(resolve => {
             setTimeout(() => {
                 controller.pauseRequests()
                 resolve()
@@ -528,7 +528,7 @@ describe('IteratingQuickPickController', async () => {
         })
         await clock.nextAsync()
         await clock.nextAsync()
-        new Promise(resolve => {
+        new Promise<void>(resolve => {
             setTimeout(() => {
                 assert.deepStrictEqual(quickPick.items, [{ label: 'A' }], `items at pause are: ${quickPick.items}`)
                 resolve()
@@ -540,7 +540,7 @@ describe('IteratingQuickPickController', async () => {
         await clock.nextAsync()
         await clock.nextAsync()
         await clock.nextAsync()
-        new Promise(resolve => {
+        new Promise<void>(resolve => {
             setTimeout(() => {
                 assert.deepStrictEqual(quickPick.items, result, `items at end are: ${quickPick.items}`)
                 resolve()
@@ -558,7 +558,7 @@ describe('IteratingQuickPickController', async () => {
         controller.startRequests()
         await clock.nextAsync()
         await clock.nextAsync()
-        new Promise(resolve => {
+        new Promise<void>(resolve => {
             setTimeout(() => {
                 assert.deepStrictEqual(quickPick.items, [
                     {
@@ -580,7 +580,7 @@ describe('IteratingQuickPickController', async () => {
 
         controller.startRequests()
         await clock.nextAsync()
-        new Promise(resolve => {
+        new Promise<void>(resolve => {
             setTimeout(() => {
                 assert.deepStrictEqual(quickPick.items, [picker.IteratingQuickPickController.NO_ITEMS_ITEM])
                 resolve()
@@ -625,7 +625,7 @@ describe('IteratingQuickPickController', async () => {
         await clock.nextAsync()
         await clock.nextAsync()
 
-        new Promise(resolve => {
+        new Promise<void>(resolve => {
             setTimeout(() => {
                 assert.deepStrictEqual(quickPick.items, result)
                 resolve()
