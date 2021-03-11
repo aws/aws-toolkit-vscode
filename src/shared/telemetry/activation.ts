@@ -60,7 +60,7 @@ export async function activate(activateArguments: {
     applyTelemetryEnabledState(ext.telemetry, activateArguments.toolkitSettings)
 
     // Prompt user about telemetry if they haven't been
-    if (!hasUserSeenTelemetryNotice(activateArguments.extensionContext)) {
+    if (!isCloud9() && !hasUserSeenTelemetryNotice(activateArguments.extensionContext)) {
         showTelemetryNotice(activateArguments.extensionContext)
     }
 
