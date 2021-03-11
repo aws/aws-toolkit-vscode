@@ -104,7 +104,15 @@ describe('timeoutUtils', async () => {
     })
 
     describe('waitUntil', async () => {
-        const testSettings = {callCounter: 0, callGoal: 0, functionDelay: 10}
+        const testSettings = {
+            callCounter: 0, 
+            callGoal: 0, 
+            functionDelay: 10,
+            clockInterval: 1,
+            clockSpeed: 5,
+        }
+
+        let fastClock: sinon.SinonTimerId
 
         // Test function, increments a counter every time it is called
         async function testFunction(): Promise<number | undefined> {
@@ -123,6 +131,18 @@ describe('timeoutUtils', async () => {
 
         before(() => {
             clock.uninstall()
+
+            // Makes a clock that runs clockSpeed times as fast as a normal clock (uses 1ms intervals)
+            // This works since we create an interval with the system clock, then trigger our fake clock with it
+            fastClock = setInterval(() => {
+                clock.tick(testSettings.clockSpeed  * testSettings.clockInterval)
+            }, testSettings.clockInterval)
+
+            clock = FakeTimers.install()
+        })
+
+        after(() => {
+            clearInterval(fastClock)
         })
 
         beforeEach(() => {
