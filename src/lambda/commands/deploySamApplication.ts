@@ -59,6 +59,7 @@ export async function deploySamApplication(
     }
 ): Promise<void> {
     let deployResult: Result = 'Succeeded'
+    let deployVersion: string | undefined
     let deployFolder: string | undefined
     try {
         const credentials = await awsContext.getCredentials()
@@ -75,6 +76,7 @@ export async function deploySamApplication(
         }
 
         deployFolder = await makeTemporaryToolkitFolder('samDeploy')
+        deployVersion = await getSamCliVersion(samCliContext)
 
         const deployParameters: DeploySamApplicationParameters = {
             deployRootFolder: deployFolder,
@@ -111,7 +113,7 @@ export async function deploySamApplication(
         outputDeployError(err as Error)
     } finally {
         await tryRemoveFolder(deployFolder)
-        recordSamDeploy({ result: deployResult, version: await getSamCliVersion(samCliContext) })
+        recordSamDeploy({ result: deployResult, version: deployVersion })
     }
 }
 
