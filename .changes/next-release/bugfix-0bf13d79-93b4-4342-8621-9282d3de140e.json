@@ -1,0 +1,4 @@
+{
+  "type" : "bugfix",
+  "description" : "Fix issue preventing deployment of CloudFormation templates with empty values (#1498)"
+}
