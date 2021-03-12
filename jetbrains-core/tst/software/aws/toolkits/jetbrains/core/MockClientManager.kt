@@ -12,6 +12,7 @@ import com.intellij.testFramework.replaceService
 import org.junit.rules.ExternalResource
 import software.amazon.awssdk.core.SdkClient
 import software.aws.toolkits.core.ToolkitClientManager
+import software.aws.toolkits.core.clients.SdkClientProvider
 import software.aws.toolkits.core.credentials.ToolkitCredentialsProvider
 import software.aws.toolkits.core.region.AwsRegion
 import software.aws.toolkits.core.region.ToolkitRegionProvider
@@ -76,7 +77,7 @@ class MockClientManager : AwsClientManager() {
 
             val httpClient = AwsSdkClient()
             Disposer.register(disposable, httpClient)
-            ApplicationManager.getApplication().replaceService(AwsSdkClient::class.java, httpClient, disposable)
+            ApplicationManager.getApplication().replaceService(SdkClientProvider::class.java, httpClient, disposable)
         }
     }
 }
