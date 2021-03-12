@@ -34,14 +34,13 @@ open class AwsClientManager : ToolkitClientManager(), Disposable {
         )
     }
 
+    override val userAgent = AwsClientManager.userAgent
+
     override fun dispose() {
         shutdown()
     }
 
-    override val sdkHttpClient: SdkHttpClient
-        get() = AwsSdkClient.getInstance().sdkHttpClient
-
-    override val userAgent = AwsClientManager.userAgent
+    override fun sdkHttpClient(): SdkHttpClient = AwsSdkClient.getInstance().sharedSdkClient()
 
     override fun getRegionProvider(): ToolkitRegionProvider = AwsRegionProvider.getInstance()
 

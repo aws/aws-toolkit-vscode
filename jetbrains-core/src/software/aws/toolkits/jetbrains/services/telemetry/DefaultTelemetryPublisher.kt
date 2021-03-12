@@ -85,7 +85,6 @@ class DefaultTelemetryPublisher(
         }
 
     private companion object {
-
         private const val METADATA_AWS_ACCOUNT = "awsAccount"
         private const val METADATA_AWS_REGION = "awsRegion"
 
@@ -93,14 +92,14 @@ class DefaultTelemetryPublisher(
             val sdkClient = AwsSdkClient.getInstance()
             return ToolkitClientManager.createNewClient(
                 ToolkitTelemetryClient::class,
-                sdkClient.sdkHttpClient,
+                sdkClient.sharedSdkClient(),
                 Region.US_EAST_1,
                 AWSCognitoCredentialsProvider(
                     "us-east-1:820fd6d1-95c0-4ca4-bffb-3f01d32da842",
                     CognitoIdentityClient.builder()
                         .credentialsProvider(AnonymousCredentialsProvider.create())
                         .region(Region.US_EAST_1)
-                        .httpClient(sdkClient.sdkHttpClient)
+                        .httpClient(sdkClient.sharedSdkClient())
                         .build()
                 ),
                 AwsClientManager.userAgent,

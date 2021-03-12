@@ -30,8 +30,9 @@ abstract class ToolkitClientManager {
 
     private val cachedClients = ConcurrentHashMap<AwsClientKey, SdkClient>()
 
-    protected abstract val sdkHttpClient: SdkHttpClient
     protected abstract val userAgent: String
+
+    protected abstract fun sdkHttpClient(): SdkHttpClient
 
     inline fun <reified T : SdkClient> getClient(
         credProvider: ToolkitCredentialsProvider,
@@ -89,7 +90,7 @@ abstract class ToolkitClientManager {
         sdkClass: KClass<T>,
         region: AwsRegion,
         credProvider: ToolkitCredentialsProvider
-    ): T = createNewClient(sdkClass, sdkHttpClient, Region.of(region.id), credProvider, userAgent)
+    ): T = createNewClient(sdkClass, sdkHttpClient(), Region.of(region.id), credProvider, userAgent)
 
     companion object {
         private val GLOBAL_SERVICE_DENY_LIST = setOf(

@@ -111,7 +111,7 @@ class AwsSdkClientProxyTest {
     private fun makeAwsCall() {
         S3Client.builder()
             .region(Region.US_WEST_2)
-            .httpClient(AwsSdkClient.getInstance().sdkHttpClient)
+            .httpClient(AwsSdkClient.getInstance().sharedSdkClient())
             .build().use {
                 it.listBuckets()
             }
