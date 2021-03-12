@@ -523,7 +523,6 @@ export const Component = Vue.extend({
             <div class="json-parse-error" v-if="payload.errorMsg">Error parsing JSON: {{payload.errorMsg}}</div>
         </div>
         <div class="invoke-button-container">
-            <button class="form-buttons" v-on:click.prevent="clearForm">Clear Form</button>
             <button class="form-buttons" v-on:click.prevent="save">Save Debug Configuration</button>
             <button class="form-buttons" v-on:click.prevent="launch">Invoke Debug Configuration</button>
         </div>
