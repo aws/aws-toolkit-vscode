@@ -28,14 +28,13 @@ class DeploySamApplicationValidatorTest {
     private lateinit var view: DeployServerlessApplicationPanel
     private lateinit var sut: DeploySamApplicationValidator
 
+    private val parameters = listOf<Parameter>(
+        TestParameter(logicalName = "param1", type = "String", defaultValue = "value1"),
+        TestParameter(logicalName = "param2", type = "String", defaultValue = "value2")
+    )
+
     @Before
     fun wireMocksTogetherWithValidOptions() {
-
-        val parameters = listOf<Parameter>(
-            TestParameter("param1", "value1"),
-            TestParameter("param2", "value2")
-        )
-
         view = runInEdtAndGet {
             DeployServerlessApplicationPanel(projectRule.project)
         }
@@ -53,7 +52,7 @@ class DeploySamApplicationValidatorTest {
         view.ecrRepo.model = MutableCollectionComboBoxModel(listOf(repo)).also { it.selectedItem = repo }
         view.ecrRepo.forceLoaded()
 
-        sut = DeploySamApplicationValidator(view, hasImageFunctions = false)
+        sut = DeploySamApplicationValidator(view, hasImageFunctions = false, templateParameters = parameters)
     }
 
     @Test
@@ -82,7 +81,7 @@ class DeploySamApplicationValidatorTest {
 
     @Test
     fun validInputsWithImageReturnsNull() {
-        sut = DeploySamApplicationValidator(view, hasImageFunctions = true)
+        sut = DeploySamApplicationValidator(view, hasImageFunctions = true, templateParameters = parameters)
         assertThat(sut.validateSettings()).isNull()
     }
 
@@ -139,26 +138,209 @@ class DeploySamApplicationValidatorTest {
     }
 
     @Test
-    fun templateParameterMissing_Single() {
+    fun templateParameterAllTypesValid_hasValues() {
         val parameters = listOf<Parameter>(
-            TestParameter("param1", "value1"),
-            TestParameter("param2", "")
+            TestParameter(logicalName = "param1", type = "String", defaultValue = "value1"),
+            TestParameter(logicalName = "param2", type = "Number", defaultValue = "1"),
+            TestParameter(logicalName = "param3", type = "Number", defaultValue = "1.2"),
+            TestParameter(logicalName = "param4", type = "List<Number>", defaultValue = "10,20,1.2"),
+            TestParameter(logicalName = "param5", type = "CommaDelimitedList", defaultValue = "param1,param2"),
+            TestParameter(logicalName = "param6", type = "AWS::EC2::AvailabilityZone::Name", defaultValue = "us-fake-1"),
+            TestParameter(logicalName = "param7", type = "List<AWS::EC2::AvailabilityZone::Name>", defaultValue = "us-fake-1a,us-fake-1b"),
+            TestParameter(logicalName = "param8", type = "AWS::SSM::Parameter::Value<String>", defaultValue = "something"),
+
         )
+        sut = DeploySamApplicationValidator(view, hasImageFunctions = false, templateParameters = parameters)
         view.withTemplateParameters(parameters)
-        assertThat(sut.validateSettings()?.message).contains("Template values are missing:")
-        assertThat(sut.validateSettings()?.message).contains("param2")
+
+        assertThat(sut.validateSettings()).isNull()
     }
 
     @Test
-    fun templateParameterMissing_Multi() {
+    fun templateParameterAllTypesValid_noValues() {
         val parameters = listOf<Parameter>(
-            TestParameter("param1", ""),
-            TestParameter("param2", "")
+            TestParameter(logicalName = "param1", type = "String", defaultValue = ""),
+            TestParameter(logicalName = "param4", type = "List<Number>", defaultValue = ""),
+            TestParameter(logicalName = "param5", type = "CommaDelimitedList", defaultValue = ""),
+            TestParameter(logicalName = "param6", type = "AWS::EC2::AvailabilityZone::Name", defaultValue = ""),
+            TestParameter(logicalName = "param7", type = "List<AWS::EC2::AvailabilityZone::Name>", defaultValue = ""),
+            TestParameter(logicalName = "param8", type = "AWS::SSM::Parameter::Value<String>", defaultValue = ""),
         )
+        sut = DeploySamApplicationValidator(view, hasImageFunctions = false, templateParameters = parameters)
         view.withTemplateParameters(parameters)
-        assertThat(sut.validateSettings()?.message).contains("Template values are missing:")
-        assertThat(sut.validateSettings()?.message).contains("param1")
-        assertThat(sut.validateSettings()?.message).contains("param2")
+
+        assertThat(sut.validateSettings()).isNull()
+    }
+
+    @Test
+    fun templateParameter_stringRegex() {
+        val parameters = listOf<Parameter>(
+            TestParameter(
+                logicalName = "goodRegex",
+                type = "String",
+                defaultValue = "example@example.com",
+                additionalProperties = mapOf(
+                    "AllowedPattern" to "^[_A-Za-z0-9-\\+]+(\\.[_A-Za-z0-9-]+)*@[A-Za-z0-9-]+(\\.[A-Za-z0-9]+)*(\\.[A-Za-z]{2,})$"
+                )
+            )
+        )
+        sut = DeploySamApplicationValidator(view, hasImageFunctions = false, templateParameters = parameters)
+        view.withTemplateParameters(parameters)
+
+        assertThat(sut.validateSettings()?.message).isNull()
+    }
+
+    @Test
+    fun templateParameter_stringTooShort() {
+        val parameters = listOf<Parameter>(
+            TestParameter(
+                logicalName = "tooShort",
+                type = "String",
+                defaultValue = "",
+                additionalProperties = mapOf(
+                    "MinLength" to "1",
+                    "MaxLength" to "5"
+                )
+            )
+        )
+        sut = DeploySamApplicationValidator(view, hasImageFunctions = false, templateParameters = parameters)
+        view.withTemplateParameters(parameters)
+
+        assertThat(sut.validateSettings()?.message).contains("tooShort does not meet MinLength")
+    }
+
+    @Test
+    fun templateParameter_stringTooLong() {
+        val parameters = listOf<Parameter>(
+            TestParameter(
+                logicalName = "tooLong",
+                type = "String",
+                defaultValue = "aaaaaaaaaa",
+                additionalProperties = mapOf(
+                    "MinLength" to "1",
+                    "MaxLength" to "5"
+                )
+            )
+        )
+        sut = DeploySamApplicationValidator(view, hasImageFunctions = false, templateParameters = parameters)
+        view.withTemplateParameters(parameters)
+
+        assertThat(sut.validateSettings()?.message).contains("tooLong exceeds MaxLength")
+    }
+
+    @Test
+    fun templateParameter_stringFailsRegex() {
+        val parameters = listOf<Parameter>(
+            TestParameter(
+                logicalName = "regexFail",
+                type = "String",
+                defaultValue = "aaaaaaaaaa",
+                additionalProperties = mapOf(
+                    "AllowedPattern" to "b*"
+
+                )
+            )
+        )
+        sut = DeploySamApplicationValidator(view, hasImageFunctions = false, templateParameters = parameters)
+        view.withTemplateParameters(parameters)
+
+        assertThat(sut.validateSettings()?.message).contains("regexFail does not match AllowedPattern")
+    }
+
+    @Test
+    fun templateParameter_stringConstraintsInvalid() {
+        val parameters = listOf<Parameter>(
+            TestParameter(
+                logicalName = "badRegex",
+                type = "String",
+                defaultValue = "",
+                additionalProperties = mapOf(
+                    "AllowedPattern" to ")]]]]]totallyValidRegex([[[["
+                )
+            ),
+            TestParameter(
+                logicalName = "badLengthConstraints",
+                type = "String",
+                defaultValue = "",
+                additionalProperties = mapOf(
+                    "MinLength" to "-42",
+                    "MaxLength" to "3.14"
+                )
+            )
+        )
+        sut = DeploySamApplicationValidator(view, hasImageFunctions = false, templateParameters = parameters)
+        view.withTemplateParameters(parameters)
+
+        assertThat(sut.validateSettings()?.message).contains("AllowedPattern for badRegex is not valid")
+    }
+
+    @Test
+    fun templateParameter_numberInvalid() {
+        val parameters = listOf<Parameter>(
+            TestParameter(logicalName = "notANumber", type = "Number", defaultValue = "f"),
+            TestParameter(logicalName = "notANumber2", type = "Number", defaultValue = "")
+        )
+        sut = DeploySamApplicationValidator(view, hasImageFunctions = false, templateParameters = parameters)
+        view.withTemplateParameters(parameters)
+
+        assertThat(sut.validateSettings()?.message).contains("not a number")
+    }
+
+    @Test
+    fun templateParameter_numberTooSmall() {
+        val parameters = listOf<Parameter>(
+            TestParameter(
+                logicalName = "tooSmall",
+                type = "Number",
+                defaultValue = "0",
+                additionalProperties = mapOf(
+                    "MinValue" to "0.1",
+                    "MaxValue" to "5"
+                )
+            )
+        )
+        sut = DeploySamApplicationValidator(view, hasImageFunctions = false, templateParameters = parameters)
+        view.withTemplateParameters(parameters)
+
+        assertThat(sut.validateSettings()?.message).contains("tooSmall is smaller than MinValue")
+    }
+
+    @Test
+    fun templateParameter_numberTooBig() {
+        val parameters = listOf<Parameter>(
+            TestParameter(
+                logicalName = "tooBig",
+                type = "Number",
+                defaultValue = "${Float.MAX_VALUE}",
+                additionalProperties = mapOf(
+                    "MinValue" to "0.1",
+                    "MaxValue" to "5"
+                )
+            )
+        )
+        sut = DeploySamApplicationValidator(view, hasImageFunctions = false, templateParameters = parameters)
+        view.withTemplateParameters(parameters)
+
+        assertThat(sut.validateSettings()?.message).contains("tooBig is larger than MaxValue")
+    }
+
+    @Test
+    fun templateParameter_numberConstraintsInvalid() {
+        val parameters = listOf<Parameter>(
+            TestParameter(
+                logicalName = "badValueConstraints",
+                type = "Number",
+                defaultValue = "0",
+                additionalProperties = mapOf(
+                    "MinValue" to "--3",
+                    "MaxValue" to "++3"
+                )
+            )
+        )
+        sut = DeploySamApplicationValidator(view, hasImageFunctions = false, templateParameters = parameters)
+        view.withTemplateParameters(parameters)
+
+        assertThat(sut.validateSettings()?.message).isNull()
     }
 
     @Test
@@ -169,37 +351,34 @@ class DeploySamApplicationValidatorTest {
 
     @Test
     fun ecrReoMustBeSpecifiedWithImages() {
-        sut = DeploySamApplicationValidator(view, hasImageFunctions = true)
+        sut = DeploySamApplicationValidator(view, hasImageFunctions = true, templateParameters = parameters)
         view.ecrRepo.selectedItem = null
         assertThat(sut.validateSettings()?.message).contains(message("serverless.application.deploy.validation.ecr.repo.empty"))
     }
 
     private class TestParameter(
-        var name: String,
-        var defaultValue: String
+        override val logicalName: String,
+        private val type: String,
+        private val defaultValue: String?,
+        private val additionalProperties: Map<String, String> = emptyMap()
     ) : Parameter {
-        override fun getScalarProperty(key: String): String {
-            throw NotImplementedError()
-        }
+        override fun getScalarProperty(key: String): String = getOptionalScalarProperty(key)!!
 
         override fun getOptionalScalarProperty(key: String): String? {
-            throw NotImplementedError()
+            if (key == "Type") {
+                return type
+            }
+            return additionalProperties.get(key)
         }
 
         override fun setScalarProperty(key: String, value: String) {
             throw NotImplementedError()
         }
 
-        var description: String? = null
-        var constraintDescription: String? = null
-
-        override val logicalName: String
-            get() = name
-
         override fun defaultValue(): String? = defaultValue
 
-        override fun description(): String? = description
+        override fun description(): String? = null
 
-        override fun constraintDescription(): String? = constraintDescription
+        override fun constraintDescription(): String? = null
     }
 }
