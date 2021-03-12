@@ -111,6 +111,7 @@ export const Component = Vue.extend({
                     this.launchConfig.invokeTarget.templatePath = event.data.template
                     break
                 case 'loadSamLaunchConfig':
+                    this.clearForm()
                     this.launchConfig = newLaunchConfig(event.data.launchConfig)
                     if (event.data.launchConfig.lambda?.payload) {
                         this.payload.value = JSON.stringify(event.data.launchConfig.lambda.payload.json, undefined, 4)
@@ -206,7 +207,6 @@ export const Component = Vue.extend({
             this.formatDataAndExecute('saveLaunchConfig')
         },
         loadConfig() {
-            this.resetJsonErrors()
             vscode.postMessage({
                 command: 'loadSamLaunchConfig',
             })
@@ -298,6 +298,18 @@ export const Component = Vue.extend({
                     },
                 },
             })
+        },
+        clearForm() {
+            this.launchConfig = newLaunchConfig()
+            this.containerBuildStr = ''
+            this.skipNewImageCheckStr = ''
+            this.payload = {value: '', errorMsg: ''}
+            this.apiPayload = {value: '', errorMsg: ''}
+            this.environmentVariables = {value: '', errorMsg: ''}
+            this.parameters = {value: '', errorMsg: ''}
+            this.headers = {value: '', errorMsg: ''}
+            this.stageVariables = {value: '', errorMsg: ''}
+            this.showAllFields = false
         }
     },
     // `createElement` is inferred, but `render` needs return type
@@ -511,8 +523,9 @@ export const Component = Vue.extend({
             <div class="json-parse-error" v-if="payload.errorMsg">Error parsing JSON: {{payload.errorMsg}}</div>
         </div>
         <div class="invoke-button-container">
-            <button v-on:click.prevent="save">Save Debug Configuration</button>
-            <button id="invoke-button" v-on:click.prevent="launch">Invoke Debug Configuration</button>
+            <button class="form-buttons" v-on:click.prevent="clearForm">Clear Form</button>
+            <button class="form-buttons" v-on:click.prevent="save">Save Debug Configuration</button>
+            <button class="form-buttons" v-on:click.prevent="launch">Invoke Debug Configuration</button>
         </div>
     </form>
 </template>
