@@ -321,7 +321,7 @@ export async function invokeLambdaFunction(
 
         // sam local invoke ...
         const command = new SamCliLocalInvokeInvocation(localInvokeArgs)
-        const samVersion: string | undefined = await getSamCliVersion(getSamCliContext()).then(v => v).catch()
+        const samVersion: string = await getSamCliVersion(getSamCliContext()).then(v => v).catch()
         let invokeResult: telemetry.Result = 'Failed'
         try {
             await command.execute(timer)
