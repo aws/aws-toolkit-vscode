@@ -87,7 +87,7 @@ object IdeVersions {
                 "com.intellij.css",
                 "JavaScriptDebugger",
                 "com.intellij.database",
-                "Pythonid:211.6305.22"
+                "Pythonid:211.6305.22",
                 "org.jetbrains.plugins.go:211.6305.21"
             ),
             riderSdkOverride = "2021.1-SNAPSHOT",
