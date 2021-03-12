@@ -6,7 +6,7 @@
 import * as assert from 'assert'
 import { validateBucketName } from '../../../s3/util'
 
-describe('validateBucketName', () => {
+describe('validateBucketName', function() {
     const invalidErrors: { bucketNames: string[]; error: string }[] = [
         { bucketNames: ['a', 'aa', 'a'.repeat(64)], error: 'Bucket name must be between 3 and 63 characters long' },
         { bucketNames: ['-bucket'], error: 'Bucket name must start with a lowercase letter or number' },
@@ -22,7 +22,7 @@ describe('validateBucketName', () => {
         { bucketNames: ['127.0.0.1'], error: 'Bucket name must not resemble an IP address' },
     ]
 
-    it('returns undefined for a valid bucket name', () => {
+    it('returns undefined for a valid bucket name', function() {
         assert.strictEqual(validateBucketName('v.4.l1d.buc.ket-n4.m3'), undefined)
     })
 

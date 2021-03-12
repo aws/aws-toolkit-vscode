@@ -9,23 +9,23 @@ import { PropertyNode } from '../../../cdk/explorer/nodes/propertyNode'
 import { ext } from '../../../shared/extensionGlobals'
 import { clearTestIconPaths, IconPath, setupTestIconPaths } from '../../shared/utilities/iconPathUtils'
 
-describe('PropertyNode', () => {
-    before(async () => {
+describe('PropertyNode', function() {
+    before(async function() {
         setupTestIconPaths()
     })
 
-    after(async () => {
+    after(async function() {
         clearTestIconPaths()
     })
 
     const label = 'myProperty'
 
-    it('initializes label', async () => {
+    it('initializes label', async function() {
         const testNode = new PropertyNode(label, vscode.TreeItemCollapsibleState.Collapsed)
         assert.strictEqual(testNode.label, label)
     })
 
-    it('initializes icon paths for properties', async () => {
+    it('initializes icon paths for properties', async function() {
         const testNode = new PropertyNode(label, vscode.TreeItemCollapsibleState.Collapsed)
 
         const iconPath = testNode.iconPath as IconPath
@@ -34,7 +34,7 @@ describe('PropertyNode', () => {
         assert.strictEqual(iconPath.light.path, ext.iconPaths.light.settings, 'Unexpected light icon path')
     })
 
-    it('returns no children when property does not have nested values', async () => {
+    it('returns no children when property does not have nested values', async function() {
         const testNode = new PropertyNode(label, vscode.TreeItemCollapsibleState.Collapsed)
 
         const childNodes = await testNode.getChildren()
@@ -42,7 +42,7 @@ describe('PropertyNode', () => {
         assert.strictEqual(childNodes.length, 0, 'Expected no child nodes for a property with non-nested properties')
     })
 
-    it('returns single child when property has a string value', async () => {
+    it('returns single child when property has a string value', async function() {
         const value = 'string value'
         const children: { [key: string]: any } = { key: value }
         const testNode = new PropertyNode(label, vscode.TreeItemCollapsibleState.Collapsed, children)
@@ -53,7 +53,7 @@ describe('PropertyNode', () => {
         assert.strictEqual(childNodes[0].label, `key: ${value}`)
     })
 
-    it('returns single child when property has a boolean value', async () => {
+    it('returns single child when property has a boolean value', async function() {
         const children: { [key: string]: any } = { key: true }
         const testNode = new PropertyNode(label, vscode.TreeItemCollapsibleState.Collapsed, children)
 
@@ -63,7 +63,7 @@ describe('PropertyNode', () => {
         assert.strictEqual(childNodes[0].label, 'key: true')
     })
 
-    it('returns single child when property has an int value', async () => {
+    it('returns single child when property has an int value', async function() {
         const value = 100
         const children: { [key: string]: any } = { key: value }
         const testNode = new PropertyNode(label, vscode.TreeItemCollapsibleState.Collapsed, children)
@@ -74,7 +74,7 @@ describe('PropertyNode', () => {
         assert.strictEqual(childNodes[0].label, `key: ${value}`, 'Unexpected label on PropertyNode')
     })
 
-    it('returns a nested property node with a property node for each value in the array', async () => {
+    it('returns a nested property node with a property node for each value in the array', async function() {
         const values = ['one', 'two', 'three']
         const children: { [key: string]: any } = { key: values }
 
@@ -88,7 +88,7 @@ describe('PropertyNode', () => {
         assert.strictEqual(childPropertyNodes.length, 3, 'Expected each value in nested array to have a child node')
     })
 
-    it('returns a nested property node with nested object as child property nodes', async () => {
+    it('returns a nested property node with nested object as child property nodes', async function() {
         const nestedObject = {
             evenMoreNested: 'nestedValue',
         }

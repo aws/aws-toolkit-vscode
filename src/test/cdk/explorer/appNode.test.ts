@@ -16,20 +16,20 @@ import { clearTestIconPaths, IconPath, setupTestIconPaths } from '../utilities/i
 import * as treeUtils from '../utilities/treeTestUtils'
 
 let sandbox: sinon.SinonSandbox
-describe('AppNode', () => {
-    before(async () => {
+describe('AppNode', function() {
+    before(async function() {
         setupTestIconPaths()
     })
 
-    after(async () => {
+    after(async function() {
         clearTestIconPaths()
     })
 
-    beforeEach(() => {
+    beforeEach(function() {
         sandbox = sinon.createSandbox()
     })
 
-    afterEach(() => {
+    afterEach(function() {
         sandbox.restore()
     })
 
@@ -38,14 +38,14 @@ describe('AppNode', () => {
     const cdkJsonPath = path.join(workspaceFolderPath, workspaceFolderName, 'cdk.json')
     const treePath = path.join(cdkJsonPath, '..', 'cdk.out', 'tree.json')
 
-    it('initializes label and tooltip', async () => {
+    it('initializes label and tooltip', async function() {
         const testNode = getTestNode()
 
         assert.strictEqual(testNode.label, path.relative(path.dirname(workspaceFolderPath), path.dirname(cdkJsonPath)))
         assert.strictEqual(testNode.tooltip, `${cdkJsonPath}`)
     })
 
-    it('initializes icon paths', async () => {
+    it('initializes icon paths', async function() {
         const testNode = getTestNode()
 
         const iconPath = testNode.iconPath as IconPath
@@ -54,7 +54,7 @@ describe('AppNode', () => {
         assert.strictEqual(iconPath.light.path, cdk.iconPaths.light.cdk, 'Unexpected light icon path')
     })
 
-    it('returns placeholder node when app contains no stacks', async () => {
+    it('returns placeholder node when app contains no stacks', async function() {
         const testNode = getTestNode()
         const mockApp: app.CdkApp = { metadata: treeUtils.getTreeWithNoStack(), location: testNode.app }
         sandbox.stub(app, 'getApp').resolves(mockApp)
@@ -65,7 +65,7 @@ describe('AppNode', () => {
         assert.strictEqual(childNodes[0] instanceof PlaceholderNode, true)
     })
 
-    it('returns construct node when app has stacks', async () => {
+    it('returns construct node when app has stacks', async function() {
         const testNode = getTestNode()
         const mockApp: app.CdkApp = { metadata: treeUtils.getTree(), location: testNode.app }
         sandbox.stub(app, 'getApp').resolves(mockApp)
@@ -76,7 +76,7 @@ describe('AppNode', () => {
         assert.strictEqual(childNodes[0] instanceof ConstructNode, true)
     })
 
-    it('returns placeholder node when tree.json cannot be loaded', async () => {
+    it('returns placeholder node when tree.json cannot be loaded', async function() {
         const testNode = getTestNode()
         sandbox.stub(app, 'getApp').throws()
 

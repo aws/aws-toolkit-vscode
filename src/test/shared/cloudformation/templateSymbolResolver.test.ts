@@ -54,14 +54,14 @@ function symbol(name: string, kind: vscode.SymbolKind, children: vscode.Document
     return newSymbol
 }
 
-describe('TemplateSymbolResolver', () => {
+describe('TemplateSymbolResolver', function() {
     let mockDocument: vscode.TextDocument
     let document: vscode.TextDocument
 
     let mockSymbolProvider: TemplateSymbolProvider
     let symbolProvider: TemplateSymbolProvider
 
-    beforeEach(() => {
+    beforeEach(function() {
         mockDocument = mock()
         document = instance(mockDocument)
 
@@ -74,7 +74,7 @@ describe('TemplateSymbolResolver', () => {
         when(mockSymbolProvider.getText(looksLikeFunctionType, document)).thenReturn('Type: NotActuallyAFunction')
     })
 
-    it('gets function resources', async () => {
+    it('gets function resources', async function() {
         const symbolResolver = new TemplateSymbolResolver(document, symbolProvider)
         const functionResources = await symbolResolver.getResourcesOfKind('function', false)
 

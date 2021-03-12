@@ -8,8 +8,8 @@ import { getTestLogger } from '../../../globalSetup.test'
 import { assertThrowsError } from '../../utilities/assertUtils'
 import { assertErrorContainsBadExitMessage, assertLogContainsBadExitInformation } from './testSamCliProcessInvoker'
 
-describe('logAndThrowIfUnexpectedExitCode', async () => {
-    it('does not throw on expected exit code', async () => {
+describe('logAndThrowIfUnexpectedExitCode', async function() {
+    it('does not throw on expected exit code', async function() {
         logAndThrowIfUnexpectedExitCode(
             {
                 exitCode: 123,
@@ -21,7 +21,7 @@ describe('logAndThrowIfUnexpectedExitCode', async () => {
         )
     })
 
-    it('throws on unexpected exit code', async () => {
+    it('throws on unexpected exit code', async function() {
         const exitError = new Error('bad result')
         const childProcessResult = {
             exitCode: 123,

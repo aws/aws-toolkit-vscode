@@ -11,7 +11,7 @@ import { SharedCredentialsProviderFactory } from '../../../credentials/providers
 import * as sharedCredentials from '../../../credentials/sharedCredentials'
 import { Profile } from '../../../shared/credentials/credentialsFile'
 
-describe('SharedCredentialsProviderFactory', async () => {
+describe('SharedCredentialsProviderFactory', async function() {
     let sandbox: sinon.SinonSandbox
     let loadSharedCredentialsProfilesStub: sinon.SinonStub<[], Promise<Map<string, Profile>>>
 
@@ -32,7 +32,7 @@ describe('SharedCredentialsProviderFactory', async () => {
     const validProfileName2 = 'alt'
     const invalidProfileName = 'gary'
 
-    beforeEach(async () => {
+    beforeEach(async function() {
         sandbox = sinon.createSandbox()
 
         sharedCredentialsLastModifiedMillis = 1
@@ -51,11 +51,11 @@ describe('SharedCredentialsProviderFactory', async () => {
             .callsFake(async () => sharedCredentialProfiles)
     })
 
-    afterEach(async () => {
+    afterEach(async function() {
         sandbox.restore()
     })
 
-    it('produces credential providers from shared credentials profiles', async () => {
+    it('produces credential providers from shared credentials profiles', async function() {
         const sut = new SharedCredentialsProviderFactory()
 
         await sut.refresh()
@@ -84,7 +84,7 @@ describe('SharedCredentialsProviderFactory', async () => {
         )
     })
 
-    it('does not load providers for invalid profiles', async () => {
+    it('does not load providers for invalid profiles', async function() {
         sharedCredentialProfiles.set(invalidProfileName, inValidProfile)
 
         const sut = new SharedCredentialsProviderFactory()
@@ -103,7 +103,7 @@ describe('SharedCredentialsProviderFactory', async () => {
         )
     })
 
-    it('refresh does not reload from file if the file has not changed', async () => {
+    it('refresh does not reload from file if the file has not changed', async function() {
         const sut = new SharedCredentialsProviderFactory()
 
         // First load
@@ -118,7 +118,7 @@ describe('SharedCredentialsProviderFactory', async () => {
         )
     })
 
-    it('refresh reloads from file if the file has changed', async () => {
+    it('refresh reloads from file if the file has changed', async function() {
         const sut = new SharedCredentialsProviderFactory()
 
         // First load

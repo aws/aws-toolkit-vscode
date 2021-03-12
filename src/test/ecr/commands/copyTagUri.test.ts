@@ -11,8 +11,8 @@ import { EcrClient, EcrRepository } from '../../../shared/clients/ecrClient'
 import { EcrTagNode } from '../../../ecr/explorer/ecrTagNode'
 import { copyTagUri } from '../../../ecr/commands/copyTagUri'
 
-describe('copyTagUriCommand', () => {
-    it('Copies URI to clipboard and shows in the status bar', async () => {
+describe('copyTagUriCommand', function() {
+    it('Copies URI to clipboard and shows in the status bar', async function() {
         const parentNode = {} as EcrRepositoryNode
         const node = new EcrTagNode(
             parentNode,

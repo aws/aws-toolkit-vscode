@@ -11,7 +11,7 @@ import { makeTemporaryToolkitFolder } from '../../../shared/filesystemUtilities'
 import { SystemUtilities } from '../../../shared/systemUtilities'
 import { SamTemplateGenerator } from '../../../shared/templates/sam/samTemplateGenerator'
 
-describe('SamTemplateGenerator', () => {
+describe('SamTemplateGenerator', function() {
     const sampleCodeUriValue: string = 'sampleCodeUri'
     const sampleFunctionHandlerValue: string = 'sampleFunctionHandler'
     const sampleResourceNameValue: string = 'sampleResourceName'
@@ -22,12 +22,12 @@ describe('SamTemplateGenerator', () => {
     let templateFilename: string
     let tempFolder: string
 
-    beforeEach(async () => {
+    beforeEach(async function() {
         tempFolder = await makeTemporaryToolkitFolder()
         templateFilename = path.join(tempFolder, 'template.yml')
     })
 
-    afterEach(async () => {
+    afterEach(async function() {
         await fs.remove(tempFolder)
     })
 
@@ -39,7 +39,7 @@ describe('SamTemplateGenerator', () => {
             .withResourceName(sampleResourceNameValue)
     }
 
-    it('Produces a minimal template', async () => {
+    it('Produces a minimal template', async function() {
         await makeMinimalTemplate().generate(templateFilename)
 
         assert.strictEqual(await SystemUtilities.fileExists(templateFilename), true)
@@ -56,7 +56,7 @@ describe('SamTemplateGenerator', () => {
         assert.strictEqual(resource!.Properties!.Runtime, sampleRuntimeValue)
     })
 
-    it('Produces a template containing MemorySize', async () => {
+    it('Produces a template containing MemorySize', async function() {
         await makeMinimalTemplate().withMemorySize(sampleMemorySize).generate(templateFilename)
 
         assert.strictEqual(await SystemUtilities.fileExists(templateFilename), true)
@@ -70,7 +70,7 @@ describe('SamTemplateGenerator', () => {
         assert.strictEqual(resource!.Properties!.MemorySize, sampleMemorySize)
     })
 
-    it('Produces a template containing Timeout', async () => {
+    it('Produces a template containing Timeout', async function() {
         await makeMinimalTemplate().withTimeout(sampleTimeout).generate(templateFilename)
 
         assert.strictEqual(await SystemUtilities.fileExists(templateFilename), true)
@@ -84,7 +84,7 @@ describe('SamTemplateGenerator', () => {
         assert.strictEqual(resource!.Properties!.Timeout, sampleTimeout)
     })
 
-    it('Produces a template containing Environment', async () => {
+    it('Produces a template containing Environment', async function() {
         await makeMinimalTemplate().withEnvironment(sampleEnvironment).generate(templateFilename)
 
         assert.strictEqual(await SystemUtilities.fileExists(templateFilename), true)
@@ -98,7 +98,7 @@ describe('SamTemplateGenerator', () => {
         assert.deepStrictEqual(resource!.Properties!.Environment, sampleEnvironment)
     })
 
-    it('Produces a template with a Globals section', async () => {
+    it('Produces a template with a Globals section', async function() {
         await makeMinimalTemplate()
             .withGlobals({
                 Function: {
@@ -121,7 +121,7 @@ describe('SamTemplateGenerator', () => {
         assert.strictEqual(globals[functionKey]![timeoutKey], 5, 'Unexpected Globals.Function.Timeout value')
     })
 
-    it('errs if resource name is missing', async () => {
+    it('errs if resource name is missing', async function() {
         const error: Error = await assertThrowsError(async () => {
             await new SamTemplateGenerator()
                 .withCodeUri(sampleCodeUriValue)
@@ -135,7 +135,7 @@ describe('SamTemplateGenerator', () => {
         assert.strictEqual(await SystemUtilities.fileExists(templateFilename), false)
     })
 
-    it('errs if function handler is missing', async () => {
+    it('errs if function handler is missing', async function() {
         const error: Error = await assertThrowsError(async () => {
             await new SamTemplateGenerator()
                 .withCodeUri(sampleCodeUriValue)
@@ -149,7 +149,7 @@ describe('SamTemplateGenerator', () => {
         assert.strictEqual(await SystemUtilities.fileExists(templateFilename), false)
     })
 
-    it('errs if code uri is missing', async () => {
+    it('errs if code uri is missing', async function() {
         const error: Error = await assertThrowsError(async () => {
             await new SamTemplateGenerator()
                 .withFunctionHandler(sampleFunctionHandlerValue)
@@ -163,7 +163,7 @@ describe('SamTemplateGenerator', () => {
         assert.strictEqual(await SystemUtilities.fileExists(templateFilename), false)
     })
 
-    it('errs if runtime is missing', async () => {
+    it('errs if runtime is missing', async function() {
         const error: Error = await assertThrowsError(async () => {
             await new SamTemplateGenerator()
                 .withCodeUri(sampleCodeUriValue)

@@ -54,25 +54,25 @@ const AWS_EVENT_SCHEMA_PRETTY = `{
   }
 }`
 
-describe('viewSchemaItem', async () => {
+describe('viewSchemaItem', async function() {
     let sandbox: sinon.SinonSandbox
-    beforeEach(() => {
+    beforeEach(function() {
         sandbox = sinon.createSandbox()
     })
 
-    afterEach(() => {
+    afterEach(function() {
         sandbox.restore()
     })
 
-    describe('schemaFormatter', () => {
-        it('can pretty print schema content', () => {
+    describe('schemaFormatter', function() {
+        it('can pretty print schema content', function() {
             const formattedSchema = schemaFormatter(AWS_EVENT_SCHEMA_RAW, SCHEMA_TAB_SIZE)
             assert.strictEqual(formattedSchema, AWS_EVENT_SCHEMA_PRETTY, 'Schema content not pretty printed')
         })
     })
 
-    describe('showSchemaContent', async () => {
-        it('inserts pretty schema content into an editor', async () => {
+    describe('showSchemaContent', async function() {
+        it('inserts pretty schema content into an editor', async function() {
             const insertStub = stubTextEditInsert()
             await showSchemaContent(AWS_EVENT_SCHEMA_RAW, SCHEMA_TAB_SIZE)
 
@@ -88,7 +88,7 @@ describe('viewSchemaItem', async () => {
     }
     const expectedSchema = JSON.stringify(JSON.parse(AWS_EVENT_SCHEMA_RAW), undefined, getTabSizeSetting())
 
-    it('prettifies schema content and inserts into the editor ', async () => {
+    it('prettifies schema content and inserts into the editor ', async function() {
         const schemaNode = generateSchemaItemNode()
         const insertStub = stubTextEditInsert()
 

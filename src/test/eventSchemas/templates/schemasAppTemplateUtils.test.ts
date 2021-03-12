@@ -35,16 +35,16 @@ const CUSTOMER_UPLOADED_SCHEMA_MULTIPLE_TYPES_EXPECTED_PACKAGE_NAME =
 
 const schemaClient = new MockSchemaClient()
 
-describe('Build template parameters for AwsEventSchema', async () => {
+describe('Build template parameters for AwsEventSchema', async function() {
     let sandbox: sinon.SinonSandbox
-    beforeEach(() => {
+    beforeEach(function() {
         sandbox = sinon.createSandbox()
     })
 
-    afterEach(() => {
+    afterEach(function() {
         sandbox.restore()
     })
-    it('should build correct template parameters for aws event schema', async () => {
+    it('should build correct template parameters for aws event schema', async function() {
         const schemaResponse: Schemas.DescribeSchemaResponse = {
             Content: AWS_EVENT_SCHEMA_CONTENT,
             SchemaVersion: SCHEMA_VERSION,
@@ -85,16 +85,16 @@ describe('Build template parameters for AwsEventSchema', async () => {
     })
 })
 
-describe('Build template parameters for PartnerSchema', async () => {
+describe('Build template parameters for PartnerSchema', async function() {
     let sandbox: sinon.SinonSandbox
-    beforeEach(() => {
+    beforeEach(function() {
         sandbox = sinon.createSandbox()
     })
 
-    afterEach(() => {
+    afterEach(function() {
         sandbox.restore()
     })
-    it('should build correct template parameters for partner schema', async () => {
+    it('should build correct template parameters for partner schema', async function() {
         const schemaResponse: Schemas.DescribeSchemaResponse = {
             Content: PARTNER_SCHEMA_CONTENT,
             SchemaVersion: SCHEMA_VERSION,
@@ -135,17 +135,17 @@ describe('Build template parameters for PartnerSchema', async () => {
     })
 })
 
-describe('Build template parameters for CustomerUploadedSchema', async () => {
+describe('Build template parameters for CustomerUploadedSchema', async function() {
     let sandbox: sinon.SinonSandbox
-    beforeEach(() => {
+    beforeEach(function() {
         sandbox = sinon.createSandbox()
     })
 
-    afterEach(() => {
+    afterEach(function() {
         sandbox.restore()
     })
 
-    it('should build correct template parameters for customer uploaded schema with single type', async () => {
+    it('should build correct template parameters for customer uploaded schema with single type', async function() {
         const schemaResponse: Schemas.DescribeSchemaResponse = {
             Content: CUSTOMER_UPLOADED_SCHEMA,
             SchemaVersion: SCHEMA_VERSION,
@@ -182,16 +182,16 @@ describe('Build template parameters for CustomerUploadedSchema', async () => {
     })
 })
 
-describe('Build template parameters for CustomerUploadedSchemaMultipleTypes', async () => {
+describe('Build template parameters for CustomerUploadedSchemaMultipleTypes', async function() {
     let sandbox: sinon.SinonSandbox
-    beforeEach(() => {
+    beforeEach(function() {
         sandbox = sinon.createSandbox()
     })
 
-    afterEach(() => {
+    afterEach(function() {
         sandbox.restore()
     })
-    it('should  build correct template parameters for customer uploaded schema with multiple types', async () => {
+    it('should  build correct template parameters for customer uploaded schema with multiple types', async function() {
         const schemaResponse: Schemas.DescribeSchemaResponse = {
             Content: CUSTOMER_UPLOADED_SCHEMA_MULTIPLE_TYPES,
             SchemaVersion: SCHEMA_VERSION,

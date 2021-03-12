@@ -14,7 +14,7 @@ import { FakeCommands } from '../../shared/vscode/fakeCommands'
 import { FakeWindow } from '../../shared/vscode/fakeWindow'
 import { anything, mock, instance, when, capture, verify } from '../../utilities/mockito'
 
-describe('uploadFileCommand', () => {
+describe('uploadFileCommand', function() {
     const bucketName = 'bucket-name'
     const key = 'file.jpg'
     const sizeBytes = 16
@@ -24,7 +24,7 @@ describe('uploadFileCommand', () => {
     let s3: S3Client
     let node: S3BucketNode
 
-    beforeEach(() => {
+    beforeEach(function() {
         s3 = mock()
         node = new S3BucketNode(
             { name: bucketName, region: 'region', arn: 'arn' },
@@ -33,7 +33,7 @@ describe('uploadFileCommand', () => {
         )
     })
 
-    it('prompts for file location, uploads file with progress, shows output channel, and refreshes node', async () => {
+    it('prompts for file location, uploads file with progress, shows output channel, and refreshes node', async function() {
         when(s3.uploadFile(anything())).thenResolve()
 
         const window = new FakeWindow({ dialog: { openSelections: [fileLocation] } })
@@ -67,13 +67,13 @@ describe('uploadFileCommand', () => {
         assert.deepStrictEqual(commands.args, [node])
     })
 
-    it('does nothing when prompt is cancelled', async () => {
+    it('does nothing when prompt is cancelled', async function() {
         await uploadFileCommand(node, statFile, new FakeWindow(), new FakeCommands())
 
         verify(s3.uploadFile(anything())).never()
     })
 
-    it('shows an error message when upload fails', async () => {
+    it('shows an error message when upload fails', async function() {
         when(s3.uploadFile(anything())).thenReject(new Error('Expected failure'))
 
         const window = new FakeWindow({ dialog: { openSelections: [fileLocation] } })
