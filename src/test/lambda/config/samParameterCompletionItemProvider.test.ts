@@ -93,8 +93,8 @@ class MockSamParameterCompletionItemProviderContext implements SamParameterCompl
     }
 }
 
-describe('SamParameterCompletionItemProvider', async () => {
-    it('recovers gracefully if document is not in a workspace', async () => {
+describe('SamParameterCompletionItemProvider', async function() {
+    it('recovers gracefully if document is not in a workspace', async function() {
         const warnArgs: (Error | string)[][] = []
         const provider = new SamParameterCompletionItemProvider(
             new MockSamParameterCompletionItemProviderContext({
@@ -126,7 +126,7 @@ describe('SamParameterCompletionItemProvider', async () => {
         )
     })
 
-    it('does not provide suggestions if document symbols could not be loaded', async () => {
+    it('does not provide suggestions if document symbols could not be loaded', async function() {
         const provider = new SamParameterCompletionItemProvider(
             new MockSamParameterCompletionItemProviderContext({
                 executeCommand: async () => undefined,
@@ -148,7 +148,7 @@ describe('SamParameterCompletionItemProvider', async () => {
         assert.strictEqual(actualItems.length, 0)
     })
 
-    it('does not provide suggestions if no matching template is found', async () => {
+    it('does not provide suggestions if no matching template is found', async function() {
         const provider = new SamParameterCompletionItemProvider(
             new MockSamParameterCompletionItemProviderContext({
                 executeCommand: async <T>() => ([] as any) as T,
@@ -170,7 +170,7 @@ describe('SamParameterCompletionItemProvider', async () => {
         assert.strictEqual(actualItems.length, 0)
     })
 
-    it('suggests all parameter names if user has not started typing the parameter name', async () => {
+    it('suggests all parameter names if user has not started typing the parameter name', async function() {
         const templatesSymbol = createTemplatesSymbol({
             includeOverrides: true,
             parameterName: 'myParamName',
@@ -212,7 +212,7 @@ describe('SamParameterCompletionItemProvider', async () => {
         assert.strictEqual(actualItems[1].insertText, 'MyParamName2')
     })
 
-    it('suggests only matching parameter names if user has started typing the parameter name', async () => {
+    it('suggests only matching parameter names if user has started typing the parameter name', async function() {
         const templatesSymbol = createTemplatesSymbol({
             includeOverrides: true,
             parameterName: 'myParamName',
@@ -257,7 +257,7 @@ describe('SamParameterCompletionItemProvider', async () => {
         assert.strictEqual(actualItems[1].insertText, 'MyParamName2')
     })
 
-    it('recovers gracefully if templates.json is empty or invalid', async () => {
+    it('recovers gracefully if templates.json is empty or invalid', async function() {
         const provider = new SamParameterCompletionItemProvider(
             new MockSamParameterCompletionItemProviderContext({
                 executeCommand: async <T>() => undefined,
@@ -276,7 +276,7 @@ describe('SamParameterCompletionItemProvider', async () => {
         assert.strictEqual(actualItems.length, 0)
     })
 
-    it('recovers gracefully if cursor is not within the `templates` property', async () => {
+    it('recovers gracefully if cursor is not within the `templates` property', async function() {
         const templatesSymbol = createTemplatesSymbol({
             includeOverrides: true,
             parameterName: 'myParamName',
@@ -319,7 +319,7 @@ describe('SamParameterCompletionItemProvider', async () => {
         assert.strictEqual(actualItems.length, 0)
     })
 
-    it('recovers gracefully if `parameterOverrides` is not defined for this template', async () => {
+    it('recovers gracefully if `parameterOverrides` is not defined for this template', async function() {
         const templatesSymbol = createTemplatesSymbol({})
         const provider = new SamParameterCompletionItemProvider(
             new MockSamParameterCompletionItemProviderContext({
@@ -358,7 +358,7 @@ describe('SamParameterCompletionItemProvider', async () => {
         assert.strictEqual(actualItems.length, 0)
     })
 
-    it('recovers gracefully if cursor is not within the `parameterOverrides` property', async () => {
+    it('recovers gracefully if cursor is not within the `parameterOverrides` property', async function() {
         const templatesSymbol = createTemplatesSymbol({
             includeOverrides: true,
             parameterName: 'myParamName',
@@ -401,7 +401,7 @@ describe('SamParameterCompletionItemProvider', async () => {
         assert.strictEqual(actualItems.length, 0)
     })
 
-    it('recovers gracefully if cursor is not within a property name within `parameterOverrides`', async () => {
+    it('recovers gracefully if cursor is not within a property name within `parameterOverrides`', async function() {
         const templatesSymbol = createTemplatesSymbol({
             includeOverrides: true,
             parameterName: 'myParamName',

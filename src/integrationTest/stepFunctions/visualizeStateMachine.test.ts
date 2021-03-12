@@ -95,26 +95,26 @@ async function waitUntilWebviewIsVisible(webviewPanel: vscode.WebviewPanel | und
     })
 }
 
-describe('visualizeStateMachine', async () => {
+describe('visualizeStateMachine', async function() {
     before(async function() {
         this.timeout(600000)
     })
 
-    beforeEach(async () => {
+    beforeEach(async function() {
         // Make a temp folder for all these tests
         tempFolder = await makeTemporaryToolkitFolder()
     })
 
-    afterEach(async () => {
+    afterEach(async function() {
         await fs.remove(tempFolder)
     })
 
-    after(async () => {
+    after(async function() {
         // Test suite cleans up after itself
         await vscode.commands.executeCommand('workbench.action.closeAllEditors')
     })
 
-    it('opens up a webview when there is an active text editor', async () => {
+    it('opens up a webview when there is an active text editor', async function() {
         const stateMachineFileText = '{}'
         const fileName = 'mysamplestatemachine.json'
         await openATextEditorWithText(stateMachineFileText, fileName)
@@ -124,7 +124,7 @@ describe('visualizeStateMachine', async () => {
         assert.ok(result)
     }).timeout(15000) // Give the first test that calls aws.previewStateMachine a chance to download the visualizer
 
-    it('correctly displays content when given a sample state machine', async () => {
+    it('correctly displays content when given a sample state machine', async function() {
         const fileName = 'mysamplestatemachine.json'
         const textEditor = await openATextEditorWithText(sampleStateMachine, fileName)
 
@@ -147,7 +147,7 @@ describe('visualizeStateMachine', async () => {
         }
     })
 
-    it('correctly displays content when given a sample state machine in yaml', async () => {
+    it('correctly displays content when given a sample state machine in yaml', async function() {
         const fileName = 'mysamplestatemachine.asl.yaml'
         const textEditor = await openATextEditorWithText(samleStateMachineYaml, fileName)
 
@@ -170,7 +170,7 @@ describe('visualizeStateMachine', async () => {
         }
     })
 
-    it('update webview is triggered when user saves correct text editor', async () => {
+    it('update webview is triggered when user saves correct text editor', async function() {
         const stateMachineFileText = '{}'
         const fileName = 'mysamplestatemachine.json'
         const textEditor = await openATextEditorWithText(stateMachineFileText, fileName)
@@ -204,7 +204,7 @@ describe('visualizeStateMachine', async () => {
         }
     })
 
-    it('throws an error if no active text editor is open', async () => {
+    it('throws an error if no active text editor is open', async function() {
         // Make sure nothing is open from previous tests.
         await vscode.commands.executeCommand('workbench.action.closeAllEditors')
 
@@ -213,7 +213,7 @@ describe('visualizeStateMachine', async () => {
         )
     })
 
-    it('doesnt update the graph if a seperate file is opened or modified', async () => {
+    it('doesnt update the graph if a seperate file is opened or modified', async function() {
         const stateMachineFileText = '{}'
         const stateMachineDefinitionFile = 'mystatemachine.json'
         await openATextEditorWithText(stateMachineFileText, stateMachineDefinitionFile)

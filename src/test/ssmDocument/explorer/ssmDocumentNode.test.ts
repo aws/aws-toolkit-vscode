@@ -14,12 +14,12 @@ import { assertNodeListOnlyContainsErrorNode } from '../../utilities/explorerNod
 import { asyncGenerator } from '../../utilities/collectionUtils'
 import { DEFAULT_TEST_ACCOUNT_ID, DEFAULT_TEST_REGION_CODE } from '../../utilities/fakeAwsContext'
 
-describe('SsmDocumentNode', () => {
+describe('SsmDocumentNode', function() {
     let sandbox: sinon.SinonSandbox
     let testNode: SsmDocumentNode
     let docs: SSM.DocumentIdentifier[]
 
-    beforeEach(() => {
+    beforeEach(function() {
         sandbox = sinon.createSandbox()
 
         docs = [
@@ -49,11 +49,11 @@ describe('SsmDocumentNode', () => {
         testNode = new SsmDocumentNode(DEFAULT_TEST_REGION_CODE)
     })
 
-    afterEach(() => {
+    afterEach(function() {
         sandbox.restore()
     })
 
-    it('always has 1 node: Automation Documents, if any child exists', async () => {
+    it('always has 1 node: Automation Documents, if any child exists', async function() {
         const childNodes = await testNode.getChildren()
         const expectedChildNodeNames: string[] = ['Automation Documents']
 
@@ -65,7 +65,7 @@ describe('SsmDocumentNode', () => {
         })
     })
 
-    it('handles error', async () => {
+    it('handles error', async function() {
         sandbox.stub(testNode, 'updateChildren').callsFake(() => {
             throw new Error('Update children error')
         })

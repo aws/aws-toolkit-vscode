@@ -19,11 +19,11 @@ import { CloudFormationTemplateRegistry } from '../../../shared/cloudformation/t
 import { isImageLambdaConfig } from '../../../lambda/local/debugConfiguration'
 import { ext } from '../../../shared/extensionGlobals'
 
-describe('makeCoreCLRDebugConfiguration', async () => {
+describe('makeCoreCLRDebugConfiguration', async function() {
     let tempFolder: string
     let fakeWorkspaceFolder: vscode.WorkspaceFolder
 
-    beforeEach(async () => {
+    beforeEach(async function() {
         tempFolder = await makeTemporaryToolkitFolder()
         fakeWorkspaceFolder = {
             uri: vscode.Uri.file(tempFolder),
@@ -32,7 +32,7 @@ describe('makeCoreCLRDebugConfiguration', async () => {
         }
     })
 
-    afterEach(async () => {
+    afterEach(async function() {
         await fs.remove(tempFolder)
     })
 
@@ -74,9 +74,9 @@ describe('makeCoreCLRDebugConfiguration', async () => {
         return makeCoreCLRDebugConfiguration(fakeLaunchConfig, codeUri)
     }
 
-    describe('windows', async () => {
+    describe('windows', async function() {
         if (os.platform() === 'win32') {
-            it('massages drive letters to uppercase', async () => {
+            it('massages drive letters to uppercase', async function() {
                 const config = await makeConfig({})
                 assert.strictEqual(
                     config.windows.pipeTransport.pipeCwd.substring(0, 1),
@@ -85,12 +85,12 @@ describe('makeCoreCLRDebugConfiguration', async () => {
             })
         }
 
-        it('uses powershell', async () => {
+        it('uses powershell', async function() {
             const config = await makeConfig({})
             assert.strictEqual(config.windows.pipeTransport.pipeProgram, 'powershell')
         })
 
-        it('uses the specified port', async () => {
+        it('uses the specified port', async function() {
             const config = await makeConfig({})
             assert.strictEqual(
                 config.windows.pipeTransport.pipeArgs.some(arg => arg.includes(config.debugPort!!.toString())),
@@ -98,14 +98,14 @@ describe('makeCoreCLRDebugConfiguration', async () => {
             )
         })
     })
-    describe('*nix', async () => {
-        it('uses the default shell', async () => {
+    describe('*nix', async function() {
+        it('uses the default shell', async function() {
             const config = await makeConfig({})
 
             assert.strictEqual(config.pipeTransport.pipeProgram, 'sh')
         })
 
-        it('uses the specified port', async () => {
+        it('uses the specified port', async function() {
             const config = await makeConfig({})
 
             assert.strictEqual(
@@ -116,14 +116,14 @@ describe('makeCoreCLRDebugConfiguration', async () => {
     })
 })
 
-describe('isImageLambdaConfig', async () => {
+describe('isImageLambdaConfig', async function() {
     let tempFolder: string
     let fakeWorkspaceFolder: vscode.WorkspaceFolder
 
     let registry: CloudFormationTemplateRegistry
     let appDir: string
 
-    beforeEach(async () => {
+    beforeEach(async function() {
         tempFolder = await makeTemporaryToolkitFolder()
         fakeWorkspaceFolder = {
             uri: vscode.Uri.file(tempFolder),
@@ -134,7 +134,7 @@ describe('isImageLambdaConfig', async () => {
         appDir = pathutil.normalize(path.join(testutil.getProjectDir(), 'testFixtures/workspaceFolder/'))
     })
 
-    it('true for Image-backed template', async () => {
+    it('true for Image-backed template', async function() {
         const templatePath = vscode.Uri.file(path.join(appDir, 'python3.7-image-sam-app/template.yaml'))
         await registry.addItemToRegistry(templatePath)
 
@@ -163,7 +163,7 @@ describe('isImageLambdaConfig', async () => {
         assert.strictEqual(isImageLambdaConfig(input), true)
     })
 
-    it('false for ZIP-backed template', async () => {
+    it('false for ZIP-backed template', async function() {
         const templatePath = vscode.Uri.file(path.join(appDir, 'python3.7-plain-sam-app/template.yaml'))
         await registry.addItemToRegistry(templatePath)
 
@@ -192,7 +192,7 @@ describe('isImageLambdaConfig', async () => {
         assert.strictEqual(isImageLambdaConfig(input), false)
     })
 
-    it('false for code-type', async () => {
+    it('false for code-type', async function() {
         const input = {
             name: 'fake-launch-config',
             workspaceFolder: fakeWorkspaceFolder,
