@@ -159,10 +159,11 @@ class LocalLambdaRunConfiguration(project: Project, factory: ConfigurationFactor
             val options: LocalLambdaRunSettings = if (serializableOptions.functionOptions.useTemplate) {
                 if (serializableOptions.functionOptions.isImage) {
                     val (templateFile, logicalName) = validateSamTemplateDetails(templateFile(), logicalId())
-                    val function = SamTemplateUtils
+
+                    val resource = SamTemplateUtils
                         .findImageFunctionsFromTemplate(project, templateFile)
-                        .first { it.logicalName == logicalId() } as? SamFunction
-                        ?: throw IllegalStateException("Image functions must be SAM functions")
+                        .firstOrNull { it.logicalName == logicalId() } ?: throw IllegalStateException("Function ${logicalId()} not found in template!")
+                    val function = resource as? SamFunction ?: throw IllegalStateException("Image functions must be a SAM function")
 
                     val debugger = imageDebugger() ?: throw IllegalStateException("No image debugger with ID ${rawImageDebugger()}")
 
@@ -283,6 +284,7 @@ class LocalLambdaRunConfiguration(project: Project, factory: ConfigurationFactor
     fun runtime(runtime: Runtime?) {
         serializableOptions.functionOptions.runtime = runtime?.toString()
     }
+
     fun runtime(runtime: LambdaRuntime?) {
         serializableOptions.functionOptions.runtime = runtime?.toString()
     }

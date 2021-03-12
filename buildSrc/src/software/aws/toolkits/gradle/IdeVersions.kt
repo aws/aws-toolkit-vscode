@@ -25,7 +25,8 @@ object IdeVersions {
                 "JavaScript",
                 "JavaScriptDebugger",
                 "com.intellij.database",
-                "Pythonid:201.6668.31"
+                "Pythonid:201.6668.31",
+                "org.jetbrains.plugins.go:201.6668.1.98"
             ),
             rdGenVersion = "0.203.161",
             nugetVersion = "2020.1.0"
@@ -43,7 +44,8 @@ object IdeVersions {
                 "JavaScript",
                 "JavaScriptDebugger",
                 "com.intellij.database",
-                "Pythonid:202.6397.98"
+                "Pythonid:202.6397.98",
+                "org.jetbrains.plugins.go:202.6397.20"
             ),
             rdGenVersion = "0.203.161",
             nugetVersion = "2020.2.0"
@@ -61,7 +63,8 @@ object IdeVersions {
                 "JavaScript",
                 "JavaScriptDebugger",
                 "com.intellij.database",
-                "Pythonid:203.5981.165"
+                "Pythonid:203.5981.165",
+                "org.jetbrains.plugins.go:203.5981.114"
             ),
             riderSdkOverride = "2020.3.2",
             ijSdkOverride = "2020.3",
@@ -80,10 +83,12 @@ object IdeVersions {
             ultimatePlugins = listOf(
                 "JavaScript",
                 // Transitive dependency needed for javascript
+                // Can remove when https://github.com/JetBrains/gradle-intellij-plugin/issues/608 is fixed
                 "com.intellij.css",
                 "JavaScriptDebugger",
                 "com.intellij.database",
                 "Pythonid:211.6305.22"
+                "org.jetbrains.plugins.go:211.6305.21"
             ),
             riderSdkOverride = "2021.1-SNAPSHOT",
             ijSdkOverride = "211.6305-EAP-CANDIDATE-SNAPSHOT",

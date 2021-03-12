@@ -18,7 +18,7 @@ interface ImageDebugSupport : SamDebugSupport {
     val languageId: String
 
     fun displayName(): String
-    fun supportsPathMappings(): Boolean
+    fun supportsPathMappings(): Boolean = false
 
     override fun samArguments(debugPorts: List<Int>): List<String> = buildList {
         val containerEnvVars = containerEnvVars(debugPorts)
