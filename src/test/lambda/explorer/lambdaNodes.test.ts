@@ -20,14 +20,14 @@ const FAKE_REGION_CODE = 'someregioncode'
 const UNSORTED_TEXT = ['zebra', 'Antelope', 'aardvark', 'elephant']
 const SORTED_TEXT = ['aardvark', 'Antelope', 'elephant', 'zebra']
 
-describe('LambdaNode', () => {
+describe('LambdaNode', function() {
     let sandbox: sinon.SinonSandbox
     let testNode: LambdaNode
 
     // Mocked Lambda Client returns Lambda Functions for anything listed in lambdaFunctionNames
     let lambdaFunctionNames: string[]
 
-    beforeEach(() => {
+    beforeEach(function() {
         sandbox = sinon.createSandbox()
 
         lambdaFunctionNames = ['function1', 'function2']
@@ -37,11 +37,11 @@ describe('LambdaNode', () => {
         testNode = new LambdaNode(FAKE_REGION_CODE)
     })
 
-    afterEach(() => {
+    afterEach(function() {
         sandbox.restore()
     })
 
-    it('returns placeholder node if no children are present', async () => {
+    it('returns placeholder node if no children are present', async function() {
         lambdaFunctionNames = []
 
         const childNodes = await testNode.getChildren()
@@ -49,7 +49,7 @@ describe('LambdaNode', () => {
         assertNodeListOnlyContainsPlaceholderNode(childNodes)
     })
 
-    it('has LambdaFunctionNode child nodes', async () => {
+    it('has LambdaFunctionNode child nodes', async function() {
         const childNodes = await testNode.getChildren()
 
         assert.strictEqual(childNodes.length, lambdaFunctionNames.length, 'Unexpected child count')
@@ -59,7 +59,7 @@ describe('LambdaNode', () => {
         )
     })
 
-    it('has child nodes with Lambda Function contextValue', async () => {
+    it('has child nodes with Lambda Function contextValue', async function() {
         const childNodes = await testNode.getChildren()
 
         childNodes.forEach(node =>
@@ -71,7 +71,7 @@ describe('LambdaNode', () => {
         )
     })
 
-    it('sorts child nodes', async () => {
+    it('sorts child nodes', async function() {
         lambdaFunctionNames = UNSORTED_TEXT
 
         const childNodes = await testNode.getChildren()
@@ -80,7 +80,7 @@ describe('LambdaNode', () => {
         assert.deepStrictEqual(actualChildOrder, SORTED_TEXT, 'Unexpected child sort order')
     })
 
-    it('has an error node for a child if an error happens during loading', async () => {
+    it('has an error node for a child if an error happens during loading', async function() {
         sandbox.stub(testNode, 'updateChildren').callsFake(() => {
             throw new Error('Update Children error!')
         })

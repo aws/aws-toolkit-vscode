@@ -27,7 +27,7 @@ const testLogOutput = join(testReportDir, 'testLog.log')
 // Expectation: Tests are not run concurrently
 let testLogger: TestLogger | undefined
 
-before(async () => {
+before(async function() {
     // Clean up and set up test logs
     try {
         await remove(testLogOutput)

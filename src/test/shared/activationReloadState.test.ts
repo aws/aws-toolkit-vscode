@@ -25,17 +25,17 @@ class TestActivationReloadState extends ActivationReloadState {
     }
 }
 
-describe('ActivationReloadState', async () => {
+describe('ActivationReloadState', async function() {
     let extensionContext: FakeExtensionContext
     let activationReloadState: ActivationReloadState
 
-    beforeEach(() => {
+    beforeEach(function() {
         extensionContext = new FakeExtensionContext()
         activationReloadState = new TestActivationReloadState(extensionContext)
     })
 
-    describe('setSamInitState', async () => {
-        it('without runtime', async () => {
+    describe('setSamInitState', async function() {
+        it('without runtime', async function() {
             activationReloadState.setSamInitState({
                 path: 'somepath',
                 runtime: undefined,
@@ -59,7 +59,7 @@ describe('ActivationReloadState', async () => {
             )
         })
 
-        it('with runtime', async () => {
+        it('with runtime', async function() {
             activationReloadState.setSamInitState({
                 path: 'somepath',
                 runtime: 'someruntime',
@@ -83,7 +83,7 @@ describe('ActivationReloadState', async () => {
             )
         })
 
-        it('with image', async () => {
+        it('with image', async function() {
             activationReloadState.setSamInitState({
                 path: 'somepath',
                 runtime: 'someruntime',
@@ -108,8 +108,8 @@ describe('ActivationReloadState', async () => {
         })
     })
 
-    describe('getSamInitState', async () => {
-        it('path defined, without runtime', async () => {
+    describe('getSamInitState', async function() {
+        it('path defined, without runtime', async function() {
             await extensionContext.globalState.update(ACTIVATION_LAUNCH_PATH_KEY, 'getsomepath')
             await extensionContext.globalState.update(SAM_INIT_RUNTIME_KEY, undefined)
 
@@ -130,7 +130,7 @@ describe('ActivationReloadState', async () => {
             )
         })
 
-        it('path defined, with runtime', async () => {
+        it('path defined, with runtime', async function() {
             await extensionContext.globalState.update(ACTIVATION_LAUNCH_PATH_KEY, 'getsomepath')
             await extensionContext.globalState.update(SAM_INIT_RUNTIME_KEY, 'getsomeruntime')
 
@@ -151,7 +151,7 @@ describe('ActivationReloadState', async () => {
             )
         })
 
-        it('path defined, with runtime and isImage', async () => {
+        it('path defined, with runtime and isImage', async function() {
             await extensionContext.globalState.update(ACTIVATION_LAUNCH_PATH_KEY, 'getsomepath')
             await extensionContext.globalState.update(SAM_INIT_RUNTIME_KEY, 'getsomeruntime')
             await extensionContext.globalState.update(SAM_INIT_IMAGE_BOOLEAN_KEY, true)
@@ -173,7 +173,7 @@ describe('ActivationReloadState', async () => {
             )
         })
 
-        it('path undefined', async () => {
+        it('path undefined', async function() {
             await extensionContext.globalState.update(ACTIVATION_LAUNCH_PATH_KEY, undefined)
 
             assert.strictEqual(
@@ -184,7 +184,7 @@ describe('ActivationReloadState', async () => {
         })
     })
 
-    it('clearLaunchPath', async () => {
+    it('clearLaunchPath', async function() {
         activationReloadState.setSamInitState({
             path: 'somepath',
             runtime: 'someruntime',

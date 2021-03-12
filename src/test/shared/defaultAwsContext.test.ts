@@ -10,13 +10,13 @@ import { regionSettingKey } from '../../shared/constants'
 import { DefaultAwsContext } from '../../shared/defaultAwsContext'
 import { FakeExtensionContext, FakeMementoStorage } from '../fakeExtensionContext'
 
-describe('DefaultAwsContext', () => {
+describe('DefaultAwsContext', function() {
     const testRegion1Value: string = 're-gion-1'
     const testRegion2Value: string = 're-gion-2'
     const testRegion3Value: string = 're-gion-3'
     const testAccountIdValue: string = '123456789012'
 
-    it('instantiates with no credentials', async () => {
+    it('instantiates with no credentials', async function() {
         const testContext = new DefaultAwsContext(new FakeExtensionContext())
 
         assert.strictEqual(testContext.getCredentialProfileName(), undefined)
@@ -24,7 +24,7 @@ describe('DefaultAwsContext', () => {
         assert.strictEqual(await testContext.getCredentials(), undefined)
     })
 
-    it('sets credentials and gets credentialsId', async () => {
+    it('sets credentials and gets credentialsId', async function() {
         const awsCredentials = makeSampleAwsContextCredentials()
 
         const testContext = new DefaultAwsContext(new FakeExtensionContext())
@@ -33,14 +33,14 @@ describe('DefaultAwsContext', () => {
         assert.strictEqual(testContext.getCredentialProfileName(), awsCredentials.credentialsId)
     })
 
-    it('sets undefined credentials and gets credentialsId', async () => {
+    it('sets undefined credentials and gets credentialsId', async function() {
         const testContext = new DefaultAwsContext(new FakeExtensionContext())
 
         await testContext.setCredentials(undefined)
         assert.strictEqual(testContext.getCredentialProfileName(), undefined)
     })
 
-    it('sets credentials and gets accountId', async () => {
+    it('sets credentials and gets accountId', async function() {
         const awsCredentials = makeSampleAwsContextCredentials()
 
         const testContext = new DefaultAwsContext(new FakeExtensionContext())
@@ -49,14 +49,14 @@ describe('DefaultAwsContext', () => {
         assert.strictEqual(testContext.getCredentialAccountId(), awsCredentials.accountId)
     })
 
-    it('sets undefined credentials and gets accountId', async () => {
+    it('sets undefined credentials and gets accountId', async function() {
         const testContext = new DefaultAwsContext(new FakeExtensionContext())
 
         await testContext.setCredentials(undefined)
         assert.strictEqual(testContext.getCredentialAccountId(), undefined)
     })
 
-    it('sets credentials and gets credentials', async () => {
+    it('sets credentials and gets credentials', async function() {
         const awsCredentials = makeSampleAwsContextCredentials()
 
         const testContext = new DefaultAwsContext(new FakeExtensionContext())
@@ -65,14 +65,14 @@ describe('DefaultAwsContext', () => {
         assert.strictEqual(await testContext.getCredentials(), awsCredentials.credentials)
     })
 
-    it('sets undefined credentials and gets credentials', async () => {
+    it('sets undefined credentials and gets credentials', async function() {
         const testContext = new DefaultAwsContext(new FakeExtensionContext())
 
         await testContext.setCredentials(undefined)
         assert.strictEqual(await testContext.getCredentials(), undefined)
     })
 
-    it('gets single region from config on startup', async () => {
+    it('gets single region from config on startup', async function() {
         const fakeMementoStorage: FakeMementoStorage = {}
         fakeMementoStorage[regionSettingKey] = [testRegion1Value]
 
@@ -86,7 +86,7 @@ describe('DefaultAwsContext', () => {
         assert.strictEqual(regions[0], testRegion1Value)
     })
 
-    it('gets multiple regions from config on startup', async () => {
+    it('gets multiple regions from config on startup', async function() {
         const fakeMementoStorage: FakeMementoStorage = {}
         fakeMementoStorage[regionSettingKey] = [testRegion1Value, testRegion2Value]
 
@@ -101,7 +101,7 @@ describe('DefaultAwsContext', () => {
         assert.strictEqual(regions[1], testRegion2Value)
     })
 
-    it('updates globalState on single region change', async () => {
+    it('updates globalState on single region change', async function() {
         const extensionContext = new FakeExtensionContext()
         const testContext = new DefaultAwsContext(extensionContext)
         await testContext.addExplorerRegion(testRegion1Value)
@@ -112,7 +112,7 @@ describe('DefaultAwsContext', () => {
         assert.strictEqual(persistedRegions![0], testRegion1Value)
     })
 
-    it('updates globalState on multiple region change', async () => {
+    it('updates globalState on multiple region change', async function() {
         const extensionContext = new FakeExtensionContext()
         const testContext = new DefaultAwsContext(extensionContext)
         await testContext.addExplorerRegion(testRegion1Value, testRegion2Value)
@@ -124,7 +124,7 @@ describe('DefaultAwsContext', () => {
         assert.strictEqual(persistedRegions![1], testRegion2Value)
     })
 
-    it('updates globalState on region removal', async () => {
+    it('updates globalState on region removal', async function() {
         const extensionContext = new FakeExtensionContext()
         const testContext = new DefaultAwsContext(extensionContext)
         await testContext.addExplorerRegion(testRegion1Value, testRegion2Value, testRegion3Value)
@@ -137,7 +137,7 @@ describe('DefaultAwsContext', () => {
         assert.strictEqual(persistedRegions![1], testRegion3Value)
     })
 
-    it('fires event on credentials change', async () => {
+    it('fires event on credentials change', async function() {
         const testContext = new DefaultAwsContext(new FakeExtensionContext())
 
         const awsCredentials = makeSampleAwsContextCredentials()

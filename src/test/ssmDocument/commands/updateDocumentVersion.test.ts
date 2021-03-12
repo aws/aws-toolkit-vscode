@@ -16,13 +16,13 @@ import { mock } from '../../utilities/mockito'
 import { SsmDocumentClient } from '../../../shared/clients/ssmDocumentClient'
 import { MockSsmDocumentClient } from '../../shared/clients/mockClients'
 
-describe('openDocumentItem', async () => {
+describe('openDocumentItem', async function() {
     let sandbox: sinon.SinonSandbox
-    beforeEach(() => {
+    beforeEach(function() {
         sandbox = sinon.createSandbox()
     })
 
-    afterEach(() => {
+    afterEach(function() {
         sandbox.restore()
     })
 
@@ -53,7 +53,7 @@ describe('openDocumentItem', async () => {
         description: 'default',
     }
 
-    it('updateDocumentVersion with correct name and version', async () => {
+    it('updateDocumentVersion with correct name and version', async function() {
         sandbox
             .stub(picker, 'promptUser')
             .onFirstCall()

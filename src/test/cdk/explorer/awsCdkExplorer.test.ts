@@ -14,15 +14,15 @@ import * as app from '../../../cdk/explorer/nodes/appNode'
 import { CdkErrorNode } from '../../../cdk/explorer/nodes/errorNode'
 
 let sandbox: sinon.SinonSandbox
-beforeEach(() => {
+beforeEach(function() {
     sandbox = sinon.createSandbox()
 })
 
-afterEach(() => {
+afterEach(function() {
     sandbox.restore()
 })
-describe('AwsCdkExplorer', () => {
-    it('Displays Error node indicating that no CDK projects were found in empty workspace', async () => {
+describe('AwsCdkExplorer', function() {
+    it('Displays Error node indicating that no CDK projects were found in empty workspace', async function() {
         const awsCdkExplorer = new AwsCdkExplorer()
 
         const treeNodesPromise = awsCdkExplorer.getChildren()
@@ -33,7 +33,7 @@ describe('AwsCdkExplorer', () => {
         assert.strictEqual(treeNodes[0] instanceof CdkErrorNode, true)
     })
 
-    it('Displays a project node when workspaces are detected', async () => {
+    it('Displays a project node when workspaces are detected', async function() {
         const stubUri = sandbox.createStubInstance(vscode.Uri)
         const workspaceFolder: vscode.WorkspaceFolder = { uri: stubUri, index: 0, name: 'testworkspace' }
 
