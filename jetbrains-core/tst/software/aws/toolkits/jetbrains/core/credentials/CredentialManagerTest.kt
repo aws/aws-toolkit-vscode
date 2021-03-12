@@ -13,7 +13,6 @@ import org.junit.Test
 import software.amazon.awssdk.auth.credentials.AwsBasicCredentials
 import software.amazon.awssdk.auth.credentials.AwsCredentialsProvider
 import software.amazon.awssdk.auth.credentials.StaticCredentialsProvider
-import software.amazon.awssdk.http.SdkHttpClient
 import software.aws.toolkits.core.credentials.CredentialIdentifier
 import software.aws.toolkits.core.credentials.CredentialIdentifierBase
 import software.aws.toolkits.core.credentials.CredentialProviderFactory
@@ -238,8 +237,7 @@ class CredentialManagerTest {
 
         override fun createAwsCredentialProvider(
             providerId: CredentialIdentifier,
-            region: AwsRegion,
-            sdkHttpClientSupplier: () -> SdkHttpClient
+            region: AwsRegion
         ): AwsCredentialsProvider {
             val echoField = (providerId as TestCredentialProviderIdentifier).credentialsEchoField
             val echoSuffix = echoField?.let { "-$it" } ?: ""

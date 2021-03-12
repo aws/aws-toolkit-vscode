@@ -40,11 +40,11 @@ import software.amazon.awssdk.http.HttpExecuteRequest
 import software.amazon.awssdk.http.HttpExecuteResponse
 import software.amazon.awssdk.http.SdkHttpClient
 import software.amazon.awssdk.http.SdkHttpFullResponse
+import software.aws.toolkits.core.clients.SdkClientProvider
 import software.aws.toolkits.core.credentials.CredentialIdentifier
 import software.aws.toolkits.core.credentials.CredentialsChangeEvent
 import software.aws.toolkits.core.credentials.CredentialsChangeListener
 import software.aws.toolkits.core.credentials.sso.SsoCache
-import software.aws.toolkits.core.region.ToolkitRegionProvider
 import software.aws.toolkits.core.rules.SystemPropertyHelper
 import software.aws.toolkits.jetbrains.core.credentials.profiles.ProfileCredentialProviderFactory
 import software.aws.toolkits.jetbrains.core.credentials.profiles.ProfileWatcher
@@ -74,32 +74,36 @@ class ProfileCredentialProviderFactoryTest {
     val disposableRule = DisposableRule()
 
     private lateinit var profileFile: File
-    private lateinit var credentialsFile: File
 
     private val mockProfileWatcher = MockProfileWatcher()
     private val mockSdkHttpClient = mock<SdkHttpClient>()
-    private val mockRegionProvider = mock<ToolkitRegionProvider>()
     private val profileLoadCallback = mock<CredentialsChangeListener>()
     private val credentialChangeEvent = argumentCaptor<CredentialsChangeEvent>()
 
     @Before
     fun setUp() {
-        reset(mockSdkHttpClient, mockRegionProvider, profileLoadCallback)
+        reset(mockSdkHttpClient, profileLoadCallback)
 
-        val awsFolder = File(temporaryFolder.root, ".aws")
+        val awsFolder = temporaryFolder.newFolder(".aws")
         profileFile = File(awsFolder, "config")
-        credentialsFile = File(awsFolder, "credentials")
 
         System.getProperties().setProperty("aws.configFile", profileFile.absolutePath)
-        System.getProperties().setProperty("aws.sharedCredentialsFile", credentialsFile.absolutePath)
+        System.getProperties().setProperty("aws.sharedCredentialsFile", File(awsFolder, "credentials").absolutePath)
 
         profileLoadCallback.stub {
             on { profileLoadCallback.invoke(credentialChangeEvent.capture()) }.thenReturn(Unit)
         }
 
         ApplicationManager.getApplication().replaceService(ProfileWatcher::class.java, mockProfileWatcher, disposableRule.disposable)
+        ApplicationManager.getApplication().replaceService(
+            SdkClientProvider::class.java,
+            object : SdkClientProvider {
+                override fun sharedSdkClient(): SdkHttpClient = mockSdkHttpClient
+            },
+            disposableRule.disposable
+        )
 
-        TestDialogService.setTestInputDialog(TestInputDialog { MFA_TOKEN })
+        TestDialogService.setTestInputDialog { MFA_TOKEN }
     }
 
     @After
@@ -1229,7 +1233,6 @@ class ProfileCredentialProviderFactoryTest {
     private fun ProfileCredentialProviderFactory.createProvider(validProfile: CredentialIdentifier) = this.createAwsCredentialProvider(
         validProfile,
         getDefaultRegion(),
-        sdkHttpClientSupplier = { mockSdkHttpClient }
     )
 
     private class MockProfileWatcher : ProfileWatcher {
