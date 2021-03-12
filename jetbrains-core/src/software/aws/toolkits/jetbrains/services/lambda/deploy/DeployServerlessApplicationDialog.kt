@@ -20,6 +20,7 @@ import software.aws.toolkits.jetbrains.core.awsClient
 import software.aws.toolkits.jetbrains.core.help.HelpIds
 import software.aws.toolkits.jetbrains.core.map
 import software.aws.toolkits.jetbrains.services.cloudformation.CloudFormationTemplate
+import software.aws.toolkits.jetbrains.services.cloudformation.Parameter
 import software.aws.toolkits.jetbrains.services.cloudformation.SamFunction
 import software.aws.toolkits.jetbrains.services.cloudformation.describeStack
 import software.aws.toolkits.jetbrains.services.cloudformation.mergeRemoteParameters
@@ -32,6 +33,7 @@ import software.aws.toolkits.jetbrains.settings.relativeSamPath
 import software.aws.toolkits.jetbrains.utils.ui.find
 import software.aws.toolkits.jetbrains.utils.ui.validationInfo
 import software.aws.toolkits.resources.message
+import java.util.regex.PatternSyntaxException
 import javax.swing.JComponent
 
 class DeployServerlessApplicationDialog(
@@ -50,11 +52,11 @@ class DeployServerlessApplicationDialog(
     private val hasImageFunctions: Boolean = templateFunctions.any { (it as? SamFunction)?.packageType() == PackageType.IMAGE }
 
     private val view = DeployServerlessApplicationPanel(project)
-    private val validator = DeploySamApplicationValidator(view, hasImageFunctions)
+    private val templateParameters = CloudFormationTemplate.parse(project, templateFile).parameters().toList()
+    private val validator = DeploySamApplicationValidator(view, hasImageFunctions, templateParameters)
     private val s3Client: S3Client = project.awsClient()
     private val ecrClient: EcrClient = project.awsClient()
     private val cloudFormationClient: CloudFormationClient = project.awsClient()
-    private val templateParameters = CloudFormationTemplate.parse(project, templateFile).parameters().toList()
 
     init {
         super.init()
@@ -215,7 +217,15 @@ class DeployServerlessApplicationDialog(
     }
 }
 
-class DeploySamApplicationValidator(private val view: DeployServerlessApplicationPanel, private val hasImageFunctions: Boolean) {
+class DeploySamApplicationValidator(
+    private val view: DeployServerlessApplicationPanel,
+    private val hasImageFunctions: Boolean,
+    templateParameters: Collection<Parameter>
+) {
+    private val parameterDeclarations: Map<String, Parameter> by lazy {
+        templateParameters.associateBy { it.logicalName }
+    }
+
     fun validateSettings(): ValidationInfo? {
         if (view.createStack.isSelected) {
             validateStackName(view.newStackName.text)?.let {
@@ -251,18 +261,66 @@ class DeploySamApplicationValidator(private val view: DeployServerlessApplicatio
     private fun validateParameters(view: DeployServerlessApplicationPanel): ValidationInfo? {
         val parameters = view.templateParameters
 
-        val unsetParameters = parameters.entries
-            .filter { it.value.isNullOrBlank() }
-            .map { it.key }
-            .toList()
+        val invalidParameters = parameters.entries.mapNotNull { (name, value) ->
+            val cfnParameterDeclaration = parameterDeclarations[name] ?: return ValidationInfo("parameter declared but not in template")
+            when (cfnParameterDeclaration.getOptionalScalarProperty("Type")) {
+                "String" -> validateStringParameter(name, value, cfnParameterDeclaration)
+                "Number" -> validateNumberParameter(name, value, cfnParameterDeclaration)
+                // not implemented: List<Number>, CommaDelimitedList, AWS-specific parameters, SSM parameters
+                else -> null
+            }
+        }
 
-        if (unsetParameters.any()) {
-            return ValidationInfo(
-                message(
-                    "serverless.application.deploy.validation.template.values.missing",
-                    unsetParameters.joinToString(", ")
-                )
-            )
+        return invalidParameters.firstOrNull()
+    }
+
+    private fun validateStringParameter(name: String, value: String, parameterDeclaration: Parameter): ValidationInfo? {
+        val minValue = parameterDeclaration.getOptionalScalarProperty("MinLength")
+        val maxValue = parameterDeclaration.getOptionalScalarProperty("MaxLength")
+        val allowedPattern = parameterDeclaration.getOptionalScalarProperty("AllowedPattern")
+
+        minValue?.toIntOrNull()?.let {
+            if (value.length < it) {
+                return ValidationInfo(message("serverless.application.deploy.validation.template.values.tooShort", name, minValue))
+            }
+        }
+
+        maxValue?.toIntOrNull()?.let {
+            if (value.length > it) {
+                return ValidationInfo(message("serverless.application.deploy.validation.template.values.tooLong", name, maxValue))
+            }
+        }
+
+        allowedPattern?.let {
+            try {
+                val regex = it.toRegex()
+                if (!regex.matches(value)) {
+                    return ValidationInfo(message("serverless.application.deploy.validation.template.values.failsRegex", name, regex))
+                }
+            } catch (e: PatternSyntaxException) {
+                return ValidationInfo(message("serverless.application.deploy.validation.template.values.badRegex", name, e.message ?: it))
+            }
+        }
+
+        return null
+    }
+
+    private fun validateNumberParameter(name: String, value: String, parameterDeclaration: Parameter): ValidationInfo? {
+        // cfn numbers can be integer or float. assume real implementation refers to java floats
+        val number = value.toFloatOrNull() ?: return ValidationInfo(message("serverless.application.deploy.validation.template.values.notANumber", name, value))
+        val minValue = parameterDeclaration.getOptionalScalarProperty("MinValue")
+        val maxValue = parameterDeclaration.getOptionalScalarProperty("MaxValue")
+
+        minValue?.toFloatOrNull()?.let {
+            if (number < it) {
+                return ValidationInfo(message("serverless.application.deploy.validation.template.values.tooSmall", name, minValue))
+            }
+        }
+
+        maxValue?.toFloatOrNull()?.let {
+            if (number > it) {
+                return ValidationInfo(message("serverless.application.deploy.validation.template.values.tooBig", name, maxValue))
+            }
         }
 
         return null
