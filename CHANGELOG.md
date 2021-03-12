@@ -1,3 +1,19 @@
+# _1.25_ (2021-03-10)
+- **(Breaking Change)** Minimum SAM CLI version is now 1.0.0
+- **(Feature)** Debugging Python based Lambdas locally now have the Python interactive console enabled (Fixes [#1165](https://github.com/aws/aws-toolkit-jetbrains/issues/1165))
+- **(Feature)** Add a setting for how the AWS profiles notification is shown ([#2408](https://github.com/aws/aws-toolkit-jetbrains/issues/2408))
+- **(Feature)** Deleting resources now requires typing "delete me" instead of the resource name
+- **(Feature)** Add support for 2021.1
+- **(Feature)** Allow deploying SAM templates from the CloudFormaton node ([#2166](https://github.com/aws/aws-toolkit-jetbrains/issues/2166))
+- **(Bug Fix)** Improve error messages when properties are not found in templates ([#2449](https://github.com/aws/aws-toolkit-jetbrains/issues/2449))
+- **(Bug Fix)** Fix resource selectors assuming every region has every service ([#2435](https://github.com/aws/aws-toolkit-jetbrains/issues/2435))
+- **(Bug Fix)** Docker is now validated before building the Lambda when running and debugging locally (Fixes [#2418](https://github.com/aws/aws-toolkit-jetbrains/issues/2418))
+- **(Bug Fix)** Fixed several UI inconsistencies in the S3 bucket viewer actions
+- **(Bug Fix)** Fix showing stack status notification on opening existing CloudFormation stack ([#2157](https://github.com/aws/aws-toolkit-jetbrains/issues/2157))
+- **(Bug Fix)** Processes using the Step system (e.g. SAM build) can now be stopped ([#2418](https://github.com/aws/aws-toolkit-jetbrains/issues/2418))
+- **(Bug Fix)** Fixed the Remote Lambda Run Configuration failing to load the list of functions if not in active region
+- **(Deprecation)** 2020.1 support will be removed in the next release
+
 # _1.24_ (2021-02-17)
 - **(Feature)** RDS serverless databases are now visible in the RDS node in the explorer
 - **(Bug Fix)** Fix transient 'Aborted!' message on successful SAM CLI local Lambda execution

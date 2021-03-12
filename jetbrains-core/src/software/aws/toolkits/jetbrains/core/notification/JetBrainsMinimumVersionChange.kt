@@ -23,6 +23,9 @@ class JetBrainsMinimumVersionChange : NoticeType {
     override fun getSuppressNotificationValue(): String = ApplicationInfo.getInstance().fullVersion
 
     override fun isNotificationSuppressed(previousSuppressNotificationValue: String?): Boolean {
+        if (System.getProperty(SKIP_PROMPT, null)?.toBoolean() == true) {
+            return true
+        }
         previousSuppressNotificationValue?.let {
             return previousSuppressNotificationValue == getSuppressNotificationValue()
         }
@@ -33,4 +36,9 @@ class JetBrainsMinimumVersionChange : NoticeType {
 
     override fun getNoticeContents(): NoticeContents = noticeContents
     override fun getNoticeType(): NotificationType = NotificationType.WARNING
+
+    private companion object {
+        // Used by tests to make sure the prompt never shows up
+        const val SKIP_PROMPT = "aws.suppress_deprecation_prompt"
+    }
 }

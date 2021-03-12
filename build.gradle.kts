@@ -256,6 +256,7 @@ subprojects {
             systemProperty("ide.show.tips.on.startup.default.value", false)
 
             systemProperty("aws.telemetry.skip_prompt", "true")
+            systemProperty("aws.suppress_deprecation_prompt", true)
             ciOnly {
                 systemProperty("aws.sharedCredentialsFile", "/tmp/.aws/credentials")
             }

@@ -48,16 +48,9 @@ class DefaultNoticeManager :
     /**
      * Returns the notices that require notification
      */
-    override fun getRequiredNotices(notices: List<NoticeType>, project: Project): List<NoticeType> = notices.filter { it.isNotificationRequired() }
-        .filter {
-            internalState[it.id]?.let { state ->
-                state.noticeSuppressedValue?.let { previouslySuppressedValue ->
-                    return@filter !it.isNotificationSuppressed(previouslySuppressedValue)
-                }
-            }
-
-            true
-        }
+    override fun getRequiredNotices(notices: List<NoticeType>, project: Project): List<NoticeType> = notices
+        .filter { it.isNotificationRequired() }
+        .filter { !it.isNotificationSuppressed(internalState[it.id]?.noticeSuppressedValue) }
 
     override fun notify(notices: List<NoticeType>, project: Project) {
         notices.forEach { notify(it, project) }

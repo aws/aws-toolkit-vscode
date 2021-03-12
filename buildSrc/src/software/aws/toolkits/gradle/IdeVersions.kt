@@ -77,8 +77,8 @@ object IdeVersions {
                 "java",
                 "com.intellij.gradle",
                 "org.jetbrains.idea.maven",
-                "PythonCore:211.6085.26",
-                "Docker:211.6085.26"
+                "PythonCore:211.6305.22",
+                "Docker:211.6305.15"
             ),
             ultimatePlugins = listOf(
                 "JavaScript",
@@ -87,13 +87,13 @@ object IdeVersions {
                 "com.intellij.css",
                 "JavaScriptDebugger",
                 "com.intellij.database",
-                "Pythonid:211.6085.26",
-                "org.jetbrains.plugins.go:211.6085.26"
+                "Pythonid:211.6305.22",
+                "org.jetbrains.plugins.go:211.6305.21"
             ),
             riderSdkOverride = "2021.1-SNAPSHOT",
-            ijSdkOverride = "211.6085-EAP-CANDIDATE-SNAPSHOT",
-            rdGenVersion = "0.211.214",
-            nugetVersion = "2021.1.0-eap03"
+            ijSdkOverride = "211.6305-EAP-CANDIDATE-SNAPSHOT",
+            rdGenVersion = "0.211.234",
+            nugetVersion = "2021.1.0-eap06"
         )
     ).associateBy { it.name }
 

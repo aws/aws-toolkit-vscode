@@ -1,4 +1,0 @@
-{
-  "type" : "bugfix",
-  "description" : "Processes using the Step system (e.g. SAM build) can now be stopped (#2418)"
-}
