@@ -4,7 +4,7 @@
  */
 
 import { CloudWatchLogs } from 'aws-sdk'
-import * as lolex from 'lolex'
+import * as FakeTimers from '@sinonjs/fake-timers'
 import * as sinon from 'sinon'
 import * as vscode from 'vscode'
 import { addLogEvents } from '../../../cloudWatchLogs/commands/addLogEvents'
@@ -14,11 +14,11 @@ import { TestSettingsConfiguration } from '../../utilities/testSettingsConfigura
 
 describe('addLogEvents', async () => {
     let sandbox: sinon.SinonSandbox
-    let clock: lolex.InstalledClock
+    let clock: sinon.SinonFakeTimers
     const config = new TestSettingsConfiguration()
 
     before(() => {
-        clock = lolex.install()
+        clock = FakeTimers.install()
         config.writeSetting('cloudWatchLogs.limit', 1000)
     })
 
@@ -129,7 +129,7 @@ describe('addLogEvents', async () => {
 
         addLogEvents(document, fakeRegistry, 'head', fakeEvent, config)
 
-        new Promise(resolve => {
+        new Promise<void>(resolve => {
             clock.setTimeout(() => {
                 sandbox.assert.calledTwice(setBusyStatus)
                 sandbox.assert.calledWith(setBusyStatus.firstCall, uri, true)

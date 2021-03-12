@@ -1692,7 +1692,10 @@ Outputs:
 
             assertEqualLaunchConfigs(actual, expected)
             assertFileText(expected.envFile, '{"awsToolkitSamLocalResource":{}}')
-            assert.strictEqual(readFileSync(actual.eventPayloadFile, 'utf-8'), readFileSync(absPayloadPath, 'utf-8'))
+            assert.strictEqual(
+                readFileSync(actual.eventPayloadFile, 'utf-8'),
+                readFileSync(absPayloadPath, 'utf-8')
+            )
             assertFileText(
                 expected.templatePath,
                 `Resources:

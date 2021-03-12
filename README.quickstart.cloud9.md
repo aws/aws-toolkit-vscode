@@ -10,6 +10,7 @@ See [Get help](#get-help) for support.
 -   [AWS Explorer](#ui-components-aws-expl)
     -   API Gateway
     -   CloudFormation stacks
+    -   ECR
     -   Lambda functions
     -   S3 explorer
 -   [AWS Serverless Applications (SAM)](#sam-and-lambda)
@@ -80,7 +81,7 @@ The Toolkit provides commands (prefixed with `AWS:`) to the AWS Cloud9 _Go to An
 | `AWS: Connect to AWS`                | Connects the Toolkit to an AWS account.                                                                                                                                                                                                      |
 | `AWS: Create a new Issue on Github`  | Opens the AWS Toolkit's [New Issue page on Github](https://github.com/aws/aws-toolkit-vscode/issues/new/choose).                                                                                                                             |
 | `AWS: Create Credentials Profile`    | Creates an AWS credentials profile.                                                                                                                                                                                                          |
-| `AWS: Create new SAM Application`    | Generates a set of code files for a new AWS serverless application. For more information, see [Creating a Serverless Application](https://docs.aws.amazon.com/cloud9/latest/user-guide/latest/user-guide/create-sam.html) in the user guide. |
+| `AWS: Create Lambda SAM Application` | Generates code files for a new AWS serverless Lambda application. For more information, see [Creating a Serverless Application](https://docs.aws.amazon.com/cloud9/latest/user-guide/latest/user-guide/create-sam.html) in the user guide. |
 | `AWS: Deploy SAM Application`        | Deploys a local serverless application to an AWS account. For more information, see [Deploying a Serverless Application](https://docs.aws.amazon.com/cloud9/latest/user-guide/deploy-serverless-app.html) in the user guide.                 |
 | `AWS: Detect SAM CLI`                | Checks whether the Toolkit can communicate correctly with the AWS SAM CLI that is installed.                                                                                                                                                 |
 | `AWS: Hide region from the Explorer` | Hides an AWS Region from the **AWS Explorer**.                                                                                                                                                                                               |
