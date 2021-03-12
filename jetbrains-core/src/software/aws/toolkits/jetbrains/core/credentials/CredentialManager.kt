@@ -20,7 +20,6 @@ import software.aws.toolkits.core.credentials.ToolkitCredentialsProvider
 import software.aws.toolkits.core.region.AwsRegion
 import software.aws.toolkits.core.utils.getLogger
 import software.aws.toolkits.core.utils.tryOrNull
-import software.aws.toolkits.jetbrains.core.AwsSdkClient
 import software.aws.toolkits.telemetry.AwsTelemetry
 import java.util.concurrent.ConcurrentHashMap
 import java.util.concurrent.atomic.AtomicInteger
@@ -85,7 +84,7 @@ abstract class CredentialManager : SimpleModificationTracker() {
                     ?: throw CredentialProviderNotFoundException("No provider factory found with ID ${identifier.factoryId}")
 
                 try {
-                    providerFactory.createAwsCredentialProvider(identifier, region) { AwsSdkClient.getInstance().sdkHttpClient }
+                    providerFactory.createAwsCredentialProvider(identifier, region)
                 } catch (e: Exception) {
                     throw CredentialProviderNotFoundException("Failed to create underlying AwsCredentialProvider", e)
                 }

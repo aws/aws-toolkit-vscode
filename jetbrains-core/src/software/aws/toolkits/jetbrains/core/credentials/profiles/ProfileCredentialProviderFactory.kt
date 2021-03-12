@@ -11,7 +11,6 @@ import software.amazon.awssdk.auth.credentials.AwsBasicCredentials
 import software.amazon.awssdk.auth.credentials.AwsCredentialsProvider
 import software.amazon.awssdk.auth.credentials.AwsSessionCredentials
 import software.amazon.awssdk.auth.credentials.StaticCredentialsProvider
-import software.amazon.awssdk.http.SdkHttpClient
 import software.amazon.awssdk.profiles.Profile
 import software.amazon.awssdk.profiles.ProfileProperty
 import software.amazon.awssdk.regions.Region
@@ -36,6 +35,7 @@ import software.aws.toolkits.core.credentials.sso.SsoCache
 import software.aws.toolkits.core.credentials.sso.SsoCredentialProvider
 import software.aws.toolkits.core.region.AwsRegion
 import software.aws.toolkits.jetbrains.core.AwsClientManager
+import software.aws.toolkits.jetbrains.core.AwsSdkClient
 import software.aws.toolkits.jetbrains.core.credentials.CorrectThreadCredentialsProvider
 import software.aws.toolkits.jetbrains.core.credentials.MfaRequiredInteractiveCredentials
 import software.aws.toolkits.jetbrains.core.credentials.SsoPrompt
@@ -209,23 +209,19 @@ class ProfileCredentialProviderFactory(private val ssoCache: SsoCache = diskCach
         }
     }
 
-    override fun createAwsCredentialProvider(
-        providerId: CredentialIdentifier,
-        region: AwsRegion,
-        sdkHttpClientSupplier: () -> SdkHttpClient
-    ): AwsCredentialsProvider {
+    override fun createAwsCredentialProvider(providerId: CredentialIdentifier, region: AwsRegion): AwsCredentialsProvider {
         val profileProviderId = providerId as? ProfileCredentialsIdentifier
             ?: throw IllegalStateException("ProfileCredentialProviderFactory can only handle ProfileCredentialsIdentifier, but got ${providerId::class}")
 
         val profile = profileHolder.getProfile(profileProviderId.profileName)
             ?: throw IllegalStateException("Profile ${profileProviderId.profileName} looks to have been removed")
 
-        return createAwsCredentialProvider(profile, region, sdkHttpClientSupplier)
+        return createAwsCredentialProvider(profile, region)
     }
 
-    private fun createAwsCredentialProvider(profile: Profile, region: AwsRegion, sdkHttpClientSupplier: () -> SdkHttpClient) = when {
-        profile.propertyExists(SSO_URL) -> createSsoProvider(profile, sdkHttpClientSupplier)
-        profile.propertyExists(ProfileProperty.ROLE_ARN) -> createAssumeRoleProvider(profile, region, sdkHttpClientSupplier)
+    private fun createAwsCredentialProvider(profile: Profile, region: AwsRegion) = when {
+        profile.propertyExists(SSO_URL) -> createSsoProvider(profile)
+        profile.propertyExists(ProfileProperty.ROLE_ARN) -> createAssumeRoleProvider(profile, region)
         profile.propertyExists(ProfileProperty.AWS_SESSION_TOKEN) -> createStaticSessionProvider(profile)
         profile.propertyExists(ProfileProperty.AWS_ACCESS_KEY_ID) -> createBasicProvider(profile)
         profile.propertyExists(ProfileProperty.CREDENTIAL_PROCESS) -> createCredentialProcessProvider(profile)
@@ -234,9 +230,9 @@ class ProfileCredentialProviderFactory(private val ssoCache: SsoCache = diskCach
         }
     }
 
-    private fun createSsoProvider(profile: Profile, sdkHttpClientSupplier: () -> SdkHttpClient): AwsCredentialsProvider {
+    private fun createSsoProvider(profile: Profile): AwsCredentialsProvider {
         val ssoRegion = profile.requiredProperty(SSO_REGION)
-        val sdkHttpClient = sdkHttpClientSupplier()
+        val sdkHttpClient = AwsSdkClient.getInstance().sharedSdkClient()
         val ssoClient = ToolkitClientManager.createNewClient(
             SsoClient::class,
             sdkHttpClient,
@@ -269,20 +265,15 @@ class ProfileCredentialProviderFactory(private val ssoCache: SsoCache = diskCach
         )
     }
 
-    private fun createAssumeRoleProvider(profile: Profile, region: AwsRegion, sdkHttpClientSupplier: () -> SdkHttpClient): AwsCredentialsProvider {
+    private fun createAssumeRoleProvider(profile: Profile, region: AwsRegion): AwsCredentialsProvider {
         val sourceProfileName = profile.requiredProperty(ProfileProperty.SOURCE_PROFILE)
         val sourceProfile = profileHolder.getProfile(sourceProfileName)
             ?: throw IllegalStateException("Profile $sourceProfileName looks to have been removed")
+        val parentCredentialProvider = createAwsCredentialProvider(sourceProfile, region)
 
-        val sdkHttpClient = sdkHttpClientSupplier()
-
-        val parentCredentialProvider = createAwsCredentialProvider(sourceProfile, region, sdkHttpClientSupplier)
-
-        // Override the default SPI for getting the active credentials since we are making an internal
-        // to this provider client
         val stsClient = ToolkitClientManager.createNewClient(
             StsClient::class,
-            sdkHttpClient,
+            AwsSdkClient.getInstance().sharedSdkClient(),
             Region.of(region.id),
             parentCredentialProvider,
             AwsClientManager.userAgent
