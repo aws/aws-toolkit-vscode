@@ -74,7 +74,7 @@ textarea {
     font-weight: bold;
 }
 
-#invoke-button {
+.form-buttons {
     margin-left: 20px;
 }
 
