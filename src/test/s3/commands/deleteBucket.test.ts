@@ -13,20 +13,20 @@ import { FakeCommands } from '../../shared/vscode/fakeCommands'
 import { FakeWindow } from '../../shared/vscode/fakeWindow'
 import { anything, mock, instance, when, deepEqual, verify } from '../../utilities/mockito'
 
-describe('deleteBucketCommand', () => {
+describe('deleteBucketCommand', function() {
     const bucketName = 'bucket-name'
 
     let s3: S3Client
     let parentNode: S3Node
     let node: S3BucketNode
 
-    beforeEach(() => {
+    beforeEach(function() {
         s3 = mock()
         parentNode = new S3Node(instance(s3))
         node = new S3BucketNode({ name: bucketName, region: 'region', arn: 'arn' }, parentNode, instance(s3))
     })
 
-    it('confirms deletion, deletes bucket, shows progress bar, and refreshes parent node', async () => {
+    it('confirms deletion, deletes bucket, shows progress bar, and refreshes parent node', async function() {
         const window = new FakeWindow({ inputBox: { input: bucketName } })
         const commands = new FakeCommands()
         await deleteBucketCommand(node, window, commands)
@@ -43,7 +43,7 @@ describe('deleteBucketCommand', () => {
         assert.deepStrictEqual(commands.args, [parentNode])
     })
 
-    it('does nothing when deletion is cancelled', async () => {
+    it('does nothing when deletion is cancelled', async function() {
         const window = new FakeWindow()
         const commands = new FakeCommands()
         await deleteBucketCommand(node, window, commands)
@@ -54,7 +54,7 @@ describe('deleteBucketCommand', () => {
         assert.strictEqual(commands.command, undefined)
     })
 
-    it('shows an error message and refreshes node when bucket deletion fails', async () => {
+    it('shows an error message and refreshes node when bucket deletion fails', async function() {
         when(s3.deleteBucket(anything())).thenReject(new Error('Expected failure'))
 
         const window = new FakeWindow({ inputBox: { input: bucketName } })
@@ -67,7 +67,7 @@ describe('deleteBucketCommand', () => {
         assert.deepStrictEqual(commands.args, [parentNode])
     })
 
-    it('warns when confirmation is invalid', async () => {
+    it('warns when confirmation is invalid', async function() {
         const window = new FakeWindow({ inputBox: { input: 'something other than the bucket name' } })
         const commands = new FakeCommands()
         await deleteBucketCommand(node, window, commands)

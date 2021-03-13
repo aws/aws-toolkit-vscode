@@ -10,17 +10,17 @@ import * as vscode from 'vscode'
 import * as picker from '../../../shared/ui/picker'
 import { IteratorTransformer } from '../../../shared/utilities/collectionUtils'
 
-describe('createQuickPick', async () => {
+describe('createQuickPick', async function() {
     let testPicker: vscode.QuickPick<vscode.QuickPickItem> | undefined
 
-    afterEach(() => {
+    afterEach(function() {
         if (testPicker) {
             testPicker.dispose()
             testPicker = undefined
         }
     })
 
-    it('Sets items', async () => {
+    it('Sets items', async function() {
         const items: vscode.QuickPickItem[] = [{ label: 'item one' }, { label: 'item two' }, { label: 'item triangle' }]
 
         testPicker = picker.createQuickPick({
@@ -30,7 +30,7 @@ describe('createQuickPick', async () => {
         assert.deepStrictEqual(testPicker.items, items)
     })
 
-    it('Sets item options', async () => {
+    it('Sets item options', async function() {
         const items: vscode.QuickPickItem[] = [
             {
                 label: 'label',
@@ -45,7 +45,7 @@ describe('createQuickPick', async () => {
         assert.deepStrictEqual(testPicker.items, items)
     })
 
-    it('Sets buttons', async () => {
+    it('Sets buttons', async function() {
         const buttons: vscode.QuickInputButton[] = [vscode.QuickInputButtons.Back]
 
         testPicker = picker.createQuickPick({
@@ -55,7 +55,7 @@ describe('createQuickPick', async () => {
         assert.deepStrictEqual(testPicker.buttons, buttons)
     })
 
-    it('Sets Options', async () => {
+    it('Sets Options', async function() {
         const options = {
             title: 'title',
             placeHolder: 'placeholder',
@@ -72,7 +72,7 @@ describe('createQuickPick', async () => {
         assertPickerOptions(testPicker, options)
     })
 
-    it('Sets boolean Options to false values', async () => {
+    it('Sets boolean Options to false values', async function() {
         const options = {
             matchOnDescription: false,
             matchOnDetail: false,
@@ -86,7 +86,7 @@ describe('createQuickPick', async () => {
         assertPickerOptions(testPicker, options)
     })
 
-    it('Sets Options to undefined values', async () => {
+    it('Sets Options to undefined values', async function() {
         const options = {}
 
         testPicker = picker.createQuickPick({
@@ -96,7 +96,7 @@ describe('createQuickPick', async () => {
         assertPickerOptions(testPicker, options)
     })
 
-    it('Does not set Options', async () => {
+    it('Does not set Options', async function() {
         testPicker = picker.createQuickPick({})
 
         assertPickerOptions(testPicker, {})
@@ -156,18 +156,18 @@ describe('createQuickPick', async () => {
     }
 })
 
-describe('promptUser', async () => {
+describe('promptUser', async function() {
     let samplePicker: TestQuickPick<vscode.QuickPickItem>
 
-    beforeEach(async () => {
+    beforeEach(async function() {
         samplePicker = createSamplePicker()
     })
 
-    afterEach(async () => {
+    afterEach(async function() {
         samplePicker.dispose()
     })
 
-    it('Accepted value is returned', async () => {
+    it('Accepted value is returned', async function() {
         const selectedItem = [samplePicker.items[0]]
 
         const promptPromise = picker.promptUser({
@@ -181,7 +181,7 @@ describe('promptUser', async () => {
         assertPromptResultEquals(promptResult, selectedItem)
     })
 
-    it('Hide returns undefined', async () => {
+    it('Hide returns undefined', async function() {
         const promptPromise = picker.promptUser({
             picker: samplePicker,
         })
@@ -193,7 +193,7 @@ describe('promptUser', async () => {
         assert.strictEqual(result, undefined, `Expected calling hide() on prompt to return undefined, got ${result}`)
     })
 
-    it('Button can cancel and return undefined', async () => {
+    it('Button can cancel and return undefined', async function() {
         const buttonOfInterest = vscode.QuickInputButtons.Back
         samplePicker.buttons = [buttonOfInterest]
 
@@ -221,7 +221,7 @@ describe('promptUser', async () => {
         )
     })
 
-    it('Button can return a value', async () => {
+    it('Button can return a value', async function() {
         const buttonOfInterest = vscode.QuickInputButtons.Back
         const selectedItem = [samplePicker.items[0]]
         samplePicker.buttons = [buttonOfInterest]
@@ -247,7 +247,7 @@ describe('promptUser', async () => {
         assertPromptResultEquals(promptResult, selectedItem)
     })
 
-    it('Button can do something and leave picker open', async () => {
+    it('Button can do something and leave picker open', async function() {
         const buttonOfInterest = vscode.QuickInputButtons.Back
         samplePicker.buttons = [buttonOfInterest]
         let handledButtonPress: boolean = false
@@ -370,7 +370,7 @@ describe('promptUser', async () => {
     }
 })
 
-describe('IteratingQuickPickController', async () => {
+describe('IteratingQuickPickController', async function() {
     const values = ['a', 'b', 'c']
     const result = [{ label: 'A' }, { label: 'B' }, { label: 'C' }]
     const errMessage = 'ahhhhhhhhh!!!'
@@ -379,20 +379,20 @@ describe('IteratingQuickPickController', async () => {
     let quickPick: vscode.QuickPick<vscode.QuickPickItem>
     let clock: sinon.SinonFakeTimers
 
-    before(() => {
+    before(function() {
         clock = FakeTimers.install()
     })
 
-    after(() => {
+    after(function() {
         clock.uninstall()
     })
 
-    beforeEach(() => {
+    beforeEach(function() {
         clock.reset()
         quickPick = picker.createQuickPick<vscode.QuickPickItem>({})
     })
 
-    afterEach(() => {
+    afterEach(function() {
         quickPick.dispose()
     })
 
@@ -425,7 +425,7 @@ describe('IteratingQuickPickController', async () => {
 
     async function* blankIteratorFn(): AsyncIterator<string> {}
 
-    it('appends a refresh button to the quickPick', () => {
+    it('appends a refresh button to the quickPick', function() {
         new picker.IteratingQuickPickController(
             quickPick,
             new IteratorTransformer<string, vscode.QuickPickItem>(() => iteratorFn(), converter)
@@ -435,7 +435,7 @@ describe('IteratingQuickPickController', async () => {
         assert.strictEqual(quickPick.buttons[0], picker.IteratingQuickPickController.REFRESH_BUTTON)
     })
 
-    it('returns iterated values on start and on reset', async () => {
+    it('returns iterated values on start and on reset', async function() {
         const controller = new picker.IteratingQuickPickController(
             quickPick,
             new IteratorTransformer<string, vscode.QuickPickItem>(() => iteratorFn(), converter)
@@ -480,7 +480,7 @@ describe('IteratingQuickPickController', async () => {
         await clock.nextAsync()
     })
 
-    it('does not return additional values if start is called on a finished iterator', async () => {
+    it('does not return additional values if start is called on a finished iterator', async function() {
         const controller = new picker.IteratingQuickPickController(
             quickPick,
             new IteratorTransformer<string, vscode.QuickPickItem>(() => iteratorFn(), converter)
@@ -512,7 +512,7 @@ describe('IteratingQuickPickController', async () => {
         await clock.nextAsync()
     })
 
-    it('pauses and restarts iteration', async () => {
+    it('pauses and restarts iteration', async function() {
         const controller = new picker.IteratingQuickPickController(
             quickPick,
             new IteratorTransformer<string, vscode.QuickPickItem>(() => iteratorFn(), converter)
@@ -549,7 +549,7 @@ describe('IteratingQuickPickController', async () => {
         await clock.nextAsync()
     })
 
-    it('appends an error item', async () => {
+    it('appends an error item', async function() {
         const controller = new picker.IteratingQuickPickController(
             quickPick,
             new IteratorTransformer<string, vscode.QuickPickItem>(() => errIteratorFn(), converter)
@@ -572,7 +572,7 @@ describe('IteratingQuickPickController', async () => {
         await clock.nextAsync()
     })
 
-    it('appends a no items item', async () => {
+    it('appends a no items item', async function() {
         const controller = new picker.IteratingQuickPickController(
             quickPick,
             new IteratorTransformer<string, vscode.QuickPickItem>(() => blankIteratorFn(), converter)
@@ -589,7 +589,7 @@ describe('IteratingQuickPickController', async () => {
         await clock.nextAsync()
     })
 
-    it('only appends values from the current refresh cycle', async () => {
+    it('only appends values from the current refresh cycle', async function() {
         const controller = new picker.IteratingQuickPickController(
             quickPick,
             new IteratorTransformer<string, vscode.QuickPickItem>(() => iteratorFn(), converter)
@@ -634,7 +634,7 @@ describe('IteratingQuickPickController', async () => {
         await clock.nextAsync()
     })
 
-    describe('iteratingOnDidTriggerButton', async () => {
+    describe('iteratingOnDidTriggerButton', async function() {
         class fakeIteratingQuickPickController extends picker.IteratingQuickPickController<undefined> {
             public constructor(
                 private readonly spy: sinon.SinonSpy,
@@ -662,15 +662,15 @@ describe('IteratingQuickPickController', async () => {
 
         let sandbox: sinon.SinonSandbox
 
-        beforeEach(() => {
+        beforeEach(function() {
             sandbox = sinon.createSandbox()
         })
 
-        afterEach(() => {
+        afterEach(function() {
             sandbox.restore()
         })
 
-        it('triggers a refresh and returns undefined', async () => {
+        it('triggers a refresh and returns undefined', async function() {
             const spy = sandbox.spy()
             const controller = new fakeIteratingQuickPickController(spy)
             const out = await controller.iteratingOnDidTriggerButton(
@@ -682,7 +682,7 @@ describe('IteratingQuickPickController', async () => {
             assert.ok(spy.calledOnce)
         })
 
-        it('returns undefined if no override is provided', async () => {
+        it('returns undefined if no override is provided', async function() {
             const spy = sandbox.spy()
             const controller = new fakeIteratingQuickPickController(spy)
             const out = await controller.iteratingOnDidTriggerButton(
@@ -694,7 +694,7 @@ describe('IteratingQuickPickController', async () => {
             assert.ok(spy.notCalled)
         })
 
-        it('returns a value from the override function', async () => {
+        it('returns a value from the override function', async function() {
             const spy = sandbox.spy()
             const callback = async () => {
                 return items

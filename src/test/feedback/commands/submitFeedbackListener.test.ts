@@ -11,18 +11,18 @@ const COMMENT = 'comment'
 const SENTIMENT = 'Positive'
 const message = { command: 'submitFeedback', comment: COMMENT, sentiment: SENTIMENT }
 
-describe('submitFeedbackListener', () => {
+describe('submitFeedbackListener', function() {
     let mockPanel: FeedbackPanel
     let mockWindow: Window
     let mockTelemetry: TelemetryService
 
-    beforeEach(() => {
+    beforeEach(function() {
         mockPanel = mock()
         mockWindow = mock()
         mockTelemetry = mock()
     })
 
-    it('submits feedback, disposes, and shows message on success', async () => {
+    it('submits feedback, disposes, and shows message on success', async function() {
         const listener = submitFeedbackListener(instance(mockPanel), instance(mockWindow), instance(mockTelemetry))
         await listener(message)
 
@@ -31,7 +31,7 @@ describe('submitFeedbackListener', () => {
         verify(mockWindow.showInformationMessage('Thanks for the feedback!')).once()
     })
 
-    it('submits feedback and posts failure message on failure', async () => {
+    it('submits feedback and posts failure message on failure', async function() {
         const error = 'Expected failure'
 
         when(mockTelemetry.postFeedback(anything())).thenThrow(new Error(error))

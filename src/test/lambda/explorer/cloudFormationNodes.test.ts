@@ -28,7 +28,7 @@ const FAKE_REGION_CODE = 'someregioncode'
 const UNSORTED_TEXT = ['zebra', 'Antelope', 'aardvark', 'elephant']
 const SORTED_TEXT = ['aardvark', 'Antelope', 'elephant', 'zebra']
 
-describe('CloudFormationStackNode', () => {
+describe('CloudFormationStackNode', function() {
     let fakeStackSummary: CloudFormation.StackSummary
     let sandbox: sinon.SinonSandbox
     let testNode: CloudFormationStackNode
@@ -39,7 +39,7 @@ describe('CloudFormationStackNode', () => {
     // Mocked CloudFormation Client returns Lambda Function Stack Resources for anything listed in cloudFormationStacklambdaFunctionNames
     let cloudFormationStacklambdaFunctionNames: string[]
 
-    before(async () => {
+    before(async function() {
         setupTestIconPaths()
         fakeStackSummary = {
             CreationTime: new Date(),
@@ -49,7 +49,7 @@ describe('CloudFormationStackNode', () => {
         }
     })
 
-    beforeEach(() => {
+    beforeEach(function() {
         sandbox = sinon.createSandbox()
 
         lambdaFunctionNames = ['function1', 'function2']
@@ -60,27 +60,27 @@ describe('CloudFormationStackNode', () => {
         testNode = generateTestNode()
     })
 
-    afterEach(() => {
+    afterEach(function() {
         sandbox.restore()
     })
 
-    after(async () => {
+    after(async function() {
         clearTestIconPaths()
     })
 
-    it('initializes name and tooltip', async () => {
+    it('initializes name and tooltip', async function() {
         assert.strictEqual(testNode.label, `${fakeStackSummary.StackName} [${fakeStackSummary.StackStatus}]`)
         assert.strictEqual(testNode.tooltip, `${fakeStackSummary.StackName}${os.EOL}${fakeStackSummary.StackId}`)
     })
 
-    it('initializes icon', async () => {
+    it('initializes icon', async function() {
         const iconPath = testNode.iconPath as IconPath
 
         assert.strictEqual(iconPath.dark.path, ext.iconPaths.dark.cloudFormation, 'Unexpected dark icon path')
         assert.strictEqual(iconPath.light.path, ext.iconPaths.light.cloudFormation, 'Unexpected light icon path')
     })
 
-    it('returns placeholder node if no children are present', async () => {
+    it('returns placeholder node if no children are present', async function() {
         lambdaFunctionNames = []
         cloudFormationStacklambdaFunctionNames = []
 
@@ -89,7 +89,7 @@ describe('CloudFormationStackNode', () => {
         assertNodeListOnlyContainsPlaceholderNode(childNodes)
     })
 
-    it('has LambdaFunctionNode child nodes', async () => {
+    it('has LambdaFunctionNode child nodes', async function() {
         const childNodes = await testNode.getChildren()
 
         assert.strictEqual(childNodes.length, cloudFormationStacklambdaFunctionNames.length, 'Unexpected child count')
@@ -99,7 +99,7 @@ describe('CloudFormationStackNode', () => {
         )
     })
 
-    it('has child nodes with CloudFormation contextValue', async () => {
+    it('has child nodes with CloudFormation contextValue', async function() {
         const childNodes = await testNode.getChildren()
 
         childNodes.forEach(node =>
@@ -111,7 +111,7 @@ describe('CloudFormationStackNode', () => {
         )
     })
 
-    it('only includes functions which are in a CloudFormation stack', async () => {
+    it('only includes functions which are in a CloudFormation stack', async function() {
         lambdaFunctionNames = ['lambda1', 'lambda2', 'lambda3']
         cloudFormationStacklambdaFunctionNames = ['lambda1', 'lambda3']
 
@@ -129,7 +129,7 @@ describe('CloudFormationStackNode', () => {
         )
     })
 
-    it('sorts child nodes', async () => {
+    it('sorts child nodes', async function() {
         lambdaFunctionNames = UNSORTED_TEXT
         cloudFormationStacklambdaFunctionNames = UNSORTED_TEXT
 
@@ -139,7 +139,7 @@ describe('CloudFormationStackNode', () => {
         assert.deepStrictEqual(actualChildOrder, SORTED_TEXT, 'Unexpected child sort order')
     })
 
-    it('has an error node for a child if an error happens during loading', async () => {
+    it('has an error node for a child if an error happens during loading', async function() {
         const lambdaClient = {
             listFunctions: sandbox.stub().callsFake(() => {
                 throw new Error('loading failure')
@@ -204,17 +204,17 @@ describe('CloudFormationStackNode', () => {
     }
 })
 
-describe('CloudFormationNode', () => {
+describe('CloudFormationNode', function() {
     let sandbox: sinon.SinonSandbox
-    beforeEach(() => {
+    beforeEach(function() {
         sandbox = sinon.createSandbox()
     })
 
-    afterEach(() => {
+    afterEach(function() {
         sandbox.restore()
     })
 
-    it('has CloudFormationStackNode child nodes', async () => {
+    it('has CloudFormationStackNode child nodes', async function() {
         const inputStackNames: string[] = ['stack123']
 
         const cloudFormationClient = makeCloudFormationClient(inputStackNames)
@@ -234,7 +234,7 @@ describe('CloudFormationNode', () => {
         )
     })
 
-    it('has sorted child nodes', async () => {
+    it('has sorted child nodes', async function() {
         const inputStackNames = UNSORTED_TEXT
         const expectedChildOrder = SORTED_TEXT
 
@@ -255,7 +255,7 @@ describe('CloudFormationNode', () => {
         assert.deepStrictEqual(actualChildOrder, expectedChildOrder, 'Unexpected child sort order')
     })
 
-    it('returns placeholder node if no children are present', async () => {
+    it('returns placeholder node if no children are present', async function() {
         const cloudFormationClient = makeCloudFormationClient([])
 
         const clientBuilder = {
@@ -271,7 +271,7 @@ describe('CloudFormationNode', () => {
         assertNodeListOnlyContainsPlaceholderNode(children)
     })
 
-    it('has an error node for a child if an error happens during loading', async () => {
+    it('has an error node for a child if an error happens during loading', async function() {
         const testNode = new CloudFormationNode(FAKE_REGION_CODE)
         sandbox.stub(testNode, 'updateChildren').callsFake(() => {
             throw new Error('Update Children error!')

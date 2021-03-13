@@ -15,8 +15,8 @@ import {
     getDriveLetter,
 } from '../../../shared/utilities/pathUtils'
 
-describe('pathUtils', async () => {
-    it('getNormalizedRelativePath()', async () => {
+describe('pathUtils', async function() {
+    it('getNormalizedRelativePath()', async function() {
         const workspaceFolderPath = path.join('my', 'workspace')
         const expectedRelativePath = path.join('processors', 'template.yaml')
         const templatePath = path.join(workspaceFolderPath, expectedRelativePath)
@@ -24,14 +24,14 @@ describe('pathUtils', async () => {
         assert.strictEqual(relativePath, expectedRelativePath.replace(path.sep, path.posix.sep))
     })
 
-    it('normalizedDirnameWithTrailingSlash()', async () => {
+    it('normalizedDirnameWithTrailingSlash()', async function() {
         const expectedResult = 'src/processors/'
         const input = path.join(expectedResult, 'app.js')
         const actualResult = normalizedDirnameWithTrailingSlash(input)
         assert.strictEqual(actualResult, expectedResult, 'Expected path to contain trailing slash')
     })
 
-    it('areEqual()', () => {
+    it('areEqual()', function() {
         const workspaceFolderPath = path.join('/my', 'workspace')
         assert.ok(areEqual(undefined, 'a/b/c', 'a/b/c'))
         assert.ok(areEqual(workspaceFolderPath, '/my/workspace/foo', './foo'))
@@ -48,7 +48,7 @@ describe('pathUtils', async () => {
         }
     })
 
-    it('normalizeSeparator()', () => {
+    it('normalizeSeparator()', function() {
         assert.strictEqual(normalizeSeparator('a/b/c'), 'a/b/c')
         assert.strictEqual(normalizeSeparator('a\\b\\c'), 'a/b/c')
         assert.strictEqual(normalizeSeparator('a\\\\b\\c\\/\\'), 'a/b/c/')
@@ -68,7 +68,7 @@ describe('pathUtils', async () => {
         )
     })
 
-    it('normalize()', () => {
+    it('normalize()', function() {
         assert.strictEqual(normalize('../../FOO/BAR'), '../../FOO/BAR')
         assert.strictEqual(normalize('c:\\foo\\bar.txt'), 'C:/foo/bar.txt')
         assert.strictEqual(normalize('C:\\foo\\bar.txt'), 'C:/foo/bar.txt')

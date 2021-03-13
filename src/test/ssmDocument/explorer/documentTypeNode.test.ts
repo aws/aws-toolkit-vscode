@@ -9,22 +9,22 @@ import { DocumentTypeNode } from '../../../ssmDocument/explorer/documentTypeNode
 
 import { assertNodeListOnlyContainsErrorNode } from '../../utilities/explorerNodeAssertions'
 
-describe('DocumentTypeNode', () => {
+describe('DocumentTypeNode', function() {
     let sandbox: sinon.SinonSandbox
 
     const fakeRegion = 'testRegion'
     const expectedChildNodeNames = ['Owned by Amazon', 'Owned by me', 'Shared with me']
     const documentType = 'Automation'
 
-    beforeEach(() => {
+    beforeEach(function() {
         sandbox = sinon.createSandbox()
     })
 
-    afterEach(() => {
+    afterEach(function() {
         sandbox.restore()
     })
 
-    it('has correct child nodes', async () => {
+    it('has correct child nodes', async function() {
         const testNode: DocumentTypeNode = new DocumentTypeNode(fakeRegion, documentType)
         const childNodes = await testNode.getChildren()
 
@@ -34,7 +34,7 @@ describe('DocumentTypeNode', () => {
         })
     })
 
-    it('handles error', async () => {
+    it('handles error', async function() {
         const testNode: DocumentTypeNode = new DocumentTypeNode(fakeRegion, documentType)
         sandbox.stub(testNode, 'updateChildren').callsFake(() => {
             throw new Error('Update child error')

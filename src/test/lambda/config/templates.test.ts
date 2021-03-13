@@ -34,9 +34,9 @@ class MockLoadTemplatesConfigContext {
     }
 }
 
-describe('templates', async () => {
-    describe('load', async () => {
-        it('loads a valid file without parameter overrides', async () => {
+describe('templates', async function() {
+    describe('load', async function() {
+        it('loads a valid file without parameter overrides', async function() {
             const rawJson = `{
                 "templates": {
                     "relative/path/to/template.yaml": {
@@ -59,7 +59,7 @@ describe('templates', async () => {
             assert.strictEqual(Object.getOwnPropertyNames(template).length, 0)
         })
 
-        it('loads a valid file with parameter overrides', async () => {
+        it('loads a valid file with parameter overrides', async function() {
             const rawJson = `{
                 "templates": {
                     "relative/path/to/template.yaml": {
@@ -97,7 +97,7 @@ describe('templates', async () => {
             assert.strictEqual(myParam2!.value, 'myValue2')
         })
 
-        it('returns minimal config on missing file', async () => {
+        it('returns minimal config on missing file', async function() {
             const context = new MockLoadTemplatesConfigContext({
                 fileExists: async pathLike => false,
             })
@@ -109,7 +109,7 @@ describe('templates', async () => {
             assert.strictEqual(Object.getOwnPropertyNames(config.templates).length, 0)
         })
 
-        it('throws on error loading file', async () => {
+        it('throws on error loading file', async function() {
             const context = new MockLoadTemplatesConfigContext({
                 readFile: async pathLike => {
                     throw new Error('oh no')
@@ -128,7 +128,7 @@ describe('templates', async () => {
             assert.fail()
         })
 
-        it('gracefully handles invalid JSON', async () => {
+        it('gracefully handles invalid JSON', async function() {
             const context = new MockLoadTemplatesConfigContext({
                 readFile: async pathLike => '{',
             })
@@ -148,7 +148,7 @@ describe('templates', async () => {
             assert.fail()
         })
 
-        it('supports JSON comments', async () => {
+        it('supports JSON comments', async function() {
             const rawJson = `{
                 "templates": {
                     // A single-comment.
@@ -175,7 +175,7 @@ describe('templates', async () => {
             assert.strictEqual(Object.getOwnPropertyNames(template).length, 0)
         })
 
-        it('reads the correct path', async () => {
+        it('reads the correct path', async function() {
             const readArgs: string[] = []
             const context = new MockLoadTemplatesConfigContext({
                 readFile: async pathLike => {
@@ -191,7 +191,7 @@ describe('templates', async () => {
             assert.strictEqual(readArgs[0], path.join('my', 'path', '.aws', 'templates.json'))
         })
 
-        it('saves dirty documents before loading', async () => {
+        it('saves dirty documents before loading', async function() {
             const saveArgs: string[] = []
             let read: boolean = false
             let readBeforeSave: boolean = false
@@ -220,15 +220,15 @@ describe('templates', async () => {
     })
 })
 
-describe('getTemplatesConfigPath', async () => {
-    it('returns expected path', async () => {
+describe('getTemplatesConfigPath', async function() {
+    it('returns expected path', async function() {
         const configPath = getTemplatesConfigPath(path.join('my', 'workspace'))
 
         assert.strictEqual(configPath, path.join('my', 'workspace', '.aws', 'templates.json'))
     })
 })
 
-describe('TemplatesConfigPopulator', async () => {
+describe('TemplatesConfigPopulator', async function() {
     const testModificationOptions = {
         formattingOptions: {
             tabSize: 4,
@@ -236,7 +236,7 @@ describe('TemplatesConfigPopulator', async () => {
         },
     }
 
-    it('handles ModificationOptions', async () => {
+    it('handles ModificationOptions', async function() {
         const inputJson: string = '{}'
 
         const expectedJson: string = String.raw`{
@@ -258,8 +258,8 @@ describe('TemplatesConfigPopulator', async () => {
         assert.strictEqual(JSON.stringify(results.json), JSON.stringify(expectedJson))
     })
 
-    describe('ensureTemplateSectionExists', async () => {
-        it('handles clean data', async () => {
+    describe('ensureTemplateSectionExists', async function() {
+        it('handles clean data', async function() {
             const inputJson: string = String.raw`{
     "templates": {
         "someprocessor": {}
@@ -274,7 +274,7 @@ describe('TemplatesConfigPopulator', async () => {
             assert.strictEqual(JSON.stringify(results.json), JSON.stringify(inputJson))
         })
 
-        it('handles missing templates section', async () => {
+        it('handles missing templates section', async function() {
             const inputJson: string = '{}'
 
             const expectedJson: string = String.raw`{
@@ -291,7 +291,7 @@ describe('TemplatesConfigPopulator', async () => {
             assert.strictEqual(JSON.stringify(results.json), JSON.stringify(expectedJson))
         })
 
-        it('handles missing template section', async () => {
+        it('handles missing template section', async function() {
             const inputJson: string = String.raw`{
     "templates": {}
 }`
@@ -310,7 +310,7 @@ describe('TemplatesConfigPopulator', async () => {
             assert.strictEqual(JSON.stringify(results.json), JSON.stringify(expectedJson))
         })
 
-        it('errs with invalid templates type', async () => {
+        it('errs with invalid templates type', async function() {
             const inputJson: string = `{
             "templates": 1234
         }`
@@ -330,8 +330,8 @@ describe('TemplatesConfigPopulator', async () => {
         })
     })
 
-    describe('ensureTemplateHandlerSectionExists', async () => {
-        it('handles clean data', async () => {
+    describe('ensureTemplateHandlerSectionExists', async function() {
+        it('handles clean data', async function() {
             const inputJson: string = String.raw`{
     "templates": {
         "someprocessor": {
@@ -353,7 +353,7 @@ describe('TemplatesConfigPopulator', async () => {
             assert.strictEqual(JSON.stringify(results.json), JSON.stringify(inputJson))
         })
 
-        it('errs with invalid template type', async () => {
+        it('errs with invalid template type', async function() {
             const inputJson: string = String.raw`{
             "templates": {
                 "someprocessor": true
@@ -375,7 +375,7 @@ describe('TemplatesConfigPopulator', async () => {
             )
         })
 
-        it('errs with invalid handlers type', async () => {
+        it('errs with invalid handlers type', async function() {
             const inputJson: string = String.raw`{
             "templates": {
                 "someprocessor": {
@@ -398,7 +398,7 @@ describe('TemplatesConfigPopulator', async () => {
             )
         })
 
-        it('errs with invalid handler type', async () => {
+        it('errs with invalid handler type', async function() {
             const inputJson: string = String.raw`{
             "templates": {
                 "someprocessor": {
@@ -423,7 +423,7 @@ describe('TemplatesConfigPopulator', async () => {
             )
         })
 
-        it('handles missing handlers section', async () => {
+        it('handles missing handlers section', async function() {
             const inputJson: string = String.raw`{
     "templates": {
         "someprocessor": {
@@ -452,7 +452,7 @@ describe('TemplatesConfigPopulator', async () => {
             assert.strictEqual(JSON.stringify(results.json), JSON.stringify(expectedJson))
         })
 
-        it('handles missing handler section', async () => {
+        it('handles missing handler section', async function() {
             const inputJson: string = String.raw`{
     "templates": {
         "someprocessor": {
@@ -483,8 +483,8 @@ describe('TemplatesConfigPopulator', async () => {
         })
     })
 
-    describe('ensureTemplateHandlerPropertiesExist', async () => {
-        it('handles clean data', async () => {
+    describe('ensureTemplateHandlerPropertiesExist', async function() {
+        it('handles clean data', async function() {
             const inputJson: string = `{
     "templates": {
         "someprocessor": {
@@ -506,7 +506,7 @@ describe('TemplatesConfigPopulator', async () => {
             assert.strictEqual(JSON.stringify(results.json), JSON.stringify(inputJson))
         })
 
-        it('errs with invalid handler type', async () => {
+        it('errs with invalid handler type', async function() {
             const inputJson: string = String.raw`{
             "templates": {
                 "someprocessor": {
@@ -531,7 +531,7 @@ describe('TemplatesConfigPopulator', async () => {
             )
         })
 
-        it('errs with invalid event type', async () => {
+        it('errs with invalid event type', async function() {
             const inputJson: string = String.raw`{
             "templates": {
                 "someprocessor": {
@@ -558,7 +558,7 @@ describe('TemplatesConfigPopulator', async () => {
             )
         })
 
-        it('handles missing everything', async () => {
+        it('handles missing everything', async function() {
             const inputJson: string = String.raw`{
     "templates": {
         "someprocessor": {
@@ -591,7 +591,7 @@ describe('TemplatesConfigPopulator', async () => {
             assert.strictEqual(JSON.stringify(results.json), JSON.stringify(expectedJson))
         })
 
-        it('handles missing event', async () => {
+        it('handles missing event', async function() {
             const inputJson: string = String.raw`{
     "templates": {
         "someprocessor": {
@@ -625,7 +625,7 @@ describe('TemplatesConfigPopulator', async () => {
             assert.strictEqual(JSON.stringify(results.json), JSON.stringify(expectedJson))
         })
 
-        it('handles missing envvars', async () => {
+        it('handles missing envvars', async function() {
             const inputJson: string = String.raw`{
     "templates": {
         "someprocessor": {
@@ -660,8 +660,8 @@ describe('TemplatesConfigPopulator', async () => {
         })
     })
 
-    describe('ensureTemplateParameterOverrideExists', async () => {
-        it('creates parameterOverrides section if it does not already exist', async () => {
+    describe('ensureTemplateParameterOverrideExists', async function() {
+        it('creates parameterOverrides section if it does not already exist', async function() {
             const inputJson: string = String.raw`{
     "templates": {
         "someprocessor": {
@@ -686,7 +686,7 @@ describe('TemplatesConfigPopulator', async () => {
             assert.strictEqual(isDirty, true, 'Expected results to be dirty')
         })
 
-        it('adds new override if it does not already exist', async () => {
+        it('adds new override if it does not already exist', async function() {
             const inputJson: string = String.raw`{
     "templates": {
         "someprocessor": {
@@ -713,7 +713,7 @@ describe('TemplatesConfigPopulator', async () => {
             assert.strictEqual(isDirty, true, 'Expected results to be dirty')
         })
 
-        it('does not overwrite existing overrides', async () => {
+        it('does not overwrite existing overrides', async function() {
             const inputJson: string = String.raw`{
     "templates": {
         "someprocessor": {
@@ -732,7 +732,7 @@ describe('TemplatesConfigPopulator', async () => {
             assert.strictEqual(isDirty, false, 'Expected results to be clean')
         })
 
-        it('throws if parameterOverrides exists, but is not an object or null', async () => {
+        it('throws if parameterOverrides exists, but is not an object or null', async function() {
             const inputJson: string = String.raw`{
     "templates": {
         "someprocessor": {
@@ -745,7 +745,7 @@ describe('TemplatesConfigPopulator', async () => {
             assert.throws(() => populator.ensureTemplateParameterOverrideExists('someprocessor', 'myParam'))
         })
 
-        it('throws if override value exists, but is not a string or null', async () => {
+        it('throws if override value exists, but is not a string or null', async function() {
             const inputJson: string = String.raw`{
     "templates": {
         "someprocessor": {
@@ -762,7 +762,7 @@ describe('TemplatesConfigPopulator', async () => {
     })
 })
 
-describe('getExistingConfiguration', async () => {
+describe('getExistingConfiguration', async function() {
     let tempFolder: string
     let tempTemplateFile: vscode.Uri
     let tempConfigFile: string
@@ -770,7 +770,7 @@ describe('getExistingConfiguration', async () => {
     let tempConfigFolder: string
     const matchedHandler = "it'sTheSameHandler"
 
-    beforeEach(async () => {
+    beforeEach(async function() {
         tempFolder = await makeTemporaryToolkitFolder()
         tempTemplateFile = vscode.Uri.file(path.join(tempFolder, 'test.yaml'))
         fakeWorkspaceFolder = {
@@ -783,7 +783,7 @@ describe('getExistingConfiguration', async () => {
         tempConfigFile = path.join(tempConfigFolder, 'templates.json')
     })
 
-    afterEach(async () => {
+    afterEach(async function() {
         await remove(tempFolder)
         ext.templateRegistry.reset()
     })
@@ -793,7 +793,7 @@ describe('getExistingConfiguration', async () => {
         assert.strictEqual(val, undefined)
     })
 
-    it('returns undefined if the legacy config file is not valid JSON', async () => {
+    it('returns undefined if the legacy config file is not valid JSON', async function() {
         await writeFile(tempTemplateFile.fsPath, makeSampleSamTemplateYaml(true, { handler: matchedHandler }), 'utf8')
         await writeFile(tempConfigFile, makeSampleSamTemplateYaml(true, { handler: matchedHandler }), 'utf8')
         await ext.templateRegistry.addItemToRegistry(tempTemplateFile)
@@ -801,7 +801,7 @@ describe('getExistingConfiguration', async () => {
         assert.strictEqual(val, undefined)
     })
 
-    it('returns data from the legacy config file', async () => {
+    it('returns data from the legacy config file', async function() {
         await writeFile(tempTemplateFile.fsPath, makeSampleSamTemplateYaml(true, { handler: matchedHandler }), 'utf8')
         const configData = {
             templates: {

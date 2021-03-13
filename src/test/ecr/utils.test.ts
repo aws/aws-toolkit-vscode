@@ -6,13 +6,13 @@
 import * as assert from 'assert'
 import { validateRepositoryName } from '../../ecr/utils'
 
-describe('createRepositoryCommand', () => {
-    it('Validates repository name starts with a lowercase letter', () => {
+describe('createRepositoryCommand', function() {
+    it('Validates repository name starts with a lowercase letter', function() {
         const message = validateRepositoryName('404')
         assert.strictEqual(message, 'Repository name must start with a lowercase letter')
     })
 
-    it('Validates repository name does not contain uppercase characters', () => {
+    it('Validates repository name does not contain uppercase characters', function() {
         const message = validateRepositoryName('abcDEF')
         assert.strictEqual(
             message,
@@ -20,13 +20,13 @@ describe('createRepositoryCommand', () => {
         )
     })
 
-    it('Validates repository name against large regex the service uses', () => {
+    it('Validates repository name against large regex the service uses', function() {
         ;['abc--a', 'abc//a', 'abc__a', 'abc-', 'abc/', 'abc_'].forEach(item =>
             assert.strictEqual(validateRepositoryName(item), 'Invalid repository name')
         )
     })
 
-    it('Allows lowercase names with slashes, underscores, and dashes', () => {
+    it('Allows lowercase names with slashes, underscores, and dashes', function() {
         const message = validateRepositoryName('abc1/def2/hij3_klmno-p5')
         assert.strictEqual(message, undefined)
     })

@@ -10,8 +10,8 @@ import { assertThrowsError } from '../../shared/utilities/assertUtils'
 
 const MISSING_PROPERTIES_FRAGMENT = 'missing properties'
 
-describe('SharedCredentialsProvider', async () => {
-    it('constructor fails if profile does not exist', async () => {
+describe('SharedCredentialsProvider', async function() {
+    it('constructor fails if profile does not exist', async function() {
         await assertThrowsError(async () => {
             // @ts-ignore - sut is unused, we expect the constructor to throw
             const sut = new SharedCredentialsProvider(
@@ -21,7 +21,7 @@ describe('SharedCredentialsProvider', async () => {
         })
     })
 
-    it('produces a CredentialsProviderId', async () => {
+    it('produces a CredentialsProviderId', async function() {
         const sut = new SharedCredentialsProvider(
             'default',
             new Map<string, Profile>([['default', { aws_access_key_id: 'x', aws_secret_access_key: 'y' }]])
@@ -33,7 +33,7 @@ describe('SharedCredentialsProvider', async () => {
         })
     })
 
-    it('gets profile properties', async () => {
+    it('gets profile properties', async function() {
         const sut = new SharedCredentialsProvider(
             'default',
             new Map<string, Profile>([
@@ -45,7 +45,7 @@ describe('SharedCredentialsProvider', async () => {
         assert.strictEqual(sut.canAutoConnect(), true)
     })
 
-    it('profile properties may be undefined', async () => {
+    it('profile properties may be undefined', async function() {
         const sut = new SharedCredentialsProvider(
             'default',
             new Map<string, Profile>([['default', { aws_access_key_id: 'x', aws_secret_access_key: 'y' }]])
@@ -54,7 +54,7 @@ describe('SharedCredentialsProvider', async () => {
         assert.strictEqual(sut.getDefaultRegion(), undefined)
     })
 
-    it('validation identifies a source_profile reference that does not exist', async () => {
+    it('validation identifies a source_profile reference that does not exist', async function() {
         const sut = new SharedCredentialsProvider(
             'default',
             new Map<string, Profile>([['default', { role_arn: 'x', source_profile: 'fakeprofile' }]])
@@ -64,7 +64,7 @@ describe('SharedCredentialsProvider', async () => {
         assertSubstringsInText(sut.validate(), 'not found')
     })
 
-    it('validation identifies a source_profile reference cycle', async () => {
+    it('validation identifies a source_profile reference cycle', async function() {
         const sut = new SharedCredentialsProvider(
             'profileA',
             new Map<string, Profile>([
@@ -78,7 +78,7 @@ describe('SharedCredentialsProvider', async () => {
         assertSubstringsInText(sut.validate(), 'Cycle detected', 'profileA', 'profileB', 'profileC')
     })
 
-    it('validation identifies when access key id is missing a corresponding secret key', async () => {
+    it('validation identifies when access key id is missing a corresponding secret key', async function() {
         const sut = new SharedCredentialsProvider(
             'default',
             new Map<string, Profile>([['default', { aws_access_key_id: 'x' }]])
@@ -88,7 +88,7 @@ describe('SharedCredentialsProvider', async () => {
         assertSubstringsInText(sut.validate(), MISSING_PROPERTIES_FRAGMENT, 'aws_secret_access_key')
     })
 
-    it('validation identifies when session_token is missing a corresponding access key id', async () => {
+    it('validation identifies when session_token is missing a corresponding access key id', async function() {
         const sut = new SharedCredentialsProvider(
             'default',
             new Map<string, Profile>([['default', { aws_secret_access_key: 'y', aws_session_token: 'z' }]])
@@ -98,7 +98,7 @@ describe('SharedCredentialsProvider', async () => {
         assertSubstringsInText(sut.validate(), MISSING_PROPERTIES_FRAGMENT, 'aws_access_key_id')
     })
 
-    it('validation identifies when session_token is missing a corresponding secret key', async () => {
+    it('validation identifies when session_token is missing a corresponding secret key', async function() {
         const sut = new SharedCredentialsProvider(
             'default',
             new Map<string, Profile>([['default', { aws_access_key_id: 'x', aws_session_token: 'z' }]])
@@ -108,7 +108,7 @@ describe('SharedCredentialsProvider', async () => {
         assertSubstringsInText(sut.validate(), MISSING_PROPERTIES_FRAGMENT, 'aws_secret_access_key')
     })
 
-    it('validation identifies when the profile contains no supported properties', async () => {
+    it('validation identifies when the profile contains no supported properties', async function() {
         const sut = new SharedCredentialsProvider(
             'default',
             new Map<string, Profile>([['default', { hello: 'world' }]])
@@ -118,7 +118,7 @@ describe('SharedCredentialsProvider', async () => {
         assertSubstringsInText(sut.validate(), 'not supported')
     })
 
-    it('validates a valid profile with an access key', async () => {
+    it('validates a valid profile with an access key', async function() {
         const sut = new SharedCredentialsProvider(
             'default',
             new Map<string, Profile>([['default', { aws_access_key_id: 'x', aws_secret_access_key: 'y' }]])
@@ -127,7 +127,7 @@ describe('SharedCredentialsProvider', async () => {
         assert.strictEqual(sut.validate(), undefined)
     })
 
-    it('validates a valid profile with a session token', async () => {
+    it('validates a valid profile with a session token', async function() {
         const sut = new SharedCredentialsProvider(
             'default',
             new Map<string, Profile>([
@@ -138,7 +138,7 @@ describe('SharedCredentialsProvider', async () => {
         assert.strictEqual(sut.validate(), undefined)
     })
 
-    it('validates a valid profile with credential_process', async () => {
+    it('validates a valid profile with credential_process', async function() {
         const sut = new SharedCredentialsProvider(
             'default',
             new Map<string, Profile>([['default', { credential_process: 'x' }]])
@@ -147,7 +147,7 @@ describe('SharedCredentialsProvider', async () => {
         assert.strictEqual(sut.validate(), undefined)
     })
 
-    it('validates a valid profile with role_arn', async () => {
+    it('validates a valid profile with role_arn', async function() {
         const sut = new SharedCredentialsProvider(
             'default',
             new Map<string, Profile>([['default', { role_arn: 'x' }]])
@@ -156,7 +156,7 @@ describe('SharedCredentialsProvider', async () => {
         assert.strictEqual(sut.validate(), undefined)
     })
 
-    it('validates a valid profile with role_arn and source_profile', async () => {
+    it('validates a valid profile with role_arn and source_profile', async function() {
         const sut = new SharedCredentialsProvider(
             'default',
             new Map<string, Profile>([
@@ -168,7 +168,7 @@ describe('SharedCredentialsProvider', async () => {
         assert.strictEqual(sut.validate(), undefined)
     })
 
-    it('getCredentials throws when the profile is not valid', async () => {
+    it('getCredentials throws when the profile is not valid', async function() {
         const sut = new SharedCredentialsProvider(
             'default',
             new Map<string, Profile>([['default', { aws_access_key_id: 'x' }]])
