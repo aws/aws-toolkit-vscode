@@ -34,7 +34,6 @@ import { DefaultSamCliConfiguration } from './cli/samCliConfiguration'
 import { extensionSettingsPrefix } from '../constants'
 import { DefaultSamCliLocationProvider } from './cli/samCliLocator'
 import { getSamCliContext, getSamCliVersion } from './cli/samCliContext'
-import { logger } from 'handlebars'
 
 const localize = nls.loadMessageBundle()
 
@@ -327,7 +326,7 @@ export async function invokeLambdaFunction(
 
         // Retrives SAM's version if the CLI exists, otherwise log an error
         await getSamCliVersion(getSamCliContext()).then(v => { samVersion = v }).catch(err => getLogger().error(err))
-        
+
         try {
             await command.execute(timer)
             invokeResult = 'Succeeded'
