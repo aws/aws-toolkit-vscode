@@ -16,6 +16,7 @@ import { recordVscodeViewLogs } from '../telemetry/telemetry'
 import { setLogger } from './logger'
 import { LOG_OUTPUT_CHANNEL } from './outputChannel'
 import { WinstonToolkitLogger } from './winstonToolkitLogger'
+import { parseLogObject } from './logManager'
 
 const localize = nls.loadMessageBundle()
 
@@ -101,7 +102,11 @@ export function makeLogger(
     // don't alter logfile output for now since that should be more diagnostic. On the fence about this...
     const stripAnsi = opts.useDebugConsole || false
     for (const logPath of opts.logPaths ?? []) {
-        logger.logToFile(logPath)
+        if (logPath === LOG_PATH) {
+            logger.logToFile(logPath, "logged", parseLogObject)
+        } else {
+            logger.logToFile(logPath)
+        }
     }
     for (const outputChannel of opts.outputChannels ?? []) {
         logger.logToOutputChannel(outputChannel, stripAnsi)
@@ -157,6 +162,33 @@ async function registerLoggerCommands(context: vscode.ExtensionContext): Promise
         vscode.commands.registerCommand('aws.viewLogs', async () => {
             await vscode.window.showTextDocument(vscode.Uri.file(path.normalize(LOG_PATH)))
             recordVscodeViewLogs()
+        })
+    )
+    context.subscriptions.push(
+        vscode.commands.registerCommand('aws.viewLogsAtMessage', async (msgPromise: Promise<string | undefined>) => {
+            const msg: string | undefined = await msgPromise.then(m => m)
+            await vscode.commands.executeCommand('aws.viewLogs')
+
+            if (!msg) {
+                return
+            }
+
+            const editor: vscode.TextEditor | undefined = vscode.window.activeTextEditor          
+
+            if (editor) {
+                const text: string = editor.document.getText()
+                const lineStart: number = text.substring(0, text.indexOf(msg)).split(/\r?\n/).filter(x => x).length
+
+                if (lineStart > 0) {
+                    const lineEnd: number = lineStart + msg.split(/\r?\n/).filter(x => x).length
+                    const startPos = editor.document.lineAt(lineStart).range.start
+                    const endPos = editor.document.lineAt(lineEnd-1).range.end
+                    editor.selection = new vscode.Selection(startPos, endPos)
+                    editor.revealRange(new vscode.Range(startPos, endPos))
+                } else {
+                    editor.selection = new vscode.Selection(new vscode.Position(0, 0), new vscode.Position(0, 0))
+                }
+            }
         })
     )
 }

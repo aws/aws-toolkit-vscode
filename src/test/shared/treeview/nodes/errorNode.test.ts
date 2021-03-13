@@ -17,7 +17,7 @@ describe('ErrorNode', () => {
         const testNode = new ErrorNode(parentNode, error, 'Error loading resources')
 
         assert.strictEqual(testNode.label, 'Error loading resources')
-        assert.strictEqual(testNode.tooltip, `${error.name}:${error.message}`)
+        assert.strictEqual(testNode.tooltip, `Click to view error in Toolkit logs`)
     })
 
     // Validates function nodes are leaves
@@ -27,5 +27,12 @@ describe('ErrorNode', () => {
         const childNodes = await testNode.getChildren()
         assert(childNodes !== undefined)
         assert.strictEqual(childNodes.length, 0)
+    })
+
+    // Validates that a command is set
+    it('command is set', async function() {
+        const testNode = new ErrorNode(parentNode, error, 'Error loading resources')
+        
+        assert.notStrictEqual(testNode.command, undefined)
     })
 })

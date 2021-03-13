@@ -12,14 +12,19 @@ const toolkitLoggers: {
 export interface Logger {
     debug(message: string, ...meta: any[]): void
     debug(error: Error): void
+    debug(error: Error, ...meta: any[]): void
     verbose(message: string, ...meta: any[]): void
     verbose(error: Error): void
+    verbose(error: Error, ...meta: any[]): void
     info(message: string, ...meta: any[]): void
     info(error: Error): void
+    info(error: Error, ...meta: any[]): void
     warn(message: string, ...meta: any[]): void
     warn(error: Error): void
+    warn(error: Error, ...meta: any[]): void
     error(message: string, ...meta: any[]): void
     error(error: Error): void
+    error(error: Error, ...meta: any[]): void
     setLogLevel(logLevel: LogLevel): void
     /** Returns true if the given log level is being logged.  */
     logLevelEnabled(logLevel: LogLevel): boolean

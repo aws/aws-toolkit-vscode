@@ -43,8 +43,13 @@ export class WinstonToolkitLogger implements Logger, vscode.Disposable {
         return compareLogLevel(currentLevel, logLevel) >= 0
     }
 
-    public logToFile(logPath: string): void {
-        this.logger.add(new winston.transports.File({ filename: logPath }))
+    public logToFile(logPath: string, event?: string, callback?: (...args: any) => void): void {
+        const fileTransport: winston.transport = new winston.transports.File({ filename: logPath })
+        this.logger.add(fileTransport)
+
+        if (event && callback) {
+            fileTransport.on(event, callback)
+        }
     }
 
     public logToOutputChannel(outputChannel: vscode.OutputChannel, stripAnsi: boolean): void {
