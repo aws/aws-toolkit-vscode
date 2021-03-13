@@ -17,7 +17,6 @@ import software.aws.toolkits.core.lambda.LambdaRuntime
 import software.aws.toolkits.jetbrains.core.executables.ExecutableInstance.BadExecutable
 import software.aws.toolkits.jetbrains.core.executables.ExecutableManager
 import software.aws.toolkits.jetbrains.core.executables.ExecutableType.Companion.getExecutable
-import software.aws.toolkits.jetbrains.services.lambda.RuntimeGroup
 import software.aws.toolkits.jetbrains.services.lambda.minSamInitVersion
 import software.aws.toolkits.jetbrains.services.lambda.runtimeGroup
 import software.aws.toolkits.jetbrains.services.lambda.sam.SamCommon
@@ -89,25 +88,23 @@ class SamInitSelectionPanel(
             }
         )
 
+        // this will also fire wizardUpdate since templateComboBox will change
+        // otherwise we make 2 of them
         runtimeUpdate()
-        wizardUpdate()
     }
 
-    private fun supportedRuntimes(): MutableList<LambdaRuntime> {
-        // Source all templates, find all the runtimes they support, then filter those by what the IDE supports
-        val supportedRuntimeGroups = RuntimeGroup.registeredRuntimeGroups()
-        return SamProjectTemplate.supportedTemplates().asSequence()
-            .flatMap {
-                when (packageType()) {
-                    PackageType.ZIP -> it.supportedZipRuntimes().asSequence()
-                    else -> it.supportedImageRuntimes().asSequence()
-                }
+    // Source all templates, find all the runtimes they support, then filter those by what the IDE supports
+    private fun supportedRuntimes(): MutableList<LambdaRuntime> = SamProjectTemplate.supportedTemplates().asSequence()
+        .flatMap {
+            when (packageType()) {
+                PackageType.ZIP -> it.supportedZipRuntimes().asSequence()
+                else -> it.supportedImageRuntimes().asSequence()
             }
-            .filter(runtimeFilter)
-            .distinct()
-            .sorted()
-            .toMutableList()
-    }
+        }
+        .filter(runtimeFilter)
+        .distinct()
+        .sorted()
+        .toMutableList()
 
     private fun packageType() = when {
         packageZip.isSelected -> PackageType.ZIP
