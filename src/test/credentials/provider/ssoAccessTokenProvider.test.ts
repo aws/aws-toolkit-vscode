@@ -4,7 +4,7 @@
  */
 
 import * as assert from 'assert'
-import * as lolex from 'lolex'
+import * as FakeTimers from '@sinonjs/fake-timers'
 import * as SDK from 'aws-sdk'
 import * as sinon from 'sinon'
 import { DiskCache } from '../../../credentials/sso/diskCache'
@@ -63,10 +63,10 @@ describe('SsoAccessTokenProvider', () => {
         sandbox.stub(cache, 'saveClientRegistration').returns()
     }
 
-    let clock: lolex.InstalledClock
+    let clock: sinon.SinonFakeTimers
 
     before(() => {
-        clock = lolex.install()
+        clock = FakeTimers.install()
     })
 
     afterEach(async () => {
