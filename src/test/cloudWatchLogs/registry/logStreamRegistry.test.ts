@@ -11,7 +11,7 @@ import { CloudWatchLogStreamData, LogStreamRegistry } from '../../../cloudWatchL
 import { CLOUDWATCH_LOGS_SCHEME, INSIGHTS_TIMESTAMP_FORMAT } from '../../../shared/constants'
 import { TestSettingsConfiguration } from '../../utilities/testSettingsConfiguration'
 
-describe('LogStreamRegistry', async () => {
+describe('LogStreamRegistry', async function() {
     let registry: LogStreamRegistry
     let map: Map<string, CloudWatchLogStreamData>
 
@@ -74,7 +74,7 @@ describe('LogStreamRegistry', async () => {
     const missingRegisteredUri = vscode.Uri.parse(`${CLOUDWATCH_LOGS_SCHEME}:Not:Here:Dude`)
     const newLineUri = vscode.Uri.parse(`${CLOUDWATCH_LOGS_SCHEME}:ANOTHER:LINE:PIEEEECCCEEEEEE`)
 
-    beforeEach(() => {
+    beforeEach(function() {
         map = new Map<string, CloudWatchLogStreamData>()
         map.set(registeredUri.path, stream)
         map.set(shorterRegisteredUri.path, simplerStream)
@@ -82,14 +82,14 @@ describe('LogStreamRegistry', async () => {
         registry = new LogStreamRegistry(config, map)
     })
 
-    describe('hasLog', () => {
-        it('correctly returns whether or not the log is registered', () => {
+    describe('hasLog', function() {
+        it('correctly returns whether or not the log is registered', function() {
             assert.strictEqual(registry.hasLog(registeredUri), true)
             assert.strictEqual(registry.hasLog(missingRegisteredUri), false)
         })
     })
 
-    describe('registerLog', async () => {
+    describe('registerLog', async function() {
         it("registers logs and doesn't overwrite existing logs", async () => {
             await registry.registerLog(missingRegisteredUri, getLogEventsFromUriComponentsFn)
             const blankPostRegister = registry.getLogContent(missingRegisteredUri)
@@ -101,8 +101,8 @@ describe('LogStreamRegistry', async () => {
         })
     })
 
-    describe('getLogContent', () => {
-        it('gets unformatted log content', () => {
+    describe('getLogContent', function() {
+        it('gets unformatted log content', function() {
             const text = registry.getLogContent(registeredUri)
 
             assert.strictEqual(
@@ -111,7 +111,7 @@ describe('LogStreamRegistry', async () => {
             )
         })
 
-        it('gets log content formatted to show timestamps', () => {
+        it('gets log content formatted to show timestamps', function() {
             const text = registry.getLogContent(registeredUri, { timestamps: true })
 
             assert.strictEqual(
@@ -124,7 +124,7 @@ describe('LogStreamRegistry', async () => {
             )
         })
 
-        it('indents log entries with newlines of all flavors if timestamps are shown but otherwise does not act on them', () => {
+        it('indents log entries with newlines of all flavors if timestamps are shown but otherwise does not act on them', function() {
             const timestampText = registry.getLogContent(newLineUri, { timestamps: true })
             const noTimestampText = registry.getLogContent(newLineUri)
 
@@ -138,7 +138,7 @@ describe('LogStreamRegistry', async () => {
         })
     })
 
-    describe('updateLog', async () => {
+    describe('updateLog', async function() {
         it("adds content to existing streams at both head and tail ends and doesn't do anything if the log isn't registered", async () => {
             await registry.updateLog(shorterRegisteredUri, 'tail', config, getLogEventsFromUriComponentsFn)
             const initialWithTail = registry.getLogContent(shorterRegisteredUri)
@@ -153,14 +153,14 @@ describe('LogStreamRegistry', async () => {
         })
     })
 
-    describe('deregisterLog', () => {
-        it('deletes a log', () => {
+    describe('deregisterLog', function() {
+        it('deletes a log', function() {
             assert.strictEqual(registry.hasLog(registeredUri), true)
             registry.deregisterLog(registeredUri)
             assert.strictEqual(registry.hasLog(registeredUri), false)
         })
 
-        it('does not error if the log does not exist in the registry', () => {
+        it('does not error if the log does not exist in the registry', function() {
             assert.strictEqual(registry.hasLog(missingRegisteredUri), false)
             registry.deregisterLog(missingRegisteredUri)
             assert.strictEqual(registry.hasLog(missingRegisteredUri), false)

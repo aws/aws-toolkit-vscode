@@ -10,8 +10,8 @@ import { S3Client } from '../../../shared/clients/s3Client'
 import { FakeEnv } from '../../shared/vscode/fakeEnv'
 import { FakeWindow } from '../../shared/vscode/fakeWindow'
 
-describe('copyPathCommand', () => {
-    it('copies path to clipboard and shows status bar confirmation', async () => {
+describe('copyPathCommand', function() {
+    it('copies path to clipboard and shows status bar confirmation', async function() {
         const node = createS3FolderNode()
 
         const window = new FakeWindow()

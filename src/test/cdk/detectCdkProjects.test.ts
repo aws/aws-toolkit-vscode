@@ -13,11 +13,11 @@ import { saveCdkJson } from './utilities/treeTestUtils'
 import { createTestWorkspaceFolder } from '../testUtil'
 import { FakeExtensionContext } from '../fakeExtensionContext'
 
-describe('detectCdkProjects', () => {
+describe('detectCdkProjects', function() {
     const workspacePaths: string[] = []
     const workspaceFolders: vscode.WorkspaceFolder[] = []
 
-    beforeEach(async () => {
+    beforeEach(async function() {
         await FakeExtensionContext.getFakeExtContext()
         const workspaceFolder = await createTestWorkspaceFolder('vsctk-cdk')
 
@@ -25,7 +25,7 @@ describe('detectCdkProjects', () => {
         workspaceFolders.push(workspaceFolder)
     })
 
-    afterEach(async () => {
+    afterEach(async function() {
         for (const path of workspacePaths) {
             await fs.remove(path)
         }
@@ -34,28 +34,28 @@ describe('detectCdkProjects', () => {
         workspaceFolders.length = 0
     })
 
-    it('detects no projects when workspaceFolders is undefined', async () => {
+    it('detects no projects when workspaceFolders is undefined', async function() {
         const actual = await detectCdkProjects(undefined)
 
         assert.ok(actual)
         assert.strictEqual(actual.length, 0)
     })
 
-    it('detects no projects when workspaceFolders is empty', async () => {
+    it('detects no projects when workspaceFolders is empty', async function() {
         const actual = await detectCdkProjects([])
 
         assert.ok(actual)
         assert.strictEqual(actual.length, 0)
     })
 
-    it('detects no projects when cdk.json does not exist', async () => {
+    it('detects no projects when cdk.json does not exist', async function() {
         const actual = await detectCdkProjects(workspaceFolders)
 
         assert.ok(actual)
         assert.strictEqual(actual.length, 0)
     })
 
-    it('detects CDK project when cdk.json exists', async () => {
+    it('detects CDK project when cdk.json exists', async function() {
         const cdkJsonPath = path.join(workspaceFolders[0].uri.fsPath, 'cdk.json')
         await saveCdkJson(cdkJsonPath)
         const actual = await detectCdkProjects(workspaceFolders)
@@ -69,7 +69,7 @@ describe('detectCdkProjects', () => {
         assert.strictEqual(project.treePath, path.join(cdkJsonPath, '..', 'cdk.out', 'tree.json'))
     })
 
-    it('detects CDK projects in multi-folder workspace', async () => {
+    it('detects CDK projects in multi-folder workspace', async function() {
         assert.strictEqual(workspacePaths.length, 1)
 
         workspacePaths.push(await makeTemporaryToolkitFolder('vsctk2'))

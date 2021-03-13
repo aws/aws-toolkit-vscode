@@ -7,9 +7,9 @@ import * as assert from 'assert'
 import { ActiveFeatureKeys, FeatureToggle } from '../../shared/featureToggle'
 import { TestSettingsConfiguration } from '../utilities/testSettingsConfiguration'
 
-describe('FeatureToggle', async () => {
-    describe('isFeatureActive', async () => {
-        it('returns true if feature is declared active and is present in settings.json', async () => {
+describe('FeatureToggle', async function() {
+    describe('isFeatureActive', async function() {
+        it('returns true if feature is declared active and is present in settings.json', async function() {
             // simulate settings.json
             const config = new TestSettingsConfiguration()
             const flag = 'myFlag'
@@ -21,7 +21,7 @@ describe('FeatureToggle', async () => {
             assert.ok(features.isFeatureActive(flag))
         })
 
-        it('returns false for features that are not declared as active feature keys but are present in settings.json', async () => {
+        it('returns false for features that are not declared as active feature keys but are present in settings.json', async function() {
             // simulate settings.json
             const config = new TestSettingsConfiguration()
             const flag = 'myFlag'
@@ -33,7 +33,7 @@ describe('FeatureToggle', async () => {
             assert.strictEqual(features.isFeatureActive(notFlag), false)
         })
 
-        it('returns false for features that are declared as active feature keys but are not active in settings.json', async () => {
+        it('returns false for features that are declared as active feature keys but are not active in settings.json', async function() {
             // simulate settings.json
             const config = new TestSettingsConfiguration()
             const flag = 'myFlag'
@@ -46,7 +46,7 @@ describe('FeatureToggle', async () => {
             assert.strictEqual(features.isFeatureActive(notFlag), false)
         })
 
-        it('throws an error if too many features are registered', () => {
+        it('throws an error if too many features are registered', function() {
             const config = new TestSettingsConfiguration()
             assert.throws(() => new FeatureToggle(config, ['1', '2', '3', '4', '5', '6']))
         })

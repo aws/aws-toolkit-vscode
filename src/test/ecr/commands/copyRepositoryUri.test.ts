@@ -11,8 +11,8 @@ import { EcrNode } from '../../../ecr/explorer/ecrNode'
 import { EcrClient, EcrRepository } from '../../../shared/clients/ecrClient'
 import { copyRepositoryUri } from '../../../ecr/commands/copyRepositoryUri'
 
-describe('copyUriCommand', () => {
-    it('Copies URI to clipboard and shows in the status bar', async () => {
+describe('copyUriCommand', function() {
+    it('Copies URI to clipboard and shows in the status bar', async function() {
         const node = new EcrRepositoryNode(
             {} as EcrNode,
             {} as EcrClient,

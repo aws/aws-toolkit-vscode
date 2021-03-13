@@ -14,7 +14,7 @@ import {
     BadExitCodeSamCliProcessInvoker,
 } from './testSamCliProcessInvoker'
 
-describe('SamCliPackageInvocation', async () => {
+describe('SamCliPackageInvocation', async function() {
     let invokeCount: number
     const packageParameters: SamCliPackageParameters = {
         sourceTemplateFile: 'template',
@@ -24,11 +24,11 @@ describe('SamCliPackageInvocation', async () => {
         s3Bucket: 'bucket',
     }
 
-    beforeEach(() => {
+    beforeEach(function() {
         invokeCount = 0
     })
 
-    it('includes a template, s3 bucket, output template file, and region', async () => {
+    it('includes a template, s3 bucket, output template file, and region', async function() {
         const invoker = new MockSamCliProcessInvoker(args => {
             invokeCount++
             assertArgsContainArgument(args, '--template-file', 'template')
@@ -43,7 +43,7 @@ describe('SamCliPackageInvocation', async () => {
         assert.strictEqual(invokeCount, 1, 'Unexpected invoke count')
     })
 
-    it('includes a template, s3 bucket, output template file, region, and repo', async () => {
+    it('includes a template, s3 bucket, output template file, region, and repo', async function() {
         const invoker = new MockSamCliProcessInvoker(args => {
             invokeCount++
             assertArgsContainArgument(args, '--template-file', 'template')
@@ -58,7 +58,7 @@ describe('SamCliPackageInvocation', async () => {
         assert.strictEqual(invokeCount, 1, 'Unexpected invoke count')
     })
 
-    it('throws on unexpected exit code', async () => {
+    it('throws on unexpected exit code', async function() {
         const badExitCodeProcessInvoker = new BadExitCodeSamCliProcessInvoker({})
 
         const error = await assertThrowsError(async () => {

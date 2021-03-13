@@ -19,8 +19,8 @@ import * as filesystemUtilities from '../../shared/filesystemUtilities'
 import { FakeExtensionContext } from '../fakeExtensionContext'
 import { assertRejects } from './utilities/assertUtils'
 
-describe('extensionUtilities', () => {
-    describe('safeGet', () => {
+describe('extensionUtilities', function() {
+    describe('safeGet', function() {
         class Blah {
             public someProp?: string
 
@@ -29,7 +29,7 @@ describe('extensionUtilities', () => {
             }
         }
 
-        it('can access sub-property', () => {
+        it('can access sub-property', function() {
             assert.strictEqual(
                 safeGet(new Blah('hello!'), x => x.someProp),
                 'hello!'
@@ -45,16 +45,16 @@ describe('extensionUtilities', () => {
         })
     })
 
-    describe('createQuickStartWebview', async () => {
+    describe('createQuickStartWebview', async function() {
         const context = new FakeExtensionContext()
         let tempDir: string | undefined
 
-        beforeEach(async () => {
+        beforeEach(async function() {
             tempDir = await filesystemUtilities.makeTemporaryToolkitFolder()
             context.extensionPath = tempDir
         })
 
-        afterEach(async () => {
+        afterEach(async function() {
             if (tempDir) {
                 await remove(tempDir)
             }
@@ -66,7 +66,7 @@ describe('extensionUtilities', () => {
             })
         })
 
-        it('returns a webview with unaltered text if a valid file is passed without tokens', async () => {
+        it('returns a webview with unaltered text if a valid file is passed without tokens', async function() {
             const filetext = 'this temp page does not have any tokens'
             const filepath = 'tokenless'
             await writeFile(path.join(context.extensionPath, filepath), filetext)
@@ -77,7 +77,7 @@ describe('extensionUtilities', () => {
             assert.strictEqual(forcedWebview.webview.html, filetext)
         })
 
-        it('returns a webview with tokens replaced', async () => {
+        it('returns a webview with tokens replaced', async function() {
             const token = '!!EXTENSIONROOT!!'
             const basetext = 'this temp page has tokens: '
             const filetext = basetext + token
@@ -93,8 +93,8 @@ describe('extensionUtilities', () => {
         })
     })
 
-    describe('isDifferentVersion', () => {
-        it('returns false if the version exists and matches the existing version exactly', () => {
+    describe('isDifferentVersion', function() {
+        it('returns false if the version exists and matches the existing version exactly', function() {
             const goodVersion = '1.2.3'
             const extContext = new FakeExtensionContext()
             extContext.globalState.update(mostRecentVersionKey, goodVersion)
@@ -118,8 +118,8 @@ describe('extensionUtilities', () => {
         })
     })
 
-    describe('setMostRecentVersion', () => {
-        it('sets the most recent version', () => {
+    describe('setMostRecentVersion', function() {
+        it('sets the most recent version', function() {
             const extContext = new FakeExtensionContext()
             setMostRecentVersion(extContext)
 

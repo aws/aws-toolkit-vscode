@@ -6,8 +6,8 @@
 import * as assert from 'assert'
 import { getLocalRootVariants } from '../../../shared/utilities/pathUtils'
 
-describe('pythonCodeLensProvider', async () => {
-    describe('getLocalRootVariants', async () => {
+describe('pythonCodeLensProvider', async function() {
+    describe('getLocalRootVariants', async function() {
         if (process.platform === 'win32') {
             const testScenarios = [
                 {
@@ -34,14 +34,14 @@ describe('pythonCodeLensProvider', async () => {
                 })
             })
 
-            it('Returns the same string for network location - windows', async () => {
+            it('Returns the same string for network location - windows', async function() {
                 const variants = getLocalRootVariants('//share/src/code.js')
                 assert.ok(variants)
                 assert.strictEqual(variants.length, 1, 'Only expected one variant')
                 assert.strictEqual(variants[0], '//share/src/code.js', 'Unexpected variant text')
             })
 
-            it('Returns the same string for weird input - windows', async () => {
+            it('Returns the same string for weird input - windows', async function() {
                 const variants = getLocalRootVariants('src/code.js')
                 assert.ok(variants)
                 assert.strictEqual(variants.length, 1, 'Only expected one variant')
