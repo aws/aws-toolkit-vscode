@@ -9,7 +9,7 @@ import { SsoClientRegistration } from './ssoClientRegistration'
 import { join } from 'path'
 import { homedir } from 'os'
 import { SsoAccessToken } from './ssoAccessToken'
-import { getSHA1StringHash } from '../../shared/utilities/textUtilities'
+import * as crypto from 'crypto'
 import { getLogger } from '../../shared/logger'
 
 export class DiskCache implements SsoCache {
@@ -73,12 +73,19 @@ export class DiskCache implements SsoCache {
     }
 
     private accessTokenCache(ssoUrl: string): string {
-        // According to the Spec: 'SSO Login Token Flow' the access token should be cached as
-        // the SHA1 hash of the bytes of the UTF-8 encoded startUrl value with .json appended to the end.
-        // Using the SHA1 hash is no longer recommended, but this hash is used to specifically comply with the
-        // Spec and is used only to name a file. It is advised to use a more secure hash in most other cases.
         const encoded = encodeURI(ssoUrl)
-        return join(this.cacheDir, getSHA1StringHash(encoded) + `.json`)
+        // Per the spec: 'SSO Login Token Flow' the access token must be
+        // cached as the SHA1 hash of the bytes of the UTF-8 encoded
+        // startUrl value with ".json" appended to the end.
+
+        const shasum = crypto.createHash('sha1')
+        // Suppress warning because:
+        //   1. SHA1 is prescribed by the AWS SSO spec
+        //   2. the hashed startUrl value is not a secret
+        shasum.update(encoded) // lgtm[js/weak-cryptographic-algorithm]
+        const hashedUrl = shasum.digest('hex') // lgtm[js/weak-cryptographic-algorithm]
+
+        return join(this.cacheDir, `${hashedUrl}.json`)
     }
 
     private registrationExists(ssoRegion: string): boolean {
