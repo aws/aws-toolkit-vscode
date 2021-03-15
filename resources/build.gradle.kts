@@ -2,6 +2,7 @@
 // SPDX-License-Identifier: Apache-2.0
 
 import de.undercouch.gradle.tasks.download.Download
+import software.aws.toolkits.gradle.resources.ValidateMessages
 
 val kotlinVersion: String by project
 
@@ -29,4 +30,14 @@ val download = tasks.register<Download>("downloadResources") {
     }
 }
 
-tasks["processResources"].dependsOn(download)
+tasks.named("processResources") {
+    dependsOn(download)
+}
+
+val validateLocalizedMessages = tasks.register<ValidateMessages>("validateLocalizedMessages") {
+    paths.from("resources/software/aws/toolkits/resources/MessagesBundle.properties")
+}
+
+tasks.named("check") {
+    dependsOn(validateLocalizedMessages)
+}
