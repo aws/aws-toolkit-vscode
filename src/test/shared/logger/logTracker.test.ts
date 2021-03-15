@@ -11,7 +11,7 @@ import { WinstonToolkitLogger } from '../../../shared/logger/winstonToolkitLogge
 import { LogTracker, LogTrackerRecord, getLogTracker, parseLogObject } from '../../../shared/logger/logTracker'
 import { waitUntil } from '../../../shared/utilities/timeoutUtils'
 
-describe('LogTracker', () => {
+describe('LogTracker', function() {
     let tempFolder: string
     let tempLogPath: string
     let tempFileCounter: number = 0
