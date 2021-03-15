@@ -5,11 +5,10 @@
 
 import { SSOOIDC } from 'aws-sdk'
 import { SsoClientRegistration } from './ssoClientRegistration'
-import { SsoAccessToken } from './ssoAccessToken'
+import { openSsoPortalLink, SsoAccessToken } from './sso'
 import { DiskCache } from './diskCache'
 import { getLogger } from '../../shared/logger'
 import { StartDeviceAuthorizationResponse } from 'aws-sdk/clients/ssooidc'
-import { openSsoPortalLink } from './ssoSupport'
 
 const CLIENT_REGISTRATION_TYPE = 'public'
 const CLIENT_NAME = 'aws-toolkit-vscode'
@@ -136,7 +135,9 @@ export class SsoAccessTokenProvider {
             clientName: CLIENT_NAME,
         }
         const registerResponse = await this.ssoOidcClient.registerClient(registerParams).promise()
-        const formattedExpiry = new Date(registerResponse.clientSecretExpiresAt! * MILLISECONDS_PER_SECOND).toISOString()
+        const formattedExpiry = new Date(
+            registerResponse.clientSecretExpiresAt! * MILLISECONDS_PER_SECOND
+        ).toISOString()
 
         const registration: SsoClientRegistration = {
             clientId: registerResponse.clientId!,

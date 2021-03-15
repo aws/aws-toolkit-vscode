@@ -10,7 +10,7 @@ import { fstatSync, writeFileSync } from 'fs-extra'
 import { fileExists, makeTemporaryToolkitFolder, tryRemoveFolder } from '../../shared/filesystemUtilities'
 import { DiskCache } from '../../credentials/sso/diskCache'
 import { SsoClientRegistration } from '../../credentials/sso/ssoClientRegistration'
-import { SsoAccessToken } from '../../credentials/sso/ssoAccessToken'
+import { SsoAccessToken } from '../../credentials/sso/sso'
 
 describe('SSO diskCache', () => {
     let tempFolder: string
@@ -48,7 +48,7 @@ describe('SSO diskCache', () => {
     })
 
     describe('loadClientRegistration', () => {
-        it('should return a valid registration', () => {
+        it('returns a valid registration', () => {
             writeFileSync(registrationFilename, JSON.stringify(validRegistration))
 
             const returnedRegistration = sut.loadClientRegistration(ssoRegion)
@@ -56,12 +56,12 @@ describe('SSO diskCache', () => {
             assert.deepStrictEqual(returnedRegistration, validRegistration)
         })
 
-        it('should return undefined if no registration exists', () => {
+        it('returns undefined if no registration exists', () => {
             const returnedRegistration = sut.loadClientRegistration(ssoRegion)
             assert.strictEqual(returnedRegistration, undefined)
         })
 
-        it('should return undefined for expired registration', () => {
+        it('returns undefined for expired registration', () => {
             const expiredRegistration: SsoClientRegistration = {
                 clientId: 'dummyId',
                 clientSecret: 'dummySecret',
@@ -74,7 +74,7 @@ describe('SSO diskCache', () => {
             assert.strictEqual(returnedRegistration, undefined)
         })
 
-        it('should return undefined if within 15 minutes from expiration', () => {
+        it('returns undefined if within 15 minutes from expiration', () => {
             const expiredSoonRegistration: SsoClientRegistration = {
                 clientId: 'dummyId',
                 clientSecret: 'dummySecret',

@@ -79,7 +79,7 @@ describe('SsoAccessTokenProvider', () => {
     })
 
     describe('accessToken', () => {
-        it('should return a cached token', async () => {
+        it('returns a cached token', async () => {
             sandbox.stub(cache, 'loadAccessToken').returns(validAccessToken)
 
             const receivedToken = await sut.accessToken()
@@ -87,7 +87,7 @@ describe('SsoAccessTokenProvider', () => {
             assert.strictEqual(receivedToken, validAccessToken)
         })
 
-        it('should create a new access token with a cached client registration', async () => {
+        it('creates a new access token with a cached client registration', async () => {
             setUpStubCache(validRegistation)
             const stubAuthorizeClient = sandbox.stub(sut, 'authorizeClient').resolves(validAuthorization)
 
@@ -107,7 +107,7 @@ describe('SsoAccessTokenProvider', () => {
             assert.strictEqual(stubAuthorizeClient.calledOnce, true)
         })
 
-        it('should create an access token without caches', async () => {
+        it('creates an access token without caches', async () => {
             setUpStubCache()
             const stubRegisterClient = sandbox.stub(sut, 'registerClient').resolves(validRegistation)
             const stubAuthorizeClient = sandbox.stub(sut, 'authorizeClient').resolves(validAuthorization)
@@ -130,7 +130,7 @@ describe('SsoAccessTokenProvider', () => {
             assert.strictEqual(stubSaveAccessToken.calledOnce, true)
         })
 
-        it('should create access token after multiple polls', async () => {
+        it('creates access token after multiple polls', async () => {
             setUpStubCache()
             sandbox.stub(sut, 'registerClient').resolves(validRegistation)
             sandbox.stub(sut, 'authorizeClient').resolves(validAuthorization)
@@ -162,7 +162,7 @@ describe('SsoAccessTokenProvider', () => {
             assert.strictEqual(stubSaveAccessToken.calledOnce, true)
         })
 
-        it('should stop polling for unspecified errors during createToken call', async () => {
+        it('stops polling for unspecified errors during createToken call', async () => {
             setUpStubCache(validRegistation)
             sandbox.stub(sut, 'authorizeClient').resolves(validAuthorization)
 
@@ -183,7 +183,7 @@ describe('SsoAccessTokenProvider', () => {
             assert.strictEqual(stubSaveAccessToken.called, false)
         })
 
-        it('should add backoff delay on SlowDownException', async () => {
+        it('adds backoff delay on SlowDownException', async () => {
             setUpStubCache(validRegistation)
             sandbox.stub(sut, 'authorizeClient').resolves(validAuthorization)
 
@@ -216,7 +216,7 @@ describe('SsoAccessTokenProvider', () => {
     })
 
     describe('authorizeClient', () => {
-        it('should remove the client registration cache on InvalidClientException', async () => {
+        it('removes the client registration cache on InvalidClientException', async () => {
             const errToThrow = new Error() as SDK.AWSError
             errToThrow.code = 'InvalidClientException'
 

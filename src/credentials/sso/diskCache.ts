@@ -3,14 +3,13 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
-import * as fs from 'fs'
-import { SsoCache } from './ssoCache'
-import { SsoClientRegistration } from './ssoClientRegistration'
-import { join } from 'path'
-import { homedir } from 'os'
-import { SsoAccessToken } from './ssoAccessToken'
 import * as crypto from 'crypto'
+import * as fs from 'fs'
+import { homedir } from 'os'
+import { join } from 'path'
 import { getLogger } from '../../shared/logger'
+import { SsoAccessToken, SsoCache } from './sso'
+import { SsoClientRegistration } from './ssoClientRegistration'
 
 export class DiskCache implements SsoCache {
     public constructor(private cacheDir: string = join(homedir(), '.aws', 'sso', 'cache')) {}
