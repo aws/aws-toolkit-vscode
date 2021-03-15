@@ -460,6 +460,7 @@
     "AWS.samcli.userChoice.visit.install.url": "Get SAM CLI",
     "AWS.samcli.userChoice.update.awstoolkit.url": "Visit Marketplace",
     "AWS.samcli.initWizard.general.error": "An error occurred while creating a new SAM Application. {0}",
+    "AWS.samcli.initWizard.resume.error": "An error occured while resuming SAM Application creation. {0}",
     "AWS.wizard.location.prompt": "Select a workspace folder for your new project",
     "AWS.initWizard.location.select.folder": "Select a different folder...",
     "AWS.initWizard.location.select.folder.empty.workspace": "There are no workspace folders open. Select a folder...",
