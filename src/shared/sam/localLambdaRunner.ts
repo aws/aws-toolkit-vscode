@@ -324,10 +324,8 @@ export async function invokeLambdaFunction(
         let samVersion: string | undefined 
         let invokeResult: telemetry.Result = 'Failed'
 
-        // Retrives SAM's version if the CLI exists, otherwise log an error
-        await getSamCliVersion(getSamCliContext()).then(v => { samVersion = v }).catch(err => getLogger().error(err))
-
         try {
+            samVersion = await getSamCliVersion(getSamCliContext())
             await command.execute(timer)
             invokeResult = 'Succeeded'
         } catch (err) {
