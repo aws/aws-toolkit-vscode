@@ -97,7 +97,7 @@ class MockCredentialManagerRule : AppRule() {
         get() = lazyCredentialManager.value
 
     fun addCredentials(
-        id: String,
+        id: String = aString(),
         credentials: AwsCredentials = AwsBasicCredentials.create("Access", "Secret"),
         region: AwsRegion? = null
     ): CredentialIdentifier = credentialManager.addCredentials(id, credentials, region?.id)
