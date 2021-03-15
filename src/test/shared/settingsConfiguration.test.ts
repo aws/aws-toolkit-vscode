@@ -8,7 +8,7 @@ import * as vscode from 'vscode'
 import { extensionSettingsPrefix } from '../../shared/constants'
 import { DefaultSettingsConfiguration } from '../../shared/settingsConfiguration'
 
-describe('DefaultSettingsConfiguration', () => {
+describe('DefaultSettingsConfiguration', function() {
     // These tests use an actual extension setting, because vscode.WorkspaceConfiguration fails when
     // you attempt to update one that isn't defined in package.json. We will restore the setting value
     // at the end of the tests.
@@ -17,15 +17,15 @@ describe('DefaultSettingsConfiguration', () => {
 
     let sut: DefaultSettingsConfiguration
 
-    before(async () => {
+    before(async function() {
         originalSettingValue = vscode.workspace.getConfiguration(extensionSettingsPrefix).get(SETTING_KEY)
     })
 
-    beforeEach(async () => {
+    beforeEach(async function() {
         sut = new DefaultSettingsConfiguration(extensionSettingsPrefix)
     })
 
-    after(async () => {
+    after(async function() {
         await vscode.workspace
             .getConfiguration(extensionSettingsPrefix)
             .update(SETTING_KEY, originalSettingValue, vscode.ConfigurationTarget.Global)
@@ -45,10 +45,10 @@ describe('DefaultSettingsConfiguration', () => {
         // Note: we don't test undefined because retrieval returns the package.json configured default value, if there is one
     ]
 
-    describe('readSetting', async () => {
+    describe('readSetting', async function() {
         let settings: vscode.WorkspaceConfiguration
 
-        beforeEach(async () => {
+        beforeEach(async function() {
             settings = vscode.workspace.getConfiguration(extensionSettingsPrefix)
         })
 
@@ -62,7 +62,7 @@ describe('DefaultSettingsConfiguration', () => {
         })
     })
 
-    describe('writeSetting', async () => {
+    describe('writeSetting', async function() {
         scenarios.forEach(scenario => {
             it(scenario.desc, async () => {
                 await sut.writeSetting(SETTING_KEY, scenario.testValue, vscode.ConfigurationTarget.Global)

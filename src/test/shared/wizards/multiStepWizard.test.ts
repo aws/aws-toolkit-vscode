@@ -32,25 +32,25 @@ class MockMultiStepWizard extends MultiStepWizard<undefined> {
     }
 }
 
-describe('run', () => {
+describe('run', function() {
     const mockWizard = new MockMultiStepWizard()
     let sandbox: sinon.SinonSandbox
 
-    beforeEach(() => {
+    beforeEach(function() {
         sandbox = sinon.createSandbox()
     })
 
-    afterEach(() => {
+    afterEach(function() {
         sandbox.restore()
     })
 
-    it('handles undefined starting step', async () => {
+    it('handles undefined starting step', async function() {
         sandbox.stub(mockWizard, 'startStep').value(undefined)
 
         await mockWizard.run()
     })
 
-    it('handles undefined steps', async () => {
+    it('handles undefined steps', async function() {
         const stub = sinon.stub()
         stub.returns({
             nextState: WizardNextState.CONTINUE,
@@ -61,8 +61,8 @@ describe('run', () => {
         await mockWizard.run()
     })
 
-    describe('terminate', () => {
-        it('works when there are no more steps', async () => {
+    describe('terminate', function() {
+        it('works when there are no more steps', async function() {
             const stub = sinon.stub()
             stub.returns(WIZARD_TERMINATE)
             sandbox.stub(mockWizard, 'startStep').value(stub)
@@ -73,8 +73,8 @@ describe('run', () => {
         })
     })
 
-    describe('retry', () => {
-        it('repeats current step', async () => {
+    describe('retry', function() {
+        it('repeats current step', async function() {
             const stub = sinon.stub()
             stub.onFirstCall().returns(WIZARD_RETRY)
             stub.onSecondCall().returns(WIZARD_TERMINATE)
@@ -86,8 +86,8 @@ describe('run', () => {
         })
     })
 
-    describe('go back', () => {
-        it('goes back', async () => {
+    describe('go back', function() {
+        it('goes back', async function() {
             const step1 = sinon.stub()
             const step2 = sinon.stub()
             step1.returns(wizardContinue(step2))
@@ -99,7 +99,7 @@ describe('run', () => {
             sinon.assert.callOrder(step1, step2, step1, step2)
         })
 
-        it('handles branches', async () => {
+        it('handles branches', async function() {
             const step1 = sinon.stub()
             const branch1 = sinon.stub()
             const branch2 = sinon.stub()
@@ -118,8 +118,8 @@ describe('run', () => {
         })
     })
 
-    describe('continue', () => {
-        it('continues', async () => {
+    describe('continue', function() {
+        it('continues', async function() {
             const step1 = sinon.stub()
             const step2 = sinon.stub()
             step1.returns(wizardContinue(step2))

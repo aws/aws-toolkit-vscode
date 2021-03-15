@@ -19,18 +19,18 @@ import {
     BadExitCodeSamCliProcessInvoker,
 } from './testSamCliProcessInvoker'
 
-describe('runSamCliDeploy', async () => {
+describe('runSamCliDeploy', async function() {
     const fakeRegion = 'region'
     const fakeStackName = 'stackName'
     const fakeS3BucketName = 'coolbucket'
     const fakeTemplateFile = 'template'
     let invokeCount: number
 
-    beforeEach(() => {
+    beforeEach(function() {
         invokeCount = 0
     })
 
-    it('does not include --parameter-overrides if there are no overrides', async () => {
+    it('does not include --parameter-overrides if there are no overrides', async function() {
         const invoker = new MockSamCliProcessInvoker(args => {
             invokeCount++
             assertArgNotPresent(args, '--parameter-overrides')
@@ -41,7 +41,7 @@ describe('runSamCliDeploy', async () => {
         assert.strictEqual(invokeCount, 1, 'Unexpected invoke count')
     })
 
-    it('includes overrides as a string of key=value pairs', async () => {
+    it('includes overrides as a string of key=value pairs', async function() {
         const invoker = new MockSamCliProcessInvoker(args => {
             invokeCount++
             assertArgIsPresent(args, '--parameter-overrides')
@@ -65,7 +65,7 @@ describe('runSamCliDeploy', async () => {
         assert.strictEqual(invokeCount, 1, 'Unexpected invoke count')
     })
 
-    it('includes a template, stack name, bucket, and region', async () => {
+    it('includes a template, stack name, bucket, and region', async function() {
         const invoker = new MockSamCliProcessInvoker(args => {
             invokeCount++
             assertArgsContainArgument(args, '--template-file', fakeTemplateFile)
@@ -79,7 +79,7 @@ describe('runSamCliDeploy', async () => {
         assert.strictEqual(invokeCount, 1, 'Unexpected invoke count')
     })
 
-    it('Passes all cloudformation capabilities', async () => {
+    it('Passes all cloudformation capabilities', async function() {
         const invoker = new MockSamCliProcessInvoker(args => {
             invokeCount++
             assertArgIsPresent(args, '--capabilities')
@@ -93,7 +93,7 @@ describe('runSamCliDeploy', async () => {
         assert.strictEqual(invokeCount, 1, 'Unexpected invoke count')
     })
 
-    it('throws on unexpected exit code', async () => {
+    it('throws on unexpected exit code', async function() {
         const badExitCodeProcessInvoker = new BadExitCodeSamCliProcessInvoker({})
 
         const error = await assertThrowsError(async () => {

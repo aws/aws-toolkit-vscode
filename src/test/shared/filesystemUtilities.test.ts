@@ -9,13 +9,13 @@ import { writeFile, remove } from 'fs-extra'
 import * as path from 'path'
 import { fileExists, getNonexistentFilename, isInDirectory, makeTemporaryToolkitFolder, tempDirPath } from '../../shared/filesystemUtilities'
 
-describe('filesystemUtilities', () => {
+describe('filesystemUtilities', function() {
     const targetFilename = 'findThisFile12345.txt'
     let targetFilePath: string
     let tempFolder: string
     const foldersToCleanUp: string[] = []
 
-    beforeEach(async () => {
+    beforeEach(async function() {
         // Make a temp folder for all these tests
         tempFolder = await makeTemporaryToolkitFolder()
         targetFilePath = path.join(tempFolder, targetFilename)
@@ -25,14 +25,14 @@ describe('filesystemUtilities', () => {
         foldersToCleanUp.push(tempFolder)
     })
 
-    afterEach(async () => {
+    afterEach(async function() {
         for (const folder of foldersToCleanUp) {
             await remove(folder)
         }
     })
     
-    describe('getNonexistentFilename()', () => {
-        it('failure modes', async () => {
+    describe('getNonexistentFilename()', function() {
+        it('failure modes', async function() {
             assert.throws(() => {
                 getNonexistentFilename('/bogus/directory/', 'foo', '.txt', 99)
             })
@@ -40,7 +40,7 @@ describe('filesystemUtilities', () => {
                 getNonexistentFilename('', 'foo', '.txt', 99)
             })
         })
-        it('returns a filename that does not exist in the directory', async () => {
+        it('returns a filename that does not exist in the directory', async function() {
             const dir = tempFolder
             await writeFile(path.join(dir, 'foo.txt'), '', 'utf8')
             await writeFile(path.join(dir, 'foo-0.txt'), '', 'utf8')
@@ -49,7 +49,7 @@ describe('filesystemUtilities', () => {
             assert.strictEqual(getNonexistentFilename(dir, 'foo', '.txt', 99), 'foo-3.txt')
             assert.strictEqual(getNonexistentFilename(dir, 'foo', '', 99), 'foo')
         })
-        it('returns "foo-RANDOM.txt" if max is reached', async () => {
+        it('returns "foo-RANDOM.txt" if max is reached', async function() {
             const dir = tempFolder
             await writeFile(path.join(dir, 'foo.txt'), '', 'utf8')
             await writeFile(path.join(dir, 'foo-1.txt'), '', 'utf8')
@@ -58,7 +58,7 @@ describe('filesystemUtilities', () => {
         })
     })
 
-    describe('makeTemporaryToolkitFolder()', () => {
+    describe('makeTemporaryToolkitFolder()', function() {
         it(`makes temp dirs as children to filesystemUtilities.tempDirPath ('${tempDirPath}')`, async () => {
             const parentFolder = path.dirname(tempFolder)
 
@@ -69,11 +69,11 @@ describe('filesystemUtilities', () => {
             )
         })
 
-        it('creates a folder', async () => {
+        it('creates a folder', async function() {
             assert.ok(await fileExists(tempFolder), `expected folder to exist: ${tempFolder}`)
         })
 
-        it('makes nested temp dirs', async () => {
+        it('makes nested temp dirs', async function() {
             const nestedTempDirPath = await makeTemporaryToolkitFolder('nestedSubfolder', 'moreNestedSubfolder')
 
             foldersToCleanUp.push(nestedTempDirPath)
@@ -88,7 +88,7 @@ describe('filesystemUtilities', () => {
         })
     })
 
-    it('isInDirectory()', () => {
+    it('isInDirectory()', function() {
         const basePath = path.join('this', 'is', 'the', 'way')
         const extendedPath = path.join(basePath, 'forward')
         const filename = 'yadayadayada.log'

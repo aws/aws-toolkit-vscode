@@ -9,8 +9,8 @@ import { readFileAsString } from '../shared/filesystemUtilities'
 import { RootlessLambdaHandlerCandidate } from '../shared/lambdaHandlerSearch'
 import { TypescriptLambdaHandlerSearch } from '../shared/typescriptLambdaHandlerSearch'
 
-describe('TypescriptLambdaHandlerSearch', () => {
-    it('finds export declared functions in Typescript code', async () => {
+describe('TypescriptLambdaHandlerSearch', function() {
+    it('finds export declared functions in Typescript code', async function() {
         const filename: string = path.join(getSamplesFolder(), 'typescript', 'sampleFunctions.ts')
 
         const expectedHandlerNames: Set<string> = new Set([
@@ -27,7 +27,7 @@ describe('TypescriptLambdaHandlerSearch', () => {
         await testTypescriptLambdaHandlerSearch(filename, expectedHandlerNames)
     })
 
-    it('ignores class declarations in Typescript code', async () => {
+    it('ignores class declarations in Typescript code', async function() {
         const filename: string = path.join(getSamplesFolder(), 'typescript', 'sampleClasses.ts')
 
         const expectedHandlerNames: Set<string> = new Set(['sampleClasses.exportedFunctionWithNoArgs'])
@@ -35,7 +35,7 @@ describe('TypescriptLambdaHandlerSearch', () => {
         await testTypescriptLambdaHandlerSearch(filename, expectedHandlerNames)
     })
 
-    it('ignores interface declarations in Typescript code', async () => {
+    it('ignores interface declarations in Typescript code', async function() {
         const filename: string = path.join(getSamplesFolder(), 'typescript', 'sampleInterfaces.ts')
 
         const expectedHandlerNames: Set<string> = new Set(['sampleInterfaces.exportedFunctionWithNoArgs'])
@@ -43,7 +43,7 @@ describe('TypescriptLambdaHandlerSearch', () => {
         await testTypescriptLambdaHandlerSearch(filename, expectedHandlerNames)
     })
 
-    it('finds module.exports declared functions in javascript code', async () => {
+    it('finds module.exports declared functions in javascript code', async function() {
         const filename: string = path.join(getSamplesFolder(), 'javascript', 'sampleFunctions.js')
 
         const expectedHandlerNames: Set<string> = new Set([
@@ -61,7 +61,7 @@ describe('TypescriptLambdaHandlerSearch', () => {
         await testTypescriptLambdaHandlerSearch(filename, expectedHandlerNames)
     })
 
-    it('ignores class declarations in javascript code', async () => {
+    it('ignores class declarations in javascript code', async function() {
         const filename: string = path.join(getSamplesFolder(), 'javascript', 'sampleClasses.js')
 
         const expectedHandlerNames: Set<string> = new Set(['sampleClasses.exportedFunctionWithNoArgs'])

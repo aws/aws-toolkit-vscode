@@ -8,7 +8,7 @@ import { CredentialsProvider } from '../../../credentials/providers/credentialsP
 import { BaseCredentialsProviderFactory } from '../../../credentials/providers/credentialsProviderFactory'
 import { CredentialsProviderId } from '../../../credentials/providers/credentialsProviderId'
 
-describe('BaseCredentialsProviderFactory', async () => {
+describe('BaseCredentialsProviderFactory', async function() {
     /**
      * This class exposes abstract class functionality for the purpose of testing it.
      */
@@ -38,30 +38,30 @@ describe('BaseCredentialsProviderFactory', async () => {
 
     let sut: TestCredentialsProviderFactory
 
-    beforeEach(async () => {
+    beforeEach(async function() {
         sut = new TestCredentialsProviderFactory()
     })
 
-    it('can add a provider', async () => {
+    it('can add a provider', async function() {
         sut.addProvider(makeSampleCredentialsProvider('provider1'))
         assert.strictEqual(sut.getProviders().length, 1)
     })
 
-    it('can remove a provider', async () => {
+    it('can remove a provider', async function() {
         const provider = makeSampleCredentialsProvider('provider1')
         sut.getProviders().push(provider)
         sut.removeProvider(provider)
         assert.strictEqual(sut.getProviders().length, 0)
     })
 
-    it('can reset providers', async () => {
+    it('can reset providers', async function() {
         const provider = makeSampleCredentialsProvider('provider1')
         sut.getProviders().push(provider)
         sut.resetProviders()
         assert.strictEqual(sut.getProviders().length, 0)
     })
 
-    it('can list providers', async () => {
+    it('can list providers', async function() {
         const provider = makeSampleCredentialsProvider('provider1')
         const provider2 = makeSampleCredentialsProvider('provider2')
         sut.getProviders().push(provider)
@@ -73,7 +73,7 @@ describe('BaseCredentialsProviderFactory', async () => {
         assert.notStrictEqual(providers.indexOf(provider2), -1, 'Expected provider 2 to be in listed providers')
     })
 
-    it('returns a requested provider', async () => {
+    it('returns a requested provider', async function() {
         const provider = makeSampleCredentialsProvider('provider1')
         sut.getProviders().push(provider)
 
@@ -81,7 +81,7 @@ describe('BaseCredentialsProviderFactory', async () => {
         assert.notStrictEqual(retrievedProvider, undefined)
     })
 
-    it('returns undefined when requesting a provider it does not have', async () => {
+    it('returns undefined when requesting a provider it does not have', async function() {
         const provider = makeSampleCredentialsProvider('provider1')
         sut.getProviders().push(provider)
 

@@ -6,7 +6,7 @@
 import * as assert from 'assert'
 import { IdentifierFormatter, SchemaCodeGenUtils } from '../../../eventSchemas/models/schemaCodeGenUtils'
 
-describe('SchemaCodeGenUtils', async () => {
+describe('SchemaCodeGenUtils', async function() {
     const testScenarios = [
         {
             scenario: 'builds the "aws event" package name',
@@ -55,7 +55,7 @@ describe('SchemaCodeGenUtils', async () => {
         },
     ]
 
-    describe('buildSchemaPackageName', async () => {
+    describe('buildSchemaPackageName', async function() {
         testScenarios.forEach(test => {
             it(test.scenario, async () => {
                 const codeGen = new SchemaCodeGenUtils()
@@ -66,13 +66,13 @@ describe('SchemaCodeGenUtils', async () => {
     })
 })
 
-describe('IdentifierFormatter', async () => {
-    describe('toValidIdentifier', async () => {
-        it('replaces invalid identifier characters with underscore', async () => {
+describe('IdentifierFormatter', async function() {
+    describe('toValidIdentifier', async function() {
+        it('replaces invalid identifier characters with underscore', async function() {
             assert.strictEqual(IdentifierFormatter.toValidIdentifier('Review.created?today'), 'Review_created_today')
         })
 
-        it('replaces package seperator @ with dot', async () => {
+        it('replaces package seperator @ with dot', async function() {
             assert.strictEqual(IdentifierFormatter.toValidIdentifier('Review@created'), 'Review.created')
         })
     })

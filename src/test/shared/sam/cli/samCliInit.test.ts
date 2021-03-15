@@ -27,7 +27,7 @@ import {
 import { SchemaTemplateExtraContext } from '../../../../eventSchemas/templates/schemasAppTemplateUtils'
 import { FakeSamCliValidator } from '../../../fakeExtensionContext'
 
-describe('runSamCliInit', async () => {
+describe('runSamCliInit', async function() {
     class FakeChildProcessResult implements ChildProcessResult {
         public exitCode: number = 0
         public error = undefined
@@ -58,8 +58,8 @@ describe('runSamCliInit', async () => {
         dependencyManager: sampleDependencyManager,
     }
 
-    describe('runSamCliInit with HelloWorld template', async () => {
-        it('Passes init command to sam cli', async () => {
+    describe('runSamCliInit with HelloWorld template', async function() {
+        it('Passes init command to sam cli', async function() {
             const processInvoker: SamCliProcessInvoker = new ExtendedTestSamCliProcessInvoker(
                 (spawnOptions: SpawnOptions, args: any[]) => {
                     assert.ok(args.length > 0, 'Expected args to be present')
@@ -75,7 +75,7 @@ describe('runSamCliInit', async () => {
             await runSamCliInit(sampleSamInitArgs, context)
         })
 
-        it('Passes name to sam cli', async () => {
+        it('Passes name to sam cli', async function() {
             const processInvoker: SamCliProcessInvoker = new ExtendedTestSamCliProcessInvoker(
                 (spawnOptions: SpawnOptions, args: any[]) => {
                     assertArgsContainArgument(args, '--name', sampleSamInitArgs.name)
@@ -90,7 +90,7 @@ describe('runSamCliInit', async () => {
             await runSamCliInit(sampleSamInitArgs, context)
         })
 
-        it('Passes location to sam cli', async () => {
+        it('Passes location to sam cli', async function() {
             const processInvoker: SamCliProcessInvoker = new ExtendedTestSamCliProcessInvoker(
                 (spawnOptions: SpawnOptions, args: any[]) => {
                     assert.strictEqual(spawnOptions.cwd, sampleSamInitArgs.location, 'Unexpected cwd')
@@ -105,7 +105,7 @@ describe('runSamCliInit', async () => {
             await runSamCliInit(sampleSamInitArgs, context)
         })
 
-        it('Passes runtime to sam cli', async () => {
+        it('Passes runtime to sam cli', async function() {
             const processInvoker: SamCliProcessInvoker = new ExtendedTestSamCliProcessInvoker(
                 (spawnOptions: SpawnOptions, args: any[]) => {
                     assertArgsContainArgument(args, '--runtime', sampleSamInitArgs.runtime!)
@@ -120,7 +120,7 @@ describe('runSamCliInit', async () => {
             await runSamCliInit(sampleSamInitArgs, context)
         })
 
-        it('throws on unexpected exit code', async () => {
+        it('throws on unexpected exit code', async function() {
             const badExitCodeProcessInvoker = new BadExitCodeSamCliProcessInvoker({})
             const context: SamCliContext = {
                 validator: defaultFakeValidator,
@@ -139,7 +139,7 @@ describe('runSamCliInit', async () => {
             )
         })
 
-        it('Passes --no-interactive', async () => {
+        it('Passes --no-interactive', async function() {
             const processInvoker: SamCliProcessInvoker = new ExtendedTestSamCliProcessInvoker(
                 (spawnOptions: SpawnOptions, args: any[]) => {
                     assertArgIsPresent(args, '--no-interactive')
@@ -154,7 +154,7 @@ describe('runSamCliInit', async () => {
             await runSamCliInit(sampleSamInitArgs, context)
         })
 
-        it('Passes --app-template', async () => {
+        it('Passes --app-template', async function() {
             const processInvoker: SamCliProcessInvoker = new ExtendedTestSamCliProcessInvoker(
                 (spawnOptions: SpawnOptions, args: any[]) => {
                     assertArgsContainArgument(args, '--app-template', getSamCliTemplateParameter(helloWorldTemplate))
@@ -170,7 +170,7 @@ describe('runSamCliInit', async () => {
             await runSamCliInit(sampleSamInitArgs, context)
         })
 
-        it('Passes --dependency-manager', async () => {
+        it('Passes --dependency-manager', async function() {
             const processInvoker: SamCliProcessInvoker = new ExtendedTestSamCliProcessInvoker(
                 (spawnOptions: SpawnOptions, args: any[]) => {
                     assertArgsContainArgument(args, '--dependency-manager', sampleDependencyManager)
@@ -186,7 +186,7 @@ describe('runSamCliInit', async () => {
         })
     })
 
-    describe('runSamCliInit With EventBridgeStartAppTemplate', async () => {
+    describe('runSamCliInit With EventBridgeStartAppTemplate', async function() {
         const extraContent: SchemaTemplateExtraContext = {
             AWS_Schema_registry: 'testRegistry',
             AWS_Schema_name: 'testSchema',
@@ -205,7 +205,7 @@ describe('runSamCliInit', async () => {
             dependencyManager: sampleDependencyManager,
         }
 
-        it('Passes --extra-context for eventBridgeStarterAppTemplate', async () => {
+        it('Passes --extra-context for eventBridgeStarterAppTemplate', async function() {
             const processInvoker: SamCliProcessInvoker = new ExtendedTestSamCliProcessInvoker(
                 (spawnOptions: SpawnOptions, args: any[]) => {
                     assertArgsContainArgument(

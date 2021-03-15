@@ -10,7 +10,7 @@ import { S3Client, Bucket } from '../../../shared/clients/s3Client'
 import { AWSTreeNodeBase } from '../../../shared/treeview/nodes/awsTreeNodeBase'
 import { instance, mock, when } from '../../utilities/mockito'
 
-describe('S3Node', () => {
+describe('S3Node', function() {
     const firstBucket: Bucket = { name: 'first-bucket-name', region: 'firstRegion', arn: 'firstArn' }
     const secondBucket: Bucket = { name: 'second-bucket-name', region: 'secondRegion', arn: 'secondArn' }
 
@@ -21,11 +21,11 @@ describe('S3Node', () => {
         assert.deepStrictEqual((node as S3BucketNode).bucket, expectedBucket)
     }
 
-    beforeEach(() => {
+    beforeEach(function() {
         s3 = mock()
     })
 
-    it('gets children', async () => {
+    it('gets children', async function() {
         when(s3.listBuckets()).thenResolve({
             buckets: [firstBucket, secondBucket],
         })

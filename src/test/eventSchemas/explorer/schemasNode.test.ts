@@ -20,14 +20,14 @@ const FAKE_REGION_CODE = 'someregioncode'
 const UNSORTED_TEXT = ['zebra', 'Antelope', 'aardvark', 'elephant']
 const SORTED_TEXT = ['aardvark', 'Antelope', 'elephant', 'zebra']
 
-describe('SchemasNode', () => {
+describe('SchemasNode', function() {
     let sandbox: sinon.SinonSandbox
     let testNode: SchemasNode
 
     // Mocked Lambda Client returns Lambda Functions for anything listed in lambdaFunctionNames
     let registryNames: string[]
 
-    beforeEach(() => {
+    beforeEach(function() {
         sandbox = sinon.createSandbox()
 
         registryNames = ['registry1', 'registry2']
@@ -37,11 +37,11 @@ describe('SchemasNode', () => {
         testNode = new SchemasNode(FAKE_REGION_CODE)
     })
 
-    afterEach(() => {
+    afterEach(function() {
         sandbox.restore()
     })
 
-    it('returns placeholder node if no children are present', async () => {
+    it('returns placeholder node if no children are present', async function() {
         registryNames = []
 
         const childNodes = await testNode.getChildren()
@@ -49,7 +49,7 @@ describe('SchemasNode', () => {
         assertNodeListOnlyContainsPlaceholderNode(childNodes)
     })
 
-    it('has RegistryItemNode child nodes', async () => {
+    it('has RegistryItemNode child nodes', async function() {
         const childNodes = await testNode.getChildren()
 
         assert.strictEqual(childNodes.length, registryNames.length, 'Unexpected child count')
@@ -59,7 +59,7 @@ describe('SchemasNode', () => {
         )
     })
 
-    it('sorts child nodes', async () => {
+    it('sorts child nodes', async function() {
         registryNames = UNSORTED_TEXT
 
         const childNodes = await testNode.getChildren()
@@ -68,7 +68,7 @@ describe('SchemasNode', () => {
         assert.deepStrictEqual(actualChildOrder, SORTED_TEXT, 'Unexpected child sort order')
     })
 
-    it('has an error node for a child if an error happens during loading', async () => {
+    it('has an error node for a child if an error happens during loading', async function() {
         sandbox.stub(testNode, 'updateChildren').callsFake(() => {
             throw new Error('Update Children error!')
         })

@@ -8,8 +8,8 @@ import CreateStateMachineWizard, {
     TemplateFormats,
 } from '../../../stepFunctions/wizards/createStateMachineWizard'
 
-describe('CreateStateMachineWizard', async () => {
-    it('exits when cancelled', async () => {
+describe('CreateStateMachineWizard', async function() {
+    it('exits when cancelled', async function() {
         const mockUserPrompt: any = () => Promise.resolve(undefined)
         const wizard = new CreateStateMachineWizard(mockUserPrompt)
         const result = await wizard.run()
@@ -17,7 +17,7 @@ describe('CreateStateMachineWizard', async () => {
         assert.ok(!result)
     })
 
-    it('returns format and template type when completed', async () => {
+    it('returns format and template type when completed', async function() {
         const promptRsults = [[STARTER_TEMPLATES[0]], [{ label: TemplateFormats.YAML }]]
 
         const mockUserPrompt: any = (options: any) => Promise.resolve(promptRsults.shift())

@@ -4,7 +4,7 @@
  */
 
 import { CloudWatchLogs } from 'aws-sdk'
-import * as lolex from 'lolex'
+import * as FakeTimers from '@sinonjs/fake-timers'
 import * as sinon from 'sinon'
 import * as vscode from 'vscode'
 import { addLogEvents } from '../../../cloudWatchLogs/commands/addLogEvents'
@@ -12,30 +12,30 @@ import { LogStreamRegistry } from '../../../cloudWatchLogs/registry/logStreamReg
 import { CLOUDWATCH_LOGS_SCHEME } from '../../../shared/constants'
 import { TestSettingsConfiguration } from '../../utilities/testSettingsConfiguration'
 
-describe('addLogEvents', async () => {
+describe('addLogEvents', async function() {
     let sandbox: sinon.SinonSandbox
-    let clock: lolex.InstalledClock
+    let clock: sinon.SinonFakeTimers
     const config = new TestSettingsConfiguration()
 
-    before(() => {
-        clock = lolex.install()
+    before(function() {
+        clock = FakeTimers.install()
         config.writeSetting('cloudWatchLogs.limit', 1000)
     })
 
-    beforeEach(() => {
+    beforeEach(function() {
         sandbox = sinon.createSandbox()
     })
 
-    afterEach(() => {
+    afterEach(function() {
         clock.reset()
         sandbox.restore()
     })
 
-    after(() => {
+    after(function() {
         clock.uninstall()
     })
 
-    it('runs updateLog and sets busy status correctly', async () => {
+    it('runs updateLog and sets busy status correctly', async function() {
         const uri = vscode.Uri.parse(`${CLOUDWATCH_LOGS_SCHEME}:group:stream:region`)
         const setBusyStatus = sandbox.stub<[vscode.Uri, boolean], void>()
         const updateLog = sandbox.stub<
@@ -78,7 +78,7 @@ describe('addLogEvents', async () => {
         sandbox.assert.calledWith(updateLog.firstCall, uri, 'head')
     })
 
-    it('async-locks to prevent more than one execution at a time', async () => {
+    it('async-locks to prevent more than one execution at a time', async function() {
         const uri = vscode.Uri.parse(`${CLOUDWATCH_LOGS_SCHEME}:group:stream:region`)
         const setBusyStatus = sandbox.stub<[vscode.Uri, boolean], void>()
         const updateLog = sandbox.stub<
@@ -129,7 +129,7 @@ describe('addLogEvents', async () => {
 
         addLogEvents(document, fakeRegistry, 'head', fakeEvent, config)
 
-        new Promise(resolve => {
+        new Promise<void>(resolve => {
             clock.setTimeout(() => {
                 sandbox.assert.calledTwice(setBusyStatus)
                 sandbox.assert.calledWith(setBusyStatus.firstCall, uri, true)

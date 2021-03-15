@@ -8,15 +8,15 @@ import { AWSError, ECS } from 'aws-sdk'
 import { DefaultEcsClient } from '../../../shared/clients/defaultEcsClient'
 import { assertThrowsError } from '../utilities/assertUtils'
 
-describe('defaultEcsClient', async () => {
+describe('defaultEcsClient', async function() {
     let testClient: TestEcsClient
 
-    before(() => {
+    before(function() {
         testClient = new TestEcsClient()
     })
 
-    describe('listClusters', async () => {
-        it('lists clusters from a single page', async () => {
+    describe('listClusters', async function() {
+        it('lists clusters from a single page', async function() {
             const targetArr = ['cluster1', 'cluster2', 'cluster3']
             testClient.listClustersResponses = [
                 {
@@ -31,7 +31,7 @@ describe('defaultEcsClient', async () => {
             assert.deepStrictEqual(targetArr, arr)
         })
 
-        it('lists clusters from multiple pages', async () => {
+        it('lists clusters from multiple pages', async function() {
             const targetArr1 = ['cluster1', 'cluster2', 'cluster3']
             const targetArr2 = ['cluster4', 'cluster5', 'cluster6']
             const targetArr3 = ['cluster7', 'cluster8', 'cluster9']
@@ -56,7 +56,7 @@ describe('defaultEcsClient', async () => {
             assert.deepStrictEqual(targetArr1.concat(targetArr2).concat(targetArr3), arr)
         })
 
-        it('handles errors', async () => {
+        it('handles errors', async function() {
             testClient.listClustersResponses = new Error() as AWSError
             await assertThrowsError(async () => {
                 const iterator = testClient.listClusters()
@@ -68,8 +68,8 @@ describe('defaultEcsClient', async () => {
         })
     })
 
-    describe('listServices', async () => {
-        it('lists services from a single page', async () => {
+    describe('listServices', async function() {
+        it('lists services from a single page', async function() {
             const targetArr = ['service1', 'service2', 'service3']
             testClient.listServicesResponses = [
                 {
@@ -84,7 +84,7 @@ describe('defaultEcsClient', async () => {
             assert.deepStrictEqual(targetArr, arr)
         })
 
-        it('lists services from multiple pages', async () => {
+        it('lists services from multiple pages', async function() {
             const targetArr1 = ['service1', 'service2', 'service3']
             const targetArr2 = ['service4', 'service5', 'service6']
             const targetArr3 = ['service7', 'service8', 'service9']
@@ -109,7 +109,7 @@ describe('defaultEcsClient', async () => {
             assert.deepStrictEqual(targetArr1.concat(targetArr2).concat(targetArr3), arr)
         })
 
-        it('handles errors', async () => {
+        it('handles errors', async function() {
             testClient.listServicesResponses = new Error() as AWSError
             await assertThrowsError(async () => {
                 const iterator = testClient.listServices('ourcluster')
@@ -121,8 +121,8 @@ describe('defaultEcsClient', async () => {
         })
     })
 
-    describe('ListTaskDefinitionFamilies', async () => {
-        it('lists task definition families from a single page', async () => {
+    describe('ListTaskDefinitionFamilies', async function() {
+        it('lists task definition families from a single page', async function() {
             const targetArr = ['fam1', 'fam2', 'fam3']
             testClient.listTaskDefinitionFamiliesResponses = [
                 {
@@ -137,7 +137,7 @@ describe('defaultEcsClient', async () => {
             assert.deepStrictEqual(targetArr, arr)
         })
 
-        it('lists task definition families from multiple pages', async () => {
+        it('lists task definition families from multiple pages', async function() {
             const targetArr1 = ['fam1', 'fam2', 'fam3']
             const targetArr2 = ['fam4', 'fam5', 'fam6']
             const targetArr3 = ['fam7', 'fam8', 'fam9']
@@ -162,7 +162,7 @@ describe('defaultEcsClient', async () => {
             assert.deepStrictEqual(targetArr1.concat(targetArr2).concat(targetArr3), arr)
         })
 
-        it('handles errors', async () => {
+        it('handles errors', async function() {
             testClient.listTaskDefinitionFamiliesResponses = new Error() as AWSError
             await assertThrowsError(async () => {
                 const iterator = testClient.listTaskDefinitionFamilies()
