@@ -346,6 +346,21 @@ describe('javaCodeLensProvider', () => {
                 failedHandlerRunner(test)
             }
         })
+
+        it('returns false with more than three parameters', async function () {
+            failedHandlerRunner(
+                generateFunctionHandler('FunctionHandler', [
+                    { name: 'param1', type: 'InputStream' },
+                    { name: 'param2', type: 'OutputStream' },
+                    { name: 'ctx', type: 'Context' },
+                    { name: 'silly', type: 'Whatever' },
+                ])
+            )
+        })
+
+        it('returns false with zero parameters', async function () {
+            failedHandlerRunner(generateFunctionHandler('FunctionHandler', []))
+        })
     })
 
     describe('generateJavaLambdaHandler', () => {
