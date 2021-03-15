@@ -1,0 +1,83 @@
+form {
+    padding: 15px;
+}
+
+.section-header {
+    margin: 0px;
+    margin-bottom: 10px;
+    display: flex;
+    justify-content: flex-start;
+}
+
+div {
+    margin-bottom: 20px;
+}
+
+button {
+    margin-bottom: 15px;
+}
+
+textarea {
+    max-width: 100%;
+}
+
+.config-item {
+    border-bottom: solid rgb(51, 51, 51) 1px;
+    display: grid;
+    grid-template-columns: 1fr 3fr;
+}
+
+.config-details {
+    margin-top: 20px;
+    border: rgb(211, 130, 38) dashed 1px;
+    padding: 5px 15px;
+}
+
+.payload-section{
+    padding-left: 15px;
+    border: rgb(211, 130, 38) dashed 1px;
+    padding: 5px 15px;
+}
+
+.data-view {
+    display: none;
+    border: dashed rgb(218, 31, 31) 1px;
+    color: rgb(218, 31, 31)
+}
+
+.invoke-button-container {
+    border: rgb(211, 130, 38) dashed 1px;
+    padding: 15px 15px 5px 15px;
+    position: sticky;
+    bottom: 20px;
+    display: flex;
+    flex-direction: row;
+    justify-content: flex-end;
+    align-items: center;
+    background-color: var(--vscode-tab-activeBackground);
+}
+
+.json-parse-error {
+    margin-top: 10px;
+    color: red;
+    border: red solid 1px;
+    width:  90%;
+    padding: 5px 10px;
+}
+
+.required {
+    color: red;
+}
+
+#form-title {
+    font-size: large;
+    font-weight: bold;
+}
+
+.form-buttons {
+    margin-left: 20px;
+}
+
+#target-type-selector {
+    margin-bottom: 15px;
+}
