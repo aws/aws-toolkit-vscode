@@ -60,8 +60,12 @@ export async function resumeCreateNewSamApp(
     let createResult: Result = 'Succeeded'
     let reason: CreateReason = 'complete'
     let samInitState: SamInitState | undefined
+    let samVersion: string | undefined
+
     try {
         samInitState = activationReloadState.getSamInitState()
+        samVersion = await getSamCliVersion(getSamCliContext())
+
         const pathToLaunch = samInitState?.path
         if (!pathToLaunch) {
             return
@@ -92,6 +96,22 @@ export async function resumeCreateNewSamApp(
             samInitState?.isImage ? samInitState?.runtime : undefined
         )
         await vscode.window.showTextDocument(uri)
+    } catch (err) {
+        createResult = 'Failed'
+        reason = 'error'
+
+        const checkLogsMessage = makeCheckLogsMessage()
+
+        ext.outputChannel.show(true)
+        getLogger('channel').error(
+            localize(
+                "AWS.samcli.initWizard.resume.error",
+                "An error occured while resuming SAM Application creation. {0}",
+                checkLogsMessage
+            )
+        )
+
+        getLogger().error('Error resuming new SAM Application: %O', err as Error)
     } finally {
         activationReloadState.clearSamInitState()
         recordSamInit({
@@ -99,6 +119,7 @@ export async function resumeCreateNewSamApp(
             result: createResult,
             reason: reason,
             runtime: samInitState?.runtime as TelemetryRuntime,
+            version: samVersion,
         })
     }
 }
@@ -123,6 +144,7 @@ export async function createNewSamApplication(
     let lambdaPackageType: 'Zip' | 'Image' | undefined
     let createRuntime: Runtime | undefined
     let config: CreateNewSamAppWizardResponse | undefined
+    let samVersion: string | undefined
 
     let initArguments: SamCliInitArgs
 
@@ -132,9 +154,9 @@ export async function createNewSamApplication(
         const currentCredentials = await awsContext.getCredentials()
         const availableRegions = getRegionsForActiveCredentials(awsContext, regionProvider)
         const schemasRegions = availableRegions.filter(region => regionProvider.isServiceInRegion('schemas', region.id))
-        const samCliVersion = await getSamCliVersion(samCliContext)
+        samVersion = await getSamCliVersion(samCliContext)
 
-        const wizardContext = new DefaultCreateNewSamAppWizardContext(currentCredentials, schemasRegions, samCliVersion)
+        const wizardContext = new DefaultCreateNewSamAppWizardContext(currentCredentials, schemasRegions, samVersion)
         config = await new CreateNewSamAppWizard(wizardContext).run()
 
         if (!config) {
@@ -302,6 +324,7 @@ export async function createNewSamApplication(
             result: createResult,
             reason: reason,
             runtime: createRuntime as TelemetryRuntime,
+            version: samVersion,
         })
     }
 }
