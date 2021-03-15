@@ -19,10 +19,11 @@ export class ErrorNode extends AWSTreeNodeBase {
         const logRecord: LogTrackerRecord = getLogTracker().registerLog()
         logger.error(error, { logID: logRecord.logID })     
 
-        this.tooltip = tooltip
         // Theme color for icons were introduced in the 1.51.0 October 2020 update of vscode
-        this.iconPath = new vscode.ThemeIcon('error', new vscode.ThemeColor('errorForeground'))
+        // TODO: get 'error' icons made for cloud9 (error messages will have no icon for now)
+        // this.iconPath = new vscode.ThemeIcon('error', new vscode.ThemeColor('errorForeground'))
         this.contextValue = 'awsErrorNode'
+        this.tooltip = tooltip
         this.command = {
             command: 'aws.viewLogsAtMessage',
             title: commandName,
