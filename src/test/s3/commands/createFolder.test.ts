@@ -12,7 +12,7 @@ import { FakeCommands } from '../../shared/vscode/fakeCommands'
 import { FakeWindow } from '../../shared/vscode/fakeWindow'
 import { anything, mock, instance, when, deepEqual, verify } from '../../utilities/mockito'
 
-describe('createFolderCommand', () => {
+describe('createFolderCommand', function() {
     const invalidFolderNames: { folderName: string; error: string }[] = [
         { folderName: 'contains/delimiter', error: `Folder name must not contain '/'` },
         { folderName: '', error: 'Folder name must not be empty' },
@@ -25,7 +25,7 @@ describe('createFolderCommand', () => {
     let s3: S3Client
     let node: S3BucketNode
 
-    beforeEach(() => {
+    beforeEach(function() {
         s3 = mock()
         node = new S3BucketNode(
             { name: bucketName, region: 'region', arn: 'arn' },
@@ -34,7 +34,7 @@ describe('createFolderCommand', () => {
         )
     })
 
-    it('prompts for folder name, creates folder, shows success, and refreshes node', async () => {
+    it('prompts for folder name, creates folder, shows success, and refreshes node', async function() {
         when(s3.createFolder(deepEqual({ path: folderPath, bucketName }))).thenResolve({
             folder: { name: folderName, path: folderPath, arn: 'arn' },
         })
@@ -52,13 +52,13 @@ describe('createFolderCommand', () => {
         assert.deepStrictEqual(commands.args, [node])
     })
 
-    it('does nothing when prompt is cancelled', async () => {
+    it('does nothing when prompt is cancelled', async function() {
         await createFolderCommand(node, new FakeWindow(), new FakeCommands())
 
         verify(s3.createFolder(anything())).never()
     })
 
-    it('shows an error message and refreshes node when folder creation fails', async () => {
+    it('shows an error message and refreshes node when folder creation fails', async function() {
         when(s3.createFolder(anything())).thenReject(new Error('Expected failure'))
 
         const window = new FakeWindow({ inputBox: { input: folderName } })

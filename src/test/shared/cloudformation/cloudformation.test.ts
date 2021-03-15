@@ -20,23 +20,23 @@ import {
     strToYamlFile,
 } from './cloudformationTestUtils'
 
-describe('CloudFormation', () => {
+describe('CloudFormation', function() {
     let tempFolder: string
     let filename: string
 
-    before(async () => {
+    before(async function() {
         // Make a temp folder for all these tests
         // Stick some temp credentials files in there to load from
         tempFolder = await makeTemporaryToolkitFolder()
         filename = path.join(tempFolder, 'temp.yaml')
     })
 
-    afterEach(async () => {
+    afterEach(async function() {
         await fs.remove(filename)
     })
 
-    describe('load', async () => {
-        it('can successfully load a file', async () => {
+    describe('load', async function() {
+        it('can successfully load a file', async function() {
             const yamlStr = makeSampleSamTemplateYaml(true)
 
             await strToYamlFile(yamlStr, filename)
@@ -44,7 +44,7 @@ describe('CloudFormation', () => {
             assert.deepStrictEqual(loadedTemplate, createBaseTemplate())
         })
 
-        it('can successfully load a file without globals', async () => {
+        it('can successfully load a file without globals', async function() {
             const yamlStr = makeSampleSamTemplateYaml(false)
 
             await strToYamlFile(yamlStr, filename)
@@ -56,7 +56,7 @@ describe('CloudFormation', () => {
             assert.deepStrictEqual(loadedTemplate, expectedTemplate)
         })
 
-        it('can successfully load a file with parameters', async () => {
+        it('can successfully load a file with parameters', async function() {
             const yamlStr: string = `Parameters:
     MyParam1:
         Type: String
@@ -87,7 +87,7 @@ describe('CloudFormation', () => {
             assert.deepStrictEqual(loadedTemplate, expectedTemplate)
         })
 
-        it('Does not load YAML with missing fields', async () => {
+        it('Does not load YAML with missing fields', async function() {
             // handler is missing
             const badYamlStr: string = `Resources:
                                             TestResource:
@@ -103,7 +103,7 @@ describe('CloudFormation', () => {
             await assertRejects(async () => await CloudFormation.load(filename))
         })
 
-        it('only loads valid YAML', async () => {
+        it('only loads valid YAML', async function() {
             // same as above, minus the handler
             const badYamlStr: string = `Resources:
                                             TestResource:
@@ -119,7 +119,7 @@ describe('CloudFormation', () => {
             await assertRejects(async () => await CloudFormation.load(filename))
         })
 
-        it('Loads YAML with references', async () => {
+        it('Loads YAML with references', async function() {
             // This one is valid, "!Ref" is valid!
             const validYamlStr: string = `Resources:
                                             TestResource:
@@ -136,7 +136,7 @@ describe('CloudFormation', () => {
             await CloudFormation.load(filename)
         })
 
-        it('Loads YAML without a CodeUri', async () => {
+        it('Loads YAML without a CodeUri', async function() {
             // This one is valid, "!Ref" is valid!
             const validYamlStr: string = `Resources:
                                             TestResource:
@@ -154,13 +154,13 @@ describe('CloudFormation', () => {
         })
     })
 
-    describe('save', async () => {
-        it('can successfully save a file', async () => {
+    describe('save', async function() {
+        it('can successfully save a file', async function() {
             await CloudFormation.save(createBaseTemplate(), filename)
             assert.strictEqual(await SystemUtilities.fileExists(filename), true)
         })
 
-        it('can successfully save a file to YAML and load the file as a CloudFormation.Template', async () => {
+        it('can successfully save a file to YAML and load the file as a CloudFormation.Template', async function() {
             const baseTemplate = createBaseTemplate()
             await CloudFormation.save(baseTemplate, filename)
             assert.strictEqual(await SystemUtilities.fileExists(filename), true)
@@ -169,12 +169,12 @@ describe('CloudFormation', () => {
         })
     })
 
-    describe('validateTemplate', async () => {
-        it('can successfully validate a valid template', () => {
+    describe('validateTemplate', async function() {
+        it('can successfully validate a valid template', function() {
             assert.doesNotThrow(() => CloudFormation.validateTemplate(createBaseTemplate()))
         })
 
-        it('can detect an invalid template', () => {
+        it('can detect an invalid template', function() {
             const badTemplate = createBaseTemplate()
             delete (badTemplate.Resources!.TestResource as any)!.Type
             assert.throws(
@@ -185,12 +185,12 @@ describe('CloudFormation', () => {
         })
     })
 
-    describe('validateResource', async () => {
-        it('can successfully validate a valid resource', () => {
+    describe('validateResource', async function() {
+        it('can successfully validate a valid resource', function() {
             assert.doesNotThrow(() => CloudFormation.validateResource(createBaseResource(), createBaseTemplate()))
         })
 
-        it('can detect an invalid resource', () => {
+        it('can detect an invalid resource', function() {
             const badResource = createBaseResource()
             delete (badResource.Properties as any)!.Handler
             assert.throws(
@@ -200,7 +200,7 @@ describe('CloudFormation', () => {
             )
         })
 
-        it('can detect invalid Image resources', () => {
+        it('can detect invalid Image resources', function() {
             const badResource = createBaseImageResource()
             assert.ok(CloudFormation.isImageLambdaResource(badResource.Properties))
 
@@ -252,7 +252,7 @@ describe('CloudFormation', () => {
         return path.join(path.dirname(__filename), 'yaml', templateFileName)
     }
 
-    describe('getResourceFromTemplate', async () => {
+    describe('getResourceFromTemplate', async function() {
         for (const scenario of templateWithExistingHandlerScenarios) {
             it(`should retrieve resource for ${scenario.title}`, async () => {
                 const templatePath = makeTemplatePath(scenario.templateFileName)
@@ -288,7 +288,7 @@ describe('CloudFormation', () => {
         }
     })
 
-    describe('getResourceFromTemplateResources', async () => {
+    describe('getResourceFromTemplateResources', async function() {
         for (const scenario of templateWithExistingHandlerScenarios) {
             it(`should retrieve resource for ${scenario.title}`, async () => {
                 const templatePath = makeTemplatePath(scenario.templateFileName)
@@ -326,7 +326,7 @@ describe('CloudFormation', () => {
         }
     })
 
-    describe('Ref handlers', () => {
+    describe('Ref handlers', function() {
         const newTemplate: () => CloudFormation.Template = () => {
             return {
                 Globals: {
@@ -369,8 +369,8 @@ describe('CloudFormation', () => {
             }
         }
 
-        describe('getStringForProperty', () => {
-            it('returns a string', () => {
+        describe('getStringForProperty', function() {
+            it('returns a string', function() {
                 const template = newTemplate()
                 assert.strictEqual(
                     CloudFormation.getStringForProperty(template.Resources!.resource?.Properties, 'Handler', template),
@@ -378,7 +378,7 @@ describe('CloudFormation', () => {
                 )
             })
 
-            it('returns a string from a ref with a default value', () => {
+            it('returns a string from a ref with a default value', function() {
                 const property: CloudFormation.Ref = {
                     Ref: 'strParamVal',
                 }
@@ -390,7 +390,7 @@ describe('CloudFormation', () => {
                 )
             })
 
-            it('returns undefined if the ref does not have a default value', () => {
+            it('returns undefined if the ref does not have a default value', function() {
                 const property: CloudFormation.Ref = {
                     Ref: 'strParamNoVal',
                 }
@@ -402,7 +402,7 @@ describe('CloudFormation', () => {
                 )
             })
 
-            it('returns undefined if a number is provided', () => {
+            it('returns undefined if a number is provided', function() {
                 const property: number = 1
                 const template = newTemplate()
                 template.Resources!.resource!.Properties!.MemorySize = property
@@ -416,7 +416,7 @@ describe('CloudFormation', () => {
                 )
             })
 
-            it('returns undefined if a ref to a number is provided', () => {
+            it('returns undefined if a ref to a number is provided', function() {
                 const property: CloudFormation.Ref = {
                     Ref: 'numParamVal',
                 }
@@ -432,12 +432,12 @@ describe('CloudFormation', () => {
                 )
             })
 
-            it('returns undefined if undefined is provided', () => {
+            it('returns undefined if undefined is provided', function() {
                 const template = newTemplate()
                 assert.strictEqual(CloudFormation.getStringForProperty(undefined, 'dont-matter', template), undefined)
             })
 
-            it('returns a global value', () => {
+            it('returns a global value', function() {
                 const template = newTemplate()
                 assert.strictEqual(
                     CloudFormation.getStringForProperty(template.Resources!.resource?.Properties, 'Runtime', template),
@@ -445,7 +445,7 @@ describe('CloudFormation', () => {
                 )
             })
 
-            it('returns a global Ref value', () => {
+            it('returns a global Ref value', function() {
                 const template = newTemplate()
                 assert.strictEqual(
                     CloudFormation.getStringForProperty(
@@ -457,7 +457,7 @@ describe('CloudFormation', () => {
                 )
             })
 
-            it('returns undefined for a global number value', () => {
+            it('returns undefined for a global number value', function() {
                 const template = newTemplate()
                 assert.strictEqual(
                     CloudFormation.getStringForProperty(template.Resources!.resource?.Properties, 'Timeout', template),
@@ -465,7 +465,7 @@ describe('CloudFormation', () => {
                 )
             })
 
-            it('returns undefined for a global Ref number value', () => {
+            it('returns undefined for a global Ref number value', function() {
                 const template = newTemplate()
                 assert.strictEqual(
                     CloudFormation.getStringForProperty(
@@ -478,8 +478,8 @@ describe('CloudFormation', () => {
             })
         })
 
-        describe('getNumberForProperty', () => {
-            it('returns a number', () => {
+        describe('getNumberForProperty', function() {
+            it('returns a number', function() {
                 const property: number = 1
                 const template = newTemplate()
                 template.Resources!.resource!.Properties!.MemorySize = property
@@ -493,7 +493,7 @@ describe('CloudFormation', () => {
                 )
             })
 
-            it('returns a number from a ref with a default value', () => {
+            it('returns a number from a ref with a default value', function() {
                 const property: CloudFormation.Ref = {
                     Ref: 'numParamVal',
                 }
@@ -509,7 +509,7 @@ describe('CloudFormation', () => {
                 )
             })
 
-            it('returns undefined if the ref does not have a default value', () => {
+            it('returns undefined if the ref does not have a default value', function() {
                 const property: CloudFormation.Ref = {
                     Ref: 'numParamNoVal',
                 }
@@ -525,7 +525,7 @@ describe('CloudFormation', () => {
                 )
             })
 
-            it('returns undefined is a string', () => {
+            it('returns undefined is a string', function() {
                 const template = newTemplate()
                 assert.strictEqual(
                     CloudFormation.getNumberForProperty(template.Resources!.resource!.Properties, 'Handler', template),
@@ -533,7 +533,7 @@ describe('CloudFormation', () => {
                 )
             })
 
-            it('returns undefined if a ref to a string is provided', () => {
+            it('returns undefined if a ref to a string is provided', function() {
                 const property: CloudFormation.Ref = {
                     Ref: 'strParamVal',
                 }
@@ -545,12 +545,12 @@ describe('CloudFormation', () => {
                 )
             })
 
-            it('returns undefined if undefined is provided', () => {
+            it('returns undefined if undefined is provided', function() {
                 const template = newTemplate()
                 assert.strictEqual(CloudFormation.getNumberForProperty(undefined, 'dont-matter', template), undefined)
             })
 
-            it('returns a global value', () => {
+            it('returns a global value', function() {
                 const template = newTemplate()
                 assert.strictEqual(
                     CloudFormation.getNumberForProperty(template.Resources!.resource?.Properties, 'Timeout', template),
@@ -558,7 +558,7 @@ describe('CloudFormation', () => {
                 )
             })
 
-            it('returns a global Ref value', () => {
+            it('returns a global Ref value', function() {
                 const template = newTemplate()
                 assert.strictEqual(
                     CloudFormation.getNumberForProperty(
@@ -570,7 +570,7 @@ describe('CloudFormation', () => {
                 )
             })
 
-            it('returns undefined for a global string value', () => {
+            it('returns undefined for a global string value', function() {
                 const template = newTemplate()
                 assert.strictEqual(
                     CloudFormation.getNumberForProperty(template.Resources!.resource?.Properties, 'Runtime', template),
@@ -578,7 +578,7 @@ describe('CloudFormation', () => {
                 )
             })
 
-            it('returns undefined for a global Ref string value', () => {
+            it('returns undefined for a global Ref string value', function() {
                 const template = newTemplate()
                 assert.strictEqual(
                     CloudFormation.getNumberForProperty(
@@ -591,14 +591,14 @@ describe('CloudFormation', () => {
             })
         })
 
-        describe('resolvePropertyWithOverrides', () => {
-            it('returns a string', () => {
+        describe('resolvePropertyWithOverrides', function() {
+            it('returns a string', function() {
                 const property: string = 'good'
                 const template = newTemplate()
                 assert.strictEqual(CloudFormation.resolvePropertyWithOverrides(property, template), property)
             })
 
-            it('returns a string from a ref with a default value', () => {
+            it('returns a string from a ref with a default value', function() {
                 const property: CloudFormation.Ref = {
                     Ref: 'strParamVal',
                 }
@@ -606,13 +606,13 @@ describe('CloudFormation', () => {
                 assert.strictEqual(CloudFormation.resolvePropertyWithOverrides(property, template), 'asdf')
             })
 
-            it('returns a number', () => {
+            it('returns a number', function() {
                 const property: number = 1
                 const template = newTemplate()
                 assert.strictEqual(CloudFormation.resolvePropertyWithOverrides(property, template), 1)
             })
 
-            it('returns a number from a ref with a default value', () => {
+            it('returns a number from a ref with a default value', function() {
                 const property: CloudFormation.Ref = {
                     Ref: 'numParamVal',
                 }
@@ -620,12 +620,12 @@ describe('CloudFormation', () => {
                 assert.strictEqual(CloudFormation.resolvePropertyWithOverrides(property, template), 999)
             })
 
-            it('returns undefined if undefined is provided', () => {
+            it('returns undefined if undefined is provided', function() {
                 const template = newTemplate()
                 assert.strictEqual(CloudFormation.resolvePropertyWithOverrides(undefined, template), undefined)
             })
 
-            it('returns undefined if the ref does not have a default value and no overrides are present', () => {
+            it('returns undefined if the ref does not have a default value and no overrides are present', function() {
                 const property: CloudFormation.Ref = {
                     Ref: 'strParamNoVal',
                 }
@@ -633,7 +633,7 @@ describe('CloudFormation', () => {
                 assert.strictEqual(CloudFormation.resolvePropertyWithOverrides(property, template), undefined)
             })
 
-            it('returns the override value if no default value provided', () => {
+            it('returns the override value if no default value provided', function() {
                 const property: CloudFormation.Ref = {
                     Ref: 'strParamNoVal',
                 }
@@ -647,7 +647,7 @@ describe('CloudFormation', () => {
                 )
             })
 
-            it('returns the override value even if default value provided', () => {
+            it('returns the override value even if default value provided', function() {
                 const property: CloudFormation.Ref = {
                     Ref: 'strParamVal',
                 }

@@ -14,7 +14,7 @@ import { MockOutputChannel } from '../../mockOutputChannel'
 import { FakeWindow } from '../../shared/vscode/fakeWindow'
 import { anything, mock, instance, when, capture, verify } from '../../utilities/mockito'
 
-describe('downloadFileAsCommand', () => {
+describe('downloadFileAsCommand', function() {
     const bucketName = 'bucket-name'
     const key = 'path/to/file.jpg'
     const fileName = 'file.jpg'
@@ -26,7 +26,7 @@ describe('downloadFileAsCommand', () => {
     let bucketNode: S3BucketNode
     let node: S3FileNode
 
-    beforeEach(() => {
+    beforeEach(function() {
         s3 = mock()
 
         const bucket: Bucket = { name: bucketName, region: 'region', arn: 'arn' }
@@ -39,7 +39,7 @@ describe('downloadFileAsCommand', () => {
         )
     })
 
-    it('prompts for save location, downloads file with progress, and shows output channel', async () => {
+    it('prompts for save location, downloads file with progress, and shows output channel', async function() {
         when(s3.downloadFile(anything())).thenResolve()
 
         const window = new FakeWindow({ dialog: { saveSelection: saveLocation } })
@@ -71,13 +71,13 @@ describe('downloadFileAsCommand', () => {
         assert.strictEqual(outputChannel.isFocused, false)
     })
 
-    it('does nothing when prompt is cancelled', async () => {
+    it('does nothing when prompt is cancelled', async function() {
         await downloadFileAsCommand(node, new FakeWindow())
 
         verify(s3.downloadFile(anything())).never()
     })
 
-    it('shows an error message when download fails', async () => {
+    it('shows an error message when download fails', async function() {
         when(s3.downloadFile(anything())).thenReject(new Error('Expected failure'))
 
         const window = new FakeWindow({ dialog: { saveSelection: saveLocation } })
