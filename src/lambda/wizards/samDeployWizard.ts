@@ -415,15 +415,15 @@ export class DefaultSamDeployWizardContext implements SamDeployWizardContext {
     ): Promise<string | undefined> {
         const createBucket = {
             iconPath: {
-                light: vscode.Uri.file(ext.iconPaths.light.createBucket),
-                dark: vscode.Uri.file(ext.iconPaths.dark.createBucket),
+                light: vscode.Uri.file(ext.iconPaths.light.plus),
+                dark: vscode.Uri.file(ext.iconPaths.dark.plus),
             },
             tooltip: CREATE_NEW_BUCKET,
         }
         const enterBucket = {
             iconPath: {
-                light: vscode.Uri.file(ext.iconPaths.light.bucket),
-                dark: vscode.Uri.file(ext.iconPaths.dark.bucket),
+                light: vscode.Uri.file(ext.iconPaths.light.edit),
+                dark: vscode.Uri.file(ext.iconPaths.dark.edit),
             },
             tooltip: ENTER_BUCKET,
         }
