@@ -44,7 +44,11 @@ export async function loginWithMostRecentCredentials(
             credentialType: SharedCredentialsProvider.getCredentialsType(),
             credentialTypeId: previousCredentialsId,
         }
-        await loginManager.login({ passive: true, providerId: loginCredentialsId })
+        if ((await manager.getCredentialsProvider(loginCredentialsId))!.canAutoConnect()) {
+            await loginManager.login({ passive: true, providerId: loginCredentialsId })
+        } else {
+            await loginManager.logout()
+        }
     } else if (
         providerMap &&
         profileNames.length === 1 &&

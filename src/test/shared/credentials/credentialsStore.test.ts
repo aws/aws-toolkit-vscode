@@ -17,6 +17,7 @@ describe('CredentialsStore', async function() {
         credentialType: 'test',
         credentialTypeId: 'someId',
     }
+    const sampleExpiredCredentials = ({expired: true} as any) as AWS.Credentials
 
     beforeEach(async function() {
         sandbox = sinon.createSandbox()
@@ -27,9 +28,9 @@ describe('CredentialsStore', async function() {
         sandbox.restore()
     })
 
-    function makeSampleCredentialsProvider(credentialsHashCode: number = 0): CredentialsProvider {
+    function makeSampleCredentialsProvider(credentialsHashCode: number = 0, testCredentials: AWS.Credentials): CredentialsProvider {
         return ({
-            getCredentials: () => sampleCredentials,
+            getCredentials: () => testCredentials,
             getHashCode: () => credentialsHashCode,
         } as any) as CredentialsProvider
     }
@@ -39,7 +40,7 @@ describe('CredentialsStore', async function() {
     })
 
     it('upsertCredentials creates when credentials are not loaded', async function() {
-        const provider = makeSampleCredentialsProvider(1)
+        const provider = makeSampleCredentialsProvider(1, sampleCredentials)
         const loadedCredentials = await sut.upsertCredentials(sampleCredentialsProviderId, provider)
 
         assert.strictEqual(loadedCredentials.credentials, sampleCredentials)
@@ -47,7 +48,7 @@ describe('CredentialsStore', async function() {
     })
 
     it('upsertCredentials does not call create method once credentials are loaded', async function() {
-        const provider = makeSampleCredentialsProvider()
+        const provider = makeSampleCredentialsProvider(0, sampleCredentials)
         const getCredentialsStub = sandbox
             .stub(provider, 'getCredentials')
             .onFirstCall()
@@ -64,7 +65,7 @@ describe('CredentialsStore', async function() {
     })
 
     it('getCredentials returns stored credentials', async function() {
-        const provider = makeSampleCredentialsProvider(2)
+        const provider = makeSampleCredentialsProvider(2, sampleCredentials)
         await sut.upsertCredentials(sampleCredentialsProviderId, provider)
         const loadedCredentials = await sut.getCredentials(sampleCredentialsProviderId)
 
@@ -73,10 +74,19 @@ describe('CredentialsStore', async function() {
     })
 
     it('invalidate removes the credentials from storage', async function() {
-        await sut.upsertCredentials(sampleCredentialsProviderId, makeSampleCredentialsProvider())
+        await sut.upsertCredentials(sampleCredentialsProviderId, makeSampleCredentialsProvider(0, sampleCredentials))
         sut.invalidateCredentials(sampleCredentialsProviderId)
         const loadedCredentials = await sut.getCredentials(sampleCredentialsProviderId)
 
         assert.strictEqual(loadedCredentials, undefined)
+    })
+
+    it('getCredentials returns undefined when credentials are expired', async () => {
+        const provider = makeSampleCredentialsProvider(0, sampleExpiredCredentials)
+
+        await sut.upsertCredentials(sampleCredentialsProviderId, provider)
+        const cachedCredentials = await sut.getCredentials(sampleCredentialsProviderId)
+
+        assert.strictEqual(cachedCredentials, undefined)
     })
 })
