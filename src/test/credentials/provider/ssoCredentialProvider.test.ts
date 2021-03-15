@@ -39,7 +39,7 @@ describe('SsoCredentialProvider', () => {
             sandbox.restore()
         })
 
-        it('should invalidate cached access token if denied', async () => {
+        it('invalidates cached access token if denied', async () => {
             const stubAccessToken = sandbox.stub(ssoAccessTokenProvider, 'accessToken').resolves(validAccessToken)
             const stubSsoClient = sandbox.stub(ssoClient, 'getRoleCredentials')
 
@@ -61,7 +61,7 @@ describe('SsoCredentialProvider', () => {
             assert.strictEqual(stubInvalidate.callCount, 1, 'invalidate not called')
         })
 
-        it('should return valid credentials', async () => {
+        it('returns valid credentials', async () => {
             sandbox.stub(ssoAccessTokenProvider, 'accessToken').resolves(validAccessToken)
             const response: GetRoleCredentialsResponse = {
                 roleCredentials: {
