@@ -13,7 +13,7 @@ import { ext } from '../../shared/extensionGlobals'
 import { makeTemporaryToolkitFolder, tryRemoveFolder } from '../../shared/filesystemUtilities'
 import { getLogger } from '../../shared/logger'
 import { SamCliBuildInvocation } from '../../shared/sam/cli/samCliBuild'
-import { getSamCliContext, SamCliContext } from '../../shared/sam/cli/samCliContext'
+import { getSamCliContext, SamCliContext, getSamCliVersion } from '../../shared/sam/cli/samCliContext'
 import { runSamCliDeploy } from '../../shared/sam/cli/samCliDeploy'
 import { SamCliProcessInvoker } from '../../shared/sam/cli/samCliInvokerUtils'
 import { runSamCliPackage } from '../../shared/sam/cli/samCliPackage'
@@ -59,6 +59,7 @@ export async function deploySamApplication(
     }
 ): Promise<void> {
     let deployResult: Result = 'Succeeded'
+    let samVersion: string | undefined
     let deployFolder: string | undefined
     try {
         const credentials = await awsContext.getCredentials()
@@ -75,6 +76,7 @@ export async function deploySamApplication(
         }
 
         deployFolder = await makeTemporaryToolkitFolder('samDeploy')
+        samVersion = await getSamCliVersion(samCliContext)
 
         const deployParameters: DeploySamApplicationParameters = {
             deployRootFolder: deployFolder,
@@ -111,7 +113,7 @@ export async function deploySamApplication(
         outputDeployError(err as Error)
     } finally {
         await tryRemoveFolder(deployFolder)
-        recordSamDeploy({ result: deployResult })
+        recordSamDeploy({ result: deployResult, version: samVersion })
     }
 }
 

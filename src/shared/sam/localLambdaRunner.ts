@@ -33,6 +33,7 @@ import { DefaultSamCliProcessInvokerContext } from './cli/samCliProcessInvokerCo
 import { DefaultSamCliConfiguration } from './cli/samCliConfiguration'
 import { extensionSettingsPrefix } from '../constants'
 import { DefaultSamCliLocationProvider } from './cli/samCliLocator'
+import { getSamCliContext, getSamCliVersion } from './cli/samCliContext'
 
 const localize = nls.loadMessageBundle()
 
@@ -320,8 +321,11 @@ export async function invokeLambdaFunction(
 
         // sam local invoke ...
         const command = new SamCliLocalInvokeInvocation(localInvokeArgs)
+        let samVersion: string | undefined 
         let invokeResult: telemetry.Result = 'Failed'
+
         try {
+            samVersion = await getSamCliVersion(getSamCliContext())
             await command.execute(timer)
             invokeResult = 'Succeeded'
         } catch (err) {
@@ -339,6 +343,7 @@ export async function invokeLambdaFunction(
                 result: invokeResult,
                 runtime: config.runtime as telemetry.Runtime,
                 debug: !config.noDebug,
+                version: samVersion,
             })
         }
     }

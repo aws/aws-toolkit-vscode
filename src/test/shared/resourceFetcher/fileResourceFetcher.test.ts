@@ -9,18 +9,18 @@ import { join } from 'path'
 import { makeTemporaryToolkitFolder } from '../../../shared/filesystemUtilities'
 import { FileResourceFetcher } from '../../../shared/resourcefetcher/fileResourceFetcher'
 
-describe('FileResourceFetcher', async () => {
+describe('FileResourceFetcher', async function() {
     let tempFolder: string
 
-    beforeEach(async () => {
+    beforeEach(async function() {
         tempFolder = await makeTemporaryToolkitFolder()
     })
 
-    afterEach(async () => {
+    afterEach(async function() {
         await fs.remove(tempFolder)
     })
 
-    it('loads the contents of a file', async () => {
+    it('loads the contents of a file', async function() {
         const testFile = join(tempFolder, 'file.txt')
         const expectedContents = 'Hello World!\n12345'
 
@@ -33,7 +33,7 @@ describe('FileResourceFetcher', async () => {
         assert.strictEqual(contents, expectedContents)
     })
 
-    it('returns undefined if the file does not exist', async () => {
+    it('returns undefined if the file does not exist', async function() {
         const sut = new FileResourceFetcher(join(tempFolder, 'somefile'))
 
         const contents = await sut.get()

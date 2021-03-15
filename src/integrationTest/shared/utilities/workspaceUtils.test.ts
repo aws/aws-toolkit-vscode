@@ -12,7 +12,7 @@ import { findParentProjectFile, getWorkspaceRelativePath } from '../../../shared
 import { getTestWorkspaceFolder } from '../../integrationTestsUtilities'
 import { CodelensRootRegistry } from '../../../shared/sam/codelensRootRegistry'
 
-describe('findParentProjectFile', async () => {
+describe('findParentProjectFile', async function() {
     const workspaceDir = getTestWorkspaceFolder()
     let filesToDelete: vscode.Uri[]
 
@@ -63,23 +63,23 @@ describe('findParentProjectFile', async () => {
         },
     ]
 
-    before(async () => {
+    before(async function() {
         await mkdirp(path.join(workspaceDir, 'someproject', 'src'))
         await mkdirp(path.join(workspaceDir, 'someotherproject'))
         globalRegistry = ext.codelensRootRegistry
     })
 
-    after(async () => {
+    after(async function() {
         remove(path.join(workspaceDir, 'someproject'))
         remove(path.join(workspaceDir, 'someotherproject'))
         ext.codelensRootRegistry = globalRegistry
     })
 
-    beforeEach(() => {
+    beforeEach(function() {
         ext.codelensRootRegistry = new CodelensRootRegistry()
     })
 
-    afterEach(async () => {
+    afterEach(async function() {
         for (const file of filesToDelete) {
             remove(file.fsPath)
         }
@@ -108,12 +108,12 @@ describe('findParentProjectFile', async () => {
     })
 })
 
-describe('getWorkspaceRelativePath', () => {
+describe('getWorkspaceRelativePath', function() {
     const parentPath = path.join('/', 'level1', 'level2')
     const nestedPath = path.join(parentPath, 'level3')
     const childPath = path.join(nestedPath, 'level4')
 
-    it('returns a path relative to the first parent path it sees', () => {
+    it('returns a path relative to the first parent path it sees', function() {
         const relativePath = getWorkspaceRelativePath(childPath, {
             workspaceFolders: [
                 {
@@ -132,12 +132,12 @@ describe('getWorkspaceRelativePath', () => {
         assert.strictEqual(relativePath, 'level4')
     })
 
-    it('returns undefined if no workspace folders exist', () => {
+    it('returns undefined if no workspace folders exist', function() {
         const relativePath = getWorkspaceRelativePath(childPath, { workspaceFolders: undefined })
         assert.strictEqual(relativePath, undefined)
     })
 
-    it('returns undefined if no paths are parents', () => {
+    it('returns undefined if no paths are parents', function() {
         const relativePath = getWorkspaceRelativePath(childPath, {
             workspaceFolders: [
                 {

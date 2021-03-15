@@ -10,9 +10,9 @@ import {
     PublishStateMachineWizardResponse,
 } from '../../../stepFunctions/wizards/publishStateMachineWizard'
 
-describe('PublishStateMachineWizard', async () => {
-    describe('PUBLISH_ACTION', async () => {
-        it('exits when cancelled', async () => {
+describe('PublishStateMachineWizard', async function() {
+    describe('PUBLISH_ACTION', async function() {
+        it('exits when cancelled', async function() {
             const context: PublishStateMachineWizardContext = new MockPublishStateMachineWizardContext()
             const wizard = new PublishStateMachineWizard(context)
             const result: PublishStateMachineWizardResponse | undefined = await wizard.run()
@@ -21,8 +21,8 @@ describe('PublishStateMachineWizard', async () => {
         })
     })
 
-    describe('Quick create', async () => {
-        it('exits gracefully if cancelled', async () => {
+    describe('Quick create', async function() {
+        it('exits gracefully if cancelled', async function() {
             const roleArn: string = 'arn:aws:iam::123456789012:role/myRole'
             const context: PublishStateMachineWizardContext = new MockPublishStateMachineWizardContext(
                 [PublishStateMachineAction.QuickCreate],
@@ -35,7 +35,7 @@ describe('PublishStateMachineWizard', async () => {
             assert.ok(!result)
         })
 
-        it('returns create response when completed', async () => {
+        it('returns create response when completed', async function() {
             const name: string = 'myStateMachine'
             const roleArn: string = 'arn:aws:iam::123456789012:role/myRole'
             const context: PublishStateMachineWizardContext = new MockPublishStateMachineWizardContext(
@@ -52,8 +52,8 @@ describe('PublishStateMachineWizard', async () => {
         })
     })
 
-    describe('Quick update', async () => {
-        it('exits gracefully if cancelled', async () => {
+    describe('Quick update', async function() {
+        it('exits gracefully if cancelled', async function() {
             const context: PublishStateMachineWizardContext = new MockPublishStateMachineWizardContext([
                 PublishStateMachineAction.QuickUpdate,
             ])
@@ -63,7 +63,7 @@ describe('PublishStateMachineWizard', async () => {
             assert.ok(!result)
         })
 
-        it('returns update response when completed', async () => {
+        it('returns update response when completed', async function() {
             const stateMachineArn: string = 'arn:aws:states:us-east-1:123456789012:stateMachine:myStateMachine'
             const context: PublishStateMachineWizardContext = new MockPublishStateMachineWizardContext(
                 [PublishStateMachineAction.QuickUpdate],

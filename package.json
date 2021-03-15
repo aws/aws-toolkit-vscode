@@ -1521,7 +1521,7 @@
         "buildWebviews": "webpack --config ./webpack.webview.config.js"
     },
     "devDependencies": {
-        "@aws-toolkits/telemetry": "0.0.80",
+        "@aws-toolkits/telemetry": "0.0.91",
         "@sinonjs/fake-timers": "^7.0.2",
         "@types/adm-zip": "^0.4.32",
         "@types/async-lock": "^1.1.0",

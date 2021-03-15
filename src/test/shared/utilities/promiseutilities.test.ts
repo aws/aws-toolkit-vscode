@@ -7,18 +7,18 @@ import * as assert from 'assert'
 import * as vscode from 'vscode'
 import { PromiseSharer } from '../../../shared/utilities/promiseUtilities'
 
-describe('PromiseSharer', async () => {
+describe('PromiseSharer', async function() {
     let eventEmitter: vscode.EventEmitter<void>
     let event: vscode.Event<void>
     let waitForEventCount = 0
 
-    beforeEach(() => {
+    beforeEach(function() {
         eventEmitter = new vscode.EventEmitter<void>()
         event = eventEmitter.event
         waitForEventCount = 0
     })
 
-    afterEach(() => {
+    afterEach(function() {
         eventEmitter.dispose()
     })
 
@@ -32,7 +32,7 @@ describe('PromiseSharer', async () => {
         })
     }
 
-    it('joins promises', async () => {
+    it('joins promises', async function() {
         let promisesCompleted: number = 0
 
         const p1 = PromiseSharer.getExistingPromiseOrCreate('abc', waitForEvent).then(() => {
@@ -52,7 +52,7 @@ describe('PromiseSharer', async () => {
         assert.strictEqual(promisesCompleted, 3)
     })
 
-    it('does not join different promises', async () => {
+    it('does not join different promises', async function() {
         let promisesCompleted: number = 0
 
         const p1 = PromiseSharer.getExistingPromiseOrCreate('abc', waitForEvent).then(() => {
@@ -74,7 +74,7 @@ describe('PromiseSharer', async () => {
         assert.strictEqual(promisesCompleted, 3)
     })
 
-    it('starts a new promise if previous one completed', async () => {
+    it('starts a new promise if previous one completed', async function() {
         const p1 = PromiseSharer.getExistingPromiseOrCreate('abc', waitForEvent)
         eventEmitter.fire()
         await p1

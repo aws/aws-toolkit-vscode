@@ -11,12 +11,12 @@ import { ext } from '../../../shared/extensionGlobals'
 import { TestAWSTreeNode } from '../../shared/treeview/nodes/testAWSTreeNode'
 import { clearTestIconPaths, IconPath, setupTestIconPaths } from '../../shared/utilities/iconPathUtils'
 
-describe('LambdaFunctionNode', () => {
+describe('LambdaFunctionNode', function() {
     const parentNode = new TestAWSTreeNode('test node')
     let testNode: LambdaFunctionNode
     let fakeFunctionConfig: Lambda.FunctionConfiguration
 
-    before(async () => {
+    before(async function() {
         setupTestIconPaths()
         fakeFunctionConfig = {
             FunctionName: 'testFunctionName',
@@ -26,45 +26,45 @@ describe('LambdaFunctionNode', () => {
         testNode = new LambdaFunctionNode(parentNode, 'someregioncode', fakeFunctionConfig)
     })
 
-    after(async () => {
+    after(async function() {
         clearTestIconPaths()
     })
 
-    it('instantiates without issue', async () => {
+    it('instantiates without issue', async function() {
         assert.ok(testNode)
     })
 
-    it('initializes the parent node', async () => {
+    it('initializes the parent node', async function() {
         assert.strictEqual(testNode.parent, parentNode, 'unexpected parent node')
     })
 
-    it('initializes the region code', async () => {
+    it('initializes the region code', async function() {
         assert.strictEqual(testNode.regionCode, 'someregioncode')
     })
 
-    it('initializes the label', async () => {
+    it('initializes the label', async function() {
         assert.strictEqual(testNode.label, fakeFunctionConfig.FunctionName)
     })
 
-    it('initializes the functionName', async () => {
+    it('initializes the functionName', async function() {
         assert.strictEqual(testNode.functionName, fakeFunctionConfig.FunctionName)
     })
 
-    it('initializes the tooltip', async () => {
+    it('initializes the tooltip', async function() {
         assert.strictEqual(
             testNode.tooltip,
             `${fakeFunctionConfig.FunctionName}${os.EOL}${fakeFunctionConfig.FunctionArn}`
         )
     })
 
-    it('initializes the icon', async () => {
+    it('initializes the icon', async function() {
         const iconPath = testNode.iconPath as IconPath
 
         assert.strictEqual(iconPath.dark.path, ext.iconPaths.dark.lambda, 'Unexpected dark icon path')
         assert.strictEqual(iconPath.light.path, ext.iconPaths.light.lambda, 'Unexpected light icon path')
     })
 
-    it('has no children', async () => {
+    it('has no children', async function() {
         const childNodes = await testNode.getChildren()
         assert.ok(childNodes)
         assert.strictEqual(childNodes.length, 0, 'Expected node to have no children')

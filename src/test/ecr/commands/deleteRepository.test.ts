@@ -13,23 +13,23 @@ import { FakeCommands } from '../../shared/vscode/fakeCommands'
 import { EcrRepositoryNode } from '../../../ecr/explorer/ecrRepositoryNode'
 import { deleteRepository } from '../../../ecr/commands/deleteRepository'
 
-describe('deleteRepositoryCommand', () => {
+describe('deleteRepositoryCommand', function() {
     const repositoryName = 'reponame'
     const parentNode: EcrNode = {} as EcrNode
     const ecr: EcrClient = new MockEcrClient({})
     let node: EcrRepositoryNode
     let sandbox: sinon.SinonSandbox
 
-    beforeEach(() => {
+    beforeEach(function() {
         sandbox = sinon.createSandbox()
         node = new EcrRepositoryNode(parentNode, ecr, { repositoryName: repositoryName } as EcrRepository)
     })
 
-    afterEach(() => {
+    afterEach(function() {
         sandbox.restore()
     })
 
-    it('Confirms deletion, deletes repository, shows progress bar, and refreshes parent node', async () => {
+    it('Confirms deletion, deletes repository, shows progress bar, and refreshes parent node', async function() {
         const window = new FakeWindow({ inputBox: { input: repositoryName } })
         const commands = new FakeCommands()
         const stub = sandbox.stub(ecr, 'deleteRepository').callsFake(async name => {
@@ -49,7 +49,7 @@ describe('deleteRepositoryCommand', () => {
         assert.deepStrictEqual(commands.args, [parentNode])
     })
 
-    it('Does nothing when deletion is cancelled', async () => {
+    it('Does nothing when deletion is cancelled', async function() {
         const spy = sandbox.spy(ecr, 'deleteRepository')
 
         await deleteRepository(node, new FakeWindow(), new FakeCommands())
@@ -57,7 +57,7 @@ describe('deleteRepositoryCommand', () => {
         assert.ok(spy.notCalled)
     })
 
-    it('shows an error message and refreshes node when repository deletion fails', async () => {
+    it('shows an error message and refreshes node when repository deletion fails', async function() {
         sandbox.stub(ecr, 'deleteRepository').callsFake(async () => {
             throw Error('Network busted')
         })
@@ -72,7 +72,7 @@ describe('deleteRepositoryCommand', () => {
         assert.deepStrictEqual(commands.args, [parentNode])
     })
 
-    it('Warns when confirmation is invalid', async () => {
+    it('Warns when confirmation is invalid', async function() {
         const window = new FakeWindow({ inputBox: { input: 'something other than the repo name' } })
         const commands = new FakeCommands()
 

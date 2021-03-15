@@ -13,7 +13,7 @@ import {
     SamCliVersionValidation,
 } from '../../../../shared/sam/cli/samCliValidator'
 
-describe('DefaultSamCliValidator', async () => {
+describe('DefaultSamCliValidator', async function() {
     class TestSamCliValidatorContext implements SamCliValidatorContext {
         public samCliVersionId: string = new Date().valueOf().toString()
         public getInfoCallCount: number = 0
@@ -65,7 +65,7 @@ describe('DefaultSamCliValidator', async () => {
         },
     ]
 
-    describe('detectValidSamCli', async () => {
+    describe('detectValidSamCli', async function() {
         samCliVersionTestScenarios.forEach(test => {
             it(`handles case where SAM CLI exists and ${test.situation}`, async () => {
                 const validatorContext = new TestSamCliValidatorContext(test.version)
@@ -86,7 +86,7 @@ describe('DefaultSamCliValidator', async () => {
             })
         })
 
-        it('handles case where SAM CLI is not found', async () => {
+        it('handles case where SAM CLI is not found', async function() {
             const validatorContext = new TestSamCliValidatorContext('')
             validatorContext.mockSamLocation = ''
             const samCliValidator = new DefaultSamCliValidator(validatorContext)
@@ -98,7 +98,7 @@ describe('DefaultSamCliValidator', async () => {
         })
     })
 
-    describe('getVersionValidatorResult', async () => {
+    describe('getVersionValidatorResult', async function() {
         samCliVersionTestScenarios.forEach(test => {
             it(`Validates SAM CLI binary for the case: ${test.situation}`, async () => {
                 const validatorContext = new TestSamCliValidatorContext(test.version)
@@ -116,7 +116,7 @@ describe('DefaultSamCliValidator', async () => {
             })
         })
 
-        it('Uses the cached validation result', async () => {
+        it('Uses the cached validation result', async function() {
             const validatorContext = new TestSamCliValidatorContext(MINIMUM_SAM_CLI_VERSION_INCLUSIVE)
             const samCliValidator = new DefaultSamCliValidator(validatorContext)
 
@@ -126,7 +126,7 @@ describe('DefaultSamCliValidator', async () => {
             assert.strictEqual(validatorContext.getInfoCallCount, 1, 'getInfo called more than once')
         })
 
-        it('Does not use the cached validation result if the SAM CLI timestamp changed', async () => {
+        it('Does not use the cached validation result if the SAM CLI timestamp changed', async function() {
             const validatorContext = new TestSamCliValidatorContext(MINIMUM_SAM_CLI_VERSION_INCLUSIVE)
             const samCliValidator = new DefaultSamCliValidator(validatorContext)
 
@@ -140,7 +140,7 @@ describe('DefaultSamCliValidator', async () => {
         })
     })
 
-    describe('validateSamCliVersion', async () => {
+    describe('validateSamCliVersion', async function() {
         samCliVersionTestScenarios.forEach(test => {
             it(`validates when ${test.situation}`, async () => {
                 const validation: SamCliVersionValidation = DefaultSamCliValidator.validateSamCliVersion(test.version)

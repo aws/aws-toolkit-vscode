@@ -17,10 +17,10 @@ import {
     makeFakeAwsContextWithPlaceholderIds,
 } from '../utilities/fakeAwsContext'
 
-describe('AwsExplorer', () => {
+describe('AwsExplorer', function() {
     let sandbox: sinon.SinonSandbox
 
-    beforeEach(() => {
+    beforeEach(function() {
         sandbox = sinon.createSandbox()
         // contingency for current Node impl: requires a client built from ext.toolkitClientBuilder.
         const clientBuilder = {
@@ -30,11 +30,11 @@ describe('AwsExplorer', () => {
         ext.toolkitClientBuilder = (clientBuilder as any) as ToolkitClientBuilder
     })
 
-    afterEach(() => {
+    afterEach(function() {
         sandbox.restore()
     })
 
-    it('displays region nodes with user-friendly region names', async () => {
+    it('displays region nodes with user-friendly region names', async function() {
         const awsContext = makeFakeAwsContextWithPlaceholderIds(({} as any) as AWS.Credentials)
         const regionProvider = new FakeRegionProvider()
 
@@ -54,7 +54,7 @@ describe('AwsExplorer', () => {
         assert.strictEqual(regionNode.regionName, DEFAULT_TEST_REGION_NAME)
     })
 
-    it('refreshes when the Region Provider is updated', async () => {
+    it('refreshes when the Region Provider is updated', async function() {
         const awsContext = makeFakeAwsContextWithPlaceholderIds(({} as any) as AWS.Credentials)
         const regionProvider = new FakeRegionProvider()
 
