@@ -28,7 +28,10 @@ describe('LogTracker', function() {
         tempLogPath = path.join(tempFolder, `temp-${++tempFileCounter}.log`)
         logger.logToFile(tempLogPath, "logged", parseLogObject)
         logger.error(new Error("Test start"))
-        const logExists: boolean | undefined = await waitUntil(() => filesystemUtilities.fileExists(tempLogPath))
+        const logExists: boolean | undefined = await waitUntil(
+            () => filesystemUtilities.fileExists(tempLogPath), 
+            { timeout: 1000, interval: 10, truthy: true }
+        )
 
         if (!logExists) {
             throw new Error("Log file wasn't created during test")
