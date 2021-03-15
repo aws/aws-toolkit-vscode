@@ -63,21 +63,18 @@ abstract class ToolkitClientManager {
     protected abstract fun getRegionProvider(): ToolkitRegionProvider
 
     /**
-     * Calls [AutoCloseable.close] if client implements [AutoCloseable] and clears the cache
+     * Calls [AutoCloseable.close] on all managed clients and clears the cache
      */
     protected fun shutdown() {
-        cachedClients.values.mapNotNull { it as? AutoCloseable }.forEach { it.close() }
+        cachedClients.values.map { it }.forEach { it.close() }
+        cachedClients.clear()
     }
 
     protected fun invalidateSdks(providerId: String) {
-        cachedClients.keys.removeIf { it.credentialProviderId == providerId }
+        val invalidClients = cachedClients.entries.filter { it.key.credentialProviderId == providerId }
+        cachedClients.entries.removeAll(invalidClients)
+        invalidClients.forEach { it.value.close() }
     }
-
-    /**
-     * Used by [software.aws.toolkits.jetbrains.core.MockClientManager]
-     */
-    @TestOnly
-    protected fun clear() = cachedClients.clear()
 
     @TestOnly
     fun cachedClients() = cachedClients
