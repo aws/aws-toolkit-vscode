@@ -263,7 +263,7 @@ export async function makeJavaCodeLensProvider(): Promise<vscode.CodeLensProvide
             document: vscode.TextDocument,
             token: vscode.CancellationToken
         ): Promise<vscode.CodeLens[]> => {
-            // Try to activate the Java Extension before requesting symbols from a python file
+            // Try to activate the Java Extension before requesting symbols from a java file
             await javaDebug.activateJavaExtensionIfInstalled()
             if (token.isCancellationRequested) {
                 return []

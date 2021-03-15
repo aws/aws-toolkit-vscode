@@ -42,7 +42,6 @@ export async function getLambdaHandlerCandidates(document: vscode.TextDocument):
         return []
     }
 
-    // TODO make this work?
     const symbols: vscode.DocumentSymbol[] =
         (await vscode.commands.executeCommand('vscode.executeDocumentSymbolProvider', document.uri)) || []
 
@@ -136,14 +135,12 @@ export function isValidLambdaHandler(
 /**
  * Returns whether or not a VS Code DocumentSymbol is a method that could be a Lambda handler
  * * has one parameter
- * * has three or fewer parameters, where the last parameter is a `Context` type
- *   * does not check for extension/implementation of Context, and cannot differentiate between different types of Context objects (just has to be something named `Context`)
+ * * has two parameters where the first params are an InputStream and OutputStream OR the last param is a Context
+ *   * TODO?: Notably, we are not checking specifically for a `com.amazonaws.services.lambda.runtime.Context`, or `java.io` streams
+ * * has three parameters where both conditions from two parameters are met
  * @param symbol VS Code DocumentSymbol to analyze
  */
 export function isValidMethodSignature(symbol: vscode.DocumentSymbol): boolean {
-    // TODO: handle different kinds of imported context objects in case user is importing a non-Lambda context
-    const lambdaContextType = /[\.\b]{0,1}Context\b/
-
     if (symbol.kind === vscode.SymbolKind.Method) {
         // The `redhat.java` extension appears to strip a fair amount from this signature:
         // from source function `public APIGatewayProxyResponseEvent handleRequest(final APIGatewayProxyRequestEvent input, final Context context)`
@@ -156,16 +153,31 @@ export function isValidMethodSignature(symbol: vscode.DocumentSymbol): boolean {
         // remove generics from parameter string so we can do a predictable split on comma
         const strippedStr = stripGenericsFromParams(parametersArr[0])
         const individualParams = strippedStr.split(',')
-        if (
-            individualParams.length === 1 ||
-            (individualParams.length <= 3 &&
-                lambdaContextType.test(individualParams[individualParams.length - 1].valueOf().trimLeft()))
-        ) {
-            return true
+        switch (individualParams.length) {
+            case 1:
+                return true
+            case 2:
+                return lastParamIsContext(individualParams) || firstTwoParamsAreStreams(individualParams)
+            case 3:
+                return lastParamIsContext(individualParams) && firstTwoParamsAreStreams(individualParams)
+            default:
+                return false
         }
     }
 
     return false
+}
+
+function lastParamIsContext(paramArr: string[]): boolean {
+    // TODO: handle different kinds of imported context objects in case user is importing a non-Lambda context
+    const lambdaContextType = /[\.\b]{0,1}Context\b/
+    return lambdaContextType.test(paramArr[paramArr.length - 1].valueOf().trimLeft())
+}
+
+function firstTwoParamsAreStreams(paramArr: string[]): boolean {
+    const inputStreamType = /[\.\b]{0,1}InputStream\b/
+    const outputStreamType = /[\.\b]{0,1}OutputStream\b/
+    return inputStreamType.test(paramArr[0].valueOf().trim()) && outputStreamType.test(paramArr[1].valueOf().trim())
 }
 
 /**
