@@ -25,10 +25,17 @@ export class CredentialsStore {
     }
 
     /**
-     * Returns undefined if credentials are not stored for given ID
+     * Returns undefined if the specified credentials are expired or not found.
      */
     public async getCredentials(credentialsProviderId: CredentialsProviderId): Promise<CachedCredentials | undefined> {
-        return this.credentialsCache[asString(credentialsProviderId)]
+        if (
+            this.credentialsCache[asString(credentialsProviderId)] &&
+            !this.credentialsCache[asString(credentialsProviderId)].credentials.expired
+        ) {
+            return this.credentialsCache[asString(credentialsProviderId)]
+        } else {
+            return undefined
+        }
     }
 
     /**
