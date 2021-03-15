@@ -349,10 +349,6 @@ val ktlintTask = tasks.register<JavaExec>("ktlint") {
     outputs.dirs("${project.buildDir}/reports/ktlint/")
 }
 
-val validateLocalizedMessages = tasks.register<ValidateMessages>("validateLocalizedMessages") {
-    paths.set(listOf("${project.rootDir}/resources/resources/software/aws/toolkits/resources/MessagesBundle.properties"))
-}
-
 val coverageReport = tasks.register<JacocoReport>("coverageReport") {
     executionData.setFrom(fileTree(project.rootDir.absolutePath) { include("**/build/jacoco/*.exec") })
 
@@ -374,7 +370,6 @@ subprojects.forEach {
 
 val check = tasks.getByName("check")
 check.dependsOn(ktlintTask)
-check.dependsOn(validateLocalizedMessages)
 check.dependsOn(tasks.getByName("verifyPlugin"))
 check.dependsOn(coverageReport)
 
