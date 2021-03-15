@@ -155,7 +155,7 @@ export function isValidMethodSignature(symbol: vscode.DocumentSymbol): boolean {
         const individualParams = strippedStr.split(',')
         switch (individualParams.length) {
             case 1:
-                return true
+                return individualParams[0] === '()' ? false : true
             case 2:
                 return lastParamIsContext(individualParams) || firstTwoParamsAreStreams(individualParams)
             case 3:

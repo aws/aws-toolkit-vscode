@@ -392,7 +392,7 @@ describe('javaCodeLensProvider', () => {
         }
 
         const isValid = isValidLambdaHandler(doc, symbol)
-        assert.strictEqual(isValid, false, 'Expected symbol not to be a public method')
+        assert.strictEqual(isValid, false)
     }
 
     function generateFunctionDeclaration(functionSignature: string): string {
