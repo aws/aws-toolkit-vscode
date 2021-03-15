@@ -168,26 +168,24 @@ async function registerLoggerCommands(context: vscode.ExtensionContext): Promise
         vscode.commands.registerCommand('aws.viewLogsAtMessage', async (msgPromise: Promise<string | undefined>) => {
             const msg: string | undefined = await msgPromise.then(m => m)
             await vscode.commands.executeCommand('aws.viewLogs')
+            const editor: vscode.TextEditor | undefined = vscode.window.activeTextEditor          
 
-            if (!msg) {
+            if (!msg || !editor) {
                 return
             }
 
-            const editor: vscode.TextEditor | undefined = vscode.window.activeTextEditor          
+            // Retrieve where the message starts by counting number of newlines
+            const text: string = editor.document.getText()
+            const lineStart: number = text.substring(0, text.indexOf(msg)).split(/\r?\n/).filter(x => x).length 
 
-            if (editor) {
-                const text: string = editor.document.getText()
-                const lineStart: number = text.substring(0, text.indexOf(msg)).split(/\r?\n/).filter(x => x).length
-
-                if (lineStart > 0) {
-                    const lineEnd: number = lineStart + msg.split(/\r?\n/).filter(x => x).length
-                    const startPos = editor.document.lineAt(lineStart).range.start
-                    const endPos = editor.document.lineAt(lineEnd-1).range.end
-                    editor.selection = new vscode.Selection(startPos, endPos)
-                    editor.revealRange(new vscode.Range(startPos, endPos))
-                } else {
-                    editor.selection = new vscode.Selection(new vscode.Position(0, 0), new vscode.Position(0, 0))
-                }
+            if (lineStart > 0) {
+                const lineEnd: number = lineStart + msg.split(/\r?\n/).filter(x => x).length
+                const startPos = editor.document.lineAt(lineStart).range.start
+                const endPos = editor.document.lineAt(lineEnd-1).range.end
+                editor.selection = new vscode.Selection(startPos, endPos)
+                editor.revealRange(new vscode.Range(startPos, endPos))
+            } else {
+                editor.selection = new vscode.Selection(new vscode.Position(0, 0), new vscode.Position(0, 0))
             }
         })
     )
