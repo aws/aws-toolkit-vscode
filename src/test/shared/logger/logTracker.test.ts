@@ -18,7 +18,6 @@ describe('LogTracker', () => {
     let logger: WinstonToolkitLogger
     let logTracker: LogTracker
 
-
     before(async function() {
         tempFolder = await filesystemUtilities.makeTemporaryToolkitFolder()
         logger = new WinstonToolkitLogger("info")

@@ -103,7 +103,7 @@ export function makeLogger(
     const stripAnsi = opts.useDebugConsole || false
     for (const logPath of opts.logPaths ?? []) {
         if (logPath === LOG_PATH) {
-            logger.logToFile(logPath, "logged", parseLogObject)
+            logger.logToFile(logPath, "logged", parseLogObject) // Assigns tracking event to the main log file
         } else {
             logger.logToFile(logPath)
         }
