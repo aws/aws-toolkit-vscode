@@ -76,20 +76,20 @@ class AwsClientManagerTest {
         sut.getClient<DummyServiceClient>(credentialProvider, anAwsRegion())
 
         assertThat(sut.cachedClients().keys).anySatisfy {
-            it.credentialProviderId == "profile:admin"
+            assertThat(it.credentialProviderId).isEqualTo("profile:admin")
         }
 
         ApplicationManager.getApplication().messageBus.syncPublisher(CredentialManager.CREDENTIALS_CHANGED).providerRemoved(credentialsIdentifier)
 
         assertThat(sut.cachedClients().keys).noneSatisfy {
-            it.credentialProviderId == "profile:admin"
+            assertThat(it.credentialProviderId).isEqualTo("profile:admin")
         }
     }
 
     @Test
     fun clientsAreClosedWhenParentIsDisposed() {
+        val sut = getClientManager()
         val client = Disposer.newDisposable().use { parent ->
-            val sut = getClientManager()
             Disposer.register(parent, sut)
 
             sut.getClient<DummyServiceClient>(credentialManager.createCredentialProvider(), regionProvider.createAwsRegion()).also {
@@ -97,7 +97,22 @@ class AwsClientManagerTest {
             }
         }
 
-        assertThat(client.closed).isTrue()
+        assertThat(client.closed).isTrue
+        assertThat(sut.cachedClients()).isEmpty()
+    }
+
+    @Test
+    fun clientsAreClosedWhenCredentialProviderIsRemoved() {
+        val sut = getClientManager()
+        val credentialProviderId = credentialManager.addCredentials()
+        val credentialProvider = credentialManager.getAwsCredentialProvider(credentialProviderId, anAwsRegion())
+        val client = sut.getClient<DummyServiceClient>(credentialProvider, regionProvider.createAwsRegion())
+
+        assertThat(client.closed).isFalse
+        credentialManager.removeCredentials(credentialProviderId)
+        assertThat(client.closed).isTrue
+
+        assertThat(sut.cachedClients()).isEmpty()
     }
 
     @Test
