@@ -16,7 +16,7 @@ import { recordVscodeViewLogs } from '../telemetry/telemetry'
 import { setLogger } from './logger'
 import { LOG_OUTPUT_CHANNEL } from './outputChannel'
 import { WinstonToolkitLogger } from './winstonToolkitLogger'
-import { parseLogObject } from './logManager'
+import { parseLogObject } from './logTracker'
 
 const localize = nls.loadMessageBundle()
 

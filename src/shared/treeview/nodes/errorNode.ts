@@ -7,7 +7,7 @@ import * as vscode from 'vscode'
 import { AWSTreeNodeBase } from './awsTreeNodeBase'
 import { localize } from '../../../shared/utilities/vsCodeUtils'
 import { getLogger, Logger } from '../../../shared/logger/logger'
-import { getLogManager, LogManagerRecord } from '../../../shared/logger/logManager'
+import { getLogTracker, LogTrackerRecord } from '../../../shared/logger/logTracker'
 
 // Used as a child node when an exception occurs while querying AWS resources
 export class ErrorNode extends AWSTreeNodeBase {
@@ -16,7 +16,7 @@ export class ErrorNode extends AWSTreeNodeBase {
         const commandName: string = localize('AWS.command.viewLogs', 'View AWS Toolkit Logs')
         const tooltip: string = localize('AWS.explorerNode.error.tooltip', 'Click to view error in Toolkit logs')
         const logger: Logger = getLogger()
-        const logRecord: LogManagerRecord = getLogManager().registerLog()
+        const logRecord: LogTrackerRecord = getLogTracker().registerLog()
         logger.error(error, { logID: logRecord.logID })     
 
         this.tooltip = tooltip

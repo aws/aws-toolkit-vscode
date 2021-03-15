@@ -9,15 +9,15 @@ import { waitUntil } from '../utilities/timeoutUtils'
  * @param logID  Unique ID assigned to a registered log
  * @param logMessage  A Promise to be resolved into the message written by the logger 
  */
-export interface LogManagerRecord {
+export interface LogTrackerRecord {
     logID: number,
     logMessage: Promise<string | undefined>,
 }
 
 /** 
- * The LogManager allows for the recording of a log's message after it has passed through a Logger class.
+ * The LogTracker allows for the recording of a log's message after it has passed through a Logger class.
  */
-export class LogManager {
+export class LogTracker {
     private idCounter: number = 1
     private logMap: { [logID: string]: string } = {}
 
@@ -30,7 +30,7 @@ export class LogManager {
     } 
 
     /**
-     * Registering a log lets the manager know that it should be listening for a message
+     * Registering a log lets the tracker know that it should be listening for a message
      * The logID should be written to the logger as meta data with key = "logID"
      * 
      * @param timeout  The number of milliseconds to wait for the message (default: 2000)
@@ -38,7 +38,7 @@ export class LogManager {
      * 
      * @returns  A record containining a unique ID and Promise
      */
-    public registerLog(timeout: number = 2000, interval: number = 100): LogManagerRecord {
+    public registerLog(timeout: number = 2000, interval: number = 100): LogTrackerRecord {
         const logID: number = this.idCounter++
         const messagePromise: Promise<string | undefined> = waitUntil(async () => { 
                 if (this.logMap[logID] !== undefined) {
@@ -56,22 +56,22 @@ export class LogManager {
     }
 }
 
-let logManager: LogManager | undefined
+let logTracker: LogTracker | undefined
 /**
- * Currently generates only a single LogManager. Could be adapted to have multiple managers for multiple files.
+ * Currently generates only a single LogTracker. Could be adapted to have multiple tracker for multiple files.
  * @returns  Current log manager
  */
-export function getLogManager(): LogManager {
-    if (logManager === undefined) {
-        logManager = new LogManager()
+export function getLogTracker(): LogTracker {
+    if (logTracker === undefined) {
+        logTracker = new LogTracker()
     }
 
-    return logManager
+    return logTracker
 }
 
 /**
  * Register this function to a Transport's 'logged' event to parse out the resulting meta data and log ID
- * Immediately records this log into the LogManager after parsing
+ * Immediately records this log into the LogTracker after parsing
  * 
  * @param obj  Object passed from the event
  */
@@ -81,6 +81,6 @@ export function parseLogObject(obj: any): void {
     const messageSymbol: symbol | undefined = symbols.find((s: symbol) => s.toString() === "Symbol(message)")
 
     if (logID && messageSymbol) {
-        getLogManager().recordLog(logID, obj[messageSymbol])
+        getLogTracker().recordLog(logID, obj[messageSymbol])
     }
 }

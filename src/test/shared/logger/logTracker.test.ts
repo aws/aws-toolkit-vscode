@@ -8,21 +8,21 @@ import * as path from 'path'
 import * as filesystemUtilities from '../../../shared/filesystemUtilities'
 import * as fs from 'fs-extra'
 import { WinstonToolkitLogger } from '../../../shared/logger/winstonToolkitLogger'
-import { LogManager, LogManagerRecord, getLogManager, parseLogObject } from '../../../shared/logger/logManager'
+import { LogTracker, LogTrackerRecord, getLogTracker, parseLogObject } from '../../../shared/logger/logTracker'
 import { waitUntil } from '../../../shared/utilities/timeoutUtils'
 
-describe('LogManager', () => {
+describe('LogTracker', () => {
     let tempFolder: string
     let tempLogPath: string
     let tempFileCounter: number = 0
     let logger: WinstonToolkitLogger
-    let logManager: LogManager
+    let logTracker: LogTracker
 
 
     before(async function() {
         tempFolder = await filesystemUtilities.makeTemporaryToolkitFolder()
         logger = new WinstonToolkitLogger("info")
-        logManager = getLogManager()
+        logTracker = getLogTracker()
     })
 
     beforeEach(async function() {
@@ -43,7 +43,7 @@ describe('LogManager', () => {
     })
 
     it("get info log message", async function() {
-        const record: LogManagerRecord = logManager.registerLog()
+        const record: LogTrackerRecord = logTracker.registerLog()
 
         logger.info("test", { logID: record.logID })
         const msg: string | undefined = await record.logMessage.then(m => m)
@@ -51,7 +51,7 @@ describe('LogManager', () => {
     })
 
     it("debug log message is undefined", async function() {
-        const record: LogManagerRecord = logManager.registerLog(50, 5)
+        const record: LogTrackerRecord = logTracker.registerLog(50, 5)
 
         logger.debug("debug test", { logID: record.logID })
         const msg: string | undefined = await record.logMessage.then(m => m)
@@ -62,7 +62,7 @@ describe('LogManager', () => {
         const set: Set<string> = new Set<string>()
 
         for (let i = 0; i < 5; i++) {
-            const record: LogManagerRecord = logManager.registerLog(1000, 5)
+            const record: LogTrackerRecord = logTracker.registerLog(1000, 5)
 
             logger.info(`log ${i}`, { logID: record.logID })
             logger.error("error log")
@@ -80,7 +80,7 @@ describe('LogManager', () => {
         const logMessages: Promise<string | undefined>[] = new Array<Promise<string | undefined>>()
 
         for (let i = 0; i < 10; i++) {
-            const record: LogManagerRecord = logManager.registerLog(1000, 5)
+            const record: LogTrackerRecord = logTracker.registerLog(1000, 5)
             logger.error(`error message ${i}`, { logID: record.logID })
             logger.warn('warning message')
             logMessages.push(record.logMessage)
