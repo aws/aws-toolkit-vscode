@@ -26,8 +26,8 @@ class MockTelemetryClient implements TelemetryClient {
     }
 }
 
-describe('DefaultTelemetryPublisher', () => {
-    it('posts feedback', async () => {
+describe('DefaultTelemetryPublisher', function() {
+    it('posts feedback', async function() {
         const client = new MockTelemetryClient()
         const publisher = new DefaultTelemetryPublisher('', '', new AWS.Credentials('', ''), client)
 
@@ -37,7 +37,7 @@ describe('DefaultTelemetryPublisher', () => {
         assert.strictEqual(client.feedback, feedback)
     })
 
-    it('enqueues events', () => {
+    it('enqueues events', function() {
         const publisher = new DefaultTelemetryPublisher('', '', new AWS.Credentials('', ''), new MockTelemetryClient())
         publisher.enqueue(...[{ MetricName: 'name', Value: 1, Unit: 'None', EpochTimestamp: new Date().getTime() }])
         assert.strictEqual(publisher.queue.length, 1)
@@ -45,7 +45,7 @@ describe('DefaultTelemetryPublisher', () => {
         assert.strictEqual(publisher.queue.length, 2)
     })
 
-    it('can flush single event', async () => {
+    it('can flush single event', async function() {
         const publisher = new DefaultTelemetryPublisher('', '', new AWS.Credentials('', ''), new MockTelemetryClient())
         publisher.enqueue(...[{ MetricName: 'name', Value: 1, Unit: 'None', EpochTimestamp: new Date().getTime() }])
 
@@ -55,7 +55,7 @@ describe('DefaultTelemetryPublisher', () => {
         assert.strictEqual(publisher.queue.length, 0)
     })
 
-    it('retains queue on flush failure', async () => {
+    it('retains queue on flush failure', async function() {
         const batch = [{ MetricName: 'name', Value: 1, Unit: 'None', EpochTimestamp: new Date().getTime() }]
         const publisher = new DefaultTelemetryPublisher(
             '',

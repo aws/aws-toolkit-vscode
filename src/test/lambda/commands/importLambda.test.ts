@@ -6,9 +6,9 @@
 import { openLambdaFile } from '../../../lambda/commands/importLambda'
 import { assertThrowsError } from '../../shared/utilities/assertUtils'
 
-describe('importLambda', async () => {
-    describe('openLambdaFile', async () => {
-        it('throws if a file does not exist', async () => {
+describe('importLambda', async function() {
+    describe('openLambdaFile', async function() {
+        it('throws if a file does not exist', async function() {
             await assertThrowsError(async () => openLambdaFile('/asdfasdfasfdasdfasdf.js'))
         })
     })

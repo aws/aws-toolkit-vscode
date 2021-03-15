@@ -9,16 +9,16 @@ import { AWSResourceNode } from '../../../shared/treeview/nodes/awsResourceNode'
 import { FakeEnv } from '../../shared/vscode/fakeEnv'
 import { FakeWindow } from '../../shared/vscode/fakeWindow'
 
-describe('copyArnCommand', () => {
+describe('copyArnCommand', function() {
     let window: FakeWindow
     let env: FakeEnv
 
-    beforeEach(() => {
+    beforeEach(function() {
         window = new FakeWindow()
         env = new FakeEnv()
     })
 
-    it('copies arn to clipboard and shows status bar confirmation', async () => {
+    it('copies arn to clipboard and shows status bar confirmation', async function() {
         const node: AWSResourceNode = {
             arn: 'arn',
             name: 'name',
@@ -30,7 +30,7 @@ describe('copyArnCommand', () => {
         assert.strictEqual(window.message.error, undefined)
     })
 
-    it('shows error message on failure', async () => {
+    it('shows error message on failure', async function() {
         await copyArnCommand(new NoArnNode(), window, env)
 
         assert.strictEqual(env.clipboard.text, undefined)

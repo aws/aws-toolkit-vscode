@@ -10,15 +10,15 @@ import { version } from 'vscode'
 import { DefaultAWSClientBuilder } from '../../shared/awsClientBuilder'
 import { FakeAwsContext } from '../utilities/fakeAwsContext'
 
-describe('DefaultAwsClientBuilder', () => {
-    describe('createAndConfigureSdkClient', () => {
+describe('DefaultAwsClientBuilder', function() {
+    describe('createAndConfigureSdkClient', function() {
         class FakeService extends Service {
             public constructor(config?: ServiceConfigurationOptions) {
                 super(config)
             }
         }
 
-        it('includes custom user-agent if no options are specified', async () => {
+        it('includes custom user-agent if no options are specified', async function() {
             const builder = new DefaultAWSClientBuilder(new FakeAwsContext())
             const service = await builder.createAndConfigureServiceClient(opts => new FakeService(opts))
 
@@ -29,7 +29,7 @@ describe('DefaultAwsClientBuilder', () => {
             )
         })
 
-        it('includes custom user-agent if not specified in options', async () => {
+        it('includes custom user-agent if not specified in options', async function() {
             const builder = new DefaultAWSClientBuilder(new FakeAwsContext())
             const service = await builder.createAndConfigureServiceClient(opts => new FakeService(opts), {})
 
@@ -37,7 +37,7 @@ describe('DefaultAwsClientBuilder', () => {
             assert.notStrictEqual(service.config.customUserAgent, undefined)
         })
 
-        it('does not override custom user-agent if specified in options', async () => {
+        it('does not override custom user-agent if specified in options', async function() {
             const builder = new DefaultAWSClientBuilder(new FakeAwsContext())
             const service = await builder.createAndConfigureServiceClient(opts => new FakeService(opts), {
                 customUserAgent: 'CUSTOM USER AGENT',
