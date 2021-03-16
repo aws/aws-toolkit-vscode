@@ -44,6 +44,7 @@ fun executeRunConfiguration(runConfiguration: RunConfiguration, executorId: Stri
     val executor = ExecutorRegistry.getInstance().getExecutorById(executorId)
     assertNotNull(executor)
     val executionFuture = CompletableFuture<Output>()
+    // In the real world create and execute runs on EDT
     runInEdt {
         val executionEnvironment = ExecutionEnvironmentBuilder.create(executor, runConfiguration).build {
             it.processHandler?.addProcessListener(
@@ -154,7 +155,7 @@ fun samImageRunDebugTest(
     runtime: LambdaRuntime,
     mockCredentialsId: String,
     input: String,
-    expectedOutput: String = input.toUpperCase(),
+    expectedOutput: String? = input.toUpperCase(),
     addBreakpoint: (() -> Unit)? = null
 ) {
     assumeImageSupport()
@@ -183,10 +184,12 @@ fun samImageRunDebugTest(
     }
 
     assertThat(executeLambda.exitCode).isEqualTo(0)
-    assertThat(executeLambda.stdout).contains(expectedOutput)
+    if (expectedOutput != null) {
+        assertThat(executeLambda.stdout).contains(expectedOutput)
+    }
 
     if (addBreakpoint != null) {
-        assertThat(debuggerIsHit.get()).isTrue()
+        assertThat(debuggerIsHit.get()).isTrue
     }
 }
 

@@ -6,8 +6,8 @@ package software.aws.toolkits.jetbrains.utils
 import org.jetbrains.ide.BuiltInServerManager
 import java.util.concurrent.atomic.AtomicReference
 
-object WebStormTestUtils {
-    private val serverStarted = AtomicReference<Boolean>(false)
+object UltimateTestUtils {
+    private val serverStarted = AtomicReference(false)
 
     // Make sure the built in sever is started. This is not done in unit test mode, so it must be done
     // for several integration tests

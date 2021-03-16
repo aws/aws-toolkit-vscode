@@ -30,6 +30,7 @@ object BuiltInRuntimeGroups {
     const val Dotnet = "DOTNET"
     const val Java = "JAVA"
     const val NodeJs = "NODEJS"
+    const val Go = "GO"
 }
 
 /**
