@@ -8,13 +8,8 @@
 // </auto-generated>
 //------------------------------------------------------------------------------
 
-#if PROFILE_2020_1 // TODO: Remove preprocessor conditions FIX_WHEN_MIN_IS_202
-using TiImage = global::JetBrains.Application.UI.Icons.Images.TiImage;
-using TiImageConverter = global::JetBrains.Application.UI.Icons.Images.TiImageConverter;
-#else
 using TiImage = global::JetBrains.Util.Icons.TiImage;
 using TiImageConverter = global::JetBrains.Util.Icons.TiImageConverter;
-#endif
 
 namespace AWS.Daemon.RunMarkers
 {
