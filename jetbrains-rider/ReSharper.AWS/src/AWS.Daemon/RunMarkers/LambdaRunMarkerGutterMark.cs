@@ -15,7 +15,7 @@ using JetBrains.UI.RichText;
 using JetBrains.Util;
 using JetBrains.Util.Logging;
 
-#if PROFILE_2020_1 || PROFILE_2020_2 // TODO: Remove preprocessor conditions FIX_WHEN_MIN_IS_203
+#if PROFILE_2020_2 // TODO: Remove preprocessor conditions FIX_WHEN_MIN_IS_203
 using IconGutterMarkType = JetBrains.TextControl.DocumentMarkup.IconGutterMark;
 #else 
 using IconGutterMarkType = JetBrains.TextControl.DocumentMarkup.IconGutterMarkType;
@@ -27,7 +27,7 @@ namespace AWS.Daemon.RunMarkers
     {
         private static readonly ILogger OurLogger = Logger.GetLogger<LambdaRunMarkerGutterMark>();
 
-#if PROFILE_2020_1 || PROFILE_2020_2 // TODO: Remove preprocessor conditions FIX_WHEN_MIN_IS_203
+#if PROFILE_2020_2 // TODO: Remove preprocessor conditions FIX_WHEN_MIN_IS_203
         public override IAnchor Anchor => BulbMenuAnchors.PermanentBackgroundItems;
 #else
         public override IAnchor Priority => BulbMenuAnchors.PermanentBackgroundItems;
