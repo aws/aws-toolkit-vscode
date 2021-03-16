@@ -50,11 +50,12 @@ export class RegistryItemNode extends AWSTreeNodeBase {
 
                 return [...this.schemaNodes.values()]
             },
-            getErrorNode: async (error: Error) =>
+            getErrorNode: async (error: Error, logID: number) =>
                 new ErrorNode(
                     this,
                     error,
-                    localize('AWS.explorerNode.registry.error', 'Error loading registry schema items')
+                    localize('AWS.explorerNode.registry.error', 'Error loading registry schema items'),
+                    logID
                 ),
             getNoChildrenPlaceholderNode: async () =>
                 new PlaceholderNode(this, localize('AWS.explorerNode.registry.noSchemas', '[No Registry Schemas]')),

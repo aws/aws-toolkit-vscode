@@ -35,11 +35,12 @@ export class SchemasNode extends AWSTreeNodeBase {
 
                 return [...this.registryNodes.values()]
             },
-            getErrorNode: async (error: Error) =>
+            getErrorNode: async (error: Error, logID: number) =>
                 new ErrorNode(
                     this,
                     error,
-                    localize('AWS.explorerNode.schemas.error', 'Error loading Schemas resources')
+                    localize('AWS.explorerNode.schemas.error', 'Error loading Schemas resources'),
+                    logID
                 ),
             getNoChildrenPlaceholderNode: async () =>
                 new PlaceholderNode(this, localize('AWS.explorerNode.schemas.noRegistry', '[No Schema Registries]')),

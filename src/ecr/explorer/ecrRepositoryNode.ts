@@ -40,8 +40,8 @@ export class EcrRepositoryNode extends AWSTreeNodeBase implements AWSResourceNod
 
                 return response.map(item => new EcrTagNode(this, this.ecr, this.repository, item))
             },
-            getErrorNode: async (error: Error) =>
-                new ErrorNode(this, error, localize('AWS.explorerNode.ecr.error', 'Error loading ECR resources')),
+            getErrorNode: async (error: Error, logID: number) =>
+                new ErrorNode(this, error, localize('AWS.explorerNode.ecr.error', 'Error loading ECR resources'), logID),
             getNoChildrenPlaceholderNode: async () =>
                 new PlaceholderNode(this, localize('AWS.explorerNode.ecr.noTags', '[No tags found]')),
             sort: (item1: EcrTagNode, item2: EcrTagNode) => item1.tag.localeCompare(item2.tag),

@@ -31,8 +31,8 @@ export class S3Node extends AWSTreeNodeBase {
 
                 return response.buckets.map(bucket => new S3BucketNode(bucket, this, this.s3))
             },
-            getErrorNode: async (error: Error) =>
-                new ErrorNode(this, error, localize('AWS.explorerNode.s3.error', 'Error loading S3 resources')),
+            getErrorNode: async (error: Error, logID: number) =>
+                new ErrorNode(this, error, localize('AWS.explorerNode.s3.error', 'Error loading S3 resources'), logID),
             getNoChildrenPlaceholderNode: async () =>
                 new PlaceholderNode(this, localize('AWS.explorerNode.s3.noBuckets', '[No Buckets found]')),
         })

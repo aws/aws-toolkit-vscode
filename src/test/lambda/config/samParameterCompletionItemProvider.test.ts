@@ -80,7 +80,7 @@ class MockSamParameterCompletionItemProviderContext implements SamParameterCompl
 
     public constructor({
         logger = {
-            warn(...message: (Error | string)[]) {},
+            warn(...message: (Error | string)[]): number { return 0 },
         },
         getWorkspaceFolder = uri => undefined,
         executeCommand = async (command, ...rest) => undefined,
@@ -101,6 +101,7 @@ describe('SamParameterCompletionItemProvider', async function() {
                 logger: {
                     warn(...message: (Error | string)[]) {
                         warnArgs.push(message)
+                        return 0
                     },
                 },
             })

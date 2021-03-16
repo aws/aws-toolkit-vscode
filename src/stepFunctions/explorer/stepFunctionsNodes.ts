@@ -40,11 +40,12 @@ export class StepFunctionsNode extends AWSTreeNodeBase {
 
                 return [...this.stateMachineNodes.values()]
             },
-            getErrorNode: async (error: Error) =>
+            getErrorNode: async (error: Error, logID: number) =>
                 new ErrorNode(
                     this,
                     error,
-                    localize('AWS.explorerNode.stepfunctions.error', 'Error loading Step Functions resources')
+                    localize('AWS.explorerNode.stepfunctions.error', 'Error loading Step Functions resources'),
+                    logID
                 ),
             getNoChildrenPlaceholderNode: async () =>
                 new PlaceholderNode(

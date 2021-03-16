@@ -39,11 +39,12 @@ export class CloudFormationNode extends AWSTreeNodeBase {
 
                 return [...this.stackNodes.values()]
             },
-            getErrorNode: async (error: Error) =>
+            getErrorNode: async (error: Error, logID: number) =>
                 new ErrorNode(
                     this,
                     error,
-                    localize('AWS.explorerNode.cloudFormation.error', 'Error loading CloudFormation resources')
+                    localize('AWS.explorerNode.cloudFormation.error', 'Error loading CloudFormation resources'),
+                    logID
                 ),
             getNoChildrenPlaceholderNode: async () =>
                 new PlaceholderNode(this, localize('AWS.explorerNode.cloudformation.noStacks', '[No Stacks found]')),
@@ -111,11 +112,12 @@ export class CloudFormationStackNode extends AWSTreeNodeBase implements AWSResou
 
                 return [...this.functionNodes.values()]
             },
-            getErrorNode: async (error: Error) =>
+            getErrorNode: async (error: Error, logID: number) =>
                 new ErrorNode(
                     this,
                     error,
-                    localize('AWS.explorerNode.cloudFormation.error', 'Error loading CloudFormation resources')
+                    localize('AWS.explorerNode.cloudFormation.error', 'Error loading CloudFormation resources'),
+                    logID
                 ),
             getNoChildrenPlaceholderNode: async () =>
                 new PlaceholderNode(
