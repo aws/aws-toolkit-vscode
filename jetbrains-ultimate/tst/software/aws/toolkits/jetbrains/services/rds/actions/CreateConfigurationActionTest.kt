@@ -4,6 +4,7 @@
 package software.aws.toolkits.jetbrains.services.rds.actions
 
 import com.intellij.database.autoconfig.DataSourceRegistry
+import com.intellij.database.remote.jdbc.helpers.JdbcSettings
 import com.intellij.testFramework.ProjectRule
 import com.intellij.testFramework.RuleChain
 import com.nhaarman.mockitokotlin2.doAnswer
@@ -24,6 +25,7 @@ import software.aws.toolkits.jetbrains.services.rds.RdsDatasourceConfiguration
 import software.aws.toolkits.jetbrains.services.rds.RdsNode
 import software.aws.toolkits.jetbrains.services.rds.auth.IamAuth
 import software.aws.toolkits.jetbrains.services.rds.jdbcMysql
+import software.aws.toolkits.jetbrains.services.rds.jdbcMysqlAurora
 import software.aws.toolkits.jetbrains.services.rds.jdbcPostgres
 import software.aws.toolkits.jetbrains.services.rds.mysqlEngineType
 import software.aws.toolkits.jetbrains.services.rds.postgresEngineType
@@ -168,6 +170,46 @@ class CreateConfigurationActionTest {
             assertThat(it.driverClass).contains("mysql")
             assertThat(it.url).contains(jdbcMysql)
             assertThat(it.sslCfg).isNotNull
+        }
+    }
+
+    @Test
+    fun `Add Aurora MySQL data source`() {
+        val database = createDbInstance(address = address, port = port, engineType = "aurora")
+        val registry = DataSourceRegistry(projectRule.project)
+        registry.createRdsDatasource(
+            RdsDatasourceConfiguration(
+                username = username,
+                credentialId = DUMMY_PROVIDER_IDENTIFIER.id,
+                regionId = getDefaultRegion().id,
+                database = database
+            )
+        )
+        assertThat(registry.newDataSources).hasOnlyOneElementSatisfying {
+            assertThat(it.username).isEqualTo(username)
+            assertThat(it.driverClass).contains("mariadb")
+            assertThat(it.url).contains(jdbcMysqlAurora)
+            assertThat(it.sslCfg?.myMode).isEqualTo(JdbcSettings.SslMode.REQUIRE)
+        }
+    }
+
+    @Test
+    fun `Add Aurora MySQL 5_7 data source`() {
+        val database = createDbInstance(address = address, port = port, engineType = "aurora-mysql")
+        val registry = DataSourceRegistry(projectRule.project)
+        registry.createRdsDatasource(
+            RdsDatasourceConfiguration(
+                username = username,
+                credentialId = DUMMY_PROVIDER_IDENTIFIER.id,
+                regionId = getDefaultRegion().id,
+                database = database
+            )
+        )
+        assertThat(registry.newDataSources).hasOnlyOneElementSatisfying {
+            assertThat(it.username).isEqualTo(username)
+            assertThat(it.driverClass).contains("mariadb")
+            assertThat(it.url).contains(jdbcMysqlAurora)
+            assertThat(it.sslCfg?.myMode).isEqualTo(JdbcSettings.SslMode.REQUIRE)
         }
     }
 

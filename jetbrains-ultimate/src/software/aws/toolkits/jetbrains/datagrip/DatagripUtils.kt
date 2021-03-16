@@ -3,8 +3,10 @@
 
 package software.aws.toolkits.jetbrains.datagrip
 
+import com.intellij.database.Dbms
 import com.intellij.database.dataSource.DataSourceSslConfiguration
 import com.intellij.database.dataSource.DatabaseConnectionInterceptor.ProtoConnection
+import com.intellij.database.dataSource.LocalDataSource
 import com.intellij.database.remote.jdbc.helpers.JdbcSettings.SslMode
 import software.aws.toolkits.jetbrains.core.credentials.ConnectionSettings
 import software.aws.toolkits.jetbrains.core.credentials.CredentialManager
@@ -48,6 +50,25 @@ fun jdbcAdapterFromRuntime(runtime: String?): String? = when (runtime) {
     in AuroraPostgres.engines -> jdbcPostgres
     redshiftEngineType -> jdbcRedshift
     else -> null
+}
+
+fun secretsManagerIsApplicable(dataSource: LocalDataSource): Boolean {
+    val dbms = dataSource.dbms
+    return dbms == Dbms.MYSQL || dbms == Dbms.POSTGRES || dbms == Dbms.REDSHIFT || dbms == Dbms.MYSQL_AURORA
+}
+
+fun iamIsApplicable(dataSource: LocalDataSource): Boolean =
+    dataSource.dbms == Dbms.MYSQL || dataSource.dbms == Dbms.POSTGRES || dataSource.dbms == Dbms.MYSQL_AURORA
+
+fun validateIamConfiguration(connection: ProtoConnection) {
+    // MariaDB/Mysql aurora will never work if SSL is turned off, so validate and give
+    // a good message if it is not enabled
+    if (
+        connection.connectionPoint.dataSource.dbms == Dbms.MYSQL_AURORA &&
+        connection.connectionPoint.dataSource.sslCfg == null
+    ) {
+        throw IllegalArgumentException(message("rds.validation.aurora_mysql_ssl_required"))
+    }
 }
 
 // We don't have access to service information when we need this. What we do have access to is the database driver

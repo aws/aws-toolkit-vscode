@@ -15,6 +15,5 @@ import kotlinx.coroutines.SupervisorJob
  * see: [com.intellij.openapi.application.Application.executeOnPooledThread]
  */
 class ApplicationThreadPoolScope(coroutineName: String) : CoroutineScope {
-    // Dispatchers.ApplicationThreadPool Requires MIN 193.1822. However we cannot set our IDE min to that because not all JB IDEs use the same build numbers
     override val coroutineContext = SupervisorJob() + Dispatchers.ApplicationThreadPool + CoroutineName(coroutineName)
 }
