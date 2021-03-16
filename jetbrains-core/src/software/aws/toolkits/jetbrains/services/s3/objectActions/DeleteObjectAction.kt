@@ -9,6 +9,7 @@ import com.intellij.openapi.actionSystem.DataContext
 import com.intellij.openapi.project.Project
 import com.intellij.openapi.ui.Messages
 import kotlinx.coroutines.launch
+import software.amazon.awssdk.services.s3.model.NoSuchBucketException
 import software.aws.toolkits.jetbrains.core.utils.getRequiredData
 import software.aws.toolkits.jetbrains.services.s3.editor.S3EditorDataKeys
 import software.aws.toolkits.jetbrains.services.s3.editor.S3TreeNode
@@ -49,6 +50,9 @@ class DeleteObjectAction : S3ObjectAction(message("s3.delete.object.action"), Al
                     nodes.forEach { treeTable.invalidateLevel(it) }
                     treeTable.refresh()
                     S3Telemetry.deleteObject(project, Result.Succeeded)
+                } catch (e: NoSuchBucketException) {
+                    treeTable.bucket.handleDeletedBucket()
+                    S3Telemetry.deleteObject(project, Result.Failed)
                 } catch (e: Exception) {
                     e.notifyError(project = project, title = message("s3.delete.object.failed"))
                     S3Telemetry.deleteObject(project, Result.Failed)

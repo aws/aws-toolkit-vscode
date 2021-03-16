@@ -79,7 +79,7 @@ fun openEditor(project: Project, bucket: Bucket): Editor? = try {
     FileEditorManager.getInstance(project).openTextEditor(
         OpenFileDescriptor(
             project,
-            S3VirtualBucket(bucket, project.awsClient())
+            S3VirtualBucket(bucket, project.awsClient(), project)
         ),
         true
     ).also {

@@ -9,6 +9,7 @@ import com.intellij.openapi.actionSystem.DataContext
 import com.intellij.openapi.ui.Messages
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.launch
+import software.amazon.awssdk.services.s3.model.NoSuchBucketException
 import software.aws.toolkits.jetbrains.core.utils.getRequiredData
 import software.aws.toolkits.jetbrains.services.s3.editor.S3EditorDataKeys
 import software.aws.toolkits.jetbrains.services.s3.editor.S3TreeDirectoryNode
@@ -30,6 +31,8 @@ class NewFolderAction : S3ObjectAction(message("s3.new.folder"), AllIcons.Action
                     node.bucket.newFolder(node.directoryPath() + key)
                     treeTable.invalidateLevel(node)
                     treeTable.refresh()
+                } catch (e: NoSuchBucketException) {
+                    node.bucket.handleDeletedBucket()
                 } catch (e: Exception) {
                     e.notifyError(project = project)
                 }
