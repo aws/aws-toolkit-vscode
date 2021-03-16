@@ -82,7 +82,7 @@ export class SsoAccessTokenProvider {
         const deviceCodeExpiration = this.currentTimePlusSecondsInMs(authz.expiresIn!)
         const deviceCodeExpiredMsg = 'SSO: device code expired, login flow must be reinitiated'
 
-        getLogger().info(`AWS SSO credentials: to complete sign-in, visit: ${authz.verificationUriComplete}`)
+        getLogger().info(`SSO: to complete sign-in, visit: ${authz.verificationUriComplete}`)
 
         /** Retry interval in milliseconds. */
         let retryInterval =
