@@ -19,6 +19,7 @@ import com.intellij.util.containers.Convertor
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
+import software.amazon.awssdk.services.s3.model.NoSuchBucketException
 import software.aws.toolkits.core.utils.error
 import software.aws.toolkits.core.utils.getLogger
 import software.aws.toolkits.core.utils.info
@@ -27,6 +28,7 @@ import software.aws.toolkits.jetbrains.utils.ApplicationThreadPoolScope
 import software.aws.toolkits.jetbrains.utils.getCoroutineUiContext
 import software.aws.toolkits.jetbrains.utils.notifyError
 import software.aws.toolkits.resources.message
+import software.aws.toolkits.telemetry.Result
 import software.aws.toolkits.telemetry.S3Telemetry
 import java.awt.datatransfer.DataFlavor
 import java.awt.datatransfer.UnsupportedFlavorException
@@ -97,7 +99,6 @@ class S3TreeTable(
 
     private fun handleOpeningFile(row: Int, isDoubleClick: Boolean): Boolean {
         val objectNode = (tree.getPathForRow(row).lastPathComponent as? DefaultMutableTreeNode)?.userObject as? S3Object ?: return false
-
         // Don't process double click if it has children (i.e. versions) since it will trigger expansion as well
         if (isDoubleClick && objectNode is S3LazyLoadParentNode<*> && objectNode.childCount > 0) {
             return false
@@ -132,6 +133,9 @@ class S3TreeTable(
                     }
                 }
                 S3Telemetry.downloadObject(project, true)
+            } catch (e: NoSuchBucketException) {
+                bucket.handleDeletedBucket()
+                S3Telemetry.downloadObject(project, Result.Failed)
             } catch (e: Exception) {
                 S3Telemetry.downloadObject(project, false)
                 LOG.error(e) { "Attempting to open file threw" }

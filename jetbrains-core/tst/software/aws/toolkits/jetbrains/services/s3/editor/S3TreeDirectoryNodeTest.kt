@@ -38,7 +38,7 @@ class S3TreeDirectoryNodeTest {
     @Test
     fun `directory path`() {
         val s3Client = delegateMock<S3Client>()
-        val bucket = S3VirtualBucket(s3Bucket, s3Client)
+        val bucket = S3VirtualBucket(s3Bucket, s3Client, projectRule.project)
         val sut = S3TreeDirectoryNode(bucket, null, "my/folder/")
 
         assertThat(sut.directoryPath()).isEqualTo("my/folder/")
@@ -47,7 +47,7 @@ class S3TreeDirectoryNodeTest {
     @Test
     fun `display name`() {
         val s3Client = delegateMock<S3Client>()
-        val bucket = S3VirtualBucket(s3Bucket, s3Client)
+        val bucket = S3VirtualBucket(s3Bucket, s3Client, projectRule.project)
         val sut = S3TreeDirectoryNode(bucket, null, "my/folder/")
 
         assertThat(sut.displayName()).isEqualTo("folder")
@@ -56,7 +56,7 @@ class S3TreeDirectoryNodeTest {
     @Test
     fun `get icon`() {
         val s3Client = delegateMock<S3Client>()
-        val bucket = S3VirtualBucket(s3Bucket, s3Client)
+        val bucket = S3VirtualBucket(s3Bucket, s3Client, projectRule.project)
         val sut = S3TreeDirectoryNode(bucket, null, "my/folder/")
 
         assertThat(sut.icon).isEqualTo(AllIcons.Nodes.Folder)
@@ -71,7 +71,7 @@ class S3TreeDirectoryNodeTest {
                 .contents(createS3Object("my/folder/picture.png"), createS3Object("my/folder/file.txt"))
                 .build()
         }
-        val bucket = S3VirtualBucket(s3Bucket, s3Client)
+        val bucket = S3VirtualBucket(s3Bucket, s3Client, projectRule.project)
         val sut = S3TreeDirectoryNode(bucket, null, "my/folder/")
 
         assertThat(sut.children).containsExactly(
@@ -97,7 +97,7 @@ class S3TreeDirectoryNodeTest {
                 .build()
         }
 
-        val bucket = S3VirtualBucket(s3Bucket, s3Client)
+        val bucket = S3VirtualBucket(s3Bucket, s3Client, projectRule.project)
         val sut = S3TreeDirectoryNode(bucket, null, "my/folder")
 
         assertThat(sut.children).containsExactly(
@@ -121,7 +121,7 @@ class S3TreeDirectoryNodeTest {
             )
         }
 
-        val bucket = S3VirtualBucket(s3Bucket, s3Client)
+        val bucket = S3VirtualBucket(s3Bucket, s3Client, projectRule.project)
         val sut = S3TreeDirectoryNode(bucket, null, "my/folder/")
 
         assertThat(sut.children).containsExactly(
@@ -156,7 +156,7 @@ class S3TreeDirectoryNodeTest {
             on { listObjectsV2(any<ListObjectsV2Request>()) } doThrow IllegalStateException("Bad!")
         }
 
-        val bucket = S3VirtualBucket(s3Bucket, s3Client)
+        val bucket = S3VirtualBucket(s3Bucket, s3Client, projectRule.project)
         val sut = S3TreeDirectoryNode(bucket, null, "my/folder")
 
         assertThat(sut.children).containsExactly(
@@ -182,7 +182,7 @@ class S3TreeDirectoryNodeTest {
                 )
         }
 
-        val bucket = S3VirtualBucket(s3Bucket, s3Client)
+        val bucket = S3VirtualBucket(s3Bucket, s3Client, projectRule.project)
         val sut = S3TreeDirectoryNode(bucket, null, "my/folder/")
 
         assertThat(sut.children).containsExactly(
@@ -220,7 +220,7 @@ class S3TreeDirectoryNodeTest {
             )
         }
 
-        val bucket = S3VirtualBucket(s3Bucket, s3Client)
+        val bucket = S3VirtualBucket(s3Bucket, s3Client, projectRule.project)
         val sut = S3TreeDirectoryNode(bucket, null, "my/folder/")
 
         assertThat(sut.children).containsExactly(
@@ -262,7 +262,7 @@ class S3TreeDirectoryNodeTest {
             }
         }
 
-        val bucket = S3VirtualBucket(s3Bucket, s3Client)
+        val bucket = S3VirtualBucket(s3Bucket, s3Client, projectRule.project)
         val sut = S3TreeDirectoryNode(bucket, null, "my/folder/")
         val continuationNode = sut.children.last() as S3TreeContinuationNode<*>
 

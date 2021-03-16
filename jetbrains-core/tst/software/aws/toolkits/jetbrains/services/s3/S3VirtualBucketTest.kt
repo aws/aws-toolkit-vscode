@@ -2,9 +2,14 @@
 // SPDX-License-Identifier: Apache-2.0
 package software.aws.toolkits.jetbrains.services.s3
 
+import com.intellij.openapi.application.runWriteAction
+import com.intellij.openapi.fileEditor.FileEditorManager
+import com.intellij.openapi.fileTypes.FileTypes
+import com.intellij.openapi.fileTypes.ex.FileTypeManagerEx
 import com.intellij.openapi.util.io.FileUtil
 import com.intellij.openapi.vfs.VirtualFile
 import com.intellij.testFramework.ProjectRule
+import com.intellij.testFramework.runInEdtAndWait
 import com.nhaarman.mockitokotlin2.any
 import com.nhaarman.mockitokotlin2.argumentCaptor
 import com.nhaarman.mockitokotlin2.doAnswer
@@ -76,7 +81,7 @@ class S3VirtualBucketTest {
                     ).build()
         }
 
-        val sut = S3VirtualBucket(Bucket.builder().name("TestBucket").build(), s3Client)
+        val sut = S3VirtualBucket(Bucket.builder().name("TestBucket").build(), s3Client, projectRule.project)
         runBlocking {
             sut.deleteObjects(listOf("testKey"))
         }
@@ -109,7 +114,7 @@ class S3VirtualBucketTest {
                 .build()
         }
 
-        val sut = S3VirtualBucket(Bucket.builder().name("TestBucket").build(), s3Client)
+        val sut = S3VirtualBucket(Bucket.builder().name("TestBucket").build(), s3Client, projectRule.project)
         runBlocking {
             sut.renameObject("key", "renamedKey")
         }
@@ -140,7 +145,7 @@ class S3VirtualBucketTest {
         testFile.stub { on { length } doReturn 341 }
         testFile.stub { on { inputStream } doReturn ByteArrayInputStream("Hello".toByteArray()) }
 
-        val sut = S3VirtualBucket(Bucket.builder().name("TestBucket").build(), s3Client)
+        val sut = S3VirtualBucket(Bucket.builder().name("TestBucket").build(), s3Client, projectRule.project)
         runBlocking {
             sut.upload(projectRule.project, testFile.inputStream, testFile.length, "TestFile")
         }
@@ -156,6 +161,7 @@ class S3VirtualBucketTest {
     fun downloadObject() {
         val s3Client = mockClientManager.create<S3Client>()
         val downloadCaptor = argumentCaptor<GetObjectRequest>()
+        val testBucket = Bucket.builder().name("TestBucket").build()
 
         s3Client.stub {
             on {
@@ -176,8 +182,7 @@ class S3VirtualBucketTest {
         }
 
         val testFile = FileUtil.createTempFile("myfile", ".txt")
-
-        val sut = S3VirtualBucket(Bucket.builder().name("TestBucket").build(), s3Client)
+        val sut = S3VirtualBucket(testBucket, s3Client, projectRule.project)
         runBlocking {
             sut.download(projectRule.project, "key", null, testFile.outputStream())
         }
@@ -196,7 +201,7 @@ class S3VirtualBucketTest {
             on { listObjectsV2(requestCaptor.capture()) } doReturn ListObjectsV2Response.builder().build()
         }
 
-        val sut = S3VirtualBucket(Bucket.builder().name("TestBucket").build(), s3Client)
+        val sut = S3VirtualBucket(Bucket.builder().name("TestBucket").build(), s3Client, projectRule.project)
         runBlocking {
             sut.listObjects("prefix/", "continuation")
         }
@@ -214,7 +219,7 @@ class S3VirtualBucketTest {
 
         // Use real manager for this since it can affect the S3Configuration that goes into S3Utilities
         AwsClientManager().getClient<S3Client>(awsConnectionManager.activeCredentialProvider, awsConnectionManager.activeRegion).use {
-            val sut = S3VirtualBucket(Bucket.builder().name("test-bucket").build(), it)
+            val sut = S3VirtualBucket(Bucket.builder().name("test-bucket").build(), it, projectRule.project)
 
             assertThat(sut.generateUrl("prefix/key", null)).isEqualTo(URL("https://test-bucket.s3.us-west-2.amazonaws.com/prefix/key"))
         }
@@ -227,7 +232,7 @@ class S3VirtualBucketTest {
 
         // Use real manager for this since it can affect the S3Configuration that goes into S3Utilities
         AwsClientManager().getClient<S3Client>(awsConnectionManager.activeCredentialProvider, awsConnectionManager.activeRegion).use {
-            val sut = S3VirtualBucket(Bucket.builder().name("test-bucket").build(), it)
+            val sut = S3VirtualBucket(Bucket.builder().name("test-bucket").build(), it, projectRule.project)
 
             assertThat(sut.generateUrl("prefix/key", "123")).isEqualTo(URL("https://test-bucket.s3.us-west-2.amazonaws.com/prefix/key?versionId=123"))
         }
@@ -240,11 +245,31 @@ class S3VirtualBucketTest {
 
         // Use real manager for this since it can affect the S3Configuration that goes into S3Utilities
         AwsClientManager().getClient<S3Client>(awsConnectionManager.activeCredentialProvider, awsConnectionManager.activeRegion).use {
-            val sut = S3VirtualBucket(Bucket.builder().name("test-bucket").build(), it)
+            val sut = S3VirtualBucket(Bucket.builder().name("test-bucket").build(), it, projectRule.project)
 
             assertThatThrownBy {
                 sut.generateUrl("", null)
             }
         }
+    }
+
+    @Test
+    fun handleDeletedBucket() {
+        val s3Mock = mockClientManager.create<S3Client>()
+        val testBucket = Bucket.builder().name("TestBucket").build()
+        val s3VirtualBucket = S3VirtualBucket(testBucket, s3Mock, projectRule.project)
+        runInEdtAndWait {
+            runWriteAction {
+                FileTypeManagerEx.getInstanceEx().associatePattern(
+                    FileTypes.PLAIN_TEXT,
+                    testBucket.name()
+                )
+            }
+            assertThat(openEditor(projectRule.project, testBucket)).isNotNull
+        }
+        val fileEditorManager = FileEditorManager.getInstance(projectRule.project)
+        assertThat(fileEditorManager.openFiles).contains(s3VirtualBucket)
+        s3VirtualBucket.handleDeletedBucket()
+        assertThat(fileEditorManager.openFiles).doesNotContain(s3VirtualBucket)
     }
 }
