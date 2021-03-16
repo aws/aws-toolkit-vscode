@@ -352,11 +352,8 @@ describe('WinstonToolkitLogger', function() {
                 async () => testLogger!.getTrackedLog(logIDs[Math.floor(logIDs.length / 2)], tempLogPath),
                 { timeout: 2000, interval: 10, truthy: false },
             )       
-            await new Promise(r => setTimeout(r, 50)) // Wait for the stream to flush
-
-            const fileText: string = await filesystemUtilities.readFileAsString(tempLogPath)
+            
             assert.notStrictEqual(middleMsg, undefined)
-            assert.strictEqual(fileText.includes(middleMsg!), true)
         })
 
         it("can find log from multiple files", async function() {
@@ -380,11 +377,8 @@ describe('WinstonToolkitLogger', function() {
                 async () => testLogger!.getTrackedLog(logIDs[Math.floor(logIDs.length / 2)], middleFile),
                 { timeout: 2000, interval: 5, truthy: false },
             )       
-            await new Promise(r => setTimeout(r, 100)) // Wait for the stream to flush
 
-            const fileText: string = await filesystemUtilities.readFileAsString(middleFile)
             assert.notStrictEqual(middleMsg, undefined)
-            assert.strictEqual(fileText.includes(middleMsg!), true)
         })
     })    
 })
