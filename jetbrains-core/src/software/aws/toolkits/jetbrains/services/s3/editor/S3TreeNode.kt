@@ -8,6 +8,7 @@ import com.intellij.openapi.fileTypes.FileTypeRegistry
 import com.intellij.openapi.util.io.FileUtilRt
 import com.intellij.ui.treeStructure.SimpleNode
 import kotlinx.coroutines.runBlocking
+import software.amazon.awssdk.services.s3.model.NoSuchBucketException
 import software.aws.toolkits.core.utils.error
 import software.aws.toolkits.core.utils.getLogger
 import software.aws.toolkits.jetbrains.core.utils.buildList
@@ -76,7 +77,8 @@ abstract class S3LazyLoadParentNode<T>(bucket: S3VirtualBucket, parent: S3LazyLo
     protected abstract fun loadObjects(continuationMarker: T? = null): List<S3TreeNode>
 }
 
-class S3TreeDirectoryNode(bucket: S3VirtualBucket, parent: S3TreeDirectoryNode?, key: String) : S3LazyLoadParentNode<String>(bucket, parent, key) {
+class S3TreeDirectoryNode(bucket: S3VirtualBucket, parent: S3TreeDirectoryNode?, key: String) :
+    S3LazyLoadParentNode<String>(bucket, parent, key) {
     init {
         icon = AllIcons.Nodes.Folder
     }
@@ -105,6 +107,9 @@ class S3TreeDirectoryNode(bucket: S3VirtualBucket, parent: S3TreeDirectoryNode?,
                 ?: emptyList()
 
             return (folders + s3Objects).sortedBy { it.key } + continuation
+        } catch (e: NoSuchBucketException) {
+            bucket.handleDeletedBucket()
+            return emptyList()
         } catch (e: Exception) {
             LOG.error(e) { "Loading objects failed!" }
             return buildList {
@@ -136,7 +141,8 @@ interface S3Object {
 data class VersionContinuationToken(val keyMarker: String, val versionId: String)
 
 class S3TreeObjectNode(parent: S3TreeDirectoryNode, key: String, override val size: Long, override val lastModified: Instant) :
-    S3LazyLoadParentNode<VersionContinuationToken>(parent.bucket, parent, key), S3Object {
+    S3LazyLoadParentNode<VersionContinuationToken>(parent.bucket, parent, key),
+    S3Object {
     var showHistory: Boolean = false
 
     init {
@@ -180,6 +186,9 @@ class S3TreeObjectNode(parent: S3TreeDirectoryNode, key: String, override val si
                     )
                 }
             }
+        } catch (e: NoSuchBucketException) {
+            bucket.handleDeletedBucket()
+            return emptyList()
         } catch (e: Exception) {
             LOG.error(e) { "Loading objects failed!" }
             return buildList {

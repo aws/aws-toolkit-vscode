@@ -14,6 +14,7 @@ import com.intellij.util.io.exists
 import com.intellij.util.io.isDirectory
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.launch
+import software.amazon.awssdk.services.s3.model.NoSuchBucketException
 import software.aws.toolkits.core.utils.deleteIfExists
 import software.aws.toolkits.core.utils.getLogger
 import software.aws.toolkits.core.utils.info
@@ -205,6 +206,8 @@ class DownloadObjectAction :
                         it.diskLocation.outputStream().use { os ->
                             it.sourceBucket.download(project, it.s3Object, it.versionId, os)
                         }
+                    } catch (e: NoSuchBucketException) {
+                        it.sourceBucket.handleDeletedBucket()
                     } catch (e: Exception) {
                         e.notifyError(project = project, title = message("s3.download.object.failed", it.s3Object))
                         it.diskLocation.deleteIfExists()

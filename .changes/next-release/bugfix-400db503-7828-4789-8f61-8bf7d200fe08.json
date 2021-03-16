@@ -1,0 +1,4 @@
+{
+  "type" : "bugfix",
+  "description" : "Fix being able to interact with objects from deleted buckets (#1601)"
+}

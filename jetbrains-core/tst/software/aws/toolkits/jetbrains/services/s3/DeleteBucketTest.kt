@@ -126,7 +126,7 @@ class DeleteBucketTest {
             assertThat(openEditor(projectRule.project, bucket)).isNotNull
         }
 
-        val s3VirtualBucket = S3VirtualBucket(bucket, s3Mock)
+        val s3VirtualBucket = S3VirtualBucket(bucket, s3Mock, projectRule.project)
         val fileEditorManager = FileEditorManager.getInstance(projectRule.project)
 
         assertThat(fileEditorManager.openFiles).contains(s3VirtualBucket)
