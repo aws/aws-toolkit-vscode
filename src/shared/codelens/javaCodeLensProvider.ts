@@ -191,7 +191,7 @@ function firstTwoParamsAreStreams(paramArr: string[]): boolean {
  * @param input String to remove generics from
  */
 function stripGenericsFromParams(input: string): string {
-    const javaGenericIdentifierRegex = /(?:<(?:\s*[a-zA-Z_$][a-zA-Z0-9_$]*[\s,]?)*+>)/g
+    const javaGenericIdentifierRegex = /<(?:\s*[a-zA-Z_$][a-zA-Z0-9_$]*[\s,]?)+?>/g
 
     return input.replace(javaGenericIdentifierRegex, '')
 }
