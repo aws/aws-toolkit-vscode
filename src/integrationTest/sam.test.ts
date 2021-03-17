@@ -337,10 +337,6 @@ describe('SAM Integration Tests', async function () {
                 })
 
                 it('produces an Add Debug Configuration codelens', async function () {
-                    if (vscode.version.startsWith('1.42')) {
-                        this.skip()
-                    }
-
                     setTestTimeout(this.test?.fullTitle(), 60000)
                     const codeLens = await getAddConfigCodeLens(samAppCodeUri)
                     assert.ok(codeLens)
@@ -366,10 +362,6 @@ describe('SAM Integration Tests', async function () {
                 })
 
                 it('invokes and attaches on debug request (F5)', async function () {
-                    if (vscode.version.startsWith('1.42')) {
-                        this.skip()
-                    }
-
                     setTestTimeout(this.test?.fullTitle(), 90000)
                     // Allow previous sessions to go away.
                     const noDebugSession: boolean | undefined = await waitUntil(

@@ -28,10 +28,6 @@ describe('SamTemplateCodeLensProvider', async function () {
     })
 
     it('provides a CodeLens for a file with a new resource', async function () {
-        if (vscode.version.startsWith('1.42')) {
-            this.skip()
-        }
-
         const codeLenses = await codeLensProvider.provideCodeLenses(
             document,
             instance(mockCancellationToken),
