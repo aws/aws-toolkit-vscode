@@ -1,4 +1,0 @@
-{
-	"type": "Bug Fix",
-	"description": "Toolkit correctly handles failures when importing Lambdas for supported language families that have not been added explicitly as importable"
-}
