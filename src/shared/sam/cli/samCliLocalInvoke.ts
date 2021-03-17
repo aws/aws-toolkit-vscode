@@ -66,13 +66,13 @@ export class DefaultSamLocalInvokeCommand implements SamLocalInvokeCommand {
         const runDebugger = new Promise<void>((resolve, reject) => {
             return childProcess.start({
                 onStdout: (text: string): void => {
-                    getLogger('debugConsole').info(text)
+                    getLogger('debugConsole').info(text.trimEnd())
                     // If we have a timeout (as we do on debug) refresh the timeout as we receive text
                     params.timeout?.refresh()
                     this.logger.verbose('SAM: pid %d: stdout: %s', childProcess.pid(), removeAnsi(text))
                 },
                 onStderr: (text: string): void => {
-                    getLogger('debugConsole').error(text)
+                    getLogger('debugConsole').info(text.trimEnd())
                     // If we have a timeout (as we do on debug) refresh the timeout as we receive text
                     params.timeout?.refresh()
                     this.logger.verbose('SAM: pid %d: stderr: %s', childProcess.pid(), removeAnsi(text))
