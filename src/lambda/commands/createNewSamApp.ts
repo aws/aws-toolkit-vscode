@@ -105,8 +105,8 @@ export async function resumeCreateNewSamApp(
         ext.outputChannel.show(true)
         getLogger('channel').error(
             localize(
-                "AWS.samcli.initWizard.resume.error",
-                "An error occured while resuming SAM Application creation. {0}",
+                'AWS.samcli.initWizard.resume.error',
+                'An error occured while resuming SAM Application creation. {0}',
                 checkLogsMessage
             )
         )
@@ -259,10 +259,11 @@ export async function createNewSamApplication(
 
         // Race condition where SAM app is created but template doesn't register in time.
         // Poll for 5 seconds, otherwise direct user to codelens.
-        const isTemplateRegistered = await waitUntil(
-            async () => ext.templateRegistry.getRegisteredItem(uri),
-            { timeout: 5000, interval: 500, truthy: false }
-        )
+        const isTemplateRegistered = await waitUntil(async () => ext.templateRegistry.getRegisteredItem(uri), {
+            timeout: 5000,
+            interval: 500,
+            truthy: false,
+        })
 
         if (isTemplateRegistered) {
             const newLaunchConfigs = await addInitialLaunchConfiguration(
@@ -298,7 +299,7 @@ export async function createNewSamApplication(
         }
 
         activationReloadState.clearSamInitState()
-        await vscode.window.showTextDocument(uri)
+        await vscode.commands.executeCommand('markdown.showPreview', uri)
     } catch (err) {
         createResult = 'Failed'
         reason = 'error'
@@ -337,14 +338,14 @@ async function validateSamCli(samCliValidator: SamCliValidator): Promise<void> {
 async function getMainUri(
     config: Pick<CreateNewSamAppWizardResponse, 'location' | 'name'>
 ): Promise<vscode.Uri | undefined> {
-    const cfnTemplatePath = path.resolve(config.location.fsPath, config.name, 'template.yaml')
+    const cfnTemplatePath = path.resolve(config.location.fsPath, config.name, 'README.md')
     if (await fileExists(cfnTemplatePath)) {
         return vscode.Uri.file(cfnTemplatePath)
     } else {
         vscode.window.showWarningMessage(
             localize(
                 'AWS.samcli.initWizard.source.error.notFound',
-                'Project created successfully, but main source code file not found: {0}',
+                'Project created successfully, but README.md file not found: {0}',
                 cfnTemplatePath
             )
         )
