@@ -32,6 +32,7 @@ import { sampleRequestManifestPath, sampleRequestPath } from '../constants'
 import { tryGetAbsolutePath } from '../../shared/utilities/workspaceUtils'
 import { CloudFormation } from '../../shared/cloudformation/cloudformation'
 import { openLaunchJsonFile } from '../../shared/sam/debugger/commands/addSamDebugConfiguration'
+import { recordSamOpenConfigUi } from '../../shared/telemetry/telemetry.gen'
 
 const localize = nls.loadMessageBundle()
 
@@ -58,13 +59,15 @@ export function registerSamInvokeVueCommand(context: ExtContext): vscode.Disposa
                       ]
                     : undefined,
             })
+
+            recordSamOpenConfigUi()
         }
     )
 }
 
 export interface SamInvokeVueState {
     launchConfig: MorePermissiveAwsSamDebuggerConfiguration
-    payload: {value: string, errorMsg: string}
+    payload: { value: string; errorMsg: string }
 }
 
 export interface MorePermissiveAwsSamDebuggerConfiguration extends AwsSamDebuggerConfiguration {
