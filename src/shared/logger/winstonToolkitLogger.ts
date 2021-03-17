@@ -50,7 +50,7 @@ export class WinstonToolkitLogger implements Logger, vscode.Disposable {
 
     public logToFile(logPath: string): void {
         const fileTransport: winston.transport = new winston.transports.File({ filename: logPath })
-        fileTransport.on("logged", (obj: any) => this.parseLogObject(logPath, obj))
+        fileTransport.on("logged", (obj: any) => this.parseLogObject(`file://${logPath}`, obj))
         this.logger.add(fileTransport)
     }
 

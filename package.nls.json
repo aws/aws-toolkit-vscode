@@ -226,7 +226,7 @@
     "AWS.explorerNode.connecting.tooltip": "Connecting...",
     "AWS.explorerNode.signIn": "Connect to AWS...",
     "AWS.explorerNode.signIn.tooltip": "Click here to select credentials for the AWS Toolkit",
-    "AWS.explorerNode.error.tooltip": "Click to view error in Toolkit logs",
+    "AWS.explorerNode.error.label": "Failed to load resources (click for logs)",
     "AWS.lambda.explorerTitle": "Explorer",
     "AWS.lambda.debug.node.launchConfig.name": "Lambda: Debug {0} locally",
     "AWS.lambda.debug.node.attachConfig.name": "Lambda: Attach to {0} locally",

@@ -20,6 +20,7 @@ import { WinstonToolkitLogger } from './winstonToolkitLogger'
 const localize = nls.loadMessageBundle()
 
 const LOG_PATH = path.join(getLogBasePath(), 'Code', 'logs', 'aws_toolkit', makeLogFilename())
+const LOG_URI = vscode.Uri.file(path.normalize(LOG_PATH))
 const DEFAULT_LOG_LEVEL: LogLevel = 'info'
 
 /**
@@ -152,19 +153,20 @@ function makeLogFilename(): string {
     return `aws_toolkit_${datetime}.log`
 }
 
+async function openLogUri(logUri: vscode.Uri): Promise<vscode.TextEditor | undefined> {
+    recordVscodeViewLogs() // Perhaps add additional argument to know which log was viewed?
+    return await vscode.window.showTextDocument(logUri)
+}
+
 async function registerLoggerCommands(context: vscode.ExtensionContext): Promise<void> {
     context.subscriptions.push(
-        vscode.commands.registerCommand('aws.viewLogs', async () => {
-            await vscode.window.showTextDocument(vscode.Uri.file(path.normalize(LOG_PATH)))
-            recordVscodeViewLogs()
-        })
+        vscode.commands.registerCommand('aws.viewLogs', async () => openLogUri(LOG_URI))
     )
     context.subscriptions.push(
-        vscode.commands.registerCommand('aws.viewLogsAtMessage', async (logID: number) => {
-            const msg: string | undefined = getLogger().getTrackedLog(logID, LOG_PATH)
-            await vscode.commands.executeCommand('aws.viewLogs')
-            const editor: vscode.TextEditor | undefined = vscode.window.activeTextEditor      
-
+        vscode.commands.registerCommand('aws.viewLogsAtMessage', async (logID: number = -1, logUri: vscode.Uri = LOG_URI) => {
+            const msg: string | undefined = getLogger().getTrackedLog(logID, logUri.toString(true))
+            const editor: vscode.TextEditor | undefined = await openLogUri(logUri) 
+            
             if (!msg || !editor) {
                 return
             }

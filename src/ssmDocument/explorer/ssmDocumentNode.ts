@@ -32,15 +32,7 @@ export class SsmDocumentNode extends AWSTreeNodeBase {
                 return [...this.documentTypeNodes.values()]
             },
             getErrorNode: async (error: Error, logID: number) =>
-                new ErrorNode(
-                    this,
-                    error,
-                    localize(
-                        'AWS.explorerNode.registry.error',
-                        'Error loading registry Systems Manager documentType items'
-                    ),
-                    logID
-                ),
+                new ErrorNode(this, error, logID),
             getNoChildrenPlaceholderNode: async () =>
                 new PlaceholderNode(
                     this,

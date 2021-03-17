@@ -306,7 +306,7 @@ describe('WinstonToolkitLogger', function() {
         it("get info log message", async function() {    
             const logID: number = testLogger!.info("test")
             const msg: string | undefined = await waitUntil(
-                async () => testLogger!.getTrackedLog(logID, tempLogPath),
+                async () => testLogger!.getTrackedLog(logID, `file://${tempLogPath}`),
                 { timeout: 2000, interval: 10, truthy: false },
             )
             assert.notStrictEqual(msg, undefined)
@@ -315,7 +315,7 @@ describe('WinstonToolkitLogger', function() {
         it("debug log message is undefined", async function() {    
             const logID: number = testLogger!.debug("debug test")
             const msg: string | undefined = await waitUntil(
-                async () => testLogger!.getTrackedLog(logID, tempLogPath),
+                async () => testLogger!.getTrackedLog(logID, `file://${tempLogPath}`),
                 { timeout: 50, interval: 5, truthy: false },
             )
             assert.strictEqual(msg, undefined)
@@ -330,7 +330,7 @@ describe('WinstonToolkitLogger', function() {
                 testLogger!.debug("debug log")
     
                 const msg: string | undefined = await waitUntil(
-                    async () => testLogger!.getTrackedLog(logID, tempLogPath),
+                    async () => testLogger!.getTrackedLog(logID, `file://${tempLogPath}`),
                     { timeout: 400, interval: 10, truthy: false },
                 )                
                 assert.notStrictEqual(msg, undefined)
@@ -349,7 +349,7 @@ describe('WinstonToolkitLogger', function() {
             }
     
             const middleMsg: string | undefined = await waitUntil(
-                async () => testLogger!.getTrackedLog(logIDs[Math.floor(logIDs.length / 2)], tempLogPath),
+                async () => testLogger!.getTrackedLog(logIDs[Math.floor(logIDs.length / 2)], `file://${tempLogPath}`),
                 { timeout: 2000, interval: 10, truthy: false },
             )       
             
@@ -374,11 +374,24 @@ describe('WinstonToolkitLogger', function() {
     
             const middleFile: string = filePaths[Math.floor(filePaths.length / 2)]
             const middleMsg: string | undefined = await waitUntil(
-                async () => testLogger!.getTrackedLog(logIDs[Math.floor(logIDs.length / 2)], middleFile),
+                async () => testLogger!.getTrackedLog(logIDs[Math.floor(logIDs.length / 2)], `file://${middleFile}`),
                 { timeout: 2000, interval: 5, truthy: false },
             )       
 
             assert.notStrictEqual(middleMsg, undefined)
+        })
+
+        it("can find log from channel", async function() {
+            const outputChannel: MockOutputChannel = new MockOutputChannel()
+            testLogger!.logToOutputChannel(outputChannel, true)
+            const logID: number = testLogger!.error("Test error")
+    
+            const msg: string | undefined = await waitUntil(
+                async () => testLogger!.getTrackedLog(logID, `channel://${outputChannel.name}`),
+                { timeout: 2000, interval: 5, truthy: false },
+            )       
+
+            assert.notStrictEqual(msg, undefined)
         })
     })    
 })

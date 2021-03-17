@@ -87,6 +87,6 @@ describe('makeChildrenNodes', async function() {
     })
 
     function makeErrorNode(error: Error): ErrorNode {
-        return new ErrorNode(parentNode, error, error.message)
+        return new ErrorNode(parentNode, error)
     }
 })

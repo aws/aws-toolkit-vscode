@@ -34,6 +34,8 @@ export class OutputChannelTransport extends Transport {
 
     public log(info: LogEntry, next: () => void): void {
         setImmediate(() => {
+            this.emit('logged', info)
+            
             if (this.stripAnsi) {
                 this.outputChannel.appendLine(removeAnsi(info[MESSAGE]))
             } else {
