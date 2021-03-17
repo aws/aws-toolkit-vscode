@@ -1,0 +1,4 @@
+{
+  "type" : "bugfix",
+  "description" : "Fix breaking run configuration gutter icons when the IDE has no languages installed that support Lambda local runtime (#2504)"
+}
