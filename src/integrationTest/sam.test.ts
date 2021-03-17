@@ -337,6 +337,10 @@ describe('SAM Integration Tests', async function () {
                 })
 
                 it('produces an Add Debug Configuration codelens', async function () {
+                    if (vscode.version.startsWith('1.42')) {
+                        this.skip()
+                    }
+
                     setTestTimeout(this.test?.fullTitle(), 60000)
                     const codeLens = await getAddConfigCodeLens(samAppCodeUri)
                     assert.ok(codeLens)
@@ -370,13 +374,13 @@ describe('SAM Integration Tests', async function () {
                     )
 
                     assert.strictEqual(
-                         noDebugSession,
-                         true,
-                         `unexpected debug session in progress: ${JSON.stringify(
-                             vscode.debug.activeDebugSession,
-                             undefined,
-                             2
-                         )}`
+                        noDebugSession,
+                        true,
+                        `unexpected debug session in progress: ${JSON.stringify(
+                            vscode.debug.activeDebugSession,
+                            undefined,
+                            2
+                        )}`
                     )
 
                     const testConfig = {
