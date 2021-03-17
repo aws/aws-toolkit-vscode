@@ -1,3 +1,12 @@
+## 1.21.0 2021-03-17
+
+- **Breaking Change** SAM debug: remove nodejs8.10 support
+- **Bug Fix** Toolkit correctly handles failures when importing Lambdas for supported language families that have not been added explicitly as importable
+- **Bug Fix** Launch configurations created by the Toolkit use correct relative paths
+- **Feature** Support ${workspaceFolder} in aws-sam debug configs
+- **Feature** Renaming "Create new SAM Application" to "Create Lambda SAM Application" to make it clear that this is an entrypoint for creating a Lambda function
+- **Feature** SAM deploy wizard: optionally create a new S3 bucket
+
 ## 1.20.0 2021-02-04
 
 - **Feature** SAM templates handle Global values correctly when Resource-level fields are missing.

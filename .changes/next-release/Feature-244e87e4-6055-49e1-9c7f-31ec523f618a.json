@@ -1,4 +1,0 @@
-{
-	"type": "Feature",
-	"description": "Support ${workspaceFolder} in aws-sam debug configs"
-}
