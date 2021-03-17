@@ -64,6 +64,7 @@ import { activate as activateStepFunctions } from './stepFunctions/activation'
 import { activate as activateSsmDocument } from './ssmDocument/activation'
 import { CredentialsStore } from './credentials/credentialsStore'
 import { getSamCliContext } from './shared/sam/cli/samCliContext'
+import * as extWindow from './shared/vscode/window'
 
 let localize: nls.LocalizeFunc
 
@@ -72,6 +73,7 @@ export async function activate(context: vscode.ExtensionContext) {
 
     localize = nls.loadMessageBundle()
 
+    ext.window = extWindow.Window.vscode()
     ext.context = context
     const toolkitOutputChannel = vscode.window.createOutputChannel(localize('AWS.channel.aws.toolkit', 'AWS Toolkit'))
     await activateLogger(context, toolkitOutputChannel)
