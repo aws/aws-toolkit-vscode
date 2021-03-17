@@ -5,6 +5,8 @@
 
 import * as child_process from 'child_process'
 import * as crossSpawn from 'cross-spawn'
+import * as os from 'os'
+import { map } from 'lodash'
 import { getLogger } from '../logger'
 import { waitUntil } from './timeoutUtils'
 
@@ -43,6 +45,11 @@ export class ChildProcess {
     private stdoutChunks: string[] = []
     /** Collects stderr data if the process was started with `collect=true`. */
     private stderrChunks: string[] = []
+
+    // Very simple buffers for stdout/stderr streams
+    // We will buffer until a \n or stream closure
+    private stdoutBuffer: string = ""
+    private stderrBuffer: string = ""
 
     private makeResult(code: number): ChildProcessResult {
         return {
@@ -127,7 +134,9 @@ export class ChildProcess {
             }
 
             if (params.onStdout) {
-                params.onStdout(data.toString())
+                const lines: string[] = (this.stdoutBuffer + data.toString()).split(/\r?\n/)
+                this.stdoutBuffer = lines.pop()!
+                map(lines, (line) => params.onStdout!(line + os.EOL))
             }
         })
 
@@ -137,7 +146,9 @@ export class ChildProcess {
             }
 
             if (params.onStderr) {
-                params.onStderr(data.toString())
+                const lines: string[] = (this.stderrBuffer + data.toString()).split(/\r?\n/)
+                this.stderrBuffer = lines.pop()!
+                map(lines, (line) => params.onStderr!(line + os.EOL)) 
             }
         })
 
@@ -145,6 +156,14 @@ export class ChildProcess {
         this.childProcess.once('close', (code, signal) => {
             const result = this.makeResult(code)
             this.processResult = result
+
+            if (params.onStdout && this.stdoutBuffer) {
+                params.onStdout(this.stdoutBuffer + os.EOL)
+            }
+
+            if (params.onStderr && this.stderrBuffer) {
+                params.onStderr(this.stderrBuffer + os.EOL)
+            }
 
             if (params.onClose) {
                 params.onClose(code, signal)
