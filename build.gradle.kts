@@ -13,19 +13,14 @@ import org.jetbrains.intellij.tasks.VerifyPluginTask
 import org.jetbrains.kotlin.gradle.tasks.KotlinCompile
 import software.aws.toolkits.gradle.IdeVersions
 import software.aws.toolkits.gradle.changelog.tasks.GenerateGithubChangeLog
+import software.aws.toolkits.gradle.ciOnly
 import software.aws.toolkits.gradle.findFolders
 import software.aws.toolkits.gradle.getOrCreate
-import software.aws.toolkits.gradle.ciOnly
 import software.aws.toolkits.gradle.intellij
 import software.aws.toolkits.gradle.removeTask
-import software.aws.toolkits.gradle.resources.ValidateMessages
 import java.time.Instant
 
 buildscript {
-    repositories {
-        maven("https://plugins.gradle.org/m2/")
-        mavenCentral()
-    }
     val kotlinVersion: String by project
     val ideaPluginVersion: String by project
     dependencies {
@@ -67,6 +62,17 @@ repositories {
 allprojects {
     repositories {
         mavenLocal()
+        System.getenv("CODEARTIFACT_URL")?.let {
+            println("Using CodeArtifact proxy: $it")
+            maven {
+                url = uri(it)
+                credentials {
+                    username = "aws"
+                    password = System.getenv("CODEARTIFACT_AUTH_TOKEN")
+                }
+            }
+        }
+        gradlePluginPortal()
         mavenCentral()
     }
 

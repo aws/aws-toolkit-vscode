@@ -12,9 +12,6 @@ plugins {
 
 buildscript {
     val telemetryVersion: String by project
-    repositories {
-        mavenCentral()
-    }
     dependencies {
         classpath("software.aws.toolkits:telemetry-generator:$telemetryVersion")
     }

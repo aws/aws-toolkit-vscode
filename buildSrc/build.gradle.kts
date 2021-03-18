@@ -18,12 +18,6 @@ buildscript {
     props.entries.forEach { it: Map.Entry<Any, Any> -> project.extensions.add(it.key.toString(), it.value) }
 }
 
-repositories {
-    maven("https://plugins.gradle.org/m2/")
-    mavenLocal()
-    mavenCentral()
-}
-
 plugins {
     `java-gradle-plugin`
     `kotlin-dsl`
@@ -31,10 +25,10 @@ plugins {
 
 sourceSets {
     main {
-        java.srcDir("src")
+        java.setSrcDirs(listOf("src"))
     }
     test {
-        java.srcDir("tst")
+        java.setSrcDirs(listOf("tst"))
     }
 }
 
