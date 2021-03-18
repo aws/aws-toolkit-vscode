@@ -10,6 +10,7 @@ import { ToolkitClientBuilder } from './clients/toolkitClientBuilder'
 import { CloudFormationTemplateRegistry } from './cloudformation/templateRegistry'
 import { CodelensRootRegistry } from './sam/codelensRootRegistry'
 import { TelemetryService } from './telemetry/telemetryService'
+import { Window } from './vscode/window'
 
 /**
  * Namespace for common variables used globally in the extension.
@@ -17,6 +18,7 @@ import { TelemetryService } from './telemetry/telemetryService'
  */
 export namespace ext {
     export let context: ExtensionContext
+    export let window: Window
     export let outputChannel: OutputChannel
     export let awsContextCommands: AWSContextCommands
     export let sdkClientBuilder: AWSClientBuilder
