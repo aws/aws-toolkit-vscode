@@ -15,7 +15,6 @@ buildscript {
 
     repositories {
         maven("https://www.myget.org/F/rd-snapshots/maven/")
-        mavenCentral()
     }
 
     dependencies {
