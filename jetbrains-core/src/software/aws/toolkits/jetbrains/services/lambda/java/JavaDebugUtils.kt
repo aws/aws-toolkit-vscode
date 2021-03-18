@@ -3,12 +3,17 @@
 
 package software.aws.toolkits.jetbrains.services.lambda.java
 
+import com.intellij.debugger.DebugEnvironment
 import com.intellij.debugger.DebuggerManagerEx
-import com.intellij.debugger.DefaultDebugEnvironment
 import com.intellij.debugger.engine.JavaDebugProcess
+import com.intellij.debugger.engine.RemoteDebugProcessHandler
 import com.intellij.execution.DefaultExecutionResult
+import com.intellij.execution.ExecutionResult
 import com.intellij.execution.configurations.RemoteConnection
+import com.intellij.execution.impl.ConsoleViewImpl
 import com.intellij.execution.runners.ExecutionEnvironment
+import com.intellij.psi.search.GlobalSearchScope
+import com.intellij.psi.search.GlobalSearchScopes
 import com.intellij.xdebugger.XDebugProcess
 import com.intellij.xdebugger.XDebugProcessStarter
 import com.intellij.xdebugger.XDebugSession
@@ -25,14 +30,14 @@ object JavaDebugUtils {
         state: SamRunningState,
         debugHost: String,
         debugPorts: List<Int>
-    ): XDebugProcessStarter? {
+    ): XDebugProcessStarter {
         val connection = RemoteConnection(true, debugHost, debugPorts.first().toString(), false)
-        val debugEnvironment = DefaultDebugEnvironment(environment, state, connection, true)
+        val debugEnvironment = RemotePortDebugEnvironment(environment, connection)
         val debuggerManager = DebuggerManagerEx.getInstanceEx(environment.project)
 
         val debuggerSession = withContext(edtContext) {
             debuggerManager.attachVirtualMachine(debugEnvironment)
-        } ?: return null
+        } ?: throw IllegalStateException("Attaching to the JVM failed")
 
         return object : XDebugProcessStarter() {
             override fun start(session: XDebugSession): XDebugProcess {
@@ -48,5 +53,24 @@ object JavaDebugUtils {
                 return JavaDebugProcess.create(session, debuggerSession)
             }
         }
+    }
+
+    /**
+     * We are required to make our own so we do not end up in a loop. DefaultDebugEnvironment will execute the run config again
+     * which make a tragic recursive loop starting the run config an infinite number of times
+     */
+    class RemotePortDebugEnvironment(private val environment: ExecutionEnvironment, private val connection: RemoteConnection) : DebugEnvironment {
+        override fun createExecutionResult(): ExecutionResult {
+            val consoleView = ConsoleViewImpl(environment.project, false)
+            val process = RemoteDebugProcessHandler(environment.project)
+            consoleView.attachToProcess(process)
+            return DefaultExecutionResult(consoleView, process)
+        }
+
+        override fun getSearchScope(): GlobalSearchScope = GlobalSearchScopes.executionScope(environment.project, environment.runProfile)
+        override fun isRemote(): Boolean = true
+        override fun getRemoteConnection(): RemoteConnection = connection
+        override fun getPollTimeout(): Long = DebugEnvironment.LOCAL_START_TIMEOUT.toLong()
+        override fun getSessionName(): String = environment.runProfile.name
     }
 }

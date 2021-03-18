@@ -5,6 +5,10 @@ package software.aws.toolkits.jetbrains.utils.execution.steps
 
 import com.intellij.openapi.progress.ProcessCanceledException
 import com.intellij.openapi.project.Project
+import kotlinx.coroutines.CancellationException
+import kotlinx.coroutines.delay
+import kotlinx.coroutines.runBlocking
+import kotlinx.coroutines.withTimeout
 import software.aws.toolkits.core.utils.AttributeBag
 import software.aws.toolkits.core.utils.AttributeBagKey
 import java.util.UUID
@@ -16,13 +20,20 @@ import java.util.concurrent.atomic.AtomicBoolean
 class Context(val project: Project) {
     val workflowToken = UUID.randomUUID().toString()
     private val attributeMap = AttributeBag()
-    private val isCancelled: AtomicBoolean = AtomicBoolean(false)
+    private val isCancelled = AtomicBoolean(false)
+    private val isCompleted = AtomicBoolean(false)
 
     fun cancel() {
         isCancelled.set(true)
+        isCompleted.set(true)
+    }
+
+    fun complete() {
+        isCompleted.set(true)
     }
 
     fun isCancelled() = isCancelled.get()
+    fun isCompleted() = isCompleted.get()
 
     fun throwIfCancelled() {
         if (isCancelled()) {
@@ -31,6 +42,24 @@ class Context(val project: Project) {
     }
 
     fun <T : Any> getAttribute(key: AttributeBagKey<T>): T? = attributeMap.get(key)
+
+    /**
+     * Try to get attribute for timeout milliseconds, throws a kotlinx.coroutines.TimeoutCancellationException on failure
+     * @param key The key to try to get
+     * @param timeout The timeout in milliseconds
+     */
+    fun <T : Any> blockingGet(key: AttributeBagKey<T>, timeout: Long = 10000): T = runBlocking {
+        return@runBlocking withTimeout(timeout) {
+            while (!isCancelled()) {
+                val item = attributeMap.get(key)
+                if (item != null) {
+                    return@withTimeout item
+                }
+                delay(100)
+            }
+            throw CancellationException("getAttributeOrWait cancelled")
+        }
+    }
 
     fun <T : Any> getRequiredAttribute(key: AttributeBagKey<T>): T = attributeMap.getOrThrow(key)
 

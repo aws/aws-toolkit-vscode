@@ -18,7 +18,7 @@ abstract class JavaImageDebugSupport : ImageDebugSupport {
         state: SamRunningState,
         debugHost: String,
         debugPorts: List<Int>
-    ): XDebugProcessStarter? = JavaDebugUtils.createDebugProcess(environment, state, debugHost, debugPorts)
+    ): XDebugProcessStarter = JavaDebugUtils.createDebugProcess(environment, state, debugHost, debugPorts)
 }
 
 open class Java8ImageDebugSupport : JavaImageDebugSupport() {

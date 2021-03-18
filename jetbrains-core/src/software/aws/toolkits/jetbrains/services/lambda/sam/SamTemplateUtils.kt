@@ -22,9 +22,9 @@ import software.aws.toolkits.jetbrains.services.cloudformation.CloudFormationTem
 import software.aws.toolkits.jetbrains.services.cloudformation.Function
 import software.aws.toolkits.jetbrains.services.cloudformation.SERVERLESS_FUNCTION_TYPE
 import software.aws.toolkits.jetbrains.services.lambda.LambdaLimits
-import software.aws.toolkits.jetbrains.services.lambda.upload.steps.UploadedCode
-import software.aws.toolkits.jetbrains.services.lambda.upload.steps.UploadedEcrCode
-import software.aws.toolkits.jetbrains.services.lambda.upload.steps.UploadedS3Code
+import software.aws.toolkits.jetbrains.services.lambda.steps.UploadedCode
+import software.aws.toolkits.jetbrains.services.lambda.steps.UploadedEcrCode
+import software.aws.toolkits.jetbrains.services.lambda.steps.UploadedS3Code
 import software.aws.toolkits.jetbrains.utils.YamlWriter
 import software.aws.toolkits.jetbrains.utils.yaml
 import software.aws.toolkits.resources.message

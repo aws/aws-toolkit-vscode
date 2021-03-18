@@ -18,8 +18,8 @@ import software.aws.toolkits.jetbrains.services.lambda.LambdaBuilder
 import software.aws.toolkits.jetbrains.services.lambda.LambdaFunction
 import software.aws.toolkits.jetbrains.services.lambda.runtimeGroup
 import software.aws.toolkits.jetbrains.services.lambda.sam.SamOptions
-import software.aws.toolkits.jetbrains.services.lambda.upload.steps.updateLambdaCodeWorkflowForImage
-import software.aws.toolkits.jetbrains.services.lambda.upload.steps.updateLambdaCodeWorkflowForZip
+import software.aws.toolkits.jetbrains.services.lambda.steps.updateLambdaCodeWorkflowForImage
+import software.aws.toolkits.jetbrains.services.lambda.steps.updateLambdaCodeWorkflowForZip
 import software.aws.toolkits.jetbrains.settings.UpdateLambdaSettings
 import software.aws.toolkits.jetbrains.utils.execution.steps.StepExecutor
 import software.aws.toolkits.jetbrains.utils.notifyError

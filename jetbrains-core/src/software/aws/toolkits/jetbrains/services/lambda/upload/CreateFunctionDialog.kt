@@ -23,9 +23,9 @@ import software.aws.toolkits.jetbrains.services.lambda.LambdaLimits.DEFAULT_TIME
 import software.aws.toolkits.jetbrains.services.lambda.resources.LambdaResources
 import software.aws.toolkits.jetbrains.services.lambda.runtimeGroup
 import software.aws.toolkits.jetbrains.services.lambda.sam.SamOptions
-import software.aws.toolkits.jetbrains.services.lambda.upload.steps.CreateLambda.Companion.FUNCTION_ARN
-import software.aws.toolkits.jetbrains.services.lambda.upload.steps.createLambdaWorkflowForImage
-import software.aws.toolkits.jetbrains.services.lambda.upload.steps.createLambdaWorkflowForZip
+import software.aws.toolkits.jetbrains.services.lambda.steps.CreateLambda.Companion.FUNCTION_ARN
+import software.aws.toolkits.jetbrains.services.lambda.steps.createLambdaWorkflowForImage
+import software.aws.toolkits.jetbrains.services.lambda.steps.createLambdaWorkflowForZip
 import software.aws.toolkits.jetbrains.settings.UpdateLambdaSettings
 import software.aws.toolkits.jetbrains.utils.execution.steps.StepExecutor
 import software.aws.toolkits.jetbrains.utils.notifyError

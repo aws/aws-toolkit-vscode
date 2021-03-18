@@ -78,3 +78,9 @@ class ImageTemplateRunSettings(
     override val runtimeGroup = RuntimeGroup.find { imageDebugger.languageId in it.languageIds }
         ?: throw IllegalStateException("Attempting to run SAM for unsupported language ${imageDebugger.languageId}")
 }
+
+fun LocalLambdaRunSettings.resolveDebuggerSupport() = when (this) {
+    is ImageTemplateRunSettings -> imageDebugger
+    is ZipSettings -> RuntimeDebugSupport.getInstance(runtimeGroup)
+    else -> throw IllegalStateException("Can't find debugger support for $this")
+}

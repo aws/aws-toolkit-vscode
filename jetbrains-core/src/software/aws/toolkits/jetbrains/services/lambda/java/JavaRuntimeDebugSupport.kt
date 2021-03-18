@@ -14,5 +14,5 @@ class JavaRuntimeDebugSupport : RuntimeDebugSupport {
         state: SamRunningState,
         debugHost: String,
         debugPorts: List<Int>
-    ): XDebugProcessStarter? = JavaDebugUtils.createDebugProcess(environment, state, debugHost, debugPorts)
+    ): XDebugProcessStarter = JavaDebugUtils.createDebugProcess(environment, state, debugHost, debugPorts)
 }
