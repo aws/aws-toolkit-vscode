@@ -94,7 +94,7 @@ export class WinstonToolkitLogger implements Logger, vscode.Disposable {
 
     private writeToLogs(level: LogLevel, message: string | Error, ...meta: any[]): void {
         // Don't write new lines after a log message, makes it look strange
-        if (typeof(message) == "string") {
+        if (typeof message == "string") {
             message = message.toString().trimEnd()
         }
 

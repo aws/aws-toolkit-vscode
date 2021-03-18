@@ -6,7 +6,6 @@
 import * as child_process from 'child_process'
 import * as crossSpawn from 'cross-spawn'
 import * as os from 'os'
-import { map } from 'lodash'
 import { getLogger } from '../logger'
 import { waitUntil } from './timeoutUtils'
 
@@ -136,7 +135,7 @@ export class ChildProcess {
             if (params.onStdout) {
                 const lines: string[] = (this.stdoutBuffer + data.toString()).split(/\r?\n/)
                 this.stdoutBuffer = lines.pop()!
-                map(lines, (line) => params.onStdout!(line + os.EOL))
+                lines.map((line) => params.onStdout!(line + os.EOL))
             }
         })
 
@@ -148,7 +147,7 @@ export class ChildProcess {
             if (params.onStderr) {
                 const lines: string[] = (this.stderrBuffer + data.toString()).split(/\r?\n/)
                 this.stderrBuffer = lines.pop()!
-                map(lines, (line) => params.onStderr!(line + os.EOL)) 
+                lines.map((line) => params.onStderr!(line + os.EOL)) 
             }
         })
 
