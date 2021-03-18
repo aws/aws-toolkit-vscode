@@ -10,21 +10,22 @@ import * as fs from 'fs-extra'
 import { WinstonToolkitLogger } from '../../../shared/logger/winstonToolkitLogger'
 import { MockOutputChannel } from '../../mockOutputChannel'
 import { assertThrowsError } from '../utilities/assertUtils'
+import { waitUntil } from '../../../shared/utilities/timeoutUtils'
 
-describe('WinstonToolkitLogger', function() {
+describe('WinstonToolkitLogger', function () {
     let tempFolder: string
 
-    before(async function() {
+    before(async function () {
         tempFolder = await filesystemUtilities.makeTemporaryToolkitFolder()
     })
 
-    after(async function() {
+    after(async function () {
         if (await filesystemUtilities.fileExists(tempFolder)) {
             await fs.remove(tempFolder)
         }
     })
 
-    it('logLevelEnabled()', function() {
+    it('logLevelEnabled()', function () {
         const logger = new WinstonToolkitLogger('info')
         assert.strictEqual(true, logger.logLevelEnabled('error'))
         assert.strictEqual(true, logger.logLevelEnabled('warn'))
@@ -47,11 +48,11 @@ describe('WinstonToolkitLogger', function() {
         assert.strictEqual(true, logger.logLevelEnabled('debug'))
     })
 
-    it('creates an object', function() {
+    it('creates an object', function () {
         assert.notStrictEqual(new WinstonToolkitLogger('info'), undefined)
     })
 
-    it('throws when logging to a disposed object', async function() {
+    it('throws when logging to a disposed object', async function () {
         const logger = new WinstonToolkitLogger('info')
         logger.dispose()
 
@@ -91,23 +92,23 @@ describe('WinstonToolkitLogger', function() {
         },
     ]
 
-    describe('logs to a file', async function() {
+    describe('logs to a file', async function () {
         let tempLogPath: string
         let tempFileCounter = 0
         let testLogger: WinstonToolkitLogger | undefined
 
-        beforeEach(async function() {
+        beforeEach(async function () {
             tempLogPath = path.join(tempFolder, `temp-${++tempFileCounter}.log`)
         })
 
-        afterEach(async function() {
+        afterEach(async function () {
             if (testLogger) {
                 testLogger.dispose()
                 testLogger = undefined
             }
         })
 
-        it('does not log a lower level', async function() {
+        it('does not log a lower level', async function () {
             const debugMessage = 'debug message'
             const errorMessage = 'error message'
 
@@ -125,7 +126,7 @@ describe('WinstonToolkitLogger', function() {
             )
         })
 
-        it('supports updating the log type', async function() {
+        it('supports updating the log type', async function () {
             const nonLoggedVerboseEntry = 'verbose entry should not be logged'
             const loggedVerboseEntry = 'verbose entry should be logged'
 
@@ -155,8 +156,7 @@ describe('WinstonToolkitLogger', function() {
         async function isTextInLogFile(logPath: string, text: string): Promise<boolean> {
             await waitForLogFile(logPath)
             const logText = await filesystemUtilities.readFileAsString(logPath)
-
-            return logText.includes(text)
+            return !!(await waitUntil(async () => logText.includes(text)))
         }
 
         async function waitForLogFile(logPath: string): Promise<void> {
@@ -179,22 +179,22 @@ describe('WinstonToolkitLogger', function() {
         }
     })
 
-    describe('logs to an OutputChannel', async function() {
+    describe('logs to an OutputChannel', async function () {
         let testLogger: WinstonToolkitLogger | undefined
         let outputChannel: MockOutputChannel
 
-        beforeEach(async function() {
+        beforeEach(async function () {
             outputChannel = new MockOutputChannel()
         })
 
-        afterEach(async function() {
+        afterEach(async function () {
             if (testLogger) {
                 testLogger.dispose()
                 testLogger = undefined
             }
         })
 
-        it('does not log a lower level', async function() {
+        it('does not log a lower level', async function () {
             const debugMessage = 'debug message'
             const errorMessage = 'error message'
 
@@ -209,7 +209,7 @@ describe('WinstonToolkitLogger', function() {
             assert.ok((await waitForMessage).includes(errorMessage), 'Expected error message to be logged')
         })
 
-        it('supports updating the log type', async function() {
+        it('supports updating the log type', async function () {
             const nonLoggedVerboseEntry = 'verbose entry should not be logged'
             const loggedVerboseEntry = 'verbose entry should be logged'
 
