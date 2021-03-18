@@ -112,7 +112,10 @@ abstract class DotnetLocalLambdaRunConfigurationIntegrationTestBase(private val 
             .containsEntry("AWS_SESSION_TOKEN", "")
     }
 
-    private fun jsonToMap(data: String) = jacksonObjectMapper().readValue<Map<String, Any>>(data)
+    // Extracts the first json structure. Needed since output has all build output and sam cli messages
+    private fun jsonToMap(data: String) = data.substringAfter("{").substringBefore("}").let {
+        jacksonObjectMapper().readValue<Map<String, String>>("{$it}")
+    }
 }
 
 abstract class DotnetLocalLambdaImageRunConfigurationIntegrationTestBase(private val solutionName: String, private val runtime: LambdaRuntime) :

@@ -20,8 +20,8 @@ import software.aws.toolkits.core.utils.writeText
 import software.aws.toolkits.jetbrains.services.cloudformation.Function
 import software.aws.toolkits.jetbrains.services.lambda.sam.SamTemplateUtils.findFunctionsFromTemplate
 import software.aws.toolkits.jetbrains.services.lambda.sam.SamTemplateUtils.functionFromElement
-import software.aws.toolkits.jetbrains.services.lambda.upload.steps.UploadedEcrCode
-import software.aws.toolkits.jetbrains.services.lambda.upload.steps.UploadedS3Code
+import software.aws.toolkits.jetbrains.services.lambda.steps.UploadedEcrCode
+import software.aws.toolkits.jetbrains.services.lambda.steps.UploadedS3Code
 
 class SamTemplateUtilsTest {
 

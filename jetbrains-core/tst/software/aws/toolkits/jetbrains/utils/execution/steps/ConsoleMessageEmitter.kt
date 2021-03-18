@@ -3,6 +3,7 @@
 
 package software.aws.toolkits.jetbrains.utils.execution.steps
 
+import com.intellij.build.BuildProgressListener
 import com.intellij.util.ExceptionUtil
 
 class ConsoleMessageEmitter(private val stepName: String) : MessageEmitter {
@@ -14,6 +15,10 @@ class ConsoleMessageEmitter(private val stepName: String) : MessageEmitter {
 
     override fun finishSuccessfully() {
         println("[$stepName] [Finish Event] Success")
+    }
+
+    override fun addListener(listener: BuildProgressListener) {
+        println("Added a listener $listener in step $stepName")
     }
 
     override fun finishExceptionally(e: Throwable) {

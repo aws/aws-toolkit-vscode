@@ -38,9 +38,9 @@ import software.aws.toolkits.jetbrains.services.lambda.LambdaHandlerResolver
 import software.aws.toolkits.jetbrains.services.lambda.deploy.DeployServerlessApplicationDialog
 import software.aws.toolkits.jetbrains.services.lambda.sam.SamCommon
 import software.aws.toolkits.jetbrains.services.lambda.sam.SamExecutable
+import software.aws.toolkits.jetbrains.services.lambda.steps.DeployLambda
+import software.aws.toolkits.jetbrains.services.lambda.steps.createDeployWorkflow
 import software.aws.toolkits.jetbrains.services.lambda.upload.UploadFunctionContinueDialog
-import software.aws.toolkits.jetbrains.services.lambda.upload.steps.DeployLambda
-import software.aws.toolkits.jetbrains.services.lambda.upload.steps.createDeployWorkflow
 import software.aws.toolkits.jetbrains.settings.DeploySettings
 import software.aws.toolkits.jetbrains.settings.relativeSamPath
 import software.aws.toolkits.jetbrains.utils.Operation

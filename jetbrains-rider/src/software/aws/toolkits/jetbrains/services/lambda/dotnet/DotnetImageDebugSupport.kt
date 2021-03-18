@@ -33,7 +33,7 @@ abstract class DotnetImageDebugSupport : ImageDebugSupport {
         state: SamRunningState,
         debugHost: String,
         debugPorts: List<Int>
-    ): XDebugProcessStarter? {
+    ): XDebugProcessStarter {
         throw UnsupportedOperationException("Use 'createDebugProcessAsync' instead")
     }
 
@@ -42,7 +42,7 @@ abstract class DotnetImageDebugSupport : ImageDebugSupport {
         state: SamRunningState,
         debugHost: String,
         debugPorts: List<Int>
-    ): Promise<XDebugProcessStarter?> = DotnetDebugUtils.createDebugProcessAsync(environment, state, debugHost, debugPorts)
+    ): Promise<XDebugProcessStarter> = DotnetDebugUtils.createDebugProcessAsync(environment, state, debugHost, debugPorts)
 }
 
 class Dotnet21ImageDebug : DotnetImageDebugSupport() {

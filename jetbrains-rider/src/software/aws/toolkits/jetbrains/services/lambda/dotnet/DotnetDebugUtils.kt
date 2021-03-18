@@ -4,9 +4,8 @@
 package software.aws.toolkits.jetbrains.services.lambda.dotnet
 
 import com.intellij.execution.configurations.GeneralCommandLine
+import com.intellij.execution.filters.TextConsoleBuilderFactory
 import com.intellij.execution.process.OSProcessHandler
-import com.intellij.execution.process.ProcessAdapter
-import com.intellij.execution.process.ProcessEvent
 import com.intellij.execution.process.ProcessHandlerFactory
 import com.intellij.execution.process.ProcessOutput
 import com.intellij.execution.runners.ExecutionEnvironment
@@ -14,7 +13,6 @@ import com.intellij.execution.util.ExecUtil
 import com.intellij.openapi.application.ExpirableExecutor
 import com.intellij.openapi.application.ModalityState
 import com.intellij.openapi.application.impl.coroutineDispatchingContext
-import com.intellij.openapi.application.runInEdt
 import com.intellij.openapi.rd.defineNestedLifetime
 import com.intellij.util.concurrency.AppExecutorUtil
 import com.intellij.util.text.nullize
@@ -44,7 +42,7 @@ import org.jetbrains.concurrency.AsyncPromise
 import org.jetbrains.concurrency.Promise
 import software.aws.toolkits.core.utils.getLogger
 import software.aws.toolkits.core.utils.warn
-import software.aws.toolkits.jetbrains.services.lambda.execution.sam.SamDebugger.Companion.debuggerConnectTimeoutMs
+import software.aws.toolkits.jetbrains.services.lambda.execution.sam.SamDebugSupport
 import software.aws.toolkits.jetbrains.services.lambda.execution.sam.SamRunningState
 import software.aws.toolkits.jetbrains.utils.ApplicationThreadPoolScope
 import software.aws.toolkits.jetbrains.utils.DotNetDebuggerUtils
@@ -63,7 +61,7 @@ object DotnetDebugUtils {
     private const val REMOTE_NETCORE_CLI_PATH = "/var/lang/bin/dotnet"
     const val NUMBER_OF_DEBUG_PORTS = 2
 
-    const val FIND_PID_SCRIPT =
+    private const val FIND_PID_SCRIPT =
         """
             for i in `ls /proc/*/exe` ; do
                 symlink=`readlink  ${'$'}i 2>/dev/null`;
@@ -78,10 +76,10 @@ object DotnetDebugUtils {
         state: SamRunningState,
         debugHost: String,
         debugPorts: List<Int>
-    ): Promise<XDebugProcessStarter?> {
+    ): Promise<XDebugProcessStarter> {
         val frontendPort = debugPorts[0]
         val backendPort = debugPorts[1]
-        val promise = AsyncPromise<XDebugProcessStarter?>()
+        val promise = AsyncPromise<XDebugProcessStarter>()
         val edtContext = getCoroutineUiContext(ModalityState.any(), environment)
         val bgContext = ExpirableExecutor.on(AppExecutorUtil.getAppExecutorService()).expireWith(environment).coroutineDispatchingContext()
 
@@ -107,33 +105,11 @@ object DotnetDebugUtils {
             RiderDebuggerWorkerModelManager.createDebuggerModel(debuggerLifetime, protocol)
         }
 
-        val executionResult = state.execute(environment.executor, environment.runner)
-        val samProcessHandle = executionResult.processHandler
-
-        // If we have not started the process's notification system, start it now.
-        // This is needed to pipe the SAM output to the Console view of the debugger panel
-        if (!samProcessHandle.isStartNotified) {
-            samProcessHandle.startNotify()
-        }
-
         ApplicationThreadPoolScope(environment.runProfile.name).launch(bgContext) {
             try {
                 val dockerContainer = findDockerContainer(frontendPort)
                 val pid = findDotnetPid(dockerContainer)
                 val riderDebuggerProcessHandler = startDebugWorker(dockerContainer, backendPort, frontendPort)
-
-                // Link worker process to SAM process lifetime
-                samProcessHandle.addProcessListener(
-                    object : ProcessAdapter() {
-                        override fun processTerminated(event: ProcessEvent) {
-                            runInEdt {
-                                debuggerLifetimeDefinition.terminate()
-                                riderDebuggerProcessHandler.destroyProcess()
-                            }
-                        }
-                    },
-                    environment
-                )
 
                 withContext(edtContext) {
                     protocol.wire.connected.adviseUntil(debuggerLifetime) connected@{ isConnected ->
@@ -165,12 +141,14 @@ object DotnetDebugUtils {
 
                             workerModel.activeSession.set(sessionModel)
 
+                            val console = TextConsoleBuilderFactory.getInstance().createBuilder(environment.project).console
+
                             promise.setResult(
                                 DotNetDebuggerUtils.createAndStartSession(
-                                    executionConsole = executionResult.executionConsole,
+                                    executionConsole = console,
                                     env = environment,
                                     sessionLifetime = debuggerLifetime,
-                                    processHandler = samProcessHandle,
+                                    processHandler = riderDebuggerProcessHandler,
                                     protocol = protocol,
                                     sessionModel = sessionModel,
                                     outputEventsListener = object : IDebuggerOutputListener {}
@@ -192,7 +170,7 @@ object DotnetDebugUtils {
             }
         }
 
-        val checkDebuggerTask = Timer("Debugger Worker launch timer", true).schedule(debuggerConnectTimeoutMs()) {
+        val checkDebuggerTask = Timer("Debugger Worker launch timer", true).schedule(SamDebugSupport.debuggerConnectTimeoutMs()) {
             if (debuggerLifetimeDefinition.isAlive && !protocol.wire.connected.value) {
                 runBlocking(edtContext) {
                     debuggerLifetimeDefinition.terminate()
@@ -209,7 +187,7 @@ object DotnetDebugUtils {
     }
 
     private suspend fun findDockerContainer(frontendPort: Int): String = runProcessUntil(
-        duration = Duration.ofMillis(debuggerConnectTimeoutMs()),
+        duration = Duration.ofMillis(SamDebugSupport.debuggerConnectTimeoutMs()),
         cmd = GeneralCommandLine(
             "docker",
             "ps",
@@ -222,7 +200,7 @@ object DotnetDebugUtils {
     }
 
     private suspend fun findDotnetPid(dockerContainer: String): Int = runProcessUntil(
-        duration = Duration.ofMillis(debuggerConnectTimeoutMs()),
+        duration = Duration.ofMillis(SamDebugSupport.debuggerConnectTimeoutMs()),
         cmd = GeneralCommandLine(
             "docker",
             "exec",

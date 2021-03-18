@@ -328,5 +328,8 @@ class PythonLocalLambdaRunConfigurationIntegrationTest(private val runtime: Runt
         assertThat(debuggerIsHit.get()).isTrue()
     }
 
-    private fun jsonToMap(data: String) = jacksonObjectMapper().readValue<Map<String, String>>(data)
+    // Extracts the first json structure. Needed since output has all build output and sam cli messages
+    private fun jsonToMap(data: String) = data.substringAfter("{").substringBefore("}").let {
+        jacksonObjectMapper().readValue<Map<String, String>>("{$it}")
+    }
 }

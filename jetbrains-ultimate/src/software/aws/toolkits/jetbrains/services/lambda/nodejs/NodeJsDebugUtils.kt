@@ -7,7 +7,6 @@ import com.google.common.collect.BiMap
 import com.google.common.collect.HashBiMap
 import com.intellij.execution.process.ProcessAdapter
 import com.intellij.execution.process.ProcessEvent
-import com.intellij.execution.runners.ExecutionEnvironment
 import com.intellij.javascript.debugger.LocalFileSystemFileFinder
 import com.intellij.javascript.debugger.RemoteDebuggingFileFinder
 import com.intellij.openapi.util.io.FileUtil
@@ -17,8 +16,6 @@ import com.intellij.xdebugger.XDebugProcessStarter
 import com.intellij.xdebugger.XDebugSession
 import com.jetbrains.debugger.wip.WipLocalVmConnection
 import com.jetbrains.nodeJs.NodeChromeDebugProcess
-import kotlinx.coroutines.Dispatchers
-import kotlinx.coroutines.withContext
 import org.jetbrains.io.LocalFileFinder
 import software.aws.toolkits.jetbrains.services.PathMapping
 import software.aws.toolkits.jetbrains.services.lambda.execution.sam.SamRunningState
@@ -28,41 +25,34 @@ object NodeJsDebugUtils {
     private const val NODE_MODULES = "node_modules"
 
     suspend fun createDebugProcess(
-        environment: ExecutionEnvironment,
         state: SamRunningState,
         debugHost: String,
         debugPorts: List<Int>
-    ): XDebugProcessStarter {
-        val executionResult = withContext(Dispatchers.IO) {
-            // needs to run off EDT since it resolves credentials
-            state.execute(environment.executor, environment.runner)
-        }
+    ): XDebugProcessStarter = object : XDebugProcessStarter() {
+        override fun start(session: XDebugSession): XDebugProcess {
+            val mappings = createBiMapMappings(state.pathMappings)
+            val fileFinder = RemoteDebuggingFileFinder(mappings, LocalFileSystemFileFinder())
 
-        return object : XDebugProcessStarter() {
-            override fun start(session: XDebugSession): XDebugProcess {
-                val mappings = createBiMapMappings(state.pathMappings)
-                val fileFinder = RemoteDebuggingFileFinder(mappings, LocalFileSystemFileFinder())
+            val connection = WipLocalVmConnection()
 
-                val connection = WipLocalVmConnection()
+            val process = NodeChromeDebugProcess(session, fileFinder, connection, null)
 
-                val process = NodeChromeDebugProcess(session, fileFinder, connection, executionResult)
+            val processHandler = process.processHandler
+            val socketAddress = InetSocketAddress(debugHost, debugPorts.first())
 
-                val processHandler = executionResult.processHandler
-                val socketAddress = InetSocketAddress(debugHost, debugPorts.first())
-
-                if (processHandler == null || processHandler.isStartNotified) {
-                    connection.open(socketAddress)
-                } else {
-                    processHandler.addProcessListener(
-                        object : ProcessAdapter() {
-                            override fun startNotified(event: ProcessEvent) {
-                                connection.open(socketAddress)
-                            }
+            if (processHandler.isStartNotified) {
+                connection.open(socketAddress)
+            } else {
+                processHandler.addProcessListener(
+                    object : ProcessAdapter() {
+                        override fun startNotified(event: ProcessEvent) {
+                            connection.open(socketAddress)
                         }
-                    )
-                }
-                return process
+                    }
+                )
             }
+
+            return process
         }
     }
 

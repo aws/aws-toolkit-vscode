@@ -1,7 +1,7 @@
-// Copyright 2020 Amazon.com, Inc. or its affiliates. All Rights Reserved.
+// Copyright 2021 Amazon.com, Inc. or its affiliates. All Rights Reserved.
 // SPDX-License-Identifier: Apache-2.0
 
-package software.aws.toolkits.jetbrains.services.lambda.upload.steps
+package software.aws.toolkits.jetbrains.services.lambda.steps
 
 import com.intellij.testFramework.ProjectRule
 import com.nhaarman.mockitokotlin2.any
@@ -26,8 +26,8 @@ import software.amazon.awssdk.services.lambda.model.State
 import software.aws.toolkits.core.utils.test.aString
 import software.aws.toolkits.jetbrains.core.MockClientManagerRule
 import software.aws.toolkits.jetbrains.services.iam.IamRole
+import software.aws.toolkits.jetbrains.services.lambda.steps.CreateLambda.Companion.FUNCTION_ARN
 import software.aws.toolkits.jetbrains.services.lambda.upload.FunctionDetails
-import software.aws.toolkits.jetbrains.services.lambda.upload.steps.CreateLambda.Companion.FUNCTION_ARN
 import software.aws.toolkits.jetbrains.utils.execution.steps.ConsoleMessageEmitter
 import software.aws.toolkits.jetbrains.utils.execution.steps.Context
 
