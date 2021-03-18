@@ -65,6 +65,7 @@ describe('OutputChannelTransport', async function () {
                     level: 'info',
                     message: text,
                     [MESSAGE]: text,
+                    raw: false,
                 },
                 () => {}
             )
