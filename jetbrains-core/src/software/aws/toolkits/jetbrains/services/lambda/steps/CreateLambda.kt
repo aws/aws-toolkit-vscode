@@ -1,13 +1,13 @@
-// Copyright 2020 Amazon.com, Inc. or its affiliates. All Rights Reserved.
+// Copyright 2021 Amazon.com, Inc. or its affiliates. All Rights Reserved.
 // SPDX-License-Identifier: Apache-2.0
 
-package software.aws.toolkits.jetbrains.services.lambda.upload.steps
+package software.aws.toolkits.jetbrains.services.lambda.steps
 
 import software.amazon.awssdk.services.lambda.LambdaClient
 import software.amazon.awssdk.services.lambda.model.PackageType
 import software.aws.toolkits.core.utils.AttributeBagKey
+import software.aws.toolkits.jetbrains.services.lambda.steps.PackageLambda.Companion.UPLOADED_CODE_LOCATION
 import software.aws.toolkits.jetbrains.services.lambda.upload.FunctionDetails
-import software.aws.toolkits.jetbrains.services.lambda.upload.steps.PackageLambda.Companion.UPLOADED_CODE_LOCATION
 import software.aws.toolkits.jetbrains.utils.execution.steps.Context
 import software.aws.toolkits.jetbrains.utils.execution.steps.MessageEmitter
 import software.aws.toolkits.jetbrains.utils.execution.steps.Step

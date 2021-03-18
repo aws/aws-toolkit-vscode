@@ -20,8 +20,8 @@ import software.aws.toolkits.core.rules.EcrTemporaryRepositoryRule
 import software.aws.toolkits.core.rules.S3TemporaryBucketRule
 import software.aws.toolkits.jetbrains.core.credentials.MockAwsConnectionManager
 import software.aws.toolkits.jetbrains.core.credentials.runUnderRealCredentials
-import software.aws.toolkits.jetbrains.services.lambda.upload.steps.DeployLambda
-import software.aws.toolkits.jetbrains.services.lambda.upload.steps.createDeployWorkflow
+import software.aws.toolkits.jetbrains.services.lambda.steps.DeployLambda
+import software.aws.toolkits.jetbrains.services.lambda.steps.createDeployWorkflow
 import software.aws.toolkits.jetbrains.utils.assumeImageSupport
 import software.aws.toolkits.jetbrains.utils.execution.steps.StepExecutor
 import software.aws.toolkits.jetbrains.utils.readProject

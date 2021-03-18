@@ -10,12 +10,9 @@ import com.intellij.execution.configurations.RunConfiguration
 import com.intellij.execution.executors.DefaultDebugExecutor
 import com.intellij.execution.executors.DefaultRunExecutor
 import com.intellij.execution.process.ProcessEvent
-import com.intellij.execution.process.ProcessOutputType
-import com.intellij.execution.process.ProcessOutputTypes
 import com.intellij.execution.runners.ExecutionEnvironmentBuilder
 import com.intellij.openapi.application.runInEdt
 import com.intellij.openapi.project.Project
-import com.intellij.openapi.util.Key
 import com.intellij.openapi.util.Ref
 import com.intellij.openapi.vfs.VirtualFile
 import com.intellij.testFramework.runInEdtAndWait
@@ -32,6 +29,7 @@ import software.aws.toolkits.jetbrains.core.executables.getExecutableIfPresent
 import software.aws.toolkits.jetbrains.services.lambda.execution.local.createTemplateRunConfiguration
 import software.aws.toolkits.jetbrains.services.lambda.sam.SamCommon.Companion.minImageVersion
 import software.aws.toolkits.jetbrains.services.lambda.sam.SamExecutable
+import software.aws.toolkits.jetbrains.utils.execution.steps.StepExecutor
 import software.aws.toolkits.jetbrains.utils.rules.CodeInsightTestFixtureRule
 import software.aws.toolkits.jetbrains.utils.rules.addFileToModule
 import java.io.File
@@ -49,19 +47,12 @@ fun executeRunConfiguration(runConfiguration: RunConfiguration, executorId: Stri
         val executionEnvironment = ExecutionEnvironmentBuilder.create(executor, runConfiguration).build {
             it.processHandler?.addProcessListener(
                 object : OutputListener() {
-                    override fun onTextAvailable(event: ProcessEvent, outputType: Key<*>) {
-                        // Ansi codes throw off the default logic, so remap it to check the base type
-                        val processOutputType = outputType as? ProcessOutputType
-                        val baseType = processOutputType?.baseOutputType ?: outputType
-
-                        super.onTextAvailable(event, baseType)
-
-                        println("[${if (baseType == ProcessOutputTypes.STDOUT) "stdout" else "stderr"}]: ${event.text}")
-                    }
-
                     override fun processTerminated(event: ProcessEvent) {
                         super.processTerminated(event)
-                        executionFuture.complete(this.output)
+                        // if using the default step executor as the process handle, need to pull text from it or it will be empty
+                        // otherwise, pull the output from the process itself
+                        val output = (it.processHandler as? StepExecutor.StepExecutorProcessHandler)?.getFinalOutput() ?: this.output
+                        executionFuture.complete(output)
                     }
                 }
             )

@@ -3,10 +3,17 @@
 
 package software.aws.toolkits.jetbrains.services.lambda.execution.sam
 
+import com.intellij.execution.process.ProcessAdapter
+import com.intellij.execution.process.ProcessEvent
+import com.intellij.execution.process.ProcessOutputTypes
 import com.intellij.execution.runners.ExecutionEnvironment
+import com.intellij.execution.ui.ConsoleView
+import com.intellij.execution.ui.ConsoleViewContentType
 import com.intellij.openapi.application.ExpirableExecutor
 import com.intellij.openapi.application.impl.coroutineDispatchingContext
 import com.intellij.openapi.application.runInEdt
+import com.intellij.openapi.util.Key
+import com.intellij.openapi.util.registry.Registry
 import com.intellij.util.concurrency.AppExecutorUtil
 import com.intellij.xdebugger.XDebugProcessStarter
 import kotlinx.coroutines.launch
@@ -34,11 +41,11 @@ interface SamDebugSupport {
         state: SamRunningState,
         debugHost: String,
         debugPorts: List<Int>
-    ): Promise<XDebugProcessStarter?> {
-        val promise = AsyncPromise<XDebugProcessStarter?>()
+    ): Promise<XDebugProcessStarter> {
+        val promise = AsyncPromise<XDebugProcessStarter>()
         val bgContext = ExpirableExecutor.on(AppExecutorUtil.getAppExecutorService()).expireWith(environment).coroutineDispatchingContext()
 
-        val timerTask = Timer("Debugger Worker launch timer", true).schedule(SamDebugger.debuggerConnectTimeoutMs()) {
+        val timerTask = Timer("Debugger Worker launch timer", true).schedule(debuggerConnectTimeoutMs()) {
             if (!promise.isDone) {
                 runInEdt {
                     promise.setError(message("lambda.debug.process.start.timeout"))
@@ -71,9 +78,25 @@ interface SamDebugSupport {
         state: SamRunningState,
         debugHost: String,
         debugPorts: List<Int>
-    ): XDebugProcessStarter?
+    ): XDebugProcessStarter
 
-    private companion object {
-        val LOG = getLogger<SamDebugSupport>()
+    companion object {
+        private val LOG = getLogger<SamDebugSupport>()
+        fun debuggerConnectTimeoutMs() = Registry.intValue("aws.debuggerAttach.timeout", 60000).toLong()
+
+        fun buildProcessAdapter(console: (() -> ConsoleView?)) = object : ProcessAdapter() {
+            override fun onTextAvailable(event: ProcessEvent, outputType: Key<*>) {
+                // Skip system messages
+                if (outputType == ProcessOutputTypes.SYSTEM) {
+                    return
+                }
+                val viewType = if (outputType == ProcessOutputTypes.STDERR) {
+                    ConsoleViewContentType.ERROR_OUTPUT
+                } else {
+                    ConsoleViewContentType.NORMAL_OUTPUT
+                }
+                console()?.print(event.text, viewType)
+            }
+        }
     }
 }
