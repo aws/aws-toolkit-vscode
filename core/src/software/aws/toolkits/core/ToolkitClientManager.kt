@@ -100,7 +100,7 @@ abstract class ToolkitClientManager {
             httpClient: SdkHttpClient,
             region: Region,
             credProvider: AwsCredentialsProvider,
-            userAgent: String,
+            userAgent: String? = null,
             endpointOverride: String? = null
         ): T {
             val builderMethod = sdkClass.java.methods.find {
@@ -114,8 +114,8 @@ abstract class ToolkitClientManager {
                 .httpClient(httpClient)
                 .credentialsProvider(credProvider)
                 .region(region)
-                .overrideConfiguration {
-                    it.putAdvancedOption(SdkAdvancedClientOption.USER_AGENT_PREFIX, userAgent)
+                .overrideConfiguration { configuration ->
+                    userAgent?.let { configuration.putAdvancedOption(SdkAdvancedClientOption.USER_AGENT_PREFIX, it) }
                 }
                 .also { _ ->
                     endpointOverride?.let {
