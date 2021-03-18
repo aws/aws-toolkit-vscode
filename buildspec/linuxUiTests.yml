@@ -55,6 +55,12 @@ phases:
       - echo "SAM CLI location $SAM_CLI_EXEC"
       - $SAM_CLI_EXEC --version
 
+      - |
+        if [ "$CODEARTIFACT_DOMAIN_NAME" ] && [ "$CODEARTIFACT_REPO_NAME" ]; then
+          CODEARTIFACT_URL=$(aws codeartifact get-repository-endpoint --domain $CODEARTIFACT_DOMAIN_NAME --repository $CODEARTIFACT_REPO_NAME --format maven --query repositoryEndpoint --output text)
+          CODEARTIFACT_AUTH_TOKEN=$(aws codeartifact get-authorization-token --domain $CODEARTIFACT_DOMAIN_NAME --query authorizationToken --output text --duration-seconds 3600)
+        fi
+
       - chmod +x gradlew
       - ./gradlew buildPlugin --console plain --info
       - Xvfb ${DISPLAY} -screen 0 ${SCREEN_WIDTH}x${SCREEN_HEIGHT}x${SCREEN_DEPTH} &

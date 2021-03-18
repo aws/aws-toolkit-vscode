@@ -45,7 +45,9 @@ class GenerateSdkPlugin : Plugin<Project> {
         val javaConvention = project.convention.getPlugin(JavaPluginConvention::class.java)
         val mainSourceSet = javaConvention.sourceSets.getByName(SourceSet.MAIN_SOURCE_SET_NAME)
         mainSourceSet.java.srcDir(generateSdkTask.srcDir)
-        project.tasks.getByName(mainSourceSet.compileJavaTaskName).dependsOn(generateSdkTask)
+        project.tasks.named(mainSourceSet.compileJavaTaskName) {
+            dependsOn(generateSdkTask)
+        }
 
         val ideaModel = project.extensions.getByType(IdeaModel::class.java)
         ideaModel.module.generatedSourceDirs.add(generateSdkTask.srcDir.get().asFile)
