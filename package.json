@@ -69,6 +69,7 @@
         "onCommand:aws.ssmDocument.publishDocument",
         "onCommand:aws.ssmDocument.updateDocumentVersion",
         "onLanguage:javascript",
+        "onLanguage:java",
         "onLanguage:python",
         "onLanguage:csharp",
         "onLanguage:yaml"
