@@ -15,7 +15,6 @@ import software.amazon.awssdk.services.toolkittelemetry.model.Sentiment
 import software.aws.toolkits.core.ToolkitClientManager
 import software.aws.toolkits.core.telemetry.MetricEvent
 import software.aws.toolkits.core.telemetry.TelemetryPublisher
-import software.aws.toolkits.jetbrains.core.AwsClientManager
 import software.aws.toolkits.jetbrains.core.AwsSdkClient
 import kotlin.streams.toList
 
@@ -102,8 +101,7 @@ class DefaultTelemetryPublisher(
                         .httpClient(sdkClient.sharedSdkClient())
                         .build()
                 ),
-                AwsClientManager.userAgent,
-                "https://client-telemetry.us-east-1.amazonaws.com"
+                endpointOverride = "https://client-telemetry.us-east-1.amazonaws.com"
             )
         }
     }
