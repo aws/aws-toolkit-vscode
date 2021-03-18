@@ -12,14 +12,14 @@ import { LaunchConfiguration } from '../../../shared/debug/launchConfiguration'
 import { API_TARGET_TYPE, TEMPLATE_TARGET_TYPE } from '../../../shared/sam/debugger/awsSamDebugConfiguration'
 import * as workspaceUtils from '../../../shared/utilities/workspaceUtils'
 
-describe('SamTemplateCodeLensProvider', async function() {
+describe('SamTemplateCodeLensProvider', async function () {
     let codeLensProvider: SamTemplateCodeLensProvider = new SamTemplateCodeLensProvider()
     let document: vscode.TextDocument
     let launchConfig: LaunchConfiguration
     let templateUri: vscode.Uri
     let mockCancellationToken: vscode.CancellationToken
 
-    beforeEach(async function() {
+    beforeEach(async function () {
         codeLensProvider = new SamTemplateCodeLensProvider()
         document = (await workspaceUtils.openTextDocument('python3.7-plain-sam-app/template.yaml'))!
         templateUri = document.uri
@@ -27,7 +27,11 @@ describe('SamTemplateCodeLensProvider', async function() {
         mockCancellationToken = mock()
     })
 
-    it('provides a CodeLens for a file with a new resource', async function() {
+    it('provides a CodeLens for a file with a new resource', async function () {
+        if (vscode.version.startsWith('1.42')) {
+            this.skip()
+        }
+
         const codeLenses = await codeLensProvider.provideCodeLenses(
             document,
             instance(mockCancellationToken),
@@ -62,7 +66,7 @@ describe('SamTemplateCodeLensProvider', async function() {
         assert.deepStrictEqual(codeLenses, expectedCodeLens)
     })
 
-    it('provides no code lenses for a file with no resources', async function() {
+    it('provides no code lenses for a file with no resources', async function () {
         const mockSymbolResolver: TemplateSymbolResolver = mock()
         when(mockSymbolResolver.getResourcesOfKind('function', anything())).thenResolve([])
 

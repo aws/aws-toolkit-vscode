@@ -1,4 +1,0 @@
-{
-	"type": "Feature",
-	"description": "Renaming \"Create new SAM Application\" to \"Create Lambda SAM Application\" to make it clear that this is an entrypoint for creating a Lambda function"
-}
