@@ -51,17 +51,14 @@ val rdgenDir = File("${project.buildDir}/rdgen/")
 rdgenDir.mkdirs()
 
 intellij {
-    val parentIntellijTask = rootProject.intellij
-    version = ideProfile.rider.sdkVersion
-    pluginName = parentIntellijTask.pluginName
-    updateSinceUntilBuild = parentIntellijTask.updateSinceUntilBuild
+    pluginName = "aws-toolkit-jetbrains"
 
+    version = ideProfile.rider.sdkVersion
     // Workaround for https://youtrack.jetbrains.com/issue/IDEA-179607
     val extraPlugins = arrayOf("rider-plugins-appender")
     setPlugins(*(ideProfile.rider.plugins + extraPlugins))
 
-    // Disable downloading source to avoid issues related to Rider SDK naming that is missed in Idea
-    // snapshots repository. The task is failed because if is unable to find related IC sources.
+    // RD is closed source, so nothing to download.
     downloadSources = false
     instrumentCode = false
 }
