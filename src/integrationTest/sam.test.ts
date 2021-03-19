@@ -132,14 +132,14 @@ const scenarios: TestScenario[] = [
         debugSessionType: 'python',
         language: 'python',
     },
-    {
-        runtime: 'python3.8',
-        displayName: 'python3.8 (Image)',
-        baseImage: `amazon/python3.8-base`,
-        path: 'hello_world/app.py',
-        debugSessionType: 'python',
-        language: 'python',
-    },
+    // {
+    //     runtime: 'python3.8',
+    //     displayName: 'python3.8 (Image)',
+    //     baseImage: `amazon/python3.8-base`,
+    //     path: 'hello_world/app.py',
+    //     debugSessionType: 'python',
+    //     language: 'python',
+    // },
     // { runtime: 'dotnetcore2.1', path: 'src/HelloWorld/Function.cs', debugSessionType: 'coreclr', language: 'csharp' },
     // { runtime: 'dotnetcore3.1', path: 'src/HelloWorld/Function.cs', debugSessionType: 'coreclr', language: 'csharp' },
 ]
