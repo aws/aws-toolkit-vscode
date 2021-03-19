@@ -31,6 +31,10 @@ tasks.test {
     systemProperty("log.dir", "${(project.extensions["intellij"] as IntelliJPluginExtension).sandboxDirectory}-test/logs")
 }
 
+tasks.buildSearchableOptions {
+    enabled = false
+}
+
 tasks.jar {
     archiveBaseName.set("aws-intellij-toolkit-ultimate")
 }
