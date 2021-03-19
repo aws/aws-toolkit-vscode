@@ -1,4 +1,0 @@
-{
-	"type": "Bug Fix",
-	"description": "fix unwanted \"invalid SAM CLI\" error on startup"
-}
