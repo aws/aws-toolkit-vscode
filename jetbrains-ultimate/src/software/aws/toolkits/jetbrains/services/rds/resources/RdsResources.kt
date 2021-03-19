@@ -11,7 +11,6 @@ import software.aws.toolkits.jetbrains.services.rds.Endpoint
 import software.aws.toolkits.jetbrains.services.rds.RdsDatabase
 import software.aws.toolkits.jetbrains.services.rds.RdsEngine
 
-// FIX_WHEN_MIN_IS_202 make this one the default in RdsResources.kt
 // Filters are also just a string
 private const val ENGINE_FILTER = "engine"
 

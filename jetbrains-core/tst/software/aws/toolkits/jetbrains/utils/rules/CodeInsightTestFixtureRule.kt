@@ -24,7 +24,6 @@ import com.intellij.testFramework.fixtures.impl.LightTempDirTestFixtureImpl
 import com.intellij.testFramework.runInEdtAndGet
 import com.intellij.testFramework.runInEdtAndWait
 import com.intellij.testFramework.writeChild
-import org.junit.rules.TestWatcher
 import org.junit.runner.Description
 import org.mockito.Mockito
 import software.aws.toolkits.core.utils.getLogger
@@ -38,9 +37,8 @@ import java.nio.file.Paths
  * If you wish to have just a [Project], you may use Intellij's [com.intellij.testFramework.ProjectRule]
  */
 open class CodeInsightTestFixtureRule(protected val testDescription: LightProjectDescriptor = LightProjectDescriptor.EMPTY_PROJECT_DESCRIPTOR) :
-    TestWatcher() {
+    ApplicationRule() {
     private lateinit var description: Description
-    private val appRule = ApplicationRule()
     protected val lazyFixture = ClearableLazy {
         invokeAndWait {
             createTestFixture()
@@ -56,17 +54,9 @@ open class CodeInsightTestFixtureRule(protected val testDescription: LightProjec
         return newFixture
     }
 
-    override fun starting(description: Description) {
-        // TODO: Make this extend AppRule and remove reflection FIX_WHEN_MIN_IS_202
-        val beforeMethod = appRule.javaClass.declaredMethods.first { it.name == "before" }
-        beforeMethod.trySetAccessible()
-        if (beforeMethod.parameterCount == 1) {
-            beforeMethod.invoke(appRule, description)
-        } else {
-            beforeMethod.invoke(appRule)
-        }
+    override fun before(description: Description) {
+        super.before(description)
         this.description = description
-
         // We can't find fork join pool correctly on JDK 11, we have to match all fork join threads because we can only register by name prefixes unlike the
         // actual JB logic
         // https://github.com/JetBrains/intellij-community/commit/0a6c9e16e95983ae0786d7667290c07b420ce705
@@ -76,7 +66,8 @@ open class CodeInsightTestFixtureRule(protected val testDescription: LightProjec
         ThreadTracker.longRunningThreadCreated(ApplicationManager.getApplication(), "Debugger Worker launch timer")
     }
 
-    override fun finished(description: Description?) {
+    override fun after() {
+        super.after()
         // Hack: Runs often enough that we keep our leaks down. https://github.com/mockito/mockito/pull/1619
         // TODO: Investigate Mockk and remove this
         Mockito.framework().clearInlineMocks()
