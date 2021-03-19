@@ -270,6 +270,10 @@ tasks.integrationTest {
     environment("LOCAL_ENV_RUN", true)
 }
 
+tasks.buildSearchableOptions {
+    enabled = false
+}
+
 tasks.jar {
     archiveBaseName.set("aws-intellij-toolkit-rider")
 }

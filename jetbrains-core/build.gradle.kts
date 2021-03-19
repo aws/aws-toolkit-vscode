@@ -57,6 +57,10 @@ tasks.test {
     systemProperty("log.dir", "${project.intellij.sandboxDirectory}-test/logs")
 }
 
+tasks.buildSearchableOptions {
+    enabled = false
+}
+
 val changelog = tasks.register<GeneratePluginChangeLog>("pluginChangeLog") {
     includeUnreleased.set(true)
     changeLogFile.set(project.file("$buildDir/changelog/change-notes.xml"))
