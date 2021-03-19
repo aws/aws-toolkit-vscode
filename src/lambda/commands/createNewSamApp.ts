@@ -64,6 +64,7 @@ export async function resumeCreateNewSamApp(
 
     try {
         samInitState = activationReloadState.getSamInitState()
+        samVersion = await getSamCliVersion(getSamCliContext())
 
         const pathToLaunch = samInitState?.path
         if (!pathToLaunch) {
@@ -87,8 +88,6 @@ export async function resumeCreateNewSamApp(
 
             return
         }
-
-        samVersion = await getSamCliVersion(getSamCliContext())
 
         await addInitialLaunchConfiguration(
             extContext,
