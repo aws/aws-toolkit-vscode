@@ -1,4 +1,6 @@
 {
+    "isolatedModules": true,
+    "esModuleInterop": true,
     "compilerOptions": {
         "baseUrl": ".",
         "paths": {
