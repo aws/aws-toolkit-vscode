@@ -166,7 +166,6 @@ class LocalLambdaRunConfiguration(project: Project, factory: ConfigurationFactor
 
                     val debugger = imageDebugger() ?: throw IllegalStateException("No image debugger with ID ${rawImageDebugger()}")
 
-                    // TODO FIX_WHEN_MIN_IS_202 use templateFile.toNioPath()
                     val dockerFile = function.dockerFile() ?: "Dockerfile"
                     val dockerFilePath = Paths.get(templateFile.path).parent.resolve(function.codeLocation()).resolve(dockerFile)
                     ImageTemplateRunSettings(

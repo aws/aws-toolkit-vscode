@@ -10,24 +10,10 @@ import com.intellij.openapi.vfs.newvfs.impl.VfsRootAccess
 import com.jetbrains.rider.test.base.PrepareTestEnvironment
 import java.io.File
 
-/**
- * Force us to use 3.1. 2020.1 does not like running against 5.
- * Format is:
- * ```
- * 2.1.811 [C:\Program Files\dotnet\sdk]
- * 3.1.404 [C:\Program Files\dotnet\sdk]
- * 5.0.100 [C:\Program Files\dotnet\sdk]
- * ```
- *
- * TODO: This seems like it is not needed with 2020.2+ so look to remove it FIX_WHEN_MIN_IS_202
- */
 val dotNetSdk by lazy {
-    val output = ExecUtil.execAndGetOutput(GeneralCommandLine("dotnet", "--list-sdks"))
+    val output = ExecUtil.execAndGetOutput(GeneralCommandLine("dotnet", "--version"))
     if (output.exitCode == 0) {
-        // We use version 3.1 due to 2020.1 does not like 5, FIX_WHEN_MIN_IS_202
-        val versions = output.stdoutLines.map { it.split(" ").first() }
-        val v31 = versions.first { it.startsWith("3.1") }
-        "C:\\Program Files\\dotnet\\sdk\\$v31".also {
+        "C:\\Program Files\\dotnet\\sdk\\${output.stdout.trim()}".also {
             println("Using dotnet SDK at $it")
         }
     } else {

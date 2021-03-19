@@ -4,7 +4,7 @@
 package software.aws.toolkits.jetbrains.core.credentials
 
 import com.intellij.openapi.components.ServiceManager
-import org.junit.runner.Description
+import com.intellij.testFramework.ApplicationRule
 import software.amazon.awssdk.auth.credentials.AwsBasicCredentials
 import software.amazon.awssdk.auth.credentials.AwsCredentials
 import software.amazon.awssdk.auth.credentials.AwsCredentialsProvider
@@ -17,7 +17,6 @@ import software.aws.toolkits.core.credentials.ToolkitCredentialsProvider
 import software.aws.toolkits.core.region.AwsRegion
 import software.aws.toolkits.core.utils.test.aString
 import software.aws.toolkits.jetbrains.core.region.getDefaultRegion
-import software.aws.toolkits.jetbrains.utils.rules.AppRule
 import software.aws.toolkits.jetbrains.utils.rules.ClearableLazy
 
 @Deprecated("Use MockCredentialManagerRule")
@@ -88,7 +87,7 @@ class MockCredentialsManager : CredentialManager() {
 }
 
 @Suppress("DEPRECATION")
-class MockCredentialManagerRule : AppRule() {
+class MockCredentialManagerRule : ApplicationRule() {
     private val lazyCredentialManager = ClearableLazy {
         MockCredentialsManager.getInstance()
     }
@@ -120,7 +119,7 @@ class MockCredentialManagerRule : AppRule() {
 
     fun removeCredentials(credentialIdentifier: CredentialIdentifier) = credentialManager.removeCredentials(credentialIdentifier)
 
-    override fun finished(description: Description?) {
+    override fun after() {
         lazyCredentialManager.ifSet {
             reset()
             lazyCredentialManager.clear()

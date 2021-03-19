@@ -11,8 +11,8 @@ import com.intellij.ui.layout.panel
 import software.aws.toolkits.resources.message
 import javax.swing.JComponent
 
-// FIX_WHEN_MIN_IS_202 when 202 is the min, we can add `Filter`s to the step executor which will allow us to take
-// actions on certain text, so we can put it in the output window to select to continue
+// TODO we can add `Filter`s to the step executor which will allow us to take
+// actions on certain text, so we can put it in the output window to click to continue
 class UploadFunctionContinueDialog(private val project: Project, private val changeSet: String) : DialogWrapper(project) {
     init {
         super.init()

@@ -90,7 +90,7 @@ fun DataSourceRegistry.createDatasource(project: Project, secret: SecretsManager
         .withUser(secret.username)
         .withUrl("jdbc:$jdbcAdapter://${secret.host}:${secret.port}")
         .commit()
-    // TODO FIX_WHEN_MIN_IS_202 set auth provider ID in builder
+    // TODO FIX_WHEN_MIN_IS_203 set auth provider ID in builder. It's in 202 but doesn't work
     newDataSources.firstOrNull()?.let {
         it.authProviderId = SecretsManagerAuth.providerId
         it.sslCfg = RequireSsl
