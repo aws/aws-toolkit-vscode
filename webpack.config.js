@@ -9,6 +9,7 @@
 
 const path = require('path')
 const webpack = require('webpack')
+const { ESBuildMinifyPlugin } = require('esbuild-loader')
 const fs = require('fs')
 const TerserPlugin = require('terser-webpack-plugin')
 const { NLSBundlePlugin } = require('vscode-nls-dev/lib/webpack-bundler')
@@ -58,11 +59,10 @@ const config = {
                         },
                     },
                     {
-                        loader: 'ts-loader',
+                        loader: 'esbuild-loader',
                         options: {
-                            compilerOptions: {
-                                sourceMap: true,
-                            },
+                            loader: 'ts', // Or 'ts' if you don't need tsx
+                            target: 'es2018',
                         },
                     },
                 ],
@@ -85,7 +85,11 @@ const config = {
     ],
     optimization: {
         minimize: true,
-        minimizer: [new TerserPlugin()],
+        minimizer: [
+            new ESBuildMinifyPlugin({
+                target: 'es2018',
+            }),
+        ],
     },
 }
 module.exports = config
