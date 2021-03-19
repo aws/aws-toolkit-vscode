@@ -18,12 +18,13 @@ dependencies {
 val ideProfile = IdeVersions.ideProfile(project)
 
 intellij {
-    val parentIntellijTask = rootProject.intellij
+    pluginName = "aws-toolkit-jetbrains"
+
     version = ideProfile.ultimate.sdkVersion
     setPlugins(*ideProfile.ultimate.plugins)
-    pluginName = parentIntellijTask.pluginName
-    updateSinceUntilBuild = parentIntellijTask.updateSinceUntilBuild
-    downloadSources = parentIntellijTask.downloadSources
+
+    // IU is closed source, so nothing to download.
+    downloadSources = false
 }
 
 tasks.test {

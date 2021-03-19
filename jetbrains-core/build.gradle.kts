@@ -26,12 +26,10 @@ val jacksonVersion: String by project
 val compileKotlin: KotlinCompile by tasks
 
 intellij {
-    val rootIntelliJTask = rootProject.intellij
+    pluginName = "aws-toolkit-jetbrains"
+
     version = ideProfile.community.sdkVersion
     setPlugins(*ideProfile.community.plugins)
-    pluginName = rootIntelliJTask.pluginName
-    updateSinceUntilBuild = rootIntelliJTask.updateSinceUntilBuild
-    downloadSources = rootIntelliJTask.downloadSources
 }
 
 tasks.patchPluginXml {
@@ -67,7 +65,7 @@ val changelog = tasks.register<GeneratePluginChangeLog>("pluginChangeLog") {
 tasks.jar {
     dependsOn(changelog)
     archiveBaseName.set("aws-intellij-toolkit-core")
-    from(changelog.get().changeLogFile) {
+    from(changelog) {
         into("META-INF")
     }
 }
