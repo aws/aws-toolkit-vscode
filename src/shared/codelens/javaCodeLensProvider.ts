@@ -30,11 +30,6 @@ export interface JavaLambdaHandlerComponents {
 }
 
 export async function getLambdaHandlerCandidates(document: vscode.TextDocument): Promise<LambdaHandlerCandidate[]> {
-    // Limitation: If more than one .csproj file exists in the same directory,
-    // and the directory is the closest to the source file, the csproj file used will be random
-
-    // TODO : Perform an XPATH parse on the project file
-    // If Project/PropertyGroup/AssemblyName exists, use that. Otherwise use the file name.
     const manifestUri =
         (await findParentProjectFile(document.uri, /^.*pom.xml$/)) ??
         (await findParentProjectFile(document.uri, /^.*build.gradle$/))

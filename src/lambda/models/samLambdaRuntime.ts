@@ -44,6 +44,7 @@ export const samZipLambdaRuntimes: ImmutableSet<Runtime> = ImmutableSet.union([
     nodeJsRuntimes,
     pythonRuntimes,
     dotNetRuntimes,
+    javaRuntimes,
 ])
 
 // Cloud9 supports a subset of runtimes for debugging.
@@ -84,6 +85,11 @@ export function getDependencyManager(runtime: Runtime): DependencyManager {
         return 'pip'
     } else if (dotNetRuntimes.has(runtime) || runtime === dotnet50) {
         return 'cli-package'
+    } else if (javaRuntimes.has(runtime)) {
+        // TODO: Return Maven too!
+        return 'gradle'
+    } else if (javaRuntimes.has(runtime)) {
+        return 'maven'
     }
     throw new Error(`Runtime ${runtime} does not have an associated DependencyManager`)
 }
@@ -95,6 +101,8 @@ export function getFamily(runtime: string): RuntimeFamily {
         return RuntimeFamily.Python
     } else if (dotNetRuntimes.has(runtime) || runtime === dotnet50) {
         return RuntimeFamily.DotNetCore
+    } else if (javaRuntimes.has(runtime)) {
+        return RuntimeFamily.Java
     }
     return RuntimeFamily.Unknown
 }
@@ -147,6 +155,8 @@ function getRuntimesForFamily(family: RuntimeFamily): ImmutableSet<Runtime> | un
             return pythonRuntimes
         case RuntimeFamily.DotNetCore:
             return dotNetRuntimes
+        case RuntimeFamily.Java:
+            return javaRuntimes
         default:
             return undefined
     }
