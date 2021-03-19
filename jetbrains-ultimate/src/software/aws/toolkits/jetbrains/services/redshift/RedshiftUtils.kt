@@ -42,7 +42,7 @@ fun DataSourceRegistry.createDatasource(project: Project, cluster: Cluster) {
         .withUser(cluster.masterUsername())
         .withUrl("jdbc:redshift://${cluster.endpoint().address()}:${cluster.endpoint().port()}/${cluster.dbName()}")
         .commit()
-    // TODO FIX_WHEN_MIN_IS_202 set auth provider ID in builder
+    // TODO FIX_WHEN_MIN_IS_203 set auth provider ID in builder. It's in 202 but doesn't work
     newDataSources.firstOrNull()?.let {
         it.authProviderId = IamAuth.providerId
         // Force SSL on

@@ -51,7 +51,7 @@ class StepExecutor(
             isActivateToolWindowWhenAdded = true
         }
 
-        // FIX_WHEN_MIN_IS_202 add optional filters and use descriptor.withExecutionFilter for deploy instead of using pop up notification
+        // TODO add optional filters and use descriptor.withExecutionFilter for deploy instead of using pop up notification
         val messageEmitter = DefaultMessageEmitter.createRoot(listOf(progressListener, processHandler.buildProgressListener), uniqueId)
 
         ApplicationManager.getApplication().executeOnPooledThread {

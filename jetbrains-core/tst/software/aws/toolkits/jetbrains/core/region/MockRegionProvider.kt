@@ -5,7 +5,7 @@ package software.aws.toolkits.jetbrains.core.region
 
 import com.intellij.openapi.components.ServiceManager
 import com.intellij.openapi.components.service
-import org.junit.runner.Description
+import com.intellij.testFramework.ApplicationRule
 import software.amazon.awssdk.regions.Region
 import software.aws.toolkits.core.region.AwsPartition
 import software.aws.toolkits.core.region.AwsRegion
@@ -14,7 +14,6 @@ import software.aws.toolkits.core.region.ToolkitRegionProvider
 import software.aws.toolkits.core.region.aRegionId
 import software.aws.toolkits.core.region.anAwsRegion
 import software.aws.toolkits.core.utils.test.aString
-import software.aws.toolkits.jetbrains.utils.rules.AppRule
 import software.aws.toolkits.jetbrains.utils.rules.ClearableLazy
 
 private class MockRegionProvider : ToolkitRegionProvider() {
@@ -65,7 +64,7 @@ private class MockRegionProvider : ToolkitRegionProvider() {
     }
 }
 
-class MockRegionProviderRule : AppRule() {
+class MockRegionProviderRule : ApplicationRule() {
     private val lazyRegionProvider = ClearableLazy {
         MockRegionProvider.getInstance()
     }
@@ -101,7 +100,7 @@ class MockRegionProviderRule : AppRule() {
 
     fun addService(serviceName: String, service: Service) = regionManager.addService(serviceName, service)
 
-    override fun finished(description: Description?) {
+    override fun after() {
         lazyRegionProvider.ifSet {
             reset()
             lazyRegionProvider.clear()
