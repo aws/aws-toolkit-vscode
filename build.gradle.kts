@@ -349,5 +349,7 @@ dependencies {
 }
 
 tasks.register("runIde") {
-    throw GradleException("Use project specific runIde command, i.e. :jetbrains-core:runIde, :intellij:runIde")
+    doFirst {
+        throw GradleException("Use project specific runIde command, i.e. :jetbrains-core:runIde, :intellij:runIde")
+    }
 }
