@@ -15,9 +15,8 @@ import { ext } from '../shared/extensionGlobals'
 import { getLogger, LogLevel } from '../shared/logger'
 import { setLogger } from '../shared/logger/logger'
 import { DefaultTelemetryService } from '../shared/telemetry/defaultTelemetryService'
-import { TelemetryFeedback } from '../shared/telemetry/telemetryFeedback'
-import { TelemetryPublisher } from '../shared/telemetry/telemetryPublisher'
 import { FakeExtensionContext } from './fakeExtensionContext'
+import * as fakeTelemetry from './fake/fakeTelemetryService'
 import { TestLogger } from './testLogger'
 import { FakeAwsContext } from './utilities/fakeAwsContext'
 
@@ -27,7 +26,7 @@ const testLogOutput = join(testReportDir, 'testLog.log')
 // Expectation: Tests are not run concurrently
 let testLogger: TestLogger | undefined
 
-before(async function() {
+before(async function () {
     // Clean up and set up test logs
     try {
         await remove(testLogOutput)
@@ -36,12 +35,7 @@ before(async function() {
     // Set up global telemetry client
     const mockContext = new FakeExtensionContext()
     const mockAws = new FakeAwsContext()
-    const mockPublisher: TelemetryPublisher = {
-        async init() {},
-        async postFeedback(feedback: TelemetryFeedback): Promise<void> {},
-        enqueue(...events: any[]) {},
-        async flush() {},
-    }
+    const mockPublisher = new fakeTelemetry.FakeTelemetryPublisher()
     const service = new DefaultTelemetryService(mockContext, mockAws, undefined, mockPublisher)
     ext.telemetry = service
     ext.templateRegistry = new CloudFormationTemplateRegistry()

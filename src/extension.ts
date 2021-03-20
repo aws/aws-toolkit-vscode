@@ -241,6 +241,12 @@ export async function activate(context: vscode.ExtensionContext) {
         await loginWithMostRecentCredentials(toolkitSettings, loginManager)
 
         recordToolkitInitialization(activationStartedOn, getLogger())
+
+        for (const metric of ext.telemetry.records) {
+            if (!metric.Passive) {
+                throw Error('non-passive metric emitted at startup')
+            }
+        }
     } catch (error) {
         getLogger('channel').error(
             localize(
