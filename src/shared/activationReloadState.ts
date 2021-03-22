@@ -22,7 +22,7 @@ export interface SamInitState {
  */
 export class ActivationReloadState {
     public getSamInitState(): SamInitState | undefined {
-        return ext.reloading()
+        return ext.didReload()
             ? {
                   path: this.extensionContext.globalState.get<string>(ACTIVATION_LAUNCH_PATH_KEY),
                   runtime: this.extensionContext.globalState.get<string>(SAM_INIT_RUNTIME_KEY),

@@ -57,7 +57,7 @@ export async function resumeCreateNewSamApp(
     extContext: ExtContext,
     activationReloadState: ActivationReloadState = new ActivationReloadState()
 ) {
-    if (!ext.reloading()) {
+    if (!ext.didReload()) {
         return
     }
 
