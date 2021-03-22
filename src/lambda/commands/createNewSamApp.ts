@@ -61,20 +61,14 @@ export async function resumeCreateNewSamApp(
     let reason: CreateReason = 'complete'
     let samVersion: string | undefined
     const samInitState: SamInitState | undefined = activationReloadState.getSamInitState()
-
-    const pathToLaunch = samInitState?.path
-    if (!pathToLaunch) {
-        return
-    }
-
     try {
-        const uri = vscode.Uri.file(pathToLaunch)
+        const uri = vscode.Uri.file(samInitState?.path!)
         const folder = vscode.workspace.getWorkspaceFolder(uri)
         if (!folder) {
             createResult = 'Failed'
             reason = 'error'
-            // This should never happen, as `pathToLaunch` will only be set if `uri` is in
-            // the newly added workspace folder.
+            // Should never happen, because `samInitState.path` is only set if
+            // `uri` is in the newly-added workspace folder.
             vscode.window.showErrorMessage(
                 localize(
                     'AWS.samcli.initWizard.source.error.notInWorkspace',

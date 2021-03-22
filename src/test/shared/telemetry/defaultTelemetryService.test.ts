@@ -28,7 +28,7 @@ let mockAws: FakeAwsContext
 let mockPublisher: FakeTelemetryPublisher
 let service: DefaultTelemetryService
 
-beforeEach(function() {
+beforeEach(function () {
     mockContext = new FakeExtensionContext()
     mockAws = new FakeAwsContext()
     mockPublisher = new FakeTelemetryPublisher()
@@ -36,28 +36,28 @@ beforeEach(function() {
     ext.telemetry = service
 })
 
-afterEach(async function() {
+afterEach(async function () {
     // Remove the persist file as it is saved
     await fs.remove(ext.telemetry.persistFilePath)
     ext.telemetry = originalTelemetryClient
 })
 
-describe('DefaultTelemetryService', function() {
+describe('DefaultTelemetryService', function () {
     const testFlushPeriod = 10
     let clock: sinon.SinonFakeTimers
     let sandbox: sinon.SinonSandbox
 
-    before(function() {
+    before(function () {
         sandbox = sinon.createSandbox()
         clock = FakeTimers.install()
     })
 
-    after(function() {
+    after(function () {
         clock.uninstall()
         sandbox.restore()
     })
 
-    it('posts feedback', async function() {
+    it('posts feedback', async function () {
         service.telemetryEnabled = false
         const feedback = { comment: '', sentiment: '' }
         await service.postFeedback(feedback)
@@ -65,7 +65,7 @@ describe('DefaultTelemetryService', function() {
         assert.strictEqual(mockPublisher.feedback, feedback)
     })
 
-    it('publishes periodically if user has said ok', async function() {
+    it('publishes periodically if user has said ok', async function () {
         service.clearRecords()
         service.telemetryEnabled = true
         service.flushPeriod = testFlushPeriod
@@ -78,11 +78,11 @@ describe('DefaultTelemetryService', function() {
         await service.shutdown()
 
         assert.notStrictEqual(mockPublisher.flushCount, 0)
-        assert.notStrictEqual(mockPublisher.enqueuedItems, 0)
+        assert.notStrictEqual(mockPublisher.queue.length, 0)
         assert.strictEqual(mockPublisher.enqueueCount, mockPublisher.flushCount)
     })
 
-    it('events automatically inject the active account id into the metadata', async function() {
+    it('events automatically inject the active account id into the metadata', async function () {
         const mockAwsWithIds = makeFakeAwsContextWithPlaceholderIds(({} as any) as AWS.Credentials)
         service = new DefaultTelemetryService(mockContext, mockAwsWithIds, undefined, mockPublisher)
         ext.telemetry = service
@@ -98,7 +98,7 @@ describe('DefaultTelemetryService', function() {
         assertMetadataContainsTestAccount(metricDatum, DEFAULT_TEST_ACCOUNT_ID)
     })
 
-    it('events with `session` namespace do not have an account tied to them', async function() {
+    it('events with `session` namespace do not have an account tied to them', async function () {
         service.clearRecords()
         service.telemetryEnabled = true
         service.flushPeriod = testFlushPeriod
@@ -119,7 +119,7 @@ describe('DefaultTelemetryService', function() {
         assertMetadataContainsTestAccount(shutdownEvent, AccountStatus.NotApplicable)
     })
 
-    it('events created with a bad active account produce metadata mentioning the bad account', async function() {
+    it('events created with a bad active account produce metadata mentioning the bad account', async function () {
         const mockAwsBad = ({
             getCredentialAccountId: () => 'this is bad!',
         } as any) as AwsContext
@@ -143,7 +143,7 @@ describe('DefaultTelemetryService', function() {
         assertMetadataContainsTestAccount(metricDatum, AccountStatus.Invalid)
     })
 
-    it('events created prior to signing in do not have an account attached', async function() {
+    it('events created prior to signing in do not have an account attached', async function () {
         service.clearRecords()
         service.telemetryEnabled = true
         service.flushPeriod = testFlushPeriod
@@ -162,7 +162,7 @@ describe('DefaultTelemetryService', function() {
         assertMetadataContainsTestAccount(metricDatum, AccountStatus.NotSet)
     })
 
-    it('events are never recorded if telemetry has been disabled', async function() {
+    it('events are never recorded if telemetry has been disabled', async function () {
         service.clearRecords()
         service.telemetryEnabled = false
         service.flushPeriod = testFlushPeriod
@@ -178,7 +178,7 @@ describe('DefaultTelemetryService', function() {
         // events are never flushed
         assert.strictEqual(mockPublisher.flushCount, 0)
         assert.strictEqual(mockPublisher.enqueueCount, 0)
-        assert.strictEqual(mockPublisher.enqueuedItems, 0)
+        assert.strictEqual(mockPublisher.queue.length, 0)
         // and events are not kept in memory
         assert.strictEqual(service.records.length, 0)
     })
