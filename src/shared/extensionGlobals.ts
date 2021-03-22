@@ -4,7 +4,6 @@
  */
 
 import { ExtensionContext, OutputChannel, Uri } from 'vscode'
-import { ACTIVATION_LAUNCH_PATH_KEY } from './activationReloadState'
 import { AWSClientBuilder } from './awsClientBuilder'
 import { AWSContextCommands } from './awsContextCommands'
 import { ToolkitClientBuilder } from './clients/toolkitClientBuilder'
@@ -38,8 +37,7 @@ export namespace ext {
 
     /**
      * Whether the current session was (likely) a reload forced by VSCode
-     * during a workspace folder operation.  Must be checked before
-     * `clearSamInitState()` is called.
+     * during a workspace folder operation.
      */
     export function didReload(): boolean {
         return _didReload

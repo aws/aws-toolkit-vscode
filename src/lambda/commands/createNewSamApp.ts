@@ -57,10 +57,6 @@ export async function resumeCreateNewSamApp(
     extContext: ExtContext,
     activationReloadState: ActivationReloadState = new ActivationReloadState()
 ) {
-    if (!ext.didReload()) {
-        return
-    }
-
     let createResult: Result = 'Succeeded'
     let reason: CreateReason = 'complete'
     let samVersion: string | undefined
