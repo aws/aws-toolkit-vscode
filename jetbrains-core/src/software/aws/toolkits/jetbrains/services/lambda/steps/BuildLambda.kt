@@ -12,25 +12,27 @@ import software.aws.toolkits.jetbrains.utils.execution.steps.MessageEmitter
 import software.aws.toolkits.resources.message
 import java.nio.file.Path
 
-class BuildLambda(
-    private val templatePath: Path,
-    private val logicalId: String? = null,
-    private val buildDir: Path,
-    private val buildEnvVars: Map<String, String> = emptyMap(),
-    private val samOptions: SamOptions
-) : SamCliStep() {
+data class BuildLambdaRequest(
+    val templatePath: Path,
+    val logicalId: String? = null,
+    val buildDir: Path,
+    val buildEnvVars: Map<String, String> = emptyMap(),
+    val samOptions: SamOptions
+)
+
+class BuildLambda(private val request: BuildLambdaRequest) : SamCliStep() {
     override val stepName: String = message("lambda.create.step.build")
 
     override fun constructCommandLine(context: Context): GeneralCommandLine = getCli().samBuildCommand(
-        templatePath = templatePath,
-        logicalId = logicalId,
-        buildDir = buildDir,
-        environmentVariables = buildEnvVars,
-        samOptions = samOptions
+        templatePath = request.templatePath,
+        logicalId = request.logicalId,
+        buildDir = request.buildDir,
+        environmentVariables = request.buildEnvVars,
+        samOptions = request.samOptions
     )
 
     override fun handleSuccessResult(output: String, messageEmitter: MessageEmitter, context: Context) {
-        context.putAttribute(BUILT_LAMBDA, BuiltLambda(buildDir.resolve("template.yaml"), logicalId))
+        context.putAttribute(BUILT_LAMBDA, BuiltLambda(request.buildDir.resolve("template.yaml"), request.logicalId))
     }
 
     companion object {

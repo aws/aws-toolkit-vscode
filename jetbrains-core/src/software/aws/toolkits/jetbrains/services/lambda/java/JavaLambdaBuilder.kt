@@ -6,8 +6,10 @@ package software.aws.toolkits.jetbrains.services.lambda.java
 import com.intellij.openapi.externalSystem.ExternalSystemModulePropertyManager
 import com.intellij.openapi.externalSystem.util.ExternalSystemApiUtil
 import com.intellij.openapi.module.Module
+import com.intellij.openapi.project.Project
 import com.intellij.openapi.projectRoots.JavaSdkType
 import com.intellij.openapi.roots.ModuleRootManager
+import com.intellij.openapi.roots.ProjectRootManager
 import com.intellij.openapi.util.io.FileUtil
 import com.intellij.psi.PsiElement
 import org.jetbrains.idea.maven.project.MavenProjectsManager
@@ -29,12 +31,12 @@ class JavaLambdaBuilder : LambdaBuilder() {
         return Paths.get(buildFileDir)
     }
 
-    override fun additionalBuildEnvironmentVariables(module: Module, samOptions: SamOptions): Map<String, String> {
+    override fun additionalBuildEnvironmentVariables(project: Project, module: Module?, samOptions: SamOptions): Map<String, String> {
         if (samOptions.buildInContainer) {
             return emptyMap()
         }
 
-        val sdk = ModuleRootManager.getInstance(module).sdk ?: return emptyMap()
+        val sdk = module ?.let { ModuleRootManager.getInstance(it).sdk } ?: ProjectRootManager.getInstance(project).projectSdk ?: return emptyMap()
         val sdkHome = sdk.homePath ?: return emptyMap()
 
         return if (sdk.sdkType is JavaSdkType) {

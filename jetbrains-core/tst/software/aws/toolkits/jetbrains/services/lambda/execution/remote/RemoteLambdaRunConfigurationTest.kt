@@ -3,10 +3,7 @@
 
 package software.aws.toolkits.jetbrains.services.lambda.execution.remote
 
-import com.intellij.execution.ExecutorRegistry
 import com.intellij.execution.configurations.RuntimeConfigurationError
-import com.intellij.execution.executors.DefaultRunExecutor
-import com.intellij.execution.runners.ExecutionEnvironmentBuilder
 import com.intellij.openapi.application.WriteAction
 import com.intellij.openapi.vfs.VfsUtilCore
 import com.intellij.psi.PsiDocumentManager
@@ -19,9 +16,9 @@ import org.junit.Test
 import org.junit.rules.TemporaryFolder
 import software.amazon.awssdk.auth.credentials.AwsBasicCredentials
 import software.aws.toolkits.jetbrains.core.credentials.MockCredentialManagerRule
+import software.aws.toolkits.jetbrains.utils.getState
 import software.aws.toolkits.jetbrains.utils.rules.HeavyJavaCodeInsightTestFixtureRule
 import software.aws.toolkits.resources.message
-import kotlin.test.assertNotNull
 
 class RemoteLambdaRunConfigurationTest {
     @Rule
@@ -160,7 +157,7 @@ class RemoteLambdaRunConfigurationTest {
                 input = "TestInput"
             )
             assertThat(runConfiguration).isNotNull
-            assertThat(getState(runConfiguration).settings.input).isEqualTo("TestInput")
+            assertThat(getRunConfigState(runConfiguration).settings.input).isEqualTo("TestInput")
         }
     }
 
@@ -175,7 +172,7 @@ class RemoteLambdaRunConfigurationTest {
                 inputIsFile = true
             )
             assertThat(runConfiguration).isNotNull
-            assertThat(getState(runConfiguration).settings.input).isEqualTo("TestInputFile")
+            assertThat(getRunConfigState(runConfiguration).settings.input).isEqualTo("TestInputFile")
         }
     }
 
@@ -196,7 +193,7 @@ class RemoteLambdaRunConfigurationTest {
                 inputIsFile = true
             )
             assertThat(runConfiguration).isNotNull
-            assertThat(getState(runConfiguration).settings.input).isEqualTo("UpdatedTestInputFile")
+            assertThat(getRunConfigState(runConfiguration).settings.input).isEqualTo("UpdatedTestInputFile")
         }
     }
 
@@ -217,15 +214,5 @@ class RemoteLambdaRunConfigurationTest {
         }
     }
 
-    private fun getState(runConfiguration: RemoteLambdaRunConfiguration): RemoteLambdaState {
-        val executor = ExecutorRegistry.getInstance().getExecutorById(DefaultRunExecutor.EXECUTOR_ID)
-        assertNotNull(executor)
-
-        val environment = ExecutionEnvironmentBuilder.create(
-            DefaultRunExecutor.getRunExecutorInstance(),
-            runConfiguration
-        ).build()
-
-        return runConfiguration.getState(executor, environment)
-    }
+    private fun getRunConfigState(runConfiguration: RemoteLambdaRunConfiguration) = getState(runConfiguration) as RemoteLambdaState
 }

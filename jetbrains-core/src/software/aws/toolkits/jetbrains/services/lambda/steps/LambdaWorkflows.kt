@@ -44,10 +44,12 @@ fun createLambdaWorkflowForZip(
 
             add(
                 BuildLambda(
-                    templatePath = dummyTemplate,
-                    buildDir = buildDir,
-                    buildEnvVars = buildEnvVars,
-                    samOptions = samOptions
+                    BuildLambdaRequest(
+                        templatePath = dummyTemplate,
+                        buildDir = buildDir,
+                        buildEnvVars = buildEnvVars,
+                        samOptions = samOptions
+                    )
                 ),
             )
             add(
@@ -85,9 +87,11 @@ fun createLambdaWorkflowForImage(
     return StepWorkflow(
         ValidateDocker(),
         BuildLambda(
-            templatePath = dummyTemplate,
-            buildDir = buildDir,
-            samOptions = samOptions
+            BuildLambdaRequest(
+                templatePath = dummyTemplate,
+                buildDir = buildDir,
+                samOptions = samOptions
+            )
         ),
         PackageLambda(
             templatePath = builtTemplate,
@@ -128,10 +132,12 @@ fun updateLambdaCodeWorkflowForZip(
 
             add(
                 BuildLambda(
-                    templatePath = dummyTemplate,
-                    buildDir = buildDir,
-                    buildEnvVars = buildEnvVars,
-                    samOptions = samOptions
+                    BuildLambdaRequest(
+                        templatePath = dummyTemplate,
+                        buildDir = buildDir,
+                        buildEnvVars = buildEnvVars,
+                        samOptions = samOptions
+                    )
                 ),
             )
             add(
@@ -170,9 +176,11 @@ fun updateLambdaCodeWorkflowForImage(
     return StepWorkflow(
         ValidateDocker(),
         BuildLambda(
-            templatePath = dummyTemplate,
-            buildDir = buildDir,
-            samOptions = samOptions
+            BuildLambdaRequest(
+                templatePath = dummyTemplate,
+                buildDir = buildDir,
+                samOptions = samOptions
+            )
         ),
         PackageLambda(
             templatePath = builtTemplate,
@@ -216,11 +224,13 @@ fun createDeployWorkflow(
 
             add(
                 BuildLambda(
-                    templatePath = templatePath,
-                    logicalId = null,
-                    buildDir = buildDir,
-                    buildEnvVars = envVars,
-                    samOptions = SamOptions(buildInContainer = useContainer)
+                    BuildLambdaRequest(
+                        templatePath = templatePath,
+                        logicalId = null,
+                        buildDir = buildDir,
+                        buildEnvVars = envVars,
+                        samOptions = SamOptions(buildInContainer = useContainer)
+                    )
                 )
             )
             add(
