@@ -5,6 +5,7 @@ package software.aws.toolkits.jetbrains.services.lambda
 
 import com.intellij.openapi.extensions.ExtensionPointName
 import com.intellij.openapi.module.Module
+import com.intellij.openapi.project.Project
 import com.intellij.openapi.project.rootManager
 import com.intellij.psi.PsiElement
 import software.aws.toolkits.jetbrains.core.utils.buildList
@@ -51,7 +52,7 @@ abstract class LambdaBuilder {
     /**
      * Returns a set of additional environment variables that should be passed to SAM build
      */
-    open fun additionalBuildEnvironmentVariables(module: Module, samOptions: SamOptions): Map<String, String> = emptyMap()
+    open fun additionalBuildEnvironmentVariables(project: Project, module: Module?, samOptions: SamOptions): Map<String, String> = emptyMap()
 
     companion object : RuntimeGroupExtensionPointObject<LambdaBuilder>(ExtensionPointName("aws.toolkit.lambda.builder")) {
         /*

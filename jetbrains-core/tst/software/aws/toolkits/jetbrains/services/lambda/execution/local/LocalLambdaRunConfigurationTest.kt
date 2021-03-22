@@ -3,11 +3,7 @@
 
 package software.aws.toolkits.jetbrains.services.lambda.execution.local
 
-import com.intellij.execution.ExecutorRegistry
 import com.intellij.execution.configurations.RuntimeConfigurationError
-import com.intellij.execution.executors.DefaultDebugExecutor
-import com.intellij.execution.executors.DefaultRunExecutor
-import com.intellij.execution.runners.ExecutionEnvironmentBuilder
 import com.intellij.openapi.application.WriteAction
 import com.intellij.openapi.project.Project
 import com.intellij.openapi.util.io.FileUtil
@@ -31,6 +27,7 @@ import software.aws.toolkits.jetbrains.services.lambda.execution.sam.SamRunningS
 import software.aws.toolkits.jetbrains.services.lambda.sam.SamCommon
 import software.aws.toolkits.jetbrains.services.lambda.sam.SamCommonTestUtils
 import software.aws.toolkits.jetbrains.services.lambda.sam.SamExecutable
+import software.aws.toolkits.jetbrains.utils.getState
 import software.aws.toolkits.jetbrains.utils.rules.HeavyJavaCodeInsightTestFixtureRule
 import software.aws.toolkits.jetbrains.utils.rules.addClass
 import software.aws.toolkits.jetbrains.utils.rules.addModule
@@ -38,7 +35,6 @@ import software.aws.toolkits.jetbrains.utils.toElement
 import software.aws.toolkits.jetbrains.utils.value
 import software.aws.toolkits.resources.message
 import java.nio.file.Paths
-import kotlin.test.assertNotNull
 
 class LocalLambdaRunConfigurationTest {
     @Rule
@@ -563,7 +559,7 @@ class LocalLambdaRunConfigurationTest {
                 credentialsProviderId = mockId
             )
             assertThat(runConfiguration).isNotNull
-            assertThat(getState(runConfiguration).settings.input).isEqualTo("TestInput")
+            assertThat(getRunConfigState(runConfiguration).settings.input).isEqualTo("TestInput")
         }
     }
 
@@ -579,7 +575,7 @@ class LocalLambdaRunConfigurationTest {
                 credentialsProviderId = mockId
             )
             assertThat(runConfiguration).isNotNull
-            assertThat(getState(runConfiguration).settings.input).isEqualTo("TestInputFile")
+            assertThat(getRunConfigState(runConfiguration).settings.input).isEqualTo("TestInputFile")
         }
     }
 
@@ -601,7 +597,7 @@ class LocalLambdaRunConfigurationTest {
                 credentialsProviderId = mockId
             )
             assertThat(runConfiguration).isNotNull
-            assertThat(getState(runConfiguration).settings.input).isEqualTo("UpdatedTestInputFile")
+            assertThat(getRunConfigState(runConfiguration).settings.input).isEqualTo("UpdatedTestInputFile")
         }
     }
 
@@ -818,17 +814,7 @@ class LocalLambdaRunConfigurationTest {
     private fun preWarmLambdaHandlerValidation(project: Project, handler: String = defaultHandler) =
         preWarmLambdaHandlerValidation(project, runtime, handler)
 
-    private fun getState(runConfiguration: LocalLambdaRunConfiguration): SamRunningState {
-        val executor = ExecutorRegistry.getInstance().getExecutorById(DefaultRunExecutor.EXECUTOR_ID)
-        assertNotNull(executor)
-
-        val environment = ExecutionEnvironmentBuilder.create(
-            DefaultDebugExecutor.getDebugExecutorInstance(),
-            runConfiguration
-        ).build()
-
-        return runConfiguration.getState(executor, environment)
-    }
+    private fun getRunConfigState(runConfiguration: LocalLambdaRunConfiguration) = getState(runConfiguration) as SamRunningState
 
     private fun createImageTemplate(): String = tempDir.newFile("template.yaml").also {
         it.writeText(

@@ -4,12 +4,9 @@
 package software.aws.toolkits.jetbrains.services.ecs.execution
 
 import com.intellij.execution.BeforeRunTask
-import com.intellij.execution.ExecutorRegistry
 import com.intellij.execution.configurations.RuntimeConfigurationError
 import com.intellij.execution.configurations.RuntimeConfigurationWarning
 import com.intellij.execution.executors.DefaultDebugExecutor
-import com.intellij.execution.executors.DefaultRunExecutor
-import com.intellij.execution.runners.ExecutionEnvironmentBuilder
 import com.intellij.testFramework.ProjectRule
 import org.assertj.core.api.Assertions.assertThat
 import org.assertj.core.api.Assertions.assertThatThrownBy
@@ -28,9 +25,9 @@ import software.aws.toolkits.jetbrains.services.clouddebug.CloudDebugConstants
 import software.aws.toolkits.jetbrains.services.clouddebug.CloudDebuggingPlatform
 import software.aws.toolkits.jetbrains.services.clouddebug.execution.CloudDebugRunState
 import software.aws.toolkits.jetbrains.services.ecs.resources.EcsResources
+import software.aws.toolkits.jetbrains.utils.getState
 import software.aws.toolkits.resources.message
 import java.util.concurrent.CompletableFuture
-import kotlin.test.assertNotNull
 
 class EcsCloudDebugRunConfigurationTest {
     private val containerOptionsKey = "111"
@@ -428,16 +425,8 @@ class EcsCloudDebugRunConfigurationTest {
         config.checkConfiguration()
     }
 
-    private fun getCloudDebugRunningState(configuration: EcsCloudDebugRunConfiguration): CloudDebugRunState? {
-        val executor = ExecutorRegistry.getInstance().getExecutorById(DefaultRunExecutor.EXECUTOR_ID)
-        assertNotNull(executor)
-        val environment = ExecutionEnvironmentBuilder.create(
-            DefaultDebugExecutor.getDebugExecutorInstance(),
-            configuration
-        ).build()
-
-        return configuration.getState(executor, environment)
-    }
+    private fun getCloudDebugRunningState(configuration: EcsCloudDebugRunConfiguration) =
+        getState(configuration, executorId = DefaultDebugExecutor.EXECUTOR_ID) as CloudDebugRunState?
 
     private fun buildDefaultConfiguration(): EcsCloudDebugRunConfiguration {
         val configuration = EcsCloudDebugRunConfiguration(
