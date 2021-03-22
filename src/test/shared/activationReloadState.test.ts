@@ -15,10 +15,10 @@ import {
 import { ext } from '../../shared/extensionGlobals'
 
 describe('ActivationReloadState', async function () {
-    let activationReloadState: ActivationReloadState
+    const activationReloadState = new ActivationReloadState()
 
     beforeEach(function () {
-        activationReloadState = new ActivationReloadState()
+        activationReloadState.clearSamInitState()
     })
 
     afterEach(function () {

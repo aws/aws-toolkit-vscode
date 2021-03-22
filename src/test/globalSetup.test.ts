@@ -14,6 +14,7 @@ import { CloudFormationTemplateRegistry } from '../shared/cloudformation/templat
 import { ext } from '../shared/extensionGlobals'
 import { getLogger, LogLevel } from '../shared/logger'
 import { setLogger } from '../shared/logger/logger'
+import * as extWindow from '../shared/vscode/window'
 import { DefaultTelemetryService } from '../shared/telemetry/defaultTelemetryService'
 import { FakeExtensionContext } from './fakeExtensionContext'
 import * as fakeTelemetry from './fake/fakeTelemetryService'
@@ -33,10 +34,11 @@ before(async function () {
     } catch (e) {}
     mkdirpSync(testReportDir)
     // Set up global telemetry client
-    const mockContext = new FakeExtensionContext()
-    const mockAws = new FakeAwsContext()
-    const mockPublisher = new fakeTelemetry.FakeTelemetryPublisher()
-    const service = new DefaultTelemetryService(mockContext, mockAws, undefined, mockPublisher)
+    const fakeContext = new FakeExtensionContext()
+    const fakeAws = new FakeAwsContext()
+    const fakeTelemetryPublisher = new fakeTelemetry.FakeTelemetryPublisher()
+    const service = new DefaultTelemetryService(fakeContext, fakeAws, undefined, fakeTelemetryPublisher)
+    ext.init(fakeContext, extWindow.Window.vscode())
     ext.telemetry = service
     ext.templateRegistry = new CloudFormationTemplateRegistry()
     ext.codelensRootRegistry = new CodelensRootRegistry()
