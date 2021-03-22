@@ -242,11 +242,7 @@ export async function activate(context: vscode.ExtensionContext) {
 
         recordToolkitInitialization(activationStartedOn, getLogger())
 
-        for (const metric of ext.telemetry.records) {
-            if (!metric.Passive) {
-                throw Error('non-passive metric emitted at startup')
-            }
-        }
+        assertPassiveTelemetry()
     } catch (error) {
         getLogger('channel').error(
             localize(
@@ -256,6 +252,22 @@ export async function activate(context: vscode.ExtensionContext) {
             )
         )
         throw error
+    }
+}
+
+/**
+ * Only passive telemetry is allowed during startup (except for some known
+ * special-cases).
+ */
+function assertPassiveTelemetry() {
+    const reloading = ext.reloading()
+    // These special-case metrics may be non-passive during a VSCode "reload".
+    const activeAllowed = ['sam_init']
+    for (const metric of ext.telemetry.records) {
+        if (metric.Passive || (reloading && activeAllowed.includes(metric.MetricName))) {
+            continue
+        }
+        throw Error('non-passive metric emitted at startup')
     }
 }
 

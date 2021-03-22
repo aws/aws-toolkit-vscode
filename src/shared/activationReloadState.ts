@@ -22,11 +22,9 @@ export interface SamInitState {
  */
 export class ActivationReloadState {
     public getSamInitState(): SamInitState | undefined {
-        const activationPath = this.extensionContext.globalState.get<string>(ACTIVATION_LAUNCH_PATH_KEY)
-
-        return activationPath
+        return ext.reloading()
             ? {
-                  path: activationPath,
+                  path: this.extensionContext.globalState.get<string>(ACTIVATION_LAUNCH_PATH_KEY),
                   runtime: this.extensionContext.globalState.get<string>(SAM_INIT_RUNTIME_KEY),
                   isImage: this.extensionContext.globalState.get<boolean>(SAM_INIT_IMAGE_BOOLEAN_KEY),
               }

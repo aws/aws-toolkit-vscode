@@ -4,6 +4,7 @@
  */
 
 import { ExtensionContext, OutputChannel, Uri } from 'vscode'
+import { ACTIVATION_LAUNCH_PATH_KEY } from './activationReloadState'
 import { AWSClientBuilder } from './awsClientBuilder'
 import { AWSContextCommands } from './awsContextCommands'
 import { ToolkitClientBuilder } from './clients/toolkitClientBuilder'
@@ -26,6 +27,15 @@ export namespace ext {
     export let telemetry: TelemetryService
     export let templateRegistry: CloudFormationTemplateRegistry
     export let codelensRootRegistry: CodelensRootRegistry
+
+    /**
+     * Whether the current session was (likely) a reload forced by VSCode
+     * during a workspace folder operation.  Must be checked before
+     * `clearSamInitState()` is called.
+     */
+    export function reloading(): boolean {
+        return !!ext.context.globalState.get<string>(ACTIVATION_LAUNCH_PATH_KEY)
+    }
 
     export namespace iconPaths {
         export const dark: IconPaths = makeIconPathsObject()
