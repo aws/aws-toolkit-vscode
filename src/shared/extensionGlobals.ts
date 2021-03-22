@@ -33,7 +33,7 @@ export namespace ext {
     export function init(context: ExtensionContext, window: Window) {
         ext.context = context
         ext.window = window
-        _didReload = !!ext.context.globalState.get<string>(ACTIVATION_LAUNCH_PATH_KEY)
+        _didReload = !!ext.context.globalState.get<string>('ACTIVATION_LAUNCH_PATH_KEY')
     }
 
     /**
