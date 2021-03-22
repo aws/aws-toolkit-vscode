@@ -141,7 +141,7 @@ class UpdateFunctionCodeDialog(private val project: Project, private val initial
                     functionName = initialSettings.name,
                     codeDetails = codeDetails,
                     buildDir = lambdaBuilder.getBuildDirectory(module),
-                    buildEnvVars = lambdaBuilder.additionalBuildEnvironmentVariables(module, samOptions),
+                    buildEnvVars = lambdaBuilder.additionalBuildEnvironmentVariables(project, module, samOptions),
                     codeStorageLocation = view.codeStorage.codeLocation(),
                     samOptions = samOptions,
                     updatedHandler = handler.takeIf { it != initialSettings.handler }

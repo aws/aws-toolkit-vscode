@@ -101,7 +101,7 @@ class JavaLambdaBuilderTest {
         envVarsRule.remove("JAVA_HOME")
 
         ModuleRootModificationUtil.setModuleSdk(projectRule.module, IdeaTestUtil.getMockJdk18())
-        assertThat(sut.additionalBuildEnvironmentVariables(projectRule.module, SamOptions(buildInContainer = false)))
+        assertThat(sut.additionalBuildEnvironmentVariables(projectRule.project, projectRule.module, SamOptions(buildInContainer = false)))
             .extractingByKey("JAVA_HOME").isEqualTo(IdeaTestUtil.getMockJdk18Path().absolutePath)
     }
 
@@ -109,7 +109,7 @@ class JavaLambdaBuilderTest {
     fun javaHomeNotPassedWhenInContainer() {
         envVarsRule.remove("JAVA_HOME")
 
-        assertThat(sut.additionalBuildEnvironmentVariables(projectRule.module, SamOptions(buildInContainer = true)))
+        assertThat(sut.additionalBuildEnvironmentVariables(projectRule.project, projectRule.module, SamOptions(buildInContainer = true)))
             .doesNotContainKey("JAVA_HOME")
     }
 }
