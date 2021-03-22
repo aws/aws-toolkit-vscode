@@ -163,16 +163,6 @@ describe('ActivationReloadState', async function () {
                 'Unexpected init image boolean value was retrieved'
             )
         })
-
-        it('path undefined', async function () {
-            await ext.context.globalState.update(ACTIVATION_LAUNCH_PATH_KEY, undefined)
-
-            assert.strictEqual(
-                activationReloadState.getSamInitState(),
-                undefined,
-                'expected sam init state to be undefined'
-            )
-        })
     })
 
     it('clearLaunchPath', async function () {
