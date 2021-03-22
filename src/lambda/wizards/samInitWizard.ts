@@ -140,7 +140,6 @@ export class DefaultCreateNewSamAppWizardContext extends WizardContext implement
         if (dependencyManagers.length === 1) {
             return dependencyManagers[0]
         } else {
-            // TODO!!!!!! CLEAN UP STEP NUMBERS!!!!!
             this.stepsToAdd.promptUserForDependencyManager = true
             const quickPick = picker.createQuickPick<vscode.QuickPickItem>({
                 options: {
