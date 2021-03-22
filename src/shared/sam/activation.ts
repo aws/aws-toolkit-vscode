@@ -16,6 +16,7 @@ import {
 import * as codelensUtils from '../codelens/codeLensUtils'
 import * as csLensProvider from '../codelens/csharpCodeLensProvider'
 import * as pyLensProvider from '../codelens/pythonCodeLensProvider'
+import * as goLensProvider from '../codelens/goCodeLensProvider'
 import { SamTemplateCodeLensProvider } from '../codelens/samTemplateCodeLensProvider'
 import * as jsLensProvider from '../codelens/typescriptCodeLensProvider'
 import { ext } from '../extensionGlobals'
@@ -150,6 +151,13 @@ async function activateCodeLensProviders(
         vscode.languages.registerCodeLensProvider(
             csLensProvider.CSHARP_ALLFILES,
             await codelensUtils.makeCSharpCodeLensProvider()
+        )
+    )
+
+    disposables.push(
+        vscode.languages.registerCodeLensProvider(
+            goLensProvider.GO_ALLFILES,
+            await codelensUtils.makeGoCodeLensProvider()
         )
     )
 

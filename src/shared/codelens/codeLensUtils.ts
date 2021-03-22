@@ -254,3 +254,20 @@ export function makeTypescriptCodeLensProvider(): vscode.CodeLensProvider {
         },
     }
 }
+
+export async function makeGoCodeLensProvider(): Promise<vscode.CodeLensProvider> {
+    return {
+        provideCodeLenses: async (
+            document: vscode.TextDocument,
+            token: vscode.CancellationToken
+        ): Promise<vscode.CodeLens[]> => {
+            const handlers = await tsCodelens.getLambdaHandlerCandidates(document)
+            return makeCodeLenses({
+                document,
+                handlers,
+                token,
+                runtimeFamily: RuntimeFamily.Go,
+            })
+        },
+    }
+}
