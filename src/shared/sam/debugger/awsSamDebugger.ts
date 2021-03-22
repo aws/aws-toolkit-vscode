@@ -523,7 +523,7 @@ export class SamDebugConfigProvider implements vscode.DebugConfigurationProvider
                 break
             }
             case RuntimeFamily.Java: {
-                // Make a DotNet launch-config from the generic config.
+                // Make a Java launch-config from the generic config.
                 launchConfig = await javaDebug.makeJavaConfig(launchConfig)
                 break
             }
