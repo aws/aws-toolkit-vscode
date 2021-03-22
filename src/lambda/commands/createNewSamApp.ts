@@ -32,7 +32,6 @@ import { SamCliValidator } from '../../shared/sam/cli/samCliValidator'
 import { recordSamInit, Result, Runtime as TelemetryRuntime } from '../../shared/telemetry/telemetry'
 import { makeCheckLogsMessage } from '../../shared/utilities/messages'
 import { addFolderToWorkspace } from '../../shared/utilities/workspaceUtils'
-import { getDependencyManager } from '../models/samLambdaRuntime'
 import { eventBridgeStarterAppTemplate } from '../models/samTemplates'
 import {
     CreateNewSamAppWizard,
@@ -105,8 +104,8 @@ export async function resumeCreateNewSamApp(
         ext.outputChannel.show(true)
         getLogger('channel').error(
             localize(
-                "AWS.samcli.initWizard.resume.error",
-                "An error occured while resuming SAM Application creation. {0}",
+                'AWS.samcli.initWizard.resume.error',
+                'An error occured while resuming SAM Application creation. {0}',
                 checkLogsMessage
             )
         )
@@ -170,13 +169,10 @@ export async function createNewSamApplication(
         // section of types as Runtime
         createRuntime = config.runtime as Runtime
 
-        // TODO: Make this selectable in the wizard to account for runtimes with multiple dependency managers
-        const dependencyManager = getDependencyManager(createRuntime)
-
         initArguments = {
             name: config.name,
             location: config.location.fsPath,
-            dependencyManager: dependencyManager,
+            dependencyManager: config.dependencyManager,
         }
 
         let request: SchemaCodeDownloadRequestDetails
@@ -259,10 +255,11 @@ export async function createNewSamApplication(
 
         // Race condition where SAM app is created but template doesn't register in time.
         // Poll for 5 seconds, otherwise direct user to codelens.
-        const isTemplateRegistered = await waitUntil(
-            async () => ext.templateRegistry.getRegisteredItem(uri),
-            { timeout: 5000, interval: 500, truthy: false }
-        )
+        const isTemplateRegistered = await waitUntil(async () => ext.templateRegistry.getRegisteredItem(uri), {
+            timeout: 5000,
+            interval: 500,
+            truthy: false,
+        })
 
         if (isTemplateRegistered) {
             const newLaunchConfigs = await addInitialLaunchConfiguration(

@@ -27,7 +27,13 @@ import {
     wizardContinue,
     WizardStep,
 } from '../../shared/wizards/multiStepWizard'
-import { createRuntimeQuickPick, RuntimePackageType, samLambdaCreatableRuntimes } from '../models/samLambdaRuntime'
+import {
+    createRuntimeQuickPick,
+    DependencyManager,
+    getDependencyManager,
+    RuntimePackageType,
+    samLambdaCreatableRuntimes,
+} from '../models/samLambdaRuntime'
 import {
     eventBridgeStarterAppTemplate,
     getSamTemplateWizardOption,
@@ -45,7 +51,9 @@ export interface CreateNewSamAppWizardContext {
     readonly lambdaRuntimes: ImmutableSet<Runtime>
     readonly workspaceFolders: readonly vscode.WorkspaceFolder[] | undefined
 
-    promptUserForRuntime(currRuntime?: Runtime): Promise<[Runtime, RuntimePackageType] | undefined>
+    promptUserForRuntimeAndDependencyManager(
+        currRuntime?: Runtime
+    ): Promise<[Runtime, RuntimePackageType, DependencyManager | undefined] | undefined>
     promptUserForTemplate(
         currRuntime: Runtime,
         packageType: RuntimePackageType,
@@ -70,7 +78,18 @@ export class DefaultCreateNewSamAppWizardContext extends WizardContext implement
     private readonly samCliVersion: string
 
     private readonly totalSteps: number = 4
-    private additionalSteps: number = 0
+    private stepsToAdd = { promptUserForDependencyManager: false, promptUserForRegion: false }
+    private additionalSteps(): number {
+        let n = 0
+        if (this.stepsToAdd.promptUserForDependencyManager) {
+            n += 1
+        }
+        if (this.stepsToAdd.promptUserForRegion) {
+            n += 3
+        }
+
+        return n
+    }
 
     public constructor(currentCredentials: Credentials | undefined, schemasRegions: Region[], samCliVersion: string) {
         super()
@@ -79,7 +98,12 @@ export class DefaultCreateNewSamAppWizardContext extends WizardContext implement
         this.samCliVersion = samCliVersion
     }
 
-    public async promptUserForRuntime(currRuntime?: Runtime): Promise<[Runtime, RuntimePackageType] | undefined> {
+    public async promptUserForRuntimeAndDependencyManager(
+        currRuntime?: Runtime
+    ): Promise<[Runtime, RuntimePackageType, DependencyManager | undefined] | undefined> {
+        // last common step; reset additionalSteps to 0
+        this.stepsToAdd.promptUserForDependencyManager = false
+
         const quickPick = createRuntimeQuickPick({
             // TODO: remove check when SAM CLI version is low enough
             showImageRuntimes: semver.gte(this.samCliVersion, MINIMUM_SAM_CLI_VERSION_INCLUSIVE_FOR_IMAGE_SUPPORT),
@@ -101,7 +125,50 @@ export class DefaultCreateNewSamAppWizardContext extends WizardContext implement
         })
         const val = picker.verifySinglePickerOutput(choices)
 
-        return val ? [val.runtime, val.packageType] : undefined
+        if (!val) {
+            return undefined
+        }
+
+        const dependencyManager = await this.promptUserForDependencyManager(val.runtime)
+
+        return val ? [val.runtime, val.packageType, dependencyManager] : undefined
+    }
+
+    // don't preinclude currDependencyManager because it won't make sense if transitioning between runtimes
+    private async promptUserForDependencyManager(currRuntime: Runtime): Promise<DependencyManager | undefined> {
+        const dependencyManagers = getDependencyManager(currRuntime)
+        if (dependencyManagers.length === 1) {
+            return dependencyManagers[0]
+        } else {
+            // TODO!!!!!! CLEAN UP STEP NUMBERS!!!!!
+            this.stepsToAdd.promptUserForDependencyManager = true
+            const quickPick = picker.createQuickPick<vscode.QuickPickItem>({
+                options: {
+                    ignoreFocusOut: true,
+                    title: localize('AWS.samcli.initWizard.dependencyManager.prompt', 'Select a Dependency Manager'),
+                    step: 2,
+                    totalSteps: this.totalSteps + this.additionalSteps(),
+                },
+                buttons: [this.helpButton, vscode.QuickInputButtons.Back],
+                items: dependencyManagers.map(dependencyManager => ({
+                    label: dependencyManager,
+                })),
+            })
+
+            const choices = await picker.promptUser({
+                picker: quickPick,
+                onDidTriggerButton: (button, resolve, reject) => {
+                    if (button === vscode.QuickInputButtons.Back) {
+                        resolve(undefined)
+                    } else if (button === this.helpButton) {
+                        vscode.env.openExternal(vscode.Uri.parse(samInitDocUrl))
+                    }
+                },
+            })
+            const val = picker.verifySinglePickerOutput(choices)
+
+            return val ? (val.label as DependencyManager) : undefined
+        }
     }
 
     public async promptUserForTemplate(
@@ -109,16 +176,15 @@ export class DefaultCreateNewSamAppWizardContext extends WizardContext implement
         packageType: RuntimePackageType,
         currTemplate?: SamTemplate
     ): Promise<SamTemplate | undefined> {
-        // last common step; reset additionalSteps to 0
-        this.additionalSteps = 0
+        this.stepsToAdd.promptUserForRegion = false
         const templates = getSamTemplateWizardOption(currRuntime, packageType, this.samCliVersion)
         const quickPick = picker.createQuickPick<vscode.QuickPickItem>({
             options: {
                 ignoreFocusOut: true,
                 title: localize('AWS.samcli.initWizard.template.prompt', 'Select a SAM Application Template'),
                 value: currTemplate,
-                step: 2,
-                totalSteps: this.totalSteps,
+                step: 2 + this.additionalSteps(),
+                totalSteps: this.totalSteps + this.additionalSteps(),
             },
             buttons: [this.helpButton, vscode.QuickInputButtons.Back],
             items: templates.toArray().map(template => ({
@@ -163,14 +229,14 @@ export class DefaultCreateNewSamAppWizardContext extends WizardContext implement
 
     public async promptUserForRegion(currRegion?: string): Promise<string | undefined> {
         // start of longer path; set additionalSteps to 3
-        this.additionalSteps = 3
+        this.stepsToAdd.promptUserForRegion = true
         const quickPick = picker.createQuickPick<vscode.QuickPickItem>({
             options: {
                 ignoreFocusOut: true,
                 title: localize('AWS.samcli.initWizard.schemas.region.prompt', 'Select an EventBridge Schemas Region'),
                 value: currRegion ? currRegion : '',
                 step: 3,
-                totalSteps: this.totalSteps + this.additionalSteps,
+                totalSteps: this.totalSteps + this.additionalSteps(),
             },
             buttons: [this.helpButton, vscode.QuickInputButtons.Back],
             items: this.schemasRegions.map(region => ({
@@ -219,7 +285,7 @@ export class DefaultCreateNewSamAppWizardContext extends WizardContext implement
                 title: localize('AWS.samcli.initWizard.schemas.registry.prompt', 'Select a Registry'),
                 value: currRegistry ? currRegistry : '',
                 step: 4,
-                totalSteps: this.totalSteps + this.additionalSteps,
+                totalSteps: this.totalSteps + this.additionalSteps(),
             },
             buttons: [this.helpButton, vscode.QuickInputButtons.Back],
             items: registryNames!.map(registry => ({
@@ -284,7 +350,7 @@ export class DefaultCreateNewSamAppWizardContext extends WizardContext implement
                 title: localize('AWS.samcli.initWizard.schemas.schema.prompt', 'Select a Schema'),
                 value: currSchema ? currSchema : '',
                 step: 4,
-                totalSteps: this.totalSteps + this.additionalSteps,
+                totalSteps: this.totalSteps + this.additionalSteps(),
             },
             buttons: [this.helpButton, vscode.QuickInputButtons.Back],
             items: schemas!.map(schema => ({
@@ -313,8 +379,8 @@ export class DefaultCreateNewSamAppWizardContext extends WizardContext implement
     public async promptUserForLocation(): Promise<vscode.Uri | undefined> {
         return promptUserForLocation(this, {
             helpButton: { button: this.helpButton, url: samInitDocUrl },
-            step: 3 + this.additionalSteps,
-            totalSteps: this.totalSteps + this.additionalSteps,
+            step: 3 + this.additionalSteps(),
+            totalSteps: this.totalSteps + this.additionalSteps(),
         })
     }
 
@@ -323,8 +389,8 @@ export class DefaultCreateNewSamAppWizardContext extends WizardContext implement
             options: {
                 title: localize('AWS.samcli.initWizard.name.prompt', 'Enter a name for your new application'),
                 ignoreFocusOut: true,
-                step: 4 + this.additionalSteps,
-                totalSteps: this.totalSteps + this.additionalSteps,
+                step: 4 + this.additionalSteps(),
+                totalSteps: this.totalSteps + this.additionalSteps(),
             },
             buttons: [this.helpButton, vscode.QuickInputButtons.Back],
         })
@@ -361,6 +427,7 @@ export class DefaultCreateNewSamAppWizardContext extends WizardContext implement
 export interface CreateNewSamAppWizardResponse {
     packageType: RuntimePackageType
     runtime: Runtime
+    dependencyManager: DependencyManager
     template: SamTemplate
     region?: string
     registryName?: string
@@ -372,6 +439,7 @@ export interface CreateNewSamAppWizardResponse {
 export class CreateNewSamAppWizard extends MultiStepWizard<CreateNewSamAppWizardResponse> {
     private packageType?: RuntimePackageType
     private runtime?: Runtime
+    private dependencyManager?: DependencyManager
     private template?: SamTemplate
     private region?: string
     private registryName?: string
@@ -388,7 +456,14 @@ export class CreateNewSamAppWizard extends MultiStepWizard<CreateNewSamAppWizard
     }
 
     protected getResult(): CreateNewSamAppWizardResponse | undefined {
-        if (!this.runtime || !this.packageType || !this.template || !this.location || !this.name) {
+        if (
+            !this.runtime ||
+            !this.dependencyManager ||
+            !this.packageType ||
+            !this.template ||
+            !this.location ||
+            !this.name
+        ) {
             return undefined
         }
 
@@ -401,6 +476,7 @@ export class CreateNewSamAppWizard extends MultiStepWizard<CreateNewSamAppWizard
         return {
             packageType: this.packageType,
             runtime: this.runtime,
+            dependencyManager: this.dependencyManager,
             template: this.template,
             region: this.region,
             registryName: this.registryName,
@@ -411,9 +487,13 @@ export class CreateNewSamAppWizard extends MultiStepWizard<CreateNewSamAppWizard
     }
 
     private readonly RUNTIME: WizardStep = async () => {
-        const result = await this.context.promptUserForRuntime(this.runtime)
+        const result = await this.context.promptUserForRuntimeAndDependencyManager(this.runtime)
         if (result) {
-            ;[this.runtime, this.packageType] = result
+            ;[this.runtime, this.packageType, this.dependencyManager] = result
+        }
+
+        if (this.dependencyManager === undefined) {
+            return WIZARD_RETRY
         }
 
         return result ? wizardContinue(this.TEMPLATE) : WIZARD_TERMINATE

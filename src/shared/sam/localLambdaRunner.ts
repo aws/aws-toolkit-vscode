@@ -65,7 +65,11 @@ function getEnvironmentVariables(
  * Decides the resource name for the generated template.yaml.
  */
 function makeResourceName(config: SamLaunchRequestArgs): string {
-    return config.invokeTarget.target === 'code' ? 'awsToolkitSamLocalResource' : config.invokeTarget.logicalId
+    return config.invokeTarget.target === 'code'
+        ? config.runtimeFamily === RuntimeFamily.Java
+            ? path.parse(config.invokeTarget.projectRoot).name
+            : 'awsToolkitSamLocalResource'
+        : config.invokeTarget.logicalId
 }
 
 const SAM_LOCAL_PORT_CHECK_RETRY_INTERVAL_MILLIS: number = 125
@@ -321,7 +325,7 @@ export async function invokeLambdaFunction(
 
         // sam local invoke ...
         const command = new SamCliLocalInvokeInvocation(localInvokeArgs)
-        let samVersion: string | undefined 
+        let samVersion: string | undefined
         let invokeResult: telemetry.Result = 'Failed'
 
         try {

@@ -78,18 +78,15 @@ export const samLambdaRuntimes: ImmutableSet<Runtime> = ImmutableSet.union([
 export type DependencyManager = 'cli-package' | 'mod' | 'gradle' | 'pip' | 'npm' | 'maven' | 'bundler'
 
 // TODO: Make this return an array of DependencyManagers when we add runtimes with multiple dependency managers
-export function getDependencyManager(runtime: Runtime): DependencyManager {
+export function getDependencyManager(runtime: Runtime): DependencyManager[] {
     if (nodeJsRuntimes.has(runtime)) {
-        return 'npm'
+        return ['npm']
     } else if (pythonRuntimes.has(runtime)) {
-        return 'pip'
+        return ['pip']
     } else if (dotNetRuntimes.has(runtime) || runtime === dotnet50) {
-        return 'cli-package'
+        return ['cli-package']
     } else if (javaRuntimes.has(runtime)) {
-        // TODO: Return Maven too!
-        return 'gradle'
-    } else if (javaRuntimes.has(runtime)) {
-        return 'maven'
+        return ['gradle', 'maven']
     }
     throw new Error(`Runtime ${runtime} does not have an associated DependencyManager`)
 }
