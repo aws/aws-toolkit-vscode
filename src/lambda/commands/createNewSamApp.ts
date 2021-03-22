@@ -58,18 +58,15 @@ export async function resumeCreateNewSamApp(
 ) {
     let createResult: Result = 'Succeeded'
     let reason: CreateReason = 'complete'
-    let samInitState: SamInitState | undefined
     let samVersion: string | undefined
+    const samInitState: SamInitState | undefined = activationReloadState.getSamInitState()
+
+    const pathToLaunch = samInitState?.path
+    if (!pathToLaunch) {
+        return
+    }
 
     try {
-        samInitState = activationReloadState.getSamInitState()
-        samVersion = await getSamCliVersion(getSamCliContext())
-
-        const pathToLaunch = samInitState?.path
-        if (!pathToLaunch) {
-            return
-        }
-
         const uri = vscode.Uri.file(pathToLaunch)
         const folder = vscode.workspace.getWorkspaceFolder(uri)
         if (!folder) {
@@ -87,6 +84,8 @@ export async function resumeCreateNewSamApp(
 
             return
         }
+
+        samVersion = await getSamCliVersion(getSamCliContext())
 
         await addInitialLaunchConfiguration(
             extContext,
