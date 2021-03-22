@@ -53,12 +53,10 @@ describe('OutputChannelTransport', async function () {
         })
         // Used to check for raw logging
         const targetLog: string = outputText.join(raw ? '' : '\n')
-        let finalLog: string = ''
 
         // OutputChannel is logged to in async manner
         outputChannel.onDidAppendText(loggedText => {
             const res = targetMessages.get(loggedText)
-            finalLog += loggedText
             if (res) {
                 targetMessages.delete(loggedText)
                 res()
@@ -98,6 +96,6 @@ describe('OutputChannelTransport', async function () {
         ])
 
         assert.strictEqual(targetMessages.size, 0, 'Did not find all entries')
-        assert.strictEqual(finalLog.trimEnd(), targetLog, 'Logs did not match')
+        assert.strictEqual(outputChannel.value.trimEnd(), targetLog, 'Logs did not match')
     }
 })
