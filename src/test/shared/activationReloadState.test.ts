@@ -25,6 +25,18 @@ describe('ActivationReloadState', async function () {
         activationReloadState.clearSamInitState()
     })
 
+    it('decides ext.didReload()', async function () {
+        await ext.context.globalState.update(ACTIVATION_LAUNCH_PATH_KEY, undefined)
+        // Force ext to re-initialize.
+        ext.init(ext.context, ext.window)
+        assert.strictEqual(ext.didReload(), false)
+
+        await ext.context.globalState.update(ACTIVATION_LAUNCH_PATH_KEY, '/some/path')
+        // Force ext to re-initialize.
+        ext.init(ext.context, ext.window)
+        assert.strictEqual(ext.didReload(), true)
+    })
+
     describe('setSamInitState', async function () {
         it('without runtime', async function () {
             activationReloadState.setSamInitState({
