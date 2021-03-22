@@ -29,7 +29,21 @@ describe('OutputChannelTransport', async function () {
         await runTests([loggedMessage1, `${ansiCode}${loggedMessage2}`], [loggedMessage1, loggedMessage2], true)
     })
 
-    async function runTests(logStrings: string[], outputText: string[], stripAnsi: boolean, timeout: number = 1000) {
+    it('write raw output to the console', async function () {
+        await runTests([loggedMessage1, loggedMessage2], [loggedMessage1, loggedMessage2], false, true)
+    })
+
+    it('write raw output to the console and strips ansi', async function () {
+        await runTests([loggedMessage1, `${ansiCode}${loggedMessage2}`], [loggedMessage1, loggedMessage2], true, true)
+    })
+
+    async function runTests(
+        logStrings: string[],
+        outputText: string[],
+        stripAnsi: boolean,
+        raw: boolean = false,
+        timeout: number = 1000
+    ) {
         assert.ok(logStrings.length === outputText.length, 'Inputs are uneven')
 
         const targetMessages = new Map<string, (value: void | PromiseLike<void>) => void>()
@@ -37,10 +51,14 @@ describe('OutputChannelTransport', async function () {
             outputChannel,
             stripAnsi,
         })
+        // Used to check for raw logging
+        const targetLog: string = outputText.join(raw ? '' : '\n')
+        let finalLog: string = ''
 
         // OutputChannel is logged to in async manner
         outputChannel.onDidAppendText(loggedText => {
             const res = targetMessages.get(loggedText)
+            finalLog += loggedText
             if (res) {
                 targetMessages.delete(loggedText)
                 res()
@@ -54,7 +72,7 @@ describe('OutputChannelTransport', async function () {
         for (const text of outputText) {
             promises.push(
                 new Promise<void>(resolve => {
-                    targetMessages.set(`${text}\n`, resolve)
+                    targetMessages.set(raw ? text : `${text}\n`, resolve)
                 })
             )
         }
@@ -65,7 +83,7 @@ describe('OutputChannelTransport', async function () {
                     level: 'info',
                     message: text,
                     [MESSAGE]: text,
-                    raw: false,
+                    raw: raw,
                 },
                 () => {}
             )
@@ -78,6 +96,8 @@ describe('OutputChannelTransport', async function () {
                 setTimeout(reject, timeout)
             }),
         ])
+
         assert.strictEqual(targetMessages.size, 0, 'Did not find all entries')
+        assert.strictEqual(finalLog.trimEnd(), targetLog, 'Logs did not match')
     }
 })
