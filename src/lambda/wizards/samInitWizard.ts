@@ -488,15 +488,16 @@ export class CreateNewSamAppWizard extends MultiStepWizard<CreateNewSamAppWizard
 
     private readonly RUNTIME: WizardStep = async () => {
         const result = await this.context.promptUserForRuntimeAndDependencyManager(this.runtime)
-        if (result) {
-            ;[this.runtime, this.packageType, this.dependencyManager] = result
+        if (!result) {
+            return WIZARD_TERMINATE
         }
 
+        ;[this.runtime, this.packageType, this.dependencyManager] = result
         if (this.dependencyManager === undefined) {
             return WIZARD_RETRY
         }
 
-        return result ? wizardContinue(this.TEMPLATE) : WIZARD_TERMINATE
+        return wizardContinue(this.TEMPLATE)
     }
 
     private readonly TEMPLATE: WizardStep = async () => {

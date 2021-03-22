@@ -8,7 +8,7 @@ import { Runtime } from 'aws-sdk/clients/lambda'
 import { mkdirpSync, mkdtemp, removeSync } from 'fs-extra'
 import * as path from 'path'
 import * as vscode from 'vscode'
-import { getDependencyManager } from '../../src/lambda/models/samLambdaRuntime'
+import { DependencyManager } from '../../src/lambda/models/samLambdaRuntime'
 import { helloWorldTemplate } from '../../src/lambda/models/samTemplates'
 import { getSamCliContext } from '../../src/shared/sam/cli/samCliContext'
 import { runSamCliInit, SamCliInitArgs } from '../../src/shared/sam/cli/samCliInit'
@@ -33,6 +33,7 @@ interface TestScenario {
     path: string
     debugSessionType: string
     language: Language
+    dependencyManager: DependencyManager
 }
 
 // When testing additional runtimes, consider pulling the docker container in buildspec\linuxIntegrationTests.yml
@@ -45,6 +46,7 @@ const scenarios: TestScenario[] = [
         path: 'hello-world/app.js',
         debugSessionType: 'pwa-node',
         language: 'javascript',
+        dependencyManager: 'npm',
     },
     {
         runtime: 'nodejs12.x',
@@ -52,6 +54,7 @@ const scenarios: TestScenario[] = [
         path: 'hello-world/app.js',
         debugSessionType: 'pwa-node',
         language: 'javascript',
+        dependencyManager: 'npm',
     },
     {
         runtime: 'nodejs14.x',
@@ -59,6 +62,7 @@ const scenarios: TestScenario[] = [
         path: 'hello-world/app.js',
         debugSessionType: 'pwa-node',
         language: 'javascript',
+        dependencyManager: 'npm',
     },
     {
         runtime: 'python2.7',
@@ -66,6 +70,7 @@ const scenarios: TestScenario[] = [
         path: 'hello_world/app.py',
         debugSessionType: 'python',
         language: 'python',
+        dependencyManager: 'pip',
     },
     {
         runtime: 'python3.6',
@@ -73,6 +78,7 @@ const scenarios: TestScenario[] = [
         path: 'hello_world/app.py',
         debugSessionType: 'python',
         language: 'python',
+        dependencyManager: 'pip',
     },
     {
         runtime: 'python3.7',
@@ -80,6 +86,7 @@ const scenarios: TestScenario[] = [
         path: 'hello_world/app.py',
         debugSessionType: 'python',
         language: 'python',
+        dependencyManager: 'pip',
     },
     {
         runtime: 'python3.8',
@@ -87,6 +94,7 @@ const scenarios: TestScenario[] = [
         path: 'hello_world/app.py',
         debugSessionType: 'python',
         language: 'python',
+        dependencyManager: 'pip',
     },
     // { runtime: 'dotnetcore2.1', path: 'src/HelloWorld/Function.cs', debugSessionType: 'coreclr', language: 'csharp' },
     // { runtime: 'dotnetcore3.1', path: 'src/HelloWorld/Function.cs', debugSessionType: 'coreclr', language: 'csharp' },
@@ -99,6 +107,7 @@ const scenarios: TestScenario[] = [
         path: 'hello-world/app.js',
         debugSessionType: 'pwa-node',
         language: 'javascript',
+        dependencyManager: 'npm',
     },
     {
         runtime: 'nodejs12.x',
@@ -107,6 +116,7 @@ const scenarios: TestScenario[] = [
         path: 'hello-world/app.js',
         debugSessionType: 'pwa-node',
         language: 'javascript',
+        dependencyManager: 'npm',
     },
     {
         runtime: 'nodejs14.x',
@@ -115,6 +125,7 @@ const scenarios: TestScenario[] = [
         path: 'hello-world/app.js',
         debugSessionType: 'pwa-node',
         language: 'javascript',
+        dependencyManager: 'npm',
     },
     {
         runtime: 'python3.6',
@@ -123,6 +134,7 @@ const scenarios: TestScenario[] = [
         path: 'hello_world/app.py',
         debugSessionType: 'python',
         language: 'python',
+        dependencyManager: 'pip',
     },
     {
         runtime: 'python3.7',
@@ -131,6 +143,7 @@ const scenarios: TestScenario[] = [
         path: 'hello_world/app.py',
         debugSessionType: 'python',
         language: 'python',
+        dependencyManager: 'pip',
     },
     {
         runtime: 'python3.8',
@@ -139,6 +152,7 @@ const scenarios: TestScenario[] = [
         path: 'hello_world/app.py',
         debugSessionType: 'python',
         language: 'python',
+        dependencyManager: 'pip',
     },
     // { runtime: 'dotnetcore2.1', path: 'src/HelloWorld/Function.cs', debugSessionType: 'coreclr', language: 'csharp' },
     // { runtime: 'dotnetcore3.1', path: 'src/HelloWorld/Function.cs', debugSessionType: 'coreclr', language: 'csharp' },
@@ -485,7 +499,7 @@ describe('SAM Integration Tests', async function () {
             const initArguments: SamCliInitArgs = {
                 name: samApplicationName,
                 location: location,
-                dependencyManager: getDependencyManager(scenario.runtime),
+                dependencyManager: scenario.dependencyManager,
             }
             if (scenario.baseImage) {
                 initArguments.baseImage = scenario.baseImage
