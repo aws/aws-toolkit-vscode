@@ -24,7 +24,7 @@ import * as javaCodelens from './javaCodeLensProvider'
 import * as pythonCodelens from './pythonCodeLensProvider'
 import * as tsCodelens from './typescriptCodeLensProvider'
 
-export type Language = 'python' | 'javascript' | 'csharp'
+export type Language = 'python' | 'javascript' | 'csharp' | 'java'
 
 export async function makeCodeLenses({
     document,

@@ -96,6 +96,22 @@ const scenarios: TestScenario[] = [
         language: 'python',
         dependencyManager: 'pip',
     },
+    // {
+    //     runtime: 'java11 (maven)',
+    //     displayName: 'java11 (ZIP)',
+    //     path: 'hello_world/app.py',
+    //     debugSessionType: 'java',
+    //     language: 'java',
+    //     dependencyManager: 'maven',
+    // },
+    // {
+    //     runtime: 'java11 (gradle)',
+    //     displayName: 'java11 (ZIP)',
+    //     path: 'hello_world/app.py',
+    //     debugSessionType: 'java',
+    //     language: 'java',
+    //     dependencyManager: 'gradle',
+    // },
     // { runtime: 'dotnetcore2.1', path: 'src/HelloWorld/Function.cs', debugSessionType: 'coreclr', language: 'csharp' },
     // { runtime: 'dotnetcore3.1', path: 'src/HelloWorld/Function.cs', debugSessionType: 'coreclr', language: 'csharp' },
 
