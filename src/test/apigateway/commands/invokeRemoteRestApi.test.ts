@@ -7,9 +7,9 @@ import * as assert from 'assert'
 import { listValidMethods } from '../../../apigateway/commands/invokeRemoteRestApi'
 import { Resource } from 'aws-sdk/clients/apigateway'
 
-describe('listValidMethods', function() {
+describe('listValidMethods', function () {
     const allMethods = ['DELETE', 'GET', 'HEAD', 'OPTIONS', 'PATCH', 'POST', 'PUT']
-    it('returns all methods if "ANY" is a method', async function() {
+    it('returns all methods if "ANY" is a method', async function () {
         const resources = new Map<string, Resource>()
         const resource: Resource = {
             resourceMethods: {
@@ -22,7 +22,7 @@ describe('listValidMethods', function() {
 
         assert.deepStrictEqual(actual, allMethods)
     })
-    it('returns dedupe-d all methods if "ANY" declared with another method', async function() {
+    it('returns dedupe-d all methods if "ANY" declared with another method', async function () {
         const resources = new Map<string, Resource>()
         const resource: Resource = {
             resourceMethods: {
@@ -36,7 +36,7 @@ describe('listValidMethods', function() {
 
         assert.deepStrictEqual(actual, allMethods)
     })
-    it('returns get if declares get', async function() {
+    it('returns get if declares get', async function () {
         const resources = new Map<string, Resource>()
         const resource: Resource = {
             resourceMethods: {
@@ -49,7 +49,7 @@ describe('listValidMethods', function() {
 
         assert.deepStrictEqual(actual, ['GET'])
     })
-    it('returns nothing if no methods', async function() {
+    it('returns nothing if no methods', async function () {
         const resources = new Map<string, Resource>()
         const resource: Resource = {}
         resources.set('resource', resource)

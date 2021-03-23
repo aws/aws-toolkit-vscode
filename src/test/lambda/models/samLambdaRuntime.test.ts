@@ -13,7 +13,7 @@ import {
     RuntimeFamily,
 } from '../../../lambda/models/samLambdaRuntime'
 
-describe('compareSamLambdaRuntime', async function() {
+describe('compareSamLambdaRuntime', async function () {
     const scenarios: {
         lowerRuntime: Runtime
         higherRuntime: Runtime
@@ -36,8 +36,8 @@ describe('compareSamLambdaRuntime', async function() {
     })
 })
 
-describe('getDependencyManager', async function() {
-    it('all runtimes are handled', async function() {
+describe('getDependencyManager', async function () {
+    it('all runtimes are handled', async function () {
         samZipLambdaRuntimes.forEach(runtime => {
             // Checking that call does not throw
             getDependencyManager(runtime)
@@ -45,11 +45,11 @@ describe('getDependencyManager', async function() {
     })
 })
 
-describe('getFamily', async function() {
-    it('unknown runtime name', async function() {
+describe('getFamily', async function () {
+    it('unknown runtime name', async function () {
         assert.strictEqual(getFamily('foo'), RuntimeFamily.Unknown)
     })
-    it('handles all known runtimes', async function() {
+    it('handles all known runtimes', async function () {
         samZipLambdaRuntimes.forEach(runtime => {
             assert.notStrictEqual(getFamily(runtime), RuntimeFamily.Unknown)
         })

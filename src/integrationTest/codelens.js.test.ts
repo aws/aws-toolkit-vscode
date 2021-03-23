@@ -14,13 +14,13 @@ const CODELENS_TEST_TIMEOUT_MILLIS = 10000
 
 const workspaceFolder = getTestWorkspaceFolder()
 
-describe('SAM Local CodeLenses (JS)', async function() {
+describe('SAM Local CodeLenses (JS)', async function () {
     // TODO : Extend this test suite out to work for different projects with different file configurations
     before(async function () {
         this.timeout(ACTIVATE_EXTENSION_TIMEOUT_MILLIS)
     })
 
-    it('appear when manifest in subfolder and app is beside manifest', async function() {
+    it('appear when manifest in subfolder and app is beside manifest', async function () {
         const appRoot = join(workspaceFolder, 'js-plain-sam-app')
         const appCodePath = join(appRoot, 'src', 'app.js')
         const expectedHandlerName = 'app.handlerBesidePackageJson'
@@ -31,7 +31,7 @@ describe('SAM Local CodeLenses (JS)', async function() {
         assertAddDebugConfigCodeLensExists(codeLenses, expectedHandlerName, dirname(appCodePath))
     }).timeout(CODELENS_TEST_TIMEOUT_MILLIS)
 
-    it('appear when manifest in root', async function() {
+    it('appear when manifest in root', async function () {
         const appRoot = join(workspaceFolder, 'js-manifest-in-root')
         const appCodePath = join(appRoot, 'src', 'subfolder', 'app.js')
         const expectedHandlerName = 'src/subfolder/app.handlerTwoFoldersDeep'
@@ -42,7 +42,7 @@ describe('SAM Local CodeLenses (JS)', async function() {
         assertAddDebugConfigCodeLensExists(codeLenses, expectedHandlerName, join(dirname(appCodePath), '..', '..'))
     }).timeout(CODELENS_TEST_TIMEOUT_MILLIS)
 
-    it('appear when manifest in subfolder and app in subfolder to manifest', async function() {
+    it('appear when manifest in subfolder and app in subfolder to manifest', async function () {
         const appRoot = join(workspaceFolder, 'js-manifest-in-subfolder')
         const appCodePath = join(appRoot, 'src', 'subfolder', 'app.js')
         const expectedHandlerName = 'subfolder/app.handlerInManifestSubfolder'
@@ -53,7 +53,7 @@ describe('SAM Local CodeLenses (JS)', async function() {
         assertAddDebugConfigCodeLensExists(codeLenses, expectedHandlerName, join(dirname(appCodePath), '..'))
     }).timeout(CODELENS_TEST_TIMEOUT_MILLIS)
 
-    it('appear when project is a few folders deep in the workspace', async function() {
+    it('appear when project is a few folders deep in the workspace', async function () {
         const appRoot = join(workspaceFolder, 'deeper-projects', 'js-plain-sam-app')
         const appCodePath = join(appRoot, 'src', 'app.js')
         const expectedHandlerName = 'app.projectDeepInWorkspace'

@@ -30,8 +30,8 @@ const validTemplateOptions: Set<SamTemplate> = Set<SamTemplate>([
 
 const defaultTemplateOptions: Set<SamTemplate> = Set<SamTemplate>([helloWorldTemplate, stepFunctionsSampleApp])
 
-describe('getSamTemplateWizardOption', function() {
-    it('should successfully return available templates for specific runtime', function() {
+describe('getSamTemplateWizardOption', function () {
+    it('should successfully return available templates for specific runtime', function () {
         for (const runtime of samZipLambdaRuntimes.values()) {
             const result = getSamTemplateWizardOption(runtime, 'Zip', CLI_VERSION_STEP_FUNCTIONS_TEMPLATE)
             switch (runtime) {
@@ -55,7 +55,7 @@ describe('getSamTemplateWizardOption', function() {
         }
     })
 
-    it('should not return Step Functions templates for a SAM CLI version that does not support them', function() {
+    it('should not return Step Functions templates for a SAM CLI version that does not support them', function () {
         for (const runtime of samZipLambdaRuntimes.values()) {
             const result = getSamTemplateWizardOption(runtime, 'Zip', '0.40.0')
             assert(!result.contains(stepFunctionsSampleApp))
@@ -63,23 +63,23 @@ describe('getSamTemplateWizardOption', function() {
     })
 })
 
-describe('getSamCliTemplateParameter', function() {
-    it('should successfully return template values used by sam cli', function() {
+describe('getSamCliTemplateParameter', function () {
+    it('should successfully return template values used by sam cli', function () {
         for (const template of validTemplateOptions.values()) {
             const result = getSamCliTemplateParameter(template)
             assert.ok(result, `Template name on the wizard : ${template}, sam cli parameter value : ${result}`)
         }
     })
 
-    it('should return error if the template option is not valid', async function() {
+    it('should return error if the template option is not valid', async function () {
         const errorMessage = `${repromptUserForTemplate} is not valid sam template`
         const error = await assertThrowsError(async () => getSamCliTemplateParameter(repromptUserForTemplate))
         assert.strictEqual(error.message, errorMessage, 'Should fail for same error')
     })
 })
 
-describe('getTemplateDescription', async function() {
-    it('all templates are handled', async function() {
+describe('getTemplateDescription', async function () {
+    it('all templates are handled', async function () {
         validTemplateOptions.forEach(template => {
             // Checking that call does not throw
             getTemplateDescription(template)

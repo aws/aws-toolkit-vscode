@@ -16,19 +16,19 @@ import {
 } from '../../../shared/sam/debugger/awsSamDebugConfiguration'
 import * as AddSamDebugConfiguration from '../../../shared/sam/debugger/commands/addSamDebugConfiguration'
 
-describe('codeLensUtils', function() {
-    describe('pickAddSamDebugConfiguration', function() {
+describe('codeLensUtils', function () {
+    describe('pickAddSamDebugConfiguration', function () {
         let sandbox: sinon.SinonSandbox
 
-        beforeEach(function() {
+        beforeEach(function () {
             sandbox = sinon.createSandbox()
         })
 
-        afterEach(function() {
+        afterEach(function () {
             sandbox.restore()
         })
 
-        it('should use CODE_TARGET_TYPE with no templateConfigs', function() {
+        it('should use CODE_TARGET_TYPE with no templateConfigs', function () {
             const addSamStub = sandbox.stub(AddSamDebugConfiguration, 'addSamDebugConfiguration')
             const codeConfig: AddSamDebugConfiguration.AddSamDebugConfigurationInput = {
                 resourceName: 'codeResource',
@@ -41,7 +41,7 @@ describe('codeLensUtils', function() {
             assert.strictEqual(addSamStub.calledOnceWith(codeConfig, CODE_TARGET_TYPE, false), true)
         })
 
-        it('should use CODE_TARGET_TYPE when no template option is chosen', async function() {
+        it('should use CODE_TARGET_TYPE when no template option is chosen', async function () {
             sandbox.stub(Picker, 'promptUser').resolves(undefined)
             sandbox.stub(Picker, 'verifySinglePickerOutput').returns({ label: 'No Template' })
             const addSamStub = sandbox.stub(AddSamDebugConfiguration, 'addSamDebugConfiguration').resolves()
@@ -58,7 +58,7 @@ describe('codeLensUtils', function() {
             assert.strictEqual(addSamStub.calledOnceWith(codeConfig, CODE_TARGET_TYPE, false), true)
         })
 
-        it('should use API_TARGET_TYPE when API template option is chosen', async function() {
+        it('should use API_TARGET_TYPE when API template option is chosen', async function () {
             sandbox.stub(Picker, 'promptUser').resolves(undefined)
             sandbox
                 .stub(Picker, 'verifySinglePickerOutput')
@@ -81,7 +81,7 @@ describe('codeLensUtils', function() {
             assert.strictEqual(addSamStub.args[0][1], API_TARGET_TYPE)
         })
 
-        it('should use TEMPLATE_TARGET_TYPE when non API template option is chosen', async function() {
+        it('should use TEMPLATE_TARGET_TYPE when non API template option is chosen', async function () {
             sandbox.stub(Picker, 'promptUser').resolves(undefined)
             sandbox.stub(Picker, 'verifySinglePickerOutput').returns({ label: `${path.sep}path:templateNoApi` })
             const addSamStub = sandbox.stub(AddSamDebugConfiguration, 'addSamDebugConfiguration').resolves()

@@ -2,7 +2,7 @@
     "name": "aws-toolkit-vscode",
     "displayName": "AWS Toolkit",
     "description": "An extension for working with Amazon Web Services",
-    "version": "1.21.0-SNAPSHOT",
+    "version": "1.23.0-SNAPSHOT",
     "publisher": "amazonwebservices",
     "license": "Apache-2.0",
     "repository": {
@@ -1501,7 +1501,7 @@
         "copyNonCodeFiles": "node ./build-scripts/copyNonCodeFiles.js",
         "copyExtensionMain": "node ./build-scripts/copyExtensionMain.js",
         "copyDistFiles": "ts-node ./build-scripts/copyDistFiles.ts",
-        "buildScripts": "npm run buildWebviews && npm run bundleDeps && npm run copyExtensionMain && npm run copyDistFiles && npm run copyNonCodeFiles && npm run generateNonCodeFiles",
+        "buildScripts": "npm run bundleDeps && npm run copyExtensionMain && npm run copyDistFiles && npm run copyNonCodeFiles && npm run generateNonCodeFiles",
         "compile": "webpack --mode development && npm run buildScripts",
         "recompile": "npm run clean && npm run compile",
         "watch": "npm run buildScripts && tsc -watch -p ./",
@@ -1517,8 +1517,7 @@
         "generateTelemetry": "node node_modules/@aws-toolkits/telemetry/lib/generateTelemetry.js --extraInput=src/shared/telemetry/vscodeTelemetry.json --output=src/shared/telemetry/telemetry.gen.ts",
         "generateConfigurationAttributes": "ts-node ./build-scripts/generateConfigurationAttributes.ts",
         "newChange": "ts-node ./build-scripts/newChange.ts",
-        "createRelease": "ts-node ./build-scripts/createRelease.ts",
-        "buildWebviews": "webpack --config ./webpack.webview.config.js"
+        "createRelease": "ts-node ./build-scripts/createRelease.ts"
     },
     "devDependencies": {
         "@aws-toolkits/telemetry": "0.0.91",
@@ -1549,6 +1548,7 @@
         "@typescript-eslint/parser": "^2.27.0",
         "circular-dependency-plugin": "^5.2.0",
         "decache": "^4.4.0",
+        "esbuild-loader": "2.10.0",
         "eslint": "^6.8.0",
         "eslint-config-prettier": "^6.10.1",
         "eslint-plugin-header": "^3.0.0",
@@ -1567,8 +1567,6 @@
         "remap-istanbul": "^0.12.0",
         "sinon": "^7.4.2",
         "source-map-support": "^0.5.19",
-        "terser-webpack-plugin": "^4.2.2",
-        "ts-loader": "^6.2.0",
         "ts-mockito": "^2.5.0",
         "ts-node": "^9.0.0",
         "tslint": "^6.1.3",
@@ -1576,6 +1574,8 @@
         "vsce": "^1.81.1",
         "vscode-nls-dev": "^3.3.1",
         "vscode-test": "^1.4.0",
+        "vue-loader": "^15.9.6",
+        "vue-template-compiler": "^2.6.12",
         "webpack": "^4.41.2",
         "webpack-cli": "^3.3.10"
     },

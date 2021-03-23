@@ -33,7 +33,7 @@ textarea {
     padding: 5px 15px;
 }
 
-.payload-section{
+.payload-section {
     padding-left: 15px;
     border: rgb(211, 130, 38) dashed 1px;
     padding: 5px 15px;
@@ -42,7 +42,7 @@ textarea {
 .data-view {
     display: none;
     border: dashed rgb(218, 31, 31) 1px;
-    color: rgb(218, 31, 31)
+    color: rgb(218, 31, 31);
 }
 
 .invoke-button-container {
@@ -61,7 +61,7 @@ textarea {
     margin-top: 10px;
     color: red;
     border: red solid 1px;
-    width:  90%;
+    width: 90%;
     padding: 5px 10px;
 }
 

@@ -14,31 +14,31 @@ import { getTestWorkspaceFolder } from '../integrationTestsUtilities'
  * Note: these tests are pretty shallow right now. They do not test the following:
  * * Adding/removing workspace folders
  */
-describe('CloudFormation Template Registry', async function() {
+describe('CloudFormation Template Registry', async function () {
     let registry: CloudFormationTemplateRegistry
     let workspaceDir: string
     let testDir: string
     let testDirNested: string
     let dir: number = 0
 
-    before(async function() {
+    before(async function () {
         workspaceDir = getTestWorkspaceFolder()
     })
 
-    beforeEach(async function() {
+    beforeEach(async function () {
         testDir = path.join(workspaceDir, dir.toString())
         testDirNested = path.join(testDir, 'nested')
         await fs.mkdirp(testDirNested)
         registry = new CloudFormationTemplateRegistry()
     })
 
-    afterEach(async function() {
+    afterEach(async function () {
         registry.dispose()
         await fs.remove(testDir)
         dir++
     })
 
-    it('adds initial template files with yaml and yml extensions at various nesting levels', async function() {
+    it('adds initial template files with yaml and yml extensions at various nesting levels', async function () {
         await strToYamlFile(makeSampleSamTemplateYaml(true), path.join(testDir, 'test.yaml'))
         await strToYamlFile(makeSampleSamTemplateYaml(false), path.join(testDirNested, 'test.yml'))
 
@@ -47,7 +47,7 @@ describe('CloudFormation Template Registry', async function() {
         await registryHasTargetNumberOfFiles(registry, 2)
     })
 
-    it('adds dynamically-added template files with yaml and yml extensions at various nesting levels', async function() {
+    it('adds dynamically-added template files with yaml and yml extensions at various nesting levels', async function () {
         await registry.addWatchPattern('**/test.{yaml,yml}')
 
         await strToYamlFile(makeSampleSamTemplateYaml(false), path.join(testDir, 'test.yml'))
@@ -56,7 +56,7 @@ describe('CloudFormation Template Registry', async function() {
         await registryHasTargetNumberOfFiles(registry, 2)
     })
 
-    it('Ignores templates matching excluded patterns', async function() {
+    it('Ignores templates matching excluded patterns', async function () {
         await registry.addWatchPattern('**/test.{yaml,yml}')
         await registry.addExcludedPattern(/.*nested.*/)
 
@@ -66,7 +66,7 @@ describe('CloudFormation Template Registry', async function() {
         await registryHasTargetNumberOfFiles(registry, 1)
     })
 
-    it('can handle changed files', async function() {
+    it('can handle changed files', async function () {
         const filepath = path.join(testDir, 'changeMe.yml')
         await strToYamlFile(makeSampleSamTemplateYaml(false), filepath)
 
@@ -81,7 +81,7 @@ describe('CloudFormation Template Registry', async function() {
         await queryRegistryForFileWithGlobalsKeyStatus(registry, filepath, true)
     })
 
-    it('can handle deleted files', async function() {
+    it('can handle deleted files', async function () {
         await registry.addWatchPattern('**/deleteMe.yml')
 
         // Specifically creating the file after the watcher is added

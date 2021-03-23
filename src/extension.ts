@@ -64,15 +64,15 @@ import { activate as activateStepFunctions } from './stepFunctions/activation'
 import { activate as activateSsmDocument } from './ssmDocument/activation'
 import { CredentialsStore } from './credentials/credentialsStore'
 import { getSamCliContext } from './shared/sam/cli/samCliContext'
+import * as extWindow from './shared/vscode/window'
 
 let localize: nls.LocalizeFunc
 
 export async function activate(context: vscode.ExtensionContext) {
     const activationStartedOn = Date.now()
-
     localize = nls.loadMessageBundle()
+    ext.init(context, extWindow.Window.vscode())
 
-    ext.context = context
     const toolkitOutputChannel = vscode.window.createOutputChannel(localize('AWS.channel.aws.toolkit', 'AWS Toolkit'))
     await activateLogger(context, toolkitOutputChannel)
     const remoteInvokeOutputChannel = vscode.window.createOutputChannel(
@@ -239,6 +239,8 @@ export async function activate(context: vscode.ExtensionContext) {
         await loginWithMostRecentCredentials(toolkitSettings, loginManager)
 
         recordToolkitInitialization(activationStartedOn, getLogger())
+
+        assertPassiveTelemetry()
     } catch (error) {
         getLogger('channel').error(
             localize(
@@ -248,6 +250,22 @@ export async function activate(context: vscode.ExtensionContext) {
             )
         )
         throw error
+    }
+}
+
+/**
+ * Only passive telemetry is allowed during startup (except for some known
+ * special-cases).
+ */
+function assertPassiveTelemetry() {
+    const didReload = ext.didReload()
+    // These special-case metrics may be non-passive during a VSCode "reload".
+    const activeAllowed = ['sam_init']
+    for (const metric of ext.telemetry.records) {
+        if (metric.Passive || (didReload && activeAllowed.includes(metric.MetricName))) {
+            continue
+        }
+        throw Error('non-passive metric emitted at startup')
     }
 }
 

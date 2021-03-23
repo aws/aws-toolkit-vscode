@@ -9,12 +9,12 @@ import { PlaceholderNode } from '../../../shared/treeview/nodes/placeholderNode'
 import { makeChildrenNodes } from '../../../shared/treeview/treeNodeUtilities'
 import { TestAWSTreeNode } from './nodes/testAWSTreeNode'
 
-describe('makeChildrenNodes', async function() {
+describe('makeChildrenNodes', async function () {
     const parentNode = new TestAWSTreeNode('parent node')
     const nodeA = new PlaceholderNode(parentNode, 'node A')
     const nodeB = new PlaceholderNode(parentNode, 'node B')
 
-    it('returns child nodes', async function() {
+    it('returns child nodes', async function () {
         const childNodes = await makeChildrenNodes({
             getChildNodes: async () => [nodeA, nodeB],
             getErrorNode: async (error: Error) => makeErrorNode(error),
@@ -25,7 +25,7 @@ describe('makeChildrenNodes', async function() {
         assert.deepStrictEqual(childNodes[1], nodeB, 'Unexpected second child node')
     })
 
-    it('returns an error node if an error is encountered', async function() {
+    it('returns an error node if an error is encountered', async function () {
         const expectedError = new Error('loading error')
         const expectedErrorNode = makeErrorNode(expectedError)
 
@@ -41,7 +41,7 @@ describe('makeChildrenNodes', async function() {
         assert.deepStrictEqual(actualChildNode, expectedErrorNode, 'Child node was not the error node')
     })
 
-    it('returns a placeholder node if there are no child nodes', async function() {
+    it('returns a placeholder node if there are no child nodes', async function () {
         const expectedPlaceholderNode = new PlaceholderNode(parentNode, 'No child nodes found')
         const childNodes = await makeChildrenNodes({
             getChildNodes: async () => [],
@@ -54,7 +54,7 @@ describe('makeChildrenNodes', async function() {
         assert.deepStrictEqual(actualChildNode, expectedPlaceholderNode, 'Child node was not the placeholder node')
     })
 
-    it('returns an empty list if there are no child nodes and no placeholder', async function() {
+    it('returns an empty list if there are no child nodes and no placeholder', async function () {
         const childNodes = await makeChildrenNodes({
             getChildNodes: async () => [],
             getErrorNode: async (error: Error) => makeErrorNode(error),
@@ -63,7 +63,7 @@ describe('makeChildrenNodes', async function() {
         assert.strictEqual(childNodes.length, 0, 'Unexpected child node count')
     })
 
-    it('sorts the child nodes', async function() {
+    it('sorts the child nodes', async function () {
         const childNodes = await makeChildrenNodes({
             getChildNodes: async () => [nodeB, nodeA],
             getErrorNode: async (error: Error) => makeErrorNode(error),
@@ -75,7 +75,7 @@ describe('makeChildrenNodes', async function() {
         assert.deepStrictEqual(childNodes[1], nodeB, 'Unexpected second child node')
     })
 
-    it('does not sort the child nodes if a sort method is not provided', async function() {
+    it('does not sort the child nodes if a sort method is not provided', async function () {
         const childNodes = await makeChildrenNodes({
             getChildNodes: async () => [nodeB, nodeA],
             getErrorNode: async (error: Error) => makeErrorNode(error),

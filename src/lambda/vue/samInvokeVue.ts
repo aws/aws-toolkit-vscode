@@ -44,7 +44,7 @@ function newLaunchConfig(existingConfig?: AwsSamDebuggerConfiguration): MorePerm
         aws: {
             credentials: '',
             region: '',
-            ...(existingConfig?.aws ? existingConfig.aws : {})
+            ...(existingConfig?.aws ? existingConfig.aws : {}),
         },
         invokeTarget: {
             target: 'template',
@@ -52,7 +52,7 @@ function newLaunchConfig(existingConfig?: AwsSamDebuggerConfiguration): MorePerm
             logicalId: '',
             lambdaHandler: '',
             projectRoot: '',
-            ...existingConfig?.invokeTarget
+            ...existingConfig?.invokeTarget,
         },
         lambda: {
             runtime: '',
@@ -61,10 +61,10 @@ function newLaunchConfig(existingConfig?: AwsSamDebuggerConfiguration): MorePerm
             environmentVariables: {},
             ...existingConfig?.lambda,
             payload: {
-                json: (existingConfig?.lambda?.payload?.json ? existingConfig.lambda.payload.json : {}),
-                path: (existingConfig?.lambda?.payload?.path ? existingConfig.lambda.payload.path : ''),
-            }
-            
+                json: existingConfig?.lambda?.payload?.json ? existingConfig.lambda.payload.json : {},
+                path: existingConfig?.lambda?.payload?.path ? existingConfig.lambda.payload.path : '',
+            },
+
             // pathMappings: undefined
         },
         sam: {
@@ -75,8 +75,8 @@ function newLaunchConfig(existingConfig?: AwsSamDebuggerConfiguration): MorePerm
             skipNewImageCheck: false,
             ...(existingConfig?.sam ? existingConfig.sam : {}),
             template: {
-                parameters: (existingConfig?.sam?.template?.parameters ? existingConfig.sam.template.parameters : {})
-            }
+                parameters: existingConfig?.sam?.template?.parameters ? existingConfig.sam.template.parameters : {},
+            },
         },
         api: {
             path: '',
@@ -87,9 +87,10 @@ function newLaunchConfig(existingConfig?: AwsSamDebuggerConfiguration): MorePerm
             stageVariables: {},
             ...(existingConfig?.api ? existingConfig.api : {}),
             payload: {
-                json: (existingConfig?.api?.payload?.json ? existingConfig.api.payload.json : {}),
-                path: (existingConfig?.api?.payload?.path ? existingConfig.api.payload.path : ''),            },
-        }
+                json: existingConfig?.api?.payload?.json ? existingConfig.api.payload.json : {},
+                path: existingConfig?.api?.payload?.path ? existingConfig.api.payload.path : '',
+            },
+        },
     }
 }
 export const Component = Vue.extend({
@@ -117,7 +118,9 @@ export const Component = Vue.extend({
                         this.payload.value = JSON.stringify(event.data.launchConfig.lambda.payload.json, undefined, 4)
                     }
                     if (event.data.launchConfig.lambda?.environmentVariables) {
-                        this.environmentVariables.value = JSON.stringify(event.data.launchConfig.lambda?.environmentVariables)
+                        this.environmentVariables.value = JSON.stringify(
+                            event.data.launchConfig.lambda?.environmentVariables
+                        )
                     }
                     if (event.data.launchConfig.sam?.template?.parameters) {
                         this.parameters.value = JSON.stringify(event.data.launchConfig.sam?.template?.parameters)
@@ -167,12 +170,12 @@ export const Component = Vue.extend({
             ],
             httpMethods: ['GET', 'POST', 'PUT', 'DELETE', 'HEAD', 'OPTIONS', 'PATCH'],
             launchConfig: newLaunchConfig(),
-            payload: {value: '', errorMsg: ''},
-            apiPayload: {value: '', errorMsg: ''},
-            environmentVariables: {value: '', errorMsg: ''},
-            parameters: {value: '', errorMsg: ''},
-            headers: {value: '', errorMsg: ''},
-            stageVariables: {value: '', errorMsg: ''}
+            payload: { value: '', errorMsg: '' },
+            apiPayload: { value: '', errorMsg: '' },
+            environmentVariables: { value: '', errorMsg: '' },
+            parameters: { value: '', errorMsg: '' },
+            headers: { value: '', errorMsg: '' },
+            stageVariables: { value: '', errorMsg: '' },
         }
     },
     watch: {
@@ -185,7 +188,7 @@ export const Component = Vue.extend({
             },
             deep: true,
         },
-        payload: function (newval: {value: string, errorMsg: string}) {
+        payload: function (newval: { value: string; errorMsg: string }) {
             this.resetJsonErrors()
             vscode.setState({
                 payload: newval,
@@ -226,11 +229,11 @@ export const Component = Vue.extend({
         toggleShowAllFields() {
             this.showAllFields = !this.showAllFields
         },
-        stringToBoolean(field: string){
-            return field === "True"
+        stringToBoolean(field: string) {
+            return field === 'True'
         },
         formatFieldToStringArray(field: string | undefined) {
-            if(!field){
+            if (!field) {
                 return undefined
             }
             //Reg ex for a comma with 0 or more whitespace before and/or after
@@ -246,7 +249,7 @@ export const Component = Vue.extend({
                     field.errorMsg = e
                     throw e
                 }
-            } 
+            }
         },
         formatDataAndExecute(command: 'saveLaunchConfig' | 'invokeLaunchConfig') {
             this.resetJsonErrors()
@@ -254,15 +257,15 @@ export const Component = Vue.extend({
             let payloadJson, environmentVariablesJson, headersJson, stageVariablesJson, parametersJson, apiPayloadJson
 
             try {
-            payloadJson = this.formatStringtoJSON(this.payload)
-            environmentVariablesJson = this.formatStringtoJSON(this.environmentVariables)
-            headersJson = this.formatStringtoJSON(this.headers)
-            stageVariablesJson = this.formatStringtoJSON(this.stageVariables)
-            parametersJson = this.formatStringtoJSON(this.parameters)
-            apiPayloadJson = this.formatStringtoJSON(this.apiPayload)
+                payloadJson = this.formatStringtoJSON(this.payload)
+                environmentVariablesJson = this.formatStringtoJSON(this.environmentVariables)
+                headersJson = this.formatStringtoJSON(this.headers)
+                stageVariablesJson = this.formatStringtoJSON(this.stageVariables)
+                parametersJson = this.formatStringtoJSON(this.parameters)
+                apiPayloadJson = this.formatStringtoJSON(this.apiPayload)
             } catch {
                 return
-            }  
+            }
 
             vscode.postMessage({
                 command: command,
@@ -279,22 +282,28 @@ export const Component = Vue.extend({
                         },
                         sam: {
                             ...this.launchConfig.sam,
-                            buildArguments: this.formatFieldToStringArray(this.launchConfig.sam?.buildArguments?.toString()),
-                            localArguments: this.formatFieldToStringArray(this.launchConfig.sam?.localArguments?.toString()),
+                            buildArguments: this.formatFieldToStringArray(
+                                this.launchConfig.sam?.buildArguments?.toString()
+                            ),
+                            localArguments: this.formatFieldToStringArray(
+                                this.launchConfig.sam?.localArguments?.toString()
+                            ),
                             containerBuild: this.stringToBoolean(this.containerBuildStr),
                             skipNewImageCheck: this.stringToBoolean(this.skipNewImageCheckStr),
                             template: {
-                                parameters: parametersJson
-                            }
+                                parameters: parametersJson,
+                            },
                         },
-                        api: this.launchConfig.api ?  {
-                            ...this.launchConfig.api,
-                            headers: headersJson,
-                            stageVariables: stageVariablesJson,
-                            payload: {
-                                json: apiPayloadJson
-                            }
-                        } : undefined
+                        api: this.launchConfig.api
+                            ? {
+                                  ...this.launchConfig.api,
+                                  headers: headersJson,
+                                  stageVariables: stageVariablesJson,
+                                  payload: {
+                                      json: apiPayloadJson,
+                                  },
+                              }
+                            : undefined,
                     },
                 },
             })
@@ -303,14 +312,14 @@ export const Component = Vue.extend({
             this.launchConfig = newLaunchConfig()
             this.containerBuildStr = ''
             this.skipNewImageCheckStr = ''
-            this.payload = {value: '', errorMsg: ''}
-            this.apiPayload = {value: '', errorMsg: ''}
-            this.environmentVariables = {value: '', errorMsg: ''}
-            this.parameters = {value: '', errorMsg: ''}
-            this.headers = {value: '', errorMsg: ''}
-            this.stageVariables = {value: '', errorMsg: ''}
+            this.payload = { value: '', errorMsg: '' }
+            this.apiPayload = { value: '', errorMsg: '' }
+            this.environmentVariables = { value: '', errorMsg: '' }
+            this.parameters = { value: '', errorMsg: '' }
+            this.headers = { value: '', errorMsg: '' }
+            this.stageVariables = { value: '', errorMsg: '' }
             this.showAllFields = false
-        }
+        },
     },
     // `createElement` is inferred, but `render` needs return type
     template: `<!--
@@ -528,8 +537,7 @@ export const Component = Vue.extend({
         </div>
     </form>
 </template>
-`
-,
+`,
 })
 
 new Vue({
