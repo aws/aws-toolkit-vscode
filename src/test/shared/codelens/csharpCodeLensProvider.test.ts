@@ -22,19 +22,19 @@ import { makeTemporaryToolkitFolder } from '../../../shared/filesystemUtilities'
 
 const fakeRange = new vscode.Range(0, 0, 0, 0)
 
-describe('getLambdaHandlerComponents', async function() {
+describe('getLambdaHandlerComponents', async function () {
     let tempFolder: string
 
-    beforeEach(async function() {
+    beforeEach(async function () {
         // Make a temp folder for all these tests
         tempFolder = await makeTemporaryToolkitFolder()
     })
 
-    afterEach(async function() {
+    afterEach(async function () {
         await fs.remove(tempFolder)
     })
 
-    it('Detects a public function symbol', async function() {
+    it('Detects a public function symbol', async function () {
         const programFile = path.join(tempFolder, 'program.cs')
         await writeFile(programFile, sampleDotNetSamProgram.getFunctionText())
 
@@ -54,7 +54,7 @@ describe('getLambdaHandlerComponents', async function() {
     })
 })
 
-describe('isPublicClassSymbol', async function() {
+describe('isPublicClassSymbol', async function () {
     const sampleClassSymbol: vscode.DocumentSymbol = new vscode.DocumentSymbol(
         'HelloWorld.Function',
         '',
@@ -63,7 +63,7 @@ describe('isPublicClassSymbol', async function() {
         fakeRange
     )
 
-    it('returns true for a public class', async function() {
+    it('returns true for a public class', async function () {
         const doc = {
             getText: (range?: vscode.Range): string => {
                 return 'public class Function {}'
@@ -74,7 +74,7 @@ describe('isPublicClassSymbol', async function() {
         assert.strictEqual(isPublic, true, 'Expected symbol to be a public class')
     })
 
-    it('returns false when symbol is not of type Class', async function() {
+    it('returns false when symbol is not of type Class', async function () {
         const symbol = new vscode.DocumentSymbol(
             sampleClassSymbol.name,
             sampleClassSymbol.detail,
@@ -93,7 +93,7 @@ describe('isPublicClassSymbol', async function() {
         assert.strictEqual(isPublic, false, 'Expected symbol not to be a public class')
     })
 
-    it('returns false when class is not public', async function() {
+    it('returns false when class is not public', async function () {
         const doc = {
             getText: (range?: vscode.Range): string => 'private class ',
         }
@@ -103,7 +103,7 @@ describe('isPublicClassSymbol', async function() {
     })
 })
 
-describe('isPublicMethodSymbol', async function() {
+describe('isPublicMethodSymbol', async function () {
     const validPublicMethodTests = [
         {
             scenario: 'signature all on one line',
@@ -167,7 +167,7 @@ describe('isPublicMethodSymbol', async function() {
         })
     })
 
-    it('returns false for a symbol that is not a method', async function() {
+    it('returns false for a symbol that is not a method', async function () {
         const symbol = new vscode.DocumentSymbol(
             'FunctionHandler(APIGatewayProxyRequest apigProxyEvent, ILambdaContext context)',
             '',
@@ -186,7 +186,7 @@ describe('isPublicMethodSymbol', async function() {
         assert.strictEqual(isPublic, false, 'Expected symbol not to be a public method')
     })
 
-    it('returns false when the method is not public', async function() {
+    it('returns false when the method is not public', async function () {
         const handler = generateFunctionHandler('FunctionHandler', 'APIGatewayProxyResponse', 'ILambdaContext')
         const symbol = new vscode.DocumentSymbol(handler, '', vscode.SymbolKind.Method, fakeRange, fakeRange)
         const doc = {
@@ -203,7 +203,7 @@ describe('isPublicMethodSymbol', async function() {
         assert.strictEqual(isPublic, false, 'Expected symbol not to be a public method')
     })
 
-    it('returns false when a private method name contains the word public in it', async function() {
+    it('returns false when a private method name contains the word public in it', async function () {
         const symbol = new vscode.DocumentSymbol('notpublicmethod', '', vscode.SymbolKind.Method, fakeRange, fakeRange)
 
         const doc = {
@@ -220,7 +220,7 @@ describe('isPublicMethodSymbol', async function() {
         assert.strictEqual(isPublic, false, 'Expected symbol not to be a public method')
     })
 
-    it('returns false when the second parameter is not an ILambdaContext', async function() {
+    it('returns false when the second parameter is not an ILambdaContext', async function () {
         const symbol: vscode.DocumentSymbol = new vscode.DocumentSymbol(
             'FunctionHandler(APIGatewayProxyRequest apigProxyEvent, string context)',
             '',
@@ -296,8 +296,8 @@ describe('isPublicMethodSymbol', async function() {
     }
 })
 
-describe('generateDotNetLambdaHandler', async function() {
-    it('produces a handler name', async function() {
+describe('generateDotNetLambdaHandler', async function () {
+    it('produces a handler name', async function () {
         const components: DotNetLambdaHandlerComponents = {
             assembly: 'myAssembly',
             namespace: 'myNamespace',

@@ -13,7 +13,7 @@ import { FakeWindow } from '../../shared/vscode/fakeWindow'
 import { RegistryItemNode } from '../../../ssmDocument/explorer/registryItemNode'
 import { SSM } from 'aws-sdk'
 
-describe('deleteDocument', async function() {
+describe('deleteDocument', async function () {
     let ssmClient: SsmDocumentClient
     let node: DocumentItemNodeWriteable
     let parentNode: RegistryItemNode
@@ -28,13 +28,13 @@ describe('deleteDocument', async function() {
 
     const fakeRegion: string = 'us-east-1'
 
-    beforeEach(function() {
+    beforeEach(function () {
         ssmClient = mock()
         parentNode = mock()
         node = new DocumentItemNodeWriteable(fakeDoc, ssmClient, fakeRegion, parentNode)
     })
 
-    it('confirms deletion, deletes file, and refreshes parent node', async function() {
+    it('confirms deletion, deletes file, and refreshes parent node', async function () {
         const window = new FakeWindow({ message: { warningSelection: 'Delete' } })
         const commands = new FakeCommands()
         await deleteDocument(node, window, commands)

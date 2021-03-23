@@ -15,24 +15,24 @@ import { assertRejects } from '../utilities/assertUtils'
 import { SamLaunchRequestArgs } from '../../../shared/sam/debugger/awsSamDebugger'
 import { assertLogsContain } from '../../globalSetup.test'
 
-describe('localLambdaRunner', async function() {
+describe('localLambdaRunner', async function () {
     let tempDir: string
-    before(async function() {
+    before(async function () {
         await FakeExtensionContext.getNew()
     })
 
-    beforeEach(async function() {
+    beforeEach(async function () {
         tempDir = await fsUtils.makeTemporaryToolkitFolder()
     })
 
-    afterEach(async function() {
+    afterEach(async function () {
         await fs.remove(tempDir)
     })
 
-    describe('attachDebugger', async function() {
+    describe('attachDebugger', async function () {
         let actualRetries: number = 0
 
-        beforeEach(async function() {
+        beforeEach(async function () {
             actualRetries = 0
         })
 
@@ -54,7 +54,7 @@ describe('localLambdaRunner', async function() {
             return Promise.resolve(false)
         }
 
-        it('Successful attach has no retries', async function() {
+        it('Successful attach has no retries', async function () {
             await localLambdaRunner.attachDebugger({
                 debugConfig: ({} as any) as SamLaunchRequestArgs,
                 onStartDebugging: startDebuggingReturnsTrue,
@@ -64,7 +64,7 @@ describe('localLambdaRunner', async function() {
             assert.strictEqual(actualRetries, 0, 'Did not expect any retries when attaching debugger succeeds')
         })
 
-        it('Successful attach logs that the debugger attached', async function() {
+        it('Successful attach logs that the debugger attached', async function () {
             await localLambdaRunner.attachDebugger({
                 debugConfig: ({} as any) as SamLaunchRequestArgs,
                 onStartDebugging: startDebuggingReturnsTrue,
@@ -75,7 +75,7 @@ describe('localLambdaRunner', async function() {
             assertLogsContain('Debugger attached', false, 'info')
         })
 
-        it('Successful attach records a success metric', async function() {
+        it('Successful attach records a success metric', async function () {
             await localLambdaRunner.attachDebugger({
                 debugConfig: ({} as any) as SamLaunchRequestArgs,
                 onStartDebugging: startDebuggingReturnsTrue,
@@ -87,7 +87,7 @@ describe('localLambdaRunner', async function() {
             })
         })
 
-        it('Successful attach returns success', async function() {
+        it('Successful attach returns success', async function () {
             const results = await localLambdaRunner.attachDebugger({
                 debugConfig: ({} as any) as SamLaunchRequestArgs,
                 onStartDebugging: startDebuggingReturnsTrue,
@@ -97,7 +97,7 @@ describe('localLambdaRunner', async function() {
             assert.ok(results.success, 'Expected attach results to be successful')
         })
 
-        it('Failure to attach logs that the debugger did not attach', async function() {
+        it('Failure to attach logs that the debugger did not attach', async function () {
             await localLambdaRunner.attachDebugger({
                 debugConfig: ({} as any) as SamLaunchRequestArgs,
                 onStartDebugging: startDebuggingReturnsFalse,
@@ -108,7 +108,7 @@ describe('localLambdaRunner', async function() {
             assertLogsContain('Unable to attach Debugger', false, 'error')
         })
 
-        it('Failure to attach records a fail metric', async function() {
+        it('Failure to attach records a fail metric', async function () {
             await localLambdaRunner.attachDebugger({
                 debugConfig: ({} as any) as SamLaunchRequestArgs,
                 onStartDebugging: startDebuggingReturnsFalse,
@@ -119,7 +119,7 @@ describe('localLambdaRunner', async function() {
             })
         })
 
-        it('Failure to attach returns failure', async function() {
+        it('Failure to attach returns failure', async function () {
             const results = await localLambdaRunner.attachDebugger({
                 debugConfig: ({} as any) as SamLaunchRequestArgs,
                 onStartDebugging: startDebuggingReturnsFalse,
@@ -129,7 +129,7 @@ describe('localLambdaRunner', async function() {
             assert.strictEqual(results.success, false, 'Expected attach results to fail')
         })
 
-        it('Logs about exceeding the retry limit', async function() {
+        it('Logs about exceeding the retry limit', async function () {
             await localLambdaRunner.attachDebugger({
                 debugConfig: ({} as any) as SamLaunchRequestArgs,
                 onStartDebugging: startDebuggingReturnsFalse,
@@ -140,7 +140,7 @@ describe('localLambdaRunner', async function() {
             assertLogsContain('Retry limit reached', false, 'error')
         })
 
-        it('Does not log metrics when startDebugging returns false', async function() {
+        it('Does not log metrics when startDebugging returns false', async function () {
             await localLambdaRunner.attachDebugger({
                 debugConfig: ({} as any) as SamLaunchRequestArgs,
                 onStartDebugging: startDebuggingReturnsFalse,
@@ -152,7 +152,7 @@ describe('localLambdaRunner', async function() {
             })
         })
 
-        it('Returns true if attach succeeds during retries', async function() {
+        it('Returns true if attach succeeds during retries', async function () {
             const results = await localLambdaRunner.attachDebugger({
                 debugConfig: ({} as any) as SamLaunchRequestArgs,
                 onStartDebugging: async (
@@ -169,7 +169,7 @@ describe('localLambdaRunner', async function() {
             assert.ok(results.success, 'Expected attach results to succeed')
         })
 
-        it('Returns false if retry count exceeded', async function() {
+        it('Returns false if retry count exceeded', async function () {
             const results = await localLambdaRunner.attachDebugger({
                 debugConfig: ({} as any) as SamLaunchRequestArgs,
                 onStartDebugging: startDebuggingReturnsFalse,
@@ -180,7 +180,7 @@ describe('localLambdaRunner', async function() {
         })
     })
 
-    describe('executeSamBuild', function() {
+    describe('executeSamBuild', function () {
         const failedChildProcess: ChildProcessResult = {
             exitCode: 1,
             error: new Error('you are already dead'),
@@ -212,12 +212,12 @@ describe('localLambdaRunner', async function() {
             }
         }
 
-        it('fails when the child process returns a nonzero exit code', async function() {
+        it('fails when the child process returns a nonzero exit code', async function () {
             const samArgs = generateSamBuildParams(false)
             await assertRejects(async () => await new SamCliBuildInvocation(samArgs).execute())
         })
 
-        it('succeeds when the child process returns with an exit code of 0', async function() {
+        it('succeeds when the child process returns with an exit code of 0', async function () {
             const samArgs = generateSamBuildParams(true)
             assert.strictEqual(await new SamCliBuildInvocation(samArgs).execute(), 0)
         })

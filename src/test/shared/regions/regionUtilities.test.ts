@@ -12,7 +12,7 @@ import { Region } from '../../../shared/regions/endpoints'
 import { RegionProvider } from '../../../shared/regions/regionProvider'
 import { getRegionsForActiveCredentials } from '../../../shared/regions/regionUtilities'
 
-describe('getRegionsForActiveCredentials', async function() {
+describe('getRegionsForActiveCredentials', async function () {
     let sandbox: sinon.SinonSandbox
     let awsContext: AwsContext
     let regionProvider: RegionProvider
@@ -33,7 +33,7 @@ describe('getRegionsForActiveCredentials', async function() {
         },
     ]
 
-    beforeEach(function() {
+    beforeEach(function () {
         sandbox = sinon.createSandbox()
 
         fnGetCredentialDefaultRegion = sandbox.stub()
@@ -54,25 +54,25 @@ describe('getRegionsForActiveCredentials', async function() {
         } as any) as RegionProvider
     })
 
-    afterEach(function() {
+    afterEach(function () {
         sandbox.restore()
     })
 
-    it('returns regions in the same partition', async function() {
+    it('returns regions in the same partition', async function () {
         fnGetCredentialDefaultRegion.returns(samplePartitionRegions[0].id)
 
         const regions = getRegionsForActiveCredentials(awsContext, regionProvider)
         assert.deepStrictEqual(regions, samplePartitionRegions)
     })
 
-    it('defaults to the standard partition if no default region is found', async function() {
+    it('defaults to the standard partition if no default region is found', async function () {
         fnGetCredentialDefaultRegion.returns(undefined)
 
         getRegionsForActiveCredentials(awsContext, regionProvider)
         assert.ok(fnGetPartitionId.alwaysCalledWith('us-east-1'), 'expected default region to be used')
     })
 
-    it('defaults to the standard partition if default region is not recognized', async function() {
+    it('defaults to the standard partition if default region is not recognized', async function () {
         fnGetCredentialDefaultRegion.returns('foo')
 
         fnGetPartitionId.reset()

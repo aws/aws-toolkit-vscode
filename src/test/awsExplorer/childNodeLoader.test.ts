@@ -27,7 +27,7 @@ class FakeLoadMore implements LoadMoreNode {
     public clearChildren(): void {}
 }
 
-describe('ChildNodeLoader', function() {
+describe('ChildNodeLoader', function () {
     const fakeNode = new FakeNode()
     const fakeLoadMore = new FakeLoadMore()
 
@@ -57,8 +57,8 @@ describe('ChildNodeLoader', function() {
         })
     }
 
-    describe('first call to getChildren', function() {
-        it('loads and returns initial children', async function() {
+    describe('first call to getChildren', function () {
+        it('loads and returns initial children', async function () {
             const loader = childLoader()
 
             const [firstNode, ...otherNodes] = await loader.getChildren()
@@ -67,7 +67,7 @@ describe('ChildNodeLoader', function() {
             assert.strictEqual(otherNodes.length, 0)
         })
 
-        it('loads and returns initial children with more results', async function() {
+        it('loads and returns initial children with more results', async function () {
             const loader = continuedChildLoader('token')
 
             const [firstNode, moreResultsNode, ...otherNodes] = await loader.getChildren()
@@ -78,8 +78,8 @@ describe('ChildNodeLoader', function() {
         })
     })
 
-    describe('subsequent calls to getChildren', function() {
-        it('returns existing children', async function() {
+    describe('subsequent calls to getChildren', function () {
+        it('returns existing children', async function () {
             const loader = childLoader()
 
             await loader.getChildren()
@@ -90,8 +90,8 @@ describe('ChildNodeLoader', function() {
         })
     })
 
-    describe('loadMoreChildren', function() {
-        it('loads and appends next page of children', async function() {
+    describe('loadMoreChildren', function () {
+        it('loads and appends next page of children', async function () {
             const loader = continuedChildLoader('token')
 
             await loader.getChildren()
@@ -104,7 +104,7 @@ describe('ChildNodeLoader', function() {
             assert.strictEqual(otherNodes.length, 0)
         })
 
-        it('has no effect if all children already loaded', async function() {
+        it('has no effect if all children already loaded', async function () {
             const loader = childLoader()
 
             await loader.getChildren()
@@ -116,7 +116,7 @@ describe('ChildNodeLoader', function() {
             assert.strictEqual(otherNodes.length, 0)
         })
 
-        it('queues up concurrent calls', async function() {
+        it('queues up concurrent calls', async function () {
             const loader = delayedChildLoader('token')
 
             const firstCall = loader.getChildren()
@@ -135,8 +135,8 @@ describe('ChildNodeLoader', function() {
         })
     })
 
-    describe('clearChildren', function() {
-        it('resets cache', async function() {
+    describe('clearChildren', function () {
+        it('resets cache', async function () {
             const loader = childLoader()
 
             await loader.getChildren()

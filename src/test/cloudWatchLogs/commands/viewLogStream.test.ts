@@ -36,8 +36,8 @@ class MockSelectLogStreamWizardContext implements SelectLogStreamWizardContext {
     }
 }
 
-describe('viewLogStreamWizard', async function() {
-    it('exits when cancelled', async function() {
+describe('viewLogStreamWizard', async function () {
+    it('exits when cancelled', async function () {
         const wizard = new SelectLogStreamWizard(
             new LogGroupNode(new FakeParentNode('asdf'), 'region', {}),
             new MockSelectLogStreamWizardContext([undefined])
@@ -47,7 +47,7 @@ describe('viewLogStreamWizard', async function() {
         assert.ok(!result)
     })
 
-    it('returns the selected log stream name', async function() {
+    it('returns the selected log stream name', async function () {
         const streamName = 'stream/name'
         const region = 'us-weast-99'
         const groupName = 'grouper'
@@ -64,8 +64,8 @@ describe('viewLogStreamWizard', async function() {
     })
 })
 
-describe('convertDescribeLogStreamsToQuickPickItems', function() {
-    it('converts things correctly', function() {
+describe('convertDescribeLogStreamsToQuickPickItems', function () {
+    it('converts things correctly', function () {
         const time = new Date().getTime()
         const results = convertDescribeLogStreamsToQuickPickItems({
             logStreams: [

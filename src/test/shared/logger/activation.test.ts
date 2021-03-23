@@ -11,16 +11,16 @@ import { Logger } from '../../../shared/logger'
 import { makeLogger } from '../../../shared/logger/activation'
 import { WinstonToolkitLogger } from '../../../shared/logger/winstonToolkitLogger'
 
-describe('makeLogger', function() {
+describe('makeLogger', function () {
     let tempFolder: string
     let testLogger: Logger | undefined
 
-    before(async function() {
+    before(async function () {
         tempFolder = await makeTemporaryToolkitFolder()
         testLogger = makeLogger({ staticLogLevel: 'debug', logPaths: [join(tempFolder, 'log.txt')] })
     })
 
-    after(async function() {
+    after(async function () {
         if (testLogger && testLogger instanceof WinstonToolkitLogger) {
             testLogger.dispose()
         }
@@ -29,7 +29,7 @@ describe('makeLogger', function() {
         await fs.remove(tempFolder)
     })
 
-    it('creates a logger object', function() {
+    it('creates a logger object', function () {
         assert.notStrictEqual(testLogger, undefined)
         assert.ok(testLogger instanceof WinstonToolkitLogger)
     })

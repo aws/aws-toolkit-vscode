@@ -13,7 +13,7 @@ import { FakeCommands } from '../../shared/vscode/fakeCommands'
 import { FakeWindow } from '../../shared/vscode/fakeWindow'
 import { anything, mock, instance, when, deepEqual, verify } from '../../utilities/mockito'
 
-describe('deleteFileCommand', function() {
+describe('deleteFileCommand', function () {
     const key = 'foo/bar.jpg'
     const name = 'bar.jpg'
     const bucketName = 'bucket-name'
@@ -23,13 +23,13 @@ describe('deleteFileCommand', function() {
     let parentNode: S3BucketNode
     let node: S3FileNode
 
-    beforeEach(function() {
+    beforeEach(function () {
         s3 = mock()
         parentNode = new S3BucketNode(bucket, {} as S3Node, instance(s3))
         node = new S3FileNode(bucket, { name, key, arn: 'arn' }, parentNode, instance(s3))
     })
 
-    it('confirms deletion, deletes file, shows status bar confirmation, and refreshes parent node', async function() {
+    it('confirms deletion, deletes file, shows status bar confirmation, and refreshes parent node', async function () {
         const window = new FakeWindow({ message: { warningSelection: 'Delete' } })
         const commands = new FakeCommands()
         await deleteFileCommand(node, window, commands)
@@ -42,7 +42,7 @@ describe('deleteFileCommand', function() {
         assert.deepStrictEqual(commands.args, [parentNode])
     })
 
-    it('does nothing when deletion is cancelled', async function() {
+    it('does nothing when deletion is cancelled', async function () {
         const window = new FakeWindow({ message: { warningSelection: 'Cancel' } })
         const commands = new FakeCommands()
         await deleteFileCommand(node, window, commands)
@@ -53,7 +53,7 @@ describe('deleteFileCommand', function() {
         assert.strictEqual(commands.command, undefined)
     })
 
-    it('shows an error message and refreshes node when file deletion fails', async function() {
+    it('shows an error message and refreshes node when file deletion fails', async function () {
         when(s3.deleteObject(anything())).thenReject(new Error('Expected failure'))
 
         const window = new FakeWindow({ message: { warningSelection: 'Delete' } })

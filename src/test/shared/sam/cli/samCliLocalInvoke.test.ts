@@ -15,7 +15,7 @@ import {
 import { ChildProcess } from '../../../../shared/utilities/childProcess'
 import { assertArgIsPresent, assertArgNotPresent, assertArgsContainArgument } from './samCliTestUtils'
 
-describe('SamCliLocalInvokeInvocation', async function() {
+describe('SamCliLocalInvokeInvocation', async function () {
     class TestSamLocalInvokeCommand implements SamLocalInvokeCommand {
         public constructor(private readonly onInvoke: ({ ...params }: SamLocalInvokeCommandArgs) => void) {}
 
@@ -30,7 +30,7 @@ describe('SamCliLocalInvokeInvocation', async function() {
     let placeholderEventFile: string
     const nonRelevantArg = 'arg is not of interest to this test'
 
-    beforeEach(async function() {
+    beforeEach(async function () {
         tempFolder = await makeTemporaryToolkitFolder()
         placeholderTemplateFile = path.join(tempFolder, 'template.yaml')
         placeholderEventFile = path.join(tempFolder, 'event.json')
@@ -38,11 +38,11 @@ describe('SamCliLocalInvokeInvocation', async function() {
         await writeFile(placeholderEventFile, '')
     })
 
-    afterEach(async function() {
+    afterEach(async function () {
         await remove(tempFolder)
     })
 
-    it('invokes `sam local` with args', async function() {
+    it('invokes `sam local` with args', async function () {
         const taskInvoker: SamLocalInvokeCommand = new TestSamLocalInvokeCommand(
             (invokeArgs: SamLocalInvokeCommandArgs) => {
                 assert.ok(invokeArgs.args.length >= 2, 'Expected args to be present')
@@ -70,7 +70,7 @@ describe('SamCliLocalInvokeInvocation', async function() {
         }).execute()
     })
 
-    it('Passes template resource name to sam cli', async function() {
+    it('Passes template resource name to sam cli', async function () {
         const expectedResourceName = 'HelloWorldResource'
         const taskInvoker: SamLocalInvokeCommand = new TestSamLocalInvokeCommand(
             (invokeArgs: SamLocalInvokeCommandArgs) => {
@@ -87,7 +87,7 @@ describe('SamCliLocalInvokeInvocation', async function() {
         }).execute()
     })
 
-    it('Passes template path to sam cli', async function() {
+    it('Passes template path to sam cli', async function () {
         const taskInvoker: SamLocalInvokeCommand = new TestSamLocalInvokeCommand(
             (invokeArgs: SamLocalInvokeCommandArgs) => {
                 assertArgsContainArgument(invokeArgs.args, '--template', placeholderTemplateFile)
@@ -103,7 +103,7 @@ describe('SamCliLocalInvokeInvocation', async function() {
         }).execute()
     })
 
-    it('Passes event path to sam cli', async function() {
+    it('Passes event path to sam cli', async function () {
         const taskInvoker: SamLocalInvokeCommand = new TestSamLocalInvokeCommand(
             (invokeArgs: SamLocalInvokeCommandArgs) => {
                 assertArgsContainArgument(invokeArgs.args, '--event', placeholderEventFile)
@@ -119,7 +119,7 @@ describe('SamCliLocalInvokeInvocation', async function() {
         }).execute()
     })
 
-    it('Passes env-vars path to sam cli', async function() {
+    it('Passes env-vars path to sam cli', async function () {
         const expectedEnvVarsPath = 'envvars.json'
         const taskInvoker: SamLocalInvokeCommand = new TestSamLocalInvokeCommand(
             (invokeArgs: SamLocalInvokeCommandArgs) => {
@@ -136,7 +136,7 @@ describe('SamCliLocalInvokeInvocation', async function() {
         }).execute()
     })
 
-    it('Passes debug port to sam cli', async function() {
+    it('Passes debug port to sam cli', async function () {
         const expectedDebugPort = '1234'
         const taskInvoker: SamLocalInvokeCommand = new TestSamLocalInvokeCommand(
             (invokeArgs: SamLocalInvokeCommandArgs) => {
@@ -154,7 +154,7 @@ describe('SamCliLocalInvokeInvocation', async function() {
         }).execute()
     })
 
-    it('undefined debug port does not pass to sam cli', async function() {
+    it('undefined debug port does not pass to sam cli', async function () {
         const taskInvoker: SamLocalInvokeCommand = new TestSamLocalInvokeCommand(
             (invokeArgs: SamLocalInvokeCommandArgs) => {
                 assertArgNotPresent(invokeArgs.args, '-d')
@@ -171,7 +171,7 @@ describe('SamCliLocalInvokeInvocation', async function() {
         }).execute()
     })
 
-    it('Passes docker network to sam cli', async function() {
+    it('Passes docker network to sam cli', async function () {
         const expectedDockerNetwork = 'hello-world'
         const taskInvoker: SamLocalInvokeCommand = new TestSamLocalInvokeCommand(
             (invokeArgs: SamLocalInvokeCommandArgs) => {
@@ -189,7 +189,7 @@ describe('SamCliLocalInvokeInvocation', async function() {
         }).execute()
     })
 
-    it('Does not pass docker network to sam cli when undefined', async function() {
+    it('Does not pass docker network to sam cli when undefined', async function () {
         const taskInvoker: SamLocalInvokeCommand = new TestSamLocalInvokeCommand(
             (invokeArgs: SamLocalInvokeCommandArgs) => {
                 assertArgNotPresent(invokeArgs.args, '--docker-network')
@@ -206,7 +206,7 @@ describe('SamCliLocalInvokeInvocation', async function() {
         }).execute()
     })
 
-    it('passes --skip-pull-image to sam cli if skipPullImage is true', async function() {
+    it('passes --skip-pull-image to sam cli if skipPullImage is true', async function () {
         const taskInvoker: SamLocalInvokeCommand = new TestSamLocalInvokeCommand(
             (invokeArgs: SamLocalInvokeCommandArgs) => {
                 assertArgIsPresent(invokeArgs.args, '--skip-pull-image')
@@ -223,7 +223,7 @@ describe('SamCliLocalInvokeInvocation', async function() {
         }).execute()
     })
 
-    it('does not pass --skip-pull-image to sam cli if skipPullImage is false', async function() {
+    it('does not pass --skip-pull-image to sam cli if skipPullImage is false', async function () {
         const taskInvoker: SamLocalInvokeCommand = new TestSamLocalInvokeCommand(
             (invokeArgs: SamLocalInvokeCommandArgs) => {
                 assertArgNotPresent(invokeArgs.args, '--skip-pull-image')
@@ -240,7 +240,7 @@ describe('SamCliLocalInvokeInvocation', async function() {
         }).execute()
     })
 
-    it('does not pass --skip-pull-image to sam cli if skipPullImage is undefined', async function() {
+    it('does not pass --skip-pull-image to sam cli if skipPullImage is undefined', async function () {
         const taskInvoker: SamLocalInvokeCommand = new TestSamLocalInvokeCommand(
             (invokeArgs: SamLocalInvokeCommandArgs) => {
                 assertArgNotPresent(invokeArgs.args, '--skip-pull-image')
@@ -257,7 +257,7 @@ describe('SamCliLocalInvokeInvocation', async function() {
         }).execute()
     })
 
-    it('Passes debuggerPath to sam cli', async function() {
+    it('Passes debuggerPath to sam cli', async function () {
         const expectedDebuggerPath = path.join('foo', 'bar')
 
         const taskInvoker: SamLocalInvokeCommand = new TestSamLocalInvokeCommand(
@@ -276,7 +276,7 @@ describe('SamCliLocalInvokeInvocation', async function() {
         }).execute()
     })
 
-    it('Does not pass debuggerPath to sam cli when undefined', async function() {
+    it('Does not pass debuggerPath to sam cli when undefined', async function () {
         const taskInvoker: SamLocalInvokeCommand = new TestSamLocalInvokeCommand(
             (invokeArgs: SamLocalInvokeCommandArgs) => {
                 assertArgNotPresent(invokeArgs.args, '--debugger-path')
