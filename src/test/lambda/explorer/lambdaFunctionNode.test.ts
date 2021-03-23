@@ -11,12 +11,12 @@ import { ext } from '../../../shared/extensionGlobals'
 import { TestAWSTreeNode } from '../../shared/treeview/nodes/testAWSTreeNode'
 import { clearTestIconPaths, IconPath, setupTestIconPaths } from '../../shared/utilities/iconPathUtils'
 
-describe('LambdaFunctionNode', function() {
+describe('LambdaFunctionNode', function () {
     const parentNode = new TestAWSTreeNode('test node')
     let testNode: LambdaFunctionNode
     let fakeFunctionConfig: Lambda.FunctionConfiguration
 
-    before(async function() {
+    before(async function () {
         setupTestIconPaths()
         fakeFunctionConfig = {
             FunctionName: 'testFunctionName',
@@ -26,45 +26,45 @@ describe('LambdaFunctionNode', function() {
         testNode = new LambdaFunctionNode(parentNode, 'someregioncode', fakeFunctionConfig)
     })
 
-    after(async function() {
+    after(async function () {
         clearTestIconPaths()
     })
 
-    it('instantiates without issue', async function() {
+    it('instantiates without issue', async function () {
         assert.ok(testNode)
     })
 
-    it('initializes the parent node', async function() {
+    it('initializes the parent node', async function () {
         assert.strictEqual(testNode.parent, parentNode, 'unexpected parent node')
     })
 
-    it('initializes the region code', async function() {
+    it('initializes the region code', async function () {
         assert.strictEqual(testNode.regionCode, 'someregioncode')
     })
 
-    it('initializes the label', async function() {
+    it('initializes the label', async function () {
         assert.strictEqual(testNode.label, fakeFunctionConfig.FunctionName)
     })
 
-    it('initializes the functionName', async function() {
+    it('initializes the functionName', async function () {
         assert.strictEqual(testNode.functionName, fakeFunctionConfig.FunctionName)
     })
 
-    it('initializes the tooltip', async function() {
+    it('initializes the tooltip', async function () {
         assert.strictEqual(
             testNode.tooltip,
             `${fakeFunctionConfig.FunctionName}${os.EOL}${fakeFunctionConfig.FunctionArn}`
         )
     })
 
-    it('initializes the icon', async function() {
+    it('initializes the icon', async function () {
         const iconPath = testNode.iconPath as IconPath
 
         assert.strictEqual(iconPath.dark.path, ext.iconPaths.dark.lambda, 'Unexpected dark icon path')
         assert.strictEqual(iconPath.light.path, ext.iconPaths.light.lambda, 'Unexpected light icon path')
     })
 
-    it('has no children', async function() {
+    it('has no children', async function () {
         const childNodes = await testNode.getChildren()
         assert.ok(childNodes)
         assert.strictEqual(childNodes.length, 0, 'Expected node to have no children')

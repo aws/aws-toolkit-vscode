@@ -16,7 +16,7 @@ import {
     TestSamCliProcessInvoker,
 } from './testSamCliProcessInvoker'
 
-describe('SamCliInfoInvocation', async function() {
+describe('SamCliInfoInvocation', async function () {
     const successfulInvoker: TestSamCliProcessInvoker = new TestSamCliProcessInvoker(
         (spawnOptions, args: any[]): ChildProcessResult => {
             return new FakeChildProcessResult({
@@ -30,7 +30,7 @@ describe('SamCliInfoInvocation', async function() {
         }
     }
 
-    it('converts sam info response to SamCliInfoResponse', async function() {
+    it('converts sam info response to SamCliInfoResponse', async function () {
         const response: SamCliInfoResponse | undefined = new TestSamCliInfoCommand({
             invoker: successfulInvoker,
         }).convertOutput('{"version": "1.2.3"}')
@@ -39,7 +39,7 @@ describe('SamCliInfoInvocation', async function() {
         assert.strictEqual(response!.version, '1.2.3')
     })
 
-    it('converts sam info response containing unexpected fields to SamCliInfoResponse', async function() {
+    it('converts sam info response containing unexpected fields to SamCliInfoResponse', async function () {
         const response: SamCliInfoResponse | undefined = new TestSamCliInfoCommand({
             invoker: successfulInvoker,
         }).convertOutput('{"version": "1.2.3", "bananas": "123"}')
@@ -48,7 +48,7 @@ describe('SamCliInfoInvocation', async function() {
         assert.strictEqual(response!.version, '1.2.3')
     })
 
-    it('converts sam info response without version to SamCliInfoResponse', async function() {
+    it('converts sam info response without version to SamCliInfoResponse', async function () {
         const response: SamCliInfoResponse | undefined = new TestSamCliInfoCommand({
             invoker: successfulInvoker,
         }).convertOutput('{}')
@@ -57,7 +57,7 @@ describe('SamCliInfoInvocation', async function() {
         assert.strictEqual(response!.version, undefined)
     })
 
-    it('converts non-response to undefined', async function() {
+    it('converts non-response to undefined', async function () {
         ;['qwerty', '{"version": "1.2.3"} you have no new email messages'].forEach(output => {
             const response: SamCliInfoResponse | undefined = new TestSamCliInfoCommand({
                 invoker: successfulInvoker,
@@ -67,7 +67,7 @@ describe('SamCliInfoInvocation', async function() {
         })
     })
 
-    it('handles successful errorcode and output', async function() {
+    it('handles successful errorcode and output', async function () {
         const samInfo: SamCliInfoInvocation = new SamCliInfoInvocation({ invoker: successfulInvoker })
 
         const response = await samInfo.execute()
@@ -75,7 +75,7 @@ describe('SamCliInfoInvocation', async function() {
         assert.strictEqual(response.version, '1.2.3', 'unexpected sam info version')
     })
 
-    it('handles successful errorcode with strange output', async function() {
+    it('handles successful errorcode with strange output', async function () {
         const invoker: TestSamCliProcessInvoker = new TestSamCliProcessInvoker(
             (spawnOptions, args: any[]): ChildProcessResult => {
                 return new FakeChildProcessResult({
@@ -90,7 +90,7 @@ describe('SamCliInfoInvocation', async function() {
         }, 'Expected a error to be thrown')
     })
 
-    it('throws on unexpected exit code', async function() {
+    it('throws on unexpected exit code', async function () {
         const badExitCodeProcessInvoker = new BadExitCodeSamCliProcessInvoker({})
 
         const error = await assertThrowsError(async () => {

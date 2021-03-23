@@ -214,7 +214,7 @@ const mockExtensionContext: vscode.ExtensionContext = {
     asAbsolutePath: sinon.spy(),
 }
 
-describe('StepFunctions VisualizeStateMachine', async function() {
+describe('StepFunctions VisualizeStateMachine', async function () {
     let mockVsCode: MockVSCode
 
     const oldWebviewScriptsPath = ext.visualizationResourcePaths.localWebviewScriptsPath
@@ -226,7 +226,7 @@ describe('StepFunctions VisualizeStateMachine', async function() {
     const oldThemeCssPath = ext.visualizationResourcePaths.stateMachineCustomThemeCSS
 
     // Before all
-    before(function() {
+    before(function () {
         mockVsCode = new MockVSCode()
 
         ext.visualizationResourcePaths.localWebviewScriptsPath = mockUriOne
@@ -244,17 +244,17 @@ describe('StepFunctions VisualizeStateMachine', async function() {
     })
 
     // Before each
-    beforeEach(function() {
+    beforeEach(function () {
         aslVisualizationManager = new AslVisualizationManager(mockExtensionContext)
     })
 
     // After each
-    afterEach(function() {
+    afterEach(function () {
         mockVsCode.closeAll()
     })
 
     // After all
-    after(function() {
+    after(function () {
         sandbox.restore()
         ext.visualizationResourcePaths.localWebviewScriptsPath = oldWebviewScriptsPath
         ext.visualizationResourcePaths.webviewBodyScript = oldWebviewBodyPath
@@ -266,7 +266,7 @@ describe('StepFunctions VisualizeStateMachine', async function() {
     })
 
     // Tests
-    it('Test AslVisualization on setup all properties are correct', function() {
+    it('Test AslVisualization on setup all properties are correct', function () {
         const vis = new MockAslVisualization(mockTextDocumentOne)
 
         assert.deepStrictEqual(vis.documentUri, mockTextDocumentOne.uri)
@@ -285,11 +285,11 @@ describe('StepFunctions VisualizeStateMachine', async function() {
         assert.ok(webview.html)
     })
 
-    it('Test AslVisualizationManager on setup managedVisualizations set is empty', function() {
+    it('Test AslVisualizationManager on setup managedVisualizations set is empty', function () {
         assert.strictEqual(aslVisualizationManager.getManagedVisualizations().size, 0)
     })
 
-    it('Test AslVisualizationManager managedVisualizations set still empty if no active text editor', async function() {
+    it('Test AslVisualizationManager managedVisualizations set still empty if no active text editor', async function () {
         assert.strictEqual(aslVisualizationManager.getManagedVisualizations().size, 0)
 
         // Preview with no active text editor
@@ -301,7 +301,7 @@ describe('StepFunctions VisualizeStateMachine', async function() {
         assert.strictEqual(aslVisualizationManager.getManagedVisualizations().size, 0)
     })
 
-    it('Test AslVisualizationManager managedVisualizations set has one AslVis on first preview', async function() {
+    it('Test AslVisualizationManager managedVisualizations set has one AslVis on first preview', async function () {
         assert.strictEqual(aslVisualizationManager.getManagedVisualizations().size, 0)
 
         // Preview Doc1
@@ -313,7 +313,7 @@ describe('StepFunctions VisualizeStateMachine', async function() {
         assert.ok(managedVisualizations.get(mockTextDocumentOne.uri.path))
     })
 
-    it('Test AslVisualizationManager managedVisualizations set does not add second Vis on duplicate preview', async function() {
+    it('Test AslVisualizationManager managedVisualizations set does not add second Vis on duplicate preview', async function () {
         assert.strictEqual(aslVisualizationManager.getManagedVisualizations().size, 0)
 
         // Preview Doc1
@@ -329,7 +329,7 @@ describe('StepFunctions VisualizeStateMachine', async function() {
         assert.ok(managedVisualizations.get(mockTextDocumentOne.uri.path))
     })
 
-    it('Test AslVisualizationManager managedVisualizations set adds second Vis on different preview', async function() {
+    it('Test AslVisualizationManager managedVisualizations set adds second Vis on different preview', async function () {
         assert.strictEqual(aslVisualizationManager.getManagedVisualizations().size, 0)
 
         // Preview Doc1
@@ -347,7 +347,7 @@ describe('StepFunctions VisualizeStateMachine', async function() {
         assert.ok(managedVisualizations.get(mockTextDocumentTwo.uri.path))
     })
 
-    it('Test AslVisualizationManager managedVisualizations set does not add duplicate renders when multiple Vis active', async function() {
+    it('Test AslVisualizationManager managedVisualizations set does not add duplicate renders when multiple Vis active', async function () {
         assert.strictEqual(aslVisualizationManager.getManagedVisualizations().size, 0)
 
         // Preview Doc1
@@ -375,7 +375,7 @@ describe('StepFunctions VisualizeStateMachine', async function() {
         assert.ok(managedVisualizations.get(mockTextDocumentTwo.uri.path))
     })
 
-    it('Test AslVisualizationManager managedVisualizations set removes visualization on visualization dispose, single vis', async function() {
+    it('Test AslVisualizationManager managedVisualizations set removes visualization on visualization dispose, single vis', async function () {
         assert.strictEqual(aslVisualizationManager.getManagedVisualizations().size, 0)
 
         // Preview Doc1
@@ -394,7 +394,7 @@ describe('StepFunctions VisualizeStateMachine', async function() {
         assert.strictEqual(aslVisualizationManager.getManagedVisualizations().size, 0)
     })
 
-    it('Test AslVisualizationManager managedVisualizations set removes correct visualization on visualization dispose, multiple vis', async function() {
+    it('Test AslVisualizationManager managedVisualizations set removes correct visualization on visualization dispose, multiple vis', async function () {
         assert.strictEqual(aslVisualizationManager.getManagedVisualizations().size, 0)
 
         // Preview Doc1
@@ -418,7 +418,7 @@ describe('StepFunctions VisualizeStateMachine', async function() {
         assert.strictEqual(aslVisualizationManager.getManagedVisualizations().size, 1)
     })
 
-    it('Test AslVisualisation sendUpdateMessage posts a correct update message for YAML files', async function() {
+    it('Test AslVisualisation sendUpdateMessage posts a correct update message for YAML files', async function () {
         const postMessage = sinon.spy()
         class MockAslVisualizationYaml extends AslVisualization {
             public getWebview(): vscode.Webview | undefined {
@@ -441,7 +441,7 @@ describe('StepFunctions VisualizeStateMachine', async function() {
         assert.deepEqual(postMessage.firstCall.args, [message])
     })
 
-    it('Test AslVisualisation sendUpdateMessage posts a correct update message for ASL files', async function() {
+    it('Test AslVisualisation sendUpdateMessage posts a correct update message for ASL files', async function () {
         const postMessage = sinon.spy()
         class MockAslVisualizationJson extends AslVisualization {
             public getWebview(): vscode.Webview | undefined {

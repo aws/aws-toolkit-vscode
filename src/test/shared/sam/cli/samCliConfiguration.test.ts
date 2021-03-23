@@ -11,20 +11,20 @@ import { DefaultSamCliConfiguration, SamCliConfiguration } from '../../../../sha
 import { SamCliLocationProvider } from '../../../../shared/sam/cli/samCliLocator'
 import { TestSettingsConfiguration } from '../../../utilities/testSettingsConfiguration'
 
-describe('SamCliConfiguration', function() {
+describe('SamCliConfiguration', function () {
     let tempFolder: string
     let settingsConfiguration: TestSettingsConfiguration
 
-    beforeEach(async function() {
+    beforeEach(async function () {
         tempFolder = await makeTemporaryToolkitFolder()
         settingsConfiguration = new TestSettingsConfiguration()
     })
 
-    afterEach(async function() {
+    afterEach(async function () {
         await fs.remove(tempFolder)
     })
 
-    it('uses config value when referencing file that exists', async function() {
+    it('uses config value when referencing file that exists', async function () {
         const fakeCliLocation = path.join(tempFolder, 'fakeSamCli')
 
         createSampleFile(fakeCliLocation)
@@ -44,7 +44,7 @@ describe('SamCliConfiguration', function() {
         assert.strictEqual(samCliConfig.getSamCliLocation(), fakeCliLocation)
     })
 
-    it('calls location provider when config not set', async function() {
+    it('calls location provider when config not set', async function () {
         let timesCalled: number = 0
 
         const samCliConfig: SamCliConfiguration = new DefaultSamCliConfiguration(settingsConfiguration, {
@@ -60,7 +60,7 @@ describe('SamCliConfiguration', function() {
         assert.strictEqual(timesCalled, 1)
     })
 
-    it('location provider detects a file', async function() {
+    it('location provider detects a file', async function () {
         const fakeCliLocation = path.join(tempFolder, 'fakeSamCli')
 
         const samCliConfig: SamCliConfiguration = new DefaultSamCliConfiguration(settingsConfiguration, {
@@ -74,7 +74,7 @@ describe('SamCliConfiguration', function() {
         assert.strictEqual(samCliConfig.getSamCliLocation(), fakeCliLocation)
     })
 
-    it('location provider does not detect a file', async function() {
+    it('location provider does not detect a file', async function () {
         const samCliConfig: SamCliConfiguration = new DefaultSamCliConfiguration(settingsConfiguration, {
             getLocation: async (): Promise<string | undefined> => {
                 return Promise.resolve(undefined)

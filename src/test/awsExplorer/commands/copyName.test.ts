@@ -9,8 +9,8 @@ import { AWSResourceNode } from '../../../shared/treeview/nodes/awsResourceNode'
 import { FakeEnv } from '../../shared/vscode/fakeEnv'
 import { FakeWindow } from '../../shared/vscode/fakeWindow'
 
-describe('copyNameCommand', function() {
-    it('copies name to clipboard and shows status bar confirmation', async function() {
+describe('copyNameCommand', function () {
+    it('copies name to clipboard and shows status bar confirmation', async function () {
         const node: AWSResourceNode = {
             arn: 'arn',
             name: 'name',

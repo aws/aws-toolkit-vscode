@@ -17,17 +17,17 @@ const FILE_PATH = '/some/path'
 const STORAGE_KEY = 'KEY'
 let tempFolder = ''
 
-describe('StateMachineGraphCache', function() {
+describe('StateMachineGraphCache', function () {
     before(async function () {
         tempFolder = await makeTemporaryToolkitFolder()
     })
 
-    after(async function() {
+    after(async function () {
         await fs.remove(tempFolder)
     })
 
-    describe('updateCachedFile', function() {
-        it('downloads a file when it is not in cache and stores it', async function() {
+    describe('updateCachedFile', function () {
+        it('downloads a file when it is not in cache and stores it', async function () {
             const globalStorage = {
                 update: sinon.spy(),
                 get: sinon.stub().returns(undefined),
@@ -58,7 +58,7 @@ describe('StateMachineGraphCache', function() {
             assert.ok(writeFile.calledWith(FILE_PATH, REQUEST_BODY))
         })
 
-        it('downloads and stores a file when cached file exists but url has been updated', async function() {
+        it('downloads and stores a file when cached file exists but url has been updated', async function () {
             const globalStorage = {
                 update: sinon.spy(),
                 get: sinon.stub().returns('https://old-url'),
@@ -89,7 +89,7 @@ describe('StateMachineGraphCache', function() {
             assert.ok(writeFile.calledWith(FILE_PATH, REQUEST_BODY))
         })
 
-        it('it does not store data when file exists and url for it is same', async function() {
+        it('it does not store data when file exists and url for it is same', async function () {
             const globalStorage = {
                 update: sinon.spy(),
                 get: sinon.stub().returns(ASSET_URL),
@@ -120,7 +120,7 @@ describe('StateMachineGraphCache', function() {
             assert.ok(writeFile.notCalled)
         })
 
-        it('creates assets directory when it does not exist', async function() {
+        it('creates assets directory when it does not exist', async function () {
             const globalStorage = {
                 update: sinon.spy(),
                 get: sinon.stub().returns(undefined),
@@ -158,7 +158,7 @@ describe('StateMachineGraphCache', function() {
     })
 })
 
-describe('isStepFunctionsRole', function() {
+describe('isStepFunctionsRole', function () {
     const baseIamRole: IAM.Role = {
         Path: '',
         RoleName: '',
@@ -167,7 +167,7 @@ describe('isStepFunctionsRole', function() {
         CreateDate: new Date(),
     }
 
-    it('return true if the Step Functions service principal is in the AssumeRolePolicyDocument', function() {
+    it('return true if the Step Functions service principal is in the AssumeRolePolicyDocument', function () {
         const role: IAM.Role = {
             ...baseIamRole,
             AssumeRolePolicyDocument: JSON.stringify({
@@ -186,7 +186,7 @@ describe('isStepFunctionsRole', function() {
         assert.ok(isStepFunctionsRole(role))
     })
 
-    it('returns false if the role does not have an AssumeRolePolicyDocument', function() {
+    it('returns false if the role does not have an AssumeRolePolicyDocument', function () {
         assert.ok(!isStepFunctionsRole(baseIamRole))
     })
 
@@ -210,8 +210,8 @@ describe('isStepFunctionsRole', function() {
     })
 })
 
-describe('isDocumentValid', async function() {
-    it('returns true for valid ASL', async function() {
+describe('isDocumentValid', async function () {
+    it('returns true for valid ASL', async function () {
         const aslText = `
             {
                 "StartAt": "FirstMatchState",
@@ -230,7 +230,7 @@ describe('isDocumentValid', async function() {
         assert.ok(isValid)
     })
 
-    it('returns true for ASL with invalid arns', async function() {
+    it('returns true for ASL with invalid arns', async function () {
         const aslText = `
             {
                 "StartAt": "FirstMatchState",
@@ -249,7 +249,7 @@ describe('isDocumentValid', async function() {
         assert.ok(isValid)
     })
 
-    it('returns false for invalid ASL', async function() {
+    it('returns false for invalid ASL', async function () {
         const aslText = `
             {
                 "StartAt": "Does not exist",

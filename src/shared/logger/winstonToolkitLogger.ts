@@ -13,7 +13,7 @@ import { OutputChannelTransport } from './outputChannelTransport'
 
 // Need to limit how many logs are actually tracked
 // LRU cache would work well, currently it just dumps the least recently added log
-const LOGMAP_SIZE: number = 1000 
+const LOGMAP_SIZE: number = 1000
 export class WinstonToolkitLogger implements Logger, vscode.Disposable {
     private readonly logger: winston.Logger
     private disposed: boolean = false
@@ -29,6 +29,10 @@ export class WinstonToolkitLogger implements Logger, vscode.Disposable {
                 }),
                 winston.format.errors({ stack: true }),
                 winston.format.printf(info => {
+                    if (info.raw) {
+                        return info.message
+                    }
+
                     return `${info.timestamp} [${info.level.toUpperCase()}]: ${info.message}`
                 })
             ),
@@ -50,28 +54,28 @@ export class WinstonToolkitLogger implements Logger, vscode.Disposable {
 
     public logToFile(logPath: string): void {
         const fileTransport: winston.transport = new winston.transports.File({ filename: logPath })
-        fileTransport.on("logged", (obj: any) => this.parseLogObject(`file://${logPath}`, obj))
+        fileTransport.on('logged', (obj: any) => this.parseLogObject(`file://${logPath}`, obj))
         this.logger.add(fileTransport)
     }
 
     public logToOutputChannel(outputChannel: vscode.OutputChannel, stripAnsi: boolean): void {
-        const outputChannelTransport: winston.transport = new OutputChannelTransport({ 
+        const outputChannelTransport: winston.transport = new OutputChannelTransport({
             outputChannel,
             stripAnsi,
         })
-        outputChannelTransport.on("logged", (obj: any) => this.parseLogObject(`channel://${outputChannel.name}`, obj))
+        outputChannelTransport.on('logged', (obj: any) => this.parseLogObject(`channel://${outputChannel.name}`, obj))
         this.logger.add(outputChannelTransport)
     }
 
     public logToDebugConsole(): void {
         const debugConsoleTransport: winston.transport = new DebugConsoleTransport({ name: 'ActiveDebugConsole' })
-        debugConsoleTransport.on("logged", (obj: any) => this.parseLogObject('console://debug', obj))
+        debugConsoleTransport.on('logged', (obj: any) => this.parseLogObject('console://debug', obj))
         this.logger.add(debugConsoleTransport)
     }
 
     public logToConsole(): void {
         const consoleLogTransport: winston.transport = new ConsoleLogTransport({})
-        consoleLogTransport.on("logged", (obj: any) => this.parseLogObject('console://log', obj))
+        consoleLogTransport.on('logged', (obj: any) => this.parseLogObject('console://log', obj))
         this.logger.add(consoleLogTransport)
     }
 
@@ -122,12 +126,12 @@ export class WinstonToolkitLogger implements Logger, vscode.Disposable {
     }
 
     /**
-     * Attempts to get the mapped message corresponding to the provided file and logID. 
+     * Attempts to get the mapped message corresponding to the provided file and logID.
      * Log messages are considered 'stale' after a constant amount of new logs have been added.
-     * 
+     *
      * @param logID  Unique ID associated with every log operation
      * @param file  Desired output file path. Can use "channel://NAME" and "console://NAME" for non-file transports.
-     * 
+     *
      * @returns  Final log message. Stale or non-existant logs return undefined
      */
     public getTrackedLog(logID: number, file: string): string | undefined {
@@ -144,14 +148,14 @@ export class WinstonToolkitLogger implements Logger, vscode.Disposable {
     /**
      * Register this function to a Transport's 'logged' event to parse out the resulting meta data and log ID
      * Immediately records this log into logMap so it can be collected by an external caller
-     * 
+     *
      * @param file  File that was written to
      * @param obj  Object passed from the event
      */
     private parseLogObject(file: string, obj: any): void {
         const logID: number | NamedNodeMap = parseInt(obj.logID) % LOGMAP_SIZE
         const symbols: symbol[] = Object.getOwnPropertySymbols(obj)
-        const messageSymbol: symbol | undefined = symbols.find((s: symbol) => s.toString() === "Symbol(message)")
+        const messageSymbol: symbol | undefined = symbols.find((s: symbol) => s.toString() === 'Symbol(message)')
 
         if (logID && messageSymbol) {
             this.logMap[logID][file] = obj[messageSymbol]

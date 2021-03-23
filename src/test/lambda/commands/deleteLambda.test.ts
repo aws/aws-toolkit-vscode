@@ -8,8 +8,8 @@ import { deleteLambda } from '../../../lambda/commands/deleteLambda'
 import { MockOutputChannel } from '../../mockOutputChannel'
 import { MockLambdaClient } from '../../shared/clients/mockClients'
 
-describe('deleteLambda', async function() {
-    it('should do nothing if function name is not provided', async function() {
+describe('deleteLambda', async function () {
+    it('should do nothing if function name is not provided', async function () {
         await assertLambdaDeleteWorksWhen({
             // test variables
             functionName: '',
@@ -21,7 +21,7 @@ describe('deleteLambda', async function() {
         })
     })
 
-    it('should delete lambda when confirmed', async function() {
+    it('should delete lambda when confirmed', async function () {
         await assertLambdaDeleteWorksWhen({
             // test variables
             functionName: 'myFunctionName',
@@ -33,7 +33,7 @@ describe('deleteLambda', async function() {
         })
     })
 
-    it('should not delete lambda when cancelled', async function() {
+    it('should not delete lambda when cancelled', async function () {
         await assertLambdaDeleteWorksWhen({
             // test variables
             functionName: 'myFunctionName',
@@ -45,7 +45,7 @@ describe('deleteLambda', async function() {
         })
     })
 
-    it('should handles errors gracefully', async function() {
+    it('should handles errors gracefully', async function () {
         const errorToThrowDuringDelete = new SyntaxError('Fake error inserted to test error handling')
 
         await assertLambdaDeleteWorksWhen({

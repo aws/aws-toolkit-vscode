@@ -18,7 +18,7 @@ import {
     makeSamCliValidationNotification,
 } from '../../../../shared/sam/cli/samCliValidationNotification'
 
-describe('makeSamCliValidationNotification', async function() {
+describe('makeSamCliValidationNotification', async function () {
     const fakeSamCliValidationNotification: SamCliValidationNotification = {
         show: () => {
             throw new Error('show is unused')
@@ -27,7 +27,7 @@ describe('makeSamCliValidationNotification', async function() {
     const actionLabelUpdateSamCli = 'Get SAM CLI'
     const actionLabelUpdateToolkit = 'Visit Marketplace'
 
-    it('handles SamCliNotFoundError', async function() {
+    it('handles SamCliNotFoundError', async function () {
         makeSamCliValidationNotification(
             new SamCliNotFoundError(),
             (message: string, actions: SamCliValidationNotificationAction[]): SamCliValidationNotification => {
@@ -93,7 +93,7 @@ describe('makeSamCliValidationNotification', async function() {
         })
     })
 
-    it('handles Unexpected input', async function() {
+    it('handles Unexpected input', async function () {
         makeSamCliValidationNotification(
             new InvalidSamCliError('different error'),
             (message: string, actions: SamCliValidationNotificationAction[]): SamCliValidationNotification => {
