@@ -12,21 +12,21 @@ import { createRepository } from '../../../ecr/commands/createRepository'
 import { MockEcrClient } from '../../shared/clients/mockClients'
 import { FakeCommands } from '../../shared/vscode/fakeCommands'
 
-describe('createRepositoryCommand', function() {
+describe('createRepositoryCommand', function () {
     const ecr: EcrClient = new MockEcrClient({})
     let node: EcrNode
     let sandbox: sinon.SinonSandbox
 
-    beforeEach(function() {
+    beforeEach(function () {
         sandbox = sinon.createSandbox()
         node = new EcrNode(ecr)
     })
 
-    afterEach(function() {
+    afterEach(function () {
         sandbox.restore()
     })
 
-    it('prompts for repo name, creates repo, shows success, and refreshes node', async function() {
+    it('prompts for repo name, creates repo, shows success, and refreshes node', async function () {
         const repoName = 'amazingecrrepo'
 
         const stub = sandbox.stub(ecr, 'createRepository').callsFake(async name => {
@@ -47,7 +47,7 @@ describe('createRepositoryCommand', function() {
         assert.deepStrictEqual(commands.args, [node])
     })
 
-    it('does nothing when prompt is cancelled', async function() {
+    it('does nothing when prompt is cancelled', async function () {
         const spy = sandbox.spy(ecr, 'createRepository')
 
         await createRepository(node, new FakeWindow(), new FakeCommands())
@@ -55,7 +55,7 @@ describe('createRepositoryCommand', function() {
         assert.ok(spy.notCalled)
     })
 
-    it('Shows an error message and refreshes node when repository creation fails', async function() {
+    it('Shows an error message and refreshes node when repository creation fails', async function () {
         sandbox.stub(ecr, 'createRepository').callsFake(async () => {
             throw Error('Network busted')
         })
@@ -70,7 +70,7 @@ describe('createRepositoryCommand', function() {
         assert.deepStrictEqual(commands.args, [node])
     })
 
-    it('Warns when repository name is invalid', async function() {
+    it('Warns when repository name is invalid', async function () {
         const window = new FakeWindow({ inputBox: { input: '404' } })
 
         await createRepository(node, window, new FakeCommands())

@@ -10,7 +10,7 @@ import { ToolkitClientBuilder } from '../../../shared/clients/toolkitClientBuild
 import { getAccountId } from '../../../shared/credentials/accountId'
 import { ext } from '../../../shared/extensionGlobals'
 
-describe('getAccountId', function() {
+describe('getAccountId', function () {
     let sandbox: sinon.SinonSandbox
 
     const credentials: AWS.Credentials = ({} as any) as AWS.Credentials
@@ -29,7 +29,7 @@ describe('getAccountId', function() {
     }
     let createStsClientStub: sinon.SinonStub<[], StsClient>
 
-    beforeEach(async function() {
+    beforeEach(async function () {
         sandbox = sinon.createSandbox()
 
         createStsClientStub = sandbox.stub(clientBuilder, 'createStsClient').returns(stsClient)
@@ -37,11 +37,11 @@ describe('getAccountId', function() {
         ext.toolkitClientBuilder = (clientBuilder as any) as ToolkitClientBuilder
     })
 
-    afterEach(async function() {
+    afterEach(async function () {
         sandbox.restore()
     })
 
-    it('returns an account id (happy path)', async function() {
+    it('returns an account id (happy path)', async function () {
         const mockResponse: AWS.STS.GetCallerIdentityResponse = {
             Account: 'some valid account id',
         }
@@ -53,7 +53,7 @@ describe('getAccountId', function() {
         assert.strictEqual(accountId, mockResponse.Account)
     })
 
-    it('returns undefined if getCallerIdentity returns an undefined account', async function() {
+    it('returns undefined if getCallerIdentity returns an undefined account', async function () {
         const mockResponse: AWS.STS.GetCallerIdentityResponse = {
             Account: undefined,
         }
@@ -65,7 +65,7 @@ describe('getAccountId', function() {
         assert.strictEqual(accountId, undefined)
     })
 
-    it('returns undefined if getCallerIdentity throws', async function() {
+    it('returns undefined if getCallerIdentity throws', async function () {
         sandbox.stub(stsClient, 'getCallerIdentity').callsFake(() => {
             throw new Error('Simulating service error')
         })
@@ -75,7 +75,7 @@ describe('getAccountId', function() {
         assert.strictEqual(accountId, undefined)
     })
 
-    it('returns undefined if STS is not defined and toolkitClientBuilder cannot create an STS client', async function() {
+    it('returns undefined if STS is not defined and toolkitClientBuilder cannot create an STS client', async function () {
         createStsClientStub.restore()
         sandbox.stub(clientBuilder, 'createStsClient').callsFake(() => {
             throw new Error('Simulating STS Client not creating')

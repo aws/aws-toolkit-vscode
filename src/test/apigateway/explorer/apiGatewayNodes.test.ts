@@ -33,13 +33,13 @@ const SORTED_TEXT = [
     "zebra (it's zee not zed)",
 ]
 
-describe('ApiGatewayNode', function() {
+describe('ApiGatewayNode', function () {
     let sandbox: sinon.SinonSandbox
     let testNode: ApiGatewayNode
 
     let apiNames: { name: string; id: string }[]
 
-    beforeEach(function() {
+    beforeEach(function () {
         sandbox = sinon.createSandbox()
 
         apiNames = [
@@ -52,11 +52,11 @@ describe('ApiGatewayNode', function() {
         testNode = new ApiGatewayNode(FAKE_PARTITION_ID, FAKE_REGION_CODE)
     })
 
-    afterEach(function() {
+    afterEach(function () {
         sandbox.restore()
     })
 
-    it('returns placeholder node if no children are present', async function() {
+    it('returns placeholder node if no children are present', async function () {
         apiNames = []
 
         const childNodes = await testNode.getChildren()
@@ -64,7 +64,7 @@ describe('ApiGatewayNode', function() {
         assertNodeListOnlyContainsPlaceholderNode(childNodes)
     })
 
-    it('has RestApi child nodes', async function() {
+    it('has RestApi child nodes', async function () {
         const childNodes = await testNode.getChildren()
 
         assert.strictEqual(childNodes.length, apiNames.length, 'Unexpected child count')
@@ -72,7 +72,7 @@ describe('ApiGatewayNode', function() {
         childNodes.forEach(node => assert.ok(node instanceof RestApiNode, 'Expected child node to be RestApiNode'))
     })
 
-    it('sorts child nodes', async function() {
+    it('sorts child nodes', async function () {
         apiNames = UNSORTED_TEXT
 
         const childNodes = await testNode.getChildren()
@@ -81,7 +81,7 @@ describe('ApiGatewayNode', function() {
         assert.deepStrictEqual(actualChildOrder, SORTED_TEXT, 'Unexpected child sort order')
     })
 
-    it('has an error node for a child if an error happens during loading', async function() {
+    it('has an error node for a child if an error happens during loading', async function () {
         sandbox.stub(testNode, 'updateChildren').callsFake(() => {
             throw new Error('Update Children error!')
         })

@@ -21,23 +21,23 @@ import { CloudFormation } from '../../../shared/cloudformation/cloudformation'
 import { WatchedItem } from '../../../shared/watchedFiles'
 
 // TODO almost all of these tests should be moved to test WatchedFiles instead
-describe('CloudFormation Template Registry', async function() {
+describe('CloudFormation Template Registry', async function () {
     const goodYaml1 = makeSampleSamTemplateYaml(false)
 
-    describe('CloudFormationTemplateRegistry', async function() {
+    describe('CloudFormationTemplateRegistry', async function () {
         let testRegistry: CloudFormationTemplateRegistry
         let tempFolder: string
 
-        beforeEach(async function() {
+        beforeEach(async function () {
             tempFolder = await makeTemporaryToolkitFolder()
             testRegistry = new CloudFormationTemplateRegistry()
         })
 
-        afterEach(async function() {
+        afterEach(async function () {
             await fs.remove(tempFolder)
         })
 
-        describe('addItemToRegistry', async function() {
+        describe('addItemToRegistry', async function () {
             it("adds data from a template to the registry and can receive the template's data", async () => {
                 const filename = vscode.Uri.file(path.join(tempFolder, 'template.yaml'))
                 await strToYamlFile(goodYaml1, filename.fsPath)
@@ -50,7 +50,7 @@ describe('CloudFormation Template Registry', async function() {
                 assertValidTestTemplate(data, filename.fsPath)
             })
 
-            it('throws an error if the file to add is not a CF template', async function() {
+            it('throws an error if the file to add is not a CF template', async function () {
                 const filename = vscode.Uri.file(path.join(tempFolder, 'template.yaml'))
                 await strToYamlFile(badYaml, filename.fsPath)
 
@@ -61,15 +61,15 @@ describe('CloudFormation Template Registry', async function() {
         })
 
         // other get cases are tested in the add section
-        describe('registeredItems', async function() {
-            it('returns an empty array if the registry has no registered templates', function() {
+        describe('registeredItems', async function () {
+            it('returns an empty array if the registry has no registered templates', function () {
                 assert.strictEqual(testRegistry.registeredItems.length, 0)
             })
         })
 
         // other get cases are tested in the add section
-        describe('getRegisteredItem', async function() {
-            it('Returns the item from the VSCode URI', async function() {
+        describe('getRegisteredItem', async function () {
+            it('Returns the item from the VSCode URI', async function () {
                 const filename = vscode.Uri.file(path.join(tempFolder, 'template.yaml'))
                 await strToYamlFile(goodYaml1, filename.fsPath)
                 await testRegistry.addItemToRegistry(filename)
@@ -79,11 +79,11 @@ describe('CloudFormation Template Registry', async function() {
                 assertValidTestTemplate(data, filename.fsPath)
             })
 
-            it('returns undefined if the registry has no registered templates', function() {
+            it('returns undefined if the registry has no registered templates', function () {
                 assert.strictEqual(testRegistry.getRegisteredItem('/template.yaml'), undefined)
             })
 
-            it('returns undefined if the registry does not contain the template in question', async function() {
+            it('returns undefined if the registry does not contain the template in question', async function () {
                 const filename = vscode.Uri.file(path.join(tempFolder, 'template.yaml'))
                 await strToYamlFile(goodYaml1, filename.fsPath)
                 await testRegistry.addItemToRegistry(vscode.Uri.file(filename.fsPath))
@@ -92,8 +92,8 @@ describe('CloudFormation Template Registry', async function() {
             })
         })
 
-        describe('removeTemplateFromRegistry', async function() {
-            it('removes an added template', async function() {
+        describe('removeTemplateFromRegistry', async function () {
+            it('removes an added template', async function () {
                 const filename = vscode.Uri.file(path.join(tempFolder, 'template.yaml'))
                 await strToYamlFile(goodYaml1, filename.fsPath)
                 await testRegistry.addItemToRegistry(vscode.Uri.file(filename.fsPath))
@@ -103,7 +103,7 @@ describe('CloudFormation Template Registry', async function() {
                 assert.strictEqual(testRegistry.registeredItems.length, 0)
             })
 
-            it('does not affect the registry if a nonexistant template is removed', async function() {
+            it('does not affect the registry if a nonexistant template is removed', async function () {
                 const filename = vscode.Uri.file(path.join(tempFolder, 'template.yaml'))
                 await strToYamlFile(goodYaml1, filename.fsPath)
                 await testRegistry.addItemToRegistry(vscode.Uri.file(filename.fsPath))
@@ -198,8 +198,8 @@ describe('CloudFormation Template Registry', async function() {
         },
     }
 
-    describe('getResourcesForHandler', function() {
-        it('handles empty input', function() {
+    describe('getResourcesForHandler', function () {
+        it('handles empty input', function () {
             // Empty `unfilteredTemplates` input:
             assert.deepStrictEqual(
                 getResourcesForHandler(path.join(rootPath, nestedPath, 'index.js'), 'handler', []),
@@ -207,7 +207,7 @@ describe('CloudFormation Template Registry', async function() {
             )
         })
 
-        it('returns an array containing resources that contain references to the handler in question', function() {
+        it('returns an array containing resources that contain references to the handler in question', function () {
             const val = getResourcesForHandler(path.join(rootPath, nestedPath, 'index.js'), 'handler', [
                 nonParentTemplate,
                 workingTemplate,
@@ -248,8 +248,8 @@ describe('CloudFormation Template Registry', async function() {
         })
     })
 
-    describe('getResourcesForHandlerFromTemplateDatum', function() {
-        it('returns an empty array if the given template is not a parent of the handler file in question', function() {
+    describe('getResourcesForHandlerFromTemplateDatum', function () {
+        it('returns an empty array if the given template is not a parent of the handler file in question', function () {
             const val = getResourcesForHandlerFromTemplateDatum(
                 path.join(rootPath, 'index.js'),
                 'handler',
@@ -259,7 +259,7 @@ describe('CloudFormation Template Registry', async function() {
             assert.deepStrictEqual(val, [])
         })
 
-        it('returns an empty array if the template has no resources', function() {
+        it('returns an empty array if the template has no resources', function () {
             const val = getResourcesForHandlerFromTemplateDatum(
                 path.join(rootPath, nestedPath, 'index.js'),
                 'handler',
@@ -269,7 +269,7 @@ describe('CloudFormation Template Registry', async function() {
             assert.deepStrictEqual(val, [])
         })
 
-        it('returns a template resource if it has a matching handler', function() {
+        it('returns a template resource if it has a matching handler', function () {
             const val = getResourcesForHandlerFromTemplateDatum(
                 path.join(rootPath, nestedPath, 'index.js'),
                 'handler',
@@ -284,7 +284,7 @@ describe('CloudFormation Template Registry', async function() {
             ])
         })
 
-        it('ignores path handling if using a compiled language', function() {
+        it('ignores path handling if using a compiled language', function () {
             const val = getResourcesForHandlerFromTemplateDatum(
                 path.join(rootPath, nestedPath, 'index.cs'),
                 'Asdf::Asdf.Function::FunctionHandler',
@@ -299,7 +299,7 @@ describe('CloudFormation Template Registry', async function() {
             ])
         })
 
-        it('returns all template resources if it has multiple matching handlers', function() {
+        it('returns all template resources if it has multiple matching handlers', function () {
             const val = getResourcesForHandlerFromTemplateDatum(
                 path.join(rootPath, nestedPath, 'index.js'),
                 'handler',
@@ -324,7 +324,7 @@ describe('CloudFormation Template Registry', async function() {
             ])
         })
 
-        it('does not break if the resource has a non-parseable runtime', function() {
+        it('does not break if the resource has a non-parseable runtime', function () {
             const val = getResourcesForHandlerFromTemplateDatum(
                 path.join(rootPath, nestedPath, 'index.js'),
                 'handler',
@@ -340,18 +340,18 @@ describe('CloudFormation Template Registry', async function() {
         })
     })
 
-    describe('getResourcesForHandlerFromTemplateDatum (image tests)', async function() {
+    describe('getResourcesForHandlerFromTemplateDatum (image tests)', async function () {
         let tempFolder: string
         let helloPath: string
         let nestedPath: string
 
-        beforeEach(async function() {
+        beforeEach(async function () {
             tempFolder = await makeTemporaryToolkitFolder()
             helloPath = path.join(tempFolder, 'hello-world')
             nestedPath = path.join(helloPath, 'nested')
         })
 
-        afterEach(async function() {
+        afterEach(async function () {
             await fs.remove(tempFolder)
         })
 
@@ -374,7 +374,7 @@ describe('CloudFormation Template Registry', async function() {
             },
         }
 
-        it('checks for an exact handler match to a relative path in a Dockerfile for image functions', async function() {
+        it('checks for an exact handler match to a relative path in a Dockerfile for image functions', async function () {
             toFile('CMD: ["index.handler"]', path.join(helloPath, 'Dockerfile'))
             toFile('CMD: ["index.handler"]', path.join(nestedPath, 'Dockerfile'))
 
@@ -444,7 +444,7 @@ describe('CloudFormation Template Registry', async function() {
             )
         })
 
-        it('checks for an exact handler match for C# files in a Dockerfile for image functions', async function() {
+        it('checks for an exact handler match for C# files in a Dockerfile for image functions', async function () {
             toFile('CMD: ["HelloWorld::HelloWorld.Function::FunctionHandler"]', path.join(helloPath, 'Dockerfile'))
             toFile('CMD: ["HelloWorld::HelloWorld.Function::FunctionHandler"]', path.join(nestedPath, 'Dockerfile'))
 

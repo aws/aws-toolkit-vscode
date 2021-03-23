@@ -19,11 +19,11 @@ import { MockSchemaClient, MockToolkitClientBuilder } from '../../shared/clients
 import { clearTestIconPaths, IconPath, setupTestIconPaths } from '../../shared/utilities/iconPathUtils'
 import { asyncGenerator } from '../../utilities/collectionUtils'
 
-describe('RegistryItemNode', function() {
+describe('RegistryItemNode', function () {
     const fakeRegion = 'testRegion'
     let fakeRegistry: Schemas.RegistrySummary
 
-    before(async function() {
+    before(async function () {
         setupTestIconPaths()
         fakeRegistry = {
             RegistryName: 'myRegistry',
@@ -31,7 +31,7 @@ describe('RegistryItemNode', function() {
         }
     })
 
-    after(async function() {
+    after(async function () {
         clearTestIconPaths()
     })
 
@@ -42,14 +42,14 @@ describe('RegistryItemNode', function() {
     }
 
     // Validates we tagged the node correctly.
-    it('initializes name and tooltip', async function() {
+    it('initializes name and tooltip', async function () {
         const testNode: RegistryItemNode = generateTestNode()
 
         assert.strictEqual(testNode.label, `${fakeRegistry.RegistryName}`)
         assert.strictEqual(testNode.tooltip, `${fakeRegistry.RegistryName}${os.EOL}${fakeRegistry.RegistryArn}`)
     })
 
-    it('initializes icon', async function() {
+    it('initializes icon', async function () {
         const testNode: RegistryItemNode = generateTestNode()
 
         const iconPath = testNode.iconPath as IconPath
@@ -58,7 +58,7 @@ describe('RegistryItemNode', function() {
         assert.strictEqual(iconPath.light.path, ext.iconPaths.light.registry, 'Unexpected light icon path')
     })
 
-    it('returns placeholder node if no children are present', async function() {
+    it('returns placeholder node if no children are present', async function () {
         const schemaClient = ({
             regionCode: 'code',
 
@@ -76,7 +76,7 @@ describe('RegistryItemNode', function() {
         assert.strictEqual(childNodes[0] instanceof PlaceholderNode, true)
     })
 
-    it('returns schemas that belong to Registry', async function() {
+    it('returns schemas that belong to Registry', async function () {
         class TestMockSchemaClient extends MockSchemaClient {
             public constructor(
                 public readonly schemaItemArray: Schemas.SchemaSummary[] = [],
@@ -135,7 +135,7 @@ describe('RegistryItemNode', function() {
     }
 })
 
-describe('DefaultRegistryNode', function() {
+describe('DefaultRegistryNode', function () {
     const fakeRegion: string = 'testRegion'
 
     class SchemaMockToolkitClientBuilder extends MockToolkitClientBuilder {
@@ -160,7 +160,7 @@ describe('DefaultRegistryNode', function() {
         }
     }
 
-    it('Sorts Registries', async function() {
+    it('Sorts Registries', async function () {
         const inputRegistryNames: string[] = ['zebra', 'Antelope', 'aardvark', 'elephant']
         const schemaClient = new RegistryNamesMockSchemaClient(inputRegistryNames)
         ext.toolkitClientBuilder = new SchemaMockToolkitClientBuilder(schemaClient)
@@ -192,7 +192,7 @@ describe('DefaultRegistryNode', function() {
         assertChildNodeRegistryName(children[3], 'zebra')
     })
 
-    it('returns placeholder node if no children are present', async function() {
+    it('returns placeholder node if no children are present', async function () {
         const inputRegistryNames: string[] = []
         const schemaClient = new RegistryNamesMockSchemaClient(inputRegistryNames)
         ext.toolkitClientBuilder = new SchemaMockToolkitClientBuilder(schemaClient)
@@ -203,7 +203,7 @@ describe('DefaultRegistryNode', function() {
         assertNodeListOnlyContainsPlaceholderNode(childNodes)
     })
 
-    it('handles error', async function() {
+    it('handles error', async function () {
         //typo in the name of the method
         class ThrowErrorDefaultSchemaRegistrynNode extends SchemasNode {
             public constructor() {

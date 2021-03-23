@@ -8,13 +8,13 @@ import { showConfirmationMessage, showErrorWithLogs, showOutputMessage } from '.
 import { MockOutputChannel } from '../../mockOutputChannel'
 import { FakeWindow } from '../../shared/vscode/fakeWindow'
 
-describe('messages', function() {
-    describe('showConfirmationMessage', function() {
+describe('messages', function () {
+    describe('showConfirmationMessage', function () {
         const prompt = 'prompt'
         const confirm = 'confirm'
         const cancel = 'cancel'
 
-        it('confirms warning message when the user clicks confirm', async function() {
+        it('confirms warning message when the user clicks confirm', async function () {
             const window = new FakeWindow({ message: { warningSelection: confirm } })
 
             const isConfirmed = await showConfirmationMessage({ prompt, confirm, cancel }, window)
@@ -23,7 +23,7 @@ describe('messages', function() {
             assert.strictEqual(isConfirmed, true)
         })
 
-        it('cancels warning message when the user clicks cancel', async function() {
+        it('cancels warning message when the user clicks cancel', async function () {
             const window = new FakeWindow({ message: { warningSelection: cancel } })
 
             const isConfirmed = await showConfirmationMessage({ prompt, confirm, cancel }, window)
@@ -33,8 +33,8 @@ describe('messages', function() {
         })
     })
 
-    describe('showOutputMessage', function() {
-        it('shows and appends line to output channel', function() {
+    describe('showOutputMessage', function () {
+        it('shows and appends line to output channel', function () {
             const outputChannel = new MockOutputChannel()
             showOutputMessage('message', outputChannel)
 
@@ -44,10 +44,10 @@ describe('messages', function() {
         })
     })
 
-    describe('showErrorWithLogs', function() {
+    describe('showErrorWithLogs', function () {
         const message = 'message'
 
-        it('shows error message with a button to view logs', async function() {
+        it('shows error message with a button to view logs', async function () {
             const window = new FakeWindow({ message: { errorSelection: 'View Logs...' } })
             await showErrorWithLogs(message, window)
             assert.strictEqual(window.message.error, message)

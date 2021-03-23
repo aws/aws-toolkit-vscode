@@ -15,7 +15,7 @@ import { LoadMoreNode } from '../../../shared/treeview/nodes/loadMoreNode'
 import { deepEqual, instance, mock, when } from '../../utilities/mockito'
 import { FakeWorkspace } from '../../shared/vscode/fakeWorkspace'
 
-describe('S3BucketNode', function() {
+describe('S3BucketNode', function () {
     const name = 'bucket-name'
     const continuationToken = 'continuationToken'
     const bucket: Bucket = { name, region: 'region', arn: 'arn' }
@@ -46,12 +46,12 @@ describe('S3BucketNode', function() {
         assertBucketNode((node as MoreResultsNode).parent)
     }
 
-    beforeEach(function() {
+    beforeEach(function () {
         s3 = mock()
     })
 
-    describe('getChildren', function() {
-        it('gets children', async function() {
+    describe('getChildren', function () {
+        it('gets children', async function () {
             when(s3.listFiles(deepEqual({ bucketName: name, continuationToken: undefined, maxResults }))).thenResolve({
                 folders: [folder],
                 files: [file],
@@ -70,7 +70,7 @@ describe('S3BucketNode', function() {
             assert.strictEqual(otherNodes.length, 0)
         })
 
-        it('gets children with node for loading more results', async function() {
+        it('gets children with node for loading more results', async function () {
             when(s3.listFiles(deepEqual({ bucketName: name, continuationToken: undefined, maxResults }))).thenResolve({
                 folders: [folder],
                 files: [file],

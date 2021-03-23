@@ -8,16 +8,16 @@ import * as vscode from 'vscode'
 import { copyLogStreamName } from '../../../cloudWatchLogs/commands/copyLogStreamName'
 import { CLOUDWATCH_LOGS_SCHEME } from '../../../shared/constants'
 
-describe('copyLogStreamName', async function() {
-    beforeEach(async function() {
+describe('copyLogStreamName', async function () {
+    beforeEach(async function () {
         await vscode.env.clipboard.writeText('')
     })
 
-    afterEach(async function() {
+    afterEach(async function () {
         await vscode.env.clipboard.writeText('')
     })
 
-    it('copies stream names from valid URIs and does not copy anything new if the URI is invalid', async function() {
+    it('copies stream names from valid URIs and does not copy anything new if the URI is invalid', async function () {
         const streamName = 'stream'
         await copyLogStreamName(vscode.Uri.parse(`${CLOUDWATCH_LOGS_SCHEME}:group:${streamName}:account`))
 

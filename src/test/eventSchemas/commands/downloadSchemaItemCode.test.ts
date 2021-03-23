@@ -27,12 +27,12 @@ import { MockSchemaClient } from '../../shared/clients/mockClients'
 import admZip = require('adm-zip')
 import { makeTemporaryToolkitFolder } from '../../../shared/filesystemUtilities'
 
-describe('CodeDownloader', function() {
+describe('CodeDownloader', function () {
     let tempFolder: string
     let sandbox: sinon.SinonSandbox
     let destinationDirectory: vscode.Uri
     let request: SchemaCodeDownloadRequestDetails
-    beforeEach(async function() {
+    beforeEach(async function () {
         tempFolder = await makeTemporaryToolkitFolder()
         sandbox = sinon.createSandbox()
         destinationDirectory = vscode.Uri.file(tempFolder)
@@ -47,7 +47,7 @@ describe('CodeDownloader', function() {
         }
     })
 
-    afterEach(async function() {
+    afterEach(async function () {
         sandbox.restore()
         await fs.remove(tempFolder)
     })
@@ -59,8 +59,8 @@ describe('CodeDownloader', function() {
     const schemaClient = new MockSchemaClient()
     const codeDownloader = new CodeDownloader(schemaClient)
 
-    describe('codeDownloader', async function() {
-        it('should return an error if the response body is not Buffer', async function() {
+    describe('codeDownloader', async function () {
+        it('should return an error if the response body is not Buffer', async function () {
             const erroMessage = 'Response body should be Buffer type'
             const response: Schemas.GetCodeBindingSourceResponse = {
                 Body: 'Invalied body',
@@ -72,7 +72,7 @@ describe('CodeDownloader', function() {
             assert.strictEqual(error.message, erroMessage, 'Should fail for same error')
         })
 
-        it('should return arrayBuffer for valid Body type', async function() {
+        it('should return arrayBuffer for valid Body type', async function () {
             const myBuffer = Buffer.from('TEST STRING')
             const response: Schemas.GetCodeBindingSourceResponse = {
                 Body: myBuffer,
@@ -104,12 +104,12 @@ describe('CodeDownloader', function() {
     })
 })
 
-describe('CodeGenerator', function() {
+describe('CodeGenerator', function () {
     let tempFolder: string
     let sandbox: sinon.SinonSandbox
     let destinationDirectory: vscode.Uri
     let request: SchemaCodeDownloadRequestDetails
-    beforeEach(async function() {
+    beforeEach(async function () {
         tempFolder = await makeTemporaryToolkitFolder()
         sandbox = sinon.createSandbox()
         destinationDirectory = vscode.Uri.file(tempFolder)
@@ -124,7 +124,7 @@ describe('CodeGenerator', function() {
         }
     })
 
-    afterEach(async function() {
+    afterEach(async function () {
         sandbox.restore()
         await fs.remove(tempFolder)
     })
@@ -143,8 +143,8 @@ describe('CodeGenerator', function() {
     const schemaClient = new MockSchemaClient()
     const codeGenerator = new CodeGenerator(schemaClient)
 
-    describe('codeGenerator', async function() {
-        it('should return the current status of code generation', async function() {
+    describe('codeGenerator', async function () {
+        it('should return the current status of code generation', async function () {
             const response: Schemas.PutCodeBindingResponse = {
                 Status: CodeGenerationStatus.CREATE_IN_PROGRESS,
             }
@@ -160,7 +160,7 @@ describe('CodeGenerator', function() {
 
         // If code bindings were not generated, but putCodeBinding was already called, ConflictException occurs
         // Return CREATE_IN_PROGRESS and keep polling in this case
-        it('should return valid code generation status if it gets ConflictException', async function() {
+        it('should return valid code generation status if it gets ConflictException', async function () {
             const response: Schemas.PutCodeBindingResponse = {
                 Status: CodeGenerationStatus.CREATE_IN_PROGRESS,
             }
@@ -177,12 +177,12 @@ describe('CodeGenerator', function() {
         })
     })
 })
-describe('CodeGeneratorStatusPoller', function() {
+describe('CodeGeneratorStatusPoller', function () {
     let tempFolder: string
     let sandbox: sinon.SinonSandbox
     let destinationDirectory: vscode.Uri
     let request: SchemaCodeDownloadRequestDetails
-    beforeEach(async function() {
+    beforeEach(async function () {
         tempFolder = await makeTemporaryToolkitFolder()
         sandbox = sinon.createSandbox()
         destinationDirectory = vscode.Uri.file(tempFolder)
@@ -197,7 +197,7 @@ describe('CodeGeneratorStatusPoller', function() {
         }
     })
 
-    afterEach(async function() {
+    afterEach(async function () {
         sandbox.restore()
         await fs.remove(tempFolder)
     })
@@ -219,8 +219,8 @@ describe('CodeGeneratorStatusPoller', function() {
     const schemaClient = new MockSchemaClient()
     const statuspoller = new CodeGenerationStatusPoller(schemaClient)
 
-    describe('getCurrentStatus', async function() {
-        it('should return the current status of code generation', async function() {
+    describe('getCurrentStatus', async function () {
+        it('should return the current status of code generation', async function () {
             const firstStatus: Schemas.DescribeCodeBindingResponse = {
                 Status: CodeGenerationStatus.CREATE_IN_PROGRESS,
             }
@@ -240,8 +240,8 @@ describe('CodeGeneratorStatusPoller', function() {
         })
     })
 
-    describe('codeGeneratorStatusPoller', async function() {
-        it('fails if code generation status is invalid without retry', async function() {
+    describe('codeGeneratorStatusPoller', async function () {
+        it('fails if code generation status is invalid without retry', async function () {
             const schemaResponse: Schemas.DescribeCodeBindingResponse = {
                 Status: CodeGenerationStatus.CREATE_FAILED,
             }
@@ -263,7 +263,7 @@ describe('CodeGeneratorStatusPoller', function() {
             )
         })
 
-        it('times out after max attempts if status is still in progress', async function() {
+        it('times out after max attempts if status is still in progress', async function () {
             const schemaResponse: Schemas.DescribeCodeBindingResponse = {
                 Status: CodeGenerationStatus.CREATE_IN_PROGRESS,
             }
@@ -288,7 +288,7 @@ describe('CodeGeneratorStatusPoller', function() {
             )
         })
 
-        it('succeeds when code is previously generated without retry', async function() {
+        it('succeeds when code is previously generated without retry', async function () {
             const schemaResponse: Schemas.DescribeCodeBindingResponse = {
                 Status: CodeGenerationStatus.CREATE_COMPLETE,
             }
@@ -306,7 +306,7 @@ describe('CodeGeneratorStatusPoller', function() {
             assert.strictEqual(status, schemaResponse.Status, 'status should match')
         })
 
-        it('succeeds once the code generation status is complete within maxRetry attempts', async function() {
+        it('succeeds once the code generation status is complete within maxRetry attempts', async function () {
             const statusPoll = sandbox.stub(statuspoller, 'getCurrentStatus')
             statusPoll.onCall(0).returns(Promise.resolve(CodeGenerationStatus.CREATE_IN_PROGRESS))
             statusPoll.onCall(1).returns(Promise.resolve(CodeGenerationStatus.CREATE_COMPLETE)) // After maxAttempts
@@ -322,7 +322,7 @@ describe('CodeGeneratorStatusPoller', function() {
     })
 })
 
-describe('SchemaCodeDownload', function() {
+describe('SchemaCodeDownload', function () {
     let tempFolder: string
     let sandbox: sinon.SinonSandbox
     let destinationDirectory: vscode.Uri
@@ -330,7 +330,7 @@ describe('SchemaCodeDownload', function() {
 
     let arrayBuffer: Buffer
     let fileName: string
-    beforeEach(async function() {
+    beforeEach(async function () {
         tempFolder = await makeTemporaryToolkitFolder()
         sandbox = sinon.createSandbox()
         destinationDirectory = vscode.Uri.file(tempFolder)
@@ -350,7 +350,7 @@ describe('SchemaCodeDownload', function() {
         arrayBuffer = zip.toBuffer()
     })
 
-    afterEach(async function() {
+    afterEach(async function () {
         sandbox.restore()
         await fs.remove(tempFolder)
     })
@@ -370,8 +370,8 @@ describe('SchemaCodeDownload', function() {
 
     const schemaCodeDownloader = new SchemaCodeDownloader(downloader, generator, poller, extractor)
 
-    describe('downloadCode', async function() {
-        it('should download pre-generated code and place it into requested directory ', async function() {
+    describe('downloadCode', async function () {
+        it('should download pre-generated code and place it into requested directory ', async function () {
             const codeDownloaderStub = sandbox.stub(downloader, 'download').returns(Promise.resolve(arrayBuffer))
 
             await schemaCodeDownloader.downloadCode(request)
@@ -387,7 +387,7 @@ describe('SchemaCodeDownload', function() {
             assert.strictEqual(response, fileContent, `${expectedFilePath} :file content do not match`)
         })
 
-        it('should return error if downloading code fails with anything other than ResourceNotFound', async function() {
+        it('should return error if downloading code fails with anything other than ResourceNotFound', async function () {
             const customError = new Error('Custom error')
             const codeDownloaderStub = sandbox.stub(downloader, 'download').returns(Promise.reject(customError))
 
@@ -399,7 +399,7 @@ describe('SchemaCodeDownload', function() {
             assert.strictEqual(customError, error, 'Should throw Custom error')
         })
 
-        it('should generate code if download fails with ResourceNotFound and place it into requested directory', async function() {
+        it('should generate code if download fails with ResourceNotFound and place it into requested directory', async function () {
             sandbox.stub(poller, 'pollForCompletion').returns(Promise.resolve('CREATE_COMPLETE'))
             const codeDownloaderStub = sandbox.stub(downloader, 'download')
             const codeGeneratorResponse: Schemas.PutCodeBindingResponse = {
@@ -425,7 +425,7 @@ describe('SchemaCodeDownload', function() {
             assert.strictEqual(response, fileContent, 'Extracted file content do not match with expected')
         })
 
-        it('should return coreCodeFilePath', async function() {
+        it('should return coreCodeFilePath', async function () {
             const expectedFilePath = path.join(request.destinationDirectory.fsPath, fileName)
             sandbox.stub(downloader, 'download').returns(Promise.resolve(arrayBuffer))
             sandbox.stub(extractor, 'extractAndPlace').returns(Promise.resolve(expectedFilePath))
@@ -440,16 +440,16 @@ describe('SchemaCodeDownload', function() {
     })
 })
 
-describe('CodeExtractor', function() {
+describe('CodeExtractor', function () {
     let destinationDirectory: string
     let sandbox: sinon.SinonSandbox
 
-    beforeEach(async function() {
+    beforeEach(async function () {
         destinationDirectory = await makeTemporaryToolkitFolder()
         sandbox = sinon.createSandbox()
     })
 
-    afterEach(async function() {
+    afterEach(async function () {
         await fs.remove(destinationDirectory)
         sandbox.restore()
     })
@@ -457,8 +457,8 @@ describe('CodeExtractor', function() {
     const outputChannel = new MockOutputChannel()
     const codeExtractor = new CodeExtractor(outputChannel)
 
-    describe('checkFileCollisions', function() {
-        it('should return true when zipFile directoryFile contents clash ', async function() {
+    describe('checkFileCollisions', function () {
+        it('should return true when zipFile directoryFile contents clash ', async function () {
             const fileName = 'test.txt'
             const zipName = path.join(destinationDirectory, 'test.zip')
 
@@ -479,7 +479,7 @@ describe('CodeExtractor', function() {
             assert(outputChannel.value.includes(expectedMessage), `channel missing msg: ${expectedMessage}`)
         })
 
-        it('should return false if no collision present', async function() {
+        it('should return false if no collision present', async function () {
             const fileName1 = 'test.txt'
             const zipName = path.join(destinationDirectory, 'test.zip')
 
@@ -499,7 +499,7 @@ describe('CodeExtractor', function() {
             )
         })
     })
-    describe('extractAndPlace', function() {
+    describe('extractAndPlace', function () {
         const testSchemaName = 'aws.batch.testSchema'
         const testRegistryName = 'testRegistry'
         const language = 'Java8'
@@ -509,7 +509,7 @@ describe('CodeExtractor', function() {
         let destinationDirectoryUri: vscode.Uri
         let request: SchemaCodeDownloadRequestDetails
 
-        beforeEach(async function() {
+        beforeEach(async function () {
             sandbox = sinon.createSandbox()
             destinationDirectoryUri = vscode.Uri.file(destinationDirectory)
 
@@ -523,12 +523,12 @@ describe('CodeExtractor', function() {
             }
         })
 
-        afterEach(async function() {
+        afterEach(async function () {
             sandbox.restore()
             await fs.remove(destinationDirectory)
         })
 
-        it('should extract files if no collision present', async function() {
+        it('should extract files if no collision present', async function () {
             const fileName1 = 'test.text'
             const zipName1 = path.join(destinationDirectory, 'test.zip')
 
@@ -558,7 +558,7 @@ describe('CodeExtractor', function() {
             assert.strictEqual(file2Content, 'Second file content', `${file2Path} : file content do not match`)
         })
 
-        it('should not override file content if user picks No when collision occurs', async function() {
+        it('should not override file content if user picks No when collision occurs', async function () {
             sandbox.stub(codeExtractor, 'confirmOverwriteCollisions').returns(Promise.resolve(false))
 
             const fileName1 = 'test.txt'
@@ -583,7 +583,7 @@ describe('CodeExtractor', function() {
             assert.strictEqual(file1Content, expectedFileContent, `${file1Path} :File content should not be overriden`)
         })
 
-        it('should override file content if user picks Yes when collision occurs', async function() {
+        it('should override file content if user picks Yes when collision occurs', async function () {
             sandbox.stub(codeExtractor, 'confirmOverwriteCollisions').returns(Promise.resolve(true))
 
             const fileName1 = 'test.txt'
@@ -609,7 +609,7 @@ describe('CodeExtractor', function() {
             assert.strictEqual(file1Content, overridenFileContent, `${file1Path} :File content should be overriden`)
         })
 
-        it('should throw error if user picks Cancel when collision occurs', async function() {
+        it('should throw error if user picks Cancel when collision occurs', async function () {
             const error = new Error('Download code bindings cancelled')
             sandbox.stub(codeExtractor, 'confirmOverwriteCollisions').returns(Promise.reject(error))
 
@@ -636,7 +636,7 @@ describe('CodeExtractor', function() {
             assert.strictEqual(file1Content, expectedFileContent, `${file1Path} :File content should not be overriden`)
         })
 
-        it('should return coreCodeFilePath if it exists inside zip content', async function() {
+        it('should return coreCodeFilePath if it exists inside zip content', async function () {
             //grab the title from schemaName
             const title = testSchemaName.split('.').pop()
             const fileName = title!.concat('.java')
@@ -652,8 +652,8 @@ describe('CodeExtractor', function() {
         })
     })
 
-    describe('getCoreCodeFilePath', function() {
-        it('shoul return file path if it exists in zipFile', async function() {
+    describe('getCoreCodeFilePath', function () {
+        it('shoul return file path if it exists in zipFile', async function () {
             const coreFile = 'test.java'
             const zipName = path.join(destinationDirectory, 'test.zip')
             createZipFileInTempDirectory(coreFile, 'First file content', zipName)
@@ -663,7 +663,7 @@ describe('CodeExtractor', function() {
             assert.strictEqual(coreCodeFilePath, coreFile, 'Core file path should match')
         })
 
-        it('should return undefined if file does not exist in zipFile', async function() {
+        it('should return undefined if file does not exist in zipFile', async function () {
             const fileName = 'test.java'
             const zipName = path.join(destinationDirectory, 'test.zip')
             createZipFileInTempDirectory(fileName, 'First file content', zipName)
