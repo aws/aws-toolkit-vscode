@@ -24,6 +24,10 @@ export class WinstonToolkitLogger implements Logger, vscode.Disposable {
                 }),
                 winston.format.errors({ stack: true }),
                 winston.format.printf(info => {
+                    if (info.raw) {
+                        return info.message
+                    }
+
                     return `${info.timestamp} [${info.level.toUpperCase()}]: ${info.message}`
                 })
             ),
