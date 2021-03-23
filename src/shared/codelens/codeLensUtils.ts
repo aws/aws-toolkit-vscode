@@ -21,8 +21,9 @@ import { getWorkspaceRelativePath } from '../utilities/workspaceUtils'
 import * as csharpCodelens from './csharpCodeLensProvider'
 import * as pythonCodelens from './pythonCodeLensProvider'
 import * as tsCodelens from './typescriptCodeLensProvider'
+import * as goCodelens from './goCodeLensProvider'
 
-export type Language = 'python' | 'javascript' | 'csharp'
+export type Language = 'python' | 'javascript' | 'csharp' | 'go'
 
 export async function makeCodeLenses({
     document,
@@ -261,7 +262,7 @@ export async function makeGoCodeLensProvider(): Promise<vscode.CodeLensProvider>
             document: vscode.TextDocument,
             token: vscode.CancellationToken
         ): Promise<vscode.CodeLens[]> => {
-            const handlers = await tsCodelens.getLambdaHandlerCandidates(document)
+            const handlers = await goCodelens.getLambdaHandlerCandidates(document)
             return makeCodeLenses({
                 document,
                 handlers,

@@ -167,6 +167,7 @@ async function activateCodeLensProviders(
         await registry.addWatchPattern(pyLensProvider.PYTHON_BASE_PATTERN)
         await registry.addWatchPattern(jsLensProvider.JAVASCRIPT_BASE_PATTERN)
         await registry.addWatchPattern(csLensProvider.CSHARP_BASE_PATTERN)
+        await registry.addWatchPattern(goLensProvider.GO_BASE_PATTERN)
 
         ext.codelensRootRegistry = registry
     } catch (e) {
