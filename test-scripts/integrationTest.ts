@@ -14,6 +14,7 @@ async function setupVSCode(): Promise<string> {
     await installVSCodeExtension(vsCodeExecutablePath, VSCODE_EXTENSION_ID.python)
     await installVSCodeExtension(vsCodeExecutablePath, VSCODE_EXTENSION_ID.yaml)
     await installVSCodeExtension(vsCodeExecutablePath, VSCODE_EXTENSION_ID.java)
+    await installVSCodeExtension(vsCodeExecutablePath, VSCODE_EXTENSION_ID.javadebug)
     console.log('VS Code Test instance has been set up')
 
     return vsCodeExecutablePath

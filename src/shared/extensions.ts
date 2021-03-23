@@ -18,6 +18,7 @@ export const VSCODE_EXTENSION_ID = {
     jupyter: 'ms-toolsai.jupyter',
     yaml: 'redhat.vscode-yaml',
     java: 'redhat.java',
+    javadebug: 'vscjava.vscode-java-debug',
 }
 
 /**
