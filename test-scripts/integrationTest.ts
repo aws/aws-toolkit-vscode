@@ -32,7 +32,13 @@ async function setupVSCode(): Promise<string> {
         process.env.AWS_TOOLKIT_IGNORE_WEBPACK_BUNDLE = 'true'
 
         const disableExtensions = await getCliArgsToDisableExtensions(vsCodeExecutablePath, {
-            except: [VSCODE_EXTENSION_ID.python, VSCODE_EXTENSION_ID.yaml, VSCODE_EXTENSION_ID.jupyter],
+            except: [
+                VSCODE_EXTENSION_ID.python,
+                VSCODE_EXTENSION_ID.yaml,
+                VSCODE_EXTENSION_ID.jupyter,
+                VSCODE_EXTENSION_ID.java,
+                VSCODE_EXTENSION_ID.javadebug,
+            ],
         })
         const args = {
             vscodeExecutablePath: vsCodeExecutablePath,
