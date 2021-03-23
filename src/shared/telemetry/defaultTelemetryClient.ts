@@ -88,14 +88,19 @@ export class DefaultTelemetryClient implements TelemetryClient {
 
         return new DefaultTelemetryClient(
             clientId,
-            await ext.sdkClientBuilder.createAndConfigureServiceClient(opts => new Service(opts), {
-                // @ts-ignore: apiConfig is internal and not in the TS declaration file
-                apiConfig: apiConfig,
-                region: region,
-                credentials: credentials,
-                correctClockSkew: true,
-                endpoint: DefaultTelemetryClient.DEFAULT_TELEMETRY_ENDPOINT,
-            })
+            await ext.sdkClientBuilder.createAndConfigureServiceClient(
+                opts => new Service(opts),
+                {
+                    // @ts-ignore: apiConfig is internal and not in the TS declaration file
+                    apiConfig: apiConfig,
+                    region: region,
+                    credentials: credentials,
+                    correctClockSkew: true,
+                    endpoint: DefaultTelemetryClient.DEFAULT_TELEMETRY_ENDPOINT,
+                },
+                undefined,
+                false
+            )
         )
     }
 }
