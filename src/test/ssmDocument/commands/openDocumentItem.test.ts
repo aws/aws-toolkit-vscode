@@ -16,13 +16,13 @@ import * as picker from '../../../shared/ui/picker'
 import { MockSsmDocumentClient } from '../../shared/clients/mockClients'
 import { FakeAwsContext } from '../../utilities/fakeAwsContext'
 
-describe('openDocumentItem', async function() {
+describe('openDocumentItem', async function () {
     let sandbox: sinon.SinonSandbox
-    beforeEach(function() {
+    beforeEach(function () {
         sandbox = sinon.createSandbox()
     })
 
-    afterEach(function() {
+    afterEach(function () {
         sandbox.restore()
     })
 
@@ -61,16 +61,10 @@ describe('openDocumentItem', async function() {
         description: 'Open document with format JSON',
     }
 
-    it('create DocumentItemNode and openDocumentItem functionality', async function() {
+    it('create DocumentItemNode and openDocumentItem functionality', async function () {
         sandbox.stub(vscode.window, 'showSaveDialog').returns(Promise.resolve(vscode.Uri.file('test')))
-        sandbox
-            .stub(picker, 'promptUser')
-            .onFirstCall()
-            .returns(Promise.resolve(fakeFormatSelection))
-        sandbox
-            .stub(picker, 'verifySinglePickerOutput')
-            .onFirstCall()
-            .returns(fakeFormatSelectionResult)
+        sandbox.stub(picker, 'promptUser').onFirstCall().returns(Promise.resolve(fakeFormatSelection))
+        sandbox.stub(picker, 'verifySinglePickerOutput').onFirstCall().returns(fakeFormatSelectionResult)
 
         const documentNode = generateDocumentItemNode()
         const openTextDocumentStub = sandbox.stub(vscode.workspace, 'openTextDocument')

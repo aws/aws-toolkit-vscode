@@ -12,27 +12,27 @@ import { UserCredentialsUtils } from '../../../shared/credentials/userCredential
 import { EnvironmentVariables } from '../../../shared/environmentVariables'
 import { makeTemporaryToolkitFolder } from '../../../shared/filesystemUtilities'
 
-describe('UserCredentialsUtils', function() {
+describe('UserCredentialsUtils', function () {
     let tempFolder: string
 
-    before(async function() {
+    before(async function () {
         // Make a temp folder for all these tests
         // Stick some temp credentials files in there to load from
         tempFolder = await makeTemporaryToolkitFolder()
     })
 
-    afterEach(async function() {
+    afterEach(async function () {
         const env = process.env as EnvironmentVariables
         delete env.AWS_SHARED_CREDENTIALS_FILE
         delete env.AWS_CONFIG_FILE
     })
 
-    after(async function() {
+    after(async function () {
         await fs.remove(tempFolder)
     })
 
-    describe('findExistingCredentialsFilenames', function() {
-        it('returns both filenames if both files exist', async function() {
+    describe('findExistingCredentialsFilenames', function () {
+        it('returns both filenames if both files exist', async function () {
             const credentialsFilename = path.join(tempFolder, 'credentials-both-exist-test')
             const configFilename = path.join(tempFolder, 'config-both-exist-test')
 
@@ -48,7 +48,7 @@ describe('UserCredentialsUtils', function() {
             assert.strictEqual(foundFiles.length, 2)
         })
 
-        it('returns credentials file if it exists and config file does not exist', async function() {
+        it('returns credentials file if it exists and config file does not exist', async function () {
             const credentialsFilename = path.join(tempFolder, 'credentials-exist-test')
             const configFilename = path.join(tempFolder, 'config-not-exist-test')
 
@@ -64,7 +64,7 @@ describe('UserCredentialsUtils', function() {
             assert.strictEqual(foundFiles[0], credentialsFilename)
         })
 
-        it('returns config file if it exists and credentials file does not exist', async function() {
+        it('returns config file if it exists and credentials file does not exist', async function () {
             const credentialsFilename = path.join(tempFolder, 'credentials-not-exist-test')
             const configFilename = path.join(tempFolder, 'config-exist-test')
 
@@ -80,7 +80,7 @@ describe('UserCredentialsUtils', function() {
             assert.strictEqual(foundFiles[0], configFilename)
         })
 
-        it('returns empty result if neither file exists', async function() {
+        it('returns empty result if neither file exists', async function () {
             const credentialsFilename = path.join(tempFolder, 'credentials-not-exist-test')
             const configFilename = path.join(tempFolder, 'config-not-exist-test')
 
@@ -94,8 +94,8 @@ describe('UserCredentialsUtils', function() {
         })
     })
 
-    describe('generateCredentialsFile', function() {
-        it('generates a valid credentials file', async function() {
+    describe('generateCredentialsFile', function () {
+        it('generates a valid credentials file', async function () {
             const credentialsFilename = path.join(tempFolder, 'credentials-generation-test')
             const profileName = 'someRandomProfileName'
 

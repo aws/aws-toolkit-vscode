@@ -24,12 +24,12 @@ class FakeNode extends AWSTreeNodeBase implements LoadMoreNode {
     public clearChildren(): void {}
 }
 
-describe('ChildNodeCache', function() {
+describe('ChildNodeCache', function () {
     const continuationToken = 'continuationToken'
     const fakeNode = new FakeNode('fakeNode')
     const anotherFakeNode = new FakeNode('anotherFakeNode')
 
-    it('starts empty, with no continuation token, and is pristine', function() {
+    it('starts empty, with no continuation token, and is pristine', function () {
         const cache = new ChildNodeCache()
 
         assert.deepStrictEqual(cache.children, [])
@@ -37,7 +37,7 @@ describe('ChildNodeCache', function() {
         assert.strictEqual(cache.isPristine, true)
     })
 
-    it('appends initial items and updates continuation token and pristine state', function() {
+    it('appends initial items and updates continuation token and pristine state', function () {
         const cache = new ChildNodeCache()
         cache.appendPage({ newChildren: [fakeNode, anotherFakeNode], newContinuationToken: continuationToken })
 
@@ -46,7 +46,7 @@ describe('ChildNodeCache', function() {
         assert.strictEqual(cache.isPristine, false)
     })
 
-    it('appends additional items', function() {
+    it('appends additional items', function () {
         const newFakeNode = new FakeNode('newFakeNode')
 
         const cache = new ChildNodeCache()
