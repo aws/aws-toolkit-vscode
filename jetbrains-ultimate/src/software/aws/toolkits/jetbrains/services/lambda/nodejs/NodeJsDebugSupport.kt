@@ -7,8 +7,10 @@ import com.google.common.collect.BiMap
 import com.google.common.collect.HashBiMap
 import com.intellij.execution.process.ProcessAdapter
 import com.intellij.execution.process.ProcessEvent
+import com.intellij.execution.runners.ExecutionEnvironment
 import com.intellij.javascript.debugger.LocalFileSystemFileFinder
 import com.intellij.javascript.debugger.RemoteDebuggingFileFinder
+import com.intellij.lang.javascript.JavascriptLanguage
 import com.intellij.openapi.util.io.FileUtil
 import com.intellij.openapi.vfs.VirtualFile
 import com.intellij.xdebugger.XDebugProcess
@@ -17,14 +19,59 @@ import com.intellij.xdebugger.XDebugSession
 import com.jetbrains.debugger.wip.WipLocalVmConnection
 import com.jetbrains.nodeJs.NodeChromeDebugProcess
 import org.jetbrains.io.LocalFileFinder
+import software.aws.toolkits.core.lambda.LambdaRuntime
 import software.aws.toolkits.jetbrains.services.PathMapping
+import software.aws.toolkits.jetbrains.services.lambda.execution.sam.ImageDebugSupport
+import software.aws.toolkits.jetbrains.services.lambda.execution.sam.RuntimeDebugSupport
 import software.aws.toolkits.jetbrains.services.lambda.execution.sam.SamRunningState
+import software.aws.toolkits.jetbrains.utils.execution.steps.Context
 import java.net.InetSocketAddress
+
+class NodeJsRuntimeDebugSupport : RuntimeDebugSupport {
+    override suspend fun createDebugProcess(
+        context: Context,
+        environment: ExecutionEnvironment,
+        state: SamRunningState,
+        debugHost: String,
+        debugPorts: List<Int>
+    ): XDebugProcessStarter = NodeJsDebugUtils.createDebugProcess(state, debugHost, debugPorts)
+}
+
+abstract class NodeJsImageDebugSupport : ImageDebugSupport {
+    override fun supportsPathMappings(): Boolean = true
+    override val languageId = JavascriptLanguage.INSTANCE.id
+    override suspend fun createDebugProcess(
+        context: Context,
+        environment: ExecutionEnvironment,
+        state: SamRunningState,
+        debugHost: String,
+        debugPorts: List<Int>
+    ): XDebugProcessStarter = NodeJsDebugUtils.createDebugProcess(state, debugHost, debugPorts)
+
+    override fun containerEnvVars(debugPorts: List<Int>): Map<String, String> = mapOf(
+        "NODE_OPTIONS" to "--inspect-brk=0.0.0.0:${debugPorts.first()} --max-http-header-size 81920"
+    )
+}
+
+class NodeJs10ImageDebug : NodeJsImageDebugSupport() {
+    override val id: String = LambdaRuntime.NODEJS10_X.toString()
+    override fun displayName() = LambdaRuntime.NODEJS10_X.toString().capitalize()
+}
+
+class NodeJs12ImageDebug : NodeJsImageDebugSupport() {
+    override val id: String = LambdaRuntime.NODEJS12_X.toString()
+    override fun displayName() = LambdaRuntime.NODEJS12_X.toString().capitalize()
+}
+
+class NodeJs14ImageDebug : NodeJsImageDebugSupport() {
+    override val id: String = LambdaRuntime.NODEJS14_X.toString()
+    override fun displayName() = LambdaRuntime.NODEJS14_X.toString().capitalize()
+}
 
 object NodeJsDebugUtils {
     private const val NODE_MODULES = "node_modules"
 
-    suspend fun createDebugProcess(
+    fun createDebugProcess(
         state: SamRunningState,
         debugHost: String,
         debugPorts: List<Int>

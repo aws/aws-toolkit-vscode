@@ -7,15 +7,12 @@ import com.intellij.execution.configurations.GeneralCommandLine
 import com.intellij.execution.filters.TextConsoleBuilderFactory
 import com.intellij.execution.process.OSProcessHandler
 import com.intellij.execution.process.ProcessHandlerFactory
-import com.intellij.execution.process.ProcessOutput
 import com.intellij.execution.runners.ExecutionEnvironment
-import com.intellij.execution.util.ExecUtil
 import com.intellij.openapi.application.ExpirableExecutor
 import com.intellij.openapi.application.ModalityState
 import com.intellij.openapi.application.impl.coroutineDispatchingContext
 import com.intellij.openapi.rd.defineNestedLifetime
 import com.intellij.util.concurrency.AppExecutorUtil
-import com.intellij.util.text.nullize
 import com.intellij.xdebugger.XDebugProcessStarter
 import com.jetbrains.rd.framework.IdKind
 import com.jetbrains.rd.framework.Identities
@@ -34,22 +31,21 @@ import com.jetbrains.rider.model.debuggerWorkerConnectionHelperModel
 import com.jetbrains.rider.projectView.solution
 import com.jetbrains.rider.run.IDebuggerOutputListener
 import com.jetbrains.rider.run.bindToSettings
-import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.runBlocking
 import kotlinx.coroutines.withContext
 import org.jetbrains.concurrency.AsyncPromise
-import org.jetbrains.concurrency.Promise
 import software.aws.toolkits.core.utils.getLogger
 import software.aws.toolkits.core.utils.warn
+import software.aws.toolkits.jetbrains.services.lambda.dotnet.FindDockerContainer.Companion.DOCKER_CONTAINER
+import software.aws.toolkits.jetbrains.services.lambda.dotnet.FindPid.Companion.DOTNET_PID
 import software.aws.toolkits.jetbrains.services.lambda.execution.sam.SamDebugSupport
-import software.aws.toolkits.jetbrains.services.lambda.execution.sam.SamRunningState
 import software.aws.toolkits.jetbrains.utils.ApplicationThreadPoolScope
 import software.aws.toolkits.jetbrains.utils.DotNetDebuggerUtils
+import software.aws.toolkits.jetbrains.utils.execution.steps.Context
 import software.aws.toolkits.jetbrains.utils.getCoroutineUiContext
 import software.aws.toolkits.resources.message
 import java.net.InetAddress
-import java.time.Duration
 import java.util.Timer
 import kotlin.concurrent.schedule
 
@@ -61,22 +57,12 @@ object DotnetDebugUtils {
     private const val REMOTE_NETCORE_CLI_PATH = "/var/lang/bin/dotnet"
     const val NUMBER_OF_DEBUG_PORTS = 2
 
-    private const val FIND_PID_SCRIPT =
-        """
-            for i in `ls /proc/*/exe` ; do
-                symlink=`readlink  ${'$'}i 2>/dev/null`;
-                if [[ "${'$'}symlink" == *"/dotnet" ]]; then
-                    echo  ${'$'}i | sed -n 's/.*\/proc\/\(.*\)\/exe.*/\1/p'
-                fi;
-            done;
-        """
-
-    fun createDebugProcessAsync(
+    fun createDebugProcess(
         environment: ExecutionEnvironment,
-        state: SamRunningState,
         debugHost: String,
-        debugPorts: List<Int>
-    ): Promise<XDebugProcessStarter> {
+        debugPorts: List<Int>,
+        context: Context
+    ): XDebugProcessStarter {
         val frontendPort = debugPorts[0]
         val backendPort = debugPorts[1]
         val promise = AsyncPromise<XDebugProcessStarter>()
@@ -107,8 +93,8 @@ object DotnetDebugUtils {
 
         ApplicationThreadPoolScope(environment.runProfile.name).launch(bgContext) {
             try {
-                val dockerContainer = findDockerContainer(frontendPort)
-                val pid = findDotnetPid(dockerContainer)
+                val dockerContainer = context.getRequiredAttribute(DOCKER_CONTAINER)
+                val pid = context.getRequiredAttribute(DOTNET_PID)
                 val riderDebuggerProcessHandler = startDebugWorker(dockerContainer, backendPort, frontendPort)
 
                 withContext(edtContext) {
@@ -183,54 +169,7 @@ object DotnetDebugUtils {
             checkDebuggerTask.cancel()
         }
 
-        return promise
-    }
-
-    private suspend fun findDockerContainer(frontendPort: Int): String = runProcessUntil(
-        duration = Duration.ofMillis(SamDebugSupport.debuggerConnectTimeoutMs()),
-        cmd = GeneralCommandLine(
-            "docker",
-            "ps",
-            "-q",
-            "-f",
-            "publish=$frontendPort"
-        )
-    ) {
-        it.stdout.trim().nullize()
-    }
-
-    private suspend fun findDotnetPid(dockerContainer: String): Int = runProcessUntil(
-        duration = Duration.ofMillis(SamDebugSupport.debuggerConnectTimeoutMs()),
-        cmd = GeneralCommandLine(
-            "docker",
-            "exec",
-            "-i",
-            dockerContainer,
-            "/bin/sh",
-            "-c",
-            FIND_PID_SCRIPT
-        )
-    ) {
-        it.stdout.trim().nullize()?.toIntOrNull()
-    }
-
-    private suspend fun <T> runProcessUntil(duration: Duration, cmd: GeneralCommandLine, resultChecker: (ProcessOutput) -> T?): T {
-        val start = System.nanoTime()
-        var lastAttemptOutput: ProcessOutput? = null
-        while (System.nanoTime() - start <= duration.toNanos()) {
-            lastAttemptOutput = ExecUtil.execAndGetOutput(cmd, timeoutInMilliseconds = duration.toMillis().toInt())
-
-            resultChecker(lastAttemptOutput)?.let {
-                return it
-            }
-
-            delay(100)
-        }
-
-        throw IllegalStateException(
-            "Command did not return expected result within $duration, last attempt; cmd: '${cmd.commandLineString}', " +
-                "exitCode: ${lastAttemptOutput?.exitCode}, stdOut: '${lastAttemptOutput?.stdout?.trim()}', stdErr: '${lastAttemptOutput?.stderr?.trim()}'"
-        )
+        return promise.get()!!
     }
 
     private fun startDebugWorker(dockerContainer: String, backendPort: Int, frontendPort: Int): OSProcessHandler {

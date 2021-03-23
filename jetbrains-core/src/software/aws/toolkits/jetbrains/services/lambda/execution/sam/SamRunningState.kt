@@ -31,6 +31,7 @@ import software.aws.toolkits.jetbrains.services.lambda.sam.SamCommon
 import software.aws.toolkits.jetbrains.services.lambda.sam.SamOptions
 import software.aws.toolkits.jetbrains.services.lambda.sam.SamTemplateUtils
 import software.aws.toolkits.jetbrains.services.lambda.steps.AttachDebugger
+import software.aws.toolkits.jetbrains.services.lambda.steps.AttachDebuggerParent
 import software.aws.toolkits.jetbrains.services.lambda.steps.BuildLambda
 import software.aws.toolkits.jetbrains.services.lambda.steps.BuildLambdaRequest
 import software.aws.toolkits.jetbrains.services.lambda.steps.GetPorts
@@ -152,7 +153,12 @@ class SamRunningState(
                     add(object : ParallelStep() {
                         override fun buildChildSteps(context: Context): List<Step> = listOf(
                             startSam,
-                            AttachDebugger(environment, state)
+                            AttachDebuggerParent(
+                                state.settings.resolveDebuggerSupport().additionalDebugProcessSteps(environment, state) + AttachDebugger(
+                                    environment,
+                                    state
+                                )
+                            )
                         )
 
                         override val stepName: String = ""
