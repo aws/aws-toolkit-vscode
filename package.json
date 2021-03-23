@@ -1501,7 +1501,7 @@
         "copyNonCodeFiles": "node ./build-scripts/copyNonCodeFiles.js",
         "copyExtensionMain": "node ./build-scripts/copyExtensionMain.js",
         "copyDistFiles": "ts-node ./build-scripts/copyDistFiles.ts",
-        "buildScripts": "npm run buildWebviews && npm run bundleDeps && npm run copyExtensionMain && npm run copyDistFiles && npm run copyNonCodeFiles && npm run generateNonCodeFiles",
+        "buildScripts": "npm run bundleDeps && npm run copyExtensionMain && npm run copyDistFiles && npm run copyNonCodeFiles && npm run generateNonCodeFiles",
         "compile": "webpack --mode development && npm run buildScripts",
         "recompile": "npm run clean && npm run compile",
         "watch": "npm run buildScripts && tsc -watch -p ./",
@@ -1517,8 +1517,7 @@
         "generateTelemetry": "node node_modules/@aws-toolkits/telemetry/lib/generateTelemetry.js --extraInput=src/shared/telemetry/vscodeTelemetry.json --output=src/shared/telemetry/telemetry.gen.ts",
         "generateConfigurationAttributes": "ts-node ./build-scripts/generateConfigurationAttributes.ts",
         "newChange": "ts-node ./build-scripts/newChange.ts",
-        "createRelease": "ts-node ./build-scripts/createRelease.ts",
-        "buildWebviews": "webpack --config ./webpack.webview.config.js"
+        "createRelease": "ts-node ./build-scripts/createRelease.ts"
     },
     "devDependencies": {
         "@aws-toolkits/telemetry": "0.0.91",
@@ -1575,6 +1574,8 @@
         "vsce": "^1.81.1",
         "vscode-nls-dev": "^3.3.1",
         "vscode-test": "^1.4.0",
+        "vue-loader": "^15.9.6",
+        "vue-template-compiler": "^2.6.12",
         "webpack": "^4.41.2",
         "webpack-cli": "^3.3.10"
     },
