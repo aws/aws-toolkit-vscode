@@ -7,7 +7,6 @@ import com.intellij.openapi.progress.ProcessCanceledException
 import com.intellij.openapi.project.Project
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.delay
-import kotlinx.coroutines.runBlocking
 import kotlinx.coroutines.withTimeout
 import software.aws.toolkits.core.utils.AttributeBag
 import software.aws.toolkits.core.utils.AttributeBagKey
@@ -48,17 +47,15 @@ class Context(val project: Project) {
      * @param key The key to try to get
      * @param timeout The timeout in milliseconds
      */
-    fun <T : Any> blockingGet(key: AttributeBagKey<T>, timeout: Long = 10000): T = runBlocking {
-        return@runBlocking withTimeout(timeout) {
-            while (!isCancelled()) {
-                val item = attributeMap.get(key)
-                if (item != null) {
-                    return@withTimeout item
-                }
-                delay(100)
+    suspend fun <T : Any> pollingGet(key: AttributeBagKey<T>, timeout: Long = 10000): T = withTimeout(timeout) {
+        while (!isCancelled()) {
+            val item = attributeMap.get(key)
+            if (item != null) {
+                return@withTimeout item
             }
-            throw CancellationException("getAttributeOrWait cancelled")
+            delay(100)
         }
+        throw CancellationException("getAttributeOrWait cancelled")
     }
 
     fun <T : Any> getRequiredAttribute(key: AttributeBagKey<T>): T = attributeMap.getOrThrow(key)
