@@ -12,7 +12,8 @@ export interface AWSClientBuilder {
     createAndConfigureServiceClient<T>(
         awsServiceFactory: (options: ServiceConfigurationOptions) => T,
         awsServiceOpts?: ServiceConfigurationOptions,
-        region?: string
+        region?: string,
+        addUserAgent?: boolean
     ): Promise<T>
 }
 
@@ -28,7 +29,8 @@ export class DefaultAWSClientBuilder implements AWSClientBuilder {
     public async createAndConfigureServiceClient<T>(
         awsServiceFactory: (options: ServiceConfigurationOptions) => T,
         awsServiceOpts?: ServiceConfigurationOptions,
-        region?: string
+        region?: string,
+        addUserAgent: boolean = true
     ): Promise<T> {
         if (!awsServiceOpts) {
             awsServiceOpts = {}
@@ -42,7 +44,7 @@ export class DefaultAWSClientBuilder implements AWSClientBuilder {
             awsServiceOpts.region = region
         }
 
-        if (!awsServiceOpts.customUserAgent) {
+        if (!awsServiceOpts.customUserAgent && addUserAgent) {
             const platformName = env.appName.replace(/\s/g, '-')
             awsServiceOpts.customUserAgent = `AWS-Toolkit-For-VSCode/${pluginVersion} ${platformName}/${version}`
         }
