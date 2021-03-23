@@ -13,6 +13,7 @@ interface LogEntry {
     level: string
     message: string
     [MESSAGE]: string
+    raw: boolean
 }
 
 export class OutputChannelTransport extends Transport {
@@ -34,10 +35,12 @@ export class OutputChannelTransport extends Transport {
 
     public log(info: LogEntry, next: () => void): void {
         setImmediate(() => {
-            if (this.stripAnsi) {
-                this.outputChannel.appendLine(removeAnsi(info[MESSAGE]))
+            const msg: string = this.stripAnsi ? removeAnsi(info[MESSAGE]) : info[MESSAGE]
+
+            if (info.raw) {
+                this.outputChannel.append(msg)
             } else {
-                this.outputChannel.appendLine(info[MESSAGE])
+                this.outputChannel.appendLine(msg)
             }
         })
 
