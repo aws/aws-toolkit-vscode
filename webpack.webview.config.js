@@ -38,7 +38,8 @@ const config = {
                 test: /\.tsx?$/,
                 loader: 'esbuild-loader',
                 options: {
-                    appendTsSuffixTo: [/\.vue$/],
+                    // appendTsSuffixTo: [/\.vue$/],
+                    target: 'es2018',
                 },
                 exclude: /node_modules/,
             },
