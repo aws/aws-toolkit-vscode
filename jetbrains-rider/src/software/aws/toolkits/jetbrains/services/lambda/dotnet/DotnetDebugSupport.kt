@@ -6,12 +6,41 @@ package software.aws.toolkits.jetbrains.services.lambda.dotnet
 import com.intellij.execution.runners.ExecutionEnvironment
 import com.intellij.xdebugger.XDebugProcessStarter
 import com.jetbrains.rider.ideaInterop.fileTypes.csharp.CSharpLanguage
-import org.jetbrains.concurrency.Promise
 import software.aws.toolkits.core.lambda.LambdaRuntime
 import software.aws.toolkits.jetbrains.core.utils.buildList
 import software.aws.toolkits.jetbrains.services.lambda.execution.sam.ImageDebugSupport
+import software.aws.toolkits.jetbrains.services.lambda.execution.sam.RuntimeDebugSupport
 import software.aws.toolkits.jetbrains.services.lambda.execution.sam.SamRunningState
 import software.aws.toolkits.jetbrains.utils.DotNetDebuggerUtils
+import software.aws.toolkits.jetbrains.utils.execution.steps.Context
+import software.aws.toolkits.jetbrains.utils.execution.steps.Step
+
+/**
+ * Rider uses it's own DebuggerWorker process that run under .NET with extra parameters to configure:
+ *    - debugger mode (client/server)
+ *    - frontend port
+ *    - backend port
+ *
+ * Workflow:
+ * 1. Find the correct container by filtering `docker ps` for one of the published port of the debugger
+ * 2. Use `docker exec` and a shell script to locate the dotnet PID of the runtime.
+ * 3. Launch the Debugger worker in server mode using `docker exec`
+ * 4. Send the command to the worker to attach to the correct PID.
+ */
+class DotNetRuntimeDebugSupport : RuntimeDebugSupport {
+    override fun numberOfDebugPorts(): Int = DotnetDebugUtils.NUMBER_OF_DEBUG_PORTS
+
+    override fun samArguments(debugPorts: List<Int>): List<String> = listOf("--debugger-path", DotNetDebuggerUtils.debuggerBinDir.path)
+    override fun additionalDebugProcessSteps(environment: ExecutionEnvironment, state: SamRunningState): List<Step> = listOf(FindDockerContainer(), FindPid())
+
+    override suspend fun createDebugProcess(
+        context: Context,
+        environment: ExecutionEnvironment,
+        state: SamRunningState,
+        debugHost: String,
+        debugPorts: List<Int>
+    ): XDebugProcessStarter = DotnetDebugUtils.createDebugProcess(environment, debugHost, debugPorts, context)
+}
 
 abstract class DotnetImageDebugSupport : ImageDebugSupport {
     override fun numberOfDebugPorts(): Int = DotnetDebugUtils.NUMBER_OF_DEBUG_PORTS
@@ -28,21 +57,15 @@ abstract class DotnetImageDebugSupport : ImageDebugSupport {
         "_AWS_LAMBDA_DOTNET_DEBUGGING" to "1"
     )
 
-    override suspend fun createDebugProcess(
-        environment: ExecutionEnvironment,
-        state: SamRunningState,
-        debugHost: String,
-        debugPorts: List<Int>
-    ): XDebugProcessStarter {
-        throw UnsupportedOperationException("Use 'createDebugProcessAsync' instead")
-    }
+    override fun additionalDebugProcessSteps(environment: ExecutionEnvironment, state: SamRunningState): List<Step> = listOf(FindDockerContainer(), FindPid())
 
-    override fun createDebugProcessAsync(
+    override suspend fun createDebugProcess(
+        context: Context,
         environment: ExecutionEnvironment,
         state: SamRunningState,
         debugHost: String,
         debugPorts: List<Int>
-    ): Promise<XDebugProcessStarter> = DotnetDebugUtils.createDebugProcessAsync(environment, state, debugHost, debugPorts)
+    ): XDebugProcessStarter = DotnetDebugUtils.createDebugProcess(environment, debugHost, debugPorts, context)
 }
 
 class Dotnet21ImageDebug : DotnetImageDebugSupport() {
