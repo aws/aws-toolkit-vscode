@@ -1,0 +1,28 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg width="11px" height="13px" viewBox="0 0 11 13" version="1.1" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink">
+    <title>edit - dark</title>
+    <defs>
+        <filter id="filter-1">
+            <feColorMatrix in="SourceGraphic" type="matrix" values="0 0 0 0 0.592157 0 0 0 0 0.592157 0 0 0 0 0.592157 0 0 0 1.000000 0"></feColorMatrix>
+        </filter>
+        <path d="M6.5,0.8125 L6.5,2.4375 L3.25,2.4375 L3.25,10.5625 L9.75,10.5625 L9.75,6.5 L11.375,6.5 L11.375,11.375 C11.375,11.8235 11.0118125,12.1875 10.5625,12.1875 L10.5625,12.1875 L2.4375,12.1875 C1.9881875,12.1875 1.625,11.8235 1.625,11.375 L1.625,11.375 L1.625,1.625 C1.625,1.1765 1.9881875,0.8125 2.4375,0.8125 L2.4375,0.8125 L6.5,0.8125 Z M10.8005625,1.0505625 L11.9494375,2.1994375 L5.4494375,8.6994375 L4.3005625,7.5505625 L10.8005625,1.0505625 Z" id="path-2"></path>
+    </defs>
+    <g id="V1" stroke="none" stroke-width="1" fill="none" fill-rule="evenodd">
+        <g id="icons-/-actions-/-default" transform="translate(-1.500000, 0.000000)" filter="url(#filter-1)">
+            <g id="LOCKED_ON_PURPOSE.CHANGING-RESETS-CHILDREN">
+                <g id="icons-/-actions-/-default-/-caret">
+                    <mask id="mask-3" fill="white">
+                        <use xlink:href="#path-2"></use>
+                    </mask>
+                    <use id="Combined-Shape" fill="#545B64" xlink:href="#path-2"></use>
+                    <g id="Group" mask="url(#mask-3)" fill="#16191F">
+                        <g id="color">
+                            <rect id="Rectangle" x="0" y="0" width="13" height="13"></rect>
+                        </g>
+                    </g>
+                </g>
+                <rect id="Rectangle" fill="#50E3C2" opacity="0" x="0" y="0" width="13" height="13"></rect>
+            </g>
+        </g>
+    </g>
+</svg>
