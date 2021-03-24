@@ -349,9 +349,14 @@ describe('SAM Integration Tests', async function () {
      * us an idea of the timeline.
      */
     const sessionLog: string[] = []
+    let javaLanguageSetting: string | undefined
+    const config = vscode.workspace.getConfiguration('java')
     let testSuiteRoot: string
 
     before(async function () {
+        javaLanguageSetting = config.get('server.launchMode')
+        config.update('server.launchMode', 'Standard')
+
         await activateExtensions()
         await configureAwsToolkitExtension()
         await configurePythonExtension()
@@ -365,6 +370,7 @@ describe('SAM Integration Tests', async function () {
         tryRemoveFolder(testSuiteRoot)
         // Print a summary of session that were seen by `onDidStartDebugSession`.
         const sessionReport = sessionLog.map(x => `    ${x}`).join('\n')
+        config.update('server.launchMode', javaLanguageSetting)
         console.log(`DebugSessions seen in this run:${sessionReport}`)
     })
 
@@ -432,6 +438,11 @@ describe('SAM Integration Tests', async function () {
                     appPath = path.join(testDir, samApplicationName, scenario.path)
                     cfnTemplatePath = path.join(testDir, samApplicationName, 'template.yaml')
                     assert.ok(await fileExists(cfnTemplatePath), `Expected SAM template to exist at ${cfnTemplatePath}`)
+
+                    if (scenario.language === 'java') {
+                        await vscode.commands.executeCommand('java.project.import')
+                    }
+
                     samAppCodeUri = await openSamAppFile(appPath)
                 })
 
@@ -473,6 +484,16 @@ describe('SAM Integration Tests', async function () {
                             break
                         case 'csharp':
                             manifestFile = /^.*\.csproj$/
+                            break
+                        case 'java':
+                            if (scenario.dependencyManager === 'maven') {
+                                manifestFile = /^.*pom\.xml$/
+                                break
+                            } else if (scenario.dependencyManager === 'gradle') {
+                                manifestFile = /^.*build\.gradle$/
+                                break
+                            }
+                            assert.fail(`invalid dependency manager for java: ${scenario.dependencyManager}`)
                             break
                         default:
                             assert.fail('invalid scenario language')
