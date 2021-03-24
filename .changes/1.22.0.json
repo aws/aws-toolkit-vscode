@@ -1,0 +1,14 @@
+{
+	"date": "2021-03-19",
+	"version": "1.22.0",
+	"entries": [
+		{
+			"type": "Bug Fix",
+			"description": "fix unwanted \"invalid SAM CLI\" error on startup"
+		},
+		{
+			"type": "Feature",
+			"description": "StepFunctions: show \"View Logs\" button on failure"
+		}
+	]
+}

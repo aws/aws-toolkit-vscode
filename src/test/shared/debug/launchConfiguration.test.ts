@@ -89,7 +89,7 @@ const debugConfigurations: vscode.DebugConfiguration[] = [
 
 const templateUri = vscode.Uri.file('/template.yaml')
 
-describe('LaunchConfiguration', function() {
+describe('LaunchConfiguration', function () {
     let mockConfigSource: DebugConfigurationSource
     let mockSamValidator: AwsSamDebugConfigurationValidator
 
@@ -104,7 +104,7 @@ describe('LaunchConfiguration', function() {
     )
     const templateUriCsharp = vscode.Uri.file(path.join(workspace.uri.fsPath, 'csharp2.1-plain-sam-app/template.yaml'))
 
-    beforeEach(async function() {
+    beforeEach(async function () {
         await ext.templateRegistry.addWatchPattern(TEMPLATE_FILE_GLOB_PATTERN)
 
         // TODO: remove mocks in favor of testing src/testFixtures/ data.
@@ -114,11 +114,11 @@ describe('LaunchConfiguration', function() {
         when(mockSamValidator.validate(deepEqual(samDebugConfiguration))).thenReturn({ isValid: true })
     })
 
-    afterEach(function() {
+    afterEach(function () {
         ext.templateRegistry.reset()
     })
 
-    it('getConfigsMappedToTemplates(type=api)', async function() {
+    it('getConfigsMappedToTemplates(type=api)', async function () {
         const actual = getConfigsMappedToTemplates(new LaunchConfiguration(templateUriJsPlainApp), 'api')
         assert.deepStrictEqual(actual.size, 0)
 
@@ -135,7 +135,7 @@ describe('LaunchConfiguration', function() {
         assert.deepStrictEqual((actual3[0].invokeTarget as any).logicalId, 'HelloWorldFunction')
     })
 
-    it('getConfigsMappedToTemplates(type=undefined) returns target=template + target=api resources', async function() {
+    it('getConfigsMappedToTemplates(type=undefined) returns target=template + target=api resources', async function () {
         const actual = Array.from(
             getConfigsMappedToTemplates(new LaunchConfiguration(templateUriJsPlainApp), undefined)
         )
@@ -155,13 +155,13 @@ describe('LaunchConfiguration', function() {
         assert.deepStrictEqual((actual3[0].invokeTarget as any).logicalId, 'HelloWorldFunction')
     })
 
-    it('gets debug configurations', function() {
+    it('gets debug configurations', function () {
         const launchConfig = new LaunchConfiguration(templateUriJsPlainApp)
         const expected = testLaunchJsonData['configurations']
         assertEqualLaunchJsons(launchConfig.getDebugConfigurations(), expected, workspace.uri, false)
     })
 
-    it('gets aws-sam debug configurations', function() {
+    it('gets aws-sam debug configurations', function () {
         const launchConfig = new LaunchConfiguration(templateUriJsPlainApp)
         const expected = (testLaunchJsonData['configurations'] as any[]).filter(
             o => o.type === 'aws-sam' && o.request === 'direct-invoke'
@@ -170,7 +170,7 @@ describe('LaunchConfiguration', function() {
         assertEqualLaunchJsons(actual, expected, workspace.uri, true)
     })
 
-    it('adds single debug configuration', async function() {
+    it('adds single debug configuration', async function () {
         const launchConfig = new LaunchConfiguration(
             templateUri,
             instance(mockConfigSource),
@@ -182,7 +182,7 @@ describe('LaunchConfiguration', function() {
         verify(mockConfigSource.setDebugConfigurations(deepEqual(expected))).once()
     })
 
-    it('adds multiple debug configurations', async function() {
+    it('adds multiple debug configurations', async function () {
         const launchConfig = new LaunchConfiguration(
             templateUri,
             instance(mockConfigSource),
@@ -195,8 +195,8 @@ describe('LaunchConfiguration', function() {
     })
 })
 
-describe('getReferencedHandlerPaths', function() {
-    it('includes all resources as absolute paths to root dir + handlers', function() {
+describe('getReferencedHandlerPaths', function () {
+    it('includes all resources as absolute paths to root dir + handlers', function () {
         const mockLaunchConfig = instance(createMockLaunchConfig())
 
         const resultSet = getReferencedHandlerPaths(mockLaunchConfig)

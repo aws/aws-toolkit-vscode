@@ -26,7 +26,7 @@ import { assertLogsContain, getTestLogger } from '../../globalSetup.test'
 import { FakeChildProcessResult, TestSamCliProcessInvoker } from '../../shared/sam/cli/testSamCliProcessInvoker'
 import { TestSettingsConfiguration } from '../../utilities/testSettingsConfiguration'
 
-describe('deploySamApplication', async function() {
+describe('deploySamApplication', async function () {
     // Bad Validator
 
     const badValidatorResult: SamCliValidatorResult = {
@@ -126,7 +126,7 @@ describe('deploySamApplication', async function() {
     let templatePath: string
 
     let tempToolkitFolder: string
-    beforeEach(async function() {
+    beforeEach(async function () {
         settings = new TestSettingsConfiguration()
         profile = 'testAcct'
         tempToolkitFolder = await makeTemporaryToolkitFolder()
@@ -150,11 +150,11 @@ describe('deploySamApplication', async function() {
         runningDeployProcess = undefined
     })
 
-    afterEach(async function() {
+    afterEach(async function () {
         await fs.remove(tempToolkitFolder)
     })
 
-    it('deploys with the happy path', async function() {
+    it('deploys with the happy path', async function () {
         await deploySamApplication(
             {
                 samCliContext: goodSamCliContext(),
@@ -354,7 +354,7 @@ describe('deploySamApplication', async function() {
         )
     })
 
-    it('informs user of error when user is not logged in', async function() {
+    it('informs user of error when user is not logged in', async function () {
         testCredentials = undefined
 
         await deploySamApplication(
@@ -372,7 +372,7 @@ describe('deploySamApplication', async function() {
         assertGeneralErrorLogged()
     })
 
-    it('informs user of error when sam cli is invalid', async function() {
+    it('informs user of error when sam cli is invalid', async function () {
         await deploySamApplication(
             {
                 samCliContext: invalidSamCliContext,
@@ -388,7 +388,7 @@ describe('deploySamApplication', async function() {
         assertGeneralErrorLogged()
     })
 
-    it('exits if the wizard is cancelled', async function() {
+    it('exits if the wizard is cancelled', async function () {
         samDeployWizardResponse = undefined
 
         await deploySamApplication(
@@ -406,7 +406,7 @@ describe('deploySamApplication', async function() {
         assert.strictEqual(invokerCalledCount, 0, 'Did not expect sam cli to get invoked')
     })
 
-    it('continues deploying with initial template if invoking sam build fails', async function() {
+    it('continues deploying with initial template if invoking sam build fails', async function () {
         goodSamCliProcessInvoker = new TestSamCliProcessInvoker(
             (spawnOptions, args: any[]): ChildProcessResult => {
                 invokerCalledCount++
@@ -437,7 +437,7 @@ describe('deploySamApplication', async function() {
         assertErrorLogsSwallowed('broken build', false)
     })
 
-    it('informs user of error if invoking sam package fails', async function() {
+    it('informs user of error if invoking sam package fails', async function () {
         goodSamCliProcessInvoker = new TestSamCliProcessInvoker(
             (spawnOptions, args: any[]): ChildProcessResult => {
                 invokerCalledCount++
@@ -468,7 +468,7 @@ describe('deploySamApplication', async function() {
         assertGeneralErrorLogged()
     })
 
-    it('informs user of error if invoking sam deploy fails', async function() {
+    it('informs user of error if invoking sam deploy fails', async function () {
         goodSamCliProcessInvoker = new TestSamCliProcessInvoker(
             (spawnOptions, args: any[]): ChildProcessResult => {
                 invokerCalledCount++

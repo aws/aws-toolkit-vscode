@@ -6,10 +6,10 @@
 import * as assert from 'assert'
 import { CompositeResourceFetcher } from '../../../shared/resourcefetcher/compositeResourceFetcher'
 
-describe('CompositeResourceFetcher', async function() {
+describe('CompositeResourceFetcher', async function () {
     const expectedContents = 'Hello World!\n12345'
 
-    it('loads from a resource fetcher', async function() {
+    it('loads from a resource fetcher', async function () {
         const fetcher = {
             get: async () => expectedContents,
         }
@@ -20,7 +20,7 @@ describe('CompositeResourceFetcher', async function() {
         assert.strictEqual(contents, expectedContents)
     })
 
-    it('loads from the first resource fetcher to return contents', async function() {
+    it('loads from the first resource fetcher to return contents', async function () {
         const fetcher1 = {
             get: async () => undefined,
         }
@@ -41,7 +41,7 @@ describe('CompositeResourceFetcher', async function() {
         assert.strictEqual(contents, expectedContents)
     })
 
-    it('tries to load from the next resource fetcher when one raises an error', async function() {
+    it('tries to load from the next resource fetcher when one raises an error', async function () {
         const fetcher1 = {
             get: async () => {
                 assert.fail('Error, load from the next fetcher')
@@ -58,7 +58,7 @@ describe('CompositeResourceFetcher', async function() {
         assert.strictEqual(contents, expectedContents)
     })
 
-    it('returns undefined if no resource fetcher returns contents', async function() {
+    it('returns undefined if no resource fetcher returns contents', async function () {
         let timesCalled = 0
         const fetcher = {
             get: async () => {

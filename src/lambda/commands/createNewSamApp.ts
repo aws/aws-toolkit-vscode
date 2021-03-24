@@ -59,21 +59,16 @@ export async function resumeCreateNewSamApp(
 ) {
     let createResult: Result = 'Succeeded'
     let reason: CreateReason = 'complete'
-    let samInitState: SamInitState | undefined
+    let samVersion: string | undefined
+    const samInitState: SamInitState | undefined = activationReloadState.getSamInitState()
     try {
-        samInitState = activationReloadState.getSamInitState()
-        const pathToLaunch = samInitState?.path
-        if (!pathToLaunch) {
-            return
-        }
-
-        const uri = vscode.Uri.file(pathToLaunch)
+        const uri = vscode.Uri.file(samInitState?.path!)
         const folder = vscode.workspace.getWorkspaceFolder(uri)
         if (!folder) {
             createResult = 'Failed'
             reason = 'error'
-            // This should never happen, as `pathToLaunch` will only be set if `uri` is in
-            // the newly added workspace folder.
+            // Should never happen, because `samInitState.path` is only set if
+            // `uri` is in the newly-added workspace folder.
             vscode.window.showErrorMessage(
                 localize(
                     'AWS.samcli.initWizard.source.error.notInWorkspace',
@@ -85,6 +80,8 @@ export async function resumeCreateNewSamApp(
             return
         }
 
+        samVersion = await getSamCliVersion(getSamCliContext())
+
         await addInitialLaunchConfiguration(
             extContext,
             folder,
@@ -92,6 +89,22 @@ export async function resumeCreateNewSamApp(
             samInitState?.isImage ? samInitState?.runtime : undefined
         )
         await vscode.window.showTextDocument(uri)
+    } catch (err) {
+        createResult = 'Failed'
+        reason = 'error'
+
+        const checkLogsMessage = makeCheckLogsMessage()
+
+        ext.outputChannel.show(true)
+        getLogger('channel').error(
+            localize(
+                'AWS.samcli.initWizard.resume.error',
+                'An error occured while resuming SAM Application creation. {0}',
+                checkLogsMessage
+            )
+        )
+
+        getLogger().error('Error resuming new SAM Application: %O', err as Error)
     } finally {
         activationReloadState.clearSamInitState()
         recordSamInit({
@@ -99,6 +112,7 @@ export async function resumeCreateNewSamApp(
             result: createResult,
             reason: reason,
             runtime: samInitState?.runtime as TelemetryRuntime,
+            version: samVersion,
         })
     }
 }
@@ -123,6 +137,7 @@ export async function createNewSamApplication(
     let lambdaPackageType: 'Zip' | 'Image' | undefined
     let createRuntime: Runtime | undefined
     let config: CreateNewSamAppWizardResponse | undefined
+    let samVersion: string | undefined
 
     let initArguments: SamCliInitArgs
 
@@ -132,9 +147,9 @@ export async function createNewSamApplication(
         const currentCredentials = await awsContext.getCredentials()
         const availableRegions = getRegionsForActiveCredentials(awsContext, regionProvider)
         const schemasRegions = availableRegions.filter(region => regionProvider.isServiceInRegion('schemas', region.id))
-        const samCliVersion = await getSamCliVersion(samCliContext)
+        samVersion = await getSamCliVersion(samCliContext)
 
-        const wizardContext = new DefaultCreateNewSamAppWizardContext(currentCredentials, schemasRegions, samCliVersion)
+        const wizardContext = new DefaultCreateNewSamAppWizardContext(currentCredentials, schemasRegions, samVersion)
         config = await new CreateNewSamAppWizard(wizardContext).run()
 
         if (!config) {
@@ -237,10 +252,11 @@ export async function createNewSamApplication(
 
         // Race condition where SAM app is created but template doesn't register in time.
         // Poll for 5 seconds, otherwise direct user to codelens.
-        const isTemplateRegistered = await waitUntil(
-            async () => ext.templateRegistry.getRegisteredItem(uri),
-            { timeout: 5000, interval: 500, truthy: false }
-        )
+        const isTemplateRegistered = await waitUntil(async () => ext.templateRegistry.getRegisteredItem(uri), {
+            timeout: 5000,
+            interval: 500,
+            truthy: false,
+        })
 
         if (isTemplateRegistered) {
             const newLaunchConfigs = await addInitialLaunchConfiguration(
@@ -302,6 +318,7 @@ export async function createNewSamApplication(
             result: createResult,
             reason: reason,
             runtime: createRuntime as TelemetryRuntime,
+            version: samVersion,
         })
     }
 }

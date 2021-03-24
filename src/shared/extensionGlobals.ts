@@ -10,6 +10,7 @@ import { ToolkitClientBuilder } from './clients/toolkitClientBuilder'
 import { CloudFormationTemplateRegistry } from './cloudformation/templateRegistry'
 import { CodelensRootRegistry } from './sam/codelensRootRegistry'
 import { TelemetryService } from './telemetry/telemetryService'
+import { Window } from './vscode/window'
 
 /**
  * Namespace for common variables used globally in the extension.
@@ -17,6 +18,7 @@ import { TelemetryService } from './telemetry/telemetryService'
  */
 export namespace ext {
     export let context: ExtensionContext
+    export let window: Window
     export let outputChannel: OutputChannel
     export let awsContextCommands: AWSContextCommands
     export let sdkClientBuilder: AWSClientBuilder
@@ -24,6 +26,22 @@ export namespace ext {
     export let telemetry: TelemetryService
     export let templateRegistry: CloudFormationTemplateRegistry
     export let codelensRootRegistry: CodelensRootRegistry
+
+    let _didReload = false
+
+    export function init(context: ExtensionContext, window: Window) {
+        ext.context = context
+        ext.window = window
+        _didReload = !!ext.context.globalState.get<string>('ACTIVATION_LAUNCH_PATH_KEY')
+    }
+
+    /**
+     * Whether the current session was (likely) a reload forced by VSCode
+     * during a workspace folder operation.
+     */
+    export function didReload(): boolean {
+        return _didReload
+    }
 
     export namespace iconPaths {
         export const dark: IconPaths = makeIconPathsObject()

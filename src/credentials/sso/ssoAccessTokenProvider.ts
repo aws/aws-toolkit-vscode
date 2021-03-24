@@ -5,20 +5,45 @@
 
 import { SSOOIDC } from 'aws-sdk'
 import { SsoClientRegistration } from './ssoClientRegistration'
-import { SsoAccessToken } from './ssoAccessToken'
+import { openSsoPortalLink, SsoAccessToken } from './sso'
 import { DiskCache } from './diskCache'
 import { getLogger } from '../../shared/logger'
 import { StartDeviceAuthorizationResponse } from 'aws-sdk/clients/ssooidc'
-import { openSsoPortalLink } from './ssoSupport'
 
 const CLIENT_REGISTRATION_TYPE = 'public'
 const CLIENT_NAME = 'aws-toolkit-vscode'
-// According to Spec 'SSO Login Token Flow' the grant type must be the following string
+// Grant type specified by the 'SSO Login Token Flow' spec.
 const GRANT_TYPE = 'urn:ietf:params:oauth:grant-type:device_code'
-// Used to convert seconds to milliseconds
-const MILLISECONDS_PER_SECOND = 1000
+const MS_PER_SECOND = 1000
 const BACKOFF_DELAY_MS = 5000
 
+/**
+ *  SSO flow (RFC: https://tools.ietf.org/html/rfc8628)
+ *    1. Get a client id (SSO-OIDC identifier, formatted per RFC6749).
+ *       - Toolkit code: `registerClient()`
+ *       - RETURNS:
+ *         - ClientSecret
+ *         - ClientId
+ *         - ClientSecretExpiresAt
+ *       - Client registration is valid for potentially months and creates state
+ *         server-side, so the client SHOULD cache them to disk.
+ *    2. Start device authorization.
+ *       - Toolkit code: `authorizeClient()`
+ *       - StartDeviceAuthorization(clientSecret, clientId, startUrl)
+ *       - RETURNS (RFC: https://tools.ietf.org/html/rfc8628#section-3.2):
+ *         - DeviceCode             : Device verification code
+ *         - UserCode               : User verification code
+ *         - VerificationUri        : User verification URI on the authorization server
+ *         - VerificationUriComplete: User verification URI including the `user_code`
+ *         - ExpiresIn              : Lifetime (seconds) of `device_code` and `user_code`
+ *         - Interval               : Minimum time (seconds) the client SHOULD wait between polling intervals.
+ *    3. Poll for the access token.
+ *       - Toolkit code: `pollForToken()`
+ *       - Call CreateToken() in a loop.
+ *       - RETURNS:
+ *         - AccessToken
+ *         - ExpiresIn
+ */
 export class SsoAccessTokenProvider {
     public constructor(
         private ssoRegion: string,
@@ -32,8 +57,11 @@ export class SsoAccessTokenProvider {
         if (accessToken) {
             return accessToken
         }
+        // SSO step 1
         const registration = await this.registerClient()
+        // SSO step 2
         const authorization = await this.authorizeClient(registration)
+        // SSO step 3
         const token = await this.pollForToken(registration, authorization)
         this.cache.saveAccessToken(this.ssoUrl, token)
         return token
@@ -43,30 +71,28 @@ export class SsoAccessTokenProvider {
         this.cache.invalidateAccessToken(this.ssoUrl)
     }
 
+    /**
+     * SSO step 3: poll for the access token.
+     */
     private async pollForToken(
         registration: SsoClientRegistration,
-        authorization: StartDeviceAuthorizationResponse
+        authz: StartDeviceAuthorizationResponse
     ): Promise<SsoAccessToken> {
-        // Calculate the device code expiration in milliseconds
-        const deviceCodeExpiration = this.currentTimePlusSecondsInMs(authorization.expiresIn!)
+        // Device code expiration in milliseconds.
+        const deviceCodeExpiration = this.currentTimePlusSecondsInMs(authz.expiresIn!)
+        const deviceCodeExpiredMsg = 'SSO: device code expired, login flow must be reinitiated'
 
-        getLogger().info(
-            `To complete authentication for this SSO account, please continue to this SSO portal:${authorization.verificationUriComplete}`
-        )
+        getLogger().info(`SSO: to complete sign-in, visit: ${authz.verificationUriComplete}`)
 
-        // The retry interval converted to milliseconds
-        let retryInterval: number
-        if (authorization.interval != undefined && authorization.interval! > 0) {
-            retryInterval = authorization.interval! * MILLISECONDS_PER_SECOND
-        } else {
-            retryInterval = BACKOFF_DELAY_MS
-        }
+        /** Retry interval in milliseconds. */
+        let retryInterval =
+            authz.interval !== undefined && authz.interval! > 0 ? authz.interval! * MS_PER_SECOND : BACKOFF_DELAY_MS
 
         const createTokenParams = {
             clientId: registration.clientId,
             clientSecret: registration.clientSecret,
             grantType: GRANT_TYPE,
-            deviceCode: authorization.deviceCode!,
+            deviceCode: authz.deviceCode!,
         }
 
         while (true) {
@@ -83,9 +109,9 @@ export class SsoAccessTokenProvider {
                 if (err.code === 'SlowDownException') {
                     retryInterval += BACKOFF_DELAY_MS
                 } else if (err.code === 'AuthorizationPendingException') {
-                    // do nothing, wait the interval and try again
+                    // Do nothing, try again after the interval.
                 } else if (err.code === 'ExpiredTokenException') {
-                    throw Error(`Device code has expired while polling for SSO token, login flow must be re-initiated.`)
+                    throw Error(deviceCodeExpiredMsg)
                 } else if (err.code === 'TimeoutException') {
                     retryInterval *= 2
                 } else {
@@ -93,13 +119,16 @@ export class SsoAccessTokenProvider {
                 }
             }
             if (Date.now() + retryInterval > deviceCodeExpiration) {
-                throw Error(`Device code has expired while polling for SSO token, login flow must be re-initiated.`)
+                throw Error(deviceCodeExpiredMsg)
             }
-            // Delay each attempt by the interval
+            // Wait `retryInterval` milliseconds before next poll attempt.
             await new Promise(resolve => setTimeout(resolve, retryInterval))
         }
     }
 
+    /**
+     * SSO step 2: start device authorization.
+     */
     public async authorizeClient(registration: SsoClientRegistration): Promise<StartDeviceAuthorizationResponse> {
         const authorizationParams = {
             clientId: registration.clientId,
@@ -124,6 +153,9 @@ export class SsoAccessTokenProvider {
         }
     }
 
+    /**
+     * SSO step 1: get a client id.
+     */
     public async registerClient(): Promise<SsoClientRegistration> {
         const currentRegistration = this.cache.loadClientRegistration(this.ssoRegion)
         if (currentRegistration) {
@@ -136,7 +168,7 @@ export class SsoAccessTokenProvider {
             clientName: CLIENT_NAME,
         }
         const registerResponse = await this.ssoOidcClient.registerClient(registerParams).promise()
-        const formattedExpiry = new Date(registerResponse.clientSecretExpiresAt! * MILLISECONDS_PER_SECOND).toISOString()
+        const formattedExpiry = new Date(registerResponse.clientSecretExpiresAt! * MS_PER_SECOND).toISOString()
 
         const registration: SsoClientRegistration = {
             clientId: registerResponse.clientId!,
@@ -154,6 +186,6 @@ export class SsoAccessTokenProvider {
      * @param seconds Number of seconds to add
      */
     private currentTimePlusSecondsInMs(seconds: number) {
-        return seconds * MILLISECONDS_PER_SECOND + Date.now()
+        return seconds * MS_PER_SECOND + Date.now()
     }
 }

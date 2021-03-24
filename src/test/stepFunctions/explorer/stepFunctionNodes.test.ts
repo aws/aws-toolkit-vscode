@@ -23,14 +23,14 @@ const FAKE_REGION_CODE = 'someregioncode'
 const UNSORTED_TEXT = ['zebra', 'Antelope', 'aardvark', 'elephant']
 const SORTED_TEXT = ['aardvark', 'Antelope', 'elephant', 'zebra']
 
-describe('StepFunctionsNode', function() {
+describe('StepFunctionsNode', function () {
     let sandbox: sinon.SinonSandbox
     let testNode: StepFunctionsNode
 
     // Mocked Step Functions Client returns State Machines for anything listed in stateMachineNames
     let stateMachineNames: string[]
 
-    beforeEach(function() {
+    beforeEach(function () {
         sandbox = sinon.createSandbox()
 
         stateMachineNames = ['stateMachine1', 'stateMachine2']
@@ -40,11 +40,11 @@ describe('StepFunctionsNode', function() {
         testNode = new StepFunctionsNode(FAKE_REGION_CODE)
     })
 
-    afterEach(function() {
+    afterEach(function () {
         sandbox.restore()
     })
 
-    it('returns placeholder node if no children are present', async function() {
+    it('returns placeholder node if no children are present', async function () {
         stateMachineNames = []
 
         const childNodes = await testNode.getChildren()
@@ -52,7 +52,7 @@ describe('StepFunctionsNode', function() {
         assertNodeListOnlyContainsPlaceholderNode(childNodes)
     })
 
-    it('has StateMachineNode child nodes', async function() {
+    it('has StateMachineNode child nodes', async function () {
         const childNodes = await testNode.getChildren()
 
         assert.strictEqual(childNodes.length, stateMachineNames.length, 'Unexpected child count')
@@ -62,7 +62,7 @@ describe('StepFunctionsNode', function() {
         )
     })
 
-    it('has child nodes with State Machine contextValue', async function() {
+    it('has child nodes with State Machine contextValue', async function () {
         const childNodes = await testNode.getChildren()
 
         childNodes.forEach(node =>
@@ -74,7 +74,7 @@ describe('StepFunctionsNode', function() {
         )
     })
 
-    it('sorts child nodes', async function() {
+    it('sorts child nodes', async function () {
         stateMachineNames = UNSORTED_TEXT
 
         const childNodes = await testNode.getChildren()
@@ -83,7 +83,7 @@ describe('StepFunctionsNode', function() {
         assert.deepStrictEqual(actualChildOrder, SORTED_TEXT, 'Unexpected child sort order')
     })
 
-    it('has an error node for a child if an error happens during loading', async function() {
+    it('has an error node for a child if an error happens during loading', async function () {
         sandbox.stub(testNode, 'updateChildren').callsFake(() => {
             throw new Error('Update Children error!')
         })
