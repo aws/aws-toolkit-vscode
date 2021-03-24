@@ -73,7 +73,7 @@ describe('SAM Local CodeLenses (JS)', async function () {
             hasLocalInvokeArguments(codeLens, expectedHandlerName, manifestPath)
         )
 
-        assert.strictEqual(debugCodeLenses.length, 1, 'Add Debug Config CodeLens was not found')
+        assert.strictEqual(debugCodeLenses.length, 2, 'Add Debug Config CodeLenses were not found')
     }
 
     function getLocalInvokeCodeLenses(codeLenses: vscode.CodeLens[]): vscode.CodeLens[] {
@@ -82,12 +82,12 @@ describe('SAM Local CodeLenses (JS)', async function () {
                 codeLens.command &&
                 codeLens.command.command === 'aws.pickAddSamDebugConfiguration' &&
                 codeLens.command.arguments &&
-                codeLens.command.arguments.length === 2
+                codeLens.command.arguments.length === 3
         )
     }
 
     function hasLocalInvokeArguments(codeLens: vscode.CodeLens, handlerName: string, manifestPath: string): boolean {
-        if (!codeLens.command || !codeLens.command.arguments || codeLens.command.arguments.length !== 2) {
+        if (!codeLens.command || !codeLens.command.arguments || codeLens.command.arguments.length !== 3) {
             return false
         }
 
