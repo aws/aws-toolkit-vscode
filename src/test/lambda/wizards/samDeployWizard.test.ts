@@ -107,9 +107,26 @@ class MockSamDeployWizardContext implements SamDeployWizardContext {
         return this.promptForS3BucketResponses.pop()
     }
 
-    public async promptUserForNewS3Bucket(step: number): Promise<string | undefined> {
+    public async promptUserForS3BucketName(
+        step: number,
+        bucketProps: {
+            title: string
+            prompt?: string | undefined
+            placeHolder?: string | undefined
+            value?: string | undefined
+            buttons?: vscode.QuickInputButton[] | undefined
+            buttonHandler?:
+                | ((
+                      button: vscode.QuickInputButton,
+                      inputBox: vscode.InputBox,
+                      resolve: (value: string | PromiseLike<string | undefined> | undefined) => void,
+                      reject: (value: string | PromiseLike<string | undefined> | undefined) => void
+                  ) => void)
+                | undefined
+        }
+    ): Promise<string | undefined> {
         if (this.promptForNewS3BucketResponses.length <= 0) {
-            throw new Error('promptUserForNewS3Bucket was called more times than expected')
+            throw new Error('promptUserForS3BucketName was called more times than expected')
         }
 
         return this.promptForNewS3BucketResponses.pop()
@@ -246,7 +263,7 @@ describe('SamDeployWizard', async function () {
                 promptUserForSamTemplate: async () => vscode.Uri.file(templatePath),
                 promptUserForRegion: async () => region,
                 promptUserForS3Bucket: async () => s3Bucket,
-                promptUserForNewS3Bucket: async () => undefined,
+                promptUserForS3BucketName: async () => undefined,
                 promptUserForEcrRepo: async () => undefined,
                 promptUserForStackName: async () => stackName,
                 determineIfTemplateHasImages: async () => hasImages,
@@ -685,13 +702,13 @@ describe('DefaultSamDeployWizardContext', async function () {
                 .stub(picker, 'promptUser')
                 .onFirstCall()
                 .returns(Promise.resolve([{ label: bucketName }]))
-            const output = await context.promptUserForS3Bucket(1, 'us-weast-1')
+            const output = await context.promptUserForS3Bucket(1, 'us-weast-1', 'accountId')
             assert.strictEqual(output, bucketName)
         })
 
         it('returns undefined on receiving undefined from the picker (back button)', async function () {
             sandbox.stub(picker, 'promptUser').onFirstCall().returns(Promise.resolve(undefined))
-            const output = await context.promptUserForS3Bucket(1, 'us-weast-1')
+            const output = await context.promptUserForS3Bucket(1, 'us-weast-1', 'accountId')
             assert.strictEqual(output, undefined)
         })
 
@@ -706,10 +723,24 @@ describe('DefaultSamDeployWizardContext', async function () {
                 .returns(Promise.resolve([{ label: messages.noBuckets }]))
                 .onSecondCall()
                 .returns(Promise.resolve([{ label: messages.bucketError }]))
-            const firstOutput = await context.promptUserForS3Bucket(1, 'us-weast-1', undefined, messages)
+            const firstOutput = await context.promptUserForS3Bucket(
+                1,
+                'us-weast-1',
+                'profile',
+                'accountId',
+                undefined,
+                messages
+            )
             assert.strictEqual(firstOutput, undefined)
 
-            const secondOutput = await context.promptUserForS3Bucket(1, 'us-weast-1', undefined, messages)
+            const secondOutput = await context.promptUserForS3Bucket(
+                1,
+                'us-weast-1',
+                'profile',
+                'accountId',
+                undefined,
+                messages
+            )
             assert.strictEqual(secondOutput, undefined)
         })
     })
@@ -736,14 +767,17 @@ describe('DefaultSamDeployWizardContext', async function () {
         it('returns an S3 bucket name', async function () {
             const bucketName = 'shinyNewBucket'
             sandbox.stub(input, 'promptUser').onFirstCall().returns(Promise.resolve(bucketName))
-            const output = await context.promptUserForNewS3Bucket(1)
+            const output = await context.promptUserForS3BucketName(1, { title: 'asdf' })
             assert.strictEqual(output, bucketName)
         })
 
-        it('retunrs undefined if nothing is entered', async function () {
-            sandbox.stub(input, 'promptUser').onFirstCall().returns(Promise.resolve(undefined))
-            const output = await context.promptUserForNewS3Bucket(1)
-            assert.strictEqual(output, undefined)
-        })
+        it('returns undefined if nothing is entered', async function() {
+            sandbox
+                .stub(input, 'promptUser')
+                .onFirstCall()
+                .returns(Promise.resolve(undefined))
+            const output = await context.promptUserForS3BucketName(1, { title: 'asdf' })
+            assert.strictEqual(output, undefined) 
+        })  
     })
 })

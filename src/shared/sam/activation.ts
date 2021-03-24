@@ -107,7 +107,10 @@ async function registerServerlessCommands(ctx: ExtContext): Promise<void> {
                 {
                     samDeployWizard: samDeployWizard,
                 },
-                { awsContext: ctx.awsContext }
+                {
+                    awsContext: ctx.awsContext,
+                    settings: ctx.settings,
+                }
             )
         })
     )

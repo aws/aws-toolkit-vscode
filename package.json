@@ -157,6 +157,11 @@
                     "default": 10000,
                     "description": "%aws.cloudWatchLogs.limit.desc%",
                     "maximum": 10000
+                },
+                "aws.manuallySelectedBuckets": {
+                    "type": "object",
+                    "description": "%AWS.samcli.deploy.bucket.recentlyUsed%",
+                    "default": []
                 }
             }
         },
@@ -1122,7 +1127,10 @@
                 "command": "aws.ecr.createRepository",
                 "title": "%AWS.command.ecr.createRepository%",
                 "category": "AWS",
-                "icon": "$(add)"
+                "icon": {
+                    "light": "resources/light/plus.svg",
+                    "dark": "resources/dark/plus.svg"
+                }
             },
             {
                 "command": "aws.ecr.deleteRepository",
