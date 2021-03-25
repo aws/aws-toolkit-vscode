@@ -141,6 +141,13 @@ async function activateCodeLensProviders(
 
     disposables.push(
         vscode.languages.registerCodeLensProvider(
+            jsLensProvider.TYPESCRIPT_ALL_FILES,
+            codelensUtils.makeTypescriptCodeLensProvider()
+        )
+    )
+
+    disposables.push(
+        vscode.languages.registerCodeLensProvider(
             pyLensProvider.PYTHON_ALLFILES,
             await codelensUtils.makePythonCodeLensProvider()
         )
