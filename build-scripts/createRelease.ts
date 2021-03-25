@@ -7,16 +7,9 @@ import * as child_process from 'child_process'
 import * as fs from 'fs-extra'
 import * as path from 'path'
 
-let releaseVersion: string = require(path.join('..', 'package.json')).version
-
-// Append SHA of commit if there are no tags
-if (child_process.execSync('git tag -l --contains HEAD').toString() === '') {
-    const commitId = child_process.execSync('git rev-parse --short=12 HEAD').toString()
-    releaseVersion = releaseVersion.replace('-SNAPSHOT', `-${commitId}`)
-}
-
 const changesDirectory = '.changes'
 const nextReleaseDirectory = path.join(changesDirectory, 'next-release')
+const releaseVersion = require(path.join('..', 'package.json')).version
 const changesFile = path.join(changesDirectory, `${releaseVersion}.json`)
 
 fs.mkdirpSync(nextReleaseDirectory)
