@@ -10,12 +10,12 @@ import org.junit.runners.Parameterized
 import java.io.InputStream
 
 @RunWith(Parameterized::class)
-class BundledResourcesTest(private val file: InputStream) {
+class BundledResourcesTest(@Suppress("UNUSED_PARAMETER") name: String, private val file: InputStream) {
     companion object {
         @JvmStatic
         @Parameterized.Parameters(name = "{0}")
         fun data() = listOf(
-            BundledResources.ENDPOINTS_FILE
+            arrayOf("ENDPOINTS_FILE", BundledResources.ENDPOINTS_FILE)
         )
     }
 
