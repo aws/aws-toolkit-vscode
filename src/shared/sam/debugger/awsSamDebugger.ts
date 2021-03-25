@@ -13,6 +13,7 @@ import {
     getTemplateResource,
     NodejsDebugConfiguration,
     PythonDebugConfiguration,
+    GoDebugConfiguration,
     getTemplate,
 } from '../../../lambda/local/debugConfiguration'
 import { getDefaultRuntime, getFamily, getRuntimeFamily, RuntimeFamily } from '../../../lambda/models/samLambdaRuntime'
@@ -20,6 +21,7 @@ import { Timeout } from '../../utilities/timeoutUtils'
 import * as csharpDebug from './csharpSamDebug'
 import * as pythonDebug from './pythonSamDebug'
 import * as tsDebug from './typescriptSamDebug'
+import * as goDebug from './goSamDebug'
 import { ExtContext } from '../../extensions'
 import { isInDirectory, makeTemporaryToolkitFolder } from '../../filesystemUtilities'
 import { getLogger } from '../../logger'
@@ -521,6 +523,10 @@ export class SamDebugConfigProvider implements vscode.DebugConfigurationProvider
                 launchConfig = await csharpDebug.makeCsharpConfig(launchConfig)
                 break
             }
+            case RuntimeFamily.Go: {
+                launchConfig = await goDebug.makeGoConfig(launchConfig)
+                break
+            }
             default: {
                 getLogger().error(`SAM debug: unknown runtime: ${runtime})`)
                 vscode.window.showErrorMessage(
@@ -567,6 +573,10 @@ export class SamDebugConfigProvider implements vscode.DebugConfigurationProvider
             case RuntimeFamily.DotNetCore: {
                 config.type = 'coreclr'
                 return await csharpDebug.invokeCsharpLambda(this.ctx, config)
+            }
+            case RuntimeFamily.Go: {
+                config.type = 'go'
+                return await goDebug.invokeGoLambda(this.ctx, config as GoDebugConfiguration)
             }
             default: {
                 throw Error(`unknown runtimeFamily: ${config.runtimeFamily}`)

@@ -21,9 +21,11 @@ export const GO_BASE_PATTERN = '**/go.mod'
 
 export async function getLambdaHandlerCandidates(document: vscode.TextDocument): Promise<LambdaHandlerCandidate[]> {
     const modFile = await findParentProjectFile(document.uri, /go.mod/)
+
     if (!modFile) {
         return []
     }
+
     const filename = document.uri.fsPath
     const symbols: vscode.DocumentSymbol[] =
         (await vscode.commands.executeCommand<vscode.DocumentSymbol[]>(
@@ -44,11 +46,11 @@ export async function getLambdaHandlerCandidates(document: vscode.TextDocument):
 }
 
 /**
- * Returns whether or not a VS Code DocumentSymbol is a method that could be a Lambda handler
- * * has one or more parameters
- * * if there is more than one parameter, the second parameter is an ILambdaContext object
- *   * does not check for extension/implementation of ILambdaContext
- * @param symbol VS Code DocumentSymbol to analyze
+ * Checks for a valid lamba function signature for Go
+ * TODO: Parse the symbol range for better analysis of the function signature
+ *
+ * @param document  VS Code Document that contains the symbol
+ * @param symbol  VS Code DocumentSymbol to analyze
  */
 export function isValidFuncSignature(document: vscode.TextDocument, symbol: vscode.DocumentSymbol): boolean {
     const argsRegExp = /\(.*?\)/

@@ -23,7 +23,6 @@ import { setTestTimeout } from './globalSetup.test'
 import { waitUntil } from '../shared/utilities/timeoutUtils'
 import { AwsSamDebuggerConfiguration } from '../shared/sam/debugger/awsSamDebugConfiguration.gen'
 import { ext } from '../shared/extensionGlobals'
-
 const projectFolder = getTestWorkspaceFolder()
 
 interface TestScenario {
@@ -88,6 +87,13 @@ const scenarios: TestScenario[] = [
         debugSessionType: 'python',
         language: 'python',
     },
+    {
+        runtime: 'go1.x',
+        displayName: 'go1.x (ZIP)',
+        path: 'hello-word/main.go',
+        debugSessionType: 'delve',
+        language: 'go',
+    },
     // { runtime: 'dotnetcore2.1', path: 'src/HelloWorld/Function.cs', debugSessionType: 'coreclr', language: 'csharp' },
     // { runtime: 'dotnetcore3.1', path: 'src/HelloWorld/Function.cs', debugSessionType: 'coreclr', language: 'csharp' },
 
@@ -131,6 +137,14 @@ const scenarios: TestScenario[] = [
         path: 'hello_world/app.py',
         debugSessionType: 'python',
         language: 'python',
+    },
+    {
+        runtime: 'go1.x',
+        displayName: 'go1.x (Image)',
+        baseImage: 'amazon/go1.x-base',
+        path: 'hello-word/main.go',
+        debugSessionType: 'delve',
+        language: 'go',
     },
     // {
     //     runtime: 'python3.8',
@@ -204,6 +218,7 @@ async function closeAllEditors(): Promise<void> {
 async function activateExtensions(): Promise<void> {
     console.log('Activating extensions...')
     await activateExtension(VSCODE_EXTENSION_ID.python)
+    await activateExtension(VSCODE_EXTENSION_ID.go)
     console.log('Extensions activated')
 }
 

@@ -15,14 +15,14 @@ export function getDocumentSymbols(): vscode.DocumentSymbol[] {
         'notAHandler()',
         '()',
         vscode.SymbolKind.Function,
-        new vscode.Range(38, 9, 40, 4),
+        new vscode.Range(38, 4, 40, 4),
         new vscode.Range(38, 9, 38, 20)
     )
     const goodFuncSymbol: vscode.DocumentSymbol = new vscode.DocumentSymbol(
         'handler(request events.APIGatewayProxyRequest)',
         '(request events.APIGatewayProxyRequest)',
         vscode.SymbolKind.Function,
-        new vscode.Range(23, 5, 50, 0),
+        new vscode.Range(23, 0, 50, 0),
         new vscode.Range(23, 5, 23, 12)
     )
 
