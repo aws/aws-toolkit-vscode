@@ -34,7 +34,7 @@ export async function getLambdaHandlerCandidates(document: vscode.TextDocument):
         )) ?? []
 
     return symbols
-        .filter(symbol => isValidFuncSignature(document, symbol))
+        .filter(async symbol => await isValidFuncSignature(document, symbol))
         .map<LambdaHandlerCandidate>(symbol => {
             return {
                 filename,
@@ -52,9 +52,14 @@ export async function getLambdaHandlerCandidates(document: vscode.TextDocument):
  * @param document  VS Code Document that contains the symbol
  * @param symbol  VS Code DocumentSymbol to analyze
  */
-export function isValidFuncSignature(document: vscode.TextDocument, symbol: vscode.DocumentSymbol): boolean {
+export async function isValidFuncSignature(
+    document: vscode.TextDocument,
+    symbol: vscode.DocumentSymbol
+): Promise<boolean> {
     const argsRegExp = /\(.*?\)/
-
+    console.log(
+        await vscode.commands.executeCommand('vscode.executeTypeDefinitionProvider', document.uri, symbol.range.start)
+    )
     if (symbol.kind === vscode.SymbolKind.Function && symbol.range.start.character == 0) {
         // collects the parameters, vscode details does not have the return signature :(
         const parameters = argsRegExp.exec(symbol.detail)
