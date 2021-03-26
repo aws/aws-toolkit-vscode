@@ -4,10 +4,10 @@
 package software.aws.toolkits.jetbrains.services.lambda.go
 
 import com.goide.GoLanguage
-import com.goide.sdk.GoSdkType
-import com.goide.sdk.GoSdkUtil
+import com.intellij.openapi.module.Module
 import com.intellij.openapi.module.ModuleType
 import com.intellij.openapi.module.WebModuleTypeBase
+import com.intellij.openapi.project.Project
 import com.intellij.openapi.projectRoots.Sdk
 import software.aws.toolkits.core.lambda.LambdaRuntime
 import software.aws.toolkits.jetbrains.services.lambda.BuiltInRuntimeGroups
@@ -22,20 +22,12 @@ class GoRuntimeGroup : SdkBasedRuntimeGroup() {
         LambdaRuntime.GO1_X
     )
 
-    override fun runtimeForSdk(sdk: Sdk): LambdaRuntime? {
-        if (sdk.sdkType !is GoSdkType) {
-            return null
-        }
-        return when {
-            GoSdkUtil.compareVersions(sdk.versionString, "1.0.0") < 0 -> {
-                return null
-            }
-            GoSdkUtil.compareVersions(sdk.versionString, "2.0.0") < 0 -> {
-                LambdaRuntime.GO1_X
-            }
-            else -> {
-                null
-            }
-        }
-    }
+    // Since we only have one option, we don't need to actually determine it. This is only called
+    // when we already suspect it's a go project, so we only have one real option. In the future
+    // we can look at using something like GoModuleSettings.
+    override fun determineRuntime(module: Module): LambdaRuntime = determineRuntime(module.project)
+    override fun determineRuntime(project: Project): LambdaRuntime = LambdaRuntime.GO1_X
+
+    // Go kind of has this but real projects don't always have an sdk, so ignore it in favor for determineRuntime
+    override fun runtimeForSdk(sdk: Sdk): LambdaRuntime? = null
 }

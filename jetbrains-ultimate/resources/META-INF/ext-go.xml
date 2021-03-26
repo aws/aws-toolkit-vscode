@@ -4,7 +4,7 @@
 <idea-plugin>
     <extensions defaultExtensionNs="com.intellij">
         <codeInsight.lineMarkerProvider language="go" implementationClass="software.aws.toolkits.jetbrains.services.lambda.upload.LambdaLineMarker"/>
-        <registryKey key="aws.sam.goDebuggerDelay" description="Delay before connecting to the remote Delve process (ms)" restartRequired="false" defaultValue="5000"/>
+        <registryKey key="aws.sam.goMaxAttachDelay" description="Maximum delay before connecting to the remote Delve process (ms)" restartRequired="false" defaultValue="60000"/>
     </extensions>
 
     <extensions defaultExtensionNs="aws.toolkit.lambda">

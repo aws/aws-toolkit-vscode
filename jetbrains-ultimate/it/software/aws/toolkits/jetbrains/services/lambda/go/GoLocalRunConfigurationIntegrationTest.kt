@@ -235,7 +235,11 @@ class GoLocalRunConfigurationIntegrationTest(private val runtime: LambdaRuntime)
         )
     }
 
-    private fun jsonToMap(data: String) = jacksonObjectMapper().readValue<Map<String, String>>(data)
+    // Extracts the first json structure. Needed since output has all build output and sam cli messages
+    private fun jsonToMap(data: String) = data.substringAfter("{").substringBefore("}").let {
+        jacksonObjectMapper().readValue<Map<String, String>>("{$it}")
+    }
+
     private fun CodeInsightTestFixture.addLambdaFile(contents: String) {
         val psiFile = addFileToProject("hello-world/main.go", contents)
 

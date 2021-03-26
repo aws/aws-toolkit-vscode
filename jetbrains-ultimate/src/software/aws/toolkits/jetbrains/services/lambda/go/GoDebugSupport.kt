@@ -9,7 +9,27 @@ import com.intellij.xdebugger.XDebugProcessStarter
 import software.aws.toolkits.core.lambda.LambdaRuntime
 import software.aws.toolkits.jetbrains.core.utils.buildList
 import software.aws.toolkits.jetbrains.services.lambda.execution.sam.ImageDebugSupport
+import software.aws.toolkits.jetbrains.services.lambda.execution.sam.RuntimeDebugSupport
 import software.aws.toolkits.jetbrains.services.lambda.execution.sam.SamRunningState
+import software.aws.toolkits.jetbrains.utils.execution.steps.Context
+
+class GoSamDebugSupport : RuntimeDebugSupport {
+    override suspend fun createDebugProcess(
+        context: Context,
+        environment: ExecutionEnvironment,
+        state: SamRunningState,
+        debugHost: String,
+        debugPorts: List<Int>
+    ): XDebugProcessStarter = GoDebugHelper.createGoDebugProcess(debugHost, debugPorts, context)
+
+    override fun samArguments(debugPorts: List<Int>): List<String> = buildList {
+        val debugger = GoDebugHelper.copyDlv()
+        add("--debugger-path")
+        add(debugger)
+        add("--debug-args")
+        add("-delveAPI=2")
+    }
+}
 
 class GoImageDebugSupport : ImageDebugSupport {
     override val id = LambdaRuntime.GO1_X.toString()
@@ -18,7 +38,7 @@ class GoImageDebugSupport : ImageDebugSupport {
     override val languageId = GoLanguage.INSTANCE.id
 
     override fun samArguments(debugPorts: List<Int>): List<String> = buildList {
-        val debugger = copyDlv()
+        val debugger = GoDebugHelper.copyDlv()
         addAll(super.samArguments(debugPorts))
         add("--debugger-path")
         add(debugger)
@@ -32,9 +52,10 @@ class GoImageDebugSupport : ImageDebugSupport {
     )
 
     override suspend fun createDebugProcess(
+        context: Context,
         environment: ExecutionEnvironment,
         state: SamRunningState,
         debugHost: String,
         debugPorts: List<Int>
-    ): XDebugProcessStarter = createGoDebugProcess(environment, state, debugHost, debugPorts)
+    ): XDebugProcessStarter = GoDebugHelper.createGoDebugProcess(debugHost, debugPorts, context)
 }
