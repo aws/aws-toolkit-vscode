@@ -1,4 +1,0 @@
-{
-	"type": "Breaking Change",
-	"description": "SAM debug: remove nodejs8.10 support"
-}

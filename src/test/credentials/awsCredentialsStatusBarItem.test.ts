@@ -7,16 +7,16 @@ import * as assert from 'assert'
 import * as vscode from 'vscode'
 import { updateCredentialsStatusBarItem } from '../../credentials/awsCredentialsStatusBarItem'
 
-describe('updateCredentialsStatusBarItem', async function() {
+describe('updateCredentialsStatusBarItem', async function () {
     let statusBarItem: vscode.StatusBarItem
 
-    beforeEach(async function() {
+    beforeEach(async function () {
         statusBarItem = ({
             text: '',
         } as any) as vscode.StatusBarItem
     })
 
-    it('updates text with credentials id', async function() {
+    it('updates text with credentials id', async function () {
         const credentialId = 'qwerty'
 
         updateCredentialsStatusBarItem(statusBarItem, credentialId)
@@ -26,7 +26,7 @@ describe('updateCredentialsStatusBarItem', async function() {
         )
     })
 
-    it('updates text with placeholder when there is no credentials id', async function() {
+    it('updates text with placeholder when there is no credentials id', async function () {
         updateCredentialsStatusBarItem(statusBarItem, undefined)
         assert.ok(
             statusBarItem.text.includes('(not connected)'),

@@ -16,11 +16,11 @@ import { MockSchemaClient, MockToolkitClientBuilder } from '../../shared/clients
 import { clearTestIconPaths, IconPath, setupTestIconPaths } from '../../shared/utilities/iconPathUtils'
 import { asyncGenerator } from '../../utilities/collectionUtils'
 
-describe('SchemaItemNode', function() {
+describe('SchemaItemNode', function () {
     let fakeSchemaItem: Schemas.SchemaSummary
     const fakeRegistryName = 'testRegistry'
 
-    before(async function() {
+    before(async function () {
         setupTestIconPaths()
         fakeSchemaItem = {
             SchemaName: 'testSchemaName',
@@ -28,19 +28,19 @@ describe('SchemaItemNode', function() {
         }
     })
 
-    after(async function() {
+    after(async function () {
         clearTestIconPaths()
     })
 
     // Validates we tagged the node correctly
-    it('initializes name and tooltip', async function() {
+    it('initializes name and tooltip', async function () {
         const testNode = generateTestNode()
 
         assert.strictEqual(testNode.label, fakeSchemaItem.SchemaName)
         assert.strictEqual(testNode.tooltip, `${fakeSchemaItem.SchemaName}${os.EOL}${fakeSchemaItem.SchemaArn}`)
     })
 
-    it('initializes icon', async function() {
+    it('initializes icon', async function () {
         const testNode = generateTestNode()
 
         const iconPath = testNode.iconPath as IconPath
@@ -51,14 +51,14 @@ describe('SchemaItemNode', function() {
 
     // Validates we don't yield some unexpected value that our command triggers
     // don't recognize
-    it('returns expected context value', async function() {
+    it('returns expected context value', async function () {
         const testNode = generateTestNode()
 
         assert.strictEqual(testNode.contextValue, 'awsSchemaItemNode')
     })
 
     // Validates schemaItem nodes are leaves
-    it('has no children', async function() {
+    it('has no children', async function () {
         const testNode = generateTestNode()
 
         const childNodes = await testNode.getChildren()
@@ -71,11 +71,11 @@ describe('SchemaItemNode', function() {
     }
 })
 
-describe('RegistryItemNode', function() {
+describe('RegistryItemNode', function () {
     const fakeRegion = 'testRegistry'
     let fakeRegistry: Schemas.RegistrySummary
 
-    before(async function() {
+    before(async function () {
         fakeRegistry = {
             RegistryName: 'testRegistry',
             RegistryArn: 'arn:aws:schemas:us-west-2:19930409:registry/testRegistry',
@@ -116,7 +116,7 @@ describe('RegistryItemNode', function() {
         }
     }
 
-    it('Sorts Schema Items By Name', async function() {
+    it('Sorts Schema Items By Name', async function () {
         const inputSchemaNames: string[] = ['zebra', 'Antelope', 'aardvark', 'elephant']
         const schemaClient = new SchemaNamesMockSchemaClient(inputSchemaNames)
         ext.toolkitClientBuilder = new TestMockToolkitClientBuilder(schemaClient)
@@ -152,7 +152,7 @@ describe('RegistryItemNode', function() {
         assertChildNodeSchemaName(children[3], 'zebra')
     })
 
-    it('handles error', async function() {
+    it('handles error', async function () {
         const testNode = new ThrowErrorRegistryItemNode(fakeRegion, fakeRegistry)
 
         const childNodes = await testNode.getChildren()

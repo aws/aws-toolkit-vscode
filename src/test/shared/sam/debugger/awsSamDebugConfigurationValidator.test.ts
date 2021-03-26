@@ -91,7 +91,7 @@ function createImageTemplateData(): WatchedItem<CloudFormation.Template> {
     }
 }
 
-describe('DefaultAwsSamDebugConfigurationValidator', function() {
+describe('DefaultAwsSamDebugConfigurationValidator', function () {
     const templateConfig = createTemplateConfig()
     const imageTemplateConfig = createImageTemplateConfig()
     const codeConfig = createCodeConfig()
@@ -106,15 +106,15 @@ describe('DefaultAwsSamDebugConfigurationValidator', function() {
 
     let savedRegistry: CloudFormationTemplateRegistry
 
-    before(function() {
+    before(function () {
         savedRegistry = ext.templateRegistry
     })
 
-    after(function() {
+    after(function () {
         ext.templateRegistry = savedRegistry
     })
 
-    beforeEach(function() {
+    beforeEach(function () {
         when(mockRegistry.getRegisteredItem('/')).thenReturn(templateData)
         when(mockRegistry.getRegisteredItem('/image')).thenReturn(imageTemplateData)
 
@@ -123,14 +123,14 @@ describe('DefaultAwsSamDebugConfigurationValidator', function() {
         validator = new DefaultAwsSamDebugConfigurationValidator(instance(mockFolder))
     })
 
-    it('returns invalid when resolving debug configurations with an invalid request type', function() {
+    it('returns invalid when resolving debug configurations with an invalid request type', function () {
         templateConfig.request = 'not-direct-invoke'
 
         const result = validator.validate(templateConfig)
         assert.strictEqual(result.isValid, false)
     })
 
-    it('returns invalid when resolving debug configurations with an invalid target type', function() {
+    it('returns invalid when resolving debug configurations with an invalid target type', function () {
         templateConfig.invokeTarget.target = 'not-valid' as any
 
         const result = validator.validate(templateConfig as any)
@@ -163,7 +163,7 @@ describe('DefaultAwsSamDebugConfigurationValidator', function() {
         assert.strictEqual(result.isValid, false)
     })
 
-    it('returns undefined when resolving template debug configurations with a resource that has an invalid runtime in template', function() {
+    it('returns undefined when resolving template debug configurations with a resource that has an invalid runtime in template', function () {
         const properties = templateData.item.Resources?.TestResource?.Properties as CloudFormation.ZipResourceProperties
         properties.Runtime = 'invalid'
 
@@ -179,7 +179,7 @@ describe('DefaultAwsSamDebugConfigurationValidator', function() {
         assert.strictEqual(result.isValid, false)
     })
 
-    it('API config is invalid when it does not have an API field', function() {
+    it('API config is invalid when it does not have an API field', function () {
         const config = createApiConfig()
         config.api = undefined
 
@@ -196,14 +196,14 @@ describe('DefaultAwsSamDebugConfigurationValidator', function() {
         assert.strictEqual(result.isValid, false)
     })
 
-    it('returns invalid when resolving code debug configurations with invalid runtimes', function() {
+    it('returns invalid when resolving code debug configurations with invalid runtimes', function () {
         codeConfig.lambda = { runtime: 'asd' }
 
         const result = validator.validate(codeConfig)
         assert.strictEqual(result.isValid, false)
     })
 
-    it('returns invalid when Image app does not declare runtime', function() {
+    it('returns invalid when Image app does not declare runtime', function () {
         const lambda = imageTemplateConfig.lambda
 
         delete lambda?.runtime

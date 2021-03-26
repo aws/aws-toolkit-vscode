@@ -1,0 +1,28 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg width="12px" height="13px" viewBox="0 0 12 13" version="1.1" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink">
+    <title>plus - light</title>
+    <defs>
+        <filter id="filter-1">
+            <feColorMatrix in="SourceGraphic" type="matrix" values="0 0 0 0 0.921569 0 0 0 0 0.929412 0 0 0 0 0.956863 0 0 0 1.000000 0"></feColorMatrix>
+        </filter>
+        <path d="M7.2109375,0.8125 L7.2105,5.7885 L12.1875,5.7890625 L12.1875,7.2109375 L7.2105,7.2105 L7.2109375,12.1875 L5.7890625,12.1875 L5.7885,7.2105 L0.8125,7.2109375 L0.8125,5.7890625 L5.7885,5.7885 L5.7890625,0.8125 L7.2109375,0.8125 Z" id="path-2"></path>
+    </defs>
+    <g id="V1" stroke="none" stroke-width="1" fill="none" fill-rule="evenodd">
+        <g id="icons-/-actions-/-default" transform="translate(-0.500000, 0.000000)" filter="url(#filter-1)">
+            <g id="LOCKED_ON_PURPOSE.CHANGING-RESETS-CHILDREN">
+                <g id="icons-/-actions-/-default-/-caret">
+                    <mask id="mask-3" fill="white">
+                        <use xlink:href="#path-2"></use>
+                    </mask>
+                    <use id="Combined-Shape" fill="#D8D8D8" transform="translate(6.500000, 6.500000) rotate(-270.000000) translate(-6.500000, -6.500000) " xlink:href="#path-2"></use>
+                    <g id="Group" mask="url(#mask-3)" fill="#16191F">
+                        <g id="color">
+                            <rect id="Rectangle" x="0" y="0" width="13" height="13"></rect>
+                        </g>
+                    </g>
+                </g>
+                <rect id="Rectangle" fill="#50E3C2" opacity="0" x="0" y="0" width="13" height="13"></rect>
+            </g>
+        </g>
+    </g>
+</svg>

@@ -59,7 +59,7 @@ const mockDoc: vscode.TextDocument = {
     validateRange: sinon.spy(),
 }
 
-describe('publishSSMDocument', async function() {
+describe('publishSSMDocument', async function () {
     let sandbox = sinon.createSandbox()
     const fakeAwsContext = new FakeAwsContext()
     const fakeRegionProvider = new FakeRegionProvider()
@@ -79,7 +79,7 @@ describe('publishSSMDocument', async function() {
     let textDocument: vscode.TextDocument
     let apiCalled: string
 
-    beforeEach(async function() {
+    beforeEach(async function () {
         sandbox = sinon.createSandbox()
         apiCalled = ''
         textDocument = { ...mockDoc }
@@ -91,11 +91,11 @@ describe('publishSSMDocument', async function() {
         initializeClientBuilders()
     })
 
-    afterEach(async function() {
+    afterEach(async function () {
         sandbox.restore()
     })
 
-    it('tests calling createDocument', async function() {
+    it('tests calling createDocument', async function () {
         const wizardStub = sandbox.stub(PublishSSMDocumentWizard.prototype, 'run').returns(
             Promise.resolve({
                 PublishSsmDocAction: 'Create',
@@ -111,7 +111,7 @@ describe('publishSSMDocument', async function() {
         assert.strictEqual(apiCalled, 'createDocument')
     })
 
-    it('tests calling updateDocument', async function() {
+    it('tests calling updateDocument', async function () {
         const wizardStub = sandbox.stub(PublishSSMDocumentWizard.prototype, 'run').returns(
             Promise.resolve({
                 PublishSsmDocAction: 'Update',
@@ -146,7 +146,7 @@ describe('publishSSMDocument', async function() {
     }
 })
 
-describe('publishDocument', async function() {
+describe('publishDocument', async function () {
     let wizardResponse: PublishSSMDocumentWizardResponse
     let textDocument: vscode.TextDocument
     let result: SSM.CreateDocumentResult | SSM.UpdateDocumentResult
@@ -164,7 +164,7 @@ describe('publishDocument', async function() {
         Name: 'test',
     }
 
-    beforeEach(async function() {
+    beforeEach(async function () {
         sandbox = sinon.createSandbox()
 
         wizardResponse = {
@@ -181,12 +181,12 @@ describe('publishDocument', async function() {
         }
     })
 
-    afterEach(function() {
+    afterEach(function () {
         sandbox.restore()
     })
 
-    describe('createDocument', async function() {
-        it('createDocument API returns successfully', async function() {
+    describe('createDocument', async function () {
+        it('createDocument API returns successfully', async function () {
             client = new MockSsmDocumentClient(
                 undefined,
                 undefined,
@@ -208,7 +208,7 @@ describe('publishDocument', async function() {
             assert(createSpy.calledWith(fakeCreateRequest))
         })
 
-        it('createDocument API failed', async function() {
+        it('createDocument API failed', async function () {
             client = new MockSsmDocumentClient(
                 undefined,
                 undefined,
@@ -234,8 +234,8 @@ describe('publishDocument', async function() {
         })
     })
 
-    describe('updateDocument', async function() {
-        it('updateDocument API returns successfully', async function() {
+    describe('updateDocument', async function () {
+        it('updateDocument API returns successfully', async function () {
             client = new MockSsmDocumentClient(
                 undefined,
                 undefined,
@@ -257,7 +257,7 @@ describe('publishDocument', async function() {
             assert(updateSpy.calledWith(fakeUpdateRequest))
         })
 
-        it('updateDocument API failed', async function() {
+        it('updateDocument API failed', async function () {
             client = new MockSsmDocumentClient(
                 undefined,
                 undefined,

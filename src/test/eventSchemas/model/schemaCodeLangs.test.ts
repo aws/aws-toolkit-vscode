@@ -12,8 +12,8 @@ import {
 import { samZipLambdaRuntimes } from '../../../lambda/models/samLambdaRuntime'
 import { assertThrowsError } from '../../../test/shared/utilities/assertUtils'
 
-describe('getLanguageDetails', function() {
-    it('should successfully return details for supported languages', function() {
+describe('getLanguageDetails', function () {
+    it('should successfully return details for supported languages', function () {
         for (const language of schemaCodeLangs.values()) {
             const result = getLanguageDetails(language)
             assert.ok(
@@ -24,8 +24,8 @@ describe('getLanguageDetails', function() {
     })
 })
 
-describe('getApiValueForSchemasDownload', function() {
-    it('should return api value for runtimes supported by eventBridge application', async function() {
+describe('getApiValueForSchemasDownload', function () {
+    it('should return api value for runtimes supported by eventBridge application', async function () {
         for (const runtime of samZipLambdaRuntimes.values()) {
             switch (runtime) {
                 case 'python3.6':

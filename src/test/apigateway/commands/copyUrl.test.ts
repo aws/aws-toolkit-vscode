@@ -6,8 +6,8 @@
 import * as assert from 'assert'
 import { buildDefaultApiInvokeUrl } from '../../../apigateway/commands/copyUrl'
 
-describe('buildDefaultApiInvokeUrl', function() {
-    it('builds a url', async function() {
+describe('buildDefaultApiInvokeUrl', function () {
+    it('builds a url', async function () {
         const expected = 'https://1234567ab.execute-api.us-east-1.amazonaws.com/stagename'
 
         assert.deepStrictEqual(

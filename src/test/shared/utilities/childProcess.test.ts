@@ -11,22 +11,22 @@ import { makeTemporaryToolkitFolder } from '../../../shared/filesystemUtilities'
 import { ChildProcess, ChildProcessResult } from '../../../shared/utilities/childProcess'
 import { waitUntil } from '../../../shared/utilities/timeoutUtils'
 
-describe('ChildProcess', async function() {
+describe('ChildProcess', async function () {
     let tempFolder: string
 
-    beforeEach(async function() {
+    beforeEach(async function () {
         // Make a temp folder for all these tests
         // Stick some temp credentials files in there to load from
         tempFolder = await makeTemporaryToolkitFolder()
     })
 
-    afterEach(async function() {
+    afterEach(async function () {
         await fs.remove(tempFolder)
     })
 
-    describe('run', async function() {
+    describe('run', async function () {
         if (process.platform === 'win32') {
-            it('runs and captures stdout - windows', async function() {
+            it('runs and captures stdout - windows', async function () {
                 const batchFile = path.join(tempFolder, 'test-script.bat')
                 writeBatchFile(batchFile)
 
@@ -41,7 +41,7 @@ describe('ChildProcess', async function() {
                 })
             })
 
-            it('runs cmd files containing a space in the filename and folder', async function() {
+            it('runs cmd files containing a space in the filename and folder', async function () {
                 const subfolder: string = path.join(tempFolder, 'sub folder')
                 const command: string = path.join(subfolder, 'test script.cmd')
 
@@ -60,7 +60,7 @@ describe('ChildProcess', async function() {
                 })
             })
 
-            it('errs when starting twice - windows', async function() {
+            it('errs when starting twice - windows', async function () {
                 const batchFile = path.join(tempFolder, 'test-script.bat')
                 writeBatchFile(batchFile)
 
@@ -79,7 +79,7 @@ describe('ChildProcess', async function() {
                 assert.fail('Expected exception, but none was thrown.')
             })
         } else {
-            it('runs and captures stdout - unix', async function() {
+            it('runs and captures stdout - unix', async function () {
                 const scriptFile = path.join(tempFolder, 'test-script.sh')
                 writeShellFile(scriptFile)
 
@@ -94,7 +94,7 @@ describe('ChildProcess', async function() {
                 })
             })
 
-            it('errs when starting twice - unix', async function() {
+            it('errs when starting twice - unix', async function () {
                 const scriptFile = path.join(tempFolder, 'test-script.sh')
                 writeShellFile(scriptFile)
 
@@ -114,7 +114,7 @@ describe('ChildProcess', async function() {
             })
         } // END Linux only tests
 
-        it('runs scripts containing a space in the filename and folder', async function() {
+        it('runs scripts containing a space in the filename and folder', async function () {
             const subfolder: string = path.join(tempFolder, 'sub folder')
             let command: string
 
@@ -139,7 +139,7 @@ describe('ChildProcess', async function() {
             })
         })
 
-        it('reports error for missing executable', async function() {
+        it('reports error for missing executable', async function () {
             const batchFile = path.join(tempFolder, 'nonExistentScript')
 
             const childProcess = new ChildProcess(batchFile)
@@ -173,7 +173,7 @@ describe('ChildProcess', async function() {
         }
     })
 
-    describe('start', async function() {
+    describe('start', async function () {
         async function assertRegularRun(childProcess: ChildProcess): Promise<void> {
             await new Promise<void>(async (resolve, reject) => {
                 await childProcess.start({
@@ -189,7 +189,7 @@ describe('ChildProcess', async function() {
         }
 
         if (process.platform === 'win32') {
-            it('starts and captures stdout - windows', async function() {
+            it('starts and captures stdout - windows', async function () {
                 const batchFile = path.join(tempFolder, 'test-script.bat')
                 writeBatchFile(batchFile)
 
@@ -198,7 +198,7 @@ describe('ChildProcess', async function() {
                 await assertRegularRun(childProcess)
             })
 
-            it('runs cmd files containing a space in the filename and folder', async function() {
+            it('runs cmd files containing a space in the filename and folder', async function () {
                 const subfolder: string = path.join(tempFolder, 'sub folder')
                 const command: string = path.join(subfolder, 'test script.cmd')
 
@@ -211,7 +211,7 @@ describe('ChildProcess', async function() {
                 await assertRegularRun(childProcess)
             })
 
-            it('errs when starting twice - windows', async function() {
+            it('errs when starting twice - windows', async function () {
                 const batchFile = path.join(tempFolder, 'test-script.bat')
                 writeBatchFile(batchFile)
 
@@ -232,7 +232,7 @@ describe('ChildProcess', async function() {
         } // END Windows only tests
 
         if (process.platform !== 'win32') {
-            it('runs and captures stdout - unix', async function() {
+            it('runs and captures stdout - unix', async function () {
                 const scriptFile = path.join(tempFolder, 'test-script.sh')
                 writeShellFile(scriptFile)
 
@@ -241,7 +241,7 @@ describe('ChildProcess', async function() {
                 await assertRegularRun(childProcess)
             })
 
-            it('errs when starting twice - unix', async function() {
+            it('errs when starting twice - unix', async function () {
                 const scriptFile = path.join(tempFolder, 'test-script.sh')
                 writeShellFile(scriptFile)
 
@@ -261,7 +261,7 @@ describe('ChildProcess', async function() {
             })
         } // END Linux only tests
 
-        it('runs scripts containing a space in the filename and folder', async function() {
+        it('runs scripts containing a space in the filename and folder', async function () {
             const subfolder: string = path.join(tempFolder, 'sub folder')
             let command: string
 
@@ -280,7 +280,7 @@ describe('ChildProcess', async function() {
             await assertRegularRun(childProcess)
         })
 
-        it('reports error for missing executable', async function() {
+        it('reports error for missing executable', async function () {
             const batchFile = path.join(tempFolder, 'nonExistentScript')
 
             const childProcess = new ChildProcess(batchFile)
@@ -296,9 +296,9 @@ describe('ChildProcess', async function() {
         })
     })
 
-    describe('stop()', async function() {
+    describe('stop()', async function () {
         if (process.platform === 'win32') {
-            it('detects running processes and successfully stops a running process - Windows', async function() {
+            it('detects running processes and successfully stops a running process - Windows', async function () {
                 const batchFile = path.join(tempFolder, 'test-script.bat')
                 writeBatchFileWithDelays(batchFile)
 
@@ -309,14 +309,11 @@ describe('ChildProcess', async function() {
 
                 assert.strictEqual(childProcess.stopped, false)
                 childProcess.stop()
-                await waitUntil(
-                    async () => childProcess.stopped,
-                    { timeout: 1000, interval: 100, truthy: true }
-                )
+                await waitUntil(async () => childProcess.stopped, { timeout: 1000, interval: 100, truthy: true })
                 assert.strictEqual(childProcess.stopped, true)
             })
 
-            it('cannot stop() previously stopped processes - Windows', async function() {
+            it('cannot stop() previously stopped processes - Windows', async function () {
                 const batchFile = path.join(tempFolder, 'test-script.bat')
                 writeBatchFileWithDelays(batchFile)
 
@@ -326,10 +323,7 @@ describe('ChildProcess', async function() {
                 childProcess.run()
 
                 childProcess.stop()
-                await waitUntil(
-                    async () => childProcess.stopped,
-                    { timeout: 1000, interval: 100, truthy: true }
-                )
+                await waitUntil(async () => childProcess.stopped, { timeout: 1000, interval: 100, truthy: true })
                 assert.strictEqual(childProcess.stopped, true)
                 assert.throws(() => {
                     childProcess.stop()
@@ -338,7 +332,7 @@ describe('ChildProcess', async function() {
         } // END Windows-only tests
 
         if (process.platform !== 'win32') {
-            it('detects running processes and successfully stops a running process - Unix', async function() {
+            it('detects running processes and successfully stops a running process - Unix', async function () {
                 const scriptFile = path.join(tempFolder, 'test-script.sh')
                 writeShellFileWithDelays(scriptFile)
 
@@ -349,14 +343,11 @@ describe('ChildProcess', async function() {
 
                 assert.strictEqual(childProcess.stopped, false)
                 childProcess.stop()
-                await waitUntil(
-                    async () => childProcess.stopped,
-                    { timeout: 1000, interval: 100, truthy: true }
-                )
+                await waitUntil(async () => childProcess.stopped, { timeout: 1000, interval: 100, truthy: true })
                 assert.strictEqual(childProcess.stopped, true)
             })
 
-            it('cannot stop() previously stopped processes - Unix', async function() {
+            it('cannot stop() previously stopped processes - Unix', async function () {
                 const scriptFile = path.join(tempFolder, 'test-script.sh')
                 writeShellFileWithDelays(scriptFile)
 
@@ -366,10 +357,7 @@ describe('ChildProcess', async function() {
                 childProcess.run()
 
                 childProcess.stop()
-                await waitUntil(
-                    async () => childProcess.stopped,
-                    { timeout: 1000, interval: 100, truthy: true }
-                )
+                await waitUntil(async () => childProcess.stopped, { timeout: 1000, interval: 100, truthy: true })
                 assert.strictEqual(childProcess.stopped, true)
                 assert.throws(() => {
                     childProcess.stop()

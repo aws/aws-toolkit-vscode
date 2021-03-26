@@ -7,11 +7,11 @@ import * as assert from 'assert'
 import * as vscode from 'vscode'
 import { CdkErrorNode } from '../../../cdk/explorer/nodes/errorNode'
 
-describe('CdkErrorNode', function() {
+describe('CdkErrorNode', function () {
     const label = '[no projects]'
     const tooltip = 'we will integrate this with the CLI to create an app!'
 
-    it('initializes label and tooltip', async function() {
+    it('initializes label and tooltip', async function () {
         const testNode = new CdkErrorNode(label, tooltip)
 
         assert.strictEqual(testNode.label, label)
@@ -19,7 +19,7 @@ describe('CdkErrorNode', function() {
         assert.strictEqual(testNode.collapsibleState, vscode.TreeItemCollapsibleState.None)
     })
 
-    it('has no children', async function() {
+    it('has no children', async function () {
         const testNode = new CdkErrorNode(label, tooltip)
 
         const childNodes = await testNode.getChildren()

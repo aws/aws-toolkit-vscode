@@ -205,18 +205,18 @@ class MockCreateNewSamAppWizardContext implements CreateNewSamAppWizardContext {
     }
 }
 
-describe('CreateNewSamAppWizard', async function() {
+describe('CreateNewSamAppWizard', async function () {
     let dir: string
     let dir2: string
-    before(async function() {
+    before(async function () {
         dir = await makeTemporaryToolkitFolder()
         dir2 = await makeTemporaryToolkitFolder()
     })
-    after(async function() {
+    after(async function () {
         fs.rmdirSync(dir)
     })
-    describe('runtime', async function() {
-        it('uses user response as runtime', async function() {
+    describe('runtime', async function () {
+        it('uses user response as runtime', async function () {
             const context: CreateNewSamAppWizardContext = new MockCreateNewSamAppWizardContext(
                 [],
                 Set<Runtime>(['nodejs10.x']),
@@ -234,7 +234,7 @@ describe('CreateNewSamAppWizard', async function() {
             assert.strictEqual(args!.runtime, 'nodejs10.x')
         })
 
-        it('exits when cancelled', async function() {
+        it('exits when cancelled', async function () {
             const context: CreateNewSamAppWizardContext = new MockCreateNewSamAppWizardContext(
                 [],
                 Set<Runtime>(),
@@ -252,8 +252,8 @@ describe('CreateNewSamAppWizard', async function() {
         })
     })
 
-    describe('template', async function() {
-        it('uses user response as template', async function() {
+    describe('template', async function () {
+        it('uses user response as template', async function () {
             const context: CreateNewSamAppWizardContext = new MockCreateNewSamAppWizardContext(
                 [],
                 Set<Runtime>(['nodejs10.x']),
@@ -271,7 +271,7 @@ describe('CreateNewSamAppWizard', async function() {
             assert.strictEqual(args!.template, helloWorldTemplate)
         })
 
-        it('backtracks when cancelled', async function() {
+        it('backtracks when cancelled', async function () {
             const context: CreateNewSamAppWizardContext = new MockCreateNewSamAppWizardContext(
                 [],
                 [Set<Runtime>(['python3.6']), Set<Runtime>(['nodejs10.x'])],
@@ -290,19 +290,19 @@ describe('CreateNewSamAppWizard', async function() {
             assert.strictEqual(args!.template, helloWorldTemplate)
         })
 
-        describe('eventBridge-schema-app template', async function() {
+        describe('eventBridge-schema-app template', async function () {
             let locationPath: string
-            before(async function() {
+            before(async function () {
                 locationPath = await makeTemporaryToolkitFolder()
             })
-            after(async function() {
+            after(async function () {
                 fs.rmdirSync(locationPath)
             })
             let context: CreateNewSamAppWizardContext
             let wizard: CreateNewSamAppWizard
             let args: CreateNewSamAppWizardResponse | undefined
 
-            beforeEach(async function() {
+            beforeEach(async function () {
                 context = new MockCreateNewSamAppWizardContext(
                     [],
                     Set<Runtime>(['nodejs10.x']),
@@ -317,13 +317,13 @@ describe('CreateNewSamAppWizard', async function() {
                 args = await wizard.run()
             })
 
-            describe('region', async function() {
-                it('uses user response as region', async function() {
+            describe('region', async function () {
+                it('uses user response as region', async function () {
                     assert.ok(args)
                     assert.strictEqual(args!.region, 'us-west-2')
                 })
 
-                it('backtracks when cancelled', async function() {
+                it('backtracks when cancelled', async function () {
                     context = new MockCreateNewSamAppWizardContext(
                         [],
                         [Set<Runtime>(['python3.6']), Set<Runtime>(['nodejs10.x'])],
@@ -343,13 +343,13 @@ describe('CreateNewSamAppWizard', async function() {
                 })
             })
 
-            describe('registry', async function() {
-                it('uses user response as registry', async function() {
+            describe('registry', async function () {
+                it('uses user response as registry', async function () {
                     assert.ok(args)
                     assert.strictEqual(args!.registryName, 'aws.events')
                 })
 
-                it('backtracks when cancelled', async function() {
+                it('backtracks when cancelled', async function () {
                     context = new MockCreateNewSamAppWizardContext(
                         [],
                         [Set<Runtime>(['python3.6']), Set<Runtime>(['nodejs10.x'])],
@@ -369,13 +369,13 @@ describe('CreateNewSamAppWizard', async function() {
                 })
             })
 
-            describe('schema', async function() {
-                it('uses user response as schema', async function() {
+            describe('schema', async function () {
+                it('uses user response as schema', async function () {
                     assert.ok(args)
                     assert.strictEqual(args!.schemaName, 'AWSAPICallViaCloudTrail')
                 })
 
-                it('backtracks when cancelled', async function() {
+                it('backtracks when cancelled', async function () {
                     context = new MockCreateNewSamAppWizardContext(
                         [],
                         [Set<Runtime>(['python3.6']), Set<Runtime>(['nodejs10.x'])],
@@ -395,13 +395,13 @@ describe('CreateNewSamAppWizard', async function() {
                 })
             })
 
-            describe('location', async function() {
-                it('uses user response as schema', async function() {
+            describe('location', async function () {
+                it('uses user response as schema', async function () {
                     assert.ok(args)
                     assertEqualPaths(args!.location.fsPath, locationPath)
                 })
 
-                it('backtracks when cancelled', async function() {
+                it('backtracks when cancelled', async function () {
                     context = new MockCreateNewSamAppWizardContext(
                         [],
                         [Set<Runtime>(['python3.6']), Set<Runtime>(['nodejs10.x'])],
@@ -423,8 +423,8 @@ describe('CreateNewSamAppWizard', async function() {
         })
     })
 
-    describe('location', async function() {
-        it('uses user response as location', async function() {
+    describe('location', async function () {
+        it('uses user response as location', async function () {
             const context: CreateNewSamAppWizardContext = new MockCreateNewSamAppWizardContext(
                 [],
                 Set<Runtime>(['nodejs10.x']),
@@ -442,7 +442,7 @@ describe('CreateNewSamAppWizard', async function() {
             assertEqualPaths(args!.location.fsPath, dir)
         })
 
-        it('backtracks when cancelled', async function() {
+        it('backtracks when cancelled', async function () {
             const context: CreateNewSamAppWizardContext = new MockCreateNewSamAppWizardContext(
                 [],
                 [Set<Runtime>(['python3.6']), Set<Runtime>(['nodejs10.x'])],
@@ -480,7 +480,7 @@ describe('CreateNewSamAppWizard', async function() {
             assertEqualPaths(args!.location.fsPath, dir)
         })
 
-        it('contains an option for each workspace folder', async function() {
+        it('contains an option for each workspace folder', async function () {
             const workspaceFolderPaths = [dir, dir2]
 
             let index = 0
@@ -506,8 +506,8 @@ describe('CreateNewSamAppWizard', async function() {
         })
     })
 
-    describe('name', async function() {
-        it('uses user response as name', async function() {
+    describe('name', async function () {
+        it('uses user response as name', async function () {
             const context: CreateNewSamAppWizardContext = new MockCreateNewSamAppWizardContext(
                 [],
                 Set<Runtime>(['nodejs10.x']),
@@ -525,7 +525,7 @@ describe('CreateNewSamAppWizard', async function() {
             assert.strictEqual(args!.name, 'myName')
         })
 
-        it('backtracks when cancelled', async function() {
+        it('backtracks when cancelled', async function () {
             const context: CreateNewSamAppWizardContext = new MockCreateNewSamAppWizardContext(
                 [],
                 Set<Runtime>(['nodejs10.x']),

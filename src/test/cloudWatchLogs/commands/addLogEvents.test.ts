@@ -12,30 +12,30 @@ import { LogStreamRegistry } from '../../../cloudWatchLogs/registry/logStreamReg
 import { CLOUDWATCH_LOGS_SCHEME } from '../../../shared/constants'
 import { TestSettingsConfiguration } from '../../utilities/testSettingsConfiguration'
 
-describe('addLogEvents', async function() {
+describe('addLogEvents', async function () {
     let sandbox: sinon.SinonSandbox
     let clock: sinon.SinonFakeTimers
     const config = new TestSettingsConfiguration()
 
-    before(function() {
+    before(function () {
         clock = FakeTimers.install()
         config.writeSetting('cloudWatchLogs.limit', 1000)
     })
 
-    beforeEach(function() {
+    beforeEach(function () {
         sandbox = sinon.createSandbox()
     })
 
-    afterEach(function() {
+    afterEach(function () {
         clock.reset()
         sandbox.restore()
     })
 
-    after(function() {
+    after(function () {
         clock.uninstall()
     })
 
-    it('runs updateLog and sets busy status correctly', async function() {
+    it('runs updateLog and sets busy status correctly', async function () {
         const uri = vscode.Uri.parse(`${CLOUDWATCH_LOGS_SCHEME}:group:stream:region`)
         const setBusyStatus = sandbox.stub<[vscode.Uri, boolean], void>()
         const updateLog = sandbox.stub<
@@ -78,7 +78,7 @@ describe('addLogEvents', async function() {
         sandbox.assert.calledWith(updateLog.firstCall, uri, 'head')
     })
 
-    it('async-locks to prevent more than one execution at a time', async function() {
+    it('async-locks to prevent more than one execution at a time', async function () {
         const uri = vscode.Uri.parse(`${CLOUDWATCH_LOGS_SCHEME}:group:stream:region`)
         const setBusyStatus = sandbox.stub<[vscode.Uri, boolean], void>()
         const updateLog = sandbox.stub<

@@ -15,9 +15,9 @@ import {
 } from '../../../lambda/utilities/parameterUtils'
 import { getNormalizedRelativePath } from '../../../shared/utilities/pathUtils'
 
-describe('parameterUtils', async function() {
-    describe('getParameters', async function() {
-        it('returns an empty map if template has no parameters section', async function() {
+describe('parameterUtils', async function () {
+    describe('getParameters', async function () {
+        it('returns an empty map if template has no parameters section', async function () {
             const context: GetParametersContext = {
                 loadTemplate: async () => ({}),
             }
@@ -26,7 +26,7 @@ describe('parameterUtils', async function() {
             assert.strictEqual(actual.size, 0)
         })
 
-        it('returns an empty map if parameters section is empty', async function() {
+        it('returns an empty map if parameters section is empty', async function () {
             const context: GetParametersContext = {
                 loadTemplate: async () => ({
                     Parameters: {},
@@ -37,7 +37,7 @@ describe('parameterUtils', async function() {
             assert.strictEqual(actual.size, 0)
         })
 
-        it('sets `required` to true if default is undefined', async function() {
+        it('sets `required` to true if default is undefined', async function () {
             const context: GetParametersContext = {
                 loadTemplate: async () => ({
                     Parameters: {
@@ -56,7 +56,7 @@ describe('parameterUtils', async function() {
             assert.strictEqual(parameter!.required, true)
         })
 
-        it('sets `required` to false if default is defined, but falsy', async function() {
+        it('sets `required` to false if default is defined, but falsy', async function () {
             const context: GetParametersContext = {
                 loadTemplate: async () => ({
                     Parameters: {
@@ -76,7 +76,7 @@ describe('parameterUtils', async function() {
             assert.strictEqual(parameter!.required, false)
         })
 
-        it('sets `required` to false if default is defined and truthy', async function() {
+        it('sets `required` to false if default is defined and truthy', async function () {
             const context: GetParametersContext = {
                 loadTemplate: async () => ({
                     Parameters: {
@@ -97,8 +97,8 @@ describe('parameterUtils', async function() {
         })
     })
 
-    describe('getParameterNames', async function() {
-        it('returns an empty array if no parameters were found', async function() {
+    describe('getParameterNames', async function () {
+        it('returns an empty array if no parameters were found', async function () {
             const context: GetParametersContext = {
                 loadTemplate: async () => ({}),
             }
@@ -107,7 +107,7 @@ describe('parameterUtils', async function() {
             assert.strictEqual(actual.length, 0)
         })
 
-        it('returns the names of each parameter', async function() {
+        it('returns the names of each parameter', async function () {
             const context: GetParametersContext = {
                 loadTemplate: async () => ({
                     Parameters: {
@@ -128,12 +128,12 @@ describe('parameterUtils', async function() {
         })
     })
 
-    describe('getOverriddenParameters', async function() {
+    describe('getOverriddenParameters', async function () {
         const workspaceFolderUri = vscode.Uri.file(path.join('my', 'workspace', 'folder'))
         const templateUri = vscode.Uri.file(path.join(workspaceFolderUri.fsPath, 'some', 'template.yaml'))
         const templateId = getNormalizedRelativePath(workspaceFolderUri.fsPath, templateUri.fsPath)
 
-        it('throws if template is not in the workspace', async function() {
+        it('throws if template is not in the workspace', async function () {
             const context: GetOverriddenParametersContext = {
                 getWorkspaceFolder: uri => undefined,
                 loadTemplatesConfig: async () => ({
@@ -152,7 +152,7 @@ describe('parameterUtils', async function() {
             assert.fail('expected exception, but none occurred')
         })
 
-        it('returns undefined if no config is found for this template', async function() {
+        it('returns undefined if no config is found for this template', async function () {
             const context: GetOverriddenParametersContext = {
                 getWorkspaceFolder: () => ({
                     uri: workspaceFolderUri,
@@ -166,7 +166,7 @@ describe('parameterUtils', async function() {
             assert.strictEqual(actual, undefined)
         })
 
-        it('returns undefined if config for this template does not contain `parameterOverrides`', async function() {
+        it('returns undefined if config for this template does not contain `parameterOverrides`', async function () {
             const context: GetOverriddenParametersContext = {
                 getWorkspaceFolder: () => ({
                     uri: workspaceFolderUri,
@@ -182,7 +182,7 @@ describe('parameterUtils', async function() {
             assert.strictEqual(actual, undefined)
         })
 
-        it('returns an empty map if this template contains an empty `parameterOverrides`', async function() {
+        it('returns an empty map if this template contains an empty `parameterOverrides`', async function () {
             const context: GetOverriddenParametersContext = {
                 getWorkspaceFolder: () => ({
                     uri: vscode.Uri.file(workspaceFolderUri.fsPath),
@@ -201,7 +201,7 @@ describe('parameterUtils', async function() {
             assert.strictEqual(actual!.size, 0)
         })
 
-        it('returns a map of parameter names to their overridden values', async function() {
+        it('returns a map of parameter names to their overridden values', async function () {
             const context: GetOverriddenParametersContext = {
                 getWorkspaceFolder: () => ({
                     uri: workspaceFolderUri,
