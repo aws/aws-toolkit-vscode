@@ -96,7 +96,6 @@ describe('getAccountId', function () {
         }
 
         sandbox.stub(stsClient, 'getCallerIdentity').callsFake(async () => {
-            console.log(process.env.AWS_REGION)
             if (env.AWS_REGION !== region) {
                 throw new Error('Region not set by workaround')
             }
