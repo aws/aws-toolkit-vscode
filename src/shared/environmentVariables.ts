@@ -16,6 +16,7 @@ export interface EnvironmentVariables {
     AWS_SDK_LOAD_CONFIG?: boolean | string
     AWS_SHARED_CREDENTIALS_FILE?: string
     AWS_CONFIG_FILE?: string
+    AWS_REGION?: string
 
     [key: string]: string | boolean | undefined
 }

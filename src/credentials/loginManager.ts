@@ -11,6 +11,7 @@ import { CredentialsStore } from './credentialsStore'
 import { notifyUserInvalidCredentials } from './credentialsUtilities'
 import { asString, CredentialsProviderId } from './providers/credentialsProviderId'
 import { CredentialsProviderManager } from './providers/credentialsProviderManager'
+import { EnvironmentVariables } from '../shared/environmentVariables'
 
 export class LoginManager {
     private readonly defaultCredentialsRegion = 'us-east-1'
@@ -40,10 +41,26 @@ export class LoginManager {
                 throw new Error(`No credentials found for id ${asString(args.providerId)}`)
             }
 
+            // In V2 of the AWS JS SDK, the STS client tries to parse from the credentials file even
+            // if it doesn't exist, throwing an uncaught exception.
+            // This is because it doesn't check for the region we passed to it...
+            // Instead we have to set an enviromental variable
+            // TODO: Remove this hack when the toolkit migrates to version 3 of the SDK
+
             const credentialsRegion = provider.getDefaultRegion() ?? this.defaultCredentialsRegion
+            const env = process.env as EnvironmentVariables
+            const tmp = env.AWS_REGION
+            env.AWS_REGION = env.AWS_REGION ?? credentialsRegion
+
             const accountId = await getAccountId(storedCredentials.credentials, credentialsRegion)
             if (!accountId) {
                 throw new Error('Could not determine Account Id for credentials')
+            }
+
+            if (tmp === undefined) {
+                delete env.AWS_REGION // Delete it to prevent side effects
+            } else {
+                env.AWS_REGION = tmp
             }
 
             await this.awsContext.setCredentials({
