@@ -7,8 +7,9 @@ import * as assert from 'assert'
 import * as sinon from 'sinon'
 import { StsClient } from '../../../shared/clients/stsClient'
 import { ToolkitClientBuilder } from '../../../shared/clients/toolkitClientBuilder'
-import { getAccountId } from '../../../shared/credentials/accountId'
+import { getAccountId, getAccountIdHack } from '../../../shared/credentials/accountId'
 import { ext } from '../../../shared/extensionGlobals'
+import { EnvironmentVariables } from '../../../shared/environmentVariables'
 
 describe('getAccountId', function () {
     let sandbox: sinon.SinonSandbox
@@ -84,5 +85,28 @@ describe('getAccountId', function () {
         const accountId = await getAccountId(credentials, 'someregion')
 
         assert.strictEqual(accountId, undefined)
+    })
+
+    // TODO: remove this test after migrating to SDK V3
+    it('missing credentials file workaround sets environment variable and resets after', async function () {
+        const env: EnvironmentVariables = process.env as EnvironmentVariables
+        const region: string = 'someregion'
+        const mockResponse: AWS.STS.GetCallerIdentityResponse = {
+            Account: 'some valid account id',
+        }
+
+        sandbox.stub(stsClient, 'getCallerIdentity').callsFake(async () => {
+            console.log(process.env.AWS_REGION)
+            if (env.AWS_REGION !== region) {
+                throw new Error('Region not set by workaround')
+            }
+
+            return mockResponse
+        })
+
+        const accountId = await getAccountIdHack(credentials, region)
+
+        assert.strictEqual(accountId, mockResponse.Account)
+        assert.strictEqual(env.AWS_REGION, undefined, 'Region environment variable not reset')
     })
 })
