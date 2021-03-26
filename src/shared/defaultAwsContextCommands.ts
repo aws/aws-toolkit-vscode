@@ -14,7 +14,7 @@ import { CredentialsProviderManager } from '../credentials/providers/credentials
 import { AwsContext } from './awsContext'
 import { AwsContextTreeCollection } from './awsContextTreeCollection'
 import * as extensionConstants from './constants'
-import { getAccountId } from './credentials/accountId'
+import { getAccountIdHack } from './credentials/accountId'
 import { CredentialSelectionState } from './credentials/credentialSelectionState'
 import {
     credentialProfileSelector,
@@ -131,7 +131,7 @@ export class DefaultAWSContextCommands {
             }
 
             // TODO : Get a region relevant to the partition for these credentials -- https://github.com/aws/aws-toolkit-vscode/issues/188
-            const accountId = await getAccountId(new Credentials(state.accesskey, state.secretKey), 'us-east-1')
+            const accountId = await getAccountIdHack(new Credentials(state.accesskey, state.secretKey), 'us-east-1')
 
             if (accountId) {
                 await UserCredentialsUtils.generateCredentialDirectoryIfNonexistent()
