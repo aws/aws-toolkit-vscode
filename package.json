@@ -2,7 +2,7 @@
     "name": "aws-toolkit-vscode",
     "displayName": "AWS Toolkit",
     "description": "An extension for working with Amazon Web Services",
-    "version": "1.21.0-SNAPSHOT",
+    "version": "1.23.0-SNAPSHOT",
     "publisher": "amazonwebservices",
     "license": "Apache-2.0",
     "repository": {
@@ -157,6 +157,11 @@
                     "default": 10000,
                     "description": "%aws.cloudWatchLogs.limit.desc%",
                     "maximum": 10000
+                },
+                "aws.manuallySelectedBuckets": {
+                    "type": "object",
+                    "description": "%AWS.samcli.deploy.bucket.recentlyUsed%",
+                    "default": []
                 }
             }
         },
@@ -1122,7 +1127,10 @@
                 "command": "aws.ecr.createRepository",
                 "title": "%AWS.command.ecr.createRepository%",
                 "category": "AWS",
-                "icon": "$(add)"
+                "icon": {
+                    "light": "resources/light/plus.svg",
+                    "dark": "resources/dark/plus.svg"
+                }
             },
             {
                 "command": "aws.ecr.deleteRepository",
@@ -1504,8 +1512,7 @@
         "integrationTest": "npm run testCompile && ts-node ./test-scripts/integrationTest.ts",
         "lint": "eslint -c .eslintrc.js --ext .ts .",
         "lintfix": "eslint -c .eslintrc.js --fix --ext .ts .",
-        "package": "vsce package",
-        "packageDebug": "ts-node ./build-scripts/packageDebug.ts",
+        "package": "ts-node ./build-scripts/package.ts",
         "install-plugin": "vsce package -o aws-toolkit-vscode-test.vsix && code --install-extension aws-toolkit-vscode-test.vsix",
         "generateTelemetry": "node node_modules/@aws-toolkits/telemetry/lib/generateTelemetry.js --extraInput=src/shared/telemetry/vscodeTelemetry.json --output=src/shared/telemetry/telemetry.gen.ts",
         "generateConfigurationAttributes": "ts-node ./build-scripts/generateConfigurationAttributes.ts",
@@ -1541,6 +1548,7 @@
         "@typescript-eslint/parser": "^2.27.0",
         "circular-dependency-plugin": "^5.2.0",
         "decache": "^4.4.0",
+        "esbuild-loader": "2.10.0",
         "eslint": "^6.8.0",
         "eslint-config-prettier": "^6.10.1",
         "eslint-plugin-header": "^3.0.0",
@@ -1559,8 +1567,6 @@
         "remap-istanbul": "^0.12.0",
         "sinon": "^7.4.2",
         "source-map-support": "^0.5.19",
-        "terser-webpack-plugin": "^4.2.2",
-        "ts-loader": "^6.2.0",
         "ts-mockito": "^2.5.0",
         "ts-node": "^9.0.0",
         "tslint": "^6.1.3",

@@ -26,13 +26,13 @@ import { asyncGenerator } from '../../utilities/collectionUtils'
 
 import * as vscode from 'vscode'
 
-describe('Search Schemas', function() {
+describe('Search Schemas', function () {
     let sandbox: sinon.SinonSandbox
-    beforeEach(function() {
+    beforeEach(function () {
         sandbox = sinon.createSandbox()
     })
 
-    afterEach(function() {
+    afterEach(function () {
         sandbox.restore()
     })
 
@@ -67,8 +67,8 @@ describe('Search Schemas', function() {
         SchemaVersions: [versionSummary1],
     }
 
-    describe('getSearchListForSingleRegistry', function() {
-        it('should return summaries', async function() {
+    describe('getSearchListForSingleRegistry', function () {
+        it('should return summaries', async function () {
             const searchSummaryList = [searchSummary1, searchSummary2]
 
             sandbox
@@ -101,7 +101,7 @@ describe('Search Schemas', function() {
             assert.strictEqual(results[1].RegistryName, TEST_REGISTRY, 'summary should belong to requested registry')
         })
 
-        it('should display an error message when search api call fails', async function() {
+        it('should display an error message when search api call fails', async function () {
             const searchSummaryList = [searchSummary1, searchSummary2]
 
             const vscodeSpy = sandbox.spy(vscode.window, 'showErrorMessage')
@@ -121,8 +121,8 @@ describe('Search Schemas', function() {
         })
     })
 
-    describe('getSearchResults', function() {
-        it('should display error message for failed registries and return summaries for successful ones', async function() {
+    describe('getSearchResults', function () {
+        it('should display error message for failed registries and return summaries for successful ones', async function () {
             const vscodeSpy = sandbox.spy(vscode.window, 'showErrorMessage')
             const displayMessage = `Unable to search registry ${FAIL_REGISTRY}`
             const displayMessage2 = `Unable to search registry ${FAIL_REGISTRY2}`
@@ -131,10 +131,7 @@ describe('Search Schemas', function() {
             const searchSummaryList2 = [searchSummary3]
 
             const searchSchemaStub = sandbox.stub(schemaClient, 'searchSchemas')
-            searchSchemaStub
-                .withArgs('randomText', TEST_REGISTRY)
-                .returns(asyncGenerator(searchSummaryList1))
-                .onCall(0)
+            searchSchemaStub.withArgs('randomText', TEST_REGISTRY).returns(asyncGenerator(searchSummaryList1)).onCall(0)
             searchSchemaStub
                 .withArgs('randomText', TEST_REGISTRY2)
                 .returns(asyncGenerator(searchSummaryList2))
@@ -148,7 +145,7 @@ describe('Search Schemas', function() {
             assert.strictEqual(results.length, 3, 'should return 3 summaries')
 
             //results are unordered, sort for testing purposes
-            results.sort(function(a, b) {
+            results.sort(function (a, b) {
                 return a.RegistryName > b.RegistryName ? 1 : b.RegistryName > a.RegistryName ? -1 : 0
             })
             const expectedTitle1 = TEST_REGISTRY.concat('/', searchSummary1.SchemaName!)
@@ -174,9 +171,9 @@ describe('Search Schemas', function() {
         })
     })
 
-    describe('createMessageReceivedFunc', function() {
+    describe('createMessageReceivedFunc', function () {
         let postMessageSpy: sinon.SinonSpy<[any], Thenable<boolean>>
-        beforeEach(function() {
+        beforeEach(function () {
             postMessageSpy = sandbox.spy(onPostMessage)
         })
 
@@ -193,7 +190,7 @@ describe('Search Schemas', function() {
             Content: AWS_EVENT_SCHEMA_RAW,
         }
 
-        it('shows schema content for latest matching schema version by default', async function() {
+        it('shows schema content for latest matching schema version by default', async function () {
             const versionedSummary = {
                 RegistryName: TEST_REGISTRY,
                 Title: getPageHeader(singleRegistryName),
@@ -245,7 +242,7 @@ describe('Search Schemas', function() {
             )
         })
 
-        it('shows schema content for user selected version', async function() {
+        it('shows schema content for user selected version', async function () {
             const versionedSummary = {
                 RegistryName: TEST_REGISTRY,
                 Title: getPageHeader(multipleRegistryNames),
@@ -287,7 +284,7 @@ describe('Search Schemas', function() {
             )
         })
 
-        it('shows schema list when user makes a search', async function() {
+        it('shows schema list when user makes a search', async function () {
             const fakeMessage: CommandMessage = { command: 'searchSchemas', keyword: 'searchText' }
 
             const expectResults1 = {
@@ -331,7 +328,7 @@ describe('Search Schemas', function() {
             )
         })
 
-        it('throws an error for an invalid command message', async function() {
+        it('throws an error for an invalid command message', async function () {
             const fakeMessage: CommandMessage = { command: 'invalidCommand' }
             const errorMessage = `Search webview command ${fakeMessage.command} is invalid`
             const returnedFunc = createMessageReceivedFunc({
@@ -356,8 +353,8 @@ describe('Search Schemas', function() {
         }
     })
 
-    describe('getRegistryNameList', function() {
-        it('should return list with single registry name for registryItemNode', async function() {
+    describe('getRegistryNameList', function () {
+        it('should return list with single registry name for registryItemNode', async function () {
             const fakeRegistryNew = {
                 RegistryName: TEST_REGISTRY,
                 RegistryArn: 'arn:aws:schemas:us-west-2:19930409:registry/testRegistry',
@@ -369,7 +366,7 @@ describe('Search Schemas', function() {
             assert.deepStrictEqual(result, [TEST_REGISTRY], 'should have a single registry name in it')
         })
 
-        it('should return list with multiple registry names for schemasNode', async function() {
+        it('should return list with multiple registry names for schemasNode', async function () {
             const schemasNode = new SchemasNode(fakeRegion)
             const registrySummary1 = { RegistryArn: 'arn:aws:registry/' + TEST_REGISTRY, RegistryName: TEST_REGISTRY }
             const registrySummary2 = { RegistryArn: 'arn:aws:registry/' + TEST_REGISTRY2, RegistryName: TEST_REGISTRY2 }
@@ -380,7 +377,7 @@ describe('Search Schemas', function() {
             assert.deepStrictEqual(result, [TEST_REGISTRY, TEST_REGISTRY2], 'should have two registry names in it')
         })
 
-        it('should return an empty list and display error message if schemas service not available in the region', async function() {
+        it('should return an empty list and display error message if schemas service not available in the region', async function () {
             const vscodeSpy = sandbox.spy(vscode.window, 'showErrorMessage')
             const displayMessage = 'Error loading Schemas resources'
 

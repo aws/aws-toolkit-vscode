@@ -8,11 +8,11 @@ import * as treeInspector from '../../../cdk/explorer/tree/treeInspector'
 import { CfnResourceKeys, ConstructProps, ConstructTreeEntity } from '../../../cdk/explorer/tree/types'
 import * as treeUtils from '../utilities/treeTestUtils'
 
-describe('TreeInspector', function() {
+describe('TreeInspector', function () {
     const testLabel = 'my label'
     const treePath = 'my-project/cdk.out/tree.json'
 
-    it('returns label when construct is not named Resource', async function() {
+    it('returns label when construct is not named Resource', async function () {
         const construct = treeUtils.generateConstructTreeEntity(testLabel, treePath)
 
         const label = treeInspector.getDisplayLabel(construct)
@@ -20,7 +20,7 @@ describe('TreeInspector', function() {
         assert.strictEqual(label, construct.id, 'Unexpected label')
     })
 
-    it('includes type when construct is named Resource and type exists', async function() {
+    it('includes type when construct is named Resource and type exists', async function () {
         const id = 'Resource'
         const type = 'AWS::S3::Bucket'
         const attributes = { 'aws:cdk:cloudformation:type': type }
@@ -32,7 +32,7 @@ describe('TreeInspector', function() {
         assert.strictEqual(label, `${id} (${type})`)
     })
 
-    it('returns unchanged label when construct is named Resource and no type information exists', async function() {
+    it('returns unchanged label when construct is named Resource and no type information exists', async function () {
         const id = 'Resource'
 
         const construct: ConstructTreeEntity = { id, path: treePath }
@@ -42,7 +42,7 @@ describe('TreeInspector', function() {
         assert.strictEqual(label, id)
     })
 
-    it('returns default if no type information exists', async function() {
+    it('returns default if no type information exists', async function () {
         const construct = treeUtils.generateConstructTreeEntity(testLabel, treePath)
 
         const type = treeInspector.getTypeAttributeOrDefault(construct, '')
@@ -50,7 +50,7 @@ describe('TreeInspector', function() {
         assert.strictEqual(type, '')
     })
 
-    it('returns type when type information exists', async function() {
+    it('returns type when type information exists', async function () {
         const testType = 'AWS:SQS::Queue'
         const construct: ConstructTreeEntity = {
             id: testLabel,
@@ -63,7 +63,7 @@ describe('TreeInspector', function() {
         assert.strictEqual(type, testType)
     })
 
-    it('includes construct in tree', async function() {
+    it('includes construct in tree', async function () {
         const construct = treeUtils.generateConstructTreeEntity(testLabel, treePath)
 
         const includeConstruct = treeInspector.includeConstructInTree(construct)
@@ -71,7 +71,7 @@ describe('TreeInspector', function() {
         assert.strictEqual(includeConstruct, true, 'expected construct to be included in the tree')
     })
 
-    it('excludes the `Tree` construct that the CDK adds by default', async function() {
+    it('excludes the `Tree` construct that the CDK adds by default', async function () {
         const construct: ConstructTreeEntity = { id: 'Tree', path: 'Tree' }
 
         const includeConstruct = treeInspector.includeConstructInTree(construct)
@@ -79,7 +79,7 @@ describe('TreeInspector', function() {
         assert.strictEqual(includeConstruct, false, 'Tree construct should be excluded from the tree')
     })
 
-    it('returns properties when a construct has attributes', async function() {
+    it('returns properties when a construct has attributes', async function () {
         const attributes = treeUtils.generateAttributes()
         const expectedProps: ConstructProps = attributes[CfnResourceKeys.PROPS]
         const construct: ConstructTreeEntity = {
@@ -93,7 +93,7 @@ describe('TreeInspector', function() {
         assert.deepStrictEqual(props, expectedProps)
     })
 
-    it('returns undefined when construct does not have attributes', async function() {
+    it('returns undefined when construct does not have attributes', async function () {
         const construct: ConstructTreeEntity = {
             id: 'no',
             path: 'attributes',
@@ -104,7 +104,7 @@ describe('TreeInspector', function() {
         assert.strictEqual(props, undefined)
     })
 
-    it('returns undefined when construct does not have CloudFormation properties', async function() {
+    it('returns undefined when construct does not have CloudFormation properties', async function () {
         const construct: ConstructTreeEntity = {
             id: 'no-cloudformation',
             path: 'attributes',

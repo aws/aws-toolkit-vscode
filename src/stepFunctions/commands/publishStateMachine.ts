@@ -8,6 +8,7 @@ import * as nls from 'vscode-nls'
 const localize = nls.loadMessageBundle()
 import { AwsContext } from '../../shared/awsContext'
 import { StepFunctionsClient } from '../../shared/clients/stepFunctionsClient'
+import { showErrorWithLogs } from '../../shared/utilities/messages'
 import { ext } from '../../shared/extensionGlobals'
 import { getLogger, Logger } from '../../shared/logger'
 import {
@@ -107,15 +108,15 @@ async function createStateMachine(
         logger.info(`Created '${result.stateMachineArn}' successfully`)
         outputChannel.appendLine('')
     } catch (err) {
-        outputChannel.appendLine(
-            localize(
-                'AWS.message.error.stepFunctions.publishStateMachine.createFailure',
-                "There was an error creating state machine '{0}', check logs for more information.",
-                wizardResponse.name
-            )
+        const msg = localize(
+            'AWS.message.error.stepFunctions.publishStateMachine.createFailure',
+            'Failed to create state machine: {0}',
+            wizardResponse.name
         )
-        logger.error(`Failed to create state machine '${wizardResponse.name}'. %O`, err as Error)
+        showErrorWithLogs(msg)
+        outputChannel.appendLine(msg)
         outputChannel.appendLine('')
+        logger.error(`Failed to create state machine '${wizardResponse.name}': %O`, err as Error)
     }
 }
 
@@ -152,14 +153,14 @@ async function updateStateMachine(
         logger.info(`Updated ${wizardResponse.stateMachineArn} successfully`)
         outputChannel.appendLine('')
     } catch (err) {
-        outputChannel.appendLine(
-            localize(
-                'AWS.message.error.stepFunctions.publishStateMachine.updateFailure',
-                "There was an error updating state machine '{0}', check logs for more information.",
-                wizardResponse.stateMachineArn
-            )
+        const msg = localize(
+            'AWS.message.error.stepFunctions.publishStateMachine.updateFailure',
+            'Failed to update state machine: {0}',
+            wizardResponse.stateMachineArn
         )
-        logger.error(`Failed to update '${wizardResponse.stateMachineArn}'. %O`, err as Error)
+        showErrorWithLogs(msg)
+        outputChannel.appendLine(msg)
         outputChannel.appendLine('')
+        logger.error(`Failed to update state machine '${wizardResponse.stateMachineArn}': %O`, err as Error)
     }
 }

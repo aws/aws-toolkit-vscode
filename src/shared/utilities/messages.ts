@@ -8,6 +8,7 @@ import { getIdeProperties } from '../extensionUtilities'
 import { getLogger, showLogOutputChannel } from '../../shared/logger'
 import { localize } from '../../shared/utilities/vsCodeUtils'
 import { Window } from '../../shared/vscode/window'
+import { ext } from '../extensionGlobals'
 
 const commandName = localize('AWS.command.viewLogs', 'View AWS Toolkit Logs')
 
@@ -38,7 +39,7 @@ export function makeFailedWriteMessage(filename: string): string {
  *
  * @returns	A promise that resolves when the button is clicked or the error is dismissed.
  */
-export async function showErrorWithLogs(message: string, window: Window): Promise<void> {
+export async function showErrorWithLogs(message: string, window: Window = ext.window): Promise<void> {
     const logsItem = localize('AWS.generic.message.viewLogs', 'View Logs...')
 
     return window

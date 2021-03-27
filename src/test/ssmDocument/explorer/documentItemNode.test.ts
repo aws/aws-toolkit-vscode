@@ -9,7 +9,7 @@ import * as sinon from 'sinon'
 import { DocumentItemNode } from '../../../ssmDocument/explorer/documentItemNode'
 import { MockSsmDocumentClient } from '../../shared/clients/mockClients'
 
-describe('DocumentItemNode', async function() {
+describe('DocumentItemNode', async function () {
     let sandbox: sinon.SinonSandbox
     let testNode: DocumentItemNode
     const testDoc: SSM.DocumentIdentifier = {
@@ -18,23 +18,23 @@ describe('DocumentItemNode', async function() {
     }
     const fakeRegion = 'us-east-1'
 
-    beforeEach(function() {
+    beforeEach(function () {
         sandbox = sinon.createSandbox()
         testNode = new DocumentItemNode(testDoc, new MockSsmDocumentClient(), fakeRegion)
     })
 
-    afterEach(function() {
+    afterEach(function () {
         sandbox.restore()
     })
 
-    it('initializes name, owner, context value', async function() {
+    it('initializes name, owner, context value', async function () {
         assert.strictEqual(testNode.label, testDoc.Name)
         assert.strictEqual(testNode.documentName, testDoc.Name)
         assert.strictEqual(testNode.documentOwner, testDoc.Owner)
         assert.strictEqual(testNode.contextValue, 'awsDocumentItemNode')
     })
 
-    it('has no children', async function() {
+    it('has no children', async function () {
         const childNode = await testNode.getChildren()
         assert(childNode !== undefined)
         assert.strictEqual(childNode.length, 0)

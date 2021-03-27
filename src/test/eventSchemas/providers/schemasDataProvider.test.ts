@@ -13,12 +13,12 @@ import {
 import { MockSchemaClient } from '../../shared/clients/mockClients'
 import { asyncGenerator } from '../../utilities/collectionUtils'
 
-describe('schemasDataProvider', function() {
+describe('schemasDataProvider', function () {
     let sandbox: sinon.SinonSandbox
     let dataProviderObject: SchemasDataProvider
     let cacheData: Cache
 
-    beforeEach(async function() {
+    beforeEach(async function () {
         sandbox = sinon.createSandbox()
         const regionDataWithCredentials: credentialsRegionDataListMap = {
             credentials: testCredentials,
@@ -36,7 +36,7 @@ describe('schemasDataProvider', function() {
         clientStubSchema.onCall(1).returns(asyncGenerator([schemaSummary]))
     })
 
-    afterEach(function() {
+    afterEach(function () {
         sandbox.restore()
     })
 
@@ -54,15 +54,15 @@ describe('schemasDataProvider', function() {
     const testCredentials = ({} as any) as AWS.Credentials
     const testCredentials2 = ({} as any) as AWS.Credentials
 
-    describe('getRegistries', function() {
-        it('should return registries for given region', async function() {
+    describe('getRegistries', function () {
+        it('should return registries for given region', async function () {
             const registryNames = await dataProviderObject.getRegistries(TEST_REGION, schemaClient, testCredentials)
             assert.ok(registryNames!.length === 2, 'unexpected number of registries returned')
             assert.strictEqual(registryNames![0], TEST_REGISTRY, 'TEST_REGISTRY name should match')
             assert.strictEqual(registryNames![1], TEST_REGISTRY2, 'TEST_REGISTRY2 name should match')
         })
 
-        it('should retain results when it is queried with same credentials ', async function() {
+        it('should retain results when it is queried with same credentials ', async function () {
             await dataProviderObject.getRegistries(TEST_REGION, schemaClient, testCredentials)
             await dataProviderObject.getRegistries(TEST_REGION2, schemaClient, testCredentials)
 
@@ -102,7 +102,7 @@ describe('schemasDataProvider', function() {
             )
         })
 
-        it('should retain results when it is queried with different credentials ', async function() {
+        it('should retain results when it is queried with different credentials ', async function () {
             await dataProviderObject.getRegistries(TEST_REGION, schemaClient, testCredentials)
             await dataProviderObject.getRegistries(TEST_REGION, schemaClient, testCredentials2)
 
@@ -128,7 +128,7 @@ describe('schemasDataProvider', function() {
             )
         })
 
-        it('should return undefined when error occurs', async function() {
+        it('should return undefined when error occurs', async function () {
             sandbox.restore()
             sandbox.stub(schemaClient, 'listRegistries').throws(new Error('Custom error'))
             const result = await dataProviderObject.getRegistries(TEST_REGION, schemaClient, testCredentials)
@@ -141,8 +141,8 @@ describe('schemasDataProvider', function() {
         })
     })
 
-    describe('getSchemas', function() {
-        it('should return schemas for given region', async function() {
+    describe('getSchemas', function () {
+        it('should return schemas for given region', async function () {
             const schemas = await dataProviderObject.getSchemas(
                 TEST_REGION,
                 TEST_REGISTRY,
@@ -155,7 +155,7 @@ describe('schemasDataProvider', function() {
             assert.strictEqual(schemas![1], schemaSummary2, 'schemaSummary2 should match')
         })
 
-        it('should retain results when it is queried with same credentials ', async function() {
+        it('should retain results when it is queried with same credentials ', async function () {
             await dataProviderObject.getSchemas(TEST_REGION, TEST_REGISTRY, schemaClient, testCredentials)
             await dataProviderObject.getSchemas(TEST_REGION, TEST_REGISTRY2, schemaClient, testCredentials)
 
@@ -192,7 +192,7 @@ describe('schemasDataProvider', function() {
             )
         })
 
-        it('should retain results when it is queried with different credentials ', async function() {
+        it('should retain results when it is queried with different credentials ', async function () {
             await dataProviderObject.getSchemas(TEST_REGION, TEST_REGISTRY, schemaClient, testCredentials)
             await dataProviderObject.getSchemas(TEST_REGION, TEST_REGISTRY, schemaClient, testCredentials2)
 
@@ -218,7 +218,7 @@ describe('schemasDataProvider', function() {
             )
         })
 
-        it('should return undefined when error occurs ', async function() {
+        it('should return undefined when error occurs ', async function () {
             sandbox.restore()
             sandbox.stub(schemaClient, 'listSchemas').throws(new Error('Custom error'))
             const result = await dataProviderObject.getSchemas(

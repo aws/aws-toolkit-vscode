@@ -75,7 +75,9 @@ export async function activate(ctx: ExtContext): Promise<void> {
         })
     )
 
-    await resumeCreateNewSamApp(ctx)
+    if (ext.didReload()) {
+        await resumeCreateNewSamApp(ctx)
+    }
 }
 
 async function registerServerlessCommands(ctx: ExtContext): Promise<void> {
@@ -105,7 +107,10 @@ async function registerServerlessCommands(ctx: ExtContext): Promise<void> {
                 {
                     samDeployWizard: samDeployWizard,
                 },
-                { awsContext: ctx.awsContext }
+                {
+                    awsContext: ctx.awsContext,
+                    settings: ctx.settings,
+                }
             )
         })
     )

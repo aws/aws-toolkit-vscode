@@ -5,11 +5,14 @@
 
 import { TelemetryPublisher } from '../../shared/telemetry/telemetryPublisher'
 import { TelemetryFeedback } from '../../shared/telemetry/telemetryFeedback'
+import { MetricDatum } from '../../shared/telemetry/clienttelemetry'
 
 export class FakeTelemetryPublisher implements TelemetryPublisher {
+    private readonly _eventQueue: MetricDatum[] = []
+    /** How many times flush() was called. */
     public flushCount = 0
+    /** How many times enqueue() was called. */
     public enqueueCount = 0
-    public enqueuedItems = 0
 
     public feedback?: TelemetryFeedback
 
@@ -21,7 +24,11 @@ export class FakeTelemetryPublisher implements TelemetryPublisher {
 
     public enqueue(...events: any[]) {
         this.enqueueCount++
-        this.enqueuedItems += events.length
+        this._eventQueue.push(...events)
+    }
+
+    public get queue(): MetricDatum[] {
+        return this._eventQueue
     }
 
     public async flush() {
