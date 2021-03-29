@@ -1,0 +1,4 @@
+{
+  "type" : "feature",
+  "description" : "Add support for creating/debugging Golang Lambdas (#649)"
+}
