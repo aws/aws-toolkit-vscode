@@ -10,19 +10,20 @@ const toolkitLoggers: {
 } = { main: undefined, channel: undefined, debugConsole: undefined }
 
 export interface Logger {
-    debug(message: string, ...meta: any[]): void
-    debug(error: Error): void
-    verbose(message: string, ...meta: any[]): void
-    verbose(error: Error): void
-    info(message: string, ...meta: any[]): void
-    info(error: Error): void
-    warn(message: string, ...meta: any[]): void
-    warn(error: Error): void
-    error(message: string, ...meta: any[]): void
-    error(error: Error): void
+    debug(message: string, ...meta: any[]): number
+    debug(error: Error, ...meta: any[]): number
+    verbose(message: string, ...meta: any[]): number
+    verbose(error: Error, ...meta: any[]): number
+    info(message: string, ...meta: any[]): number
+    info(error: Error, ...meta: any[]): number
+    warn(message: string, ...meta: any[]): number
+    warn(error: Error, ...meta: any[]): number
+    error(message: string, ...meta: any[]): number
+    error(error: Error, ...meta: any[]): number
     setLogLevel(logLevel: LogLevel): void
     /** Returns true if the given log level is being logged.  */
     logLevelEnabled(logLevel: LogLevel): boolean
+    getLogById(logID: number, file: string): string | undefined
 }
 
 /**

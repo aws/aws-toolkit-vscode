@@ -14,27 +14,27 @@ export class TestLogger implements Logger {
         logLevel: LogLevel
         entry: Loggable
     }[] = []
-
+    private count: number = 0
     public constructor(private logLevel: LogLevel = 'debug') {}
 
-    public debug(...message: Loggable[]): void {
-        this.addLoggedEntries('debug', message)
+    public debug(...message: Loggable[]): number {
+        return this.addLoggedEntries('debug', message)
     }
 
-    public verbose(...message: Loggable[]): void {
-        this.addLoggedEntries('verbose', message)
+    public verbose(...message: Loggable[]): number {
+        return this.addLoggedEntries('verbose', message)
     }
 
-    public info(...message: Loggable[]): void {
-        this.addLoggedEntries('info', message)
+    public info(...message: Loggable[]): number {
+        return this.addLoggedEntries('info', message)
     }
 
-    public warn(...message: Loggable[]): void {
-        this.addLoggedEntries('warn', message)
+    public warn(...message: Loggable[]): number {
+        return this.addLoggedEntries('warn', message)
     }
 
-    public error(...message: Loggable[]): void {
-        this.addLoggedEntries('error', message)
+    public error(...message: Loggable[]): number {
+        return this.addLoggedEntries('error', message)
     }
 
     public getLoggedEntries(...logLevels: LogLevel[]): Loggable[] {
@@ -43,13 +43,20 @@ export class TestLogger implements Logger {
             .map(loggedEntry => loggedEntry.entry)
     }
 
-    private addLoggedEntries(logLevel: LogLevel, entries: Loggable[]) {
+    private addLoggedEntries(logLevel: LogLevel, entries: Loggable[]): number {
         entries.forEach(entry => {
             this.loggedEntries.push({
                 logLevel,
                 entry,
             })
         })
+
+        return this.count++
+    }
+
+    // No need to actually implement this. Log tracking is tested in winstonToolkitLogger.test.ts
+    public getLogById(logID: number, file: string): string | undefined {
+        return undefined
     }
 
     public setLogLevel(logLevel: LogLevel) {

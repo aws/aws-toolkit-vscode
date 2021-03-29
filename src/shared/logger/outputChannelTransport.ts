@@ -42,6 +42,8 @@ export class OutputChannelTransport extends Transport {
             } else {
                 this.outputChannel.appendLine(msg)
             }
+
+            this.emit('logged', info)
         })
 
         next()
