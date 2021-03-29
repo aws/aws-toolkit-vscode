@@ -9,7 +9,7 @@ import { LogStreamDocumentProvider } from '../../../cloudWatchLogs/document/logS
 import { LogStreamRegistry, CloudWatchLogStreamData } from '../../../cloudWatchLogs/registry/logStreamRegistry'
 import { TestSettingsConfiguration } from '../../utilities/testSettingsConfiguration'
 
-describe('LogStreamDocumentProvider', function() {
+describe('LogStreamDocumentProvider', function () {
     let registry: LogStreamRegistry
     let map: Map<string, CloudWatchLogStreamData>
     let provider: LogStreamDocumentProvider
@@ -29,14 +29,14 @@ describe('LogStreamDocumentProvider', function() {
         busy: false,
     }
 
-    beforeEach(function() {
+    beforeEach(function () {
         map = new Map<string, CloudWatchLogStreamData>()
         map.set(registeredUri.path, stream)
         registry = new LogStreamRegistry(config, map)
         provider = new LogStreamDocumentProvider(registry)
     })
 
-    it('provides content if it exists and a blank string if it does not', function() {
+    it('provides content if it exists and a blank string if it does not', function () {
         assert.strictEqual(
             provider.provideTextDocumentContent(registeredUri),
             `                             \t${message}\n`

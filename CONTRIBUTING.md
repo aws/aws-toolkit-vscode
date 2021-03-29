@@ -47,7 +47,7 @@ Alternatively, these NPM tasks are defined:
     ```
 -   To build a "debug" VSIX artifact (faster, does not minify the webpack result):
     ```
-    npm run packageDebug
+    npm run package -- --debug
     ```
 
 #### If you run out of memory while building

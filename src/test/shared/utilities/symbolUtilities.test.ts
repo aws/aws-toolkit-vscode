@@ -18,9 +18,9 @@ function makeSymbol(name: string): vscode.DocumentSymbol {
     )
 }
 
-describe('symbolUtilities', async function() {
-    describe('loadSymbols', async function() {
-        it('returns symbols if available', async function() {
+describe('symbolUtilities', async function () {
+    describe('loadSymbols', async function () {
+        it('returns symbols if available', async function () {
             const context: LoadSymbolsContext = {
                 async executeCommand<T>(command: string, ...args: any[]): Promise<T | undefined> {
                     return ([makeSymbol('MyName')] as unknown) as T
@@ -38,7 +38,7 @@ describe('symbolUtilities', async function() {
             assert.strictEqual(actual![0].name, 'MyName')
         })
 
-        it('does not retry if maxRetries is 0', async function() {
+        it('does not retry if maxRetries is 0', async function () {
             const executeCommandArgs: { command: string; uri: vscode.Uri }[] = []
             const context: LoadSymbolsContext = {
                 async executeCommand<T>(command: string, ...args: any[]): Promise<T | undefined> {
@@ -61,7 +61,7 @@ describe('symbolUtilities', async function() {
             assert.strictEqual(executeCommandArgs[0].uri.fsPath, path.sep)
         })
 
-        it('retries if maxRetries is non-zero', async function() {
+        it('retries if maxRetries is non-zero', async function () {
             const executeReturnValues = [undefined, undefined, [makeSymbol('MyName')]].reverse()
             const executeCommandArgs: { command: string; uri: vscode.Uri }[] = []
             const context: LoadSymbolsContext = {
@@ -89,7 +89,7 @@ describe('symbolUtilities', async function() {
             }
         })
 
-        it('returns undefined if all retries fail', async function() {
+        it('returns undefined if all retries fail', async function () {
             const executeCommandArgs: { command: string; uri: vscode.Uri }[] = []
             const context: LoadSymbolsContext = {
                 async executeCommand<T>(command: string, ...args: any[]): Promise<T | undefined> {
@@ -115,8 +115,8 @@ describe('symbolUtilities', async function() {
         })
     })
 
-    describe('getChildrenRange', async function() {
-        it('returns the range for the child if exactly one child is found', async function() {
+    describe('getChildrenRange', async function () {
+        it('returns the range for the child if exactly one child is found', async function () {
             const symbol = new vscode.DocumentSymbol(
                 'MyParent',
                 'MyParentDetail',
@@ -143,7 +143,7 @@ describe('symbolUtilities', async function() {
             assert.strictEqual(actualRange.end.character, 10)
         })
 
-        it('returns the range for all children if multiple children are found', async function() {
+        it('returns the range for all children if multiple children are found', async function () {
             const symbol = new vscode.DocumentSymbol(
                 'MyParent',
                 'MyParentDetail',
@@ -180,7 +180,7 @@ describe('symbolUtilities', async function() {
             assert.strictEqual(actualRange.end.character, 10)
         })
 
-        it('returns the range for the entire symbol if no children are found', async function() {
+        it('returns the range for the entire symbol if no children are found', async function () {
             const symbol = new vscode.DocumentSymbol(
                 'MyParent',
                 'MyParentDetail',

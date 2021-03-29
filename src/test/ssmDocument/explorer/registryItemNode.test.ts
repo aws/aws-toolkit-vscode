@@ -12,22 +12,22 @@ import { ToolkitClientBuilder } from '../../../shared/clients/toolkitClientBuild
 import { assertNodeListOnlyContainsErrorNode } from '../../utilities/explorerNodeAssertions'
 import { asyncGenerator } from '../../utilities/collectionUtils'
 
-describe('RegistryItemNode', function() {
+describe('RegistryItemNode', function () {
     let sandbox: sinon.SinonSandbox
 
     const fakeRegion = 'testRegion'
     const documentType = 'Automation'
     const registryNames = ['Owned by me', 'Owned by Amazon', 'Shared with me']
 
-    beforeEach(function() {
+    beforeEach(function () {
         sandbox = sinon.createSandbox()
     })
 
-    afterEach(function() {
+    afterEach(function () {
         sandbox.restore()
     })
 
-    it('handles error', async function() {
+    it('handles error', async function () {
         const testNode: RegistryItemNode = new RegistryItemNode(fakeRegion, 'Owned by me', documentType)
         sandbox.stub(testNode, 'updateChildren').callsFake(() => {
             throw new Error('Update child error')
@@ -37,7 +37,7 @@ describe('RegistryItemNode', function() {
         assertNodeListOnlyContainsErrorNode(childNodes)
     })
 
-    it('puts documents into right registry', async function() {
+    it('puts documents into right registry', async function () {
         registryNames.forEach(async registry => {
             const testNode: RegistryItemNode = new RegistryItemNode(fakeRegion, registry, documentType)
             let owner: string

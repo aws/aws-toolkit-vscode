@@ -1,3 +1,8 @@
+## 1.22.0 2021-03-19
+
+- **Bug Fix** fix unwanted "invalid SAM CLI" error on startup
+- **Feature** StepFunctions: show "View Logs" button on failure
+
 ## 1.21.0 2021-03-17
 
 - **Breaking Change** SAM debug: remove nodejs8.10 support

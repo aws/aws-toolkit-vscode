@@ -8,7 +8,7 @@ import * as fs from 'fs-extra'
 import * as path from 'path'
 import * as vscode from 'vscode'
 import { deploySamApplication, WindowFunctions } from '../../../lambda/commands/deploySamApplication'
-import { SamDeployWizardResponse } from '../../../lambda/wizards/samDeployWizard'
+import { CHOSEN_BUCKET_KEY, SamDeployWizardResponse } from '../../../lambda/wizards/samDeployWizard'
 import { AwsContext } from '../../../shared/awsContext'
 import { ext } from '../../../shared/extensionGlobals'
 import { makeTemporaryToolkitFolder } from '../../../shared/filesystemUtilities'
@@ -20,11 +20,13 @@ import {
     SamCliVersionValidation,
     SamCliVersionValidatorResult,
 } from '../../../shared/sam/cli/samCliValidator'
+import { SettingsConfiguration } from '../../../shared/settingsConfiguration'
 import { ChildProcessResult } from '../../../shared/utilities/childProcess'
 import { assertLogsContain, getTestLogger } from '../../globalSetup.test'
 import { FakeChildProcessResult, TestSamCliProcessInvoker } from '../../shared/sam/cli/testSamCliProcessInvoker'
+import { TestSettingsConfiguration } from '../../utilities/testSettingsConfiguration'
 
-describe('deploySamApplication', async function() {
+describe('deploySamApplication', async function () {
     // Bad Validator
 
     const badValidatorResult: SamCliValidatorResult = {
@@ -109,19 +111,26 @@ describe('deploySamApplication', async function() {
     // Other support stubs
     const placeholderCredentials = ({} as any) as AWS.Credentials
     let testCredentials: AWS.Credentials | undefined
-    const awsContext: Pick<AwsContext, 'getCredentials'> = {
+    let profile: string = ''
+    const awsContext: Pick<AwsContext, 'getCredentials' | 'getCredentialProfileName'> = {
         getCredentials: async () => testCredentials,
+        getCredentialProfileName: () => profile,
     }
+    let settings: SettingsConfiguration
 
     let samDeployWizardResponse: SamDeployWizardResponse | undefined
     const samDeployWizard = async (): Promise<SamDeployWizardResponse | undefined> => {
         return samDeployWizardResponse
     }
 
+    let templatePath: string
+
     let tempToolkitFolder: string
-    beforeEach(async function() {
+    beforeEach(async function () {
+        settings = new TestSettingsConfiguration()
+        profile = 'testAcct'
         tempToolkitFolder = await makeTemporaryToolkitFolder()
-        const templatePath = path.join(tempToolkitFolder, 'template.yaml')
+        templatePath = path.join(tempToolkitFolder, 'template.yaml')
         writeFile(templatePath)
 
         // TODO: is this safe? will add output channel across all tests
@@ -141,11 +150,11 @@ describe('deploySamApplication', async function() {
         runningDeployProcess = undefined
     })
 
-    afterEach(async function() {
+    afterEach(async function () {
         await fs.remove(tempToolkitFolder)
     })
 
-    it('deploys with the happy path', async function() {
+    it('deploys with the happy path', async function () {
         await deploySamApplication(
             {
                 samCliContext: goodSamCliContext(),
@@ -153,15 +162,199 @@ describe('deploySamApplication', async function() {
             },
             {
                 awsContext,
+                settings,
                 window,
             }
         )
 
         await waitForDeployToComplete()
         assert.strictEqual(invokerCalledCount, 3, 'Unexpected sam cli invoke count')
+        assert.deepStrictEqual(
+            settings.readSetting(CHOSEN_BUCKET_KEY, ''),
+            JSON.stringify({ [profile]: { region: 'bucket' } })
+        )
     })
 
-    it('informs user of error when user is not logged in', async function() {
+    it('overwrites recently selected bucket', async () => {
+        settings.writeSetting(
+            CHOSEN_BUCKET_KEY,
+            JSON.stringify({ [profile]: { region: 'oldBucket' } }),
+            vscode.ConfigurationTarget.Global
+        )
+        await deploySamApplication(
+            {
+                samCliContext: goodSamCliContext(),
+                samDeployWizard,
+            },
+            {
+                awsContext,
+                settings,
+                window,
+            }
+        )
+
+        await waitForDeployToComplete()
+        assert.strictEqual(invokerCalledCount, 3, 'Unexpected sam cli invoke count')
+        assert.deepStrictEqual(
+            settings.readSetting(CHOSEN_BUCKET_KEY, ''),
+            JSON.stringify({ [profile]: { region: 'bucket' } })
+        )
+    })
+
+    it('saves one bucket max to multiple regions', async () => {
+        samDeployWizardResponse = {
+            parameterOverrides: new Map<string, string>(),
+            region: 'region0',
+            s3Bucket: 'bucket0',
+            stackName: 'stack',
+            template: vscode.Uri.file(templatePath),
+        }
+
+        await deploySamApplication(
+            {
+                samCliContext: goodSamCliContext(),
+                samDeployWizard,
+            },
+            {
+                awsContext,
+                settings,
+                window,
+            }
+        )
+
+        await waitForDeployToComplete()
+        samDeployWizardResponse = {
+            parameterOverrides: new Map<string, string>(),
+            region: 'region1',
+            s3Bucket: 'bucket1',
+            stackName: 'stack',
+            template: vscode.Uri.file(templatePath),
+        }
+        await deploySamApplication(
+            {
+                samCliContext: goodSamCliContext(),
+                samDeployWizard,
+            },
+            {
+                awsContext,
+                settings,
+                window,
+            }
+        )
+
+        await waitForDeployToComplete()
+        samDeployWizardResponse = {
+            parameterOverrides: new Map<string, string>(),
+            region: 'region2',
+            s3Bucket: 'bucket2',
+            stackName: 'stack',
+            template: vscode.Uri.file(templatePath),
+        }
+        await deploySamApplication(
+            {
+                samCliContext: goodSamCliContext(),
+                samDeployWizard,
+            },
+            {
+                awsContext,
+                settings,
+                window,
+            }
+        )
+
+        await waitForDeployToComplete()
+        samDeployWizardResponse = {
+            parameterOverrides: new Map<string, string>(),
+            region: 'region0',
+            s3Bucket: 'bucket3',
+            stackName: 'stack',
+            template: vscode.Uri.file(templatePath),
+        }
+        await deploySamApplication(
+            {
+                samCliContext: goodSamCliContext(),
+                samDeployWizard,
+            },
+            {
+                awsContext,
+                settings,
+                window,
+            }
+        )
+
+        await waitForDeployToComplete()
+        assert.strictEqual(invokerCalledCount, 12, 'Unexpected sam cli invoke count')
+        assert.deepStrictEqual(
+            settings.readSetting(CHOSEN_BUCKET_KEY, ''),
+            JSON.stringify({
+                [profile]: {
+                    region0: 'bucket3',
+                    region1: 'bucket1',
+                    region2: 'bucket2',
+                },
+            })
+        )
+    })
+
+    it('saves one bucket per region per profile', async () => {
+        profile = 'testAcct0'
+        samDeployWizardResponse = {
+            parameterOverrides: new Map<string, string>(),
+            region: 'region0',
+            s3Bucket: 'bucket0',
+            stackName: 'stack',
+            template: vscode.Uri.file(templatePath),
+        }
+
+        await deploySamApplication(
+            {
+                samCliContext: goodSamCliContext(),
+                samDeployWizard,
+            },
+            {
+                awsContext,
+                settings,
+                window,
+            }
+        )
+
+        await waitForDeployToComplete()
+        profile = 'testAcct1'
+        samDeployWizardResponse = {
+            parameterOverrides: new Map<string, string>(),
+            region: 'region0',
+            s3Bucket: 'bucket1',
+            stackName: 'stack',
+            template: vscode.Uri.file(templatePath),
+        }
+        await deploySamApplication(
+            {
+                samCliContext: goodSamCliContext(),
+                samDeployWizard,
+            },
+            {
+                awsContext,
+                settings,
+                window,
+            }
+        )
+
+        await waitForDeployToComplete()
+        assert.strictEqual(invokerCalledCount, 6, 'Unexpected sam cli invoke count')
+        assert.deepStrictEqual(
+            settings.readSetting(CHOSEN_BUCKET_KEY, ''),
+            JSON.stringify({
+                testAcct0: {
+                    region0: 'bucket0',
+                },
+                testAcct1: {
+                    region0: 'bucket1',
+                },
+            })
+        )
+    })
+
+    it('informs user of error when user is not logged in', async function () {
         testCredentials = undefined
 
         await deploySamApplication(
@@ -171,6 +364,7 @@ describe('deploySamApplication', async function() {
             },
             {
                 awsContext,
+                settings,
                 window,
             }
         )
@@ -178,7 +372,7 @@ describe('deploySamApplication', async function() {
         assertGeneralErrorLogged()
     })
 
-    it('informs user of error when sam cli is invalid', async function() {
+    it('informs user of error when sam cli is invalid', async function () {
         await deploySamApplication(
             {
                 samCliContext: invalidSamCliContext,
@@ -186,6 +380,7 @@ describe('deploySamApplication', async function() {
             },
             {
                 awsContext,
+                settings,
                 window,
             }
         )
@@ -193,7 +388,7 @@ describe('deploySamApplication', async function() {
         assertGeneralErrorLogged()
     })
 
-    it('exits if the wizard is cancelled', async function() {
+    it('exits if the wizard is cancelled', async function () {
         samDeployWizardResponse = undefined
 
         await deploySamApplication(
@@ -203,6 +398,7 @@ describe('deploySamApplication', async function() {
             },
             {
                 awsContext,
+                settings,
                 window,
             }
         )
@@ -210,7 +406,7 @@ describe('deploySamApplication', async function() {
         assert.strictEqual(invokerCalledCount, 0, 'Did not expect sam cli to get invoked')
     })
 
-    it('continues deploying with initial template if invoking sam build fails', async function() {
+    it('continues deploying with initial template if invoking sam build fails', async function () {
         goodSamCliProcessInvoker = new TestSamCliProcessInvoker(
             (spawnOptions, args: any[]): ChildProcessResult => {
                 invokerCalledCount++
@@ -231,6 +427,7 @@ describe('deploySamApplication', async function() {
             },
             {
                 awsContext,
+                settings,
                 window,
             }
         )
@@ -240,7 +437,7 @@ describe('deploySamApplication', async function() {
         assertErrorLogsSwallowed('broken build', false)
     })
 
-    it('informs user of error if invoking sam package fails', async function() {
+    it('informs user of error if invoking sam package fails', async function () {
         goodSamCliProcessInvoker = new TestSamCliProcessInvoker(
             (spawnOptions, args: any[]): ChildProcessResult => {
                 invokerCalledCount++
@@ -261,17 +458,17 @@ describe('deploySamApplication', async function() {
             },
             {
                 awsContext,
+                settings,
                 window,
             }
         )
 
-        await waitForDeployToComplete()
         assert.strictEqual(invokerCalledCount, 2, 'Unexpected sam cli invoke count')
         assertLogsContain('broken package', false, 'error')
         assertGeneralErrorLogged()
     })
 
-    it('informs user of error if invoking sam deploy fails', async function() {
+    it('informs user of error if invoking sam deploy fails', async function () {
         goodSamCliProcessInvoker = new TestSamCliProcessInvoker(
             (spawnOptions, args: any[]): ChildProcessResult => {
                 invokerCalledCount++
@@ -292,14 +489,15 @@ describe('deploySamApplication', async function() {
             },
             {
                 awsContext,
+                settings,
                 window,
             }
         )
 
-        await waitForDeployToComplete()
         assert.strictEqual(invokerCalledCount, 3, 'Unexpected sam cli invoke count')
         assertLogsContain('broken deploy', false, 'error')
         assertGeneralErrorLogged()
+        assert.strictEqual(settings.readSetting(CHOSEN_BUCKET_KEY), undefined)
     })
 
     async function waitForDeployToComplete(): Promise<void> {

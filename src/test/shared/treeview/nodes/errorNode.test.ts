@@ -7,13 +7,13 @@ import * as assert from 'assert'
 import { ErrorNode } from '../../../../shared/treeview/nodes/errorNode'
 import { TestAWSTreeNode } from './testAWSTreeNode'
 
-describe('ErrorNode', function() {
+describe('ErrorNode', function () {
     const parentNode = new TestAWSTreeNode('test parent node')
     const error = new Error('error message')
     error.name = 'myMockError'
 
     // Validates we tagged the node correctly
-    it('initializes label and tooltip', async function() {
+    it('initializes label and tooltip', async function () {
         const testNode = new ErrorNode(parentNode, error, 'Error loading resources')
 
         assert.strictEqual(testNode.label, 'Error loading resources')
@@ -21,7 +21,7 @@ describe('ErrorNode', function() {
     })
 
     // Validates function nodes are leaves
-    it('has no children', async function() {
+    it('has no children', async function () {
         const testNode = new ErrorNode(parentNode, error, `Error loading resources (${error.name})`)
 
         const childNodes = await testNode.getChildren()
