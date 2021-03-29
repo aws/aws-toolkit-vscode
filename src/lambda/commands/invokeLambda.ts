@@ -6,30 +6,17 @@
 import { _Blob } from 'aws-sdk/clients/lambda'
 import _ = require('lodash')
 import * as vscode from 'vscode'
-import xml2js = require('xml2js')
 import { LambdaClient } from '../../shared/clients/lambdaClient'
 import { ext } from '../../shared/extensionGlobals'
 import { ExtensionUtilities } from '../../shared/extensionUtilities'
 import { getLogger, Logger } from '../../shared/logger'
-import { CompositeResourceFetcher } from '../../shared/resourcefetcher/compositeResourceFetcher'
-import { FileResourceFetcher } from '../../shared/resourcefetcher/fileResourceFetcher'
 import { HttpResourceFetcher } from '../../shared/resourcefetcher/httpResourceFetcher'
-import { ResourceFetcher } from '../../shared/resourcefetcher/resourcefetcher'
 import { recordLambdaInvokeRemote, Result, Runtime } from '../../shared/telemetry/telemetry'
 import { BaseTemplates } from '../../shared/templates/baseTemplates'
-import { sampleRequestManifestPath, sampleRequestPath } from '../constants'
+import { sampleRequestPath } from '../constants'
 import { LambdaFunctionNode } from '../explorer/lambdaFunctionNode'
-import { SampleRequest } from '../models/sampleRequest'
 import { LambdaTemplates } from '../templates/lambdaTemplates'
-
-interface SampleRequestManifest {
-    requests: {
-        request: {
-            name?: string
-            filename?: string
-        }[]
-    }
-}
+import { getSampleLambdaPayloads } from '../utilities/lambdaPayloadUtils'
 
 interface CommandMessage {
     command: string
@@ -73,25 +60,7 @@ export async function invokeLambda(params: {
         logger.info('Loading Sample Requests Manifest')
 
         try {
-            const sampleInput = await makeSampleRequestManifestResourceFetcher().get()
-
-            if (!sampleInput) {
-                throw new Error('Unable to retrieve Sample Request manifest')
-            }
-
-            logger.debug(`Loaded: ${sampleInput}`)
-
-            const inputs: SampleRequest[] = []
-
-            xml2js.parseString(sampleInput, { explicitArray: false }, (err: Error, result: SampleRequestManifest) => {
-                if (err) {
-                    return
-                }
-
-                _.forEach(result.requests.request, r => {
-                    inputs.push({ name: r.name, filename: r.filename })
-                })
-            })
+            const inputs = await getSampleLambdaPayloads()
 
             const loadScripts = ExtensionUtilities.getScriptsForHtml(['invokeLambdaVue.js'], view.webview)
             const loadLibs = ExtensionUtilities.getLibrariesForHtml(['vue.min.js'], view.webview)
@@ -191,11 +160,4 @@ function createMessageReceivedFunc({
                 return
         }
     }
-}
-
-function makeSampleRequestManifestResourceFetcher(): ResourceFetcher {
-    return new CompositeResourceFetcher(
-        new HttpResourceFetcher(sampleRequestManifestPath, { showUrl: true }),
-        new FileResourceFetcher(ext.manifestPaths.lambdaSampleRequests)
-    )
 }

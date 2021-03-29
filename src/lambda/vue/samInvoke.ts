@@ -3,8 +3,6 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
-import _ = require('lodash')
-import xml2js = require('xml2js')
 import * as fs from 'fs-extra'
 import * as path from 'path'
 import * as vscode from 'vscode'
@@ -13,10 +11,7 @@ import { LaunchConfiguration } from '../../shared/debug/launchConfiguration'
 import { ext } from '../../shared/extensionGlobals'
 import { ExtContext } from '../../shared/extensions'
 import { getLogger } from '../../shared/logger'
-import { CompositeResourceFetcher } from '../../shared/resourcefetcher/compositeResourceFetcher'
-import { FileResourceFetcher } from '../../shared/resourcefetcher/fileResourceFetcher'
 import { HttpResourceFetcher } from '../../shared/resourcefetcher/httpResourceFetcher'
-import { ResourceFetcher } from '../../shared/resourcefetcher/resourcefetcher'
 import {
     AwsSamDebuggerConfiguration,
     isCodeTargetProperties,
@@ -28,21 +23,22 @@ import * as input from '../../shared/ui/input'
 import * as picker from '../../shared/ui/picker'
 import { addCodiconToString } from '../../shared/utilities/textUtilities'
 import { createVueWebview } from '../../webviews/main'
-import { sampleRequestManifestPath, sampleRequestPath } from '../constants'
+import { sampleRequestPath } from '../constants'
 import { tryGetAbsolutePath } from '../../shared/utilities/workspaceUtils'
 import { CloudFormation } from '../../shared/cloudformation/cloudformation'
 import { openLaunchJsonFile } from '../../shared/sam/debugger/commands/addSamDebugConfiguration'
 import { recordSamOpenConfigUi } from '../../shared/telemetry/telemetry.gen'
+import { getSampleLambdaPayloads } from '../utilities/lambdaPayloadUtils'
 
 const localize = nls.loadMessageBundle()
 
 export function registerSamInvokeVueCommand(context: ExtContext): vscode.Disposable {
     return vscode.commands.registerCommand(
-        'aws.lambda.invokeForm',
+        'aws.launchConfigForm',
         async (launchConfig?: AwsSamDebuggerConfiguration) => {
             await createVueWebview<SamInvokerRequest, SamInvokerResponse>({
                 id: 'createLambda',
-                name: localize('AWS.command.lambda.editor.title', 'SAM Debug Configuration Editor'),
+                name: localize('AWS.command.launchConfigForm.title', 'SAM Debug Configuration Editor'),
                 webviewJs: 'samInvokeVue.js',
                 onDidReceiveMessageFunction: async (message, postMessageFn, destroyWebviewFn) =>
                     handleFrontendToBackendMessage(message, postMessageFn, destroyWebviewFn, context),
@@ -66,11 +62,11 @@ export function registerSamInvokeVueCommand(context: ExtContext): vscode.Disposa
 }
 
 export interface SamInvokeVueState {
-    launchConfig: MorePermissiveAwsSamDebuggerConfiguration
+    launchConfig: AwsSamDebuggerConfigurationLoose
     payload: { value: string; errorMsg: string }
 }
 
-export interface MorePermissiveAwsSamDebuggerConfiguration extends AwsSamDebuggerConfiguration {
+export interface AwsSamDebuggerConfigurationLoose extends AwsSamDebuggerConfiguration {
     invokeTarget: {
         target: 'template' | 'api' | 'code'
         templatePath: string
@@ -147,11 +143,12 @@ async function handleFrontendToBackendMessage(
  * Call back into the webview with the selected launch config.
  * @param postMessageFn
  */
-async function loadSamLaunchConfig(postMessageFn: (response: SamInvokerResponse) => Thenable<boolean>): Promise<void> {
+async function loadSamLaunchConfig(
+    postMessageFn: (response: LoadSamLaunchConfigResponse) => Thenable<boolean>
+): Promise<void> {
     // TODO: Find a better way to infer this. Might need another arg from the frontend (depends on the context in which the launch config is made?)
     const workspaceFolder = vscode.workspace.workspaceFolders?.length ? vscode.workspace.workspaceFolders[0] : undefined
     if (!workspaceFolder) {
-        // TODO Localize
         vscode.window.showErrorMessage(localize('AWS.lambda.form.noFolder', 'No workspace folder found.'))
         return
     }
@@ -188,15 +185,6 @@ async function loadSamLaunchConfig(postMessageFn: (response: SamInvokerResponse)
     })
 }
 
-interface SampleRequestManifest {
-    requests: {
-        request: {
-            name?: string
-            filename?: string
-        }[]
-    }
-}
-
 interface SampleQuickPickItem extends vscode.QuickPickItem {
     filename: string
 }
@@ -206,36 +194,18 @@ interface SampleQuickPickItem extends vscode.QuickPickItem {
  * Call back into the webview with the contents of the payload to add to the JSON field.
  * @param postMessageFn
  */
-async function getSamplePayload(postMessageFn: (response: SamInvokerResponse) => Thenable<boolean>): Promise<void> {
-    // stolen from invokeLambda.ts
+async function getSamplePayload(
+    postMessageFn: (response: GetSamplePayloadResponse) => Thenable<boolean>
+): Promise<void> {
     try {
-        const sampleInput = await makeSampleRequestManifestResourceFetcher().get()
-
-        if (!sampleInput) {
-            throw new Error('Unable to retrieve Sample Request manifest')
-        }
-
-        getLogger().debug(`Loaded: ${sampleInput}`)
-
-        const inputs: SampleQuickPickItem[] = []
-
-        await new Promise<void>((resolve, reject) => {
-            xml2js.parseString(sampleInput, { explicitArray: false }, (err: Error, result: SampleRequestManifest) => {
-                if (err) {
-                    reject()
-                }
-
-                _.forEach(result.requests.request, r => {
-                    inputs.push({ label: r.name ?? '', filename: r.filename ?? '' })
-                })
-                resolve()
-            })
+        const inputs: SampleQuickPickItem[] = (await getSampleLambdaPayloads()).map(entry => {
+            return { label: entry.name ?? '', filename: entry.filename ?? '' }
         })
 
         const qp = picker.createQuickPick({
             items: inputs,
             options: {
-                title: localize('AWS.lambda.form.pickSampleInput', 'Pick a Sample Input'),
+                title: localize('AWS.lambda.form.pickSampleInput', 'Choose Sample Input'),
             },
         })
 
@@ -249,8 +219,6 @@ async function getSamplePayload(postMessageFn: (response: SamInvokerResponse) =>
         }
         const sampleUrl = `${sampleRequestPath}${pickerResponse.filename}`
         const sample = (await new HttpResourceFetcher(sampleUrl, { showUrl: true }).get()) ?? ''
-        // declaring here so we don't get an error
-        sample
 
         postMessageFn({
             command: 'getSamplePayload',
@@ -268,7 +236,7 @@ async function getSamplePayload(postMessageFn: (response: SamInvokerResponse) =>
  * Call back into the webview with the registry contents.
  * @param postMessageFn
  */
-async function getTemplate(postMessageFn: (response: SamInvokerResponse) => Thenable<boolean>): Promise<void> {
+async function getTemplate(postMessageFn: (response: GetTemplateResponse) => Thenable<boolean>): Promise<void> {
     const items: (vscode.QuickPickItem & { templatePath: string })[] = []
     const NO_TEMPLATE = 'NOTEMPLATEFOUND'
     for (const template of ext.templateRegistry.registeredItems) {
@@ -376,7 +344,7 @@ async function saveLaunchConfig(config: AwsSamDebuggerConfiguration): Promise<vo
     if (pickerResponse.index === -1) {
         const ib = input.createInputBox({
             options: {
-                prompt: localize('AWS.lambda.form.debugConfigName', 'Enter Name For Debug Configuration'),
+                prompt: localize('AWS.lambda.form.debugConfigName', 'Input Name For Debug Configuration'),
             },
         })
         const response = await input.promptUser({ inputBox: ib })
@@ -398,9 +366,7 @@ async function saveLaunchConfig(config: AwsSamDebuggerConfiguration): Promise<vo
  */
 async function invokeLaunchConfig(config: AwsSamDebuggerConfiguration, context: ExtContext): Promise<void> {
     const finalConfig = finalizeConfig(config, 'Editor-Created Debug Config')
-
     const targetUri = getUriFromLaunchConfig(finalConfig)
-
     const folder = targetUri ? vscode.workspace.getWorkspaceFolder(targetUri) : undefined
 
     await new SamDebugConfigProvider(context).resolveDebugConfiguration(folder, finalConfig)
@@ -428,13 +394,6 @@ function getUriFromLaunchConfig(config: AwsSamDebuggerConfiguration): vscode.Uri
     }
 
     return undefined
-}
-
-function makeSampleRequestManifestResourceFetcher(): ResourceFetcher {
-    return new CompositeResourceFetcher(
-        new HttpResourceFetcher(sampleRequestManifestPath, { showUrl: true }),
-        new FileResourceFetcher(ext.manifestPaths.lambdaSampleRequests)
-    )
 }
 
 function getLaunchConfigQuickPickItems(launchConfig: LaunchConfiguration, uri: vscode.Uri): LaunchConfigPickItem[] {
@@ -478,6 +437,12 @@ export function finalizeConfig(config: AwsSamDebuggerConfiguration, name: string
     return newConfig
 }
 
+/**
+ * Removes empty objects, strings, fields, and arrays from a given object.
+ * Use when writing JSON to a file.
+ * @param object
+ * @returns Pruned object
+ */
 function doTraverseAndPrune(object: { [key: string]: any }): any | undefined {
     const keys = Object.keys(object)
     const final = JSON.parse(JSON.stringify(object))

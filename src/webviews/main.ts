@@ -37,7 +37,7 @@ export async function createVueWebview<TRequest, TResponse>(params: WebviewParam
     const libsPath: string = path.join(params.context.extensionPath, 'media', 'libs')
     const jsPath: string = path.join(params.context.extensionPath, 'media', 'js')
     const cssPath: string = path.join(params.context.extensionPath, 'media', 'css')
-    const webviewPath: string = path.join(params.context.extensionPath, 'compiledWebviews')
+    const webviewPath: string = path.join(params.context.extensionPath, 'dist', 'compiledWebviews')
 
     const view = vscode.window.createWebviewPanel(params.id, params.name, vscode.ViewColumn.Beside, {
         enableScripts: true,
@@ -95,7 +95,7 @@ export async function createVueWebview<TRequest, TResponse>(params: WebviewParam
         >
     </head>
     <body>
-        <div id="vueApp">{{ counter }}</div>
+        <div id="vueApp"></div>
         <!-- Dependencies -->
         ${scripts}
         ${stylesheets}

@@ -96,13 +96,10 @@ const baseConfig = {
 /**@type {import('webpack').Configuration}*/
 const webviewConfig = {
     entry: {
-        // invokeRemote: path.resolve(__dirname, 'src', 'webviews', 'tsx', 'invokeRemote.tsx'),
-        // createSamApp: path.resolve(__dirname, 'src', 'webviews', 'tsx', 'createSamApp.tsx'),
-        // createSamApp: path.resolve(__dirname, 'src', 'webviews', 'tsx', 'reducerCreateSamApp.tsx'),
         samInvokeVue: path.resolve(__dirname, 'src', 'lambda', 'vue', 'samInvokeVue.ts'),
     },
     output: {
-        path: path.resolve(__dirname, 'compiledWebviews'),
+        path: path.resolve(__dirname, 'dist', 'compiledWebviews'),
         filename: '[name].js',
     },
 

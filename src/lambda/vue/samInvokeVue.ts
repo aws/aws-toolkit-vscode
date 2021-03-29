@@ -6,12 +6,7 @@
 import Vue, { VNode } from 'vue'
 import { VsCode } from '../../webviews/main'
 import { AwsSamDebuggerConfiguration } from '../../shared/sam/debugger/awsSamDebugConfiguration'
-import {
-    MorePermissiveAwsSamDebuggerConfiguration,
-    SamInvokerRequest,
-    SamInvokerResponse,
-    SamInvokeVueState,
-} from './samInvoke'
+import { AwsSamDebuggerConfigurationLoose, SamInvokerRequest, SamInvokerResponse, SamInvokeVueState } from './samInvoke'
 
 declare const vscode: VsCode<SamInvokerRequest, SamInvokeVueState>
 
@@ -25,7 +20,7 @@ export interface SamInvokeVueData {
     targetTypes: { [k: string]: string }[]
     runtimes: string[]
     httpMethods: string[]
-    launchConfig: MorePermissiveAwsSamDebuggerConfiguration
+    launchConfig: AwsSamDebuggerConfigurationLoose
     payload: VueDataLaunchPropertyObject
     apiPayload: VueDataLaunchPropertyObject
     environmentVariables: VueDataLaunchPropertyObject
@@ -36,7 +31,7 @@ export interface SamInvokeVueData {
     skipNewImageCheckStr: string
 }
 
-function newLaunchConfig(existingConfig?: AwsSamDebuggerConfiguration): MorePermissiveAwsSamDebuggerConfiguration {
+function newLaunchConfig(existingConfig?: AwsSamDebuggerConfiguration): AwsSamDebuggerConfigurationLoose {
     return {
         type: 'aws-sam',
         request: 'direct-invoke',
@@ -180,7 +175,7 @@ export const Component = Vue.extend({
     },
     watch: {
         launchConfig: {
-            handler(newval: MorePermissiveAwsSamDebuggerConfiguration) {
+            handler(newval: AwsSamDebuggerConfigurationLoose) {
                 vscode.setState({
                     payload: this.payload,
                     launchConfig: newval,
