@@ -33,12 +33,8 @@ export class CloudWatchLogsNode extends AWSTreeNodeBase {
 
                 return [...this.logGroupNodes.values()]
             },
-            getErrorNode: async (error: Error) =>
-                new ErrorNode(
-                    this,
-                    error,
-                    localize('AWS.explorerNode.cloudWatchLogs.noGroups', '[No Log Groups found]')
-                ),
+            getErrorNode: async (error: Error, logID: number) =>
+                new ErrorNode(this, error, logID),
             getNoChildrenPlaceholderNode: async () =>
                 new PlaceholderNode(
                     this,
