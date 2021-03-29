@@ -23,7 +23,7 @@ import software.aws.toolkits.jetbrains.services.ecs.execution.ArtifactMapping
 import software.aws.toolkits.jetbrains.services.ecs.execution.ContainerOptions
 import software.aws.toolkits.jetbrains.services.ecs.execution.EcsCloudDebugRunConfiguration
 import software.aws.toolkits.jetbrains.services.ecs.execution.EcsCloudDebugRunConfigurationProducer
-import software.aws.toolkits.jetbrains.utils.WebStormTestUtils
+import software.aws.toolkits.jetbrains.utils.UltimateTestUtils
 import software.aws.toolkits.jetbrains.utils.checkBreakPointHit
 import software.aws.toolkits.jetbrains.utils.executeRunConfigurationAndWait
 import software.aws.toolkits.jetbrains.utils.rules.HeavyNodeJsCodeInsightTestFixtureRule
@@ -69,7 +69,7 @@ class NodeJsDebugEndToEndTest : CloudDebugTestCase("CloudDebugTestECSClusterTask
     fun testEndToEnd() {
         // setup project workspace
         val testScript = addNodeFile()
-        WebStormTestUtils.ensureBuiltInServerStarted()
+        UltimateTestUtils.ensureBuiltInServerStarted()
         setUpMocks()
 
         // set breakpoint
