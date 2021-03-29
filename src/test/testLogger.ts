@@ -55,7 +55,7 @@ export class TestLogger implements Logger {
     }
 
     // No need to actually implement this. Log tracking is tested in winstonToolkitLogger.test.ts
-    public getTrackedLog(logID: number, file: string): string | undefined {
+    public getLogById(logID: number, file: string): string | undefined {
         return undefined
     }
 

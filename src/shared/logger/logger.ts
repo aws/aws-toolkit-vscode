@@ -11,24 +11,19 @@ const toolkitLoggers: {
 
 export interface Logger {
     debug(message: string, ...meta: any[]): number
-    debug(error: Error): number
     debug(error: Error, ...meta: any[]): number
     verbose(message: string, ...meta: any[]): number
-    verbose(error: Error): number
     verbose(error: Error, ...meta: any[]): number
     info(message: string, ...meta: any[]): number
-    info(error: Error): number
     info(error: Error, ...meta: any[]): number
     warn(message: string, ...meta: any[]): number
-    warn(error: Error): number
     warn(error: Error, ...meta: any[]): number
     error(message: string, ...meta: any[]): number
-    error(error: Error): number
     error(error: Error, ...meta: any[]): number
     setLogLevel(logLevel: LogLevel): void
     /** Returns true if the given log level is being logged.  */
     logLevelEnabled(logLevel: LogLevel): boolean
-    getTrackedLog(logID: number, file: string): string | undefined
+    getLogById(logID: number, file: string): string | undefined
 }
 
 /**

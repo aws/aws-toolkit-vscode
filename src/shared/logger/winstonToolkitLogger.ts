@@ -134,7 +134,12 @@ export class WinstonToolkitLogger implements Logger, vscode.Disposable {
      *
      * @returns  Final log message. Stale or non-existant logs return undefined
      */
-    public getTrackedLog(logID: number, file: string): string | undefined {
+    public getLogById(logID: number, file: string): string | undefined {
+        // Not possible, yell at the caller :(
+        if (logID >= this.idCounter || logID < 0) {
+            throw new Error(`Invalid log state, logID=${logID} must be in the range [0, ${this.idCounter})!`)
+        }
+
         // This prevents callers from getting stale logs
         if (this.idCounter - logID > LOGMAP_SIZE) {
             return undefined

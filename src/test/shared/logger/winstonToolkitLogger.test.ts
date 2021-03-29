@@ -306,7 +306,7 @@ describe('WinstonToolkitLogger', function () {
         it('get info log message', async function () {
             const logID: number = testLogger!.info('test')
             const msg: string | undefined = await waitUntil(
-                async () => testLogger!.getTrackedLog(logID, `file://${tempLogPath}`),
+                async () => testLogger!.getLogById(logID, `file://${tempLogPath}`),
                 { timeout: 2000, interval: 10, truthy: false }
             )
             assert.notStrictEqual(msg, undefined)
@@ -315,7 +315,7 @@ describe('WinstonToolkitLogger', function () {
         it('debug log message is undefined', async function () {
             const logID: number = testLogger!.debug('debug test')
             const msg: string | undefined = await waitUntil(
-                async () => testLogger!.getTrackedLog(logID, `file://${tempLogPath}`),
+                async () => testLogger!.getLogById(logID, `file://${tempLogPath}`),
                 { timeout: 50, interval: 5, truthy: false }
             )
             assert.strictEqual(msg, undefined)
@@ -330,7 +330,7 @@ describe('WinstonToolkitLogger', function () {
                 testLogger!.debug('debug log')
 
                 const msg: string | undefined = await waitUntil(
-                    async () => testLogger!.getTrackedLog(logID, `file://${tempLogPath}`),
+                    async () => testLogger!.getLogById(logID, `file://${tempLogPath}`),
                     { timeout: 400, interval: 10, truthy: false }
                 )
                 assert.notStrictEqual(msg, undefined)
@@ -349,7 +349,7 @@ describe('WinstonToolkitLogger', function () {
             }
 
             const middleMsg: string | undefined = await waitUntil(
-                async () => testLogger!.getTrackedLog(logIDs[Math.floor(logIDs.length / 2)], `file://${tempLogPath}`),
+                async () => testLogger!.getLogById(logIDs[Math.floor(logIDs.length / 2)], `file://${tempLogPath}`),
                 { timeout: 2000, interval: 10, truthy: false }
             )
 
@@ -374,7 +374,7 @@ describe('WinstonToolkitLogger', function () {
 
             const middleFile: string = filePaths[Math.floor(filePaths.length / 2)]
             const middleMsg: string | undefined = await waitUntil(
-                async () => testLogger!.getTrackedLog(logIDs[Math.floor(logIDs.length / 2)], `file://${middleFile}`),
+                async () => testLogger!.getLogById(logIDs[Math.floor(logIDs.length / 2)], `file://${middleFile}`),
                 { timeout: 2000, interval: 5, truthy: false }
             )
 
@@ -387,11 +387,29 @@ describe('WinstonToolkitLogger', function () {
             const logID: number = testLogger!.error('Test error')
 
             const msg: string | undefined = await waitUntil(
-                async () => testLogger!.getTrackedLog(logID, `channel://${outputChannel.name}`),
+                async () => testLogger!.getLogById(logID, `channel://${outputChannel.name}`),
                 { timeout: 2000, interval: 5, truthy: false }
             )
 
             assert.notStrictEqual(msg, undefined)
+        })
+
+        it('invalid log id raises exception', async function () {
+            // Log ID counter will be at 3 after these
+            testLogger!.error('error log')
+            testLogger!.debug('debug log')
+
+            assert.throws(
+                () => testLogger!.getLogById(-1, ''),
+                Error,
+                'Invalid log state, logID=-1 must be in the range [0, 3)!'
+            )
+
+            assert.throws(
+                () => testLogger!.getLogById(3, ''),
+                Error,
+                'Invalid log state, logID=3 must be in the range [0, 3)!'
+            )
         })
     })
 })

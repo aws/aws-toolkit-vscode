@@ -159,32 +159,36 @@ async function openLogUri(logUri: vscode.Uri): Promise<vscode.TextEditor | undef
 }
 
 async function registerLoggerCommands(context: vscode.ExtensionContext): Promise<void> {
+    context.subscriptions.push(vscode.commands.registerCommand('aws.viewLogs', async () => openLogUri(LOG_URI)))
     context.subscriptions.push(
-        vscode.commands.registerCommand('aws.viewLogs', async () => openLogUri(LOG_URI))
-    )
-    context.subscriptions.push(
-        vscode.commands.registerCommand('aws.viewLogsAtMessage', async (logID: number = -1, logUri: vscode.Uri = LOG_URI) => {
-            const msg: string | undefined = getLogger().getTrackedLog(logID, logUri.toString(true))
-            const editor: vscode.TextEditor | undefined = await openLogUri(logUri) 
-            
-            if (!msg || !editor) {
-                return
-            }
+        vscode.commands.registerCommand(
+            'aws.viewLogsAtMessage',
+            async (logID: number = -1, logUri: vscode.Uri = LOG_URI) => {
+                const msg: string | undefined = getLogger().getLogById(logID, logUri.toString(true))
+                const editor: vscode.TextEditor | undefined = await openLogUri(logUri)
 
-            // Retrieve where the message starts by counting number of newlines
-            const text: string = editor.document.getText()
-            const lineStart: number = text.substring(0, text.indexOf(msg)).split(/\r?\n/).filter(x => x).length 
+                if (!msg || !editor) {
+                    return
+                }
 
-            if (lineStart > 0) {
-                const lineEnd: number = lineStart + msg.split(/\r?\n/).filter(x => x).length
-                const startPos = editor.document.lineAt(lineStart).range.start
-                const endPos = editor.document.lineAt(lineEnd-1).range.end
-                editor.selection = new vscode.Selection(startPos, endPos)
-                editor.revealRange(new vscode.Range(startPos, endPos))
-            } else {
-                // No message found, clear selection
-                editor.selection = new vscode.Selection(new vscode.Position(0, 0), new vscode.Position(0, 0))
+                // Retrieve where the message starts by counting number of newlines
+                const text: string = editor.document.getText()
+                const lineStart: number = text
+                    .substring(0, text.indexOf(msg))
+                    .split(/\r?\n/)
+                    .filter(x => x).length
+
+                if (lineStart > 0) {
+                    const lineEnd: number = lineStart + msg.split(/\r?\n/).filter(x => x).length
+                    const startPos = editor.document.lineAt(lineStart).range.start
+                    const endPos = editor.document.lineAt(lineEnd - 1).range.end
+                    editor.selection = new vscode.Selection(startPos, endPos)
+                    editor.revealRange(new vscode.Range(startPos, endPos))
+                } else {
+                    // No message found, clear selection
+                    editor.selection = new vscode.Selection(new vscode.Position(0, 0), new vscode.Position(0, 0))
+                }
             }
-        })
+        )
     )
 }
