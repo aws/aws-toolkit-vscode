@@ -17,7 +17,7 @@ describe('makeChildrenNodes', async function () {
     it('returns child nodes', async function () {
         const childNodes = await makeChildrenNodes({
             getChildNodes: async () => [nodeA, nodeB],
-            getErrorNode: async (error: Error) => makeErrorNode(error),
+            getErrorNode: async (error: Error, logID: number) => makeErrorNode(error),
         })
 
         assert.strictEqual(childNodes.length, 2, 'Unexpected child node count')
@@ -33,7 +33,7 @@ describe('makeChildrenNodes', async function () {
             getChildNodes: async () => {
                 throw expectedError
             },
-            getErrorNode: async (error: Error) => expectedErrorNode,
+            getErrorNode: async (error: Error, logID: number) => expectedErrorNode,
         })
 
         assert.strictEqual(childNodes.length, 1, 'Unexpected child node count')
@@ -45,7 +45,7 @@ describe('makeChildrenNodes', async function () {
         const expectedPlaceholderNode = new PlaceholderNode(parentNode, 'No child nodes found')
         const childNodes = await makeChildrenNodes({
             getChildNodes: async () => [],
-            getErrorNode: async (error: Error) => makeErrorNode(error),
+            getErrorNode: async (error: Error, logID: number) => makeErrorNode(error),
             getNoChildrenPlaceholderNode: async () => expectedPlaceholderNode,
         })
 
@@ -57,7 +57,7 @@ describe('makeChildrenNodes', async function () {
     it('returns an empty list if there are no child nodes and no placeholder', async function () {
         const childNodes = await makeChildrenNodes({
             getChildNodes: async () => [],
-            getErrorNode: async (error: Error) => makeErrorNode(error),
+            getErrorNode: async (error: Error, logID: number) => makeErrorNode(error),
         })
 
         assert.strictEqual(childNodes.length, 0, 'Unexpected child node count')
@@ -66,7 +66,7 @@ describe('makeChildrenNodes', async function () {
     it('sorts the child nodes', async function () {
         const childNodes = await makeChildrenNodes({
             getChildNodes: async () => [nodeB, nodeA],
-            getErrorNode: async (error: Error) => makeErrorNode(error),
+            getErrorNode: async (error: Error, logID: number) => makeErrorNode(error),
             sort: (a, b) => a.label!.localeCompare(b.label!),
         })
 
@@ -78,7 +78,7 @@ describe('makeChildrenNodes', async function () {
     it('does not sort the child nodes if a sort method is not provided', async function () {
         const childNodes = await makeChildrenNodes({
             getChildNodes: async () => [nodeB, nodeA],
-            getErrorNode: async (error: Error) => makeErrorNode(error),
+            getErrorNode: async (error: Error, logID: number) => makeErrorNode(error),
         })
 
         assert.strictEqual(childNodes.length, 2, 'Unexpected child node count')
@@ -87,6 +87,6 @@ describe('makeChildrenNodes', async function () {
     })
 
     function makeErrorNode(error: Error): ErrorNode {
-        return new ErrorNode(parentNode, error, error.message)
+        return new ErrorNode(parentNode, error)
     }
 })

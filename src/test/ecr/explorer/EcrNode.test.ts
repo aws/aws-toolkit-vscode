@@ -66,7 +66,7 @@ describe('EcrNode', function () {
 
         const [firstNode, ...otherNodes] = await new EcrNode(ecr).getChildren()
 
-        assert.strictEqual((firstNode as ErrorNode).label, 'Error loading ECR resources')
+        assert.strictEqual((firstNode as ErrorNode).label, 'Failed to load resources (click for logs)')
 
         assert.strictEqual(otherNodes.length, 0)
         assert.ok(stub.calledOnce)
@@ -131,7 +131,7 @@ describe('EcrRepositoryNode', function () {
 
         const [firstNode, ...otherNodes] = await new EcrRepositoryNode({} as EcrNode, ecr, repository).getChildren()
 
-        assert.strictEqual((firstNode as ErrorNode).label, 'Error loading ECR resources')
+        assert.strictEqual((firstNode as ErrorNode).label, 'Failed to load resources (click for logs)')
 
         assert.strictEqual(otherNodes.length, 0)
         assert.ok(stub.calledOnce)

@@ -20,6 +20,7 @@ import { WinstonToolkitLogger } from './winstonToolkitLogger'
 const localize = nls.loadMessageBundle()
 
 const LOG_PATH = path.join(getLogBasePath(), 'Code', 'logs', 'aws_toolkit', makeLogFilename())
+const LOG_URI = vscode.Uri.file(path.normalize(LOG_PATH))
 const DEFAULT_LOG_LEVEL: LogLevel = 'info'
 
 /**
@@ -152,11 +153,42 @@ function makeLogFilename(): string {
     return `aws_toolkit_${datetime}.log`
 }
 
+async function openLogUri(logUri: vscode.Uri): Promise<vscode.TextEditor | undefined> {
+    recordVscodeViewLogs() // Perhaps add additional argument to know which log was viewed?
+    return await vscode.window.showTextDocument(logUri)
+}
+
 async function registerLoggerCommands(context: vscode.ExtensionContext): Promise<void> {
+    context.subscriptions.push(vscode.commands.registerCommand('aws.viewLogs', async () => openLogUri(LOG_URI)))
     context.subscriptions.push(
-        vscode.commands.registerCommand('aws.viewLogs', async () => {
-            await vscode.window.showTextDocument(vscode.Uri.file(path.normalize(LOG_PATH)))
-            recordVscodeViewLogs()
-        })
+        vscode.commands.registerCommand(
+            'aws.viewLogsAtMessage',
+            async (logID: number = -1, logUri: vscode.Uri = LOG_URI) => {
+                const msg: string | undefined = getLogger().getLogById(logID, logUri.toString(true))
+                const editor: vscode.TextEditor | undefined = await openLogUri(logUri)
+
+                if (!msg || !editor) {
+                    return
+                }
+
+                // Retrieve where the message starts by counting number of newlines
+                const text: string = editor.document.getText()
+                const lineStart: number = text
+                    .substring(0, text.indexOf(msg))
+                    .split(/\r?\n/)
+                    .filter(x => x).length
+
+                if (lineStart > 0) {
+                    const lineEnd: number = lineStart + msg.split(/\r?\n/).filter(x => x).length
+                    const startPos = editor.document.lineAt(lineStart).range.start
+                    const endPos = editor.document.lineAt(lineEnd - 1).range.end
+                    editor.selection = new vscode.Selection(startPos, endPos)
+                    editor.revealRange(new vscode.Range(startPos, endPos))
+                } else {
+                    // No message found, clear selection
+                    editor.selection = new vscode.Selection(new vscode.Position(0, 0), new vscode.Position(0, 0))
+                }
+            }
+        )
     )
 }
