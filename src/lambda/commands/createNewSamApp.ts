@@ -49,7 +49,7 @@ import { openLaunchJsonFile } from '../../shared/sam/debugger/commands/addSamDeb
 import { waitUntil } from '../../shared/utilities/timeoutUtils'
 import { launchConfigDocUrl } from '../../shared/constants'
 import { Runtime } from 'aws-sdk/clients/lambda'
-import { getIdeProperties } from '../../shared/extensionUtilities'
+import { getIdeProperties, isCloud9 } from '../../shared/extensionUtilities'
 
 type CreateReason = 'unknown' | 'userCancelled' | 'fileNotFound' | 'complete' | 'error'
 
@@ -292,7 +292,8 @@ export async function createNewSamApplication(
         }
 
         activationReloadState.clearSamInitState()
-        await vscode.window.showTextDocument(uri)
+        // TODO: Replace when Cloud9 supports `markdown` commands
+        isCloud9() ? await vscode.workspace.openTextDocument(uri) : await vscode.commands.executeCommand('markdown.showPreviewToSide', uri)
     } catch (err) {
         createResult = 'Failed'
         reason = 'error'
@@ -331,14 +332,14 @@ async function validateSamCli(samCliValidator: SamCliValidator): Promise<void> {
 async function getMainUri(
     config: Pick<CreateNewSamAppWizardResponse, 'location' | 'name'>
 ): Promise<vscode.Uri | undefined> {
-    const cfnTemplatePath = path.resolve(config.location.fsPath, config.name, 'template.yaml')
+    const cfnTemplatePath = path.resolve(config.location.fsPath, config.name, 'README.md')
     if (await fileExists(cfnTemplatePath)) {
         return vscode.Uri.file(cfnTemplatePath)
     } else {
         vscode.window.showWarningMessage(
             localize(
                 'AWS.samcli.initWizard.source.error.notFound',
-                'Project created successfully, but main source code file not found: {0}',
+                'Project created successfully, but README.md file not found: {0}',
                 cfnTemplatePath
             )
         )
