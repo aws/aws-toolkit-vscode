@@ -11,6 +11,12 @@ enum class LambdaRuntime(
     val minSamDebugging: String? = null,
     private val runtimeOverride: String? = null
 ) {
+    GO1_X(
+        Runtime.GO1_X,
+        // Although go sam debugging was supported before 1.18.1, it does not work on 1.13.0-1.16.0
+        // and 1.17.0 broke the arguments
+        minSamDebugging = "1.18.1"
+    ),
     NODEJS10_X(Runtime.NODEJS10_X),
     NODEJS12_X(Runtime.NODEJS12_X),
     NODEJS14_X(Runtime.NODEJS14_X, minSamDebugging = "1.17.0", minSamInit = "1.17.0"),

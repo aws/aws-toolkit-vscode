@@ -70,7 +70,7 @@ class LambdaLineMarker : LineMarkerProviderDescriptor() {
                 null,
                 GutterIconRenderer.Alignment.CENTER
             ) {
-                override fun createGutterRenderer(): GutterIconRenderer? = LambdaGutterIcon(this, actionGroup)
+                override fun createGutterRenderer(): GutterIconRenderer = LambdaGutterIcon(this, actionGroup)
             }
         } else null
     }
