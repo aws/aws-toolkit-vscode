@@ -13,7 +13,7 @@ import { AWSTreeNodeBase } from './nodes/awsTreeNodeBase'
 export async function makeChildrenNodes(parameters: {
     getChildNodes(): Promise<AWSTreeNodeBase[]>
     getNoChildrenPlaceholderNode?(): Promise<AWSTreeNodeBase>
-    getErrorNode(error: Error): Promise<AWSTreeNodeBase>
+    getErrorNode(error: Error, logID: number): Promise<AWSTreeNodeBase>
     sort?(a: AWSTreeNodeBase, b: AWSTreeNodeBase): number
 }): Promise<AWSTreeNodeBase[]> {
     let childNodes: AWSTreeNodeBase[] = []
@@ -29,9 +29,9 @@ export async function makeChildrenNodes(parameters: {
         }
     } catch (err) {
         const error = err as Error
-        getLogger().error(`Error while getting Child nodes: ${error.message}`)
+        const logID: number = getLogger().error(err)
 
-        childNodes.push(await parameters.getErrorNode(error))
+        childNodes.push(await parameters.getErrorNode(error, logID))
     }
 
     return childNodes

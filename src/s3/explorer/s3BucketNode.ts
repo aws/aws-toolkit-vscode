@@ -52,9 +52,10 @@ export class S3BucketNode extends AWSTreeNodeBase implements AWSResourceNode, Lo
 
     public async getChildren(): Promise<AWSTreeNodeBase[]> {
         return await makeChildrenNodes({
-            getChildNodes: async () => this.childLoader.getChildren(),
-            getErrorNode: async (error: Error) =>
-                new ErrorNode(this, error, localize('AWS.explorerNode.s3.error', 'Error loading S3 resources')),
+            getChildNodes: async () => 
+                this.childLoader.getChildren(),
+            getErrorNode: async (error: Error, logID: number) =>
+                new ErrorNode(this, error, logID),
             getNoChildrenPlaceholderNode: async () =>
                 new PlaceholderNode(this, localize('AWS.explorerNode.s3.noObjects', '[No Objects found]')),
         })
