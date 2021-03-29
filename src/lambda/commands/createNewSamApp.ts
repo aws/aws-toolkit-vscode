@@ -49,7 +49,7 @@ import { openLaunchJsonFile } from '../../shared/sam/debugger/commands/addSamDeb
 import { waitUntil } from '../../shared/utilities/timeoutUtils'
 import { launchConfigDocUrl } from '../../shared/constants'
 import { Runtime } from 'aws-sdk/clients/lambda'
-import { getIdeProperties } from '../../shared/extensionUtilities'
+import { getIdeProperties, isCloud9 } from '../../shared/extensionUtilities'
 
 type CreateReason = 'unknown' | 'userCancelled' | 'fileNotFound' | 'complete' | 'error'
 
@@ -299,7 +299,8 @@ export async function createNewSamApplication(
         }
 
         activationReloadState.clearSamInitState()
-        await vscode.commands.executeCommand('markdown.showPreview', uri)
+        // TODO: Replace when Cloud9 supports `markdown` commands
+        isCloud9() ? await vscode.workspace.openTextDocument(uri) : await vscode.commands.executeCommand('markdown.showPreviewToSide', uri)
     } catch (err) {
         createResult = 'Failed'
         reason = 'error'
