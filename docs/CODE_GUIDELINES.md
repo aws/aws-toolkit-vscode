@@ -20,9 +20,6 @@ that is a net cost.
         - They aren't in the same modules. But they are similar concepts. This
           helps discoverability and signals to other humans the behavior of the
           symbols without having to consume the implementation.
-        - over-specifying function names, types, etc.: 
-            - counteracts re-use and discoverability
-            - creates churn when the implementation changes, because then the name needs to change (it doesn't really matter that "parsing" is being done here)
 - Use common names unless there is a strong, conscious reason to use
   a variant/uncommon name.
     - `Info` is more common that `Details`.
@@ -34,10 +31,9 @@ that is a net cost.
 - Over-specifying names:
     - Counteracts re-use and discoverability
     - Creates churn when the implementation changes, because then the name
-      needs to change (it doesn't really matter that "parsing" is being done
-      here).
-        - Or worse: the name can't/didn't change, now the function has an
-          overspecified and misleading name.
+      needs to change (it doesn't matter that `getLambdaFileName` is "parsing"
+      its input--unless parsing is a central requirement of the function, and
+      differentiates it from other similar functions).
 
 ## Project guidelines
 
