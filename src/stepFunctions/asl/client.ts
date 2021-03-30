@@ -39,6 +39,8 @@ import {
     TransportKind,
 } from 'vscode-languageclient'
 
+import { YAML_ASL, JSON_ASL, ASL_FORMATS } from '../constants/aslFormats'
+
 namespace ResultLimitReachedNotification {
     export const type: NotificationType<string, any> = new NotificationType('asl/resultLimitReached')
 }
@@ -69,10 +71,10 @@ export async function activate(extensionContext: ExtensionContext) {
     }
 
     const documentSelector = [
-        { schema: 'file', language: 'asl' },
-        { schema: 'untitled', language: 'asl' },
-        { schema: 'file', language: 'asl-yaml' },
-        { schema: 'untitled', language: 'asl-yaml' },
+        { schema: 'file', language: JSON_ASL },
+        { schema: 'untitled', language: JSON_ASL },
+        { schema: 'file', language: YAML_ASL },
+        { schema: 'untitled', language: YAML_ASL },
     ]
 
     // Options to control the language client
@@ -85,7 +87,7 @@ export async function activate(extensionContext: ExtensionContext) {
         },
         synchronize: {
             // Synchronize the setting section 'json' to the server
-            configurationSection: ['asl', 'asl-yaml'],
+            configurationSection: ASL_FORMATS,
             fileEvents: workspace.createFileSystemWatcher('**/*.{asl,asl.json,asl.yml,asl.yaml}'),
         },
         middleware: {
