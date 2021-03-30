@@ -5,6 +5,7 @@
 
 import * as vscode from 'vscode'
 import * as nls from 'vscode-nls'
+import { safeLoad } from 'js-yaml'
 const localize = nls.loadMessageBundle()
 import { AwsContext } from '../../shared/awsContext'
 import { StepFunctionsClient } from '../../shared/clients/stepFunctionsClient'
@@ -20,20 +21,41 @@ import {
     PublishStateMachineWizardUpdateResponse,
 } from '../wizards/publishStateMachineWizard'
 
+import { VALID_SFN_PUBLISH_FORMATS, YAML_FORMATS } from '../constants/aslFormats'
+
 const DEFAULT_REGION: string = 'us-east-1'
 
 export async function publishStateMachine(awsContext: AwsContext, outputChannel: vscode.OutputChannel) {
     const logger: Logger = getLogger()
 
     const textDocument = vscode.window.activeTextEditor?.document
+
     if (!textDocument) {
         logger.error('Could not get active text editor for state machine definition')
         throw new Error('Could not get active text editor for state machine definition')
     }
 
-    if (textDocument.languageId === 'asl-yaml') {
-        logger.error('Cannot publish state machine from Amazon States Language YAML file')
-        throw new Error('Cannot publish state machine from Amazon States Language YAML file')
+    let text = textDocument.getText()
+
+    if (!VALID_SFN_PUBLISH_FORMATS.includes(textDocument.languageId)) {
+        const errorMessage = `Cannot publish state machine from "${textDocument.languageId}" file`
+        logger.error(errorMessage)
+        throw new Error(errorMessage)
+    }
+
+    if (YAML_FORMATS.includes(textDocument.languageId)) {
+        try {
+            text = JSON.stringify(safeLoad(text), undefined, '  ')
+        } catch (error) {
+            const localizedMsg = localize(
+                'AWS.message.error.stepFunctions.publishStateMachine.invalidYAML',
+                'Cannot publish invalid YAML file'
+            )
+
+            logger.error(error)
+            showErrorWithLogs(localizedMsg)
+            return
+        }
     }
 
     let region = awsContext.getCredentialDefaultRegion()
@@ -52,21 +74,9 @@ export async function publishStateMachine(awsContext: AwsContext, outputChannel:
             wizardContext
         ).run()
         if (wizardResponse?.createResponse) {
-            await createStateMachine(
-                wizardResponse.createResponse,
-                textDocument.getText(),
-                outputChannel,
-                region,
-                client
-            )
+            await createStateMachine(wizardResponse.createResponse, text, outputChannel, region, client)
         } else if (wizardResponse?.updateResponse) {
-            await updateStateMachine(
-                wizardResponse.updateResponse,
-                textDocument.getText(),
-                outputChannel,
-                region,
-                client
-            )
+            await updateStateMachine(wizardResponse.updateResponse, text, outputChannel, region, client)
         }
     } catch (err) {
         logger.error(err as Error)
