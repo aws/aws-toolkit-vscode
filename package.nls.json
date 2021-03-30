@@ -282,6 +282,7 @@
     "AWS.message.info.stepFunctions.executeStateMachine.started": "Execution started",
     "AWS.message.error.stepFunctions.publishStateMachine.createFailure": "Failed to create state machine: {0}",
     "AWS.message.error.stepFunctions.publishStateMachine.updateFailure": "Failed to update state machine: {0}",
+    "AWS.message.error.stepFunctions.publishStateMachine.invalidYAML": "Cannot publish invalid YAML file",
     "AWS.message.info.stepFunctions.publishStateMachine.createSuccess": "Successfully created state machine '{0}'",
     "AWS.message.info.stepFunctions.publishStateMachine.creating": "Creating state machine '{0}' in {1}...",
     "AWS.message.info.stepFunctions.publishStateMachine.updateSuccess": "Successfully updated state machine '{0}'",

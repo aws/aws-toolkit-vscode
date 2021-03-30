@@ -13,6 +13,8 @@ import { createStateMachineFromTemplate } from './commands/createStateMachineFro
 import { publishStateMachine } from './commands/publishStateMachine'
 import { AslVisualizationManager } from './commands/visualizeStateMachine/aslVisualizationManager'
 
+import { ASL_FORMATS, YAML_ASL, JSON_ASL } from './constants/aslFormats'
+
 import * as nls from 'vscode-nls'
 const localize = nls.loadMessageBundle()
 
@@ -112,7 +114,7 @@ function initializeCodeLens(context: vscode.ExtensionContext) {
             }
             const renderCodeLens = new vscode.CodeLens(topOfDocument, renderCommand)
 
-            if (document.languageId === 'asl') {
+            if (ASL_FORMATS.includes(document.languageId)) {
                 const publishCommand: vscode.Command = {
                     command: 'aws.stepfunctions.publishStateMachine',
                     title: localize('AWS.stepFunctions.publish', 'Publish to Step Functions'),
@@ -126,7 +128,7 @@ function initializeCodeLens(context: vscode.ExtensionContext) {
         }
     }
 
-    const docSelector = [{ language: 'asl' }, { language: 'asl-yaml' }]
+    const docSelector = [{ language: JSON_ASL }, { language: YAML_ASL }]
 
     const codeLensProviderDisposable = vscode.languages.registerCodeLensProvider(
         docSelector,

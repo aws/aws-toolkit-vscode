@@ -133,8 +133,6 @@ export default class CreateStateMachineWizard extends MultiStepWizard<CreateStat
             },
         })
 
-        console.log(choices)
-
         this.template = picker.verifySinglePickerOutput<StateMachineTemplateQuickPickItem>(choices)
 
         return this.template ? wizardContinue(this.TEMPLATE_FORMAT_ACTION) : WIZARD_GOBACK
