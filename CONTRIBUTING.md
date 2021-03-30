@@ -25,6 +25,8 @@ To develop this project, install these dependencies:
 -   [Typescript](https://www.typescriptlang.org/)
 -   [Git](https://git-scm.com/downloads)
 -   [AWS `git secrets`](https://github.com/awslabs/git-secrets)
+-   (optional) [AWS SAM CLI](https://docs.aws.amazon.com/serverless-application-model/latest/developerguide/serverless-sam-cli-install.html)
+-   (optional) [Docker](https://docs.docker.com/get-docker/)
 
 Then clone the repository and install NPM packages:
 
