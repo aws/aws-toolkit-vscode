@@ -122,7 +122,7 @@ function parseTypes(params: string): string[] {
 
     // Names of parameters must either be all present or all absent: https://golang.org/ref/spec#Function_types
     for (let i = 0; i < paramParts.length; i++) {
-        const parts: string[] = paramParts[i].trimStart().split(' ')
+        const parts: string[] = paramParts[i].trim().split(/\s+/)
         const type: string = parts.length > 1 ? parts[1] : parts[0]
 
         // Go allows types to be assigned to multiple parameters, e.g. (x, y, z int) === (x int, y int, z int)

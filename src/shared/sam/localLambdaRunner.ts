@@ -572,7 +572,6 @@ export async function waitForPort(port: number, timeout: Timeout, isDebugPort: b
     try {
         // this function always attempts once no matter the timeoutDuration
         await tcpPortUsed.waitUntilUsed(port, SAM_LOCAL_PORT_CHECK_RETRY_INTERVAL_MILLIS, time)
-        console.log('port')
     } catch (err) {
         getLogger().warn(`Timeout after ${time} ms: port was not used: ${port}`)
         if (isDebugPort) {
