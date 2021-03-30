@@ -518,10 +518,7 @@ describe('SamDebugConfigurationProvider', async function () {
             }
 
             assertEqualLaunchConfigs(actual, expected)
-            assertFileText(
-                expected.envFile,
-                '{"awsToolkitSamLocalResource":{"test-envvar-1":"test value 1","test-envvar-2":"test value 2"}}'
-            )
+            assertFileText(expected.envFile, '{"src":{"test-envvar-1":"test value 1","test-envvar-2":"test value 2"}}')
             assertFileText(
                 expected.eventPayloadFile,
                 '{"test-payload-key-1":"test payload value 1","test-payload-key-2":"test payload value 2"}'
@@ -529,7 +526,7 @@ describe('SamDebugConfigurationProvider', async function () {
             assertFileText(
                 expected.templatePath,
                 `Resources:
-  awsToolkitSamLocalResource:
+  src:
     Type: 'AWS::Serverless::Function'
     Properties:
       Handler: my.test.handler
@@ -1625,12 +1622,12 @@ Outputs:
             }
 
             assertEqualLaunchConfigs(actual, expected)
-            assertFileText(expected.envFile, '{"awsToolkitSamLocalResource":{}}')
+            assertFileText(expected.envFile, '{"HelloWorld":{}}')
             assertFileText(expected.eventPayloadFile, '{}')
             assertFileText(
                 expected.templatePath,
                 `Resources:
-  awsToolkitSamLocalResource:
+  HelloWorld:
     Type: 'AWS::Serverless::Function'
     Properties:
       Handler: 'HelloWorld::HelloWorld.Function::FunctionHandler'
@@ -2203,12 +2200,12 @@ Outputs:
             }
 
             assertEqualLaunchConfigs(actual, expected)
-            assertFileText(expected.envFile, '{"awsToolkitSamLocalResource":{}}')
+            assertFileText(expected.envFile, '{"hello_world":{}}')
             assert.strictEqual(readFileSync(actual.eventPayloadFile, 'utf-8'), readFileSync(absPayloadPath, 'utf-8'))
             assertFileText(
                 expected.templatePath,
                 `Resources:
-  awsToolkitSamLocalResource:
+  hello_world:
     Type: 'AWS::Serverless::Function'
     Properties:
       Handler: ${expected.handlerName}
@@ -2883,7 +2880,7 @@ Outputs:
             }
 
             assertEqualLaunchConfigs(actual, expected)
-            assertFileText(expected.envFile, '{"awsToolkitSamLocalResource":{}}')
+            assertFileText(expected.envFile, '{"hello_world":{}}')
             assert.strictEqual(
                 readFileSync(actual.eventPayloadFile, 'utf-8'),
                 readFileSync(input.lambda.payload.path, 'utf-8')
@@ -2891,7 +2888,7 @@ Outputs:
             assertFileText(
                 expected.templatePath,
                 `Resources:
-  awsToolkitSamLocalResource:
+  hello_world:
     Type: 'AWS::Serverless::Function'
     Properties:
       Handler: ${expected.handlerName}
