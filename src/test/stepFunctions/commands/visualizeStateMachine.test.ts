@@ -14,6 +14,8 @@ import { ext } from '../../../shared/extensionGlobals'
 import { StateMachineGraphCache } from '../../../stepFunctions/utils'
 import { assertThrowsError } from '../../shared/utilities/assertUtils'
 
+import { YAML_ASL, JSON_ASL } from '../../../../src/stepFunctions/constants/aslFormats'
+
 // Top level defintions
 let aslVisualizationManager: AslVisualizationManager
 let sandbox: sinon.SinonSandbox
@@ -125,7 +127,7 @@ const mockTextDocumentYaml: vscode.TextDocument = {
     isClosed: false,
     isDirty: false,
     isUntitled: false,
-    languageId: 'asl-yaml',
+    languageId: YAML_ASL,
     lineCount: 0,
     uri: mockUriThree,
     version: 0,
@@ -147,7 +149,7 @@ const mockTextDocumentJson: vscode.TextDocument = {
     isClosed: false,
     isDirty: false,
     isUntitled: false,
-    languageId: 'asl',
+    languageId: JSON_ASL,
     lineCount: 0,
     uri: mockUriThree,
     version: 0,
