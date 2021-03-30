@@ -16,6 +16,8 @@ import CreateStateMachineWizard, {
     TemplateFormats,
 } from '../wizards/createStateMachineWizard'
 
+import { YAML_ASL, JSON_ASL } from '../constants/aslFormats'
+
 export async function createStateMachineFromTemplate(context: vscode.ExtensionContext) {
     const logger: Logger = getLogger()
 
@@ -60,7 +62,7 @@ async function getTextDocumentForSelectedItem(
 
     const options = {
         content,
-        language: format === TemplateFormats.YAML ? 'asl-yaml' : 'asl',
+        language: format === TemplateFormats.YAML ? YAML_ASL : JSON_ASL,
     }
 
     return await vscode.workspace.openTextDocument(options)
