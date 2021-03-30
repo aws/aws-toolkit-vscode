@@ -10,13 +10,13 @@ import { makeTemporaryToolkitFolder } from '../../../../shared/filesystemUtiliti
 import { buildSamCliStartApiArguments } from '../../../../shared/sam/cli/samCliStartApi'
 import { assertArgIsPresent, assertArgNotPresent, assertArgsContainArgument } from './samCliTestUtils'
 
-describe('SamCliStartApi', async function() {
+describe('SamCliStartApi', async function () {
     let tempFolder: string
     let placeholderTemplateFile: string
     let placeholderEventFile: string
     const nonRelevantArg = 'arg is not of interest to this test'
 
-    beforeEach(async function() {
+    beforeEach(async function () {
         tempFolder = await makeTemporaryToolkitFolder()
         placeholderTemplateFile = join(tempFolder, 'template.yaml')
         placeholderEventFile = join(tempFolder, 'event.json')
@@ -24,11 +24,11 @@ describe('SamCliStartApi', async function() {
         await writeFile(placeholderEventFile, '')
     })
 
-    afterEach(async function() {
+    afterEach(async function () {
         await remove(tempFolder)
     })
 
-    it('invokes `sam local start-api` with correct args', async function() {
+    it('invokes `sam local start-api` with correct args', async function () {
         const invokeArgs = await buildSamCliStartApiArguments({
             templatePath: placeholderTemplateFile,
             environmentVariablePath: nonRelevantArg,
@@ -48,7 +48,7 @@ describe('SamCliStartApi', async function() {
         assert.strictEqual(invokeArgs[8], 'my/build/dir/')
     })
 
-    it('Passes template path to sam cli', async function() {
+    it('Passes template path to sam cli', async function () {
         const invokeArgs = await buildSamCliStartApiArguments({
             templatePath: placeholderTemplateFile,
             environmentVariablePath: nonRelevantArg,
@@ -57,7 +57,7 @@ describe('SamCliStartApi', async function() {
         assertArgsContainArgument(invokeArgs, '--template', placeholderTemplateFile)
     })
 
-    it('Passes env-vars path to sam cli', async function() {
+    it('Passes env-vars path to sam cli', async function () {
         const expectedEnvVarsPath = 'envvars.json'
         const invokeArgs = await buildSamCliStartApiArguments({
             templatePath: placeholderTemplateFile,
@@ -67,7 +67,7 @@ describe('SamCliStartApi', async function() {
         assertArgsContainArgument(invokeArgs, '--env-vars', expectedEnvVarsPath)
     })
 
-    it('Passes debug port to sam cli', async function() {
+    it('Passes debug port to sam cli', async function () {
         const expectedDebugPort = '1234'
 
         const invokeArgs = await buildSamCliStartApiArguments({
@@ -79,7 +79,7 @@ describe('SamCliStartApi', async function() {
         assertArgsContainArgument(invokeArgs, '--debug-port', expectedDebugPort)
     })
 
-    it('undefined debug port does not pass to sam cli', async function() {
+    it('undefined debug port does not pass to sam cli', async function () {
         const invokeArgs = await buildSamCliStartApiArguments({
             templatePath: placeholderTemplateFile,
             environmentVariablePath: nonRelevantArg,
@@ -89,7 +89,7 @@ describe('SamCliStartApi', async function() {
         assertArgNotPresent(invokeArgs, '--debug-port')
     })
 
-    it('Passes docker network to sam cli', async function() {
+    it('Passes docker network to sam cli', async function () {
         const expectedDockerNetwork = 'hello-world'
 
         const invokeArgs = await buildSamCliStartApiArguments({
@@ -101,7 +101,7 @@ describe('SamCliStartApi', async function() {
         assertArgsContainArgument(invokeArgs, '--docker-network', expectedDockerNetwork)
     })
 
-    it('Does not pass docker network to sam cli when undefined', async function() {
+    it('Does not pass docker network to sam cli when undefined', async function () {
         const invokeArgs = await buildSamCliStartApiArguments({
             templatePath: placeholderTemplateFile,
             environmentVariablePath: nonRelevantArg,
@@ -111,7 +111,7 @@ describe('SamCliStartApi', async function() {
         assertArgNotPresent(invokeArgs, '--docker-network')
     })
 
-    it('passes --skip-pull-image to sam cli if skipPullImage is true', async function() {
+    it('passes --skip-pull-image to sam cli if skipPullImage is true', async function () {
         const invokeArgs = await buildSamCliStartApiArguments({
             templatePath: placeholderTemplateFile,
             environmentVariablePath: nonRelevantArg,
@@ -121,7 +121,7 @@ describe('SamCliStartApi', async function() {
         assertArgIsPresent(invokeArgs, '--skip-pull-image')
     })
 
-    it('does not pass --skip-pull-image to sam cli if skipPullImage is false', async function() {
+    it('does not pass --skip-pull-image to sam cli if skipPullImage is false', async function () {
         const invokeArgs = await buildSamCliStartApiArguments({
             templatePath: placeholderTemplateFile,
             environmentVariablePath: nonRelevantArg,
@@ -131,7 +131,7 @@ describe('SamCliStartApi', async function() {
         assertArgNotPresent(invokeArgs, '--skip-pull-image')
     })
 
-    it('does not pass --skip-pull-image to sam cli if skipPullImage is undefined', async function() {
+    it('does not pass --skip-pull-image to sam cli if skipPullImage is undefined', async function () {
         const invokeArgs = await buildSamCliStartApiArguments({
             templatePath: placeholderTemplateFile,
             environmentVariablePath: nonRelevantArg,
@@ -141,7 +141,7 @@ describe('SamCliStartApi', async function() {
         assertArgNotPresent(invokeArgs, '--skip-pull-image')
     })
 
-    it('Passes debuggerPath to sam cli', async function() {
+    it('Passes debuggerPath to sam cli', async function () {
         const expectedDebuggerPath = join('foo', 'bar')
 
         const invokeArgs = await buildSamCliStartApiArguments({
@@ -153,7 +153,7 @@ describe('SamCliStartApi', async function() {
         assertArgsContainArgument(invokeArgs, '--debugger-path', expectedDebuggerPath)
     })
 
-    it('Does not pass debuggerPath to sam cli when undefined', async function() {
+    it('Does not pass debuggerPath to sam cli when undefined', async function () {
         const invokeArgs = await buildSamCliStartApiArguments({
             templatePath: placeholderTemplateFile,
             environmentVariablePath: nonRelevantArg,

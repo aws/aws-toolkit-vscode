@@ -11,16 +11,16 @@ import { LoadMoreNode } from '../../../shared/treeview/nodes/loadMoreNode'
 import { FakeWindow } from '../../shared/vscode/fakeWindow'
 import { verify, instance, mock, when } from '../../utilities/mockito'
 
-describe('loadMoreChildrenCommand', function() {
+describe('loadMoreChildrenCommand', function () {
     let mockNode: AWSTreeNodeBase & LoadMoreNode
     let mockAwsExplorer: AwsExplorer
 
-    beforeEach(function() {
+    beforeEach(function () {
         mockNode = mock()
         mockAwsExplorer = mock()
     })
 
-    it('loads more children and refreshes the node', async function() {
+    it('loads more children and refreshes the node', async function () {
         when(mockNode.isLoadingMoreChildren()).thenReturn(false)
 
         const window = new FakeWindow()
@@ -33,7 +33,7 @@ describe('loadMoreChildrenCommand', function() {
         assert.strictEqual(window.message.error, undefined)
     })
 
-    it('ignores invocation when load more is already in progress', async function() {
+    it('ignores invocation when load more is already in progress', async function () {
         when(mockNode.isLoadingMoreChildren()).thenReturn(true)
 
         const window = new FakeWindow()
@@ -45,7 +45,7 @@ describe('loadMoreChildrenCommand', function() {
         assert.strictEqual(window.message.error, undefined)
     })
 
-    it('shows an error message and refreshes the node on failure', async function() {
+    it('shows an error message and refreshes the node on failure', async function () {
         when(mockNode.isLoadingMoreChildren()).thenReturn(false)
         when(mockNode.loadMoreChildren()).thenThrow(new Error('Expected failure'))
 

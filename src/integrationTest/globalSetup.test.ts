@@ -46,7 +46,7 @@ export function setTestTimeout(testName: string | undefined, ms: number) {
 }
 
 // Before all tests begin, once only:
-before(async function() {
+before(async function () {
     console.log('globalSetup: before()')
     // Needed for getLogger().
     await activateExtension(VSCODE_EXTENSION_ID.awstoolkit)
@@ -58,7 +58,7 @@ before(async function() {
     }
 })
 // After all tests end, once only:
-after(async function() {
+after(async function () {
     console.log('globalSetup: after()')
 })
 

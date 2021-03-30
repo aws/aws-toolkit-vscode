@@ -273,4 +273,143 @@ describe('WinstonToolkitLogger', function () {
             })
         }
     })
+
+    // Log tracking functionality testing
+    describe('log tracking', function () {
+        let tempLogPath: string
+        let tempFileCounter: number = 0
+        let testLogger: WinstonToolkitLogger | undefined
+
+        beforeEach(async function () {
+            testLogger = new WinstonToolkitLogger('info')
+            tempLogPath = path.join(tempFolder, `temp-tracker-${tempFileCounter++}.log`)
+            testLogger.logToFile(tempLogPath)
+            testLogger.error(new Error('Test start'))
+            const logExists: boolean | undefined = await waitUntil(() => filesystemUtilities.fileExists(tempLogPath), {
+                timeout: 1000,
+                interval: 10,
+                truthy: true,
+            })
+
+            if (!logExists) {
+                throw new Error("Log file wasn't created during test")
+            }
+        })
+
+        afterEach(function () {
+            if (testLogger) {
+                testLogger.dispose()
+                testLogger = undefined
+            }
+        })
+
+        it('get info log message', async function () {
+            const logID: number = testLogger!.info('test')
+            const msg: string | undefined = await waitUntil(
+                async () => testLogger!.getLogById(logID, `file://${tempLogPath}`),
+                { timeout: 2000, interval: 10, truthy: false }
+            )
+            assert.notStrictEqual(msg, undefined)
+        })
+
+        it('debug log message is undefined', async function () {
+            const logID: number = testLogger!.debug('debug test')
+            const msg: string | undefined = await waitUntil(
+                async () => testLogger!.getLogById(logID, `file://${tempLogPath}`),
+                { timeout: 50, interval: 5, truthy: false }
+            )
+            assert.strictEqual(msg, undefined)
+        })
+
+        it('retrieve multiple unique logs with other logs', async function () {
+            const set: Set<string> = new Set<string>()
+
+            for (let i = 0; i < 5; i++) {
+                const logID: number = testLogger!.info(`log ${i}`)
+                testLogger!.error('error log')
+                testLogger!.debug('debug log')
+
+                const msg: string | undefined = await waitUntil(
+                    async () => testLogger!.getLogById(logID, `file://${tempLogPath}`),
+                    { timeout: 400, interval: 10, truthy: false }
+                )
+                assert.notStrictEqual(msg, undefined)
+                assert.strictEqual(set.has(msg!), false)
+                set.add(msg!)
+            }
+        })
+
+        it('can find log within file', async function () {
+            // Fill the file with messsages, then try to find the middle log
+            const logIDs: number[] = []
+
+            for (let i = 0; i < 10; i++) {
+                logIDs.push(testLogger!.error(`error message ${i}`))
+                testLogger!.warn('warning message')
+            }
+
+            const middleMsg: string | undefined = await waitUntil(
+                async () => testLogger!.getLogById(logIDs[Math.floor(logIDs.length / 2)], `file://${tempLogPath}`),
+                { timeout: 2000, interval: 10, truthy: false }
+            )
+
+            assert.notStrictEqual(middleMsg, undefined)
+        })
+
+        it('can find log from multiple files', async function () {
+            const logIDs: number[] = []
+            const filePaths: string[] = []
+
+            // Make a bunch of files
+            for (let i = 0; i < 4; i++) {
+                tempLogPath = path.join(tempFolder, `temp-tracker-${tempFileCounter++}.log`)
+                testLogger!.logToFile(tempLogPath)
+                filePaths.push(tempLogPath)
+            }
+
+            for (let i = 0; i < 10; i++) {
+                logIDs.push(testLogger!.error(`error message ${i}`))
+                testLogger!.warn('warning message')
+            }
+
+            const middleFile: string = filePaths[Math.floor(filePaths.length / 2)]
+            const middleMsg: string | undefined = await waitUntil(
+                async () => testLogger!.getLogById(logIDs[Math.floor(logIDs.length / 2)], `file://${middleFile}`),
+                { timeout: 2000, interval: 5, truthy: false }
+            )
+
+            assert.notStrictEqual(middleMsg, undefined)
+        })
+
+        it('can find log from channel', async function () {
+            const outputChannel: MockOutputChannel = new MockOutputChannel()
+            testLogger!.logToOutputChannel(outputChannel, true)
+            const logID: number = testLogger!.error('Test error')
+
+            const msg: string | undefined = await waitUntil(
+                async () => testLogger!.getLogById(logID, `channel://${outputChannel.name}`),
+                { timeout: 2000, interval: 5, truthy: false }
+            )
+
+            assert.notStrictEqual(msg, undefined)
+        })
+
+        it('invalid log id raises exception', async function () {
+            // Log ID counter will be at 3 after these
+            testLogger!.error('error log')
+            testLogger!.debug('debug log')
+
+            assert.throws(
+                () => testLogger!.getLogById(-1, ''),
+                Error,
+                'Invalid log state, logID=-1 must be in the range [0, 3)!'
+            )
+
+            assert.throws(
+                () => testLogger!.getLogById(3, ''),
+                Error,
+                'Invalid log state, logID=3 must be in the range [0, 3)!'
+            )
+        })
+    })
 })

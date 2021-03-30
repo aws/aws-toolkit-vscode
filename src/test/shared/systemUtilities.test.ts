@@ -12,28 +12,28 @@ import { EnvironmentVariables } from '../../shared/environmentVariables'
 import { makeTemporaryToolkitFolder } from '../../shared/filesystemUtilities'
 import { SystemUtilities } from '../../shared/systemUtilities'
 
-describe('SystemUtilities', function() {
+describe('SystemUtilities', function () {
     let tempFolder: string
 
-    before(async function() {
+    before(async function () {
         // Make a temp folder for all these tests
         // Stick some temp credentials files in there to load from
         tempFolder = await makeTemporaryToolkitFolder()
     })
 
-    after(async function() {
+    after(async function () {
         await fs.remove(tempFolder)
     })
 
-    describe('getHomeDirectory', function() {
-        it('gets HOME if set', async function() {
+    describe('getHomeDirectory', function () {
+        it('gets HOME if set', async function () {
             const env = process.env as EnvironmentVariables
 
             env.HOME = 'c:\\qwerty'
             assert.strictEqual(SystemUtilities.getHomeDirectory(), 'c:\\qwerty')
         })
 
-        it('gets USERPROFILE if set and HOME is not set', async function() {
+        it('gets USERPROFILE if set and HOME is not set', async function () {
             const env = process.env as EnvironmentVariables
 
             delete env.HOME
@@ -41,7 +41,7 @@ describe('SystemUtilities', function() {
             assert.strictEqual(SystemUtilities.getHomeDirectory(), 'c:\\profiles\\qwerty')
         })
 
-        it('gets HOMEPATH if set and HOME and USERPROFILE are not set', async function() {
+        it('gets HOMEPATH if set and HOME and USERPROFILE are not set', async function () {
             const env = process.env as EnvironmentVariables
 
             delete env.HOME
@@ -54,7 +54,7 @@ describe('SystemUtilities', function() {
             )
         })
 
-        it('prefixes result with HOMEDRIVE if set', async function() {
+        it('prefixes result with HOMEDRIVE if set', async function () {
             const env = process.env as EnvironmentVariables
 
             delete env.HOME
@@ -64,7 +64,7 @@ describe('SystemUtilities', function() {
             assert.strictEqual(SystemUtilities.getHomeDirectory(), `x:${path.sep}users${path.sep}homepath`)
         })
 
-        it('falls back on os.homedir if no environment variables are set', async function() {
+        it('falls back on os.homedir if no environment variables are set', async function () {
             const env = process.env as EnvironmentVariables
 
             delete env.HOME
@@ -76,8 +76,8 @@ describe('SystemUtilities', function() {
         })
     })
 
-    describe('fileExists', function() {
-        it('returns true if file exists', async function() {
+    describe('fileExists', function () {
+        it('returns true if file exists', async function () {
             const filename: string = path.join(tempFolder, 'existing-file.txt')
 
             fs.writeFileSync(filename, 'hello world', 'utf8')
@@ -85,7 +85,7 @@ describe('SystemUtilities', function() {
             assert.strictEqual(await SystemUtilities.fileExists(filename), true)
         })
 
-        it('returns false if file does not exist', async function() {
+        it('returns false if file does not exist', async function () {
             const filename: string = path.join(tempFolder, 'non-existing-file.txt')
             assert.strictEqual(await SystemUtilities.fileExists(filename), false)
         })

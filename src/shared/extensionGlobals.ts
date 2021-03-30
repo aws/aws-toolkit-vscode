@@ -27,6 +27,22 @@ export namespace ext {
     export let templateRegistry: CloudFormationTemplateRegistry
     export let codelensRootRegistry: CodelensRootRegistry
 
+    let _didReload = false
+
+    export function init(context: ExtensionContext, window: Window) {
+        ext.context = context
+        ext.window = window
+        _didReload = !!ext.context.globalState.get<string>('ACTIVATION_LAUNCH_PATH_KEY')
+    }
+
+    /**
+     * Whether the current session was (likely) a reload forced by VSCode
+     * during a workspace folder operation.
+     */
+    export function didReload(): boolean {
+        return _didReload
+    }
+
     export namespace iconPaths {
         export const dark: IconPaths = makeIconPathsObject()
         export const light: IconPaths = makeIconPathsObject()
@@ -65,6 +81,11 @@ export interface IconPaths {
     file: string
     schema: string
     cloudWatchLogGroup: string
+    bucket: string
+    createBucket: string
+    // temporary icons while Cloud9 does not have codicon support
+    plus: string
+    edit: string
 }
 
 function makeIconPathsObject(): IconPaths {
@@ -81,5 +102,9 @@ function makeIconPathsObject(): IconPaths {
         schema: '',
         statemachine: '',
         cloudWatchLogGroup: '',
+        bucket: '',
+        createBucket: '',
+        plus: '',
+        edit: '',
     }
 }

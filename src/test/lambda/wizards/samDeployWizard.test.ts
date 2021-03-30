@@ -107,9 +107,26 @@ class MockSamDeployWizardContext implements SamDeployWizardContext {
         return this.promptForS3BucketResponses.pop()
     }
 
-    public async promptUserForNewS3Bucket(step: number): Promise<string | undefined> {
+    public async promptUserForS3BucketName(
+        step: number,
+        bucketProps: {
+            title: string
+            prompt?: string | undefined
+            placeHolder?: string | undefined
+            value?: string | undefined
+            buttons?: vscode.QuickInputButton[] | undefined
+            buttonHandler?:
+                | ((
+                      button: vscode.QuickInputButton,
+                      inputBox: vscode.InputBox,
+                      resolve: (value: string | PromiseLike<string | undefined> | undefined) => void,
+                      reject: (value: string | PromiseLike<string | undefined> | undefined) => void
+                  ) => void)
+                | undefined
+        }
+    ): Promise<string | undefined> {
         if (this.promptForNewS3BucketResponses.length <= 0) {
-            throw new Error('promptUserForNewS3Bucket was called more times than expected')
+            throw new Error('promptUserForS3BucketName was called more times than expected')
         }
 
         return this.promptForNewS3BucketResponses.pop()
@@ -166,17 +183,17 @@ function normalizePath(...paths: string[]): string {
     return vscode.Uri.file(path.join(...paths)).fsPath
 }
 
-describe('SamDeployWizard', async function() {
+describe('SamDeployWizard', async function () {
     const extContext = await FakeExtensionContext.getFakeExtContext()
-    describe('TEMPLATE', async function() {
-        it('fails gracefully when no templates are found', async function() {
+    describe('TEMPLATE', async function () {
+        it('fails gracefully when no templates are found', async function () {
             const wizard = new SamDeployWizard(new MockSamDeployWizardContext(extContext, [[]], [undefined], [], []))
             const result = await wizard.run()
 
             assert.ok(!result)
         })
 
-        it('exits wizard when cancelled', async function() {
+        it('exits wizard when cancelled', async function () {
             const workspaceFolderPath = normalizePath('my', 'workspace', 'folder')
             const wizard = new SamDeployWizard(
                 new MockSamDeployWizardContext(
@@ -192,7 +209,7 @@ describe('SamDeployWizard', async function() {
             assert.ok(!result)
         })
 
-        it('uses user response as template', async function() {
+        it('uses user response as template', async function () {
             const workspaceFolderPath = normalizePath('my', 'workspace', 'folder')
             const templatePath = normalizePath(workspaceFolderPath, 'template.yaml')
             const wizard = new SamDeployWizard(
@@ -214,7 +231,7 @@ describe('SamDeployWizard', async function() {
         })
     })
 
-    describe('PARAMETER_OVERRIDES', async function() {
+    describe('PARAMETER_OVERRIDES', async function () {
         async function makeFakeContext({
             getParameters,
             getOverriddenParameters,
@@ -246,15 +263,15 @@ describe('SamDeployWizard', async function() {
                 promptUserForSamTemplate: async () => vscode.Uri.file(templatePath),
                 promptUserForRegion: async () => region,
                 promptUserForS3Bucket: async () => s3Bucket,
-                promptUserForNewS3Bucket: async () => undefined,
+                promptUserForS3BucketName: async () => undefined,
                 promptUserForEcrRepo: async () => undefined,
                 promptUserForStackName: async () => stackName,
                 determineIfTemplateHasImages: async () => hasImages,
             }
         }
 
-        describe('SAM template has no parameters', async function() {
-            it('skips configuring overrides and continues wizard', async function() {
+        describe('SAM template has no parameters', async function () {
+            it('skips configuring overrides and continues wizard', async function () {
                 const context = await makeFakeContext({
                     getParameters: async () => new Map<string, { required: boolean }>([]),
                     getOverriddenParameters: async () => {
@@ -273,8 +290,8 @@ describe('SamDeployWizard', async function() {
             })
         })
 
-        describe('SAM template has only optional parameters', async function() {
-            it('skips configuring overrides and continues wizard if parameterOverrides is defined', async function() {
+        describe('SAM template has only optional parameters', async function () {
+            it('skips configuring overrides and continues wizard if parameterOverrides is defined', async function () {
                 const context = await makeFakeContext({
                     getParameters: async () =>
                         new Map<string, { required: boolean }>([['myParam', { required: false }]]),
@@ -291,7 +308,7 @@ describe('SamDeployWizard', async function() {
                 assert.strictEqual(result!.parameterOverrides.size, 0)
             })
 
-            it('skips configuring overrides and continues wizard if parameterOverrides is undefined and user declines prompt', async function() {
+            it('skips configuring overrides and continues wizard if parameterOverrides is undefined and user declines prompt', async function () {
                 const context = await makeFakeContext({
                     getParameters: async () =>
                         new Map<string, { required: boolean }>([['myParam', { required: false }]]),
@@ -306,7 +323,7 @@ describe('SamDeployWizard', async function() {
                 assert.strictEqual(result!.parameterOverrides.size, 0)
             })
 
-            it('configures overrides and cancels wizard if parameterOverrides is undefined and user accepts prompt', async function() {
+            it('configures overrides and cancels wizard if parameterOverrides is undefined and user accepts prompt', async function () {
                 const configureParameterOverridesArgs: {
                     templateUri: vscode.Uri
                     missingParameters?: Set<string> | undefined
@@ -332,8 +349,8 @@ describe('SamDeployWizard', async function() {
             })
         })
 
-        describe('SAM template has required parameters', async function() {
-            it('configures overrides and cancels wizard if overrides are not defined', async function() {
+        describe('SAM template has required parameters', async function () {
+            it('configures overrides and cancels wizard if overrides are not defined', async function () {
                 const configureParameterOverridesArgs: {
                     templateUri: vscode.Uri
                     missingParameters?: Set<string> | undefined
@@ -359,7 +376,7 @@ describe('SamDeployWizard', async function() {
                 assert.strictEqual(configureParameterOverridesArgs[0].missingParameters!.has('myParam'), true)
             })
 
-            it('configures overrides and cancels wizard if there are missing overrides', async function() {
+            it('configures overrides and cancels wizard if there are missing overrides', async function () {
                 const configureParameterOverridesArgs: {
                     templateUri: vscode.Uri
                     missingParameters?: Set<string> | undefined
@@ -385,7 +402,7 @@ describe('SamDeployWizard', async function() {
                 assert.strictEqual(configureParameterOverridesArgs[0].missingParameters!.has('myParam'), true)
             })
 
-            it('stores existing overrides and continues without configuring overrides if there are no missing overrides', async function() {
+            it('stores existing overrides and continues without configuring overrides if there are no missing overrides', async function () {
                 const configureParameterOverridesArgs: {
                     templateUri: vscode.Uri
                     missingParameters?: Set<string> | undefined
@@ -414,8 +431,8 @@ describe('SamDeployWizard', async function() {
         })
     })
 
-    describe('REGION', async function() {
-        it('uses user response for region', async function() {
+    describe('REGION', async function () {
+        it('uses user response for region', async function () {
             const workspaceFolderPath = normalizePath('my', 'workspace', 'folder', '1')
             const templatePath = normalizePath(workspaceFolderPath, 'template.yaml')
             const region = 'us-east-1'
@@ -438,7 +455,7 @@ describe('SamDeployWizard', async function() {
             assert.strictEqual(result!.region, region)
         })
 
-        it('goes back when cancelled', async function() {
+        it('goes back when cancelled', async function () {
             const workspaceFolderPath1 = normalizePath('my', 'workspace', 'folder', '1')
             const workspaceFolderPath2 = normalizePath('my', 'workspace', 'folder', '2')
             const templatePath1 = normalizePath(workspaceFolderPath1, 'template.yaml')
@@ -470,8 +487,8 @@ describe('SamDeployWizard', async function() {
         })
     })
 
-    describe('S3_BUCKET', async function() {
-        it('goes back when cancelled', async function() {
+    describe('S3_BUCKET', async function () {
+        it('goes back when cancelled', async function () {
             const workspaceFolderPath1 = normalizePath('my', 'workspace', 'folder', '1')
             const workspaceFolderPath2 = normalizePath('my', 'workspace', 'folder', '2')
             const templatePath1 = normalizePath(workspaceFolderPath1, 'template.yaml')
@@ -504,7 +521,7 @@ describe('SamDeployWizard', async function() {
             assert.strictEqual(result!.region, region2)
         })
 
-        it('uses user response as s3Bucket', async function() {
+        it('uses user response as s3Bucket', async function () {
             const workspaceFolderPath = normalizePath('my', 'workspace', 'folder')
             const templatePath = normalizePath(workspaceFolderPath, 'template.yaml')
             const wizard = new SamDeployWizard(
@@ -526,8 +543,8 @@ describe('SamDeployWizard', async function() {
         })
     })
 
-    describe('ECR_REPO', async function() {
-        it('goes back when cancelled', async function() {
+    describe('ECR_REPO', async function () {
+        it('goes back when cancelled', async function () {
             const workspaceFolderPath = normalizePath('my', 'workspace', 'folder')
             const templatePath = normalizePath(workspaceFolderPath, 'template.yaml')
 
@@ -551,7 +568,7 @@ describe('SamDeployWizard', async function() {
             assert.strictEqual(result?.ecrRepo?.repositoryUri, 'uri')
         })
 
-        it('uses user response as repo', async function() {
+        it('uses user response as repo', async function () {
             const workspaceFolderPath = normalizePath('my', 'workspace', 'folder')
             const templatePath = normalizePath(workspaceFolderPath, 'template.yaml')
             const wizard = new SamDeployWizard(
@@ -574,8 +591,8 @@ describe('SamDeployWizard', async function() {
         })
     })
 
-    describe('STACK_NAME', async function() {
-        it('goes back when cancelled', async function() {
+    describe('STACK_NAME', async function () {
+        it('goes back when cancelled', async function () {
             const workspaceFolderPath = normalizePath('my', 'workspace', 'folder')
             const templatePath = normalizePath(workspaceFolderPath, 'template.yaml')
             const wizard = new SamDeployWizard(
@@ -596,7 +613,7 @@ describe('SamDeployWizard', async function() {
             assert.strictEqual(result!.s3Bucket, 'mys3bucketname2')
         })
 
-        it('uses user response as stackName', async function() {
+        it('uses user response as stackName', async function () {
             const workspaceFolderPath = normalizePath('my', 'workspace', 'folder')
             const templatePath = normalizePath(workspaceFolderPath, 'template.yaml')
             const wizard = new SamDeployWizard(
@@ -617,7 +634,7 @@ describe('SamDeployWizard', async function() {
             assert.strictEqual(result!.stackName, 'myStackName')
         })
 
-        describe('validation', async function() {
+        describe('validation', async function () {
             async function assertValidationFails(stackName: string | undefined): Promise<void> {
                 const workspaceFolderPath = normalizePath('my', 'workspace', 'folder')
                 const templatePath = normalizePath(workspaceFolderPath, 'template.yaml')
@@ -642,18 +659,18 @@ describe('SamDeployWizard', async function() {
                 assert.fail(`Expected validation for stack name '${stackName}' to fail, but it passed.`)
             }
 
-            it('validates that stackName does not contain invalid charcters', async function() {
+            it('validates that stackName does not contain invalid charcters', async function () {
                 await assertValidationFails('ab_c')
                 await assertValidationFails('ab$c')
                 await assertValidationFails('ab.c')
             })
 
-            it('validates that stackName begins with an alphabetic character', async function() {
+            it('validates that stackName begins with an alphabetic character', async function () {
                 await assertValidationFails('1abc')
                 await assertValidationFails('-abc')
             })
 
-            it('validates that stackName is not longer than 128 characters', async function() {
+            it('validates that stackName is not longer than 128 characters', async function () {
                 const parts = []
                 for (let i = 0; i < 129; i++) {
                     parts.push('a')
@@ -665,37 +682,37 @@ describe('SamDeployWizard', async function() {
     })
 })
 
-describe('DefaultSamDeployWizardContext', async function() {
+describe('DefaultSamDeployWizardContext', async function () {
     let context: DefaultSamDeployWizardContext
     let sandbox: sinon.SinonSandbox
 
-    beforeEach(async function() {
+    beforeEach(async function () {
         sandbox = sinon.createSandbox()
         context = new DefaultSamDeployWizardContext(await FakeExtensionContext.getFakeExtContext())
     })
 
-    afterEach(function() {
+    afterEach(function () {
         sandbox.restore()
     })
 
-    describe('promptUserForS3Bucket', async function() {
-        it('returns an s3 bucket name', async function() {
+    describe('promptUserForS3Bucket', async function () {
+        it('returns an s3 bucket name', async function () {
             const bucketName = 'strictlyForBuckets'
             sandbox
                 .stub(picker, 'promptUser')
                 .onFirstCall()
                 .returns(Promise.resolve([{ label: bucketName }]))
-            const output = await context.promptUserForS3Bucket(1, 'us-weast-1')
+            const output = await context.promptUserForS3Bucket(1, 'us-weast-1', 'accountId')
             assert.strictEqual(output, bucketName)
         })
 
-        it('returns undefined on receiving undefined from the picker (back button)', async function() {
+        it('returns undefined on receiving undefined from the picker (back button)', async function () {
             sandbox.stub(picker, 'promptUser').onFirstCall().returns(Promise.resolve(undefined))
-            const output = await context.promptUserForS3Bucket(1, 'us-weast-1')
+            const output = await context.promptUserForS3Bucket(1, 'us-weast-1', 'accountId')
             assert.strictEqual(output, undefined)
         })
 
-        it('returns undefined if the user selects a no items/error message', async function() {
+        it('returns undefined if the user selects a no items/error message', async function () {
             const messages = {
                 noBuckets: "NO! We're out of bear claws",
                 bucketError: 'One box of one dozen, starving, crazed weasels',
@@ -706,16 +723,30 @@ describe('DefaultSamDeployWizardContext', async function() {
                 .returns(Promise.resolve([{ label: messages.noBuckets }]))
                 .onSecondCall()
                 .returns(Promise.resolve([{ label: messages.bucketError }]))
-            const firstOutput = await context.promptUserForS3Bucket(1, 'us-weast-1', undefined, messages)
+            const firstOutput = await context.promptUserForS3Bucket(
+                1,
+                'us-weast-1',
+                'profile',
+                'accountId',
+                undefined,
+                messages
+            )
             assert.strictEqual(firstOutput, undefined)
 
-            const secondOutput = await context.promptUserForS3Bucket(1, 'us-weast-1', undefined, messages)
+            const secondOutput = await context.promptUserForS3Bucket(
+                1,
+                'us-weast-1',
+                'profile',
+                'accountId',
+                undefined,
+                messages
+            )
             assert.strictEqual(secondOutput, undefined)
         })
     })
 
-    describe('promptUserForEcrRepo', async function() {
-        it('returns an ECR Repo', async function() {
+    describe('promptUserForEcrRepo', async function () {
+        it('returns an ECR Repo', async function () {
             const repoName = 'repo'
             sandbox
                 .stub(picker, 'promptUser')
@@ -725,31 +756,28 @@ describe('DefaultSamDeployWizardContext', async function() {
             assert.notStrictEqual(output, { repositoryUri: 'uri' })
         })
 
-        it('returns undefined on receiving undefined from the picker (back button)', async function() {
+        it('returns undefined on receiving undefined from the picker (back button)', async function () {
             sandbox.stub(picker, 'promptUser').onFirstCall().returns(Promise.resolve(undefined))
             const output = await context.promptUserForEcrRepo(1, 'us-weast-1')
             assert.strictEqual(output, undefined)
         })
     })
 
-    describe('promptUserForNewS3Bucket', async function() {
-        it('returns an S3 bucket name', async function() {
+    describe('promptUserForNewS3Bucket', async function () {
+        it('returns an S3 bucket name', async function () {
             const bucketName = 'shinyNewBucket'
+            sandbox.stub(input, 'promptUser').onFirstCall().returns(Promise.resolve(bucketName))
+            const output = await context.promptUserForS3BucketName(1, { title: 'asdf' })
+            assert.strictEqual(output, bucketName)
+        })
+
+        it('returns undefined if nothing is entered', async function() {
             sandbox
                 .stub(input, 'promptUser')
                 .onFirstCall()
-                .returns(Promise.resolve(bucketName))
-            const output = await context.promptUserForNewS3Bucket(1)
-            assert.strictEqual(output, bucketName) 
-        })
-
-        it('retunrs undefined if nothing is entered', async function() {
-            sandbox
-            .stub(input, 'promptUser')
-            .onFirstCall()
-            .returns(Promise.resolve(undefined))
-        const output = await context.promptUserForNewS3Bucket(1)
-        assert.strictEqual(output, undefined) 
+                .returns(Promise.resolve(undefined))
+            const output = await context.promptUserForS3BucketName(1, { title: 'asdf' })
+            assert.strictEqual(output, undefined) 
         })  
     })
 })

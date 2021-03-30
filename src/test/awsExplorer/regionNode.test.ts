@@ -11,11 +11,11 @@ import { SchemasNode } from '../../eventSchemas/explorer/schemasNode'
 import { DEFAULT_TEST_REGION_CODE, DEFAULT_TEST_REGION_NAME, FakeRegionProvider } from '../utilities/fakeAwsContext'
 import { ToolkitClientBuilder } from '../../shared/clients/toolkitClientBuilder'
 
-describe('RegionNode', function() {
+describe('RegionNode', function () {
     let sandbox: sinon.SinonSandbox
     let testNode: RegionNode
 
-    beforeEach(function() {
+    beforeEach(function () {
         sandbox = sinon.createSandbox()
         console.log('initializing...')
 
@@ -29,24 +29,24 @@ describe('RegionNode', function() {
         testNode = new RegionNode({ id: regionCode, name: regionName }, new FakeRegionProvider())
     })
 
-    afterEach(function() {
+    afterEach(function () {
         sandbox.reset()
     })
 
     const regionCode = DEFAULT_TEST_REGION_CODE
     const regionName = DEFAULT_TEST_REGION_NAME
 
-    it('initializes name and tooltip', async function() {
+    it('initializes name and tooltip', async function () {
         assert.strictEqual(testNode.label, regionName)
         assert.strictEqual(testNode.tooltip, `${regionName} [${regionCode}]`)
     })
 
-    it('contains children', async function() {
+    it('contains children', async function () {
         const childNodes = await testNode.getChildren()
         assert.ok(childNodes.length > 0, 'Expected region node to have child nodes')
     })
 
-    it('does not have child nodes for services not available in a region', async function() {
+    it('does not have child nodes for services not available in a region', async function () {
         const regionProvider = new FakeRegionProvider()
         regionProvider.servicesNotInRegion.push('schemas')
         const regionNode = new RegionNode({ id: regionCode, name: regionName }, regionProvider)

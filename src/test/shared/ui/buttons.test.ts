@@ -8,23 +8,23 @@ import { ext } from '../../../shared/extensionGlobals'
 import * as buttons from '../../../shared/ui/buttons'
 import { clearTestIconPaths, IconPath, setupTestIconPaths } from '../utilities/iconPathUtils'
 
-describe('UI buttons', function() {
-    before(function() {
+describe('UI buttons', function () {
+    before(function () {
         setupTestIconPaths()
     })
 
-    after(function() {
+    after(function () {
         clearTestIconPaths()
     })
 
-    it('creates a help button without a tooltip', function() {
+    it('creates a help button without a tooltip', function () {
         const help = buttons.createHelpButton()
 
         assert.strictEqual(help.tooltip, undefined)
         assertIconPath(help.iconPath as IconPath)
     })
 
-    it('creates a help button with a tooltip', function() {
+    it('creates a help button with a tooltip', function () {
         const tooltip = 'you must be truly desperate to come to me for help'
         const help = buttons.createHelpButton(tooltip)
 

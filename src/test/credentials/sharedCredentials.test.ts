@@ -10,27 +10,27 @@ import { getConfigFilename, getCredentialsFilename } from '../../credentials/sha
 import { EnvironmentVariables } from '../../shared/environmentVariables'
 import { makeTemporaryToolkitFolder } from '../../shared/filesystemUtilities'
 
-describe('sharedCredentials', function() {
+describe('sharedCredentials', function () {
     let tempFolder: string
 
-    before(async function() {
+    before(async function () {
         // Make a temp folder for all these tests
         // Stick some temp credentials files in there to load from
         tempFolder = await makeTemporaryToolkitFolder()
     })
 
-    afterEach(async function() {
+    afterEach(async function () {
         const env = process.env as EnvironmentVariables
         delete env.AWS_SHARED_CREDENTIALS_FILE
         delete env.AWS_CONFIG_FILE
     })
 
-    after(async function() {
+    after(async function () {
         await fs.remove(tempFolder)
     })
 
-    describe('getCredentialsFilename', function() {
-        it('uses the default credentials path if AWS_SHARED_CREDENTIALS_FILE is not set', async function() {
+    describe('getCredentialsFilename', function () {
+        it('uses the default credentials path if AWS_SHARED_CREDENTIALS_FILE is not set', async function () {
             const env = process.env as EnvironmentVariables
             env.AWS_SHARED_CREDENTIALS_FILE = ''
 
@@ -38,7 +38,7 @@ describe('sharedCredentials', function() {
             assert.strictEqual(filename.length > 0, true)
         })
 
-        it('gets AWS_SHARED_CREDENTIALS_FILE if set', async function() {
+        it('gets AWS_SHARED_CREDENTIALS_FILE if set', async function () {
             const expectedFilename = path.join(tempFolder, 'credentials-custom-name-test')
             const env = process.env as EnvironmentVariables
             env.AWS_SHARED_CREDENTIALS_FILE = expectedFilename
@@ -48,8 +48,8 @@ describe('sharedCredentials', function() {
         })
     })
 
-    describe('getConfigFilename', function() {
-        it('uses the default config path if AWS_CONFIG_FILE is not set', async function() {
+    describe('getConfigFilename', function () {
+        it('uses the default config path if AWS_CONFIG_FILE is not set', async function () {
             const env = process.env as EnvironmentVariables
             env.AWS_CONFIG_FILE = ''
 
@@ -57,7 +57,7 @@ describe('sharedCredentials', function() {
             assert.strictEqual(filename.length > 0, true)
         })
 
-        it('gets AWS_CONFIG_FILE if set', async function() {
+        it('gets AWS_CONFIG_FILE if set', async function () {
             const expectedFilename = path.join(tempFolder, 'config-custom-name-test')
             const env = process.env as EnvironmentVariables
             env.AWS_CONFIG_FILE = expectedFilename

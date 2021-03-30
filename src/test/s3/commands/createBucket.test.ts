@@ -11,17 +11,17 @@ import { FakeCommands } from '../../shared/vscode/fakeCommands'
 import { FakeWindow } from '../../shared/vscode/fakeWindow'
 import { anything, mock, instance, when, deepEqual, verify } from '../../utilities/mockito'
 
-describe('createBucketCommand', function() {
+describe('createBucketCommand', function () {
     const bucketName = 'buc.ket-n4.m3'
     let s3: S3Client
     let node: S3Node
 
-    beforeEach(function() {
+    beforeEach(function () {
         s3 = mock()
         node = new S3Node(instance(s3))
     })
 
-    it('prompts for bucket name, creates bucket, shows success, and refreshes node', async function() {
+    it('prompts for bucket name, creates bucket, shows success, and refreshes node', async function () {
         when(s3.createBucket(deepEqual({ bucketName }))).thenResolve({
             bucket: { name: bucketName, region: 'region', arn: 'arn' },
         })
@@ -39,13 +39,13 @@ describe('createBucketCommand', function() {
         assert.deepStrictEqual(commands.args, [node])
     })
 
-    it('does nothing when prompt is cancelled', async function() {
+    it('does nothing when prompt is cancelled', async function () {
         await createBucketCommand(node, new FakeWindow(), new FakeCommands())
 
         verify(s3.createFolder(anything())).never()
     })
 
-    it('shows an error message and refreshes node when bucket creation fails', async function() {
+    it('shows an error message and refreshes node when bucket creation fails', async function () {
         when(s3.createBucket(anything())).thenReject(new Error('Expected failure'))
 
         const window = new FakeWindow({ inputBox: { input: bucketName } })
@@ -58,7 +58,7 @@ describe('createBucketCommand', function() {
         assert.deepStrictEqual(commands.args, [node])
     })
 
-    it('warns when bucket name is invalid', async function() {
+    it('warns when bucket name is invalid', async function () {
         const window = new FakeWindow({ inputBox: { input: 'gg' } })
         const commands = new FakeCommands()
         await createBucketCommand(node, window, commands)

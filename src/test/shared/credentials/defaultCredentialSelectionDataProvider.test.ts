@@ -13,9 +13,9 @@ import {
 } from '../../../shared/credentials/defaultCredentialSelectionDataProvider'
 import { MultiStepInputFlowController } from '../../../shared/multiStepInputFlowController'
 
-describe('defaultCredentialSelectionDataProvider', function() {
-    describe('credentialProfileSelector', function() {
-        it('stops on selection of existing profile name', async function() {
+describe('defaultCredentialSelectionDataProvider', function () {
+    describe('credentialProfileSelector', function () {
+        it('stops on selection of existing profile name', async function () {
             // need to find a better mock solution
             class MockCredentialSelectionDataProvider implements CredentialSelectionDataProvider {
                 public constructor(public readonly existingProfileNames: string[]) {}
@@ -63,8 +63,8 @@ describe('defaultCredentialSelectionDataProvider', function() {
         })
     })
 
-    describe('promptToDefineCredentialsProfile', function() {
-        it('populates prompt with profiles from from data provider', async function() {
+    describe('promptToDefineCredentialsProfile', function () {
+        it('populates prompt with profiles from from data provider', async function () {
             const sampleProfileName: string = 'demoProfile'
             const sampleAccessKey: string = 'ABCD1234'
             const sampleSecretKey: string = '!@#$!@#$'
