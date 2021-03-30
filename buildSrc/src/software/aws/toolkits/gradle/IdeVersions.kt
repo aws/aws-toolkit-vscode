@@ -74,7 +74,7 @@ object IdeVersions {
             riderSdkOverride = "2021.1-SNAPSHOT",
             ijSdkOverride = "211.6305-EAP-CANDIDATE-SNAPSHOT",
             rdGenVersion = "0.211.234",
-            nugetVersion = "2021.1.0-eap06"
+            nugetVersion = "2021.1.0-eap09"
         )
     ).associateBy { it.name }
 

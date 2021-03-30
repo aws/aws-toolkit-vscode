@@ -203,7 +203,8 @@ class DotNetSamProjectGenerator(
         val project = SolutionManager.openExistingSolution(
             projectToClose = null,
             forceOpenInNewFrame = false,
-            solutionFile = solutionFile
+            solutionFile = solutionFile,
+            forceConsiderTrusted = true
         ) ?: return@Runnable
 
         vcsPanel?.createInitializer()?.execute(project)
