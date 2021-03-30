@@ -220,6 +220,7 @@ describe('CreateNewSamAppWizard', async function () {
     after(async function () {
         fs.rmdirSync(dir)
     })
+  
     describe('runtime and dependency manager', async function () {
         it('uses user response as runtime', async function () {
             const context: CreateNewSamAppWizardContext = new MockCreateNewSamAppWizardContext(

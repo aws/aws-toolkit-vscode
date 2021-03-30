@@ -7,17 +7,17 @@ import * as assert from 'assert'
 import * as vscode from 'vscode'
 import * as input from '../../../shared/ui/input'
 
-describe('createInputBox', async function() {
+describe('createInputBox', async function () {
     let testInput: vscode.InputBox | undefined
 
-    afterEach(function() {
+    afterEach(function () {
         if (testInput) {
             testInput.dispose()
             testInput = undefined
         }
     })
 
-    it('Sets buttons', async function() {
+    it('Sets buttons', async function () {
         const buttons: vscode.QuickInputButton[] = [vscode.QuickInputButtons.Back]
 
         testInput = input.createInputBox({
@@ -27,7 +27,7 @@ describe('createInputBox', async function() {
         assert.deepStrictEqual(testInput.buttons, buttons)
     })
 
-    it('Sets Options', async function() {
+    it('Sets Options', async function () {
         const options = {
             title: 'title',
             placeHolder: 'placeholder',
@@ -41,7 +41,7 @@ describe('createInputBox', async function() {
         assertInputBoxOptions(testInput, options)
     })
 
-    it('Sets boolean Options to false values', async function() {
+    it('Sets boolean Options to false values', async function () {
         const options = {
             ignoreFocusOut: false,
         }
@@ -53,7 +53,7 @@ describe('createInputBox', async function() {
         assertInputBoxOptions(testInput, options)
     })
 
-    it('Sets Options to undefined values', async function() {
+    it('Sets Options to undefined values', async function () {
         const options = {}
 
         testInput = input.createInputBox({
@@ -63,7 +63,7 @@ describe('createInputBox', async function() {
         assertInputBoxOptions(testInput, options)
     })
 
-    it('Does not set Options', async function() {
+    it('Does not set Options', async function () {
         testInput = input.createInputBox({})
 
         assertInputBoxOptions(testInput, {})
@@ -99,18 +99,18 @@ describe('createInputBox', async function() {
     }
 })
 
-describe('promptUser', async function() {
+describe('promptUser', async function () {
     let sampleInput: TestInputBox
 
-    beforeEach(async function() {
+    beforeEach(async function () {
         sampleInput = new TestInputBox()
     })
 
-    afterEach(async function() {
+    afterEach(async function () {
         sampleInput.dispose()
     })
 
-    it('Accepted value is returned', async function() {
+    it('Accepted value is returned', async function () {
         const promptPromise = input.promptUser({
             inputBox: sampleInput,
         })
@@ -123,7 +123,7 @@ describe('promptUser', async function() {
         assert.strictEqual(promptResult, 'hello world', 'InputBox accepted value was not expected value')
     })
 
-    it('Hide returns undefined', async function() {
+    it('Hide returns undefined', async function () {
         const promptPromise = input.promptUser({
             inputBox: sampleInput,
         })
@@ -135,7 +135,7 @@ describe('promptUser', async function() {
         assert.strictEqual(result, undefined, `Expected calling hide() on prompt to return undefined, got ${result}`)
     })
 
-    it('Button can cancel and return undefined', async function() {
+    it('Button can cancel and return undefined', async function () {
         const buttonOfInterest = vscode.QuickInputButtons.Back
         sampleInput.buttons = [buttonOfInterest]
 
@@ -163,7 +163,7 @@ describe('promptUser', async function() {
         )
     })
 
-    it('Button can return a value', async function() {
+    it('Button can return a value', async function () {
         const buttonOfInterest = vscode.QuickInputButtons.Back
         const expectedValue = 'hello world'
         sampleInput.buttons = [buttonOfInterest]
@@ -190,7 +190,7 @@ describe('promptUser', async function() {
         assert.strictEqual(promptResult, expectedValue, 'InputBox accepted value was not expected value')
     })
 
-    it('Button can do something and leave input box open', async function() {
+    it('Button can do something and leave input box open', async function () {
         const buttonOfInterest = vscode.QuickInputButtons.Back
         sampleInput.buttons = [buttonOfInterest]
         let handledButtonPress: boolean = false

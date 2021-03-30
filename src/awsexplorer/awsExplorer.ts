@@ -128,7 +128,7 @@ export class AwsExplorer implements vscode.TreeDataProvider<AWSTreeNodeBase>, Re
 
                 return [...this.regionNodes.values()]
             },
-            getErrorNode: async (error: Error) => {
+            getErrorNode: async (error: Error, logID: number) => {
                 // Let the calling function handle the error
                 throw error
             },

@@ -13,7 +13,7 @@ import { AwsContext } from '../../../shared/awsContext'
 import * as accountId from '../../../shared/credentials/accountId'
 import { CredentialsStore } from '../../../credentials/credentialsStore'
 
-describe('LoginManager', async function() {
+describe('LoginManager', async function () {
     let sandbox: sinon.SinonSandbox
 
     const awsContext = ({
@@ -35,7 +35,7 @@ describe('LoginManager', async function() {
     let getCredentialsProviderStub: sinon.SinonStub<[CredentialsProviderId], Promise<CredentialsProvider | undefined>>
     let recordAwsSetCredentialsSpy: any
 
-    beforeEach(async function() {
+    beforeEach(async function () {
         sandbox = sinon.createSandbox()
         recordAwsSetCredentialsSpy = sandbox.spy()
 
@@ -54,11 +54,11 @@ describe('LoginManager', async function() {
         getCredentialsProviderStub.resolves(credentialsProvider)
     })
 
-    afterEach(async function() {
+    afterEach(async function () {
         sandbox.restore()
     })
 
-    it('passive login does NOT send telemetry', async function() {
+    it('passive login does NOT send telemetry', async function () {
         const setCredentialsStub = sandbox.stub(awsContext, 'setCredentials')
         await loginManager.login({ passive: true, providerId: sampleCredentialsProviderId })
 
@@ -66,7 +66,7 @@ describe('LoginManager', async function() {
         assert.strictEqual(recordAwsSetCredentialsSpy.calledOnce, false)
     })
 
-    it('non-passive login sends telemetry', async function() {
+    it('non-passive login sends telemetry', async function () {
         const setCredentialsStub = sandbox.stub(awsContext, 'setCredentials')
         await loginManager.login({ passive: false, providerId: sampleCredentialsProviderId })
 
@@ -74,7 +74,7 @@ describe('LoginManager', async function() {
         assert.strictEqual(recordAwsSetCredentialsSpy.calledOnce, true)
     })
 
-    it('logs in with credentials (happy path)', async function() {
+    it('logs in with credentials (happy path)', async function () {
         const setCredentialsStub = sandbox.stub(awsContext, 'setCredentials')
 
         await loginManager.login({ passive: false, providerId: sampleCredentialsProviderId })
@@ -82,7 +82,7 @@ describe('LoginManager', async function() {
         assert.strictEqual(recordAwsSetCredentialsSpy.calledOnce, true)
     })
 
-    it('logs out (happy path)', async function() {
+    it('logs out (happy path)', async function () {
         const setCredentialsStub = sandbox.stub(awsContext, 'setCredentials')
 
         await loginManager.login({ passive: false, providerId: sampleCredentialsProviderId })
@@ -91,7 +91,7 @@ describe('LoginManager', async function() {
         assert.strictEqual(recordAwsSetCredentialsSpy.calledOnce, true)
     })
 
-    it('logs out if credentials could not be retrieved', async function() {
+    it('logs out if credentials could not be retrieved', async function () {
         getCredentialsProviderStub.reset()
         getCredentialsProviderStub.resolves(undefined)
         const setCredentialsStub = sandbox.stub(awsContext, 'setCredentials').callsFake(async credentials => {
@@ -104,7 +104,7 @@ describe('LoginManager', async function() {
         assert.strictEqual(recordAwsSetCredentialsSpy.calledOnce, false)
     })
 
-    it('logs out if an account Id could not be determined', async function() {
+    it('logs out if an account Id could not be determined', async function () {
         getAccountIdStub.reset()
         getAccountIdStub.resolves(undefined)
         const setCredentialsStub = sandbox.stub(awsContext, 'setCredentials').callsFake(async credentials => {
@@ -117,7 +117,7 @@ describe('LoginManager', async function() {
         assert.strictEqual(recordAwsSetCredentialsSpy.calledOnce, true)
     })
 
-    it('logs out if getting an account Id throws an Error', async function() {
+    it('logs out if getting an account Id throws an Error', async function () {
         getAccountIdStub.reset()
         getAccountIdStub.throws('Simulating getAccountId throwing an Error')
         const setCredentialsStub = sandbox.stub(awsContext, 'setCredentials').callsFake(async credentials => {

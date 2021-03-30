@@ -14,13 +14,13 @@ import { CLOUDWATCH_LOGS_SCHEME } from '../../../shared/constants'
 import { fileExists, makeTemporaryToolkitFolder, readFileAsString } from '../../../shared/filesystemUtilities'
 import { FakeWindow } from '../../shared/vscode/fakeWindow'
 
-describe('saveCurrentLogStreamContent', async function() {
+describe('saveCurrentLogStreamContent', async function () {
     const logContent = 'shutdown is imminent'
     let filename: string
     let fakeRegistry: LogStreamRegistry
     let tempDir: string
 
-    beforeEach(async function() {
+    beforeEach(async function () {
         tempDir = await makeTemporaryToolkitFolder()
         filename = path.join(tempDir, 'bobLoblawsLawB.log')
         fakeRegistry = ({
@@ -30,11 +30,11 @@ describe('saveCurrentLogStreamContent', async function() {
         } as any) as LogStreamRegistry
     })
 
-    afterEach(async function() {
+    afterEach(async function () {
         await fs.remove(tempDir)
     })
 
-    it('saves log content to a file', async function() {
+    it('saves log content to a file', async function () {
         await saveCurrentLogStreamContent(
             vscode.Uri.parse(`${CLOUDWATCH_LOGS_SCHEME}:g:s:r`),
             fakeRegistry,
@@ -49,7 +49,7 @@ describe('saveCurrentLogStreamContent', async function() {
         assert.strictEqual(await readFileAsString(filename), logContent)
     })
 
-    it('does not do anything if the URI is invalid', async function() {
+    it('does not do anything if the URI is invalid', async function () {
         await saveCurrentLogStreamContent(
             vscode.Uri.parse(`notCloudWatch:hahahaha`),
             fakeRegistry,

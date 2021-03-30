@@ -49,14 +49,14 @@ class TestCredentialsProviderFactory implements CredentialsProviderFactory {
     public async refresh(): Promise<void> {}
 }
 
-describe('CredentialsProviderManager', async function() {
+describe('CredentialsProviderManager', async function () {
     let sut: CredentialsProviderManager
 
-    beforeEach(async function() {
+    beforeEach(async function () {
         sut = new CredentialsProviderManager()
     })
 
-    it('getCredentialProviderNames()', async function() {
+    it('getCredentialProviderNames()', async function () {
         const factoryA = new TestCredentialsProviderFactory('credentialTypeA', ['one'])
         const factoryB = new TestCredentialsProviderFactory('credentialTypeB', ['two', 'three'])
         sut.addProviderFactory(factoryA)
@@ -79,8 +79,8 @@ describe('CredentialsProviderManager', async function() {
         assert.deepStrictEqual(expectedCredentials, await sut.getCredentialProviderNames())
     })
 
-    describe('getAllCredentialsProviders', async function() {
-        it('returns all providers', async function() {
+    describe('getAllCredentialsProviders', async function () {
+        it('returns all providers', async function () {
             const factoryA = new TestCredentialsProviderFactory('credentialTypeA', ['one'])
             const factoryB = new TestCredentialsProviderFactory('credentialTypeB', ['two', 'three'])
 
@@ -120,8 +120,8 @@ describe('CredentialsProviderManager', async function() {
         })
     })
 
-    describe('getCredentialsProvider', async function() {
-        it('returns a provider', async function() {
+    describe('getCredentialsProvider', async function () {
+        it('returns a provider', async function () {
             const factoryA = new TestCredentialsProviderFactory('profile', ['default'])
             const expectedCredentialsProviderId: CredentialsProviderId = {
                 credentialType: 'profile',
@@ -140,7 +140,7 @@ describe('CredentialsProviderManager', async function() {
             )
         })
 
-        it('returns undefined when there is a factory but the factory does not contain a provider', async function() {
+        it('returns undefined when there is a factory but the factory does not contain a provider', async function () {
             const factoryA = new TestCredentialsProviderFactory('profile', ['default2'])
 
             sut.addProviderFactory(factoryA)
@@ -153,7 +153,7 @@ describe('CredentialsProviderManager', async function() {
             assert.strictEqual(provider, undefined, 'Manager was not supposed to return a provider')
         })
 
-        it('returns undefined when there is not a factory for the given credentialsType', async function() {
+        it('returns undefined when there is not a factory for the given credentialsType', async function () {
             const factoryA = new TestCredentialsProviderFactory('ec2', ['instance'])
 
             sut.addProviderFactory(factoryA)

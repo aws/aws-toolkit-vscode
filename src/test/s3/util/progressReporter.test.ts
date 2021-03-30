@@ -8,14 +8,14 @@ import * as vscode from 'vscode'
 import { progressReporter } from '../../../s3/progressReporter'
 import { deepEqual, mock, verify, anyNumber, instance } from '../../utilities/mockito'
 
-describe('progressReporter', function() {
+describe('progressReporter', function () {
     let progress: vscode.Progress<{ message?: string; increment?: number }>
 
-    beforeEach(function() {
+    beforeEach(function () {
         progress = mock()
     })
 
-    it('reports incremental percentage when total is provided', function() {
+    it('reports incremental percentage when total is provided', function () {
         const reporter = progressReporter({ progress: instance(progress), totalBytes: 16, minIntervalMillis: 0 })
 
         reporter(4)
@@ -25,7 +25,7 @@ describe('progressReporter', function() {
         verify(progress.report(deepEqual({ increment: 50 }))).once()
     })
 
-    it('throttles progress updates when update frequency exceeds throttle interval', function() {
+    it('throttles progress updates when update frequency exceeds throttle interval', function () {
         const reporter = progressReporter({
             progress: instance(progress),
             totalBytes: 16,
@@ -55,7 +55,7 @@ describe('progressReporter', function() {
         ).once()
     })
 
-    it('reports no incremental percentage when total is not provided', function() {
+    it('reports no incremental percentage when total is not provided', function () {
         const reporter = progressReporter({ progress: instance(progress), minIntervalMillis: 0 })
 
         reporter(4)
@@ -63,21 +63,21 @@ describe('progressReporter', function() {
         verify(progress.report(anyNumber())).never()
     })
 
-    it('throws an error if total bytes is not an integer', function() {
+    it('throws an error if total bytes is not an integer', function () {
         assert.throws(
             () => progressReporter({ progress: instance(progress), totalBytes: 1.5, minIntervalMillis: 0 }),
             /must be an integer/
         )
     })
 
-    it('throws an error if total bytes is negative', function() {
+    it('throws an error if total bytes is negative', function () {
         assert.throws(
             () => progressReporter({ progress: instance(progress), totalBytes: -5, minIntervalMillis: 0 }),
             /cannot be negative/
         )
     })
 
-    it('throws an error if updated with bytes less than loaded bytes', function() {
+    it('throws an error if updated with bytes less than loaded bytes', function () {
         const reporter = progressReporter({ progress: instance(progress), totalBytes: 16, minIntervalMillis: 0 })
 
         reporter(4)
@@ -85,19 +85,19 @@ describe('progressReporter', function() {
         assert.throws(() => reporter(2), /cannot be less than loadedBytes/)
     })
 
-    it('throws an error if updated with non integer bytes', function() {
+    it('throws an error if updated with non integer bytes', function () {
         const reporter = progressReporter({ progress: instance(progress), totalBytes: 5, minIntervalMillis: 0 })
 
         assert.throws(() => reporter(1.5), /must be an integer/)
     })
 
-    it('throws an error if updated with negative bytes', function() {
+    it('throws an error if updated with negative bytes', function () {
         const reporter = progressReporter({ progress: instance(progress), totalBytes: 5, minIntervalMillis: 0 })
 
         assert.throws(() => reporter(-5), /cannot be negative/)
     })
 
-    it('throws an error if updated with bytes greater than total bytes', function() {
+    it('throws an error if updated with bytes greater than total bytes', function () {
         const reporter = progressReporter({ progress: instance(progress), totalBytes: 2, minIntervalMillis: 0 })
 
         assert.throws(() => reporter(5), /cannot be greater than totalBytes/)

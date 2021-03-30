@@ -21,7 +21,7 @@ import {
     TestSamCliProcessInvoker,
 } from './testSamCliProcessInvoker'
 
-describe('SamCliBuildInvocation', async function() {
+describe('SamCliBuildInvocation', async function () {
     class FakeChildProcessResult implements ChildProcessResult {
         public exitCode: number = 0
         public error = undefined
@@ -48,17 +48,17 @@ describe('SamCliBuildInvocation', async function() {
         fileExists: async (filePath: string): Promise<boolean> => true,
     }
 
-    beforeEach(async function() {
+    beforeEach(async function () {
         tempFolder = await makeTemporaryToolkitFolder()
         placeholderTemplateFile = path.join(tempFolder, 'template.yaml')
         await writeFile(placeholderTemplateFile, '')
     })
 
-    afterEach(async function() {
+    afterEach(async function () {
         await remove(tempFolder)
     })
 
-    it('invokes `sam build` with args', async function() {
+    it('invokes `sam build` with args', async function () {
         const processInvoker: SamCliProcessInvoker = new ExtendedTestSamCliProcessInvoker((args: any[]) => {
             assert.ok(args.length >= 2, 'Expected args to be present')
             assert.strictEqual(args[0], 'build')
@@ -84,7 +84,7 @@ describe('SamCliBuildInvocation', async function() {
         }).execute()
     })
 
-    it('Passes Build Dir to sam cli', async function() {
+    it('Passes Build Dir to sam cli', async function () {
         const expectedBuildDir = '/build'
 
         const processInvoker: SamCliProcessInvoker = new ExtendedTestSamCliProcessInvoker((args: any[]) => {
@@ -99,7 +99,7 @@ describe('SamCliBuildInvocation', async function() {
         }).execute()
     })
 
-    it('Passes Base Dir to sam cli', async function() {
+    it('Passes Base Dir to sam cli', async function () {
         const expectedBaseDir = '/src'
 
         const processInvoker: SamCliProcessInvoker = new ExtendedTestSamCliProcessInvoker((args: any[]) => {
@@ -114,7 +114,7 @@ describe('SamCliBuildInvocation', async function() {
         }).execute()
     })
 
-    it('Does not pass Base Dir to sam cli', async function() {
+    it('Does not pass Base Dir to sam cli', async function () {
         const processInvoker: SamCliProcessInvoker = new ExtendedTestSamCliProcessInvoker((args: any[]) => {
             assertArgNotPresent(args, '--base-dir')
         })
@@ -126,7 +126,7 @@ describe('SamCliBuildInvocation', async function() {
         }).execute()
     })
 
-    it('Passes Template to sam cli', async function() {
+    it('Passes Template to sam cli', async function () {
         const processInvoker: SamCliProcessInvoker = new ExtendedTestSamCliProcessInvoker((args: any[]) => {
             assertArgsContainArgument(args, '--template', placeholderTemplateFile)
         })
@@ -139,7 +139,7 @@ describe('SamCliBuildInvocation', async function() {
         }).execute()
     })
 
-    it('passes --use-container to sam cli if useContainer is true', async function() {
+    it('passes --use-container to sam cli if useContainer is true', async function () {
         const processInvoker: SamCliProcessInvoker = new ExtendedTestSamCliProcessInvoker((args: any[]) => {
             assert.notStrictEqual(args.indexOf('--use-container'), -1, 'Expected --use-container arg')
         })
@@ -152,7 +152,7 @@ describe('SamCliBuildInvocation', async function() {
         }).execute()
     })
 
-    it('does not pass --use-container to sam cli if useContainer is false', async function() {
+    it('does not pass --use-container to sam cli if useContainer is false', async function () {
         const processInvoker: SamCliProcessInvoker = new ExtendedTestSamCliProcessInvoker((args: any[]) => {
             assertArgNotPresent(args, '--use-container')
         })
@@ -165,7 +165,7 @@ describe('SamCliBuildInvocation', async function() {
         }).execute()
     })
 
-    it('does not pass --use-container to sam cli if useContainer is undefined', async function() {
+    it('does not pass --use-container to sam cli if useContainer is undefined', async function () {
         const processInvoker: SamCliProcessInvoker = new ExtendedTestSamCliProcessInvoker((args: any[]) => {
             assertArgNotPresent(args, '--use-container')
         })
@@ -177,7 +177,7 @@ describe('SamCliBuildInvocation', async function() {
         }).execute()
     })
 
-    it('passes --manifest to sam cli if manifestPath is set', async function() {
+    it('passes --manifest to sam cli if manifestPath is set', async function () {
         const expectedArg = 'mypath'
 
         const processInvoker: SamCliProcessInvoker = new ExtendedTestSamCliProcessInvoker((args: any[]) => {
@@ -192,7 +192,7 @@ describe('SamCliBuildInvocation', async function() {
         }).execute()
     })
 
-    it('does not pass --manifest to sam cli if manifestPath is not set', async function() {
+    it('does not pass --manifest to sam cli if manifestPath is not set', async function () {
         const processInvoker: SamCliProcessInvoker = new ExtendedTestSamCliProcessInvoker((args: any[]) => {
             assertArgNotPresent(args, '--manifest')
         })
@@ -204,7 +204,7 @@ describe('SamCliBuildInvocation', async function() {
         }).execute()
     })
 
-    it('Passes docker network to sam cli', async function() {
+    it('Passes docker network to sam cli', async function () {
         const expectedDockerNetwork = 'hello-world'
 
         const processInvoker: SamCliProcessInvoker = new ExtendedTestSamCliProcessInvoker((args: any[]) => {
@@ -219,7 +219,7 @@ describe('SamCliBuildInvocation', async function() {
         }).execute()
     })
 
-    it('Does not pass docker network to sam cli if undefined', async function() {
+    it('Does not pass docker network to sam cli if undefined', async function () {
         const processInvoker: SamCliProcessInvoker = new ExtendedTestSamCliProcessInvoker((args: any[]) => {
             assertArgNotPresent(args, '--docker-network')
         })
@@ -231,7 +231,7 @@ describe('SamCliBuildInvocation', async function() {
         }).execute()
     })
 
-    it('passes --skip-pull-image to sam cli if skipPullImage is true', async function() {
+    it('passes --skip-pull-image to sam cli if skipPullImage is true', async function () {
         const processInvoker: SamCliProcessInvoker = new ExtendedTestSamCliProcessInvoker((args: any[]) => {
             assert.notStrictEqual(args.indexOf('--skip-pull-image'), -1, 'Expected --skip-pull-image arg')
         })
@@ -244,7 +244,7 @@ describe('SamCliBuildInvocation', async function() {
         }).execute()
     })
 
-    it('does not pass --skip-pull-image to sam cli if skipPullImageis false', async function() {
+    it('does not pass --skip-pull-image to sam cli if skipPullImageis false', async function () {
         const processInvoker: SamCliProcessInvoker = new ExtendedTestSamCliProcessInvoker((args: any[]) => {
             assertArgNotPresent(args, '--skip-pull-image')
         })
@@ -257,7 +257,7 @@ describe('SamCliBuildInvocation', async function() {
         }).execute()
     })
 
-    it('does not pass --skip-pull-image to sam cli if skipPullImage is undefined', async function() {
+    it('does not pass --skip-pull-image to sam cli if skipPullImage is undefined', async function () {
         const processInvoker: SamCliProcessInvoker = new ExtendedTestSamCliProcessInvoker((args: any[]) => {
             assertArgNotPresent(args, '--skip-pull-image')
         })
@@ -269,7 +269,7 @@ describe('SamCliBuildInvocation', async function() {
         }).execute()
     })
 
-    it('throws on unexpected exit code', async function() {
+    it('throws on unexpected exit code', async function () {
         const error = await assertThrowsError(async () => {
             await new SamCliBuildInvocation(
                 {

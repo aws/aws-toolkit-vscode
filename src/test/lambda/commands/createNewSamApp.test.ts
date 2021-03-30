@@ -29,7 +29,7 @@ describe('addInitialLaunchConfiguration', function () {
     let fakeWorkspaceFolder: vscode.WorkspaceFolder
     let fakeContext: ExtContext
 
-    beforeEach(async function() {
+    beforeEach(async function () {
         mockLaunchConfiguration = mock()
         fakeContext = await FakeExtensionContext.getFakeExtContext()
         tempFolder = await makeTemporaryToolkitFolder()
@@ -55,12 +55,12 @@ describe('addInitialLaunchConfiguration', function () {
         ])
     })
 
-    afterEach(async function() {
+    afterEach(async function () {
         await fs.remove(tempFolder)
         ext.templateRegistry.reset()
     })
 
-    it('produces and returns initial launch configurations', async function() {
+    it('produces and returns initial launch configurations', async function () {
         when(mockLaunchConfiguration.addDebugConfigurations(anything())).thenResolve()
 
         testutil.toFile(makeSampleSamTemplateYaml(true), tempTemplate.fsPath)
@@ -98,7 +98,7 @@ describe('addInitialLaunchConfiguration', function () {
         assert.strictEqual(matchingConfigs!.length, 1)
     })
 
-    it('produces and returns initial launch configurations with runtime', async function() {
+    it('produces and returns initial launch configurations with runtime', async function () {
         when(mockLaunchConfiguration.addDebugConfigurations(anything())).thenResolve()
 
         testutil.toFile(makeSampleSamTemplateYaml(true), tempTemplate.fsPath)
@@ -138,7 +138,7 @@ describe('addInitialLaunchConfiguration', function () {
         assert.strictEqual(matchingConfigs!.length, 1)
     })
 
-    it('returns a blank array if it does not match any launch configs', async function() {
+    it('returns a blank array if it does not match any launch configs', async function () {
         when(mockLaunchConfiguration.addDebugConfigurations(anything())).thenResolve()
 
         testutil.toFile(makeSampleSamTemplateYaml(true), tempTemplate.fsPath)

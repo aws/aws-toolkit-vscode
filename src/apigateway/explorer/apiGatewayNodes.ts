@@ -35,12 +35,8 @@ export class ApiGatewayNode extends AWSTreeNodeBase {
 
                 return [...this.apiNodes.values()]
             },
-            getErrorNode: async (error: Error) =>
-                new ErrorNode(
-                    this,
-                    error,
-                    localize('AWS.explorerNode.apigateway.error', 'Error loading API Gateway REST APIs')
-                ),
+            getErrorNode: async (error: Error, logID: number) => 
+                new ErrorNode(this, error, logID),
             getNoChildrenPlaceholderNode: async () =>
                 new PlaceholderNode(
                     this,

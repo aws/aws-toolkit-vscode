@@ -7,9 +7,9 @@ import * as assert from 'assert'
 import { getLambdaDetails } from '../../lambda/utils'
 import { assertThrowsError } from '../shared/utilities/assertUtils'
 
-describe('lambda utils', async function() {
-    describe('getLambdaDetails', function() {
-        it('returns valid filenames and function names', function() {
+describe('lambda utils', async function () {
+    describe('getLambdaDetails', function () {
+        it('returns valid filenames and function names', function () {
             const jsNonNestedParsedName = getLambdaDetails({
                 Runtime: 'nodejs12.x',
                 Handler: 'app.lambda_handler',
@@ -36,7 +36,7 @@ describe('lambda utils', async function() {
             assert(PyNestedParsedName.functionName, 'lambda_handler')
         })
 
-        it('throws if the handler is not a supported runtime', async function() {
+        it('throws if the handler is not a supported runtime', async function () {
             // unsupported runtime for import
             await assertThrowsError(async () =>
                 getLambdaDetails({

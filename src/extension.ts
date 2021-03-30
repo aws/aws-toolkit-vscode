@@ -97,7 +97,11 @@ export async function activate(context: vscode.ExtensionContext) {
         const loginManager = new LoginManager(awsContext, credentialsStore)
 
         const toolkitEnvDetails = getToolkitEnvironmentDetails()
-        getLogger().info(toolkitEnvDetails)
+        // Splits environment details by new line, filter removes the empty string
+        toolkitEnvDetails
+            .split(/\r?\n/)
+            .filter(x => x)
+            .forEach(line => getLogger().info(line))
 
         await initializeAwsCredentialsStatusBarItem(awsContext, context)
         ext.awsContextCommands = new DefaultAWSContextCommands(
@@ -313,6 +317,19 @@ function initializeIconPaths(context: vscode.ExtensionContext) {
 
     ext.iconPaths.dark.cloudWatchLogGroup = context.asAbsolutePath('resources/dark/log-group.svg')
     ext.iconPaths.light.cloudWatchLogGroup = context.asAbsolutePath('resources/light/log-group.svg')
+
+    ext.iconPaths.dark.createBucket = context.asAbsolutePath('resources/dark/s3/create-bucket.svg')
+    ext.iconPaths.light.createBucket = context.asAbsolutePath('resources/light/s3/create-bucket.svg')
+
+    ext.iconPaths.dark.bucket = context.asAbsolutePath('resources/dark/s3/bucket.svg')
+    ext.iconPaths.light.bucket = context.asAbsolutePath('resources/light/s3/bucket.svg')
+
+    // temporary icons while Cloud9 does not have Codicon support
+    ext.iconPaths.dark.plus = context.asAbsolutePath('resources/dark/plus.svg')
+    ext.iconPaths.light.plus = context.asAbsolutePath('resources/light/plus.svg')
+
+    ext.iconPaths.dark.edit = context.asAbsolutePath('resources/dark/edit.svg')
+    ext.iconPaths.light.edit = context.asAbsolutePath('resources/light/edit.svg')
 }
 
 function initializeManifestPaths(extensionContext: vscode.ExtensionContext) {
