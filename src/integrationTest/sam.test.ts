@@ -439,10 +439,6 @@ describe('SAM Integration Tests', async function () {
                     cfnTemplatePath = path.join(testDir, samApplicationName, 'template.yaml')
                     assert.ok(await fileExists(cfnTemplatePath), `Expected SAM template to exist at ${cfnTemplatePath}`)
 
-                    if (scenario.language === 'java') {
-                        await vscode.commands.executeCommand('java.project.import')
-                    }
-
                     samAppCodeUri = await openSamAppFile(appPath)
                 })
 
