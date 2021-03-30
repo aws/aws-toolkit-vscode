@@ -73,6 +73,7 @@ cannot be enforced by a `lint` build-task.
   - If a message has many variable parts, mention them in the message in
     a natural way, but surround them with quotes:
     - `'creating "{0}" in directory: {1}'`
+  - Localize UI messages. Do _not_ localize log and exception messages.
 - Bubble-up error conditions, do not sink them to random hidden places (such as
   logs only), expecting callers to figure out the failure mode. If a caller
   spawns a process that fails, the caller should get either an exception or
@@ -164,7 +165,7 @@ cannot be enforced by a `lint` build-task.
 - Explanation of VSCode settings hierarchy: https://github.com/microsoft/vscode/issues/97616#issuecomment-633671266
   - package.json scope=machine : https://code.visualstudio.com/api/references/contribution-points#Configuration-property-schema
 - Example: consider the "User" and "Remote" tabs in the VSCode settings UI.
-    Say that `clangd.path` that is defined as "machine" scope.
+  Say `clangd.path` that is defined as "machine" scope.
     - In a Local workspace, the setting is applied if it is defined in User settings.
     - In a Remote workspace, the setting is applied if it is defined in Remote settings and the value defined in User settings is ignored.
     If the extension uses this code (note `Global`):

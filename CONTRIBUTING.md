@@ -163,8 +163,7 @@ GitHub provides additional document on [forking a repository](https://help.githu
 
 Generally, your pull request description should be a copy-paste of your commit
 message(s). If your PR description provides insight not found in a commit
-message, ask yourself why. Source control (Git) is our source-of-truth, not
-GitHub.
+message, ask why. Source control (Git) is our source-of-truth, not GitHub.
 
 Quick summary of commit message guidelines:
 
