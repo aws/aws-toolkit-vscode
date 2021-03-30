@@ -21,7 +21,7 @@ export const GO_ALLFILES: vscode.DocumentFilter[] = [
 export const GO_BASE_PATTERN = '**/go.mod'
 
 export async function getLambdaHandlerCandidates(document: vscode.TextDocument): Promise<LambdaHandlerCandidate[]> {
-    const modFile = await findParentProjectFile(document.uri, /go.mod/)
+    const modFile = await findParentProjectFile(document.uri, /go\.mod$/)
 
     if (!modFile) {
         return []

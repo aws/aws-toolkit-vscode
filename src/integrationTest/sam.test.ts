@@ -371,6 +371,9 @@ describe('SAM Integration Tests', async function () {
                         case 'csharp':
                             manifestFile = /^.*\.csproj$/
                             break
+                        case 'go':
+                            manifestFile = /^go\.mod$/
+                            break
                         default:
                             assert.fail('invalid scenario language')
                     }
