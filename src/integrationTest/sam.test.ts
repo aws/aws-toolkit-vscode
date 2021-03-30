@@ -339,10 +339,11 @@ async function configureAwsToolkitExtension(): Promise<void> {
 }
 
 function runtimeNeedsWorkaround(lang: Language) {
+    // TODO: java fails because debugger connects and completes TOO fast (before detach hook fires)
     return vscode.version.startsWith('1.42') || lang === 'csharp' || lang === 'python' || lang === 'java'
 }
 
-describe('SAM Integration Tests', async function () {
+describe.only('SAM Integration Tests', async function () {
     const samApplicationName = 'testProject'
     /**
      * Breadcrumbs from each process, printed at end of all scenarios to give
@@ -387,7 +388,10 @@ describe('SAM Integration Tests', async function () {
             })
 
             after(async function () {
-                tryRemoveFolder(runtimeTestRoot)
+                // don't clean up after java tests so the java language server doesn't freak out
+                if (scenario.language !== 'java') {
+                    tryRemoveFolder(runtimeTestRoot)
+                }
             })
 
             function log(o: any) {
@@ -406,7 +410,10 @@ describe('SAM Integration Tests', async function () {
                 })
 
                 afterEach(async function () {
-                    tryRemoveFolder(testDir)
+                    // don't clean up after java tests so the java language server doesn't freak out
+                    if (scenario.language !== 'java') {
+                        tryRemoveFolder(testDir)
+                    }
                 })
 
                 it('creates a new SAM Application (happy path)', async function () {
@@ -453,7 +460,10 @@ describe('SAM Integration Tests', async function () {
                 })
 
                 after(async function () {
-                    tryRemoveFolder(testDir)
+                    // don't clean up after java tests so the java language server doesn't freak out
+                    if (scenario.language !== 'java') {
+                        tryRemoveFolder(testDir)
+                    }
                 })
 
                 it('produces an error when creating a SAM Application to the same location', async function () {
