@@ -121,7 +121,7 @@ function makeInstallScript(debuggerPath: string): string {
 
 /**
  * Downloads and builds the delve debugger for our container image
- * TODO: add windows support (or just make the container build it for us)
+ * TODO: add windows support (or just build it in the container)
  *
  * @param debuggerPath Installation path for the debugger
  */
