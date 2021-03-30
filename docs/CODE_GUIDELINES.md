@@ -1,7 +1,10 @@
 # Code guidelines
 
 This document describes code guidelines and technical considerations for AWS
-Toolkit for VSCode.
+Toolkit for VSCode. It provides answers to common questions, decisions, UX and
+project consistency, questions of style and code structure, and anything else
+that cannot be enforced by a `lint` build-task.
+
 
 ## Naming
 
@@ -22,7 +25,7 @@ that is a net cost.
           symbols without having to consume the implementation.
 - Use common names unless there is a strong, conscious reason to use
   a variant/uncommon name.
-    - `Info` is more common that `Details`.
+    - "Info" is more common that "Details".
     - "Get" is more common than "Retrieve"
         - "Fetch" might be used to indicate that special work is being done vs
           some other existing (or potential) "Get" counterpart in the same
@@ -36,10 +39,6 @@ that is a net cost.
       differentiates it from other similar functions).
 
 ## Project guidelines
-
-This section documents answers to common questions, decisions, UX and project
-consistency, questions of style and code structure, and anything else that
-cannot be enforced by a `lint` build-task.
 
 - Telemetry: "active" vs "passive"
   - Active (`passive:false`) metrics are those intended to appear in DAU count.
@@ -72,13 +71,11 @@ cannot be enforced by a `lint` build-task.
   - Localize UI messages. Do _not_ localize log and exception messages.
 - Bubble-up error conditions, do not sink them to random hidden places (such as
   logs only), expecting callers to figure out the failure mode. If a caller
-  spawns a process that fails, the caller should get either an exception or
-  a callback or a return value indicating that some descendant in the call-chain
-  failed, with the failure reason.
+  spawns a process that fails, the caller should get an exception, callback, or
+  return value indicating that some descendant in the call-chain failed, with
+  the failure reason.
 - Refactoring tools allow us to avoid "premature abstraction". Avoid wrappers
   until the need is clear and obvious.
-  - Example: What is the purpose of `CloudFormation.Resource`, what is the
-    purpose vs SDK types?
 
 ## Test guidelines
 
@@ -94,7 +91,8 @@ cannot be enforced by a `lint` build-task.
 
 ## Code guidelines
 
-- Use maps to group variables, rather than ad-hoc/informal group signals. [Example](https://github.com/aws/aws-toolkit-vscode/blob/abed2c4c7e1329da785190e286e567525afa9da5/src/test/shared/utilities/timeoutUtils.test.ts#L107-L113)
+- Use maps to group variables, rather than ad-hoc/informal grouping.
+  [Example](https://github.com/aws/aws-toolkit-vscode/blob/abed2c4c7e1329da785190e286e567525afa9da5/src/test/shared/utilities/timeoutUtils.test.ts#L107-L113)
   - PREFER:
     ```
     let topic = {
@@ -107,8 +105,8 @@ cannot be enforced by a `lint` build-task.
     let topicVar1 = 'foo'
     let topicVar2 = 'bar'
     ```
-- Where formal grouping is not possible, using a common prefix in names helps
-  discoverability and helps other developers understand "these symbols are
+- Where formal grouping is not possible, use a common prefix in names to help
+  discoverability and help other developers understand "these symbols are
   related".
   - PREFER:
     ```
