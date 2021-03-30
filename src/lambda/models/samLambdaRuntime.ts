@@ -77,7 +77,6 @@ export const samLambdaRuntimes: ImmutableSet<Runtime> = ImmutableSet.union([
 
 export type DependencyManager = 'cli-package' | 'mod' | 'gradle' | 'pip' | 'npm' | 'maven' | 'bundler'
 
-// TODO: Make this return an array of DependencyManagers when we add runtimes with multiple dependency managers
 export function getDependencyManager(runtime: Runtime): DependencyManager[] {
     if (nodeJsRuntimes.has(runtime)) {
         return ['npm']

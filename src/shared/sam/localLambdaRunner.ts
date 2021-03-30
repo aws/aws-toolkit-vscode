@@ -66,9 +66,7 @@ function getEnvironmentVariables(
  */
 function makeResourceName(config: SamLaunchRequestArgs): string {
     return config.invokeTarget.target === 'code'
-        ? config.runtimeFamily === RuntimeFamily.Java
-            ? path.parse(config.invokeTarget.projectRoot).name
-            : 'awsToolkitSamLocalResource'
+        ? path.parse(config.invokeTarget.projectRoot).name
         : config.invokeTarget.logicalId
 }
 

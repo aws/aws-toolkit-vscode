@@ -339,7 +339,7 @@ async function configureAwsToolkitExtension(): Promise<void> {
 }
 
 function runtimeNeedsWorkaround(lang: Language) {
-    return vscode.version.startsWith('1.42') || lang === 'csharp' || lang === 'python'
+    return vscode.version.startsWith('1.42') || lang === 'csharp' || lang === 'python' || lang === 'java'
 }
 
 describe('SAM Integration Tests', async function () {
