@@ -21,7 +21,7 @@ export const WAIT_FOR_DEBUGGER_MESSAGES = {
     PYTHON_IKPDB: 'IKP3db listening on',
     NODEJS: 'Debugger listening on',
     DOTNET: 'Waiting for the debugger to attach...',
-    GO_DELVE: 'API server listening at',
+    GO_DELVE: 'launching process with args',
 }
 
 export interface SamLocalInvokeCommandArgs {

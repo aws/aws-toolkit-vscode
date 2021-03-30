@@ -11,22 +11,63 @@ import * as vscode from 'vscode'
  */
 
 export function getDocumentSymbols(): vscode.DocumentSymbol[] {
+    const symbols: vscode.DocumentSymbol[] = []
+
     const badFuncSymbol: vscode.DocumentSymbol = new vscode.DocumentSymbol(
-        'notAHandler()',
+        'notAHandler',
         '()',
         vscode.SymbolKind.Function,
-        new vscode.Range(38, 4, 40, 4),
+        new vscode.Range(38, 4, 41, 4),
         new vscode.Range(38, 9, 38, 20)
     )
+    symbols.push(badFuncSymbol)
+
     const goodFuncSymbol: vscode.DocumentSymbol = new vscode.DocumentSymbol(
-        'handler(request events.APIGatewayProxyRequest)',
+        'handler',
         '(request events.APIGatewayProxyRequest)',
         vscode.SymbolKind.Function,
-        new vscode.Range(23, 0, 50, 0),
+        new vscode.Range(23, 0, 51, 0),
         new vscode.Range(23, 5, 23, 12)
     )
+    symbols.push(goodFuncSymbol)
 
-    return [badFuncSymbol, goodFuncSymbol]
+    const mainSymbol: vscode.DocumentSymbol = new vscode.DocumentSymbol(
+        'main',
+        '()',
+        vscode.SymbolKind.Function,
+        new vscode.Range(52, 0, 55, 0),
+        new vscode.Range(52, 5, 52, 9)
+    )
+    symbols.push(mainSymbol)
+
+    const manyArgsSymbol: vscode.DocumentSymbol = new vscode.DocumentSymbol(
+        'tooManyArgs',
+        '(a, b, c int)',
+        vscode.SymbolKind.Function,
+        new vscode.Range(56, 0, 59, 0),
+        new vscode.Range(56, 5, 56, 16)
+    )
+    symbols.push(manyArgsSymbol)
+
+    const multiLineSymbol: vscode.DocumentSymbol = new vscode.DocumentSymbol(
+        'multiLine',
+        '(a int, b string)',
+        vscode.SymbolKind.Function,
+        new vscode.Range(60, 0, 64, 0),
+        new vscode.Range(60, 5, 60, 14)
+    )
+    symbols.push(multiLineSymbol)
+
+    const manyReturnSymbol: vscode.DocumentSymbol = new vscode.DocumentSymbol(
+        'tooManyReturns',
+        '(a int, b int)',
+        vscode.SymbolKind.Function,
+        new vscode.Range(65, 0, 68, 0),
+        new vscode.Range(65, 5, 65, 19)
+    )
+    symbols.push(manyReturnSymbol)
+
+    return symbols
 }
 
 export function getFunctionText(): string {
@@ -86,5 +127,18 @@ func handler(request events.APIGatewayProxyRequest) (events.APIGatewayProxyRespo
 func main() {
     lambda.Start(handler)
 }    
+
+func tooManyArgs(a, b, c int) {
+
+}
+
+func multiLine(a int, // this parameter is an int
+               c string) /* this parameter is a string */ int {
+    return 1
+}
+
+func tooManyReturns(a int, b int) (x, y, z string) {
+
+}
 `
 }

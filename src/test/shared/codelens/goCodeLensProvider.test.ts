@@ -32,6 +32,7 @@ describe('getLambdaHandlerCandidates', async function () {
         await fs.remove(tempFolder)
     })
 
+    // TODO: make a more robust testing suite for our code lenses
     it('Detects only good function symbols', async function () {
         const textDoc: vscode.TextDocument = await vscode.workspace.openTextDocument(programFile)
         const candidates: vscode.DocumentSymbol[] = sampleGoSamProgram
@@ -39,11 +40,8 @@ describe('getLambdaHandlerCandidates', async function () {
             .filter(symbol => isValidFuncSignature(textDoc, symbol))
 
         assert.ok(candidates)
-        assert.strictEqual(candidates.length, 1, 'Expected one set of Lambda Handler components')
-        assert.strictEqual(
-            candidates[0].name,
-            'handler(request events.APIGatewayProxyRequest)',
-            'Unexpected handler name'
-        )
+        assert.strictEqual(candidates.length, 2, 'Expected two Lambda Handler components')
+        assert.strictEqual(candidates[0].name, 'handler', 'Unexpected handler name')
+        assert.strictEqual(candidates[1].name, 'multiLine', 'Unexpected handler name')
     })
 })

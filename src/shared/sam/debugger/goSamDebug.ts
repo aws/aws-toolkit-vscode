@@ -16,6 +16,7 @@ import { SamLaunchRequestArgs } from './awsSamDebugger'
 import { getLogger } from '../../logger'
 import { chmod, ensureDir, writeFile } from 'fs-extra'
 import { ChildProcess } from '../../utilities/childProcess'
+import { Timeout } from '../../utilities/timeoutUtils'
 
 /**
  * Launches and attaches debugger to a SAM Node project.
@@ -23,12 +24,26 @@ import { ChildProcess } from '../../utilities/childProcess'
 export async function invokeGoLambda(ctx: ExtContext, config: GoDebugConfiguration): Promise<GoDebugConfiguration> {
     config.samLocalInvokeCommand = new DefaultSamLocalInvokeCommand([WAIT_FOR_DEBUGGER_MESSAGES.GO_DELVE])
     // eslint-disable-next-line @typescript-eslint/unbound-method
-    config.onWillAttachDebugger = waitForPort
+    config.onWillAttachDebugger = goToSleep
+
     if (!config.noDebug) {
         installDebugger(config.debuggerPath!)
     }
+
     const c = (await invokeLambdaFunction(ctx, config, async () => {})) as GoDebugConfiguration
     return c
+}
+
+/**
+ * Triggered before the debugger attachment process begins. We should verify that the debugger is ready to go
+ * before returning. We'll wait a little bit before checking ports, just to make sure the debugger doesn't break.
+ *
+ * @param debugPort
+ * @param timeout
+ */
+async function goToSleep(debugPort: number, timeout: Timeout) {
+    await new Promise<void>(resolve => setTimeout(resolve, 500))
+    await waitForPort(debugPort, timeout)
 }
 
 export async function getSamProjectDirPathForFile(filepath: string): Promise<string> {
@@ -94,16 +109,13 @@ export async function makeGoConfig(config: SamLaunchRequestArgs): Promise<GoDebu
     const goLaunchConfig: GoDebugConfiguration = {
         ...config, // Compose.
         type: 'go',
+        processName: 'gogogadgetdelve',
         request: 'attach',
         mode: config.noDebug ? undefined : 'remote',
         runtimeFamily: RuntimeFamily.Go,
         preLaunchTask: undefined,
         host: 'localhost',
         port: config.debugPort ?? -1,
-        // in theory, roots should never be undefined for node
-        //localRoot: localRoot ?? config.codeRoot,
-        // Stop at first user breakpoint, not the runtime bootstrap file.
-        stopOnEntry: config.stopOnEntry === undefined ? false : !!config.stopOnEntry,
         skipFiles: [],
         debugArgs: ['-delveAPI=2'],
     }
@@ -116,7 +128,7 @@ function makeInstallScript(debuggerPath: string): string {
     const script: string = `
         export GOPROXY=direct
         go get ${DELVE_MODULE}
-        GOARCH=amd64 GOOS=linux go build -o ${debuggerPath}/dlv ${DELVE_MODULE}
+        GOARCH=amd64 GOOS=linux go build -o "${debuggerPath}/dlv" "${DELVE_MODULE}"
     `
 
     return script

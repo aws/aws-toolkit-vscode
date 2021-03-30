@@ -84,6 +84,7 @@ export interface GoDebugConfiguration extends SamLaunchRequestArgs {
     readonly remotePath?: string
     readonly port: number
 }
+
 export interface PipeTransport {
     pipeProgram: 'sh' | 'powershell'
     pipeArgs: string[]
