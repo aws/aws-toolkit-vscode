@@ -38,6 +38,8 @@ import * as URL from 'url'
 import { getLanguageModelCache } from '../../shared/languageServer/languageModelCache'
 import { formatError, runSafe, runSafeAsync } from '../../shared/languageServer/utils/runner'
 
+import { YAML_ASL, JSON_ASL } from '../constants/aslFormats'
+
 namespace ResultLimitReachedNotification {
     export const type: NotificationType<string, any> = new NotificationType('asl/resultLimitReached')
 }
@@ -212,7 +214,7 @@ connection.onDidChangeConfiguration(change => {
         if (enableFormatter) {
             if (!formatterRegistration) {
                 formatterRegistration = connection.client.register(DocumentRangeFormattingRequest.type, {
-                    documentSelector: [{ language: 'asl' }, { language: 'asl-yaml' }],
+                    documentSelector: [{ language: JSON_ASL }, { language: YAML_ASL }],
                 })
             }
         } else if (formatterRegistration) {
@@ -272,7 +274,7 @@ function triggerValidation(textDocument: TextDocument): void {
 
 // sets language service depending on document language
 function getLanguageService(langId: string): LanguageService {
-    if (langId === 'asl-yaml') {
+    if (langId === YAML_ASL) {
         return aslYamlLanguageService
     } else {
         return aslJsonLanguageService
