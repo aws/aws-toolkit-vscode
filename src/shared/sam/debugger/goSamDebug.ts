@@ -42,7 +42,7 @@ export async function invokeGoLambda(ctx: ExtContext, config: GoDebugConfigurati
  * @param timeout Cancellation token to prevent stalling
  */
 async function goToSleep(debugPort: number, timeout: Timeout) {
-    await new Promise<void>(resolve => setTimeout(resolve, 500))
+    await new Promise<void>(resolve => setTimeout(resolve, 1000))
     await waitForPort(debugPort, timeout)
 }
 
