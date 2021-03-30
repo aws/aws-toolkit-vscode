@@ -13,6 +13,8 @@ import { getLogger, Logger } from '../../../shared/logger'
 import { isDocumentValid } from '../../utils'
 import * as yaml from 'yaml'
 
+import { YAML_ASL } from '../../constants/aslFormats'
+
 const YAML_OPTIONS: yaml.Options = {
     merge: false,
     maxAliasCount: 0,
@@ -62,7 +64,7 @@ export class AslVisualization {
 
     public async sendUpdateMessage(updatedTextDocument: vscode.TextDocument) {
         const logger: Logger = getLogger()
-        const isYaml = updatedTextDocument.languageId === 'asl-yaml'
+        const isYaml = updatedTextDocument.languageId === YAML_ASL
         const text = updatedTextDocument.getText()
         let stateMachineData = text
         let yamlErrors: string[] = []
