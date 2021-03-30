@@ -64,9 +64,13 @@ export function isValidFuncSignature(document: vscode.TextDocument, symbol: vsco
         // otherwise we would just use symbol.details instead of parsing it ourselves
         const funcWithBody: string = document.getText(symbol.range)
 
-        // '(' and '{' will always exist, otherwise symbol is not a function!
         const bodyStart: number = funcWithBody.search(/\{/)
         const sigStart: number = funcWithBody.search(/\(/)
+
+        if (bodyStart === -1 || sigStart === -1) {
+            return false
+        }
+
         const funcSig: string = stripNewLinesAndComments(funcWithBody.substring(sigStart, bodyStart))
 
         const funcSigParts: string[] = funcSig.split(/\)/)
