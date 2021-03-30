@@ -15,8 +15,9 @@ export const GO_ALLFILES: vscode.DocumentFilter[] = [
     },
 ]
 
-// Need to check for different Go package managers...
-// go.mod???
+// Go modules were introduced in Go 1.11
+// Before that, $GOPATH had to be set properly to find dependencies
+// We currently just ignore projects without a Go module file
 export const GO_BASE_PATTERN = '**/go.mod'
 
 export async function getLambdaHandlerCandidates(document: vscode.TextDocument): Promise<LambdaHandlerCandidate[]> {
@@ -48,8 +49,8 @@ export async function getLambdaHandlerCandidates(document: vscode.TextDocument):
 /**
  * Checks for a valid lamba function signature for Go
  *
- * @param document  VS Code Document that contains the symbol
- * @param symbol  VS Code DocumentSymbol to analyze
+ * @param document VS Code Document that contains the symbol
+ * @param symbol VS Code DocumentSymbol to analyze
  */
 export function isValidFuncSignature(document: vscode.TextDocument, symbol: vscode.DocumentSymbol): boolean {
     if (symbol.name === 'main') {
@@ -92,9 +93,11 @@ export function isValidFuncSignature(document: vscode.TextDocument, symbol: vsco
 /**
  * Go allows function signatures to be multi-line, so we should parse these into something more usable.
  *
- * @param text  String to parse
+ * @param text String to parse
+ *
+ * @returns Final output without any new lines or comments
  */
-function stripNewLinesAndComments(text: string) {
+function stripNewLinesAndComments(text: string): string {
     const blockCommentRegExp = /\/\*[.*?]\*\//
     let result: string = ''
 
@@ -111,7 +114,9 @@ function stripNewLinesAndComments(text: string) {
  * Finds all types of the parameter list, stripping out names if they exist.
  * Parenthesis are stripped from the list if they exist.
  *
- * @param params  List of parameters delimeted by commas
+ * @param params List of parameters delimeted by commas
+ *
+ * @returns A list of types mapping 1:1 with the input
  */
 function parseTypes(params: string): string[] {
     params = params.replace(/\(|\)/, '')

@@ -5,7 +5,7 @@
 
 import * as path from 'path'
 import * as vscode from 'vscode'
-import { isImageLambdaConfig, GoDebugConfiguration } from '../../../lambda/local/debugConfiguration'
+import { GoDebugConfiguration } from '../../../lambda/local/debugConfiguration'
 import { RuntimeFamily } from '../../../lambda/models/samLambdaRuntime'
 import * as pathutil from '../../../shared/utilities/pathUtils'
 import { ExtContext } from '../../extensions'
@@ -38,8 +38,8 @@ export async function invokeGoLambda(ctx: ExtContext, config: GoDebugConfigurati
  * Triggered before the debugger attachment process begins. We should verify that the debugger is ready to go
  * before returning. We'll wait a little bit before checking ports, just to make sure the debugger doesn't break.
  *
- * @param debugPort
- * @param timeout
+ * @param debugPort Port to check for activity
+ * @param timeout Cancellation token to prevent stalling
  */
 async function goToSleep(debugPort: number, timeout: Timeout) {
     await new Promise<void>(resolve => setTimeout(resolve, 500))
@@ -65,45 +65,26 @@ export async function makeGoConfig(config: SamLaunchRequestArgs): Promise<GoDebu
     if (!config.baseBuildDir) {
         throw Error('invalid state: config.baseBuildDir was not set')
     }
+
+    config.codeRoot =
+        config.codeRoot ??
+        pathutil.normalize(await getSamProjectDirPathForFile(config?.templatePath ?? config.documentUri!!.fsPath))
+
     if (!config.codeRoot) {
-        // Last-resort attempt to discover the project root
-        config.codeRoot = pathutil.normalize(
-            await getSamProjectDirPathForFile(config?.templatePath ?? config.documentUri!!.fsPath)
-        )
-        if (!config.codeRoot) {
-            // TODO: return error and show it at the caller.
-            throw Error('missing launch.json, template.yaml, and failed to discover project root')
-        }
+        throw Error('missing launch.json, template.yaml, and failed to discover project root')
     }
-    let localRoot: string | undefined
-    let remoteRoot: string | undefined
+
     config.codeRoot = pathutil.normalize(config.codeRoot)
+    // TODO: install debugger in a temporary work directory instead of the project directory
     config.debuggerPath = path.resolve(config.codeRoot, '.godbg')
 
     // Always generate a temporary template.yaml, don't use workspace one directly.
     config.templatePath = await makeInputTemplate(config)
 
-    const isImageLambda = isImageLambdaConfig(config)
+    // TODO: make sure debugging works with Go images
+    //const isImageLambda = isImageLambdaConfig(config)
 
-    /*
-    if (isImageLambda && !config.noDebug) {
-        config.containerEnvVars = {
-            NODE_OPTIONS: `--inspect-brk=0.0.0.0:${config.debugPort} --max-http-header-size 81920`,
-        }
-    }
-    */
-
-    // if provided, use the user's mapping instead
-    if (config.lambda?.pathMappings !== undefined && config.lambda.pathMappings.length > 0) {
-        const mappings = config.lambda.pathMappings
-        if (mappings.length !== 1) {
-            getLogger().warn(
-                'This language only supports a single path mapping entry. Taking the first entry in the list.'
-            )
-        }
-        localRoot = mappings[0].localRoot
-        remoteRoot = mappings[0].remoteRoot
-    }
+    // TODO: add support for GOPATH and GOROOT??
 
     //  Make a go launch-config from the generic config.
     const goLaunchConfig: GoDebugConfiguration = {
@@ -123,6 +104,10 @@ export async function makeGoConfig(config: SamLaunchRequestArgs): Promise<GoDebu
     return goLaunchConfig
 }
 
+/**
+ * @param debuggerPath Installation path for the debugger
+ * @returns A simple shell script for building delve
+ */
 function makeInstallScript(debuggerPath: string): string {
     const DELVE_MODULE: string = 'github.com/go-delve/delve/cmd/dlv'
     const script: string = `
@@ -136,8 +121,9 @@ function makeInstallScript(debuggerPath: string): string {
 
 /**
  * Downloads and builds the delve debugger for our container image
+ * TODO: add windows support (or just make the container build it for us)
  *
- * @param debuggerPath
+ * @param debuggerPath Installation path for the debugger
  */
 async function installDebugger(debuggerPath: string): Promise<void> {
     const installScriptPath = path.join(debuggerPath, 'install.sh')
