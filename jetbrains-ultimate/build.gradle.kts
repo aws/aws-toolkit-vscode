@@ -1,11 +1,13 @@
 // Copyright 2019 Amazon.com, Inc. or its affiliates. All Rights Reserved.
 // SPDX-License-Identifier: Apache-2.0
 
-import org.jetbrains.intellij.IntelliJPluginExtension
-import software.aws.toolkits.gradle.IdeVersions
+import software.aws.toolkits.gradle.intellij.ToolkitIntelliJExtension.IdeFlavor
 
 plugins {
-    id("org.jetbrains.intellij")
+    id("toolkit-kotlin-conventions")
+    id("toolkit-intellij-subplugin")
+    id("toolkit-testing")
+    id("toolkit-integration-testing")
 }
 
 dependencies {
@@ -15,26 +17,6 @@ dependencies {
     integrationTestImplementation(project(path = ":jetbrains-core", configuration = "testArtifacts"))
 }
 
-val ideProfile = IdeVersions.ideProfile(project)
-
-intellij {
-    pluginName = "aws-toolkit-jetbrains"
-
-    version = ideProfile.ultimate.sdkVersion
-    setPlugins(*ideProfile.ultimate.plugins)
-
-    // IU is closed source, so nothing to download.
-    downloadSources = false
-}
-
-tasks.test {
-    systemProperty("log.dir", "${(project.extensions["intellij"] as IntelliJPluginExtension).sandboxDirectory}-test/logs")
-}
-
-tasks.buildSearchableOptions {
-    enabled = false
-}
-
-tasks.jar {
-    archiveBaseName.set("aws-intellij-toolkit-ultimate")
+intellijToolkit {
+    ideFlavor.set(IdeFlavor.IU)
 }

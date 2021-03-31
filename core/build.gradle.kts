@@ -3,12 +3,18 @@
 
 val awsSdkVersion: String by project
 val jacksonVersion: String by project
-val coroutinesVersion: String by project
-val kotlinVersion: String by project
+val junitVersion: String by project
+
+plugins {
+    id("toolkit-kotlin-conventions")
+    id("toolkit-testing")
+    id("toolkit-integration-testing")
+}
 
 dependencies {
     api(project(":resources"))
     api(project(":sdk-codegen"))
+
     api("com.fasterxml.jackson.module:jackson-module-kotlin:$jacksonVersion")
     api("com.fasterxml.jackson.datatype:jackson-datatype-jsr310:$jacksonVersion")
     api("com.fasterxml.jackson.dataformat:jackson-dataformat-xml:$jacksonVersion")
@@ -21,11 +27,5 @@ dependencies {
     api("software.amazon.awssdk:ssooidc:$awsSdkVersion")
     api("software.amazon.awssdk:sts:$awsSdkVersion")
 
-    compileOnly("org.jetbrains.kotlin:kotlin-stdlib-jdk8:$kotlinVersion")
-    compileOnly("org.jetbrains.kotlin:kotlin-reflect:$kotlinVersion")
-    compileOnly("org.jetbrains.kotlinx:kotlinx-coroutines-core:$coroutinesVersion")
-
-    testImplementation("org.jetbrains.kotlin:kotlin-stdlib-jdk8:$kotlinVersion")
-    testImplementation("org.jetbrains.kotlin:kotlin-reflect:$kotlinVersion")
-    testImplementation("org.jetbrains.kotlinx:kotlinx-coroutines-core:$coroutinesVersion")
+    testImplementation("junit:junit:$junitVersion")
 }

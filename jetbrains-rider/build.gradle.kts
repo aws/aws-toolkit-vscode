@@ -1,9 +1,11 @@
 // Copyright 2019 Amazon.com, Inc. or its affiliates. All Rights Reserved.
 // SPDX-License-Identifier: Apache-2.0
+
 import com.jetbrains.rd.generator.gradle.RdGenExtension
 import com.jetbrains.rd.generator.gradle.RdGenTask
 import org.jetbrains.intellij.tasks.PrepareSandboxTask
 import software.aws.toolkits.gradle.IdeVersions
+import software.aws.toolkits.gradle.intellij.ToolkitIntelliJExtension.IdeFlavor
 import java.nio.file.Path
 
 buildscript {
@@ -11,7 +13,7 @@ buildscript {
     @Suppress("RemoveRedundantQualifierName")
     val rdversion = software.aws.toolkits.gradle.IdeVersions.ideProfile(project).rider.rdGenVersion
 
-    logger.info("Using rd-gen: $rdversion")
+    println("Using rd-gen: $rdversion")
 
     repositories {
         maven("https://www.myget.org/F/rd-snapshots/maven/")
@@ -22,16 +24,47 @@ buildscript {
     }
 }
 
+val ideProfile = IdeVersions.ideProfile(project)
+
 plugins {
-    id("org.jetbrains.intellij")
+    id("toolkit-kotlin-conventions")
+    id("toolkit-intellij-subplugin")
+    id("toolkit-testing")
+    id("toolkit-integration-testing")
 }
 
-apply(plugin = "com.jetbrains.rdgen")
+intellijToolkit {
+    ideFlavor.set(IdeFlavor.RD)
+}
 
-val ideProfile = IdeVersions.ideProfile(project)
+sourceSets {
+    main {
+        java.srcDirs("$buildDir/generated-src")
+    }
+}
+
+dependencies {
+    implementation(project(":jetbrains-core"))
+    testImplementation(project(path = ":jetbrains-core", configuration = "testArtifacts"))
+}
+
+/**
+ * RESHARPER
+ */
+
+// Not published to gradle plugin portal, use old syntax
+apply(plugin = "com.jetbrains.rdgen")
 
 val resharperPluginPath = File(projectDir, "ReSharper.AWS")
 val resharperBuildPath = File(project.buildDir, "dotnetBuild")
+
+val resharperParts = listOf(
+    "AWS.Daemon",
+    "AWS.Localization",
+    "AWS.Project",
+    "AWS.Psi",
+    "AWS.Settings"
+)
 
 val buildConfiguration = project.extra.properties["BuildConfiguration"] ?: "Debug" // TODO: Do we ever want to make a release build?
 
@@ -50,26 +83,12 @@ val rdgenDir = File("${project.buildDir}/rdgen/")
 
 rdgenDir.mkdirs()
 
-intellij {
-    pluginName = "aws-toolkit-jetbrains"
-
-    version = ideProfile.rider.sdkVersion
-    // Workaround for https://youtrack.jetbrains.com/issue/IDEA-179607
-    val extraPlugins = arrayOf("rider-plugins-appender")
-    setPlugins(*(ideProfile.rider.plugins + extraPlugins))
-
-    // RD is closed source, so nothing to download.
-    downloadSources = false
-    instrumentCode = false
-}
-
 configure<RdGenExtension> {
     verbose = true
     hashFolder = rdgenDir.toString()
-    logger.info("Configuring rdgen params")
 
     classpath({
-        logger.info("Calculating classpath for rdgen, intellij.ideaDependency is: ${intellij.ideaDependency}")
+        println("Calculating classpath for rdgen, intellij.ideaDependency is: ${intellij.ideaDependency}")
         File(intellij.ideaDependency.classes, "lib/rd").resolve("rider-model.jar").absolutePath
     })
 
@@ -80,6 +99,14 @@ configure<RdGenExtension> {
 val generateModels = tasks.register<RdGenTask>("generateModels") {
     group = protocolGroup
     description = "Generates protocol models"
+
+    inputs.dir(file("protocol/model"))
+
+    outputs.dir(riderGeneratedSources)
+    outputs.dir(csDaemonGeneratedOutput)
+    outputs.dir(csPsiGeneratedOutput)
+    outputs.dir(csAwsSettingsGeneratedOutput)
+    outputs.dir(csAwsProjectGeneratedOutput)
 
     systemProperty("ktDaemonGeneratedOutput", riderGeneratedSources.resolve("DaemonProtocol").absolutePath)
     systemProperty("csDaemonGeneratedOutput", csDaemonGeneratedOutput.absolutePath)
@@ -98,34 +125,23 @@ val cleanGenerateModels = tasks.register("cleanGenerateModels") {
     group = protocolGroup
     description = "Clean up generated protocol models"
 
-    logger.info("Deleting generated Kotlin files...")
-    riderGeneratedSources.listFiles().orEmpty().forEach { it.deleteRecursively() }
+    doLast {
+        println("Deleting generated Kotlin files...")
+        riderGeneratedSources.listFiles().orEmpty().forEach { it.deleteRecursively() }
 
-    logger.info("Deleting generated CSharp files...")
-    val csGeneratedRoots = listOf(
-        csDaemonGeneratedOutput,
-        csPsiGeneratedOutput,
-        csAwsSettingsGeneratedOutput,
-        csAwsProjectGeneratedOutput
-    )
+        println("Deleting generated CSharp files...")
+        val csGeneratedRoots = listOf(
+            csDaemonGeneratedOutput,
+            csPsiGeneratedOutput,
+            csAwsSettingsGeneratedOutput,
+            csAwsProjectGeneratedOutput
+        )
 
-    csGeneratedRoots.forEach { protocolDirectory: File ->
-        if (!protocolDirectory.exists()) return@forEach
-        protocolDirectory.listFiles().orEmpty().forEach { file -> file.deleteRecursively() }
+        csGeneratedRoots.forEach { protocolDirectory: File ->
+            if (!protocolDirectory.exists()) return@forEach
+            protocolDirectory.listFiles().orEmpty().forEach { file -> file.deleteRecursively() }
+        }
     }
-}
-
-val cleanNetBuilds = task("cleanNetBuilds", Delete::class) {
-    group = protocolGroup
-    description = "Clean up obj/ bin/ folders under ReSharper.AWS"
-    delete(project.fileTree("ReSharper.AWS/") {
-        include("**/bin/")
-        include("**/obj/")
-    })
-}
-
-project.tasks.clean {
-    dependsOn(cleanGenerateModels, cleanNetBuilds)
 }
 
 // Backend
@@ -183,13 +199,6 @@ val buildReSharperPlugin = tasks.register("buildReSharperPlugin") {
     inputs.dir(resharperPluginPath)
     outputs.dir(resharperBuildPath)
 
-    outputs.files({
-        fileTree(file("${resharperPluginPath.absolutePath}/src")).matching {
-            include("**/bin/Debug/**/AWS*.dll")
-            include("**/bin/Debug/**/AWS*.pdb")
-        }
-    })
-
     doLast {
         val arguments = listOf(
             "build",
@@ -206,12 +215,7 @@ fun getNugetPackagesPath(): File {
     val sdkPath = intellij.ideaDependency.classes
     println("SDK path: $sdkPath")
 
-    // 2019
-    var riderSdk = File(sdkPath, "lib/ReSharperHostSdk")
-    // 2020.1
-    if (!riderSdk.exists()) {
-        riderSdk = File(sdkPath, "lib/DotNetSdkForRdPlugins")
-    }
+    val riderSdk = File(sdkPath, "lib/DotNetSdkForRdPlugins")
 
     println("NuGet packages: $riderSdk")
     if (!riderSdk.isDirectory) throw IllegalStateException("$riderSdk does not exist or not a directory")
@@ -219,24 +223,37 @@ fun getNugetPackagesPath(): File {
     return riderSdk
 }
 
-dependencies {
-    implementation(project(":jetbrains-core"))
-    testImplementation(project(":jetbrains-core", "testArtifacts"))
+val resharperDlls = configurations.create("resharperDlls") {
+    isCanBeResolved = false
 }
 
-sourceSets {
-    main {
-        java.srcDirs("$buildDir/generated-src")
+val resharperDllsDir = tasks.register<Sync>("resharperDllsDir") {
+    from(buildReSharperPlugin) {
+        include("**/bin/**/$buildConfiguration/**/AWS*.dll")
+        include("**/bin/**/$buildConfiguration/**/AWS*.pdb")
+    }
+    into("$buildDir/$name")
+
+    includeEmptyDirs = false
+
+    eachFile {
+        path = name // Clear out the path to flatten it
     }
 }
 
-val resharperParts = listOf(
-    "AWS.Daemon",
-    "AWS.Localization",
-    "AWS.Project",
-    "AWS.Psi",
-    "AWS.Settings"
-)
+artifacts {
+    add(resharperDlls.name, resharperDllsDir)
+}
+
+val cleanNetBuilds = tasks.register<Delete>("cleanNetBuilds") {
+    group = protocolGroup
+    description = "Clean up obj/ bin/ folders under ReSharper.AWS"
+    delete(resharperBuildPath)
+}
+
+tasks.clean {
+    dependsOn(cleanGenerateModels, cleanNetBuilds)
+}
 
 // Tasks:
 //
@@ -244,13 +261,11 @@ val resharperParts = listOf(
 // `runIde` depends on `prepareSandbox` task and then executes IJ inside the sandbox dir
 // `prepareSandbox` depends on the standard Java `jar` and then copies everything into the sandbox dir
 
-tasks.withType(PrepareSandboxTask::class.java).configureEach {
-    dependsOn(buildReSharperPlugin)
+tasks.withType<PrepareSandboxTask>().all {
+    dependsOn(resharperDllsDir)
 
-    val files = resharperParts.map { "$resharperBuildPath/bin/$it/$buildConfiguration/${it}.dll" } +
-        resharperParts.map { "$resharperBuildPath/bin/$it/$buildConfiguration/${it}.pdb" }
-    from(files) {
-        into("${intellij.pluginName}/dotnet")
+    from(resharperDllsDir) {
+        into("aws-toolkit-jetbrains/dotnet")
     }
 }
 
@@ -259,7 +274,6 @@ tasks.compileKotlin {
 }
 
 tasks.test {
-    systemProperty("log.dir", "${intellij.sandboxDirectory}-test/logs")
     useTestNG()
     environment("LOCAL_ENV_RUN", true)
     maxHeapSize = "1024m"
@@ -268,12 +282,5 @@ tasks.test {
 tasks.integrationTest {
     useTestNG()
     environment("LOCAL_ENV_RUN", true)
-}
-
-tasks.buildSearchableOptions {
-    enabled = false
-}
-
-tasks.jar {
-    archiveBaseName.set("aws-intellij-toolkit-rider")
+    maxHeapSize = "1024m"
 }
