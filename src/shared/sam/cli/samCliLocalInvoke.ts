@@ -56,7 +56,7 @@ export class DefaultSamLocalInvokeCommand implements SamLocalInvokeCommand {
     ) {}
 
     public async invoke({ options, ...params }: SamLocalInvokeCommandArgs): Promise<ChildProcess> {
-        const childProcess = new ChildProcess(params.command, options, ...params.args)
+        const childProcess = new ChildProcess(true, params.command, options, ...params.args)
         getLogger('channel').info('AWS.running.command', 'Running: {0}', `${childProcess}`)
         // "sam local invoke", "sam local start-api", etc.
         const samCommandName = `sam ${params.args[0]} ${params.args[1]}`
@@ -77,7 +77,7 @@ export class DefaultSamLocalInvokeCommand implements SamLocalInvokeCommand {
                     params.timeout?.refresh()
                     this.logger.verbose('SAM: pid %d: stderr: %s', childProcess.pid(), removeAnsi(text))
                     if (checkForCues) {
-                        // Look for messages like "Waiting for debugger to attach" before returning back to caller
+                        // Look for messages like "Debugger attached" before returning back to caller
                         if (this.debuggerAttachCues.some(cue => text.includes(cue))) {
                             this.logger.verbose(
                                 `SAM: pid ${childProcess.pid()}: local SAM app is ready for debugger to attach`
