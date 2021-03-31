@@ -26,7 +26,7 @@ phases:
             - '>/dev/null pip3 install --upgrade awscli'
             - '>/dev/null pip3 install pylint'
             - '>/dev/null VERSION=$(curl "https://golang.org/VERSION?m=text") && wget "https://dl.google.com/go/$VERSION.linux-amd64.tar.gz"'
-            - '>/dev/null tar -C /usr/local -xzf $VERSION.linux-amd64.tar.gz && export PATH=$PATH:/usr/local/go/bin && export GOPROXY=direct"'
+            - '>/dev/null tar -C /usr/local -xzf $VERSION.linux-amd64.tar.gz && export PATH=$PATH:/usr/local/go/bin && export GOPROXY=direct'
             # login to DockerHub so we don't get throttled
             - docker login --username $(echo $DOCKER_HUB_TOKEN | jq -r '.username') --password $(echo $DOCKER_HUB_TOKEN | jq -r '.password') || true
 

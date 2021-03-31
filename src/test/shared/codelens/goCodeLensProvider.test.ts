@@ -32,8 +32,7 @@ describe('getLambdaHandlerCandidates', async function () {
         await fs.remove(tempFolder)
     })
 
-    // TODO: test more things
-    it('Detects only good function symbols', async function () {
+    it('Detects only good function symbols from a mock program', async function () {
         const textDoc: vscode.TextDocument = await vscode.workspace.openTextDocument(programFile)
         const candidates: vscode.DocumentSymbol[] = sampleGoSamProgram
             .getDocumentSymbols()
