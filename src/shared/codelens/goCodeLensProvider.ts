@@ -4,6 +4,7 @@
  */
 
 import * as vscode from 'vscode'
+import { VSCODE_EXTENSION_ID } from '../extensions'
 import { LambdaHandlerCandidate } from '../lambdaHandlerSearch'
 import { getLogger } from '../logger/logger'
 import { findParentProjectFile } from '../utilities/workspaceUtils'
@@ -23,8 +24,9 @@ export const GO_BASE_PATTERN = '**/go.mod'
 
 export async function getLambdaHandlerCandidates(document: vscode.TextDocument): Promise<LambdaHandlerCandidate[]> {
     const modFile: vscode.Uri | undefined = await findParentProjectFile(document.uri, /go\.mod$/)
+    const goIsActive: boolean = await checkForGoExtension()
 
-    if (!modFile) {
+    if (!modFile || !goIsActive) {
         return []
     }
 
@@ -162,4 +164,31 @@ function parseTypes(params: string): string[] {
     }
 
     return types
+}
+
+/**
+ * Checks if the Go extension exists and is active.
+ */
+async function checkForGoExtension(): Promise<boolean> {
+    const extension = vscode.extensions.getExtension(VSCODE_EXTENSION_ID.go)
+
+    if (extension) {
+        if (extension.isActive) {
+            return true
+        }
+
+        getLogger().info('Go CodeLens provider is activating the Go extension...')
+
+        try {
+            await extension.activate()
+            getLogger().info('Go extension activated!')
+
+            return true
+        } catch (err) {
+            getLogger().info('Failed to activate Go extension. AWS CodeLens for Go will not appear.')
+            getLogger().debug('Extension activation failed: %O', err as Error)
+        }
+    }
+
+    return false
 }
