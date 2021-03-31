@@ -15,6 +15,7 @@ import { SsoAccessTokenProvider } from '../sso/ssoAccessTokenProvider'
 import { CredentialsProvider } from './credentialsProvider'
 import { CredentialsProviderId } from './credentialsProviderId'
 import { SsoCredentialProvider } from './ssoCredentialProvider'
+import { CredentialType } from '../../shared/telemetry/telemetry.gen'
 
 const SHARED_CREDENTIAL_PROPERTIES = {
     AWS_ACCESS_KEY_ID: 'aws_access_key_id',
@@ -244,8 +245,19 @@ export class SharedCredentialsProvider implements CredentialsProvider {
         AWS.config.sts.region = this.getDefaultRegion()
     }
 
+    /**
+     * Legacy function that does nothing particularly useful.
+     *
+     * You are probably looking for `getCredentialsType2()`.
+     *
+     * TODO: deprecated / why is this static?!
+     */
     public static getCredentialsType(): string {
         return SharedCredentialsProvider.CREDENTIALS_TYPE
+    }
+
+    public getCredentialsType2(): CredentialType {
+        return this.isSsoProfile() ? 'ssoProfile' : 'staticProfile'
     }
 
     public isSsoProfile(): boolean {
