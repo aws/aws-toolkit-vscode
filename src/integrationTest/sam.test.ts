@@ -90,7 +90,7 @@ const scenarios: TestScenario[] = [
     {
         runtime: 'go1.x',
         displayName: 'go1.x (ZIP)',
-        path: 'hello-word/main.go',
+        path: 'hello-world/main.go',
         debugSessionType: 'delve',
         language: 'go',
     },
@@ -142,7 +142,7 @@ const scenarios: TestScenario[] = [
         runtime: 'go1.x',
         displayName: 'go1.x (Image)',
         baseImage: 'amazon/go1.x-base',
-        path: 'hello-word/main.go',
+        path: 'hello-world/main.go',
         debugSessionType: 'delve',
         language: 'go',
     },
