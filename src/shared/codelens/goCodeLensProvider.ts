@@ -5,6 +5,7 @@
 
 import * as vscode from 'vscode'
 import { LambdaHandlerCandidate } from '../lambdaHandlerSearch'
+import { getLogger } from '../logger/logger'
 import { findParentProjectFile } from '../utilities/workspaceUtils'
 
 export const GO_LANGUAGE = 'go'
@@ -21,9 +22,28 @@ export const GO_ALLFILES: vscode.DocumentFilter[] = [
 export const GO_BASE_PATTERN = '**/go.mod'
 
 export async function getLambdaHandlerCandidates(document: vscode.TextDocument): Promise<LambdaHandlerCandidate[]> {
-    const modFile = await findParentProjectFile(document.uri, /go\.mod$/)
+    const modFile: vscode.Uri | undefined = await findParentProjectFile(document.uri, /go\.mod$/)
 
     if (!modFile) {
+        return []
+    }
+
+    // We'll check that the Go lambda module is required, otherwise showing debug configs does not make much sense
+    // If we want to support GOPATH, then we should check for an import statemnt within the file instead
+    try {
+        const modDoc: vscode.TextDocument = await vscode.workspace.openTextDocument(modFile!)
+
+        if (
+            !modDoc.getText().includes('require github.com/aws/aws-lambda-go') ||
+            !document.getText().includes('github.com/aws/aws-lambda-go/lambda')
+        ) {
+            return []
+        }
+    } catch (err) {
+        // No need to throw an error
+        getLogger().verbose(`Go CodeLens not enabled for ${document.fileName}`)
+        getLogger().verbose('Verify that a go.mod file exists and is within the module directory')
+
         return []
     }
 

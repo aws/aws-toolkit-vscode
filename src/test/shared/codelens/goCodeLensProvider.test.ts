@@ -25,7 +25,7 @@ describe('getLambdaHandlerCandidates', async function () {
         dummyMod = path.join(tempFolder, 'go.mod')
 
         await writeFile(programFile, sampleGoSamProgram.getFunctionText())
-        await writeFile(dummyMod, 'go 1.14')
+        await writeFile(dummyMod, 'require github.com/aws/aws-lambda-go v1.13.3\nmodule hello-world\ngo 1.14')
     })
 
     after(async function () {
