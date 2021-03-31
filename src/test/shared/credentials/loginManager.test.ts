@@ -42,6 +42,7 @@ describe('LoginManager', async function () {
         loginManager = new LoginManager(awsContext, credentialsStore, recordAwsSetCredentialsSpy)
         credentialsProvider = {
             getCredentials: sandbox.stub().resolves(sampleCredentials),
+            getCredentialsType2: sandbox.stub().resolves('staticProfile'),
             getCredentialsProviderId: sandbox.stub().returns(sampleCredentialsProviderId),
             getDefaultRegion: sandbox.stub().returns('someRegion'),
             getHashCode: sandbox.stub().returns('1234'),
