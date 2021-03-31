@@ -9,6 +9,7 @@ import { getLogger } from '../shared/logger'
 import { recordAwsSetCredentials } from '../shared/telemetry/telemetry'
 import { CredentialsStore } from './credentialsStore'
 import { notifyUserInvalidCredentials } from './credentialsUtilities'
+import { CredentialsProvider } from './providers/credentialsProvider'
 import { asString, CredentialsProviderId } from './providers/credentialsProviderId'
 import { CredentialsProviderManager } from './providers/credentialsProviderManager'
 
@@ -29,8 +30,9 @@ export class LoginManager {
      * @param provider  Credentials provider id
      */
     public async login(args: { passive: boolean; providerId: CredentialsProviderId }): Promise<void> {
+        let provider : CredentialsProvider | undefined
         try {
-            const provider = await CredentialsProviderManager.getInstance().getCredentialsProvider(args.providerId)
+            provider = await CredentialsProviderManager.getInstance().getCredentialsProvider(args.providerId)
             if (!provider) {
                 throw new Error(`Could not find Credentials Provider for ${asString(args.providerId)}`)
             }
@@ -65,8 +67,11 @@ export class LoginManager {
 
             notifyUserInvalidCredentials(args.providerId)
         } finally {
+            const credType = provider?.getCredentialsType2()
             if (!args.passive) {
-                this.recordAwsSetCredentialsFn()
+                this.recordAwsSetCredentialsFn({
+                    credentialType: credType
+                })
             }
         }
     }

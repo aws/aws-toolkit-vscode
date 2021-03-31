@@ -6,7 +6,9 @@
 const CREDENTIALS_PROVIDER_ID_SEPARATOR = ':'
 
 export interface CredentialsProviderId {
+    /** Credential type name, e.g. "profile". */
     readonly credentialType: string
+    /** User-defined profile name, e.g. "default". */
     readonly credentialTypeId: string
 }
 
