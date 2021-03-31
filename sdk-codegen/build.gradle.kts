@@ -3,10 +3,11 @@
 
 val awsSdkVersion: String by project
 
-dependencies {
-    implementation("software.amazon.awssdk:services:$awsSdkVersion")
-    implementation("software.amazon.awssdk:aws-json-protocol:$awsSdkVersion")
-    runtimeOnly("software.amazon.awssdk:core:$awsSdkVersion")
+plugins {
+    id("toolkit-generate-sdks")
 }
 
-apply(plugin = "toolkit-generate-sdk")
+sdkGenerator {
+    c2jFolder.set(file("$projectDir/codegen-resources"))
+    outputDir.set(file("$buildDir/generated-sources"))
+}

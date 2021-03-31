@@ -1,13 +1,15 @@
 // Copyright 2019 Amazon.com, Inc. or its affiliates. All Rights Reserved.
 // SPDX-License-Identifier: Apache-2.0
 
-import org.jetbrains.kotlin.gradle.tasks.KotlinCompile
-import software.aws.toolkits.gradle.IdeVersions
 import software.aws.toolkits.gradle.changelog.tasks.GeneratePluginChangeLog
+import software.aws.toolkits.gradle.intellij.ToolkitIntelliJExtension.IdeFlavor
 import software.aws.toolkits.telemetry.generator.gradle.GenerateTelemetry
 
 plugins {
-    id("org.jetbrains.intellij")
+    id("toolkit-kotlin-conventions")
+    id("toolkit-testing")
+    id("toolkit-integration-testing")
+    id("toolkit-intellij-subplugin")
 }
 
 buildscript {
@@ -17,48 +19,26 @@ buildscript {
     }
 }
 
-val ideProfile = IdeVersions.ideProfile(project)
 val telemetryVersion: String by project
 val awsSdkVersion: String by project
 val coroutinesVersion: String by project
 val jacksonVersion: String by project
 
-val compileKotlin: KotlinCompile by tasks
-
-intellij {
-    pluginName = "aws-toolkit-jetbrains"
-
-    version = ideProfile.community.sdkVersion
-    setPlugins(*ideProfile.community.plugins)
+intellijToolkit {
+    ideFlavor.set(IdeFlavor.IC)
 }
-
-tasks.patchPluginXml {
-    setSinceBuild(ideProfile.sinceVersion)
-    setUntilBuild(ideProfile.untilVersion)
-}
-
-configurations {
-    testArtifacts
-}
-
-val generateTelemetry = tasks.register<GenerateTelemetry>("generateTelemetry") {
-    inputFiles = listOf(file("${project.projectDir}/resources/telemetryOverride.json"))
-    outputDirectory = file("${project.buildDir}/generated-src")
-}
-compileKotlin.dependsOn(generateTelemetry)
 
 sourceSets {
     main {
         java.srcDir("${project.buildDir}/generated-src")
     }
 }
-
-tasks.test {
-    systemProperty("log.dir", "${project.intellij.sandboxDirectory}-test/logs")
+val generateTelemetry = tasks.register<GenerateTelemetry>("generateTelemetry") {
+    inputFiles = listOf(file("${project.projectDir}/resources/telemetryOverride.json"))
+    outputDirectory = file("${project.buildDir}/generated-src")
 }
-
-tasks.buildSearchableOptions {
-    enabled = false
+tasks.compileKotlin {
+    dependsOn(generateTelemetry)
 }
 
 val changelog = tasks.register<GeneratePluginChangeLog>("pluginChangeLog") {
@@ -81,7 +61,6 @@ dependencies {
     api("software.amazon.awssdk:iam:$awsSdkVersion")
     api("software.amazon.awssdk:ecr:$awsSdkVersion")
     api("software.amazon.awssdk:ecs:$awsSdkVersion")
-    api("software.amazon.awssdk:ecr:$awsSdkVersion")
     api("software.amazon.awssdk:cloudformation:$awsSdkVersion")
     api("software.amazon.awssdk:schemas:$awsSdkVersion")
     api("software.amazon.awssdk:cloudwatchlogs:$awsSdkVersion")

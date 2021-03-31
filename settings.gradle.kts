@@ -2,7 +2,6 @@
 // SPDX-License-Identifier: Apache-2.0
 rootProject.name = "aws-toolkit-jetbrains"
 
-include("ktlint-rules")
 include("resources")
 include("sdk-codegen")
 include("core")
@@ -19,9 +18,9 @@ plugins {
 gradleEnterprise {
     buildScan {
         obfuscation {
-            username { "<username>"}
-            hostname { "<hostname>"}
-            ipAddresses { it.map { "0.0.0.0"} }
+            username { "<username>" }
+            hostname { "<hostname>" }
+            ipAddresses { it.map { "0.0.0.0" } }
         }
     }
 }
