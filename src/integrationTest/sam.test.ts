@@ -292,7 +292,7 @@ function runtimeNeedsWorkaround(lang: Language) {
     return vscode.version.startsWith('1.42') || lang === 'csharp' || lang === 'python' || lang === 'java'
 }
 
-describe.only('SAM Integration Tests', async function () {
+describe('SAM Integration Tests', async function () {
     const samApplicationName = 'testProject'
     /**
      * Breadcrumbs from each process, printed at end of all scenarios to give
