@@ -21,6 +21,7 @@ import {
 } from '../../utilities/fakeAwsContext'
 import { FakeTelemetryPublisher } from '../../fake/fakeTelemetryService'
 import ClientTelemetry = require('../../../shared/telemetry/clienttelemetry')
+import { assertThrowsError } from '../utilities/assertUtils'
 
 const originalTelemetryClient: TelemetryService = ext.telemetry
 let mockContext: FakeExtensionContext
@@ -41,6 +42,16 @@ afterEach(async function () {
     await fs.remove(ext.telemetry.persistFilePath)
     ext.telemetry = originalTelemetryClient
 })
+
+function fakeMetric(value: number, passive: boolean) {
+    return {
+        Passive: passive,
+        MetricName: `metric${value}`,
+        Value: value,
+        Unit: 'None',
+        EpochTimestamp: new Date().getTime(),
+    }
+}
 
 describe('DefaultTelemetryService', function () {
     const testFlushPeriod = 10
@@ -63,6 +74,36 @@ describe('DefaultTelemetryService', function () {
         await service.postFeedback(feedback)
 
         assert.strictEqual(mockPublisher.feedback, feedback)
+    })
+
+    it('assertPassiveTelemetry() throws if active, non-cached metric is emitted during startup', async function () {
+        service.clearRecords()
+        service.telemetryEnabled = true
+        service.flushPeriod = testFlushPeriod
+
+        // Simulate cached telemetry by prepopulating records before start().
+        // (Normally readEventsFromCache() does this.)
+        service.record(fakeMetric(1, true))
+        service.record(fakeMetric(2, true))
+        // Active *cached* metric.
+        service.record(fakeMetric(4, false))
+        await service.start()
+
+        // Passive *non-cached* metric.
+        service.record(fakeMetric(5, true))
+
+        // Must *not* throw.
+        service.assertPassiveTelemetry(false)
+
+        // Active *non-cached* metric.
+        service.record(fakeMetric(6, false))
+
+        // Must throw.
+        assertThrowsError(async () => {
+            service.assertPassiveTelemetry(false)
+        })
+
+        await service.shutdown()
     })
 
     it('publishes periodically if user has said ok', async function () {
