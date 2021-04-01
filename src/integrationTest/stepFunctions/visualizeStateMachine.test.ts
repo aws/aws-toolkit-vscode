@@ -11,7 +11,7 @@ import { MessageObject } from '../../stepFunctions/commands/visualizeStateMachin
 import { assertThrowsError } from '../../test/shared/utilities/assertUtils'
 import { makeTemporaryToolkitFolder } from '../../shared/filesystemUtilities'
 import { spy } from 'sinon'
-import { waitUntil } from '../../../src/shared/utilities/timeoutUtils'
+import { closeAllEditors } from '../../shared/utilities/vsCodeUtils'
 
 const sampleStateMachine = `
 	 {
@@ -94,27 +94,6 @@ async function waitUntilWebviewIsVisible(webviewPanel: vscode.WebviewPanel | und
             reject()
         }
     })
-}
-
-/**
- * Executes the close all editors command but also waits for the active editor to disappear
- *
- */
-async function closeAllEditors() {
-    await vscode.commands.executeCommand('workbench.action.closeAllEditors')
-    await waitUntil(async () => vscode.window.activeTextEditor === undefined, {
-        timeout: 2500,
-        interval: 50,
-        truthy: true,
-    })
-
-    if (vscode.window.activeTextEditor) {
-        throw new Error(
-            `Window "${vscode.window.activeTextEditor.document.fileName}" was still open after executing "closeAllEditors"`
-        )
-        // Dumping document output to console so I can see what it is...
-        console.log(vscode.window.activeTextEditor!.document.getText())
-    }
 }
 
 describe('visualizeStateMachine', async function () {

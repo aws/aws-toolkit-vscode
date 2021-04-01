@@ -6,6 +6,7 @@
 import * as vscode from 'vscode'
 import * as nls from 'vscode-nls'
 import { ext } from '../../shared/extensionGlobals'
+import { waitUntil } from './timeoutUtils'
 
 // TODO: Consider NLS initialization/configuration here & have packages to import localize from here
 export const localize = nls.loadMessageBundle()
@@ -38,5 +39,24 @@ export function folderIconPath(): vscode.ThemeIcon | { light: vscode.Uri; dark: 
         }
     } else {
         return vscode.ThemeIcon.Folder
+    }
+}
+
+/**
+ * Executes the close all editors command and waits for the active editor to disappear
+ */
+export async function closeAllEditors() {
+    await vscode.commands.executeCommand('workbench.action.closeAllEditors')
+    await waitUntil(async () => vscode.window.activeTextEditor === undefined, {
+        timeout: 2500,
+        interval: 50,
+        truthy: true,
+    })
+
+    if (vscode.window.activeTextEditor) {
+        console.log(vscode.window.activeTextEditor.document.getText()) // Just so I can see what the document actually is...
+        throw new Error(
+            `Window "${vscode.window.activeTextEditor.document.fileName}" was still open after executing "closeAllEditors"`
+        )
     }
 }

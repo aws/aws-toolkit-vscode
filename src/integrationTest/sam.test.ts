@@ -23,6 +23,7 @@ import { setTestTimeout } from './globalSetup.test'
 import { waitUntil } from '../shared/utilities/timeoutUtils'
 import { AwsSamDebuggerConfiguration } from '../shared/sam/debugger/awsSamDebugConfiguration.gen'
 import { ext } from '../shared/extensionGlobals'
+import { closeAllEditors } from '../shared/utilities/vsCodeUtils'
 const projectFolder = testUtils.getTestWorkspaceFolder()
 
 interface TestScenario {
@@ -211,10 +212,6 @@ async function stopDebugger(logMsg: string | undefined): Promise<void> {
     await vscode.commands.executeCommand('workbench.action.debug.stop')
 }
 
-async function closeAllEditors(): Promise<void> {
-    await vscode.commands.executeCommand('workbench.action.closeAllEditors')
-}
-
 async function activateExtensions(): Promise<void> {
     console.log('Activating extensions...')
     await testUtils.activateExtension(VSCODE_EXTENSION_ID.python)
@@ -244,9 +241,6 @@ describe('SAM Integration Tests', async function () {
         testSuiteRoot = await mkdtemp(path.join(projectFolder, 'inttest'))
         console.log('testSuiteRoot: ', testSuiteRoot)
         mkdirpSync(testSuiteRoot)
-
-        // Reload the workspace so the config settings take place
-        await vscode.commands.executeCommand('workbench.action.reloadWindow')
     })
 
     after(async function () {
