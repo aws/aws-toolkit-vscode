@@ -258,6 +258,7 @@ export async function invokeLambdaFunction(
             skipPullImage: config.sam?.skipNewImageCheck,
             parameterOverrides: config.parameterOverrides,
             extraArgs: config.sam?.localArguments,
+            name: config.name,
         })
 
         const recordApigwTelemetry = (result: telemetry.Result) => {

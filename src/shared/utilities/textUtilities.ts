@@ -36,3 +36,23 @@ export function getStringHash(text: string): string {
 export function addCodiconToString(codiconName: string, text: string): string {
     return isCloud9() ? text : `$(${codiconName}) ${text}`
 }
+
+/**
+ * Go allows function signatures to be multi-line, so we should parse these into something more usable.
+ *
+ * @param text String to parse
+ *
+ * @returns Final output without any new lines or comments
+ */
+export function stripNewLinesAndComments(text: string): string {
+    const blockCommentRegExp = /\/\*[.*?]\*\//
+    let result: string = ''
+
+    text.split(/\r|\n/).map(s => {
+        const commentStart: number = s.search(/\/\//)
+        s = s.replace(blockCommentRegExp, '')
+        result += commentStart === -1 ? s : s.substring(0, commentStart)
+    })
+
+    return result
+}

@@ -9,10 +9,9 @@ import { Set as ImmutableSet } from 'immutable'
 export const JAVA = 'Java 8+'
 export const PYTHON = 'Python 3.6+'
 export const TYPESCRIPT = 'Typescript 3+'
-export const GO = 'Go 1+'
-export type SchemaCodeLangs = 'Java 8+' | 'Python 3.6+' | 'Typescript 3+' | 'Go 1+'
+export type SchemaCodeLangs = 'Java 8+' | 'Python 3.6+' | 'Typescript 3+'
 
-export const schemaCodeLangs: ImmutableSet<SchemaCodeLangs> = ImmutableSet([JAVA, PYTHON, TYPESCRIPT, GO])
+export const schemaCodeLangs: ImmutableSet<SchemaCodeLangs> = ImmutableSet([JAVA, PYTHON, TYPESCRIPT])
 
 const javaDetail = {
     apiValue: 'Java8',
@@ -29,11 +28,6 @@ const typescriptDetail = {
     extension: '.ts',
 }
 
-const goDetail = {
-    apiValue: 'Go1',
-    extension: '.go',
-}
-
 export function getLanguageDetails(
     language: SchemaCodeLangs
 ): {
@@ -47,8 +41,6 @@ export function getLanguageDetails(
             return pythonDetail
         case TYPESCRIPT:
             return typescriptDetail
-        case GO:
-            return goDetail
         default:
             throw new Error(`Language ${language} is not supported as Schema Code Language`)
     }

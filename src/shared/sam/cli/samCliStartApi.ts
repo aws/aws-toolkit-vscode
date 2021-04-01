@@ -51,6 +51,8 @@ export interface SamCliStartApiArguments {
     parameterOverrides?: string[]
     /** SAM args specified by user (`sam.localArguments`). */
     extraArgs?: string[]
+    /** Debug session name */
+    name?: string
 }
 
 /**

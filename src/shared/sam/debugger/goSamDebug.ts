@@ -3,6 +3,7 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
+import * as os from 'os'
 import * as path from 'path'
 import * as vscode from 'vscode'
 import { GoDebugConfiguration } from '../../../lambda/local/debugConfiguration'
@@ -105,18 +106,22 @@ export async function makeGoConfig(config: SamLaunchRequestArgs): Promise<GoDebu
 }
 
 /**
- * TODO: add support for windows
- *
  * @param debuggerPath Installation path for the debugger
  * @returns A simple shell script for building delve
  */
-function makeInstallScript(debuggerPath: string): string {
-    const DELVE_MODULE: string = 'github.com/go-delve/delve/cmd/dlv'
-    const script: string = `
-        export GOPROXY=direct
-        go get ${DELVE_MODULE}
-        GOARCH=amd64 GOOS=linux go build -o "${debuggerPath}/dlv" "${DELVE_MODULE}"
-    `
+function makeInstallScript(debuggerPath: string, isWindows: boolean): string {
+    let script: string = ''
+    const DELVE_MODULE: string = path.normalize('github.com/go-delve/delve/cmd/dlv')
+    debuggerPath = path.join(debuggerPath, 'dlv')
+
+    if (isWindows) {
+        script += 'set GOPROXY=direct\n'
+    } else {
+        script += 'export GOPROXY=direct\n'
+    }
+
+    script += `go get ${DELVE_MODULE}\n`
+    script += `GOARCH=amd64 GOOS=linux go build -o "${debuggerPath}" "${DELVE_MODULE}"\n`
 
     return script
 }
@@ -127,11 +132,15 @@ function makeInstallScript(debuggerPath: string): string {
  * @param debuggerPath Installation path for the debugger
  */
 async function installDebugger(debuggerPath: string): Promise<void> {
-    const installScriptPath = path.join(debuggerPath, 'install.sh')
+    const isWindows: boolean = os.platform() === 'win32'
+    const scriptExt: string = isWindows ? 'cmd' : 'sh'
+    const installScriptPath: string = path.join(debuggerPath, `install.${scriptExt}`)
+
     await ensureDir(debuggerPath)
-    writeFile(installScriptPath, makeInstallScript(debuggerPath), 'utf8')
+    writeFile(installScriptPath, makeInstallScript(debuggerPath, isWindows), 'utf8')
     await chmod(installScriptPath, 0o700)
-    const childProcess = new ChildProcess(path.join(debuggerPath, 'install.sh'))
+    const childProcess = new ChildProcess(path.join(debuggerPath, `install.${scriptExt}`))
     await childProcess.run()
-    getLogger().info('Installed delve debugger')
+
+    getLogger().verbose('Installed delve debugger')
 }

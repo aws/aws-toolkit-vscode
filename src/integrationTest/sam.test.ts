@@ -18,12 +18,12 @@ import { VSCODE_EXTENSION_ID } from '../shared/extensions'
 import { fileExists } from '../shared/filesystemUtilities'
 import { AddSamDebugConfigurationInput } from '../shared/sam/debugger/commands/addSamDebugConfiguration'
 import { findParentProjectFile } from '../shared/utilities/workspaceUtils'
-import { activateExtension, getCodeLenses, getTestWorkspaceFolder, sleep } from './integrationTestsUtilities'
+import * as testUtils from './integrationTestsUtilities'
 import { setTestTimeout } from './globalSetup.test'
 import { waitUntil } from '../shared/utilities/timeoutUtils'
 import { AwsSamDebuggerConfiguration } from '../shared/sam/debugger/awsSamDebugConfiguration.gen'
 import { ext } from '../shared/extensionGlobals'
-const projectFolder = getTestWorkspaceFolder()
+const projectFolder = testUtils.getTestWorkspaceFolder()
 
 interface TestScenario {
     displayName: string
@@ -176,8 +176,8 @@ async function getAddConfigCodeLens(documentUri: vscode.Uri): Promise<vscode.Cod
     while (true) {
         try {
             // this works without a sleep locally, but not on CodeBuild
-            await sleep(200)
-            let codeLenses = await getCodeLenses(documentUri)
+            await testUtils.sleep(200)
+            let codeLenses = await testUtils.getCodeLenses(documentUri)
             if (!codeLenses || codeLenses.length === 0) {
                 continue
             }
@@ -217,50 +217,9 @@ async function closeAllEditors(): Promise<void> {
 
 async function activateExtensions(): Promise<void> {
     console.log('Activating extensions...')
-    await activateExtension(VSCODE_EXTENSION_ID.python)
-    await activateExtension(VSCODE_EXTENSION_ID.go)
+    await testUtils.activateExtension(VSCODE_EXTENSION_ID.python)
+    await testUtils.activateExtension(VSCODE_EXTENSION_ID.go)
     console.log('Extensions activated')
-}
-
-async function configurePythonExtension(): Promise<void> {
-    const configPy = vscode.workspace.getConfiguration('python')
-    // Disable linting to silence some of the Python extension's log spam
-    await configPy.update('linting.pylintEnabled', false, false)
-    await configPy.update('linting.enabled', false, false)
-}
-
-// Install dlv and gopls
-// Ref: https://github.com/golang/vscode-go/blob/0058bd16ba31394f98aa3396056998e4808998a7/src/goMain.ts#L408-L417
-async function configureGoExtension(): Promise<void> {
-    const gopls = {
-        name: 'gopls',
-        importPath: 'golang.org/x/tools/gopls',
-        replacedByGopls: false,
-        isImportant: true,
-        description: 'Language Server from Google',
-        minimumGoVersion: '1.12',
-        latestVersion: '0.6.4',
-        latestVersionTimestamp: '2021-01-19',
-        latestPrereleaseVersion: '0.6.4',
-        latestPrereleaseVersionTimestamp: '2021-01-19',
-    }
-
-    const dlv = {
-        name: 'dlv',
-        importPath: 'github.com/go-delve/delve/cmd/dlv',
-        replacedByGopls: false,
-        isImportant: true,
-        description: 'Debugging',
-    }
-
-    await vscode.commands.executeCommand('go.tools.install', [gopls, dlv])
-    // await vscode.commands.executeCommand('go.languageserver.restart')
-}
-
-async function configureAwsToolkitExtension(): Promise<void> {
-    const configAws = vscode.workspace.getConfiguration('aws')
-    // Prevent the extension from preemptively cancelling a 'sam local' run
-    await configAws.update('samcli.debug.attach.timeout.millis', 90000, false)
 }
 
 function runtimeNeedsWorkaround(lang: Language) {
@@ -278,9 +237,9 @@ describe('SAM Integration Tests', async function () {
 
     before(async function () {
         await activateExtensions()
-        await configureAwsToolkitExtension()
-        await configurePythonExtension()
-        await configureGoExtension()
+        await testUtils.configureAwsToolkitExtension()
+        await testUtils.configurePythonExtension()
+        await testUtils.configureGoExtension()
 
         testSuiteRoot = await mkdtemp(path.join(projectFolder, 'inttest'))
         console.log('testSuiteRoot: ', testSuiteRoot)
@@ -460,7 +419,7 @@ describe('SAM Integration Tests', async function () {
                     await vscode.debug.startDebugging(undefined, testConfig)
 
                     await new Promise<void>((resolve, reject) => {
-                        // XXX: temporary workaround because the csharp/python
+                        // XXX: temporary workaround because the csharp/python/go
                         // debuggers exit without triggering `onDidStartDebugSession`.
                         if (runtimeNeedsWorkaround(scenario.language)) {
                             testDisposables.push(
@@ -513,11 +472,11 @@ describe('SAM Integration Tests', async function () {
                                 )
 
                                 // Wait for it to actually start (which we do not get an event for).
-                                await sleep(400)
+                                await testUtils.sleep(400)
                                 await continueDebugger()
-                                await sleep(400)
+                                await testUtils.sleep(400)
                                 await continueDebugger()
-                                await sleep(400)
+                                await testUtils.sleep(400)
                                 await continueDebugger()
                             })
                         )

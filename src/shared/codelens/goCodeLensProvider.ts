@@ -7,6 +7,7 @@ import * as vscode from 'vscode'
 import { VSCODE_EXTENSION_ID } from '../extensions'
 import { LambdaHandlerCandidate } from '../lambdaHandlerSearch'
 import { getLogger } from '../logger/logger'
+import { stripNewLinesAndComments } from '../../shared/utilities/textUtilities'
 import { findParentProjectFile } from '../utilities/workspaceUtils'
 
 export const GO_LANGUAGE = 'go'
@@ -114,26 +115,6 @@ export function isValidFuncSignature(document: vscode.TextDocument, symbol: vsco
 }
 
 /**
- * Go allows function signatures to be multi-line, so we should parse these into something more usable.
- *
- * @param text String to parse
- *
- * @returns Final output without any new lines or comments
- */
-function stripNewLinesAndComments(text: string): string {
-    const blockCommentRegExp = /\/\*[.*?]\*\//
-    let result: string = ''
-
-    text.split(/\r|\n/).map(s => {
-        const commentStart: number = s.search(/\/\//)
-        s = s.replace(blockCommentRegExp, '')
-        result += commentStart === -1 ? s : s.substring(0, commentStart)
-    })
-
-    return result
-}
-
-/**
  * Finds all types of the parameter list, stripping out names if they exist.
  * Parenthesis are stripped from the list if they exist.
  *
@@ -178,16 +159,19 @@ async function checkForGoExtension(): Promise<boolean> {
             return true
         }
 
-        getLogger().info('Go CodeLens provider is activating the Go extension...')
+        getLogger().debug('Activating extension: %s', VSCODE_EXTENSION_ID.go)
 
         try {
             await extension.activate()
-            getLogger().info('Go extension activated!')
+            getLogger().debug('Activated extension: %s', VSCODE_EXTENSION_ID.go)
 
             return true
         } catch (err) {
-            getLogger().info('Failed to activate Go extension. The toolkit will have reduced functionality.')
-            getLogger().debug('Extension activation failed: %O', err as Error)
+            if (getLogger().logLevelEnabled('debug')) {
+                getLogger().debug('Failed to activate extension "%s": %O', VSCODE_EXTENSION_ID.go, err as Error)
+            } else {
+                getLogger().info('Failed to activate extension "%s". AWS codelenses will not appear in .go files.')
+            }
         }
     }
 
