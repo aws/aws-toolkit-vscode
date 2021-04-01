@@ -44,7 +44,7 @@ export async function getLambdaHandlerCandidates(document: vscode.TextDocument):
     } catch (err) {
         // No need to throw an error
         getLogger().verbose(`Go CodeLens not enabled for ${document.fileName}`)
-        getLogger().verbose('Verify that a go.mod file exists and is within the module directory')
+        getLogger().verbose(`Go CodeLens: not enabled for "${document.fileName}". Verify that a go.mod file exists and is within the module directory`)
 
         return []
     }
