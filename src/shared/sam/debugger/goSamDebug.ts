@@ -83,10 +83,9 @@ export async function makeGoConfig(config: SamLaunchRequestArgs): Promise<GoDebu
     // Always generate a temporary template.yaml, don't use workspace one directly.
     config.templatePath = await makeInputTemplate(config)
 
-    // TODO: make sure debugging works with Go images
+    // Go images work fine (for now), only issue is integration tests need GOPROXY set to direct
+    // This will be done in the actual tests rather than here since it's not necessary for the average user
     //const isImageLambda = isImageLambdaConfig(config)
-
-    // TODO: add support for GOPATH and GOROOT??
 
     //  Make a go launch-config from the generic config.
     const goLaunchConfig: GoDebugConfiguration = {

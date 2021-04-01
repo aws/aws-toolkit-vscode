@@ -5,6 +5,7 @@
 
 import * as assert from 'assert'
 import * as vscode from 'vscode'
+import * as fs from 'fs'
 
 const SECOND = 1000
 export const TIMEOUT = 30 * SECOND
@@ -93,4 +94,26 @@ export async function configureGoExtension(): Promise<void> {
     process.env['GOPROXY'] = 'direct'
 
     await vscode.commands.executeCommand('go.tools.install', [gopls])
+}
+
+/**
+ * Prepends the data string to the file.
+ * Very slow for large files so don't use it for that purpose.
+ *
+ * @param filePath Path to the file to write to
+ * @param data Data that will be prepended to it
+ */
+export async function prependDataToFile(data: string, filePath: string) {
+    const newData: Buffer = Buffer.from(data)
+    const oldData: Buffer = fs.readFileSync(filePath)
+    const fd: number = fs.openSync(filePath, 'w+')
+
+    fs.writeSync(fd, newData, 0, newData.length, 0)
+    fs.writeSync(fd, oldData, 0, oldData.length, newData.length)
+
+    fs.close(fd, err => {
+        if (err) {
+            throw err
+        }
+    })
 }

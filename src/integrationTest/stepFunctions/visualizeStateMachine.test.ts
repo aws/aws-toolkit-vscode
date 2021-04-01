@@ -11,6 +11,7 @@ import { MessageObject } from '../../stepFunctions/commands/visualizeStateMachin
 import { assertThrowsError } from '../../test/shared/utilities/assertUtils'
 import { makeTemporaryToolkitFolder } from '../../shared/filesystemUtilities'
 import { spy } from 'sinon'
+import { waitUntil } from '../../../src/shared/utilities/timeoutUtils'
 
 const sampleStateMachine = `
 	 {
@@ -95,6 +96,25 @@ async function waitUntilWebviewIsVisible(webviewPanel: vscode.WebviewPanel | und
     })
 }
 
+/**
+ * Executes the close all editors command but also waits for the active editor to disappear
+ *
+ */
+async function closeAllEditors() {
+    await vscode.commands.executeCommand('workbench.action.closeAllEditors')
+    await waitUntil(async () => vscode.window.activeTextEditor === undefined, {
+        timeout: 2500,
+        interval: 50,
+        truthy: true,
+    })
+
+    if (vscode.window.activeTextEditor) {
+        throw new Error(
+            `Window "${vscode.window.activeTextEditor.document.fileName}" was still open after executing "closeAllEditors"`
+        )
+    }
+}
+
 describe('visualizeStateMachine', async function () {
     before(async function () {
         this.timeout(600000)
@@ -111,7 +131,7 @@ describe('visualizeStateMachine', async function () {
 
     after(async function () {
         // Test suite cleans up after itself
-        await vscode.commands.executeCommand('workbench.action.closeAllEditors')
+        await closeAllEditors()
     })
 
     it('opens up a webview when there is an active text editor', async function () {
@@ -206,7 +226,7 @@ describe('visualizeStateMachine', async function () {
 
     it('throws an error if no active text editor is open', async function () {
         // Make sure nothing is open from previous tests.
-        await vscode.commands.executeCommand('workbench.action.closeAllEditors')
+        await closeAllEditors()
 
         await assertThrowsError(
             async () => await vscode.commands.executeCommand<vscode.WebviewPanel>('aws.previewStateMachine')

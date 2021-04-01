@@ -410,6 +410,12 @@ describe('SAM Integration Tests', async function () {
                         testConfig.lambda = {
                             runtime: scenario.runtime,
                         }
+
+                        // little hack for Go, have to set GOPROXY to direct or it will fail to build
+                        if (scenario.language === 'go') {
+                            const dockerfilePath: string = path.join(path.dirname(appPath), 'Dockerfile')
+                            testUtils.prependDataToFile('ENV GOPROXY=direct\n', dockerfilePath)
+                        }
                     }
 
                     // XXX: force load since template registry seems a bit flakey
