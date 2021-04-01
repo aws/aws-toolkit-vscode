@@ -6,7 +6,7 @@
 import * as os from 'os'
 import * as path from 'path'
 import * as vscode from 'vscode'
-import { GoDebugConfiguration } from '../../../lambda/local/debugConfiguration'
+import { GoDebugConfiguration, GO_DEBUGGER_PATH, isImageLambdaConfig } from '../../../lambda/local/debugConfiguration'
 import { RuntimeFamily } from '../../../lambda/models/samLambdaRuntime'
 import * as pathutil from '../../../shared/utilities/pathUtils'
 import { ExtContext } from '../../extensions'
@@ -76,16 +76,38 @@ export async function makeGoConfig(config: SamLaunchRequestArgs): Promise<GoDebu
         throw Error('missing launch.json, template.yaml, and failed to discover project root')
     }
 
+    let localRoot: string | undefined
+    let remoteRoot: string | undefined
+
+    config.debugPort = config.debugPort ?? -1
     config.codeRoot = pathutil.normalize(config.codeRoot)
-    // TODO: install debugger in a temporary work directory instead of the project directory
-    config.debuggerPath = path.resolve(config.codeRoot, '.godbg')
+    config.debuggerPath = GO_DEBUGGER_PATH
 
     // Always generate a temporary template.yaml, don't use workspace one directly.
     config.templatePath = await makeInputTemplate(config)
 
-    // Go images work fine (for now), only issue is integration tests need GOPROXY set to direct
-    // This will be done in the actual tests rather than here since it's not necessary for the average user
-    //const isImageLambda = isImageLambdaConfig(config)
+    const isImageLambda = isImageLambdaConfig(config)
+
+    if (isImageLambda && !config.noDebug) {
+        config.containerEnvVars = {
+            _AWS_LAMBDA_GO_DEBUGGING: '1',
+            _AWS_LAMBDA_GO_DELVE_API_VERSION: '2',
+            _AWS_LAMBDA_GO_DELVE_PATH: path.join(GO_DEBUGGER_PATH, 'dlv'),
+            _AWS_LAMBDA_GO_DELVE_LISTEN_PORT: config.debugPort.toString(),
+        }
+    }
+
+    // if provided, use the user's mapping instead
+    if (config.lambda?.pathMappings !== undefined && config.lambda.pathMappings.length > 0) {
+        const mappings = config.lambda.pathMappings
+        if (mappings.length !== 1) {
+            getLogger().warn(
+                'This language only supports a single path mapping entry. Taking the first entry in the list.'
+            )
+        }
+        localRoot = mappings[0].localRoot
+        remoteRoot = mappings[0].remoteRoot
+    }
 
     //  Make a go launch-config from the generic config.
     const goLaunchConfig: GoDebugConfiguration = {
@@ -97,9 +119,11 @@ export async function makeGoConfig(config: SamLaunchRequestArgs): Promise<GoDebu
         runtimeFamily: RuntimeFamily.Go,
         preLaunchTask: undefined,
         host: 'localhost',
-        port: config.debugPort ?? -1,
+        port: config.debugPort,
         skipFiles: [],
-        debugArgs: ['-delveAPI=2'],
+        debugArgs: isImageLambda ? undefined : ['-delveAPI=2'],
+        localRoot: localRoot ?? config.codeRoot,
+        remoteRoot: remoteRoot ?? '/var/task',
     }
 
     return goLaunchConfig

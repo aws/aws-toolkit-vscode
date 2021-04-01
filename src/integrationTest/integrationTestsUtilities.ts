@@ -97,19 +97,22 @@ export async function configureGoExtension(): Promise<void> {
 }
 
 /**
- * Prepends the data string to the file.
+ * Inserts data into a file.
  * Very slow for large files so don't use it for that purpose.
  *
  * @param filePath Path to the file to write to
- * @param data Data that will be prepended to it
+ * @param data Data that will be inserted
+ * @param line Optional line number to use (0 indexed)
  */
-export async function prependDataToFile(data: string, filePath: string) {
-    const newData: Buffer = Buffer.from(data)
+export async function insertDataInFile(data: string, filePath: string, line: number = 0) {
     const oldData: Buffer = fs.readFileSync(filePath)
+    const lines: string[] = oldData.toString().split(/\r?\n/)
+    lines.splice(line, 0, data)
+
+    const newData: Buffer = Buffer.from(lines.join('\n'))
     const fd: number = fs.openSync(filePath, 'w+')
 
     fs.writeSync(fd, newData, 0, newData.length, 0)
-    fs.writeSync(fd, oldData, 0, oldData.length, newData.length)
 
     fs.close(fd, err => {
         if (err) {
