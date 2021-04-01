@@ -185,7 +185,7 @@ async function checkForGoExtension(): Promise<boolean> {
 
             return true
         } catch (err) {
-            getLogger().info('Failed to activate Go extension. AWS CodeLens for Go will not appear.')
+            getLogger().info('Failed to activate Go extension. The toolkit will have reduced functionality.')
             getLogger().debug('Extension activation failed: %O', err as Error)
         }
     }

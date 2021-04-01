@@ -105,6 +105,8 @@ export async function makeGoConfig(config: SamLaunchRequestArgs): Promise<GoDebu
 }
 
 /**
+ * TODO: add support for windows
+ *
  * @param debuggerPath Installation path for the debugger
  * @returns A simple shell script for building delve
  */
@@ -121,7 +123,6 @@ function makeInstallScript(debuggerPath: string): string {
 
 /**
  * Downloads and builds the delve debugger for our container image
- * TODO: add windows support (or just build it in the container)
  *
  * @param debuggerPath Installation path for the debugger
  */

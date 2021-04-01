@@ -13,6 +13,7 @@ import { Timeout } from '../../utilities/timeoutUtils'
 import { removeAnsi } from '../../utilities/textUtilities'
 import { ext } from '../../extensionGlobals'
 import { DefaultSamCliProcessInvokerContext, SamCliProcessInvokerContext } from './samCliProcessInvokerContext'
+import * as vscode from 'vscode'
 
 const localize = nls.loadMessageBundle()
 
@@ -31,6 +32,8 @@ export interface SamLocalInvokeCommandArgs {
     /** Wait until strings specified in `debuggerAttachCues` appear in the process output.  */
     waitForCues: boolean
     timeout?: Timeout
+    /** Allows us to name debug sessions so we can terminate them later */
+    name?: string
 }
 
 /**
@@ -106,6 +109,15 @@ export class DefaultSamLocalInvokeCommand implements SamLocalInvokeCommand {
                         resolve()
                     } else if (code !== 0) {
                         reject(new Error(`"${samCommandName}" command stopped (error code: ${code})`))
+                    }
+
+                    // Forces debugger to disconnect (sometimes it fails to disconnect on its own)
+                    // Note that VSCode 1.42 only allows us to get the active debug session, so
+                    // the user will have to manually disconnect if using multiple debug sessions
+                    const debugSession: vscode.DebugSession | undefined = vscode.debug.activeDebugSession
+                    if (debugSession && debugSession.name === params.name) {
+                        getLogger().debug('forcing debugger to disconnect')
+                        debugSession.customRequest('disconnect')
                     }
                 },
                 onError: (error: Error): void => {
@@ -195,6 +207,8 @@ export interface SamCliLocalInvokeInvocationArguments {
     parameterOverrides?: string[]
     /** SAM args specified by user (`sam.localArguments`). */
     extraArgs?: string[]
+    /** Debug session name */
+    name?: string
 }
 
 /**
@@ -260,6 +274,7 @@ export class SamCliLocalInvokeInvocation {
             args: invokeArgs,
             waitForCues: !!this.args.debugPort,
             timeout,
+            name: this.args.name,
         })
     }
 

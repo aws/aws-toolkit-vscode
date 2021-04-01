@@ -284,6 +284,7 @@ export async function invokeLambdaFunction(
                 // "sam local start-api" produces "attach" messages similar to "sam local invoke".
                 waitForCues: true,
                 timeout: timer,
+                name: config.name,
             })
             .then(sam => {
                 recordApigwTelemetry('Succeeded')
@@ -317,6 +318,7 @@ export async function invokeLambdaFunction(
             extraArgs: config.sam?.localArguments,
             skipPullImage: config.sam?.skipNewImageCheck,
             parameterOverrides: config.parameterOverrides,
+            name: config.name,
         }
 
         // sam local invoke ...
