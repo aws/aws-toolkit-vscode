@@ -4,10 +4,11 @@
 package software.aws.toolkits.jetbrains.utils.rules
 
 import com.goide.GoConstants
+import com.goide.project.GoModuleSettings
 import com.goide.psi.GoFile
-import com.goide.sdk.GoSdkType
+import com.goide.sdk.GoSdk
+import com.goide.sdk.GoSdkImpl
 import com.intellij.openapi.projectRoots.Sdk
-import com.intellij.openapi.projectRoots.impl.ProjectJdkImpl
 import com.intellij.psi.PsiElement
 import com.intellij.psi.PsiFile
 import com.intellij.testFramework.LightProjectDescriptor
@@ -22,6 +23,7 @@ class GoCodeInsightTestFixtureRule : CodeInsightTestFixtureRule(GoLightProjectDe
     override fun createTestFixture(): CodeInsightTestFixture {
         val codeInsightFixture = super.createTestFixture()
         PsiTestUtil.addContentRoot(codeInsightFixture.module, codeInsightFixture.tempDirFixture.getFile(".")!!)
+        GoModuleSettings.getInstance(codeInsightFixture.module).isGoSupportEnabled = true
         return codeInsightFixture
     }
 }
@@ -87,9 +89,4 @@ fun CodeInsightTestFixture.addGoModFile(
         """.trimIndent()
 ): PsiFile = this.addFileToProject("$subPath/go.mod", content)
 
-fun createMockSdk(version: String): Sdk {
-    val sdk = ProjectJdkImpl("Go $version", GoSdkType())
-    sdk.versionString = version
-    GoSdkType().setupSdkPaths(sdk)
-    return sdk
-}
+fun createMockSdk(root: String, version: String): GoSdk = GoSdkImpl(root, version, null)

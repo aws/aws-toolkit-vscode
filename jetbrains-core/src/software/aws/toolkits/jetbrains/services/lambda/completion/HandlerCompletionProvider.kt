@@ -11,7 +11,6 @@ import com.intellij.util.textCompletion.TextCompletionProvider
 import software.aws.toolkits.core.lambda.LambdaRuntime
 import software.aws.toolkits.core.utils.getLogger
 import software.aws.toolkits.core.utils.info
-import software.aws.toolkits.jetbrains.services.lambda.RuntimeGroup
 import software.aws.toolkits.jetbrains.services.lambda.runtimeGroup
 
 class HandlerCompletionProvider(private val project: Project, runtime: LambdaRuntime?) : TextCompletionProvider {
@@ -19,7 +18,7 @@ class HandlerCompletionProvider(private val project: Project, runtime: LambdaRun
     private val logger = getLogger<HandlerCompletionProvider>()
 
     private val handlerCompletion: HandlerCompletion? by lazy {
-        val runtimeGroup = runtime?.runtimeGroup ?: RuntimeGroup.determineRuntime(project)?.runtimeGroup ?: return@lazy null
+        val runtimeGroup = runtime?.runtimeGroup ?: return@lazy null
 
         return@lazy HandlerCompletion.getInstanceOrNull(runtimeGroup) ?: let {
             logger.info { "Lambda handler completion provider is not registered for runtime: ${runtimeGroup.id}. Completion is not supported." }
