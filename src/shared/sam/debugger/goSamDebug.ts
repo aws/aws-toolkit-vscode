@@ -18,6 +18,7 @@ import { getLogger } from '../../logger'
 import { chmod, ensureDir, writeFile } from 'fs-extra'
 import { ChildProcess } from '../../utilities/childProcess'
 import { Timeout } from '../../utilities/timeoutUtils'
+import { SystemUtilities } from '../../../shared/systemUtilities'
 
 /**
  * Launches and attaches debugger to a SAM Go project.
@@ -137,10 +138,15 @@ async function installDebugger(debuggerPath: string): Promise<void> {
     const installScriptPath: string = path.join(debuggerPath, `install.${scriptExt}`)
 
     await ensureDir(debuggerPath)
-    writeFile(installScriptPath, makeInstallScript(debuggerPath, isWindows), 'utf8')
-    await chmod(installScriptPath, 0o700)
-    const childProcess = new ChildProcess(path.join(debuggerPath, `install.${scriptExt}`))
-    await childProcess.run()
+    // TODO: don't just check if the file exists, ideally we should check for a version too
+    const alreadyInstalled = await SystemUtilities.fileExists(installScriptPath)
 
-    getLogger().verbose('Installed delve debugger')
+    if (!alreadyInstalled) {
+        await writeFile(installScriptPath, makeInstallScript(debuggerPath, isWindows), 'utf8')
+        await chmod(installScriptPath, 0o700)
+        const childProcess = new ChildProcess(path.join(debuggerPath, `install.${scriptExt}`))
+        await childProcess.run()
+
+        getLogger().debug('Installed delve debugger')
+    }
 }

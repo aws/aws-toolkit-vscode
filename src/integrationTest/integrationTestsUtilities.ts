@@ -93,5 +93,4 @@ export async function configureGoExtension(): Promise<void> {
     process.env['GOPROXY'] = 'direct'
 
     await vscode.commands.executeCommand('go.tools.install', [gopls])
-    await vscode.commands.executeCommand('go.languageserver.restart')
 }
