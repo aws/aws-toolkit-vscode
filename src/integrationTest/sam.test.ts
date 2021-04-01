@@ -37,6 +37,13 @@ interface TestScenario {
 // When testing additional runtimes, consider pulling the docker container in buildspec\linuxIntegrationTests.yml
 // to reduce the chance of automated tests timing out.
 const scenarios: TestScenario[] = [
+    {
+        runtime: 'go1.x',
+        displayName: 'go1.x (ZIP)',
+        path: 'hello-world/main.go',
+        debugSessionType: 'delve',
+        language: 'go',
+    },
     // zips
     {
         runtime: 'nodejs10.x',
@@ -229,6 +236,34 @@ async function configurePythonExtension(): Promise<void> {
     await configPy.update('linting.enabled', false, false)
 }
 
+// Install dlv and gopls
+// Ref: https://github.com/golang/vscode-go/blob/0058bd16ba31394f98aa3396056998e4808998a7/src/goMain.ts#L408-L417
+async function configureGoExtension(): Promise<void> {
+    const gopls = {
+        name: 'gopls',
+        importPath: 'golang.org/x/tools/gopls',
+        replacedByGopls: false,
+        isImportant: true,
+        description: 'Language Server from Google',
+        minimumGoVersion: '1.12',
+        latestVersion: '0.6.4',
+        latestVersionTimestamp: '2021-01-19',
+        latestPrereleaseVersion: '0.6.4',
+        latestPrereleaseVersionTimestamp: '2021-01-19',
+    }
+
+    const dlv = {
+        name: 'dlv',
+        importPath: 'github.com/go-delve/delve/cmd/dlv',
+        replacedByGopls: false,
+        isImportant: true,
+        description: 'Debugging',
+    }
+
+    await vscode.commands.executeCommand('go.tools.install', [gopls, dlv])
+    await vscode.commands.executeCommand('go.languageserver.restart')
+}
+
 async function configureAwsToolkitExtension(): Promise<void> {
     const configAws = vscode.workspace.getConfiguration('aws')
     // Prevent the extension from preemptively cancelling a 'sam local' run
@@ -236,7 +271,7 @@ async function configureAwsToolkitExtension(): Promise<void> {
 }
 
 function runtimeNeedsWorkaround(lang: Language) {
-    return vscode.version.startsWith('1.42') || lang === 'csharp' || lang === 'python'
+    return vscode.version.startsWith('1.42') || lang === 'csharp' || lang === 'python' || lang === 'go'
 }
 
 describe('SAM Integration Tests', async function () {
@@ -252,6 +287,7 @@ describe('SAM Integration Tests', async function () {
         await activateExtensions()
         await configureAwsToolkitExtension()
         await configurePythonExtension()
+        await configureGoExtension()
 
         testSuiteRoot = await mkdtemp(path.join(projectFolder, 'inttest'))
         console.log('testSuiteRoot: ', testSuiteRoot)

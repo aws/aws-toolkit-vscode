@@ -90,7 +90,7 @@ export async function makeGoConfig(config: SamLaunchRequestArgs): Promise<GoDebu
     const goLaunchConfig: GoDebugConfiguration = {
         ...config, // Compose.
         type: 'go',
-        processName: 'gogogadgetdelve',
+        processName: 'godelve',
         request: 'attach',
         mode: config.noDebug ? undefined : 'remote',
         runtimeFamily: RuntimeFamily.Go,
