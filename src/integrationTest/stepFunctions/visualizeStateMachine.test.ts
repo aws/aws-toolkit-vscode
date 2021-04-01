@@ -101,9 +101,6 @@ async function waitUntilWebviewIsVisible(webviewPanel: vscode.WebviewPanel | und
  *
  */
 async function closeAllEditors() {
-    // Saving all the files as a workaround for some files not closing (it's probably the Go extension)
-    // For future reference, the file that was not closing was 'extension-output-#3' (vague, I know)
-    await vscode.commands.executeCommand('workbench.action.files.saveAll')
     await vscode.commands.executeCommand('workbench.action.closeAllEditors')
     await waitUntil(async () => vscode.window.activeTextEditor === undefined, {
         timeout: 2500,
@@ -115,6 +112,8 @@ async function closeAllEditors() {
         throw new Error(
             `Window "${vscode.window.activeTextEditor.document.fileName}" was still open after executing "closeAllEditors"`
         )
+        // Dumping document output to console so I can see what it is...
+        console.log(vscode.window.activeTextEditor!.document.getText())
     }
 }
 

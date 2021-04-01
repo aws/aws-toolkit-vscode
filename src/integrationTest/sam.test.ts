@@ -244,6 +244,9 @@ describe('SAM Integration Tests', async function () {
         testSuiteRoot = await mkdtemp(path.join(projectFolder, 'inttest'))
         console.log('testSuiteRoot: ', testSuiteRoot)
         mkdirpSync(testSuiteRoot)
+
+        // Reload the workspace so the config settings take place
+        await vscode.commands.executeCommand('workbench.action.reloadWindow')
     })
 
     after(async function () {
