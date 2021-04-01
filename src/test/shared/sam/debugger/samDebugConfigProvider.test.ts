@@ -300,6 +300,7 @@ describe('SamDebugConfigurationProvider', async function () {
 
             const credentialsProvider: CredentialsProvider = {
                 getCredentials: sandbox.stub().resolves(({} as any) as AWS.Credentials),
+                getCredentialsType2: sandbox.stub().resolves('staticProfile'),
                 getCredentialsProviderId: sandbox.stub().returns({
                     credentialType: 'test',
                     credentialTypeId: 'someId',
@@ -3193,6 +3194,7 @@ Resources:
 
             const credentialsProvider: CredentialsProvider = {
                 getCredentials: sandbox.stub().resolves(({} as any) as AWS.Credentials),
+                getCredentialsType2: sandbox.stub().resolves('staticProfile'),
                 getCredentialsProviderId: sandbox.stub().returns({
                     credentialType: 'test',
                     credentialTypeId: 'someId',
