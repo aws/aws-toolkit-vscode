@@ -16,7 +16,6 @@ import org.jetbrains.yaml.psi.YAMLPsiElement
 import software.aws.toolkits.core.region.AwsRegion
 import software.aws.toolkits.jetbrains.core.credentials.AwsConnectionManager
 import software.aws.toolkits.jetbrains.services.lambda.LambdaHandlerResolver
-import software.aws.toolkits.jetbrains.services.lambda.RuntimeGroup
 import software.aws.toolkits.jetbrains.services.lambda.execution.LambdaRunConfigurationType
 import software.aws.toolkits.jetbrains.services.lambda.runtimeGroup
 import software.aws.toolkits.jetbrains.services.lambda.sam.SamTemplateUtils.functionFromElement
@@ -57,7 +56,7 @@ class LocalLambdaRunConfigurationProducer : LazyRunConfigurationProducer<LocalLa
         }
         val resolver = LambdaHandlerResolver.getInstance(runtimeGroup)
         val handler = resolver.determineHandler(element) ?: return false
-        val runtime = RuntimeGroup.determineRuntime(context.module) ?: RuntimeGroup.determineRuntime(context.project)
+        val runtime = runtimeGroup.determineRuntime(context.module) ?: runtimeGroup.determineRuntime(context.project)
 
         setAccountOptions(configuration)
         configuration.useHandler(runtime?.toSdkRuntime(), handler)
