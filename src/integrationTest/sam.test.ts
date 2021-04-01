@@ -37,13 +37,6 @@ interface TestScenario {
 // When testing additional runtimes, consider pulling the docker container in buildspec\linuxIntegrationTests.yml
 // to reduce the chance of automated tests timing out.
 const scenarios: TestScenario[] = [
-    {
-        runtime: 'go1.x',
-        displayName: 'go1.x (ZIP)',
-        path: 'hello-world/main.go',
-        debugSessionType: 'delve',
-        language: 'go',
-    },
     // zips
     {
         runtime: 'nodejs10.x',
@@ -261,7 +254,7 @@ async function configureGoExtension(): Promise<void> {
     }
 
     await vscode.commands.executeCommand('go.tools.install', [gopls, dlv])
-    await vscode.commands.executeCommand('go.languageserver.restart')
+    // await vscode.commands.executeCommand('go.languageserver.restart')
 }
 
 async function configureAwsToolkitExtension(): Promise<void> {
