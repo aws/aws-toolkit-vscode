@@ -8,7 +8,7 @@ import { Runtime } from 'aws-sdk/clients/lambda'
 import { mkdirpSync, mkdtemp, removeSync } from 'fs-extra'
 import * as path from 'path'
 import * as vscode from 'vscode'
-import { getDependencyManager } from '../../src/lambda/models/samLambdaRuntime'
+import { DependencyManager } from '../../src/lambda/models/samLambdaRuntime'
 import { helloWorldTemplate } from '../../src/lambda/models/samTemplates'
 import { getSamCliContext } from '../../src/shared/sam/cli/samCliContext'
 import { runSamCliInit, SamCliInitArgs } from '../../src/shared/sam/cli/samCliInit'
@@ -33,6 +33,7 @@ interface TestScenario {
     path: string
     debugSessionType: string
     language: Language
+    dependencyManager: DependencyManager
 }
 
 // When testing additional runtimes, consider pulling the docker container in buildspec\linuxIntegrationTests.yml
@@ -45,6 +46,7 @@ const scenarios: TestScenario[] = [
         path: 'hello-world/app.js',
         debugSessionType: 'pwa-node',
         language: 'javascript',
+        dependencyManager: 'npm',
     },
     {
         runtime: 'nodejs12.x',
@@ -52,6 +54,7 @@ const scenarios: TestScenario[] = [
         path: 'hello-world/app.js',
         debugSessionType: 'pwa-node',
         language: 'javascript',
+        dependencyManager: 'npm',
     },
     {
         runtime: 'nodejs14.x',
@@ -59,6 +62,7 @@ const scenarios: TestScenario[] = [
         path: 'hello-world/app.js',
         debugSessionType: 'pwa-node',
         language: 'javascript',
+        dependencyManager: 'npm',
     },
     {
         runtime: 'python2.7',
@@ -66,6 +70,7 @@ const scenarios: TestScenario[] = [
         path: 'hello_world/app.py',
         debugSessionType: 'python',
         language: 'python',
+        dependencyManager: 'pip',
     },
     {
         runtime: 'python3.6',
@@ -73,6 +78,7 @@ const scenarios: TestScenario[] = [
         path: 'hello_world/app.py',
         debugSessionType: 'python',
         language: 'python',
+        dependencyManager: 'pip',
     },
     {
         runtime: 'python3.7',
@@ -80,6 +86,7 @@ const scenarios: TestScenario[] = [
         path: 'hello_world/app.py',
         debugSessionType: 'python',
         language: 'python',
+        dependencyManager: 'pip',
     },
     {
         runtime: 'python3.8',
@@ -87,6 +94,31 @@ const scenarios: TestScenario[] = [
         path: 'hello_world/app.py',
         debugSessionType: 'python',
         language: 'python',
+        dependencyManager: 'pip',
+    },
+    {
+        runtime: 'java8',
+        displayName: 'java8 (Gradle ZIP)',
+        path: 'HelloWorldFunction/src/main/java/helloworld/App.java',
+        debugSessionType: 'java',
+        language: 'java',
+        dependencyManager: 'gradle',
+    },
+    {
+        runtime: 'java8.al2',
+        displayName: 'java8.al2 (Maven ZIP)',
+        path: 'HelloWorldFunction/src/main/java/helloworld/App.java',
+        debugSessionType: 'java',
+        language: 'java',
+        dependencyManager: 'maven',
+    },
+    {
+        runtime: 'java11',
+        displayName: 'java11 (Gradle ZIP)',
+        path: 'HelloWorldFunction/src/main/java/helloworld/App.java',
+        debugSessionType: 'java',
+        language: 'java',
+        dependencyManager: 'gradle',
     },
     // { runtime: 'dotnetcore2.1', path: 'src/HelloWorld/Function.cs', debugSessionType: 'coreclr', language: 'csharp' },
     // { runtime: 'dotnetcore3.1', path: 'src/HelloWorld/Function.cs', debugSessionType: 'coreclr', language: 'csharp' },
@@ -99,6 +131,7 @@ const scenarios: TestScenario[] = [
         path: 'hello-world/app.js',
         debugSessionType: 'pwa-node',
         language: 'javascript',
+        dependencyManager: 'npm',
     },
     {
         runtime: 'nodejs12.x',
@@ -107,6 +140,7 @@ const scenarios: TestScenario[] = [
         path: 'hello-world/app.js',
         debugSessionType: 'pwa-node',
         language: 'javascript',
+        dependencyManager: 'npm',
     },
     {
         runtime: 'nodejs14.x',
@@ -115,6 +149,7 @@ const scenarios: TestScenario[] = [
         path: 'hello-world/app.js',
         debugSessionType: 'pwa-node',
         language: 'javascript',
+        dependencyManager: 'npm',
     },
     {
         runtime: 'python3.6',
@@ -123,6 +158,7 @@ const scenarios: TestScenario[] = [
         path: 'hello_world/app.py',
         debugSessionType: 'python',
         language: 'python',
+        dependencyManager: 'pip',
     },
     {
         runtime: 'python3.7',
@@ -131,6 +167,7 @@ const scenarios: TestScenario[] = [
         path: 'hello_world/app.py',
         debugSessionType: 'python',
         language: 'python',
+        dependencyManager: 'pip',
     },
     // {
     //     runtime: 'python3.8',
@@ -139,7 +176,35 @@ const scenarios: TestScenario[] = [
     //     path: 'hello_world/app.py',
     //     debugSessionType: 'python',
     //     language: 'python',
+    //     dependencyManager: 'pip',
     // },
+    {
+        runtime: 'java8',
+        displayName: 'java8 (Maven Image)',
+        path: 'HelloWorldFunction/src/main/java/helloworld/App.java',
+        baseImage: `amazon/java8-base`,
+        debugSessionType: 'java',
+        language: 'java',
+        dependencyManager: 'maven',
+    },
+    {
+        runtime: 'java8.al2',
+        displayName: 'java8.al2 (Gradle Image)',
+        path: 'HelloWorldFunction/src/main/java/helloworld/App.java',
+        baseImage: `amazon/java8.al2-base`,
+        debugSessionType: 'java',
+        language: 'java',
+        dependencyManager: 'gradle',
+    },
+    {
+        runtime: 'java11',
+        displayName: 'java11 (Maven Image)',
+        path: 'HelloWorldFunction/src/main/java/helloworld/App.java',
+        baseImage: `amazon/java11-base`,
+        debugSessionType: 'java',
+        language: 'java',
+        dependencyManager: 'maven',
+    },
     // { runtime: 'dotnetcore2.1', path: 'src/HelloWorld/Function.cs', debugSessionType: 'coreclr', language: 'csharp' },
     // { runtime: 'dotnetcore3.1', path: 'src/HelloWorld/Function.cs', debugSessionType: 'coreclr', language: 'csharp' },
 ]
@@ -204,6 +269,8 @@ async function closeAllEditors(): Promise<void> {
 async function activateExtensions(): Promise<void> {
     console.log('Activating extensions...')
     await activateExtension(VSCODE_EXTENSION_ID.python)
+    await activateExtension(VSCODE_EXTENSION_ID.java)
+    await activateExtension(VSCODE_EXTENSION_ID.javadebug)
     console.log('Extensions activated')
 }
 
@@ -221,7 +288,8 @@ async function configureAwsToolkitExtension(): Promise<void> {
 }
 
 function runtimeNeedsWorkaround(lang: Language) {
-    return vscode.version.startsWith('1.42') || lang === 'csharp' || lang === 'python'
+    // TODO: java fails because debugger connects and completes TOO fast (before detach hook fires)
+    return vscode.version.startsWith('1.42') || lang === 'csharp' || lang === 'python' || lang === 'java'
 }
 
 describe('SAM Integration Tests', async function () {
@@ -231,9 +299,14 @@ describe('SAM Integration Tests', async function () {
      * us an idea of the timeline.
      */
     const sessionLog: string[] = []
+    let javaLanguageSetting: string | undefined
+    const config = vscode.workspace.getConfiguration('java')
     let testSuiteRoot: string
 
     before(async function () {
+        javaLanguageSetting = config.get('server.launchMode')
+        config.update('server.launchMode', 'Standard')
+
         await activateExtensions()
         await configureAwsToolkitExtension()
         await configurePythonExtension()
@@ -247,6 +320,7 @@ describe('SAM Integration Tests', async function () {
         tryRemoveFolder(testSuiteRoot)
         // Print a summary of session that were seen by `onDidStartDebugSession`.
         const sessionReport = sessionLog.map(x => `    ${x}`).join('\n')
+        config.update('server.launchMode', javaLanguageSetting)
         console.log(`DebugSessions seen in this run:${sessionReport}`)
     })
 
@@ -263,7 +337,10 @@ describe('SAM Integration Tests', async function () {
             })
 
             after(async function () {
-                tryRemoveFolder(runtimeTestRoot)
+                // don't clean up after java tests so the java language server doesn't freak out
+                if (scenario.language !== 'java') {
+                    tryRemoveFolder(runtimeTestRoot)
+                }
             })
 
             function log(o: any) {
@@ -282,7 +359,10 @@ describe('SAM Integration Tests', async function () {
                 })
 
                 afterEach(async function () {
-                    tryRemoveFolder(testDir)
+                    // don't clean up after java tests so the java language server doesn't freak out
+                    if (scenario.language !== 'java') {
+                        tryRemoveFolder(testDir)
+                    }
                 })
 
                 it('creates a new SAM Application (happy path)', async function () {
@@ -314,6 +394,7 @@ describe('SAM Integration Tests', async function () {
                     appPath = path.join(testDir, samApplicationName, scenario.path)
                     cfnTemplatePath = path.join(testDir, samApplicationName, 'template.yaml')
                     assert.ok(await fileExists(cfnTemplatePath), `Expected SAM template to exist at ${cfnTemplatePath}`)
+
                     samAppCodeUri = await openSamAppFile(appPath)
                 })
 
@@ -328,7 +409,10 @@ describe('SAM Integration Tests', async function () {
                 })
 
                 after(async function () {
-                    tryRemoveFolder(testDir)
+                    // don't clean up after java tests so the java language server doesn't freak out
+                    if (scenario.language !== 'java') {
+                        tryRemoveFolder(testDir)
+                    }
                 })
 
                 it('produces an error when creating a SAM Application to the same location', async function () {
@@ -355,6 +439,16 @@ describe('SAM Integration Tests', async function () {
                             break
                         case 'csharp':
                             manifestFile = /^.*\.csproj$/
+                            break
+                        case 'java':
+                            if (scenario.dependencyManager === 'maven') {
+                                manifestFile = /^.*pom\.xml$/
+                                break
+                            } else if (scenario.dependencyManager === 'gradle') {
+                                manifestFile = /^.*build\.gradle$/
+                                break
+                            }
+                            assert.fail(`invalid dependency manager for java: ${scenario.dependencyManager}`)
                             break
                         default:
                             assert.fail('invalid scenario language')
@@ -485,7 +579,7 @@ describe('SAM Integration Tests', async function () {
             const initArguments: SamCliInitArgs = {
                 name: samApplicationName,
                 location: location,
-                dependencyManager: getDependencyManager(scenario.runtime),
+                dependencyManager: scenario.dependencyManager,
             }
             if (scenario.baseImage) {
                 initArguments.baseImage = scenario.baseImage

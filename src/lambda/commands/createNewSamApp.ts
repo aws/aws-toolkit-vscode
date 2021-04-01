@@ -32,7 +32,6 @@ import { SamCliValidator } from '../../shared/sam/cli/samCliValidator'
 import { recordSamInit, Result, Runtime as TelemetryRuntime } from '../../shared/telemetry/telemetry'
 import { makeCheckLogsMessage } from '../../shared/utilities/messages'
 import { addFolderToWorkspace } from '../../shared/utilities/workspaceUtils'
-import { getDependencyManager } from '../models/samLambdaRuntime'
 import { eventBridgeStarterAppTemplate } from '../models/samTemplates'
 import {
     CreateNewSamAppWizard,
@@ -163,13 +162,10 @@ export async function createNewSamApplication(
         // section of types as Runtime
         createRuntime = config.runtime as Runtime
 
-        // TODO: Make this selectable in the wizard to account for runtimes with multiple dependency managers
-        const dependencyManager = getDependencyManager(createRuntime)
-
         initArguments = {
             name: config.name,
             location: config.location.fsPath,
-            dependencyManager: dependencyManager,
+            dependencyManager: config.dependencyManager,
         }
 
         let request: SchemaCodeDownloadRequestDetails

@@ -18,6 +18,7 @@ import {
 import { getDefaultRuntime, getFamily, getRuntimeFamily, RuntimeFamily } from '../../../lambda/models/samLambdaRuntime'
 import { Timeout } from '../../utilities/timeoutUtils'
 import * as csharpDebug from './csharpSamDebug'
+import * as javaDebug from './javaSamDebug'
 import * as pythonDebug from './pythonSamDebug'
 import * as tsDebug from './typescriptSamDebug'
 import { ExtContext } from '../../extensions'
@@ -521,6 +522,11 @@ export class SamDebugConfigProvider implements vscode.DebugConfigurationProvider
                 launchConfig = await csharpDebug.makeCsharpConfig(launchConfig)
                 break
             }
+            case RuntimeFamily.Java: {
+                // Make a Java launch-config from the generic config.
+                launchConfig = await javaDebug.makeJavaConfig(launchConfig)
+                break
+            }
             default: {
                 getLogger().error(`SAM debug: unknown runtime: ${runtime})`)
                 vscode.window.showErrorMessage(
@@ -567,6 +573,10 @@ export class SamDebugConfigProvider implements vscode.DebugConfigurationProvider
             case RuntimeFamily.DotNetCore: {
                 config.type = 'coreclr'
                 return await csharpDebug.invokeCsharpLambda(this.ctx, config)
+            }
+            case RuntimeFamily.Java: {
+                config.type = 'java'
+                return await javaDebug.invokeJavaLambda(this.ctx, config)
             }
             default: {
                 throw Error(`unknown runtimeFamily: ${config.runtimeFamily}`)
