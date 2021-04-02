@@ -4,7 +4,7 @@
 package software.aws.toolkits.jetbrains.core
 
 import com.intellij.openapi.project.Project
-import com.nhaarman.mockitokotlin2.mock
+import org.mockito.kotlin.mock
 import software.amazon.awssdk.services.s3.model.Bucket
 import software.aws.toolkits.core.region.AwsRegion
 import software.aws.toolkits.jetbrains.services.ecs.resources.EcsResources

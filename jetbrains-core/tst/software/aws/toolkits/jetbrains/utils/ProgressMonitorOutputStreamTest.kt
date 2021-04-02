@@ -4,12 +4,12 @@
 package software.aws.toolkits.jetbrains.utils
 
 import com.intellij.openapi.progress.ProgressIndicator
-import com.nhaarman.mockitokotlin2.mock
-import com.nhaarman.mockitokotlin2.verify
 import org.assertj.core.api.Assertions.assertThat
 import org.junit.Rule
 import org.junit.Test
 import org.junit.rules.TemporaryFolder
+import org.mockito.kotlin.mock
+import org.mockito.kotlin.verify
 import java.io.FileOutputStream
 import java.nio.charset.StandardCharsets
 

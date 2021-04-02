@@ -35,6 +35,6 @@ dependencies {
 
     testImplementation("org.assertj:assertj-core:$assertjVersion")
     testImplementation("junit:junit:$junitVersion")
-    testImplementation("com.nhaarman.mockitokotlin2:mockito-kotlin:$mockitoKotlinVersion")
+    testImplementation("org.mockito.kotlin:mockito-kotlin:$mockitoKotlinVersion")
     testImplementation("org.mockito:mockito-core:$mockitoVersion")
 }

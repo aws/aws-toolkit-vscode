@@ -3,7 +3,7 @@
 
 package software.aws.toolkits.gradle.changelog
 
-import com.nhaarman.mockitokotlin2.mock
+import org.mockito.kotlin.mock
 import org.assertj.core.api.Assertions.assertThat
 import org.junit.Rule
 import org.junit.Test

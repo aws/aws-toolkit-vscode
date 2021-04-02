@@ -4,11 +4,11 @@
 package software.aws.toolkits.jetbrains.services.cloudwatch.logs
 
 import com.intellij.testFramework.ProjectRule
-import com.nhaarman.mockitokotlin2.whenever
 import org.assertj.core.api.Assertions.assertThat
 import org.junit.Rule
 import org.junit.Test
 import org.mockito.Mockito
+import org.mockito.kotlin.whenever
 import software.amazon.awssdk.services.cloudwatchlogs.CloudWatchLogsClient
 import software.amazon.awssdk.services.cloudwatchlogs.model.DescribeLogGroupsRequest
 import software.amazon.awssdk.services.cloudwatchlogs.model.DescribeLogGroupsResponse

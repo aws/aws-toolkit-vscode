@@ -3,17 +3,17 @@
 
 package software.aws.toolkits.gradle.changelog
 
-import com.nhaarman.mockitokotlin2.argumentCaptor
-import com.nhaarman.mockitokotlin2.inOrder
-import com.nhaarman.mockitokotlin2.mock
-import com.nhaarman.mockitokotlin2.times
-import com.nhaarman.mockitokotlin2.verify
 import org.assertj.core.api.Assertions.assertThat
 import org.intellij.lang.annotations.Language
 import org.junit.Rule
 import org.junit.Test
 import org.junit.rules.TemporaryFolder
 import org.mockito.ArgumentMatchers.anyString
+import org.mockito.kotlin.argumentCaptor
+import org.mockito.kotlin.inOrder
+import org.mockito.kotlin.mock
+import org.mockito.kotlin.times
+import org.mockito.kotlin.verify
 import software.aws.toolkits.gradle.changelog.ChangeLogGenerator.Companion.renderEntry
 import software.aws.toolkits.gradle.changelog.ChangeType.BUGFIX
 import software.aws.toolkits.gradle.changelog.ChangeType.FEATURE

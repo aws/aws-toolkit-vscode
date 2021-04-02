@@ -4,11 +4,11 @@
 package software.aws.toolkits.jetbrains.utils
 
 import com.intellij.testFramework.ProjectRule
-import com.nhaarman.mockitokotlin2.any
-import com.nhaarman.mockitokotlin2.whenever
 import org.assertj.core.api.Assertions.assertThat
 import org.junit.Rule
 import org.junit.Test
+import org.mockito.kotlin.any
+import org.mockito.kotlin.whenever
 import software.amazon.awssdk.services.resourcegroupstaggingapi.ResourceGroupsTaggingApiClient
 import software.amazon.awssdk.services.resourcegroupstaggingapi.model.GetResourcesRequest
 import software.amazon.awssdk.services.resourcegroupstaggingapi.model.GetResourcesResponse
