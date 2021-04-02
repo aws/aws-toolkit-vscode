@@ -11,10 +11,10 @@ import com.intellij.openapi.roots.ModuleRootModificationUtil
 import com.intellij.openapi.roots.ProjectRootManager
 import com.intellij.testFramework.runInEdtAndWait
 import com.jetbrains.python.PythonLanguage
-import com.nhaarman.mockitokotlin2.mock
 import org.assertj.core.api.Assertions.assertThat
 import org.junit.Rule
 import org.junit.Test
+import org.mockito.kotlin.mock
 import software.amazon.awssdk.services.lambda.model.Runtime
 import software.aws.toolkits.core.lambda.LambdaRuntime
 import software.aws.toolkits.core.lambda.validOrNull

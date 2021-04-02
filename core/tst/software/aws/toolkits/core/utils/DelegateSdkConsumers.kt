@@ -3,10 +3,10 @@
 
 package software.aws.toolkits.core.utils
 
-import com.nhaarman.mockitokotlin2.KStubbing
-import com.nhaarman.mockitokotlin2.withSettings
 import org.mockito.Mockito
 import org.mockito.invocation.InvocationOnMock
+import org.mockito.kotlin.KStubbing
+import org.mockito.kotlin.withSettings
 import org.mockito.stubbing.Answer
 import software.amazon.awssdk.core.SdkClient
 import software.amazon.awssdk.core.SdkRequest

@@ -4,14 +4,14 @@
 package software.aws.toolkits.jetbrains.services.lambda.upload
 
 import com.intellij.testFramework.ProjectRule
-import com.nhaarman.mockitokotlin2.any
-import com.nhaarman.mockitokotlin2.argumentCaptor
-import com.nhaarman.mockitokotlin2.doReturn
-import com.nhaarman.mockitokotlin2.stub
-import com.nhaarman.mockitokotlin2.verify
 import org.assertj.core.api.Assertions.assertThat
 import org.junit.Rule
 import org.junit.Test
+import org.mockito.kotlin.any
+import org.mockito.kotlin.argumentCaptor
+import org.mockito.kotlin.doReturn
+import org.mockito.kotlin.stub
+import org.mockito.kotlin.verify
 import software.amazon.awssdk.services.lambda.LambdaClient
 import software.amazon.awssdk.services.lambda.model.PackageType
 import software.amazon.awssdk.services.lambda.model.Runtime

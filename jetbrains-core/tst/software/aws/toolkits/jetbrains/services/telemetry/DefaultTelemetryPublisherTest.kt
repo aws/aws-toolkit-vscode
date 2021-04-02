@@ -4,13 +4,13 @@
 package software.aws.toolkits.jetbrains.services.telemetry
 
 import com.intellij.testFramework.ProjectRule
-import com.nhaarman.mockitokotlin2.argumentCaptor
-import com.nhaarman.mockitokotlin2.times
-import com.nhaarman.mockitokotlin2.verify
 import kotlinx.coroutines.runBlocking
 import org.assertj.core.api.Assertions.assertThat
 import org.junit.Rule
 import org.junit.Test
+import org.mockito.kotlin.argumentCaptor
+import org.mockito.kotlin.times
+import org.mockito.kotlin.verify
 import software.amazon.awssdk.services.toolkittelemetry.ToolkitTelemetryClient
 import software.amazon.awssdk.services.toolkittelemetry.model.AWSProduct
 import software.amazon.awssdk.services.toolkittelemetry.model.MetadataEntry

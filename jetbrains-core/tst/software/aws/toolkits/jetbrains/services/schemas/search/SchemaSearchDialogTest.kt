@@ -6,13 +6,13 @@ package software.aws.toolkits.jetbrains.services.schemas.search
 import com.intellij.testFramework.ProjectRule
 import com.intellij.testFramework.runInEdtAndGet
 import com.intellij.testFramework.runInEdtAndWait
-import com.nhaarman.mockitokotlin2.any
-import com.nhaarman.mockitokotlin2.eq
-import com.nhaarman.mockitokotlin2.mock
-import com.nhaarman.mockitokotlin2.stub
 import org.assertj.core.api.Assertions.assertThat
 import org.junit.Rule
 import org.junit.Test
+import org.mockito.kotlin.any
+import org.mockito.kotlin.eq
+import org.mockito.kotlin.mock
+import org.mockito.kotlin.stub
 import software.aws.toolkits.jetbrains.services.schemas.SchemaViewer
 import software.aws.toolkits.resources.message
 import java.util.concurrent.CompletableFuture.completedFuture

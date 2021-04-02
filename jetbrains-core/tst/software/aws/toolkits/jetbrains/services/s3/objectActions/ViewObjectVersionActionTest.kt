@@ -3,9 +3,9 @@
 
 package software.aws.toolkits.jetbrains.services.s3.objectActions
 
-import com.nhaarman.mockitokotlin2.verify
 import org.assertj.core.api.Assertions.assertThat
 import org.junit.Test
+import org.mockito.kotlin.verify
 import software.aws.toolkits.jetbrains.services.s3.editor.S3TreeContinuationNode
 import software.aws.toolkits.jetbrains.services.s3.editor.S3TreeDirectoryNode
 import software.aws.toolkits.jetbrains.services.s3.editor.S3TreeErrorNode

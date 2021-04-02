@@ -3,7 +3,7 @@
 
 package software.aws.toolkits.core.credentials
 
-import com.nhaarman.mockitokotlin2.mock
+import org.mockito.kotlin.mock
 import software.amazon.awssdk.auth.credentials.AwsCredentialsProvider
 import software.aws.toolkits.core.utils.test.aString
 

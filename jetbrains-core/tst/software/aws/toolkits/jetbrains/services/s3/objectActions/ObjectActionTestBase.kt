@@ -10,9 +10,9 @@ import com.intellij.openapi.actionSystem.Presentation
 import com.intellij.openapi.actionSystem.impl.SimpleDataContext
 import com.intellij.testFramework.ProjectRule
 import com.intellij.ui.treeStructure.treetable.TreeTableTree
-import com.nhaarman.mockitokotlin2.mock
 import org.junit.Before
 import org.junit.Rule
+import org.mockito.kotlin.mock
 import software.aws.toolkits.core.utils.test.aString
 import software.aws.toolkits.jetbrains.services.s3.editor.S3EditorDataKeys
 import software.aws.toolkits.jetbrains.services.s3.editor.S3TreeDirectoryNode

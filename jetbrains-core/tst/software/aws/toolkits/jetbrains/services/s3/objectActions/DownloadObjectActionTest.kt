@@ -5,14 +5,14 @@ package software.aws.toolkits.jetbrains.services.s3.objectActions
 
 import com.intellij.openapi.ui.TestDialog
 import com.intellij.testFramework.DisposableRule
-import com.nhaarman.mockitokotlin2.any
-import com.nhaarman.mockitokotlin2.anyOrNull
-import com.nhaarman.mockitokotlin2.stub
 import org.assertj.core.api.Assertions.assertThat
 import org.junit.After
 import org.junit.Rule
 import org.junit.Test
 import org.junit.rules.TemporaryFolder
+import org.mockito.kotlin.any
+import org.mockito.kotlin.anyOrNull
+import org.mockito.kotlin.stub
 import software.amazon.awssdk.services.s3.model.S3Exception
 import software.aws.toolkits.core.utils.test.retryableAssert
 import software.aws.toolkits.core.utils.touch

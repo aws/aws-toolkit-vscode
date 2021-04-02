@@ -3,15 +3,15 @@
 
 package software.aws.toolkits.core.credentials.sso
 
-import com.nhaarman.mockitokotlin2.any
-import com.nhaarman.mockitokotlin2.mock
-import com.nhaarman.mockitokotlin2.stub
-import com.nhaarman.mockitokotlin2.times
-import com.nhaarman.mockitokotlin2.verify
 import org.assertj.core.api.Assertions.assertThat
 import org.assertj.core.api.Assertions.assertThatThrownBy
 import org.junit.Before
 import org.junit.Test
+import org.mockito.kotlin.any
+import org.mockito.kotlin.mock
+import org.mockito.kotlin.stub
+import org.mockito.kotlin.times
+import org.mockito.kotlin.verify
 import software.amazon.awssdk.auth.credentials.AwsSessionCredentials
 import software.amazon.awssdk.services.sso.SsoClient
 import software.amazon.awssdk.services.sso.model.GetRoleCredentialsRequest

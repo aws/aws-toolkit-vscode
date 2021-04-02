@@ -4,11 +4,11 @@
 package software.aws.toolkits.jetbrains.services.redshift
 
 import com.intellij.testFramework.ProjectRule
-import com.nhaarman.mockitokotlin2.doReturn
-import com.nhaarman.mockitokotlin2.mock
 import org.assertj.core.api.Assertions.assertThat
 import org.junit.Rule
 import org.junit.Test
+import org.mockito.kotlin.doReturn
+import org.mockito.kotlin.mock
 import software.amazon.awssdk.services.redshift.model.Cluster
 import software.aws.toolkits.core.utils.RuleUtils
 import software.aws.toolkits.jetbrains.core.MockResourceCacheRule

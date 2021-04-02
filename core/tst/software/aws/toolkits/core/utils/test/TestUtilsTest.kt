@@ -3,11 +3,11 @@
 
 package software.aws.toolkits.core.utils.test
 
-import com.nhaarman.mockitokotlin2.mock
-import com.nhaarman.mockitokotlin2.times
-import com.nhaarman.mockitokotlin2.verify
 import org.assertj.core.api.Assertions.assertThatThrownBy
 import org.junit.Test
+import org.mockito.kotlin.mock
+import org.mockito.kotlin.times
+import org.mockito.kotlin.verify
 import java.time.Duration
 
 class TestUtilsTest {

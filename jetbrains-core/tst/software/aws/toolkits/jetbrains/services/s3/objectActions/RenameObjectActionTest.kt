@@ -4,14 +4,14 @@
 package software.aws.toolkits.jetbrains.services.s3.objectActions
 
 import com.intellij.openapi.ui.TestDialog
-import com.nhaarman.mockitokotlin2.any
-import com.nhaarman.mockitokotlin2.argumentCaptor
-import com.nhaarman.mockitokotlin2.never
-import com.nhaarman.mockitokotlin2.verify
-import com.nhaarman.mockitokotlin2.verifyBlocking
 import org.assertj.core.api.Assertions.assertThat
 import org.junit.After
 import org.junit.Test
+import org.mockito.kotlin.any
+import org.mockito.kotlin.argumentCaptor
+import org.mockito.kotlin.never
+import org.mockito.kotlin.verify
+import org.mockito.kotlin.verifyBlocking
 import software.aws.toolkits.core.utils.test.aString
 import software.aws.toolkits.core.utils.test.retryableAssert
 import software.aws.toolkits.jetbrains.services.s3.editor.S3TreeContinuationNode

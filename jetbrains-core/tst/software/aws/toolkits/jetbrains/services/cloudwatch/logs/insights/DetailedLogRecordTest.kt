@@ -6,8 +6,6 @@ package software.aws.toolkits.jetbrains.services.cloudwatch.logs.insights
 import com.intellij.testFramework.EdtRule
 import com.intellij.testFramework.RuleChain
 import com.intellij.testFramework.RunsInEdt
-import com.nhaarman.mockitokotlin2.any
-import com.nhaarman.mockitokotlin2.whenever
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.runBlocking
 import org.assertj.core.api.Assertions.assertThat
@@ -15,6 +13,8 @@ import org.assertj.core.api.Assertions.assertThatThrownBy
 import org.junit.Before
 import org.junit.Rule
 import org.junit.Test
+import org.mockito.kotlin.any
+import org.mockito.kotlin.whenever
 import software.amazon.awssdk.services.cloudwatchlogs.CloudWatchLogsClient
 import software.amazon.awssdk.services.cloudwatchlogs.model.CloudWatchLogsException
 import software.amazon.awssdk.services.cloudwatchlogs.model.GetLogRecordRequest

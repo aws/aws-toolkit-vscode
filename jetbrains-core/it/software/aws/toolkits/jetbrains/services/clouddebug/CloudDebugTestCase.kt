@@ -5,10 +5,10 @@ package software.aws.toolkits.jetbrains.services.clouddebug
 
 import com.intellij.openapi.project.Project
 import com.intellij.testFramework.RuleChain
-import com.nhaarman.mockitokotlin2.mock
 import org.junit.After
 import org.junit.Before
 import org.junit.Rule
+import org.mockito.kotlin.mock
 import software.amazon.awssdk.core.waiters.WaiterOverrideConfiguration
 import software.amazon.awssdk.http.apache.ApacheHttpClient
 import software.amazon.awssdk.regions.Region

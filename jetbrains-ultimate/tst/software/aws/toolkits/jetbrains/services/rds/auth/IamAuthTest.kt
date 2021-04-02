@@ -8,14 +8,14 @@ import com.intellij.database.dataSource.DatabaseConnectionInterceptor.ProtoConne
 import com.intellij.database.dataSource.DatabaseConnectionPoint
 import com.intellij.database.dataSource.LocalDataSource
 import com.intellij.testFramework.ProjectRule
-import com.nhaarman.mockitokotlin2.doAnswer
-import com.nhaarman.mockitokotlin2.doReturn
-import com.nhaarman.mockitokotlin2.mock
 import org.assertj.core.api.Assertions.assertThat
 import org.assertj.core.api.Assertions.assertThatThrownBy
 import org.junit.Before
 import org.junit.Rule
 import org.junit.Test
+import org.mockito.kotlin.doAnswer
+import org.mockito.kotlin.doReturn
+import org.mockito.kotlin.mock
 import software.amazon.awssdk.auth.credentials.AwsBasicCredentials
 import software.aws.toolkits.core.region.AwsRegion
 import software.aws.toolkits.core.utils.RuleUtils

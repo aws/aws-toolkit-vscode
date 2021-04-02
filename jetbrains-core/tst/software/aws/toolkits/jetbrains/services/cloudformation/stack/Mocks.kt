@@ -2,9 +2,9 @@
 // SPDX-License-Identifier: Apache-2.0
 package software.aws.toolkits.jetbrains.services.cloudformation.stack
 
-import com.nhaarman.mockitokotlin2.whenever
 import org.junit.Assert
 import org.mockito.Mockito
+import org.mockito.kotlin.whenever
 import software.amazon.awssdk.services.cloudformation.CloudFormationClient
 import software.amazon.awssdk.services.cloudformation.model.DescribeStackEventsRequest
 import software.amazon.awssdk.services.cloudformation.model.DescribeStackEventsResponse

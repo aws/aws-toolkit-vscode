@@ -7,11 +7,11 @@ import com.intellij.database.autoconfig.DataSourceRegistry
 import com.intellij.database.remote.jdbc.helpers.JdbcSettings
 import com.intellij.testFramework.ProjectRule
 import com.intellij.testFramework.RuleChain
-import com.nhaarman.mockitokotlin2.doAnswer
-import com.nhaarman.mockitokotlin2.mock
 import org.assertj.core.api.Assertions.assertThat
 import org.junit.Rule
 import org.junit.Test
+import org.mockito.kotlin.doAnswer
+import org.mockito.kotlin.mock
 import software.aws.toolkits.core.utils.RuleUtils
 import software.aws.toolkits.core.utils.test.aString
 import software.aws.toolkits.jetbrains.core.MockResourceCacheRule
