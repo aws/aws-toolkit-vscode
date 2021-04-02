@@ -10,8 +10,12 @@ plugins {
 
 val ideProfile = IdeVersions.ideProfile(project)
 
+val toolkitVersion: String by project
 val publishToken: String by project
 val publishChannel: String by project
+
+// please check changelog generation logic if this format is changed
+version = "$toolkitVersion-${ideProfile.shortName}"
 
 val resharperDlls = configurations.create("resharperDlls") {
     isCanBeConsumed = false

@@ -14,8 +14,12 @@ import java.time.Instant
 val toolkitIntelliJ = project.extensions.create<ToolkitIntelliJExtension>("intellijToolkit")
 
 val ideProfile = IdeVersions.ideProfile(project)
+val toolkitVersion: String by project
 val remoteRobotPort: String by project
 val remoteRobotVersion: String by project
+
+// please check changelog generation logic if this format is changed
+version = "$toolkitVersion-${ideProfile.shortName}"
 
 plugins {
     id("toolkit-kotlin-conventions")
