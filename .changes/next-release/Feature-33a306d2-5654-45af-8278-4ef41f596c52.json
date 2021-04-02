@@ -1,0 +1,4 @@
+{
+	"type": "Feature",
+	"description": "AWS Explorer: clicking \"Failed to load\" node navigates to failure details #1569"
+}
