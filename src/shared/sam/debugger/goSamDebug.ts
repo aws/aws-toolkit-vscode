@@ -131,45 +131,55 @@ export async function makeGoConfig(config: SamLaunchRequestArgs): Promise<GoDebu
 
 /**
  * @param debuggerPath Installation path for the debugger
- * @returns A simple shell script for building delve
+ * @param isWindows Flag for making a windows script
+ * @param forceDirect Sets GOPROXY to direct to prevent DNS failures
+ * @returns Path for the debugger install script
  */
-function makeInstallScript(debuggerPath: string, isWindows: boolean): string {
+async function makeInstallScript(debuggerPath: string, isWindows: boolean, forceDirect: boolean): Promise<string> {
     let script: string = ''
     const DELVE_MODULE: string = path.normalize('github.com/go-delve/delve/cmd/dlv')
-    debuggerPath = path.join(debuggerPath, 'dlv')
+    const scriptExt: string = isWindows ? 'cmd' : 'sh'
+    const installScriptPath: string = path.join(debuggerPath, `install.${scriptExt}`)
+    const delvePath: string = path.join(debuggerPath, 'dlv')
 
-    if (isWindows) {
-        script += 'set GOPROXY=direct\n'
-    } else {
-        script += 'export GOPROXY=direct\n'
+    // TODO: don't just check if the file exists, ideally we should check for a version too
+    const alreadyInstalled = await SystemUtilities.fileExists(installScriptPath)
+
+    if (alreadyInstalled) {
+        return installScriptPath
+    }
+
+    // This needs to be done only for internal systems, otherwise leave 'forceDirect' false!
+    if (forceDirect) {
+        if (isWindows) {
+            script += 'set GOPROXY=direct\n'
+        } else {
+            script += 'export GOPROXY=direct\n'
+        }
     }
 
     script += `go get ${DELVE_MODULE}\n`
-    script += `GOARCH=amd64 GOOS=linux go build -o "${debuggerPath}" "${DELVE_MODULE}"\n`
+    script += `GOARCH=amd64 GOOS=linux go build -o "${delvePath}" "${DELVE_MODULE}"\n`
 
-    return script
+    await writeFile(installScriptPath, script, 'utf8')
+    await chmod(installScriptPath, 0o700)
+
+    return installScriptPath
 }
 
 /**
- * Downloads and builds the delve debugger for our container image
+ * Downloads and builds the delve debugger for our container
  *
  * @param debuggerPath Installation path for the debugger
  */
 async function installDebugger(debuggerPath: string): Promise<void> {
-    const isWindows: boolean = os.platform() === 'win32'
-    const scriptExt: string = isWindows ? 'cmd' : 'sh'
-    const installScriptPath: string = path.join(debuggerPath, `install.${scriptExt}`)
-
     await ensureDir(debuggerPath)
-    // TODO: don't just check if the file exists, ideally we should check for a version too
-    const alreadyInstalled = await SystemUtilities.fileExists(installScriptPath)
 
-    if (!alreadyInstalled) {
-        await writeFile(installScriptPath, makeInstallScript(debuggerPath, isWindows), 'utf8')
-        await chmod(installScriptPath, 0o700)
-        const childProcess = new ChildProcess(path.join(debuggerPath, `install.${scriptExt}`))
-        await childProcess.run()
+    const isWindows: boolean = os.platform() === 'win32'
+    const installScriptPath: string = await makeInstallScript(debuggerPath, isWindows, false)
 
-        getLogger().debug('Installed delve debugger')
-    }
+    const childProcess = new ChildProcess(installScriptPath)
+    await childProcess.run()
+
+    getLogger().debug('Installed delve debugger')
 }

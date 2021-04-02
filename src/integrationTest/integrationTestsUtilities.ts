@@ -5,7 +5,6 @@
 
 import * as assert from 'assert'
 import * as vscode from 'vscode'
-import * as fs from 'fs'
 
 const SECOND = 1000
 export const TIMEOUT = 30 * SECOND
@@ -95,29 +94,4 @@ export async function configureGoExtension(): Promise<void> {
     process.env['GOPROXY'] = 'direct'
 
     await vscode.commands.executeCommand('go.tools.install', [gopls])
-}
-
-/**
- * Inserts data into a file.
- * Very slow for large files so don't use it for that purpose.
- *
- * @param filePath Path to the file to write to
- * @param data Data that will be inserted
- * @param line Optional line number to use (0 indexed)
- */
-export async function insertDataInFile(data: string, filePath: string, line: number = 0) {
-    const oldData: Buffer = fs.readFileSync(filePath)
-    const lines: string[] = oldData.toString().split(/\r?\n/)
-    lines.splice(line, 0, data)
-
-    const newData: Buffer = Buffer.from(lines.join('\n'))
-    const fd: number = fs.openSync(filePath, 'w+')
-
-    fs.writeSync(fd, newData, 0, newData.length, 0)
-
-    fs.close(fd, err => {
-        if (err) {
-            throw err
-        }
-    })
 }

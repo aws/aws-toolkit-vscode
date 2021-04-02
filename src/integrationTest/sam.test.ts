@@ -24,6 +24,7 @@ import { waitUntil } from '../shared/utilities/timeoutUtils'
 import { AwsSamDebuggerConfiguration } from '../shared/sam/debugger/awsSamDebugConfiguration.gen'
 import { ext } from '../shared/extensionGlobals'
 import { closeAllEditors } from '../shared/utilities/vsCodeUtils'
+import { insertTextIntoFile } from '../shared/utilities/textUtilities'
 const projectFolder = testUtils.getTestWorkspaceFolder()
 
 interface TestScenario {
@@ -409,9 +410,10 @@ describe('SAM Integration Tests', async function () {
                         }
 
                         // little hack for Go, have to set GOPROXY to direct or it will fail to build
+                        // This only applies for our internal systems
                         if (scenario.language === 'go') {
                             const dockerfilePath: string = path.join(path.dirname(appPath), 'Dockerfile')
-                            testUtils.insertDataInFile('ENV GOPROXY=direct', dockerfilePath, 1)
+                            insertTextIntoFile('ENV GOPROXY=direct', dockerfilePath, 1)
                         }
                     }
 
