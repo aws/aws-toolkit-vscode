@@ -1,0 +1,4 @@
+{
+	"type": "Feature",
+	"description": "SAM Deploy wizard: show recently-used S3 buckets; ability to input S3 bucket name manually #1527"
+}
