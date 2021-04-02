@@ -204,6 +204,11 @@ export const Component = Vue.extend({
         save() {
             this.formatDataAndExecute('saveLaunchConfig')
         },
+        feedback() {
+            vscode.postMessage({
+                command: 'feedback',
+            })
+        },
         loadConfig() {
             vscode.postMessage({
                 command: 'loadSamLaunchConfig',
@@ -328,6 +333,7 @@ export const Component = Vue.extend({
     <form class="invoke-lambda-form">
         <h1>SAM Debug Configuration Editor</h1>
         <button v-on:click.prevent="loadConfig">Load Existing Debug Configuration</button><br />
+        <div>This feature is in <strong>beta</strong>. <a v-on:click="feedback">Provide Feedback...</a></div>
         <div class="config-details">
             <div class="section-header">
                 <h2>Configuration Details</h2>
