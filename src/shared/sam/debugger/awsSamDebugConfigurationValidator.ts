@@ -5,6 +5,7 @@
 
 import * as vscode from 'vscode'
 import * as fs from 'fs'
+import * as path from 'path'
 import { samImageLambdaRuntimes, samZipLambdaRuntimes } from '../../../lambda/models/samLambdaRuntime'
 import { CloudFormation } from '../../cloudformation/cloudformation'
 import { localize } from '../../utilities/vsCodeUtils'
@@ -35,8 +36,11 @@ export class DefaultAwsSamDebugConfigurationValidator implements AwsSamDebugConf
     /**
      * Validates debug configuration properties.
      */
-    public validate(config: AwsSamDebuggerConfiguration): ValidationResult {
+    public validate(config: AwsSamDebuggerConfiguration, resolveVars?: boolean): ValidationResult {
         let rv: ValidationResult = { isValid: false, message: undefined }
+        if (resolveVars) {
+            config = doTraverseAndReplace(config, this.workspaceFolder?.uri.fsPath ?? '')
+        }
         if (!config.request) {
             rv.message = localize(
                 'AWS.sam.debugger.missingField',
@@ -278,4 +282,51 @@ export class DefaultAwsSamDebugConfigurationValidator implements AwsSamDebugConf
 
         return { isValid: true }
     }
+}
+
+/**
+ * Resolves the `${workspaceFolder}` variable with the workspace folder.
+ * Unsure if any of the other variables are valuable for `aws-sam` configs at this time.
+ * @param folder
+ * @param config
+ * @returns resolved config
+ */
+export function resolveWorkspaceFolderVariable(
+    folder: vscode.WorkspaceFolder | undefined,
+    config: AwsSamDebuggerConfiguration
+): AwsSamDebuggerConfiguration {
+    return doTraverseAndReplace(config, folder?.uri.fsPath)
+}
+
+function doTraverseAndReplace(object: { [key: string]: any }, fspath: string | undefined): any {
+    const wsfRegex = /^(.*)(\$\{workspaceFolder\})(.*)$/g
+    if (!vscode.workspace.workspaceFolders && !fspath) {
+        throw new Error('No workspace folders available; cannot resolve workspaceFolder variable.')
+    }
+    const keys = Object.keys(object)
+    const final = JSON.parse(JSON.stringify(object))
+    for (const key of keys) {
+        const val = object[key]
+        if (typeof val === 'string') {
+            const result = wsfRegex.exec(val)
+            if (result) {
+                if (!fspath) {
+                    for (const wsf of vscode.workspace.workspaceFolders!) {
+                        if (fs.existsSync(path.join(result[1], wsf.uri.fsPath, result[3]))) {
+                            fspath = wsf.uri.fsPath
+                            break
+                        }
+                    }
+                }
+                if (!fspath) {
+                    throw new Error(`No compatible workspace folders for path: ${val}`)
+                }
+                final[key] = path.join(result[1], fspath, result[3])
+            }
+        } else if (typeof val === 'object') {
+            final[key] = doTraverseAndReplace(val, fspath)
+        }
+    }
+
+    return final
 }

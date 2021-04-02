@@ -17,7 +17,10 @@ import {
     isCodeTargetProperties,
     isTemplateTargetProperties,
 } from '../../shared/sam/debugger/awsSamDebugConfiguration'
-import { DefaultAwsSamDebugConfigurationValidator } from '../../shared/sam/debugger/awsSamDebugConfigurationValidator'
+import {
+    DefaultAwsSamDebugConfigurationValidator,
+    resolveWorkspaceFolderVariable,
+} from '../../shared/sam/debugger/awsSamDebugConfigurationValidator'
 import { SamDebugConfigProvider } from '../../shared/sam/debugger/awsSamDebugger'
 import * as input from '../../shared/ui/input'
 import * as picker from '../../shared/ui/picker'
@@ -365,11 +368,11 @@ async function saveLaunchConfig(config: AwsSamDebuggerConfiguration): Promise<vo
  * @param config Config to invoke
  */
 async function invokeLaunchConfig(config: AwsSamDebuggerConfiguration, context: ExtContext): Promise<void> {
-    const finalConfig = finalizeConfig(config, 'Editor-Created Debug Config')
+    const finalConfig = finalizeConfig(resolveWorkspaceFolderVariable(undefined, config), 'Editor-Created Debug Config')
     const targetUri = getUriFromLaunchConfig(finalConfig)
     const folder = targetUri ? vscode.workspace.getWorkspaceFolder(targetUri) : undefined
 
-    await new SamDebugConfigProvider(context).resolveDebugConfiguration(folder, finalConfig)
+    await new SamDebugConfigProvider(context).resolveDebugConfigurationWithSubstitutedVariables(folder, finalConfig)
 }
 
 function getUriFromLaunchConfig(config: AwsSamDebuggerConfiguration): vscode.Uri | undefined {
@@ -406,7 +409,7 @@ function getLaunchConfigQuickPickItems(launchConfig: LaunchConfiguration, uri: v
                 index,
             }
         })
-        .filter(o => samValidator.validate((o.config as any) as AwsSamDebuggerConfiguration)?.isValid)
+        .filter(o => samValidator.validate((o.config as any) as AwsSamDebuggerConfiguration, true)?.isValid)
         .map(val => {
             return {
                 index: val.index,

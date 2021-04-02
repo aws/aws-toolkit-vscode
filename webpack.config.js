@@ -20,6 +20,7 @@ const packageId = `${packageJson.publisher}.${packageJson.name}`
 
 /**@type {import('webpack').Configuration}*/
 const baseConfig = {
+    name: 'main',
     target: 'node',
     entry: {
         extension: './src/extension.ts',
@@ -95,6 +96,7 @@ const baseConfig = {
 
 /**@type {import('webpack').Configuration}*/
 const webviewConfig = {
+    name: 'vueLoader',
     entry: {
         samInvokeVue: path.resolve(__dirname, 'src', 'lambda', 'vue', 'samInvokeVue.ts'),
     },
