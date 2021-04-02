@@ -14,10 +14,6 @@ plugins {
     id("toolkit-jacoco-report")
 }
 
-group = "software.aws.toolkits"
-// please check changelog generation logic if this format is changed
-version = "$toolkitVersion-${ideProfile.shortName}"
-
 allprojects {
     repositories {
         mavenLocal()
