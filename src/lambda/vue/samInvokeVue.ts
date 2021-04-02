@@ -332,8 +332,8 @@ export const Component = Vue.extend({
 <template>
     <form class="invoke-lambda-form">
         <h1>SAM Debug Configuration Editor</h1>
+        <div>This feature is in <strong>beta</strong>. <a href="" v-on:click="feedback">Provide Feedback...</a></div>
         <button v-on:click.prevent="loadConfig">Load Existing Debug Configuration</button><br />
-        <div>This feature is in <strong>beta</strong>. <a v-on:click="feedback">Provide Feedback...</a></div>
         <div class="config-details">
             <div class="section-header">
                 <h2>Configuration Details</h2>
