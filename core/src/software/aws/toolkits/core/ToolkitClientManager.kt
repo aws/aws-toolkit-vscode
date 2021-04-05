@@ -8,6 +8,7 @@ import software.amazon.awssdk.auth.credentials.AwsCredentialsProvider
 import software.amazon.awssdk.awscore.client.builder.AwsDefaultClientBuilder
 import software.amazon.awssdk.core.SdkClient
 import software.amazon.awssdk.core.client.config.SdkAdvancedClientOption
+import software.amazon.awssdk.core.retry.RetryMode
 import software.amazon.awssdk.http.SdkHttpClient
 import software.amazon.awssdk.regions.Region
 import software.aws.toolkits.core.credentials.ToolkitCredentialsProvider
@@ -116,6 +117,7 @@ abstract class ToolkitClientManager {
                 .region(region)
                 .overrideConfiguration { configuration ->
                     userAgent?.let { configuration.putAdvancedOption(SdkAdvancedClientOption.USER_AGENT_PREFIX, it) }
+                    configuration.retryPolicy(RetryMode.STANDARD)
                 }
                 .also { _ ->
                     endpointOverride?.let {
