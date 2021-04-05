@@ -33,10 +33,7 @@ import { ext } from '../../shared/extensionGlobals'
 import { EcrRepository } from '../../shared/clients/ecrClient'
 import { getSamCliVersion } from '../../shared/sam/cli/samCliContext'
 import * as semver from 'semver'
-import {
-    MINIMUM_SAM_CLI_VERSION_INCLUSIVE_FOR_IMAGE_SUPPORT,
-    MINIMUM_SAM_CLI_VERSION_INCLUSIVE_FOR_GO_SUPPORT,
-} from '../../shared/sam/cli/samCliValidator'
+import { MINIMUM_SAM_CLI_VERSION_INCLUSIVE_FOR_IMAGE_SUPPORT } from '../../shared/sam/cli/samCliValidator'
 import { ExtContext } from '../../shared/extensions'
 import { validateBucketName } from '../../s3/util'
 import { showErrorWithLogs } from '../../shared/utilities/messages'
@@ -676,11 +673,10 @@ export class SamDeployWizard extends MultiStepWizard<SamDeployWizardResponse> {
             }
         }
 
-        const samCliVersion = await getSamCliVersion(this.context.extContext.samCliContext())
-
         this.hasImages = await this.context.determineIfTemplateHasImages(this.response.template)
         if (this.hasImages) {
             // TODO: remove check when min version is high enough
+            const samCliVersion = await getSamCliVersion(this.context.extContext.samCliContext())
             if (semver.lt(samCliVersion, MINIMUM_SAM_CLI_VERSION_INCLUSIVE_FOR_IMAGE_SUPPORT)) {
                 vscode.window.showErrorMessage(
                     localize(
@@ -692,18 +688,6 @@ export class SamDeployWizard extends MultiStepWizard<SamDeployWizardResponse> {
             }
 
             this.context.additionalSteps++
-        }
-
-        // SAM CLI versions before 1.18.1 do not work correctly for Go debugging.
-        if (semver.lt(samCliVersion, MINIMUM_SAM_CLI_VERSION_INCLUSIVE_FOR_GO_SUPPORT)) {
-            vscode.window.showErrorMessage(
-                localize(
-                    'AWS.output.sam.no.go.support',
-                    'Go debugging requires SAM CLI version {0} or higher.',
-                    MINIMUM_SAM_CLI_VERSION_INCLUSIVE_FOR_GO_SUPPORT
-                )
-            )
-            return WIZARD_TERMINATE
         }
 
         const parameters = await this.context.getParameters(this.response.template)

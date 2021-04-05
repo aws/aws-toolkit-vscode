@@ -16,7 +16,13 @@ import {
     GoDebugConfiguration,
     getTemplate,
 } from '../../../lambda/local/debugConfiguration'
-import { getDefaultRuntime, getFamily, getRuntimeFamily, RuntimeFamily } from '../../../lambda/models/samLambdaRuntime'
+import {
+    getDefaultRuntime,
+    getFamily,
+    getRuntimeFamily,
+    goRuntimes,
+    RuntimeFamily,
+} from '../../../lambda/models/samLambdaRuntime'
 import { Timeout } from '../../utilities/timeoutUtils'
 import * as csharpDebug from './csharpSamDebug'
 import * as pythonDebug from './pythonSamDebug'
@@ -49,7 +55,10 @@ import { CloudFormation } from '../../cloudformation/cloudformation'
 import { getSamCliVersion } from '../cli/samCliContext'
 import { ext } from '../../extensionGlobals'
 import * as pathutils from '../../utilities/pathUtils'
-import { MINIMUM_SAM_CLI_VERSION_INCLUSIVE_FOR_IMAGE_SUPPORT } from '../cli/samCliValidator'
+import {
+    MINIMUM_SAM_CLI_VERSION_INCLUSIVE_FOR_IMAGE_SUPPORT,
+    MINIMUM_SAM_CLI_VERSION_INCLUSIVE_FOR_GO_SUPPORT,
+} from '../cli/samCliValidator'
 import { isCloud9 } from '../../extensionUtilities'
 
 const localize = nls.loadMessageBundle()
@@ -394,8 +403,8 @@ export class SamDebugConfigProvider implements vscode.DebugConfigurationProvider
                 : undefined) ?? config.lambda?.timeoutSec
 
         // TODO: Remove this when min sam version is > 1.13.0
+        const samCliVersion = await getSamCliVersion(this.ctx.samCliContext())
         if (!isZip) {
-            const samCliVersion = await getSamCliVersion(this.ctx.samCliContext())
             if (semver.lt(samCliVersion, MINIMUM_SAM_CLI_VERSION_INCLUSIVE_FOR_IMAGE_SUPPORT)) {
                 getLogger().error(`SAM debug: version (${samCliVersion}) too low for Image lambdas: ${config})`)
                 vscode.window.showErrorMessage(
@@ -415,6 +424,22 @@ export class SamDebugConfigProvider implements vscode.DebugConfigurationProvider
                     'AWS.sam.debugger.failedLaunch.missingRuntime',
                     'Toolkit could not infer a runtime for config: {0}. Add a "lambda.runtime" field to your launch configuration.',
                     config.name
+                )
+            )
+            return undefined
+        }
+
+        // SAM CLI versions before 1.18.1 do not work correctly for Go debugging.
+        if (
+            goRuntimes.includes(runtime) &&
+            semver.lt(samCliVersion, MINIMUM_SAM_CLI_VERSION_INCLUSIVE_FOR_GO_SUPPORT)
+        ) {
+            getLogger().error(`SAM debug: version (${samCliVersion}) too low for Go support: ${config})`)
+            vscode.window.showErrorMessage(
+                localize(
+                    'AWS.output.sam.no.go.support',
+                    'Go debugging requires SAM CLI version {0} or higher.',
+                    MINIMUM_SAM_CLI_VERSION_INCLUSIVE_FOR_GO_SUPPORT
                 )
             )
             return undefined
