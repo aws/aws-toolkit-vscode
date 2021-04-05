@@ -139,14 +139,20 @@ class ProfileWatcherTest {
         block()
 
         // Wait for fsnotify to see the change
-        assertThat(watcherTriggered.await(5, TimeUnit.SECONDS)).describedAs("FileWatcher is triggered").isTrue()
+        assertThat(watcherTriggered.await(5, TimeUnit.SECONDS)).describedAs("FileWatcher is triggered").isTrue
 
         val refreshComplete = CountDownLatch(1)
-        RefreshQueue.getInstance().refresh(true, true, Runnable { refreshComplete.countDown() }, *ManagingFS.getInstance().localRoots)
+        RefreshQueue.getInstance().refresh(true, true, { refreshComplete.countDown() }, *ManagingFS.getInstance().localRoots)
 
         // Wait for refresh to complete
         refreshComplete.await()
 
-        assertThat(updateCalled.get()).describedAs("ProfileWatcher is triggered").isTrue()
+        // The update is triggered asynchronously, so this does not mean it's done, especially when the system is under high load
+        // Since we are compiling ultimate/rider while running this test it can fail easily. 2000 is since we are dealing with the filesystem
+        // so, pick a high arbitrary value
+        if (updateCalled.get() == false) {
+            Thread.sleep(2000)
+        }
+        assertThat(updateCalled.get()).describedAs("ProfileWatcher is triggered").isTrue
     }
 }

@@ -131,7 +131,7 @@ afterEvaluate {
 
         systemProperty("aws.telemetry.skip_prompt", "true")
         systemProperty("aws.suppress_deprecation_prompt", true)
-        ciOnly {
+        ciOnly() {
             systemProperty("aws.sharedCredentialsFile", "/tmp/.aws/credentials")
         }
 
