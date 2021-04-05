@@ -1,0 +1,6 @@
+<!-- Copyright 2021 Amazon.com, Inc. or its affiliates. All Rights Reserved. -->
+<!-- SPDX-License-Identifier: Apache-2.0 -->
+
+<idea-plugin>
+    <depends optional="true" config-file="ext-rider.xml">com.intellij.modules.rider</depends>
+</idea-plugin>
