@@ -1,0 +1,8 @@
+<!-- Copyright 2021 Amazon.com, Inc. or its affiliates. All Rights Reserved. -->
+<!-- SPDX-License-Identifier: Apache-2.0 -->
+
+<idea-plugin>
+    <depends optional="true" config-file="ext-nodejs.xml">JavaScriptDebugger</depends>
+    <depends optional="true" config-file="ext-datagrip.xml">com.intellij.database</depends>
+    <depends optional="true" config-file="ext-go.xml">org.jetbrains.plugins.go</depends>
+</idea-plugin>
