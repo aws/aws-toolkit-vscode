@@ -403,8 +403,8 @@ export class SamDebugConfigProvider implements vscode.DebugConfigurationProvider
                 : undefined) ?? config.lambda?.timeoutSec
 
         // TODO: Remove this when min sam version is > 1.13.0
-        const samCliVersion = await getSamCliVersion(this.ctx.samCliContext())
         if (!isZip) {
+            const samCliVersion = await getSamCliVersion(this.ctx.samCliContext())
             if (semver.lt(samCliVersion, MINIMUM_SAM_CLI_VERSION_INCLUSIVE_FOR_IMAGE_SUPPORT)) {
                 getLogger().error(`SAM debug: version (${samCliVersion}) too low for Image lambdas: ${config})`)
                 vscode.window.showErrorMessage(
@@ -430,19 +430,19 @@ export class SamDebugConfigProvider implements vscode.DebugConfigurationProvider
         }
 
         // SAM CLI versions before 1.18.1 do not work correctly for Go debugging.
-        if (
-            goRuntimes.includes(runtime) &&
-            semver.lt(samCliVersion, MINIMUM_SAM_CLI_VERSION_INCLUSIVE_FOR_GO_SUPPORT)
-        ) {
-            getLogger().error(`SAM debug: version (${samCliVersion}) too low for Go support: ${config})`)
-            vscode.window.showErrorMessage(
-                localize(
-                    'AWS.output.sam.no.go.support',
-                    'Go debugging requires SAM CLI version {0} or higher.',
-                    MINIMUM_SAM_CLI_VERSION_INCLUSIVE_FOR_GO_SUPPORT
+        // TODO: remove this when min sam version is >= 1.18.1
+        if (goRuntimes.includes(runtime) && !config.noDebug) {
+            const samCliVersion = await getSamCliVersion(this.ctx.samCliContext())
+            if (semver.lt(samCliVersion, MINIMUM_SAM_CLI_VERSION_INCLUSIVE_FOR_GO_SUPPORT)) {
+                vscode.window.showWarningMessage(
+                    localize(
+                        'AWS.output.sam.local.no.go.support',
+                        'Debugging go1.x lambdas requires a minimum SAM CLI version of {0}. Function will run locally without debug.',
+                        MINIMUM_SAM_CLI_VERSION_INCLUSIVE_FOR_GO_SUPPORT
+                    )
                 )
-            )
-            return undefined
+                config.noDebug = true
+            }
         }
 
         const runtimeFamily = getFamily(runtime)
@@ -460,7 +460,7 @@ export class SamDebugConfigProvider implements vscode.DebugConfigurationProvider
                 vscode.window.showWarningMessage(
                     localize(
                         'AWS.output.sam.local.no.net.3.1.debug',
-                        'Debugging dotnetcore3.1 requires a minimum SAM CLI version of 1.4.0. Function will run locally without debug.'
+                        'Debugging dotnetcore3.1 lambdas requires a minimum SAM CLI version of 1.4.0. Function will run locally without debug.'
                     )
                 )
                 config.noDebug = true

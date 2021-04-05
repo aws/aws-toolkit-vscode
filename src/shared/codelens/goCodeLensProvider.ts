@@ -130,8 +130,8 @@ function parseTypes(params: string): string[] {
     const paramParts = params.split(',')
 
     // Names of parameters must either be all present or all absent: https://golang.org/ref/spec#Function_types
-    for (let i = 0; i < paramParts.length; i++) {
-        const parts: string[] = paramParts[i].trim().split(/\s+/)
+    paramParts.forEach((element: string, i: number) => {
+        const parts: string[] = element.trim().split(/\s+/)
         const type: string = parts.length > 1 ? parts[1] : parts[0]
 
         // Go allows types to be assigned to multiple parameters, e.g. (x, y, z int) === (x int, y int, z int)
@@ -143,7 +143,7 @@ function parseTypes(params: string): string[] {
         }
 
         types.push(type)
-    }
+    })
 
     return types
 }
@@ -167,11 +167,7 @@ async function checkForGoExtension(): Promise<boolean> {
 
             return true
         } catch (err) {
-            if (getLogger().logLevelEnabled('debug')) {
-                getLogger().debug('Failed to activate extension "%s": %O', VSCODE_EXTENSION_ID.go, err as Error)
-            } else {
-                getLogger().info('Failed to activate extension "%s". AWS codelenses will not appear in .go files.')
-            }
+            getLogger().debug('Failed to activate extension "%s": %O', VSCODE_EXTENSION_ID.go, err as Error)
         }
     }
 

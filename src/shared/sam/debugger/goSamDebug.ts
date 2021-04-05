@@ -26,7 +26,7 @@ import { SystemUtilities } from '../../../shared/systemUtilities'
 export async function invokeGoLambda(ctx: ExtContext, config: GoDebugConfiguration): Promise<GoDebugConfiguration> {
     config.samLocalInvokeCommand = new DefaultSamLocalInvokeCommand([WAIT_FOR_DEBUGGER_MESSAGES.GO_DELVE])
     // eslint-disable-next-line @typescript-eslint/unbound-method
-    config.onWillAttachDebugger = goToSleep
+    config.onWillAttachDebugger = waitForDelve
 
     if (!config.noDebug) {
         installDebugger(config.debuggerPath!)
@@ -38,12 +38,13 @@ export async function invokeGoLambda(ctx: ExtContext, config: GoDebugConfigurati
 
 /**
  * Triggered before the debugger attachment process begins. We should verify that the debugger is ready to go
- * before returning. We'll wait a little bit before checking ports, just to make sure the debugger doesn't break.
+ * before returning. Checking the ports before Delve has initialized causes it to fail, so an arbitrary delay
+ * time is added to reduce the chance of this occuring.
  *
  * @param debugPort Port to check for activity
  * @param timeout Cancellation token to prevent stalling
  */
-async function goToSleep(debugPort: number, timeout: Timeout) {
+async function waitForDelve(debugPort: number, timeout: Timeout) {
     await new Promise<void>(resolve => setTimeout(resolve, 1000))
     await waitForPort(debugPort, timeout)
 }
