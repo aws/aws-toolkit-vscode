@@ -132,7 +132,7 @@ export async function makeGoConfig(config: SamLaunchRequestArgs): Promise<GoDebu
 /**
  * @param debuggerPath Installation path for the debugger
  * @param isWindows Flag for making a windows script
- * @param forceDirect Sets GOPROXY to direct to prevent DNS failures
+ * @param forceDirect Sets GOPROXY to direct to prevent DNS failures, for use in tests *only*. See https://golang.org/ref/mod#module-proxy
  * @returns Path for the debugger install script
  */
 async function makeInstallScript(debuggerPath: string, isWindows: boolean, forceDirect: boolean): Promise<string> {

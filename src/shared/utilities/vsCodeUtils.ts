@@ -52,13 +52,13 @@ export async function closeAllEditors() {
     const noVisibleEditor: boolean | undefined = await waitUntil(
         async () => {
             const visibleEditors = vscode.window.visibleTextEditors.filter(
-                editor => !editor.document.fileName.includes('extension-output')
+                editor => !editor.document.fileName.includes('extension-output') // Output channels are named with the prefix 'extension-output'
             )
 
             return visibleEditors.length === 0
         },
         {
-            timeout: 2500,
+            timeout: 2500, // Arbitrary values. Should succeed except when VS Code is lagging heavily.
             interval: 250,
             truthy: true,
         }

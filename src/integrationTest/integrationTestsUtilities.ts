@@ -89,8 +89,8 @@ export async function configureGoExtension(): Promise<void> {
         latestPrereleaseVersion: '0.6.4',
         latestPrereleaseVersionTimestamp: '2021-01-19',
     }
-
-    // Force it
+    // Have to set GOPROXY to direct or it will fail to install gopls
+    // This only applies for our internal systems
     process.env['GOPROXY'] = 'direct'
 
     await vscode.commands.executeCommand('go.tools.install', [gopls])

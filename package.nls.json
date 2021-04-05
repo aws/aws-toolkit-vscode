@@ -331,6 +331,7 @@
     "AWS.message.toolkitInfo": "OS:  {0} {1} {2}\n{3} Extension Host Version:  {4}\nAWS Toolkit Version:  {5}\n",
     "AWS.output.building.sam.application": "Building SAM application...",
     "AWS.output.sam.no.image.support": "Debugging Image-based Lambdas requires a minimum SAM CLI version of 1.13.0.",
+    "AWS.output.sam.no.go.support": "Go debugging requires SAM CLI version {0} or higher.",
     "AWS.output.sam.local.no.net.3.1.debug": "Debugging dotnetcore3.1 requires a minimum SAM CLI version of 1.4.0. Function will run locally without debug.",
     "AWS.output.building.sam.application.complete": "Build complete.",
     "AWS.output.sam.local.attaching": "Attaching debugger to SAM application...",
