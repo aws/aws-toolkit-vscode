@@ -64,7 +64,7 @@ interface MetricEvent {
 
 fun String.replaceIllegal(replacement: String = "") = this.replace(illegalCharsRegex, replacement)
 
-class DefaultMetricEvent internal constructor(
+data class DefaultMetricEvent internal constructor(
     override val createTime: Instant,
     override val awsAccount: String,
     override val awsRegion: String,
@@ -110,7 +110,7 @@ class DefaultMetricEvent internal constructor(
         const val METADATA_INVALID = "invalid"
     }
 
-    class DefaultDatum(
+    data class DefaultDatum(
         override val name: String,
         override val value: Double,
         override val unit: MetricUnit,

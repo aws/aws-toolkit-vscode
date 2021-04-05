@@ -8,6 +8,7 @@ import com.intellij.openapi.components.ServiceManager
 import com.intellij.openapi.project.Project
 import software.amazon.awssdk.services.toolkittelemetry.model.Sentiment
 import software.aws.toolkits.core.telemetry.DefaultMetricEvent
+import software.aws.toolkits.core.telemetry.DefaultMetricEvent.Companion.METADATA_INVALID
 import software.aws.toolkits.core.telemetry.DefaultMetricEvent.Companion.METADATA_NA
 import software.aws.toolkits.core.telemetry.DefaultMetricEvent.Companion.METADATA_NOT_SET
 import software.aws.toolkits.core.telemetry.DefaultTelemetryBatcher
@@ -27,7 +28,6 @@ data class MetricEventMetadata(
 )
 
 abstract class TelemetryService(private val publisher: TelemetryPublisher, private val batcher: TelemetryBatcher) : Disposable {
-
     private val isDisposing = AtomicBoolean(false)
 
     init {
@@ -35,10 +35,22 @@ abstract class TelemetryService(private val publisher: TelemetryPublisher, priva
     }
 
     fun record(project: Project?, buildEvent: MetricEvent.Builder.() -> Unit) {
-        val metricEventMetadata = if (project == null) MetricEventMetadata() else MetricEventMetadata(
-            awsAccount = project.activeAwsAccountIfKnown() ?: METADATA_NOT_SET,
-            awsRegion = project.activeRegion().id
-        )
+        // It is possible that a race can happen if we record telemetry but project has been closed, i.e. async actions
+        val metricEventMetadata = if (project != null) {
+            if (project.isDisposed) {
+                MetricEventMetadata(
+                    awsAccount = METADATA_INVALID,
+                    awsRegion = METADATA_INVALID
+                )
+            } else {
+                MetricEventMetadata(
+                    awsAccount = project.activeAwsAccountIfKnown() ?: METADATA_NOT_SET,
+                    awsRegion = project.activeRegion().id
+                )
+            }
+        } else {
+            MetricEventMetadata()
+        }
         record(metricEventMetadata, buildEvent)
     }
 
