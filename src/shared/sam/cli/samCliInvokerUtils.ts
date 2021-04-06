@@ -12,6 +12,7 @@ export interface SamCliProcessInvokeOptions {
     arguments?: string[]
     onStdout?: ChildProcessStartArguments['onStdout']
     onStderr?: ChildProcessStartArguments['onStderr']
+    /** Log command invocations (default: true). */
     logging?: boolean
 }
 
