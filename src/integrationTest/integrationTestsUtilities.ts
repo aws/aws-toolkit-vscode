@@ -89,7 +89,7 @@ export async function configureGoExtension(): Promise<void> {
         latestPrereleaseVersion: '0.6.4',
         latestPrereleaseVersionTimestamp: '2021-01-19',
     }
-    // Have to set GOPROXY to direct or it will fail to install gopls
+    // Set GOPROXY=direct or it will fail to install gopls. https://golang.org/ref/mod#module-proxy
     // This only applies for our internal systems
     process.env['GOPROXY'] = 'direct'
 
