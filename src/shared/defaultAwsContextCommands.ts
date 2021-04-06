@@ -28,6 +28,7 @@ import { Region } from './regions/endpoints'
 import { RegionProvider } from './regions/regionProvider'
 import { getRegionsForActiveCredentials } from './regions/regionUtilities'
 import { createQuickPick, promptUser } from './ui/picker'
+import { SharedCredentialsProvider } from '../credentials/providers/sharedCredentialsProvider'
 
 const TITLE_HIDE_REGION = localize(
     'AWS.message.prompt.region.hide.title',
@@ -72,12 +73,13 @@ export class DefaultAWSContextCommands {
             const profileName: string | undefined = await this.promptAndCreateNewCredentialsFile()
 
             if (profileName) {
-                await this.loginManager.login({ passive: false, providerId: fromString(profileName) })
+                // TODO: change this once we figure out what profile types we should have
+                const profileNameWithType: string = SharedCredentialsProvider.getCredentialsType() + ':' + profileName
+                await this.loginManager.login({ passive: false, providerId: fromString(profileNameWithType) })
             }
-        } else {
-            // Get the editor set up and turn things over to the user
-            await this.editCredentials()
         }
+
+        await this.editCredentials()
     }
 
     public async onCommandLogout() {
