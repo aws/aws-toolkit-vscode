@@ -16,6 +16,7 @@ import {
 import * as codelensUtils from '../codelens/codeLensUtils'
 import * as csLensProvider from '../codelens/csharpCodeLensProvider'
 import * as pyLensProvider from '../codelens/pythonCodeLensProvider'
+import * as goLensProvider from '../codelens/goCodeLensProvider'
 import { SamTemplateCodeLensProvider } from '../codelens/samTemplateCodeLensProvider'
 import * as jsLensProvider from '../codelens/typescriptCodeLensProvider'
 import { ext } from '../extensionGlobals'
@@ -158,12 +159,20 @@ async function activateCodeLensProviders(
         )
     )
 
+    disposables.push(
+        vscode.languages.registerCodeLensProvider(
+            goLensProvider.GO_ALLFILES,
+            await codelensUtils.makeGoCodeLensProvider()
+        )
+    )
+
     try {
         const registry = new CodelensRootRegistry()
 
         await registry.addWatchPattern(pyLensProvider.PYTHON_BASE_PATTERN)
         await registry.addWatchPattern(jsLensProvider.JAVASCRIPT_BASE_PATTERN)
         await registry.addWatchPattern(csLensProvider.CSHARP_BASE_PATTERN)
+        await registry.addWatchPattern(goLensProvider.GO_BASE_PATTERN)
 
         ext.codelensRootRegistry = registry
     } catch (e) {
