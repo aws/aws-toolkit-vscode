@@ -51,6 +51,7 @@ abstract class AwsReuseSolutionTestBase : BaseTestWithSolutionBase() {
 
     @BeforeClass
     fun setUpBuildToolPath() {
+        // TODO: Does not appear to be needed in 203+ FIX_WHEN_MIN_IS_203
         if (SystemInfo.isWindows) {
             PrepareTestEnvironment.dotnetCoreCliPath = "C:\\Program Files\\dotnet\\dotnet.exe"
             setUpDotNetCoreCliPath(PrepareTestEnvironment.dotnetCoreCliPath)

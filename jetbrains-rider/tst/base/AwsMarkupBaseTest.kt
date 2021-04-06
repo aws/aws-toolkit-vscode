@@ -19,6 +19,7 @@ import org.testng.annotations.BeforeClass
 //
 // To avoid such errors we need to explicitly set toolset and MSBuild to be selected on an instance.
 // Please use this class for any Highlighting tests
+// TODO: Does not appear to be needed in 203+ FIX_WHEN_MIN_IS_203
 open class AwsMarkupBaseTest : BaseTestWithMarkup() {
     @BeforeClass
     fun setUpBuildToolPath() {
