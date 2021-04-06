@@ -77,7 +77,7 @@ class ResourceSelectorTest {
 
         retryableAssert {
             runInEdtAndWait {
-                assertThat(comboBox.isEnabled).isFalse()
+                assertThat(comboBox.isEnabled).isFalse
                 assertThat(comboBox.model.selectedItem).isEqualTo(message("loading_resource.failed"))
             }
         }
@@ -109,17 +109,74 @@ class ResourceSelectorTest {
 
         assertThat(comboBox.selected()).isNull()
 
-        comboBox.reload()
         runInEdtAndWait {
-            assertThat(comboBox.isEnabled).isFalse()
+            assertThat(comboBox.isEnabled).isFalse
             assertThat(comboBox.selectedItem).isEqualTo(message("loading_resource.loading"))
         }
 
         future.complete(listOf("foo", "bar", "baz"))
+
         retryableAssert {
             runInEdtAndWait {
-                assertThat(comboBox.isEnabled).isTrue()
+                assertThat(comboBox.isEnabled).isTrue
                 assertThat(comboBox.selectedItem).isNull()
+            }
+        }
+    }
+
+    @Test
+    fun comboBoxCancelsOldLoadingFutures() {
+        val future = CompletableFuture<List<String>>()
+        resourceCache.addEntry(projectRule.project, mockResource, future)
+        val comboBox = ResourceSelector.builder().resource(mockResource).awsConnection(projectRule.project).build()
+
+        retryableAssert {
+            runInEdtAndWait {
+                assertThat(comboBox.isLoading).isTrue()
+            }
+        }
+
+        assertThat(future).isNotDone
+
+        val replacementFuture = CompletableFuture<List<String>>()
+        resourceCache.addEntry(projectRule.project, mockResource, replacementFuture)
+
+        comboBox.reload()
+
+        replacementFuture.complete(listOf("foo", "bar", "baz"))
+
+        retryableAssert {
+            runInEdtAndWait {
+                assertThat(comboBox.isEnabled).isTrue
+                assertThat(comboBox.selectedItem).isNull()
+            }
+
+            assertThat(future).isCancelled
+        }
+    }
+
+    @Test
+    fun comboBoxLoadingDoesntCancelIdempotentFutures() {
+        val future = CompletableFuture<List<String>>()
+        resourceCache.addEntry(projectRule.project, mockResource, future)
+        val comboBox = ResourceSelector.builder().resource(mockResource).awsConnection(projectRule.project).build()
+
+        retryableAssert {
+            runInEdtAndWait {
+                assertThat(comboBox.isLoading).isTrue()
+            }
+        }
+
+        assertThat(future).isNotDone
+
+        comboBox.reload()
+
+        future.complete(listOf("foo", "bar", "baz"))
+
+        retryableAssert {
+            runInEdtAndWait {
+                assertThat(future).isNotCancelled
+                assertThat(comboBox.isEnabled).isTrue
             }
         }
     }
