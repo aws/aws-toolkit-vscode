@@ -25,7 +25,9 @@ phases:
           $Env:CODEARTIFACT_AUTH_TOKEN=aws codeartifact get-authorization-token --domain $Env:CODEARTIFACT_DOMAIN_NAME --query authorizationToken --output text --duration-seconds 3600
         }
 
-        ./gradlew check coverageReport --info --full-stacktrace --console plain
+         # Rider is very expensive (spikes our CI jobs to 50% CPU, so let it do the prep work in parallel, but run tests later
+        ./gradlew check :jetbrains-rider:compileTestKotlin -x :jetbrains-rider:test --info --full-stacktrace --console plain
+        ./gradlew :jetbrains-rider:check coverageReport --info --full-stacktrace --console plain
 
   post_build:
     commands:
