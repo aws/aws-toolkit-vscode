@@ -34,11 +34,12 @@ class Updater(
     private val eventsTable: EventsTable,
     private val outputsTable: OutputsListener,
     private val resourceListener: ResourceListener,
-    private val stackName: String,
     private val updateInterval: Duration,
+    private val updateIntervalOnFinalState: Duration,
     private val listener: UpdateListener,
     private val client: CloudFormationClient,
-    private val setPagesAvailable: (Set<Page>) -> Unit
+    private val setPagesAvailable: (Set<Page>) -> Unit,
+    private val stackId: String
 ) : Disposable {
 
     @Volatile
@@ -48,7 +49,7 @@ class Updater(
     private var predicate: (StackResource) -> Boolean = { true }
     private val updating = AtomicBoolean(false)
     val running get() = updating.get()
-    private val eventsFetcher = EventsFetcher(stackName)
+    private val eventsFetcher = EventsFetcher(stackId)
 
     private val app: Application
         get() = ApplicationManager.getApplication()
@@ -61,6 +62,8 @@ class Updater(
 
     fun start() {
         updating.set(true)
+        // cancel pending requests after refreshing
+        alarm.cancelAllRequests()
         alarm.addRequest({ fetchDataSafely() }, 0)
     }
 
@@ -132,10 +135,15 @@ class Updater(
             }
 
             updating.set(!newStackStatusNotInProgress)
-
             // Reschedule next run
-            if (!alarm.isDisposed && updating.get() && alarm.isEmpty) {
-                alarm.addRequest({ fetchDataSafely() }, updateInterval.toMillis())
+            if (stackStatus == StatusType.DELETED) {
+                alarm.cancelAllRequests()
+            } else if (!alarm.isDisposed && alarm.isEmpty) {
+                if (updating.get()) {
+                    alarm.addRequest({ fetchDataSafely() }, updateInterval.toMillis())
+                } else {
+                    alarm.addRequest({ fetchDataSafely() }, updateIntervalOnFinalState.toMillis())
+                }
             }
         }
     }
@@ -154,9 +162,9 @@ class Updater(
 
     private fun fetchStackDetails(): Stack {
         assert(!SwingUtilities.isEventDispatchThread())
-        val resourcesRequest = DescribeStackResourcesRequest.builder().stackName(stackName).build()
+        val resourcesRequest = DescribeStackResourcesRequest.builder().stackName(stackId).build()
         val resources = client.describeStackResources(resourcesRequest).stackResources()
-        val stack = client.describeStacks { it.stackName(stackName) }.stacks().firstOrNull()
+        val stack = client.describeStacks { it.stackName(stackId) }.stacks().firstOrNull()
         val stackStatus = stack?.stackStatus() ?: StackStatus.UNKNOWN_TO_SDK_VERSION
         val outputs = stack?.outputs() ?: emptyList()
         return Stack(stackStatus, resources, outputs)
