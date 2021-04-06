@@ -42,6 +42,7 @@ import javax.swing.JPanel
 import javax.swing.SwingUtilities
 
 private val UPDATE_STACK_STATUS_INTERVAL = Duration.ofSeconds(5)
+private val UPDATE_STACK_STATUS_INTERVAL_ON_FINAL_STATE = Duration.ofSeconds(60)
 private const val REDRAW_ANIMATED_ICON_INTERVAL = 70
 private const val TREE_TABLE_INITIAL_PROPORTION = 0.25f
 internal val STACK_TOOL_WINDOW =
@@ -159,11 +160,12 @@ private class StackUI(
             eventsTable = eventsTable,
             outputsTable = outputsTable,
             resourceListener = resourcesTable,
-            stackName = stackName,
             updateInterval = UPDATE_STACK_STATUS_INTERVAL,
+            updateIntervalOnFinalState = UPDATE_STACK_STATUS_INTERVAL_ON_FINAL_STATE,
             listener = this,
             client = project.awsClient(),
-            setPagesAvailable = pageButtons::setPagesAvailable
+            setPagesAvailable = pageButtons::setPagesAvailable,
+            stackId = stackId
         )
 
         window.setContent(mainPanel)

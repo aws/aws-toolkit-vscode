@@ -1,0 +1,4 @@
+{
+  "type" : "bugfix",
+  "description" : "Fix cloudformation stack events failing to update after reaching a final state (#2519)"
+}

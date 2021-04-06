@@ -101,13 +101,14 @@ class UpdaterTest {
             Updater(
                 treeView = treeView,
                 eventsTable = eventsTable,
-                resourceListener = resourceListener,
                 outputsTable = outputTable,
-                stackName = "MyStack",
+                resourceListener = resourceListener,
                 updateInterval = Duration.ofMillis(1),
+                updateIntervalOnFinalState = Duration.ofMillis(10),
                 listener = updateListener,
                 client = client,
-                setPagesAvailable = { p -> availablePages = p }
+                setPagesAvailable = { p -> availablePages = p },
+                stackId = "1234"
             ).start()
         }
 
@@ -152,13 +153,14 @@ class UpdaterTest {
         Updater(
             treeView = treeView,
             eventsTable = eventsTable,
-            resourceListener = resourceListener,
             outputsTable = outputTable,
-            stackName = "MyStack",
+            resourceListener = resourceListener,
             updateInterval = Duration.ofMillis(1),
+            updateIntervalOnFinalState = Duration.ofMillis(10),
             listener = updateListener,
             client = client,
-            setPagesAvailable = { }
+            setPagesAvailable = { },
+            stackId = "1234"
         ).applyFilter { it.logicalResourceId() == "L1" }
 
         fillResources.waitFor()
