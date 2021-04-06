@@ -13,7 +13,7 @@ import { CreateTokenResponse, StartDeviceAuthorizationResponse } from 'aws-sdk/c
 import { SsoClientRegistration } from '../../../credentials/sso/ssoClientRegistration'
 import { assertThrowsError } from '../../../test/shared/utilities/assertUtils'
 
-describe('SsoAccessTokenProvider', () => {
+describe('SsoAccessTokenProvider', function () {
     const sandbox = sinon.createSandbox()
 
     const ssoRegion = 'fakeRegion'
@@ -65,21 +65,21 @@ describe('SsoAccessTokenProvider', () => {
 
     let clock: sinon.SinonFakeTimers
 
-    before(() => {
+    before(function () {
         clock = FakeTimers.install()
     })
 
-    afterEach(async () => {
+    afterEach(async function () {
         sandbox.restore()
         clock.reset()
     })
 
-    after(() => {
+    after(function () {
         clock.uninstall()
     })
 
-    describe('accessToken', () => {
-        it('returns a cached token', async () => {
+    describe('accessToken', function () {
+        it('returns a cached token', async function () {
             sandbox.stub(cache, 'loadAccessToken').returns(validAccessToken)
 
             const receivedToken = await sut.accessToken()
@@ -87,7 +87,7 @@ describe('SsoAccessTokenProvider', () => {
             assert.strictEqual(receivedToken, validAccessToken)
         })
 
-        it('creates a new access token with a cached client registration', async () => {
+        it('creates a new access token with a cached client registration', async function () {
             setUpStubCache(validRegistation)
             const stubAuthorizeClient = sandbox.stub(sut, 'authorizeClient').resolves(validAuthorization)
 
@@ -107,7 +107,7 @@ describe('SsoAccessTokenProvider', () => {
             assert.strictEqual(stubAuthorizeClient.calledOnce, true)
         })
 
-        it('creates an access token without caches', async () => {
+        it('creates an access token without caches', async function () {
             setUpStubCache()
             const stubRegisterClient = sandbox.stub(sut, 'registerClient').resolves(validRegistation)
             const stubAuthorizeClient = sandbox.stub(sut, 'authorizeClient').resolves(validAuthorization)
@@ -130,7 +130,7 @@ describe('SsoAccessTokenProvider', () => {
             assert.strictEqual(stubSaveAccessToken.calledOnce, true)
         })
 
-        it('creates access token after multiple polls', async () => {
+        it('creates access token after multiple polls', async function () {
             setUpStubCache()
             sandbox.stub(sut, 'registerClient').resolves(validRegistation)
             sandbox.stub(sut, 'authorizeClient').resolves(validAuthorization)
@@ -139,7 +139,6 @@ describe('SsoAccessTokenProvider', () => {
             stubCreateToken.onFirstCall().returns(({
                 promise: sandbox.stub().throws({ code: 'AuthorizationPendingException' }),
             } as any) as SDK.Request<CreateTokenResponse, SDK.AWSError>)
-            clock.nextAsync()
 
             stubCreateToken.onSecondCall().returns(({
                 promise: sandbox.stub().resolves(fakeCreateTokenResponse),
@@ -164,7 +163,7 @@ describe('SsoAccessTokenProvider', () => {
             assert.strictEqual(stubSaveAccessToken.calledOnce, true)
         })
 
-        it('stops polling for unspecified errors during createToken call', async () => {
+        it('stops polling for unspecified errors during createToken call', async function () {
             setUpStubCache(validRegistation)
             sandbox.stub(sut, 'authorizeClient').resolves(validAuthorization)
 
@@ -185,7 +184,7 @@ describe('SsoAccessTokenProvider', () => {
             assert.strictEqual(stubSaveAccessToken.called, false)
         })
 
-        it('adds backoff delay on SlowDownException', async () => {
+        it('adds backoff delay on SlowDownException', async function () {
             setUpStubCache(validRegistation)
             sandbox.stub(sut, 'authorizeClient').resolves(validAuthorization)
 
@@ -218,8 +217,8 @@ describe('SsoAccessTokenProvider', () => {
         })
     })
 
-    describe('authorizeClient', () => {
-        it('removes the client registration cache on InvalidClientException', async () => {
+    describe('authorizeClient', function () {
+        it('removes the client registration cache on InvalidClientException', async function () {
             const errToThrow = new Error() as SDK.AWSError
             errToThrow.code = 'InvalidClientException'
 
