@@ -116,7 +116,7 @@ export class DefaultSamLocalInvokeCommand implements SamLocalInvokeCommand {
                     // the user will have to manually disconnect if using multiple debug sessions
                     const debugSession: vscode.DebugSession | undefined = vscode.debug.activeDebugSession
                     if (debugSession && debugSession.name === params.name) {
-                        getLogger().debug('forcing debugger to disconnect')
+                        getLogger().debug(`forcing debugger to disconnect: name=${debugSession.name}`)
                         debugSession.customRequest('disconnect')
                     }
                 },
