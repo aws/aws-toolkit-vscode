@@ -139,7 +139,7 @@ class AwsClientManagerTest {
 
         assertThatThrownBy { sut.getClient<NoServiceNameClient>(credentialManager.createCredentialProvider(), regionProvider.createAwsRegion()) }
             .isInstanceOf(NoSuchFieldException::class.java)
-            .hasMessageContaining("SERVICE_NAME")
+            .hasMessageContaining("SERVICE_METADATA_ID")
     }
 
     @Test
@@ -233,7 +233,7 @@ class AwsClientManagerTest {
         companion object {
             @Suppress("unused", "MayBeConstant")
             @JvmField
-            val SERVICE_NAME = "DummyService"
+            val SERVICE_METADATA_ID = "DummyService"
         }
     }
 

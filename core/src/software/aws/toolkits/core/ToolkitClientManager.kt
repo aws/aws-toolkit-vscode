@@ -52,7 +52,7 @@ abstract class ToolkitClientManager {
             serviceClass = sdkClass
         )
 
-        val serviceId = key.serviceClass.java.getField("SERVICE_NAME").get(null) as String
+        val serviceId = key.serviceClass.java.getField("SERVICE_METADATA_ID").get(null) as String
         if (serviceId !in GLOBAL_SERVICE_DENY_LIST && getRegionProvider().isServiceGlobal(region, serviceId)) {
             val globalRegion = getRegionProvider().getGlobalRegionForService(region, serviceId)
             return cachedClients.computeIfAbsent(key.copy(region = globalRegion)) { createNewClient(sdkClass, globalRegion, credProvider) } as T
