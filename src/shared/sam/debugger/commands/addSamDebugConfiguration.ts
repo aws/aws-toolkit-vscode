@@ -5,6 +5,7 @@
 
 import * as path from 'path'
 import * as vscode from 'vscode'
+import { pathExistsSync, readJsonSync } from 'fs-extra'
 import { Runtime } from 'aws-sdk/clients/lambda'
 import { getExistingConfiguration } from '../../../../lambda/config/templates'
 import { createRuntimeQuickPick, getDefaultRuntime, RuntimeFamily } from '../../../../lambda/models/samLambdaRuntime'
@@ -22,6 +23,7 @@ import {
 } from '../awsSamDebugConfiguration'
 import { CloudFormation } from '../../../cloudformation/cloudformation'
 import { ext } from '../../../extensionGlobals'
+import { getLogger } from '../../../../shared/logger'
 
 /**
  * Holds information required to create a launch config
@@ -166,6 +168,15 @@ export async function addSamDebugConfiguration(
         const val = picker.verifySinglePickerOutput(choices)
 
         if (val) {
+            // Prepend the artifact path to the lambda handler if this is a TypeScript application
+            if (pathExistsSync(path.join(path.dirname(rootUri.fsPath), 'tsconfig.json'))) {
+                try {
+                    const outDir = readJsonSync(path.join(path.dirname(rootUri.fsPath), 'tsconfig.json')).compilerOptions.outDir
+                    resourceName = `${outDir}/${resourceName}`
+                } catch (err) {
+                    getLogger().error(`Parsing tsconfig.json failed: ${err}`)
+                }
+            }
             // strip the manifest's URI to the manifest's dir here. More reliable to do this here than converting back and forth between URI/string up the chain.
             samDebugConfig = createCodeAwsSamDebugConfig(
                 workspaceFolder,
