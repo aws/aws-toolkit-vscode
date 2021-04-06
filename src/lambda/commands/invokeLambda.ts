@@ -16,7 +16,7 @@ import { BaseTemplates } from '../../shared/templates/baseTemplates'
 import { sampleRequestPath } from '../constants'
 import { LambdaFunctionNode } from '../explorer/lambdaFunctionNode'
 import { LambdaTemplates } from '../templates/lambdaTemplates'
-import { getSampleLambdaPayloads } from '../utilities/lambdaPayloadUtils'
+import { getSampleLambdaPayloads } from '../utils'
 
 interface CommandMessage {
     command: string

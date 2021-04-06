@@ -21,7 +21,7 @@ import {
     DefaultAwsSamDebugConfigurationValidator,
     resolveWorkspaceFolderVariable,
 } from '../../shared/sam/debugger/awsSamDebugConfigurationValidator'
-import { SamDebugConfigProvider } from '../../shared/sam/debugger/awsSamDebugger'
+// import { SamDebugConfigProvider } from '../../shared/sam/debugger/awsSamDebugger'
 import * as input from '../../shared/ui/input'
 import * as picker from '../../shared/ui/picker'
 import { addCodiconToString } from '../../shared/utilities/textUtilities'
@@ -31,7 +31,7 @@ import { tryGetAbsolutePath } from '../../shared/utilities/workspaceUtils'
 import { CloudFormation } from '../../shared/cloudformation/cloudformation'
 import { openLaunchJsonFile } from '../../shared/sam/debugger/commands/addSamDebugConfiguration'
 import { recordSamOpenConfigUi } from '../../shared/telemetry/telemetry.gen'
-import { getSampleLambdaPayloads } from '../utilities/lambdaPayloadUtils'
+import { getSampleLambdaPayloads } from '../utils'
 
 const localize = nls.loadMessageBundle()
 
@@ -375,7 +375,9 @@ async function invokeLaunchConfig(config: AwsSamDebuggerConfiguration, context: 
     const targetUri = getUriFromLaunchConfig(finalConfig)
     const folder = targetUri ? vscode.workspace.getWorkspaceFolder(targetUri) : undefined
 
-    await new SamDebugConfigProvider(context).resolveDebugConfigurationWithSubstitutedVariables(folder, finalConfig)
+    await vscode.debug.startDebugging(folder, finalConfig)
+
+    // await new SamDebugConfigProvider(context).resolveDebugConfigurationWithSubstitutedVariables(folder, finalConfig)
 }
 
 function getUriFromLaunchConfig(config: AwsSamDebuggerConfiguration): vscode.Uri | undefined {
