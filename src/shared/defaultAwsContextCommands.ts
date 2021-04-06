@@ -9,7 +9,7 @@ const localize = nls.loadMessageBundle()
 import { Credentials } from 'aws-sdk'
 import { env, QuickPickItem, Uri, ViewColumn, window } from 'vscode'
 import { LoginManager } from '../credentials/loginManager'
-import { fromString } from '../credentials/providers/credentialsProviderId'
+import { CredentialsProviderId, fromString } from '../credentials/providers/credentialsProviderId'
 import { CredentialsProviderManager } from '../credentials/providers/credentialsProviderManager'
 import { AwsContext } from './awsContext'
 import { AwsContextTreeCollection } from './awsContextTreeCollection'
@@ -74,8 +74,12 @@ export class DefaultAWSContextCommands {
 
             if (profileName) {
                 // TODO: change this once we figure out what profile types we should have
-                const profileNameWithType: string = SharedCredentialsProvider.getCredentialsType() + ':' + profileName
-                await this.loginManager.login({ passive: false, providerId: fromString(profileNameWithType) })
+                const sharedProviderId: CredentialsProviderId = {
+                    credentialType: SharedCredentialsProvider.getCredentialsType(),
+                    credentialTypeId: profileName,
+                }
+
+                await this.loginManager.login({ passive: false, providerId: sharedProviderId })
             }
         }
 
