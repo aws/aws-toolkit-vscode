@@ -148,7 +148,9 @@ describe('SsoAccessTokenProvider', () => {
             const stubSaveAccessToken = sandbox.stub(cache, 'saveAccessToken').returns()
 
             const startTime = Date.now()
-            const receivedToken = await sut.accessToken()
+            const tokenPromise = sut.accessToken()
+            clock.runAllAsync()
+            const receivedToken = await tokenPromise
             const endTime = Date.now()
 
             const durationInSeconds = (endTime - startTime) / 1000
@@ -191,7 +193,6 @@ describe('SsoAccessTokenProvider', () => {
             stubCreateToken.onFirstCall().returns(({
                 promise: sandbox.stub().throws({ code: 'SlowDownException' }),
             } as any) as SDK.Request<CreateTokenResponse, SDK.AWSError>)
-            clock.nextAsync()
 
             stubCreateToken.onSecondCall().returns(({
                 promise: sandbox.stub().resolves(fakeCreateTokenResponse),
@@ -200,16 +201,18 @@ describe('SsoAccessTokenProvider', () => {
             const stubSaveAccessToken = sandbox.stub(cache, 'saveAccessToken').returns()
 
             const startTime = Date.now()
-            const returnedToken = await sut.accessToken()
+            const tokenPromise = sut.accessToken()
+            clock.runAllAsync()
+            const receivedToken = await tokenPromise
             const endTime = Date.now()
 
             const durationInSeconds = (endTime - startTime) / 1000
 
             //The default backoff delay is 5 seconds, the starting retry interval is 1 second
             assert.strictEqual(durationInSeconds >= 6, true, 'Duration not over 6 seconds')
-            assert.strictEqual(returnedToken.startUrl, validAccessToken.startUrl)
-            assert.strictEqual(returnedToken.region, validAccessToken.region)
-            assert.strictEqual(returnedToken.accessToken, validAccessToken.accessToken)
+            assert.strictEqual(receivedToken.startUrl, validAccessToken.startUrl)
+            assert.strictEqual(receivedToken.region, validAccessToken.region)
+            assert.strictEqual(receivedToken.accessToken, validAccessToken.accessToken)
 
             assert.strictEqual(stubSaveAccessToken.calledOnce, true, 'Access token not saved')
         })
