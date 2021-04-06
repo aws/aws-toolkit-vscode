@@ -63,10 +63,7 @@ class ResourceSelector<T> private constructor(
     @Synchronized
     fun reload(forceFetch: Boolean = false) {
         val previouslySelected = model.selectedItem
-        loadingStatus = Status.LOADING
-
-        // If this reload will supersede a previous once, cancel it
-        loadingFuture?.cancel(true)
+        val previousLoading = loadingFuture
 
         runInEdt(ModalityState.any()) {
             loadingStatus = Status.LOADING
@@ -85,6 +82,11 @@ class ResourceSelector<T> private constructor(
                     connectionSettings = connectionSettings,
                     forceFetch = forceFetch
                 ).toCompletableFuture()
+
+                // If this reload will supersede a previous once, cancel it
+                if (previousLoading != resultFuture) {
+                    previousLoading?.cancel(true)
+                }
 
                 loadingFuture = resultFuture
                 resultFuture.whenComplete { value, error ->
