@@ -172,8 +172,8 @@ func tooManyArgs(a, b, c int) {
 
 }
 
-func multiLine(a int, // this parameter is an int
-               c string) /* this parameter is a string */ int {
+func multiLine(c Context, // this parameter is a context
+               s string) /* this parameter is a string */ error {
     return 1
 }
 

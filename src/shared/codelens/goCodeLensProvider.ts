@@ -108,13 +108,7 @@ export function isValidFuncSignature(document: vscode.TextDocument, symbol: vsco
         const argTypes: string[] = parseTypes(funcSigParts[0])
         const retTypes: string[] = funcSigParts.length > 1 ? parseTypes(funcSigParts[1]) : []
 
-        if (argTypes.length > 2 || retTypes.length > 2) {
-            return false
-        }
-
-        // TODO: actually check the types to make sure they are valid
-
-        return true
+        return validateArgumentTypes(argTypes) && validateReturnTypes(retTypes)
     }
 
     return false
@@ -138,7 +132,7 @@ function parseTypes(params: string): string[] {
     // Names of parameters must either be all present or all absent: https://golang.org/ref/spec#Function_types
     paramParts.forEach((element: string, i: number) => {
         const parts: string[] = element.trim().split(/\s+/)
-        const type: string = parts.length > 1 ? parts[1] : parts[0]
+        const type: string = parts.length > 1 ? parts[1].trim() : parts[0].trim()
 
         // Go allows types to be assigned to multiple parameters, e.g. (x, y, z int) === (x int, y int, z int)
         if (parts.length > 1) {
@@ -148,7 +142,9 @@ function parseTypes(params: string): string[] {
             lastType = i + 1
         }
 
-        types.push(type)
+        if (type !== '') {
+            types.push(type)
+        }
     })
 
     return types
@@ -178,4 +174,22 @@ async function checkForGoExtension(): Promise<boolean> {
     }
 
     return false
+}
+
+function validateArgumentTypes(argTypes: string[]): boolean {
+    if (argTypes.length > 2) {
+        return false
+    } else if (argTypes.length === 2) {
+        return argTypes[0].includes('Context')
+    } else {
+        return true
+    }
+}
+
+function validateReturnTypes(retTypes: string[]): boolean {
+    if (retTypes.length > 2) {
+        return false
+    } else {
+        return retTypes.length === 0 ? true : retTypes.pop()!.includes('error')
+    }
 }
