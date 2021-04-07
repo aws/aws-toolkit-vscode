@@ -132,7 +132,7 @@ async function _installDebugger({ debuggerPath }: InstallDebuggerArgs): Promise<
             installArgs = ['-v', vsDbgVersion, '-r', vsDbgRuntime, '-l', debuggerPath]
         }
 
-        const childProcess = new ChildProcess(installCommand, {}, ...installArgs)
+        const childProcess = new ChildProcess(true, installCommand, {}, ...installArgs)
 
         const installPromise = new Promise<void>(async (resolve, reject) => {
             await childProcess.start({

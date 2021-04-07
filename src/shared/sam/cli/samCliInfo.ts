@@ -41,7 +41,11 @@ export class SamCliInfoInvocation {
     }
 
     public async execute(): Promise<SamCliInfoResponse> {
-        const childProcessResult = await this.invoker.invoke({ arguments: ['--info'] })
+        const childProcessResult = await this.invoker.invoke({
+            // "info" command is noisy and uninteresting, don't log it.
+            logging: false,
+            arguments: ['--info'],
+        })
 
         logAndThrowIfUnexpectedExitCode(childProcessResult, 0)
         const response = this.convertOutput(childProcessResult.stdout)
