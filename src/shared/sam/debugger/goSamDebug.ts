@@ -79,8 +79,8 @@ export async function makeGoConfig(config: SamLaunchRequestArgs): Promise<GoDebu
 
     let localRoot: string | undefined
     let remoteRoot: string | undefined
+    const port: number = config.debugPort ?? -1
 
-    config.debugPort = config.debugPort ?? -1
     config.codeRoot = pathutil.normalize(config.codeRoot)
     config.debuggerPath = GO_DEBUGGER_PATH
 
@@ -94,7 +94,7 @@ export async function makeGoConfig(config: SamLaunchRequestArgs): Promise<GoDebu
             _AWS_LAMBDA_GO_DEBUGGING: '1',
             _AWS_LAMBDA_GO_DELVE_API_VERSION: '2',
             _AWS_LAMBDA_GO_DELVE_PATH: path.join(GO_DEBUGGER_PATH, 'dlv'),
-            _AWS_LAMBDA_GO_DELVE_LISTEN_PORT: config.debugPort.toString(),
+            _AWS_LAMBDA_GO_DELVE_LISTEN_PORT: port.toString(),
         }
     }
 
@@ -120,9 +120,9 @@ export async function makeGoConfig(config: SamLaunchRequestArgs): Promise<GoDebu
         runtimeFamily: RuntimeFamily.Go,
         preLaunchTask: undefined,
         host: 'localhost',
-        port: config.debugPort,
+        port: port,
         skipFiles: [],
-        debugArgs: isImageLambda ? undefined : ['-delveAPI=2'],
+        debugArgs: config.noDebug ? undefined : ['-delveAPI=2'],
         localRoot: localRoot ?? config.codeRoot,
         remoteRoot: remoteRoot ?? '/var/task',
     }
