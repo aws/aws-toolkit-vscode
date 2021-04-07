@@ -5,7 +5,7 @@
 
 import * as child_process from 'child_process'
 import * as crossSpawn from 'cross-spawn'
-import { getLogger } from '../logger'
+import * as logger from '../logger'
 import { waitUntil } from './timeoutUtils'
 
 export interface ChildProcessStartArguments {
@@ -38,6 +38,7 @@ export class ChildProcess {
     private childProcess: child_process.ChildProcess | undefined
     private processError: Error | undefined
     private processResult: ChildProcessResult | undefined
+    private log: logger.Logger
 
     /** Collects stdout data if the process was started with `collect=true`. */
     private stdoutChunks: string[] = []
@@ -54,10 +55,12 @@ export class ChildProcess {
     }
 
     public constructor(
+        logging: boolean,
         private readonly command: string,
         private readonly options?: child_process.SpawnOptions,
         ...args: string[]
     ) {
+        this.log = logging ? logger.getLogger() : logger.getNullLogger()
         this.args = args
     }
 
@@ -95,7 +98,7 @@ export class ChildProcess {
         if (this.childProcess) {
             throw new Error('process already started')
         }
-        getLogger().info(`Running: ${this.toString()}`)
+        this.log.info(`Running: ${this.toString()}`)
 
         // Async.
         // See also crossSpawn.spawnSync().
@@ -117,9 +120,15 @@ export class ChildProcess {
         //  3. Sending a message to the child process failed.
         // https://nodejs.org/api/child_process.html#child_process_class_childprocess
         // We also register error event handlers on the output/error streams in case a lower level library fails
-        this.childProcess.on('error', (err) => { errorHandler(this, params, err) })
-        this.childProcess.stdout?.on('error', (err) => { errorHandler(this, params, err) })
-        this.childProcess.stderr?.on('error', (err) => { errorHandler(this, params, err) })
+        this.childProcess.on('error', err => {
+            errorHandler(this, params, err)
+        })
+        this.childProcess.stdout?.on('error', err => {
+            errorHandler(this, params, err)
+        })
+        this.childProcess.stderr?.on('error', err => {
+            errorHandler(this, params, err)
+        })
 
         this.childProcess.stdout?.on('data', (data: { toString(): string }) => {
             if (params.collect) {
@@ -198,7 +207,7 @@ export class ChildProcess {
      * @param signal  Signal to send, defaults to SIGTERM.
      *
      */
-    public stop(force: boolean = false, signal: string = "SIGTERM"): void {
+    public stop(force: boolean = false, signal: string = 'SIGTERM'): void {
         const child = this.childProcess
         if (!child) {
             return
@@ -216,7 +225,7 @@ export class ChildProcess {
                         }
                     })
                     .catch(e => {
-                        getLogger().warn(`stop(): SIGKILL failed: pid=${pid} command=${command}`)
+                        this.log.warn(`stop(): SIGKILL failed: pid=${pid} command=${command}`)
                     })
             }
         } else {

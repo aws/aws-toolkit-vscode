@@ -3,7 +3,7 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
-import { getLogger } from '../../logger'
+import * as logger from '../../logger'
 import { ChildProcess, ChildProcessResult } from '../../utilities/childProcess'
 import {
     makeRequiredSamCliProcessInvokeOptions,
@@ -53,31 +53,38 @@ export class DefaultSamCliProcessInvoker implements SamCliProcessInvoker {
 
     public async invoke(options?: SamCliProcessInvokeOptions): Promise<ChildProcessResult> {
         const invokeOptions = makeRequiredSamCliProcessInvokeOptions(options)
-        const logger = getLogger()
+        const logging = options?.logging !== false
+        const getLogger = logging ? logger.getLogger : logger.getNullLogger
+        const log = getLogger()
 
         const sam = await this.context.getOrDetectSamCli()
         if (!sam.path) {
-            logger.warn('SAM CLI not found and not configured')
+            log.warn('SAM CLI not found and not configured')
         } else if (sam.autoDetected) {
-            logger.info('SAM CLI not configured, using SAM found at: %O', sam.path)
+            log.info('SAM CLI not configured, using SAM found at: %O', sam.path)
         }
 
         const samCommand = sam.path ? sam.path : 'sam'
-        this.childProcess = new ChildProcess(samCommand, invokeOptions.spawnOptions, ...invokeOptions.arguments)
+        this.childProcess = new ChildProcess(
+            logging,
+            samCommand,
+            invokeOptions.spawnOptions,
+            ...invokeOptions.arguments
+        )
 
         getLogger('channel').info(localize('AWS.running.command', 'Running command: {0}', `${this.childProcess}`))
-        logger.verbose(`running: ${this.childProcess}`)
+        log.verbose(`running: ${this.childProcess}`)
         return await this.childProcess.run(
             (text: string) => {
                 getLogger('debugConsole').info(text)
-                logger.verbose(`stdout: ${text}`)
+                log.verbose(`stdout: ${text}`)
                 if (options?.onStdout) {
                     options.onStdout(text)
                 }
             },
             (text: string) => {
                 getLogger('debugConsole').info(text)
-                logger.verbose(`stderr: ${text}`)
+                log.verbose(`stderr: ${text}`)
                 if (options?.onStderr) {
                     options.onStderr(text)
                 }
