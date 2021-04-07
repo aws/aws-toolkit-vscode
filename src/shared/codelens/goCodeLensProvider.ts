@@ -31,17 +31,23 @@ export async function getLambdaHandlerCandidates(document: vscode.TextDocument):
         return []
     }
 
+    let handlerName: string
+
     // We'll check that the Go lambda module is required, otherwise showing debug configs does not make much sense
     // If we want to support GOPATH, then we should check for an import statemnt within the file instead
     try {
         const modDoc: vscode.TextDocument = await vscode.workspace.openTextDocument(modFile!)
+        const regexp = /module ([a-zA-Z0-9_.-]*)[\s]*/.exec(modDoc.getText())
 
         if (
             !modDoc.getText().includes('require github.com/aws/aws-lambda-go') ||
-            !document.getText().includes('github.com/aws/aws-lambda-go/lambda')
+            !document.getText().includes('github.com/aws/aws-lambda-go/lambda') ||
+            !regexp
         ) {
             return []
         }
+
+        handlerName = regexp[1]
     } catch (err) {
         // No need to throw an error
         getLogger().verbose(
@@ -63,7 +69,7 @@ export async function getLambdaHandlerCandidates(document: vscode.TextDocument):
         .map<LambdaHandlerCandidate>(symbol => {
             return {
                 filename,
-                handlerName: `${document.uri}.${symbol.name}`,
+                handlerName: handlerName,
                 manifestUri: modFile,
                 range: symbol.range,
             }
