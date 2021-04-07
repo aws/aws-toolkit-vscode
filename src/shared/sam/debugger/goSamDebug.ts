@@ -122,7 +122,7 @@ export async function makeGoConfig(config: SamLaunchRequestArgs): Promise<GoDebu
         host: 'localhost',
         port: port,
         skipFiles: [],
-        debugArgs: config.noDebug ? undefined : ['-delveAPI=2'],
+        debugArgs: isImageLambda ? undefined : ['-delveAPI=2'],
         localRoot: localRoot ?? config.codeRoot,
         remoteRoot: remoteRoot ?? '/var/task',
     }
@@ -179,7 +179,7 @@ async function installDebugger(debuggerPath: string): Promise<void> {
     const isWindows: boolean = os.platform() === 'win32'
     const installScriptPath: string = await makeInstallScript(debuggerPath, isWindows, false)
 
-    const childProcess = new ChildProcess(installScriptPath)
+    const childProcess = new ChildProcess(false, installScriptPath)
     await childProcess.run()
 
     getLogger().debug('Installed delve debugger')
