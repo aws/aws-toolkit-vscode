@@ -36,6 +36,10 @@ tasks.register<GenerateGithubChangeLog>("generateChangeLog") {
     changeLogFile.set(project.file("CHANGELOG.md"))
 }
 
+tasks.createRelease.configure {
+    releaseVersion.set(providers.gradleProperty("toolkitVersion"))
+}
+
 dependencies {
     aggregateCoverage(project(":intellij"))
 }
