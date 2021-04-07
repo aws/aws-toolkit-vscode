@@ -30,7 +30,7 @@ describe('ChildProcess', async function () {
                 const batchFile = path.join(tempFolder, 'test-script.bat')
                 writeBatchFile(batchFile)
 
-                const childProcess = new ChildProcess(batchFile)
+                const childProcess = new ChildProcess(true, batchFile)
 
                 const result = await childProcess.run()
 
@@ -49,7 +49,7 @@ describe('ChildProcess', async function () {
 
                 writeWindowsCommandFile(command)
 
-                const childProcess = new ChildProcess(command)
+                const childProcess = new ChildProcess(true, command)
 
                 const result = await childProcess.run()
 
@@ -64,7 +64,7 @@ describe('ChildProcess', async function () {
                 const batchFile = path.join(tempFolder, 'test-script.bat')
                 writeBatchFile(batchFile)
 
-                const childProcess = new ChildProcess(batchFile)
+                const childProcess = new ChildProcess(true, batchFile)
 
                 // We want to verify that the error is thrown even if the first
                 // invocation is still in progress, so we don't await the promise.
@@ -83,7 +83,7 @@ describe('ChildProcess', async function () {
                 const scriptFile = path.join(tempFolder, 'test-script.sh')
                 writeShellFile(scriptFile)
 
-                const childProcess = new ChildProcess(scriptFile)
+                const childProcess = new ChildProcess(true, scriptFile)
 
                 const result = await childProcess.run()
 
@@ -98,7 +98,7 @@ describe('ChildProcess', async function () {
                 const scriptFile = path.join(tempFolder, 'test-script.sh')
                 writeShellFile(scriptFile)
 
-                const childProcess = new ChildProcess(scriptFile)
+                const childProcess = new ChildProcess(true, scriptFile)
 
                 // We want to verify that the error is thrown even if the first
                 // invocation is still in progress, so we don't await the promise.
@@ -128,7 +128,7 @@ describe('ChildProcess', async function () {
                 writeShellFile(command)
             }
 
-            const childProcess = new ChildProcess(command)
+            const childProcess = new ChildProcess(true, command)
 
             const result = await childProcess.run()
 
@@ -142,7 +142,7 @@ describe('ChildProcess', async function () {
         it('reports error for missing executable', async function () {
             const batchFile = path.join(tempFolder, 'nonExistentScript')
 
-            const childProcess = new ChildProcess(batchFile)
+            const childProcess = new ChildProcess(true, batchFile)
 
             const result = await childProcess.run()
 
@@ -193,7 +193,7 @@ describe('ChildProcess', async function () {
                 const batchFile = path.join(tempFolder, 'test-script.bat')
                 writeBatchFile(batchFile)
 
-                const childProcess = new ChildProcess(batchFile)
+                const childProcess = new ChildProcess(true, batchFile)
 
                 await assertRegularRun(childProcess)
             })
@@ -206,7 +206,7 @@ describe('ChildProcess', async function () {
 
                 writeWindowsCommandFile(command)
 
-                const childProcess = new ChildProcess(command)
+                const childProcess = new ChildProcess(true, command)
 
                 await assertRegularRun(childProcess)
             })
@@ -215,7 +215,7 @@ describe('ChildProcess', async function () {
                 const batchFile = path.join(tempFolder, 'test-script.bat')
                 writeBatchFile(batchFile)
 
-                const childProcess = new ChildProcess(batchFile)
+                const childProcess = new ChildProcess(true, batchFile)
 
                 // We want to verify that the error is thrown even if the first
                 // invocation is still in progress, so we don't await the promise.
@@ -236,7 +236,7 @@ describe('ChildProcess', async function () {
                 const scriptFile = path.join(tempFolder, 'test-script.sh')
                 writeShellFile(scriptFile)
 
-                const childProcess = new ChildProcess(scriptFile)
+                const childProcess = new ChildProcess(true, scriptFile)
 
                 await assertRegularRun(childProcess)
             })
@@ -245,7 +245,7 @@ describe('ChildProcess', async function () {
                 const scriptFile = path.join(tempFolder, 'test-script.sh')
                 writeShellFile(scriptFile)
 
-                const childProcess = new ChildProcess(scriptFile)
+                const childProcess = new ChildProcess(true, scriptFile)
 
                 // We want to verify that the error is thrown even if the first
                 // invocation is still in progress, so we don't await the promise.
@@ -275,7 +275,7 @@ describe('ChildProcess', async function () {
                 writeShellFile(command)
             }
 
-            const childProcess = new ChildProcess(command)
+            const childProcess = new ChildProcess(true, command)
 
             await assertRegularRun(childProcess)
         })
@@ -283,7 +283,7 @@ describe('ChildProcess', async function () {
         it('reports error for missing executable', async function () {
             const batchFile = path.join(tempFolder, 'nonExistentScript')
 
-            const childProcess = new ChildProcess(batchFile)
+            const childProcess = new ChildProcess(true, batchFile)
 
             await new Promise<void>(async (resolve, reject) => {
                 await childProcess.start({
@@ -302,7 +302,7 @@ describe('ChildProcess', async function () {
                 const batchFile = path.join(tempFolder, 'test-script.bat')
                 writeBatchFileWithDelays(batchFile)
 
-                const childProcess = new ChildProcess(batchFile)
+                const childProcess = new ChildProcess(true, batchFile)
 
                 // `await` is intentionally not used, we want to check the process while it runs.
                 childProcess.run()
@@ -317,7 +317,7 @@ describe('ChildProcess', async function () {
                 const batchFile = path.join(tempFolder, 'test-script.bat')
                 writeBatchFileWithDelays(batchFile)
 
-                const childProcess = new ChildProcess(batchFile)
+                const childProcess = new ChildProcess(true, batchFile)
 
                 // `await` is intentionally not used, we want to check the process while it runs.
                 childProcess.run()
@@ -336,7 +336,7 @@ describe('ChildProcess', async function () {
                 const scriptFile = path.join(tempFolder, 'test-script.sh')
                 writeShellFileWithDelays(scriptFile)
 
-                const childProcess = new ChildProcess('sh', {}, scriptFile)
+                const childProcess = new ChildProcess(true, 'sh', {}, scriptFile)
 
                 // `await` is intentionally not used, we want to check the process while it runs.
                 childProcess.run()
@@ -351,7 +351,7 @@ describe('ChildProcess', async function () {
                 const scriptFile = path.join(tempFolder, 'test-script.sh')
                 writeShellFileWithDelays(scriptFile)
 
-                const childProcess = new ChildProcess(scriptFile)
+                const childProcess = new ChildProcess(true, scriptFile)
 
                 // `await` is intentionally not used, we want to check the process while it runs.
                 childProcess.run()

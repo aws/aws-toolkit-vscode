@@ -12,11 +12,13 @@ export interface SamCliProcessInvokeOptions {
     arguments?: string[]
     onStdout?: ChildProcessStartArguments['onStdout']
     onStderr?: ChildProcessStartArguments['onStderr']
+    /** Log command invocations (default: true). */
+    logging?: boolean
 }
 
 export function makeRequiredSamCliProcessInvokeOptions(
     options?: SamCliProcessInvokeOptions
-): Required<Omit<SamCliProcessInvokeOptions, 'channelLogger' | 'onStdout' | 'onStderr'>> {
+): Required<Omit<SamCliProcessInvokeOptions, 'channelLogger' | 'onStdout' | 'onStderr' | 'logging'>> {
     options = options || {}
 
     return {

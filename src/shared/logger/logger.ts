@@ -73,6 +73,34 @@ export function getLogger(type?: 'channel' | 'debugConsole' | 'main'): Logger {
     return logger
 }
 
+export class NullLogger implements Logger {
+    public setLogLevel(logLevel: LogLevel) {}
+    public logLevelEnabled(logLevel: LogLevel): boolean {
+        return false
+    }
+    public debug(message: string | Error, ...meta: any[]): number {
+        return 0
+    }
+    public verbose(message: string | Error, ...meta: any[]): number {
+        return 0
+    }
+    public info(message: string | Error, ...meta: any[]): number {
+        return 0
+    }
+    public warn(message: string | Error, ...meta: any[]): number {
+        return 0
+    }
+    public error(message: string | Error, ...meta: any[]): number {
+        return 0
+    }
+    public getLogById(logID: number, file: string): string | undefined {
+        return undefined
+    }
+}
+
+export function getNullLogger(type?: 'channel' | 'debugConsole' | 'main'): Logger {
+    return new NullLogger()
+}
 /**
  * Sets (or clears) the logger that is accessible to code.
  * The Extension is expected to call this only once per log type.
