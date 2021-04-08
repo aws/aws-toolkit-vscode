@@ -20,6 +20,7 @@ const packageId = `${packageJson.publisher}.${packageJson.name}`
 
 /**@type {import('webpack').Configuration}*/
 const baseConfig = {
+    name: 'main',
     target: 'node',
     entry: {
         extension: './src/extension.ts',
@@ -95,14 +96,12 @@ const baseConfig = {
 
 /**@type {import('webpack').Configuration}*/
 const webviewConfig = {
+    name: 'vueLoader',
     entry: {
-        // invokeRemote: path.resolve(__dirname, 'src', 'webviews', 'tsx', 'invokeRemote.tsx'),
-        // createSamApp: path.resolve(__dirname, 'src', 'webviews', 'tsx', 'createSamApp.tsx'),
-        // createSamApp: path.resolve(__dirname, 'src', 'webviews', 'tsx', 'reducerCreateSamApp.tsx'),
         samInvokeVue: path.resolve(__dirname, 'src', 'lambda', 'vue', 'samInvokeVue.ts'),
     },
     output: {
-        path: path.resolve(__dirname, 'compiledWebviews'),
+        path: path.resolve(__dirname, 'dist', 'compiledWebviews'),
         filename: '[name].js',
     },
 

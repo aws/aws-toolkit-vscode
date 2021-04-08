@@ -72,7 +72,7 @@
         "onLanguage:python",
         "onLanguage:csharp",
         "onLanguage:yaml",
-        "onCommand:aws.lambda.invokeForm"
+        "onCommand:aws.launchConfigForm"
     ],
     "main": "./extensionMain",
     "contributes": {
@@ -1071,8 +1071,8 @@
         },
         "commands": [
             {
-                "command": "aws.lambda.invokeForm",
-                "title": "%AWS.command.lambda.editor.title%",
+                "command": "aws.launchConfigForm",
+                "title": "%AWS.command.launchConfigForm.title%",
                 "category": "AWS"
             },
             {
@@ -1509,7 +1509,8 @@
         "copyNonCodeFiles": "node ./build-scripts/copyNonCodeFiles.js",
         "copyExtensionMain": "node ./build-scripts/copyExtensionMain.js",
         "copyDistFiles": "ts-node ./build-scripts/copyDistFiles.ts",
-        "buildScripts": "npm run bundleDeps && npm run copyExtensionMain && npm run copyDistFiles && npm run copyNonCodeFiles && npm run generateNonCodeFiles",
+        "buildScripts": "npm run bundleDeps && npm run copyExtensionMain && npm run copyDistFiles && npm run copyNonCodeFiles && npm run generateNonCodeFiles && npm run buildVue",
+        "buildVue": "webpack --config-name vueLoader",
         "compile": "webpack --mode development && npm run buildScripts",
         "recompile": "npm run clean && npm run compile",
         "watch": "npm run buildScripts && tsc -watch -p ./",

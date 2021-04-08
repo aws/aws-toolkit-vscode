@@ -8,7 +8,6 @@ import * as vscode from 'vscode'
 import { Runtime } from 'aws-sdk/clients/lambda'
 import { getExistingConfiguration } from '../../../../lambda/config/templates'
 import { createRuntimeQuickPick, getDefaultRuntime, RuntimeFamily } from '../../../../lambda/models/samLambdaRuntime'
-// import { LaunchConfiguration } from '../../../debug/launchConfiguration'
 import * as picker from '../../../ui/picker'
 import { localize } from '../../../utilities/vsCodeUtils'
 import {
@@ -184,7 +183,7 @@ export async function addSamDebugConfiguration(
     }
 
     if (openWebview) {
-        vscode.commands.executeCommand('aws.lambda.invokeForm', samDebugConfig)
+        vscode.commands.executeCommand('aws.launchConfigForm', samDebugConfig)
     } else {
         const launchConfig = new LaunchConfiguration(rootUri)
         await launchConfig.addDebugConfiguration(samDebugConfig)
