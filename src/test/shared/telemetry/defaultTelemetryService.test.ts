@@ -21,7 +21,6 @@ import {
 } from '../../utilities/fakeAwsContext'
 import { FakeTelemetryPublisher } from '../../fake/fakeTelemetryService'
 import ClientTelemetry = require('../../../shared/telemetry/clienttelemetry')
-import { assertThrowsError } from '../utilities/assertUtils'
 
 const originalTelemetryClient: TelemetryService = ext.telemetry
 let mockContext: FakeExtensionContext
@@ -99,7 +98,7 @@ describe('DefaultTelemetryService', function () {
         service.record(fakeMetric(6, false))
 
         // Must throw.
-        assertThrowsError(async () => {
+        assert.throws(() => {
             service.assertPassiveTelemetry(false)
         })
 

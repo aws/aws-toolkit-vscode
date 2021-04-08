@@ -9,6 +9,7 @@ import * as path from 'path'
 import { v4 as uuidv4 } from 'uuid'
 import { ExtensionContext } from 'vscode'
 import { AwsContext } from '../awsContext'
+import { isReleaseVersion } from '../extensionUtilities'
 import { getLogger } from '../logger'
 import { MetricDatum } from './clienttelemetry'
 import { DefaultTelemetryClient } from './defaultTelemetryClient'
@@ -278,7 +279,7 @@ export class DefaultTelemetryService implements TelemetryService {
      */
     public assertPassiveTelemetry(didReload: boolean) {
         // Special case: these may be non-passive during a VSCode "reload". #1592
-        const activeAllowed = ['sam_init']
+        const maybeActiveOnReload = ['sam_init']
         // Metrics from the previous session can be arbitrary: we can't reason
         // about whether they should be passive/active.
         let readingCache = true
@@ -291,10 +292,15 @@ export class DefaultTelemetryService implements TelemetryService {
                 // Skip cached metrics.
                 continue
             }
-            if (metric.Passive || (didReload && activeAllowed.includes(metric.MetricName))) {
+            if (metric.Passive || (didReload && maybeActiveOnReload.includes(metric.MetricName))) {
                 continue
             }
-            throw Error(`non-passive metric emitted at startup: ${metric.MetricName}`)
+            const msg = `non-passive metric emitted at startup: ${metric.MetricName}`
+            if (isReleaseVersion()) {
+                getLogger().error(msg)
+            } else {
+                throw Error(msg)
+            }
         }
     }
 }
