@@ -44,7 +44,6 @@ import { SamDebugConfigProvider } from '../../shared/sam/debugger/awsSamDebugger
 import { ExtContext } from '../../shared/extensions'
 import { isTemplateTargetProperties } from '../../shared/sam/debugger/awsSamDebugConfiguration'
 import { TemplateTargetProperties } from '../../shared/sam/debugger/awsSamDebugConfiguration'
-import * as pathutils from '../../shared/utilities/pathUtils'
 import { openLaunchJsonFile } from '../../shared/sam/debugger/commands/addSamDebugConfiguration'
 import { waitUntil } from '../../shared/utilities/timeoutUtils'
 import { launchConfigDocUrl } from '../../shared/constants'
