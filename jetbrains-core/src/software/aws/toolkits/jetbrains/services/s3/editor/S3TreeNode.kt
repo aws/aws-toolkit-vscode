@@ -103,7 +103,7 @@ class S3TreeDirectoryNode(bucket: S3VirtualBucket, parent: S3TreeDirectoryNode?,
                 .contents()
                 ?.filterNotNull()
                 ?.filterNot { it.key() == key }
-                ?.map { S3TreeObjectNode(this, it.key(), it.size(), it.lastModified()) as S3TreeNode }
+                ?.map { S3TreeObjectNode(this, it.key(), it.size(), it.lastModified()) }
                 ?: emptyList()
 
             return (folders + s3Objects).sortedBy { it.key } + continuation

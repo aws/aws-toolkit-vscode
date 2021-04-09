@@ -72,13 +72,7 @@ abstract class AwsAuthWidget(private val userFieldEnabled: Boolean = true) : Dat
         super.reset(dataSource, resetCredentials)
 
         val regionProvider = AwsRegionProvider.getInstance()
-        val allRegions = serviceId.let {
-            if (it != null) {
-                regionProvider.allRegionsForService(it)
-            } else {
-                regionProvider.allRegions()
-            }
-        }
+        val allRegions = regionProvider.allRegionsForService(serviceId)
         regionSelector.setRegions(allRegions.values.toMutableList())
         val regionId = dataSource.additionalJdbcProperties[REGION_ID_PROPERTY]?.nullize()
         regionId?.let {
