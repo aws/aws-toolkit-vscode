@@ -212,7 +212,7 @@ export async function activate(context: vscode.ExtensionContext) {
             outputChannel: remoteInvokeOutputChannel,
         })
 
-        await activateLambda(context)
+        await activateLambda(extContext)
 
         await activateSsmDocument(context, awsContext, regionProvider, toolkitOutputChannel)
 
