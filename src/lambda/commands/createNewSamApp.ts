@@ -293,7 +293,9 @@ export async function createNewSamApplication(
 
         activationReloadState.clearSamInitState()
         // TODO: Replace when Cloud9 supports `markdown` commands
-        isCloud9() ? await vscode.workspace.openTextDocument(uri) : await vscode.commands.executeCommand('markdown.showPreviewToSide', uri)
+        isCloud9()
+            ? await vscode.workspace.openTextDocument(uri)
+            : await vscode.commands.executeCommand('markdown.showPreviewToSide', uri)
     } catch (err) {
         createResult = 'Failed'
         reason = 'error'
@@ -356,15 +358,13 @@ export async function addInitialLaunchConfiguration(
     const configurations = await new SamDebugConfigProvider(extContext).provideDebugConfigurations(folder)
     if (configurations) {
         // add configurations that target the new template file
-        const filtered = configurations.filter(
-            config =>
-                isTemplateTargetProperties(config.invokeTarget) &&
-                pathutils.areEqual(
-                    folder.uri.fsPath,
-                    (config.invokeTarget as TemplateTargetProperties).templatePath,
-                    targetUri.fsPath
-                )
-        )
+        const targetDir: string = path.dirname(targetUri.fsPath)
+        const filtered = configurations.filter(config => {
+            let templateDir: string = path.dirname((config.invokeTarget as TemplateTargetProperties).templatePath)
+            templateDir = templateDir.replace('${workspaceFolder}', folder.uri.fsPath)
+
+            return isTemplateTargetProperties(config.invokeTarget) && templateDir === targetDir
+        })
 
         // optional for ZIP-lambdas but required for Image-lambdas
         if (runtime !== undefined) {
