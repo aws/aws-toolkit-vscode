@@ -14,6 +14,9 @@ import org.gradle.language.base.plugins.LifecycleBasePlugin.VERIFICATION_GROUP
 import java.time.Instant
 
 open class ValidateMessages : DefaultTask() {
+    private companion object {
+        const val COPYRIGHT_HEADER_LINES = 2
+    }
     @InputFiles
     val paths: ConfigurableFileCollection = project.objects.fileCollection()
 
@@ -35,18 +38,20 @@ open class ValidateMessages : DefaultTask() {
                 fileLines
                     // filter out blank lines and comments
                     .filter { it.isNotBlank() && it.trim().firstOrNull() != '#' }
-                    .mapNotNull {
+                    .mapIndexed { lineNumber, it ->
                         if (it.contains("=")) {
                             it
                         } else {
-                            logger.warn(""""$filePath contains invalid message missing a '=': "$it"""")
+                            logger.error(""""$filePath:${lineNumber + COPYRIGHT_HEADER_LINES} contains invalid message missing a '=': "$it"""")
+                            hasError = true
                             null
                         }
                     }
+                    .filterNotNull()
                     .map { it.split("=").first() }
-                    .reduce { item1, item2 ->
+                    .reduceIndexed { lineNumber, item1, item2 ->
                         if (item1 > item2) {
-                            logger.error("""$filePath is not sorted:"$item1" > "$item2"""")
+                            logger.error("""$filePath:${lineNumber + COPYRIGHT_HEADER_LINES} is not sorted:"$item1" > "$item2"""")
                             hasError = true
                         }
 
