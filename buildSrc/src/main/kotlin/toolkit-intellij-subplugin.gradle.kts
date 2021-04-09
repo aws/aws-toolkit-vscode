@@ -1,6 +1,7 @@
 // Copyright 2019 Amazon.com, Inc. or its affiliates. All Rights Reserved.
 // SPDX-License-Identifier: Apache-2.0
 
+import org.gradle.testing.jacoco.plugins.JacocoTaskExtension.Output
 import org.jetbrains.intellij.tasks.DownloadRobotServerPluginTask
 import org.jetbrains.intellij.tasks.RunIdeForUiTestTask
 import software.aws.toolkits.gradle.IdeVersions
@@ -9,7 +10,6 @@ import software.aws.toolkits.gradle.findFolders
 import software.aws.toolkits.gradle.intellij
 import software.aws.toolkits.gradle.intellij.ToolkitIntelliJExtension
 import software.aws.toolkits.gradle.intellij.ToolkitIntelliJExtension.IdeFlavor
-import java.time.Instant
 
 val toolkitIntelliJ = project.extensions.create<ToolkitIntelliJExtension>("intellijToolkit")
 
@@ -142,7 +142,7 @@ afterEvaluate {
 
         configure<JacocoTaskExtension> {
             includes = listOf("software.aws.toolkits.*")
-            setDestinationFile(file("$buildDir/jacoco/${Instant.now()}-jacocoUiTests.exec"))
+            output = Output.TCP_CLIENT // Dump to our jacoco server instead of to a file
         }
     }
 }
