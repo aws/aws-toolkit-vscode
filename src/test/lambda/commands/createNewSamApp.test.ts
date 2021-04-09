@@ -25,6 +25,7 @@ import {
     TemplateTargetProperties,
 } from '../../../shared/sam/debugger/awsSamDebugConfiguration'
 import { ext } from '../../../shared/extensionGlobals'
+import { normalize } from '../../../shared/utilities/pathUtils'
 
 describe('createNewSamApp', function () {
     let mockLaunchConfiguration: LaunchConfiguration
@@ -72,7 +73,7 @@ describe('createNewSamApp', function () {
 
     describe('getMainUri', function () {
         it('returns the target file when it exists', async function () {
-            assert.strictEqual((await getMainUri(fakeResponse))?.fsPath, fakeTarget)
+            assert.strictEqual(normalize((await getMainUri(fakeResponse))?.fsPath ?? ''), normalize(fakeTarget))
         })
         it('returns undefined when the target does not exist', async function () {
             const badResponse1 = { location: fakeResponse.location, name: 'notreal' }
