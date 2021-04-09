@@ -354,7 +354,7 @@ export async function getMainUri(
 
 /**
  * Adds intial launch configurations when a new SAM app is created.
- * The template file must be within the same directory as the target file.
+ * The template file must be within the same root directory as the target file.
  */
 export async function addInitialLaunchConfiguration(
     extContext: ExtContext,
@@ -368,11 +368,13 @@ export async function addInitialLaunchConfiguration(
         // add configurations that target the new template file
         const targetDir: string = path.dirname(targetUri.fsPath)
         const filtered = configurations.filter(config => {
-            const templateDir: string = path.dirname((config.invokeTarget as TemplateTargetProperties).templatePath)
+            let templatePath: string = (config.invokeTarget as TemplateTargetProperties).templatePath
+            // TODO: write utility function that does this for other variables too
+            templatePath = templatePath.replace('${workspaceFolder}', folder.uri.fsPath)
 
             return (
                 isTemplateTargetProperties(config.invokeTarget) &&
-                pathutils.areEqual(folder.uri.fsPath, templateDir, targetDir)
+                !path.relative(targetDir, templatePath).startsWith('..')
             )
         })
 
