@@ -6,6 +6,7 @@
 import * as os from 'os'
 import * as path from 'path'
 import * as vscode from 'vscode'
+import * as https from 'https'
 import { GoDebugConfiguration, GO_DEBUGGER_PATH, isImageLambdaConfig } from '../../../lambda/local/debugConfiguration'
 import { RuntimeFamily } from '../../../lambda/models/samLambdaRuntime'
 import * as pathutil from '../../../shared/utilities/pathUtils'
@@ -29,7 +30,7 @@ export async function invokeGoLambda(ctx: ExtContext, config: GoDebugConfigurati
     config.onWillAttachDebugger = waitForDelve
 
     if (!config.noDebug) {
-        installDebugger(config.debuggerPath!)
+        await installDebugger(config.debuggerPath!)
     }
 
     const c = (await invokeLambdaFunction(ctx, config, async () => {})) as GoDebugConfiguration
@@ -138,29 +139,64 @@ export async function makeGoConfig(config: SamLaunchRequestArgs): Promise<GoDebu
  */
 async function makeInstallScript(debuggerPath: string, isWindows: boolean, forceDirect: boolean): Promise<string> {
     let script: string = ''
-    const DELVE_MODULE: string = path.normalize('github.com/go-delve/delve/cmd/dlv')
+    const DELVE_MODULE: string = 'github.com/go-delve/delve/cmd/dlv'
     const scriptExt: string = isWindows ? 'cmd' : 'sh'
-    const installScriptPath: string = path.join(debuggerPath, `install.${scriptExt}`)
     const delvePath: string = path.join(debuggerPath, 'dlv')
 
-    // TODO: don't just check if the file exists, ideally we should check for a version too
+    const response = new Promise<string | undefined>((resolve, reject) => {
+        const request = https.request(
+            {
+                hostname: 'api.github.com',
+                port: 443,
+                path: '/repos/go-delve/delve/releases/latest',
+                method: 'GET',
+                headers: { 'user-agent': 'node.js' },
+            },
+            res => {
+                let data: string = ''
+
+                res.on('data', chunk => (data += chunk))
+                res.on('end', () => resolve(data))
+            }
+        )
+
+        request.on('error', e => reject(e))
+        request.end()
+    })
+
+    let delveVersion: string = ''
+
+    try {
+        delveVersion = JSON.parse((await response) ?? '{ name: "" }').name
+    } catch (e) {
+        getLogger().debug('Failed to get latest delve version: %O', e as Error)
+    }
+
+    const installScriptPath: string = path.join(debuggerPath, `install${delveVersion}.${scriptExt}`)
     const alreadyInstalled = await SystemUtilities.fileExists(installScriptPath)
 
     if (alreadyInstalled) {
         return installScriptPath
     }
 
-    // This needs to be done only for internal systems, otherwise leave 'forceDirect' false!
-    if (forceDirect) {
-        if (isWindows) {
-            script += 'set GOPROXY=direct\n'
-        } else {
-            script += 'export GOPROXY=direct\n'
-        }
-    }
+    const envVariables: (string | undefined)[] = [
+        forceDirect ? 'GOPROXY=direct' : undefined, // This needs to be done only for internal systems, otherwise leave 'forceDirect' false!
+        'GOARCH=amd64',
+        'GOOS=linux',
+    ]
+
+    envVariables
+        .filter(v => v)
+        .forEach(v => {
+            if (isWindows) {
+                script += `set ${v}\n`
+            } else {
+                script += `export ${v}\n`
+            }
+        })
 
     script += `go get ${DELVE_MODULE}\n`
-    script += `GOARCH=amd64 GOOS=linux go build -o "${delvePath}" "${DELVE_MODULE}"\n`
+    script += `go build -o "${delvePath}" "${DELVE_MODULE}"\n`
 
     await writeFile(installScriptPath, script, 'utf8')
     await chmod(installScriptPath, 0o700)
