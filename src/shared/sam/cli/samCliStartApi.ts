@@ -53,6 +53,8 @@ export interface SamCliStartApiArguments {
     extraArgs?: string[]
     /** Debug session name */
     name?: string
+    /** Path to the container environment variable file */
+    containerEnvFile?: string
 }
 
 /**
@@ -79,6 +81,7 @@ export async function buildSamCliStartApiArguments(args: SamCliStartApiArguments
     pushIf(invokeArgs, !!args.skipPullImage, '--skip-pull-image')
     pushIf(invokeArgs, !!args.debuggerPath, '--debugger-path', args.debuggerPath!)
     pushIf(invokeArgs, !!args.debugArgs, '--debug-args', ...(args.debugArgs ?? []))
+    pushIf(invokeArgs, !!args.containerEnvFile, '--container-env-vars', args.containerEnvFile)
     pushIf(
         invokeArgs,
         !!args.parameterOverrides && args.parameterOverrides.length > 0,

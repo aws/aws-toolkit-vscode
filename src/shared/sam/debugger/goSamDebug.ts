@@ -6,7 +6,6 @@
 import * as os from 'os'
 import * as path from 'path'
 import * as vscode from 'vscode'
-import * as https from 'https'
 import { GoDebugConfiguration, GO_DEBUGGER_PATH, isImageLambdaConfig } from '../../../lambda/local/debugConfiguration'
 import { RuntimeFamily } from '../../../lambda/models/samLambdaRuntime'
 import * as pathutil from '../../../shared/utilities/pathUtils'
@@ -20,6 +19,8 @@ import { chmod, ensureDir, writeFile } from 'fs-extra'
 import { ChildProcess } from '../../utilities/childProcess'
 import { Timeout } from '../../utilities/timeoutUtils'
 import { SystemUtilities } from '../../../shared/systemUtilities'
+import { httpsRequestPromise } from '../../utilities/httpUtils'
+import { tempDirPath } from '../../../shared/filesystemUtilities'
 
 /**
  * Launches and attaches debugger to a SAM Go project.
@@ -30,7 +31,7 @@ export async function invokeGoLambda(ctx: ExtContext, config: GoDebugConfigurati
     config.onWillAttachDebugger = waitForDelve
 
     if (!config.noDebug) {
-        await installDebugger(config.debuggerPath!)
+        config.noDebug = !(await installDebugger(config.debuggerPath!))
     }
 
     const c = (await invokeLambdaFunction(ctx, config, async () => {})) as GoDebugConfiguration
@@ -83,18 +84,21 @@ export async function makeGoConfig(config: SamLaunchRequestArgs): Promise<GoDebu
     const port: number = config.debugPort ?? -1
 
     config.codeRoot = pathutil.normalize(config.codeRoot)
-    config.debuggerPath = GO_DEBUGGER_PATH
+    config.debuggerPath = path.join(tempDirPath, 'godbg')
 
     // Always generate a temporary template.yaml, don't use workspace one directly.
     config.templatePath = await makeInputTemplate(config)
 
     const isImageLambda = isImageLambdaConfig(config)
 
+    // Reference: https://github.com/aws/aws-sam-cli/blob/4543732bf3c0da3b57fe1e5aa43ce3f41d2bd0ba/samcli/local/docker/lambda_debug_settings.py#L94-L103
+    // These are the default settings. For some reason SAM CLI is not setting them even if the container
+    // environment file does not exist. SAM CLI will skip the debugging step if these are not set!
     if (isImageLambda && !config.noDebug) {
         config.containerEnvVars = {
             _AWS_LAMBDA_GO_DEBUGGING: '1',
             _AWS_LAMBDA_GO_DELVE_API_VERSION: '2',
-            _AWS_LAMBDA_GO_DELVE_PATH: path.join(GO_DEBUGGER_PATH, 'dlv'),
+            _AWS_LAMBDA_GO_DELVE_PATH: path.posix.join(GO_DEBUGGER_PATH, 'dlv'),
             _AWS_LAMBDA_GO_DELVE_LISTEN_PORT: port.toString(),
         }
     }
@@ -141,33 +145,21 @@ async function makeInstallScript(debuggerPath: string, isWindows: boolean, force
     let script: string = ''
     const DELVE_MODULE: string = 'github.com/go-delve/delve/cmd/dlv'
     const scriptExt: string = isWindows ? 'cmd' : 'sh'
-    const delvePath: string = path.join(debuggerPath, 'dlv')
+    const delvePath: string = path.posix.join(debuggerPath, 'dlv')
 
-    const response = new Promise<string | undefined>((resolve, reject) => {
-        const request = https.request(
-            {
-                hostname: 'api.github.com',
-                port: 443,
-                path: '/repos/go-delve/delve/releases/latest',
-                method: 'GET',
-                headers: { 'user-agent': 'node.js' },
-            },
-            res => {
-                let data: string = ''
-
-                res.on('data', chunk => (data += chunk))
-                res.on('end', () => resolve(data))
-            }
-        )
-
-        request.on('error', e => reject(e))
-        request.end()
+    const response = httpsRequestPromise({
+        hostname: 'api.github.com',
+        port: 443,
+        path: '/repos/go-delve/delve/releases/latest',
+        method: 'GET',
+        headers: { 'user-agent': 'node.js' },
     })
 
     let delveVersion: string = ''
 
+    // It's fine if we can't get the latest Delve version, the Toolkit will use the last built one instead
     try {
-        delveVersion = JSON.parse((await response) ?? '{ name: "" }').name
+        delveVersion = JSON.parse(await response).name
     } catch (e) {
         getLogger().debug('Failed to get latest delve version: %O', e as Error)
     }
@@ -179,21 +171,14 @@ async function makeInstallScript(debuggerPath: string, isWindows: boolean, force
         return installScriptPath
     }
 
+    const setCmd: string = isWindows ? 'set' : 'export'
     const envVariables: (string | undefined)[] = [
         forceDirect ? 'GOPROXY=direct' : undefined, // This needs to be done only for internal systems, otherwise leave 'forceDirect' false!
         'GOARCH=amd64',
         'GOOS=linux',
     ]
 
-    envVariables
-        .filter(v => v)
-        .forEach(v => {
-            if (isWindows) {
-                script += `set ${v}\n`
-            } else {
-                script += `export ${v}\n`
-            }
-        })
+    envVariables.filter(v => v).forEach(v => (script += `${setCmd} ${v}\n`))
 
     script += `go get ${DELVE_MODULE}\n`
     script += `go build -o "${delvePath}" "${DELVE_MODULE}"\n`
@@ -208,15 +193,23 @@ async function makeInstallScript(debuggerPath: string, isWindows: boolean, force
  * Downloads and builds the delve debugger for our container
  *
  * @param debuggerPath Installation path for the debugger
+ * @returns False when installation fails
  */
-async function installDebugger(debuggerPath: string): Promise<void> {
+async function installDebugger(debuggerPath: string): Promise<boolean> {
     await ensureDir(debuggerPath)
 
     const isWindows: boolean = os.platform() === 'win32'
     const installScriptPath: string = await makeInstallScript(debuggerPath, isWindows, false)
 
-    const childProcess = new ChildProcess(false, installScriptPath)
-    await childProcess.run()
+    const childProcess = new ChildProcess(true, installScriptPath)
 
-    getLogger().debug('Installed delve debugger')
+    try {
+        await childProcess.run()
+        getLogger().debug('Installed delve debugger')
+    } catch (e) {
+        getLogger().error('Failed to cross-compile delve debugger: %O', e as Error)
+        return false
+    }
+
+    return true
 }
