@@ -10,7 +10,11 @@ import * as testutil from '../../testUtil'
 import * as vscode from 'vscode'
 import * as fs from 'fs-extra'
 import { FakeExtensionContext } from '../../fakeExtensionContext'
-import { addInitialLaunchConfiguration } from '../../../lambda/commands/createNewSamApp'
+import {
+    addInitialLaunchConfiguration,
+    getMainUri,
+    SAM_INIT_OPEN_TARGET,
+} from '../../../lambda/commands/createNewSamApp'
 import { LaunchConfiguration } from '../../../shared/debug/launchConfiguration'
 import { anything, capture, instance, mock, when } from 'ts-mockito'
 import { makeSampleSamTemplateYaml } from '../../shared/cloudformation/cloudformationTestUtils'
@@ -22,26 +26,30 @@ import {
 } from '../../../shared/sam/debugger/awsSamDebugConfiguration'
 import { ext } from '../../../shared/extensionGlobals'
 
-describe('addInitialLaunchConfiguration', function () {
+describe('createNewSamApp', function () {
     let mockLaunchConfiguration: LaunchConfiguration
     let tempFolder: string
     let tempTemplate: vscode.Uri
-    let tempReadme: vscode.Uri
     let fakeWorkspaceFolder: vscode.WorkspaceFolder
     let fakeContext: ExtContext
+    let fakeResponse: { location: vscode.Uri; name: string }
+    let fakeTarget: string
 
     beforeEach(async function () {
         mockLaunchConfiguration = mock()
         fakeContext = await FakeExtensionContext.getFakeExtContext()
         tempFolder = await makeTemporaryToolkitFolder()
         tempTemplate = vscode.Uri.file(path.join(tempFolder, 'test.yaml'))
-        tempReadme = vscode.Uri.file(path.join(tempFolder, 'README.md'))
+        fakeTarget = path.join(tempFolder, SAM_INIT_OPEN_TARGET)
+        testutil.toFile('target file', fakeTarget)
 
         fakeWorkspaceFolder = {
-            uri: vscode.Uri.file(tempFolder),
+            uri: vscode.Uri.file(path.dirname(tempFolder)),
             name: 'It was me, fakeWorkspaceFolder!',
             index: 0,
         }
+
+        fakeResponse = { location: fakeWorkspaceFolder.uri, name: path.basename(tempFolder) }
 
         when(mockLaunchConfiguration.getDebugConfigurations()).thenReturn([
             {
@@ -62,129 +70,143 @@ describe('addInitialLaunchConfiguration', function () {
         ext.templateRegistry.reset()
     })
 
-    it('produces and returns initial launch configurations', async function () {
-        when(mockLaunchConfiguration.addDebugConfigurations(anything())).thenResolve()
-
-        testutil.toFile(makeSampleSamTemplateYaml(true), tempTemplate.fsPath)
-
-        // without runtime
-        await ext.templateRegistry.addItemToRegistry(tempTemplate)
-        const launchConfigs = await addInitialLaunchConfiguration(
-            fakeContext,
-            fakeWorkspaceFolder,
-            tempReadme,
-            undefined,
-            instance(mockLaunchConfiguration)
-        )
-
-        // eslint-disable-next-line @typescript-eslint/unbound-method
-        const [arg] = capture(mockLaunchConfiguration.addDebugConfigurations).last()
-        assert.ok(
-            pathutils.areEqual(
-                fakeWorkspaceFolder.uri.fsPath,
-                (arg[0].invokeTarget as TemplateTargetProperties).templatePath,
-                tempTemplate.fsPath,
-                true
-            )
-        )
-        assert.ok(launchConfigs)
-        const matchingConfigs = launchConfigs?.filter(config => {
-            return pathutils.areEqual(
-                fakeWorkspaceFolder.uri.fsPath,
-                (config.invokeTarget as TemplateTargetProperties).templatePath,
-                tempTemplate.fsPath,
-                true
-            )
+    describe('getMainUri', function () {
+        it('returns the target file when it exists', async function () {
+            assert.strictEqual((await getMainUri(fakeResponse))?.fsPath, fakeTarget)
         })
-        assert.ok(matchingConfigs)
-        assert.strictEqual(matchingConfigs!.length, 1)
+        it('returns undefined when the target does not exist', async function () {
+            const badResponse1 = { location: fakeResponse.location, name: 'notreal' }
+            const badResponse2 = { location: vscode.Uri.parse('fake://notreal'), name: 'notafile' }
+            assert.strictEqual((await getMainUri(badResponse1))?.fsPath, undefined)
+            assert.strictEqual((await getMainUri(badResponse2))?.fsPath, undefined)
+        })
     })
 
-    it('produces and returns initial launch configurations with runtime', async function () {
-        when(mockLaunchConfiguration.addDebugConfigurations(anything())).thenResolve()
+    describe('addInitialLaunchConfiguration', function () {
+        it('produces and returns initial launch configurations', async function () {
+            when(mockLaunchConfiguration.addDebugConfigurations(anything())).thenResolve()
 
-        testutil.toFile(makeSampleSamTemplateYaml(true), tempTemplate.fsPath)
+            testutil.toFile(makeSampleSamTemplateYaml(true), tempTemplate.fsPath)
 
-        // without runtime
-        await ext.templateRegistry.addItemToRegistry(tempTemplate)
-        const launchConfigs = (await addInitialLaunchConfiguration(
-            fakeContext,
-            fakeWorkspaceFolder,
-            tempReadme,
-            'someruntime',
-            instance(mockLaunchConfiguration)
-        )) as AwsSamDebuggerConfiguration[]
-
-        // eslint-disable-next-line @typescript-eslint/unbound-method
-        const [arg] = capture(mockLaunchConfiguration.addDebugConfigurations).last()
-        assert.ok(
-            pathutils.areEqual(
-                fakeWorkspaceFolder.uri.fsPath,
-                (arg[0].invokeTarget as TemplateTargetProperties).templatePath,
-                tempTemplate.fsPath,
-                true
+            // without runtime
+            await ext.templateRegistry.addItemToRegistry(tempTemplate)
+            const launchConfigs = await addInitialLaunchConfiguration(
+                fakeContext,
+                fakeWorkspaceFolder,
+                (await getMainUri(fakeResponse))!,
+                undefined,
+                instance(mockLaunchConfiguration)
             )
-        )
-        assert.ok(launchConfigs)
-        const matchingConfigs = launchConfigs?.filter(config => {
-            return (
+
+            // eslint-disable-next-line @typescript-eslint/unbound-method
+            const [arg] = capture(mockLaunchConfiguration.addDebugConfigurations).last()
+            assert.ok(
                 pathutils.areEqual(
+                    fakeWorkspaceFolder.uri.fsPath,
+                    (arg[0].invokeTarget as TemplateTargetProperties).templatePath,
+                    tempTemplate.fsPath,
+                    true
+                )
+            )
+            assert.ok(launchConfigs)
+            const matchingConfigs = launchConfigs?.filter(config => {
+                return pathutils.areEqual(
                     fakeWorkspaceFolder.uri.fsPath,
                     (config.invokeTarget as TemplateTargetProperties).templatePath,
                     tempTemplate.fsPath,
                     true
-                ) && config.lambda?.runtime === 'someruntime'
-            )
+                )
+            })
+            assert.ok(matchingConfigs)
+            assert.strictEqual(matchingConfigs!.length, 1)
         })
-        assert.ok(matchingConfigs)
-        assert.strictEqual(matchingConfigs!.length, 1)
-    })
 
-    it('returns a blank array if it does not match any launch configs', async function () {
-        when(mockLaunchConfiguration.addDebugConfigurations(anything())).thenResolve()
+        it('produces and returns initial launch configurations with runtime', async function () {
+            when(mockLaunchConfiguration.addDebugConfigurations(anything())).thenResolve()
 
-        testutil.toFile(makeSampleSamTemplateYaml(true), tempTemplate.fsPath)
+            testutil.toFile(makeSampleSamTemplateYaml(true), tempTemplate.fsPath)
 
-        await ext.templateRegistry.addItemToRegistry(tempTemplate)
-        const launchConfigs = await addInitialLaunchConfiguration(
-            fakeContext,
-            fakeWorkspaceFolder,
-            vscode.Uri.file(path.join(tempFolder, 'otherFolder', 'thisAintIt.yaml')),
-            undefined,
-            instance(mockLaunchConfiguration)
-        )
-        assert.deepStrictEqual(launchConfigs, [])
-    })
+            // without runtime
+            await ext.templateRegistry.addItemToRegistry(tempTemplate)
+            const launchConfigs = (await addInitialLaunchConfiguration(
+                fakeContext,
+                fakeWorkspaceFolder,
+                tempTemplate,
+                'someruntime',
+                instance(mockLaunchConfiguration)
+            )) as AwsSamDebuggerConfiguration[]
 
-    it('returns only templates within the same directory as target', async function () {
-        const otherFolder: string = path.join(tempFolder, 'otherFolder')
-        const otherTemplate: vscode.Uri = vscode.Uri.file(path.join(otherFolder, 'test.yaml'))
-        const otherReadme: vscode.Uri = vscode.Uri.file(path.join(otherFolder, 'README.md'))
+            // eslint-disable-next-line @typescript-eslint/unbound-method
+            const [arg] = capture(mockLaunchConfiguration.addDebugConfigurations).last()
+            assert.ok(
+                pathutils.areEqual(
+                    fakeWorkspaceFolder.uri.fsPath,
+                    (arg[0].invokeTarget as TemplateTargetProperties).templatePath,
+                    tempTemplate.fsPath,
+                    true
+                )
+            )
+            assert.ok(launchConfigs)
+            const matchingConfigs = launchConfigs?.filter(config => {
+                return (
+                    pathutils.areEqual(
+                        fakeWorkspaceFolder.uri.fsPath,
+                        (config.invokeTarget as TemplateTargetProperties).templatePath,
+                        tempTemplate.fsPath,
+                        true
+                    ) && config.lambda?.runtime === 'someruntime'
+                )
+            })
+            assert.ok(matchingConfigs)
+            assert.strictEqual(matchingConfigs!.length, 1)
+        })
 
-        when(mockLaunchConfiguration.addDebugConfigurations(anything())).thenResolve()
+        it('returns a blank array if it does not match any launch configs', async function () {
+            when(mockLaunchConfiguration.addDebugConfigurations(anything())).thenResolve()
 
-        testutil.toFile(makeSampleSamTemplateYaml(true), tempTemplate.fsPath)
-        testutil.toFile(makeSampleSamTemplateYaml(true), otherTemplate.fsPath)
+            testutil.toFile(makeSampleSamTemplateYaml(true), tempTemplate.fsPath)
 
-        await ext.templateRegistry.addItemToRegistry(tempTemplate)
-        await ext.templateRegistry.addItemToRegistry(otherTemplate)
+            await ext.templateRegistry.addItemToRegistry(tempTemplate)
+            const launchConfigs = await addInitialLaunchConfiguration(
+                fakeContext,
+                fakeWorkspaceFolder,
+                vscode.Uri.file(path.join(tempFolder, 'otherFolder', 'thisAintIt.yaml')),
+                undefined,
+                instance(mockLaunchConfiguration)
+            )
+            assert.deepStrictEqual(launchConfigs, [])
+        })
 
-        const launchConfigs = await addInitialLaunchConfiguration(
-            fakeContext,
-            fakeWorkspaceFolder,
-            tempReadme,
-            undefined,
-            instance(mockLaunchConfiguration)
-        )
+        it('returns only templates within the same base directory as target', async function () {
+            const otherFolder: string = path.join(fakeWorkspaceFolder.uri.fsPath, 'otherFolder')
+            const otherTemplate: vscode.Uri = vscode.Uri.file(path.join(otherFolder, 'test.yaml'))
 
-        const launchConfigs2 = await addInitialLaunchConfiguration(
-            fakeContext,
-            fakeWorkspaceFolder,
-            otherReadme,
-            undefined,
-            instance(mockLaunchConfiguration)
-        )
+            when(mockLaunchConfiguration.addDebugConfigurations(anything())).thenResolve()
 
-        assert.notDeepStrictEqual(launchConfigs, launchConfigs2)
+            testutil.toFile(makeSampleSamTemplateYaml(true), tempTemplate.fsPath)
+            testutil.toFile(makeSampleSamTemplateYaml(true), otherTemplate.fsPath)
+            testutil.toFile('target file', path.join(otherFolder, SAM_INIT_OPEN_TARGET))
+
+            await ext.templateRegistry.addItemToRegistry(tempTemplate)
+            await ext.templateRegistry.addItemToRegistry(otherTemplate)
+
+            const launchConfigs = await addInitialLaunchConfiguration(
+                fakeContext,
+                fakeWorkspaceFolder,
+                (await getMainUri(fakeResponse))!,
+                undefined,
+                instance(mockLaunchConfiguration)
+            )
+
+            const launchConfigs2 = await addInitialLaunchConfiguration(
+                fakeContext,
+                fakeWorkspaceFolder,
+                (await getMainUri({ location: fakeWorkspaceFolder.uri, name: 'otherFolder' }))!,
+                undefined,
+                instance(mockLaunchConfiguration)
+            )
+
+            assert.notDeepStrictEqual(launchConfigs, launchConfigs2)
+        })
     })
 })

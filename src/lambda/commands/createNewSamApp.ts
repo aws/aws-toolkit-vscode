@@ -53,6 +53,9 @@ import { getIdeProperties, isCloud9 } from '../../shared/extensionUtilities'
 
 type CreateReason = 'unknown' | 'userCancelled' | 'fileNotFound' | 'complete' | 'error'
 
+/** Target file to open after creating a new SAM application */
+export const SAM_INIT_OPEN_TARGET: string = 'README.md'
+
 export async function resumeCreateNewSamApp(
     extContext: ExtContext,
     activationReloadState: ActivationReloadState = new ActivationReloadState()
@@ -331,17 +334,18 @@ async function validateSamCli(samCliValidator: SamCliValidator): Promise<void> {
     throwAndNotifyIfInvalid(validationResult)
 }
 
-async function getMainUri(
+export async function getMainUri(
     config: Pick<CreateNewSamAppWizardResponse, 'location' | 'name'>
 ): Promise<vscode.Uri | undefined> {
-    const cfnTemplatePath = path.resolve(config.location.fsPath, config.name, 'README.md')
+    const cfnTemplatePath = path.resolve(config.location.fsPath, config.name, SAM_INIT_OPEN_TARGET)
     if (await fileExists(cfnTemplatePath)) {
         return vscode.Uri.file(cfnTemplatePath)
     } else {
         vscode.window.showWarningMessage(
             localize(
                 'AWS.samcli.initWizard.source.error.notFound',
-                'Project created successfully, but README.md file not found: {0}',
+                'Project created successfully, but {0} file not found: {1}',
+                SAM_INIT_OPEN_TARGET,
                 cfnTemplatePath
             )
         )
@@ -364,10 +368,12 @@ export async function addInitialLaunchConfiguration(
         // add configurations that target the new template file
         const targetDir: string = path.dirname(targetUri.fsPath)
         const filtered = configurations.filter(config => {
-            let templateDir: string = path.dirname((config.invokeTarget as TemplateTargetProperties).templatePath)
-            templateDir = templateDir.replace('${workspaceFolder}', folder.uri.fsPath)
+            const templateDir: string = path.dirname((config.invokeTarget as TemplateTargetProperties).templatePath)
 
-            return isTemplateTargetProperties(config.invokeTarget) && templateDir === targetDir
+            return (
+                isTemplateTargetProperties(config.invokeTarget) &&
+                pathutils.areEqual(folder.uri.fsPath, templateDir, targetDir)
+            )
         })
 
         // optional for ZIP-lambdas but required for Image-lambdas
