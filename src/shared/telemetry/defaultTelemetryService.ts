@@ -9,6 +9,7 @@ import * as path from 'path'
 import { v4 as uuidv4 } from 'uuid'
 import { ExtensionContext } from 'vscode'
 import { AwsContext } from '../awsContext'
+import { isReleaseVersion } from '../extensionUtilities'
 import { getLogger } from '../logger'
 import { MetricDatum } from './clienttelemetry'
 import { DefaultTelemetryClient } from './defaultTelemetryClient'
@@ -33,6 +34,14 @@ export class DefaultTelemetryService implements TelemetryService {
     private _timer?: NodeJS.Timer
     private publisher?: TelemetryPublisher
     private readonly _eventQueue: MetricDatum[]
+    /**
+     * Last metric (if any) loaded from cached telemetry from a previous
+     * session.
+     *
+     * We cannot infer this from "session_start" because there can in theory be
+     * multiple "session_start" metrics cached from multiple sessions.
+     */
+    private _endOfCache: MetricDatum | undefined
 
     public constructor(
         private readonly context: ExtensionContext,
@@ -59,6 +68,7 @@ export class DefaultTelemetryService implements TelemetryService {
 
     public async start(): Promise<void> {
         this._eventQueue.push(...DefaultTelemetryService.readEventsFromCache(this.persistFilePath))
+        this._endOfCache = this._eventQueue[this._eventQueue.length - 1]
         recordSessionStart()
         await this.startTimer()
     }
@@ -260,6 +270,37 @@ export class DefaultTelemetryService implements TelemetryService {
             getLogger().error(error)
 
             return []
+        }
+    }
+
+    /**
+     * Only passive telemetry is allowed during startup (except for some known
+     * special-cases).
+     */
+    public assertPassiveTelemetry(didReload: boolean) {
+        // Special case: these may be non-passive during a VSCode "reload". #1592
+        const maybeActiveOnReload = ['sam_init']
+        // Metrics from the previous session can be arbitrary: we can't reason
+        // about whether they should be passive/active.
+        let readingCache = true
+
+        // Array for..of is in-order:
+        // https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Array/forEach
+        for (const metric of this._eventQueue) {
+            if (readingCache) {
+                readingCache = metric !== this._endOfCache
+                // Skip cached metrics.
+                continue
+            }
+            if (metric.Passive || (didReload && maybeActiveOnReload.includes(metric.MetricName))) {
+                continue
+            }
+            const msg = `non-passive metric emitted at startup: ${metric.MetricName}`
+            if (isReleaseVersion()) {
+                getLogger().error(msg)
+            } else {
+                throw Error(msg)
+            }
         }
     }
 }
