@@ -8,7 +8,6 @@ import * as vscode from 'vscode'
 import { Runtime } from 'aws-sdk/clients/lambda'
 import { getExistingConfiguration } from '../../../../lambda/config/templates'
 import { createRuntimeQuickPick, getDefaultRuntime, RuntimeFamily } from '../../../../lambda/models/samLambdaRuntime'
-import { LaunchConfiguration } from '../../../debug/launchConfiguration'
 import * as picker from '../../../ui/picker'
 import { localize } from '../../../utilities/vsCodeUtils'
 import {
@@ -22,6 +21,7 @@ import {
 } from '../awsSamDebugConfiguration'
 import { CloudFormation } from '../../../cloudformation/cloudformation'
 import { ext } from '../../../extensionGlobals'
+import { LaunchConfiguration } from '../../../debug/launchConfiguration'
 
 /**
  * Holds information required to create a launch config
@@ -41,6 +41,7 @@ export interface AddSamDebugConfigurationInput {
 export async function addSamDebugConfiguration(
     { resourceName, rootUri, apiEvent, runtimeFamily }: AddSamDebugConfigurationInput,
     type: typeof CODE_TARGET_TYPE | typeof TEMPLATE_TARGET_TYPE | typeof API_TARGET_TYPE,
+    openWebview: boolean,
     step?: { step: number; totalSteps: number }
 ): Promise<void> {
     // emit without waiting
@@ -181,10 +182,14 @@ export async function addSamDebugConfiguration(
         throw new Error('Unrecognized debug target type')
     }
 
-    const launchConfig = new LaunchConfiguration(rootUri)
-    await launchConfig.addDebugConfiguration(samDebugConfig)
+    if (openWebview) {
+        vscode.commands.executeCommand('aws.launchConfigForm', samDebugConfig)
+    } else {
+        const launchConfig = new LaunchConfiguration(rootUri)
+        await launchConfig.addDebugConfiguration(samDebugConfig)
 
-    await openLaunchJsonFile()
+        await openLaunchJsonFile()
+    }
 }
 
 export async function openLaunchJsonFile(): Promise<void> {

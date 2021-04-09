@@ -6,11 +6,19 @@
 import * as nls from 'vscode-nls'
 const localize = nls.loadMessageBundle()
 
+import xml2js = require('xml2js')
 import { CloudFormation, Lambda } from 'aws-sdk'
 import * as vscode from 'vscode'
 import { CloudFormationClient } from '../shared/clients/cloudFormationClient'
 import { LambdaClient } from '../shared/clients/lambdaClient'
 import { getFamily, RuntimeFamily } from './models/samLambdaRuntime'
+import { getLogger } from '../shared/logger'
+import { ResourceFetcher } from '../shared/resourcefetcher/resourcefetcher'
+import { CompositeResourceFetcher } from '../shared/resourcefetcher/compositeResourceFetcher'
+import { HttpResourceFetcher } from '../shared/resourcefetcher/httpResourceFetcher'
+import { FileResourceFetcher } from '../shared/resourcefetcher/fileResourceFetcher'
+import { ext } from '../shared/extensionGlobals'
+import { sampleRequestManifestPath } from './constants'
 
 export async function* listCloudFormationStacks(
     client: CloudFormationClient
@@ -71,4 +79,45 @@ export function getLambdaDetails(
         fileName: `${handlerArr.slice(0, handlerArr.length - 1).join('.')}.${runtimeExtension}`,
         functionName: handlerArr[handlerArr.length - 1]!,
     }
+}
+
+interface SampleRequest {
+    name: string | undefined
+    filename: string | undefined
+}
+
+interface SampleRequestManifest {
+    requests: {
+        request: SampleRequest[]
+    }
+}
+
+export async function getSampleLambdaPayloads(): Promise<SampleRequest[]> {
+    const logger = getLogger()
+    const sampleInput = await makeSampleRequestManifestResourceFetcher().get()
+
+    if (!sampleInput) {
+        throw new Error('Unable to retrieve Sample Request manifest')
+    }
+
+    logger.debug(`Loaded: ${sampleInput}`)
+
+    const inputs: SampleRequest[] = []
+
+    xml2js.parseString(sampleInput, { explicitArray: false }, (err: Error, result: SampleRequestManifest) => {
+        if (err) {
+            return
+        }
+
+        inputs.push(...result.requests.request)
+    })
+
+    return inputs
+}
+
+function makeSampleRequestManifestResourceFetcher(): ResourceFetcher {
+    return new CompositeResourceFetcher(
+        new HttpResourceFetcher(sampleRequestManifestPath, { showUrl: true }),
+        new FileResourceFetcher(ext.manifestPaths.lambdaSampleRequests)
+    )
 }
