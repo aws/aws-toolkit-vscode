@@ -17,4 +17,9 @@ export interface TelemetryService {
     postFeedback(feedback: TelemetryFeedback): Promise<void>
     record(event: MetricDatum, awsContext?: AwsContext): void
     clearRecords(): void
+    /**
+     * Only passive telemetry is allowed during startup (except for some known
+     * special-cases).
+     */
+    assertPassiveTelemetry(didReload: boolean): void
 }
