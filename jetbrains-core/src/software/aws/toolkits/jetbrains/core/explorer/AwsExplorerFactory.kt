@@ -28,9 +28,11 @@ class AwsExplorerFactory : ToolWindowFactory, DumbAware {
         if (toolWindow is ToolWindowEx) {
             val actionManager = ActionManager.getInstance()
             toolWindow.setTitleActions(
-                actionManager.getAction("aws.settings.refresh"),
-                Separator.create(),
-                FeedbackDialog.getAction(project)
+                listOf(
+                    actionManager.getAction("aws.settings.refresh"),
+                    Separator.create(),
+                    FeedbackDialog.getAction(project)
+                )
             )
             toolWindow.setAdditionalGearActions(
                 DefaultActionGroup().apply {

@@ -13,9 +13,9 @@ import com.intellij.openapi.ui.ComboBox
 import com.intellij.openapi.ui.TextFieldWithBrowseButton
 import com.intellij.openapi.util.text.StringUtil
 import com.intellij.ui.IdeBorderFactory
+import com.intellij.ui.components.ActionLink
 import com.intellij.ui.components.JBCheckBox
 import com.intellij.ui.components.JBTextField
-import com.intellij.ui.components.labels.LinkLabel
 import com.intellij.util.ui.SwingHelper
 import software.aws.toolkits.jetbrains.core.executables.ExecutableInstance
 import software.aws.toolkits.jetbrains.core.executables.ExecutableInstance.BadExecutable
@@ -35,8 +35,8 @@ import javax.swing.JPanel
 
 class AwsSettingsConfigurable(private val project: Project) : SearchableConfigurable {
     private lateinit var panel: JPanel
-    private lateinit var samHelp: LinkLabel<*>
-    private lateinit var cloudDebugHelp: LinkLabel<*>
+    private lateinit var samHelp: JComponent
+    private lateinit var cloudDebugHelp: JComponent
     private lateinit var showAllHandlerGutterIcons: JBCheckBox
     private lateinit var serverlessSettings: JPanel
     private lateinit var remoteDebugSettings: JPanel
@@ -122,7 +122,7 @@ class AwsSettingsConfigurable(private val project: Project) : SearchableConfigur
         profilesNotification.selectedItem = awsSettings.profilesNotification
     }
 
-    private fun createHelpLink(helpId: HelpIds): LinkLabel<*> = LinkLabel.create(message("aws.settings.learn_more")) { BrowserUtil.browse(helpId.url) }
+    private fun createHelpLink(helpId: HelpIds): JComponent = ActionLink(message("aws.settings.learn_more")) { BrowserUtil.browse(helpId.url) }
 
     private fun createCliConfigurationElement(executableType: ExecutableType<*>, cliName: String): TextFieldWithBrowseButton {
         val autoDetectPath = getSavedExecutablePath(executableType, true)

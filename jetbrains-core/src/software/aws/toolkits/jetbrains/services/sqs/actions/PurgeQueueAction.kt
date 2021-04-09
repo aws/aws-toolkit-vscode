@@ -49,8 +49,8 @@ class PurgeQueueAction(
                             project,
                             message("sqs.purge_queue.confirm", queue.queueName, numMessages),
                             message("sqs.purge_queue.confirm.title"),
-                            Messages.YES_BUTTON,
-                            Messages.NO_BUTTON,
+                            Messages.getYesButton(),
+                            Messages.getNoButton(),
                             Messages.getWarningIcon()
                         )
                     }
