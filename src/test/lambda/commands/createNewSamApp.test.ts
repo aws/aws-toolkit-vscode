@@ -26,6 +26,7 @@ describe('addInitialLaunchConfiguration', function () {
     let mockLaunchConfiguration: LaunchConfiguration
     let tempFolder: string
     let tempTemplate: vscode.Uri
+    let tempReadme: vscode.Uri
     let fakeWorkspaceFolder: vscode.WorkspaceFolder
     let fakeContext: ExtContext
 
@@ -34,6 +35,7 @@ describe('addInitialLaunchConfiguration', function () {
         fakeContext = await FakeExtensionContext.getFakeExtContext()
         tempFolder = await makeTemporaryToolkitFolder()
         tempTemplate = vscode.Uri.file(path.join(tempFolder, 'test.yaml'))
+        tempReadme = vscode.Uri.file(path.join(tempFolder, 'README.md'))
 
         fakeWorkspaceFolder = {
             uri: vscode.Uri.file(tempFolder),
@@ -70,7 +72,7 @@ describe('addInitialLaunchConfiguration', function () {
         const launchConfigs = await addInitialLaunchConfiguration(
             fakeContext,
             fakeWorkspaceFolder,
-            tempTemplate,
+            tempReadme,
             undefined,
             instance(mockLaunchConfiguration)
         )
@@ -108,7 +110,7 @@ describe('addInitialLaunchConfiguration', function () {
         const launchConfigs = (await addInitialLaunchConfiguration(
             fakeContext,
             fakeWorkspaceFolder,
-            tempTemplate,
+            tempReadme,
             'someruntime',
             instance(mockLaunchConfiguration)
         )) as AwsSamDebuggerConfiguration[]
@@ -147,10 +149,42 @@ describe('addInitialLaunchConfiguration', function () {
         const launchConfigs = await addInitialLaunchConfiguration(
             fakeContext,
             fakeWorkspaceFolder,
-            vscode.Uri.file(path.join(tempFolder, 'thisAintIt.yaml')),
+            vscode.Uri.file(path.join(tempFolder, 'otherFolder', 'thisAintIt.yaml')),
             undefined,
             instance(mockLaunchConfiguration)
         )
         assert.deepStrictEqual(launchConfigs, [])
+    })
+
+    it('returns only templates within the same directory as target', async function () {
+        const otherFolder: string = path.join(tempFolder, 'otherFolder')
+        const otherTemplate: vscode.Uri = vscode.Uri.file(path.join(otherFolder, 'test.yaml'))
+        const otherReadme: vscode.Uri = vscode.Uri.file(path.join(otherFolder, 'README.md'))
+
+        when(mockLaunchConfiguration.addDebugConfigurations(anything())).thenResolve()
+
+        testutil.toFile(makeSampleSamTemplateYaml(true), tempTemplate.fsPath)
+        testutil.toFile(makeSampleSamTemplateYaml(true), otherTemplate.fsPath)
+
+        await ext.templateRegistry.addItemToRegistry(tempTemplate)
+        await ext.templateRegistry.addItemToRegistry(otherTemplate)
+
+        const launchConfigs = await addInitialLaunchConfiguration(
+            fakeContext,
+            fakeWorkspaceFolder,
+            tempReadme,
+            undefined,
+            instance(mockLaunchConfiguration)
+        )
+
+        const launchConfigs2 = await addInitialLaunchConfiguration(
+            fakeContext,
+            fakeWorkspaceFolder,
+            otherReadme,
+            undefined,
+            instance(mockLaunchConfiguration)
+        )
+
+        assert.notDeepStrictEqual(launchConfigs, launchConfigs2)
     })
 })

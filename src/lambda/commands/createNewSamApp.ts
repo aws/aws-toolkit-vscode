@@ -348,6 +348,10 @@ async function getMainUri(
     }
 }
 
+/**
+ * Adds intial launch configurations when a new SAM app is created.
+ * The template file must be within the same directory as the target file.
+ */
 export async function addInitialLaunchConfiguration(
     extContext: ExtContext,
     folder: vscode.WorkspaceFolder,
