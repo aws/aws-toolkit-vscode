@@ -30,6 +30,7 @@ dependencies {
     testImplementation("com.pinterest.ktlint:ktlint-core:$ktlintVersion")
     testImplementation("com.pinterest.ktlint:ktlint-test:$ktlintVersion")
 
+    implementation("org.jacoco:org.jacoco.core:${JacocoPlugin.DEFAULT_JACOCO_VERSION}")
     implementation("org.gradle:test-retry-gradle-plugin:$gradleRetryPluginVersion")
     implementation("com.adarshr:gradle-test-logger-plugin:$gradleTestLoggerPlugin")
 

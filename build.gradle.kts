@@ -42,6 +42,7 @@ tasks.createRelease.configure {
 
 dependencies {
     aggregateCoverage(project(":intellij"))
+    aggregateCoverage(project(":ui-tests"))
 }
 
 tasks.register("runIde") {

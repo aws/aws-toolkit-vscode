@@ -1,3 +1,5 @@
+import software.aws.toolkits.gradle.jacoco.RemoteCoverage.Companion.enableRemoteCoverage
+
 // Copyright 2020 Amazon.com, Inc. or its affiliates. All Rights Reserved.
 // SPDX-License-Identifier: Apache-2.0
 
@@ -55,4 +57,12 @@ tasks.register<Test>("uiTestCore") {
     useJUnitPlatform {
         includeTags("core")
     }
+
+    // We disable coverage for the JVM running our UI tests, we are running a TCP server that the sandbox IDE dumps to when it exits
+    // This is transparent to coverageReport creation since the coverage gets associated with this tasks jacoco output
+    configure<JacocoTaskExtension> {
+        isEnabled = false
+    }
+
+    enableRemoteCoverage(this)
 }
