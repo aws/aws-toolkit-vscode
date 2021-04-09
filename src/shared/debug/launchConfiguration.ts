@@ -88,6 +88,17 @@ export class LaunchConfiguration {
     public async addDebugConfiguration(debugConfig: vscode.DebugConfiguration): Promise<void> {
         await this.configSource.setDebugConfigurations([debugConfig, ...this.getDebugConfigurations()])
     }
+
+    /**
+     * Edits a debug configuration at a specfic index by replacing it with a new one.
+     * @param editedDebugConfig Full edited debug configuration
+     * @param index Index in `launch.json` configurations to replace
+     */
+    public async editDebugConfiguration(editedDebugConfig: vscode.DebugConfiguration, index: number): Promise<void> {
+        const configs = this.getDebugConfigurations()
+        configs[index] = editedDebugConfig
+        await this.configSource.setDebugConfigurations(configs)
+    }
 }
 
 class DefaultDebugConfigSource implements DebugConfigurationSource {

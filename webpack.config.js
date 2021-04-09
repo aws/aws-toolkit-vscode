@@ -10,6 +10,7 @@
 const path = require('path')
 const webpack = require('webpack')
 const { ESBuildMinifyPlugin } = require('esbuild-loader')
+const { VueLoaderPlugin } = require('vue-loader')
 const fs = require('fs')
 const { NLSBundlePlugin } = require('vscode-nls-dev/lib/webpack-bundler')
 const CircularDependencyPlugin = require('circular-dependency-plugin')
@@ -18,7 +19,8 @@ const packageJson = JSON.parse(fs.readFileSync(packageJsonFile, 'utf8'))
 const packageId = `${packageJson.publisher}.${packageJson.name}`
 
 /**@type {import('webpack').Configuration}*/
-const config = {
+const baseConfig = {
+    name: 'main',
     target: 'node',
     entry: {
         extension: './src/extension.ts',
@@ -91,4 +93,46 @@ const config = {
         ],
     },
 }
-module.exports = config
+
+/**@type {import('webpack').Configuration}*/
+const webviewConfig = {
+    name: 'vueLoader',
+    entry: {
+        samInvokeVue: path.resolve(__dirname, 'src', 'lambda', 'vue', 'samInvokeVue.ts'),
+    },
+    output: {
+        path: path.resolve(__dirname, 'dist', 'compiledWebviews'),
+        filename: '[name].js',
+    },
+
+    // Enable sourcemaps for debugging webpack's output.
+    devtool: 'source-map',
+
+    resolve: {
+        // Add '.ts' and '.tsx' as resolvable extensions.
+        extensions: ['.ts', '.tsx', '.js', '.json'],
+        alias: {
+            vue$: require.resolve('vue/dist/vue.esm.js'),
+        },
+    },
+    module: {
+        rules: [
+            {
+                test: /\.tsx?$/,
+                loader: 'esbuild-loader',
+                options: {
+                    loader: 'tsx',
+                    target: 'es2018',
+                },
+                exclude: /node_modules/,
+            },
+            {
+                test: /\.vue$/,
+                loader: 'vue-loader',
+            },
+        ],
+    },
+    plugins: [new VueLoaderPlugin()],
+}
+
+module.exports = [baseConfig, webviewConfig]
