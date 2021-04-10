@@ -259,6 +259,7 @@ export async function invokeLambdaFunction(
             debugArgs: config.debugArgs,
             skipPullImage: config.sam?.skipNewImageCheck,
             parameterOverrides: config.parameterOverrides,
+            containerEnvFile: config.containerEnvFile,
             extraArgs: config.sam?.localArguments,
         })
 
