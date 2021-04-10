@@ -500,7 +500,7 @@
     "AWS.samcli.initWizard.schemas.schema.prompt": "Select a Schema",
     "AWS.samcli.initWizard.schemas.notFound": "No schemas found in registry {0}.",
     "AWS.samcli.initWizard.schemas.failed_to_load_resources": "Error loading schemas in registry {0}.",
-    "AWS.samcli.initWizard.source.error.notFound": "Project created successfully, but README.md file not found: {0}",
+    "AWS.samcli.initWizard.source.error.notFound": "Project created successfully, but {0} file not found: {1}",
     "AWS.samcli.initWizard.source.error.notInWorkspace": "Could not open file '{0}'. If this file exists on disk, try adding it to your workspace.",
     "AWS.samcli.initWizard.completionMessage": "Created SAM application \"{0}\" and added launch configurations to launch.json: {1}",
     "AWS.samcli.initWizard.launchConfigFail": "Created SAM application \"{0}\" but failed to generate launch configurations. You can generate these via {1} in the template or handler file.",
