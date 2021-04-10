@@ -179,7 +179,7 @@ async function installDebugger(debuggerPath: string): Promise<void> {
     const isWindows: boolean = os.platform() === 'win32'
     const installScriptPath: string = await makeInstallScript(debuggerPath, isWindows, false)
 
-    const childProcess = new ChildProcess(installScriptPath)
+    const childProcess = new ChildProcess(true, installScriptPath)
     await childProcess.run()
 
     getLogger().debug('Installed delve debugger')
