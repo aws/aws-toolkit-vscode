@@ -53,6 +53,8 @@ export interface SamCliStartApiArguments {
     extraArgs?: string[]
     /** Path to the container environment variable file */
     containerEnvFile?: string
+    /** Debug session name */
+    name?: string
 }
 
 /**

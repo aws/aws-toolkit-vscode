@@ -35,7 +35,9 @@ export class AslVisualizationManager {
          * Ensure tests are written for this use case as well.
          */
 
-        if (!activeTextEditor) {
+        // Output channel is considered a text editor by VSCode (which we don't want)
+        // This check is required to prevent integration tests from failing due to the Go extension
+        if (!activeTextEditor || activeTextEditor.document.fileName.includes('extension-output')) {
             logger.error('Could not get active text editor for state machine render.')
             throw new Error('Could not get active text editor for state machine render.')
         }
