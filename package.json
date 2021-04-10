@@ -548,9 +548,7 @@
                 {
                     "id": "aws.explorer",
                     "name": "%AWS.lambda.explorerTitle%"
-                }
-            ],
-            "explorer": [
+                },
                 {
                     "id": "aws.cdk.explorer",
                     "name": "%AWS.cdk.explorerTitle%",
