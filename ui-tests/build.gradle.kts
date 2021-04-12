@@ -12,7 +12,7 @@ val coroutinesVersion: String by project
 val apacheCommonsVersion: String by project
 
 repositories {
-    maven { url = uri("https://jetbrains.bintray.com/intellij-third-party-dependencies") }
+    maven { url = uri("https://cache-redirector.jetbrains.com/intellij-dependencies") }
 }
 
 plugins {
