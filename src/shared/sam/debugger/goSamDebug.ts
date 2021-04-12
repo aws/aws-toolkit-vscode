@@ -12,7 +12,7 @@ import * as pathutil from '../../../shared/utilities/pathUtils'
 import { ExtContext } from '../../extensions'
 import { findParentProjectFile } from '../../utilities/workspaceUtils'
 import { DefaultSamLocalInvokeCommand, WAIT_FOR_DEBUGGER_MESSAGES } from '../cli/samCliLocalInvoke'
-import { invokeLambdaFunction, makeInputTemplate, waitForPort } from '../localLambdaRunner'
+import { invokeLambdaFunction, makeInputTemplate } from '../localLambdaRunner'
 import { SamLaunchRequestArgs } from './awsSamDebugger'
 import { getLogger } from '../../logger'
 import { chmod, ensureDir, writeFile, pathExistsSync } from 'fs-extra'
@@ -44,15 +44,14 @@ export async function invokeGoLambda(ctx: ExtContext, config: GoDebugConfigurati
 
 /**
  * Triggered before the debugger attachment process begins. We should verify that the debugger is ready to go
- * before returning. Checking the ports before Delve has initialized causes it to fail, so an arbitrary delay
- * time is added to reduce the chance of this occuring.
+ * before returning. The Delve DAP will only accept a single client, so checking if the ports are in use will
+ * cause Delve to terminate.
  *
  * @param debugPort Port to check for activity
  * @param timeout Cancellation token to prevent stalling
  */
 async function waitForDelve(debugPort: number, timeout: Timeout) {
     await new Promise<void>(resolve => setTimeout(resolve, 1000))
-    await waitForPort(debugPort, timeout)
 }
 
 export async function getSamProjectDirPathForFile(filepath: string): Promise<string> {
