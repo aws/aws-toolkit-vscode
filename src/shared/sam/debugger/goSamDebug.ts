@@ -88,7 +88,10 @@ export async function makeGoConfig(config: SamLaunchRequestArgs): Promise<GoDebu
     const port: number = config.debugPort ?? -1
 
     config.codeRoot = pathutil.normalize(config.codeRoot)
+
+    // We want to persist the binary we build since it takes a non-trivial amount of time to build
     config.debuggerPath = path.join(os.tmpdir(), 'aws-toolkit-vscode', 'godbg')
+
     // Always generate a temporary template.yaml, don't use workspace one directly.
     config.templatePath = await makeInputTemplate(config)
 
@@ -230,7 +233,7 @@ async function installDebugger(debuggerPath: string): Promise<boolean> {
 
     try {
         await childProcess.run()
-        getLogger().info('Installed Delve debugger')
+        getLogger().info(`Installed Delve debugger in ${debuggerPath}`)
     } catch (e) {
         getLogger().error('Failed to cross-compile Delve debugger: %O', e as Error)
         return false
