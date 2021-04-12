@@ -145,7 +145,7 @@ describe('localLambdaRunner', async function () {
                 debugConfig: ({} as any) as SamLaunchRequestArgs,
                 onStartDebugging: startDebuggingReturnsFalse,
                 onRecordAttachDebuggerMetric: (attachResult: boolean | undefined, attempts: number): void => {
-                    assert.strictEqual(actualRetries, 4, 'Metrics should only be recorded once')
+                    assert.strictEqual(actualRetries, 1, 'Metrics should only be recorded once')
                     assert.notStrictEqual(attachResult, undefined, 'attachResult should not be undefined')
                 },
                 onWillRetry,
@@ -159,7 +159,7 @@ describe('localLambdaRunner', async function () {
                     folder: vscode.WorkspaceFolder | undefined,
                     nameOrConfiguration: string | vscode.DebugConfiguration
                 ): Promise<boolean> => {
-                    const retVal = actualRetries === 3 ? true : undefined
+                    const retVal = actualRetries === 0 ? true : undefined
 
                     return retVal!
                 },
