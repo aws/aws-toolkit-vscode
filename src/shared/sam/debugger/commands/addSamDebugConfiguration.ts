@@ -171,8 +171,10 @@ export async function addSamDebugConfiguration(
             // Prepend the artifact path to the lambda handler if this is a TypeScript application
             if (pathExistsSync(path.join(path.dirname(rootUri.fsPath), 'tsconfig.json'))) {
                 try {
-                    const outDir = readJsonSync(path.join(path.dirname(rootUri.fsPath), 'tsconfig.json')).compilerOptions.outDir
-                    resourceName = `${outDir}/${resourceName}`
+                    const outDir = readJsonSync(path.join(path.dirname(rootUri.fsPath), 'tsconfig.json')).compilerOptions.outDir ?? undefined
+                    if (outDir) {
+                        resourceName = `${outDir}/${resourceName}`
+                    }
                 } catch (err) {
                     getLogger().error(`Parsing tsconfig.json failed: ${err}`)
                 }
