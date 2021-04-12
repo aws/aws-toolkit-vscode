@@ -6,6 +6,7 @@
 import * as _ from 'lodash'
 import * as os from 'os'
 import * as path from 'path'
+import * as semver from 'semver'
 import * as vscode from 'vscode'
 import * as nls from 'vscode-nls'
 import { ext } from '../shared/extensionGlobals'
@@ -18,11 +19,12 @@ const localize = nls.loadMessageBundle()
 
 const VSCODE_APPNAME = 'Visual Studio Code'
 const CLOUD9_APPNAME = 'AWS Cloud9'
+const TEST_VERSION = 'testPluginVersion'
 
 export const mostRecentVersionKey: string = 'awsToolkitMostRecentVersion'
 // This is a hack to get around webpack messing everything up in unit test mode, it's also a very obvious
 // bad version if something goes wrong while building it
-let pluginVersion = 'testPluginVersion'
+let pluginVersion = TEST_VERSION
 try {
     pluginVersion = PLUGINVERSION
 } catch (e) {}
@@ -119,17 +121,25 @@ export class ExtensionUtilities {
 
         return scripts
     }
+
+    public static getFilesAsVsCodeResources(rootdir: string, filenames: string[], webview: vscode.Webview) {
+        const arr: vscode.Uri[] = []
+        for (const filename of filenames) {
+            arr.push(webview.asWebviewUri(vscode.Uri.file(path.join(rootdir, filename))))
+        }
+
+        return arr
+    }
 }
 
 /**
- * A utility function that takes a possibly null value and applies
- * the given function to it, returning the result of the function or null
+ * Applies function `getFn` to `obj` and returns the result, or fails silently.
  *
- * example usage:
+ * Example:
  *
- * function blah(value?: SomeObject) {
- *  nullSafeGet(value, x => x.propertyOfSomeObject)
- * }
+ *     function blah(value?: SomeObject) {
+ *       safeGet(value, x => x.propertyOfSomeObject)
+ *     }
  *
  * @param obj the object to attempt the get function on
  * @param getFn the function to use to determine the mapping value
@@ -230,6 +240,14 @@ export function isDifferentVersion(context: vscode.ExtensionContext, currVersion
  */
 export function setMostRecentVersion(context: vscode.ExtensionContext): void {
     context.globalState.update(mostRecentVersionKey, pluginVersion)
+}
+
+/**
+ * Returns true if the current build is a production build (as opposed to a
+ * prerelease/test/nightly build)
+ */
+export function isReleaseVersion(): boolean {
+    return !semver.prerelease(pluginVersion) && pluginVersion !== TEST_VERSION
 }
 
 /**

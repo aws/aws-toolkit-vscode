@@ -51,6 +51,8 @@ export interface SamCliStartApiArguments {
     parameterOverrides?: string[]
     /** SAM args specified by user (`sam.localArguments`). */
     extraArgs?: string[]
+    /** Path to the container environment variable file */
+    containerEnvFile?: string
     /** Debug session name */
     name?: string
     /** Path to the container environment variable file */
