@@ -362,7 +362,7 @@ export async function invokeLambdaFunction(
             getLogger('channel').info(
                 localize('AWS.output.sam.local.waiting', 'Waiting for SAM application to start...')
             )
-            config.onWillAttachDebugger(config.debugPort!, timer)
+            await config.onWillAttachDebugger(config.debugPort!, timer)
         }
         // HACK: remove non-serializable properties before attaching.
         // TODO: revisit this :)
