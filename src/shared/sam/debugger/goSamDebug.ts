@@ -15,12 +15,13 @@ import { DefaultSamLocalInvokeCommand, WAIT_FOR_DEBUGGER_MESSAGES } from '../cli
 import { invokeLambdaFunction, makeInputTemplate, waitForPort } from '../localLambdaRunner'
 import { SamLaunchRequestArgs } from './awsSamDebugger'
 import { getLogger } from '../../logger'
-import { chmod, ensureDir, writeFile } from 'fs-extra'
+import { chmod, ensureDir, writeFile, pathExistsSync } from 'fs-extra'
 import { ChildProcess } from '../../utilities/childProcess'
 import { Timeout } from '../../utilities/timeoutUtils'
 import { SystemUtilities } from '../../../shared/systemUtilities'
-import { httpsRequestPromise } from '../../utilities/httpUtils'
-import { tempDirPath } from '../../../shared/filesystemUtilities'
+import { execSync, SpawnOptions } from 'child_process'
+import * as nls from 'vscode-nls'
+const localize = nls.loadMessageBundle()
 
 /**
  * Launches and attaches debugger to a SAM Go project.
@@ -30,8 +31,11 @@ export async function invokeGoLambda(ctx: ExtContext, config: GoDebugConfigurati
     // eslint-disable-next-line @typescript-eslint/unbound-method
     config.onWillAttachDebugger = waitForDelve
 
-    if (!config.noDebug) {
-        config.noDebug = !(await installDebugger(config.debuggerPath!))
+    if (!config.noDebug && !(await installDebugger(config.debuggerPath!))) {
+        getLogger('channel').warn(
+            localize('AWS.sam.debugger.godelve.failed', 'Failed to install Delve. Code will execute without debugging.')
+        )
+        config.noDebug = false
     }
 
     const c = (await invokeLambdaFunction(ctx, config, async () => {})) as GoDebugConfiguration
@@ -84,8 +88,7 @@ export async function makeGoConfig(config: SamLaunchRequestArgs): Promise<GoDebu
     const port: number = config.debugPort ?? -1
 
     config.codeRoot = pathutil.normalize(config.codeRoot)
-    config.debuggerPath = path.join(tempDirPath, 'godbg')
-
+    config.debuggerPath = path.join(os.tmpdir(), 'aws-toolkit-vscode', 'godbg')
     // Always generate a temporary template.yaml, don't use workspace one directly.
     config.templatePath = await makeInputTemplate(config)
 
@@ -135,58 +138,76 @@ export async function makeGoConfig(config: SamLaunchRequestArgs): Promise<GoDebu
     return goLaunchConfig
 }
 
+interface InstallScript {
+    path: string
+    options?: SpawnOptions
+}
+
 /**
+ * We want to cross-compile Delve using the version currently installed by the user. Git is used to check for the current
+ * version by locating the package directory in the user's GOPATH. We append this version to an install script, so we know
+ * in the future if we already built it.
+ *
  * @param debuggerPath Installation path for the debugger
  * @param isWindows Flag for making a windows script
  * @param forceDirect Sets GOPROXY to direct to prevent DNS failures, for use in tests *only*. See https://golang.org/ref/mod#module-proxy
- * @returns Path for the debugger install script
+ * @returns Path for the debugger install script, undefined if we already built the binary
  */
-async function makeInstallScript(debuggerPath: string, isWindows: boolean, forceDirect: boolean): Promise<string> {
+async function makeInstallScript(
+    debuggerPath: string,
+    isWindows: boolean,
+    forceDirect: boolean
+): Promise<InstallScript | undefined> {
     let script: string = ''
-    const DELVE_MODULE: string = 'github.com/go-delve/delve/cmd/dlv'
+    const DELVE_REPO: string = 'github.com/go-delve/delve'
     const scriptExt: string = isWindows ? 'cmd' : 'sh'
     const delvePath: string = path.posix.join(debuggerPath, 'dlv')
-
-    const response = httpsRequestPromise({
-        hostname: 'api.github.com',
-        port: 443,
-        path: '/repos/go-delve/delve/releases/latest',
-        method: 'GET',
-        headers: { 'user-agent': 'node.js' },
-    })
-
+    const installOptions: SpawnOptions = { env: { ...process.env } }
     let delveVersion: string = ''
+
+    // This needs to be done only for internal systems, otherwise leave 'forceDirect' false!
+    if (forceDirect) {
+        installOptions.env!['GOPROXY'] = 'direct'
+    }
 
     // It's fine if we can't get the latest Delve version, the Toolkit will use the last built one instead
     try {
-        delveVersion = JSON.parse(await response).name
+        const goPath: string = JSON.parse(execSync('go env -json').toString()).GOPATH
+        let repoPath: string = path.join(goPath, 'src', DELVE_REPO)
+
+        if (!pathExistsSync(repoPath)) {
+            getLogger('channel').info(
+                localize(
+                    'AWS.sam.debugger.godelve.download',
+                    'The Delve repo was not found in your GOPATH. Downloading in a temporary directory...'
+                )
+            )
+            installOptions.env!['GOPATH'] = debuggerPath
+            repoPath = path.join(debuggerPath, 'src', DELVE_REPO)
+            execSync(`go get -d ${DELVE_REPO}/cmd/dlv`, installOptions as any)
+        }
+
+        delveVersion = execSync(`cd "${repoPath}" && git describe --tags --abbrev=0`).toString().trim()
     } catch (e) {
-        getLogger().debug('Failed to get latest delve version: %O', e as Error)
+        getLogger().debug('Failed to get latest Delve version: %O', e as Error)
     }
 
     const installScriptPath: string = path.join(debuggerPath, `install${delveVersion}.${scriptExt}`)
     const alreadyInstalled = await SystemUtilities.fileExists(installScriptPath)
 
-    if (alreadyInstalled) {
-        return installScriptPath
+    if (alreadyInstalled && delveVersion !== '') {
+        return undefined
     }
 
-    const setCmd: string = isWindows ? 'set' : 'export'
-    const envVariables: (string | undefined)[] = [
-        forceDirect ? 'GOPROXY=direct' : undefined, // This needs to be done only for internal systems, otherwise leave 'forceDirect' false!
-        'GOARCH=amd64',
-        'GOOS=linux',
-    ]
+    installOptions.env!['GOARCH'] = 'amd64'
+    installOptions.env!['GOOS'] = 'linux'
 
-    envVariables.filter(v => v).forEach(v => (script += `${setCmd} ${v}\n`))
-
-    script += `go get ${DELVE_MODULE}\n`
-    script += `go build -o "${delvePath}" "${DELVE_MODULE}"\n`
+    script += `go build -o "${delvePath}" "${DELVE_REPO}/cmd/dlv"\n`
 
     await writeFile(installScriptPath, script, 'utf8')
-    await chmod(installScriptPath, 0o700)
+    await chmod(installScriptPath, 0o755)
 
-    return installScriptPath
+    return { path: installScriptPath, options: installOptions }
 }
 
 /**
@@ -199,15 +220,19 @@ async function installDebugger(debuggerPath: string): Promise<boolean> {
     await ensureDir(debuggerPath)
 
     const isWindows: boolean = os.platform() === 'win32'
-    const installScriptPath: string = await makeInstallScript(debuggerPath, isWindows, false)
+    const installScript = await makeInstallScript(debuggerPath, isWindows, false)
 
-    const childProcess = new ChildProcess(true, installScriptPath)
+    if (!installScript) {
+        return true
+    }
+
+    const childProcess = new ChildProcess(true, installScript.path, installScript.options)
 
     try {
         await childProcess.run()
-        getLogger().debug('Installed delve debugger')
+        getLogger().info('Installed Delve debugger')
     } catch (e) {
-        getLogger().error('Failed to cross-compile delve debugger: %O', e as Error)
+        getLogger().error('Failed to cross-compile Delve debugger: %O', e as Error)
         return false
     }
 
