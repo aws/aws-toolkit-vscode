@@ -307,7 +307,7 @@ export async function invokeLambdaFunction(
         if (config.invokeTarget.target === 'code' && (await readdir(config.codeRoot)).includes('tsconfig.json')) {
             try {
                 getLogger('channel').info('Compiliing TypeScript')
-                await new ChildProcess(`tsc --project ${samBuildOutputFolder}\\awsToolkitSamLocalResource --inlineSourceMap`).run()    
+                await new ChildProcess(true, `tsc --project ${samBuildOutputFolder}\\awsToolkitSamLocalResource --inlineSourceMap`).run()    
             } catch (error) {
                 getLogger('channel').error(`Compile Error: ${error}`)
             }
