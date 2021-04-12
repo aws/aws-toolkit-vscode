@@ -36,9 +36,9 @@ describe('codeLensUtils', function () {
             }
             const templateConfigs: AddSamDebugConfiguration.AddSamDebugConfigurationInput[] = []
 
-            codeLensUtils.pickAddSamDebugConfiguration(codeConfig, templateConfigs)
+            codeLensUtils.pickAddSamDebugConfiguration(codeConfig, templateConfigs, false)
 
-            assert.strictEqual(addSamStub.calledOnceWith(codeConfig, CODE_TARGET_TYPE), true)
+            assert.strictEqual(addSamStub.calledOnceWith(codeConfig, CODE_TARGET_TYPE, false), true)
         })
 
         it('should use CODE_TARGET_TYPE when no template option is chosen', async function () {
@@ -53,9 +53,9 @@ describe('codeLensUtils', function () {
                 { resourceName: 'templateNoApi', rootUri: vscode.Uri.file('path') },
             ]
 
-            await codeLensUtils.pickAddSamDebugConfiguration(codeConfig, templateConfigs)
+            await codeLensUtils.pickAddSamDebugConfiguration(codeConfig, templateConfigs, false)
 
-            assert.strictEqual(addSamStub.calledOnceWith(codeConfig, CODE_TARGET_TYPE), true)
+            assert.strictEqual(addSamStub.calledOnceWith(codeConfig, CODE_TARGET_TYPE, false), true)
         })
 
         it('should use API_TARGET_TYPE when API template option is chosen', async function () {
@@ -76,7 +76,7 @@ describe('codeLensUtils', function () {
                 },
             ]
 
-            await codeLensUtils.pickAddSamDebugConfiguration(codeConfig, templateConfigs)
+            await codeLensUtils.pickAddSamDebugConfiguration(codeConfig, templateConfigs, false)
 
             assert.strictEqual(addSamStub.args[0][1], API_TARGET_TYPE)
         })
@@ -93,7 +93,7 @@ describe('codeLensUtils', function () {
                 { resourceName: 'templateNoApi', rootUri: vscode.Uri.file('path') },
             ]
 
-            await codeLensUtils.pickAddSamDebugConfiguration(codeConfig, templateConfigs)
+            await codeLensUtils.pickAddSamDebugConfiguration(codeConfig, templateConfigs, false)
 
             assert.strictEqual(addSamStub.args[0][1], TEMPLATE_TARGET_TYPE)
         })

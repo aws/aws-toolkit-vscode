@@ -44,7 +44,6 @@ import { SamDebugConfigProvider } from '../../shared/sam/debugger/awsSamDebugger
 import { ExtContext } from '../../shared/extensions'
 import { isTemplateTargetProperties } from '../../shared/sam/debugger/awsSamDebugConfiguration'
 import { TemplateTargetProperties } from '../../shared/sam/debugger/awsSamDebugConfiguration'
-import * as pathutils from '../../shared/utilities/pathUtils'
 import { openLaunchJsonFile } from '../../shared/sam/debugger/commands/addSamDebugConfiguration'
 import { waitUntil } from '../../shared/utilities/timeoutUtils'
 import { launchConfigDocUrl } from '../../shared/constants'
@@ -52,6 +51,9 @@ import { Runtime } from 'aws-sdk/clients/lambda'
 import { getIdeProperties, isCloud9 } from '../../shared/extensionUtilities'
 
 type CreateReason = 'unknown' | 'userCancelled' | 'fileNotFound' | 'complete' | 'error'
+
+/** Target file to open after creating a new SAM application */
+export const SAM_INIT_OPEN_TARGET: string = 'README.md'
 
 export async function resumeCreateNewSamApp(
     extContext: ExtContext,
@@ -293,7 +295,9 @@ export async function createNewSamApplication(
 
         activationReloadState.clearSamInitState()
         // TODO: Replace when Cloud9 supports `markdown` commands
-        isCloud9() ? await vscode.workspace.openTextDocument(uri) : await vscode.commands.executeCommand('markdown.showPreviewToSide', uri)
+        isCloud9()
+            ? await vscode.workspace.openTextDocument(uri)
+            : await vscode.commands.executeCommand('markdown.showPreviewToSide', uri)
     } catch (err) {
         createResult = 'Failed'
         reason = 'error'
@@ -329,23 +333,28 @@ async function validateSamCli(samCliValidator: SamCliValidator): Promise<void> {
     throwAndNotifyIfInvalid(validationResult)
 }
 
-async function getMainUri(
+export async function getMainUri(
     config: Pick<CreateNewSamAppWizardResponse, 'location' | 'name'>
 ): Promise<vscode.Uri | undefined> {
-    const cfnTemplatePath = path.resolve(config.location.fsPath, config.name, 'README.md')
+    const cfnTemplatePath = path.resolve(config.location.fsPath, config.name, SAM_INIT_OPEN_TARGET)
     if (await fileExists(cfnTemplatePath)) {
         return vscode.Uri.file(cfnTemplatePath)
     } else {
         vscode.window.showWarningMessage(
             localize(
                 'AWS.samcli.initWizard.source.error.notFound',
-                'Project created successfully, but README.md file not found: {0}',
+                'Project created successfully, but {0} file not found: {1}',
+                SAM_INIT_OPEN_TARGET,
                 cfnTemplatePath
             )
         )
     }
 }
 
+/**
+ * Adds intial launch configurations when a new SAM app is created.
+ * The template file must be within the same root directory as the target file.
+ */
 export async function addInitialLaunchConfiguration(
     extContext: ExtContext,
     folder: vscode.WorkspaceFolder,
@@ -356,15 +365,17 @@ export async function addInitialLaunchConfiguration(
     const configurations = await new SamDebugConfigProvider(extContext).provideDebugConfigurations(folder)
     if (configurations) {
         // add configurations that target the new template file
-        const filtered = configurations.filter(
-            config =>
+        const targetDir: string = path.dirname(targetUri.fsPath)
+        const filtered = configurations.filter(config => {
+            let templatePath: string = (config.invokeTarget as TemplateTargetProperties).templatePath
+            // TODO: write utility function that does this for other variables too
+            templatePath = templatePath.replace('${workspaceFolder}', folder.uri.fsPath)
+
+            return (
                 isTemplateTargetProperties(config.invokeTarget) &&
-                pathutils.areEqual(
-                    folder.uri.fsPath,
-                    (config.invokeTarget as TemplateTargetProperties).templatePath,
-                    targetUri.fsPath
-                )
-        )
+                !path.relative(targetDir, templatePath).startsWith('..')
+            )
+        })
 
         // optional for ZIP-lambdas but required for Image-lambdas
         if (runtime !== undefined) {

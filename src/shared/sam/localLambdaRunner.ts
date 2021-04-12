@@ -257,6 +257,7 @@ export async function invokeLambdaFunction(
             debugArgs: config.debugArgs,
             skipPullImage: config.sam?.skipNewImageCheck,
             parameterOverrides: config.parameterOverrides,
+            containerEnvFile: config.containerEnvFile,
             extraArgs: config.sam?.localArguments,
         })
 
@@ -331,7 +332,7 @@ export async function invokeLambdaFunction(
 
         // sam local invoke ...
         const command = new SamCliLocalInvokeInvocation(localInvokeArgs)
-        let samVersion: string | undefined 
+        let samVersion: string | undefined
         let invokeResult: telemetry.Result = 'Failed'
 
         try {

@@ -71,7 +71,8 @@
         "onLanguage:javascript",
         "onLanguage:python",
         "onLanguage:csharp",
-        "onLanguage:yaml"
+        "onLanguage:yaml",
+        "onCommand:aws.launchConfigForm"
     ],
     "main": "./extensionMain",
     "contributes": {
@@ -412,7 +413,8 @@
                                             "options",
                                             "patch",
                                             "post",
-                                            "put"
+                                            "put",
+                                            ""
                                         ]
                                     },
                                     "payload": {
@@ -1069,6 +1071,11 @@
         },
         "commands": [
             {
+                "command": "aws.launchConfigForm",
+                "title": "%AWS.command.launchConfigForm.title%",
+                "category": "AWS"
+            },
+            {
                 "command": "aws.apig.copyUrl",
                 "title": "%AWS.command.apig.copyUrl%",
                 "category": "AWS"
@@ -1502,7 +1509,8 @@
         "copyNonCodeFiles": "node ./build-scripts/copyNonCodeFiles.js",
         "copyExtensionMain": "node ./build-scripts/copyExtensionMain.js",
         "copyDistFiles": "ts-node ./build-scripts/copyDistFiles.ts",
-        "buildScripts": "npm run bundleDeps && npm run copyExtensionMain && npm run copyDistFiles && npm run copyNonCodeFiles && npm run generateNonCodeFiles",
+        "buildScripts": "npm run bundleDeps && npm run copyExtensionMain && npm run copyDistFiles && npm run copyNonCodeFiles && npm run generateNonCodeFiles && npm run buildVue",
+        "buildVue": "webpack --config-name vueLoader",
         "compile": "webpack --mode development && npm run buildScripts",
         "recompile": "npm run clean && npm run compile",
         "watch": "npm run buildScripts && tsc -watch -p ./",
@@ -1574,6 +1582,8 @@
         "vsce": "^1.81.1",
         "vscode-nls-dev": "^3.3.1",
         "vscode-test": "^1.4.0",
+        "vue-loader": "^15.9.6",
+        "vue-template-compiler": "^2.6.12",
         "webpack": "^4.41.2",
         "webpack-cli": "^3.3.10"
     },
@@ -1581,7 +1591,7 @@
         "adm-zip": "^0.4.13",
         "amazon-states-language-service": "^1.6.4",
         "async-lock": "^1.1.3",
-        "aws-sdk": "^2.581.0",
+        "aws-sdk": "^2.882.0",
         "aws-ssm-document-language-service": "^1.0.0",
         "bytes": "^3.1.0",
         "cloudformation-schema-js-yaml": "^1.0.1",
@@ -1606,7 +1616,7 @@
         "vscode-languageserver": "^6.1.1",
         "vscode-languageserver-textdocument": "^1.0.1",
         "vscode-nls": "^4.1.1",
-        "vue": "^2.5.16",
+        "vue": "^2.6.12",
         "winston": "^3.2.1",
         "winston-transport": "^4.3.0",
         "xml2js": "^0.4.19",
