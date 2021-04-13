@@ -376,7 +376,7 @@ describe('SAM Integration Tests', async function () {
                     // Allow previous sessions to go away.
                     const noDebugSession: boolean | undefined = await waitUntil(
                         async () => vscode.debug.activeDebugSession === undefined,
-                        { timeout: 1000, interval: 100, truthy: true }
+                        { timeout: 10000, interval: 100, truthy: true }
                     )
 
                     assert.strictEqual(
