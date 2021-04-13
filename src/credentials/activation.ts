@@ -9,7 +9,6 @@ import { profileSettingKey } from '../shared/constants'
 import { CredentialsProfileMru } from '../shared/credentials/credentialsProfileMru'
 import { SettingsConfiguration } from '../shared/settingsConfiguration'
 import { LoginManager } from './loginManager'
-import { CredentialsProvider } from './providers/credentialsProvider'
 import { CredentialsProviderId, fromString } from './providers/credentialsProviderId'
 import { CredentialsProviderManager } from './providers/credentialsProviderManager'
 import { SharedCredentialsProvider } from './providers/sharedCredentialsProvider'
@@ -45,8 +44,9 @@ export async function loginWithMostRecentCredentials(
             credentialType: SharedCredentialsProvider.getCredentialsType(),
             credentialTypeId: previousCredentialsId,
         }
-        const provider: CredentialsProvider | undefined = await manager.getCredentialsProvider(loginCredentialsId)
+        const provider = await manager.getCredentialsProvider(loginCredentialsId)
 
+        // 'provider' may be undefined if the last-used credentials no longer exists.
         if (provider && provider.canAutoConnect()) {
             await loginManager.login({ passive: true, providerId: loginCredentialsId })
         } else {
