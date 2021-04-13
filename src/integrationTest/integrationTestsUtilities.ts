@@ -56,3 +56,42 @@ export function getTestWorkspaceFolder(): string {
 
     return vscode.workspace.workspaceFolders![0].uri.fsPath
 }
+
+export async function configureAwsToolkitExtension(): Promise<void> {
+    const configAws = vscode.workspace.getConfiguration('aws')
+    // Prevent the extension from preemptively cancelling a 'sam local' run
+    await configAws.update('samcli.debug.attach.timeout.millis', 90000, false)
+}
+
+export async function configurePythonExtension(): Promise<void> {
+    const configPy = vscode.workspace.getConfiguration('python')
+    // Disable linting to silence some of the Python extension's log spam
+    await configPy.update('linting.pylintEnabled', false, false)
+    await configPy.update('linting.enabled', false, false)
+    await configPy.update('analysis.logLevel', 'Error')
+}
+
+// Install gopls, need to force GPROXY=direct for it to work properly.
+// Had to dig around for the commands used by the Go extension.
+// Ref: https://github.com/golang/vscode-go/blob/0058bd16ba31394f98aa3396056998e4808998a7/src/goMain.ts#L408-L417
+export async function configureGoExtension(): Promise<void> {
+    console.log('Setting up Go...')
+
+    const gopls = {
+        name: 'gopls',
+        importPath: 'golang.org/x/tools/gopls',
+        replacedByGopls: false,
+        isImportant: true,
+        description: 'Language Server from Google',
+        minimumGoVersion: '1.12',
+        latestVersion: '0.6.4',
+        latestVersionTimestamp: '2021-01-19',
+        latestPrereleaseVersion: '0.6.4',
+        latestPrereleaseVersionTimestamp: '2021-01-19',
+    }
+    // Have to set GOPROXY to direct or it will fail to install gopls
+    // This only applies for our internal systems
+    process.env['GOPROXY'] = 'direct'
+
+    await vscode.commands.executeCommand('go.tools.install', [gopls])
+}

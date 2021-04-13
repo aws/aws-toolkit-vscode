@@ -18,13 +18,14 @@ import { VSCODE_EXTENSION_ID } from '../shared/extensions'
 import { fileExists } from '../shared/filesystemUtilities'
 import { AddSamDebugConfigurationInput } from '../shared/sam/debugger/commands/addSamDebugConfiguration'
 import { findParentProjectFile } from '../shared/utilities/workspaceUtils'
-import { activateExtension, getCodeLenses, getTestWorkspaceFolder, sleep } from './integrationTestsUtilities'
+import * as testUtils from './integrationTestsUtilities'
 import { setTestTimeout } from './globalSetup.test'
 import { waitUntil } from '../shared/utilities/timeoutUtils'
 import { AwsSamDebuggerConfiguration } from '../shared/sam/debugger/awsSamDebugConfiguration.gen'
 import { ext } from '../shared/extensionGlobals'
-
-const projectFolder = getTestWorkspaceFolder()
+import { closeAllEditors } from '../shared/utilities/vsCodeUtils'
+import { insertTextIntoFile } from '../shared/utilities/textUtilities'
+const projectFolder = testUtils.getTestWorkspaceFolder()
 
 interface TestScenario {
     displayName: string
@@ -88,6 +89,13 @@ const scenarios: TestScenario[] = [
         debugSessionType: 'python',
         language: 'python',
     },
+    {
+        runtime: 'go1.x',
+        displayName: 'go1.x (ZIP)',
+        path: 'hello-world/main.go',
+        debugSessionType: 'delve',
+        language: 'go',
+    },
     // { runtime: 'dotnetcore2.1', path: 'src/HelloWorld/Function.cs', debugSessionType: 'coreclr', language: 'csharp' },
     // { runtime: 'dotnetcore3.1', path: 'src/HelloWorld/Function.cs', debugSessionType: 'coreclr', language: 'csharp' },
 
@@ -132,6 +140,14 @@ const scenarios: TestScenario[] = [
         debugSessionType: 'python',
         language: 'python',
     },
+    {
+        runtime: 'go1.x',
+        displayName: 'go1.x (Image)',
+        baseImage: 'amazon/go1.x-base',
+        path: 'hello-world/main.go',
+        debugSessionType: 'delve',
+        language: 'go',
+    },
     // {
     //     runtime: 'python3.8',
     //     displayName: 'python3.8 (Image)',
@@ -162,8 +178,8 @@ async function getAddConfigCodeLens(documentUri: vscode.Uri): Promise<vscode.Cod
     while (true) {
         try {
             // this works without a sleep locally, but not on CodeBuild
-            await sleep(200)
-            let codeLenses = await getCodeLenses(documentUri)
+            await testUtils.sleep(200)
+            let codeLenses = await testUtils.getCodeLenses(documentUri)
             if (!codeLenses || codeLenses.length === 0) {
                 continue
             }
@@ -277,27 +293,11 @@ async function stopDebugger(logMsg: string | undefined): Promise<void> {
     await vscode.commands.executeCommand('workbench.action.debug.stop')
 }
 
-async function closeAllEditors(): Promise<void> {
-    await vscode.commands.executeCommand('workbench.action.closeAllEditors')
-}
-
 async function activateExtensions(): Promise<void> {
     console.log('Activating extensions...')
-    await activateExtension(VSCODE_EXTENSION_ID.python)
+    await testUtils.activateExtension(VSCODE_EXTENSION_ID.python)
+    await testUtils.activateExtension(VSCODE_EXTENSION_ID.go)
     console.log('Extensions activated')
-}
-
-async function configurePythonExtension(): Promise<void> {
-    const configPy = vscode.workspace.getConfiguration('python')
-    // Disable linting to silence some of the Python extension's log spam
-    await configPy.update('linting.pylintEnabled', false, false)
-    await configPy.update('linting.enabled', false, false)
-}
-
-async function configureAwsToolkitExtension(): Promise<void> {
-    const configAws = vscode.workspace.getConfiguration('aws')
-    // Prevent the extension from preemptively cancelling a 'sam local' run
-    await configAws.update('samcli.debug.attach.timeout.millis', 90000, false)
 }
 
 describe('SAM Integration Tests', async function () {
@@ -311,8 +311,9 @@ describe('SAM Integration Tests', async function () {
 
     before(async function () {
         await activateExtensions()
-        await configureAwsToolkitExtension()
-        await configurePythonExtension()
+        await testUtils.configureAwsToolkitExtension()
+        await testUtils.configurePythonExtension()
+        await testUtils.configureGoExtension()
 
         testSuiteRoot = await mkdtemp(path.join(projectFolder, 'inttest'))
         console.log('testSuiteRoot: ', testSuiteRoot)
@@ -432,6 +433,9 @@ describe('SAM Integration Tests', async function () {
                         case 'csharp':
                             manifestFile = /^.*\.csproj$/
                             break
+                        case 'go':
+                            manifestFile = /^go\.mod$/
+                            break
                         default:
                             assert.fail('invalid scenario language')
                     }
@@ -481,6 +485,13 @@ describe('SAM Integration Tests', async function () {
                     if (scenario.baseImage) {
                         testConfig.lambda = {
                             runtime: scenario.runtime,
+                        }
+
+                        // little hack for Go, have to set GOPROXY to direct or it will fail to build
+                        // This only applies for our internal systems
+                        if (scenario.language === 'go') {
+                            const dockerfilePath: string = path.join(path.dirname(appPath), 'Dockerfile')
+                            insertTextIntoFile('ENV GOPROXY=direct', dockerfilePath, 1)
                         }
                     }
 
