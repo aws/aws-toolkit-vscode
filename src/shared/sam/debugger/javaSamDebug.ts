@@ -61,7 +61,7 @@ export async function invokeJavaLambda(ctx: ExtContext, config: SamLaunchRequest
     config.onWillAttachDebugger = async (port, timeout) => {
         await new Promise<void>(async resolve => {
             await waitForPort(port, timeout, true)
-            setTimeout(resolve, 250)
+            setTimeout(resolve, 1000)
         })
     }
     return await invokeLambdaFunction(ctx, config, async () => {})
