@@ -186,6 +186,86 @@ async function getAddConfigCodeLens(documentUri: vscode.Uri): Promise<vscode.Cod
     }
 }
 
+/**
+ * Returns a string if there is a validation issue, undefined if there is no issue.
+ */
+function validateSamDebugSession(
+    debugSession: vscode.DebugSession,
+    expectedName: string,
+    expectedRuntime: string
+): string | undefined {
+    const runtime = (debugSession.configuration as any).runtime
+    const name = (debugSession.configuration as any).name
+    if (name !== name || runtime !== expectedRuntime) {
+        const failMsg =
+            `Unexpected DebugSession (expected name="${expectedName}" runtime="${expectedRuntime}"):` +
+            `\n${JSON.stringify(debugSession)}`
+        return failMsg
+    }
+}
+
+/**
+ * Simulates pressing 'F5' to start debugging. Sets up events to see if debugging was successful
+ * or not. Since we are not checking outputs we treat a successful operation as the debug session
+ * closing on its own (i.e. the container executable terminated)
+ *
+ * @param scenario Scenario to run, used for logging information
+ * @param scenarioIndex Scenario number, used for logging information
+ * @param testConfig Debug configuration to start the debugging with
+ * @param testDisposables All events registered by this function are pushed here to be removed later
+ * @param sessionLog An array where session logs are stored
+ */
+async function startDebugger(
+    scenario: TestScenario,
+    scenarioIndex: number,
+    testConfig: vscode.DebugConfiguration,
+    testDisposables: vscode.Disposable[],
+    sessionLog: string[]
+) {
+    // Create a Promise that encapsulates our success critera
+    const success = new Promise<void>((resolve, reject) => {
+        testDisposables.push(
+            vscode.debug.onDidTerminateDebugSession(async endedSession => {
+                sessionLog.push(`scenario ${scenarioIndex} (END) (runtime=${scenario.runtime}) ${endedSession.name}`)
+                const sessionRuntime = (endedSession.configuration as any).runtime
+                if (!sessionRuntime) {
+                    // It's a coprocess, ignore it.
+                    return
+                }
+                const failMsg = validateSamDebugSession(endedSession, testConfig.name, scenario.runtime)
+                if (failMsg) {
+                    reject(new Error(failMsg))
+                }
+                resolve()
+                await stopDebugger(`${scenario.runtime} / onDidTerminateDebugSession`)
+            })
+        )
+    })
+
+    // Executes the 'F5' action
+    await vscode.debug.startDebugging(undefined, testConfig).then(
+        async () => {
+            sessionLog.push(
+                `scenario ${scenarioIndex} (START) (runtime=${scenario.runtime}) ${
+                    vscode.debug.activeDebugSession!.name
+                }`
+            )
+
+            await sleep(400)
+            await continueDebugger()
+            await sleep(400)
+            await continueDebugger()
+            await sleep(400)
+            await continueDebugger()
+
+            await success
+        },
+        err => {
+            throw err as Error
+        }
+    )
+}
+
 async function continueDebugger(): Promise<void> {
     await vscode.commands.executeCommand('workbench.action.debug.continue')
 }
@@ -218,10 +298,6 @@ async function configureAwsToolkitExtension(): Promise<void> {
     const configAws = vscode.workspace.getConfiguration('aws')
     // Prevent the extension from preemptively cancelling a 'sam local' run
     await configAws.update('samcli.debug.attach.timeout.millis', 90000, false)
-}
-
-function runtimeNeedsWorkaround(lang: Language) {
-    return vscode.version.startsWith('1.42') || lang === 'csharp' || lang === 'python'
 }
 
 describe('SAM Integration Tests', async function () {
@@ -411,74 +487,7 @@ describe('SAM Integration Tests', async function () {
                     // XXX: force load since template registry seems a bit flakey
                     await ext.templateRegistry.addItemToRegistry(vscode.Uri.file(cfnTemplatePath))
 
-                    // Simulate "F5".
-                    await vscode.debug.startDebugging(undefined, testConfig)
-
-                    await new Promise<void>((resolve, reject) => {
-                        // XXX: temporary workaround because the csharp/python
-                        // debuggers exit without triggering `onDidStartDebugSession`.
-                        if (runtimeNeedsWorkaround(scenario.language)) {
-                            testDisposables.push(
-                                vscode.debug.onDidTerminateDebugSession(session => {
-                                    sessionLog.push(
-                                        `scenario ${scenarioIndex} (END) (runtime=${scenario.runtime}) ${session.name}`
-                                    )
-                                    resolve()
-                                })
-                            )
-                        }
-                        testDisposables.push(
-                            vscode.debug.onDidStartDebugSession(async startedSession => {
-                                sessionLog.push(
-                                    `scenario ${scenarioIndex} (START) (runtime=${scenario.runtime}) ${startedSession.name}`
-                                )
-
-                                // If `onDidStartDebugSession` is fired then the debugger doesn't need the workaround anymore.
-                                if (runtimeNeedsWorkaround(scenario.language)) {
-                                    await stopDebugger(`${scenario.runtime} / runtimeNeedsWorkaround`)
-                                    reject(
-                                        new Error(
-                                            `runtime "${scenario.language}" triggered onDidStartDebugSession, so it can be removed from runtimeNeedsWorkaround(), yay!`
-                                        )
-                                    )
-                                }
-
-                                // Wait for this debug session to terminate
-                                testDisposables.push(
-                                    vscode.debug.onDidTerminateDebugSession(async endedSession => {
-                                        sessionLog.push(
-                                            `scenario ${scenarioIndex} (END) (runtime=${scenario.runtime}) ${endedSession.name}`
-                                        )
-                                        const sessionRuntime = (endedSession.configuration as any).runtime
-                                        if (!sessionRuntime) {
-                                            // It's a coprocess, ignore it.
-                                            return
-                                        }
-                                        const failMsg = validateSamDebugSession(
-                                            endedSession,
-                                            testConfig.name,
-                                            scenario.runtime
-                                        )
-                                        if (failMsg) {
-                                            reject(new Error(failMsg))
-                                        }
-                                        resolve()
-                                        await stopDebugger(`${scenario.runtime} / onDidTerminateDebugSession`)
-                                    })
-                                )
-
-                                // Wait for it to actually start (which we do not get an event for).
-                                await sleep(400)
-                                await continueDebugger()
-                                await sleep(400)
-                                await continueDebugger()
-                                await sleep(400)
-                                await continueDebugger()
-                            })
-                        )
-                    }).catch(e => {
-                        throw e
-                    })
+                    await startDebugger(scenario, scenarioIndex, testConfig, testDisposables, sessionLog)
                 })
             })
         })
@@ -497,24 +506,6 @@ describe('SAM Integration Tests', async function () {
             }
             const samCliContext = getSamCliContext()
             await runSamCliInit(initArguments, samCliContext)
-        }
-
-        /**
-         * Returns a string if there is a validation issue, undefined if there is no issue.
-         */
-        function validateSamDebugSession(
-            debugSession: vscode.DebugSession,
-            expectedName: string,
-            expectedRuntime: string
-        ): string | undefined {
-            const runtime = (debugSession.configuration as any).runtime
-            const name = (debugSession.configuration as any).name
-            if (name !== name || runtime !== expectedRuntime) {
-                const failMsg =
-                    `Unexpected DebugSession (expected name="${expectedName}" runtime="${expectedRuntime}"):` +
-                    `\n${JSON.stringify(debugSession)}`
-                return failMsg
-            }
         }
 
         function assertCodeLensReferencesHasSameRoot(codeLens: vscode.CodeLens, expectedUri: vscode.Uri) {
