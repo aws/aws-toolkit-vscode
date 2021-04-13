@@ -58,6 +58,11 @@ export async function makeJavaConfig(config: SamLaunchRequestArgs): Promise<SamL
 export async function invokeJavaLambda(ctx: ExtContext, config: SamLaunchRequestArgs): Promise<SamLaunchRequestArgs> {
     config.samLocalInvokeCommand = new DefaultSamLocalInvokeCommand([WAIT_FOR_DEBUGGER_MESSAGES.JAVA])
     // eslint-disable-next-line @typescript-eslint/unbound-method
-    config.onWillAttachDebugger = waitForPort
+    config.onWillAttachDebugger = async (port, timeout) => {
+        await new Promise<void>(async resolve => {
+            await waitForPort(port, timeout, true)
+            setTimeout(resolve, 250)
+        })
+    }
     return await invokeLambdaFunction(ctx, config, async () => {})
 }
