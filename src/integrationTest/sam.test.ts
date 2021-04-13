@@ -267,11 +267,11 @@ async function startDebugger(
                 }`
             )
 
-            await sleep(400)
+            await testUtils.sleep(400)
             await continueDebugger()
-            await sleep(400)
+            await testUtils.sleep(400)
             await continueDebugger()
-            await sleep(400)
+            await testUtils.sleep(400)
             await continueDebugger()
 
             await success
