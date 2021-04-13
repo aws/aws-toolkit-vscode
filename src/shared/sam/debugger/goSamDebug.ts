@@ -15,7 +15,7 @@ import { DefaultSamLocalInvokeCommand, WAIT_FOR_DEBUGGER_MESSAGES } from '../cli
 import { invokeLambdaFunction, makeInputTemplate } from '../localLambdaRunner'
 import { SamLaunchRequestArgs } from './awsSamDebugger'
 import { getLogger } from '../../logger'
-import { chmod, ensureDir, writeFile, pathExistsSync } from 'fs-extra'
+import { chmod, ensureDir, writeFile, pathExistsSync, unlinkSync } from 'fs-extra'
 import { ChildProcess } from '../../utilities/childProcess'
 import { Timeout } from '../../utilities/timeoutUtils'
 import { SystemUtilities } from '../../../shared/systemUtilities'
@@ -203,6 +203,7 @@ async function makeInstallScript(
 
     installOptions.env!['GOARCH'] = 'amd64'
     installOptions.env!['GOOS'] = 'linux'
+    installOptions.env!['GO111MODULE'] = 'off'
 
     script += `go build -o "${delvePath}" "${DELVE_REPO}/cmd/dlv"\n`
 
@@ -232,8 +233,14 @@ async function installDebugger(debuggerPath: string): Promise<boolean> {
 
     try {
         await childProcess.run()
+
+        if (!(await SystemUtilities.fileExists(path.join(debuggerPath, 'dlv')))) {
+            throw new Error('Install script did not generate the Delve binary')
+        }
+
         getLogger().info(`Installed Delve debugger in ${debuggerPath}`)
     } catch (e) {
+        unlinkSync(installScript.path) // Removes the install script since it failed
         getLogger().error('Failed to cross-compile Delve debugger: %O', e as Error)
         return false
     }
