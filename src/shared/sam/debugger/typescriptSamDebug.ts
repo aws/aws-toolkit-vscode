@@ -5,6 +5,7 @@
 
 import * as path from 'path'
 import * as vscode from 'vscode'
+import { readdir, readdirSync, statSync, writeFileSync } from 'fs-extra'
 import { isImageLambdaConfig, NodejsDebugConfiguration } from '../../../lambda/local/debugConfiguration'
 import { RuntimeFamily } from '../../../lambda/models/samLambdaRuntime'
 import * as pathutil from '../../../shared/utilities/pathUtils'
@@ -14,6 +15,7 @@ import { DefaultSamLocalInvokeCommand, WAIT_FOR_DEBUGGER_MESSAGES } from '../cli
 import { invokeLambdaFunction, makeInputTemplate, waitForPort } from '../localLambdaRunner'
 import { SamLaunchRequestArgs } from './awsSamDebugger'
 import { getLogger } from '../../logger'
+import { ChildProcess } from '../../../shared/utilities/childProcess'
 
 /**
  * Launches and attaches debugger to a SAM Node project.
@@ -25,7 +27,38 @@ export async function invokeTypescriptLambda(
     config.samLocalInvokeCommand = new DefaultSamLocalInvokeCommand([WAIT_FOR_DEBUGGER_MESSAGES.NODEJS])
     // eslint-disable-next-line @typescript-eslint/unbound-method
     config.onWillAttachDebugger = waitForPort
-    const c = (await invokeLambdaFunction(ctx, config, async () => {})) as NodejsDebugConfiguration
+    const c = (await invokeLambdaFunction(ctx, config, async () => {
+        // Compile step for TS projects from source code
+        if (config.invokeTarget.target === 'code') {
+            const samBuildOutputAppRoot = path.join(config.baseBuildDir!, 'output', 'awsToolkitSamLocalResource')
+            const tsconfigPath = path.join(samBuildOutputAppRoot, 'tsconfig.json')
+            if ((await readdir(config.codeRoot)).includes('tsconfig.json') || dirTypeScriptFiles(config.codeRoot).length > 0) {
+                const defaultTsconfig = `{
+                    "compilerOptions": {
+                      "target": "es2017",
+                      "module": "commonjs",
+                      "typeRoots": [
+                        "node_modules/@types"
+                      ],                       
+                      "types": [
+                        "node"
+                      ],
+                      "inlineSourceMap": true,
+                      "esModuleInterop": true,
+                      "skipLibCheck": true
+                    }
+                  }`
+                try {
+                    writeFileSync(tsconfigPath, defaultTsconfig)
+                    getLogger('channel').info('Compiling TypeScript')
+                    await new ChildProcess(true, `tsc --project ${samBuildOutputAppRoot} --inlineSourceMap`).run()    
+                } catch (error) {
+                    getLogger('channel').error(`Compile Error: ${error}`)
+                }
+            }
+        }
+
+    })) as NodejsDebugConfiguration
     return c
 }
 
@@ -106,3 +139,27 @@ export async function makeTypescriptConfig(config: SamLaunchRequestArgs): Promis
 
     return nodejsLaunchConfig
 }
+
+function dirTypeScriptFiles(base:string, files?:string[], result?:string[]): string[] {
+    files = files || readdirSync(base) 
+    result = result || [] 
+
+    files.forEach( 
+        function (file) {
+            const newbase = path.join(base, file)
+            if ( statSync(newbase).isDirectory() )
+            {
+                result = dirTypeScriptFiles(newbase, readdirSync(newbase), result)
+            }
+            else
+            {
+                if ( file.substr(-3) === '.ts')
+                {
+                    result!.push(newbase)
+                } 
+            }
+        }
+    )
+    return result
+}
+
