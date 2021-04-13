@@ -12,7 +12,7 @@ import * as pathutil from '../../../shared/utilities/pathUtils'
 import { ExtContext } from '../../extensions'
 import { findParentProjectFile } from '../../utilities/workspaceUtils'
 import { DefaultSamLocalInvokeCommand, WAIT_FOR_DEBUGGER_MESSAGES } from '../cli/samCliLocalInvoke'
-import { invokeLambdaFunction, makeInputTemplate, waitForPort } from '../localLambdaRunner'
+import { invokeLambdaFunction, makeInputTemplate } from '../localLambdaRunner'
 import { SamLaunchRequestArgs } from './awsSamDebugger'
 import { getLogger } from '../../logger'
 import { chmod, ensureDir, writeFile } from 'fs-extra'
@@ -29,7 +29,7 @@ export async function invokeGoLambda(ctx: ExtContext, config: GoDebugConfigurati
     config.onWillAttachDebugger = waitForDelve
 
     if (!config.noDebug) {
-        installDebugger(config.debuggerPath!)
+        await installDebugger(config.debuggerPath!)
     }
 
     const c = (await invokeLambdaFunction(ctx, config, async () => {})) as GoDebugConfiguration
@@ -46,7 +46,6 @@ export async function invokeGoLambda(ctx: ExtContext, config: GoDebugConfigurati
  */
 async function waitForDelve(debugPort: number, timeout: Timeout) {
     await new Promise<void>(resolve => setTimeout(resolve, 1000))
-    await waitForPort(debugPort, timeout)
 }
 
 export async function getSamProjectDirPathForFile(filepath: string): Promise<string> {
