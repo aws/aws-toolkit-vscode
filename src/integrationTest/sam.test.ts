@@ -27,6 +27,11 @@ import { closeAllEditors } from '../shared/utilities/vsCodeUtils'
 import { insertTextIntoFile } from '../shared/utilities/textUtilities'
 const projectFolder = testUtils.getTestWorkspaceFolder()
 
+/**
+ * These languages are skipped on our minimum supported version
+ * For Go and Python this is because the extensions used do not support our minimum
+ */
+const SKIP_LANGUAGES_ON_MIN = ['python', 'go']
 interface TestScenario {
     displayName: string
     runtime: Runtime
@@ -414,7 +419,7 @@ describe('SAM Integration Tests', async function () {
                 })
 
                 it('produces an Add Debug Configuration codelens', async function () {
-                    if (vscode.version.startsWith('1.42') && scenario.language === 'python') {
+                    if (vscode.version.startsWith('1.42') && SKIP_LANGUAGES_ON_MIN.includes(scenario.language)) {
                         this.skip()
                     }
 
@@ -448,7 +453,7 @@ describe('SAM Integration Tests', async function () {
                 })
 
                 it('invokes and attaches on debug request (F5)', async function () {
-                    if (vscode.version.startsWith('1.42') && scenario.language === 'python') {
+                    if (vscode.version.startsWith('1.42') && SKIP_LANGUAGES_ON_MIN.includes(scenario.language)) {
                         this.skip()
                     }
 
