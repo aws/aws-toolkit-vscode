@@ -89,7 +89,10 @@ export async function makeGoConfig(config: SamLaunchRequestArgs): Promise<GoDebu
     config.codeRoot = pathutil.normalize(config.codeRoot)
 
     // We want to persist the binary we build since it takes a non-trivial amount of time to build
-    config.debuggerPath = path.join(os.tmpdir(), 'aws-toolkit-vscode', 'godbg')
+    // TODO: revist where to install Delve. Ideally we don't want to clutter the user's workspace
+    // with files without an explanation. For now, we will place it in the same location as codeRoot
+    // in a .godbg directory.
+    config.debuggerPath = path.join(path.dirname(config.codeRoot), '.godbg')
 
     // Always generate a temporary template.yaml, don't use workspace one directly.
     config.templatePath = await makeInputTemplate(config)
@@ -194,6 +197,7 @@ async function makeInstallScript(
         getLogger().debug('Failed to get latest Delve version: %O', e as Error)
     }
 
+    delveVersion = delveVersion.replace('v', '-')
     const installScriptPath: string = path.join(debuggerPath, `install${delveVersion}.${scriptExt}`)
     const alreadyInstalled = await SystemUtilities.fileExists(installScriptPath)
 
