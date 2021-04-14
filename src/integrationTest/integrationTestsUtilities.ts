@@ -71,7 +71,7 @@ export async function configurePythonExtension(): Promise<void> {
     await configPy.update('analysis.logLevel', 'Error')
 }
 
-// Install gopls, need to force GPROXY=direct for it to work properly.
+// Install gopls for CodeLens testing
 // Had to dig around for the commands used by the Go extension.
 // Ref: https://github.com/golang/vscode-go/blob/0058bd16ba31394f98aa3396056998e4808998a7/src/goMain.ts#L408-L417
 export async function configureGoExtension(): Promise<void> {
@@ -89,9 +89,6 @@ export async function configureGoExtension(): Promise<void> {
         latestPrereleaseVersion: '0.6.4',
         latestPrereleaseVersionTimestamp: '2021-01-19',
     }
-    // Set GOPROXY=direct or it will fail to install gopls. https://golang.org/ref/mod#module-proxy
-    // This only applies for our internal systems
-    process.env['GOPROXY'] = 'direct'
 
     await vscode.commands.executeCommand('go.tools.install', [gopls])
 }

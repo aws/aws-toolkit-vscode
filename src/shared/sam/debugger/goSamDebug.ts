@@ -155,25 +155,15 @@ interface InstallScript {
  *
  * @param debuggerPath Installation path for the debugger
  * @param isWindows Flag for making a windows script
- * @param forceDirect Sets GOPROXY to direct to prevent DNS failures, for use in tests *only*. See https://golang.org/ref/mod#module-proxy
  * @returns Path for the debugger install script, undefined if we already built the binary
  */
-async function makeInstallScript(
-    debuggerPath: string,
-    isWindows: boolean,
-    forceDirect: boolean
-): Promise<InstallScript | undefined> {
+async function makeInstallScript(debuggerPath: string, isWindows: boolean): Promise<InstallScript | undefined> {
     let script: string = ''
     const DELVE_REPO: string = 'github.com/go-delve/delve'
     const scriptExt: string = isWindows ? 'cmd' : 'sh'
     const delvePath: string = path.posix.join(debuggerPath, 'dlv')
     const installOptions: SpawnOptions = { env: { ...process.env } }
     let delveVersion: string = ''
-
-    // This needs to be done only for internal systems, otherwise leave 'forceDirect' false!
-    if (forceDirect) {
-        installOptions.env!['GOPROXY'] = 'direct'
-    }
 
     // It's fine if we can't get the latest Delve version, the Toolkit will use the last built one instead
     try {
@@ -227,7 +217,7 @@ async function installDebugger(debuggerPath: string): Promise<boolean> {
     await ensureDir(debuggerPath)
 
     const isWindows: boolean = os.platform() === 'win32'
-    const installScript = await makeInstallScript(debuggerPath, isWindows, false)
+    const installScript = await makeInstallScript(debuggerPath, isWindows)
 
     if (!installScript) {
         return true
