@@ -73,7 +73,7 @@ export async function configurePythonExtension(): Promise<void> {
 
 // Install gopls for CodeLens testing
 // Had to dig around for the commands used by the Go extension.
-// Ref: https://github.com/golang/vscode-go/blob/0058bd16ba31394f98aa3396056998e4808998a7/src/goMain.ts#L408-L417
+// Ref: https://github.com/golang/vscode-go/blob/0058bd16ba31394f98aa3396056998e4808998a7/src/goTools.ts#L211
 export async function configureGoExtension(): Promise<void> {
     console.log('Setting up Go...')
 
@@ -90,5 +90,14 @@ export async function configureGoExtension(): Promise<void> {
         latestPrereleaseVersionTimestamp: '2021-01-19',
     }
 
-    await vscode.commands.executeCommand('go.tools.install', [gopls])
+    const dlv = {
+        name: 'dlv',
+        importPath: 'github.com/go-delve/delve/cmd/dlv',
+        modulePath: 'github.com/go-delve/delve',
+        replacedByGopls: false,
+        isImportant: true,
+        description: 'Debugging',
+    }
+
+    await vscode.commands.executeCommand('go.tools.install', [gopls, dlv])
 }
