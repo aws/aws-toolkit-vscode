@@ -1,4 +1,0 @@
-{
-  "type" : "bugfix",
-  "description" : "Fix the Local Lambda run configuration always reseting the environemnt variables to defaults when using templates (#2509)"
-}

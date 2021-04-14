@@ -1,0 +1,29 @@
+{
+  "date" : "2021-04-14",
+  "version" : "1.26",
+  "entries" : [ {
+    "type" : "feature",
+    "description" : "Add support for creating/debugging Golang Lambdas (#649)"
+  }, {
+    "type" : "bugfix",
+    "description" : "Fix breaking run configuration gutter icons when the IDE has no languages installed that support Lambda local runtime (#2504)"
+  }, {
+    "type" : "bugfix",
+    "description" : "Fix issue preventing deployment of CloudFormation templates with empty values (#1498)"
+  }, {
+    "type" : "bugfix",
+    "description" : "Fix cloudformation stack events failing to update after reaching a final state (#2519)"
+  }, {
+    "type" : "bugfix",
+    "description" : "Fix the Local Lambda run configuration always reseting the environemnt variables to defaults when using templates (#2509)"
+  }, {
+    "type" : "bugfix",
+    "description" : "Fix being able to interact with objects from deleted buckets (#1601)"
+  }, {
+    "type" : "removal",
+    "description" : "Remove support for 2020.1"
+  }, {
+    "type" : "removal",
+    "description" : "Lambda gutter icons no longer take deployed Lambdas into account due to accuracy and performance issues"
+  } ]
+}

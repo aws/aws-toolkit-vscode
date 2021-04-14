@@ -1,4 +1,0 @@
-{
-  "type" : "removal",
-  "description" : "Lambda gutter icons no longer take deployed Lambdas into account due to accuracy and performance issues"
-}

@@ -1,3 +1,13 @@
+# _1.26_ (2021-04-14)
+- **(Feature)** Add support for creating/debugging Golang Lambdas ([#649](https://github.com/aws/aws-toolkit-jetbrains/issues/649))
+- **(Bug Fix)** Fix breaking run configuration gutter icons when the IDE has no languages installed that support Lambda local runtime ([#2504](https://github.com/aws/aws-toolkit-jetbrains/issues/2504))
+- **(Bug Fix)** Fix issue preventing deployment of CloudFormation templates with empty values ([#1498](https://github.com/aws/aws-toolkit-jetbrains/issues/1498))
+- **(Bug Fix)** Fix cloudformation stack events failing to update after reaching a final state ([#2519](https://github.com/aws/aws-toolkit-jetbrains/issues/2519))
+- **(Bug Fix)** Fix the Local Lambda run configuration always reseting the environemnt variables to defaults when using templates ([#2509](https://github.com/aws/aws-toolkit-jetbrains/issues/2509))
+- **(Bug Fix)** Fix being able to interact with objects from deleted buckets ([#1601](https://github.com/aws/aws-toolkit-jetbrains/issues/1601))
+- **(Removal)** Remove support for 2020.1
+- **(Removal)** Lambda gutter icons no longer take deployed Lambdas into account due to accuracy and performance issues
+
 # _1.25_ (2021-03-10)
 - **(Breaking Change)** Minimum SAM CLI version is now 1.0.0
 - **(Feature)** Debugging Python based Lambdas locally now have the Python interactive console enabled (Fixes [#1165](https://github.com/aws/aws-toolkit-jetbrains/issues/1165))
