@@ -3,7 +3,7 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
-import { copyFile, readFile, remove, writeFile, readdir } from 'fs-extra'
+import { copyFile, readFile, remove, writeFile } from 'fs-extra'
 import * as path from 'path'
 import * as request from 'request'
 import * as tcpPortUsed from 'tcp-port-used'
@@ -303,16 +303,6 @@ export async function invokeLambdaFunction(
             })
     } else {
         // 'target=code' or 'target=template'
-        // Compile step for TS projects from source code
-        if (config.invokeTarget.target === 'code' && (await readdir(config.codeRoot)).includes('tsconfig.json')) {
-            try {
-                getLogger('channel').info('Compiliing TypeScript')
-                await new ChildProcess(true, `tsc --project ${samBuildOutputFolder}\\awsToolkitSamLocalResource --inlineSourceMap`).run()    
-            } catch (error) {
-                getLogger('channel').error(`Compile Error: ${error}`)
-            }
-        }
-                    
         const localInvokeArgs: SamCliLocalInvokeInvocationArguments = {
             templateResourceName: makeResourceName(config),
             templatePath: config.templatePath,

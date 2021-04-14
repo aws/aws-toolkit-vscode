@@ -27,38 +27,8 @@ export async function invokeTypescriptLambda(
     config.samLocalInvokeCommand = new DefaultSamLocalInvokeCommand([WAIT_FOR_DEBUGGER_MESSAGES.NODEJS])
     // eslint-disable-next-line @typescript-eslint/unbound-method
     config.onWillAttachDebugger = waitForPort
-    const c = (await invokeLambdaFunction(ctx, config, async () => {
-        // Compile step for TS projects from source code
-        if (config.invokeTarget.target === 'code') {
-            const samBuildOutputAppRoot = path.join(config.baseBuildDir!, 'output', 'awsToolkitSamLocalResource')
-            const tsconfigPath = path.join(samBuildOutputAppRoot, 'tsconfig.json')
-            if ((await readdir(config.codeRoot)).includes('tsconfig.json') || dirTypeScriptFiles(config.codeRoot).length > 0) {
-                const defaultTsconfig = `{
-                    "compilerOptions": {
-                      "target": "es2017",
-                      "module": "commonjs",
-                      "typeRoots": [
-                        "node_modules/@types"
-                      ],                       
-                      "types": [
-                        "node"
-                      ],
-                      "inlineSourceMap": true,
-                      "esModuleInterop": true,
-                      "skipLibCheck": true
-                    }
-                  }`
-                try {
-                    writeFileSync(tsconfigPath, defaultTsconfig)
-                    getLogger('channel').info('Compiling TypeScript')
-                    await new ChildProcess(true, `tsc --project ${samBuildOutputAppRoot} --inlineSourceMap`).run()    
-                } catch (error) {
-                    getLogger('channel').error(`Compile Error: ${error}`)
-                }
-            }
-        }
-
-    })) as NodejsDebugConfiguration
+    const onAfterBuild = await compileTypeScriptFunc(config)
+    const c = (await invokeLambdaFunction(ctx, config, onAfterBuild)) as NodejsDebugConfiguration
     return c
 }
 
@@ -140,26 +110,62 @@ export async function makeTypescriptConfig(config: SamLaunchRequestArgs): Promis
     return nodejsLaunchConfig
 }
 
-function dirTypeScriptFiles(base:string, files?:string[], result?:string[]): string[] {
-    files = files || readdirSync(base) 
-    result = result || [] 
+/**
+ * Recursively searches directory and all nested directories until a TypeScript file is found
+ * @param dir Directory to search
+ * @returns true if at least one TypeScript file exists
+ */
+function hasTypeScriptFilesRecursive(dir:string): boolean {
+    const files = readdirSync(dir)
 
-    files.forEach( 
-        function (file) {
-            const newbase = path.join(base, file)
-            if ( statSync(newbase).isDirectory() )
-            {
-                result = dirTypeScriptFiles(newbase, readdirSync(newbase), result)
-            }
-            else
-            {
-                if ( file.substr(-3) === '.ts')
-                {
-                    result!.push(newbase)
-                } 
-            }
+    files.forEach(function (file){
+        if (file.substr(-3) === '.ts'){
+            return true
         }
-    )
-    return result
+
+        if(statSync(path.join(dir, file)).isDirectory()){
+            return hasTypeScriptFilesRecursive(path.join(dir, file))
+        }
+    })
+    return false
 }
 
+/**
+ * Returns a function closure with the config parameter 
+ * 
+ * For non-template debug configs (target = code), compile the project
+ * using a temporary default tsconfig.json file.
+ */
+async function compileTypeScriptFunc(config: NodejsDebugConfiguration) {
+    return async function () {
+        // Compile step for TS projects from source code
+        if (config.invokeTarget.target === 'code') {
+            const samBuildOutputAppRoot = path.join(config.baseBuildDir!, 'output', 'awsToolkitSamLocalResource')
+            const tsconfigPath = path.join(samBuildOutputAppRoot, 'tsconfig.json')
+            if ((await readdir(config.codeRoot)).includes('tsconfig.json') || hasTypeScriptFilesRecursive(config.codeRoot)) {
+                const defaultTsconfig = `{
+                    "compilerOptions": {
+                      "target": "es2017",
+                      "module": "commonjs",
+                      "typeRoots": [
+                        "node_modules/@types"
+                      ],                       
+                      "types": [
+                        "node"
+                      ],
+                      "inlineSourceMap": true,
+                      "esModuleInterop": true,
+                      "skipLibCheck": true
+                    }
+                  }`
+                try {
+                    writeFileSync(tsconfigPath, defaultTsconfig)
+                    getLogger('channel').info('Compiling TypeScript')
+                    await new ChildProcess(true, `tsc --project ${samBuildOutputAppRoot} --inlineSourceMap`).run()    
+                } catch (error) {
+                    getLogger('channel').error(`Compile Error: ${error}`)
+                }
+            }
+        }
+    }
+}
