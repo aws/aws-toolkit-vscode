@@ -11,6 +11,7 @@ import {
     ActivationReloadState,
     SAM_INIT_RUNTIME_KEY,
     SAM_INIT_IMAGE_BOOLEAN_KEY,
+    ACTIVATION_TEMPLATE_PATH_KEY,
 } from '../../shared/activationReloadState'
 import { ext } from '../../shared/extensionGlobals'
 
@@ -40,7 +41,8 @@ describe('ActivationReloadState', async function () {
     describe('setSamInitState', async function () {
         it('without runtime', async function () {
             activationReloadState.setSamInitState({
-                path: 'somepath',
+                template: 'sometemplate',
+                readme: 'somepath',
                 runtime: undefined,
                 isImage: false,
             })
@@ -49,6 +51,11 @@ describe('ActivationReloadState', async function () {
                 ext.context.globalState.get(ACTIVATION_LAUNCH_PATH_KEY),
                 'somepath',
                 'Unexpected Launch Path value was set'
+            )
+            assert.strictEqual(
+                ext.context.globalState.get(ACTIVATION_TEMPLATE_PATH_KEY),
+                'someTemplate',
+                'Unexpected Template Path value was set'
             )
             assert.strictEqual(
                 ext.context.globalState.get(SAM_INIT_RUNTIME_KEY),
@@ -64,7 +71,8 @@ describe('ActivationReloadState', async function () {
 
         it('with runtime', async function () {
             activationReloadState.setSamInitState({
-                path: 'somepath',
+                template: 'sometemplate',
+                readme: 'somepath',
                 runtime: 'someruntime',
                 isImage: false,
             })
@@ -73,6 +81,11 @@ describe('ActivationReloadState', async function () {
                 ext.context.globalState.get(ACTIVATION_LAUNCH_PATH_KEY),
                 'somepath',
                 'Unexpected Launch Path value was set'
+            )
+            assert.strictEqual(
+                ext.context.globalState.get(ACTIVATION_TEMPLATE_PATH_KEY),
+                'someTemplate',
+                'Unexpected Template Path value was set'
             )
             assert.strictEqual(
                 ext.context.globalState.get(SAM_INIT_RUNTIME_KEY),
@@ -88,7 +101,8 @@ describe('ActivationReloadState', async function () {
 
         it('with image', async function () {
             activationReloadState.setSamInitState({
-                path: 'somepath',
+                template: 'sometemplate',
+                readme: 'somepath',
                 runtime: 'someruntime',
                 isImage: true,
             })
@@ -97,6 +111,11 @@ describe('ActivationReloadState', async function () {
                 ext.context.globalState.get(ACTIVATION_LAUNCH_PATH_KEY),
                 'somepath',
                 'Unexpected Launch Path value was set'
+            )
+            assert.strictEqual(
+                ext.context.globalState.get(ACTIVATION_TEMPLATE_PATH_KEY),
+                'someTemplate',
+                'Unexpected Template Path value was set'
             )
             assert.strictEqual(
                 ext.context.globalState.get(SAM_INIT_RUNTIME_KEY),
@@ -114,12 +133,18 @@ describe('ActivationReloadState', async function () {
     describe('getSamInitState', async function () {
         it('path defined, without runtime', async function () {
             await ext.context.globalState.update(ACTIVATION_LAUNCH_PATH_KEY, 'getsomepath')
+            await ext.context.globalState.update(ACTIVATION_TEMPLATE_PATH_KEY, 'gettemplatepath')
             await ext.context.globalState.update(SAM_INIT_RUNTIME_KEY, undefined)
 
             assert.strictEqual(
-                activationReloadState.getSamInitState()?.path,
+                activationReloadState.getSamInitState()?.readme,
                 'getsomepath',
                 'Unexpected Launch Path value was retrieved'
+            )
+            assert.strictEqual(
+                activationReloadState.getSamInitState()?.template,
+                'gettemplatepath',
+                'Unexpected Template Path value was retrieved'
             )
             assert.strictEqual(
                 activationReloadState.getSamInitState()?.runtime,
@@ -135,12 +160,18 @@ describe('ActivationReloadState', async function () {
 
         it('path defined, with runtime', async function () {
             await ext.context.globalState.update(ACTIVATION_LAUNCH_PATH_KEY, 'getsomepath')
+            await ext.context.globalState.update(ACTIVATION_TEMPLATE_PATH_KEY, 'gettemplatepath')
             await ext.context.globalState.update(SAM_INIT_RUNTIME_KEY, 'getsomeruntime')
 
             assert.strictEqual(
-                activationReloadState.getSamInitState()?.path,
+                activationReloadState.getSamInitState()?.readme,
                 'getsomepath',
                 'Unexpected Launch Path value was retrieved'
+            )
+            assert.strictEqual(
+                activationReloadState.getSamInitState()?.template,
+                'gettemplatepath',
+                'Unexpected Template Path value was retrieved'
             )
             assert.strictEqual(
                 activationReloadState.getSamInitState()?.runtime,
@@ -156,13 +187,19 @@ describe('ActivationReloadState', async function () {
 
         it('path defined, with runtime and isImage', async function () {
             await ext.context.globalState.update(ACTIVATION_LAUNCH_PATH_KEY, 'getsomepath')
+            await ext.context.globalState.update(ACTIVATION_TEMPLATE_PATH_KEY, 'gettemplatepath')
             await ext.context.globalState.update(SAM_INIT_RUNTIME_KEY, 'getsomeruntime')
             await ext.context.globalState.update(SAM_INIT_IMAGE_BOOLEAN_KEY, true)
 
             assert.strictEqual(
-                activationReloadState.getSamInitState()?.path,
+                activationReloadState.getSamInitState()?.readme,
                 'getsomepath',
                 'Unexpected Launch Path value was retrieved'
+            )
+            assert.strictEqual(
+                activationReloadState.getSamInitState()?.template,
+                'gettemplatepath',
+                'Unexpected Template Path value was retrieved'
             )
             assert.strictEqual(
                 activationReloadState.getSamInitState()?.runtime,
@@ -179,7 +216,8 @@ describe('ActivationReloadState', async function () {
 
     it('clearLaunchPath', async function () {
         activationReloadState.setSamInitState({
-            path: 'somepath',
+            template: 'sometemplate',
+            readme: 'somepath',
             runtime: 'someruntime',
             isImage: true,
         })
@@ -189,6 +227,12 @@ describe('ActivationReloadState', async function () {
             ext.context.globalState.get(ACTIVATION_LAUNCH_PATH_KEY),
             undefined,
             'Expected launch path to be cleared (undefined)'
+        )
+
+        assert.strictEqual(
+            ext.context.globalState.get(ACTIVATION_TEMPLATE_PATH_KEY),
+            undefined,
+            'Expected template path to be cleared (undefined)'
         )
 
         assert.strictEqual(
