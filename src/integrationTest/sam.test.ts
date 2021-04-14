@@ -88,7 +88,13 @@ const scenarios: TestScenario[] = [
         debugSessionType: 'python',
         language: 'python',
     },
-    // { runtime: 'dotnetcore2.1', path: 'src/HelloWorld/Function.cs', debugSessionType: 'coreclr', language: 'csharp' },
+    {
+        runtime: 'dotnetcore2.1',
+        displayName: 'dotnetcore2.1 (ZIP)',
+        path: 'src/HelloWorld/Function.cs',
+        debugSessionType: 'coreclr',
+        language: 'csharp',
+    },
     // { runtime: 'dotnetcore3.1', path: 'src/HelloWorld/Function.cs', debugSessionType: 'coreclr', language: 'csharp' },
 
     // images
@@ -400,7 +406,28 @@ describe('SAM Integration Tests', async function () {
 
                 afterEach(async function () {
                     testDisposables.forEach(d => d.dispose())
-                    await stopDebugger(undefined)
+
+                    // Some debug sessions will spawn two debug sessions, and sometimes only 1 of them is truly terminated.
+                    // This code will try to stop this from happening.
+                    const noDebugSession: boolean | undefined = await waitUntil(
+                        async () => {
+                            if (vscode.debug.activeDebugSession) {
+                                await vscode.debug.activeDebugSession.customRequest('disconnect')
+                            }
+                            return vscode.debug.activeDebugSession === undefined
+                        },
+                        { timeout: 10000, interval: 100, truthy: true }
+                    )
+
+                    assert.strictEqual(
+                        noDebugSession,
+                        true,
+                        `unexpected debug session in progress: ${JSON.stringify(
+                            vscode.debug.activeDebugSession,
+                            undefined,
+                            2
+                        )}`
+                    )
                 })
 
                 after(async function () {
@@ -449,21 +476,6 @@ describe('SAM Integration Tests', async function () {
                     }
 
                     setTestTimeout(this.test?.fullTitle(), 90000)
-                    // Allow previous sessions to go away.
-                    const noDebugSession: boolean | undefined = await waitUntil(
-                        async () => vscode.debug.activeDebugSession === undefined,
-                        { timeout: 10000, interval: 100, truthy: true }
-                    )
-
-                    assert.strictEqual(
-                        noDebugSession,
-                        true,
-                        `unexpected debug session in progress: ${JSON.stringify(
-                            vscode.debug.activeDebugSession,
-                            undefined,
-                            2
-                        )}`
-                    )
 
                     const testConfig = {
                         type: 'aws-sam',
