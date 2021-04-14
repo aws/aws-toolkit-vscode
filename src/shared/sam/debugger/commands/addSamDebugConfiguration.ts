@@ -23,7 +23,6 @@ import { CloudFormation } from '../../../cloudformation/cloudformation'
 import { ext } from '../../../extensionGlobals'
 import { LaunchConfiguration } from '../../../debug/launchConfiguration'
 
-
 /**
  * Holds information required to create a launch config
  * @field resourceName: Resource being used. For templates, this is the resource name in the CFN stack. For code, this is the handler's name
