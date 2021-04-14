@@ -124,7 +124,9 @@ function hasTypeScriptFilesRecursive(dir:string): boolean {
         }
 
         if(statSync(path.join(dir, file)).isDirectory()){
-            return hasTypeScriptFilesRecursive(path.join(dir, file))
+            if(hasTypeScriptFilesRecursive(path.join(dir, file))) {
+                return true
+            }
         }
     })
     return false
