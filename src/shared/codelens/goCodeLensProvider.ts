@@ -4,7 +4,6 @@
  */
 
 import * as vscode from 'vscode'
-import * as path from 'path'
 import { VSCODE_EXTENSION_ID } from '../extensions'
 import { LambdaHandlerCandidate } from '../lambdaHandlerSearch'
 import { getLogger } from '../logger/logger'
@@ -32,8 +31,6 @@ export async function getLambdaHandlerCandidates(document: vscode.TextDocument):
         return []
     }
 
-    let handlerName: string
-
     // We'll check that the Go lambda module is required, otherwise showing debug configs does not make much sense
     try {
         const modDoc: vscode.TextDocument = await vscode.workspace.openTextDocument(modFile!)
@@ -45,9 +42,6 @@ export async function getLambdaHandlerCandidates(document: vscode.TextDocument):
         ) {
             return []
         }
-
-        // Go lambda handlers are named after their package, which is just their parent directory name
-        handlerName = path.dirname(document.fileName)
     } catch (err) {
         // No need to throw an error
         getLogger().verbose(
@@ -69,7 +63,7 @@ export async function getLambdaHandlerCandidates(document: vscode.TextDocument):
         .map<LambdaHandlerCandidate>(symbol => {
             return {
                 filename,
-                handlerName: handlerName,
+                handlerName: `${document.uri}.${symbol.name}`,
                 manifestUri: modFile,
                 range: symbol.range,
             }
