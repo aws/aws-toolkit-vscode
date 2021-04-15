@@ -61,27 +61,6 @@ const scenarios: TestScenario[] = [
         language: 'javascript',
     },
     {
-        runtime: 'nodejs10.x',
-        displayName: 'nodejs10.x (ZIP)',
-        path: 'hello-world/app.ts',
-        debugSessionType: 'pwa-node',
-        language: 'typescript',
-    },
-    {
-        runtime: 'nodejs12.x',
-        displayName: 'nodejs12.x (ZIP)',
-        path: 'hello-world/app.ts',
-        debugSessionType: 'pwa-node',
-        language: 'typescript',
-    },
-    {
-        runtime: 'nodejs14.x',
-        displayName: 'nodejs14.x (ZIP)',
-        path: 'hello-world/app.ts',
-        debugSessionType: 'pwa-node',
-        language: 'typescript',
-    },
-    {
         runtime: 'python2.7',
         displayName: 'python2.7 (ZIP)',
         path: 'hello_world/app.py',
@@ -369,9 +348,6 @@ describe('SAM Integration Tests', async function () {
                     let manifestFile: RegExp
                     switch (scenario.language) {
                         case 'javascript':
-                            manifestFile = /^package\.json$/
-                            break
-                        case 'typescript':
                             manifestFile = /^package\.json$/
                             break
                         case 'python':
