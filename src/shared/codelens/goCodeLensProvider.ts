@@ -47,7 +47,7 @@ export async function getLambdaHandlerCandidates(document: vscode.TextDocument):
         }
 
         // Go lambda handlers are named after their package, which is just their parent directory name
-        handlerName = path.basename(path.dirname(document.fileName))
+        handlerName = path.dirname(document.fileName)
     } catch (err) {
         // No need to throw an error
         getLogger().verbose(
