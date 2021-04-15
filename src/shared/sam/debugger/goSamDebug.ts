@@ -22,6 +22,7 @@ import { SystemUtilities } from '../../../shared/systemUtilities'
 import { execSync, SpawnOptions } from 'child_process'
 import { ext } from '../../../shared/extensionGlobals'
 import * as nls from 'vscode-nls'
+import { showErrorWithLogs } from '../../../shared/utilities/messages'
 const localize = nls.loadMessageBundle()
 
 /**
@@ -33,9 +34,15 @@ export async function invokeGoLambda(ctx: ExtContext, config: GoDebugConfigurati
     config.onWillAttachDebugger = waitForDelve
 
     if (!config.noDebug && !(await installDebugger(config.debuggerPath!))) {
-        throw new Error(
-            localize('AWS.sam.debugger.godelve.failed', 'Failed to install Delve. Please see logs for details.')
+        showErrorWithLogs(
+            localize(
+                'AWS.sam.debugger.godelve.failed',
+                'Failed to install Delve for the lambda container. See logs for details.'
+            )
         )
+
+        // Terminates the debug session by sending up a dummy config
+        return {} as GoDebugConfiguration
     }
 
     const c = (await invokeLambdaFunction(ctx, config, async () => {})) as GoDebugConfiguration
@@ -212,17 +219,18 @@ async function makeInstallScript(debuggerPath: string, isWindows: boolean): Prom
  */
 async function installDebugger(debuggerPath: string): Promise<boolean> {
     await ensureDir(debuggerPath)
-
     const isWindows: boolean = os.platform() === 'win32'
-    const installScript = await makeInstallScript(debuggerPath, isWindows)
-
-    if (!installScript) {
-        return true
-    }
-
-    const childProcess = new ChildProcess(true, installScript.path, installScript.options)
+    let installScript: InstallScript | undefined
 
     try {
+        installScript = await makeInstallScript(debuggerPath, isWindows)
+
+        if (!installScript) {
+            return true
+        }
+
+        const childProcess = new ChildProcess(true, installScript.path, installScript.options)
+
         await new Promise<void>((resolve, reject) => {
             childProcess.start({
                 onStdout: (text: string) => getLogger('channel').info(`[Delve install script] -> ${text}`),
@@ -241,7 +249,9 @@ async function installDebugger(debuggerPath: string): Promise<boolean> {
             })
         })
     } catch (e) {
-        unlinkSync(installScript.path) // Removes the install script since it failed
+        if (installScript && (await SystemUtilities.fileExists(installScript.path))) {
+            unlinkSync(installScript.path) // Removes the install script since it failed
+        }
         getLogger().error('Failed to cross-compile Delve debugger: %O', e as Error)
         return false
     }

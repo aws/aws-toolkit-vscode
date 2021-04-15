@@ -202,7 +202,7 @@ async function getAddConfigCodeLens(documentUri: vscode.Uri): Promise<vscode.Cod
                 return codeLenses || []
             }
         } catch (e) {
-            console.log(`sam.test.ts: getAddConfigCodeLens(): failed, retrying:\n${e}`)
+            console.log(`sam.test.ts: getAddConfigCodeLens() on "${documentUri.fsPath}" failed, retrying:\n${e}`)
         }
     }
 }
