@@ -451,7 +451,14 @@ describe('SAM Integration Tests', async function () {
                     setTestTimeout(this.test?.fullTitle(), 90000)
                     // Allow previous sessions to go away.
                     const noDebugSession: boolean | undefined = await waitUntil(
-                        async () => vscode.debug.activeDebugSession === undefined,
+                        async () => {
+                            if (vscode.debug.activeDebugSession !== undefined) {
+                                await stopDebugger(undefined)
+                                return false
+                            }
+
+                            return true
+                        },
                         { timeout: 10000, interval: 100, truthy: true }
                     )
 
