@@ -118,17 +118,19 @@ export async function makeTypescriptConfig(config: SamLaunchRequestArgs): Promis
 function hasTypeScriptFilesRecursive(dir:string): boolean {
     const files = readdirSync(dir)
 
-    files.forEach(function (file){
+    for (let i = 0; i < files.length; i++) {
+        const file = files[i];
+        
         if (file.substr(-3) === '.ts'){
             return true
         }
-
+    
         if(statSync(path.join(dir, file)).isDirectory()){
             if(hasTypeScriptFilesRecursive(path.join(dir, file))) {
                 return true
             }
         }
-    })
+    }        
     return false
 }
 
