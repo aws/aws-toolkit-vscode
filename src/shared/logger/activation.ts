@@ -164,7 +164,7 @@ async function registerLoggerCommands(context: vscode.ExtensionContext): Promise
         vscode.commands.registerCommand(
             'aws.viewLogsAtMessage',
             async (logID: number = -1, logUri: vscode.Uri = LOG_URI) => {
-                const msg: string | undefined = getLogger().getLogById(logID, logUri.toString(true))
+                const msg: string | undefined = getLogger().getLogById(logID, logUri)
                 const editor: vscode.TextEditor | undefined = await openLogUri(logUri)
 
                 if (!msg || !editor) {
