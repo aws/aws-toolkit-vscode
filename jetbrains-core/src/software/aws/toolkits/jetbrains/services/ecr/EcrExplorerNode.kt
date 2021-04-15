@@ -16,8 +16,11 @@ import software.aws.toolkits.jetbrains.core.explorer.nodes.ResourceParentNode
 import software.aws.toolkits.jetbrains.core.getResourceNow
 import software.aws.toolkits.jetbrains.services.ecr.resources.EcrResources
 import software.aws.toolkits.jetbrains.services.ecr.resources.Repository
+import software.aws.toolkits.resources.message
 
 class EcrServiceNode(project: Project, service: AwsExplorerServiceNode) : AwsExplorerServiceRootNode(project, service) {
+    override fun displayName(): String = message("explorer.node.ecr")
+
     override fun getChildrenInternal(): List<AwsExplorerNode<*>> =
         nodeProject.getResourceNow(EcrResources.LIST_REPOS).map { EcrRepositoryNode(nodeProject, it) }
 }

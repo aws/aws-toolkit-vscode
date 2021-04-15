@@ -7,6 +7,5 @@ import com.intellij.openapi.project.Project
 
 interface AwsExplorerServiceNode {
     val serviceId: String
-    val displayName: String
     fun buildServiceRootNode(project: Project): AwsExplorerServiceRootNode
 }

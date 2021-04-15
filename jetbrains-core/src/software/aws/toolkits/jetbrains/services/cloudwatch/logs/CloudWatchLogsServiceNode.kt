@@ -12,12 +12,14 @@ import software.aws.toolkits.jetbrains.core.explorer.nodes.AwsExplorerResourceNo
 import software.aws.toolkits.jetbrains.core.explorer.nodes.AwsExplorerServiceNode
 import software.aws.toolkits.jetbrains.core.explorer.nodes.CacheBackedAwsExplorerServiceRootNode
 import software.aws.toolkits.jetbrains.services.cloudwatch.logs.resources.CloudWatchResources
+import software.aws.toolkits.resources.message
 
 class CloudWatchLogsServiceNode(project: Project, service: AwsExplorerServiceNode) : CacheBackedAwsExplorerServiceRootNode<LogGroup>(
     project,
     service,
     CloudWatchResources.LIST_LOG_GROUPS
 ) {
+    override fun displayName(): String = message("explorer.node.cloudwatch")
     override fun toNode(child: LogGroup): AwsExplorerNode<*> = CloudWatchLogsNode(nodeProject, child.arn(), child.logGroupName())
 }
 

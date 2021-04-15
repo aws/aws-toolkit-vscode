@@ -19,6 +19,7 @@ import software.aws.toolkits.resources.message
 
 class SchemasServiceNode(project: Project, service: AwsExplorerServiceNode) :
     CacheBackedAwsExplorerServiceRootNode<RegistrySummary>(project, service, SchemasResources.LIST_REGISTRIES) {
+    override fun displayName(): String = message("explorer.node.schemas")
     override fun toNode(child: RegistrySummary): AwsExplorerNode<*> = SchemaRegistryNode(nodeProject, child)
 }
 

@@ -13,8 +13,11 @@ import software.aws.toolkits.jetbrains.core.getResourceNow
 import software.aws.toolkits.jetbrains.core.utils.buildMap
 import software.aws.toolkits.jetbrains.services.rds.resources.LIST_SUPPORTED_CLUSTERS
 import software.aws.toolkits.jetbrains.services.rds.resources.LIST_SUPPORTED_INSTANCES
+import software.aws.toolkits.resources.message
 
 class RdsExplorerParentNode(project: Project, service: AwsExplorerServiceNode) : AwsExplorerServiceRootNode(project, service) {
+    override fun displayName(): String = message("explorer.node.rds")
+
     override fun getChildrenInternal(): List<AwsExplorerNode<*>> = buildMap<String, RdsDatabase> {
         // De-dupe by db identifier
         nodeProject.getResourceNow(LIST_SUPPORTED_CLUSTERS).forEach { putIfAbsent(it.identifier, it) }
