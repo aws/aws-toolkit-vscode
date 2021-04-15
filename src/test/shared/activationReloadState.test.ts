@@ -54,7 +54,7 @@ describe('ActivationReloadState', async function () {
             )
             assert.strictEqual(
                 ext.context.globalState.get(ACTIVATION_TEMPLATE_PATH_KEY),
-                'someTemplate',
+                'sometemplate',
                 'Unexpected Template Path value was set'
             )
             assert.strictEqual(
@@ -84,7 +84,7 @@ describe('ActivationReloadState', async function () {
             )
             assert.strictEqual(
                 ext.context.globalState.get(ACTIVATION_TEMPLATE_PATH_KEY),
-                'someTemplate',
+                'sometemplate',
                 'Unexpected Template Path value was set'
             )
             assert.strictEqual(
@@ -114,7 +114,7 @@ describe('ActivationReloadState', async function () {
             )
             assert.strictEqual(
                 ext.context.globalState.get(ACTIVATION_TEMPLATE_PATH_KEY),
-                'someTemplate',
+                'sometemplate',
                 'Unexpected Template Path value was set'
             )
             assert.strictEqual(
