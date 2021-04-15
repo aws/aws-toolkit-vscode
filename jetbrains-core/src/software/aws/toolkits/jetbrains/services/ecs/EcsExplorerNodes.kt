@@ -20,6 +20,7 @@ import software.aws.toolkits.jetbrains.services.ecs.resources.EcsResources
 import software.aws.toolkits.resources.message
 
 class EcsParentNode(project: Project, service: AwsExplorerServiceNode) : AwsExplorerServiceRootNode(project, service) {
+    override fun displayName(): String = message("explorer.node.ecs")
     override fun getChildrenInternal(): List<AwsExplorerNode<*>> = listOf(
         EcsClusterParentNode(nodeProject) /*,
         EcsTaskDefinitionsParentNode(nodeProject)

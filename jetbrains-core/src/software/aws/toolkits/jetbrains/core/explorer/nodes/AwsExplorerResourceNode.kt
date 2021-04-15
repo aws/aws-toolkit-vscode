@@ -9,7 +9,7 @@ import javax.swing.Icon
 /**
  * Top level class for a node that represents a resource such as an AWS Lambda.
  */
-abstract class AwsExplorerResourceNode<T>(
+abstract class AwsExplorerResourceNode<T : Any>(
     project: Project,
     val serviceId: String,
     value: T,

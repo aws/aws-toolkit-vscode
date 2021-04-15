@@ -15,7 +15,7 @@ import javax.swing.Icon
 /**
  * Top level class for any node in the AWS explorer tree
  */
-abstract class AwsExplorerNode<T>(val nodeProject: Project, value: T, private val awsIcon: Icon?) :
+abstract class AwsExplorerNode<T : Any>(val nodeProject: Project, value: T, private val awsIcon: Icon?) :
     AbstractTreeNode<T>(nodeProject, value) {
 
     protected val region by lazy { nodeProject.activeRegion() }

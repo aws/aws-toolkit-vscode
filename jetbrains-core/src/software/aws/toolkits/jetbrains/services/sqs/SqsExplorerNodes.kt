@@ -13,15 +13,11 @@ import software.aws.toolkits.jetbrains.core.explorer.nodes.AwsExplorerServiceNod
 import software.aws.toolkits.jetbrains.core.explorer.nodes.CacheBackedAwsExplorerServiceRootNode
 import software.aws.toolkits.jetbrains.services.sqs.resources.SqsResources
 import software.aws.toolkits.jetbrains.services.sqs.toolwindow.SqsWindow
+import software.aws.toolkits.resources.message
 
-class SqsServiceNode(
-    project: Project,
-    service: AwsExplorerServiceNode
-) : CacheBackedAwsExplorerServiceRootNode<String>(
-    project,
-    service,
-    SqsResources.LIST_QUEUE_URLS
-) {
+class SqsServiceNode(project: Project, service: AwsExplorerServiceNode) :
+    CacheBackedAwsExplorerServiceRootNode<String>(project, service, SqsResources.LIST_QUEUE_URLS) {
+    override fun displayName(): String = message("explorer.node.sqs")
     override fun toNode(child: String): AwsExplorerNode<*> = SqsQueueNode(nodeProject, child)
 }
 

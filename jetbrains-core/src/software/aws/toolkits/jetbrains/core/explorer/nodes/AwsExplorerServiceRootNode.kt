@@ -10,14 +10,14 @@ import software.aws.toolkits.jetbrains.core.getResourceNow
 /**
  * Top level node for any AWS service node
  */
-abstract class AwsExplorerServiceRootNode(project: Project, private val service: AwsExplorerServiceNode) :
-    AwsExplorerNode<String>(project, service.displayName, null),
+abstract class AwsExplorerServiceRootNode(project: Project, service: AwsExplorerServiceNode) :
+    AwsExplorerNode<AwsExplorerServiceNode>(project, service, null),
     ResourceActionNode,
     ResourceParentNode {
 
-    val serviceId: String
-        get() = service.serviceId
+    private val serviceId = service.serviceId
 
+    abstract override fun displayName(): String
     override fun isAlwaysShowPlus(): Boolean = true
     override fun actionGroupName() = "aws.toolkit.explorer.$serviceId"
 }

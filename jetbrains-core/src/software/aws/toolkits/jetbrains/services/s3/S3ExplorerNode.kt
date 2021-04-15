@@ -14,8 +14,10 @@ import software.aws.toolkits.jetbrains.core.explorer.nodes.AwsExplorerServiceNod
 import software.aws.toolkits.jetbrains.core.explorer.nodes.AwsExplorerServiceRootNode
 import software.aws.toolkits.jetbrains.core.getResourceNow
 import software.aws.toolkits.jetbrains.services.s3.resources.S3Resources
+import software.aws.toolkits.resources.message
 
 class S3ServiceNode(project: Project, service: AwsExplorerServiceNode) : AwsExplorerServiceRootNode(project, service) {
+    override fun displayName(): String = message("explorer.node.s3")
     override fun getChildrenInternal(): List<AwsExplorerNode<*>> =
         nodeProject.getResourceNow(S3Resources.listBucketsByActiveRegion(nodeProject)).map { S3BucketNode(nodeProject, it) }
 }

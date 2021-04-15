@@ -11,11 +11,11 @@ import software.aws.toolkits.jetbrains.core.explorer.nodes.AwsExplorerNode
 import software.aws.toolkits.jetbrains.core.explorer.nodes.AwsExplorerResourceNode
 import software.aws.toolkits.jetbrains.core.explorer.nodes.AwsExplorerServiceNode
 import software.aws.toolkits.jetbrains.core.explorer.nodes.CacheBackedAwsExplorerServiceRootNode
+import software.aws.toolkits.resources.message
 
-class RedshiftExplorerParentNode(
-    project: Project,
-    service: AwsExplorerServiceNode
-) : CacheBackedAwsExplorerServiceRootNode<Cluster>(project, service, RedshiftResources.LIST_CLUSTERS) {
+class RedshiftExplorerParentNode(project: Project, service: AwsExplorerServiceNode) :
+    CacheBackedAwsExplorerServiceRootNode<Cluster>(project, service, RedshiftResources.LIST_CLUSTERS) {
+    override fun displayName(): String = message("explorer.node.redshift")
     override fun toNode(child: Cluster): AwsExplorerNode<*> = RedshiftExplorerNode(nodeProject, child)
 }
 
