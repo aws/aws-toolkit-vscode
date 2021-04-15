@@ -71,7 +71,7 @@ export async function configurePythonExtension(): Promise<void> {
     await configPy.update('analysis.logLevel', 'Error')
 }
 
-// Install gopls for CodeLens testing
+// Installs tools that the Go extension wants (it complains a lot if we don't)
 // Had to dig around for the commands used by the Go extension.
 // Ref: https://github.com/golang/vscode-go/blob/0058bd16ba31394f98aa3396056998e4808998a7/src/goTools.ts#L211
 export async function configureGoExtension(): Promise<void> {

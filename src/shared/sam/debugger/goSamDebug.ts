@@ -15,7 +15,7 @@ import { DefaultSamLocalInvokeCommand, WAIT_FOR_DEBUGGER_MESSAGES } from '../cli
 import { invokeLambdaFunction, makeInputTemplate } from '../localLambdaRunner'
 import { SamLaunchRequestArgs } from './awsSamDebugger'
 import { getLogger } from '../../logger'
-import { chmod, ensureDir, writeFile, pathExistsSync, unlinkSync } from 'fs-extra'
+import { chmod, ensureDir, writeFile, pathExistsSync, unlinkSync, existsSync } from 'fs-extra'
 import { ChildProcess } from '../../utilities/childProcess'
 import { Timeout } from '../../utilities/timeoutUtils'
 import { SystemUtilities } from '../../../shared/systemUtilities'
@@ -32,10 +32,9 @@ export async function invokeGoLambda(ctx: ExtContext, config: GoDebugConfigurati
     config.onWillAttachDebugger = waitForDelve
 
     if (!config.noDebug && !(await installDebugger(config.debuggerPath!))) {
-        getLogger('channel').warn(
-            localize('AWS.sam.debugger.godelve.failed', 'Failed to install Delve. Code will execute without debugging.')
+        throw new Error(
+            localize('AWS.sam.debugger.godelve.failed', 'Failed to install Delve. Please see logs for details.')
         )
-        config.noDebug = false
     }
 
     const c = (await invokeLambdaFunction(ctx, config, async () => {})) as GoDebugConfiguration
@@ -226,13 +225,23 @@ async function installDebugger(debuggerPath: string): Promise<boolean> {
     const childProcess = new ChildProcess(true, installScript.path, installScript.options)
 
     try {
-        await childProcess.run()
-
-        if (!(await SystemUtilities.fileExists(path.join(debuggerPath, 'dlv')))) {
-            throw new Error('Install script did not generate the Delve binary')
-        }
-
-        getLogger().info(`Installed Delve debugger in ${debuggerPath}`)
+        await new Promise<void>((resolve, reject) => {
+            childProcess.start({
+                onStdout: (text: string) => getLogger('channel').info(`[Delve install script] -> ${text}`),
+                onStderr: (text: string) => getLogger('channel').error(`[Delve install script] -> ${text}`),
+                onExit: (code: number | null) => {
+                    if (!existsSync(path.join(debuggerPath, 'dlv'))) {
+                        reject(`Install script did not generate the Delve binary: exit code ${code}`)
+                    } else if (code) {
+                        getLogger('channel').warn(`Install script did not sucessfully run, using old Delve binary...`)
+                        resolve()
+                    } else {
+                        getLogger().info(`Installed Delve debugger in ${debuggerPath}`)
+                        resolve()
+                    }
+                },
+            })
+        })
     } catch (e) {
         unlinkSync(installScript.path) // Removes the install script since it failed
         getLogger().error('Failed to cross-compile Delve debugger: %O', e as Error)
