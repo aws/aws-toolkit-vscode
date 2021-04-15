@@ -37,7 +37,7 @@ export async function invokeGoLambda(ctx: ExtContext, config: GoDebugConfigurati
         showErrorWithLogs(
             localize(
                 'AWS.sam.debugger.godelve.failed',
-                'Failed to install Delve for the lambda container. See logs for details.'
+                'Failed to install Delve for the lambda container.'
             )
         )
 
