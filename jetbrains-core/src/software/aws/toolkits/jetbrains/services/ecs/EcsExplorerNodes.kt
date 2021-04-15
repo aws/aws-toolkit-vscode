@@ -22,9 +22,7 @@ import software.aws.toolkits.resources.message
 class EcsParentNode(project: Project, service: AwsExplorerServiceNode) : AwsExplorerServiceRootNode(project, service) {
     override fun displayName(): String = message("explorer.node.ecs")
     override fun getChildrenInternal(): List<AwsExplorerNode<*>> = listOf(
-        EcsClusterParentNode(nodeProject) /*,
-        EcsTaskDefinitionsParentNode(nodeProject)
-        */
+        EcsClusterParentNode(nodeProject)
     )
 }
 
@@ -67,27 +65,4 @@ class EcsServiceNode(project: Project, private val service: Service, private val
     override fun location() = EcsCloudDebugLocation(nodeProject, service)
 
     fun clusterArn(): String = clusterArn
-}
-
-class EcsTaskDefinitionsParentNode(project: Project) :
-    AwsExplorerNode<String>(project, message("ecs.task_definitions"), null),
-    ResourceParentNode {
-
-    override fun isAlwaysShowPlus(): Boolean = true
-
-    override fun getChildren(): List<AwsExplorerNode<*>> = super.getChildren()
-    override fun getChildrenInternal(): List<AwsExplorerNode<*>> = nodeProject
-        .getResourceNow(EcsResources.LIST_ACTIVE_TASK_DEFINITION_FAMILIES)
-        .map { EcsTaskDefinitionNode(nodeProject, it) }
-}
-
-class EcsTaskDefinitionNode(project: Project, familyName: String) :
-    AwsExplorerResourceNode<String>(project, EcsClient.SERVICE_NAME, familyName, AwsIcons.Resources.Ecs.ECS_TASK_DEFINITION) {
-    override fun resourceType() = "taskDefinition"
-
-    override fun resourceArn(): String = nodeProject
-        .getResourceNow(EcsResources.describeTaskDefinition(value))
-        .taskDefinitionArn()
-
-    override fun getChildren(): List<AwsExplorerResourceNode<*>> = emptyList()
 }

@@ -8,7 +8,6 @@ import software.amazon.awssdk.services.ecs.model.ContainerDefinition
 import software.amazon.awssdk.services.ecs.model.Service
 import software.amazon.awssdk.services.ecs.model.ServiceNotFoundException
 import software.amazon.awssdk.services.ecs.model.TaskDefinition
-import software.amazon.awssdk.services.ecs.model.TaskDefinitionFamilyStatus
 import software.aws.toolkits.jetbrains.core.ClientBackedCachedResource
 import software.aws.toolkits.jetbrains.core.Resource
 import software.aws.toolkits.jetbrains.core.map
@@ -18,11 +17,6 @@ object EcsResources {
     val LIST_CLUSTER_ARNS: Resource.Cached<List<String>> =
         ClientBackedCachedResource(EcsClient::class, "ecs.list_clusters") {
             listClustersPaginator().clusterArns().toList()
-        }
-
-    val LIST_ACTIVE_TASK_DEFINITION_FAMILIES: Resource.Cached<List<String>> =
-        ClientBackedCachedResource(EcsClient::class, "ecs.list_task_definition_families") {
-            listTaskDefinitionFamiliesPaginator { it.status(TaskDefinitionFamilyStatus.ACTIVE) }.families().toList()
         }
 
     fun listServiceArns(clusterArn: String): Resource.Cached<List<String>> =
