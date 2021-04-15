@@ -20,6 +20,7 @@ import { ChildProcess } from '../../utilities/childProcess'
 import { Timeout } from '../../utilities/timeoutUtils'
 import { SystemUtilities } from '../../../shared/systemUtilities'
 import { execSync, SpawnOptions } from 'child_process'
+import { ext } from '../../../shared/extensionGlobals'
 import * as nls from 'vscode-nls'
 const localize = nls.loadMessageBundle()
 
@@ -88,10 +89,7 @@ export async function makeGoConfig(config: SamLaunchRequestArgs): Promise<GoDebu
     config.codeRoot = pathutil.normalize(config.codeRoot)
 
     // We want to persist the binary we build since it takes a non-trivial amount of time to build
-    // TODO: revist where to install Delve. Ideally we don't want to clutter the user's workspace
-    // with files without an explanation. For now, we will place it in the same location as codeRoot
-    // in a .godbg directory.
-    config.debuggerPath = path.join(path.dirname(config.codeRoot), '.godbg')
+    config.debuggerPath = path.join(ext.context.globalStoragePath, 'debuggers', 'delve')
 
     // Always generate a temporary template.yaml, don't use workspace one directly.
     config.templatePath = await makeInputTemplate(config)
