@@ -3,6 +3,8 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
+import { Uri } from 'vscode'
+
 const toolkitLoggers: {
     main: Logger | undefined
     channel: Logger | undefined
@@ -23,7 +25,7 @@ export interface Logger {
     setLogLevel(logLevel: LogLevel): void
     /** Returns true if the given log level is being logged.  */
     logLevelEnabled(logLevel: LogLevel): boolean
-    getLogById(logID: number, file: string): string | undefined
+    getLogById(logID: number, file: Uri): string | undefined
 }
 
 /**
@@ -93,7 +95,7 @@ export class NullLogger implements Logger {
     public error(message: string | Error, ...meta: any[]): number {
         return 0
     }
-    public getLogById(logID: number, file: string): string | undefined {
+    public getLogById(logID: number, file: Uri): string | undefined {
         return undefined
     }
 }

@@ -5,6 +5,7 @@
 
 import { Loggable, Logger, LogLevel } from '../shared/logger'
 import { compareLogLevel } from '../shared/logger/logger'
+import { Uri } from 'vscode'
 
 /**
  * In-memory Logger implementation suitable for use by tests.
@@ -55,7 +56,7 @@ export class TestLogger implements Logger {
     }
 
     // No need to actually implement this. Log tracking is tested in winstonToolkitLogger.test.ts
-    public getLogById(logID: number, file: string): string | undefined {
+    public getLogById(logID: number, file: Uri): string | undefined {
         return undefined
     }
 
