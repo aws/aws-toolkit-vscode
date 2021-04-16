@@ -189,8 +189,9 @@ async function getAddConfigCodeLens(documentUri: vscode.Uri): Promise<vscode.Cod
                 }
             } catch (e) {
                 console.log(`sam.test.ts: getAddConfigCodeLens(): failed, retrying:\n${e}`)
-                return undefined
             }
+
+            return undefined
         },
         { timeout: CODELENS_TIMEOUT, interval: CODELENS_RETRY_INTERVAL, truthy: false }
     )
