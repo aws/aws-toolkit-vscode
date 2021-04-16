@@ -27,8 +27,6 @@ import { closeAllEditors } from '../shared/utilities/vsCodeUtils'
 import { insertTextIntoFile } from '../shared/utilities/textUtilities'
 const projectFolder = testUtils.getTestWorkspaceFolder()
 
-const projectFolder = getTestWorkspaceFolder()
-
 /* Test constants go here */
 const CODELENS_TIMEOUT: number = 60000
 const CODELENS_RETRY_INTERVAL: number = 200
@@ -193,7 +191,7 @@ async function getAddConfigCodeLens(documentUri: vscode.Uri): Promise<vscode.Cod
     return waitUntil(
         async () => {
             try {
-                let codeLenses = await getCodeLenses(documentUri)
+                let codeLenses = await testUtils.getCodeLenses(documentUri)
                 if (!codeLenses || codeLenses.length === 0) {
                     return undefined
                 }
