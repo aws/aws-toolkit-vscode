@@ -216,7 +216,7 @@ export async function createNewSamApplication(
         // Needs to be done or else gopls won't start
         if (goRuntimes.includes(createRuntime)) {
             try {
-                execSync('go mod tidy', { cwd: path.join(path.dirname(uri.fsPath), 'hello-world') })
+                execSync('go mod tidy', { cwd: path.join(path.dirname(readmeUri.fsPath), 'hello-world') })
             } catch (err) {
                 getLogger().warn(
                     localize(
