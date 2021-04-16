@@ -32,7 +32,7 @@ import { SamCliValidator } from '../../shared/sam/cli/samCliValidator'
 import { recordSamInit, Result, Runtime as TelemetryRuntime } from '../../shared/telemetry/telemetry'
 import { makeCheckLogsMessage } from '../../shared/utilities/messages'
 import { addFolderToWorkspace } from '../../shared/utilities/workspaceUtils'
-import { getDependencyManager } from '../models/samLambdaRuntime'
+import { getDependencyManager, goRuntimes } from '../models/samLambdaRuntime'
 import { eventBridgeStarterAppTemplate } from '../models/samTemplates'
 import {
     CreateNewSamAppWizard,
@@ -49,6 +49,7 @@ import { waitUntil } from '../../shared/utilities/timeoutUtils'
 import { launchConfigDocUrl } from '../../shared/constants'
 import { Runtime } from 'aws-sdk/clients/lambda'
 import { getIdeProperties, isCloud9 } from '../../shared/extensionUtilities'
+import { execSync } from 'child_process'
 
 type CreateReason = 'unknown' | 'userCancelled' | 'fileNotFound' | 'complete' | 'error'
 
@@ -210,6 +211,20 @@ export async function createNewSamApplication(
             reason = 'fileNotFound'
 
             return
+        }
+
+        // Needs to be done or else gopls won't start
+        if (goRuntimes.includes(createRuntime)) {
+            try {
+                execSync('go mod tidy', { cwd: path.join(path.dirname(uri.fsPath), 'hello-world') })
+            } catch (err) {
+                getLogger().warn(
+                    localize(
+                        'AWS.message.warning.gotidyfailed',
+                        'Failed to initialize package directory with "go mod tidy". Launch config will not be automatically created.'
+                    )
+                )
+            }
         }
 
         if (config.template === eventBridgeStarterAppTemplate) {
