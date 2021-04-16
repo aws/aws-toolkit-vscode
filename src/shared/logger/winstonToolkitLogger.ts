@@ -4,6 +4,7 @@
  */
 
 import { types } from 'util'
+import { normalize } from 'path'
 import * as vscode from 'vscode'
 import * as winston from 'winston'
 import { ConsoleLogTransport } from './consoleLogTransport'
@@ -54,7 +55,8 @@ export class WinstonToolkitLogger implements Logger, vscode.Disposable {
 
     public logToFile(logPath: string): void {
         const fileTransport: winston.transport = new winston.transports.File({ filename: logPath })
-        fileTransport.on('logged', (obj: any) => this.parseLogObject(`file://${logPath}`, obj))
+        const fileUri: vscode.Uri = vscode.Uri.file(normalize(logPath))
+        fileTransport.on('logged', (obj: any) => this.parseLogObject(fileUri, obj))
         this.logger.add(fileTransport)
     }
 
@@ -63,19 +65,22 @@ export class WinstonToolkitLogger implements Logger, vscode.Disposable {
             outputChannel,
             stripAnsi,
         })
-        outputChannelTransport.on('logged', (obj: any) => this.parseLogObject(`channel://${outputChannel.name}`, obj))
+        const channelUri: vscode.Uri = vscode.Uri.parse(`channel://${outputChannel.name}`)
+        outputChannelTransport.on('logged', (obj: any) => this.parseLogObject(channelUri, obj))
         this.logger.add(outputChannelTransport)
     }
 
     public logToDebugConsole(): void {
         const debugConsoleTransport: winston.transport = new DebugConsoleTransport({ name: 'ActiveDebugConsole' })
-        debugConsoleTransport.on('logged', (obj: any) => this.parseLogObject('console://debug', obj))
+        const debugConsoleUri: vscode.Uri = vscode.Uri.parse('console://debug')
+        debugConsoleTransport.on('logged', (obj: any) => this.parseLogObject(debugConsoleUri, obj))
         this.logger.add(debugConsoleTransport)
     }
 
     public logToConsole(): void {
         const consoleLogTransport: winston.transport = new ConsoleLogTransport({})
-        consoleLogTransport.on('logged', (obj: any) => this.parseLogObject('console://log', obj))
+        const logConsoleUri: vscode.Uri = vscode.Uri.parse('console://log')
+        consoleLogTransport.on('logged', (obj: any) => this.parseLogObject(logConsoleUri, obj))
         this.logger.add(consoleLogTransport)
     }
 
@@ -130,11 +135,11 @@ export class WinstonToolkitLogger implements Logger, vscode.Disposable {
      * Log messages are considered 'stale' after a constant amount of new logs have been added.
      *
      * @param logID  Unique ID associated with every log operation
-     * @param file  Desired output file path. Can use "channel://NAME" and "console://NAME" for non-file transports.
+     * @param file  Desired output file Uri. Debug console uses the uri 'console://debug' and output channel uses 'channel://output'
      *
      * @returns  Final log message. Stale or non-existant logs return undefined
      */
-    public getLogById(logID: number, file: string): string | undefined {
+    public getLogById(logID: number, file: vscode.Uri): string | undefined {
         // Not possible, yell at the caller :(
         if (logID >= this.idCounter || logID < 0) {
             throw new Error(`Invalid log state, logID=${logID} must be in the range [0, ${this.idCounter})!`)
@@ -146,7 +151,7 @@ export class WinstonToolkitLogger implements Logger, vscode.Disposable {
         }
 
         if (this.logMap[logID % LOGMAP_SIZE]) {
-            return this.logMap[logID % LOGMAP_SIZE][file]
+            return this.logMap[logID % LOGMAP_SIZE][file.toString(true)]
         }
     }
 
@@ -157,13 +162,13 @@ export class WinstonToolkitLogger implements Logger, vscode.Disposable {
      * @param file  File that was written to
      * @param obj  Object passed from the event
      */
-    private parseLogObject(file: string, obj: any): void {
+    private parseLogObject(file: vscode.Uri, obj: any): void {
         const logID: number | NamedNodeMap = parseInt(obj.logID) % LOGMAP_SIZE
         const symbols: symbol[] = Object.getOwnPropertySymbols(obj)
         const messageSymbol: symbol | undefined = symbols.find((s: symbol) => s.toString() === 'Symbol(message)')
 
         if (logID && messageSymbol) {
-            this.logMap[logID][file] = obj[messageSymbol]
+            this.logMap[logID][file.toString(true)] = obj[messageSymbol]
         }
     }
 }
