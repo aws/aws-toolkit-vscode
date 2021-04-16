@@ -26,6 +26,13 @@ import { ext } from '../shared/extensionGlobals'
 
 const projectFolder = getTestWorkspaceFolder()
 
+/* Test constants go here */
+const CODELENS_TIMEOUT: number = 60000
+const CODELENS_RETRY_INTERVAL: number = 200
+const DEBUG_TIMEOUT: number = 90000
+const NO_DEBUG_SESSION_TIMEOUT: number = 10000
+const NO_DEBUG_SESSION_INTERVAL: number = 100
+
 interface TestScenario {
     displayName: string
     runtime: Runtime
@@ -223,32 +230,36 @@ function tryRemoveFolder(fullPath: string) {
     }
 }
 
-async function getAddConfigCodeLens(documentUri: vscode.Uri): Promise<vscode.CodeLens[]> {
-    while (true) {
-        try {
-            // this works without a sleep locally, but not on CodeBuild
-            await sleep(200)
-            let codeLenses = await getCodeLenses(documentUri)
-            if (!codeLenses || codeLenses.length === 0) {
-                continue
-            }
-
-            // omnisharp spits out some undefined code lenses for some reason, we filter them because they are
-            // not shown to the user and do not affect how our extension is working
-            codeLenses = codeLenses.filter(codeLens => {
-                if (codeLens.command && codeLens.command.arguments && codeLens.command.arguments.length === 3) {
-                    return codeLens.command.command === 'aws.pickAddSamDebugConfiguration'
+async function getAddConfigCodeLens(documentUri: vscode.Uri): Promise<vscode.CodeLens[] | undefined> {
+    return waitUntil(
+        async () => {
+            try {
+                let codeLenses = await getCodeLenses(documentUri)
+                if (!codeLenses || codeLenses.length === 0) {
+                    return undefined
                 }
 
-                return false
-            })
-            if (codeLenses.length > 0) {
-                return codeLenses || []
+                // omnisharp spits out some undefined code lenses for some reason, we filter them because they are
+                // not shown to the user and do not affect how our extension is working
+                codeLenses = codeLenses.filter(codeLens => {
+                    if (codeLens.command && codeLens.command.arguments && codeLens.command.arguments.length === 3) {
+                        return codeLens.command.command === 'aws.pickAddSamDebugConfiguration'
+                    }
+
+                    return false
+                })
+
+                if (codeLenses.length > 0) {
+                    return codeLenses || []
+                }
+            } catch (e) {
+                console.log(`sam.test.ts: getAddConfigCodeLens(): failed, retrying:\n${e}`)
             }
-        } catch (e) {
-            console.log(`sam.test.ts: getAddConfigCodeLens(): failed, retrying:\n${e}`)
-        }
-    }
+
+            return undefined
+        },
+        { timeout: CODELENS_TIMEOUT, interval: CODELENS_RETRY_INTERVAL, truthy: false }
+    )
 }
 
 /**
@@ -364,7 +375,7 @@ async function configurePythonExtension(): Promise<void> {
 async function configureAwsToolkitExtension(): Promise<void> {
     const configAws = vscode.workspace.getConfiguration('aws')
     // Prevent the extension from preemptively cancelling a 'sam local' run
-    await configAws.update('samcli.debug.attach.timeout.millis', 90000, false)
+    await configAws.update('samcli.debug.attach.timeout.millis', DEBUG_TIMEOUT, false)
 }
 
 describe('SAM Integration Tests', async function () {
@@ -500,7 +511,6 @@ describe('SAM Integration Tests', async function () {
                         this.skip()
                     }
 
-                    setTestTimeout(this.test?.fullTitle(), 60000)
                     const codeLenses = await getAddConfigCodeLens(samAppCodeUri)
                     assert.ok(codeLenses && codeLenses.length === 2)
 
@@ -541,11 +551,18 @@ describe('SAM Integration Tests', async function () {
                         this.skip()
                     }
 
-                    setTestTimeout(this.test?.fullTitle(), 90000)
+                    setTestTimeout(this.test?.fullTitle(), DEBUG_TIMEOUT)
                     // Allow previous sessions to go away.
                     const noDebugSession: boolean | undefined = await waitUntil(
-                        async () => vscode.debug.activeDebugSession === undefined,
-                        { timeout: 10000, interval: 100, truthy: true }
+                        async () => {
+                            if (vscode.debug.activeDebugSession !== undefined) {
+                                await stopDebugger(undefined)
+                                return false
+                            }
+
+                            return true
+                        },
+                        { timeout: NO_DEBUG_SESSION_TIMEOUT, interval: NO_DEBUG_SESSION_INTERVAL, truthy: true }
                     )
 
                     assert.strictEqual(
