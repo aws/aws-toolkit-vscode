@@ -7,7 +7,6 @@ import * as assert from 'assert'
 import * as vscode from 'vscode'
 import { convertLogGroupInfoToUri, parseCloudWatchLogsUri } from '../../cloudWatchLogs/cloudWatchLogsUtils'
 import { CLOUDWATCH_LOGS_SCHEME } from '../../shared/constants'
-import { assertThrowsError } from '../shared/utilities/assertUtils'
 
 const goodComponents = {
     groupName: 'theBeeGees',
@@ -24,17 +23,17 @@ describe('convertUriToLogGroupInfo', async function () {
     })
 
     it('does not convert URIs with an invalid scheme', async function () {
-        await assertThrowsError(async () => {
+        assert.throws(() => {
             parseCloudWatchLogsUri(vscode.Uri.parse('wrong:scheme'))
         })
     })
 
     it('does not convert URIs with more or less than three elements', async function () {
-        await assertThrowsError(async () => {
+        assert.throws(() => {
             parseCloudWatchLogsUri(vscode.Uri.parse(`${CLOUDWATCH_LOGS_SCHEME}:elementOne:elementTwo`))
         })
 
-        await assertThrowsError(async () => {
+        assert.throws(() => {
             parseCloudWatchLogsUri(
                 vscode.Uri.parse(`${CLOUDWATCH_LOGS_SCHEME}:elementOne:elementTwo:elementThree:whoopsAllElements`)
             )

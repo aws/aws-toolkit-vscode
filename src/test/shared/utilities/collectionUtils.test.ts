@@ -200,29 +200,12 @@ describe('CollectionUtils', async function () {
         })
 
         it('throws an error on duplicate keys', async function () {
-            // TODO: Why is assert.rejects not found at runtime?
-            async function assertRejects(action: () => Promise<any>) {
-                let threw: boolean = false
-                try {
-                    await action()
-                } catch (err) {
-                    threw = true
-                } finally {
-                    // Use assert.throws here instead of assert.ok(threw) for a more appropriate error message.
-                    assert.throws(() => {
-                        if (threw) {
-                            throw new Error()
-                        }
-                    })
-                }
-            }
-
-            await assertRejects(async () => {
-                await toMapAsync<string, { key: string }>(
+            await assert.rejects(
+                toMapAsync<string, { key: string }>(
                     asyncGenerator([{ key: 'a' }, { key: 'b' }, { key: 'b' }, { key: 'c' }]),
                     item => item.key
                 )
-            })
+            )
         })
     })
 

@@ -4,15 +4,31 @@
  */
 
 import * as assert from 'assert'
+import * as FakeTimers from '@sinonjs/fake-timers'
+import * as sinon from 'sinon'
 import { SharedCredentialsProvider } from '../../../credentials/providers/sharedCredentialsProvider'
 import { Profile } from '../../../shared/credentials/credentialsFile'
-import { assertThrowsError } from '../../shared/utilities/assertUtils'
 
 const MISSING_PROPERTIES_FRAGMENT = 'missing properties'
 
 describe('SharedCredentialsProvider', async function () {
+    let clock: FakeTimers.InstalledClock
+    const sandbox = sinon.createSandbox()
+
+    before(function () {
+        clock = FakeTimers.install()
+    })
+
+    after(function () {
+        clock.uninstall()
+    })
+
+    afterEach(function () {
+        clock.reset()
+    })
+
     it('constructor fails if profile does not exist', async function () {
-        await assertThrowsError(async () => {
+        assert.throws(() => {
             // @ts-ignore - sut is unused, we expect the constructor to throw
             const sut = new SharedCredentialsProvider(
                 'some-other-profile',
@@ -174,9 +190,8 @@ describe('SharedCredentialsProvider', async function () {
             new Map<string, Profile>([['default', { aws_access_key_id: 'x' }]])
         )
 
-        await assertThrowsError(async () => {
-            await sut.getCredentials()
-        })
+        const assertPromise = assert.rejects(sut.getCredentials(), /is not a valid Credential Profile/, 'Invalid profile error was not thrown')
+        await assertPromise
     })
 })
 

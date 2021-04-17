@@ -4,20 +4,16 @@
  */
 
 import * as assert from 'assert'
+import { makeUnpectedExitCodeError } from '../../../../shared/sam/cli/samCliInvokerUtils'
 import { runSamCliDeploy, SamCliDeployParameters } from '../../../../shared/sam/cli/samCliDeploy'
 import { getTestLogger } from '../../../globalSetup.test'
-import { assertThrowsError } from '../../utilities/assertUtils'
 import {
     assertArgIsPresent,
     assertArgNotPresent,
     assertArgsContainArgument,
     MockSamCliProcessInvoker,
 } from './samCliTestUtils'
-import {
-    assertErrorContainsBadExitMessage,
-    assertLogContainsBadExitInformation,
-    BadExitCodeSamCliProcessInvoker,
-} from './testSamCliProcessInvoker'
+import { assertLogContainsBadExitInformation, BadExitCodeSamCliProcessInvoker } from './testSamCliProcessInvoker'
 
 describe('runSamCliDeploy', async function () {
     const fakeRegion = 'region'
@@ -96,14 +92,12 @@ describe('runSamCliDeploy', async function () {
     it('throws on unexpected exit code', async function () {
         const badExitCodeProcessInvoker = new BadExitCodeSamCliProcessInvoker({})
 
-        const error = await assertThrowsError(async () => {
-            await runSamCliDeploy(
-                makeSampleSamCliDeployParameters(new Map<string, string>()),
-                badExitCodeProcessInvoker
-            )
-        }, 'Expected an error to be thrown')
+        await assert.rejects(
+            runSamCliDeploy(makeSampleSamCliDeployParameters(new Map<string, string>()), badExitCodeProcessInvoker),
+            makeUnpectedExitCodeError(badExitCodeProcessInvoker.error.message),
+            'Expected error was not thrown'
+        )
 
-        assertErrorContainsBadExitMessage(error, badExitCodeProcessInvoker.error.message)
         await assertLogContainsBadExitInformation(
             getTestLogger(),
             badExitCodeProcessInvoker.makeChildProcessResult(),

@@ -38,7 +38,9 @@ export async function openDocumentItem(node: DocumentItemNode, awsContext: AwsCo
             content: rawContent.Content,
             language: `ssm-${rawContent.DocumentFormat!.toLowerCase()}`,
         })
-        vscode.window.showTextDocument(textDocument)
+        if (textDocument !== undefined) {
+            vscode.window.showTextDocument(textDocument)
+        }
     } catch (err) {
         result = 'Failed'
         const error = err as Error

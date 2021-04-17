@@ -247,7 +247,6 @@ describe('SamDebugConfigurationProvider', async function () {
                     Properties:
                         Path: /hello
                         Method: get`
-            console.log(bigYamlStr)
 
             testutil.toFile(bigYamlStr, tempFile.fsPath)
             await ext.templateRegistry.addItemToRegistry(tempFile)
@@ -263,7 +262,6 @@ describe('SamDebugConfigurationProvider', async function () {
             Events:
                 HelloWorld2:
                     Type: HttpApi`
-            console.log(bigYamlStr)
 
             testutil.toFile(bigYamlStr, tempFile.fsPath)
             await ext.templateRegistry.addItemToRegistry(tempFile)
@@ -913,7 +911,7 @@ Outputs:
             assertEqualLaunchConfigs(actualWithPathMapping, expectedWithPathMapping)
 
             // Test noDebug=true.
-            assertEqualNoDebugTemplateTarget(input, expected, folder, debugConfigProvider)
+            await assertEqualNoDebugTemplateTarget(input, expected, folder, debugConfigProvider)
         })
 
         it('target=api: javascript', async function () {
@@ -1031,7 +1029,7 @@ Outputs:
             )
 
             // Test noDebug=true.
-            assertEqualNoDebugTemplateTarget(input, expected, folder, debugConfigProvider)
+            await assertEqualNoDebugTemplateTarget(input, expected, folder, debugConfigProvider)
         })
 
         it('target=code: dotnet/csharp', async function () {
@@ -1944,7 +1942,7 @@ Outputs:
 
             // Test noDebug=true.
             expected.handlerName = 'app.lambda_handler'
-            assertEqualNoDebugTemplateTarget(input, expected, folder, debugConfigProvider)
+            await assertEqualNoDebugTemplateTarget(input, expected, folder, debugConfigProvider)
         })
 
         it('target=api: python 3.7 (deep project tree)', async function () {
@@ -2110,7 +2108,7 @@ Outputs:
 
             // Test noDebug=true.
             expected.handlerName = 'app.lambda_handler'
-            assertEqualNoDebugTemplateTarget(input, expected, folder, debugConfigProvider)
+            await assertEqualNoDebugTemplateTarget(input, expected, folder, debugConfigProvider)
         })
 
         it('target=template: Image python 3.7', async function () {

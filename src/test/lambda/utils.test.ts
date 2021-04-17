@@ -5,7 +5,6 @@
 
 import * as assert from 'assert'
 import { getLambdaDetails } from '../../lambda/utils'
-import { assertThrowsError } from '../shared/utilities/assertUtils'
 
 describe('lambda utils', async function () {
     describe('getLambdaDetails', function () {
@@ -38,14 +37,14 @@ describe('lambda utils', async function () {
 
         it('throws if the handler is not a supported runtime', async function () {
             // unsupported runtime for import
-            await assertThrowsError(async () =>
+            assert.throws(() =>
                 getLambdaDetails({
                     Runtime: 'dotnetcore3.1',
                     Handler: 'HelloWorld::HelloWorld.Function::FunctionHandler',
                 })
             )
             // runtime that isn't present, period
-            await assertThrowsError(async () => getLambdaDetails({ Runtime: 'COBOL-60', Handler: 'asdf.asdf' }))
+            assert.throws(() => getLambdaDetails({ Runtime: 'COBOL-60', Handler: 'asdf.asdf' }))
         })
     })
 })
