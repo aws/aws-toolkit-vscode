@@ -1,4 +1,0 @@
-{
-	"type": "Feature",
-	"description": "Step Functions: adds ability to publish/update state machine from ASL YAML files."
-}
