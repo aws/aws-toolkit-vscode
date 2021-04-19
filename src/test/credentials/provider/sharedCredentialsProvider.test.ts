@@ -5,7 +5,6 @@
 
 import * as assert from 'assert'
 import * as FakeTimers from '@sinonjs/fake-timers'
-import * as sinon from 'sinon'
 import { SharedCredentialsProvider } from '../../../credentials/providers/sharedCredentialsProvider'
 import { Profile } from '../../../shared/credentials/credentialsFile'
 
@@ -13,7 +12,6 @@ const MISSING_PROPERTIES_FRAGMENT = 'missing properties'
 
 describe('SharedCredentialsProvider', async function () {
     let clock: FakeTimers.InstalledClock
-    const sandbox = sinon.createSandbox()
 
     before(function () {
         clock = FakeTimers.install()
@@ -190,7 +188,11 @@ describe('SharedCredentialsProvider', async function () {
             new Map<string, Profile>([['default', { aws_access_key_id: 'x' }]])
         )
 
-        const assertPromise = assert.rejects(sut.getCredentials(), /is not a valid Credential Profile/, 'Invalid profile error was not thrown')
+        const assertPromise = assert.rejects(
+            sut.getCredentials(),
+            /is not a valid Credential Profile/,
+            'Invalid profile error was not thrown'
+        )
         await assertPromise
     })
 })
