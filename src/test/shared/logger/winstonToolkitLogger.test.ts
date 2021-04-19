@@ -7,6 +7,7 @@ import * as assert from 'assert'
 import * as path from 'path'
 import * as filesystemUtilities from '../../../shared/filesystemUtilities'
 import * as fs from 'fs-extra'
+import * as vscode from 'vscode'
 import { WinstonToolkitLogger } from '../../../shared/logger/winstonToolkitLogger'
 import { MockOutputChannel } from '../../mockOutputChannel'
 import { assertThrowsError } from '../utilities/assertUtils'
@@ -306,7 +307,7 @@ describe('WinstonToolkitLogger', function () {
         it('get info log message', async function () {
             const logID: number = testLogger!.info('test')
             const msg: string | undefined = await waitUntil(
-                async () => testLogger!.getLogById(logID, `file://${tempLogPath}`),
+                async () => testLogger!.getLogById(logID, vscode.Uri.file(tempLogPath)),
                 { timeout: 2000, interval: 10, truthy: false }
             )
             assert.notStrictEqual(msg, undefined)
@@ -315,7 +316,7 @@ describe('WinstonToolkitLogger', function () {
         it('debug log message is undefined', async function () {
             const logID: number = testLogger!.debug('debug test')
             const msg: string | undefined = await waitUntil(
-                async () => testLogger!.getLogById(logID, `file://${tempLogPath}`),
+                async () => testLogger!.getLogById(logID, vscode.Uri.file(tempLogPath)),
                 { timeout: 50, interval: 5, truthy: false }
             )
             assert.strictEqual(msg, undefined)
@@ -330,7 +331,7 @@ describe('WinstonToolkitLogger', function () {
                 testLogger!.debug('debug log')
 
                 const msg: string | undefined = await waitUntil(
-                    async () => testLogger!.getLogById(logID, `file://${tempLogPath}`),
+                    async () => testLogger!.getLogById(logID, vscode.Uri.file(tempLogPath)),
                     { timeout: 400, interval: 10, truthy: false }
                 )
                 assert.notStrictEqual(msg, undefined)
@@ -349,7 +350,7 @@ describe('WinstonToolkitLogger', function () {
             }
 
             const middleMsg: string | undefined = await waitUntil(
-                async () => testLogger!.getLogById(logIDs[Math.floor(logIDs.length / 2)], `file://${tempLogPath}`),
+                async () => testLogger!.getLogById(logIDs[Math.floor(logIDs.length / 2)], vscode.Uri.file(tempLogPath)),
                 { timeout: 2000, interval: 10, truthy: false }
             )
 
@@ -374,7 +375,7 @@ describe('WinstonToolkitLogger', function () {
 
             const middleFile: string = filePaths[Math.floor(filePaths.length / 2)]
             const middleMsg: string | undefined = await waitUntil(
-                async () => testLogger!.getLogById(logIDs[Math.floor(logIDs.length / 2)], `file://${middleFile}`),
+                async () => testLogger!.getLogById(logIDs[Math.floor(logIDs.length / 2)], vscode.Uri.file(middleFile)),
                 { timeout: 2000, interval: 5, truthy: false }
             )
 
@@ -387,7 +388,7 @@ describe('WinstonToolkitLogger', function () {
             const logID: number = testLogger!.error('Test error')
 
             const msg: string | undefined = await waitUntil(
-                async () => testLogger!.getLogById(logID, `channel://${outputChannel.name}`),
+                async () => testLogger!.getLogById(logID, vscode.Uri.parse(`channel://${outputChannel.name}`)),
                 { timeout: 2000, interval: 5, truthy: false }
             )
 
@@ -400,13 +401,13 @@ describe('WinstonToolkitLogger', function () {
             testLogger!.debug('debug log')
 
             assert.throws(
-                () => testLogger!.getLogById(-1, ''),
+                () => testLogger!.getLogById(-1, vscode.Uri.file('')),
                 Error,
                 'Invalid log state, logID=-1 must be in the range [0, 3)!'
             )
 
             assert.throws(
-                () => testLogger!.getLogById(3, ''),
+                () => testLogger!.getLogById(3, vscode.Uri.file('')),
                 Error,
                 'Invalid log state, logID=3 must be in the range [0, 3)!'
             )
