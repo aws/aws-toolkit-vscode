@@ -70,7 +70,7 @@ dependencies {
     api("software.amazon.awssdk:iam:$awsSdkVersion")
     api("software.amazon.awssdk:ecr:$awsSdkVersion")
     api("software.amazon.awssdk:ecs:$awsSdkVersion")
-    api("software.amazon.awssdk:cloudformation:$awsSdkVersion")
+//    api("software.amazon.awssdk:cloudformation:$awsSdkVersion")
     api("software.amazon.awssdk:schemas:$awsSdkVersion")
     api("software.amazon.awssdk:cloudwatchlogs:$awsSdkVersion")
     api("software.amazon.awssdk:apache-client:$awsSdkVersion")

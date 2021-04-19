@@ -9,5 +9,5 @@ import software.aws.toolkits.jetbrains.services.redshift.RedshiftExplorerParentN
 
 class RedshiftExplorerRootNode : AwsExplorerServiceNode {
     override val serviceId: String = RedshiftClient.SERVICE_NAME
-    override fun buildServiceRootNode(project: Project) = RedshiftExplorerParentNode(project, this)
+    override fun buildServiceRootNode(project: Project): AwsExplorerNode<*> = RedshiftExplorerParentNode(project, this)
 }
