@@ -71,8 +71,8 @@ describe('getSamCliTemplateParameter', function () {
     })
 
     it('should return error if the template option is not valid', async function () {
-        await assert.rejects(
-            async () => getSamCliTemplateParameter(repromptUserForTemplate),
+        assert.throws(
+            () => getSamCliTemplateParameter(repromptUserForTemplate),
             new Error(`${repromptUserForTemplate} is not valid sam template`),
             'Should fail for same error'
         )
