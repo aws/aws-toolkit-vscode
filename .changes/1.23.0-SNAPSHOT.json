@@ -16,10 +16,6 @@
 		},
 		{
 			"type": "Feature",
-			"description": "SAM run/debug: Add support for Java 8, Java 8.al2, and Java 11 runtimes using Maven and Gradle"
-		},
-		{
-			"type": "Feature",
 			"description": "Step Functions: adds ability to publish/update state machine from ASL YAML files."
 		},
 		{
