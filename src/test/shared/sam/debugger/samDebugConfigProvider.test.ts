@@ -3390,7 +3390,7 @@ Resources:
             assertEqualLaunchConfigs(actual, expected)
             assertFileText(
                 expected.envFile,
-                '{"awsToolkitSamLocalResource":{"test-envvar-1":"test value 1","test-envvar-2":"test value 2"}}'
+                '{"hello-world":{"test-envvar-1":"test value 1","test-envvar-2":"test value 2"}}'
             )
             assertFileText(
                 expected.eventPayloadFile,
@@ -3399,7 +3399,7 @@ Resources:
             assertFileText(
                 expected.templatePath,
                 `Resources:
-  awsToolkitSamLocalResource:
+  hello-world:
     Type: 'AWS::Serverless::Function'
     Properties:
       Handler: hello-world
