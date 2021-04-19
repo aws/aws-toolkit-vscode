@@ -147,7 +147,7 @@ describe('SsoAccessTokenProvider', function () {
 
             const startTime = Date.now()
             const tokenPromise = sut.accessToken()
-            await clock.runAllAsync()
+            clock.runAllAsync()
             const receivedToken = await tokenPromise
             const endTime = Date.now()
 
@@ -198,7 +198,7 @@ describe('SsoAccessTokenProvider', function () {
 
             const startTime = Date.now()
             const tokenPromise = sut.accessToken()
-            await clock.runAllAsync()
+            clock.runAllAsync()
             const receivedToken = await tokenPromise
             const endTime = Date.now()
 
