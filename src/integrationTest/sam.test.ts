@@ -277,7 +277,7 @@ async function getAddConfigCodeLens(documentUri: vscode.Uri): Promise<vscode.Cod
                     return codeLenses || []
                 }
             } catch (e) {
-                console.log(`sam.test.ts: getAddConfigCodeLens(): failed, retrying:\n${e}`)
+                console.log(`sam.test.ts: getAddConfigCodeLens() on "${documentUri.fsPath}" failed, retrying:\n${e}`)
             }
 
             return undefined
@@ -382,6 +382,7 @@ async function activateExtensions(): Promise<void> {
     await testUtils.activateExtension(VSCODE_EXTENSION_ID.python)
     await testUtils.activateExtension(VSCODE_EXTENSION_ID.go)
     await testUtils.activateExtension(VSCODE_EXTENSION_ID.java)
+    await testUtils.activateExtension(VSCODE_EXTENSION_ID.javadebug)
     console.log('Extensions activated')
 }
 
@@ -604,7 +605,7 @@ describe('SAM Integration Tests', async function () {
                             runtime: scenario.runtime,
                         }
 
-                        // little hack for Go, have to set GOPROXY to direct or it will fail to build
+                        // HACK: set GOPROXY=direct or it will fail to build. https://golang.org/ref/mod#module-proxy
                         // This only applies for our internal systems
                         if (scenario.language === 'go') {
                             const dockerfilePath: string = path.join(path.dirname(appPath), 'Dockerfile')

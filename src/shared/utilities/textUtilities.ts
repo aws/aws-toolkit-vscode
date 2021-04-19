@@ -46,7 +46,7 @@ export function addCodiconToString(codiconName: string, text: string): string {
  * @returns Final output without any new lines or comments
  */
 export function stripNewLinesAndComments(text: string): string {
-    const blockCommentRegExp = /\/\*[.*?]\*\//
+    const blockCommentRegExp = /\/\*.*\*\//
     let result: string = ''
 
     text.split(/\r|\n/).map(s => {

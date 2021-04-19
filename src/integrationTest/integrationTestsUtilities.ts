@@ -71,9 +71,9 @@ export async function configurePythonExtension(): Promise<void> {
     await configPy.update('analysis.logLevel', 'Error')
 }
 
-// Install gopls, need to force GPROXY=direct for it to work properly.
+// Installs tools that the Go extension wants (it complains a lot if we don't)
 // Had to dig around for the commands used by the Go extension.
-// Ref: https://github.com/golang/vscode-go/blob/0058bd16ba31394f98aa3396056998e4808998a7/src/goMain.ts#L408-L417
+// Ref: https://github.com/golang/vscode-go/blob/0058bd16ba31394f98aa3396056998e4808998a7/src/goTools.ts#L211
 export async function configureGoExtension(): Promise<void> {
     console.log('Setting up Go...')
 
@@ -89,9 +89,15 @@ export async function configureGoExtension(): Promise<void> {
         latestPrereleaseVersion: '0.6.4',
         latestPrereleaseVersionTimestamp: '2021-01-19',
     }
-    // Have to set GOPROXY to direct or it will fail to install gopls
-    // This only applies for our internal systems
-    process.env['GOPROXY'] = 'direct'
 
-    await vscode.commands.executeCommand('go.tools.install', [gopls])
+    const dlv = {
+        name: 'dlv',
+        importPath: 'github.com/go-delve/delve/cmd/dlv',
+        modulePath: 'github.com/go-delve/delve',
+        replacedByGopls: false,
+        isImportant: true,
+        description: 'Debugging',
+    }
+
+    await vscode.commands.executeCommand('go.tools.install', [gopls, dlv])
 }
