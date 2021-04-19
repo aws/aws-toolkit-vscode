@@ -6,7 +6,7 @@
 import * as assert from 'assert'
 import {
     logAndThrowIfUnexpectedExitCode,
-    makeUnpectedExitCodeError,
+    makeUnexpectedExitCodeError,
 } from '../../../../shared/sam/cli/samCliInvokerUtils'
 import { getTestLogger } from '../../../globalSetup.test'
 import { assertLogContainsBadExitInformation } from './testSamCliProcessInvoker'
@@ -26,7 +26,7 @@ describe('logAndThrowIfUnexpectedExitCode', async function () {
 
     it('throws on unexpected exit code', async function () {
         const exitError = new Error('bad result')
-        const finalError = makeUnpectedExitCodeError(exitError.message)
+        const finalError = makeUnexpectedExitCodeError(exitError.message)
         const childProcessResult = {
             exitCode: 123,
             error: exitError,

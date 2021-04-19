@@ -12,7 +12,7 @@ import {
 } from '../../../../lambda/models/samTemplates'
 import { SamCliContext } from '../../../../shared/sam/cli/samCliContext'
 import { runSamCliInit, SamCliInitArgs } from '../../../../shared/sam/cli/samCliInit'
-import { SamCliProcessInvoker, makeUnpectedExitCodeError } from '../../../../shared/sam/cli/samCliInvokerUtils'
+import { SamCliProcessInvoker, makeUnexpectedExitCodeError } from '../../../../shared/sam/cli/samCliInvokerUtils'
 import { ChildProcessResult } from '../../../../shared/utilities/childProcess'
 import { getTestLogger } from '../../../globalSetup.test'
 import { assertArgIsPresent, assertArgNotPresent, assertArgsContainArgument } from './samCliTestUtils'
@@ -125,7 +125,7 @@ describe('runSamCliInit', async function () {
                 invoker: badExitCodeProcessInvoker,
             }
 
-            const expectedError = makeUnpectedExitCodeError(badExitCodeProcessInvoker.error.message)
+            const expectedError = makeUnexpectedExitCodeError(badExitCodeProcessInvoker.error.message)
             await assert.rejects(
                 runSamCliInit(sampleSamInitArgs, context),
                 expectedError,

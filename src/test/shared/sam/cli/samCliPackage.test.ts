@@ -4,7 +4,7 @@
  */
 
 import * as assert from 'assert'
-import { makeUnpectedExitCodeError } from '../../../../shared/sam/cli/samCliInvokerUtils'
+import { makeUnexpectedExitCodeError } from '../../../../shared/sam/cli/samCliInvokerUtils'
 import { runSamCliPackage, SamCliPackageParameters } from '../../../../shared/sam/cli/samCliPackage'
 import { getTestLogger } from '../../../globalSetup.test'
 import { assertArgNotPresent, assertArgsContainArgument, MockSamCliProcessInvoker } from './samCliTestUtils'
@@ -56,7 +56,7 @@ describe('SamCliPackageInvocation', async function () {
 
     it('throws on unexpected exit code', async function () {
         const badExitCodeProcessInvoker = new BadExitCodeSamCliProcessInvoker({})
-        const expectedError = makeUnpectedExitCodeError(badExitCodeProcessInvoker.error.message)
+        const expectedError = makeUnexpectedExitCodeError(badExitCodeProcessInvoker.error.message)
         await assert.rejects(
             runSamCliPackage(packageParameters, badExitCodeProcessInvoker),
             expectedError,

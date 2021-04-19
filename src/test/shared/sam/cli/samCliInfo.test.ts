@@ -5,7 +5,7 @@
 
 import * as assert from 'assert'
 import { SamCliInfoInvocation, SamCliInfoResponse } from '../../../../shared/sam/cli/samCliInfo'
-import { makeUnpectedExitCodeError } from '../../../../shared/sam/cli/samCliInvokerUtils'
+import { makeUnexpectedExitCodeError } from '../../../../shared/sam/cli/samCliInvokerUtils'
 import { ChildProcessResult } from '../../../../shared/utilities/childProcess'
 import { getTestLogger } from '../../../globalSetup.test'
 import {
@@ -91,7 +91,7 @@ describe('SamCliInfoInvocation', async function () {
         const badExitCodeProcessInvoker = new BadExitCodeSamCliProcessInvoker({})
         const samInfo: SamCliInfoInvocation = new SamCliInfoInvocation({ invoker: badExitCodeProcessInvoker })
 
-        const expectedError = makeUnpectedExitCodeError(badExitCodeProcessInvoker.error.message)
+        const expectedError = makeUnexpectedExitCodeError(badExitCodeProcessInvoker.error.message)
         await assert.rejects(samInfo.execute(), expectedError, 'Expected error was not thrown')
 
         await assertLogContainsBadExitInformation(

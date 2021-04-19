@@ -8,7 +8,7 @@ import { SpawnOptions } from 'child_process'
 import { writeFile, remove } from 'fs-extra'
 import * as path from 'path'
 import { makeTemporaryToolkitFolder } from '../../../../shared/filesystemUtilities'
-import { makeUnpectedExitCodeError } from '../../../../shared/sam/cli/samCliInvokerUtils'
+import { makeUnexpectedExitCodeError } from '../../../../shared/sam/cli/samCliInvokerUtils'
 import { FileFunctions, SamCliBuildInvocation } from '../../../../shared/sam/cli/samCliBuild'
 import { SamCliProcessInvoker } from '../../../../shared/sam/cli/samCliInvokerUtils'
 import { ChildProcessResult } from '../../../../shared/utilities/childProcess'
@@ -280,7 +280,7 @@ describe('SamCliBuildInvocation', async function () {
             }
         )
 
-        const expectedError = makeUnpectedExitCodeError(badExitCodeProcessInvoker.error.message)
+        const expectedError = makeUnexpectedExitCodeError(badExitCodeProcessInvoker.error.message)
         await assert.rejects(builder.execute(), expectedError, 'Expected error was not thrown')
 
         await assertLogContainsBadExitInformation(

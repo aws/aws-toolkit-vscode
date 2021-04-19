@@ -4,7 +4,7 @@
  */
 
 import * as assert from 'assert'
-import { makeUnpectedExitCodeError } from '../../../../shared/sam/cli/samCliInvokerUtils'
+import { makeUnexpectedExitCodeError } from '../../../../shared/sam/cli/samCliInvokerUtils'
 import { runSamCliDeploy, SamCliDeployParameters } from '../../../../shared/sam/cli/samCliDeploy'
 import { getTestLogger } from '../../../globalSetup.test'
 import {
@@ -94,7 +94,7 @@ describe('runSamCliDeploy', async function () {
 
         await assert.rejects(
             runSamCliDeploy(makeSampleSamCliDeployParameters(new Map<string, string>()), badExitCodeProcessInvoker),
-            makeUnpectedExitCodeError(badExitCodeProcessInvoker.error.message),
+            makeUnexpectedExitCodeError(badExitCodeProcessInvoker.error.message),
             'Expected error was not thrown'
         )
 
