@@ -25,6 +25,7 @@ import {
 } from '../../../lambda/models/samLambdaRuntime'
 import { Timeout } from '../../utilities/timeoutUtils'
 import * as csharpDebug from './csharpSamDebug'
+import * as javaDebug from './javaSamDebug'
 import * as pythonDebug from './pythonSamDebug'
 import * as tsDebug from './typescriptSamDebug'
 import * as goDebug from './goSamDebug'
@@ -552,6 +553,11 @@ export class SamDebugConfigProvider implements vscode.DebugConfigurationProvider
                 launchConfig = await goDebug.makeGoConfig(launchConfig)
                 break
             }
+            case RuntimeFamily.Java: {
+                // Make a Java launch-config from the generic config.
+                launchConfig = await javaDebug.makeJavaConfig(launchConfig)
+                break
+            }
             default: {
                 getLogger().error(`SAM debug: unknown runtime: ${runtime})`)
                 vscode.window.showErrorMessage(
@@ -602,6 +608,10 @@ export class SamDebugConfigProvider implements vscode.DebugConfigurationProvider
             case RuntimeFamily.Go: {
                 config.type = 'go'
                 return await goDebug.invokeGoLambda(this.ctx, config as GoDebugConfiguration)
+            }
+            case RuntimeFamily.Java: {
+                config.type = 'java'
+                return await javaDebug.invokeJavaLambda(this.ctx, config)
             }
             default: {
                 throw Error(`unknown runtimeFamily: ${config.runtimeFamily}`)
