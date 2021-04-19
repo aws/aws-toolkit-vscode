@@ -382,6 +382,7 @@ async function activateExtensions(): Promise<void> {
     await testUtils.activateExtension(VSCODE_EXTENSION_ID.python)
     await testUtils.activateExtension(VSCODE_EXTENSION_ID.go)
     await testUtils.activateExtension(VSCODE_EXTENSION_ID.java)
+    await testUtils.activateExtension(VSCODE_EXTENSION_ID.javadebug)
     console.log('Extensions activated')
 }
 
