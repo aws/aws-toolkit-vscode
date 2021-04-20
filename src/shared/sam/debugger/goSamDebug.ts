@@ -6,7 +6,12 @@
 import * as os from 'os'
 import * as path from 'path'
 import * as vscode from 'vscode'
-import { GoDebugConfiguration, GO_DEBUGGER_PATH, isImageLambdaConfig } from '../../../lambda/local/debugConfiguration'
+import {
+    SubstitutePath,
+    GoDebugConfiguration,
+    GO_DEBUGGER_PATH,
+    isImageLambdaConfig,
+} from '../../../lambda/local/debugConfiguration'
 import { RuntimeFamily } from '../../../lambda/models/samLambdaRuntime'
 import * as pathutil from '../../../shared/utilities/pathUtils'
 import { ExtContext } from '../../extensions'
@@ -15,7 +20,7 @@ import { DefaultSamLocalInvokeCommand, WAIT_FOR_DEBUGGER_MESSAGES } from '../cli
 import { invokeLambdaFunction, makeInputTemplate } from '../localLambdaRunner'
 import { SamLaunchRequestArgs } from './awsSamDebugger'
 import { getLogger } from '../../logger'
-import { chmod, ensureDir, writeFile, pathExistsSync, unlinkSync, existsSync } from 'fs-extra'
+import * as fs from 'fs-extra'
 import { ChildProcess } from '../../utilities/childProcess'
 import { Timeout } from '../../utilities/timeoutUtils'
 import { SystemUtilities } from '../../../shared/systemUtilities'
@@ -35,10 +40,7 @@ export async function invokeGoLambda(ctx: ExtContext, config: GoDebugConfigurati
 
     if (!config.noDebug && !(await installDebugger(config.debuggerPath!))) {
         showErrorWithLogs(
-            localize(
-                'AWS.sam.debugger.godelve.failed',
-                'Failed to install Delve for the lambda container.'
-            )
+            localize('AWS.sam.debugger.godelve.failed', 'Failed to install Delve for the lambda container.')
         )
 
         // Terminates the debug session by sending up a dummy config
@@ -89,8 +91,6 @@ export async function makeGoConfig(config: SamLaunchRequestArgs): Promise<GoDebu
         throw Error('missing launch.json, template.yaml, and failed to discover project root')
     }
 
-    let localRoot: string | undefined
-    let remoteRoot: string | undefined
     const port: number = config.debugPort ?? -1
 
     config.codeRoot = pathutil.normalize(config.codeRoot)
@@ -115,19 +115,16 @@ export async function makeGoConfig(config: SamLaunchRequestArgs): Promise<GoDebu
         }
     }
 
-    // if provided, use the user's mapping instead
-    if (config.lambda?.pathMappings !== undefined && config.lambda.pathMappings.length > 0) {
-        const mappings = config.lambda.pathMappings
-        if (mappings.length !== 1) {
-            getLogger().warn(
-                'This language only supports a single path mapping entry. Taking the first entry in the list.'
-            )
-        }
-        localRoot = mappings[0].localRoot
-        remoteRoot = mappings[0].remoteRoot
-    }
+    // This is a workaround for an issue with both Delve and the Go extension's debug adapter
+    // To prevent the DA from trying to parse empty file strings, we push a dummy mapping.
+    // See https://github.com/go-delve/delve/issues/2442
+    const paths: SubstitutePath[] = []
+    paths.push({
+        from: '/not/a/real/path',
+        to: '/not/a/real/path',
+    })
 
-    //  Make a go launch-config from the generic config.
+    // Make a go launch-config from the generic config.
     const goLaunchConfig: GoDebugConfiguration = {
         ...config, // Compose.
         type: 'go',
@@ -140,8 +137,8 @@ export async function makeGoConfig(config: SamLaunchRequestArgs): Promise<GoDebu
         port: port,
         skipFiles: [],
         debugArgs: isImageLambda || config.noDebug ? undefined : ['-delveAPI=2'],
-        localRoot: localRoot ?? config.codeRoot,
-        remoteRoot: remoteRoot ?? '/var/task',
+        substitutePath: paths,
+        debugAdapter: 'legacy',
     }
 
     return goLaunchConfig
@@ -174,7 +171,7 @@ async function makeInstallScript(debuggerPath: string, isWindows: boolean): Prom
         const goPath: string = JSON.parse(execSync('go env -json').toString()).GOPATH
         let repoPath: string = path.join(goPath, 'src', DELVE_REPO)
 
-        if (!pathExistsSync(repoPath)) {
+        if (!fs.pathExistsSync(repoPath)) {
             getLogger('channel').info(
                 localize(
                     'AWS.sam.debugger.godelve.download',
@@ -205,8 +202,8 @@ async function makeInstallScript(debuggerPath: string, isWindows: boolean): Prom
 
     script += `go build -o "${delvePath}" "${DELVE_REPO}/cmd/dlv"\n`
 
-    await writeFile(installScriptPath, script, 'utf8')
-    await chmod(installScriptPath, 0o755)
+    await fs.writeFile(installScriptPath, script, 'utf8')
+    await fs.chmod(installScriptPath, 0o755)
 
     return { path: installScriptPath, options: installOptions }
 }
@@ -218,7 +215,7 @@ async function makeInstallScript(debuggerPath: string, isWindows: boolean): Prom
  * @returns False when installation fails
  */
 async function installDebugger(debuggerPath: string): Promise<boolean> {
-    await ensureDir(debuggerPath)
+    await fs.ensureDir(debuggerPath)
     const isWindows: boolean = os.platform() === 'win32'
     let installScript: InstallScript | undefined
 
@@ -236,7 +233,7 @@ async function installDebugger(debuggerPath: string): Promise<boolean> {
                 onStdout: (text: string) => getLogger('channel').info(`[Delve install script] -> ${text}`),
                 onStderr: (text: string) => getLogger('channel').error(`[Delve install script] -> ${text}`),
                 onExit: (code: number | null) => {
-                    if (!existsSync(path.join(debuggerPath, 'dlv'))) {
+                    if (!fs.existsSync(path.join(debuggerPath, 'dlv'))) {
                         reject(`Install script did not generate the Delve binary: exit code ${code}`)
                     } else if (code) {
                         getLogger('channel').warn(`Install script did not sucessfully run, using old Delve binary...`)
@@ -250,7 +247,7 @@ async function installDebugger(debuggerPath: string): Promise<boolean> {
         })
     } catch (e) {
         if (installScript && (await SystemUtilities.fileExists(installScript.path))) {
-            unlinkSync(installScript.path) // Removes the install script since it failed
+            fs.unlinkSync(installScript.path) // Removes the install script since it failed
         }
         getLogger().error('Failed to cross-compile Delve debugger: %O', e as Error)
         return false

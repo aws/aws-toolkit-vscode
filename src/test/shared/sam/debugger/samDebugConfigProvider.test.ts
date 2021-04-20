@@ -3369,7 +3369,6 @@ Resources:
                 lambda: {
                     ...input.lambda,
                 },
-                localRoot: pathutil.normalize(path.join(appDir, 'hello-world')), // Normalized to absolute path.
                 name: input.name,
                 templatePath: pathutil.normalize(path.join(appDir, 'hello-world', 'app___vsctk___template.yaml')),
                 parameterOverrides: undefined,
@@ -3382,9 +3381,10 @@ Resources:
                 processName: 'godelve',
                 port: actual.debugPort,
                 preLaunchTask: undefined,
-                remoteRoot: '/var/task',
                 skipFiles: [],
                 debugArgs: ['-delveAPI=2'],
+                substitutePath: [{ from: '/not/a/real/path', to: '/not/a/real/path' }],
+                debugAdapter: 'legacy',
             }
 
             assertEqualLaunchConfigs(actual, expected)
@@ -3414,40 +3414,6 @@ Resources:
       Timeout: 9000
 `
             )
-
-            //
-            // Test pathMapping
-            //
-            const inputWithPathMapping = {
-                ...input,
-                lambda: {
-                    ...input.lambda,
-                    pathMappings: [
-                        {
-                            localRoot: 'somethingLocal',
-                            remoteRoot: 'somethingRemote',
-                        },
-                        {
-                            localRoot: 'ignoredLocal',
-                            remoteRoot: 'ignoredRemote',
-                        },
-                    ] as PathMapping[],
-                },
-            }
-            const actualWithPathMapping = (await debugConfigProvider.makeConfig(folder, inputWithPathMapping))!
-            const expectedWithPathMapping: SamLaunchRequestArgs = {
-                ...expected,
-                lambda: {
-                    ...expected.lambda,
-                    pathMappings: inputWithPathMapping.lambda.pathMappings,
-                },
-                localRoot: 'somethingLocal',
-                remoteRoot: 'somethingRemote',
-                baseBuildDir: actualWithPathMapping.baseBuildDir,
-                envFile: `${actualWithPathMapping.baseBuildDir}/env-vars.json`,
-                eventPayloadFile: `${actualWithPathMapping.baseBuildDir}/event.json`,
-            }
-            assertEqualLaunchConfigs(actualWithPathMapping, expectedWithPathMapping)
 
             //
             // Test noDebug=true.

@@ -77,13 +77,20 @@ export interface DotNetCoreDebugConfiguration extends SamLaunchRequestArgs {
         [key: string]: string
     }
 }
+
+/** Go extension legacy adapter uses this for source mapping when debugging remotely */
+export interface SubstitutePath {
+    from: string
+    to: string
+}
+
 export interface GoDebugConfiguration extends SamLaunchRequestArgs {
     readonly runtimeFamily: RuntimeFamily.Go
     readonly preLaunchTask?: string
     readonly host: 'localhost'
     readonly port: number
-    readonly localRoot: string
-    readonly remoteRoot: string
+    readonly substitutePath: SubstitutePath[]
+    readonly debugAdapter: 'legacy' | 'dlv-dap' // dlv-dap is not supported by us
 }
 
 export interface PipeTransport {
