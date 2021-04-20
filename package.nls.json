@@ -526,6 +526,7 @@
     "AWS.generic.filetype.directory": "Directory",
     "AWS.generic.filetype.zipfile": "ZIP Archive",
     "AWS.generic.message.getHelp": "Get Help...",
+    "AWS.generic.message.learnMore": "Learn More",
     "AWS.generic.name": "name",
     "AWS.template.error.showErrorDetails.title": "Error details for",
     "AWS.template.error.showErrorDetails.errorCode": "Error code",

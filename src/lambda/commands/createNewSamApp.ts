@@ -45,7 +45,7 @@ import { isTemplateTargetProperties } from '../../shared/sam/debugger/awsSamDebu
 import { TemplateTargetProperties } from '../../shared/sam/debugger/awsSamDebugConfiguration'
 import { openLaunchJsonFile } from '../../shared/sam/debugger/commands/addSamDebugConfiguration'
 import { waitUntil } from '../../shared/utilities/timeoutUtils'
-import { launchConfigDocUrl } from '../../shared/constants'
+import { debugNewSamAppUrl, launchConfigDocUrl } from '../../shared/constants'
 import { Runtime } from 'aws-sdk/clients/lambda'
 import { getIdeProperties, isCloud9 } from '../../shared/extensionUtilities'
 
@@ -395,6 +395,8 @@ export async function addInitialLaunchConfiguration(
 }
 
 async function showCompletionNotification(appName: string, configs: string): Promise<void> {
+    const openJson = localize('AWS.generic.open', 'Open {0}', 'launch.json')
+    const learnMore = localize('AWS.generic.message.learnMore', 'Learn More')
     const action = await vscode.window.showInformationMessage(
         localize(
             'AWS.samcli.initWizard.completionMessage',
@@ -402,10 +404,13 @@ async function showCompletionNotification(appName: string, configs: string): Pro
             appName,
             configs
         ),
-        localize('AWS.generic.open', 'Open {0}', 'launch.json')
+        openJson,
+        learnMore
     )
 
-    if (action) {
+    if (action === openJson) {
         await openLaunchJsonFile()
+    } else if (action === learnMore) {
+        vscode.env.openExternal(vscode.Uri.parse(debugNewSamAppUrl))
     }
 }
