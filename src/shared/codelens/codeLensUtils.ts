@@ -14,15 +14,17 @@ import {
     addSamDebugConfiguration,
     AddSamDebugConfigurationInput,
 } from '../sam/debugger/commands/addSamDebugConfiguration'
+import * as javaDebug from '../sam/debugger/javaSamDebug'
 import * as pythonDebug from '../sam/debugger/pythonSamDebug'
 import { createQuickPick, promptUser, verifySinglePickerOutput } from '../ui/picker'
 import { localize } from '../utilities/vsCodeUtils'
 import { getWorkspaceRelativePath } from '../utilities/workspaceUtils'
 import * as csharpCodelens from './csharpCodeLensProvider'
+import * as javaCodelens from './javaCodeLensProvider'
 import * as pythonCodelens from './pythonCodeLensProvider'
 import * as tsCodelens from './typescriptCodeLensProvider'
 
-export type Language = 'python' | 'javascript' | 'csharp' | 'typescript'
+export type Language = 'python' | 'javascript' | 'csharp' | 'java' | 'typescript'
 
 export async function makeCodeLenses({
     document,
@@ -258,6 +260,29 @@ export function makeTypescriptCodeLensProvider(): vscode.CodeLensProvider {
                 handlers,
                 token,
                 runtimeFamily: RuntimeFamily.NodeJS,
+            })
+        },
+    }
+}
+
+export async function makeJavaCodeLensProvider(): Promise<vscode.CodeLensProvider> {
+    return {
+        provideCodeLenses: async (
+            document: vscode.TextDocument,
+            token: vscode.CancellationToken
+        ): Promise<vscode.CodeLens[]> => {
+            // Try to activate the Java Extension before requesting symbols from a java file
+            await javaDebug.activateJavaExtensionIfInstalled()
+            if (token.isCancellationRequested) {
+                return []
+            }
+
+            const handlers: LambdaHandlerCandidate[] = await javaCodelens.getLambdaHandlerCandidates(document)
+            return makeCodeLenses({
+                document,
+                handlers,
+                token,
+                runtimeFamily: RuntimeFamily.Java,
             })
         },
     }

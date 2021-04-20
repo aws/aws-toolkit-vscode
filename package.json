@@ -2,7 +2,7 @@
     "name": "aws-toolkit-vscode",
     "displayName": "AWS Toolkit",
     "description": "An extension for working with Amazon Web Services",
-    "version": "1.23.0-SNAPSHOT",
+    "version": "1.24.0-SNAPSHOT",
     "publisher": "amazonwebservices",
     "license": "Apache-2.0",
     "repository": {
@@ -69,6 +69,7 @@
         "onCommand:aws.ssmDocument.publishDocument",
         "onCommand:aws.ssmDocument.updateDocumentVersion",
         "onLanguage:javascript",
+        "onLanguage:java",
         "onLanguage:python",
         "onLanguage:csharp",
         "onLanguage:yaml",
@@ -547,9 +548,7 @@
                 {
                     "id": "aws.explorer",
                     "name": "%AWS.lambda.explorerTitle%"
-                }
-            ],
-            "explorer": [
+                },
                 {
                     "id": "aws.cdk.explorer",
                     "name": "%AWS.cdk.explorerTitle%",
@@ -1528,7 +1527,7 @@
         "createRelease": "ts-node ./build-scripts/createRelease.ts"
     },
     "devDependencies": {
-        "@aws-toolkits/telemetry": "0.0.91",
+        "@aws-toolkits/telemetry": "0.0.94",
         "@sinonjs/fake-timers": "^7.0.2",
         "@types/adm-zip": "^0.4.32",
         "@types/async-lock": "^1.1.0",

@@ -15,6 +15,7 @@ import {
 } from '../../lambda/wizards/samDeployWizard'
 import * as codelensUtils from '../codelens/codeLensUtils'
 import * as csLensProvider from '../codelens/csharpCodeLensProvider'
+import * as javaLensProvider from '../codelens/javaCodeLensProvider'
 import * as pyLensProvider from '../codelens/pythonCodeLensProvider'
 import { SamTemplateCodeLensProvider } from '../codelens/samTemplateCodeLensProvider'
 import * as jsLensProvider from '../codelens/typescriptCodeLensProvider'
@@ -165,12 +166,21 @@ async function activateCodeLensProviders(
         )
     )
 
+    disposables.push(
+        vscode.languages.registerCodeLensProvider(
+            javaLensProvider.JAVA_ALLFILES,
+            await codelensUtils.makeJavaCodeLensProvider()
+        )
+    )
+
     try {
         const registry = new CodelensRootRegistry()
 
         await registry.addWatchPattern(pyLensProvider.PYTHON_BASE_PATTERN)
         await registry.addWatchPattern(jsLensProvider.JAVASCRIPT_BASE_PATTERN)
         await registry.addWatchPattern(csLensProvider.CSHARP_BASE_PATTERN)
+        await registry.addWatchPattern(javaLensProvider.GRADLE_BASE_PATTERN)
+        await registry.addWatchPattern(javaLensProvider.MAVEN_BASE_PATTERN)
 
         ext.codelensRootRegistry = registry
     } catch (e) {

@@ -65,12 +65,14 @@ function getEnvironmentVariables(
  * Decides the resource name for the generated template.yaml.
  */
 function makeResourceName(config: SamLaunchRequestArgs): string {
-    return config.invokeTarget.target === 'code' ? 'awsToolkitSamLocalResource' : config.invokeTarget.logicalId
+    return config.invokeTarget.target === 'code'
+        ? path.parse(config.invokeTarget.projectRoot).name
+        : config.invokeTarget.logicalId
 }
 
 const SAM_LOCAL_PORT_CHECK_RETRY_INTERVAL_MILLIS: number = 125
 const SAM_LOCAL_PORT_CHECK_RETRY_TIMEOUT_MILLIS_DEFAULT: number = 30000
-const MAX_DEBUGGER_RETRIES: number = 4
+const MAX_DEBUGGER_RETRIES: number = 1
 const ATTACH_DEBUGGER_RETRY_DELAY_MILLIS: number = 1000
 
 /** "sam local start-api" wrapper from the current debug-session. */
@@ -362,7 +364,7 @@ export async function invokeLambdaFunction(
             getLogger('channel').info(
                 localize('AWS.output.sam.local.waiting', 'Waiting for SAM application to start...')
             )
-            config.onWillAttachDebugger(config.debugPort!, timer)
+            await config.onWillAttachDebugger(config.debugPort!, timer)
         }
         // HACK: remove non-serializable properties before attaching.
         // TODO: revisit this :)

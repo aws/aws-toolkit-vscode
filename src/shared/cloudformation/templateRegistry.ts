@@ -8,7 +8,7 @@ import { CloudFormation } from './cloudformation'
 import * as pathutils from '../utilities/pathUtils'
 import * as path from 'path'
 import { isInDirectory } from '../filesystemUtilities'
-import { dotNetRuntimes } from '../../lambda/models/samLambdaRuntime'
+import { dotNetRuntimes, javaRuntimes } from '../../lambda/models/samLambdaRuntime'
 import { getLambdaDetails } from '../../lambda/utils'
 import { ext } from '../extensionGlobals'
 import { WatchedFiles, WatchedItem } from '../watchedFiles'
@@ -119,10 +119,10 @@ export function getResourcesForHandlerFromTemplateDatum(
             )
 
             if (registeredRuntime && registeredHandler && registeredCodeUri) {
-                // .NET is currently a special case in that the filepath and handler aren't specific.
+                // Java and .NET are currently special cases in that the filepath and handler aren't specific.
                 // For now: check if handler matches and check if the code URI contains the filepath.
-                // TODO: Can we use Omnisharp to help guide us better?
-                if (dotNetRuntimes.includes(registeredRuntime)) {
+                // TODO: Can we use Omnisharp or some sort of Java tooling to help guide us better?
+                if (dotNetRuntimes.includes(registeredRuntime) || javaRuntimes.includes(registeredRuntime)) {
                     if (
                         handler === registeredHandler &&
                         isInDirectory(

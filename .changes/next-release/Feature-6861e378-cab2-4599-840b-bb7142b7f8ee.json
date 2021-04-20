@@ -1,0 +1,4 @@
+{
+	"type": "Feature",
+	"description": "SAM run/debug: Add support for Java 8, Java 8.al2, and Java 11 runtimes using Maven and Gradle"
+}
