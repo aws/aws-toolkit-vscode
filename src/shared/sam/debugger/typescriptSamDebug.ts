@@ -144,9 +144,10 @@ async function compileTypeScript(config: NodejsDebugConfiguration): Promise<void
         const samBuildOutputAppRoot = path.join(config.baseBuildDir!, 'output', 'awsToolkitSamLocalResource')
         const tsconfigPath = path.join(samBuildOutputAppRoot, 'tsconfig.json')
         if ((await readdir(config.codeRoot)).includes('tsconfig.json') || hasTypeScriptFilesRecursive(config.codeRoot)) {
-            const defaultTsconfig = `{
+        //  This default config is a modified version from the AWS Toolkit for JetBrain's tsconfig file. https://github.com/aws/aws-toolkit-jetbrains/blob/feature/typescript/jetbrains-ultimate/src/software/aws/toolkits/jetbrains/services/lambda/nodejs/NodeJsLambdaBuilder.kt 
+            const defaultTsconfig = {
                 "compilerOptions": {
-                    "target": "es2017",
+                    "target": "es6",
                     "module": "commonjs",
                     "typeRoots": [
                     "node_modules/@types"
@@ -154,15 +155,15 @@ async function compileTypeScript(config: NodejsDebugConfiguration): Promise<void
                     "types": [
                     "node"
                     ],
-                    "inlineSourceMap": true,
-                    "esModuleInterop": true,
-                    "skipLibCheck": true
+                    "rootDir": ".",
+                    "sourceMap": true,
                 }
-                }`
+            }
+            const compileCommand = ['tsc', '--project', samBuildOutputAppRoot]
             try {
-                writeFileSync(tsconfigPath, defaultTsconfig)
+                writeFileSync(tsconfigPath, JSON.stringify(defaultTsconfig))
                 getLogger('channel').info('Compiling TypeScript')
-                await new ChildProcess(true, `tsc --project ${samBuildOutputAppRoot} --inlineSourceMap`).run()    
+                await new ChildProcess(true, compileCommand.join(' ')).run()    
             } catch (error) {
                 getLogger('channel').error(`Compile Error: ${error}`)
             }
