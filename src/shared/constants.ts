@@ -59,8 +59,9 @@ export const ssmJson: string = 'ssm-json'
 export const ssmYaml: string = 'ssm-yaml'
 
 // URL for post-Create SAM App
-export const debugNewSamApp: string =
-    'https://docs.aws.amazon.com/toolkit-for-vscode/latest/userguide/serverless-apps.html#serverless-apps-debug'
+export const debugNewSamAppUrl: string = isCloud9()
+    ? 'https://docs.aws.amazon.com/cloud9/latest/user-guide/serverless-apps-toolkit.html#sam-run-debug'
+    : 'https://docs.aws.amazon.com/toolkit-for-vscode/latest/userguide/serverless-apps.html#serverless-apps-debug'
 
 /**
  * Moment format for rendering readable dates.

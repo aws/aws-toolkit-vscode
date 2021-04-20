@@ -45,7 +45,7 @@ import { isTemplateTargetProperties } from '../../shared/sam/debugger/awsSamDebu
 import { TemplateTargetProperties } from '../../shared/sam/debugger/awsSamDebugConfiguration'
 import { openLaunchJsonFile } from '../../shared/sam/debugger/commands/addSamDebugConfiguration'
 import { waitUntil } from '../../shared/utilities/timeoutUtils'
-import { debugNewSamApp, launchConfigDocUrl } from '../../shared/constants'
+import { debugNewSamAppUrl, launchConfigDocUrl } from '../../shared/constants'
 import { Runtime } from 'aws-sdk/clients/lambda'
 import { getIdeProperties, isCloud9 } from '../../shared/extensionUtilities'
 
@@ -411,6 +411,6 @@ async function showCompletionNotification(appName: string, configs: string): Pro
     if (action === openJson) {
         await openLaunchJsonFile()
     } else if (action === learnMore) {
-        vscode.env.openExternal(vscode.Uri.parse(debugNewSamApp))
+        vscode.env.openExternal(vscode.Uri.parse(debugNewSamAppUrl))
     }
 }
