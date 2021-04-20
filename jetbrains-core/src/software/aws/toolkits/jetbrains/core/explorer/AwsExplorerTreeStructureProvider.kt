@@ -9,17 +9,22 @@ import com.intellij.ide.util.treeView.AbstractTreeNode
 import com.intellij.openapi.extensions.ExtensionPointName
 import software.aws.toolkits.jetbrains.core.explorer.nodes.AwsExplorerNode
 
-interface AwsExplorerTreeStructureProvider : TreeStructureProvider {
+abstract class AwsExplorerTreeStructureProvider : TreeStructureProvider {
     companion object {
         val EP_NAME = ExtensionPointName<AwsExplorerTreeStructureProvider>("aws.toolkit.explorer.treeStructure")
     }
 
     /**
-     * Runs after the [AwsExplorerNode.update] allowing for changes to the tree, like collapsing nodes
+     * Hides the ViewSettings since it is tied to the project view tree
      */
-    override fun modify(
+    final override fun modify(
         parent: AbstractTreeNode<*>,
         children: MutableCollection<AbstractTreeNode<*>>,
         settings: ViewSettings?
-    ): MutableCollection<AbstractTreeNode<*>>
+    ): MutableCollection<AbstractTreeNode<*>> = modify(parent, children)
+
+    /**
+     * Runs after the [AwsExplorerNode.update] allowing for changes to the tree, like collapsing nodes
+     */
+    abstract fun modify(parent: AbstractTreeNode<*>, children: MutableCollection<AbstractTreeNode<*>>): MutableCollection<AbstractTreeNode<*>>
 }
