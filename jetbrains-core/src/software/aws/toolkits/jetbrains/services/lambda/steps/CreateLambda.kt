@@ -11,7 +11,6 @@ import software.aws.toolkits.jetbrains.services.lambda.upload.FunctionDetails
 import software.aws.toolkits.jetbrains.utils.execution.steps.Context
 import software.aws.toolkits.jetbrains.utils.execution.steps.MessageEmitter
 import software.aws.toolkits.jetbrains.utils.execution.steps.Step
-import software.aws.toolkits.jetbrains.utils.response
 import software.aws.toolkits.resources.message
 
 class CreateLambda(private val lambdaClient: LambdaClient, private val details: FunctionDetails) : Step() {
@@ -52,7 +51,7 @@ class CreateLambda(private val lambdaClient: LambdaClient, private val details: 
         }
 
         messageEmitter.emitMessage(message("lambda.workflow.update_code.wait_for_stable"), isError = false)
-        val response = lambdaClient.waiter().waitUntilFunctionExists() { it.functionName(details.name) }.response()
+        val response = lambdaClient.waiter().waitUntilFunctionExists() { it.functionName(details.name) }.matched().response().get()
 
         // Also wait for it to become active
         lambdaClient.waiter().waitUntilFunctionActive { it.functionName(details.name) }
