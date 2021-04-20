@@ -30,7 +30,7 @@ const projectFolder = getTestWorkspaceFolder()
 const CODELENS_TIMEOUT: number = 60000
 const CODELENS_RETRY_INTERVAL: number = 200
 const DEBUG_TIMEOUT: number = 90000
-const NO_DEBUG_SESSION_TIMEOUT: number = 10000
+const NO_DEBUG_SESSION_TIMEOUT: number = 5000
 const NO_DEBUG_SESSION_INTERVAL: number = 100
 
 interface TestScenario {
@@ -554,14 +554,7 @@ describe('SAM Integration Tests', async function () {
                     setTestTimeout(this.test?.fullTitle(), DEBUG_TIMEOUT)
                     // Allow previous sessions to go away.
                     const noDebugSession: boolean | undefined = await waitUntil(
-                        async () => {
-                            if (vscode.debug.activeDebugSession !== undefined) {
-                                await stopDebugger(undefined)
-                                return false
-                            }
-
-                            return true
-                        },
+                        async () => vscode.debug.activeDebugSession === undefined,
                         { timeout: NO_DEBUG_SESSION_TIMEOUT, interval: NO_DEBUG_SESSION_INTERVAL, truthy: true }
                     )
 
