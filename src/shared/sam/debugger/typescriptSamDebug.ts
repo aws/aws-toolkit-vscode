@@ -166,6 +166,7 @@ async function compileTypeScript(config: NodejsDebugConfiguration): Promise<void
                 await new ChildProcess(true, compileCommand.join(' ')).run()    
             } catch (error) {
                 getLogger('channel').error(`Compile Error: ${error}`)
+                throw Error('Failed to compile typescript Lambda')
             }
         }
     }
