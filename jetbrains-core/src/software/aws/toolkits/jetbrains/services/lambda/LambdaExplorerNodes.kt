@@ -48,6 +48,7 @@ open class LambdaFunctionNode(
 
     fun handlerPsi(): Array<NavigatablePsiElement> {
         val runtime = value.runtime ?: return emptyArray()
-        return Lambda.findPsiElementsForHandler(nodeProject, runtime, value.handler)
+        val handler = value.handler ?: return emptyArray()
+        return Lambda.findPsiElementsForHandler(nodeProject, runtime, handler)
     }
 }

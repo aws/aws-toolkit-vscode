@@ -32,8 +32,7 @@ import software.aws.toolkits.jetbrains.ui.SliderPanel
 object Lambda {
     private val LOG = getLogger<Lambda>()
 
-    fun findPsiElementsForHandler(project: Project, runtime: Runtime, handler: String?): Array<NavigatablePsiElement> {
-        handler ?: return emptyArray()
+    fun findPsiElementsForHandler(project: Project, runtime: Runtime, handler: String): Array<NavigatablePsiElement> {
         val resolver = runtime.runtimeGroup?.let { LambdaHandlerResolver.getInstanceOrNull(it) } ?: return emptyArray()
 
         // Don't search through ".aws-sam" folders
@@ -43,7 +42,12 @@ object Lambda {
 
         val elements = resolver.findPsiElements(project, handler, scope)
 
-        logHandlerPsiElements(handler, elements)
+        LOG.debug {
+            elements.joinToString(
+                prefix = "Found ${elements.size} PsiElements for Handler: $handler\n",
+                separator = "\n"
+            ) { it.containingFile.virtualFile.path }
+        }
 
         return elements
     }
@@ -58,21 +62,11 @@ object Lambda {
         ModuleManager.getInstance(project).modules.flatMap { findSamBuildContents(it) }
 
     private fun findSamBuildContents(module: Module): Collection<VirtualFile> =
-        ModuleRootManager.getInstance(module).contentRoots.map {
+        ModuleRootManager.getInstance(module).contentRoots.mapNotNull {
             it.findChild(SamCommon.SAM_BUILD_DIR)
-        }.filterNotNull()
-            .flatMap {
-                VfsUtil.collectChildrenRecursively(it)
-            }
-
-    private fun logHandlerPsiElements(handler: String, elements: Array<NavigatablePsiElement>) {
-        LOG.debug {
-            elements.joinToString(
-                prefix = "Found ${elements.size} PsiElements for Handler: $handler\n",
-                separator = "\n"
-            ) { it.containingFile.virtualFile.path }
+        }.flatMap {
+            VfsUtil.collectChildrenRecursively(it)
         }
-    }
 }
 
 object LambdaWidgets {
