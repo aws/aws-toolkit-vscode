@@ -562,7 +562,7 @@ describe('SAM Integration Tests', async function () {
                     // However, the fact that there are sessions from previous tests is still an issue, so
                     // a warning will be logged under the current session.
                     if (!noDebugSession) {
-                        assert.notStrictEqual(
+                        assert.strictEqual(
                             vscode.debug.activeDebugSession!.type,
                             'pwa-node',
                             `unexpected debug session in progress: ${JSON.stringify(
