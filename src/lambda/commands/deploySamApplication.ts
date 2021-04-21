@@ -111,6 +111,8 @@ export async function deploySamApplication(
         )
 
         await deployApplicationPromise
+        // no need to await, doesn't need to block further execution
+        vscode.commands.executeCommand('aws.refreshAwsExplorer')
 
         // successful deploy: retain S3 bucket for quick future access
         // JSON object of type: { [profile: string]: { [region: string]: bucket } }
