@@ -148,18 +148,6 @@ class DeployServerlessApplicationDialog(
             view.stacks.selected()?.name
         } ?: throw RuntimeException(message("serverless.application.deploy.validation.stack.missing"))
 
-    val stackId: String?
-        get() = if (view.createStack.isSelected) {
-            null
-        } else {
-            view.stacks.selected()?.let { stack ->
-                // selected stack id will be null in case it was restored from DeploySettings
-                // DeploySettings doesn't store stack id because it doesn't have access to stack id
-                // at times when deployment happens with createStack selected
-                stack.id ?: view.stacks.model.find { it.name == stack.name }?.id
-            }
-        }
-
     val bucket: String
         get() = view.s3Bucket.selected()
             ?: throw RuntimeException(message("serverless.application.deploy.validation.s3.bucket.empty"))

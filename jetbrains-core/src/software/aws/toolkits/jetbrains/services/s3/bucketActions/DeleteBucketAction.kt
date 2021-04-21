@@ -13,10 +13,9 @@ import software.aws.toolkits.jetbrains.core.explorer.refreshAwsTree
 import software.aws.toolkits.jetbrains.services.s3.S3BucketNode
 import software.aws.toolkits.jetbrains.services.s3.editor.S3VirtualBucket
 import software.aws.toolkits.jetbrains.services.s3.resources.S3Resources
-import software.aws.toolkits.jetbrains.utils.TaggingResourceType
 import software.aws.toolkits.resources.message
 
-class DeleteBucketAction : DeleteResourceAction<S3BucketNode>(message("s3.delete.bucket.action"), TaggingResourceType.S3_BUCKET) {
+class DeleteBucketAction : DeleteResourceAction<S3BucketNode>(message("s3.delete.bucket.action")) {
     override fun performDelete(selected: S3BucketNode) {
         val client: S3Client = selected.nodeProject.awsClient()
 

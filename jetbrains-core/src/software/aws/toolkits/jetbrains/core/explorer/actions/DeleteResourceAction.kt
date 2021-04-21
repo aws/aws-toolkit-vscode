@@ -9,36 +9,30 @@ import com.intellij.openapi.application.ApplicationManager
 import com.intellij.openapi.project.DumbAware
 import software.aws.toolkits.jetbrains.core.explorer.DeleteResourceDialog
 import software.aws.toolkits.jetbrains.core.explorer.nodes.AwsExplorerResourceNode
-import software.aws.toolkits.jetbrains.utils.Operation
-import software.aws.toolkits.jetbrains.utils.TaggingResourceType
 import software.aws.toolkits.jetbrains.utils.notifyError
 import software.aws.toolkits.jetbrains.utils.notifyInfo
-import software.aws.toolkits.jetbrains.utils.warnResourceOperationAgainstCodePipeline
 import software.aws.toolkits.resources.message
 import software.aws.toolkits.telemetry.AwsTelemetry
 import software.aws.toolkits.telemetry.Result
 import software.aws.toolkits.telemetry.ServiceType
 
-abstract class DeleteResourceAction<in T : AwsExplorerResourceNode<*>>(text: String, private val taggingResourceType: TaggingResourceType) :
+abstract class DeleteResourceAction<in T : AwsExplorerResourceNode<*>>(text: String) :
     SingleResourceNodeAction<T>(text, icon = AllIcons.Actions.Cancel), DumbAware {
     final override fun actionPerformed(selected: T, e: AnActionEvent) {
-        warnResourceOperationAgainstCodePipeline(selected.nodeProject, selected.displayName(), selected.resourceArn(), taggingResourceType, Operation.DELETE) {
-
-            val resourceType = selected.resourceType()
-            val resourceName = selected.displayName()
-            val response = DeleteResourceDialog(selected.nodeProject, resourceType, resourceName).showAndGet()
-            if (!response) {
-                AwsTelemetry.deleteResource(selected.project, ServiceType.from(selected.serviceId), Result.Cancelled)
-            } else {
-                ApplicationManager.getApplication().executeOnPooledThread {
-                    try {
-                        performDelete(selected)
-                        notifyInfo(project = selected.project, title = message("delete_resource.deleted", resourceType, resourceName))
-                        AwsTelemetry.deleteResource(selected.project, ServiceType.from(selected.serviceId), success = true)
-                    } catch (e: Exception) {
-                        e.notifyError(project = selected.project, title = message("delete_resource.delete_failed", resourceType, resourceName))
-                        AwsTelemetry.deleteResource(selected.project, ServiceType.from(selected.serviceId), success = false)
-                    }
+        val resourceType = selected.resourceType()
+        val resourceName = selected.displayName()
+        val response = DeleteResourceDialog(selected.nodeProject, resourceType, resourceName).showAndGet()
+        if (!response) {
+            AwsTelemetry.deleteResource(selected.project, ServiceType.from(selected.serviceId), Result.Cancelled)
+        } else {
+            ApplicationManager.getApplication().executeOnPooledThread {
+                try {
+                    performDelete(selected)
+                    notifyInfo(project = selected.project, title = message("delete_resource.deleted", resourceType, resourceName))
+                    AwsTelemetry.deleteResource(selected.project, ServiceType.from(selected.serviceId), success = true)
+                } catch (e: Exception) {
+                    e.notifyError(project = selected.project, title = message("delete_resource.delete_failed", resourceType, resourceName))
+                    AwsTelemetry.deleteResource(selected.project, ServiceType.from(selected.serviceId), success = false)
                 }
             }
         }

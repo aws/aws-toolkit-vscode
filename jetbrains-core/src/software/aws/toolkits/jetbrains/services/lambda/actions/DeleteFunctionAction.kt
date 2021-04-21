@@ -9,10 +9,9 @@ import software.aws.toolkits.jetbrains.core.explorer.actions.DeleteResourceActio
 import software.aws.toolkits.jetbrains.core.explorer.refreshAwsTree
 import software.aws.toolkits.jetbrains.services.lambda.LambdaFunctionNode
 import software.aws.toolkits.jetbrains.services.lambda.resources.LambdaResources
-import software.aws.toolkits.jetbrains.utils.TaggingResourceType
 import software.aws.toolkits.resources.message
 
-class DeleteFunctionAction : DeleteResourceAction<LambdaFunctionNode>(message("lambda.function.delete.action"), TaggingResourceType.LAMBDA_FUNCTION) {
+class DeleteFunctionAction : DeleteResourceAction<LambdaFunctionNode>(message("lambda.function.delete.action")) {
     override fun performDelete(selected: LambdaFunctionNode) {
         val project = selected.nodeProject
 

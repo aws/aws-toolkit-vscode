@@ -9,10 +9,9 @@ import software.aws.toolkits.jetbrains.core.explorer.actions.DeleteResourceActio
 import software.aws.toolkits.jetbrains.core.explorer.refreshAwsTree
 import software.aws.toolkits.jetbrains.services.ecr.EcrRepositoryNode
 import software.aws.toolkits.jetbrains.services.ecr.resources.EcrResources
-import software.aws.toolkits.jetbrains.utils.TaggingResourceType
 import software.aws.toolkits.resources.message
 
-class DeleteRepositoryAction : DeleteResourceAction<EcrRepositoryNode>(message("ecr.delete.repo.action"), TaggingResourceType.ECR_REPOSITORY) {
+class DeleteRepositoryAction : DeleteResourceAction<EcrRepositoryNode>(message("ecr.delete.repo.action")) {
     override fun performDelete(selected: EcrRepositoryNode) {
         val client: EcrClient = selected.nodeProject.awsClient()
         client.deleteRepository { it.repositoryName(selected.repository.repositoryName) }

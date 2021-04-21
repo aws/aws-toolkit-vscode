@@ -18,9 +18,6 @@ import software.aws.toolkits.jetbrains.services.lambda.runtimeGroup
 import software.aws.toolkits.jetbrains.services.lambda.toDataClass
 import software.aws.toolkits.jetbrains.services.lambda.upload.UpdateFunctionCodeDialog
 import software.aws.toolkits.jetbrains.services.lambda.upload.UpdateFunctionConfigDialog
-import software.aws.toolkits.jetbrains.utils.Operation
-import software.aws.toolkits.jetbrains.utils.TaggingResourceType
-import software.aws.toolkits.jetbrains.utils.warnResourceOperationAgainstCodePipeline
 import software.aws.toolkits.resources.message
 
 abstract class UpdateFunctionAction(title: String) : SingleResourceNodeAction<LambdaFunctionNode>(title) {
@@ -38,16 +35,7 @@ abstract class UpdateFunctionAction(title: String) : SingleResourceNodeAction<La
             }.configuration()
 
             val lambdaFunction = functionConfiguration.toDataClass()
-
-            warnResourceOperationAgainstCodePipeline(
-                project,
-                selectedFunction.name,
-                selectedFunction.arn,
-                TaggingResourceType.LAMBDA_FUNCTION,
-                Operation.UPDATE
-            ) {
-                updateLambda(project, lambdaFunction)
-            }
+            updateLambda(project, lambdaFunction)
         }
     }
 
