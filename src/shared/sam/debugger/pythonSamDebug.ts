@@ -21,7 +21,7 @@ import * as pathutil from '../../utilities/pathUtils'
 import { getLocalRootVariants } from '../../utilities/pathUtils'
 import { Timeout } from '../../utilities/timeoutUtils'
 import { DefaultSamLocalInvokeCommand, WAIT_FOR_DEBUGGER_MESSAGES } from '../cli/samCliLocalInvoke'
-import { invokeLambdaFunction, makeInputTemplate } from '../localLambdaRunner'
+import { invokeLambdaFunction, makeInputTemplate, waitForPort } from '../localLambdaRunner'
 import { SamLaunchRequestArgs } from './awsSamDebugger'
 import { ext } from '../../extensionGlobals'
 import { Runtime } from 'aws-sdk/clients/lambda'
@@ -237,8 +237,9 @@ async function waitForIkpdb(debugPort: number, timeout: Timeout) {
 }
 
 export async function waitForPythonDebugAdapter(debugPort: number, timeout: Timeout) {
+    await waitForPort(debugPort, timeout)
     await new Promise<void>(resolve => {
-        setTimeout(resolve, 1000)
+        setTimeout(resolve, 3000)
     })
 }
 
