@@ -17,7 +17,6 @@ import {
 } from '../../shared/extensionUtilities'
 import * as filesystemUtilities from '../../shared/filesystemUtilities'
 import { FakeExtensionContext } from '../fakeExtensionContext'
-import { assertRejects } from './utilities/assertUtils'
 
 describe('extensionUtilities', function () {
     describe('safeGet', function () {
@@ -61,9 +60,7 @@ describe('extensionUtilities', function () {
         })
 
         it("throws error if a quick start page doesn' exist", async () => {
-            await assertRejects(async () => {
-                await createQuickStartWebview(context, 'irresponsibly-named-file')
-            })
+            await assert.rejects(createQuickStartWebview(context, 'irresponsibly-named-file'))
         })
 
         it('returns a webview with unaltered text if a valid file is passed without tokens', async function () {

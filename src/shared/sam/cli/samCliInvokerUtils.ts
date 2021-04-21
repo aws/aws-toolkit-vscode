@@ -32,6 +32,10 @@ export interface SamCliProcessInvoker {
     stop(): void
 }
 
+export function makeUnexpectedExitCodeError(message: string): Error {
+    return new Error(`Error with child process: ${message}`)
+}
+
 export function logAndThrowIfUnexpectedExitCode(processResult: ChildProcessResult, expectedExitCode: number): void {
     if (processResult.exitCode === expectedExitCode) {
         return
@@ -56,5 +60,5 @@ export function logAndThrowIfUnexpectedExitCode(processResult: ChildProcessResul
         message = processResult.stderr || processResult.stdout || 'No message available'
     }
 
-    throw new Error(`Error with child process: ${message}`)
+    throw makeUnexpectedExitCodeError(message)
 }

@@ -10,7 +10,6 @@ import {
     schemaCodeLangs,
 } from '../../../eventSchemas/models/schemaCodeLangs'
 import { samZipLambdaRuntimes } from '../../../lambda/models/samLambdaRuntime'
-import { assertThrowsError } from '../../../test/shared/utilities/assertUtils'
 
 describe('getLanguageDetails', function () {
     it('should successfully return details for supported languages', function () {
@@ -37,8 +36,11 @@ describe('getApiValueForSchemasDownload', function () {
                 }
                 default: {
                     const errorMessage = `Runtime ${runtime} is not supported by eventBridge application`
-                    const error = await assertThrowsError(async () => getApiValueForSchemasDownload(runtime))
-                    assert.strictEqual(error.message, errorMessage, 'Should fail for same error')
+                    assert.throws(
+                        () => getApiValueForSchemasDownload(runtime),
+                        new Error(errorMessage),
+                        'Should fail for same error'
+                    )
                     break
                 }
             }

@@ -12,7 +12,6 @@ import { DependencyManager } from '../../src/lambda/models/samLambdaRuntime'
 import { helloWorldTemplate } from '../../src/lambda/models/samTemplates'
 import { getSamCliContext } from '../../src/shared/sam/cli/samCliContext'
 import { runSamCliInit, SamCliInitArgs } from '../../src/shared/sam/cli/samCliInit'
-import { assertThrowsError } from '../../src/test/shared/utilities/assertUtils'
 import { Language } from '../shared/codelens/codeLensUtils'
 import { VSCODE_EXTENSION_ID } from '../shared/extensions'
 import { fileExists } from '../shared/filesystemUtilities'
@@ -511,8 +510,11 @@ describe('SAM Integration Tests', async function () {
                 })
 
                 it('produces an error when creating a SAM Application to the same location', async function () {
-                    const err = await assertThrowsError(async () => await createSamApplication(testDir))
-                    assert(err.message.includes('directory already exists'))
+                    await assert.rejects(
+                        createSamApplication(testDir),
+                        /directory already exists/,
+                        'Promise was not rejected'
+                    )
                 })
 
                 it('produces an Add Debug Configuration codelens', async function () {

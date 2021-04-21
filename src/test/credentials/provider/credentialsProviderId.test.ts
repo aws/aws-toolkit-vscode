@@ -5,7 +5,6 @@
 
 import * as assert from 'assert'
 import { asString, fromString, isEqual } from '../../../credentials/providers/credentialsProviderId'
-import { assertThrowsError } from '../../shared/utilities/assertUtils'
 
 describe('CredentialsProviderId', async function () {
     describe('fromString', async function () {
@@ -24,15 +23,11 @@ describe('CredentialsProviderId', async function () {
         })
 
         it('errs on unexpected format - not enough separators', async function () {
-            await assertThrowsError(async () => {
-                fromString('default')
-            })
+            assert.throws(() => fromString('default'))
         })
 
         it('errs on unexpected format - different separator', async function () {
-            await assertThrowsError(async () => {
-                fromString('profile$default')
-            })
+            assert.throws(() => fromString('profile$default'))
         })
     })
 

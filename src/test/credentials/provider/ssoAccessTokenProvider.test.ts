@@ -11,7 +11,6 @@ import { DiskCache } from '../../../credentials/sso/diskCache'
 import { SsoAccessTokenProvider } from '../../../credentials/sso/ssoAccessTokenProvider'
 import { CreateTokenResponse, StartDeviceAuthorizationResponse } from 'aws-sdk/clients/ssooidc'
 import { SsoClientRegistration } from '../../../credentials/sso/ssoClientRegistration'
-import { assertThrowsError } from '../../../test/shared/utilities/assertUtils'
 
 describe('SsoAccessTokenProvider', function () {
     const sandbox = sinon.createSandbox()
@@ -63,7 +62,7 @@ describe('SsoAccessTokenProvider', function () {
         sandbox.stub(cache, 'saveClientRegistration').returns()
     }
 
-    let clock: sinon.SinonFakeTimers
+    let clock: FakeTimers.InstalledClock
 
     before(function () {
         clock = FakeTimers.install()
@@ -176,9 +175,7 @@ describe('SsoAccessTokenProvider', function () {
 
             const stubSaveAccessToken = sandbox.stub(cache, 'saveAccessToken').returns()
 
-            await assertThrowsError(async () => {
-                await sut.accessToken()
-            })
+            await assert.rejects(sut.accessToken())
 
             assert.strictEqual(stubCreateToken.callCount, 1)
             assert.strictEqual(stubSaveAccessToken.called, false)
@@ -235,9 +232,7 @@ describe('SsoAccessTokenProvider', function () {
                 expiresAt: new Date(Date.now() + HOUR_IN_MS).toISOString(),
             }
 
-            await assertThrowsError(async () => {
-                await sut.authorizeClient(dummyRegistration)
-            })
+            await assert.rejects(sut.authorizeClient(dummyRegistration))
 
             assert.strictEqual(stubInvalidateCache.callCount, 1)
         })

@@ -8,7 +8,6 @@ import * as fs from 'fs-extra'
 import * as path from 'path'
 import * as vscode from 'vscode'
 import { MessageObject } from '../../stepFunctions/commands/visualizeStateMachine/aslVisualization'
-import { assertThrowsError } from '../../test/shared/utilities/assertUtils'
 import { makeTemporaryToolkitFolder } from '../../shared/filesystemUtilities'
 import { spy } from 'sinon'
 import { closeAllEditors } from '../../shared/utilities/vsCodeUtils'
@@ -209,9 +208,9 @@ describe('visualizeStateMachine', async function () {
         // Make sure nothing is open from previous tests.
         await closeAllEditors()
 
-        await assertThrowsError(
-            async () => await vscode.commands.executeCommand<vscode.WebviewPanel>('aws.previewStateMachine')
-        )
+        await assert.rejects(async () => {
+            await vscode.commands.executeCommand<vscode.WebviewPanel>('aws.previewStateMachine')
+        })
     })
 
     it('doesnt update the graph if a seperate file is opened or modified', async function () {
