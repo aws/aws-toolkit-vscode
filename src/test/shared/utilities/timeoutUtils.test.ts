@@ -8,7 +8,7 @@ import * as FakeTimers from '@sinonjs/fake-timers'
 import * as timeoutUtils from '../../../shared/utilities/timeoutUtils'
 
 describe('timeoutUtils', async function () {
-    let clock: sinon.SinonFakeTimers
+    let clock: FakeTimers.InstalledClock
 
     before(function () {
         clock = FakeTimers.install()
@@ -18,14 +18,16 @@ describe('timeoutUtils', async function () {
         clock.uninstall()
     })
 
+    afterEach(function () {
+        clock.reset()
+    })
+
     describe('Timeout', async function () {
         it('returns > 0 if the timer is still active', async function () {
             const timerLengthMs = 100
             const longTimer = new timeoutUtils.Timeout(timerLengthMs)
             clock.tick(timerLengthMs / 2)
             assert.strictEqual(longTimer.remainingTime > 0, true)
-            // kill the timer to not mess with other tests
-            longTimer.killTimer()
         })
 
         it('returns 0 if timer is expired', async function () {
@@ -40,17 +42,17 @@ describe('timeoutUtils', async function () {
         it('returns a Promise if a timer is active', async function () {
             const longTimer = new timeoutUtils.Timeout(300)
             assert.strictEqual(longTimer.timer instanceof Promise, true)
-            // kill the timer to not mess with other tests
-            longTimer.killTimer()
         })
 
         it('timer object rejects if a timer is expired', async function () {
             const timerLengthMs = 10
             const shortTimer = new timeoutUtils.Timeout(timerLengthMs)
             clock.tick(timerLengthMs + 1)
-            await shortTimer.timer.catch(value => {
-                assert.strictEqual(value, undefined)
-            })
+            await assert.rejects(
+                shortTimer.timer,
+                new Error(timeoutUtils.TIMEOUT_ERROR_MESSAGE),
+                'Timer did not reject due to timeout'
+            )
         })
 
         it('successfully kills active timers', async function () {
@@ -58,13 +60,10 @@ describe('timeoutUtils', async function () {
             // make sure this is an active Promise
             assert.strictEqual(longTimer.timer instanceof Promise, true)
             longTimer.killTimer()
-            try {
-                // make sure the promise was resolved
-                await longTimer.timer
-            } catch {
-                // if the timer was not killed, promise will reject after 300 ms and test should fail.
-                assert.fail('the promise was not killed!')
-            }
+            clock.tick(400)
+
+            // if the timer was not killed, promise will reject
+            await longTimer.timer
         })
 
         it('correctly reports an elapsed time', async function () {
@@ -75,9 +74,6 @@ describe('timeoutUtils', async function () {
             clock.tick(checkTimerMs)
 
             assert.strictEqual(longTimer.elapsedTime, checkTimerMs)
-
-            // kill the timer to not mess with other tests
-            longTimer.killTimer()
         })
 
         it('Correctly reports elapsed time with refresh', async function () {
@@ -87,9 +83,6 @@ describe('timeoutUtils', async function () {
             clock.tick(5)
             assert.strictEqual(longTimer.elapsedTime, 10)
             assert.strictEqual(longTimer.remainingTime, 5)
-
-            // kill the timer to not mess with other tests
-            longTimer.killTimer()
         })
 
         it('Refresh pushes back the start time', async function () {
@@ -97,9 +90,16 @@ describe('timeoutUtils', async function () {
             clock.tick(5)
             longTimer.refresh()
             assert.strictEqual(longTimer.remainingTime, 10)
+        })
 
-            // kill the timer to not mess with other tests
+        it('does not reject if refreshed', async function () {
+            const longTimer = new timeoutUtils.Timeout(10)
+            clock.tick(5)
+            longTimer.refresh()
+            clock.tick(6)
             longTimer.killTimer()
+            clock.tick(10)
+            await longTimer.timer
         })
     })
 
@@ -112,7 +112,7 @@ describe('timeoutUtils', async function () {
             clockSpeed: 5,
         }
 
-        let fastClock: sinon.SinonTimerId
+        let fastClock: NodeJS.Timeout
 
         // Test function, increments a counter every time it is called
         async function testFunction(): Promise<number | undefined> {

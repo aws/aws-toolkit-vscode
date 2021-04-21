@@ -14,7 +14,7 @@ import { TestSettingsConfiguration } from '../../utilities/testSettingsConfigura
 
 describe('addLogEvents', async function () {
     let sandbox: sinon.SinonSandbox
-    let clock: sinon.SinonFakeTimers
+    let clock: FakeTimers.InstalledClock
     const config = new TestSettingsConfiguration()
 
     before(function () {

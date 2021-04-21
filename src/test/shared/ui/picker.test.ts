@@ -377,7 +377,7 @@ describe('IteratingQuickPickController', async function () {
     const interval = 30
 
     let quickPick: vscode.QuickPick<vscode.QuickPickItem>
-    let clock: sinon.SinonFakeTimers
+    let clock: FakeTimers.InstalledClock
 
     before(function () {
         clock = FakeTimers.install()

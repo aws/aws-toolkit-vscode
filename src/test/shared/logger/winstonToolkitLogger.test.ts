@@ -10,7 +10,6 @@ import * as fs from 'fs-extra'
 import * as vscode from 'vscode'
 import { WinstonToolkitLogger } from '../../../shared/logger/winstonToolkitLogger'
 import { MockOutputChannel } from '../../mockOutputChannel'
-import { assertThrowsError } from '../utilities/assertUtils'
 import { waitUntil } from '../../../shared/utilities/timeoutUtils'
 
 describe('WinstonToolkitLogger', function () {
@@ -28,6 +27,9 @@ describe('WinstonToolkitLogger', function () {
 
     it('logLevelEnabled()', function () {
         const logger = new WinstonToolkitLogger('info')
+        // winston complains if we don't log to something
+        logger.logToOutputChannel(new MockOutputChannel(), false)
+
         assert.strictEqual(true, logger.logLevelEnabled('error'))
         assert.strictEqual(true, logger.logLevelEnabled('warn'))
         assert.strictEqual(true, logger.logLevelEnabled('info'))
@@ -57,7 +59,7 @@ describe('WinstonToolkitLogger', function () {
         const logger = new WinstonToolkitLogger('info')
         logger.dispose()
 
-        await assertThrowsError(async () => logger.info('This should not log'))
+        assert.throws(() => logger.info('This should not log'))
     })
 
     const happyLogScenarios = [
@@ -157,7 +159,11 @@ describe('WinstonToolkitLogger', function () {
         async function isTextInLogFile(logPath: string, text: string): Promise<boolean> {
             await waitForLogFile(logPath)
             const logText = await filesystemUtilities.readFileAsString(logPath)
-            return !!(await waitUntil(async () => logText.includes(text)))
+            return !!(await waitUntil(async () => logText.includes(text), {
+                timeout: 5000,
+                interval: 100,
+                truthy: false,
+            }))
         }
 
         async function waitForLogFile(logPath: string): Promise<void> {

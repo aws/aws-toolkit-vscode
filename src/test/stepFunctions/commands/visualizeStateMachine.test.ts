@@ -12,7 +12,6 @@ import { AslVisualizationManager } from '../../../../src/stepFunctions/commands/
 
 import { ext } from '../../../shared/extensionGlobals'
 import { StateMachineGraphCache } from '../../../stepFunctions/utils'
-import { assertThrowsError } from '../../shared/utilities/assertUtils'
 
 import { YAML_ASL, JSON_ASL } from '../../../../src/stepFunctions/constants/aslFormats'
 
@@ -295,11 +294,12 @@ describe('StepFunctions VisualizeStateMachine', async function () {
         assert.strictEqual(aslVisualizationManager.getManagedVisualizations().size, 0)
 
         // Preview with no active text editor
-        const error = await assertThrowsError(async () => {
-            await aslVisualizationManager.visualizeStateMachine(mockGlobalStorage, undefined)
-        }, 'Expected an error to be thrown')
+        await assert.rejects(
+            aslVisualizationManager.visualizeStateMachine(mockGlobalStorage, undefined),
+            new Error('Could not get active text editor for state machine render.'),
+            'Expected an error to be thrown'
+        )
 
-        assert.strictEqual(error.message, 'Could not get active text editor for state machine render.')
         assert.strictEqual(aslVisualizationManager.getManagedVisualizations().size, 0)
     })
 

@@ -3,6 +3,8 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
+export const TIMEOUT_ERROR_MESSAGE = 'Timeout token expired'
+
 /**
  * Timeout that can handle both cancellation token-style and time limit-style timeout situations.
  * @param timeoutLength Length of timeout duration (in ms)
@@ -21,7 +23,7 @@ export class Timeout {
         this.endTime = this.startTime + timeoutLength
         this.timeoutLength = timeoutLength
         this.timerPromise = new Promise<void>((resolve, reject) => {
-            this.timerTimeout = setTimeout(reject, timeoutLength)
+            this.timerTimeout = setTimeout(() => reject(new Error(TIMEOUT_ERROR_MESSAGE)), timeoutLength)
             this.timerResolve = resolve
         })
     }
@@ -104,7 +106,7 @@ export async function waitUntil<T>(
         }
 
         // Ensures that we never overrun the timeout
-        opt.timeout -= (Date.now() - start)
+        opt.timeout -= Date.now() - start
 
         if ((opt.truthy && result) || (!opt.truthy && result !== undefined)) {
             return result
