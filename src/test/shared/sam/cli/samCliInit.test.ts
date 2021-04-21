@@ -12,13 +12,11 @@ import {
 } from '../../../../lambda/models/samTemplates'
 import { SamCliContext } from '../../../../shared/sam/cli/samCliContext'
 import { runSamCliInit, SamCliInitArgs } from '../../../../shared/sam/cli/samCliInit'
-import { SamCliProcessInvoker } from '../../../../shared/sam/cli/samCliInvokerUtils'
+import { SamCliProcessInvoker, makeUnexpectedExitCodeError } from '../../../../shared/sam/cli/samCliInvokerUtils'
 import { ChildProcessResult } from '../../../../shared/utilities/childProcess'
 import { getTestLogger } from '../../../globalSetup.test'
-import { assertThrowsError } from '../../utilities/assertUtils'
 import { assertArgIsPresent, assertArgNotPresent, assertArgsContainArgument } from './samCliTestUtils'
 import {
-    assertErrorContainsBadExitMessage,
     assertLogContainsBadExitInformation,
     BadExitCodeSamCliProcessInvoker,
     TestSamCliProcessInvoker,
@@ -127,11 +125,13 @@ describe('runSamCliInit', async function () {
                 invoker: badExitCodeProcessInvoker,
             }
 
-            const error = await assertThrowsError(async () => {
-                await runSamCliInit(sampleSamInitArgs, context)
-            }, 'Expected an error to be thrown')
+            const expectedError = makeUnexpectedExitCodeError(badExitCodeProcessInvoker.error.message)
+            await assert.rejects(
+                runSamCliInit(sampleSamInitArgs, context),
+                expectedError,
+                'Expected error was not thrown'
+            )
 
-            assertErrorContainsBadExitMessage(error, badExitCodeProcessInvoker.error.message)
             await assertLogContainsBadExitInformation(
                 getTestLogger(),
                 badExitCodeProcessInvoker.makeChildProcessResult(),

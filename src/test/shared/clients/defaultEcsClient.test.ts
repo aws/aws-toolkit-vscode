@@ -6,7 +6,6 @@ import * as assert from 'assert'
 
 import { AWSError, ECS } from 'aws-sdk'
 import { DefaultEcsClient } from '../../../shared/clients/defaultEcsClient'
-import { assertThrowsError } from '../utilities/assertUtils'
 
 describe('defaultEcsClient', async function () {
     let testClient: TestEcsClient
@@ -58,7 +57,7 @@ describe('defaultEcsClient', async function () {
 
         it('handles errors', async function () {
             testClient.listClustersResponses = new Error() as AWSError
-            await assertThrowsError(async () => {
+            await assert.rejects(async () => {
                 const iterator = testClient.listClusters()
                 const arr = []
                 for await (const item of iterator) {
@@ -111,7 +110,7 @@ describe('defaultEcsClient', async function () {
 
         it('handles errors', async function () {
             testClient.listServicesResponses = new Error() as AWSError
-            await assertThrowsError(async () => {
+            await assert.rejects(async () => {
                 const iterator = testClient.listServices('ourcluster')
                 const arr = []
                 for await (const item of iterator) {
@@ -164,7 +163,7 @@ describe('defaultEcsClient', async function () {
 
         it('handles errors', async function () {
             testClient.listTaskDefinitionFamiliesResponses = new Error() as AWSError
-            await assertThrowsError(async () => {
+            await assert.rejects(async () => {
                 const iterator = testClient.listTaskDefinitionFamilies()
                 const arr = []
                 for await (const item of iterator) {

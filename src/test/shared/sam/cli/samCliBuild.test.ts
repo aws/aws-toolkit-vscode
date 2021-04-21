@@ -8,14 +8,13 @@ import { SpawnOptions } from 'child_process'
 import { writeFile, remove } from 'fs-extra'
 import * as path from 'path'
 import { makeTemporaryToolkitFolder } from '../../../../shared/filesystemUtilities'
+import { makeUnexpectedExitCodeError } from '../../../../shared/sam/cli/samCliInvokerUtils'
 import { FileFunctions, SamCliBuildInvocation } from '../../../../shared/sam/cli/samCliBuild'
 import { SamCliProcessInvoker } from '../../../../shared/sam/cli/samCliInvokerUtils'
 import { ChildProcessResult } from '../../../../shared/utilities/childProcess'
 import { getTestLogger } from '../../../globalSetup.test'
-import { assertThrowsError } from '../../utilities/assertUtils'
 import { assertArgNotPresent, assertArgsContainArgument } from './samCliTestUtils'
 import {
-    assertErrorContainsBadExitMessage,
     assertLogContainsBadExitInformation,
     BadExitCodeSamCliProcessInvoker,
     TestSamCliProcessInvoker,
@@ -270,20 +269,20 @@ describe('SamCliBuildInvocation', async function () {
     })
 
     it('throws on unexpected exit code', async function () {
-        const error = await assertThrowsError(async () => {
-            await new SamCliBuildInvocation(
-                {
-                    buildDir: nonRelevantArg,
-                    templatePath: placeholderTemplateFile,
-                    invoker: badExitCodeProcessInvoker,
-                },
-                {
-                    file: fakeFileFunctions,
-                }
-            ).execute()
-        }, 'Expected an error to be thrown')
+        const builder = new SamCliBuildInvocation(
+            {
+                buildDir: nonRelevantArg,
+                templatePath: placeholderTemplateFile,
+                invoker: badExitCodeProcessInvoker,
+            },
+            {
+                file: fakeFileFunctions,
+            }
+        )
 
-        assertErrorContainsBadExitMessage(error, badExitCodeProcessInvoker.error.message)
+        const expectedError = makeUnexpectedExitCodeError(badExitCodeProcessInvoker.error.message)
+        await assert.rejects(builder.execute(), expectedError, 'Expected error was not thrown')
+
         await assertLogContainsBadExitInformation(
             getTestLogger(),
             badExitCodeProcessInvoker.makeChildProcessResult(),

@@ -10,7 +10,6 @@ import { SsoCredentialProvider } from '../../../credentials/providers/ssoCredent
 import { SsoAccessTokenProvider } from '../../../credentials/sso/ssoAccessTokenProvider'
 import { DiskCache } from '../../../credentials/sso/diskCache'
 import { GetRoleCredentialsResponse } from 'aws-sdk/clients/sso'
-import { assertThrowsError } from '../../../test/shared/utilities/assertUtils'
 
 describe('SsoCredentialProvider', () => {
     describe('refreshCredentials', () => {
@@ -52,9 +51,7 @@ describe('SsoCredentialProvider', () => {
 
             const stubInvalidate = sandbox.stub(ssoAccessTokenProvider, 'invalidate').returns()
 
-            await assertThrowsError(async () => {
-                await sut.refreshCredentials()
-            })
+            await assert.rejects(sut.refreshCredentials())
 
             assert.strictEqual(stubAccessToken.callCount, 1, 'accessToken not called')
             assert.strictEqual(stubSsoClient.callCount, 1, 'getRoleCredentials not called')

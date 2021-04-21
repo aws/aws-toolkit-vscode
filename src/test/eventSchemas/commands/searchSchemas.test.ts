@@ -20,7 +20,6 @@ import { SchemasNode } from '../../../eventSchemas/explorer/schemasNode'
 import { TelemetryService } from '../../../shared/telemetry/telemetryService'
 import { getTabSizeSetting } from '../../../shared/utilities/editorUtilities'
 import { MockOutputChannel } from '../../../test/mockOutputChannel'
-import { assertThrowsError } from '../../../test/shared/utilities/assertUtils'
 import { MockSchemaClient } from '../../shared/clients/mockClients'
 import { asyncGenerator } from '../../utilities/collectionUtils'
 
@@ -339,9 +338,7 @@ describe('Search Schemas', function () {
                 outputChannel: outputChannel,
             })
 
-            const error = await assertThrowsError(async () => returnedFunc(fakeMessage))
-
-            assert.strictEqual(error.message, errorMessage, 'Should fail for invalidCommand')
+            await assert.rejects(returnedFunc(fakeMessage), new Error(errorMessage), 'Should fail for invalidCommand')
         })
 
         function onPostMessage(message: any): Thenable<boolean> {

@@ -10,7 +10,6 @@ import * as vscode from 'vscode'
 
 import { Schemas } from 'aws-sdk'
 import * as sinon from 'sinon'
-import { assertThrowsError } from '../../../test/shared/utilities/assertUtils'
 
 import {
     CodeDownloader,
@@ -61,15 +60,16 @@ describe('CodeDownloader', function () {
 
     describe('codeDownloader', async function () {
         it('should return an error if the response body is not Buffer', async function () {
-            const erroMessage = 'Response body should be Buffer type'
             const response: Schemas.GetCodeBindingSourceResponse = {
                 Body: 'Invalied body',
             }
             sandbox.stub(schemaClient, 'getCodeBindingSource').returns(Promise.resolve(response))
 
-            const error = await assertThrowsError(async () => codeDownloader.download(request))
-
-            assert.strictEqual(error.message, erroMessage, 'Should fail for same error')
+            await assert.rejects(
+                codeDownloader.download(request),
+                new Error('Response body should be Buffer type'),
+                'Should fail for same error'
+            )
         })
 
         it('should return arrayBuffer for valid Body type', async function () {
@@ -251,10 +251,9 @@ describe('CodeGeneratorStatusPoller', function () {
                 .withArgs(request)
                 .returns(Promise.resolve(schemaResponse.Status))
 
-            const err = await assertThrowsError(async () => statuspoller.pollForCompletion(request))
-            assert.strictEqual(
-                err.message,
-                `Invalid Code generation status ${schemaResponse.Status}`,
+            await assert.rejects(
+                async () => statuspoller.pollForCompletion(request),
+                new Error(`Invalid Code generation status ${schemaResponse.Status}`),
                 'Should fail for expected error'
             )
             assert.ok(
@@ -273,12 +272,11 @@ describe('CodeGeneratorStatusPoller', function () {
                 .withArgs(request)
                 .returns(Promise.resolve(schemaResponse.Status))
 
-            const error = await assertThrowsError(async () =>
-                statuspoller.pollForCompletion(request, RETRY_INTERVAL_MS, MAX_RETRIES)
-            )
-            assert.strictEqual(
-                error.message,
-                `Failed to download code for schema ${request.schemaName} before timeout. Please try again later`,
+            await assert.rejects(
+                statuspoller.pollForCompletion(request, RETRY_INTERVAL_MS, MAX_RETRIES),
+                new Error(
+                    `Failed to download code for schema ${request.schemaName} before timeout. Please try again later`
+                ),
                 'Should fail for expected error'
             )
             assert.strictEqual(
@@ -391,12 +389,11 @@ describe('SchemaCodeDownload', function () {
             const customError = new Error('Custom error')
             const codeDownloaderStub = sandbox.stub(downloader, 'download').returns(Promise.reject(customError))
 
-            const error = await assertThrowsError(async () => schemaCodeDownloader.downloadCode(request))
+            await assert.rejects(schemaCodeDownloader.downloadCode(request), customError, 'Should throw Custom error')
             assert.ok(
                 codeDownloaderStub.calledOnceWith(request),
                 'download method should be called once with correct parameters'
             )
-            assert.strictEqual(customError, error, 'Should throw Custom error')
         })
 
         it('should generate code if download fails with ResourceNotFound and place it into requested directory', async function () {
@@ -627,8 +624,11 @@ describe('CodeExtractor', function () {
             zip.addFile(fileName2, Buffer.from('Second file content'))
             const buffer = zip.toBuffer()
 
-            const err = await assertThrowsError(async () => codeExtractor.extractAndPlace(buffer, request))
-            assert.strictEqual(err.message, 'Download code bindings cancelled', 'Should fail for expected error')
+            await assert.rejects(
+                codeExtractor.extractAndPlace(buffer, request),
+                error,
+                'Should fail for expected error'
+            )
 
             const file1Path = path.join(destinationDirectory, fileName1)
             const file1Content = fs.readFileSync(file1Path, { encoding: 'utf8' })

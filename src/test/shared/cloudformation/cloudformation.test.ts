@@ -10,7 +10,6 @@ import * as fs from 'fs-extra'
 import { CloudFormation } from '../../../shared/cloudformation/cloudformation'
 import { makeTemporaryToolkitFolder } from '../../../shared/filesystemUtilities'
 import { SystemUtilities } from '../../../shared/systemUtilities'
-import { assertRejects } from '../utilities/assertUtils'
 import {
     createBaseImageResource,
     createBaseImageTemplate,
@@ -100,7 +99,7 @@ describe('CloudFormation', function () {
                                                         Variables:
                                                             ENVVAR: envvar`
             await strToYamlFile(badYamlStr, filename)
-            await assertRejects(async () => await CloudFormation.load(filename))
+            await assert.rejects(CloudFormation.load(filename))
         })
 
         it('only loads valid YAML', async function () {
@@ -116,7 +115,7 @@ describe('CloudFormation', function () {
                                                         Variables:
                                                             ENVVAR: envvar`
             await strToYamlFile(badYamlStr, filename)
-            await assertRejects(async () => await CloudFormation.load(filename))
+            await assert.rejects(CloudFormation.load(filename))
         })
 
         it('Loads YAML with references', async function () {
@@ -278,12 +277,12 @@ describe('CloudFormation', function () {
             it(`should throw for ${scenario.title}`, async () => {
                 const templatePath = makeTemplatePath(scenario.templateFileName)
 
-                await assertRejects(async () => {
-                    await CloudFormation.getResourceFromTemplate({
+                await assert.rejects(
+                    CloudFormation.getResourceFromTemplate({
                         templatePath,
                         handlerName: scenario.handlerName,
                     })
-                })
+                )
             })
         }
     })
@@ -316,12 +315,12 @@ describe('CloudFormation', function () {
                 const templatePath = makeTemplatePath(scenario.templateFileName)
                 const template = await CloudFormation.load(templatePath)
 
-                await assertRejects(async () => {
-                    await CloudFormation.getResourceFromTemplateResources({
+                await assert.rejects(
+                    CloudFormation.getResourceFromTemplateResources({
                         templateResources: template.Resources,
                         handlerName: scenario.handlerName,
                     })
-                })
+                )
             })
         }
     })

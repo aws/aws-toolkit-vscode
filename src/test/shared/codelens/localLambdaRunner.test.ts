@@ -11,7 +11,6 @@ import { SamCliBuildInvocation, SamCliBuildInvocationArguments } from '../../../
 import * as localLambdaRunner from '../../../shared/sam/localLambdaRunner'
 import { ChildProcessResult } from '../../../shared/utilities/childProcess'
 import { FakeExtensionContext } from '../../fakeExtensionContext'
-import { assertRejects } from '../utilities/assertUtils'
 import { SamLaunchRequestArgs } from '../../../shared/sam/debugger/awsSamDebugger'
 import { assertLogsContain } from '../../globalSetup.test'
 
@@ -214,7 +213,7 @@ describe('localLambdaRunner', async function () {
 
         it('fails when the child process returns a nonzero exit code', async function () {
             const samArgs = generateSamBuildParams(false)
-            await assertRejects(async () => await new SamCliBuildInvocation(samArgs).execute())
+            await assert.rejects(new SamCliBuildInvocation(samArgs).execute())
         })
 
         it('succeeds when the child process returns with an exit code of 0', async function () {
