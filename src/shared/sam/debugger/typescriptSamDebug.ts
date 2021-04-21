@@ -119,8 +119,8 @@ async function compileTypeScript(config: NodejsDebugConfiguration): Promise<void
     if (config.invokeTarget.target === 'code') {
         const samBuildOutputAppRoot = path.join(config.baseBuildDir!, 'output', path.parse(config.invokeTarget.projectRoot).name)
         const tsconfigPath = path.join(samBuildOutputAppRoot, 'tsconfig.json')
-        if ((await readdir(config.codeRoot)).includes('tsconfig.json') || hasFileWithExtension(config.codeRoot, '.ts', '**/node_modules/**')) {
-        //  This default config is a modified version from the AWS Toolkit for JetBrain's tsconfig file. https://github.com/aws/aws-toolkit-jetbrains/blob/feature/typescript/jetbrains-ultimate/src/software/aws/toolkits/jetbrains/services/lambda/nodejs/NodeJsLambdaBuilder.kt 
+        if ((await readdir(config.codeRoot)).includes('tsconfig.json') || (await hasFileWithExtension(config.codeRoot, '.ts', '**/node_modules/**'))) {
+        //  This default config is a modified version from the AWS Toolkit for JetBrain's tsconfig file. https://github.com/aws/aws-toolkit-jetbrains/blob/911c54252d6a4271ee6cacf0ea1023506c4b504a/jetbrains-ultimate/src/software/aws/toolkits/jetbrains/services/lambda/nodejs/NodeJsLambdaBuilder.kt#L60
             const defaultTsconfig = {
                 "compilerOptions": {
                     "target": "es6",
@@ -136,7 +136,7 @@ async function compileTypeScript(config: NodejsDebugConfiguration): Promise<void
                 }
             }
             try {
-                writeFileSync(tsconfigPath, JSON.stringify(defaultTsconfig))
+                writeFileSync(tsconfigPath, JSON.stringify(defaultTsconfig, undefined, 4))
                 getLogger('channel').info('Compiling TypeScript')
                 await new ChildProcess(true, 'tsc', undefined, '--project', samBuildOutputAppRoot).run()    
             } catch (error) {

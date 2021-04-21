@@ -152,15 +152,12 @@ export function getNonexistentFilename(dir: string, name: string, suffix: string
 /**
  * Searches for existence of at least one file with the passed extension
  * @param dir Directory to search
- * @param extension string extension to look for (".ts")
- * @param exclude GlobPattern - Pattern to ignore (ex. node_modules)
- * @returns Boolean - true if at least one file is found with given extension
+ * @param extension Extension to look for (ex.".ts")
+ * @param exclude Pattern to ignore (ex. node_modules)
+ * @returns True if at least one file is found with given extension
  */
  export async function hasFileWithExtension(dir:string, extension:string, exclude?: vscode.GlobPattern): Promise<boolean> {
      const searchFolder = `${dir}**/*${extension}`
      const matchedFiles = await vscode.workspace.findFiles(searchFolder, exclude, 1)
-     if (matchedFiles.length > 0) {
-         return true
-     }
-     return false
+     return (matchedFiles.length > 0)
 }
