@@ -139,9 +139,8 @@ function hasTypeScriptFilesRecursive(dir:string): boolean {
  * using a temporary default tsconfig.json file.
  */
 async function compileTypeScript(config: NodejsDebugConfiguration): Promise<void> {
-    // Compile step for TS projects from source code
     if (config.invokeTarget.target === 'code') {
-        const samBuildOutputAppRoot = path.join(config.baseBuildDir!, 'output', 'awsToolkitSamLocalResource')
+        const samBuildOutputAppRoot = path.join(config.baseBuildDir!, 'output', path.parse(config.invokeTarget.projectRoot).name)
         const tsconfigPath = path.join(samBuildOutputAppRoot, 'tsconfig.json')
         if ((await readdir(config.codeRoot)).includes('tsconfig.json') || hasTypeScriptFilesRecursive(config.codeRoot)) {
         //  This default config is a modified version from the AWS Toolkit for JetBrain's tsconfig file. https://github.com/aws/aws-toolkit-jetbrains/blob/feature/typescript/jetbrains-ultimate/src/software/aws/toolkits/jetbrains/services/lambda/nodejs/NodeJsLambdaBuilder.kt 
