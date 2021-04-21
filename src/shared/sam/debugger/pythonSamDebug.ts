@@ -216,12 +216,12 @@ export async function invokePythonLambda(
         WAIT_FOR_DEBUGGER_MESSAGES.PYTHON,
         WAIT_FOR_DEBUGGER_MESSAGES.PYTHON_IKPDB,
     ])
-    // Must not used waitForPythonDebugAdapter() for ikpdb: the socket consumes
+    // Must not used waitForPort() for ikpdb: the socket consumes
     // ikpdb's initial message and ikpdb does not have a --wait-for-client
     // mode, then cloud9 never sees the init message and waits forever.
     //
     // eslint-disable-next-line @typescript-eslint/unbound-method
-    config.onWillAttachDebugger = config.useIkpdb ? waitForIkpdb : waitForPythonDebugAdapter
+    config.onWillAttachDebugger = config.useIkpdb ? waitForIkpdb : waitForPort
     const c = (await invokeLambdaFunction(ctx, config, async () => {})) as PythonDebugConfiguration
     return c
 }
@@ -233,13 +233,6 @@ async function waitForIkpdb(debugPort: number, timeout: Timeout) {
     getLogger().info('waitForIkpdb: wait 2 seconds')
     await new Promise<void>(resolve => {
         setTimeout(resolve, 2000)
-    })
-}
-
-export async function waitForPythonDebugAdapter(debugPort: number, timeout: Timeout) {
-    await waitForPort(debugPort, timeout)
-    await new Promise<void>(resolve => {
-        setTimeout(resolve, 3000)
     })
 }
 

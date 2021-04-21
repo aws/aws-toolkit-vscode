@@ -72,7 +72,6 @@ function makeResourceName(config: SamLaunchRequestArgs): string {
 
 const SAM_LOCAL_PORT_CHECK_RETRY_INTERVAL_MILLIS: number = 125
 const SAM_LOCAL_PORT_CHECK_RETRY_TIMEOUT_MILLIS_DEFAULT: number = 30000
-const MAX_DEBUGGER_RETRIES: number = 1
 const ATTACH_DEBUGGER_RETRY_DELAY_MILLIS: number = 1000
 
 /** "sam local start-api" wrapper from the current debug-session. */
@@ -520,10 +519,18 @@ export async function attachDebugger({
 
     getLogger('channel').info(localize('AWS.output.sam.local.attaching', 'Attaching debugger to SAM application...'))
 
+    // The Python extension will silently fail, so it's ok for us to automatically retry
+    // Users still will not be able to stop debugging without clicking stop a bunch, but
+    // at least it's not modal popups.
+    // TODO: figure out why the Python debug client fails to attach on the first try
+    function maxRetries() {
+        return params.debugConfig.runtimeFamily === RuntimeFamily.Python ? 8 : 1
+    }
+
     do {
         isDebuggerAttached = await onStartDebugging(undefined, params.debugConfig)
         if (!isDebuggerAttached) {
-            if (retries < MAX_DEBUGGER_RETRIES) {
+            if (retries < maxRetries()) {
                 if (onWillRetry) {
                     await onWillRetry()
                 }
