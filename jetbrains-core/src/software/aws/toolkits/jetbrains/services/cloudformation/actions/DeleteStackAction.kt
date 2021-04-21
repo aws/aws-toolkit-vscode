@@ -12,13 +12,9 @@ import software.aws.toolkits.jetbrains.services.cloudformation.CloudFormationSta
 import software.aws.toolkits.jetbrains.services.cloudformation.resources.CloudFormationResources
 import software.aws.toolkits.jetbrains.services.cloudformation.stack.StackWindowManager
 import software.aws.toolkits.jetbrains.services.cloudformation.waitForStackDeletionComplete
-import software.aws.toolkits.jetbrains.utils.TaggingResourceType
 import software.aws.toolkits.resources.message
 
-class DeleteStackAction : DeleteResourceAction<CloudFormationStackNode>(
-    message("cloudformation.stack.delete.action"),
-    TaggingResourceType.CLOUDFORMATION_STACK
-) {
+class DeleteStackAction : DeleteResourceAction<CloudFormationStackNode>(message("cloudformation.stack.delete.action")) {
     override fun performDelete(selected: CloudFormationStackNode) {
         val client: CloudFormationClient = selected.nodeProject.awsClient()
         client.deleteStack { it.stackName(selected.stackName) }

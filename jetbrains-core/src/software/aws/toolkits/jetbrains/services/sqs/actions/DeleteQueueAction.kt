@@ -10,10 +10,9 @@ import software.aws.toolkits.jetbrains.core.explorer.refreshAwsTree
 import software.aws.toolkits.jetbrains.services.sqs.SqsQueueNode
 import software.aws.toolkits.jetbrains.services.sqs.resources.SqsResources
 import software.aws.toolkits.jetbrains.services.sqs.toolwindow.SqsWindow
-import software.aws.toolkits.jetbrains.utils.TaggingResourceType
 import software.aws.toolkits.resources.message
 
-class DeleteQueueAction : DeleteResourceAction<SqsQueueNode>(message("sqs.delete.queue.action"), TaggingResourceType.SQS_QUEUE) {
+class DeleteQueueAction : DeleteResourceAction<SqsQueueNode>(message("sqs.delete.queue.action")) {
     override fun performDelete(selected: SqsQueueNode) {
         val project = selected.nodeProject
         val client = project.awsClient<SqsClient>()

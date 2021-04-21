@@ -43,15 +43,12 @@ import software.aws.toolkits.jetbrains.services.lambda.steps.createDeployWorkflo
 import software.aws.toolkits.jetbrains.services.lambda.upload.UploadFunctionContinueDialog
 import software.aws.toolkits.jetbrains.settings.DeploySettings
 import software.aws.toolkits.jetbrains.settings.relativeSamPath
-import software.aws.toolkits.jetbrains.utils.Operation
-import software.aws.toolkits.jetbrains.utils.TaggingResourceType
 import software.aws.toolkits.jetbrains.utils.execution.steps.StepExecutor
 import software.aws.toolkits.jetbrains.utils.getCoroutineUiContext
 import software.aws.toolkits.jetbrains.utils.notifyError
 import software.aws.toolkits.jetbrains.utils.notifyInfo
 import software.aws.toolkits.jetbrains.utils.notifyNoActiveCredentialsError
 import software.aws.toolkits.jetbrains.utils.notifySamCliNotValidError
-import software.aws.toolkits.jetbrains.utils.warnResourceOperationAgainstCodePipeline
 import software.aws.toolkits.resources.message
 import software.aws.toolkits.telemetry.Result
 import software.aws.toolkits.telemetry.SamTelemetry
@@ -122,15 +119,7 @@ class DeployServerlessApplicationAction : AnAction(
                 saveSettings(project, templateFile, stackDialog)
 
                 val stackName = stackDialog.stackName
-                val stackId = stackDialog.stackId
-
-                if (stackId == null) {
-                    continueDeployment(project, stackName, templateFile, stackDialog)
-                } else {
-                    warnResourceOperationAgainstCodePipeline(project, stackName, stackId, TaggingResourceType.CLOUDFORMATION_STACK, Operation.DEPLOY) {
-                        continueDeployment(project, stackName, templateFile, stackDialog)
-                    }
-                }
+                continueDeployment(project, stackName, templateFile, stackDialog)
             }
         }
     }
