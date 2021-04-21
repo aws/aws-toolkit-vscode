@@ -8,6 +8,7 @@ import * as crypto from 'crypto'
 import * as fs from 'fs'
 import * as os from 'os'
 import * as path from 'path'
+import * as vscode from 'vscode'
 import { getLogger } from './logger'
 import * as pathutils from './utilities/pathUtils'
 
@@ -146,4 +147,20 @@ export function getNonexistentFilename(dir: string, name: string, suffix: string
             return filename
         }
     }
+}
+
+/**
+ * Searches for existence of at least one file with the passed extension
+ * @param dir Directory to search
+ * @param extension string extension to look for (".ts")
+ * @param exclude GlobPattern - Pattern to ignore (ex. node_modules)
+ * @returns Boolean - true if at least one file is found with given extension
+ */
+ export async function hasFileWithExtension(dir:string, extension:string, exclude?: vscode.GlobPattern): Promise<boolean> {
+     const searchFolder = `${dir}**/*${extension}`
+     const matchedFiles = await vscode.workspace.findFiles(searchFolder, exclude, 1)
+     if (matchedFiles.length > 0) {
+         return true
+     }
+     return false
 }

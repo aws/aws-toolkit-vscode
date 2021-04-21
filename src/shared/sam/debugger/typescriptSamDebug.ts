@@ -5,7 +5,7 @@
 
 import * as path from 'path'
 import * as vscode from 'vscode'
-import { readdir, readdirSync, statSync, writeFileSync } from 'fs-extra'
+import { readdir, writeFileSync } from 'fs-extra'
 import { isImageLambdaConfig, NodejsDebugConfiguration } from '../../../lambda/local/debugConfiguration'
 import { RuntimeFamily } from '../../../lambda/models/samLambdaRuntime'
 import * as pathutil from '../../../shared/utilities/pathUtils'
@@ -16,6 +16,7 @@ import { invokeLambdaFunction, makeInputTemplate, waitForPort } from '../localLa
 import { SamLaunchRequestArgs } from './awsSamDebugger'
 import { getLogger } from '../../logger'
 import { ChildProcess } from '../../../shared/utilities/childProcess'
+import { hasFileWithExtension } from '../../../shared/filesystemUtilities'
 
 /**
  * Launches and attaches debugger to a SAM Node project.
@@ -111,30 +112,6 @@ export async function makeTypescriptConfig(config: SamLaunchRequestArgs): Promis
 }
 
 /**
- * Recursively searches directory and all nested directories until a TypeScript file is found
- * @param dir Directory to search
- * @returns true if at least one TypeScript file exists
- */
-function hasTypeScriptFilesRecursive(dir:string): boolean {
-    const files = readdirSync(dir)
-
-    for (let i = 0; i < files.length; i++) {
-        const file = files[i];
-        
-        if (file.substr(-3) === '.ts'){
-            return true
-        }
-    
-        if(statSync(path.join(dir, file)).isDirectory()){
-            if(hasTypeScriptFilesRecursive(path.join(dir, file))) {
-                return true
-            }
-        }
-    }        
-    return false
-}
-
-/**
  * For non-template debug configs (target = code), compile the project
  * using a temporary default tsconfig.json file.
  */
@@ -142,7 +119,7 @@ async function compileTypeScript(config: NodejsDebugConfiguration): Promise<void
     if (config.invokeTarget.target === 'code') {
         const samBuildOutputAppRoot = path.join(config.baseBuildDir!, 'output', path.parse(config.invokeTarget.projectRoot).name)
         const tsconfigPath = path.join(samBuildOutputAppRoot, 'tsconfig.json')
-        if ((await readdir(config.codeRoot)).includes('tsconfig.json') || hasTypeScriptFilesRecursive(config.codeRoot)) {
+        if ((await readdir(config.codeRoot)).includes('tsconfig.json') || hasFileWithExtension(config.codeRoot, '.ts', '**/node_modules/**')) {
         //  This default config is a modified version from the AWS Toolkit for JetBrain's tsconfig file. https://github.com/aws/aws-toolkit-jetbrains/blob/feature/typescript/jetbrains-ultimate/src/software/aws/toolkits/jetbrains/services/lambda/nodejs/NodeJsLambdaBuilder.kt 
             const defaultTsconfig = {
                 "compilerOptions": {
@@ -155,14 +132,13 @@ async function compileTypeScript(config: NodejsDebugConfiguration): Promise<void
                     "node"
                     ],
                     "rootDir": ".",
-                    "sourceMap": true,
+                    "inlineSourceMap": true,
                 }
             }
-            const compileCommand = ['tsc', '--project', samBuildOutputAppRoot]
             try {
                 writeFileSync(tsconfigPath, JSON.stringify(defaultTsconfig))
                 getLogger('channel').info('Compiling TypeScript')
-                await new ChildProcess(true, compileCommand.join(' ')).run()    
+                await new ChildProcess(true, 'tsc', undefined, '--project', samBuildOutputAppRoot).run()    
             } catch (error) {
                 getLogger('channel').error(`Compile Error: ${error}`)
                 throw Error('Failed to compile typescript Lambda')
