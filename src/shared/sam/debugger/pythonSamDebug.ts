@@ -21,11 +21,14 @@ import * as pathutil from '../../utilities/pathUtils'
 import { getLocalRootVariants } from '../../utilities/pathUtils'
 import { Timeout } from '../../utilities/timeoutUtils'
 import { DefaultSamLocalInvokeCommand, WAIT_FOR_DEBUGGER_MESSAGES } from '../cli/samCliLocalInvoke'
-import { invokeLambdaFunction, makeInputTemplate, waitForPort } from '../localLambdaRunner'
+import { invokeLambdaFunction, makeInputTemplate } from '../localLambdaRunner'
 import { SamLaunchRequestArgs } from './awsSamDebugger'
 import { ext } from '../../extensionGlobals'
 import { Runtime } from 'aws-sdk/clients/lambda'
 import { getWorkspaceRelativePath } from '../../utilities/workspaceUtils'
+
+/** SAM will mount the --debugger-path to /tmp/lambci_debug_files */
+const DEBUGPY_WRAPPER_PATH = '/tmp/lambci_debug_files/py_debug_wrapper.py'
 
 // TODO: Fix this! Implement a more robust/flexible solution. This is just a basic minimal proof of concept.
 export async function getSamProjectDirPathForFile(filepath: string): Promise<string> {
@@ -99,7 +102,7 @@ export async function makePythonDebugConfig(
             config.debuggerPath = ext.context.asAbsolutePath(path.join('resources', 'debugger'))
             // NOTE: SAM CLI splits on each *single* space in `--debug-args`!
             //       Extra spaces will be passed as spurious "empty" arguments :(
-            const debugArgs = `/tmp/lambci_debug_files/py_debug_wrapper.py --listen 0.0.0.0:${config.debugPort} --wait-for-client`
+            const debugArgs = `${DEBUGPY_WRAPPER_PATH} --listen 0.0.0.0:${config.debugPort} --wait-for-client --log-to-stderr`
             if (isImageLambda) {
                 const params = getPythonExeAndBootstrap(config.runtime)
                 config.debugArgs = [`${params.python} ${debugArgs} ${params.boostrap}`]
@@ -221,7 +224,7 @@ export async function invokePythonLambda(
     // mode, then cloud9 never sees the init message and waits forever.
     //
     // eslint-disable-next-line @typescript-eslint/unbound-method
-    config.onWillAttachDebugger = config.useIkpdb ? waitForIkpdb : waitForPort
+    config.onWillAttachDebugger = config.useIkpdb ? waitForIkpdb : undefined
     const c = (await invokeLambdaFunction(ctx, config, async () => {})) as PythonDebugConfiguration
     return c
 }
