@@ -219,6 +219,14 @@ export async function invokePythonLambda(
         WAIT_FOR_DEBUGGER_MESSAGES.PYTHON,
         WAIT_FOR_DEBUGGER_MESSAGES.PYTHON_IKPDB,
     ])
+
+    // Make debugpy output log information if our loglevel is at 'debug'
+    // This is done in 'invokePythonLambda' instead of 'makePythonDebugConfig'
+    // since tests will fail if our loglevel is at 'debug'
+    if (!config.noDebug && !config.useIkpdb && getLogger().logLevelEnabled('debug')) {
+        config.debugArgs![0] += ' --debug'
+    }
+
     // Must not used waitForPort() for ikpdb: the socket consumes
     // ikpdb's initial message and ikpdb does not have a --wait-for-client
     // mode, then cloud9 never sees the init message and waits forever.
