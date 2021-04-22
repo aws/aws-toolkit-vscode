@@ -1,0 +1,4 @@
+{
+	"type": "Bug Fix",
+	"description": "SAM Python debugging: restore retry to ensure successful attach #1666"
+}
