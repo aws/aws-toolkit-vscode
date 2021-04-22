@@ -189,6 +189,11 @@ export async function makePythonDebugConfig(
         }
     }
 
+    // Make debugpy output log information if our loglevel is at 'debug'
+    if (!config.noDebug && getLogger().logLevelEnabled('debug')) {
+        config.debugArgs![0] += ' --debug'
+    }
+
     return {
         ...config,
         type: 'python',
@@ -219,13 +224,6 @@ export async function invokePythonLambda(
         WAIT_FOR_DEBUGGER_MESSAGES.PYTHON,
         WAIT_FOR_DEBUGGER_MESSAGES.PYTHON_IKPDB,
     ])
-
-    // Make debugpy output log information if our loglevel is at 'debug'
-    // This is done in 'invokePythonLambda' instead of 'makePythonDebugConfig'
-    // since tests will fail if our loglevel is at 'debug'
-    if (!config.noDebug && !config.useIkpdb && getLogger().logLevelEnabled('debug')) {
-        config.debugArgs![0] += ' --debug'
-    }
 
     // Must not used waitForPort() for ikpdb: the socket consumes
     // ikpdb's initial message and ikpdb does not have a --wait-for-client

@@ -46,6 +46,7 @@ import { ExtContext } from '../../../../shared/extensions'
 import { CredentialsProvider } from '../../../../credentials/providers/credentialsProvider'
 import { mkdir, remove } from 'fs-extra'
 import { ext } from '../../../../shared/extensionGlobals'
+import { getLogger } from '../../../../shared/logger/logger'
 
 /**
  * Asserts the contents of a "launch config" (the result of `makeConfig()` or
@@ -2158,7 +2159,7 @@ Outputs:
                 eventPayloadFile: `${actual.baseBuildDir}/event.json`,
                 codeRoot: pathutil.normalize(path.join(appDir, 'hello_world')),
                 debugArgs: [
-                    `/tmp/lambci_debug_files/py_debug_wrapper.py --listen 0.0.0.0:${actual.debugPort} --wait-for-client --log-to-stderr`,
+                    `/tmp/lambci_debug_files/py_debug_wrapper.py --listen 0.0.0.0:${actual.debugPort} --wait-for-client --log-to-stderr --debug`,
                 ],
                 apiPort: undefined,
                 debugPort: actual.debugPort,
@@ -2306,7 +2307,7 @@ Outputs:
                 eventPayloadFile: `${actual.baseBuildDir}/event.json`,
                 codeRoot: pathutil.normalize(path.join(appDir, 'python3.7-plain-sam-app/hello_world')),
                 debugArgs: [
-                    `/tmp/lambci_debug_files/py_debug_wrapper.py --listen 0.0.0.0:${actual.debugPort} --wait-for-client --log-to-stderr`,
+                    `/tmp/lambci_debug_files/py_debug_wrapper.py --listen 0.0.0.0:${actual.debugPort} --wait-for-client --log-to-stderr --debug`,
                 ],
                 apiPort: undefined,
                 debugPort: actual.debugPort,
@@ -2501,7 +2502,7 @@ Outputs:
                 eventPayloadFile: `${actual.baseBuildDir}/event.json`,
                 codeRoot: pathutil.normalize(path.join(appDir, 'python3.7-plain-sam-app/hello_world')),
                 debugArgs: [
-                    `/tmp/lambci_debug_files/py_debug_wrapper.py --listen 0.0.0.0:${actual.debugPort} --wait-for-client --log-to-stderr`,
+                    `/tmp/lambci_debug_files/py_debug_wrapper.py --listen 0.0.0.0:${actual.debugPort} --wait-for-client --log-to-stderr --debug`,
                 ],
                 apiPort: actual.apiPort,
                 debugPort: actual.debugPort,
@@ -2662,7 +2663,7 @@ Outputs:
                 eventPayloadFile: `${actual.baseBuildDir}/event.json`,
                 codeRoot: pathutil.normalize(path.join(appDir, 'python3.7-image-sam-app/hello_world')),
                 debugArgs: [
-                    `/var/lang/bin/python3.7 /tmp/lambci_debug_files/py_debug_wrapper.py --listen 0.0.0.0:${actual.debugPort} --wait-for-client --log-to-stderr /var/runtime/bootstrap`,
+                    `/var/lang/bin/python3.7 /tmp/lambci_debug_files/py_debug_wrapper.py --listen 0.0.0.0:${actual.debugPort} --wait-for-client --log-to-stderr /var/runtime/bootstrap --debug`,
                 ],
                 apiPort: undefined,
                 debugPort: actual.debugPort,
@@ -2803,6 +2804,41 @@ Outputs:
                 eventPayloadFile: `${actualNoDebug.baseBuildDir}/event.json`,
             }
             assertEqualLaunchConfigs(actualNoDebug, expectedNoDebug)
+        })
+
+        it('verify python debug option not set for non-debug log level', async function () {
+            const appDir = pathutil.normalize(
+                path.join(testutil.getProjectDir(), 'testFixtures/workspaceFolder/python3.7-plain-sam-app')
+            )
+            const relPayloadPath = `events/event.json`
+            const folder = testutil.getWorkspaceFolder(appDir)
+            const input = {
+                type: AWS_SAM_DEBUG_TYPE,
+                name: 'Test debugconfig',
+                request: DIRECT_INVOKE_TYPE,
+                invokeTarget: {
+                    target: CODE_TARGET_TYPE,
+                    lambdaHandler: 'app.lambda_handler',
+                    projectRoot: 'hello_world',
+                },
+                lambda: {
+                    runtime: 'python3.7', // Arbitrary choice of runtime for this test
+                    payload: {
+                        path: relPayloadPath,
+                    },
+                },
+            }
+
+            // Debug option should not appear now
+            getLogger().setLogLevel('verbose')
+            const actual = (await debugConfigProvider.makeConfig(folder, input))!
+            // Just check that a debug flag is not being passed to the wrapper
+            assert.strictEqual(
+                actual.debugArgs![0],
+                `/tmp/lambci_debug_files/py_debug_wrapper.py --listen 0.0.0.0:${actual.debugPort} --wait-for-client --log-to-stderr`,
+                'Debug option was set for log level "verbose"'
+            )
+            getLogger().setLogLevel('debug')
         })
 
         it('target=code: ikpdb, python 3.7', async function () {
