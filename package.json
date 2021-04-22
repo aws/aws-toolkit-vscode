@@ -60,6 +60,13 @@
         "onCommand:aws.refreshCdkExplorer",
         "onCommand:aws.aboutToolkit",
         "onCommand:aws.cloudWatchLogs.viewLogStream",
+        "onCommand:aws.caws.listCommands",
+        "onCommand:aws.caws.connect",
+        "onCommand:aws.caws.logout",
+        "onCommand:aws.caws.openOrg",
+        "onCommand:aws.caws.openProject",
+        "onCommand:aws.caws.openRepo",
+        "onCommand:aws.caws.cloneRepo",
         "onLanguage:asl",
         "onLanguage:asl-yaml",
         "onLanguage:ssm-json",
@@ -598,9 +605,20 @@
                     "id": "aws.cdk.explorer",
                     "name": "%AWS.cdk.explorerTitle%",
                     "when": "!isCloud9"
+                },
+                {
+                    "id": "aws.caws",
+                    "name": "CODE.AWS"
                 }
             ]
         },
+        "viewsWelcome": [
+            {
+                "view": "aws.caws",
+                "contents": "[Connect to CODE.AWS](command:aws.caws.connect)\n[Clone Repository](command:aws.caws.cloneRepo)\n[CODE.AWS Commands](command:aws.caws.listCommands)\n",
+                "when": "true"
+            }
+        ],
         "menus": {
             "commandPalette": [
                 {
@@ -633,6 +651,10 @@
                 },
                 {
                     "command": "aws.copyName",
+                    "when": "false"
+                },
+                {
+                    "command": "aws.caws.listCommands",
                     "when": "false"
                 },
                 {
@@ -897,6 +919,21 @@
                     "command": "aws.aboutToolkit",
                     "when": "view == aws.explorer || !aws.explorer.visible && view =~ /^aws/",
                     "group": "z_about@1"
+                },
+                {
+                    "command": "aws.caws.connect",
+                    "when": "view == aws.caws",
+                    "group": "1_caws@1"
+                },
+                {
+                    "command": "aws.caws.cloneRepo",
+                    "when": "view == aws.caws",
+                    "group": "1_caws@1"
+                },
+                {
+                    "command": "aws.caws.listCommands",
+                    "when": "view == aws.caws",
+                    "group": "1_caws@1"
                 },
                 {
                     "command": "aws.refreshCdkExplorer",
@@ -1226,6 +1263,41 @@
                         "category": "%AWS.title.cn%"
                     }
                 }
+            },
+            {
+                "command": "aws.caws.openOrg",
+                "title": "%AWS.command.caws.openOrg%",
+                "category": "AWS"
+            },
+            {
+                "command": "aws.caws.openProject",
+                "title": "%AWS.command.caws.openProject%",
+                "category": "AWS"
+            },
+            {
+                "command": "aws.caws.openRepo",
+                "title": "%AWS.command.caws.openRepo%",
+                "category": "AWS"
+            },
+            {
+                "command": "aws.caws.listCommands",
+                "title": "%AWS.command.caws.listCommands%",
+                "category": "AWS"
+            },
+            {
+                "command": "aws.caws.connect",
+                "title": "%AWS.command.caws.connect%",
+                "category": "AWS"
+            },
+            {
+                "command": "aws.caws.logout",
+                "title": "%AWS.command.caws.logout%",
+                "category": "AWS"
+            },
+            {
+                "command": "aws.caws.cloneRepo",
+                "title": "%AWS.command.caws.cloneRepo%",
+                "category": "AWS"
             },
             {
                 "command": "aws.credential.profile.create",
@@ -2129,6 +2201,8 @@
         "bytes": "^3.1.0",
         "cross-spawn": "^7.0.3",
         "fs-extra": "^10.0.0",
+        "graphql": "^15.5.0",
+        "graphql-request": "^3.4.0",
         "handlebars": "^4.7.7",
         "immutable": "^4.0.0-rc.12",
         "js-yaml": "^4.1.0",

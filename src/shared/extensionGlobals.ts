@@ -5,7 +5,9 @@
 
 import { ExtensionContext, OutputChannel, Uri } from 'vscode'
 import { AWSClientBuilder } from './awsClientBuilder'
+import { AwsContext } from './awsContext'
 import { AWSContextCommands } from './awsContextCommands'
+import { CawsClient } from './clients/cawsClient'
 import { ToolkitClientBuilder } from './clients/toolkitClientBuilder'
 import { CloudFormationTemplateRegistry } from './cloudformation/templateRegistry'
 import { CodelensRootRegistry } from './sam/codelensRootRegistry'
@@ -21,11 +23,14 @@ export namespace ext {
     export let window: Window
     export let outputChannel: OutputChannel
     export let awsContextCommands: AWSContextCommands
+    export let awsExplorer: AwsExplorer
+    export let awsContext: AwsContext
     export let sdkClientBuilder: AWSClientBuilder
     export let toolkitClientBuilder: ToolkitClientBuilder
     export let telemetry: TelemetryService
     export let templateRegistry: CloudFormationTemplateRegistry
     export let codelensRootRegistry: CodelensRootRegistry
+    export let caws: CawsClient
 
     let _didReload = false
 
@@ -41,6 +46,16 @@ export namespace ext {
      */
     export function didReload(): boolean {
         return _didReload
+    }
+
+    /**
+     * Shows a message if client credentials are invalid/expired/logged out.
+     */
+    export function checkCaws(): boolean {
+        if (!caws.connected()) {
+            window.showErrorMessage('AWS: Not connected to CODE.AWS')
+        }
+        return caws.connected()
     }
 
     export namespace iconPaths {

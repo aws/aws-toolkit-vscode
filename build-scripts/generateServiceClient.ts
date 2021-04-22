@@ -21,7 +21,7 @@ interface ServiceClientDefinition {
 async function generateServiceClients(serviceClientDefinitions: ServiceClientDefinition[]): Promise<void> {
     const tempJsSdkPath = fs.mkdtempSync(path.join(os.tmpdir(), 'vsctk-generate'))
     console.log(`Temp JS SDK Repo location: ${tempJsSdkPath}`)
-    console.log('Serivce Clients to Generate: ', serviceClientDefinitions.map(x => x.serviceName).join(', '))
+    console.log('Service Clients to Generate: ', serviceClientDefinitions.map(x => x.serviceName).join(', '))
 
     try {
         await cloneJsSdk(tempJsSdkPath)
@@ -199,6 +199,10 @@ ${fileContents}
 
 ;(async () => {
     const serviceClientDefinitions: ServiceClientDefinition[] = [
+        {
+            serviceJsonPath: 'types/REMOVED.api.json',
+            serviceName: 'ClientCodeAws'
+        },
         {
             serviceJsonPath: 'src/shared/telemetry/service-2.json',
             serviceName: 'ClientTelemetry',
