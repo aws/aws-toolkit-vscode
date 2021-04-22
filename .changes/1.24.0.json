@@ -1,0 +1,22 @@
+{
+	"date": "2021-04-22",
+	"version": "1.24.0",
+	"entries": [
+		{
+			"type": "Bug Fix",
+			"description": "SAM Python debugging: restore retry to ensure successful attach #1666"
+		},
+		{
+			"type": "Feature",
+			"description": "SAM run/debug: Add support for Java 8, Java 8.al2, and Java 11 runtimes using Maven and Gradle"
+		},
+		{
+			"type": "Feature",
+			"description": "CDK panel now appears below the AWS Explorer instead of the VSCode File Explorer"
+		},
+		{
+			"type": "Feature",
+			"description": "UI: Refresh AWS Explorer after performing \"Deploy SAM application\""
+		}
+	]
+}
