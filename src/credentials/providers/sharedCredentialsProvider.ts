@@ -33,18 +33,6 @@ const SHARED_CREDENTIAL_PROPERTIES = {
 }
 
 /**
- * Allows us to time-out the SDK's ProcessCredentials class by using their internal methods.
- */
-class ProcessCredentialsWrapper extends AWS.ProcessCredentials {
-    // @ts-ignore private method in the credentials class
-    public load(cb: (...args: any) => void): void {
-        setTimeout(() => cb(new Error('Timed out while getting credentials process')), 5000)
-        // @ts-ignore
-        super.load(cb)
-    }
-}
-
-/**
  * Represents one profile from the AWS Shared Credentials files, and produces Credentials from this profile.
  */
 export class SharedCredentialsProvider implements CredentialsProvider {
@@ -140,7 +128,7 @@ export class SharedCredentialsProvider implements CredentialsProvider {
                 const ssoCredentialProvider = this.makeSsoProvider()
                 return await ssoCredentialProvider.refreshCredentials()
             }
-            const provider = new AWS.CredentialProviderChain([this.makeCredentialsProvider()])
+            const provider = new AWS.CredentialProviderChain([await this.makeCredentialsProvider()])
 
             return await provider.resolvePromise()
         } finally {
@@ -186,7 +174,7 @@ export class SharedCredentialsProvider implements CredentialsProvider {
         }
     }
 
-    private makeCredentialsProvider(): () => AWS.Credentials {
+    private async makeCredentialsProvider(): Promise<() => AWS.Credentials> {
         const logger = getLogger()
 
         if (hasProfileProperty(this.profile, SHARED_CREDENTIAL_PROPERTIES.ROLE_ARN)) {
@@ -201,8 +189,17 @@ export class SharedCredentialsProvider implements CredentialsProvider {
             logger.verbose(
                 `Profile ${this.profileName} contains ${SHARED_CREDENTIAL_PROPERTIES.CREDENTIAL_PROCESS} - treating as Process Credentials`
             )
+            // Before returning the provider, we will attempt to refresh it with a timeout.
+            // We have to do it here because the CredentialProviderChain calls refresh on all providers, but it does
+            // not offer a good way to add a timeout to any single provider.
+            const provider = new AWS.ProcessCredentials({ profile: this.profileName })
+            const timeoutError = new Error(`Timed out while getting credentials process for profile "${this.profile}"`)
+            await Promise.race([
+                provider.refreshPromise(),
+                new Promise((_, reject) => setTimeout(() => reject(timeoutError), 5000)),
+            ])
 
-            return () => new ProcessCredentialsWrapper({ profile: this.profileName })
+            return () => provider
         }
 
         if (hasProfileProperty(this.profile, SHARED_CREDENTIAL_PROPERTIES.AWS_SESSION_TOKEN)) {
