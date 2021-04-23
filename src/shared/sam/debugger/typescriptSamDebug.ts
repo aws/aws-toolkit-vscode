@@ -16,7 +16,7 @@ import { invokeLambdaFunction, makeInputTemplate, waitForPort } from '../localLa
 import { SamLaunchRequestArgs } from './awsSamDebugger'
 import { getLogger } from '../../logger'
 import { ChildProcess } from '../../../shared/utilities/childProcess'
-import { hasFileWithExtension } from '../../../shared/filesystemUtilities'
+import { hasFileWithSuffix } from '../../../shared/filesystemUtilities'
 
 /**
  * Launches and attaches debugger to a SAM Node project.
@@ -119,7 +119,7 @@ async function compileTypeScript(config: NodejsDebugConfiguration): Promise<void
     if (config.invokeTarget.target === 'code') {
         const samBuildOutputAppRoot = path.join(config.baseBuildDir!, 'output', path.parse(config.invokeTarget.projectRoot).name)
         const tsconfigPath = path.join(samBuildOutputAppRoot, 'tsconfig.json')
-        if ((await readdir(config.codeRoot)).includes('tsconfig.json') || (await hasFileWithExtension(config.codeRoot, '.ts', '**/node_modules/**'))) {
+        if ((await readdir(config.codeRoot)).includes('tsconfig.json') || (await hasFileWithSuffix(config.codeRoot, '.ts', '**/node_modules/**'))) {
         //  This default config is a modified version from the AWS Toolkit for JetBrain's tsconfig file. https://github.com/aws/aws-toolkit-jetbrains/blob/911c54252d6a4271ee6cacf0ea1023506c4b504a/jetbrains-ultimate/src/software/aws/toolkits/jetbrains/services/lambda/nodejs/NodeJsLambdaBuilder.kt#L60
             const defaultTsconfig = {
                 "compilerOptions": {
