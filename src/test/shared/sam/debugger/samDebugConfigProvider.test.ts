@@ -601,7 +601,7 @@ describe('SamDebugConfigurationProvider', async function () {
             const folder = testutil.getWorkspaceFolder(appDir)
             const input = {
                 type: AWS_SAM_DEBUG_TYPE,
-                name: 'very good name',
+                name: 'test-ts-code',
                 request: DIRECT_INVOKE_TYPE,
                 invokeTarget: {
                     target: CODE_TARGET_TYPE,
