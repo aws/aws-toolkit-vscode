@@ -33,6 +33,18 @@ const SHARED_CREDENTIAL_PROPERTIES = {
 }
 
 /**
+ * Allows us to time-out the SDK's ProcessCredentials class by using their internal methods.
+ */
+class ProcessCredentialsWrapper extends AWS.ProcessCredentials {
+    // @ts-ignore private method in the credentials class
+    public load(cb: (...args: any) => void): void {
+        setTimeout(() => cb(new Error('Timed out while getting credentials process')), 5000)
+        // @ts-ignore
+        super.load(cb)
+    }
+}
+
+/**
  * Represents one profile from the AWS Shared Credentials files, and produces Credentials from this profile.
  */
 export class SharedCredentialsProvider implements CredentialsProvider {
@@ -190,7 +202,7 @@ export class SharedCredentialsProvider implements CredentialsProvider {
                 `Profile ${this.profileName} contains ${SHARED_CREDENTIAL_PROPERTIES.CREDENTIAL_PROCESS} - treating as Process Credentials`
             )
 
-            return () => new AWS.ProcessCredentials({ profile: this.profileName })
+            return () => new ProcessCredentialsWrapper({ profile: this.profileName })
         }
 
         if (hasProfileProperty(this.profile, SHARED_CREDENTIAL_PROPERTIES.AWS_SESSION_TOKEN)) {
