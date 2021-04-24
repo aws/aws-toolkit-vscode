@@ -23,6 +23,7 @@ export async function initializeAwsCredentialsStatusBarItem(
         'The current credentials used by the AWS Toolkit.\n\nClick this status bar item to use different credentials.'
     )
     statusBarItem.show()
+    updateCredentialsStatusBarItem(statusBarItem)
 
     context.subscriptions.push(statusBarItem)
 
