@@ -67,8 +67,11 @@ export async function refreshCredentialsWithTimeout(
         timeout = new Timeout(timeout)
     }
 
+    // If the provider throws an error we need to cancel the progress messsage
+    const refreshPromise = provider.refreshPromise().finally(() => (timeout as Timeout).killTimer())
+
     showMessageWithCancel(`Getting credentials for ${profile}`, timeout)
-    await createTimedPromise(provider.refreshPromise(), timeout, {
+    await createTimedPromise(refreshPromise, timeout, {
         onCancel: () => {
             throw new Error(`Request to get credentials for "${profile}" cancelled`)
         },
@@ -76,6 +79,4 @@ export async function refreshCredentialsWithTimeout(
             throw new Error(`Timed out trying to get credentials for profile "${profile}"`)
         },
     })
-
-    timeout.killTimer()
 }
