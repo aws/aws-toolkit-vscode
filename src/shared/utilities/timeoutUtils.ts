@@ -126,36 +126,38 @@ export async function waitUntil<T>(
 
 /**
  * Utility function to wrap a Timeout token around a promise.
- * 
- * @param promise The promise to use a Timeout with. 
+ *
+ * @param promise The promise to use a Timeout with.
  * @param timeout A Timeout token that will race against the promise.
- * @param opt.gracefulCancellation Allows the promise to be resolved undefined (default: true)
- * @param opt.onExpire Callback for when the promise expired. The callback can return a value for graceful handling of expirations.
- * @param opt.onCancel Callback for when the promise was cancelled. The callback can return a value for graceful handling of cancellations.
+ * @param opt.gracefulTermination Allows the promise to be resolved undefined (default: true)
+ * @param opt.onExpire Callback for when the promise expired. The callback can return a value.
+ * @param opt.onCancel Callback for when the promise was cancelled. The callback can return a value.
  */
 export function createTimedPromise<T>(
-    promise: Promise<T>, 
-    timeout: Timeout, 
-    opt: { gracefulCancellation?: boolean, onExpire?: () => T | undefined,  onCancel?: () => T | undefined } =
-    {
-        gracefulCancellation: true
-    }
+    promise: Promise<T>,
+    timeout: Timeout,
+    opt: { gracefulTermination?: boolean; onExpire?: () => T | undefined; onCancel?: () => T | undefined } = {}
 ): Promise<T | undefined> {
-    return Promise.race([promise, timeout.timer]).then(obj => {
-        if (!opt.gracefulCancellation && obj === undefined) {
-            throw new Error(TIMEOUT_UNEXPECTED_RESOLVE)
+    opt.gracefulTermination = opt.gracefulTermination ?? true
+
+    return Promise.race([promise, timeout.timer]).then(
+        obj => {
+            if (!opt.gracefulTermination && obj === undefined) {
+                throw new Error(TIMEOUT_UNEXPECTED_RESOLVE)
+            }
+            if (obj !== undefined) {
+                return obj
+            }
+            return undefined
+        },
+        err => {
+            if (opt.onExpire && (err as Error).message === TIMEOUT_EXPIRED_MESSAGE) {
+                return opt.onExpire()
+            }
+            if (opt.onCancel && (err as Error).message === TIMEOUT_CANCELLED_MESSAGE) {
+                return opt.onCancel()
+            }
+            throw err
         }
-        if (obj !== undefined) {
-            return obj
-        }
-        return undefined
-    }, err => {
-        if (opt.onExpire && (err as Error).message === TIMEOUT_EXPIRED_MESSAGE) {
-            return opt.onExpire()
-        } 
-        if (opt.onCancel && (err as Error).message === TIMEOUT_CANCELLED_MESSAGE) {
-            return opt.onCancel()
-        }
-        throw err
-    })
+    )
 }

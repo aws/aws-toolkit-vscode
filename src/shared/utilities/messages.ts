@@ -9,6 +9,7 @@ import { getLogger, showLogOutputChannel } from '../../shared/logger'
 import { localize } from '../../shared/utilities/vsCodeUtils'
 import { Window } from '../../shared/vscode/window'
 import { ext } from '../extensionGlobals'
+import { Timeout } from './timeoutUtils'
 
 const commandName = localize('AWS.command.viewLogs', 'View AWS Toolkit Logs')
 
@@ -80,4 +81,37 @@ export function showOutputMessage(message: string, outputChannel: vscode.OutputC
     outputChannel.show(true)
     outputChannel.appendLine(message)
     getLogger().info(message)
+}
+
+export interface ProgressReport {
+    message?: string
+    increment?: number
+}
+export type ReportFunction = (report: ProgressReport) => void
+
+/**
+ * Presents the user with a notification to cancel a pending process.
+ *
+ * @param message Message to display
+ * @param timeout A Timeout object that will be killed if the user clicks 'Cancel'
+ * @param window Window to display the message on (default: ext.window)
+ */
+export async function showMessageWithCancel(
+    message: string,
+    timeout: Timeout,
+    window: Window = ext.window
+): Promise<ReportFunction> {
+    const returnProgress: Promise<vscode.Progress<ProgressReport>> = new Promise(resolve => {
+        window.withProgress(
+            { location: vscode.ProgressLocation.Notification, title: message, cancellable: true },
+            function (progress, token) {
+                token.onCancellationRequested(() => timeout.killTimer(true))
+                resolve(progress)
+                return timeout.timer
+            }
+        )
+    })
+
+    // eslint-disable-next-line
+    return (await returnProgress).report
 }

@@ -30,7 +30,7 @@ export class LoginManager {
      * @param provider  Credentials provider id
      */
     public async login(args: { passive: boolean; providerId: CredentialsProviderId }): Promise<void> {
-        let provider : CredentialsProvider | undefined
+        let provider: CredentialsProvider | undefined
         try {
             provider = await CredentialsProviderManager.getInstance().getCredentialsProvider(args.providerId)
             if (!provider) {
@@ -55,22 +55,26 @@ export class LoginManager {
                 defaultRegion: provider.getDefaultRegion(),
             })
         } catch (err) {
-            getLogger().error(
-                `Error trying to connect to AWS with Credentials Provider ${asString(
-                    args.providerId
-                )}. Toolkit will now disconnect from AWS. %O`,
-                err as Error
-            )
-            this.store.invalidateCredentials(args.providerId)
+            // TODO: implement custom exceptions instead of checking error message
+            if (!(err as Error).message.includes('cancel')) {
+                notifyUserInvalidCredentials(args.providerId)
+                getLogger().error(
+                    `Error trying to connect to AWS with Credentials Provider ${asString(
+                        args.providerId
+                    )}. Toolkit will now disconnect from AWS. %O`,
+                    err as Error
+                )
+                this.store.invalidateCredentials(args.providerId)
 
-            await this.logout()
-
-            notifyUserInvalidCredentials(args.providerId)
+                await this.logout()
+            } else {
+                getLogger().info('Cancelled getting credentials from provider')
+            }
         } finally {
             const credType = provider?.getCredentialsType2()
             if (!args.passive) {
                 this.recordAwsSetCredentialsFn({
-                    credentialType: credType
+                    credentialType: credType,
                 })
             }
         }

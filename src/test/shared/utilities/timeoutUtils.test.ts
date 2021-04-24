@@ -239,11 +239,11 @@ describe('timeoutUtils', async function () {
         before(function () {
             clock = FakeTimers.install()
         })
-    
+
         after(function () {
             clock.uninstall()
         })
-    
+
         afterEach(function () {
             clock.reset()
         })
@@ -257,7 +257,7 @@ describe('timeoutUtils', async function () {
 
             return 'test'
         }
-    
+
         it('triggers "onExpire" callback', async function () {
             const timeout = new timeoutUtils.Timeout(200)
             const timedPromise = timeoutUtils.createTimedPromise(testFunction(), timeout, { onExpire: () => 'expire' })
@@ -279,6 +279,15 @@ describe('timeoutUtils', async function () {
             const timedPromise = timeoutUtils.createTimedPromise(testFunction(200, testError), timeout)
             clock.tick(300)
             await assert.rejects(timedPromise, testError)
+        })
+
+        it('timer does not reject when function finishes in time', async function () {
+            const timeout = new timeoutUtils.Timeout(400)
+            const timedPromise = timeoutUtils.createTimedPromise(testFunction(200), timeout)
+            clock.tick(300)
+            timeout.killTimer()
+            clock.tick(200)
+            await assert.doesNotReject(timedPromise)
         })
     })
 })

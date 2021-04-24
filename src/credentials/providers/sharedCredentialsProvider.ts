@@ -8,7 +8,7 @@ import { Profile } from '../../shared/credentials/credentialsFile'
 import { getLogger } from '../../shared/logger'
 import { getStringHash } from '../../shared/utilities/textUtilities'
 import { getMfaTokenFromUser } from '../credentialsCreator'
-import { hasProfileProperty } from '../credentialsUtilities'
+import { hasProfileProperty, refreshCredentialsWithTimeout } from '../credentialsUtilities'
 import { SSO_PROFILE_PROPERTIES, validateSsoProfile } from '../sso/sso'
 import { DiskCache } from '../sso/diskCache'
 import { SsoAccessTokenProvider } from '../sso/ssoAccessTokenProvider'
@@ -193,15 +193,7 @@ export class SharedCredentialsProvider implements CredentialsProvider {
             // We must do this now, because CredentialProviderChain calls refresh on *all* providers without a good
             // way to timeout any single provider.
             const provider = new AWS.ProcessCredentials({ profile: this.profileName })
-            const timeoutError = new Error(
-                `Timed out while getting credentials from process for profile "${this.profile}"`
-            )
-
-            await Promise.race([
-                provider.refreshPromise(),
-                new Promise((_, reject) => setTimeout(() => reject(timeoutError), 5000)),
-            ])
-
+            await refreshCredentialsWithTimeout(this.profileName, provider)
             return () => provider
         }
 

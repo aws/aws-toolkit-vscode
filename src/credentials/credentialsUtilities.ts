@@ -12,6 +12,8 @@ import { credentialHelpUrl } from '../shared/constants'
 import { Profile } from '../shared/credentials/credentialsFile'
 import { isCloud9 } from '../shared/extensionUtilities'
 import { CredentialsProviderId, asString } from './providers/credentialsProviderId'
+import { createTimedPromise, Timeout } from '../shared/utilities/timeoutUtils'
+import { showMessageWithCancel } from '../shared/utilities/messages'
 
 export function asEnvironmentVariables(credentials: Credentials): NodeJS.ProcessEnv {
     const environmentVariables: NodeJS.ProcessEnv = {}
@@ -52,4 +54,28 @@ export function notifyUserInvalidCredentials(credentialProviderId: CredentialsPr
 
 export function hasProfileProperty(profile: Profile, propertyName: string): boolean {
     return !!profile[propertyName]
+}
+
+export async function refreshCredentialsWithTimeout(
+    profile: string,
+    provider: AWS.Credentials,
+    timeout?: Timeout | number
+): Promise<void> {
+    timeout = timeout ?? new Timeout(5 * 60 * 1000)
+
+    if (typeof timeout === 'number') {
+        timeout = new Timeout(timeout)
+    }
+
+    showMessageWithCancel(`Getting credentials for ${profile}`, timeout)
+    await createTimedPromise(provider.refreshPromise(), timeout, {
+        onCancel: () => {
+            throw new Error(`Request to get credentials for "${profile}" cancelled`)
+        },
+        onExpire: () => {
+            throw new Error(`Timed out trying to get credentials for profile "${profile}"`)
+        },
+    })
+
+    timeout.killTimer()
 }
