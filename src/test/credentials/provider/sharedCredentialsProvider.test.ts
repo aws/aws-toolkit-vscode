@@ -210,14 +210,11 @@ describe('SharedCredentialsProvider', async function () {
         sandbox
             .stub(AWS.ProcessCredentials.prototype, 'refreshPromise')
             .onFirstCall()
-            .returns(new Promise(r => setTimeout(r, 10000)))
+            .returns(new Promise(r => setTimeout(r, 60 * 60 * 1000)))
 
-        const assertPromise = assert.rejects(
-            sut.getCredentials(),
-            /Timed out while getting credentials from process for profile/
-        )
+        const assertPromise = assert.rejects(sut.getCredentials(), /Timed out trying to get credentials for profile/)
 
-        clock.tick(7000)
+        clock.tick(10 * 60 * 1000)
         await assertPromise
     })
 })

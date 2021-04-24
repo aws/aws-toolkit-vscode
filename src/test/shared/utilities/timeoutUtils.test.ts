@@ -50,7 +50,7 @@ describe('timeoutUtils', async function () {
             clock.tick(timerLengthMs + 1)
             await assert.rejects(
                 shortTimer.timer,
-                new Error(timeoutUtils.TIMEOUT_ERROR_MESSAGE),
+                new Error(timeoutUtils.TIMEOUT_EXPIRED_MESSAGE),
                 'Timer did not reject due to timeout'
             )
         })
@@ -230,6 +230,55 @@ describe('timeoutUtils', async function () {
                 truthy: true,
             })
             assert.strictEqual(result, undefined)
+        })
+    })
+
+    describe('createTimedPromise', async function () {
+        let clock: FakeTimers.InstalledClock
+
+        before(function () {
+            clock = FakeTimers.install()
+        })
+    
+        after(function () {
+            clock.uninstall()
+        })
+    
+        afterEach(function () {
+            clock.reset()
+        })
+
+        async function testFunction(delay: number = 500, error?: Error) {
+            await new Promise(r => setTimeout(r, delay))
+
+            if (error) {
+                throw error
+            }
+
+            return 'test'
+        }
+    
+        it('triggers "onExpire" callback', async function () {
+            const timeout = new timeoutUtils.Timeout(200)
+            const timedPromise = timeoutUtils.createTimedPromise(testFunction(), timeout, { onExpire: () => 'expire' })
+            clock.tick(300)
+            assert.strictEqual(await timedPromise, 'expire')
+        })
+
+        it('triggers "onCancel" callback', async function () {
+            const timeout = new timeoutUtils.Timeout(400)
+            const timedPromise = timeoutUtils.createTimedPromise(testFunction(), timeout, { onCancel: () => 'cancel' })
+            clock.tick(200)
+            timeout.killTimer(true)
+            assert.strictEqual(await timedPromise, 'cancel')
+        })
+
+        it('propagates exception from function', async function () {
+            const timeout = new timeoutUtils.Timeout(400)
+            const testError = new Error('test error')
+            const timedPromise = timeoutUtils.createTimedPromise(testFunction(200, testError), timeout)
+            clock.tick(300)
+            await assert.rejects(timedPromise, testError)
         })
     })
 })

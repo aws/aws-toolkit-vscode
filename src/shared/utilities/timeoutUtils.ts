@@ -3,7 +3,9 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
-export const TIMEOUT_ERROR_MESSAGE = 'Timeout token expired'
+export const TIMEOUT_EXPIRED_MESSAGE = 'Timeout token expired'
+export const TIMEOUT_CANCELLED_MESSAGE = 'Timeout token cancelled'
+export const TIMEOUT_UNEXPECTED_RESOLVE = 'Timeout resolved with an unexpected object'
 
 /**
  * Timeout that can handle both cancellation token-style and time limit-style timeout situations.
@@ -16,16 +18,18 @@ export class Timeout {
     private readonly timeoutLength: number
     private readonly timerPromise: Promise<void>
     private timerTimeout?: NodeJS.Timeout
-    private timerResolve?: (value?: void | PromiseLike<void> | undefined) => void
+    private timerResolve?: (value?: void | PromiseLike<undefined> | undefined) => void
+    private timerReject?: (value?: Error | PromiseLike<Error> | undefined) => void
     public constructor(timeoutLength: number) {
         this.startTime = Date.now()
         this.originalStartTime = this.startTime
         this.endTime = this.startTime + timeoutLength
         this.timeoutLength = timeoutLength
         this.timerPromise = new Promise<void>((resolve, reject) => {
-            this.timerTimeout = setTimeout(() => reject(new Error(TIMEOUT_ERROR_MESSAGE)), timeoutLength)
+            this.timerReject = reject
             this.timerResolve = resolve
         })
+        this.timerTimeout = setTimeout(() => this.timerReject!(new Error(TIMEOUT_EXPIRED_MESSAGE)), timeoutLength)
     }
 
     /**
@@ -48,7 +52,7 @@ export class Timeout {
         // not highly accurate in when they fire.
         this.startTime = Date.now()
         this.endTime = this.startTime + this.timeoutLength
-        this.timerTimeout?.refresh()
+        this.timerTimeout!.refresh()
     }
 
     /**
@@ -69,13 +73,14 @@ export class Timeout {
 
     /**
      * Kills the internal timer and resolves the timer's promise
+     * @param reject Rejects the token with a cancelled error message
      */
-    public killTimer(): void {
-        if (this.timerTimeout) {
-            clearTimeout(this.timerTimeout)
-        }
-        if (this.timerResolve) {
-            this.timerResolve()
+    public killTimer(reject?: boolean): void {
+        clearTimeout(this.timerTimeout!)
+        if (reject) {
+            this.timerReject!(new Error(TIMEOUT_CANCELLED_MESSAGE))
+        } else {
+            this.timerResolve!()
         }
     }
 }
@@ -117,4 +122,40 @@ export async function waitUntil<T>(
 
         await new Promise(r => setTimeout(r, opt.interval))
     }
+}
+
+/**
+ * Utility function to wrap a Timeout token around a promise.
+ * 
+ * @param promise The promise to use a Timeout with. 
+ * @param timeout A Timeout token that will race against the promise.
+ * @param opt.gracefulCancellation Allows the promise to be resolved undefined (default: true)
+ * @param opt.onExpire Callback for when the promise expired. The callback can return a value for graceful handling of expirations.
+ * @param opt.onCancel Callback for when the promise was cancelled. The callback can return a value for graceful handling of cancellations.
+ */
+export function createTimedPromise<T>(
+    promise: Promise<T>, 
+    timeout: Timeout, 
+    opt: { gracefulCancellation?: boolean, onExpire?: () => T | undefined,  onCancel?: () => T | undefined } =
+    {
+        gracefulCancellation: true
+    }
+): Promise<T | undefined> {
+    return Promise.race([promise, timeout.timer]).then(obj => {
+        if (!opt.gracefulCancellation && obj === undefined) {
+            throw new Error(TIMEOUT_UNEXPECTED_RESOLVE)
+        }
+        if (obj !== undefined) {
+            return obj
+        }
+        return undefined
+    }, err => {
+        if (opt.onExpire && (err as Error).message === TIMEOUT_EXPIRED_MESSAGE) {
+            return opt.onExpire()
+        } 
+        if (opt.onCancel && (err as Error).message === TIMEOUT_CANCELLED_MESSAGE) {
+            return opt.onCancel()
+        }
+        throw err
+    })
 }
