@@ -1,0 +1,4 @@
+{
+  "type" : "bugfix",
+  "description" : "Fix Rider locking up when right clicking a Lambda in the AWS Explorer with a dotnet runtime in 2021.1"
+}
