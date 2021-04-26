@@ -108,5 +108,3 @@ _main() {
 }
 
 _main
-
-# vim: et sw=4 ts=4
