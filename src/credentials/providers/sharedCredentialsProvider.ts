@@ -128,7 +128,7 @@ export class SharedCredentialsProvider implements CredentialsProvider {
                 const ssoCredentialProvider = this.makeSsoProvider()
                 return await ssoCredentialProvider.refreshCredentials()
             }
-            const provider = new AWS.CredentialProviderChain([await this.makeCredentialsProvider()])
+            const provider = new AWS.CredentialProviderChain([this.makeCredentialsProvider()])
 
             return (await resolveProviderWithCancel(this.profileName, provider.resolvePromise())) as AWS.Credentials
         } finally {
@@ -174,7 +174,7 @@ export class SharedCredentialsProvider implements CredentialsProvider {
         }
     }
 
-    private async makeCredentialsProvider(): Promise<() => AWS.Credentials> {
+    private makeCredentialsProvider(): () => AWS.Credentials {
         const logger = getLogger()
 
         if (hasProfileProperty(this.profile, SHARED_CREDENTIAL_PROPERTIES.ROLE_ARN)) {

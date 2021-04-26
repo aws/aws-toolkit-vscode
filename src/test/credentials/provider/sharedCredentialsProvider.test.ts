@@ -9,6 +9,7 @@ import * as sinon from 'sinon'
 import { SharedCredentialsProvider } from '../../../credentials/providers/sharedCredentialsProvider'
 import { Profile } from '../../../shared/credentials/credentialsFile'
 import AWS = require('aws-sdk')
+import { tickPromise } from '../../testUtil'
 
 const MISSING_PROPERTIES_FRAGMENT = 'missing properties'
 
@@ -27,6 +28,7 @@ describe('SharedCredentialsProvider', async function () {
 
     afterEach(function () {
         clock.reset()
+        sandbox.restore()
     })
 
     it('constructor fails if profile does not exist', async function () {
@@ -192,12 +194,11 @@ describe('SharedCredentialsProvider', async function () {
             new Map<string, Profile>([['default', { aws_access_key_id: 'x' }]])
         )
 
-        const assertPromise = assert.rejects(
+        await assert.rejects(
             sut.getCredentials(),
             /is not a valid Credential Profile/,
             'Invalid profile error was not thrown'
         )
-        await assertPromise
     })
 
     it('getCredentials does not wait forever for the SDK to respond', async function () {
@@ -208,14 +209,11 @@ describe('SharedCredentialsProvider', async function () {
 
         // ideally we would stub out 'load' but since it's callback based that's tricky to do
         sandbox
-            .stub(AWS.ProcessCredentials.prototype, 'refreshPromise')
+            .stub(AWS.CredentialProviderChain.prototype, 'resolvePromise')
             .onFirstCall()
             .returns(new Promise(r => setTimeout(r, 60 * 60 * 1000)))
 
-        const assertPromise = assert.rejects(sut.getCredentials(), /Timed out trying to get credentials for profile/)
-
-        clock.tick(10 * 60 * 1000)
-        await assertPromise
+        await tickPromise(assert.rejects(sut.getCredentials(), /expired/), clock, 10 * 60 * 1000)
     })
 })
 
