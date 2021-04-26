@@ -22,6 +22,7 @@ import { setTestTimeout } from './globalSetup.test'
 import { waitUntil } from '../shared/utilities/timeoutUtils'
 import { AwsSamDebuggerConfiguration } from '../shared/sam/debugger/awsSamDebugConfiguration.gen'
 import { ext } from '../shared/extensionGlobals'
+import { AwsSamTargetType } from '../shared/sam/debugger/awsSamDebugConfiguration'
 import { closeAllEditors } from '../shared/utilities/vsCodeUtils'
 import { insertTextIntoFile } from '../shared/utilities/textUtilities'
 const projectFolder = testUtils.getTestWorkspaceFolder()
@@ -38,6 +39,9 @@ const NO_DEBUG_SESSION_INTERVAL: number = 100
  * For Go and Python this is because the extensions used do not support our minimum
  */
 const SKIP_LANGUAGES_ON_MIN = ['python', 'go']
+
+/** Go can't handle API tests yet */
+const SKIP_LANGUAGES_ON_API = ['go']
 
 interface TestScenario {
     displayName: string
@@ -317,21 +321,30 @@ function validateSamDebugSession(
 async function startDebugger(
     scenario: TestScenario,
     scenarioIndex: number,
+    target: AwsSamTargetType,
     testConfig: vscode.DebugConfiguration,
     testDisposables: vscode.Disposable[],
     sessionLog: string[]
 ) {
+    function logSession(startEnd: 'START' | 'END', name: string) {
+        sessionLog.push(
+            `scenario ${scenarioIndex}.${target.toString()[0]} ${startEnd.padEnd(5, ' ')} ${target}/${
+                scenario.displayName
+            }: ${name}`
+        )
+    }
+
     // Create a Promise that encapsulates our success critera
     const success = new Promise<void>((resolve, reject) => {
         testDisposables.push(
-            vscode.debug.onDidTerminateDebugSession(async endedSession => {
-                sessionLog.push(`scenario ${scenarioIndex} (END) (runtime=${scenario.runtime}) ${endedSession.name}`)
-                const sessionRuntime = (endedSession.configuration as any).runtime
+            vscode.debug.onDidTerminateDebugSession(async session => {
+                logSession('END', session.name)
+                const sessionRuntime = (session.configuration as any).runtime
                 if (!sessionRuntime) {
                     // It's a coprocess, ignore it.
                     return
                 }
-                const failMsg = validateSamDebugSession(endedSession, testConfig.name, scenario.runtime)
+                const failMsg = validateSamDebugSession(session, testConfig.name, scenario.runtime)
                 if (failMsg) {
                     reject(new Error(failMsg))
                 }
@@ -344,11 +357,7 @@ async function startDebugger(
     // Executes the 'F5' action
     await vscode.debug.startDebugging(undefined, testConfig).then(
         async () => {
-            sessionLog.push(
-                `scenario ${scenarioIndex} (START) (runtime=${scenario.runtime}) ${
-                    vscode.debug.activeDebugSession!.name
-                }`
-            )
+            logSession('START', vscode.debug.activeDebugSession!.name)
 
             await testUtils.sleep(400)
             await continueDebugger()
@@ -415,7 +424,7 @@ describe('SAM Integration Tests', async function () {
         // Print a summary of session that were seen by `onDidStartDebugSession`.
         const sessionReport = sessionLog.map(x => `    ${x}`).join('\n')
         config.update('server.launchMode', javaLanguageSetting)
-        console.log(`DebugSessions seen in this run:${sessionReport}`)
+        console.log(`DebugSessions seen in this run:\n${sessionReport}`)
     })
 
     for (let scenarioIndex = 0; scenarioIndex < scenarios.length; scenarioIndex++) {
@@ -560,12 +569,34 @@ describe('SAM Integration Tests', async function () {
                     }
                 })
 
-                it('invokes and attaches on debug request (F5)', async function () {
+                it('target=api: invokes and attaches on debug request (F5)', async function () {
+                    if (
+                        (vscode.version.startsWith('1.42') && SKIP_LANGUAGES_ON_MIN.includes(scenario.language)) ||
+                        SKIP_LANGUAGES_ON_API.includes(scenario.language)
+                    ) {
+                        this.skip()
+                    }
+
+                    setTestTimeout(this.test?.fullTitle(), DEBUG_TIMEOUT)
+                    await testTarget('api', {
+                        api: {
+                            path: '/hello',
+                            httpMethod: 'get',
+                            headers: { 'accept-language': 'fr-FR' },
+                        },
+                    })
+                })
+
+                it('target=template: invokes and attaches on debug request (F5)', async function () {
                     if (vscode.version.startsWith('1.42') && SKIP_LANGUAGES_ON_MIN.includes(scenario.language)) {
                         this.skip()
                     }
 
                     setTestTimeout(this.test?.fullTitle(), DEBUG_TIMEOUT)
+                    await testTarget('template')
+                })
+
+                async function testTarget(target: AwsSamTargetType, extraConfig: any = {}) {
                     // Allow previous sessions to go away.
                     const noDebugSession: boolean | undefined = await waitUntil(
                         async () => vscode.debug.activeDebugSession === undefined,
@@ -594,11 +625,12 @@ describe('SAM Integration Tests', async function () {
                         request: 'direct-invoke',
                         name: `test-config-${scenarioIndex}`,
                         invokeTarget: {
-                            target: 'template',
+                            target: target,
                             // Resource defined in `src/testFixtures/.../template.yaml`.
                             logicalId: 'HelloWorldFunction',
                             templatePath: cfnTemplatePath,
                         },
+                        ...extraConfig,
                     } as AwsSamDebuggerConfiguration
 
                     // runtime is optional for ZIP, but required for image-based
@@ -618,8 +650,8 @@ describe('SAM Integration Tests', async function () {
                     // XXX: force load since template registry seems a bit flakey
                     await ext.templateRegistry.addItemToRegistry(vscode.Uri.file(cfnTemplatePath))
 
-                    await startDebugger(scenario, scenarioIndex, testConfig, testDisposables, sessionLog)
-                })
+                    await startDebugger(scenario, scenarioIndex, target, testConfig, testDisposables, sessionLog)
+                }
             })
         })
 
