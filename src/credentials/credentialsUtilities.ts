@@ -56,11 +56,11 @@ export function hasProfileProperty(profile: Profile, propertyName: string): bool
     return !!profile[propertyName]
 }
 
-export async function refreshCredentialsWithTimeout(
+export async function resolveProviderWithCancel(
     profile: string,
-    provider: AWS.Credentials,
+    provider: Promise<AWS.Credentials>,
     timeout?: Timeout | number
-): Promise<void> {
+): Promise<AWS.Credentials> {
     timeout = timeout ?? new Timeout(5 * 60 * 1000)
 
     if (typeof timeout === 'number') {
@@ -68,15 +68,17 @@ export async function refreshCredentialsWithTimeout(
     }
 
     // If the provider throws an error we need to cancel the progress messsage
-    const refreshPromise = provider.refreshPromise().finally(() => (timeout as Timeout).killTimer())
+    provider = provider.finally(() => (timeout as Timeout).killTimer())
 
-    showMessageWithCancel(`Getting credentials for ${profile}`, timeout)
-    await createTimedPromise(refreshPromise, timeout, {
+    showMessageWithCancel(`Getting credentials for profile: ${profile}`, timeout)
+    await createTimedPromise(provider, timeout, {
         onCancel: () => {
             throw new Error(`Request to get credentials for "${profile}" cancelled`)
         },
         onExpire: () => {
-            throw new Error(`Timed out trying to get credentials for profile "${profile}"`)
+            throw new Error(`Request to get credentials for "${profile}" expired`)
         },
     })
+
+    return provider
 }

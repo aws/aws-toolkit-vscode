@@ -11,6 +11,11 @@ import { AwsContext, ContextChangeEventsArgs } from '../shared/awsContext'
 
 const STATUSBAR_PRIORITY = 100
 const STATUSBAR_TEXT_NO_CREDENTIALS = localize('AWS.credentials.statusbar.no.credentials', '(not connected)')
+const STATUSBAR_TEXT_CONNECTED = localize('AWS.credentials.statusbar.connected', '(connected)')
+const STATUSBAR_CONNECTED_DELAY = 1000
+
+// This is a module global since this code doesn't really warrant its own class
+let timeoutID: NodeJS.Timeout
 
 export async function initializeAwsCredentialsStatusBarItem(
     awsContext: AwsContext,
@@ -35,9 +40,22 @@ export async function initializeAwsCredentialsStatusBarItem(
 }
 
 export function updateCredentialsStatusBarItem(statusBarItem: vscode.StatusBarItem, credentialsId?: string) {
-    statusBarItem.text = localize(
-        'AWS.credentials.statusbar.text',
-        'AWS: {0}',
-        credentialsId ?? STATUSBAR_TEXT_NO_CREDENTIALS
+    clearTimeout(timeoutID)
+
+    // Shows confirmation text in the status bar message
+    let delay = 0
+    if (credentialsId) {
+        delay = STATUSBAR_CONNECTED_DELAY
+        statusBarItem.text = localize('AWS.credentials.statusbar.text', 'AWS: {0}', STATUSBAR_TEXT_CONNECTED)
+    }
+
+    timeoutID = setTimeout(
+        () =>
+            (statusBarItem.text = localize(
+                'AWS.credentials.statusbar.text',
+                'AWS: {0}',
+                credentialsId ?? STATUSBAR_TEXT_NO_CREDENTIALS
+            )),
+        delay
     )
 }

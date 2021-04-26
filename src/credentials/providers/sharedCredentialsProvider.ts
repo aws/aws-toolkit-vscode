@@ -8,7 +8,7 @@ import { Profile } from '../../shared/credentials/credentialsFile'
 import { getLogger } from '../../shared/logger'
 import { getStringHash } from '../../shared/utilities/textUtilities'
 import { getMfaTokenFromUser } from '../credentialsCreator'
-import { hasProfileProperty, refreshCredentialsWithTimeout } from '../credentialsUtilities'
+import { hasProfileProperty, resolveProviderWithCancel } from '../credentialsUtilities'
 import { SSO_PROFILE_PROPERTIES, validateSsoProfile } from '../sso/sso'
 import { DiskCache } from '../sso/diskCache'
 import { SsoAccessTokenProvider } from '../sso/ssoAccessTokenProvider'
@@ -130,7 +130,7 @@ export class SharedCredentialsProvider implements CredentialsProvider {
             }
             const provider = new AWS.CredentialProviderChain([await this.makeCredentialsProvider()])
 
-            return await provider.resolvePromise()
+            return (await resolveProviderWithCancel(this.profileName, provider.resolvePromise())) as AWS.Credentials
         } finally {
             // Profiles with references involving non-aws partitions need help getting the right STS endpoint
             AWS.config.sts = originalStsConfiguration
@@ -189,12 +189,8 @@ export class SharedCredentialsProvider implements CredentialsProvider {
             logger.verbose(
                 `Profile ${this.profileName} contains ${SHARED_CREDENTIAL_PROPERTIES.CREDENTIAL_PROCESS} - treating as Process Credentials`
             )
-            // Guard against hangs: credential_process will wait forever if the process does not return a result.
-            // We must do this now, because CredentialProviderChain calls refresh on *all* providers without a good
-            // way to timeout any single provider.
-            const provider = new AWS.ProcessCredentials({ profile: this.profileName })
-            await refreshCredentialsWithTimeout(this.profileName, provider)
-            return () => provider
+
+            return () => new AWS.ProcessCredentials({ profile: this.profileName })
         }
 
         if (hasProfileProperty(this.profile, SHARED_CREDENTIAL_PROPERTIES.AWS_SESSION_TOKEN)) {
