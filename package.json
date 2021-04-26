@@ -552,7 +552,7 @@
                 {
                     "id": "aws.cdk.explorer",
                     "name": "%AWS.cdk.explorerTitle%",
-                    "when": "config.aws.cdk.explorer.enabled"
+                    "when": "config.aws.cdk.explorer.enabled && !isCloud9"
                 }
             ]
         },
