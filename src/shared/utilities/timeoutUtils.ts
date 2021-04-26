@@ -125,13 +125,15 @@ export async function waitUntil<T>(
 }
 
 /**
- * Utility function to wrap a Timeout token around a promise.
+ * Utility function to wrap a Timeout token around a Promise.
  *
- * @param promise The promise to use a Timeout with.
- * @param timeout A Timeout token that will race against the promise.
+ * @param promise The promise to use a Timeout with
+ * @param timeout A Timeout token that will race against the promise
  * @param opt.gracefulTermination Allows the promise to be resolved undefined (default: true)
- * @param opt.onExpire Callback for when the promise expired. The callback can return a value.
- * @param opt.onCancel Callback for when the promise was cancelled. The callback can return a value.
+ * @param opt.onExpire Callback for when the promise expired. The callback can return a value
+ * @param opt.onCancel Callback for when the promise was cancelled. The callback can return a value
+ *
+ * @returns A Promise that resolves into a valid return value, or rejects when the Timeout was cancelled or expired.
  */
 export function createTimedPromise<T>(
     promise: Promise<T>,

@@ -90,6 +90,7 @@ interface ProgressReport {
 
 /**
  * Attaches a Timeout object to VS Code's Progress notification system.
+ * Not exported since it isn't used (yet)
  * @see showMessageWithCancel for an example usage
  */
 async function showProgressWithTimeout(

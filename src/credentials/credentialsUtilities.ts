@@ -15,6 +15,8 @@ import { CredentialsProviderId, asString } from './providers/credentialsProvider
 import { createTimedPromise, Timeout } from '../shared/utilities/timeoutUtils'
 import { showMessageWithCancel } from '../shared/utilities/messages'
 
+const RESOLVE_PROVIDER_DEFAULT_TIMEOUT = 300000 // 5 minutes
+
 export function asEnvironmentVariables(credentials: Credentials): NodeJS.ProcessEnv {
     const environmentVariables: NodeJS.ProcessEnv = {}
 
@@ -56,13 +58,21 @@ export function hasProfileProperty(profile: Profile, propertyName: string): bool
     return !!profile[propertyName]
 }
 
+/**
+ * Attempts to resolve (or refresh) a provider with a 'Cancel' progress message.
+ * User cancellation or timeout expiration will cause rejection.
+ *
+ * @param profile Profile name to display for the progress message
+ * @param provider This can be a Promise that resolves into Credentials, or if using 'refresh' it can resolve undefined
+ * @param timeout How long to wait for resolution without user intervention (default: 5 minutes)
+ *
+ * @returns The resolved Credentials or undefined if the the provider was a 'refresh' Promise
+ */
 export async function resolveProviderWithCancel(
     profile: string,
     provider: Promise<AWS.Credentials>,
-    timeout?: Timeout | number
+    timeout: Timeout | number = RESOLVE_PROVIDER_DEFAULT_TIMEOUT
 ): Promise<AWS.Credentials> {
-    timeout = timeout ?? new Timeout(5 * 60 * 1000)
-
     if (typeof timeout === 'number') {
         timeout = new Timeout(timeout)
     }
