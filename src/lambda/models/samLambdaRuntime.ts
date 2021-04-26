@@ -17,6 +17,7 @@ export enum RuntimeFamily {
     Python,
     NodeJS,
     DotNetCore,
+    Go,
     Java,
 }
 
@@ -31,12 +32,14 @@ export const pythonRuntimes: ImmutableSet<Runtime> = ImmutableSet<Runtime>([
     'python3.6',
     'python2.7',
 ])
+export const goRuntimes: ImmutableSet<Runtime> = ImmutableSet<Runtime>(['go1.x'])
 export const javaRuntimes: ImmutableSet<Runtime> = ImmutableSet<Runtime>(['java11', 'java8', 'java8.al2'])
 export const dotNetRuntimes: ImmutableSet<Runtime> = ImmutableSet<Runtime>(['dotnetcore2.1', 'dotnetcore3.1'])
 const DEFAULT_RUNTIMES = ImmutableMap<RuntimeFamily, Runtime>([
     [RuntimeFamily.NodeJS, 'nodejs12.x'],
     [RuntimeFamily.Python, 'python3.8'],
     [RuntimeFamily.DotNetCore, 'dotnetcore2.1'],
+    [RuntimeFamily.Go, 'go1.x'],
     [RuntimeFamily.Java, 'java11'],
 ])
 
@@ -44,6 +47,7 @@ export const samZipLambdaRuntimes: ImmutableSet<Runtime> = ImmutableSet.union([
     nodeJsRuntimes,
     pythonRuntimes,
     dotNetRuntimes,
+    goRuntimes,
     javaRuntimes,
 ])
 
@@ -84,6 +88,8 @@ export function getDependencyManager(runtime: Runtime): DependencyManager[] {
         return ['pip']
     } else if (dotNetRuntimes.has(runtime) || runtime === dotnet50) {
         return ['cli-package']
+    } else if (goRuntimes.has(runtime)) {
+        return ['mod']
     } else if (javaRuntimes.has(runtime)) {
         return ['gradle', 'maven']
     }
@@ -97,6 +103,8 @@ export function getFamily(runtime: string): RuntimeFamily {
         return RuntimeFamily.Python
     } else if (dotNetRuntimes.has(runtime) || runtime === dotnet50) {
         return RuntimeFamily.DotNetCore
+    } else if (goRuntimes.has(runtime)) {
+        return RuntimeFamily.Go
     } else if (javaRuntimes.has(runtime)) {
         return RuntimeFamily.Java
     }
@@ -127,6 +135,8 @@ export function getRuntimeFamily(langId: string): RuntimeFamily {
             return RuntimeFamily.DotNetCore
         case 'python':
             return RuntimeFamily.Python
+        case 'go':
+            return RuntimeFamily.Go
         default:
             return RuntimeFamily.Unknown
     }
@@ -151,6 +161,8 @@ function getRuntimesForFamily(family: RuntimeFamily): ImmutableSet<Runtime> | un
             return pythonRuntimes
         case RuntimeFamily.DotNetCore:
             return dotNetRuntimes
+        case RuntimeFamily.Go:
+            return goRuntimes
         case RuntimeFamily.Java:
             return javaRuntimes
         default:
