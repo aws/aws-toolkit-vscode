@@ -3,7 +3,7 @@
 # By default, this script gets the latest VSIX from:
 #     https://github.com/aws/aws-toolkit-vscode/releases/
 # else the first argument must be a URL or file pointing to a toolkit VSIX or
-# a ZIP (containing a vsix).
+# ZIP (containing a VSIX).
 #
 # USAGE:
 #     cloud9-toolkit-install.sh [URL|FILE]
@@ -29,7 +29,7 @@ TOOLKIT_INSTALL_DIR="$HOME/environment/.c9/extensions/aws-toolkit-vscode"
 SCRIPT_WORKDIR="$HOME/environment/toolkit"
 
 _log() {
-    >&2 echo "$@"
+    echo >&2 "$@"
 }
 
 # Runs whatever is passed.
@@ -39,7 +39,7 @@ _log() {
 #   - exits the script
 _run() {
     local out
-    if ! out="$(2>&1 $@)" ; then
+    if ! out="$($@ 2>&1)"; then
         _log "Command failed (output below): '${@}'"
         echo "$out" | sed 's/^/    /'
         _log "Command failed (output above): '${@}'"
@@ -48,63 +48,63 @@ _run() {
 }
 
 _main() {
-(
-    if test -f "$TOOLKIT_FILE" ; then
-        # Ensure full path (before `cd` below).
-        TOOLKIT_FILE="$(readlink -f $TOOLKIT_FILE)"
-    fi
-
-    echo "Script will DELETE these directories:"
-    echo "    ${TOOLKIT_INSTALL_DIR}"
-    echo "    ${SCRIPT_WORKDIR}"
-    read -n1 -r -p "ENTER to continue, CTRL-c to cancel"
-    rm -rf "$TOOLKIT_INSTALL_DIR"
-    rm -rf "$SCRIPT_WORKDIR"
-
-    cd "$HOME/environment"
-    mkdir "${SCRIPT_WORKDIR}"
-    cd "${SCRIPT_WORKDIR}"
-
-    # Set default URL if no argument was provided.
-    if test -z "$TOOLKIT_FILE" ; then
-        _log "Latest release:"
-        _log "    URL    : $TOOLKIT_LATEST_RELEASE_URL"
-        _log "    version: $TOOLKIT_LATEST_VERSION"
-        _log "    VSIX   : $TOOLKIT_LATEST_ARTIFACT_URL"
-        TOOLKIT_FILE="$TOOLKIT_LATEST_ARTIFACT_URL"
-    fi
-
-    TOOLKIT_FILE_EXTENSION="${TOOLKIT_FILE: -4}"
-    if test -f "$TOOLKIT_FILE" ; then
-        _log "Local file (not URL): ${TOOLKIT_FILE}"
-        if [ "$TOOLKIT_FILE_EXTENSION" = ".zip" ] || [ "$TOOLKIT_FILE_EXTENSION" = ".ZIP" ] ; then
-            _log 'File is a .zip file'
-            _run unzip "$TOOLKIT_FILE"
-            _run unzip *.vsix
-        else
-            _log 'File is not .zip file, assuming .vsix'
-            _run unzip "$TOOLKIT_FILE"
+    (
+        if test -f "$TOOLKIT_FILE"; then
+            # Ensure full path (before `cd` below).
+            TOOLKIT_FILE="$(readlink -f $TOOLKIT_FILE)"
         fi
-    else
-        _log "File not found, treating as URL: ${TOOLKIT_FILE}"
-        _log 'Deleting toolkit.zip'
-        rm -rf toolkit.zip
-        _log 'Downloading...'
-        curl -o toolkit.zip -L "$TOOLKIT_FILE"
-        if [ "$TOOLKIT_FILE_EXTENSION" = ".zip" ] || [ "$TOOLKIT_FILE_EXTENSION" = ".ZIP" ] ; then
-            _log 'File is a .zip file'
-            _run unzip toolkit.zip
-            _run unzip *.vsix
-        else
-            _log 'File is not .zip file, assuming .vsix'
-            _run unzip toolkit.zip
-        fi
-    fi
 
-    mv extension "$TOOLKIT_INSTALL_DIR"
-    _log "Toolkit installed to: $TOOLKIT_INSTALL_DIR"
-    _log "Refresh Cloud9 to load it"
-)
+        echo "Script will DELETE these directories:"
+        echo "    ${TOOLKIT_INSTALL_DIR}"
+        echo "    ${SCRIPT_WORKDIR}"
+        read -n1 -r -p "ENTER to continue, CTRL-c to cancel"
+        rm -rf "$TOOLKIT_INSTALL_DIR"
+        rm -rf "$SCRIPT_WORKDIR"
+
+        cd "$HOME/environment"
+        mkdir "${SCRIPT_WORKDIR}"
+        cd "${SCRIPT_WORKDIR}"
+
+        # Set default URL if no argument was provided.
+        if test -z "$TOOLKIT_FILE"; then
+            _log "Latest release:"
+            _log "    URL    : $TOOLKIT_LATEST_RELEASE_URL"
+            _log "    version: $TOOLKIT_LATEST_VERSION"
+            _log "    VSIX   : $TOOLKIT_LATEST_ARTIFACT_URL"
+            TOOLKIT_FILE="$TOOLKIT_LATEST_ARTIFACT_URL"
+        fi
+
+        TOOLKIT_FILE_EXTENSION="${TOOLKIT_FILE: -4}"
+        if test -f "$TOOLKIT_FILE"; then
+            _log "Local file (not URL): ${TOOLKIT_FILE}"
+            if [ "$TOOLKIT_FILE_EXTENSION" = ".zip" ] || [ "$TOOLKIT_FILE_EXTENSION" = ".ZIP" ]; then
+                _log 'File is a .zip file'
+                _run unzip "$TOOLKIT_FILE"
+                _run unzip *.vsix
+            else
+                _log 'File is not .zip file, assuming .vsix'
+                _run unzip "$TOOLKIT_FILE"
+            fi
+        else
+            _log "File not found, treating as URL: ${TOOLKIT_FILE}"
+            _log 'Deleting toolkit.zip'
+            rm -rf toolkit.zip
+            _log 'Downloading...'
+            curl -o toolkit.zip -L "$TOOLKIT_FILE"
+            if [ "$TOOLKIT_FILE_EXTENSION" = ".zip" ] || [ "$TOOLKIT_FILE_EXTENSION" = ".ZIP" ]; then
+                _log 'File is a .zip file'
+                _run unzip toolkit.zip
+                _run unzip *.vsix
+            else
+                _log 'File is not .zip file, assuming .vsix'
+                _run unzip toolkit.zip
+            fi
+        fi
+
+        mv extension "$TOOLKIT_INSTALL_DIR"
+        _log "Toolkit installed to: $TOOLKIT_INSTALL_DIR"
+        _log "Refresh Cloud9 to load it"
+    )
 }
 
 _main
