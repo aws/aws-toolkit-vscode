@@ -5,18 +5,10 @@
 
 import * as vscode from 'vscode'
 import { cdkDocumentationUrl } from '../shared/constants'
-import {
-    recordCdkAppExpanded,
-    recordCdkExplorerDisabled,
-    recordCdkExplorerEnabled,
-    recordCdkHelp,
-    recordCdkRefreshExplorer,
-} from '../shared/telemetry/telemetry'
+import { recordCdkAppExpanded, recordCdkHelp, recordCdkRefreshExplorer } from '../shared/telemetry/telemetry'
 import { AwsCdkExplorer } from './explorer/awsCdkExplorer'
 import { AppNode } from './explorer/nodes/appNode'
 import { cdk } from './globals'
-
-const EXPLORER_ENABLED_CONFIG_KEY = 'aws.cdk.explorer.enabled'
 
 /**
  * Activate AWS CDK related functionality for the extension.
@@ -34,25 +26,14 @@ export async function activate(activateArguments: { extensionContext: vscode.Ext
     activateArguments.extensionContext.subscriptions.push(view)
 
     // Indicates workspace includes a CDK app and user has expanded the Node
-    const appNodeExpanded = view.onDidExpandElement(e => {
-        if (e.element instanceof AppNode && !e.element.expandMetricRecorded) {
-            e.element.expandMetricRecorded = true
-            recordCdkAppExpanded()
-        }
-    })
-    activateArguments.extensionContext.subscriptions.push(appNodeExpanded)
-
-    // Indicates CDK explorer view was toggled through configuration setting
-    const explorerEnabledToggled = vscode.workspace.onDidChangeConfiguration(e => {
-        if (e.affectsConfiguration(EXPLORER_ENABLED_CONFIG_KEY)) {
-            if (vscode.workspace.getConfiguration().get(EXPLORER_ENABLED_CONFIG_KEY)) {
-                recordCdkExplorerEnabled()
-            } else {
-                recordCdkExplorerDisabled()
+    activateArguments.extensionContext.subscriptions.push(
+        view.onDidExpandElement(e => {
+            if (e.element instanceof AppNode && !e.element.expandMetricRecorded) {
+                e.element.expandMetricRecorded = true
+                recordCdkAppExpanded()
             }
-        }
-    })
-    activateArguments.extensionContext.subscriptions.push(explorerEnabledToggled)
+        })
+    )
 }
 
 function initializeIconPaths(context: vscode.ExtensionContext) {

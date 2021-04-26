@@ -1,0 +1,4 @@
+{
+	"type": "Removal",
+	"description": "Settings: remove \"Enable CDK Explorer\" option (VSCode has built-in support for showing/hiding panels already)"
+}

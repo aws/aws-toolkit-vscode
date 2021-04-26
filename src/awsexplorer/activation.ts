@@ -53,9 +53,11 @@ export async function activate(activateArguments: {
         activateArguments.regionProvider
     )
 
-    activateArguments.context.subscriptions.push(
-        vscode.window.registerTreeDataProvider(awsExplorer.viewProviderId, awsExplorer)
-    )
+    const view = vscode.window.createTreeView(awsExplorer.viewProviderId, {
+        treeDataProvider: awsExplorer,
+        showCollapseAll: true,
+    })
+    activateArguments.context.subscriptions.push(view)
 
     await registerAwsExplorerCommands(
         activateArguments.context,
