@@ -150,11 +150,11 @@ export function getNonexistentFilename(dir: string, name: string, suffix: string
 }
 
 /**
- * Searches for existence of at least one file with the passed extension
+ * Searches for existence of at least one file with the passed suffix
  * @param dir Directory to search
- * @param extension Extension to look for (ex.".ts")
+ * @param suffix Suffix to look for (ex.".ts")
  * @param exclude Pattern to ignore
- * @returns True if at least one file is found with given extension
+ * @returns True if at least one file is found with given suffix
  */
  export async function hasFileWithSuffix(dir: string, suffix: string, exclude?: vscode.GlobPattern): Promise<boolean> {
      const searchFolder = `${dir}**/*${suffix}`
