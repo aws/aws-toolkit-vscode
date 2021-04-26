@@ -67,11 +67,12 @@ export class LoginManager {
                     )}. Toolkit will now disconnect from AWS. %O`,
                     err as Error
                 )
-                this.store.invalidateCredentials(args.providerId)
             } else {
                 getLogger().info('Cancelled getting credentials from provider')
             }
 
+            this.logout()
+            this.store.invalidateCredentials(args.providerId)
             return false
         } finally {
             const credType = provider?.getCredentialsType2()
