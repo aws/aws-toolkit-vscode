@@ -129,8 +129,7 @@ export class SharedCredentialsProvider implements CredentialsProvider {
                 return await ssoCredentialProvider.refreshCredentials()
             }
             const provider = new AWS.CredentialProviderChain([this.makeCredentialsProvider()])
-
-            return (await resolveProviderWithCancel(this.profileName, provider.resolvePromise())) as AWS.Credentials
+            return await resolveProviderWithCancel(this.profileName, provider.resolvePromise())
         } finally {
             // Profiles with references involving non-aws partitions need help getting the right STS endpoint
             AWS.config.sts = originalStsConfiguration

@@ -63,16 +63,16 @@ export function hasProfileProperty(profile: Profile, propertyName: string): bool
  * User cancellation or timeout expiration will cause rejection.
  *
  * @param profile Profile name to display for the progress message
- * @param provider This can be a Promise that resolves into Credentials, or if using 'refresh' it can resolve undefined
+ * @param provider This can be a Promise that resolves into Credentials, or void if using 'refresh'
  * @param timeout How long to wait for resolution without user intervention (default: 5 minutes)
  *
  * @returns The resolved Credentials or undefined if the the provider was a 'refresh' Promise
  */
-export async function resolveProviderWithCancel(
+export async function resolveProviderWithCancel<T extends AWS.Credentials | void>(
     profile: string,
-    provider: Promise<AWS.Credentials>,
+    provider: Promise<T>,
     timeout: Timeout | number = RESOLVE_PROVIDER_DEFAULT_TIMEOUT
-): Promise<AWS.Credentials> {
+): Promise<T> {
     if (typeof timeout === 'number') {
         timeout = new Timeout(timeout)
     }
@@ -80,7 +80,11 @@ export async function resolveProviderWithCancel(
     // If the provider throws an error we need to cancel the progress messsage
     provider = provider.finally(() => (timeout as Timeout).killTimer())
 
-    showMessageWithCancel(`Getting credentials for profile: ${profile}`, timeout)
+    showMessageWithCancel(
+        localize('AWS.message.credentials.pending', 'Getting credentials for profile: {0}', profile),
+        timeout
+    )
+
     await createTimedPromise(provider, timeout, {
         onCancel: () => {
             throw new Error(`Request to get credentials for "${profile}" cancelled`)

@@ -16,20 +16,20 @@ export class Timeout {
     private startTime: number
     private endTime: number
     private readonly timeoutLength: number
-    private readonly timerPromise: Promise<void>
-    private timerTimeout?: NodeJS.Timeout
-    private timerResolve?: (value?: void | PromiseLike<undefined> | undefined) => void
-    private timerReject?: (value?: Error | PromiseLike<Error> | undefined) => void
+    private readonly timerPromise: Promise<undefined>
+    private timerTimeout: NodeJS.Timeout
+    private timerResolve!: (value?: Promise<undefined> | undefined) => void
+    private timerReject!: (value?: Error | Promise<Error> | undefined) => void
     public constructor(timeoutLength: number) {
         this.startTime = Date.now()
         this.originalStartTime = this.startTime
         this.endTime = this.startTime + timeoutLength
         this.timeoutLength = timeoutLength
-        this.timerPromise = new Promise<void>((resolve, reject) => {
+        this.timerPromise = new Promise<undefined>((resolve, reject) => {
             this.timerReject = reject
             this.timerResolve = resolve
         })
-        this.timerTimeout = setTimeout(() => this.timerReject!(new Error(TIMEOUT_EXPIRED_MESSAGE)), timeoutLength)
+        this.timerTimeout = setTimeout(() => this.timerReject(new Error(TIMEOUT_EXPIRED_MESSAGE)), timeoutLength)
     }
 
     /**
@@ -52,7 +52,7 @@ export class Timeout {
         // not highly accurate in when they fire.
         this.startTime = Date.now()
         this.endTime = this.startTime + this.timeoutLength
-        this.timerTimeout!.refresh()
+        this.timerTimeout.refresh()
     }
 
     /**
@@ -60,7 +60,7 @@ export class Timeout {
      * Use this in Promise.race() calls in order to time out awaited functions
      * Once this timer has finished, cannot be restarted
      */
-    public get timer(): Promise<void> {
+    public get timer(): Promise<undefined> {
         return this.timerPromise
     }
 
@@ -78,9 +78,9 @@ export class Timeout {
     public killTimer(reject?: boolean): void {
         clearTimeout(this.timerTimeout!)
         if (reject) {
-            this.timerReject!(new Error(TIMEOUT_CANCELLED_MESSAGE))
+            this.timerReject(new Error(TIMEOUT_CANCELLED_MESSAGE))
         } else {
-            this.timerResolve!()
+            this.timerResolve()
         }
     }
 }
@@ -129,7 +129,7 @@ export async function waitUntil<T>(
  *
  * @param promise The promise to use a Timeout with
  * @param timeout A Timeout token that will race against the promise
- * @param opt.gracefulTermination Allows the promise to be resolved undefined (default: true)
+ * @param opt.noUndefined Prevents the promise from being resolved undefined (default: false)
  * @param opt.onExpire Callback for when the promise expired. The callback can return a value
  * @param opt.onCancel Callback for when the promise was cancelled. The callback can return a value
  *
@@ -138,13 +138,11 @@ export async function waitUntil<T>(
 export function createTimedPromise<T>(
     promise: Promise<T>,
     timeout: Timeout,
-    opt: { gracefulTermination?: boolean; onExpire?: () => T | undefined; onCancel?: () => T | undefined } = {}
+    opt: { noUndefined?: boolean; onExpire?: () => T | undefined; onCancel?: () => T | undefined } = {}
 ): Promise<T | undefined> {
-    opt.gracefulTermination = opt.gracefulTermination ?? true
-
     return Promise.race([promise, timeout.timer]).then(
         obj => {
-            if (!opt.gracefulTermination && obj === undefined) {
+            if (opt.noUndefined && obj === undefined) {
                 throw new Error(TIMEOUT_UNEXPECTED_RESOLVE)
             }
             if (obj !== undefined) {

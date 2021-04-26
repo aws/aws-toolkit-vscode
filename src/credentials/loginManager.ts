@@ -58,7 +58,7 @@ export class LoginManager {
 
             return true
         } catch (err) {
-            // TODO: implement custom exceptions instead of checking error message
+            // TODO: don't hardcode logic using error message, have a 'type' field instead
             if (!(err as Error).message.includes('cancel')) {
                 notifyUserInvalidCredentials(args.providerId)
                 getLogger().error(

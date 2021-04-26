@@ -52,11 +52,13 @@ export async function loginWithMostRecentCredentials(
     } else if (
         providerMap &&
         profileNames.length === 1 &&
-        (await manager.getCredentialsProvider(providerMap[profileNames[0]]))!.canAutoConnect() &&
-        (await loginManager.login({ passive: true, providerId: providerMap[profileNames[0]] })) // Auto-connect if there is exactly one profile.
+        (await manager.getCredentialsProvider(providerMap[profileNames[0]]))!.canAutoConnect()
     ) {
-        // Toast.
-        vscode.window.showInformationMessage(`Connected to AWS as "${profileNames[0]}"`)
+        // Auto-connect if there is exactly one profile.
+        if (await loginManager.login({ passive: true, providerId: providerMap[profileNames[0]] })) {
+            // Toast.
+            vscode.window.showInformationMessage(`Connected to AWS as "${profileNames[0]}"`)
+        }
     } else {
         await loginManager.logout()
     }
