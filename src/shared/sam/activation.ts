@@ -176,8 +176,7 @@ async function activateCodeLensProviders(
             if (!activeEditor) {
                 getLogger().error(`aws.addSamDebugConfig was called without an active text editor`)
                 vscode.window.showErrorMessage(
-                    'AWS.pickDebugHandler.noEditor',
-                    'Toolkit could not find an active editor'
+                    localize('AWS.pickDebugHandler.noEditor', 'Toolkit could not find an active editor')
                 )
 
                 return

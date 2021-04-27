@@ -178,7 +178,7 @@ export async function invokeCodeLensCommandPalette(
             canPickMany: false,
             ignoreFocusOut: false,
             matchOnDetail: true,
-            title: localize('AWS.pickDebugHandler.prompt', 'Choose a function to create a debug configuration from'),
+            title: localize('AWS.pickDebugHandler.prompt', 'Create a Debug Configuration from a valid handler'),
             step: 1,
             totalSteps: 2,
         },
