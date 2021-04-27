@@ -20,6 +20,7 @@ export class Timeout {
     private timerTimeout: NodeJS.Timeout
     private timerResolve!: (value?: Promise<undefined> | undefined) => void
     private timerReject!: (value?: Error | Promise<Error> | undefined) => void
+    private _fulfilled: boolean = false
     public constructor(timeoutLength: number) {
         this.startTime = Date.now()
         this.originalStartTime = this.startTime
@@ -29,7 +30,10 @@ export class Timeout {
             this.timerReject = reject
             this.timerResolve = resolve
         })
-        this.timerTimeout = setTimeout(() => this.timerReject(new Error(TIMEOUT_EXPIRED_MESSAGE)), timeoutLength)
+        this.timerTimeout = setTimeout(() => {
+            this.timerReject(new Error(TIMEOUT_EXPIRED_MESSAGE))
+            this._fulfilled = true
+        }, timeoutLength)
     }
 
     /**
@@ -41,6 +45,13 @@ export class Timeout {
         const remainingTime = this.endTime - Date.now()
 
         return remainingTime > 0 ? remainingTime : 0
+    }
+
+    /**
+     * True when the Timeout has completed
+     */
+    public get fulfilled(): boolean {
+        return this._fulfilled
     }
 
     /**
@@ -82,6 +93,7 @@ export class Timeout {
         } else {
             this.timerResolve()
         }
+        this._fulfilled = true
     }
 }
 

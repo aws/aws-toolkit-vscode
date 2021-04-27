@@ -68,7 +68,7 @@ export class LoginManager {
                     err as Error
                 )
             } else {
-                getLogger().info('Cancelled getting credentials from provider')
+                getLogger().info(`Cancelled getting credentials from provider: ${asString(args.providerId)}`)
             }
 
             this.logout()

@@ -16,6 +16,7 @@ import { createTimedPromise, Timeout } from '../shared/utilities/timeoutUtils'
 import { showMessageWithCancel } from '../shared/utilities/messages'
 
 const CREDENTIALS_TIMEOUT = 300000 // 5 minutes
+const CREDENTIALS_PROGRESS_DELAY = 1000
 
 export function asEnvironmentVariables(credentials: Credentials): NodeJS.ProcessEnv {
     const environmentVariables: NodeJS.ProcessEnv = {}
@@ -80,10 +81,15 @@ export async function resolveProviderWithCancel<T extends AWS.Credentials | void
     // If the provider throws an error we need to cancel the progress messsage
     provider = provider.finally(() => (timeout as Timeout).killTimer())
 
-    showMessageWithCancel(
-        localize('AWS.message.credentials.pending', 'Getting credentials for profile: {0}', profile),
-        timeout
-    )
+    setTimeout(() => {
+        timeout = timeout as Timeout // Typescript lost scope of the correct type here
+        if (timeout.fulfilled !== true) {
+            showMessageWithCancel(
+                localize('AWS.message.credentials.pending', 'Getting credentials for profile: {0}', profile),
+                timeout
+            )
+        }
+    }, CREDENTIALS_PROGRESS_DELAY)
 
     await createTimedPromise(provider, timeout, {
         onCancel: () => {
