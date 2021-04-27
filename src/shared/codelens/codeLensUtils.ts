@@ -16,6 +16,7 @@ import {
 } from '../sam/debugger/commands/addSamDebugConfiguration'
 import * as javaDebug from '../sam/debugger/javaSamDebug'
 import * as pythonDebug from '../sam/debugger/pythonSamDebug'
+import { SettingsConfiguration } from '../settingsConfiguration'
 import { createQuickPick, promptUser, verifySinglePickerOutput } from '../ui/picker'
 import { localize } from '../utilities/vsCodeUtils'
 import { getWorkspaceRelativePath } from '../utilities/workspaceUtils'
@@ -25,6 +26,8 @@ import * as pythonCodelens from './pythonCodeLensProvider'
 import * as tsCodelens from './typescriptCodeLensProvider'
 
 export type Language = 'python' | 'javascript' | 'csharp' | 'java'
+
+export const STATE_NAME_SUPPRESS_CODELENSES = 'sam.suppressCodeLenses'
 
 export async function makeCodeLenses({
     document,
@@ -124,6 +127,81 @@ function makeAddCodeSamDebugCodeLens(
 }
 
 /**
+ * Tied to the AWS.addSamDebugConfig command: lets a user create a config tied to a handler via command instead of codelens
+ * Renders a quick pick using the first 200 characters of the first line of the funciton declaration + function line number
+ * @param document Curr document
+ * @param lenses Codelenses returned via CodeLensProvider, which we extract the information from
+ */
+export async function invokeCodeLensCommandPalette(
+    document: Pick<vscode.TextDocument, 'getText'>,
+    lenses: vscode.CodeLens[]
+): Promise<void> {
+    const handlers: (vscode.QuickPickItem & { lens?: vscode.CodeLens })[] = lenses
+        .filter(lens => {
+            // remove codelenses that go to the invoker UI
+            // maybe move this into the workflow at some point (drop down to one)
+            return (
+                lens &&
+                lens.command &&
+                lens.command.arguments &&
+                lens.command.arguments.length === 3 &&
+                lens.command.arguments![2] !== true
+            )
+        })
+        .map(lens => {
+            return {
+                // lens is currently pulling the entire function, not just the declaration
+                label: document.getText(
+                    new vscode.Range(
+                        lens.range.start,
+                        new vscode.Position(lens.range.start.line, lens.range.start.character + 200)
+                    )
+                ),
+                detail: localize(
+                    'AWS.pickDebugHandler.range',
+                    'Function on line {0}',
+                    (lens.range.start.line + 1).toString()
+                ),
+                lens,
+            }
+        })
+    if (handlers.length === 0) {
+        handlers.push({
+            label: 'No handlers found in current file',
+            detail: 'Please ensure your language extension is working',
+            description: 'Click to go back',
+        })
+    }
+
+    const picker = createQuickPick<vscode.QuickPickItem & { lens?: vscode.CodeLens }>({
+        options: {
+            canPickMany: false,
+            ignoreFocusOut: false,
+            matchOnDetail: true,
+            title: localize('AWS.pickDebugHandler.prompt', 'Choose a function to create a debug configuration from'),
+            step: 1,
+            totalSteps: 2,
+        },
+        items: handlers,
+    })
+
+    const choices = await promptUser({ picker })
+    const val = verifySinglePickerOutput(choices)
+
+    if (!val || !val.lens || !val.lens.command) {
+        return undefined
+    }
+
+    // note: val.lens.command.arguments[2] should always be false (aka no invoke UI) based on the filter statement
+    // HACK: `exports.` is for the sake of sinon stubbing; you can't stub a function in the same file
+    await exports.pickAddSamDebugConfiguration(
+        val.lens.command.arguments![0],
+        val.lens.command.arguments![1],
+        val.lens.command.arguments![2]
+    )
+}
+
+/**
  * Wraps the addSamDebugConfiguration logic in a picker that lets the user choose to create
  * a code-type debug config, template-type debug config, or an api-type debug config using a selected template
  * TODO: Dedupe? Call out dupes at the quick pick level?
@@ -133,7 +211,8 @@ function makeAddCodeSamDebugCodeLens(
 export async function pickAddSamDebugConfiguration(
     codeConfig: AddSamDebugConfigurationInput,
     templateConfigs: AddSamDebugConfigurationInput[],
-    openWebview: boolean
+    openWebview: boolean,
+    continuationStep?: boolean
 ): Promise<void> {
     if (templateConfigs.length === 0) {
         await addSamDebugConfiguration(codeConfig, CODE_TARGET_TYPE, openWebview)
@@ -171,8 +250,8 @@ export async function pickAddSamDebugConfiguration(
                 'AWS.pickDebugConfig.prompt',
                 'Create a Debug Configuration from a CloudFormation Template'
             ),
-            step: 1,
-            totalSteps: 1,
+            step: continuationStep ? 2 : 1,
+            totalSteps: continuationStep ? 2 : 1,
         },
         items: [
             ...templateItems,
@@ -193,7 +272,10 @@ export async function pickAddSamDebugConfiguration(
         return undefined
     }
     if (val.label === noTemplate) {
-        await addSamDebugConfiguration(codeConfig, CODE_TARGET_TYPE, openWebview, { step: 2, totalSteps: 2 })
+        await addSamDebugConfiguration(codeConfig, CODE_TARGET_TYPE, openWebview, {
+            step: continuationStep ? 3 : 2,
+            totalSteps: continuationStep ? 3 : 2,
+        })
     } else {
         const templateItem = templateItemsMap.get(val.label)
         if (!templateItem) {
@@ -207,83 +289,117 @@ export async function pickAddSamDebugConfiguration(
     }
 }
 
-export async function makePythonCodeLensProvider(): Promise<vscode.CodeLensProvider> {
+export interface OverridableCodeLensProvider extends vscode.CodeLensProvider {
+    provideCodeLenses: (
+        document: vscode.TextDocument,
+        token: vscode.CancellationToken,
+        forceProvide?: boolean
+    ) => Promise<vscode.CodeLens[]>
+}
+
+export async function makePythonCodeLensProvider(
+    configuration: SettingsConfiguration
+): Promise<OverridableCodeLensProvider> {
     return {
         // CodeLensProvider
         provideCodeLenses: async (
             document: vscode.TextDocument,
-            token: vscode.CancellationToken
+            token: vscode.CancellationToken,
+            forceProvide?: boolean
         ): Promise<vscode.CodeLens[]> => {
-            // Try to activate the Python Extension before requesting symbols from a python file
-            await pythonDebug.activatePythonExtensionIfInstalled()
-            if (token.isCancellationRequested) {
-                return []
+            if (forceProvide || !configuration.readSetting<boolean>(STATE_NAME_SUPPRESS_CODELENSES)) {
+                // Try to activate the Python Extension before requesting symbols from a python file
+                await pythonDebug.activatePythonExtensionIfInstalled()
+                if (token.isCancellationRequested) {
+                    return []
+                }
+
+                const handlers: LambdaHandlerCandidate[] = await pythonCodelens.getLambdaHandlerCandidates(document.uri)
+                return makeCodeLenses({
+                    document,
+                    handlers,
+                    token,
+                    runtimeFamily: RuntimeFamily.Python,
+                })
             }
 
-            const handlers: LambdaHandlerCandidate[] = await pythonCodelens.getLambdaHandlerCandidates(document.uri)
-            return makeCodeLenses({
-                document,
-                handlers,
-                token,
-                runtimeFamily: RuntimeFamily.Python,
-            })
+            return []
         },
     }
 }
 
-export async function makeCSharpCodeLensProvider(): Promise<vscode.CodeLensProvider> {
+export async function makeCSharpCodeLensProvider(
+    configuration: SettingsConfiguration
+): Promise<OverridableCodeLensProvider> {
     return {
         provideCodeLenses: async (
             document: vscode.TextDocument,
-            token: vscode.CancellationToken
+            token: vscode.CancellationToken,
+            forceProvide?: boolean
         ): Promise<vscode.CodeLens[]> => {
-            const handlers: LambdaHandlerCandidate[] = await csharpCodelens.getLambdaHandlerCandidates(document)
-            return makeCodeLenses({
-                document,
-                handlers,
-                token,
-                runtimeFamily: RuntimeFamily.DotNetCore,
-            })
-        },
-    }
-}
-
-export function makeTypescriptCodeLensProvider(): vscode.CodeLensProvider {
-    return {
-        provideCodeLenses: async (
-            document: vscode.TextDocument,
-            token: vscode.CancellationToken
-        ): Promise<vscode.CodeLens[]> => {
-            const handlers = await tsCodelens.getLambdaHandlerCandidates(document)
-            return makeCodeLenses({
-                document,
-                handlers,
-                token,
-                runtimeFamily: RuntimeFamily.NodeJS,
-            })
-        },
-    }
-}
-
-export async function makeJavaCodeLensProvider(): Promise<vscode.CodeLensProvider> {
-    return {
-        provideCodeLenses: async (
-            document: vscode.TextDocument,
-            token: vscode.CancellationToken
-        ): Promise<vscode.CodeLens[]> => {
-            // Try to activate the Java Extension before requesting symbols from a java file
-            await javaDebug.activateJavaExtensionIfInstalled()
-            if (token.isCancellationRequested) {
-                return []
+            if (forceProvide || !configuration.readSetting<boolean>(STATE_NAME_SUPPRESS_CODELENSES)) {
+                const handlers: LambdaHandlerCandidate[] = await csharpCodelens.getLambdaHandlerCandidates(document)
+                return makeCodeLenses({
+                    document,
+                    handlers,
+                    token,
+                    runtimeFamily: RuntimeFamily.DotNetCore,
+                })
             }
 
-            const handlers: LambdaHandlerCandidate[] = await javaCodelens.getLambdaHandlerCandidates(document)
-            return makeCodeLenses({
-                document,
-                handlers,
-                token,
-                runtimeFamily: RuntimeFamily.Java,
-            })
+            return []
+        },
+    }
+}
+
+export function makeTypescriptCodeLensProvider(configuration: SettingsConfiguration): OverridableCodeLensProvider {
+    return {
+        provideCodeLenses: async (
+            document: vscode.TextDocument,
+            token: vscode.CancellationToken,
+            forceProvide?: boolean
+        ): Promise<vscode.CodeLens[]> => {
+            if (forceProvide || !configuration.readSetting<boolean>(STATE_NAME_SUPPRESS_CODELENSES)) {
+                const handlers = await tsCodelens.getLambdaHandlerCandidates(document)
+                return makeCodeLenses({
+                    document,
+                    handlers,
+                    token,
+                    runtimeFamily: RuntimeFamily.NodeJS,
+                })
+            }
+
+            return []
+        },
+    }
+}
+
+export async function makeJavaCodeLensProvider(
+    configuration: SettingsConfiguration
+): Promise<OverridableCodeLensProvider> {
+    return {
+        provideCodeLenses: async (
+            document: vscode.TextDocument,
+            token: vscode.CancellationToken,
+            forceProvide?: boolean
+        ): Promise<vscode.CodeLens[]> => {
+            if (forceProvide || !configuration.readSetting<boolean>(STATE_NAME_SUPPRESS_CODELENSES)) {
+                // Try to activate the Java Extension before requesting symbols from a java file
+                await javaDebug.activateJavaExtensionIfInstalled()
+                if (token.isCancellationRequested) {
+                    return []
+                }
+
+                const handlers: LambdaHandlerCandidate[] = await javaCodelens.getLambdaHandlerCandidates(document)
+                return makeCodeLenses({
+                    document,
+                    handlers,
+                    token,
+                    runtimeFamily: RuntimeFamily.Java,
+                })
+            }
+
+            return []
         },
     }
 }

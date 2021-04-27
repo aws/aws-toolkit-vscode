@@ -164,6 +164,10 @@
                     "type": "object",
                     "description": "%AWS.samcli.deploy.bucket.recentlyUsed%",
                     "default": []
+                },
+                "aws.sam.suppressCodeLenses": {
+                    "type": "boolean",
+                    "description": "%AWS.configuration.suppressCodeLenses%"
                 }
             }
         },
@@ -737,6 +741,10 @@
                 {
                     "command": "aws.cdk.help",
                     "when": "!isCloud9"
+                },
+                {
+                    "command": "aws.addSamDebugConfig",
+                    "when": "editorLangId == javascript || editorLangId == python || editorLangId == java || editorLangId == csharp"
                 }
             ],
             "editor/title": [
@@ -1406,6 +1414,16 @@
                 "title": "%AWS.command.saveCurrentLogStreamContent%",
                 "category": "AWS",
                 "icon": "$(save-as)"
+            },
+            {
+                "command": "aws.addSamDebugConfig",
+                "title": "%AWS.command.addSamDebugConfig%",
+                "category": "AWS"
+            },
+            {
+                "command": "aws.toggleSamCodeLenses",
+                "title": "%AWS.command.toggleSamCodeLenses%",
+                "category": "AWS"
             }
         ],
         "jsonValidation": [

@@ -124,6 +124,10 @@ async function activateCodeLensProviders(
     telemetryService: TelemetryService
 ): Promise<vscode.Disposable[]> {
     const disposables: vscode.Disposable[] = []
+    const tsCodeLensProvider = codelensUtils.makeTypescriptCodeLensProvider(configuration)
+    const pyCodeLensProvider = await codelensUtils.makePythonCodeLensProvider(configuration)
+    const csCodeLensProvider = await codelensUtils.makeCSharpCodeLensProvider(configuration)
+    const javaCodeLensProvider = await codelensUtils.makeJavaCodeLensProvider(configuration)
 
     disposables.push(
         vscode.languages.registerCodeLensProvider(
@@ -138,32 +142,75 @@ async function activateCodeLensProviders(
         )
     )
 
-    disposables.push(
-        vscode.languages.registerCodeLensProvider(
-            jsLensProvider.JAVASCRIPT_ALL_FILES,
-            codelensUtils.makeTypescriptCodeLensProvider()
-        )
-    )
+    disposables.push(vscode.languages.registerCodeLensProvider(jsLensProvider.JAVASCRIPT_ALL_FILES, tsCodeLensProvider))
+
+    disposables.push(vscode.languages.registerCodeLensProvider(pyLensProvider.PYTHON_ALLFILES, pyCodeLensProvider))
+
+    disposables.push(vscode.languages.registerCodeLensProvider(csLensProvider.CSHARP_ALLFILES, csCodeLensProvider))
+
+    disposables.push(vscode.languages.registerCodeLensProvider(javaLensProvider.JAVA_ALLFILES, javaCodeLensProvider))
 
     disposables.push(
-        vscode.languages.registerCodeLensProvider(
-            pyLensProvider.PYTHON_ALLFILES,
-            await codelensUtils.makePythonCodeLensProvider()
-        )
+        vscode.commands.registerCommand('aws.toggleSamCodeLenses', () => {
+            configuration.readSetting<boolean>(codelensUtils.STATE_NAME_SUPPRESS_CODELENSES)
+                ? configuration.writeSetting(
+                      codelensUtils.STATE_NAME_SUPPRESS_CODELENSES,
+                      false,
+                      vscode.ConfigurationTarget.Global
+                  )
+                : configuration.writeSetting(
+                      codelensUtils.STATE_NAME_SUPPRESS_CODELENSES,
+                      true,
+                      vscode.ConfigurationTarget.Global
+                  )
+        })
     )
 
+    /**
+     * This should only be callable when the current editor is a JS, Python, C#, or Java editor.
+     * Error blocks should never be triggered, but messages will be provided regardless (I guess a user could this to a keyboard shortcut...)
+     */
     disposables.push(
-        vscode.languages.registerCodeLensProvider(
-            csLensProvider.CSHARP_ALLFILES,
-            await codelensUtils.makeCSharpCodeLensProvider()
-        )
-    )
+        vscode.commands.registerCommand('aws.addSamDebugConfig', async () => {
+            const activeEditor = vscode.window.activeTextEditor
+            if (!activeEditor) {
+                getLogger().error(`aws.addSamDebugConfig was called without an active text editor`)
+                vscode.window.showErrorMessage(
+                    'AWS.pickDebugHandler.noEditor',
+                    'Toolkit could not find an active editor'
+                )
 
-    disposables.push(
-        vscode.languages.registerCodeLensProvider(
-            javaLensProvider.JAVA_ALLFILES,
-            await codelensUtils.makeJavaCodeLensProvider()
-        )
+                return
+            }
+            const document = activeEditor.document
+            let provider: codelensUtils.OverridableCodeLensProvider | undefined
+            if (document.languageId === 'javascript') {
+                provider = tsCodeLensProvider
+            } else if (document.languageId === 'python') {
+                provider = pyCodeLensProvider
+            } else if (document.languageId === 'csharp') {
+                provider = csCodeLensProvider
+            } else if (document.languageId === 'java') {
+                provider = javaCodeLensProvider
+            } else {
+                getLogger().error(
+                    `aws.addSamDebugConfig called on a document with an invalid language: ${document.languageId}`
+                )
+                vscode.window.showErrorMessage(
+                    localize(
+                        'AWS.pickDebugHandler.invalidLanguage',
+                        'Toolkit cannot detect handlers in language: {0}',
+                        document.languageId
+                    )
+                )
+
+                return
+            }
+
+            const lenses =
+                (await provider.provideCodeLenses(document, new vscode.CancellationTokenSource().token, true)) ?? []
+            codelensUtils.invokeCodeLensCommandPalette(document, lenses)
+        })
     )
 
     try {
