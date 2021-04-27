@@ -513,6 +513,8 @@
     "AWS.pickDebugHandler.invalidLanguage": "Toolkit cannot detect handlers in language: {0}",
     "AWS.pickDebugHandler.prompt": "Create a Debug Configuration from a valid handler",
     "AWS.pickDebugHandler.range": "Function on line {0}",
+    "AWS.pickDebugHandler.noItems": "No handlers found in current file",
+    "AWS.pickDebugHandler.noItems.detail": "Please ensure your language extension is working",
     "AWS.pickDebugConfig.prompt": "Create a Debug Configuration from a CloudFormation Template",
     "AWS.pickDebugConfig.noTemplate": "No Template",
     "AWS.pickDebugConfig.noTemplate.detail": "Launch config will execute function in isolation, without referencing a CloudFormation template",
