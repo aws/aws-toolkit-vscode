@@ -128,7 +128,7 @@ function makeAddCodeSamDebugCodeLens(
 
 /**
  * Tied to the AWS.addSamDebugConfig command: lets a user create a config tied to a handler via command instead of codelens
- * Renders a quick pick using the first 200 characters of the first line of the funciton declaration + function line number
+ * Renders a quick pick using the first 200 characters of the first line of the function declaration + function line number
  * @param document Curr document
  * @param lenses Codelenses returned via CodeLensProvider, which we extract the information from
  */
@@ -136,6 +136,7 @@ export async function invokeCodeLensCommandPalette(
     document: Pick<vscode.TextDocument, 'getText'>,
     lenses: vscode.CodeLens[]
 ): Promise<void> {
+    const labelRenderRange = 200
     const handlers: (vscode.QuickPickItem & { lens?: vscode.CodeLens })[] = lenses
         .filter(lens => {
             // remove codelenses that go to the invoker UI
@@ -154,7 +155,7 @@ export async function invokeCodeLensCommandPalette(
                 label: document.getText(
                     new vscode.Range(
                         lens.range.start,
-                        new vscode.Position(lens.range.start.line, lens.range.start.character + 200)
+                        new vscode.Position(lens.range.start.line, lens.range.start.character + labelRenderRange)
                     )
                 ),
                 detail: localize(
@@ -197,7 +198,8 @@ export async function invokeCodeLensCommandPalette(
     await exports.pickAddSamDebugConfiguration(
         val.lens.command.arguments![0],
         val.lens.command.arguments![1],
-        val.lens.command.arguments![2]
+        val.lens.command.arguments![2],
+        true
     )
 }
 

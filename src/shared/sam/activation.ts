@@ -168,7 +168,7 @@ async function activateCodeLensProviders(
 
     /**
      * This should only be callable when the current editor is a JS, Python, C#, or Java editor.
-     * Error blocks should never be triggered, but messages will be provided regardless (I guess a user could this to a keyboard shortcut...)
+     * Error blocks should never be triggered, but messages will be provided regardless (I guess a user could tie this to a keyboard shortcut...)
      */
     disposables.push(
         vscode.commands.registerCommand('aws.addSamDebugConfig', async () => {

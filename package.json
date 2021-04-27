@@ -73,7 +73,9 @@
         "onLanguage:python",
         "onLanguage:csharp",
         "onLanguage:yaml",
-        "onCommand:aws.launchConfigForm"
+        "onCommand:aws.launchConfigForm",
+        "onCommand:aws.toggleSamCodeLenses",
+        "onCommand:aws.addSamDebugConfig"
     ],
     "main": "./extensionMain",
     "contributes": {
