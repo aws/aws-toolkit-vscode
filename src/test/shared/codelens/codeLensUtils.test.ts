@@ -97,7 +97,7 @@ describe('codeLensUtils', async function () {
                 {
                     label: 'No handlers found in current file',
                     detail: 'Please ensure your language extension is working',
-                    description: 'Click to go back',
+                    description: 'Click here to go back',
                 },
                 'createQuickPick called with incorrect item'
             )
