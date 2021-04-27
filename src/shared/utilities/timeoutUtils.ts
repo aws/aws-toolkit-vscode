@@ -125,24 +125,26 @@ export async function waitUntil<T>(
 }
 
 /**
- * Utility function to wrap a Timeout token around a Promise.
+ * Utility function to race a Timeout object against a Promise. Handles Timeout expiration and cancellation,
+ * exposing access through the use of callbacks. Cleanup of the Timeout object is up to the caller since the
+ * Timeout may be used for more than one Promise. Remember to use `killTimer()` once all Promises have fulfilled.
  *
- * @param promise The promise to use a Timeout with
- * @param timeout A Timeout token that will race against the promise
- * @param opt.noUndefined Prevents the promise from being resolved undefined (default: false)
+ * @param promise Promise that returns a generic type
+ * @param timeout Timeout token that will race against the promise
+ * @param opt.allowUndefined Output promise can resolve undefined (default: true)
  * @param opt.onExpire Callback for when the promise expired. The callback can return a value
  * @param opt.onCancel Callback for when the promise was cancelled. The callback can return a value
  *
- * @returns A Promise that resolves into a valid return value, or rejects when the Timeout was cancelled or expired.
+ * @returns A Promise that returns if successful, or rejects when the Timeout was cancelled or expired.
  */
 export function createTimedPromise<T>(
     promise: Promise<T>,
     timeout: Timeout,
-    opt: { noUndefined?: boolean; onExpire?: () => T | undefined; onCancel?: () => T | undefined } = {}
+    opt: { allowUndefined?: boolean; onExpire?: () => T | undefined; onCancel?: () => T | undefined } = {}
 ): Promise<T | undefined> {
     return Promise.race([promise, timeout.timer]).then(
         obj => {
-            if (opt.noUndefined && obj === undefined) {
+            if (opt.allowUndefined === false && obj === undefined) {
                 throw new Error(TIMEOUT_UNEXPECTED_RESOLVE)
             }
             if (obj !== undefined) {

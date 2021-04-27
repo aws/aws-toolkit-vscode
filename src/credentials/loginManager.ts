@@ -28,7 +28,7 @@ export class LoginManager {
      *
      * @param passive  If true, this was _not_ a user-initiated action.
      * @param provider  Credentials provider id
-     * @returns True if the toolkit could be logged in with the providerId
+     * @returns True if the toolkit could connect with the providerId
      */
     public async login(args: { passive: boolean; providerId: CredentialsProviderId }): Promise<boolean> {
         let provider: CredentialsProvider | undefined

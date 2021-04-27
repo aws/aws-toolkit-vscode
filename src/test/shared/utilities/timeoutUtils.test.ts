@@ -290,9 +290,9 @@ describe('timeoutUtils', async function () {
             await assert.doesNotReject(timedPromise)
         })
 
-        it('"noundefined" option set to true with undefined resolve throws error', async function () {
+        it('"allowUndefined" option set to false with undefined resolve throws error', async function () {
             const timeout = new timeoutUtils.Timeout(400)
-            const timedPromise = timeoutUtils.createTimedPromise(testFunction(500), timeout, { noUndefined: true })
+            const timedPromise = timeoutUtils.createTimedPromise(testFunction(500), timeout, { allowUndefined: false })
             clock.tick(300)
             timeout.killTimer() // Promise now resolves undefined
             clock.tick(200)

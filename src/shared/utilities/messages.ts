@@ -83,11 +83,6 @@ export function showOutputMessage(message: string, outputChannel: vscode.OutputC
     getLogger().info(message)
 }
 
-interface ProgressReport {
-    message?: string
-    increment?: number
-}
-
 /**
  * Attaches a Timeout object to VS Code's Progress notification system.
  * Not exported since it isn't used (yet)
@@ -97,8 +92,8 @@ async function showProgressWithTimeout(
     options: vscode.ProgressOptions,
     timeout: Timeout,
     window: Window = ext.window
-): Promise<vscode.Progress<ProgressReport>> {
-    const progressPromise: Promise<vscode.Progress<ProgressReport>> = new Promise(resolve => {
+): Promise<vscode.Progress<{ message?: string; increment?: number }>> {
+    const progressPromise: Promise<vscode.Progress<{ message?: string; increment?: number }>> = new Promise(resolve => {
         window.withProgress(options, function (progress, token) {
             token.onCancellationRequested(() => timeout.killTimer(true))
             resolve(progress)
@@ -113,16 +108,16 @@ async function showProgressWithTimeout(
  * Presents the user with a notification to cancel a pending process.
  *
  * @param message Message to display
- * @param timeout A Timeout object that will be killed if the user clicks 'Cancel'
+ * @param timeout Timeout object that will be killed if the user clicks 'Cancel'
  * @param window Window to display the message on (default: ext.window)
  *
- * @returns A VS Code Progress object, allowing the caller to report changes in progress
+ * @returns Progress object allowing the caller to update progress status
  */
 export async function showMessageWithCancel(
     message: string,
     timeout: Timeout,
     window: Window = ext.window
-): Promise<vscode.Progress<ProgressReport>> {
+): Promise<vscode.Progress<{ message?: string; increment?: number }>> {
     const progressOptions = { location: vscode.ProgressLocation.Notification, title: message, cancellable: true }
     return showProgressWithTimeout(progressOptions, timeout, window)
 }
