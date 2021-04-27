@@ -109,11 +109,6 @@
                     "default": 30000,
                     "markdownDescription": "%AWS.configuration.description.samcli.debug.attach.timeout%"
                 },
-                "aws.cdk.explorer.enabled": {
-                    "type": "boolean",
-                    "default": true,
-                    "description": "%AWS.configuration.description.cdk.explorer.enabled%"
-                },
                 "aws.logLevel": {
                     "type": "string",
                     "default": "info",
@@ -552,7 +547,7 @@
                 {
                     "id": "aws.cdk.explorer",
                     "name": "%AWS.cdk.explorerTitle%",
-                    "when": "config.aws.cdk.explorer.enabled"
+                    "when": "!isCloud9"
                 }
             ]
         },
