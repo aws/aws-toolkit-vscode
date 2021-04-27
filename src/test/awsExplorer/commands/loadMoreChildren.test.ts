@@ -3,7 +3,7 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
-import * as assert from 'assert'
+import assert from 'assert'
 import { AwsExplorer } from '../../../awsexplorer/awsExplorer'
 import { loadMoreChildrenCommand } from '../../../awsexplorer/commands/loadMoreChildren'
 import { AWSTreeNodeBase } from '../../../shared/treeview/nodes/awsTreeNodeBase'

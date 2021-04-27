@@ -5,7 +5,7 @@
 
 import * as fs from 'fs'
 // TODO: Move off of deprecated `request` to `got` or similar modern library.
-import request = require('request')
+import request from 'request'
 import { getLogger, Logger } from '../logger'
 import { ResourceFetcher } from './resourcefetcher'
 

@@ -4,7 +4,7 @@
  */
 
 import * as vscode from 'vscode'
-import * as Transport from 'winston-transport'
+import Transport from 'winston-transport'
 import { removeAnsi } from '../utilities/textUtilities'
 
 export const MESSAGE = Symbol.for('message')

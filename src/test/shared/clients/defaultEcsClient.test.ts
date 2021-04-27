@@ -2,7 +2,7 @@
  * Copyright 2019 Amazon.com, Inc. or its affiliates. All Rights Reserved.
  * SPDX-License-Identifier: Apache-2.0
  */
-import * as assert from 'assert'
+import assert from 'assert'
 
 import { AWSError, ECS } from 'aws-sdk'
 import { DefaultEcsClient } from '../../../shared/clients/defaultEcsClient'

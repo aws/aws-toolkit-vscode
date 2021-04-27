@@ -3,7 +3,7 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
-import _ = require('lodash')
+import _ from 'lodash'
 import * as vscode from 'vscode'
 import { TemplateFunctionResource, TemplateSymbolResolver } from '../cloudformation/templateSymbolResolver'
 import { getConfigsMappedToTemplates, LaunchConfiguration } from '../debug/launchConfiguration'

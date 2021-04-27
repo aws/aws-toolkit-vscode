@@ -3,7 +3,7 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
-import * as assert from 'assert'
+import assert from 'assert'
 import * as sinon from 'sinon'
 import * as SDK from 'aws-sdk'
 import { SsoCredentialProvider } from '../../../credentials/providers/ssoCredentialProvider'

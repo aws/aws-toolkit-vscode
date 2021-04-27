@@ -3,7 +3,7 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
-import * as moment from 'moment'
+import moment from 'moment'
 import * as os from 'os'
 import * as path from 'path'
 import * as vscode from 'vscode'

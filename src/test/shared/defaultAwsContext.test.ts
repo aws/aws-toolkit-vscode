@@ -3,7 +3,7 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
-import * as assert from 'assert'
+import assert from 'assert'
 import * as AWS from 'aws-sdk'
 import { AwsContextCredentials } from '../../shared/awsContext'
 import { regionSettingKey } from '../../shared/constants'

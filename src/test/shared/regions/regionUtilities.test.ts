@@ -5,7 +5,7 @@
 
 'use strict'
 
-import * as assert from 'assert'
+import assert from 'assert'
 import * as sinon from 'sinon'
 import { AwsContext } from '../../../shared/awsContext'
 import { Region } from '../../../shared/regions/endpoints'

@@ -5,7 +5,7 @@
 
 import '../../../shared/utilities/asyncIteratorShim'
 
-import * as assert from 'assert'
+import assert from 'assert'
 import { CloudWatchLogs } from 'aws-sdk'
 import * as sinon from 'sinon'
 import * as vscode from 'vscode'

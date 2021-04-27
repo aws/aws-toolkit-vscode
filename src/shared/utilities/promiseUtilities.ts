@@ -3,7 +3,7 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
-import AsyncLock = require('async-lock')
+import AsyncLock from 'async-lock'
 
 const lock = new AsyncLock()
 

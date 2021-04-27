@@ -3,7 +3,7 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
-import * as assert from 'assert'
+import assert from 'assert'
 import { Lambda } from 'aws-sdk'
 import * as sinon from 'sinon'
 import { LambdaFunctionNode } from '../../../lambda/explorer/lambdaFunctionNode'

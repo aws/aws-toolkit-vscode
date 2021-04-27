@@ -4,7 +4,7 @@
  */
 
 import * as vscode from 'vscode'
-import AsyncLock = require('async-lock')
+import AsyncLock from 'async-lock'
 import { getLogger } from '../../shared/logger/logger'
 import { SettingsConfiguration } from '../../shared/settingsConfiguration'
 import { LogStreamRegistry } from '../registry/logStreamRegistry'

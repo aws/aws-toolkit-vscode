@@ -3,7 +3,7 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
-import * as assert from 'assert'
+import assert from 'assert'
 import * as vscode from 'vscode'
 import { deleteBucketCommand } from '../../../s3/commands/deleteBucket'
 import { S3BucketNode } from '../../../s3/explorer/s3BucketNode'

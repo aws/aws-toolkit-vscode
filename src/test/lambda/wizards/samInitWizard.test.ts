@@ -3,7 +3,7 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
-import * as assert from 'assert'
+import assert from 'assert'
 import { Runtime } from 'aws-sdk/clients/lambda'
 import { Set } from 'immutable'
 import * as path from 'path'
@@ -220,7 +220,7 @@ describe('CreateNewSamAppWizard', async function () {
     after(async function () {
         fs.rmdirSync(dir)
     })
-  
+
     describe('runtime and dependency manager', async function () {
         it('uses user response as runtime', async function () {
             const context: CreateNewSamAppWizardContext = new MockCreateNewSamAppWizardContext(

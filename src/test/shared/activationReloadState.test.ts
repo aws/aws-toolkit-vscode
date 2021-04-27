@@ -5,7 +5,7 @@
 
 'use strict'
 
-import * as assert from 'assert'
+import assert from 'assert'
 import {
     ACTIVATION_LAUNCH_PATH_KEY,
     ActivationReloadState,

@@ -3,7 +3,7 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
-import * as assert from 'assert'
+import assert from 'assert'
 import { instance, mock, when, anything } from 'ts-mockito'
 import * as vscode from 'vscode'
 import {

@@ -4,7 +4,7 @@
  */
 
 import * as sinon from 'sinon'
-import * as assert from 'assert'
+import assert from 'assert'
 import { EcrTagNode } from '../../../ecr/explorer/ecrTagNode'
 import { FakeCommands } from '../../shared/vscode/fakeCommands'
 import { FakeWindow } from '../../shared/vscode/fakeWindow'
