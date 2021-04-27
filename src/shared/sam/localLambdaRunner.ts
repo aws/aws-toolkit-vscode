@@ -5,7 +5,7 @@
 
 import { copyFile, readFile, remove, writeFile } from 'fs-extra'
 import * as path from 'path'
-import * as request from 'request'
+import request = require('request')
 import * as tcpPortUsed from 'tcp-port-used'
 import * as vscode from 'vscode'
 import * as nls from 'vscode-nls'

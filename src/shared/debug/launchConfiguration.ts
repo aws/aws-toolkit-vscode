@@ -3,7 +3,7 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
-import * as _ from 'lodash'
+import _ = require('lodash')
 import * as nls from 'vscode-nls'
 import * as path from 'path'
 import * as vscode from 'vscode'

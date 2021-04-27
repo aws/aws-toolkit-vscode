@@ -66,7 +66,7 @@ import { CredentialsStore } from './credentials/credentialsStore'
 import { getSamCliContext } from './shared/sam/cli/samCliContext'
 import * as extWindow from './shared/vscode/window'
 
-const localize = nls.loadMessageBundle()
+const localize = nls.config({ messageFormat: nls.MessageFormat.bundle, bundleFormat: nls.BundleFormat.standalone })()
 
 export async function activate(context: vscode.ExtensionContext) {
     const activationStartedOn = Date.now()

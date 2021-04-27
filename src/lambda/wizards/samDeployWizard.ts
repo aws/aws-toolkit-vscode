@@ -4,7 +4,6 @@
  */
 
 import * as nls from 'vscode-nls'
-import * as _ from 'lodash'
 
 const localize = nls.loadMessageBundle()
 

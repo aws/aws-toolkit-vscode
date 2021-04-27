@@ -4,7 +4,7 @@
  */
 
 import * as vscode from 'vscode'
-import * as _ from 'lodash'
+import _ = require('lodash')
 import { isThenable } from '../../../shared/utilities/promiseUtilities'
 import { Window } from '../../../shared/vscode/window'
 import { inspect } from 'util'
