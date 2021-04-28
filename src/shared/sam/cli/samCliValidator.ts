@@ -11,6 +11,7 @@ import { SamCliInfoInvocation, SamCliInfoResponse } from './samCliInfo'
 export const MINIMUM_SAM_CLI_VERSION_INCLUSIVE = '0.47.0'
 export const MINIMUM_SAM_CLI_VERSION_INCLUSIVE_FOR_IMAGE_SUPPORT = '1.13.0'
 export const MAXIMUM_SAM_CLI_VERSION_EXCLUSIVE = '2.0.0'
+export const MINIMUM_SAM_CLI_VERSION_INCLUSIVE_FOR_GO_SUPPORT = '1.18.1'
 
 // Errors
 export class InvalidSamCliError extends Error {
