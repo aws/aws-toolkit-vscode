@@ -6,7 +6,7 @@
 export const TIMEOUT_EXPIRED_MESSAGE = 'Timeout token expired'
 export const TIMEOUT_CANCELLED_MESSAGE = 'Timeout token cancelled'
 export const TIMEOUT_UNEXPECTED_RESOLVE = 'Promise resolved with an unexpected object'
-export const TIMEOUT_BAD_REFRESH = 'Timeout token cannot be refreshed after fulfilled'
+export const TIMEOUT_BAD_REFRESH = 'Timeout token cannot be refreshed after completion'
 
 /**
  * Timeout that can handle both cancellation token-style and time limit-style timeout situations. Timeouts
@@ -23,7 +23,7 @@ export class Timeout {
     private timerTimeout: NodeJS.Timeout
     private timerResolve!: (value?: Promise<undefined> | undefined) => void
     private timerReject!: (value?: Error | Promise<Error> | undefined) => void
-    private _fulfilled: boolean = false
+    private _completed: boolean = false
 
     public constructor(timeoutLength: number) {
         this.startTime = Date.now()
@@ -38,7 +38,7 @@ export class Timeout {
 
         this.timerTimeout = setTimeout(() => {
             this.timerReject(new Error(TIMEOUT_EXPIRED_MESSAGE))
-            this._fulfilled = true
+            this._completed = true
         }, timeoutLength)
     }
 
@@ -56,15 +56,15 @@ export class Timeout {
     /**
      * True when the Timeout has completed
      */
-    public get fulfilled(): boolean {
-        return this._fulfilled
+    public get completed(): boolean {
+        return this._completed
     }
 
     /**
      * Updates the timer to timeout in timeout length from now
      */
     public refresh() {
-        if (this._fulfilled === true) {
+        if (this._completed === true) {
             throw new Error(TIMEOUT_BAD_REFRESH)
         }
 
@@ -89,7 +89,7 @@ export class Timeout {
      * Returns the elapsed time from the initial Timeout object creation
      */
     public get elapsedTime(): number {
-        return (this._fulfilled ? this.endTime : Date.now()) - this.originalStartTime
+        return (this._completed ? this.endTime : Date.now()) - this.originalStartTime
     }
 
     /**
@@ -98,6 +98,11 @@ export class Timeout {
      * @param reject Rejects the token with a cancelled error message
      */
     public complete(reject?: boolean): void {
+        // Caller tried to call complete after the token expired
+        if (this._completed === true) {
+            return
+        }
+
         this.endTime = Date.now()
         clearTimeout(this.timerTimeout!)
 
@@ -107,7 +112,7 @@ export class Timeout {
             this.timerResolve()
         }
 
-        this._fulfilled = true
+        this._completed = true
     }
 }
 

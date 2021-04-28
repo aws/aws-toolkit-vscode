@@ -80,7 +80,7 @@ export async function resolveProviderWithCancel<T extends AWS.Credentials | void
 
     setTimeout(() => {
         timeout = timeout as Timeout // Typescript lost scope of the correct type here
-        if (timeout.fulfilled !== true) {
+        if (timeout.completed !== true) {
             showMessageWithCancel(
                 localize('AWS.message.credentials.pending', 'Getting credentials for profile: {0}', profile),
                 timeout

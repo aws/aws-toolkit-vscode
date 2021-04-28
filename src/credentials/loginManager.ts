@@ -71,7 +71,7 @@ export class LoginManager {
                 getLogger().info(`Cancelled getting credentials from provider: ${asString(args.providerId)}`)
             }
 
-            this.logout()
+            await this.logout()
             this.store.invalidateCredentials(args.providerId)
             return false
         } finally {
