@@ -1,0 +1,17 @@
+Resources:
+    HelloWorldFunction:
+        Type: AWS::Serverless::Function
+        Properties:
+            CodeUri: hello-world/
+            Handler: hello-world
+            Runtime: go1.x
+            Tracing: Active
+            Events:
+                CatchAll:
+                    Type: Api
+                    Properties:
+                        Path: /hello
+                        Method: GET
+            Environment:
+                Variables:
+                    PARAM1: VALUE
