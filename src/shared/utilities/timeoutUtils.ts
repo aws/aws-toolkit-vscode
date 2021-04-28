@@ -150,11 +150,6 @@ export async function waitUntil<T>(
     }
 }
 
-/** Best approximation for identifying a Promise in CommonJS */
-function isPromiseLike<T>(obj: any): obj is Promise<T> {
-    return obj !== undefined && (obj instanceof Promise || obj.then === 'function')
-}
-
 /**
  * Race a Timeout object against a Promise. Handles Timeout expiration and cancellation, exposing access through
  * the use of callbacks. Timeout tokens are cleaned up automatically after completion. Set `opt.completeTimeout`
@@ -179,7 +174,7 @@ export function waitTimeout<T>(
         completeTimeout?: boolean
     } = {}
 ): Promise<T | undefined> {
-    if (!isPromiseLike(promise)) {
+    if (typeof promise === 'function') {
         promise = promise()
     }
 
