@@ -94,6 +94,7 @@ contextual documentation, as shown below.
 The Toolkit _local SAM debugging_ feature supports these runtimes:
 
 -   C# (.NET Core 2.1, 3.1; .NET 5.0)
+-   Go (1.14, 1.15, 1.16)
 -   Java (8, 8.al2, 11)
 -   JavaScript (Node.js 10.x, 12.x, 14.x)
 -   Python (2.7, 3.6, 3.7, 3.8)
