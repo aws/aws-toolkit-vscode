@@ -2765,7 +2765,7 @@ describe('SamDebugConfigurationProvider', async function () {
                 request: DIRECT_INVOKE_TYPE,
                 invokeTarget: {
                     target: CODE_TARGET_TYPE,
-                    lambdaHandler: 'hello-world',
+                    lambdaHandler: 'hello-world:handler',
                     projectRoot: 'hello-world',
                 },
                 lambda: {
@@ -2804,7 +2804,7 @@ describe('SamDebugConfigurationProvider', async function () {
                 apiPort: undefined,
                 debugPort: actual.debugPort,
                 documentUri: vscode.Uri.file(''), // TODO: remove or test.
-                handlerName: 'hello-world',
+                handlerName: 'handler',
                 invokeTarget: { ...input.invokeTarget },
                 lambda: {
                     ...input.lambda,

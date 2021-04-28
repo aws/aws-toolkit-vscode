@@ -1,5 +1,5 @@
 /*!
- * Copyright Amazon.com, Inc. or its affiliates. All Rights Reserved.
+ * Copyright 2018 Amazon.com, Inc. or its affiliates. All Rights Reserved.
  * SPDX-License-Identifier: Apache-2.0
  */
 
@@ -9,27 +9,26 @@ import { LambdaHandlerCandidate } from '../lambdaHandlerSearch'
 import { getLogger } from '../logger/logger'
 import { stripNewLinesAndComments } from '../../shared/utilities/textUtilities'
 import { findParentProjectFile } from '../utilities/workspaceUtils'
-import { basename, dirname } from 'path'
-import { activateExtension } from '../utilities/vsCodeUtils'
+import { basename, dirname, relative } from 'path'
 
-export const goLanguage = 'go'
-export const goAllfiles: vscode.DocumentFilter[] = [
+export const GO_LANGUAGE = 'go'
+export const GO_ALLFILES: vscode.DocumentFilter[] = [
     {
         scheme: 'file',
-        language: goLanguage,
+        language: GO_LANGUAGE,
     },
 ]
 
 // Go modules were introduced in Go 1.11
 // Before that, $GOPATH had to be set properly to find dependencies
 // We currently just ignore projects without a Go module file
-export const goBasePattern = '**/go.mod'
+export const GO_BASE_PATTERN = '**/go.mod'
 
 export async function getLambdaHandlerCandidates(document: vscode.TextDocument): Promise<LambdaHandlerCandidate[]> {
-    const modFile = await findParentProjectFile(document.uri, /go\.mod$/)
-    const hasGoExtension = !!(await activateExtension(VSCODE_EXTENSION_ID.go))
+    const modFile: vscode.Uri | undefined = await findParentProjectFile(document.uri, /go\.mod$/)
+    const goIsActive: boolean = await checkForGoExtension()
 
-    if (!modFile || !hasGoExtension) {
+    if (!modFile || !goIsActive) {
         return []
     }
 
@@ -54,6 +53,7 @@ export async function getLambdaHandlerCandidates(document: vscode.TextDocument):
     }
 
     const filename = document.uri.fsPath
+    const packagePath = dirname(filename)
     const symbols: vscode.DocumentSymbol[] =
         (await vscode.commands.executeCommand<vscode.DocumentSymbol[]>(
             'vscode.executeDocumentSymbolProvider',
@@ -61,12 +61,12 @@ export async function getLambdaHandlerCandidates(document: vscode.TextDocument):
         )) ?? []
 
     return symbols
-        .filter((symbol) => isValidFuncSignature(document, symbol))
-        .map<LambdaHandlerCandidate>((symbol) => {
+        .filter(symbol => isValidFuncSignature(document, symbol))
+        .map<LambdaHandlerCandidate>(symbol => {
             return {
                 filename,
-                handlerName: basename(dirname(filename)),
-                rootUri: modFile,
+                handlerName: relative(dirname(modFile.fsPath), packagePath) + ':' + basename(packagePath),
+                manifestUri: modFile,
                 range: symbol.range,
             }
         })
@@ -86,7 +86,7 @@ export function isValidFuncSignature(document: vscode.TextDocument, symbol: vsco
     // Documentation for valid lambda handler: https://docs.aws.amazon.com/lambda/latest/dg/golang-handler.html
     // The LSP doesn't expose any low-level type-checking functionality unfortunately. If we want to perform
     // type-checking on our lambdas, we need to write the code for that ourselves using 'executeTypeDefinitionProvider'.
-    if (symbol.kind === vscode.SymbolKind.Function && symbol.range.start.character === 0) {
+    if (symbol.kind === vscode.SymbolKind.Function && symbol.range.start.character == 0) {
         // vscode details does not include the return type in the signature :(
         // otherwise we would just use symbol.details instead of parsing it ourselves
         const funcWithBody: string = document.getText(symbol.range)
@@ -126,7 +126,6 @@ function parseTypes(params: string): string[] {
     const paramParts = params.split(',')
 
     // Names of parameters must either be all present or all absent: https://golang.org/ref/spec#Function_types
-    // eslint-disable-next-line unicorn/no-array-for-each
     paramParts.forEach((element: string, i: number) => {
         const parts: string[] = element.trim().split(/\s+/)
         const type: string = parts.length > 1 ? parts[1].trim() : parts[0].trim()
@@ -145,6 +144,32 @@ function parseTypes(params: string): string[] {
     })
 
     return types
+}
+
+/**
+ * Checks if the Go extension exists and is active.
+ */
+async function checkForGoExtension(): Promise<boolean> {
+    const extension = vscode.extensions.getExtension(VSCODE_EXTENSION_ID.go)
+
+    if (extension) {
+        if (extension.isActive) {
+            return true
+        }
+
+        getLogger().debug('Activating extension: %s', VSCODE_EXTENSION_ID.go)
+
+        try {
+            await extension.activate()
+            getLogger().debug('Activated extension: %s', VSCODE_EXTENSION_ID.go)
+
+            return true
+        } catch (err) {
+            getLogger().debug('Failed to activate extension "%s": %O', VSCODE_EXTENSION_ID.go, err as Error)
+        }
+    }
+
+    return false
 }
 
 function validateArgumentTypes(argTypes: string[]): boolean {
