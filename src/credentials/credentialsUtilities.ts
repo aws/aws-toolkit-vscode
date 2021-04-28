@@ -12,7 +12,7 @@ import { credentialHelpUrl } from '../shared/constants'
 import { Profile } from '../shared/credentials/credentialsFile'
 import { isCloud9 } from '../shared/extensionUtilities'
 import { CredentialsProviderId, asString } from './providers/credentialsProviderId'
-import { createTimedPromise, Timeout } from '../shared/utilities/timeoutUtils'
+import { waitTimeout, Timeout } from '../shared/utilities/timeoutUtils'
 import { showMessageWithCancel } from '../shared/utilities/messages'
 
 const CREDENTIALS_TIMEOUT = 300000 // 5 minutes
@@ -78,9 +78,6 @@ export async function resolveProviderWithCancel<T extends AWS.Credentials | void
         timeout = new Timeout(timeout)
     }
 
-    // If the provider throws an error we need to cancel the progress messsage
-    provider = provider.finally(() => (timeout as Timeout).killTimer())
-
     setTimeout(() => {
         timeout = timeout as Timeout // Typescript lost scope of the correct type here
         if (timeout.fulfilled !== true) {
@@ -91,7 +88,7 @@ export async function resolveProviderWithCancel<T extends AWS.Credentials | void
         }
     }, CREDENTIALS_PROGRESS_DELAY)
 
-    await createTimedPromise(provider, timeout, {
+    await waitTimeout(provider, timeout, {
         onCancel: () => {
             throw new Error(`Request to get credentials for "${profile}" cancelled`)
         },
