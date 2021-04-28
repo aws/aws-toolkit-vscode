@@ -123,15 +123,13 @@ export class SharedCredentialsProvider implements CredentialsProvider {
             }
             // Profiles with references involving non-aws partitions need help getting the right STS endpoint
             this.applyProfileRegionToGlobalStsConfig()
-            let provider
             //  SSO entry point
             if (this.isSsoProfile()) {
                 const ssoCredentialProvider = this.makeSsoProvider()
-                provider = ssoCredentialProvider.refreshCredentials()
-            } else {
-                provider = new AWS.CredentialProviderChain([this.makeCredentialsProvider()]).resolvePromise()
+                return await ssoCredentialProvider.refreshCredentials()
             }
-            return await resolveProviderWithCancel(this.profileName, provider)
+            const provider = new AWS.CredentialProviderChain([this.makeCredentialsProvider()])
+            return await resolveProviderWithCancel(this.profileName, provider.resolvePromise())
         } finally {
             // Profiles with references involving non-aws partitions need help getting the right STS endpoint
             AWS.config.sts = originalStsConfiguration
