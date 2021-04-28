@@ -35,10 +35,7 @@ export async function invokeGoLambda(ctx: ExtContext, config: GoDebugConfigurati
 
     if (!config.noDebug && !(await installDebugger(config.debuggerPath!))) {
         showErrorWithLogs(
-            localize(
-                'AWS.sam.debugger.godelve.failed',
-                'Failed to install Delve for the lambda container.'
-            )
+            localize('AWS.sam.debugger.godelve.failed', 'Failed to install Delve for the lambda container.')
         )
 
         // Terminates the debug session by sending up a dummy config
@@ -87,6 +84,18 @@ export async function makeGoConfig(config: SamLaunchRequestArgs): Promise<GoDebu
 
     if (!config.codeRoot) {
         throw Error('missing launch.json, template.yaml, and failed to discover project root')
+    }
+
+    // If the target is 'code' we need to adjust codeRoot to the location of the source
+    if (config.invokeTarget.target === 'code') {
+        const parts = config.handlerName.split(':')
+
+        if (parts.length !== 2) {
+            throw Error(`malformed Go handler name: ${config.handlerName}`)
+        }
+
+        config.codeRoot = path.join(config.codeRoot, parts[0])
+        config.handlerName = parts[1]
     }
 
     let localRoot: string | undefined
