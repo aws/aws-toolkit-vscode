@@ -25,8 +25,6 @@ import * as pythonCodelens from './pythonCodeLensProvider'
 import * as tsCodelens from './typescriptCodeLensProvider'
 import * as goCodelens from './goCodeLensProvider'
 
-export type Language = 'python' | 'javascript' | 'csharp' | 'java' 
-
 export type Language = 'python' | 'javascript' | 'csharp' | 'go' | 'java' | 'typescript'
 
 export async function makeCodeLenses({
