@@ -34,6 +34,7 @@ import { DefaultSamCliConfiguration } from './cli/samCliConfiguration'
 import { extensionSettingsPrefix } from '../constants'
 import { DefaultSamCliLocationProvider } from './cli/samCliLocator'
 import { getSamCliContext, getSamCliVersion } from './cli/samCliContext'
+import { CloudFormation } from '../cloudformation/cloudformation'
 
 const localize = nls.loadMessageBundle()
 
@@ -65,9 +66,16 @@ function getEnvironmentVariables(
  * Decides the resource name for the generated template.yaml.
  */
 function makeResourceName(config: SamLaunchRequestArgs): string {
-    return config.invokeTarget.target === 'code'
-        ? path.parse(config.invokeTarget.projectRoot).name
-        : config.invokeTarget.logicalId
+    if (config.invokeTarget.target === 'code') {
+        // CodeUri may be ".", we need a name. #1685
+        const fullPath = tryGetAbsolutePath(config.workspaceFolder, config.invokeTarget.projectRoot)
+        const logicalId = CloudFormation.makeResourceId(path.parse(fullPath).name)
+        return logicalId === ''
+            ? 'resource1' // projectRoot has only non-alphanumeric chars :(
+            : logicalId
+    } else {
+        return config.invokeTarget.logicalId
+    }
 }
 
 const SAM_LOCAL_PORT_CHECK_RETRY_INTERVAL_MILLIS: number = 125

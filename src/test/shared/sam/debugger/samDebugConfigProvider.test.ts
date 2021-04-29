@@ -329,6 +329,42 @@ describe('SamDebugConfigurationProvider', async function () {
             )
         })
 
+        it('generates a valid resource name based on the projectDir #1685', async function () {
+            const appDir = pathutil.normalize(
+                path.join(testutil.getProjectDir(), 'testFixtures/workspaceFolder/go1-plain-sam-app')
+            )
+            const folder = testutil.getWorkspaceFolder(appDir)
+            const input = {
+                type: AWS_SAM_DEBUG_TYPE,
+                name: 'test-go-code-logicalid',
+                request: DIRECT_INVOKE_TYPE,
+                invokeTarget: {
+                    target: CODE_TARGET_TYPE,
+                    lambdaHandler: 'hello-world',
+                    projectRoot: '.', // Issue #1685
+                },
+                lambda: {
+                    runtime: 'go1.x',
+                },
+            }
+            const config = (await debugConfigProvider.makeConfig(folder, input))!
+
+            assertFileText(
+                config.templatePath,
+                `Resources:
+  go1plainsamapp:
+    Type: 'AWS::Serverless::Function'
+    Properties:
+      Handler: hello-world
+      CodeUri: >-
+        ${config.codeRoot}
+      Runtime: go1.x
+      Environment:
+        Variables: {}
+`
+            )
+        })
+
         it('returns undefined when resolving debug configurations with an invalid request type', async function () {
             const resolved = await debugConfigProvider.makeConfig(undefined, {
                 type: AWS_SAM_DEBUG_TYPE,
@@ -2200,12 +2236,12 @@ Outputs:
             }
 
             assertEqualLaunchConfigs(actual, expected)
-            assertFileText(expected.envFile, '{"hello_world":{}}')
+            assertFileText(expected.envFile, '{"helloworld":{}}')
             assert.strictEqual(readFileSync(actual.eventPayloadFile, 'utf-8'), readFileSync(absPayloadPath, 'utf-8'))
             assertFileText(
                 expected.templatePath,
                 `Resources:
-  hello_world:
+  helloworld:
     Type: 'AWS::Serverless::Function'
     Properties:
       Handler: ${expected.handlerName}
@@ -2915,7 +2951,7 @@ Outputs:
             }
 
             assertEqualLaunchConfigs(actual, expected)
-            assertFileText(expected.envFile, '{"hello_world":{}}')
+            assertFileText(expected.envFile, '{"helloworld":{}}')
             assert.strictEqual(
                 readFileSync(actual.eventPayloadFile, 'utf-8'),
                 readFileSync(input.lambda.payload.path, 'utf-8')
@@ -2923,7 +2959,7 @@ Outputs:
             assertFileText(
                 expected.templatePath,
                 `Resources:
-  hello_world:
+  helloworld:
     Type: 'AWS::Serverless::Function'
     Properties:
       Handler: ${expected.handlerName}
@@ -3354,7 +3390,7 @@ Resources:
             const folder = testutil.getWorkspaceFolder(appDir)
             const input = {
                 type: AWS_SAM_DEBUG_TYPE,
-                name: 'gogogogo',
+                name: 'test-go-code',
                 request: DIRECT_INVOKE_TYPE,
                 invokeTarget: {
                     target: CODE_TARGET_TYPE,
@@ -3424,7 +3460,7 @@ Resources:
             assertEqualLaunchConfigs(actual, expected)
             assertFileText(
                 expected.envFile,
-                '{"hello-world":{"test-envvar-1":"test value 1","test-envvar-2":"test value 2"}}'
+                '{"helloworld":{"test-envvar-1":"test value 1","test-envvar-2":"test value 2"}}'
             )
             assertFileText(
                 expected.eventPayloadFile,
@@ -3433,7 +3469,7 @@ Resources:
             assertFileText(
                 expected.templatePath,
                 `Resources:
-  hello-world:
+  helloworld:
     Type: 'AWS::Serverless::Function'
     Properties:
       Handler: hello-world
