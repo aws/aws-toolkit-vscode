@@ -1,0 +1,4 @@
+{
+	"type": "Feature",
+	"description": "SAM run/debug: Add support for Go 1.x"
+}
