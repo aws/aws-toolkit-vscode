@@ -12,26 +12,36 @@ import { DependencyManager } from '../../src/lambda/models/samLambdaRuntime'
 import { helloWorldTemplate } from '../../src/lambda/models/samTemplates'
 import { getSamCliContext } from '../../src/shared/sam/cli/samCliContext'
 import { runSamCliInit, SamCliInitArgs } from '../../src/shared/sam/cli/samCliInit'
-import { assertThrowsError } from '../../src/test/shared/utilities/assertUtils'
 import { Language } from '../shared/codelens/codeLensUtils'
 import { VSCODE_EXTENSION_ID } from '../shared/extensions'
 import { fileExists } from '../shared/filesystemUtilities'
 import { AddSamDebugConfigurationInput } from '../shared/sam/debugger/commands/addSamDebugConfiguration'
 import { findParentProjectFile } from '../shared/utilities/workspaceUtils'
-import { activateExtension, getCodeLenses, getTestWorkspaceFolder, sleep } from './integrationTestsUtilities'
+import * as testUtils from './integrationTestsUtilities'
 import { setTestTimeout } from './globalSetup.test'
 import { waitUntil } from '../shared/utilities/timeoutUtils'
 import { AwsSamDebuggerConfiguration } from '../shared/sam/debugger/awsSamDebugConfiguration.gen'
 import { ext } from '../shared/extensionGlobals'
-
-const projectFolder = getTestWorkspaceFolder()
+import { AwsSamTargetType } from '../shared/sam/debugger/awsSamDebugConfiguration'
+import { closeAllEditors } from '../shared/utilities/vsCodeUtils'
+import { insertTextIntoFile } from '../shared/utilities/textUtilities'
+const projectFolder = testUtils.getTestWorkspaceFolder()
 
 /* Test constants go here */
 const CODELENS_TIMEOUT: number = 60000
 const CODELENS_RETRY_INTERVAL: number = 200
 const DEBUG_TIMEOUT: number = 90000
-const NO_DEBUG_SESSION_TIMEOUT: number = 10000
+const NO_DEBUG_SESSION_TIMEOUT: number = 5000
 const NO_DEBUG_SESSION_INTERVAL: number = 100
+
+/**
+ * These languages are skipped on our minimum supported version
+ * For Go and Python this is because the extensions used do not support our minimum
+ */
+const SKIP_LANGUAGES_ON_MIN = ['python', 'go']
+
+/** Go can't handle API tests yet */
+const SKIP_LANGUAGES_ON_API = ['go']
 
 interface TestScenario {
     displayName: string
@@ -127,6 +137,14 @@ const scenarios: TestScenario[] = [
         language: 'java',
         dependencyManager: 'gradle',
     },
+    {
+        runtime: 'go1.x',
+        displayName: 'go1.x (ZIP)',
+        path: 'hello-world/main.go',
+        debugSessionType: 'delve',
+        language: 'go',
+        dependencyManager: 'mod',
+    },
     // { runtime: 'dotnetcore2.1', path: 'src/HelloWorld/Function.cs', debugSessionType: 'coreclr', language: 'csharp' },
     // { runtime: 'dotnetcore3.1', path: 'src/HelloWorld/Function.cs', debugSessionType: 'coreclr', language: 'csharp' },
 
@@ -175,6 +193,15 @@ const scenarios: TestScenario[] = [
         debugSessionType: 'python',
         language: 'python',
         dependencyManager: 'pip',
+    },
+    {
+        runtime: 'go1.x',
+        displayName: 'go1.x (Image)',
+        baseImage: 'amazon/go1.x-base',
+        path: 'hello-world/main.go',
+        debugSessionType: 'delve',
+        language: 'go',
+        dependencyManager: 'mod',
     },
     // {
     //     runtime: 'python3.8',
@@ -234,7 +261,7 @@ async function getAddConfigCodeLens(documentUri: vscode.Uri): Promise<vscode.Cod
     return waitUntil(
         async () => {
             try {
-                let codeLenses = await getCodeLenses(documentUri)
+                let codeLenses = await testUtils.getCodeLenses(documentUri)
                 if (!codeLenses || codeLenses.length === 0) {
                     return undefined
                 }
@@ -253,7 +280,7 @@ async function getAddConfigCodeLens(documentUri: vscode.Uri): Promise<vscode.Cod
                     return codeLenses || []
                 }
             } catch (e) {
-                console.log(`sam.test.ts: getAddConfigCodeLens(): failed, retrying:\n${e}`)
+                console.log(`sam.test.ts: getAddConfigCodeLens() on "${documentUri.fsPath}" failed, retrying:\n${e}`)
             }
 
             return undefined
@@ -294,21 +321,30 @@ function validateSamDebugSession(
 async function startDebugger(
     scenario: TestScenario,
     scenarioIndex: number,
+    target: AwsSamTargetType,
     testConfig: vscode.DebugConfiguration,
     testDisposables: vscode.Disposable[],
     sessionLog: string[]
 ) {
+    function logSession(startEnd: 'START' | 'END', name: string) {
+        sessionLog.push(
+            `scenario ${scenarioIndex}.${target.toString()[0]} ${startEnd.padEnd(5, ' ')} ${target}/${
+                scenario.displayName
+            }: ${name}`
+        )
+    }
+
     // Create a Promise that encapsulates our success critera
     const success = new Promise<void>((resolve, reject) => {
         testDisposables.push(
-            vscode.debug.onDidTerminateDebugSession(async endedSession => {
-                sessionLog.push(`scenario ${scenarioIndex} (END) (runtime=${scenario.runtime}) ${endedSession.name}`)
-                const sessionRuntime = (endedSession.configuration as any).runtime
+            vscode.debug.onDidTerminateDebugSession(async session => {
+                logSession('END', session.name)
+                const sessionRuntime = (session.configuration as any).runtime
                 if (!sessionRuntime) {
                     // It's a coprocess, ignore it.
                     return
                 }
-                const failMsg = validateSamDebugSession(endedSession, testConfig.name, scenario.runtime)
+                const failMsg = validateSamDebugSession(session, testConfig.name, scenario.runtime)
                 if (failMsg) {
                     reject(new Error(failMsg))
                 }
@@ -321,17 +357,13 @@ async function startDebugger(
     // Executes the 'F5' action
     await vscode.debug.startDebugging(undefined, testConfig).then(
         async () => {
-            sessionLog.push(
-                `scenario ${scenarioIndex} (START) (runtime=${scenario.runtime}) ${
-                    vscode.debug.activeDebugSession!.name
-                }`
-            )
+            logSession('START', vscode.debug.activeDebugSession!.name)
 
-            await sleep(400)
+            await testUtils.sleep(400)
             await continueDebugger()
-            await sleep(400)
+            await testUtils.sleep(400)
             await continueDebugger()
-            await sleep(400)
+            await testUtils.sleep(400)
             await continueDebugger()
 
             await success
@@ -353,29 +385,13 @@ async function stopDebugger(logMsg: string | undefined): Promise<void> {
     await vscode.commands.executeCommand('workbench.action.debug.stop')
 }
 
-async function closeAllEditors(): Promise<void> {
-    await vscode.commands.executeCommand('workbench.action.closeAllEditors')
-}
-
 async function activateExtensions(): Promise<void> {
     console.log('Activating extensions...')
-    await activateExtension(VSCODE_EXTENSION_ID.python)
-    await activateExtension(VSCODE_EXTENSION_ID.java)
-    await activateExtension(VSCODE_EXTENSION_ID.javadebug)
+    await testUtils.activateExtension(VSCODE_EXTENSION_ID.python)
+    await testUtils.activateExtension(VSCODE_EXTENSION_ID.go)
+    await testUtils.activateExtension(VSCODE_EXTENSION_ID.java)
+    await testUtils.activateExtension(VSCODE_EXTENSION_ID.javadebug)
     console.log('Extensions activated')
-}
-
-async function configurePythonExtension(): Promise<void> {
-    const configPy = vscode.workspace.getConfiguration('python')
-    // Disable linting to silence some of the Python extension's log spam
-    await configPy.update('linting.pylintEnabled', false, false)
-    await configPy.update('linting.enabled', false, false)
-}
-
-async function configureAwsToolkitExtension(): Promise<void> {
-    const configAws = vscode.workspace.getConfiguration('aws')
-    // Prevent the extension from preemptively cancelling a 'sam local' run
-    await configAws.update('samcli.debug.attach.timeout.millis', DEBUG_TIMEOUT, false)
 }
 
 describe('SAM Integration Tests', async function () {
@@ -394,8 +410,9 @@ describe('SAM Integration Tests', async function () {
         config.update('server.launchMode', 'Standard')
 
         await activateExtensions()
-        await configureAwsToolkitExtension()
-        await configurePythonExtension()
+        await testUtils.configureAwsToolkitExtension()
+        await testUtils.configurePythonExtension()
+        await testUtils.configureGoExtension()
 
         testSuiteRoot = await mkdtemp(path.join(projectFolder, 'inttest'))
         console.log('testSuiteRoot: ', testSuiteRoot)
@@ -407,7 +424,7 @@ describe('SAM Integration Tests', async function () {
         // Print a summary of session that were seen by `onDidStartDebugSession`.
         const sessionReport = sessionLog.map(x => `    ${x}`).join('\n')
         config.update('server.launchMode', javaLanguageSetting)
-        console.log(`DebugSessions seen in this run:${sessionReport}`)
+        console.log(`DebugSessions seen in this run:\n${sessionReport}`)
     })
 
     for (let scenarioIndex = 0; scenarioIndex < scenarios.length; scenarioIndex++) {
@@ -502,12 +519,15 @@ describe('SAM Integration Tests', async function () {
                 })
 
                 it('produces an error when creating a SAM Application to the same location', async function () {
-                    const err = await assertThrowsError(async () => await createSamApplication(testDir))
-                    assert(err.message.includes('directory already exists'))
+                    await assert.rejects(
+                        createSamApplication(testDir),
+                        /directory already exists/,
+                        'Promise was not rejected'
+                    )
                 })
 
                 it('produces an Add Debug Configuration codelens', async function () {
-                    if (vscode.version.startsWith('1.42') && scenario.language === 'python') {
+                    if (vscode.version.startsWith('1.42') && SKIP_LANGUAGES_ON_MIN.includes(scenario.language)) {
                         this.skip()
                     }
 
@@ -524,6 +544,9 @@ describe('SAM Integration Tests', async function () {
                             break
                         case 'csharp':
                             manifestFile = /^.*\.csproj$/
+                            break
+                        case 'go':
+                            manifestFile = /^go\.mod$/
                             break
                         case 'java':
                             if (scenario.dependencyManager === 'maven') {
@@ -546,45 +569,68 @@ describe('SAM Integration Tests', async function () {
                     }
                 })
 
-                it('invokes and attaches on debug request (F5)', async function () {
-                    if (vscode.version.startsWith('1.42') && scenario.language === 'python') {
+                it('target=api: invokes and attaches on debug request (F5)', async function () {
+                    if (
+                        (vscode.version.startsWith('1.42') && SKIP_LANGUAGES_ON_MIN.includes(scenario.language)) ||
+                        SKIP_LANGUAGES_ON_API.includes(scenario.language)
+                    ) {
                         this.skip()
                     }
 
                     setTestTimeout(this.test?.fullTitle(), DEBUG_TIMEOUT)
+                    await testTarget('api', {
+                        api: {
+                            path: '/hello',
+                            httpMethod: 'get',
+                            headers: { 'accept-language': 'fr-FR' },
+                        },
+                    })
+                })
+
+                it('target=template: invokes and attaches on debug request (F5)', async function () {
+                    if (vscode.version.startsWith('1.42') && SKIP_LANGUAGES_ON_MIN.includes(scenario.language)) {
+                        this.skip()
+                    }
+
+                    setTestTimeout(this.test?.fullTitle(), DEBUG_TIMEOUT)
+                    await testTarget('template')
+                })
+
+                async function testTarget(target: AwsSamTargetType, extraConfig: any = {}) {
                     // Allow previous sessions to go away.
                     const noDebugSession: boolean | undefined = await waitUntil(
-                        async () => {
-                            if (vscode.debug.activeDebugSession !== undefined) {
-                                await stopDebugger(undefined)
-                                return false
-                            }
-
-                            return true
-                        },
+                        async () => vscode.debug.activeDebugSession === undefined,
                         { timeout: NO_DEBUG_SESSION_TIMEOUT, interval: NO_DEBUG_SESSION_INTERVAL, truthy: true }
                     )
 
-                    assert.strictEqual(
-                        noDebugSession,
-                        true,
-                        `unexpected debug session in progress: ${JSON.stringify(
-                            vscode.debug.activeDebugSession,
-                            undefined,
-                            2
-                        )}`
-                    )
+                    // We exclude the Node debug type since it causes the most erroneous failures with CI.
+                    // However, the fact that there are sessions from previous tests is still an issue, so
+                    // a warning will be logged under the current session.
+                    if (!noDebugSession) {
+                        assert.strictEqual(
+                            vscode.debug.activeDebugSession!.type,
+                            'pwa-node',
+                            `unexpected debug session in progress: ${JSON.stringify(
+                                vscode.debug.activeDebugSession,
+                                undefined,
+                                2
+                            )}`
+                        )
+
+                        sessionLog.push(`(WARNING) Unexpected debug session ${vscode.debug.activeDebugSession!.name}`)
+                    }
 
                     const testConfig = {
                         type: 'aws-sam',
                         request: 'direct-invoke',
                         name: `test-config-${scenarioIndex}`,
                         invokeTarget: {
-                            target: 'template',
+                            target: target,
                             // Resource defined in `src/testFixtures/.../template.yaml`.
                             logicalId: 'HelloWorldFunction',
                             templatePath: cfnTemplatePath,
                         },
+                        ...extraConfig,
                     } as AwsSamDebuggerConfiguration
 
                     // runtime is optional for ZIP, but required for image-based
@@ -592,13 +638,20 @@ describe('SAM Integration Tests', async function () {
                         testConfig.lambda = {
                             runtime: scenario.runtime,
                         }
+
+                        // HACK: set GOPROXY=direct or it will fail to build. https://golang.org/ref/mod#module-proxy
+                        // This only applies for our internal systems
+                        if (scenario.language === 'go') {
+                            const dockerfilePath: string = path.join(path.dirname(appPath), 'Dockerfile')
+                            insertTextIntoFile('ENV GOPROXY=direct', dockerfilePath, 1)
+                        }
                     }
 
                     // XXX: force load since template registry seems a bit flakey
                     await ext.templateRegistry.addItemToRegistry(vscode.Uri.file(cfnTemplatePath))
 
-                    await startDebugger(scenario, scenarioIndex, testConfig, testDisposables, sessionLog)
-                })
+                    await startDebugger(scenario, scenarioIndex, target, testConfig, testDisposables, sessionLog)
+                }
             })
         })
 

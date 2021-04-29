@@ -27,6 +27,9 @@ import { ext } from '../../extensionGlobals'
 import { Runtime } from 'aws-sdk/clients/lambda'
 import { getWorkspaceRelativePath } from '../../utilities/workspaceUtils'
 
+/** SAM will mount the --debugger-path to /tmp/lambci_debug_files */
+const DEBUGPY_WRAPPER_PATH = '/tmp/lambci_debug_files/py_debug_wrapper.py'
+
 // TODO: Fix this! Implement a more robust/flexible solution. This is just a basic minimal proof of concept.
 export async function getSamProjectDirPathForFile(filepath: string): Promise<string> {
     return path.dirname(filepath)
@@ -99,7 +102,7 @@ export async function makePythonDebugConfig(
             config.debuggerPath = ext.context.asAbsolutePath(path.join('resources', 'debugger'))
             // NOTE: SAM CLI splits on each *single* space in `--debug-args`!
             //       Extra spaces will be passed as spurious "empty" arguments :(
-            const debugArgs = `/tmp/lambci_debug_files/py_debug_wrapper.py --listen 0.0.0.0:${config.debugPort} --wait-for-client`
+            const debugArgs = `${DEBUGPY_WRAPPER_PATH} --listen 0.0.0.0:${config.debugPort} --wait-for-client --log-to-stderr`
             if (isImageLambda) {
                 const params = getPythonExeAndBootstrap(config.runtime)
                 config.debugArgs = [`${params.python} ${debugArgs} ${params.boostrap}`]
@@ -186,6 +189,11 @@ export async function makePythonDebugConfig(
         }
     }
 
+    // Make debugpy output log information if our loglevel is at 'debug'
+    if (!config.noDebug && getLogger().logLevelEnabled('debug')) {
+        config.debugArgs![0] += ' --debug'
+    }
+
     return {
         ...config,
         type: 'python',
@@ -216,12 +224,13 @@ export async function invokePythonLambda(
         WAIT_FOR_DEBUGGER_MESSAGES.PYTHON,
         WAIT_FOR_DEBUGGER_MESSAGES.PYTHON_IKPDB,
     ])
-    // Must not used waitForPythonDebugAdapter() for ikpdb: the socket consumes
+
+    // Must not used waitForPort() for ikpdb: the socket consumes
     // ikpdb's initial message and ikpdb does not have a --wait-for-client
     // mode, then cloud9 never sees the init message and waits forever.
     //
     // eslint-disable-next-line @typescript-eslint/unbound-method
-    config.onWillAttachDebugger = config.useIkpdb ? waitForIkpdb : waitForPythonDebugAdapter
+    config.onWillAttachDebugger = config.useIkpdb ? waitForIkpdb : undefined
     const c = (await invokeLambdaFunction(ctx, config, async () => {})) as PythonDebugConfiguration
     return c
 }
@@ -233,12 +242,6 @@ async function waitForIkpdb(debugPort: number, timeout: Timeout) {
     getLogger().info('waitForIkpdb: wait 2 seconds')
     await new Promise<void>(resolve => {
         setTimeout(resolve, 2000)
-    })
-}
-
-export async function waitForPythonDebugAdapter(debugPort: number, timeout: Timeout) {
-    await new Promise<void>(resolve => {
-        setTimeout(resolve, 1000)
     })
 }
 

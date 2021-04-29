@@ -3,10 +3,13 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
-import { logAndThrowIfUnexpectedExitCode } from '../../../../shared/sam/cli/samCliInvokerUtils'
+import * as assert from 'assert'
+import {
+    logAndThrowIfUnexpectedExitCode,
+    makeUnexpectedExitCodeError,
+} from '../../../../shared/sam/cli/samCliInvokerUtils'
 import { getTestLogger } from '../../../globalSetup.test'
-import { assertThrowsError } from '../../utilities/assertUtils'
-import { assertErrorContainsBadExitMessage, assertLogContainsBadExitInformation } from './testSamCliProcessInvoker'
+import { assertLogContainsBadExitInformation } from './testSamCliProcessInvoker'
 
 describe('logAndThrowIfUnexpectedExitCode', async function () {
     it('does not throw on expected exit code', async function () {
@@ -23,6 +26,7 @@ describe('logAndThrowIfUnexpectedExitCode', async function () {
 
     it('throws on unexpected exit code', async function () {
         const exitError = new Error('bad result')
+        const finalError = makeUnexpectedExitCodeError(exitError.message)
         const childProcessResult = {
             exitCode: 123,
             error: exitError,
@@ -30,11 +34,11 @@ describe('logAndThrowIfUnexpectedExitCode', async function () {
             stdout: 'stdout text',
         }
 
-        const error = await assertThrowsError(async () => {
-            logAndThrowIfUnexpectedExitCode(childProcessResult, 456)
-        }, 'Expected an error to be thrown')
-
-        assertErrorContainsBadExitMessage(error, exitError.message)
+        assert.throws(
+            () => logAndThrowIfUnexpectedExitCode(childProcessResult, 456),
+            finalError,
+            'Correct error was not thrown'
+        )
         await assertLogContainsBadExitInformation(getTestLogger(), childProcessResult, 456)
     })
 })

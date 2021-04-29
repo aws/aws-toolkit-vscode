@@ -49,7 +49,7 @@ const baseConfig = {
         rules: [
             {
                 test: /\.ts$/,
-                exclude: /node_modules/,
+                exclude: /node_modules|testFixtures/,
                 use: [
                     {
                         // vscode-nls-dev loader:
@@ -80,7 +80,7 @@ const baseConfig = {
             PLUGINVERSION: JSON.stringify(packageJson.version),
         }),
         new CircularDependencyPlugin({
-            exclude: /node_modules/,
+            exclude: /node_modules|testFixtures/,
             failOnError: true,
         }),
     ],
@@ -124,7 +124,7 @@ const webviewConfig = {
                     loader: 'tsx',
                     target: 'es2018',
                 },
-                exclude: /node_modules/,
+                exclude: /node_modules|testFixtures/,
             },
             {
                 test: /\.vue$/,

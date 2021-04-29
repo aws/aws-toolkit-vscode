@@ -5,11 +5,10 @@
 
 import * as assert from 'assert'
 import { SamCliInfoInvocation, SamCliInfoResponse } from '../../../../shared/sam/cli/samCliInfo'
+import { makeUnexpectedExitCodeError } from '../../../../shared/sam/cli/samCliInvokerUtils'
 import { ChildProcessResult } from '../../../../shared/utilities/childProcess'
 import { getTestLogger } from '../../../globalSetup.test'
-import { assertThrowsError } from '../../utilities/assertUtils'
 import {
-    assertErrorContainsBadExitMessage,
     assertLogContainsBadExitInformation,
     BadExitCodeSamCliProcessInvoker,
     FakeChildProcessResult,
@@ -85,20 +84,16 @@ describe('SamCliInfoInvocation', async function () {
         )
         const samInfo: SamCliInfoInvocation = new SamCliInfoInvocation({ invoker })
 
-        await assertThrowsError(async () => {
-            await samInfo.execute()
-        }, 'Expected a error to be thrown')
+        await assert.rejects(samInfo.execute(), 'Expected a error to be thrown')
     })
 
     it('throws on unexpected exit code', async function () {
         const badExitCodeProcessInvoker = new BadExitCodeSamCliProcessInvoker({})
+        const samInfo: SamCliInfoInvocation = new SamCliInfoInvocation({ invoker: badExitCodeProcessInvoker })
 
-        const error = await assertThrowsError(async () => {
-            const samInfo: SamCliInfoInvocation = new SamCliInfoInvocation({ invoker: badExitCodeProcessInvoker })
-            await samInfo.execute()
-        }, 'Expected an error to be thrown')
+        const expectedError = makeUnexpectedExitCodeError(badExitCodeProcessInvoker.error.message)
+        await assert.rejects(samInfo.execute(), expectedError, 'Expected error was not thrown')
 
-        assertErrorContainsBadExitMessage(error, badExitCodeProcessInvoker.error.message)
         await assertLogContainsBadExitInformation(
             getTestLogger(),
             badExitCodeProcessInvoker.makeChildProcessResult(),

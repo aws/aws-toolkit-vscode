@@ -14,7 +14,6 @@ import {
     getResourcesForHandlerFromTemplateDatum,
 } from '../../../shared/cloudformation/templateRegistry'
 import { makeTemporaryToolkitFolder } from '../../../shared/filesystemUtilities'
-import { assertThrowsError } from '../utilities/assertUtils'
 import { badYaml, makeSampleSamTemplateYaml, strToYamlFile } from './cloudformationTestUtils'
 import { assertEqualPaths, toFile } from '../../testUtil'
 import { CloudFormation } from '../../../shared/cloudformation/cloudformation'
@@ -54,9 +53,7 @@ describe('CloudFormation Template Registry', async function () {
                 const filename = vscode.Uri.file(path.join(tempFolder, 'template.yaml'))
                 await strToYamlFile(badYaml, filename.fsPath)
 
-                await assertThrowsError(
-                    async () => await testRegistry.addItemToRegistry(vscode.Uri.file(filename.fsPath))
-                )
+                await assert.rejects(testRegistry.addItemToRegistry(vscode.Uri.file(filename.fsPath)))
             })
         })
 

@@ -1,0 +1,18 @@
+Resources:
+    HelloWorldFunction:
+        Type: AWS::Serverless::Function
+        Properties:
+            PackageType: Image
+            Events:
+                CatchAll:
+                    Type: Api
+                    Properties:
+                        Path: /hello
+                        Method: GET
+            Environment:
+                Variables:
+                    PARAM1: VALUE
+        Metadata:
+            DockerTag: go1.x-v1
+            DockerContext: ./hello-world
+            Dockerfile: Dockerfile

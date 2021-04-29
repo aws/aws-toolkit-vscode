@@ -54,7 +54,7 @@ function fakeMetric(value: number, passive: boolean) {
 
 describe('DefaultTelemetryService', function () {
     const testFlushPeriod = 10
-    let clock: sinon.SinonFakeTimers
+    let clock: FakeTimers.InstalledClock
     let sandbox: sinon.SinonSandbox
 
     before(function () {
