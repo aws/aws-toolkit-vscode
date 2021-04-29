@@ -56,7 +56,7 @@ describe('timeoutUtils', async function () {
             )
         })
 
-        it('expiration error does not happend when refreshing a completed timer', async function () {
+        it('expiration error does not happen when refreshing a completed timer', async function () {
             const timerLengthMs = 10
             const shortTimer = new timeoutUtils.Timeout(timerLengthMs)
             shortTimer.complete()
