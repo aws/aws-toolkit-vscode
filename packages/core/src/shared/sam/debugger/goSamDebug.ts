@@ -98,8 +98,6 @@ export async function makeGoConfig(config: SamLaunchRequestArgs): Promise<GoDebu
         config.handlerName = parts[1]
     }
 
-    let localRoot: string | undefined
-    let remoteRoot: string | undefined
     const port: number = config.debugPort ?? -1
 
     config.codeRoot = pathutil.normalize(config.codeRoot)
