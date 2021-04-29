@@ -1,15 +1,15 @@
 /*!
- * Copyright Amazon.com, Inc. or its affiliates. All Rights Reserved.
+ * Copyright 2020 Amazon.com, Inc. or its affiliates. All Rights Reserved.
  * SPDX-License-Identifier: Apache-2.0
  */
 
-import assert from 'assert'
+import * as assert from 'assert'
 import * as os from 'os'
 import * as path from 'path'
 import * as sinon from 'sinon'
 import * as vscode from 'vscode'
 import * as lambdaModel from '../../../../lambda/models/samLambdaRuntime'
-import { CloudFormationTemplateRegistry } from '../../../../shared/fs/templateRegistry'
+import { CloudFormationTemplateRegistry } from '../../../../shared/cloudformation/templateRegistry'
 import { makeTemporaryToolkitFolder } from '../../../../shared/filesystemUtilities'
 import {
     TemplateTargetProperties,
@@ -38,15 +38,15 @@ import {
     makeSampleYamlResource,
     makeSampleYamlParameters,
 } from '../../cloudformation/cloudformationTestUtils'
-import { CredentialsStore } from '../../../../auth/credentials/store'
-import { CredentialsProviderManager } from '../../../../auth/providers/credentialsProviderManager'
-import { Credentials } from '@aws-sdk/types'
+import { readFileSync } from 'fs-extra'
+import { CredentialsStore } from '../../../../credentials/credentialsStore'
+import { CredentialsProviderManager } from '../../../../credentials/providers/credentialsProviderManager'
+import { Credentials } from 'aws-sdk'
 import { ExtContext } from '../../../../shared/extensions'
+import { CredentialsProvider } from '../../../../credentials/providers/credentialsProvider'
+import { mkdir, remove } from 'fs-extra'
+import { ext } from '../../../../shared/extensionGlobals'
 import { getLogger } from '../../../../shared/logger/logger'
-import { CredentialsProvider } from '../../../../auth/providers/credentials'
-import globals from '../../../../shared/extensionGlobals'
-import { isCI } from '../../../../shared/vscode/env'
-import { fs } from '../../../../shared'
 
 /**
  * Asserts the contents of a "launch config" (the result of `makeConfig()` or
@@ -85,8 +85,8 @@ function assertEqualLaunchConfigs(actual: SamLaunchRequestArgs, expected: SamLau
     for (const o of [actual, expected]) {
         o.codeRoot = pathutil.normalize(o.codeRoot)
         o.containerEnvFile = o.containerEnvFile ? pathutil.normalize(o.containerEnvFile) : o.containerEnvFile
-        o.envFile = o.envFile ? pathutil.normalize(o.envFile) : undefined
-        o.eventPayloadFile = o.eventPayloadFile ? pathutil.normalize(o.eventPayloadFile) : undefined
+        o.envFile = pathutil.normalize(o.envFile)
+        o.eventPayloadFile = pathutil.normalize(o.eventPayloadFile)
         o.debuggerPath = o.debuggerPath ? pathutil.normalize(o.debuggerPath) : o.debuggerPath
         o.localRoot = o.localRoot ? pathutil.normalize(o.localRoot) : o.localRoot
     }
@@ -112,8 +112,7 @@ async function assertEqualNoDebugTemplateTarget(
     input: any,
     expected: SamLaunchRequestArgs,
     folder: vscode.WorkspaceFolder,
-    debugConfigProvider: SamDebugConfigProvider,
-    noFiles?: boolean
+    debugConfigProvider: SamDebugConfigProvider
 ) {
     ;(input as any).noDebug = true
     const actualNoDebug = (await debugConfigProvider.makeConfig(folder, input))!
@@ -124,8 +123,8 @@ async function assertEqualNoDebugTemplateTarget(
         debugPort: undefined,
         port: -1,
         baseBuildDir: actualNoDebug.baseBuildDir,
-        envFile: noFiles ? undefined : `${actualNoDebug.baseBuildDir}/env-vars.json`,
-        eventPayloadFile: noFiles ? undefined : `${actualNoDebug.baseBuildDir}/event.json`,
+        envFile: `${actualNoDebug.baseBuildDir}/env-vars.json`,
+        eventPayloadFile: `${actualNoDebug.baseBuildDir}/event.json`,
     }
     assertEqualLaunchConfigs(actualNoDebug, expectedNoDebug)
 }
@@ -139,20 +138,10 @@ describe('SamDebugConfigurationProvider', async function () {
     let fakeContext: ExtContext
     let sandbox: sinon.SinonSandbox
     const resourceName = 'myResource'
-    const fakeCredentials: Credentials = {
-        accessKeyId: 'fake-access-id',
-        secretAccessKey: 'fake-secret',
-        sessionToken: 'fake-session',
-    }
+    const mockedCredentials = new Credentials('access', 'secret', 'session')
 
     beforeEach(async function () {
         fakeContext = await FakeExtensionContext.getFakeExtContext()
-        await fakeContext.awsContext.setCredentials({
-            accountId: '9888888',
-            credentials: fakeCredentials,
-            credentialsId: 'profile:fake',
-            defaultRegion: 'us-west-2',
-        })
         debugConfigProvider = new SamDebugConfigProvider(fakeContext)
         sandbox = sinon.createSandbox()
 
@@ -163,11 +152,11 @@ describe('SamDebugConfigurationProvider', async function () {
     })
 
     afterEach(async function () {
-        await fs.delete(tempFolder, { recursive: true })
+        await remove(tempFolder)
         if (tempFolderSimilarName) {
-            await fs.delete(tempFolderSimilarName, { recursive: true })
+            await remove(tempFolderSimilarName)
         }
-        ;(await globals.templateRegistry).reset()
+        ext.templateRegistry.reset()
         sandbox.restore()
     })
 
@@ -179,23 +168,23 @@ describe('SamDebugConfigurationProvider', async function () {
             assert.deepStrictEqual(await debugConfigProvider.provideDebugConfigurations(fakeWorkspaceFolder), [])
 
             // Malformed template.yaml:
-            await testutil.toFile('bogus', tempFile.fsPath)
-            await (await globals.templateRegistry).addItem(tempFile)
+            testutil.toFile('bogus', tempFile.fsPath)
+            await ext.templateRegistry.addItemToRegistry(tempFile)
             assert.deepStrictEqual(await debugConfigProvider.provideDebugConfigurations(fakeWorkspaceFolder), [])
         })
 
         it('Ignores non function type resources', async function () {
             const bigYamlStr = `${makeSampleSamTemplateYaml(true)}\nTestResource2:\n .   Type: AWS::Serverless::Api`
 
-            await testutil.toFile(bigYamlStr, tempFile.fsPath)
-            await (await globals.templateRegistry).addItem(tempFile)
+            testutil.toFile(bigYamlStr, tempFile.fsPath)
+            await ext.templateRegistry.addItemToRegistry(tempFile)
             const provided = await debugConfigProvider.provideDebugConfigurations(fakeWorkspaceFolder)
             assert.strictEqual(provided!.length, 1)
         })
 
         it('returns one item if a template with one resource is in the workspace', async function () {
-            await testutil.toFile(makeSampleSamTemplateYaml(true), tempFile.fsPath)
-            await (await globals.templateRegistry).addItem(tempFile)
+            testutil.toFile(makeSampleSamTemplateYaml(true), tempFile.fsPath)
+            await ext.templateRegistry.addItemToRegistry(tempFile)
             const provided = await debugConfigProvider.provideDebugConfigurations(fakeWorkspaceFolder)
             assert.notStrictEqual(provided, undefined)
             assert.strictEqual(provided!.length, 1)
@@ -210,8 +199,8 @@ describe('SamDebugConfigurationProvider', async function () {
             const bigYamlStr = `${makeSampleSamTemplateYaml(true, {
                 resourceName: resources[0],
             })}\n${makeSampleYamlResource({ resourceName: resources[1] })}`
-            await testutil.toFile(bigYamlStr, tempFile.fsPath)
-            await (await globals.templateRegistry).addItem(tempFile)
+            testutil.toFile(bigYamlStr, tempFile.fsPath)
+            await ext.templateRegistry.addItemToRegistry(tempFile)
             const provided = await debugConfigProvider.provideDebugConfigurations(fakeWorkspaceFolder)
             assert.notStrictEqual(provided, undefined)
             if (provided) {
@@ -230,19 +219,16 @@ describe('SamDebugConfigurationProvider', async function () {
             tempFolderSimilarName = tempFolder + 'SimilarName'
             const similarNameYaml = vscode.Uri.file(path.join(tempFolderSimilarName, 'test.yaml'))
 
-            await fs.mkdir(nestedDir)
-            await fs.mkdir(tempFolderSimilarName)
+            await mkdir(nestedDir)
+            await mkdir(tempFolderSimilarName)
 
-            await testutil.toFile(makeSampleSamTemplateYaml(true, { resourceName: resources[0] }), tempFile.fsPath)
-            await testutil.toFile(makeSampleSamTemplateYaml(true, { resourceName: resources[1] }), nestedYaml.fsPath)
-            await testutil.toFile(
-                makeSampleSamTemplateYaml(true, { resourceName: badResourceName }),
-                similarNameYaml.fsPath
-            )
+            testutil.toFile(makeSampleSamTemplateYaml(true, { resourceName: resources[0] }), tempFile.fsPath)
+            testutil.toFile(makeSampleSamTemplateYaml(true, { resourceName: resources[1] }), nestedYaml.fsPath)
+            testutil.toFile(makeSampleSamTemplateYaml(true, { resourceName: badResourceName }), similarNameYaml.fsPath)
 
-            await (await globals.templateRegistry).addItem(tempFile)
-            await (await globals.templateRegistry).addItem(nestedYaml)
-            await (await globals.templateRegistry).addItem(similarNameYaml)
+            await ext.templateRegistry.addItemToRegistry(tempFile)
+            await ext.templateRegistry.addItemToRegistry(nestedYaml)
+            await ext.templateRegistry.addItemToRegistry(similarNameYaml)
 
             const provided = await debugConfigProvider.provideDebugConfigurations(fakeWorkspaceFolder)
             assert.notStrictEqual(provided, undefined)
@@ -263,8 +249,8 @@ describe('SamDebugConfigurationProvider', async function () {
                         Path: /hello
                         Method: get`
 
-            await testutil.toFile(bigYamlStr, tempFile.fsPath)
-            await (await globals.templateRegistry).addItem(tempFile)
+            testutil.toFile(bigYamlStr, tempFile.fsPath)
+            await ext.templateRegistry.addItemToRegistry(tempFile)
             const provided = await debugConfigProvider.provideDebugConfigurations(fakeWorkspaceFolder)
             assert.strictEqual(provided!.length, 2)
             assert.strictEqual(provided![1].invokeTarget.target, API_TARGET_TYPE)
@@ -278,71 +264,49 @@ describe('SamDebugConfigurationProvider', async function () {
                 HelloWorld2:
                     Type: HttpApi`
 
-            await testutil.toFile(bigYamlStr, tempFile.fsPath)
-            await (await globals.templateRegistry).addItem(tempFile)
+            testutil.toFile(bigYamlStr, tempFile.fsPath)
+            await ext.templateRegistry.addItemToRegistry(tempFile)
             const provided = await debugConfigProvider.provideDebugConfigurations(fakeWorkspaceFolder)
             assert.strictEqual(provided!.length, 1)
         })
     })
 
     describe('makeConfig', async function () {
-        describe('buildDir', function () {
-            it('uses `buildDir` as `baseBuildDir` when provided', async function () {
-                const buildDir = (await testutil.createTestWorkspaceFolder('my-build-dir')).uri.fsPath
-                const folder = testutil.getWorkspaceFolder(testutil.getProjectDir())
-                const launchConfig = await getConfig(
-                    debugConfigProvider,
-                    await globals.templateRegistry,
-                    'testFixtures/workspaceFolder/js-plain-sam-app/'
-                )
-                const config = launchConfig.config as AwsSamDebuggerConfiguration & {
-                    invokeTarget: { target: 'template' }
-                }
-                config.sam = Object.assign(launchConfig.config.sam ?? {}, { buildDir })
-                config.invokeTarget.templatePath = config.invokeTarget.templatePath.replace(
-                    '${workspaceFolder}',
-                    launchConfig.folder.uri.fsPath
-                )
-
-                const actual = await debugConfigProvider.makeConfig(folder, config)
-                testutil.assertEqualPaths(actual?.baseBuildDir ?? '', buildDir)
-            })
-        })
-
         it('failure modes', async function () {
             const config = await getConfig(
                 debugConfigProvider,
-                await globals.templateRegistry,
-                'testFixtures/workspaceFolder/csharp6-zip/'
+                ext.templateRegistry,
+                'testFixtures/workspaceFolder/csharp2.1-plain-sam-app/'
             )
 
             // No workspace folder:
-            await assert.rejects(() => debugConfigProvider.makeConfig(undefined, config.config))
+            assert.deepStrictEqual(await debugConfigProvider.makeConfig(undefined, config.config), undefined)
 
             // No launch.json (vscode will pass an empty config.request):
-            await assert.rejects(() => debugConfigProvider.makeConfig(undefined, { ...config.config, request: '' }))
+            assert.deepStrictEqual(
+                await debugConfigProvider.makeConfig(undefined, { ...config.config, request: '' }),
+                undefined
+            )
 
             // Unknown runtime:
             config.config.lambda = {
                 runtime: 'happy-runtime-42',
             }
-            await assert.rejects(() => debugConfigProvider.makeConfig(config.folder, config.config))
+            assert.deepStrictEqual(await debugConfigProvider.makeConfig(config.folder, config.config), undefined)
 
             // bad credentials
             const mockCredentialsStore: CredentialsStore = new CredentialsStore()
 
             const credentialsProvider: CredentialsProvider = {
-                getCredentials: sandbox.stub().resolves({} as any as AWS.Credentials),
-                getProviderType: sandbox.stub().resolves('profile'),
-                getTelemetryType: sandbox.stub().resolves('staticProfile'),
-                getCredentialsId: sandbox.stub().returns({
-                    credentialSource: 'sharedCredentials',
+                getCredentials: sandbox.stub().resolves(({} as any) as AWS.Credentials),
+                getCredentialsType2: sandbox.stub().resolves('staticProfile'),
+                getCredentialsProviderId: sandbox.stub().returns({
+                    credentialType: 'test',
                     credentialTypeId: 'someId',
                 }),
                 getDefaultRegion: sandbox.stub().returns('someRegion'),
                 getHashCode: sandbox.stub().returns('1234'),
                 canAutoConnect: sandbox.stub().returns(true),
-                isAvailable: sandbox.stub().returns(Promise.resolve(true)),
             }
             const getCredentialsProviderStub = sandbox.stub(
                 CredentialsProviderManager.getInstance(),
@@ -354,14 +318,14 @@ describe('SamDebugConfigurationProvider', async function () {
                 ...fakeContext,
                 credentialsStore: mockCredentialsStore,
             })
-
-            await assert.rejects(() =>
-                debugConfigProviderMockCredentials.makeConfig(config.folder, {
+            assert.deepStrictEqual(
+                await debugConfigProviderMockCredentials.makeConfig(config.folder, {
                     ...config.config,
                     aws: {
                         credentials: 'profile:error',
                     },
-                })
+                }),
+                undefined
             )
         })
 
@@ -376,7 +340,7 @@ describe('SamDebugConfigurationProvider', async function () {
                 request: DIRECT_INVOKE_TYPE,
                 invokeTarget: {
                     target: CODE_TARGET_TYPE,
-                    lambdaHandler: 'hello-world',
+                    lambdaHandler: 'hello-world:handler',
                     projectRoot: '.', // Issue #1685
                 },
                 lambda: {
@@ -385,115 +349,114 @@ describe('SamDebugConfigurationProvider', async function () {
             }
             const config = (await debugConfigProvider.makeConfig(folder, input))!
 
-            await assertFileText(
+            assertFileText(
                 config.templatePath,
                 `Resources:
   go1plainsamapp:
-    Type: AWS::Serverless::Function
+    Type: 'AWS::Serverless::Function'
     Properties:
-      Handler: hello-world
+      Handler: handler
       CodeUri: >-
         ${config.codeRoot}
       Runtime: go1.x
+      Environment:
+        Variables: {}
 `
             )
         })
 
-        it('rejects when resolving debug configurations with an invalid request type', async function () {
-            await assert.rejects(() =>
-                debugConfigProvider.makeConfig(undefined, {
-                    type: AWS_SAM_DEBUG_TYPE,
-                    name: 'whats in a name',
-                    request: 'not-direct-invoke',
-                    invokeTarget: {
-                        target: CODE_TARGET_TYPE,
-                        lambdaHandler: 'sick handles',
-                        projectRoot: 'root as in beer',
-                    },
-                })
-            )
+        it('returns undefined when resolving debug configurations with an invalid request type', async function () {
+            const resolved = await debugConfigProvider.makeConfig(undefined, {
+                type: AWS_SAM_DEBUG_TYPE,
+                name: 'whats in a name',
+                request: 'not-direct-invoke',
+                invokeTarget: {
+                    target: CODE_TARGET_TYPE,
+                    lambdaHandler: 'sick handles',
+                    projectRoot: 'root as in beer',
+                },
+            })
+            assert.strictEqual(resolved, undefined)
         })
 
-        it('rejects when resolving debug configurations with an invalid target type', async function () {
+        it('returns undefined when resolving debug configurations with an invalid target type', async function () {
             const tgt = 'not-code' as 'code'
-            await assert.rejects(() =>
-                debugConfigProvider.makeConfig(undefined, {
-                    type: AWS_SAM_DEBUG_TYPE,
-                    name: 'whats in a name',
-                    request: DIRECT_INVOKE_TYPE,
-                    invokeTarget: {
-                        target: tgt,
-                        lambdaHandler: 'sick handles',
-                        projectRoot: 'root as in beer',
-                    },
-                })
+            const resolved = await debugConfigProvider.makeConfig(undefined, {
+                type: AWS_SAM_DEBUG_TYPE,
+                name: 'whats in a name',
+                request: DIRECT_INVOKE_TYPE,
+                invokeTarget: {
+                    target: tgt,
+                    lambdaHandler: 'sick handles',
+                    projectRoot: 'root as in beer',
+                },
+            })
+            assert.strictEqual(resolved, undefined)
+        })
+
+        it("returns undefined when resolving template debug configurations with a template that isn't in the registry", async () => {
+            const resolved = await debugConfigProvider.makeConfig(undefined, createFakeConfig({}))
+            assert.strictEqual(resolved, undefined)
+        })
+
+        it("returns undefined when resolving template debug configurations with a template that doesn't have the set resource", async () => {
+            await createAndRegisterYaml({}, tempFile, ext.templateRegistry)
+            const resolved = await debugConfigProvider.makeConfig(
+                undefined,
+                createFakeConfig({ templatePath: tempFile.fsPath })
             )
+            assert.strictEqual(resolved, undefined)
         })
 
-        it("rejects when resolving template debug configurations with a template that isn't in the registry", async () => {
-            await assert.rejects(() => debugConfigProvider.makeConfig(undefined, createFakeConfig({})))
-        })
-
-        it("rejects when resolving template debug configurations with a template that doesn't have the set resource", async () => {
-            await createAndRegisterYaml({}, tempFile, await globals.templateRegistry)
-            await assert.rejects(() =>
-                debugConfigProvider.makeConfig(undefined, createFakeConfig({ templatePath: tempFile.fsPath }))
-            )
-        })
-
-        it('rejects when resolving template debug configurations with a resource that has an invalid runtime in template', async function () {
+        it('returns undefined when resolving template debug configurations with a resource that has an invalid runtime in template', async function () {
             await createAndRegisterYaml(
                 { resourceName, runtime: 'moreLikeRanOutOfTime' },
                 tempFile,
-                await globals.templateRegistry
+                ext.templateRegistry
             )
-            await assert.rejects(
-                () =>
-                    debugConfigProvider.makeConfig(
-                        undefined,
-                        createFakeConfig({
-                            templatePath: tempFile.fsPath,
-                            logicalId: resourceName,
-                        })
-                    ),
-                /runtime/i
+            const resolved = await debugConfigProvider.makeConfig(
+                undefined,
+                createFakeConfig({
+                    templatePath: tempFile.fsPath,
+                    logicalId: resourceName,
+                })
             )
+            assert.strictEqual(resolved, undefined)
         })
 
-        it('rejects when resolving template debug configurations with a resource that has an invalid runtime in template', async function () {
-            await testutil.toFile(
+        it('returns undefined when resolving template debug configurations with a resource that has an invalid runtime in template', async function () {
+            testutil.toFile(
                 makeSampleSamTemplateYaml(true, { resourceName, runtime: 'moreLikeRanOutOfTime' }),
                 tempFile.fsPath
             )
-            await assert.rejects(() =>
-                debugConfigProvider.makeConfig(undefined, {
-                    type: AWS_SAM_DEBUG_TYPE,
-                    name: 'whats in a name',
-                    request: DIRECT_INVOKE_TYPE,
-                    invokeTarget: {
-                        target: TEMPLATE_TARGET_TYPE,
-                        templatePath: tempFile.fsPath,
-                        logicalId: resourceName,
-                    },
-                })
-            )
+            await ext.templateRegistry.addItemToRegistry(tempFile)
+            const resolved = await debugConfigProvider.makeConfig(undefined, {
+                type: AWS_SAM_DEBUG_TYPE,
+                name: 'whats in a name',
+                request: DIRECT_INVOKE_TYPE,
+                invokeTarget: {
+                    target: TEMPLATE_TARGET_TYPE,
+                    templatePath: tempFile.fsPath,
+                    logicalId: resourceName,
+                },
+            })
+            assert.strictEqual(resolved, undefined)
         })
 
-        it('rejects when resolving code debug configurations with invalid runtimes', async function () {
-            await assert.rejects(() =>
-                debugConfigProvider.makeConfig(undefined, {
-                    ...createBaseCodeConfig({}),
-                    lambda: {
-                        runtime: 'COBOL',
-                    },
-                })
-            )
+        it('returns undefined when resolving code debug configurations with invalid runtimes', async function () {
+            const resolved = await debugConfigProvider.makeConfig(undefined, {
+                ...createBaseCodeConfig({}),
+                lambda: {
+                    runtime: 'COBOL',
+                },
+            })
+            assert.strictEqual(resolved, undefined)
         })
 
         it('supports workspace-relative template path ("./foo.yaml")', async function () {
-            await testutil.toFile(makeSampleSamTemplateYaml(true, { runtime: 'nodejs18.x' }), tempFile.fsPath)
+            testutil.toFile(makeSampleSamTemplateYaml(true, { runtime: 'nodejs12.x' }), tempFile.fsPath)
             // Register with *full* path.
-            await (await globals.templateRegistry).addItem(tempFile)
+            await ext.templateRegistry.addItemToRegistry(tempFile)
             // Simulates launch.json:
             //     "invokeTarget": {
             //         "target": "./test.yaml",
@@ -510,8 +473,8 @@ describe('SamDebugConfigurationProvider', async function () {
                     target: TEMPLATE_TARGET_TYPE,
                     templatePath: relPath,
                     logicalId: 'TestResource',
-                    // lambdaHandler: 'sick handles',
-                    // projectRoot: 'root as in beer'
+                    //lambdaHandler: 'sick handles',
+                    //projectRoot: 'root as in beer'
                 },
             })
             assert.strictEqual(resolved!.name, name)
@@ -532,7 +495,7 @@ describe('SamDebugConfigurationProvider', async function () {
                     projectRoot: 'src',
                 },
                 lambda: {
-                    runtime: 'nodejs18.x',
+                    runtime: 'nodejs12.x',
                     // For target=code these envvars are written to the input-template.yaml.
                     environmentVariables: {
                         'test-envvar-1': 'test value 1',
@@ -551,10 +514,11 @@ describe('SamDebugConfigurationProvider', async function () {
             const actual = (await debugConfigProvider.makeConfig(folder, input))!
             const expected: SamLaunchRequestArgs = {
                 type: AWS_SAM_DEBUG_TYPE,
-                awsCredentials: fakeCredentials,
+                awsCredentials: undefined,
                 request: 'attach', // Input "direct-invoke", output "attach".
-                runtime: 'nodejs18.x',
+                runtime: 'nodejs12.x',
                 runtimeFamily: lambdaModel.RuntimeFamily.NodeJS,
+                useIkpdb: false,
                 workspaceFolder: {
                     index: 0,
                     name: 'test-workspace-folder',
@@ -574,9 +538,8 @@ describe('SamDebugConfigurationProvider', async function () {
                 },
                 localRoot: pathutil.normalize(path.join(appDir, 'src')), // Normalized to absolute path.
                 name: input.name,
-                templatePath: pathutil.normalize(path.join(actual.baseBuildDir!, 'app___vsctk___template.yaml')),
+                templatePath: pathutil.normalize(path.join(appDir, 'src', 'app___vsctk___template.yaml')),
                 parameterOverrides: undefined,
-                architecture: undefined,
 
                 //
                 // Node-related fields
@@ -585,199 +548,27 @@ describe('SamDebugConfigurationProvider', async function () {
                 port: actual.debugPort,
                 preLaunchTask: undefined,
                 protocol: 'inspector',
-                region: 'us-west-2',
                 remoteRoot: '/var/task',
                 skipFiles: ['/var/runtime/node_modules/**/*.js', '<node_internals>/**/*.js'],
-                continueOnAttach: true,
                 stopOnEntry: false,
             }
 
             assertEqualLaunchConfigs(actual, expected)
-            await assertFileText(
-                expected.envFile!,
-                '{"src":{"test-envvar-1":"test value 1","test-envvar-2":"test value 2"}}'
-            )
-            await assertFileText(
-                expected.eventPayloadFile!,
+            assertFileText(expected.envFile, '{"src":{"test-envvar-1":"test value 1","test-envvar-2":"test value 2"}}')
+            assertFileText(
+                expected.eventPayloadFile,
                 '{"test-payload-key-1":"test payload value 1","test-payload-key-2":"test payload value 2"}'
             )
-            await assertFileText(
+            assertFileText(
                 expected.templatePath,
                 `Resources:
   src:
-    Type: AWS::Serverless::Function
+    Type: 'AWS::Serverless::Function'
     Properties:
       Handler: my.test.handler
       CodeUri: >-
         ${expected.codeRoot}
-      Runtime: nodejs18.x
-      Environment:
-        Variables:
-          test-envvar-1: test value 1
-          test-envvar-2: test value 2
-      MemorySize: 1.2
-      Timeout: 9000
-`
-            )
-
-            //
-            // Test pathMapping
-            //
-            const inputWithPathMapping = {
-                ...input,
-                lambda: {
-                    ...input.lambda,
-                    pathMappings: [
-                        {
-                            localRoot: 'somethingLocal',
-                            remoteRoot: 'somethingRemote',
-                        },
-                        {
-                            localRoot: 'ignoredLocal',
-                            remoteRoot: 'ignoredRemote',
-                        },
-                    ] as PathMapping[],
-                },
-            }
-            const actualWithPathMapping = (await debugConfigProvider.makeConfig(folder, inputWithPathMapping))!
-            const expectedWithPathMapping: SamLaunchRequestArgs = {
-                ...expected,
-                lambda: {
-                    ...expected.lambda,
-                    pathMappings: inputWithPathMapping.lambda.pathMappings,
-                },
-                localRoot: 'somethingLocal',
-                remoteRoot: 'somethingRemote',
-                baseBuildDir: actualWithPathMapping.baseBuildDir,
-                envFile: `${actualWithPathMapping.baseBuildDir}/env-vars.json`,
-                eventPayloadFile: `${actualWithPathMapping.baseBuildDir}/event.json`,
-            }
-            assertEqualLaunchConfigs(actualWithPathMapping, expectedWithPathMapping)
-
-            //
-            // Test noDebug=true.
-            //
-            ;(input as any).noDebug = true
-            const actualNoDebug = (await debugConfigProvider.makeConfig(folder, input))!
-            const expectedNoDebug: SamLaunchRequestArgs = {
-                ...expected,
-                noDebug: true,
-                request: 'launch',
-                debugPort: undefined,
-                port: -1,
-                baseBuildDir: actualNoDebug.baseBuildDir,
-                envFile: `${actualNoDebug.baseBuildDir}/env-vars.json`,
-                eventPayloadFile: `${actualNoDebug.baseBuildDir}/event.json`,
-            }
-            assertEqualLaunchConfigs(actualNoDebug, expectedNoDebug)
-        })
-
-        it('target=code: typescript', async function () {
-            /**
-             * When executing the test on macOS in CI the tests fail with the following error:
-             *  'Error: TypeScript compiler "tsc" not found in node_modules/ or the system
-             *
-             * See: https://github.com/aws/aws-toolkit-vscode/issues/5587
-             */
-            if (isCI() && os.platform() === 'darwin') {
-                this.skip()
-            }
-
-            const appDir = pathutil.normalize(
-                path.join(testutil.getProjectDir(), 'testFixtures/workspaceFolder/ts-plain-sam-app/')
-            )
-            const folder = testutil.getWorkspaceFolder(appDir)
-            const input = {
-                type: AWS_SAM_DEBUG_TYPE,
-                name: 'test-ts-code',
-                request: DIRECT_INVOKE_TYPE,
-                invokeTarget: {
-                    target: CODE_TARGET_TYPE,
-                    lambdaHandler: 'app.handler',
-                    projectRoot: 'src',
-                },
-                lambda: {
-                    runtime: 'nodejs18.x',
-                    // For target=code these envvars are written to the input-template.yaml.
-                    environmentVariables: {
-                        'test-envvar-1': 'test value 1',
-                        'test-envvar-2': 'test value 2',
-                    },
-                    memoryMb: 1.2,
-                    timeoutSec: 9000,
-                    payload: {
-                        json: {
-                            'test-payload-key-1': 'test payload value 1',
-                            'test-payload-key-2': 'test payload value 2',
-                        },
-                    },
-                },
-            }
-            const actual = (await debugConfigProvider.makeConfig(folder, input))!
-            const expected: SamLaunchRequestArgs = {
-                type: AWS_SAM_DEBUG_TYPE,
-                awsCredentials: fakeCredentials,
-                request: 'attach', // Input "direct-invoke", output "attach".
-                runtime: 'nodejs18.x',
-                runtimeFamily: lambdaModel.RuntimeFamily.NodeJS,
-                workspaceFolder: {
-                    index: 0,
-                    name: 'test-workspace-folder',
-                    uri: vscode.Uri.file(appDir),
-                },
-                baseBuildDir: actual.baseBuildDir, // Random, sanity-checked by assertEqualLaunchConfigs().
-                envFile: `${actual.baseBuildDir}/env-vars.json`,
-                eventPayloadFile: `${actual.baseBuildDir}/event.json`,
-                codeRoot: pathutil.normalize(path.join(appDir, 'src')), // Normalized to absolute path.
-                apiPort: undefined,
-                debugPort: actual.debugPort,
-                documentUri: vscode.Uri.file(''), // TODO: remove or test.
-                handlerName: 'app.handler',
-                invokeTarget: {
-                    ...input.invokeTarget,
-                },
-                lambda: {
-                    ...input.lambda,
-                },
-                localRoot: pathutil.normalize(path.join(appDir, 'src')), // Normalized to absolute path.
-                name: input.name,
-                templatePath: pathutil.normalize(path.join(actual.baseBuildDir!, 'app___vsctk___template.yaml')),
-                parameterOverrides: undefined,
-                architecture: undefined,
-
-                //
-                // Node-related fields
-                //
-                address: 'localhost',
-                port: actual.debugPort,
-                preLaunchTask: undefined,
-                protocol: 'inspector',
-                region: 'us-west-2',
-                remoteRoot: '/var/task',
-                skipFiles: ['/var/runtime/node_modules/**/*.js', '<node_internals>/**/*.js'],
-                continueOnAttach: true,
-                stopOnEntry: false,
-            }
-
-            assertEqualLaunchConfigs(actual, expected)
-            await assertFileText(
-                expected.envFile!,
-                '{"src":{"test-envvar-1":"test value 1","test-envvar-2":"test value 2"}}'
-            )
-            await assertFileText(
-                expected.eventPayloadFile!,
-                '{"test-payload-key-1":"test payload value 1","test-payload-key-2":"test payload value 2"}'
-            )
-            await assertFileText(
-                expected.templatePath,
-                `Resources:
-  src:
-    Type: AWS::Serverless::Function
-    Properties:
-      Handler: app.handler
-      CodeUri: >-
-        ${expected.codeRoot}
-      Runtime: nodejs18.x
+      Runtime: nodejs12.x
       Environment:
         Variables:
           test-envvar-1: test value 1
@@ -871,14 +662,16 @@ describe('SamDebugConfigurationProvider', async function () {
                 },
             }
             const templatePath = vscode.Uri.file(path.join(appDir, 'template.yaml'))
+            await ext.templateRegistry.addItemToRegistry(templatePath)
             const actual = (await debugConfigProvider.makeConfig(folder, input))!
 
             const expected: SamLaunchRequestArgs = {
                 type: AWS_SAM_DEBUG_TYPE,
-                awsCredentials: fakeCredentials,
+                awsCredentials: undefined,
                 request: 'attach', // Input "direct-invoke", output "attach".
-                runtime: 'nodejs20.x',
+                runtime: 'nodejs10.x',
                 runtimeFamily: lambdaModel.RuntimeFamily.NodeJS,
+                useIkpdb: false,
                 workspaceFolder: {
                     index: 0,
                     name: 'test-workspace-folder',
@@ -898,9 +691,10 @@ describe('SamDebugConfigurationProvider', async function () {
                 },
                 localRoot: appDir,
                 name: input.name,
-                templatePath: pathutil.normalize(path.join(path.dirname(templatePath.fsPath), 'template.yaml')),
+                templatePath: pathutil.normalize(
+                    path.join(path.dirname(templatePath.fsPath), 'app___vsctk___template.yaml')
+                ),
                 parameterOverrides: undefined,
-                architecture: undefined,
 
                 //
                 // Node-related fields
@@ -909,21 +703,34 @@ describe('SamDebugConfigurationProvider', async function () {
                 port: actual.debugPort,
                 preLaunchTask: undefined,
                 protocol: 'inspector',
-                region: 'us-west-2',
                 remoteRoot: '/var/task',
                 skipFiles: ['/var/runtime/node_modules/**/*.js', '<node_internals>/**/*.js'],
-                continueOnAttach: true,
                 stopOnEntry: false,
             }
 
             assertEqualLaunchConfigs(actual, expected)
-            await assertFileText(
-                expected.envFile!,
+            assertFileText(
+                expected.envFile,
                 '{"SourceCodeTwoFoldersDeep":{"test-js-template-envvar-1":"test target=template envvar value 1","test-js-template-envvar-2":"test target=template envvar value 2"}}'
             )
-            await assertFileText(
-                expected.eventPayloadFile!,
+            assertFileText(
+                expected.eventPayloadFile,
                 '{"test-js-template-key-1":"test js target=template value 1","test-js-template-key-2":"test js target=template value 2"}'
+            )
+            assertFileText(
+                expected.templatePath,
+                `Resources:
+  SourceCodeTwoFoldersDeep:
+    Type: 'AWS::Serverless::Function'
+    Properties:
+      CodeUri: .
+      Handler: src/subfolder/app.handlerTwoFoldersDeep
+      Runtime: nodejs10.x
+    Environment:
+      Variables:
+        SAMPLE1: value 1 from template.yaml
+        SAMPLE2: value 2 from template.yaml
+`
             )
 
             //
@@ -993,18 +800,20 @@ describe('SamDebugConfigurationProvider', async function () {
                     logicalId: 'HelloWorldFunction',
                 },
                 lambda: {
-                    runtime: 'nodejs18.x',
+                    runtime: 'nodejs12.x',
                 },
             }
             const templatePath = vscode.Uri.file(path.join(appDir, 'template.yaml'))
+            await ext.templateRegistry.addItemToRegistry(templatePath)
             const actual = (await debugConfigProvider.makeConfig(folder, input))!
 
             const expected: SamLaunchRequestArgs = {
                 type: AWS_SAM_DEBUG_TYPE,
-                awsCredentials: fakeCredentials,
+                awsCredentials: undefined,
                 request: 'attach', // Input "direct-invoke", output "attach".
-                runtime: 'nodejs18.x',
+                runtime: 'nodejs12.x',
                 runtimeFamily: lambdaModel.RuntimeFamily.NodeJS,
+                useIkpdb: false,
                 workspaceFolder: {
                     index: 0,
                     name: 'test-workspace-folder',
@@ -1013,10 +822,10 @@ describe('SamDebugConfigurationProvider', async function () {
                 baseBuildDir: actual.baseBuildDir, // Random, sanity-checked by assertEqualLaunchConfigs().
                 containerEnvFile: `${actual.baseBuildDir}/container-env-vars.json`,
                 containerEnvVars: {
-                    NODE_OPTIONS: `--inspect=0.0.0.0:${actual.debugPort} --max-http-header-size 81920`,
+                    NODE_OPTIONS: `--inspect-brk=0.0.0.0:${actual.debugPort} --max-http-header-size 81920`,
                 },
-                envFile: undefined,
-                eventPayloadFile: undefined,
+                envFile: `${actual.baseBuildDir}/env-vars.json`,
+                eventPayloadFile: `${actual.baseBuildDir}/event.json`,
                 codeRoot: appDir,
                 apiPort: undefined,
                 debugPort: actual.debugPort,
@@ -1031,8 +840,9 @@ describe('SamDebugConfigurationProvider', async function () {
                 },
                 localRoot: appDir,
                 name: input.name,
-                architecture: undefined,
-                templatePath: pathutil.normalize(path.join(path.dirname(templatePath.fsPath), 'template.yaml')),
+                templatePath: pathutil.normalize(
+                    path.join(path.dirname(templatePath.fsPath), 'app___vsctk___template.yaml')
+                ),
 
                 //
                 // Node-related fields
@@ -1041,18 +851,62 @@ describe('SamDebugConfigurationProvider', async function () {
                 port: actual.debugPort,
                 preLaunchTask: undefined,
                 protocol: 'inspector',
-                region: 'us-west-2',
                 remoteRoot: '/var/task',
                 skipFiles: ['/var/runtime/node_modules/**/*.js', '<node_internals>/**/*.js'],
-                continueOnAttach: true,
                 stopOnEntry: false,
                 parameterOverrides: undefined,
             }
 
             assertEqualLaunchConfigs(actual, expected)
-            await assertFileText(
+            assertFileText(
                 expected.containerEnvFile!,
-                `{"NODE_OPTIONS":"--inspect=0.0.0.0:${actual.debugPort} --max-http-header-size 81920"}`
+                `{"NODE_OPTIONS":"--inspect-brk=0.0.0.0:${actual.debugPort} --max-http-header-size 81920"}`
+            )
+
+            assertFileText(
+                expected.templatePath,
+                `AWSTemplateFormatVersion: '2010-09-09'
+Transform: 'AWS::Serverless-2016-10-31'
+Description: |
+  js-image-sam-app
+  Sample SAM Template for js-image-sam-app
+Globals:
+  Function:
+    Timeout: 3
+Resources:
+  HelloWorldFunction:
+    Type: 'AWS::Serverless::Function'
+    Properties:
+      PackageType: Image
+      Events:
+        HelloWorld:
+          Type: Api
+          Properties:
+            Path: /hello
+            Method: get
+    Metadata:
+      DockerTag: nodejs12.x-v1
+      DockerContext: ./hello-world
+      Dockerfile: Dockerfile
+Outputs:
+  HelloWorldApi:
+    Description: API Gateway endpoint URL for Prod stage for Hello World function
+    Value:
+      'Fn::Sub': >-
+        https://\${ServerlessRestApi}.execute-api.\${AWS::Region}.amazonaws.com/Prod/hello/
+  HelloWorldFunction:
+    Description: Hello World Lambda Function ARN
+    Value:
+      'Fn::GetAtt':
+        - HelloWorldFunction
+        - Arn
+  HelloWorldFunctionIamRole:
+    Description: Implicit IAM Role created for Hello World function
+    Value:
+      'Fn::GetAtt':
+        - HelloWorldFunctionRole
+        - Arn
+`
             )
 
             //
@@ -1085,14 +939,13 @@ describe('SamDebugConfigurationProvider', async function () {
                 remoteRoot: 'somethingRemote',
                 baseBuildDir: actualWithPathMapping.baseBuildDir,
                 containerEnvFile: `${actualWithPathMapping.baseBuildDir}/container-env-vars.json`,
-                envFile: undefined,
-                eventPayloadFile: undefined,
-                architecture: undefined,
+                envFile: `${actualWithPathMapping.baseBuildDir}/env-vars.json`,
+                eventPayloadFile: `${actualWithPathMapping.baseBuildDir}/event.json`,
             }
             assertEqualLaunchConfigs(actualWithPathMapping, expectedWithPathMapping)
 
             // Test noDebug=true.
-            await assertEqualNoDebugTemplateTarget(input, expected, folder, debugConfigProvider, true)
+            await assertEqualNoDebugTemplateTarget(input, expected, folder, debugConfigProvider)
         })
 
         it('target=api: javascript', async function () {
@@ -1135,14 +988,16 @@ describe('SamDebugConfigurationProvider', async function () {
                 },
             }
             const templatePath = vscode.Uri.file(path.join(appDir, 'template.yaml'))
+            await ext.templateRegistry.addItemToRegistry(templatePath)
             const actual = (await debugConfigProvider.makeConfig(folder, input))!
 
             const expected: SamLaunchRequestArgs = {
                 type: AWS_SAM_DEBUG_TYPE,
-                awsCredentials: fakeCredentials,
+                awsCredentials: undefined,
                 request: 'attach', // Input "direct-invoke", output "attach".
-                runtime: 'nodejs20.x',
+                runtime: 'nodejs10.x',
                 runtimeFamily: lambdaModel.RuntimeFamily.NodeJS,
+                useIkpdb: false,
                 workspaceFolder: {
                     index: 0,
                     name: 'test-workspace-folder',
@@ -1165,8 +1020,9 @@ describe('SamDebugConfigurationProvider', async function () {
                 },
                 localRoot: appDir,
                 name: input.name,
-                architecture: undefined,
-                templatePath: pathutil.normalize(path.join(path.dirname(templatePath.fsPath), 'template.yaml')),
+                templatePath: pathutil.normalize(
+                    path.join(path.dirname(templatePath.fsPath), 'app___vsctk___template.yaml')
+                ),
 
                 //
                 // Node-related fields
@@ -1175,31 +1031,44 @@ describe('SamDebugConfigurationProvider', async function () {
                 port: actual.debugPort,
                 preLaunchTask: undefined,
                 protocol: 'inspector',
-                region: 'us-west-2',
                 remoteRoot: '/var/task',
                 skipFiles: ['/var/runtime/node_modules/**/*.js', '<node_internals>/**/*.js'],
-                continueOnAttach: true,
                 stopOnEntry: false,
                 parameterOverrides: undefined,
             }
 
             assertEqualLaunchConfigs(actual, expected)
-            await assertFileText(
-                expected.envFile!,
+            assertFileText(
+                expected.envFile,
                 '{"SourceCodeTwoFoldersDeep":{"test-js-template-envvar-1":"test target=template envvar value 1","test-js-template-envvar-2":"test target=template envvar value 2"}}'
             )
-            await assertFileText(
-                expected.eventPayloadFile!,
+            assertFileText(
+                expected.eventPayloadFile,
                 '{"test-js-template-key-1":"test js target=template value 1","test-js-template-key-2":"test js target=template value 2"}'
+            )
+            assertFileText(
+                expected.templatePath,
+                `Resources:
+  SourceCodeTwoFoldersDeep:
+    Type: 'AWS::Serverless::Function'
+    Properties:
+      CodeUri: .
+      Handler: src/subfolder/app.handlerTwoFoldersDeep
+      Runtime: nodejs10.x
+    Environment:
+      Variables:
+        SAMPLE1: value 1 from template.yaml
+        SAMPLE2: value 2 from template.yaml
+`
             )
 
             // Test noDebug=true.
             await assertEqualNoDebugTemplateTarget(input, expected, folder, debugConfigProvider)
         })
 
-        it('target=code: java17 maven', async function () {
+        it('target=code: java maven', async function () {
             const appDir = pathutil.normalize(
-                path.join(testutil.getProjectDir(), 'testFixtures/workspaceFolder/java17-gradle/')
+                path.join(testutil.getProjectDir(), 'testFixtures/workspaceFolder/java11-plain-maven-sam-app/')
             )
             const folder = testutil.getWorkspaceFolder(appDir)
             const handler = 'helloworld.App::handleRequest'
@@ -1213,230 +1082,17 @@ describe('SamDebugConfigurationProvider', async function () {
                     projectRoot: 'HelloWorldFunction',
                 },
                 lambda: {
-                    runtime: 'java17',
+                    runtime: 'java11',
                 },
             }
             const actual = (await debugConfigProvider.makeConfig(folder, input))! as SamLaunchRequestArgs
             const expectedCodeRoot = (actual.baseBuildDir ?? 'fail') + '/input'
             const expected: SamLaunchRequestArgs = {
-                awsCredentials: fakeCredentials,
+                awsCredentials: undefined,
                 request: 'attach', // Input "direct-invoke", output "attach".
-                runtime: 'java17',
+                runtime: 'java11',
                 runtimeFamily: lambdaModel.RuntimeFamily.Java,
-                type: AWS_SAM_DEBUG_TYPE,
-                workspaceFolder: {
-                    index: 0,
-                    name: 'test-workspace-folder',
-                    uri: vscode.Uri.file(appDir),
-                },
-                baseBuildDir: actual.baseBuildDir, // Random, sanity-checked by assertEqualLaunchConfigs().
-                envFile: undefined,
-                eventPayloadFile: undefined,
-                codeRoot: expectedCodeRoot, // Normalized to absolute path.
-                apiPort: undefined,
-                debugPort: actual.debugPort,
-                documentUri: vscode.Uri.file(''), // TODO: remove or test.
-                handlerName: handler,
-                invokeTarget: { ...input.invokeTarget },
-                lambda: {
-                    ...input.lambda,
-                    environmentVariables: {},
-                    memoryMb: undefined,
-                    timeoutSec: undefined,
-                },
-                name: input.name,
-                templatePath: pathutil.normalize(path.join(actual.baseBuildDir!, 'app___vsctk___template.yaml')),
-                parameterOverrides: undefined,
-                architecture: undefined,
-                region: 'us-west-2',
-            }
-
-            const expectedDebug = {
-                ...expected,
-                //
-                // Java-specific fields
-                //
-                hostName: '127.0.0.1',
-                port: actual.debugPort,
-            }
-
-            assertEqualLaunchConfigs(actual, expectedDebug)
-
-            await assertFileText(
-                expected.templatePath,
-                `Resources:
-  HelloWorldFunction:
-    Type: AWS::Serverless::Function
-    Properties:
-      Handler: ${handler}
-      CodeUri: >-
-        ${input.invokeTarget.projectRoot}
-      Runtime: java17
-`
-            )
-
-            //
-            // Test noDebug=true.
-            //
-            ;(input as any).noDebug = true
-            const actualNoDebug = (await debugConfigProvider.makeConfig(folder, input))! as SamLaunchRequestArgs
-            const expectedCodeRootNoDebug = (actualNoDebug.baseBuildDir ?? 'fail') + '/input'
-            const expectedNoDebug: SamLaunchRequestArgs = {
-                ...expected,
-                codeRoot: expectedCodeRootNoDebug,
-                noDebug: true,
-                request: 'launch',
-                debuggerPath: undefined,
-                debugPort: undefined,
-                baseBuildDir: actualNoDebug.baseBuildDir,
-                envFile: undefined,
-                eventPayloadFile: undefined,
-            }
-            delete expectedNoDebug.processName
-            delete expectedNoDebug.pipeTransport
-            delete expectedNoDebug.sourceFileMap
-            delete expectedNoDebug.windows
-            assertEqualLaunchConfigs(actualNoDebug, expectedNoDebug)
-        })
-
-        it('target=code: java 17 gradle', async function () {
-            const appDir = pathutil.normalize(
-                path.join(testutil.getProjectDir(), 'testFixtures/workspaceFolder/java17-gradle/')
-            )
-            const folder = testutil.getWorkspaceFolder(appDir)
-            const handler = 'helloworld.App::handleRequest'
-            const input = {
-                type: AWS_SAM_DEBUG_TYPE,
-                name: 'Test debugconfig',
-                request: DIRECT_INVOKE_TYPE,
-                invokeTarget: {
-                    target: CODE_TARGET_TYPE,
-                    lambdaHandler: handler,
-                    projectRoot: 'HelloWorldFunction',
-                },
-                lambda: {
-                    runtime: 'java17',
-                },
-            }
-            const actual = (await debugConfigProvider.makeConfig(folder, input))! as SamLaunchRequestArgs
-            const expectedCodeRoot = (actual.baseBuildDir ?? 'fail') + '/input'
-            const expected: SamLaunchRequestArgs = {
-                awsCredentials: fakeCredentials,
-                request: 'attach', // Input "direct-invoke", output "attach".
-                runtime: 'java17',
-                runtimeFamily: lambdaModel.RuntimeFamily.Java,
-                type: AWS_SAM_DEBUG_TYPE,
-                workspaceFolder: {
-                    index: 0,
-                    name: 'test-workspace-folder',
-                    uri: vscode.Uri.file(appDir),
-                },
-                baseBuildDir: actual.baseBuildDir, // Random, sanity-checked by assertEqualLaunchConfigs().
-                envFile: undefined,
-                eventPayloadFile: undefined,
-                codeRoot: expectedCodeRoot, // Normalized to absolute path.
-                apiPort: undefined,
-                debugPort: actual.debugPort,
-                documentUri: vscode.Uri.file(''), // TODO: remove or test.
-                handlerName: handler,
-                invokeTarget: { ...input.invokeTarget },
-                lambda: {
-                    ...input.lambda,
-                    environmentVariables: {},
-                    memoryMb: undefined,
-                    timeoutSec: undefined,
-                },
-                name: input.name,
-                templatePath: pathutil.normalize(path.join(actual.baseBuildDir!, 'app___vsctk___template.yaml')),
-                parameterOverrides: undefined,
-                architecture: undefined,
-                region: 'us-west-2',
-            }
-
-            const expectedDebug = {
-                ...expected,
-                //
-                // Java-specific fields
-                //
-                hostName: '127.0.0.1',
-                port: actual.debugPort,
-            }
-
-            assertEqualLaunchConfigs(actual, expectedDebug)
-
-            await assertFileText(
-                expectedDebug.templatePath,
-                `Resources:
-  HelloWorldFunction:
-    Type: AWS::Serverless::Function
-    Properties:
-      Handler: ${handler}
-      CodeUri: >-
-        ${input.invokeTarget.projectRoot}
-      Runtime: java17
-`
-            )
-
-            //
-            // Test noDebug=true.
-            //
-            ;(input as any).noDebug = true
-            const actualNoDebug = (await debugConfigProvider.makeConfig(folder, input))! as SamLaunchRequestArgs
-            const expectedCodeRootNoDebug = (actualNoDebug.baseBuildDir ?? 'fail') + '/input'
-            const expectedNoDebug: SamLaunchRequestArgs = {
-                ...expected,
-                codeRoot: expectedCodeRootNoDebug,
-                noDebug: true,
-                request: 'launch',
-                debuggerPath: undefined,
-                debugPort: undefined,
-                baseBuildDir: actualNoDebug.baseBuildDir,
-                envFile: undefined,
-                eventPayloadFile: undefined,
-            }
-            delete expectedNoDebug.processName
-            delete expectedNoDebug.pipeTransport
-            delete expectedNoDebug.sourceFileMap
-            delete expectedNoDebug.windows
-            assertEqualLaunchConfigs(actualNoDebug, expectedNoDebug)
-        })
-
-        it('target=template: java maven', async function () {
-            const handler = 'helloworld.App::handleRequest'
-            const appDir = pathutil.normalize(
-                path.join(testutil.getProjectDir(), 'testFixtures/workspaceFolder/java17-maven/')
-            )
-            const folder = testutil.getWorkspaceFolder(appDir)
-            const input = {
-                type: AWS_SAM_DEBUG_TYPE,
-                name: 'test-java-template',
-                request: DIRECT_INVOKE_TYPE,
-                invokeTarget: {
-                    target: TEMPLATE_TARGET_TYPE,
-                    templatePath: 'template.yaml',
-                    logicalId: 'HelloWorldFunction',
-                },
-                lambda: {
-                    environmentVariables: {
-                        'test-envvar-1': 'test value 1',
-                    },
-                    memoryMb: 512,
-                    timeoutSec: 20,
-                    payload: {
-                        json: {
-                            'test-payload-key-1': 'test payload value 1',
-                        },
-                    },
-                },
-            }
-            const templatePath = vscode.Uri.file(path.join(appDir, 'template.yaml'))
-            const actual = (await debugConfigProvider.makeConfig(folder, input))! as SamLaunchRequestArgs
-            const expectedCodeRoot = (actual.baseBuildDir ?? 'fail') + '/input'
-            const expected: SamLaunchRequestArgs = {
-                awsCredentials: fakeCredentials,
-                request: 'attach', // Input "direct-invoke", output "attach".
-                runtime: 'java17',
-                runtimeFamily: lambdaModel.RuntimeFamily.Java,
+                useIkpdb: false,
                 type: AWS_SAM_DEBUG_TYPE,
                 workspaceFolder: {
                     index: 0,
@@ -1446,7 +1102,7 @@ describe('SamDebugConfigurationProvider', async function () {
                 baseBuildDir: actual.baseBuildDir, // Random, sanity-checked by assertEqualLaunchConfigs().
                 envFile: `${actual.baseBuildDir}/env-vars.json`,
                 eventPayloadFile: `${actual.baseBuildDir}/event.json`,
-                codeRoot: expectedCodeRoot,
+                codeRoot: expectedCodeRoot, // Normalized to absolute path.
                 apiPort: undefined,
                 debugPort: actual.debugPort,
                 documentUri: vscode.Uri.file(''), // TODO: remove or test.
@@ -1454,12 +1110,15 @@ describe('SamDebugConfigurationProvider', async function () {
                 invokeTarget: { ...input.invokeTarget },
                 lambda: {
                     ...input.lambda,
+                    environmentVariables: {},
+                    memoryMb: undefined,
+                    timeoutSec: undefined,
                 },
                 name: input.name,
-                templatePath: pathutil.normalize(path.join(path.dirname(templatePath.fsPath), 'template.yaml')),
+                templatePath: pathutil.normalize(
+                    path.join(appDir, 'HelloWorldFunction', 'app___vsctk___template.yaml')
+                ),
                 parameterOverrides: undefined,
-                architecture: 'x86_64',
-                region: 'us-west-2',
             }
 
             const expectedDebug = {
@@ -1472,8 +1131,22 @@ describe('SamDebugConfigurationProvider', async function () {
             }
 
             assertEqualLaunchConfigs(actual, expectedDebug)
-            await assertFileText(expectedDebug.envFile!, '{"HelloWorldFunction":{"test-envvar-1":"test value 1"}}')
-            await assertFileText(expectedDebug.eventPayloadFile!, '{"test-payload-key-1":"test payload value 1"}')
+            assertFileText(expected.envFile, '{"HelloWorldFunction":{}}')
+            assertFileText(expected.eventPayloadFile, '{}')
+            assertFileText(
+                expected.templatePath,
+                `Resources:
+  HelloWorldFunction:
+    Type: 'AWS::Serverless::Function'
+    Properties:
+      Handler: '${handler}'
+      CodeUri: >-
+        ${appDir}${input.invokeTarget.projectRoot}
+      Runtime: java11
+      Environment:
+        Variables: {}
+`
+            )
 
             //
             // Test noDebug=true.
@@ -1499,9 +1172,262 @@ describe('SamDebugConfigurationProvider', async function () {
             assertEqualLaunchConfigs(actualNoDebug, expectedNoDebug)
         })
 
-        it('target=template: Image java', async function () {
+        it('target=code: java gradle', async function () {
             const appDir = pathutil.normalize(
-                path.join(testutil.getProjectDir(), 'testFixtures/workspaceFolder/java17-image')
+                path.join(testutil.getProjectDir(), 'testFixtures/workspaceFolder/java11-plain-gradle-sam-app/')
+            )
+            const folder = testutil.getWorkspaceFolder(appDir)
+            const handler = 'helloworld.App::handleRequest'
+            const input = {
+                type: AWS_SAM_DEBUG_TYPE,
+                name: 'Test debugconfig',
+                request: DIRECT_INVOKE_TYPE,
+                invokeTarget: {
+                    target: CODE_TARGET_TYPE,
+                    lambdaHandler: handler,
+                    projectRoot: 'HelloWorldFunction',
+                },
+                lambda: {
+                    runtime: 'java11',
+                },
+            }
+            const actual = (await debugConfigProvider.makeConfig(folder, input))! as SamLaunchRequestArgs
+            const expectedCodeRoot = (actual.baseBuildDir ?? 'fail') + '/input'
+            const expected: SamLaunchRequestArgs = {
+                awsCredentials: undefined,
+                request: 'attach', // Input "direct-invoke", output "attach".
+                runtime: 'java11',
+                runtimeFamily: lambdaModel.RuntimeFamily.Java,
+                useIkpdb: false,
+                type: AWS_SAM_DEBUG_TYPE,
+                workspaceFolder: {
+                    index: 0,
+                    name: 'test-workspace-folder',
+                    uri: vscode.Uri.file(appDir),
+                },
+                baseBuildDir: actual.baseBuildDir, // Random, sanity-checked by assertEqualLaunchConfigs().
+                envFile: `${actual.baseBuildDir}/env-vars.json`,
+                eventPayloadFile: `${actual.baseBuildDir}/event.json`,
+                codeRoot: expectedCodeRoot, // Normalized to absolute path.
+                apiPort: undefined,
+                debugPort: actual.debugPort,
+                documentUri: vscode.Uri.file(''), // TODO: remove or test.
+                handlerName: handler,
+                invokeTarget: { ...input.invokeTarget },
+                lambda: {
+                    ...input.lambda,
+                    environmentVariables: {},
+                    memoryMb: undefined,
+                    timeoutSec: undefined,
+                },
+                name: input.name,
+                templatePath: pathutil.normalize(
+                    path.join(appDir, 'HelloWorldFunction', 'app___vsctk___template.yaml')
+                ),
+                parameterOverrides: undefined,
+            }
+
+            const expectedDebug = {
+                ...expected,
+                //
+                // Java-specific fields
+                //
+                hostName: '127.0.0.1',
+                port: actual.debugPort,
+            }
+
+            assertEqualLaunchConfigs(actual, expectedDebug)
+            assertFileText(expectedDebug.envFile, '{"HelloWorldFunction":{}}')
+            assertFileText(expectedDebug.eventPayloadFile, '{}')
+            assertFileText(
+                expectedDebug.templatePath,
+                `Resources:
+  HelloWorldFunction:
+    Type: 'AWS::Serverless::Function'
+    Properties:
+      Handler: '${handler}'
+      CodeUri: >-
+        ${appDir}${input.invokeTarget.projectRoot}
+      Runtime: java11
+      Environment:
+        Variables: {}
+`
+            )
+
+            //
+            // Test noDebug=true.
+            //
+            ;(input as any).noDebug = true
+            const actualNoDebug = (await debugConfigProvider.makeConfig(folder, input))! as SamLaunchRequestArgs
+            const expectedCodeRootNoDebug = (actualNoDebug.baseBuildDir ?? 'fail') + '/input'
+            const expectedNoDebug: SamLaunchRequestArgs = {
+                ...expected,
+                codeRoot: expectedCodeRootNoDebug,
+                noDebug: true,
+                request: 'launch',
+                debuggerPath: undefined,
+                debugPort: undefined,
+                baseBuildDir: actualNoDebug.baseBuildDir,
+                envFile: `${actualNoDebug.baseBuildDir}/env-vars.json`,
+                eventPayloadFile: `${actualNoDebug.baseBuildDir}/event.json`,
+            }
+            delete expectedNoDebug.processName
+            delete expectedNoDebug.pipeTransport
+            delete expectedNoDebug.sourceFileMap
+            delete expectedNoDebug.windows
+            assertEqualLaunchConfigs(actualNoDebug, expectedNoDebug)
+        })
+
+        it('target=template: java maven', async function () {
+            const handler = 'helloworld.App::handleRequest'
+            const appDir = pathutil.normalize(
+                path.join(testutil.getProjectDir(), 'testFixtures/workspaceFolder/java11-plain-maven-sam-app/')
+            )
+            const folder = testutil.getWorkspaceFolder(appDir)
+            const input = {
+                type: AWS_SAM_DEBUG_TYPE,
+                name: 'test-java-template',
+                request: DIRECT_INVOKE_TYPE,
+                invokeTarget: {
+                    target: TEMPLATE_TARGET_TYPE,
+                    templatePath: 'template.yaml',
+                    logicalId: 'HelloWorldFunction',
+                },
+                lambda: {
+                    environmentVariables: {
+                        'test-envvar-1': 'test value 1',
+                    },
+                    memoryMb: 512,
+                    timeoutSec: 20,
+                    payload: {
+                        json: {
+                            'test-payload-key-1': 'test payload value 1',
+                        },
+                    },
+                },
+            }
+            const templatePath = vscode.Uri.file(path.join(appDir, 'template.yaml'))
+            await ext.templateRegistry.addItemToRegistry(templatePath)
+            const actual = (await debugConfigProvider.makeConfig(folder, input))! as SamLaunchRequestArgs
+            const expectedCodeRoot = (actual.baseBuildDir ?? 'fail') + '/input'
+            const expected: SamLaunchRequestArgs = {
+                awsCredentials: undefined,
+                request: 'attach', // Input "direct-invoke", output "attach".
+                runtime: 'java11',
+                runtimeFamily: lambdaModel.RuntimeFamily.Java,
+                useIkpdb: false,
+                type: AWS_SAM_DEBUG_TYPE,
+                workspaceFolder: {
+                    index: 0,
+                    name: 'test-workspace-folder',
+                    uri: vscode.Uri.file(appDir),
+                },
+                baseBuildDir: actual.baseBuildDir, // Random, sanity-checked by assertEqualLaunchConfigs().
+                envFile: `${actual.baseBuildDir}/env-vars.json`,
+                eventPayloadFile: `${actual.baseBuildDir}/event.json`,
+                codeRoot: expectedCodeRoot,
+                apiPort: undefined,
+                debugPort: actual.debugPort,
+                documentUri: vscode.Uri.file(''), // TODO: remove or test.
+                handlerName: handler,
+                invokeTarget: { ...input.invokeTarget },
+                lambda: {
+                    ...input.lambda,
+                },
+                name: input.name,
+                templatePath: pathutil.normalize(
+                    path.join(path.dirname(templatePath.fsPath), 'app___vsctk___template.yaml')
+                ),
+                parameterOverrides: undefined,
+            }
+
+            const expectedDebug = {
+                ...expected,
+                //
+                // Java-specific fields
+                //
+                hostName: '127.0.0.1',
+                port: actual.debugPort,
+            }
+
+            assertEqualLaunchConfigs(actual, expectedDebug)
+            assertFileText(expectedDebug.envFile, '{"HelloWorldFunction":{"test-envvar-1":"test value 1"}}')
+            assertFileText(expectedDebug.eventPayloadFile, '{"test-payload-key-1":"test payload value 1"}')
+
+            assertFileText(
+                expectedDebug.templatePath,
+                `AWSTemplateFormatVersion: '2010-09-09'
+Transform: 'AWS::Serverless-2016-10-31'
+Description: |
+  Test SAM Template
+Globals:
+  Function:
+    Timeout: 20
+Resources:
+  HelloWorldFunction:
+    Type: 'AWS::Serverless::Function'
+    Properties:
+      CodeUri: HelloWorldFunction
+      Handler: '${handler}'
+      Runtime: java11
+      MemorySize: 512
+      Environment:
+        Variables:
+          PARAM1: VALUE
+      Events:
+        HelloWorld:
+          Type: Api
+          Properties:
+            Path: /hello
+            Method: get
+Outputs:
+  HelloWorldApi:
+    Description: API Gateway endpoint URL for Prod stage for Hello World function
+    Value:
+      'Fn::Sub': >-
+        https://\${ServerlessRestApi}.execute-api.\${AWS::Region}.amazonaws.com/Prod/hello/
+  HelloWorldFunction:
+    Description: Hello World Lambda Function ARN
+    Value:
+      'Fn::GetAtt':
+        - HelloWorldFunction
+        - Arn
+  HelloWorldFunctionIamRole:
+    Description: Implicit IAM Role created for Hello World function
+    Value:
+      'Fn::GetAtt':
+        - HelloWorldFunctionRole
+        - Arn
+`
+            )
+
+            //
+            // Test noDebug=true.
+            //
+            ;(input as any).noDebug = true
+            const actualNoDebug = (await debugConfigProvider.makeConfig(folder, input))! as SamLaunchRequestArgs
+            const expectedCodeRootNoDebug = (actualNoDebug.baseBuildDir ?? 'fail') + '/input'
+            const expectedNoDebug: SamLaunchRequestArgs = {
+                ...expected,
+                codeRoot: expectedCodeRootNoDebug,
+                noDebug: true,
+                request: 'launch',
+                debuggerPath: undefined,
+                debugPort: undefined,
+                baseBuildDir: actualNoDebug.baseBuildDir,
+                envFile: `${actualNoDebug.baseBuildDir}/env-vars.json`,
+                eventPayloadFile: `${actualNoDebug.baseBuildDir}/event.json`,
+            }
+            delete expectedNoDebug.processName
+            delete expectedNoDebug.pipeTransport
+            delete expectedNoDebug.sourceFileMap
+            delete expectedNoDebug.windows
+            assertEqualLaunchConfigs(actualNoDebug, expectedNoDebug)
+        })
+
+        it('target=template: Image java gradle', async function () {
+            const appDir = pathutil.normalize(
+                path.join(testutil.getProjectDir(), 'testFixtures/workspaceFolder/java11-image-gradle-sam-app')
             )
             const folder = testutil.getWorkspaceFolder(appDir)
             const input = {
@@ -1528,13 +1454,15 @@ describe('SamDebugConfigurationProvider', async function () {
                 },
             }
             const templatePath = vscode.Uri.file(path.join(appDir, 'template.yaml'))
+            await ext.templateRegistry.addItemToRegistry(templatePath)
             const actual = (await debugConfigProvider.makeConfig(folder, input))! as SamLaunchRequestArgs
             const expectedCodeRoot = (actual.baseBuildDir ?? 'fail') + '/input'
             const expected: SamLaunchRequestArgs = {
-                awsCredentials: fakeCredentials,
+                awsCredentials: undefined,
                 request: 'attach', // Input "direct-invoke", output "attach".
                 runtime: 'java11',
                 runtimeFamily: lambdaModel.RuntimeFamily.Java,
+                useIkpdb: false,
                 type: AWS_SAM_DEBUG_TYPE,
                 workspaceFolder: {
                     index: 0,
@@ -1558,10 +1486,10 @@ describe('SamDebugConfigurationProvider', async function () {
                     ...input.lambda,
                 },
                 name: input.name,
-                templatePath: pathutil.normalize(path.join(path.dirname(templatePath.fsPath), 'template.yaml')),
+                templatePath: pathutil.normalize(
+                    path.join(path.dirname(templatePath.fsPath), 'app___vsctk___template.yaml')
+                ),
                 parameterOverrides: undefined,
-                architecture: 'x86_64',
-                region: 'us-west-2',
             }
 
             const expectedDebug = {
@@ -1574,13 +1502,58 @@ describe('SamDebugConfigurationProvider', async function () {
             }
 
             assertEqualLaunchConfigs(actual, expectedDebug)
-            await assertFileText(expectedDebug.envFile!, '{"HelloWorldFunction":{"test-envvar-1":"test value 1"}}')
-            await assertFileText(expectedDebug.eventPayloadFile!, '{"test-payload-key-1":"test payload value 1"}')
-            await assertFileText(
+            assertFileText(expectedDebug.envFile, '{"HelloWorldFunction":{"test-envvar-1":"test value 1"}}')
+            assertFileText(expectedDebug.eventPayloadFile, '{"test-payload-key-1":"test payload value 1"}')
+            assertFileText(
                 expectedDebug.containerEnvFile!,
                 `{"_JAVA_OPTIONS":"${expectedDebug.containerEnvVars!._JAVA_OPTIONS}"}`
             )
 
+            assertFileText(
+                expectedDebug.templatePath,
+                `AWSTemplateFormatVersion: '2010-09-09'
+Transform: 'AWS::Serverless-2016-10-31'
+Description: |
+  java11-image-gradle-sam-app
+  Sample SAM Template for java11-image-gradle-sam-app
+Globals:
+  Function:
+    Timeout: 20
+Resources:
+  HelloWorldFunction:
+    Type: 'AWS::Serverless::Function'
+    Properties:
+      PackageType: Image
+      Events:
+        HelloWorld:
+          Type: Api
+          Properties:
+            Path: /hello
+            Method: get
+    Metadata:
+      DockerTag: java11-gradle-v1
+      DockerContext: ./HelloWorldFunction
+      Dockerfile: Dockerfile
+Outputs:
+  HelloWorldApi:
+    Description: API Gateway endpoint URL for Prod stage for Hello World function
+    Value:
+      'Fn::Sub': >-
+        https://\${ServerlessRestApi}.execute-api.\${AWS::Region}.amazonaws.com/Prod/hello/
+  HelloWorldFunction:
+    Description: Hello World Lambda Function ARN
+    Value:
+      'Fn::GetAtt':
+        - HelloWorldFunction
+        - Arn
+  HelloWorldFunctionIamRole:
+    Description: Implicit IAM Role created for Hello World function
+    Value:
+      'Fn::GetAtt':
+        - HelloWorldFunctionRole
+        - Arn
+`
+            )
             //
             // Test noDebug=true.
             //
@@ -1607,7 +1580,7 @@ describe('SamDebugConfigurationProvider', async function () {
 
         it('target=code: dotnet/csharp', async function () {
             const appDir = pathutil.normalize(
-                path.join(testutil.getProjectDir(), 'testFixtures/workspaceFolder/csharp6-zip/')
+                path.join(testutil.getProjectDir(), 'testFixtures/workspaceFolder/csharp2.1-plain-sam-app/')
             )
             const folder = testutil.getWorkspaceFolder(appDir)
             const input = {
@@ -1620,17 +1593,18 @@ describe('SamDebugConfigurationProvider', async function () {
                     projectRoot: 'src/HelloWorld',
                 },
                 lambda: {
-                    runtime: 'dotnet6',
+                    runtime: 'dotnetcore2.1',
                 },
             }
             const actual = (await debugConfigProvider.makeConfig(folder, input))! as SamLaunchRequestArgs
-            const codeRoot = input.invokeTarget.projectRoot
+            const codeRoot = `${appDir}${input.invokeTarget.projectRoot}`
             const expectedCodeRoot = (actual.baseBuildDir ?? 'fail') + '/input'
             const expected: SamLaunchRequestArgs = {
-                awsCredentials: fakeCredentials,
+                awsCredentials: undefined,
                 request: 'attach', // Input "direct-invoke", output "attach".
-                runtime: 'dotnet6', // lambdaModel.dotNetRuntimes[0],
-                runtimeFamily: lambdaModel.RuntimeFamily.DotNet,
+                runtime: 'dotnetcore2.1', // lambdaModel.dotNetRuntimes[0],
+                runtimeFamily: lambdaModel.RuntimeFamily.DotNetCore,
+                useIkpdb: false,
                 type: AWS_SAM_DEBUG_TYPE,
                 workspaceFolder: {
                     index: 0,
@@ -1638,8 +1612,8 @@ describe('SamDebugConfigurationProvider', async function () {
                     uri: vscode.Uri.file(appDir),
                 },
                 baseBuildDir: actual.baseBuildDir, // Random, sanity-checked by assertEqualLaunchConfigs().
-                envFile: undefined,
-                eventPayloadFile: undefined,
+                envFile: `${actual.baseBuildDir}/env-vars.json`,
+                eventPayloadFile: `${actual.baseBuildDir}/event.json`,
                 codeRoot: expectedCodeRoot, // Normalized to absolute path.
                 apiPort: undefined,
                 debugPort: actual.debugPort,
@@ -1653,10 +1627,8 @@ describe('SamDebugConfigurationProvider', async function () {
                     timeoutSec: undefined,
                 },
                 name: input.name,
-                templatePath: pathutil.normalize(path.join(actual.baseBuildDir!, 'app___vsctk___template.yaml')),
+                templatePath: pathutil.normalize(path.join(appDir, 'src', 'HelloWorld', 'app___vsctk___template.yaml')),
                 parameterOverrides: undefined,
-                architecture: undefined,
-                region: 'us-west-2',
 
                 //
                 // Csharp-related fields
@@ -1686,17 +1658,20 @@ describe('SamDebugConfigurationProvider', async function () {
             }
 
             assertEqualLaunchConfigs(actual, expected)
-
-            await assertFileText(
+            assertFileText(expected.envFile, '{"HelloWorld":{}}')
+            assertFileText(expected.eventPayloadFile, '{}')
+            assertFileText(
                 expected.templatePath,
                 `Resources:
   HelloWorld:
-    Type: AWS::Serverless::Function
+    Type: 'AWS::Serverless::Function'
     Properties:
-      Handler: HelloWorld::HelloWorld.Function::FunctionHandler
+      Handler: 'HelloWorld::HelloWorld.Function::FunctionHandler'
       CodeUri: >-
-        ${input.invokeTarget.projectRoot}
-      Runtime: dotnet6
+        ${appDir}${input.invokeTarget.projectRoot}
+      Runtime: dotnetcore2.1
+      Environment:
+        Variables: {}
 `
             )
 
@@ -1731,8 +1706,8 @@ describe('SamDebugConfigurationProvider', async function () {
                     anotherRemote: 'anotherLocal',
                 },
                 baseBuildDir: actualWithPathMapping.baseBuildDir,
-                envFile: undefined,
-                eventPayloadFile: undefined,
+                envFile: `${actualWithPathMapping.baseBuildDir}/env-vars.json`,
+                eventPayloadFile: `${actualWithPathMapping.baseBuildDir}/event.json`,
             }
             assertEqualLaunchConfigs(actualWithPathMapping, expectedWithPathMapping)
 
@@ -1750,8 +1725,8 @@ describe('SamDebugConfigurationProvider', async function () {
                 debuggerPath: undefined,
                 debugPort: undefined,
                 baseBuildDir: actualNoDebug.baseBuildDir,
-                envFile: undefined,
-                eventPayloadFile: undefined,
+                envFile: `${actualNoDebug.baseBuildDir}/env-vars.json`,
+                eventPayloadFile: `${actualNoDebug.baseBuildDir}/event.json`,
             }
             delete expectedNoDebug.processName
             delete expectedNoDebug.pipeTransport
@@ -1762,7 +1737,7 @@ describe('SamDebugConfigurationProvider', async function () {
 
         it('target=template: dotnet/csharp', async function () {
             const appDir = pathutil.normalize(
-                path.join(testutil.getProjectDir(), 'testFixtures/workspaceFolder/csharp6-zip')
+                path.join(testutil.getProjectDir(), 'testFixtures/workspaceFolder/csharp2.1-plain-sam-app')
             )
             const folder = testutil.getWorkspaceFolder(appDir)
             const input = {
@@ -1773,9 +1748,6 @@ describe('SamDebugConfigurationProvider', async function () {
                     target: TEMPLATE_TARGET_TYPE,
                     templatePath: 'template.yaml',
                     logicalId: 'HelloWorldFunction',
-                },
-                sam: {
-                    containerBuild: true, // #3864
                 },
                 lambda: {
                     environmentVariables: {
@@ -1791,14 +1763,16 @@ describe('SamDebugConfigurationProvider', async function () {
                 },
             }
             const templatePath = vscode.Uri.file(path.join(appDir, 'template.yaml'))
+            await ext.templateRegistry.addItemToRegistry(templatePath)
             const actual = (await debugConfigProvider.makeConfig(folder, input))! as SamLaunchRequestArgs
             const codeRoot = `${appDir}/src/HelloWorld`
             const expectedCodeRoot = (actual.baseBuildDir ?? 'fail') + '/input'
             const expected: SamLaunchRequestArgs = {
-                awsCredentials: fakeCredentials,
+                awsCredentials: undefined,
                 request: 'attach', // Input "direct-invoke", output "attach".
-                runtime: 'dotnet6', // lambdaModel.dotNetRuntimes[0],
-                runtimeFamily: lambdaModel.RuntimeFamily.DotNet,
+                runtime: 'dotnetcore2.1', // lambdaModel.dotNetRuntimes[0],
+                runtimeFamily: lambdaModel.RuntimeFamily.DotNetCore,
+                useIkpdb: false,
                 type: AWS_SAM_DEBUG_TYPE,
                 workspaceFolder: {
                     index: 0,
@@ -1814,15 +1788,13 @@ describe('SamDebugConfigurationProvider', async function () {
                 documentUri: vscode.Uri.file(''), // TODO: remove or test.
                 handlerName: 'HelloWorld::HelloWorld.Function::FunctionHandler',
                 invokeTarget: { ...input.invokeTarget },
-                sam: { ...input.sam },
                 lambda: {
                     ...input.lambda,
                 },
                 name: input.name,
-                architecture: 'x86_64',
-                templatePath: pathutil.normalize(path.join(path.dirname(templatePath.fsPath), 'template.yaml')),
-                mountWith: 'write',
-                region: 'us-west-2',
+                templatePath: pathutil.normalize(
+                    path.join(path.dirname(templatePath.fsPath), 'app___vsctk___template.yaml')
+                ),
 
                 //
                 // Csharp-related fields
@@ -1853,8 +1825,54 @@ describe('SamDebugConfigurationProvider', async function () {
             }
 
             assertEqualLaunchConfigs(actual, expected)
-            await assertFileText(expected.envFile!, '{"HelloWorldFunction":{"test-envvar-1":"test value 1"}}')
-            await assertFileText(expected.eventPayloadFile!, '{"test-payload-key-1":"test payload value 1"}')
+            assertFileText(expected.envFile, '{"HelloWorldFunction":{"test-envvar-1":"test value 1"}}')
+            assertFileText(expected.eventPayloadFile, '{"test-payload-key-1":"test payload value 1"}')
+
+            assertFileText(
+                expected.templatePath,
+                `AWSTemplateFormatVersion: '2010-09-09'
+Transform: 'AWS::Serverless-2016-10-31'
+Description: |
+  Test SAM Template
+Globals:
+  Function:
+    Timeout: 10
+Resources:
+  HelloWorldFunction:
+    Type: 'AWS::Serverless::Function'
+    Properties:
+      CodeUri: ./src/HelloWorld/
+      Handler: 'HelloWorld::HelloWorld.Function::FunctionHandler'
+      Runtime: dotnetcore2.1
+      Environment:
+        Variables:
+          PARAM1: VALUE
+      Events:
+        HelloWorld:
+          Type: Api
+          Properties:
+            Path: /hello
+            Method: get
+Outputs:
+  HelloWorldApi:
+    Description: API Gateway endpoint URL for Prod stage for Hello World function
+    Value:
+      'Fn::Sub': >-
+        https://\${ServerlessRestApi}.execute-api.\${AWS::Region}.amazonaws.com/Prod/hello/
+  HelloWorldFunction:
+    Description: Hello World Lambda Function ARN
+    Value:
+      'Fn::GetAtt':
+        - HelloWorldFunction
+        - Arn
+  HelloWorldFunctionIamRole:
+    Description: Implicit IAM Role created for Hello World function
+    Value:
+      'Fn::GetAtt':
+        - HelloWorldFunctionRole
+        - Arn
+`
+            )
 
             //
             // Test pathMapping
@@ -1918,7 +1936,7 @@ describe('SamDebugConfigurationProvider', async function () {
 
         it('target=template: Image dotnet/csharp', async function () {
             const appDir = pathutil.normalize(
-                path.join(testutil.getProjectDir(), 'testFixtures/workspaceFolder/csharp6-image')
+                path.join(testutil.getProjectDir(), 'testFixtures/workspaceFolder/csharp2.1-image-sam-app')
             )
             const folder = testutil.getWorkspaceFolder(appDir)
             const input = {
@@ -1931,7 +1949,7 @@ describe('SamDebugConfigurationProvider', async function () {
                     logicalId: 'HelloWorldFunction',
                 },
                 lambda: {
-                    runtime: 'dotnet6',
+                    runtime: 'dotnetcore2.1',
                     environmentVariables: {
                         'test-envvar-1': 'test value 1',
                     },
@@ -1945,14 +1963,16 @@ describe('SamDebugConfigurationProvider', async function () {
                 },
             }
             const templatePath = vscode.Uri.file(path.join(appDir, 'template.yaml'))
+            await ext.templateRegistry.addItemToRegistry(templatePath)
             const actual = (await debugConfigProvider.makeConfig(folder, input))! as SamLaunchRequestArgs
             const codeRoot = `${appDir}/src/HelloWorld`
             const expectedCodeRoot = (actual.baseBuildDir ?? 'fail') + '/input'
             const expected: SamLaunchRequestArgs = {
-                awsCredentials: fakeCredentials,
+                awsCredentials: undefined,
                 request: 'attach', // Input "direct-invoke", output "attach".
-                runtime: 'dotnet6', // lambdaModel.dotNetRuntimes[0],
-                runtimeFamily: lambdaModel.RuntimeFamily.DotNet,
+                runtime: 'dotnetcore2.1', // lambdaModel.dotNetRuntimes[0],
+                runtimeFamily: lambdaModel.RuntimeFamily.DotNetCore,
+                useIkpdb: false,
                 type: AWS_SAM_DEBUG_TYPE,
                 workspaceFolder: {
                     index: 0,
@@ -1976,10 +1996,10 @@ describe('SamDebugConfigurationProvider', async function () {
                     ...input.lambda,
                 },
                 name: input.name,
-                templatePath: pathutil.normalize(path.join(path.dirname(templatePath.fsPath), 'template.yaml')),
+                templatePath: pathutil.normalize(
+                    path.join(path.dirname(templatePath.fsPath), 'app___vsctk___template.yaml')
+                ),
                 parameterOverrides: undefined,
-                architecture: undefined,
-                region: 'us-west-2',
 
                 //
                 // Csharp-related fields
@@ -2014,15 +2034,60 @@ describe('SamDebugConfigurationProvider', async function () {
             }
 
             assertEqualLaunchConfigs(actual, expected)
-            await assertFileText(expected.envFile!, '{"HelloWorldFunction":{"test-envvar-1":"test value 1"}}')
-            await assertFileText(expected.eventPayloadFile!, '{"test-payload-key-1":"test payload value 1"}')
-            await assertFileText(expected.containerEnvFile!, '{"_AWS_LAMBDA_DOTNET_DEBUGGING":"1"}')
+            assertFileText(expected.envFile, '{"HelloWorldFunction":{"test-envvar-1":"test value 1"}}')
+            assertFileText(expected.eventPayloadFile, '{"test-payload-key-1":"test payload value 1"}')
+            assertFileText(expected.containerEnvFile!, '{"_AWS_LAMBDA_DOTNET_DEBUGGING":"1"}')
 
             // Windows: sourceFileMap driveletter must be uppercase.
             if (os.platform() === 'win32') {
                 const sourceFileMap = actual.sourceFileMap!['/build']
                 assert.ok(/^[A-Z]:/.test(sourceFileMap.substring(0, 2)), 'sourceFileMap driveletter must be uppercase')
             }
+
+            assertFileText(
+                expected.templatePath,
+                `AWSTemplateFormatVersion: '2010-09-09'
+Transform: 'AWS::Serverless-2016-10-31'
+Description: |
+  Sample SAM Template for csharp2.1-image-sam-app
+Globals:
+  Function:
+    Timeout: 10
+Resources:
+  HelloWorldFunction:
+    Type: 'AWS::Serverless::Function'
+    Properties:
+      PackageType: Image
+      Events:
+        HelloWorld:
+          Type: Api
+          Properties:
+            Path: /hello
+            Method: get
+    Metadata:
+      DockerTag: dotnetcore2.1-v1
+      DockerContext: ./src/HelloWorld
+      Dockerfile: Dockerfile
+Outputs:
+  HelloWorldApi:
+    Description: API Gateway endpoint URL for Prod stage for Hello World function
+    Value:
+      'Fn::Sub': >-
+        https://\${ServerlessRestApi}.execute-api.\${AWS::Region}.amazonaws.com/Prod/hello/
+  HelloWorldFunction:
+    Description: Hello World Lambda Function ARN
+    Value:
+      'Fn::GetAtt':
+        - HelloWorldFunction
+        - Arn
+  HelloWorldFunctionIamRole:
+    Description: Implicit IAM Role created for Hello World function
+    Value:
+      'Fn::GetAtt':
+        - HelloWorldFunctionRole
+        - Arn
+`
+            )
 
             //
             // Test pathMapping
@@ -2113,10 +2178,11 @@ describe('SamDebugConfigurationProvider', async function () {
             const actual = (await debugConfigProvider.makeConfig(folder, input))!
             // Expected result with noDebug=false.
             const expected: SamLaunchRequestArgs = {
-                awsCredentials: fakeCredentials,
+                awsCredentials: undefined,
                 request: 'attach', // Input "direct-invoke", output "attach".
                 runtime: 'python3.7',
                 runtimeFamily: lambdaModel.RuntimeFamily.Python,
+                useIkpdb: false,
                 type: AWS_SAM_DEBUG_TYPE,
                 handlerName: 'app.lambda_handler',
                 workspaceFolder: {
@@ -2125,7 +2191,7 @@ describe('SamDebugConfigurationProvider', async function () {
                     uri: vscode.Uri.file(appDir),
                 },
                 baseBuildDir: actual.baseBuildDir, // Random, sanity-checked by assertEqualLaunchConfigs().
-                envFile: undefined,
+                envFile: `${actual.baseBuildDir}/env-vars.json`,
                 eventPayloadFile: `${actual.baseBuildDir}/event.json`,
                 codeRoot: pathutil.normalize(path.join(appDir, 'hello_world')),
                 debugArgs: [
@@ -2142,12 +2208,10 @@ describe('SamDebugConfigurationProvider', async function () {
                     timeoutSec: undefined,
                 },
                 name: input.name,
-                templatePath: pathutil.normalize(path.join(actual.baseBuildDir!, 'app___vsctk___template.yaml')),
+                templatePath: pathutil.normalize(path.join(appDir, 'hello_world', 'app___vsctk___template.yaml')),
                 port: actual.debugPort,
                 redirectOutput: false,
                 parameterOverrides: undefined,
-                architecture: undefined,
-                region: 'us-west-2',
 
                 //
                 // Python-related fields
@@ -2172,17 +2236,20 @@ describe('SamDebugConfigurationProvider', async function () {
             }
 
             assertEqualLaunchConfigs(actual, expected)
-            assert.strictEqual(await fs.readFileText(actual.eventPayloadFile!), await fs.readFileText(absPayloadPath))
-            await assertFileText(
+            assertFileText(expected.envFile, '{"helloworld":{}}')
+            assert.strictEqual(readFileSync(actual.eventPayloadFile, 'utf-8'), readFileSync(absPayloadPath, 'utf-8'))
+            assertFileText(
                 expected.templatePath,
                 `Resources:
   helloworld:
-    Type: AWS::Serverless::Function
+    Type: 'AWS::Serverless::Function'
     Properties:
       Handler: ${expected.handlerName}
       CodeUri: >-
         ${expected.codeRoot}
       Runtime: python3.7
+      Environment:
+        Variables: {}
 `
             )
 
@@ -2214,7 +2281,7 @@ describe('SamDebugConfigurationProvider', async function () {
                 },
                 pathMappings: inputWithPathMapping.lambda.pathMappings,
                 baseBuildDir: actualWithPathMapping.baseBuildDir,
-                envFile: undefined,
+                envFile: `${actualWithPathMapping.baseBuildDir}/env-vars.json`,
                 eventPayloadFile: `${actualWithPathMapping.baseBuildDir}/event.json`,
             }
             assertEqualLaunchConfigs(actualWithPathMapping, expectedWithPathMapping)
@@ -2232,7 +2299,7 @@ describe('SamDebugConfigurationProvider', async function () {
                 port: -1,
                 handlerName: 'app.lambda_handler',
                 baseBuildDir: actualNoDebug.baseBuildDir,
-                envFile: undefined,
+                envFile: `${actualNoDebug.baseBuildDir}/env-vars.json`,
                 eventPayloadFile: `${actualNoDebug.baseBuildDir}/event.json`,
             }
             assertEqualLaunchConfigs(actualNoDebug, expectedNoDebug)
@@ -2253,15 +2320,17 @@ describe('SamDebugConfigurationProvider', async function () {
                 },
             }
             const templatePath = vscode.Uri.file(path.join(appDir, 'python3.7-plain-sam-app/template.yaml'))
+            await ext.templateRegistry.addItemToRegistry(templatePath)
 
             // Invoke with noDebug=false (the default).
             const actual = (await debugConfigProvider.makeConfig(folder, input))!
             // Expected result with noDebug=false.
             const expected: SamLaunchRequestArgs = {
-                awsCredentials: fakeCredentials,
+                awsCredentials: undefined,
                 request: 'attach', // Input "direct-invoke", output "attach".
                 runtime: 'python3.7',
                 runtimeFamily: lambdaModel.RuntimeFamily.Python,
+                useIkpdb: false,
                 type: AWS_SAM_DEBUG_TYPE,
                 handlerName: 'app.lambda_handler',
                 workspaceFolder: {
@@ -2270,8 +2339,8 @@ describe('SamDebugConfigurationProvider', async function () {
                     uri: vscode.Uri.file(appDir),
                 },
                 baseBuildDir: actual.baseBuildDir, // Random, sanity-checked by assertEqualLaunchConfigs().
-                envFile: undefined,
-                eventPayloadFile: undefined,
+                envFile: `${actual.baseBuildDir}/env-vars.json`,
+                eventPayloadFile: `${actual.baseBuildDir}/event.json`,
                 codeRoot: pathutil.normalize(path.join(appDir, 'python3.7-plain-sam-app/hello_world')),
                 debugArgs: [
                     `/tmp/lambci_debug_files/py_debug_wrapper.py --listen 0.0.0.0:${actual.debugPort} --wait-for-client --log-to-stderr --debug`,
@@ -2286,12 +2355,12 @@ describe('SamDebugConfigurationProvider', async function () {
                     timeoutSec: 3,
                 },
                 name: input.name,
-                templatePath: pathutil.normalize(path.join(path.dirname(templatePath.fsPath), 'template.yaml')),
+                templatePath: pathutil.normalize(
+                    path.join(path.dirname(templatePath.fsPath), 'app___vsctk___template.yaml')
+                ),
                 port: actual.debugPort,
                 redirectOutput: false,
                 parameterOverrides: undefined,
-                architecture: undefined,
-                region: 'us-west-2',
 
                 //
                 // Python-related fields
@@ -2316,6 +2385,74 @@ describe('SamDebugConfigurationProvider', async function () {
             }
 
             assertEqualLaunchConfigs(actual, expected)
+            assertFileText(expected.envFile, '{"HelloWorldFunction":{}}')
+            assertFileText(expected.eventPayloadFile, '{}')
+
+            assertFileText(
+                expected.templatePath,
+                `AWSTemplateFormatVersion: '2010-09-09'
+Transform: 'AWS::Serverless-2016-10-31'
+Description: |
+  python3.7-plain-sam-app
+  Sample SAM Template for python3.7-plain-sam-app
+Globals:
+  Function:
+    Timeout: 3
+Resources:
+  HelloWorldFunction:
+    Type: 'AWS::Serverless::Function'
+    Properties:
+      CodeUri: hello_world/
+      Handler: app.lambda_handler
+      Runtime: python3.7
+      Events:
+        HelloWorld:
+          Type: Api
+          Properties:
+            Path: /hello
+            Method: get
+  Function2NotInLaunchJson:
+    Type: 'AWS::Serverless::Function'
+    Properties:
+      CodeUri: hello_world/
+      Handler: app.lambda_handler_2
+      Runtime: python3.7
+  Function3NotInLaunchJson:
+    Type: 'AWS::Serverless::Function'
+    Properties:
+      CodeUri: hello_world/
+      Handler: app.lambda_handler_3
+      Runtime: python3.7
+      Events:
+        HelloWorld:
+          Type: Api
+          Properties:
+            Path: /apipath1
+            Method: get
+  ServerlessApi:
+    Type: 'AWS::Serverless::Api'
+    Properties:
+      Name: ResourceName
+Outputs:
+  HelloWorldApi:
+    Description: API Gateway endpoint URL for Prod stage for Hello World function
+    Value:
+      'Fn::Sub': >-
+        https://\${ServerlessRestApi}.execute-api.\${AWS::Region}.amazonaws.com/Prod/hello/
+  HelloWorldFunction:
+    Description: Hello World Lambda Function ARN
+    Value:
+      'Fn::GetAtt':
+        - HelloWorldFunction
+        - Arn
+  HelloWorldFunctionIamRole:
+    Description: Implicit IAM Role created for Hello World function
+    Value:
+      'Fn::GetAtt':
+        - HelloWorldFunctionRole
+        - Arn
+`
+            )
 
             //
             // Test pathMapping
@@ -2344,14 +2481,14 @@ describe('SamDebugConfigurationProvider', async function () {
                 },
                 pathMappings: inputWithPathMapping.lambda.pathMappings,
                 baseBuildDir: actualWithPathMapping.baseBuildDir,
-                envFile: undefined,
-                eventPayloadFile: undefined,
+                envFile: `${actualWithPathMapping.baseBuildDir}/env-vars.json`,
+                eventPayloadFile: `${actualWithPathMapping.baseBuildDir}/event.json`,
             }
             assertEqualLaunchConfigs(actualWithPathMapping, expectedWithPathMapping)
 
             // Test noDebug=true.
             expected.handlerName = 'app.lambda_handler'
-            await assertEqualNoDebugTemplateTarget(input, expected, folder, debugConfigProvider, true)
+            await assertEqualNoDebugTemplateTarget(input, expected, folder, debugConfigProvider)
         })
 
         it('target=api: python 3.7 (deep project tree)', async function () {
@@ -2378,15 +2515,17 @@ describe('SamDebugConfigurationProvider', async function () {
                 },
             }
             const templatePath = vscode.Uri.file(path.join(appDir, 'python3.7-plain-sam-app/template.yaml'))
+            await ext.templateRegistry.addItemToRegistry(templatePath)
 
             // Invoke with noDebug=false (the default).
             const actual = (await debugConfigProvider.makeConfig(folder, input))!
             // Expected result with noDebug=false.
             const expected: SamLaunchRequestArgs = {
-                awsCredentials: fakeCredentials,
+                awsCredentials: undefined,
                 request: 'attach', // Input "direct-invoke", output "attach".
                 runtime: 'python3.7',
                 runtimeFamily: lambdaModel.RuntimeFamily.Python,
+                useIkpdb: false,
                 type: AWS_SAM_DEBUG_TYPE,
                 handlerName: 'app.lambda_handler',
                 workspaceFolder: {
@@ -2395,8 +2534,8 @@ describe('SamDebugConfigurationProvider', async function () {
                     uri: vscode.Uri.file(appDir),
                 },
                 baseBuildDir: actual.baseBuildDir, // Random, sanity-checked by assertEqualLaunchConfigs().
-                envFile: undefined,
-                eventPayloadFile: undefined,
+                envFile: `${actual.baseBuildDir}/env-vars.json`,
+                eventPayloadFile: `${actual.baseBuildDir}/event.json`,
                 codeRoot: pathutil.normalize(path.join(appDir, 'python3.7-plain-sam-app/hello_world')),
                 debugArgs: [
                     `/tmp/lambci_debug_files/py_debug_wrapper.py --listen 0.0.0.0:${actual.debugPort} --wait-for-client --log-to-stderr --debug`,
@@ -2414,11 +2553,11 @@ describe('SamDebugConfigurationProvider', async function () {
                     timeoutSec: 3,
                 },
                 name: input.name,
-                templatePath: pathutil.normalize(path.join(path.dirname(templatePath.fsPath), 'template.yaml')),
+                templatePath: pathutil.normalize(
+                    path.join(path.dirname(templatePath.fsPath), 'app___vsctk___template.yaml')
+                ),
                 port: actual.debugPort,
                 redirectOutput: false,
-                architecture: undefined,
-                region: 'us-west-2',
 
                 //
                 // Python-related fields
@@ -2444,10 +2583,78 @@ describe('SamDebugConfigurationProvider', async function () {
             }
 
             assertEqualLaunchConfigs(actual, expected)
+            assertFileText(expected.envFile, '{"HelloWorldFunction":{}}')
+            assertFileText(expected.eventPayloadFile, '{}')
+
+            assertFileText(
+                expected.templatePath,
+                `AWSTemplateFormatVersion: '2010-09-09'
+Transform: 'AWS::Serverless-2016-10-31'
+Description: |
+  python3.7-plain-sam-app
+  Sample SAM Template for python3.7-plain-sam-app
+Globals:
+  Function:
+    Timeout: 3
+Resources:
+  HelloWorldFunction:
+    Type: 'AWS::Serverless::Function'
+    Properties:
+      CodeUri: hello_world/
+      Handler: app.lambda_handler
+      Runtime: python3.7
+      Events:
+        HelloWorld:
+          Type: Api
+          Properties:
+            Path: /hello
+            Method: get
+  Function2NotInLaunchJson:
+    Type: 'AWS::Serverless::Function'
+    Properties:
+      CodeUri: hello_world/
+      Handler: app.lambda_handler_2
+      Runtime: python3.7
+  Function3NotInLaunchJson:
+    Type: 'AWS::Serverless::Function'
+    Properties:
+      CodeUri: hello_world/
+      Handler: app.lambda_handler_3
+      Runtime: python3.7
+      Events:
+        HelloWorld:
+          Type: Api
+          Properties:
+            Path: /apipath1
+            Method: get
+  ServerlessApi:
+    Type: 'AWS::Serverless::Api'
+    Properties:
+      Name: ResourceName
+Outputs:
+  HelloWorldApi:
+    Description: API Gateway endpoint URL for Prod stage for Hello World function
+    Value:
+      'Fn::Sub': >-
+        https://\${ServerlessRestApi}.execute-api.\${AWS::Region}.amazonaws.com/Prod/hello/
+  HelloWorldFunction:
+    Description: Hello World Lambda Function ARN
+    Value:
+      'Fn::GetAtt':
+        - HelloWorldFunction
+        - Arn
+  HelloWorldFunctionIamRole:
+    Description: Implicit IAM Role created for Hello World function
+    Value:
+      'Fn::GetAtt':
+        - HelloWorldFunctionRole
+        - Arn
+`
+            )
 
             // Test noDebug=true.
             expected.handlerName = 'app.lambda_handler'
-            await assertEqualNoDebugTemplateTarget(input, expected, folder, debugConfigProvider, true)
+            await assertEqualNoDebugTemplateTarget(input, expected, folder, debugConfigProvider)
         })
 
         it('target=template: Image python 3.7', async function () {
@@ -2469,15 +2676,17 @@ describe('SamDebugConfigurationProvider', async function () {
                 },
             }
             const templatePath = vscode.Uri.file(path.join(appDir, 'python3.7-image-sam-app/template.yaml'))
+            await ext.templateRegistry.addItemToRegistry(templatePath)
 
             // Invoke with noDebug=false (the default).
             const actual = (await debugConfigProvider.makeConfig(folder, input))!
             // Expected result with noDebug=false.
             const expected: SamLaunchRequestArgs = {
-                awsCredentials: fakeCredentials,
+                awsCredentials: undefined,
                 request: 'attach', // Input "direct-invoke", output "attach".
                 runtime: 'python3.7',
                 runtimeFamily: lambdaModel.RuntimeFamily.Python,
+                useIkpdb: false,
                 type: AWS_SAM_DEBUG_TYPE,
                 handlerName: 'HelloWorldFunction',
                 workspaceFolder: {
@@ -2486,8 +2695,8 @@ describe('SamDebugConfigurationProvider', async function () {
                     uri: vscode.Uri.file(appDir),
                 },
                 baseBuildDir: actual.baseBuildDir, // Random, sanity-checked by assertEqualLaunchConfigs().
-                envFile: undefined,
-                eventPayloadFile: undefined,
+                envFile: `${actual.baseBuildDir}/env-vars.json`,
+                eventPayloadFile: `${actual.baseBuildDir}/event.json`,
                 codeRoot: pathutil.normalize(path.join(appDir, 'python3.7-image-sam-app/hello_world')),
                 debugArgs: [
                     `/var/lang/bin/python3.7 /tmp/lambci_debug_files/py_debug_wrapper.py --listen 0.0.0.0:${actual.debugPort} --wait-for-client --log-to-stderr /var/runtime/bootstrap --debug`,
@@ -2503,11 +2712,11 @@ describe('SamDebugConfigurationProvider', async function () {
                     runtime: 'python3.7',
                 },
                 name: input.name,
-                templatePath: pathutil.normalize(path.join(path.dirname(templatePath.fsPath), 'template.yaml')),
+                templatePath: pathutil.normalize(
+                    path.join(path.dirname(templatePath.fsPath), 'app___vsctk___template.yaml')
+                ),
                 port: actual.debugPort,
                 redirectOutput: false,
-                architecture: undefined,
-                region: 'us-west-2',
 
                 //
                 // Python-related fields
@@ -2533,6 +2742,54 @@ describe('SamDebugConfigurationProvider', async function () {
             }
 
             assertEqualLaunchConfigs(actual, expected)
+            assertFileText(expected.envFile, '{"HelloWorldFunction":{}}')
+            assertFileText(expected.eventPayloadFile, '{}')
+
+            assertFileText(
+                expected.templatePath,
+                `AWSTemplateFormatVersion: '2010-09-09'
+Transform: 'AWS::Serverless-2016-10-31'
+Description: |
+  python3.7-image-sam-app
+  Sample SAM Template for python3.7-image-sam-app
+Globals:
+  Function:
+    Timeout: 3
+Resources:
+  HelloWorldFunction:
+    Type: 'AWS::Serverless::Function'
+    Properties:
+      PackageType: Image
+      Events:
+        HelloWorld:
+          Type: Api
+          Properties:
+            Path: /hello
+            Method: get
+    Metadata:
+      DockerTag: python3.7-v1
+      DockerContext: ./hello_world
+      Dockerfile: Dockerfile
+Outputs:
+  HelloWorldApi:
+    Description: API Gateway endpoint URL for Prod stage for Hello World function
+    Value:
+      'Fn::Sub': >-
+        https://\${ServerlessRestApi}.execute-api.\${AWS::Region}.amazonaws.com/Prod/hello/
+  HelloWorldFunction:
+    Description: Hello World Lambda Function ARN
+    Value:
+      'Fn::GetAtt':
+        - HelloWorldFunction
+        - Arn
+  HelloWorldFunctionIamRole:
+    Description: Implicit IAM Role created for Hello World function
+    Value:
+      'Fn::GetAtt':
+        - HelloWorldFunctionRole
+        - Arn
+`
+            )
 
             //
             // Test pathMapping
@@ -2562,8 +2819,8 @@ describe('SamDebugConfigurationProvider', async function () {
                 },
                 pathMappings: inputWithPathMapping.lambda.pathMappings,
                 baseBuildDir: actualWithPathMapping.baseBuildDir,
-                envFile: undefined,
-                eventPayloadFile: undefined,
+                envFile: `${actualWithPathMapping.baseBuildDir}/env-vars.json`,
+                eventPayloadFile: `${actualWithPathMapping.baseBuildDir}/event.json`,
             }
             assertEqualLaunchConfigs(actualWithPathMapping, expectedWithPathMapping)
 
@@ -2579,8 +2836,8 @@ describe('SamDebugConfigurationProvider', async function () {
                 debugPort: undefined,
                 port: -1,
                 baseBuildDir: actualNoDebug.baseBuildDir,
-                envFile: undefined,
-                eventPayloadFile: undefined,
+                envFile: `${actualNoDebug.baseBuildDir}/env-vars.json`,
+                eventPayloadFile: `${actualNoDebug.baseBuildDir}/event.json`,
             }
             assertEqualLaunchConfigs(actualNoDebug, expectedNoDebug)
         })
@@ -2607,6 +2864,7 @@ describe('SamDebugConfigurationProvider', async function () {
                     },
                 },
             }
+
             // Debug option should not appear now
             getLogger().setLogLevel('verbose')
             const actual = (await debugConfigProvider.makeConfig(folder, input))!
@@ -2619,27 +2877,401 @@ describe('SamDebugConfigurationProvider', async function () {
             getLogger().setLogLevel('debug')
         })
 
-        it('debugconfig with "aws" section', async function () {
-            // Simluates credentials in "aws.credentials" launch-config field.
-            const configCredentials: Credentials = {
-                accessKeyId: 'access-from-config',
-                secretAccessKey: 'secret-from-config',
-                sessionToken: 'session-from-config',
+        it('target=code: ikpdb, python 3.7', async function () {
+            const appDir = pathutil.normalize(
+                path.join(testutil.getProjectDir(), 'testFixtures/workspaceFolder/python3.7-plain-sam-app')
+            )
+            const folder = testutil.getWorkspaceFolder(appDir)
+            const input = {
+                type: AWS_SAM_DEBUG_TYPE,
+                name: 'test: ikpdb target=code',
+                request: DIRECT_INVOKE_TYPE,
+                invokeTarget: {
+                    target: CODE_TARGET_TYPE,
+                    lambdaHandler: 'app.lambda_handler',
+                    projectRoot: 'hello_world',
+                },
+                lambda: {
+                    runtime: 'python3.7',
+                    payload: {
+                        path: `${appDir}/events/event.json`,
+                    },
+                },
+                // Force ikpdb in non-cloud9 environment.
+                useIkpdb: true,
             }
+
+            // Invoke with noDebug=false (the default).
+            const actual = (await debugConfigProvider.makeConfig(folder, input))!
+            // Expected result with noDebug=false.
+            const expected: SamLaunchRequestArgs = {
+                awsCredentials: undefined,
+                request: 'attach', // Input "direct-invoke", output "attach".
+                runtime: 'python3.7',
+                runtimeFamily: lambdaModel.RuntimeFamily.Python,
+                useIkpdb: true,
+                type: AWS_SAM_DEBUG_TYPE,
+                handlerName: 'app.lambda_handler',
+                workspaceFolder: {
+                    index: 0,
+                    name: 'test-workspace-folder',
+                    uri: vscode.Uri.file(appDir),
+                },
+                baseBuildDir: actual.baseBuildDir, // Random, sanity-checked by assertEqualLaunchConfigs().
+                envFile: `${actual.baseBuildDir}/env-vars.json`,
+                eventPayloadFile: `${actual.baseBuildDir}/event.json`,
+                codeRoot: pathutil.normalize(path.join(appDir, 'hello_world')),
+                debugArgs: [
+                    `-m ikp3db --ikpdb-address=0.0.0.0 --ikpdb-port=${actual.debugPort} -ik_ccwd=hello_world -ik_cwd=/var/task --ikpdb-log=BEXFPG`,
+                ],
+                apiPort: actual.apiPort,
+                debugPort: actual.debugPort,
+                documentUri: vscode.Uri.file(''), // TODO: remove or test.
+                invokeTarget: { ...input.invokeTarget },
+                lambda: {
+                    ...input.lambda,
+                    environmentVariables: {},
+                    memoryMb: undefined,
+                    timeoutSec: undefined,
+                },
+                sam: {
+                    containerBuild: true,
+                },
+                name: input.name,
+                templatePath: pathutil.normalize(path.join(appDir, 'hello_world', 'app___vsctk___template.yaml')),
+                parameterOverrides: undefined,
+
+                //
+                // Python-ikpdb fields
+                //
+                port: actual.debugPort,
+                address: 'localhost',
+                localRoot: pathutil.normalize(path.join(appDir, 'hello_world')),
+                remoteRoot: '/var/task',
+            }
+
+            assertEqualLaunchConfigs(actual, expected)
+            assertFileText(expected.envFile, '{"helloworld":{}}')
+            assert.strictEqual(
+                readFileSync(actual.eventPayloadFile, 'utf-8'),
+                readFileSync(input.lambda.payload.path, 'utf-8')
+            )
+            assertFileText(
+                expected.templatePath,
+                `Resources:
+  helloworld:
+    Type: 'AWS::Serverless::Function'
+    Properties:
+      Handler: ${expected.handlerName}
+      CodeUri: >-
+        ${expected.codeRoot}
+      Runtime: python3.7
+      Environment:
+        Variables: {}
+`
+            )
+
+            //
+            // Test noDebug=true.
+            //
+            ;(input as any).noDebug = true
+            const actualNoDebug = (await debugConfigProvider.makeConfig(folder, input))! as SamLaunchRequestArgs
+            const expectedNoDebug: SamLaunchRequestArgs = {
+                ...expected,
+                noDebug: true,
+                request: 'launch',
+                debugPort: undefined,
+                port: -1,
+                handlerName: 'app.lambda_handler',
+                baseBuildDir: actualNoDebug.baseBuildDir,
+                envFile: `${actualNoDebug.baseBuildDir}/env-vars.json`,
+                eventPayloadFile: `${actualNoDebug.baseBuildDir}/event.json`,
+            }
+            assertEqualLaunchConfigs(actualNoDebug, expectedNoDebug)
+        })
+
+        it('target=template: ikpdb, python 3.7 (deep project tree)', async function () {
+            // To test a deeper tree, use "testFixtures/workspaceFolder/" as the root.
+            const appDir = pathutil.normalize(path.join(testutil.getProjectDir(), 'testFixtures/workspaceFolder/'))
+            const folder = testutil.getWorkspaceFolder(appDir)
+            const input = {
+                type: AWS_SAM_DEBUG_TYPE,
+                name: 'test-py37-template',
+                request: DIRECT_INVOKE_TYPE,
+                invokeTarget: {
+                    target: TEMPLATE_TARGET_TYPE,
+                    templatePath: 'python3.7-plain-sam-app/template.yaml',
+                    logicalId: 'HelloWorldFunction',
+                },
+                // Force ikpdb in non-cloud9 environment.
+                useIkpdb: true,
+            }
+            const templatePath = vscode.Uri.file(path.join(appDir, 'python3.7-plain-sam-app/template.yaml'))
+            await ext.templateRegistry.addItemToRegistry(templatePath)
+
+            // Invoke with noDebug=false (the default).
+            const actual = (await debugConfigProvider.makeConfig(folder, input))!
+            // Expected result with noDebug=false.
+            const expected: SamLaunchRequestArgs = {
+                awsCredentials: undefined,
+                request: 'attach', // Input "direct-invoke", output "attach".
+                runtime: 'python3.7',
+                runtimeFamily: lambdaModel.RuntimeFamily.Python,
+                useIkpdb: true,
+                type: AWS_SAM_DEBUG_TYPE,
+                handlerName: 'app.lambda_handler',
+                workspaceFolder: {
+                    index: 0,
+                    name: 'test-workspace-folder',
+                    uri: vscode.Uri.file(appDir),
+                },
+                baseBuildDir: actual.baseBuildDir, // Random, sanity-checked by assertEqualLaunchConfigs().
+                envFile: `${actual.baseBuildDir}/env-vars.json`,
+                eventPayloadFile: `${actual.baseBuildDir}/event.json`,
+                codeRoot: pathutil.normalize(path.join(appDir, 'python3.7-plain-sam-app/hello_world')),
+                apiPort: undefined,
+                debugArgs: [
+                    `-m ikp3db --ikpdb-address=0.0.0.0 --ikpdb-port=${actual.debugPort} -ik_ccwd=python3.7-plain-sam-app/hello_world -ik_cwd=/var/task --ikpdb-log=BEXFPG`,
+                ],
+                debugPort: actual.debugPort,
+                documentUri: vscode.Uri.file(''), // TODO: remove or test.
+                invokeTarget: { ...input.invokeTarget },
+                lambda: {
+                    environmentVariables: {},
+                    memoryMb: undefined,
+                    timeoutSec: 3,
+                },
+                sam: {
+                    containerBuild: true,
+                },
+                name: input.name,
+                templatePath: pathutil.normalize(
+                    path.join(path.dirname(templatePath.fsPath), 'app___vsctk___template.yaml')
+                ),
+                parameterOverrides: undefined,
+
+                //
+                // Python-ikpdb fields
+                //
+                port: actual.debugPort,
+                address: 'localhost',
+                localRoot: pathutil.normalize(path.join(appDir, 'hello_world')),
+                remoteRoot: '/var/task',
+            }
+
+            assertEqualLaunchConfigs(actual, expected)
+            assertFileText(expected.envFile, '{"HelloWorldFunction":{}}')
+            assertFileText(expected.eventPayloadFile, '{}')
+
+            assertFileText(
+                expected.templatePath,
+                `AWSTemplateFormatVersion: '2010-09-09'
+Transform: 'AWS::Serverless-2016-10-31'
+Description: |
+  python3.7-plain-sam-app
+  Sample SAM Template for python3.7-plain-sam-app
+Globals:
+  Function:
+    Timeout: 3
+Resources:
+  HelloWorldFunction:
+    Type: 'AWS::Serverless::Function'
+    Properties:
+      CodeUri: hello_world/
+      Handler: app.lambda_handler
+      Runtime: python3.7
+      Events:
+        HelloWorld:
+          Type: Api
+          Properties:
+            Path: /hello
+            Method: get
+  Function2NotInLaunchJson:
+    Type: 'AWS::Serverless::Function'
+    Properties:
+      CodeUri: hello_world/
+      Handler: app.lambda_handler_2
+      Runtime: python3.7
+  Function3NotInLaunchJson:
+    Type: 'AWS::Serverless::Function'
+    Properties:
+      CodeUri: hello_world/
+      Handler: app.lambda_handler_3
+      Runtime: python3.7
+      Events:
+        HelloWorld:
+          Type: Api
+          Properties:
+            Path: /apipath1
+            Method: get
+  ServerlessApi:
+    Type: 'AWS::Serverless::Api'
+    Properties:
+      Name: ResourceName
+Outputs:
+  HelloWorldApi:
+    Description: API Gateway endpoint URL for Prod stage for Hello World function
+    Value:
+      'Fn::Sub': >-
+        https://\${ServerlessRestApi}.execute-api.\${AWS::Region}.amazonaws.com/Prod/hello/
+  HelloWorldFunction:
+    Description: Hello World Lambda Function ARN
+    Value:
+      'Fn::GetAtt':
+        - HelloWorldFunction
+        - Arn
+  HelloWorldFunctionIamRole:
+    Description: Implicit IAM Role created for Hello World function
+    Value:
+      'Fn::GetAtt':
+        - HelloWorldFunctionRole
+        - Arn
+`
+            )
+
+            //
+            // Test noDebug=true.
+            //
+            ;(input as any).noDebug = true
+            const actualNoDebug = (await debugConfigProvider.makeConfig(folder, input))!
+            const expectedNoDebug: SamLaunchRequestArgs = {
+                ...expected,
+                noDebug: true,
+                request: 'launch',
+                debugPort: undefined,
+                port: -1,
+                handlerName: 'app.lambda_handler',
+                baseBuildDir: actualNoDebug.baseBuildDir,
+                envFile: `${actualNoDebug.baseBuildDir}/env-vars.json`,
+                eventPayloadFile: `${actualNoDebug.baseBuildDir}/event.json`,
+            }
+            assertEqualLaunchConfigs(actualNoDebug, expectedNoDebug)
+        })
+
+        it('debugconfig with extraneous env vars', async function () {
+            const appDir = pathutil.normalize(
+                path.join(testutil.getProjectDir(), 'testFixtures/workspaceFolder/js-manifest-in-root/')
+            )
+            const folder = testutil.getWorkspaceFolder(appDir)
+            const input = {
+                type: AWS_SAM_DEBUG_TYPE,
+                name: 'test-extraneous-env',
+                request: DIRECT_INVOKE_TYPE,
+                invokeTarget: {
+                    target: TEMPLATE_TARGET_TYPE,
+                    templatePath: tempFile.fsPath,
+                    logicalId: resourceName,
+                },
+                lambda: {
+                    // These are written to env-vars.json, but ignored by SAM.
+                    environmentVariables: {
+                        var1: '2',
+                        var2: '1',
+                    },
+                },
+            }
+            testutil.toFile(
+                makeSampleSamTemplateYaml(true, {
+                    resourceName: resourceName,
+                    runtime: 'nodejs12.x',
+                    handler: 'my.test.handler',
+                    codeUri: 'codeuri',
+                }),
+                tempFile.fsPath
+            )
+            await ext.templateRegistry.addItemToRegistry(tempFile)
+            const actual = (await debugConfigProvider.makeConfig(folder, input))!
+            const tempDir = path.dirname(actual.codeRoot)
+
+            const expected: SamLaunchRequestArgs = {
+                awsCredentials: undefined,
+                type: AWS_SAM_DEBUG_TYPE,
+                useIkpdb: false,
+                workspaceFolder: {
+                    index: 0,
+                    name: 'test-workspace-folder',
+                    uri: vscode.Uri.file(appDir),
+                },
+                baseBuildDir: actual.baseBuildDir, // Random, sanity-checked by assertEqualLaunchConfigs().
+                envFile: `${actual.baseBuildDir}/env-vars.json`,
+                eventPayloadFile: `${actual.baseBuildDir}/event.json`,
+                codeRoot: pathutil.normalize(path.join(tempDir, 'codeuri')), // Normalized to absolute path.
+                apiPort: undefined,
+                debugPort: actual.debugPort,
+                documentUri: vscode.Uri.file(''), // TODO: remove or test.
+                handlerName: 'my.test.handler',
+                invokeTarget: {
+                    target: 'template',
+                    templatePath: pathutil.normalize(path.join(tempDir ?? '?', 'test.yaml')),
+                    logicalId: 'myResource',
+                },
+                lambda: {
+                    environmentVariables: {
+                        var1: '2',
+                        var2: '1',
+                    },
+                    memoryMb: undefined,
+                    timeoutSec: 12345, // From template.yaml.
+                },
+                localRoot: pathutil.normalize(path.join(tempDir, 'codeuri')), // Normalized to absolute path.
+                name: input.name,
+                templatePath: pathutil.normalize(
+                    path.join(path.dirname(tempFile.fsPath), 'app___vsctk___template.yaml')
+                ),
+                parameterOverrides: undefined,
+
+                //
+                // Node-related fields
+                //
+                address: 'localhost',
+                port: actual.debugPort,
+                preLaunchTask: undefined,
+                protocol: 'inspector',
+                remoteRoot: '/var/task',
+                request: 'attach', // Input "direct-invoke", output "attach".
+                runtime: 'nodejs12.x',
+                runtimeFamily: lambdaModel.RuntimeFamily.NodeJS,
+                skipFiles: ['/var/runtime/node_modules/**/*.js', '<node_internals>/**/*.js'],
+                stopOnEntry: false,
+            }
+
+            assertEqualLaunchConfigs(actual, expected)
+            assertFileText(expected.envFile, '{"myResource":{"var1":"2","var2":"1"}}')
+            assertFileText(expected.eventPayloadFile, '{}')
+
+            assertFileText(
+                expected.templatePath,
+                `Globals:
+  Function:
+    Timeout: 5
+Resources:
+  myResource:
+    Type: 'AWS::Serverless::Function'
+    Properties:
+      Handler: my.test.handler
+      CodeUri: codeuri
+      Runtime: nodejs12.x
+      Timeout: 12345
+      Environment:
+        Variables:
+          ENVVAR: envvar
+`
+            )
+        })
+
+        it('debugconfig with aws section', async function () {
             const mockCredentialsStore: CredentialsStore = new CredentialsStore()
 
             const credentialsProvider: CredentialsProvider = {
-                getCredentials: sandbox.stub().resolves({} as any as AWS.Credentials),
-                getProviderType: sandbox.stub().resolves('profile'),
-                getTelemetryType: sandbox.stub().resolves('staticProfile'),
-                getCredentialsId: sandbox.stub().returns({
-                    credentialSource: 'profile',
+                getCredentials: sandbox.stub().resolves(({} as any) as AWS.Credentials),
+                getCredentialsType2: sandbox.stub().resolves('staticProfile'),
+                getCredentialsProviderId: sandbox.stub().returns({
+                    credentialType: 'test',
                     credentialTypeId: 'someId',
                 }),
                 getDefaultRegion: sandbox.stub().returns('someRegion'),
                 getHashCode: sandbox.stub().returns('1234'),
                 canAutoConnect: sandbox.stub().returns(true),
-                isAvailable: sandbox.stub().returns(Promise.resolve(true)),
             }
             const getCredentialsProviderStub = sandbox.stub(
                 CredentialsProviderManager.getInstance(),
@@ -2648,7 +3280,7 @@ describe('SamDebugConfigurationProvider', async function () {
             getCredentialsProviderStub.resolves(credentialsProvider)
             const upsertStub = sandbox.stub(mockCredentialsStore, 'upsertCredentials')
             upsertStub.resolves({
-                credentials: configCredentials,
+                credentials: mockedCredentials,
                 credentialsHashCode: 'unimportant',
             })
             const debugConfigProviderMockCredentials = new SamDebugConfigProvider({
@@ -2684,23 +3316,24 @@ describe('SamDebugConfigurationProvider', async function () {
                 },
                 ...awsSection,
             }
-            await testutil.toFile(
+            testutil.toFile(
                 makeSampleSamTemplateYaml(true, {
                     resourceName: resourceName,
-                    runtime: 'nodejs18.x',
+                    runtime: 'nodejs12.x',
                     handler: 'my.test.handler',
                     codeUri: 'codeuri',
                 }),
                 tempFile.fsPath
             )
+            await ext.templateRegistry.addItemToRegistry(tempFile)
             const actual = (await debugConfigProviderMockCredentials.makeConfig(folder, input))!
             const tempDir = path.dirname(actual.codeRoot)
 
             const expected: SamLaunchRequestArgs = {
-                // The `aws.credentials` field in debug config, overrides default toolkit credentials.
-                awsCredentials: configCredentials,
+                awsCredentials: mockedCredentials,
                 ...awsSection,
                 type: AWS_SAM_DEBUG_TYPE,
+                useIkpdb: false,
                 workspaceFolder: {
                     index: 0,
                     name: 'test-workspace-folder',
@@ -2708,7 +3341,7 @@ describe('SamDebugConfigurationProvider', async function () {
                 },
                 baseBuildDir: actual.baseBuildDir, // Random, sanity-checked by assertEqualLaunchConfigs().
                 envFile: `${actual.baseBuildDir}/env-vars.json`,
-                eventPayloadFile: undefined,
+                eventPayloadFile: `${actual.baseBuildDir}/event.json`,
                 codeRoot: pathutil.normalize(path.join(tempDir, 'codeuri')), // Normalized to absolute path.
                 apiPort: undefined,
                 debugPort: actual.debugPort,
@@ -2729,11 +3362,8 @@ describe('SamDebugConfigurationProvider', async function () {
                 },
                 localRoot: pathutil.normalize(path.join(tempDir, 'codeuri')), // Normalized to absolute path.
                 name: input.name,
-                templatePath: pathutil.normalize(path.join(actual.baseBuildDir!, 'app___vsctk___template.yaml')),
+                templatePath: pathutil.normalize(path.join(appDir, 'src', 'app___vsctk___template.yaml')),
                 parameterOverrides: undefined,
-                architecture: 'x86_64',
-                // The `aws.region` field in debug config, overrides default toolkit region.
-                region: 'us-weast-9',
 
                 //
                 // Node-related fields
@@ -2744,10 +3374,9 @@ describe('SamDebugConfigurationProvider', async function () {
                 protocol: 'inspector',
                 remoteRoot: '/var/task',
                 request: 'attach', // Input "direct-invoke", output "attach".
-                runtime: 'nodejs18.x',
+                runtime: 'nodejs12.x',
                 runtimeFamily: lambdaModel.RuntimeFamily.NodeJS,
                 skipFiles: ['/var/runtime/node_modules/**/*.js', '<node_internals>/**/*.js'],
-                continueOnAttach: true,
                 stopOnEntry: false,
             }
 
@@ -2788,10 +3417,11 @@ describe('SamDebugConfigurationProvider', async function () {
             const actual = (await debugConfigProvider.makeConfig(folder, input))!
             const expected: SamLaunchRequestArgs = {
                 type: AWS_SAM_DEBUG_TYPE,
-                awsCredentials: fakeCredentials,
+                awsCredentials: undefined,
                 request: 'attach', // Input "direct-invoke", output "attach".
                 runtime: 'go1.x',
                 runtimeFamily: lambdaModel.RuntimeFamily.Go,
+                useIkpdb: false,
                 workspaceFolder: {
                     index: 0,
                     name: 'test-workspace-folder',
@@ -2809,11 +3439,10 @@ describe('SamDebugConfigurationProvider', async function () {
                 lambda: {
                     ...input.lambda,
                 },
+                localRoot: pathutil.normalize(path.join(appDir, 'hello-world')), // Normalized to absolute path.
                 name: input.name,
-                templatePath: pathutil.normalize(path.join(actual.baseBuildDir!, 'app___vsctk___template.yaml')),
+                templatePath: pathutil.normalize(path.join(appDir, 'hello-world', 'app___vsctk___template.yaml')),
                 parameterOverrides: undefined,
-                architecture: undefined,
-                region: 'us-west-2',
 
                 //
                 // Go-related fields
@@ -2823,39 +3452,34 @@ describe('SamDebugConfigurationProvider', async function () {
                 processName: 'godelve',
                 port: actual.debugPort,
                 preLaunchTask: undefined,
+                remoteRoot: '/var/task',
                 skipFiles: [],
                 debugArgs: ['-delveAPI=2'],
-                debugAdapter: 'legacy',
             }
 
             assertEqualLaunchConfigs(actual, expected)
-            await assertFileText(
-                expected.envFile!,
+            assertFileText(
+                expected.envFile,
                 '{"helloworld":{"test-envvar-1":"test value 1","test-envvar-2":"test value 2"}}'
             )
-            await assertFileText(
-                expected.eventPayloadFile!,
+            assertFileText(
+                expected.eventPayloadFile,
                 '{"test-payload-key-1":"test payload value 1","test-payload-key-2":"test payload value 2"}'
             )
-            await assertFileText(
+            assertFileText(
                 expected.templatePath,
                 `Resources:
-  helloworld:
-    Type: AWS::Serverless::Function
+  go1plainsamapp:
+    Type: 'AWS::Serverless::Function'
     Properties:
-      Handler: hello-world
+      Handler: handler
       CodeUri: >-
         ${expected.codeRoot}
       Runtime: go1.x
       Environment:
-        Variables:
-          test-envvar-1: test value 1
-          test-envvar-2: test value 2
-      MemorySize: 1.2
-      Timeout: 9000
+        Variables: {}
 `
             )
-
             //
             // Test noDebug=true.
             //
@@ -2877,6 +3501,151 @@ describe('SamDebugConfigurationProvider', async function () {
                 delete actualNoDebug.debugArgs
             }
             assertEqualLaunchConfigs(actualNoDebug, expectedNoDebug)
+        })
+
+        it('target=code: go (nested lambdas)', async function () {
+            const appDir = pathutil.normalize(
+                path.join(testutil.getProjectDir(), 'testFixtures/workspaceFolder/go1-nested-sam-app')
+            )
+
+            const folder = testutil.getWorkspaceFolder(appDir)
+            const input1 = {
+                type: AWS_SAM_DEBUG_TYPE,
+                name: 'test-go-code',
+                request: DIRECT_INVOKE_TYPE,
+                invokeTarget: {
+                    target: CODE_TARGET_TYPE,
+                    lambdaHandler: 'lambdas/hello-world1:handler',
+                    projectRoot: appDir,
+                },
+                lambda: {
+                    runtime: 'go1.x',
+                    environmentVariables: {
+                        'test-envvar-1': 'test value 1',
+                        'test-envvar-2': 'test value 2',
+                    },
+                    memoryMb: 1.2,
+                    timeoutSec: 9000,
+                    payload: {
+                        json: {
+                            'test-payload-key-1': 'test payload value 1',
+                            'test-payload-key-2': 'test payload value 2',
+                        },
+                    },
+                },
+            }
+            // Points to the other lambda handler
+            const input2 = {
+                ...input1,
+                invokeTarget: {
+                    target: CODE_TARGET_TYPE,
+                    lambdaHandler: 'lambdas/hello-world2:handler',
+                    projectRoot: appDir,
+                },
+            }
+
+            const actual1 = (await debugConfigProvider.makeConfig(folder, input1))!
+            const actual2 = (await debugConfigProvider.makeConfig(folder, input2))!
+
+            const expected1: SamLaunchRequestArgs = {
+                type: AWS_SAM_DEBUG_TYPE,
+                awsCredentials: undefined,
+                request: 'attach', // Input "direct-invoke", output "attach".
+                runtime: 'go1.x',
+                runtimeFamily: lambdaModel.RuntimeFamily.Go,
+                useIkpdb: false,
+                workspaceFolder: {
+                    index: 0,
+                    name: 'test-workspace-folder',
+                    uri: vscode.Uri.file(appDir),
+                },
+                baseBuildDir: actual1.baseBuildDir, // Random, sanity-checked by assertEqualLaunchConfigs().
+                envFile: `${actual1.baseBuildDir}/env-vars.json`,
+                eventPayloadFile: `${actual1.baseBuildDir}/event.json`,
+                codeRoot: pathutil.normalize(path.join(appDir, 'lambdas', 'hello-world1')), // Normalized to absolute path.
+                apiPort: undefined,
+                debugPort: actual1.debugPort,
+                documentUri: vscode.Uri.file(''), // TODO: remove or test.
+                handlerName: 'handler',
+                invokeTarget: { ...input1.invokeTarget },
+                lambda: {
+                    ...input1.lambda,
+                },
+                localRoot: pathutil.normalize(path.join(appDir, 'lambdas', 'hello-world1')), // Normalized to absolute path.
+                name: input1.name,
+                templatePath: pathutil.normalize(
+                    path.join(appDir, 'lambdas', 'hello-world1', 'app___vsctk___template.yaml')
+                ),
+                parameterOverrides: undefined,
+
+                //
+                // Go-related fields
+                //
+                host: 'localhost',
+                mode: 'remote',
+                processName: 'godelve',
+                port: actual1.debugPort,
+                preLaunchTask: undefined,
+                remoteRoot: '/var/task',
+                skipFiles: [],
+                debugArgs: ['-delveAPI=2'],
+            }
+            const expected2 = {
+                ...expected1,
+                localRoot: pathutil.normalize(path.join(appDir, 'lambdas', 'hello-world2')),
+                codeRoot: pathutil.normalize(path.join(appDir, 'lambdas', 'hello-world2')),
+                baseBuildDir: actual2.baseBuildDir,
+                envFile: `${actual2.baseBuildDir}/env-vars.json`,
+                eventPayloadFile: `${actual2.baseBuildDir}/event.json`,
+                invokeTarget: { ...input2.invokeTarget },
+                name: input2.name,
+                port: actual2.debugPort,
+                templatePath: pathutil.normalize(
+                    path.join(appDir, 'lambdas', 'hello-world2', 'app___vsctk___template.yaml')
+                ),
+            }
+
+            assertEqualLaunchConfigs(actual1, expected1)
+            assertEqualLaunchConfigs(actual2, expected2)
+            assert.notDeepStrictEqual(actual1, actual2)
+
+            assertFileText(
+                expected1.templatePath,
+                `Resources:
+  go1nestedsamapp:
+    Type: 'AWS::Serverless::Function'
+    Properties:
+      Handler: handler
+      CodeUri: >-
+        ${expected1.codeRoot}
+      Runtime: go1.x
+      Environment:
+        Variables:
+          test-envvar-1: test value 1
+          test-envvar-2: test value 2
+      MemorySize: 1.2
+      Timeout: 9000
+`
+            )
+
+            assertFileText(
+                expected2.templatePath,
+                `Resources:
+  go1nestedsamapp:
+    Type: 'AWS::Serverless::Function'
+    Properties:
+      Handler: handler
+      CodeUri: >-
+        ${expected2.codeRoot}
+      Runtime: go1.x
+      Environment:
+        Variables:
+          test-envvar-1: test value 1
+          test-envvar-2: test value 2
+      MemorySize: 1.2
+      Timeout: 9000
+`
+            )
         })
     })
 })
@@ -2943,7 +3712,7 @@ async function getConfig(
     const appDir = pathutil.normalize(path.join(testutil.getProjectDir(), rootFolder))
     const folder = testutil.getWorkspaceFolder(appDir)
     const templateFile = pathutil.normalize(path.join(appDir, 'template.yaml'))
-    await registry.addItem(vscode.Uri.file(templateFile))
+    await registry.addItemToRegistry(vscode.Uri.file(templateFile))
 
     // Generate config(s) from a sample project.
     const configs = await debugConfigProvider.provideDebugConfigurations(folder)
@@ -2991,8 +3760,8 @@ async function createAndRegisterYaml(
     file: vscode.Uri,
     registry: CloudFormationTemplateRegistry
 ) {
-    await testutil.toFile(makeSampleSamTemplateYaml(true, subValues), file.fsPath)
-    await registry.addItem(file)
+    testutil.toFile(makeSampleSamTemplateYaml(true, subValues), file.fsPath)
+    await registry.addItemToRegistry(file)
 }
 
 describe('createTemplateAwsSamDebugConfig', function () {
@@ -3105,9 +3874,8 @@ describe('debugConfiguration', function () {
     })
 
     afterEach(async function () {
-        await fs.delete(tempFolder, { recursive: true })
-        const r = await globals.templateRegistry
-        r.reset()
+        await remove(tempFolder)
+        ext.templateRegistry.reset()
     })
 
     it('getCodeRoot(), getHandlerName() with invokeTarget=code', async function () {
@@ -3129,15 +3897,15 @@ describe('debugConfiguration', function () {
             },
         }
 
-        assert.strictEqual(await debugConfiguration.getHandlerName(folder, config), 'my.test.handler')
+        assert.strictEqual(debugConfiguration.getHandlerName(folder, config), 'my.test.handler')
 
         // Config with relative path:
         config.invokeTarget.projectRoot = relativePath
-        assert.strictEqual(await debugConfiguration.getCodeRoot(folder, config), fullPath)
+        assert.strictEqual(debugConfiguration.getCodeRoot(folder, config), fullPath)
 
         // Config with absolute path:
         config.invokeTarget.projectRoot = fullPath
-        assert.strictEqual(await debugConfiguration.getCodeRoot(folder, config), fullPath)
+        assert.strictEqual(debugConfiguration.getCodeRoot(folder, config), fullPath)
     })
 
     it('getCodeRoot(), getHandlerName() with invokeTarget=template', async function () {
@@ -3167,18 +3935,15 @@ describe('debugConfiguration', function () {
         }
 
         // Template with relative path:
-        await testutil.toFile(
-            makeSampleSamTemplateYaml(true, { codeUri: relativePath, handler: 'handler' }),
-            tempFile.fsPath
-        )
-        await (await globals.templateRegistry).addItem(tempFile)
-        assert.strictEqual(await debugConfiguration.getCodeRoot(folder, config), fullPath)
-        assert.strictEqual(await debugConfiguration.getHandlerName(folder, config), 'handler')
+        testutil.toFile(makeSampleSamTemplateYaml(true, { codeUri: relativePath, handler: 'handler' }), tempFile.fsPath)
+        await ext.templateRegistry.addItemToRegistry(tempFile)
+        assert.strictEqual(debugConfiguration.getCodeRoot(folder, config), fullPath)
+        assert.strictEqual(debugConfiguration.getHandlerName(folder, config), 'handler')
 
         // Template with absolute path:
-        await testutil.toFile(makeSampleSamTemplateYaml(true, { codeUri: fullPath }), tempFile.fsPath)
-        await (await globals.templateRegistry).addItem(tempFile)
-        assert.strictEqual(await debugConfiguration.getCodeRoot(folder, config), fullPath)
+        testutil.toFile(makeSampleSamTemplateYaml(true, { codeUri: fullPath }), tempFile.fsPath)
+        await ext.templateRegistry.addItemToRegistry(tempFile)
+        assert.strictEqual(debugConfiguration.getCodeRoot(folder, config), fullPath)
 
         // Template with refs that don't override:
         const tempFileRefs = vscode.Uri.file(path.join(tempFolder, 'testRefs.yaml'))
@@ -3195,13 +3960,13 @@ describe('debugConfiguration', function () {
                 Default: 'notDoingAnything',
             },
         })
-        await testutil.toFile(
+        testutil.toFile(
             makeSampleSamTemplateYaml(true, { codeUri: fullPath, handler: 'handler' }, paramStr),
             tempFileRefs.fsPath
         )
-        await (await globals.templateRegistry).addItem(tempFileRefs)
-        assert.strictEqual(await debugConfiguration.getCodeRoot(folder, fileRefsConfig), fullPath)
-        assert.strictEqual(await debugConfiguration.getHandlerName(folder, fileRefsConfig), 'handler')
+        await ext.templateRegistry.addItemToRegistry(tempFileRefs)
+        assert.strictEqual(debugConfiguration.getCodeRoot(folder, fileRefsConfig), fullPath)
+        assert.strictEqual(debugConfiguration.getHandlerName(folder, fileRefsConfig), 'handler')
 
         // Template with refs that overrides handler via default parameter value in YAML template
         const tempFileDefaultRefs = vscode.Uri.file(path.join(tempFolder, 'testDefaultRefs.yaml'))
@@ -3218,7 +3983,7 @@ describe('debugConfiguration', function () {
                 Default: 'thisWillOverride',
             },
         })
-        await testutil.toFile(
+        testutil.toFile(
             makeSampleSamTemplateYaml(
                 true,
                 { codeUri: fullPath, handler: '!Ref defaultOverride' },
@@ -3226,9 +3991,9 @@ describe('debugConfiguration', function () {
             ),
             tempFileDefaultRefs.fsPath
         )
-        await (await globals.templateRegistry).addItem(tempFileDefaultRefs)
-        assert.strictEqual(await debugConfiguration.getCodeRoot(folder, fileDefaultRefsConfig), fullPath)
-        assert.strictEqual(await debugConfiguration.getHandlerName(folder, fileDefaultRefsConfig), 'thisWillOverride')
+        await ext.templateRegistry.addItemToRegistry(tempFileDefaultRefs)
+        assert.strictEqual(debugConfiguration.getCodeRoot(folder, fileDefaultRefsConfig), fullPath)
+        assert.strictEqual(debugConfiguration.getHandlerName(folder, fileDefaultRefsConfig), 'thisWillOverride')
 
         // Template with refs that overrides handler via override value in launch config
         const tempFileOverrideRef = vscode.Uri.file(path.join(tempFolder, 'testOverrideRefs.yaml'))
@@ -3244,12 +4009,12 @@ describe('debugConfiguration', function () {
                 Type: 'String',
             },
         })
-        await testutil.toFile(
+        testutil.toFile(
             makeSampleSamTemplateYaml(true, { codeUri: fullPath, handler: '!Ref override' }, paramStrNoDefaultOverride),
             tempFileOverrideRef.fsPath
         )
-        await (await globals.templateRegistry).addItem(tempFileOverrideRef)
-        assert.strictEqual(await debugConfiguration.getCodeRoot(folder, fileOverrideRefConfig), fullPath)
-        assert.strictEqual(await debugConfiguration.getHandlerName(folder, fileOverrideRefConfig), 'override')
+        await ext.templateRegistry.addItemToRegistry(tempFileOverrideRef)
+        assert.strictEqual(debugConfiguration.getCodeRoot(folder, fileOverrideRefConfig), fullPath)
+        assert.strictEqual(debugConfiguration.getHandlerName(folder, fileOverrideRefConfig), 'override')
     })
 })
