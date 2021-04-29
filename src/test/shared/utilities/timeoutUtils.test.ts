@@ -6,6 +6,7 @@
 import * as assert from 'assert'
 import * as FakeTimers from '@sinonjs/fake-timers'
 import * as timeoutUtils from '../../../shared/utilities/timeoutUtils'
+import { tickPromise } from '../../../test/testUtil'
 
 describe('timeoutUtils', async function () {
     let clock: FakeTimers.InstalledClock
@@ -55,12 +56,13 @@ describe('timeoutUtils', async function () {
             )
         })
 
-        it('error is thrown when refreshing a completed timeout', async function () {
+        it('expiration error does not happend when refreshing a completed timer', async function () {
             const timerLengthMs = 10
             const shortTimer = new timeoutUtils.Timeout(timerLengthMs)
             shortTimer.complete()
             clock.tick(timerLengthMs + 1)
-            assert.throws(() => shortTimer.refresh(), new Error(timeoutUtils.TIMEOUT_BAD_REFRESH))
+            shortTimer.refresh()
+            await tickPromise(assert.doesNotReject(shortTimer.timer), clock, timerLengthMs + 1)
         })
 
         it('successfully kills active timers', async function () {

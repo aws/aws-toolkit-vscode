@@ -6,7 +6,6 @@
 export const TIMEOUT_EXPIRED_MESSAGE = 'Timeout token expired'
 export const TIMEOUT_CANCELLED_MESSAGE = 'Timeout token cancelled'
 export const TIMEOUT_UNEXPECTED_RESOLVE = 'Promise resolved with an unexpected object'
-export const TIMEOUT_BAD_REFRESH = 'Timeout token cannot be refreshed after completion'
 
 /**
  * Timeout that can handle both cancellation token-style and time limit-style timeout situations. Timeouts
@@ -65,7 +64,7 @@ export class Timeout {
      */
     public refresh() {
         if (this._completed === true) {
-            throw new Error(TIMEOUT_BAD_REFRESH)
+            return
         }
 
         // These will not align, but we don't have visibility into a NodeJS.Timeout
