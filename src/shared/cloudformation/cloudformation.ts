@@ -743,7 +743,7 @@ export namespace CloudFormation {
      * @param filename Filename
      * @returns  Resource id based on `path`
      */
-    export function getResourceId(s: string) {
+    export function makeResourceId(s: string) {
         return s.replace(/[^A-Za-z0-9]/g, '')
     }
 }

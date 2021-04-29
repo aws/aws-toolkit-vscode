@@ -67,10 +67,9 @@ function getEnvironmentVariables(
  */
 function makeResourceName(config: SamLaunchRequestArgs): string {
     if (config.invokeTarget.target === 'code') {
-        // const projectDir = vscode.Uri.file(config.invokeTarget.projectRoot)
         // CodeUri may be ".", we need a name. #1685
         const fullPath = tryGetAbsolutePath(config.workspaceFolder, config.invokeTarget.projectRoot)
-        const logicalId = CloudFormation.getResourceId(path.parse(fullPath).name)
+        const logicalId = CloudFormation.makeResourceId(path.parse(fullPath).name)
         return logicalId === ''
             ? 'resource1' // projectRoot has only non-alphanumeric chars :(
             : logicalId
