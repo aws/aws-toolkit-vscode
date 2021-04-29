@@ -91,7 +91,7 @@ contextual documentation, as shown below.
 
 ### Supported runtimes
 
-The Toolkit _local SAM debugging_ feature supports these runtimes:
+The Toolkit _local SAM debugging_ feature supports these Lambda runtimes:
 
 -   C# (.NET Core 2.1, 3.1; .NET 5.0)
 -   Go (1.x)
