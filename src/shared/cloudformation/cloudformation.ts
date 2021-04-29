@@ -731,4 +731,19 @@ export namespace CloudFormation {
 
         return undefined
     }
+
+    /**
+     * Removes characters disallowed in CFN/SAM logical resource ids.
+     *
+     * Example: "/a/b/c/foo-Bar!_baz{9)=+" => "abcfooBarbaz9"
+     *
+     * Reference: https://docs.aws.amazon.com/AWSCloudFormation/latest/UserGuide/resources-section-structure.html
+     * > The logical ID must be alphanumeric (A-Za-z0-9) and unique within the template
+     *
+     * @param filename Filename
+     * @returns  Resource id derived from the input.
+     */
+    export function makeResourceId(s: string) {
+        return s.replace(/[^A-Za-z0-9]/g, '')
+    }
 }
