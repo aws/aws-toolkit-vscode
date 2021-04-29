@@ -124,18 +124,6 @@ export async function makeGoConfig(config: SamLaunchRequestArgs): Promise<GoDebu
         }
     }
 
-    // if provided, use the user's mapping instead
-    if (config.lambda?.pathMappings !== undefined && config.lambda.pathMappings.length > 0) {
-        const mappings = config.lambda.pathMappings
-        if (mappings.length !== 1) {
-            getLogger().warn(
-                'This language only supports a single path mapping entry. Taking the first entry in the list.'
-            )
-        }
-        localRoot = mappings[0].localRoot
-        remoteRoot = mappings[0].remoteRoot
-    }
-
     //  Make a go launch-config from the generic config.
     const goLaunchConfig: GoDebugConfiguration = {
         ...config, // Compose.

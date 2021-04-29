@@ -340,7 +340,7 @@ describe('SamDebugConfigurationProvider', async function () {
                 request: DIRECT_INVOKE_TYPE,
                 invokeTarget: {
                     target: CODE_TARGET_TYPE,
-                    lambdaHandler: 'hello-world',
+                    lambdaHandler: 'hello-world:handler',
                     projectRoot: '.', // Issue #1685
                 },
                 lambda: {
@@ -355,7 +355,7 @@ describe('SamDebugConfigurationProvider', async function () {
   go1plainsamapp:
     Type: 'AWS::Serverless::Function'
     Properties:
-      Handler: hello-world
+      Handler: handler
       CodeUri: >-
         ${config.codeRoot}
       Runtime: go1.x
@@ -3469,56 +3469,17 @@ Resources:
             assertFileText(
                 expected.templatePath,
                 `Resources:
-  helloworld:
+  go1plainsamapp:
     Type: 'AWS::Serverless::Function'
     Properties:
-      Handler: hello-world
+      Handler: handler
       CodeUri: >-
         ${expected.codeRoot}
       Runtime: go1.x
       Environment:
-        Variables:
-          test-envvar-1: test value 1
-          test-envvar-2: test value 2
-      MemorySize: 1.2
-      Timeout: 9000
+        Variables: {}
 `
             )
-
-            //
-            // Test pathMapping
-            //
-            const inputWithPathMapping = {
-                ...input,
-                lambda: {
-                    ...input.lambda,
-                    pathMappings: [
-                        {
-                            localRoot: 'somethingLocal',
-                            remoteRoot: 'somethingRemote',
-                        },
-                        {
-                            localRoot: 'ignoredLocal',
-                            remoteRoot: 'ignoredRemote',
-                        },
-                    ] as PathMapping[],
-                },
-            }
-            const actualWithPathMapping = (await debugConfigProvider.makeConfig(folder, inputWithPathMapping))!
-            const expectedWithPathMapping: SamLaunchRequestArgs = {
-                ...expected,
-                lambda: {
-                    ...expected.lambda,
-                    pathMappings: inputWithPathMapping.lambda.pathMappings,
-                },
-                localRoot: 'somethingLocal',
-                remoteRoot: 'somethingRemote',
-                baseBuildDir: actualWithPathMapping.baseBuildDir,
-                envFile: `${actualWithPathMapping.baseBuildDir}/env-vars.json`,
-                eventPayloadFile: `${actualWithPathMapping.baseBuildDir}/event.json`,
-            }
-            assertEqualLaunchConfigs(actualWithPathMapping, expectedWithPathMapping)
-
             //
             // Test noDebug=true.
             //
@@ -3540,6 +3501,151 @@ Resources:
                 delete actualNoDebug.debugArgs
             }
             assertEqualLaunchConfigs(actualNoDebug, expectedNoDebug)
+        })
+
+        it('target=code: go (nested lambdas)', async function () {
+            const appDir = pathutil.normalize(
+                path.join(testutil.getProjectDir(), 'testFixtures/workspaceFolder/go1-nested-sam-app')
+            )
+
+            const folder = testutil.getWorkspaceFolder(appDir)
+            const input1 = {
+                type: AWS_SAM_DEBUG_TYPE,
+                name: 'test-go-code',
+                request: DIRECT_INVOKE_TYPE,
+                invokeTarget: {
+                    target: CODE_TARGET_TYPE,
+                    lambdaHandler: 'lambdas/hello-world1:handler',
+                    projectRoot: appDir,
+                },
+                lambda: {
+                    runtime: 'go1.x',
+                    environmentVariables: {
+                        'test-envvar-1': 'test value 1',
+                        'test-envvar-2': 'test value 2',
+                    },
+                    memoryMb: 1.2,
+                    timeoutSec: 9000,
+                    payload: {
+                        json: {
+                            'test-payload-key-1': 'test payload value 1',
+                            'test-payload-key-2': 'test payload value 2',
+                        },
+                    },
+                },
+            }
+            // Points to the other lambda handler
+            const input2 = {
+                ...input1,
+                invokeTarget: {
+                    target: CODE_TARGET_TYPE,
+                    lambdaHandler: 'lambdas/hello-world2:handler',
+                    projectRoot: appDir,
+                },
+            }
+
+            const actual1 = (await debugConfigProvider.makeConfig(folder, input1))!
+            const actual2 = (await debugConfigProvider.makeConfig(folder, input2))!
+
+            const expected1: SamLaunchRequestArgs = {
+                type: AWS_SAM_DEBUG_TYPE,
+                awsCredentials: undefined,
+                request: 'attach', // Input "direct-invoke", output "attach".
+                runtime: 'go1.x',
+                runtimeFamily: lambdaModel.RuntimeFamily.Go,
+                useIkpdb: false,
+                workspaceFolder: {
+                    index: 0,
+                    name: 'test-workspace-folder',
+                    uri: vscode.Uri.file(appDir),
+                },
+                baseBuildDir: actual1.baseBuildDir, // Random, sanity-checked by assertEqualLaunchConfigs().
+                envFile: `${actual1.baseBuildDir}/env-vars.json`,
+                eventPayloadFile: `${actual1.baseBuildDir}/event.json`,
+                codeRoot: pathutil.normalize(path.join(appDir, 'lambdas', 'hello-world1')), // Normalized to absolute path.
+                apiPort: undefined,
+                debugPort: actual1.debugPort,
+                documentUri: vscode.Uri.file(''), // TODO: remove or test.
+                handlerName: 'handler',
+                invokeTarget: { ...input1.invokeTarget },
+                lambda: {
+                    ...input1.lambda,
+                },
+                localRoot: pathutil.normalize(path.join(appDir, 'lambdas', 'hello-world1')), // Normalized to absolute path.
+                name: input1.name,
+                templatePath: pathutil.normalize(
+                    path.join(appDir, 'lambdas', 'hello-world1', 'app___vsctk___template.yaml')
+                ),
+                parameterOverrides: undefined,
+
+                //
+                // Go-related fields
+                //
+                host: 'localhost',
+                mode: 'remote',
+                processName: 'godelve',
+                port: actual1.debugPort,
+                preLaunchTask: undefined,
+                remoteRoot: '/var/task',
+                skipFiles: [],
+                debugArgs: ['-delveAPI=2'],
+            }
+            const expected2 = {
+                ...expected1,
+                localRoot: pathutil.normalize(path.join(appDir, 'lambdas', 'hello-world2')),
+                codeRoot: pathutil.normalize(path.join(appDir, 'lambdas', 'hello-world2')),
+                baseBuildDir: actual2.baseBuildDir,
+                envFile: `${actual2.baseBuildDir}/env-vars.json`,
+                eventPayloadFile: `${actual2.baseBuildDir}/event.json`,
+                invokeTarget: { ...input2.invokeTarget },
+                name: input2.name,
+                port: actual2.debugPort,
+                templatePath: pathutil.normalize(
+                    path.join(appDir, 'lambdas', 'hello-world2', 'app___vsctk___template.yaml')
+                ),
+            }
+
+            assertEqualLaunchConfigs(actual1, expected1)
+            assertEqualLaunchConfigs(actual2, expected2)
+            assert.notDeepStrictEqual(actual1, actual2)
+
+            assertFileText(
+                expected1.templatePath,
+                `Resources:
+  go1nestedsamapp:
+    Type: 'AWS::Serverless::Function'
+    Properties:
+      Handler: handler
+      CodeUri: >-
+        ${expected1.codeRoot}
+      Runtime: go1.x
+      Environment:
+        Variables:
+          test-envvar-1: test value 1
+          test-envvar-2: test value 2
+      MemorySize: 1.2
+      Timeout: 9000
+`
+            )
+
+            assertFileText(
+                expected2.templatePath,
+                `Resources:
+  go1nestedsamapp:
+    Type: 'AWS::Serverless::Function'
+    Properties:
+      Handler: handler
+      CodeUri: >-
+        ${expected2.codeRoot}
+      Runtime: go1.x
+      Environment:
+        Variables:
+          test-envvar-1: test value 1
+          test-envvar-2: test value 2
+      MemorySize: 1.2
+      Timeout: 9000
+`
+            )
         })
     })
 })
