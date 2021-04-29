@@ -39,10 +39,10 @@ _log() {
 #   - exits the script
 _run() {
     local out
-    if ! out="$($@ 2>&1)"; then
-        _log "Command failed (output below): '${@}'"
+    if ! out="$("$@" 2>&1)"; then
+        _log "Command failed (output below): '${*}'"
         echo "$out" | sed 's/^/    /'
-        _log "Command failed (output above): '${@}'"
+        _log "Command failed (output above): '${*}'"
         exit 1
     fi
 }
@@ -51,7 +51,7 @@ _main() {
     (
         if test -f "$TOOLKIT_FILE"; then
             # Ensure full path (before `cd` below).
-            TOOLKIT_FILE="$(readlink -f $TOOLKIT_FILE)"
+            TOOLKIT_FILE="$(readlink -f "$TOOLKIT_FILE")"
         fi
 
         echo "Script will DELETE these directories:"
@@ -79,11 +79,11 @@ _main() {
             _log "Local file (not URL): ${TOOLKIT_FILE}"
             if [ "$TOOLKIT_FILE_EXTENSION" = ".zip" ] || [ "$TOOLKIT_FILE_EXTENSION" = ".ZIP" ]; then
                 _log 'File is a .zip file'
-                _run unzip "$TOOLKIT_FILE"
-                _run unzip *.vsix
+                _run unzip -- "$TOOLKIT_FILE"
+                _run unzip -- *.vsix
             else
                 _log 'File is not .zip file, assuming .vsix'
-                _run unzip "$TOOLKIT_FILE"
+                _run unzip -- "$TOOLKIT_FILE"
             fi
         else
             _log "File not found, treating as URL: ${TOOLKIT_FILE}"
@@ -93,11 +93,11 @@ _main() {
             curl -o toolkit.zip -L "$TOOLKIT_FILE"
             if [ "$TOOLKIT_FILE_EXTENSION" = ".zip" ] || [ "$TOOLKIT_FILE_EXTENSION" = ".ZIP" ]; then
                 _log 'File is a .zip file'
-                _run unzip toolkit.zip
-                _run unzip *.vsix
+                _run unzip -- toolkit.zip
+                _run unzip -- *.vsix
             else
                 _log 'File is not .zip file, assuming .vsix'
-                _run unzip toolkit.zip
+                _run unzip -- toolkit.zip
             fi
         fi
 
