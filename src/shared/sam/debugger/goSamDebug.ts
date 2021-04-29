@@ -137,8 +137,8 @@ export async function makeGoConfig(config: SamLaunchRequestArgs): Promise<GoDebu
         port: port,
         skipFiles: [],
         debugArgs: isImageLambda || config.noDebug ? undefined : ['-delveAPI=2'],
-        localRoot: localRoot ?? config.codeRoot,
-        remoteRoot: remoteRoot ?? '/var/task',
+        localRoot: config.codeRoot,
+        remoteRoot: '/var/task',
     }
 
     return goLaunchConfig
