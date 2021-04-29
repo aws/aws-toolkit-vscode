@@ -741,7 +741,7 @@ export namespace CloudFormation {
      * > The logical ID must be alphanumeric (A-Za-z0-9) and unique within the template
      *
      * @param filename Filename
-     * @returns  Resource id based on `path`
+     * @returns  Resource id derived from the input.
      */
     export function makeResourceId(s: string) {
         return s.replace(/[^A-Za-z0-9]/g, '')
