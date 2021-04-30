@@ -86,16 +86,12 @@ export async function makeGoConfig(config: SamLaunchRequestArgs): Promise<GoDebu
         throw Error('missing launch.json, template.yaml, and failed to discover project root')
     }
 
-    // If the target is 'code' we need to adjust codeRoot to the location of the source
+    // If the target is 'code' we need to adjust codeRoot to the source's parent directory so the
+    // generated template will have the correct CodeURI and Handler properties
     if (config.invokeTarget.target === 'code') {
-        const parts = config.handlerName.split(':')
-
-        if (parts.length !== 2) {
-            throw Error(`malformed Go handler name: ${config.handlerName}`)
-        }
-
-        config.codeRoot = path.join(config.codeRoot, parts[0])
-        config.handlerName = parts[1]
+        const parts = config.handlerName.split(path.sep)
+        config.handlerName = path.basename(config.handlerName)
+        config.codeRoot = path.join(config.codeRoot, ...parts)
     }
 
     const port: number = config.debugPort ?? -1

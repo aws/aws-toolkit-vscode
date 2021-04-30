@@ -82,8 +82,6 @@ export interface GoDebugConfiguration extends SamLaunchRequestArgs {
     readonly preLaunchTask?: string
     readonly host: 'localhost'
     readonly port: number
-    readonly localRoot: string
-    readonly remoteRoot: string
 }
 
 export interface PipeTransport {
