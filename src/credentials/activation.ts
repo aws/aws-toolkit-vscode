@@ -47,7 +47,10 @@ export async function loginWithMostRecentCredentials(
             credentialType: SharedCredentialsProvider.getCredentialsType(),
             credentialTypeId: previousCredentialsId,
         }
-        if ((await manager.getCredentialsProvider(loginCredentialsId))!.canAutoConnect()) {
+        const provider = await manager.getCredentialsProvider(loginCredentialsId)
+
+        // 'provider' may be undefined if the last-used credentials no longer exists.
+        if (provider && provider.canAutoConnect()) {
             await loginManager.login({ passive: true, providerId: loginCredentialsId })
         } else {
             await loginManager.logout()
