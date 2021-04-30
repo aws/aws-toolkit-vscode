@@ -59,7 +59,7 @@ describe('LoginManager', async function () {
         sandbox.restore()
     })
 
-    it('passive login sends telemetry', async function () {
+    it('passive login sends telemetry with passive=true', async function () {
         const setCredentialsStub = sandbox.stub(awsContext, 'setCredentials')
         await loginManager.login({ passive: true, providerId: sampleCredentialsProviderId })
 
