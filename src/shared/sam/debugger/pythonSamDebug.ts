@@ -21,7 +21,7 @@ import * as pathutil from '../../utilities/pathUtils'
 import { getLocalRootVariants } from '../../utilities/pathUtils'
 import { Timeout } from '../../utilities/timeoutUtils'
 import { DefaultSamLocalInvokeCommand, WAIT_FOR_DEBUGGER_MESSAGES } from '../cli/samCliLocalInvoke'
-import { buildAndInvokeLambdaHandler, makeInputTemplate } from '../localLambdaRunner'
+import { runLambdaFunction, makeInputTemplate } from '../localLambdaRunner'
 import { SamLaunchRequestArgs } from './awsSamDebugger'
 import { ext } from '../../extensionGlobals'
 import { Runtime } from 'aws-sdk/clients/lambda'
@@ -231,7 +231,7 @@ export async function invokePythonLambda(
     //
     // eslint-disable-next-line @typescript-eslint/unbound-method
     config.onWillAttachDebugger = config.useIkpdb ? waitForIkpdb : undefined
-    const c = (await buildAndInvokeLambdaHandler(ctx, config, async () => {})) as PythonDebugConfiguration
+    const c = (await runLambdaFunction(ctx, config, async () => {})) as PythonDebugConfiguration
     return c
 }
 

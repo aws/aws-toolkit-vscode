@@ -12,7 +12,7 @@ import * as pathutil from '../../../shared/utilities/pathUtils'
 import { ExtContext } from '../../extensions'
 import { findParentProjectFile } from '../../utilities/workspaceUtils'
 import { DefaultSamLocalInvokeCommand, WAIT_FOR_DEBUGGER_MESSAGES } from '../cli/samCliLocalInvoke'
-import { buildAndInvokeLambdaHandler, makeInputTemplate } from '../localLambdaRunner'
+import { runLambdaFunction, makeInputTemplate } from '../localLambdaRunner'
 import { SamLaunchRequestArgs } from './awsSamDebugger'
 import { getLogger } from '../../logger'
 import { chmod, ensureDir, writeFile, pathExistsSync, unlinkSync, existsSync } from 'fs-extra'
@@ -42,7 +42,7 @@ export async function invokeGoLambda(ctx: ExtContext, config: GoDebugConfigurati
         return {} as GoDebugConfiguration
     }
 
-    const c = (await buildAndInvokeLambdaHandler(ctx, config, async () => {})) as GoDebugConfiguration
+    const c = (await runLambdaFunction(ctx, config, async () => {})) as GoDebugConfiguration
     return c
 }
 

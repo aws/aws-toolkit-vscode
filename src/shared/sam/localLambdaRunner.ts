@@ -137,7 +137,7 @@ export async function makeInputTemplate(config: SamLaunchRequestArgs): Promise<s
     return pathutil.normalize(inputTemplatePath)
 }
 
-export async function buildLambdaHandler(
+async function buildLambdaHandler(
     timer: Timeout,
     env: NodeJS.ProcessEnv,
     config: SamLaunchRequestArgs
@@ -199,7 +199,7 @@ export async function buildLambdaHandler(
     }
 }
 
-export async function invokeLambdaHandler(
+async function invokeLambdaHandler(
     timer: Timeout,
     env: NodeJS.ProcessEnv,
     config: SamLaunchRequestArgs
@@ -337,13 +337,13 @@ export async function invokeLambdaHandler(
 }
 
 /**
- * Prepares and invokes a lambda function via `sam local invoke`.
+ * Prepares and invokes a lambda function via `sam local (invoke/api)`.
  *
  * @param ctx
  * @param config
  * @param onAfterBuild  Called after `SamCliBuildInvocation.execute()`
  */
-export async function buildAndInvokeLambdaHandler(
+export async function runLambdaFunction(
     ctx: ExtContext,
     config: SamLaunchRequestArgs,
     onAfterBuild: () => Promise<void>
