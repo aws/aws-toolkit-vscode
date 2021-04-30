@@ -310,23 +310,22 @@ export async function makePythonCodeLensProvider(
             token: vscode.CancellationToken,
             forceProvide?: boolean
         ): Promise<vscode.CodeLens[]> => {
-            if (forceProvide || configuration.readSetting<boolean>(STATE_NAME_ENABLE_CODELENSES)) {
-                // Try to activate the Python Extension before requesting symbols from a python file
-                await pythonDebug.activatePythonExtensionIfInstalled()
-                if (token.isCancellationRequested) {
-                    return []
-                }
-
-                const handlers: LambdaHandlerCandidate[] = await pythonCodelens.getLambdaHandlerCandidates(document.uri)
-                return makeCodeLenses({
-                    document,
-                    handlers,
-                    token,
-                    runtimeFamily: RuntimeFamily.Python,
-                })
+            if (!forceProvide && !configuration.readSetting<boolean>(STATE_NAME_ENABLE_CODELENSES)) {
+                return []
+            }
+            // Try to activate the Python Extension before requesting symbols from a python file
+            await pythonDebug.activatePythonExtensionIfInstalled()
+            if (token.isCancellationRequested) {
+                return []
             }
 
-            return []
+            const handlers: LambdaHandlerCandidate[] = await pythonCodelens.getLambdaHandlerCandidates(document.uri)
+            return makeCodeLenses({
+                document,
+                handlers,
+                token,
+                runtimeFamily: RuntimeFamily.Python,
+            })
         },
     }
 }
@@ -340,17 +339,16 @@ export async function makeCSharpCodeLensProvider(
             token: vscode.CancellationToken,
             forceProvide?: boolean
         ): Promise<vscode.CodeLens[]> => {
-            if (forceProvide || configuration.readSetting<boolean>(STATE_NAME_ENABLE_CODELENSES)) {
-                const handlers: LambdaHandlerCandidate[] = await csharpCodelens.getLambdaHandlerCandidates(document)
-                return makeCodeLenses({
-                    document,
-                    handlers,
-                    token,
-                    runtimeFamily: RuntimeFamily.DotNetCore,
-                })
+            if (!forceProvide && !configuration.readSetting<boolean>(STATE_NAME_ENABLE_CODELENSES)) {
+                return []
             }
-
-            return []
+            const handlers: LambdaHandlerCandidate[] = await csharpCodelens.getLambdaHandlerCandidates(document)
+            return makeCodeLenses({
+                document,
+                handlers,
+                token,
+                runtimeFamily: RuntimeFamily.DotNetCore,
+            })
         },
     }
 }
@@ -362,17 +360,16 @@ export function makeTypescriptCodeLensProvider(configuration: SettingsConfigurat
             token: vscode.CancellationToken,
             forceProvide?: boolean
         ): Promise<vscode.CodeLens[]> => {
-            if (forceProvide || configuration.readSetting<boolean>(STATE_NAME_ENABLE_CODELENSES)) {
-                const handlers = await tsCodelens.getLambdaHandlerCandidates(document)
-                return makeCodeLenses({
-                    document,
-                    handlers,
-                    token,
-                    runtimeFamily: RuntimeFamily.NodeJS,
-                })
+            if (!forceProvide && !configuration.readSetting<boolean>(STATE_NAME_ENABLE_CODELENSES)) {
+                return []
             }
-
-            return []
+            const handlers = await tsCodelens.getLambdaHandlerCandidates(document)
+            return makeCodeLenses({
+                document,
+                handlers,
+                token,
+                runtimeFamily: RuntimeFamily.NodeJS,
+            })
         },
     }
 }
@@ -386,17 +383,16 @@ export async function makeGoCodeLensProvider(
             token: vscode.CancellationToken,
             forceProvide?: boolean
         ): Promise<vscode.CodeLens[]> => {
-            if (forceProvide || configuration.readSetting<boolean>(STATE_NAME_ENABLE_CODELENSES)) {
-                const handlers = await goCodelens.getLambdaHandlerCandidates(document)
-                return makeCodeLenses({
-                    document,
-                    handlers,
-                    token,
-                    runtimeFamily: RuntimeFamily.Go,
-                })
+            if (!forceProvide && !configuration.readSetting<boolean>(STATE_NAME_ENABLE_CODELENSES)) {
+                return []
             }
-
-            return []
+            const handlers = await goCodelens.getLambdaHandlerCandidates(document)
+            return makeCodeLenses({
+                document,
+                handlers,
+                token,
+                runtimeFamily: RuntimeFamily.Go,
+            })
         },
     }
 }
@@ -410,23 +406,22 @@ export async function makeJavaCodeLensProvider(
             token: vscode.CancellationToken,
             forceProvide?: boolean
         ): Promise<vscode.CodeLens[]> => {
-            if (forceProvide || configuration.readSetting<boolean>(STATE_NAME_ENABLE_CODELENSES)) {
-                // Try to activate the Java Extension before requesting symbols from a java file
-                await javaDebug.activateJavaExtensionIfInstalled()
-                if (token.isCancellationRequested) {
-                    return []
-                }
-
-                const handlers: LambdaHandlerCandidate[] = await javaCodelens.getLambdaHandlerCandidates(document)
-                return makeCodeLenses({
-                    document,
-                    handlers,
-                    token,
-                    runtimeFamily: RuntimeFamily.Java,
-                })
+            if (!forceProvide && !configuration.readSetting<boolean>(STATE_NAME_ENABLE_CODELENSES)) {
+                return []
+            }
+            // Try to activate the Java Extension before requesting symbols from a java file
+            await javaDebug.activateJavaExtensionIfInstalled()
+            if (token.isCancellationRequested) {
+                return []
             }
 
-            return []
+            const handlers: LambdaHandlerCandidate[] = await javaCodelens.getLambdaHandlerCandidates(document)
+            return makeCodeLenses({
+                document,
+                handlers,
+                token,
+                runtimeFamily: RuntimeFamily.Java,
+            })
         },
     }
 }

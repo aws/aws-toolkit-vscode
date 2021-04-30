@@ -5,7 +5,7 @@
 
 import * as path from 'path'
 import * as vscode from 'vscode'
-import { ExtensionUtilities, isCloud9 } from '../shared/extensionUtilities'
+import { ExtensionUtilities } from '../shared/extensionUtilities'
 
 interface WebviewParams<TRequest, TResponse> {
     id: string
@@ -39,21 +39,16 @@ export async function createVueWebview<TRequest, TResponse>(params: WebviewParam
     const cssPath: string = path.join(params.context.extensionPath, 'media', 'css')
     const webviewPath: string = path.join(params.context.extensionPath, 'dist', 'compiledWebviews')
 
-    const view = vscode.window.createWebviewPanel(
-        params.id,
-        params.name,
-        isCloud9() ? vscode.ViewColumn.Two : vscode.ViewColumn.Beside,
-        {
-            enableScripts: true,
-            localResourceRoots: [
-                vscode.Uri.file(libsPath),
-                vscode.Uri.file(jsPath),
-                vscode.Uri.file(cssPath),
-                vscode.Uri.file(webviewPath),
-            ],
-            retainContextWhenHidden: isCloud9() ? true : params.persistWithoutFocus,
-        }
-    )
+    const view = vscode.window.createWebviewPanel(params.id, params.name, vscode.ViewColumn.Beside, {
+        enableScripts: true,
+        localResourceRoots: [
+            vscode.Uri.file(libsPath),
+            vscode.Uri.file(jsPath),
+            vscode.Uri.file(cssPath),
+            vscode.Uri.file(webviewPath),
+        ],
+        retainContextWhenHidden: params.persistWithoutFocus,
+    })
 
     const loadLibs = ExtensionUtilities.getFilesAsVsCodeResources(
         libsPath,
