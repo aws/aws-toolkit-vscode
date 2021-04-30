@@ -35,10 +35,7 @@ export async function invokeGoLambda(ctx: ExtContext, config: GoDebugConfigurati
 
     if (!config.noDebug && !(await installDebugger(config.debuggerPath!))) {
         showErrorWithLogs(
-            localize(
-                'AWS.sam.debugger.godelve.failed',
-                'Failed to install Delve for the lambda container.'
-            )
+            localize('AWS.sam.debugger.godelve.failed', 'Failed to install Delve for the lambda container.')
         )
 
         // Terminates the debug session by sending up a dummy config
@@ -89,8 +86,14 @@ export async function makeGoConfig(config: SamLaunchRequestArgs): Promise<GoDebu
         throw Error('missing launch.json, template.yaml, and failed to discover project root')
     }
 
-    let localRoot: string | undefined
-    let remoteRoot: string | undefined
+    // If the target is 'code' we need to adjust codeRoot to the source's parent directory so the
+    // generated template will have the correct CodeURI and Handler properties
+    if (config.invokeTarget.target === 'code') {
+        const parts = config.handlerName.split(path.sep)
+        config.handlerName = path.basename(config.handlerName)
+        config.codeRoot = path.join(config.codeRoot, ...parts)
+    }
+
     const port: number = config.debugPort ?? -1
 
     config.codeRoot = pathutil.normalize(config.codeRoot)
@@ -115,18 +118,6 @@ export async function makeGoConfig(config: SamLaunchRequestArgs): Promise<GoDebu
         }
     }
 
-    // if provided, use the user's mapping instead
-    if (config.lambda?.pathMappings !== undefined && config.lambda.pathMappings.length > 0) {
-        const mappings = config.lambda.pathMappings
-        if (mappings.length !== 1) {
-            getLogger().warn(
-                'This language only supports a single path mapping entry. Taking the first entry in the list.'
-            )
-        }
-        localRoot = mappings[0].localRoot
-        remoteRoot = mappings[0].remoteRoot
-    }
-
     //  Make a go launch-config from the generic config.
     const goLaunchConfig: GoDebugConfiguration = {
         ...config, // Compose.
@@ -140,8 +131,8 @@ export async function makeGoConfig(config: SamLaunchRequestArgs): Promise<GoDebu
         port: port,
         skipFiles: [],
         debugArgs: isImageLambda || config.noDebug ? undefined : ['-delveAPI=2'],
-        localRoot: localRoot ?? config.codeRoot,
-        remoteRoot: remoteRoot ?? '/var/task',
+        localRoot: config.codeRoot,
+        remoteRoot: '/var/task',
     }
 
     return goLaunchConfig
