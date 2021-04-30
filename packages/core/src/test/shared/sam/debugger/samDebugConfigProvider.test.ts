@@ -340,7 +340,7 @@ describe('SamDebugConfigurationProvider', async function () {
                 request: DIRECT_INVOKE_TYPE,
                 invokeTarget: {
                     target: CODE_TARGET_TYPE,
-                    lambdaHandler: 'hello-world:handler',
+                    lambdaHandler: 'hello-world/hello-world',
                     projectRoot: '.', // Issue #1685
                 },
                 lambda: {
@@ -355,7 +355,7 @@ describe('SamDebugConfigurationProvider', async function () {
   go1plainsamapp:
     Type: 'AWS::Serverless::Function'
     Properties:
-      Handler: handler
+      Handler: hello-world
       CodeUri: >-
         ${config.codeRoot}
       Runtime: go1.x
@@ -3394,8 +3394,8 @@ Resources:
                 request: DIRECT_INVOKE_TYPE,
                 invokeTarget: {
                     target: CODE_TARGET_TYPE,
-                    lambdaHandler: 'hello-world:handler',
-                    projectRoot: 'hello-world',
+                    lambdaHandler: 'hello-world',
+                    projectRoot: appDir,
                 },
                 lambda: {
                     runtime: 'go1.x',
@@ -3434,7 +3434,7 @@ Resources:
                 apiPort: undefined,
                 debugPort: actual.debugPort,
                 documentUri: vscode.Uri.file(''), // TODO: remove or test.
-                handlerName: 'handler',
+                handlerName: 'hello-world',
                 invokeTarget: { ...input.invokeTarget },
                 lambda: {
                     ...input.lambda,
@@ -3460,7 +3460,7 @@ Resources:
             assertEqualLaunchConfigs(actual, expected)
             assertFileText(
                 expected.envFile,
-                '{"helloworld":{"test-envvar-1":"test value 1","test-envvar-2":"test value 2"}}'
+                '{"go1plainsamapp":{"test-envvar-1":"test value 1","test-envvar-2":"test value 2"}}'
             )
             assertFileText(
                 expected.eventPayloadFile,
@@ -3472,12 +3472,16 @@ Resources:
   go1plainsamapp:
     Type: 'AWS::Serverless::Function'
     Properties:
-      Handler: handler
+      Handler: hello-world
       CodeUri: >-
         ${expected.codeRoot}
       Runtime: go1.x
       Environment:
-        Variables: {}
+        Variables:
+          test-envvar-1: test value 1
+          test-envvar-2: test value 2
+      MemorySize: 1.2
+      Timeout: 9000
 `
             )
             //
@@ -3515,7 +3519,7 @@ Resources:
                 request: DIRECT_INVOKE_TYPE,
                 invokeTarget: {
                     target: CODE_TARGET_TYPE,
-                    lambdaHandler: 'lambdas/hello-world1:handler',
+                    lambdaHandler: 'lambdas/hello-world1',
                     projectRoot: appDir,
                 },
                 lambda: {
@@ -3539,7 +3543,7 @@ Resources:
                 ...input1,
                 invokeTarget: {
                     target: CODE_TARGET_TYPE,
-                    lambdaHandler: 'lambdas/hello-world2:handler',
+                    lambdaHandler: 'lambdas/hello-world2',
                     projectRoot: appDir,
                 },
             }
@@ -3566,7 +3570,7 @@ Resources:
                 apiPort: undefined,
                 debugPort: actual1.debugPort,
                 documentUri: vscode.Uri.file(''), // TODO: remove or test.
-                handlerName: 'handler',
+                handlerName: 'hello-world1',
                 invokeTarget: { ...input1.invokeTarget },
                 lambda: {
                     ...input1.lambda,
@@ -3600,6 +3604,7 @@ Resources:
                 invokeTarget: { ...input2.invokeTarget },
                 name: input2.name,
                 port: actual2.debugPort,
+                handlerName: 'hello-world2',
                 templatePath: pathutil.normalize(
                     path.join(appDir, 'lambdas', 'hello-world2', 'app___vsctk___template.yaml')
                 ),
@@ -3615,7 +3620,7 @@ Resources:
   go1nestedsamapp:
     Type: 'AWS::Serverless::Function'
     Properties:
-      Handler: handler
+      Handler: hello-world1
       CodeUri: >-
         ${expected1.codeRoot}
       Runtime: go1.x
@@ -3634,7 +3639,7 @@ Resources:
   go1nestedsamapp:
     Type: 'AWS::Serverless::Function'
     Properties:
-      Handler: handler
+      Handler: hello-world2
       CodeUri: >-
         ${expected2.codeRoot}
       Runtime: go1.x

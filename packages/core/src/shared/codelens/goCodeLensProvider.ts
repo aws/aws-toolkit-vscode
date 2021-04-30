@@ -9,7 +9,7 @@ import { LambdaHandlerCandidate } from '../lambdaHandlerSearch'
 import { getLogger } from '../logger/logger'
 import { stripNewLinesAndComments } from '../../shared/utilities/textUtilities'
 import { findParentProjectFile } from '../utilities/workspaceUtils'
-import { basename, dirname, relative } from 'path'
+import { dirname, relative } from 'path'
 
 export const GO_LANGUAGE = 'go'
 export const GO_ALLFILES: vscode.DocumentFilter[] = [
@@ -65,7 +65,7 @@ export async function getLambdaHandlerCandidates(document: vscode.TextDocument):
         .map<LambdaHandlerCandidate>(symbol => {
             return {
                 filename,
-                handlerName: relative(dirname(modFile.fsPath), packagePath) + ':' + basename(packagePath),
+                handlerName: relative(dirname(modFile.fsPath), packagePath),
                 manifestUri: modFile,
                 range: symbol.range,
             }
