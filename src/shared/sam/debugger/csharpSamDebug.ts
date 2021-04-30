@@ -16,7 +16,7 @@ import { RuntimeFamily } from '../../../lambda/models/samLambdaRuntime'
 import * as pathutil from '../../../shared/utilities/pathUtils'
 import { ExtContext } from '../../extensions'
 import { DefaultSamLocalInvokeCommand, WAIT_FOR_DEBUGGER_MESSAGES } from '../cli/samCliLocalInvoke'
-import { invokeLambdaFunction, makeInputTemplate, waitForPort } from '../localLambdaRunner'
+import { buildAndInvokeLambdaHandler, makeInputTemplate, waitForPort } from '../localLambdaRunner'
 import { SamLaunchRequestArgs } from './awsSamDebugger'
 import { ChildProcess } from '../../utilities/childProcess'
 import { HttpResourceFetcher } from '../../resourcefetcher/httpResourceFetcher'
@@ -68,7 +68,7 @@ export async function invokeCsharpLambda(ctx: ExtContext, config: SamLaunchReque
     config.samLocalInvokeCommand = new DefaultSamLocalInvokeCommand([WAIT_FOR_DEBUGGER_MESSAGES.DOTNET])
     // eslint-disable-next-line @typescript-eslint/unbound-method
     config.onWillAttachDebugger = waitForPort
-    return await invokeLambdaFunction(ctx, config, async () => {
+    return await buildAndInvokeLambdaHandler(ctx, config, async () => {
         if (!config.noDebug) {
             await _installDebugger({
                 debuggerPath: config.debuggerPath!!,
