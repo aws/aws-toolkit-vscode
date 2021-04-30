@@ -1,0 +1,354 @@
+<?xml version="1.0" ?>
+<SmellBaseline>
+  <ManuallySuppressedIssues></ManuallySuppressedIssues>
+  <CurrentIssues>
+    <ID>AbsentOrWrongFileLicense:AwsConnectionSettings.kt$software.aws.toolkits.jetbrains.ui.connection.AwsConnectionSettings.kt</ID>
+    <ID>AbsentOrWrongFileLicense:AwsSettingsConfigurable.kt$software.aws.toolkits.jetbrains.settings.AwsSettingsConfigurable.kt</ID>
+    <ID>AbsentOrWrongFileLicense:BuildSettingsPanel.kt$software.aws.toolkits.jetbrains.services.lambda.upload.BuildSettingsPanel.kt</ID>
+    <ID>AbsentOrWrongFileLicense:CodeStoragePanel.kt$software.aws.toolkits.jetbrains.services.lambda.upload.CodeStoragePanel.kt</ID>
+    <ID>AbsentOrWrongFileLicense:ConfigureLambdaPanel.kt$software.aws.toolkits.jetbrains.services.sqs.ConfigureLambdaPanel.kt</ID>
+    <ID>AbsentOrWrongFileLicense:ConfirmPolicyPanel.kt$software.aws.toolkits.jetbrains.services.sqs.ConfirmPolicyPanel.kt</ID>
+    <ID>AbsentOrWrongFileLicense:CopyBucketNameAction.kt$software.aws.toolkits.jetbrains.services.s3.bucketActions.CopyBucketNameAction.kt</ID>
+    <ID>AbsentOrWrongFileLicense:CreateBucketAction.kt$software.aws.toolkits.jetbrains.services.s3.bucketActions.CreateBucketAction.kt</ID>
+    <ID>AbsentOrWrongFileLicense:CreateFunctionPanel.kt$software.aws.toolkits.jetbrains.services.lambda.upload.CreateFunctionPanel.kt</ID>
+    <ID>AbsentOrWrongFileLicense:CreateQueuePanel.kt$software.aws.toolkits.jetbrains.services.sqs.CreateQueuePanel.kt</ID>
+    <ID>AbsentOrWrongFileLicense:DeleteBucketTest.kt$software.aws.toolkits.jetbrains.services.s3.DeleteBucketTest.kt</ID>
+    <ID>AbsentOrWrongFileLicense:DeployServerlessApplicationPanel.kt$software.aws.toolkits.jetbrains.services.lambda.deploy.DeployServerlessApplicationPanel.kt</ID>
+    <ID>AbsentOrWrongFileLicense:DownloadObjectAction.kt$software.aws.toolkits.jetbrains.services.s3.objectActions.DownloadObjectAction.kt</ID>
+    <ID>AbsentOrWrongFileLicense:DynamicTableView.kt$software.aws.toolkits.jetbrains.services.cloudformation.stack.DynamicTableView.kt</ID>
+    <ID>AbsentOrWrongFileLicense:EditAttributesPanel.kt$software.aws.toolkits.jetbrains.services.sqs.EditAttributesPanel.kt</ID>
+    <ID>AbsentOrWrongFileLicense:EnterQueryName.kt$software.aws.toolkits.jetbrains.services.cloudwatch.logs.insights.EnterQueryName.kt</ID>
+    <ID>AbsentOrWrongFileLicense:EventsFetcher.kt$software.aws.toolkits.jetbrains.services.cloudformation.stack.EventsFetcher.kt</ID>
+    <ID>AbsentOrWrongFileLicense:EventsFetcherTest.kt$software.aws.toolkits.jetbrains.services.cloudformation.stack.EventsFetcherTest.kt</ID>
+    <ID>AbsentOrWrongFileLicense:EventsTable.kt$software.aws.toolkits.jetbrains.services.cloudformation.stack.EventsTable.kt</ID>
+    <ID>AbsentOrWrongFileLicense:EventsTableTest.kt$software.aws.toolkits.jetbrains.services.cloudformation.stack.EventsTableTest.kt</ID>
+    <ID>AbsentOrWrongFileLicense:ExceptionUtils.kt$software.aws.toolkits.core.utils.ExceptionUtils.kt</ID>
+    <ID>AbsentOrWrongFileLicense:FifoPanel.kt$software.aws.toolkits.jetbrains.services.sqs.toolwindow.FifoPanel.kt</ID>
+    <ID>AbsentOrWrongFileLicense:IdBasedExtensionPoint.kt$software.aws.toolkits.jetbrains.core.IdBasedExtensionPoint.kt</ID>
+    <ID>AbsentOrWrongFileLicense:LambdaConfigPanel.kt$software.aws.toolkits.jetbrains.services.lambda.upload.LambdaConfigPanel.kt</ID>
+    <ID>AbsentOrWrongFileLicense:LocalLambdaRunSettingsEditorPanel.kt$software.aws.toolkits.jetbrains.services.lambda.execution.local.LocalLambdaRunSettingsEditorPanel.kt</ID>
+    <ID>AbsentOrWrongFileLicense:LogGroupSelectorTable.kt$software.aws.toolkits.jetbrains.services.cloudwatch.logs.insights.LogGroupSelectorTable.kt</ID>
+    <ID>AbsentOrWrongFileLicense:Mocks.kt$software.aws.toolkits.jetbrains.services.cloudformation.stack.Mocks.kt</ID>
+    <ID>AbsentOrWrongFileLicense:OpenBucketViewerAction.kt$software.aws.toolkits.jetbrains.services.s3.bucketActions.OpenBucketViewerAction.kt</ID>
+    <ID>AbsentOrWrongFileLicense:OutputsTableView.kt$software.aws.toolkits.jetbrains.services.cloudformation.stack.OutputsTableView.kt</ID>
+    <ID>AbsentOrWrongFileLicense:OutputsTableViewTest.kt$software.aws.toolkits.jetbrains.services.cloudformation.stack.OutputsTableViewTest.kt</ID>
+    <ID>AbsentOrWrongFileLicense:PageButtons.kt$software.aws.toolkits.jetbrains.services.cloudformation.stack.PageButtons.kt</ID>
+    <ID>AbsentOrWrongFileLicense:PageButtonsTest.kt$software.aws.toolkits.jetbrains.services.cloudformation.stack.PageButtonsTest.kt</ID>
+    <ID>AbsentOrWrongFileLicense:PerContainerSettings.kt$software.aws.toolkits.jetbrains.services.ecs.execution.PerContainerSettings.kt</ID>
+    <ID>AbsentOrWrongFileLicense:QueryEditor.kt$software.aws.toolkits.jetbrains.services.cloudwatch.logs.insights.QueryEditor.kt</ID>
+    <ID>AbsentOrWrongFileLicense:QueryResultList.kt$software.aws.toolkits.jetbrains.services.cloudwatch.logs.insights.QueryResultList.kt</ID>
+    <ID>AbsentOrWrongFileLicense:RenameObjectAction.kt$software.aws.toolkits.jetbrains.services.s3.objectActions.RenameObjectAction.kt</ID>
+    <ID>AbsentOrWrongFileLicense:RetrieveSavedQueryDialog.kt$software.aws.toolkits.jetbrains.services.cloudwatch.logs.insights.RetrieveSavedQueryDialog.kt</ID>
+    <ID>AbsentOrWrongFileLicense:RuntimeGroup.kt$software.aws.toolkits.jetbrains.services.lambda.RuntimeGroup.kt</ID>
+    <ID>AbsentOrWrongFileLicense:S3ColumnInfo.kt$software.aws.toolkits.jetbrains.services.s3.editor.S3ColumnInfo.kt</ID>
+    <ID>AbsentOrWrongFileLicense:S3ServiceNodeTest.kt$software.aws.toolkits.jetbrains.services.s3.S3ServiceNodeTest.kt</ID>
+    <ID>AbsentOrWrongFileLicense:S3TreeCellRenderer.kt$software.aws.toolkits.jetbrains.services.s3.editor.S3TreeCellRenderer.kt</ID>
+    <ID>AbsentOrWrongFileLicense:S3TreeTable.kt$software.aws.toolkits.jetbrains.services.s3.editor.S3TreeTable.kt</ID>
+    <ID>AbsentOrWrongFileLicense:S3TreeTableModel.kt$software.aws.toolkits.jetbrains.services.s3.editor.S3TreeTableModel.kt</ID>
+    <ID>AbsentOrWrongFileLicense:S3ViewerProvider.kt$software.aws.toolkits.jetbrains.services.s3.S3ViewerProvider.kt</ID>
+    <ID>AbsentOrWrongFileLicense:S3VirtualBucketTest.kt$software.aws.toolkits.jetbrains.services.s3.S3VirtualBucketTest.kt</ID>
+    <ID>AbsentOrWrongFileLicense:SamInitProjectBuilderCommon.kt$software.aws.toolkits.jetbrains.services.lambda.wizard.SamInitProjectBuilderCommon.kt</ID>
+    <ID>AbsentOrWrongFileLicense:SamInitSelectionPanel.kt$software.aws.toolkits.jetbrains.services.lambda.wizard.SamInitSelectionPanel.kt</ID>
+    <ID>AbsentOrWrongFileLicense:SamSchemaDownloadPostCreationAction.kt$software.aws.toolkits.jetbrains.services.lambda.sam.SamSchemaDownloadPostCreationAction.kt</ID>
+    <ID>AbsentOrWrongFileLicense:SamSettingsEditorPanel.kt$software.aws.toolkits.jetbrains.services.lambda.execution.sam.SamSettingsEditorPanel.kt</ID>
+    <ID>AbsentOrWrongFileLicense:SamTemplateUtils.kt$software.aws.toolkits.jetbrains.services.lambda.sam.SamTemplateUtils.kt</ID>
+    <ID>AbsentOrWrongFileLicense:SelectSavedQuery.kt$software.aws.toolkits.jetbrains.services.cloudwatch.logs.insights.SelectSavedQuery.kt</ID>
+    <ID>AbsentOrWrongFileLicense:SliderPanel.kt$software.aws.toolkits.jetbrains.ui.SliderPanel.kt</ID>
+    <ID>AbsentOrWrongFileLicense:SqsExplorerRootNode.kt$software.aws.toolkits.jetbrains.core.explorer.nodes.SqsExplorerRootNode.kt</ID>
+    <ID>AbsentOrWrongFileLicense:Stack.kt$software.aws.toolkits.jetbrains.services.cloudformation.stack.Stack.kt</ID>
+    <ID>AbsentOrWrongFileLicense:SubscribeSnsPanel.kt$software.aws.toolkits.jetbrains.services.sqs.SubscribeSnsPanel.kt</ID>
+    <ID>AbsentOrWrongFileLicense:TemplateSettings.kt$software.aws.toolkits.jetbrains.services.lambda.execution.local.TemplateSettings.kt</ID>
+    <ID>AbsentOrWrongFileLicense:TreeView.kt$software.aws.toolkits.jetbrains.services.cloudformation.stack.TreeView.kt</ID>
+    <ID>AbsentOrWrongFileLicense:UiUtils.kt$software.aws.toolkits.jetbrains.utils.ui.UiUtils.kt</ID>
+    <ID>AbsentOrWrongFileLicense:UpdateFunctionCodePanel.kt$software.aws.toolkits.jetbrains.services.lambda.upload.UpdateFunctionCodePanel.kt</ID>
+    <ID>AbsentOrWrongFileLicense:UpdateFunctionConfigPanel.kt$software.aws.toolkits.jetbrains.services.lambda.upload.UpdateFunctionConfigPanel.kt</ID>
+    <ID>AbsentOrWrongFileLicense:Updater.kt$software.aws.toolkits.jetbrains.services.cloudformation.stack.Updater.kt</ID>
+    <ID>AbsentOrWrongFileLicense:UpdaterTest.kt$software.aws.toolkits.jetbrains.services.cloudformation.stack.UpdaterTest.kt</ID>
+    <ID>AbsentOrWrongFileLicense:UploadObjectAction.kt$software.aws.toolkits.jetbrains.services.s3.objectActions.UploadObjectAction.kt</ID>
+    <ID>AbsentOrWrongFileLicense:View.kt$software.aws.toolkits.jetbrains.services.cloudformation.stack.View.kt</ID>
+    <ID>AbsentOrWrongFileLicense:ViewObjectVersionAction.kt$software.aws.toolkits.jetbrains.services.s3.objectActions.ViewObjectVersionAction.kt</ID>
+    <ID>AbsentOrWrongFileLicense:build.gradle.kts$.build.gradle.kts</ID>
+    <ID>AbsentOrWrongFileLicense:settings.gradle.kts$.settings.gradle.kts</ID>
+    <ID>BannedPattern:BannedPatternRule.kt$software.aws.toolkits.gradle.detekt.rules.BannedPatternRule.kt</ID>
+    <ID>BannedPattern:BannedPatternRuleTest.kt$.BannedPatternRuleTest.kt</ID>
+    <ID>CopyrightHeader:build.gradle.kts$.build.gradle.kts</ID>
+    <ID>FunctionNaming:AwsSettingsConfigurableTest.kt$AwsSettingsConfigurableTest$@Test fun validate_fail_autodetectBadSam_andManuallySetToBadSam()</ID>
+    <ID>FunctionNaming:AwsSettingsConfigurableTest.kt$AwsSettingsConfigurableTest$@Test fun validate_ok_autodetectBadSam()</ID>
+    <ID>FunctionNaming:AwsSettingsConfigurableTest.kt$AwsSettingsConfigurableTest$@Test fun validate_ok_autodetectValidSam()</ID>
+    <ID>FunctionNaming:AwsSettingsConfigurableTest.kt$AwsSettingsConfigurableTest$@Test fun validate_ok_changedTelemetry()</ID>
+    <ID>FunctionNaming:AwsSettingsConfigurableTest.kt$AwsSettingsConfigurableTest$@Test fun validate_ok_noOp()</ID>
+    <ID>FunctionNaming:AwsSettingsConfigurableTest.kt$AwsSettingsConfigurableTest$@Test fun validate_ok_setSamEmpty()</ID>
+    <ID>FunctionNaming:AwsSettingsConfigurableTest.kt$AwsSettingsConfigurableTest$@Test fun validate_ok_setValidSam()</ID>
+    <ID>FunctionNaming:AwsSettingsConfigurableTest.kt$AwsSettingsConfigurableTest$@Test(expected = ConfigurationException::class) fun validate_fail_setBadSam()</ID>
+    <ID>FunctionNaming:CliOutputParserTest.kt$CliOutputParserTest$@Test fun parseLogEntries_canHandleMultiLineEvents()</ID>
+    <ID>FunctionNaming:CliOutputParserTest.kt$CliOutputParserTest$@Test fun parseLogEntries_colorCodesAreIgnored()</ID>
+    <ID>FunctionNaming:CliOutputParserTest.kt$CliOutputParserTest$@Test fun parseLogEntries_handlesDifferentLevels()</ID>
+    <ID>FunctionNaming:CliOutputParserTest.kt$CliOutputParserTest$@Test fun parseLogEntries_unexpectedStringIsHandled()</ID>
+    <ID>FunctionNaming:CloudFormationParametersTest.kt$CloudFormationParametersTest$@Test fun mergeParameters_emptyRemote()</ID>
+    <ID>FunctionNaming:CloudFormationParametersTest.kt$CloudFormationParametersTest$@Test fun mergeParameters_emptyTemplate()</ID>
+    <ID>FunctionNaming:CloudFormationParametersTest.kt$CloudFormationParametersTest$@Test fun mergeParameters_withOverlap()</ID>
+    <ID>FunctionNaming:CloudFormationTemplateCanDeployTest.kt$CloudFormationTemplateCanDeployTest$@Test fun deployable_validatableEnough()</ID>
+    <ID>FunctionNaming:CloudFormationTemplateCanDeployTest.kt$CloudFormationTemplateCanDeployTest$@Test fun nonDeployable_emptyFile()</ID>
+    <ID>FunctionNaming:CloudFormationTemplateCanDeployTest.kt$CloudFormationTemplateCanDeployTest$@Test fun nonDeployable_incompleteResources()</ID>
+    <ID>FunctionNaming:CloudFormationTemplateIndexTest.kt$CloudFormationTemplateIndexTest$@Test fun listFunctions_lambdaFunction()</ID>
+    <ID>FunctionNaming:CloudFormationTemplateIndexTest.kt$CloudFormationTemplateIndexTest$@Test fun listFunctions_missingType()</ID>
+    <ID>FunctionNaming:CloudFormationTemplateIndexTest.kt$CloudFormationTemplateIndexTest$@Test fun listFunctions_serverlessAndLambdaFunctions()</ID>
+    <ID>FunctionNaming:CloudFormationTemplateIndexTest.kt$CloudFormationTemplateIndexTest$@Test fun listFunctions_serverlessFunction()</ID>
+    <ID>FunctionNaming:CloudFormationTemplateIndexTest.kt$CloudFormationTemplateIndexTest$@Test fun listResourcesByType_simpleTable()</ID>
+    <ID>FunctionNaming:CloudFormationTemplateIndexTest.kt$CloudFormationTemplateIndexTest$@Test fun listResources_fromFile()</ID>
+    <ID>FunctionNaming:CloudFormationTemplateIndexTest.kt$CloudFormationTemplateIndexTest$@Test fun listResources_nullType()</ID>
+    <ID>FunctionNaming:CreateBucketActionDialogTest.kt$CreateBucketActionDialogTest$@Test fun validateBucketName_emptyBucketName()</ID>
+    <ID>FunctionNaming:CreateLambdaFunctionActionTest.kt$CreateLambdaFunctionActionTest$@Test fun InvalidNullArgs()</ID>
+    <ID>FunctionNaming:CreateLambdaFunctionActionTest.kt$CreateLambdaFunctionActionTest$@Test fun InvalidNullArgs_Element()</ID>
+    <ID>FunctionNaming:CreateLambdaFunctionActionTest.kt$CreateLambdaFunctionActionTest$@Test fun InvalidNullArgs_HandlerResolver()</ID>
+    <ID>FunctionNaming:CreateLambdaFunctionActionTest.kt$CreateLambdaFunctionActionTest$@Test fun NonSamFunction()</ID>
+    <ID>FunctionNaming:CreateLambdaFunctionActionTest.kt$CreateLambdaFunctionActionTest$@Test fun NonSamFunction_Substring()</ID>
+    <ID>FunctionNaming:CreateLambdaFunctionActionTest.kt$CreateLambdaFunctionActionTest$@Test fun SamFunction()</ID>
+    <ID>FunctionNaming:CreateOrUpdateCredentialProfilesActionTest.kt$CreateOrUpdateCredentialProfilesActionTest$@Test fun bothFilesOpened_bothFilesExists()</ID>
+    <ID>FunctionNaming:CreateOrUpdateCredentialProfilesActionTest.kt$CreateOrUpdateCredentialProfilesActionTest$@Test fun configFileOpened_onlyConfigExists()</ID>
+    <ID>FunctionNaming:CreateOrUpdateCredentialProfilesActionTest.kt$CreateOrUpdateCredentialProfilesActionTest$@Test fun confirmConfigFileCreated_bothFilesDoNotExist()</ID>
+    <ID>FunctionNaming:CreateOrUpdateCredentialProfilesActionTest.kt$CreateOrUpdateCredentialProfilesActionTest$@Test fun credentialFileOpened_onlyCredentialsExists()</ID>
+    <ID>FunctionNaming:DefaultTelemetryPublisherTest.kt$DefaultTelemetryPublisherTest$@Test fun testPublish_withNamespace()</ID>
+    <ID>FunctionNaming:DefaultTelemetryPublisherTest.kt$DefaultTelemetryPublisherTest$@Test fun testPublish_withoutNamespace()</ID>
+    <ID>FunctionNaming:DeleteWaiterTest.kt$DeleteWaiterTest$@Test fun deleteSuccessful_stackNotExist()</ID>
+    <ID>FunctionNaming:DeploySamApplicationValidatorTest.kt$DeploySamApplicationValidatorTest$@Test fun invalidStackName_Duplicate()</ID>
+    <ID>FunctionNaming:DeploySamApplicationValidatorTest.kt$DeploySamApplicationValidatorTest$@Test fun invalidStackName_InvalidChars()</ID>
+    <ID>FunctionNaming:DeploySamApplicationValidatorTest.kt$DeploySamApplicationValidatorTest$@Test fun invalidStackName_TooLong()</ID>
+    <ID>FunctionNaming:DeploySamApplicationValidatorTest.kt$DeploySamApplicationValidatorTest$@Test fun templateParameterAllTypesValid_hasValues()</ID>
+    <ID>FunctionNaming:DeploySamApplicationValidatorTest.kt$DeploySamApplicationValidatorTest$@Test fun templateParameterAllTypesValid_noValues()</ID>
+    <ID>FunctionNaming:DeploySamApplicationValidatorTest.kt$DeploySamApplicationValidatorTest$@Test fun templateParameter_numberConstraintsInvalid()</ID>
+    <ID>FunctionNaming:DeploySamApplicationValidatorTest.kt$DeploySamApplicationValidatorTest$@Test fun templateParameter_numberInvalid()</ID>
+    <ID>FunctionNaming:DeploySamApplicationValidatorTest.kt$DeploySamApplicationValidatorTest$@Test fun templateParameter_numberTooBig()</ID>
+    <ID>FunctionNaming:DeploySamApplicationValidatorTest.kt$DeploySamApplicationValidatorTest$@Test fun templateParameter_numberTooSmall()</ID>
+    <ID>FunctionNaming:DeploySamApplicationValidatorTest.kt$DeploySamApplicationValidatorTest$@Test fun templateParameter_stringConstraintsInvalid()</ID>
+    <ID>FunctionNaming:DeploySamApplicationValidatorTest.kt$DeploySamApplicationValidatorTest$@Test fun templateParameter_stringFailsRegex()</ID>
+    <ID>FunctionNaming:DeploySamApplicationValidatorTest.kt$DeploySamApplicationValidatorTest$@Test fun templateParameter_stringRegex()</ID>
+    <ID>FunctionNaming:DeploySamApplicationValidatorTest.kt$DeploySamApplicationValidatorTest$@Test fun templateParameter_stringTooLong()</ID>
+    <ID>FunctionNaming:DeploySamApplicationValidatorTest.kt$DeploySamApplicationValidatorTest$@Test fun templateParameter_stringTooShort()</ID>
+    <ID>FunctionNaming:DeploySettingsTest.kt$DeploySettingsTest$@Test fun relativeSamPath_null()</ID>
+    <ID>FunctionNaming:DeploySettingsTest.kt$DeploySettingsTest$@Test fun relativeSamPath_root()</ID>
+    <ID>FunctionNaming:DotNetEcsCloudDebugRunConfigurationTest.kt$DotNetEcsCloudDebugRunConfigurationTest$@Test fun testCheckConfiguration_StartupCommand_NotStartWithDotNet()</ID>
+    <ID>FunctionNaming:DotNetHandlerCompletionProviderTest.kt$DotNetHandlerCompletionProviderTest$@Test( dataProvider = "handlerCompletionSupportedData", description = "Check completion in run configuration feature is enabled for DOTNET runtime." ) fun testCompletion_IsSupportedForDotNetRuntime(name: String, runtime: LambdaRuntime)</ID>
+    <ID>FunctionNaming:DotNetHandlerCompletionTest.kt$DotNetHandlerCompletionTest$// TODO this test only works on 2019.2. Which we don't support anymore. Fix the test // TODO: This test is failing due to handlers detection logic. I assume it need to be fixed if test is correct. @Test(enabled = false, description = "Check all handlers are show in completion lookup when multiple handlers are defined in a project.") @TestEnvironment(solution = "SamMultipleHandlersApp") fun testDetermineHandlers_MultipleHandlers()</ID>
+    <ID>FunctionNaming:DotNetHandlerCompletionTest.kt$DotNetHandlerCompletionTest$@Test(description = "Check a single handler is shown in lookup when one is defined in a project.") @TestEnvironment(solution = "SamHelloWorldApp") fun testDetermineHandlers_SingleHandler()</ID>
+    <ID>FunctionNaming:DotNetLambdaHandlerResolverTest.kt$DotNetLambdaHandlerResolverTest$@Test fun testHandler_SingleValidHandler()</ID>
+    <ID>FunctionNaming:DotNetLambdaHandlerResolverTest.kt$DotNetLambdaHandlerResolverTest$@Test(dataProvider = "invalidHandlerData") fun testHandler_InvalidHandler(name: String, handler: String)</ID>
+    <ID>FunctionNaming:DotNetLocalLambdaRunConfigurationTest.kt$DotNetLocalLambdaRunConfigurationTest$@Test fun testHandler_HandlerNotSet()</ID>
+    <ID>FunctionNaming:DotNetLocalLambdaRunConfigurationTest.kt$DotNetLocalLambdaRunConfigurationTest$@Test fun testHandler_InvalidHandlerString()</ID>
+    <ID>FunctionNaming:DotNetLocalLambdaRunConfigurationTest.kt$DotNetLocalLambdaRunConfigurationTest$@Test fun testHandler_NonExistingMethodName()</ID>
+    <ID>FunctionNaming:DotNetLocalLambdaRunConfigurationTest.kt$DotNetLocalLambdaRunConfigurationTest$@Test fun testHandler_NonExistingTypeName()</ID>
+    <ID>FunctionNaming:DotNetLocalLambdaRunConfigurationTest.kt$DotNetLocalLambdaRunConfigurationTest$@Test fun testHandler_ValidHandler()</ID>
+    <ID>FunctionNaming:DotNetStartupCommandAugmenterTest.kt$DotNetStartupCommandAugmenterTest$@Test fun testAugmentStatement_NoDebugPort_Exception()</ID>
+    <ID>FunctionNaming:DotNetStartupCommandAugmenterTest.kt$DotNetStartupCommandAugmenterTest$@Test fun testAugmentStatement_SingleDebugPort_Exception()</ID>
+    <ID>FunctionNaming:DotNetStartupCommandAugmenterTest.kt$DotNetStartupCommandAugmenterTest$@Test fun testAutomaticallyAugmentable_InvalidPath()</ID>
+    <ID>FunctionNaming:DotNetStartupCommandAugmenterTest.kt$DotNetStartupCommandAugmenterTest$@Test fun testAutomaticallyAugmentable_LeadingSingleQuote_Exception()</ID>
+    <ID>FunctionNaming:DotNetStartupCommandAugmenterTest.kt$DotNetStartupCommandAugmenterTest$@Test fun testAutomaticallyAugmentable_NoDotnetInCommand_Exception()</ID>
+    <ID>FunctionNaming:DotNetStartupCommandAugmenterTest.kt$DotNetStartupCommandAugmenterTest$@Test fun testAutomaticallyAugmentable_SingleCommand()</ID>
+    <ID>FunctionNaming:DotNetStartupCommandAugmenterTest.kt$DotNetStartupCommandAugmenterTest$@Test fun testAutomaticallyAugmentable_ValidCommand()</ID>
+    <ID>FunctionNaming:DotNetStartupCommandTest.kt$DotNetStartupCommandTest$@Test fun testUpdateCommand_AssemblyFound_UpdateStartupCommand()</ID>
+    <ID>FunctionNaming:DotNetStartupCommandTest.kt$DotNetStartupCommandTest$@Test(dataProvider = "artifactsMappingTestData") fun testUpdateStartupCommand_ReturnOriginalCommand(name: String, originalCommand: String, artifactsMap: ArtifactMapping)</ID>
+    <ID>FunctionNaming:FileInfoCacheTest.kt$FileInfoCacheTest$@Test fun emptyCache_SingleExecutableRequest()</ID>
+    <ID>FunctionNaming:FileInfoCacheTest.kt$FileInfoCacheTest$@Test fun multipleThreads_SameSamPath()</ID>
+    <ID>FunctionNaming:FileInfoCacheTest.kt$FileInfoCacheTest$@Test fun nonEmptyCache_SingleExecutableRequest()</ID>
+    <ID>FunctionNaming:GoHelperTest.kt$GoHelperTest$@Test fun inferSourceRoot_goModInRootFolder()</ID>
+    <ID>FunctionNaming:GoHelperTest.kt$GoHelperTest$@Test fun inferSourceRoot_goModInSubFolder()</ID>
+    <ID>FunctionNaming:GoHelperTest.kt$GoHelperTest$@Test fun inferSourceRoot_noGoModReturnsNull()</ID>
+    <ID>FunctionNaming:LambdaGutterMarkHighlightingTest.kt$LambdaGutterMarkHighlightingTest$@Suppress("UNUSED_PARAMETER") @Test(dataProvider = "singleParameterAmazonEventType") fun testParameters_SingleParameterAmazonEvent_Detected(name: String)</ID>
+    <ID>FunctionNaming:LambdaGutterMarkHighlightingTest.kt$LambdaGutterMarkHighlightingTest$@Test fun testClass_FunctionAbstractClass_NotDetected()</ID>
+    <ID>FunctionNaming:LambdaGutterMarkHighlightingTest.kt$LambdaGutterMarkHighlightingTest$@Test fun testClass_FunctionClass_Detected()</ID>
+    <ID>FunctionNaming:LambdaGutterMarkHighlightingTest.kt$LambdaGutterMarkHighlightingTest$@Test fun testClass_FunctionInterface_NotDetected()</ID>
+    <ID>FunctionNaming:LambdaGutterMarkHighlightingTest.kt$LambdaGutterMarkHighlightingTest$@Test fun testClass_FunctionStruct_NotDetected()</ID>
+    <ID>FunctionNaming:LambdaGutterMarkHighlightingTest.kt$LambdaGutterMarkHighlightingTest$@Test fun testMethod_StaticMainWithSerializer_Detected()</ID>
+    <ID>FunctionNaming:LambdaGutterMarkHighlightingTest.kt$LambdaGutterMarkHighlightingTest$@Test fun testMethod_StaticMain_NotDetected()</ID>
+    <ID>FunctionNaming:LambdaGutterMarkHighlightingTest.kt$LambdaGutterMarkHighlightingTest$@Test fun testMethod_StaticNonMain_Detected()</ID>
+    <ID>FunctionNaming:LambdaGutterMarkHighlightingTest.kt$LambdaGutterMarkHighlightingTest$@Test fun testParameters_NoParameters_NotDetected()</ID>
+    <ID>FunctionNaming:LambdaGutterMarkHighlightingTest.kt$LambdaGutterMarkHighlightingTest$@Test fun testParameters_SingleParameterCustomDataArray_Detected()</ID>
+    <ID>FunctionNaming:LambdaGutterMarkHighlightingTest.kt$LambdaGutterMarkHighlightingTest$@Test fun testParameters_SingleParameterCustomDataDateTime_Detected()</ID>
+    <ID>FunctionNaming:LambdaGutterMarkHighlightingTest.kt$LambdaGutterMarkHighlightingTest$@Test fun testParameters_SingleParameterCustomDataGenericIDictionary_Detected()</ID>
+    <ID>FunctionNaming:LambdaGutterMarkHighlightingTest.kt$LambdaGutterMarkHighlightingTest$@Test fun testParameters_SingleParameterCustomDataGenericIEnumerable_Detected()</ID>
+    <ID>FunctionNaming:LambdaGutterMarkHighlightingTest.kt$LambdaGutterMarkHighlightingTest$@Test fun testParameters_SingleParameterCustomDataGenericIList_Detected()</ID>
+    <ID>FunctionNaming:LambdaGutterMarkHighlightingTest.kt$LambdaGutterMarkHighlightingTest$@Test fun testParameters_SingleParameterCustomDataIDictionary_Detected()</ID>
+    <ID>FunctionNaming:LambdaGutterMarkHighlightingTest.kt$LambdaGutterMarkHighlightingTest$@Test fun testParameters_SingleParameterCustomDataIEnumerable_Detected()</ID>
+    <ID>FunctionNaming:LambdaGutterMarkHighlightingTest.kt$LambdaGutterMarkHighlightingTest$@Test fun testParameters_SingleParameterCustomDataIList_Detected()</ID>
+    <ID>FunctionNaming:LambdaGutterMarkHighlightingTest.kt$LambdaGutterMarkHighlightingTest$@Test fun testParameters_SingleParameterCustomDataPrimitive_Detected()</ID>
+    <ID>FunctionNaming:LambdaGutterMarkHighlightingTest.kt$LambdaGutterMarkHighlightingTest$@Test fun testParameters_SingleParameterCustomDataTypeSubstitution_Detected()</ID>
+    <ID>FunctionNaming:LambdaGutterMarkHighlightingTest.kt$LambdaGutterMarkHighlightingTest$@Test fun testParameters_SingleParameterCustomDataWithoutDefaultConstructor_NotDetected()</ID>
+    <ID>FunctionNaming:LambdaGutterMarkHighlightingTest.kt$LambdaGutterMarkHighlightingTest$@Test fun testParameters_SingleParameterInheritedFromStream_Detected()</ID>
+    <ID>FunctionNaming:LambdaGutterMarkHighlightingTest.kt$LambdaGutterMarkHighlightingTest$@Test fun testParameters_SingleParameterStream_Detected()</ID>
+    <ID>FunctionNaming:LambdaGutterMarkHighlightingTest.kt$LambdaGutterMarkHighlightingTest$@Test fun testParameters_SingleParameterTypeInheritedFromAmazonEvent_Detected()</ID>
+    <ID>FunctionNaming:LambdaGutterMarkHighlightingTest.kt$LambdaGutterMarkHighlightingTest$@Test fun testParameters_TwoParametersAmazonEventAndContext_Detected()</ID>
+    <ID>FunctionNaming:LambdaGutterMarkHighlightingTest.kt$LambdaGutterMarkHighlightingTest$@Test fun testParameters_TwoParametersAmazonEventAndNonContext_NotDetected()</ID>
+    <ID>FunctionNaming:LambdaGutterMarkHighlightingTest.kt$LambdaGutterMarkHighlightingTest$@Test fun testParameters_TwoParametersCustomDataAndContext_Detected()</ID>
+    <ID>FunctionNaming:LambdaGutterMarkHighlightingTest.kt$LambdaGutterMarkHighlightingTest$@Test fun testParameters_TwoParametersStreamAndContext_Detected()</ID>
+    <ID>FunctionNaming:LambdaGutterMarkHighlightingTest.kt$LambdaGutterMarkHighlightingTest$@Test fun testReturn_AsyncTaskGeneric_Detected()</ID>
+    <ID>FunctionNaming:LambdaGutterMarkHighlightingTest.kt$LambdaGutterMarkHighlightingTest$@Test fun testReturn_AsyncTask_Detected()</ID>
+    <ID>FunctionNaming:LambdaGutterMarkHighlightingTest.kt$LambdaGutterMarkHighlightingTest$@Test fun testReturn_AsyncVoid_Detected()</ID>
+    <ID>FunctionNaming:LambdaGutterMarkHighlightingTest.kt$LambdaGutterMarkHighlightingTest$@Test fun testReturn_SyncAmazonEvent_Detected()</ID>
+    <ID>FunctionNaming:LambdaGutterMarkHighlightingTest.kt$LambdaGutterMarkHighlightingTest$@Test fun testReturn_SyncCustomData_Detected()</ID>
+    <ID>FunctionNaming:LambdaGutterMarkHighlightingTest.kt$LambdaGutterMarkHighlightingTest$@Test fun testReturn_SyncStream_Detected()</ID>
+    <ID>FunctionNaming:LambdaGutterMarkHighlightingTest.kt$LambdaGutterMarkHighlightingTest$@Test fun testReturn_SyncVoid_NotDetected()</ID>
+    <ID>FunctionNaming:LambdaGutterMarkHighlightingTest.kt$LambdaGutterMarkHighlightingTest$@Test fun testSerializer_AssemblyLevelInherited_Detected()</ID>
+    <ID>FunctionNaming:LambdaGutterMarkHighlightingTest.kt$LambdaGutterMarkHighlightingTest$@Test fun testSerializer_AssemblyLevelNonInherited_NotDetected()</ID>
+    <ID>FunctionNaming:LambdaGutterMarkHighlightingTest.kt$LambdaGutterMarkHighlightingTest$@Test fun testSerializer_AssemblyLevel_Detected()</ID>
+    <ID>FunctionNaming:LambdaGutterMarkHighlightingTest.kt$LambdaGutterMarkHighlightingTest$@Test fun testSerializer_MethodLevelInherited_Detected()</ID>
+    <ID>FunctionNaming:LambdaGutterMarkHighlightingTest.kt$LambdaGutterMarkHighlightingTest$@Test fun testSerializer_MethodLevelNonInherited_NotDetected()</ID>
+    <ID>FunctionNaming:LambdaGutterMarkHighlightingTest.kt$LambdaGutterMarkHighlightingTest$@Test fun testSerializer_MethodLevel_Detected()</ID>
+    <ID>FunctionNaming:LambdaGutterMarkHighlightingTest.kt$LambdaGutterMarkHighlightingTest$@Test fun testSerializer_NoSerializer_NotDetected()</ID>
+    <ID>FunctionNaming:NodeJsLambdaHandlerResolverTest.kt$NodeJsLambdaHandlerResolverTest$@Test fun determineHandler_ThreeParametersForAsyncReturnsNull()</ID>
+    <ID>FunctionNaming:NodeJsLambdaHandlerResolverTest.kt$NodeJsLambdaHandlerResolverTest$@Test fun determineHandler_TooManyParametersReturnsNull()</ID>
+    <ID>FunctionNaming:NodeJsLambdaHandlerResolverTest.kt$NodeJsLambdaHandlerResolverTest$@Test fun determineHandler_es5Code()</ID>
+    <ID>FunctionNaming:NodeJsLambdaHandlerResolverTest.kt$NodeJsLambdaHandlerResolverTest$@Test fun determineHandler_inSubFolder()</ID>
+    <ID>FunctionNaming:NodeJsLambdaHandlerResolverTest.kt$NodeJsLambdaHandlerResolverTest$@Test fun determineHandler_noExportsReturnsNull()</ID>
+    <ID>FunctionNaming:NodeJsLambdaHandlerResolverTest.kt$NodeJsLambdaHandlerResolverTest$@Test fun determineHandler_notAFunction()</ID>
+    <ID>FunctionNaming:NodeJsLambdaHandlerResolverTest.kt$NodeJsLambdaHandlerResolverTest$@Test fun determineHandler_oneParameter()</ID>
+    <ID>FunctionNaming:NodeJsLambdaHandlerResolverTest.kt$NodeJsLambdaHandlerResolverTest$@Test fun determineHandler_oneParameterForAsync()</ID>
+    <ID>FunctionNaming:NodeJsLambdaHandlerResolverTest.kt$NodeJsLambdaHandlerResolverTest$@Test fun determineHandler_packageJsonFolderAsSourceRoot()</ID>
+    <ID>FunctionNaming:NodeJsLambdaHandlerResolverTest.kt$NodeJsLambdaHandlerResolverTest$@Test fun findPsiElement_exportsAsync1Parameter()</ID>
+    <ID>FunctionNaming:NodeJsLambdaHandlerResolverTest.kt$NodeJsLambdaHandlerResolverTest$@Test fun findPsiElement_exportsAsync2Parameters()</ID>
+    <ID>FunctionNaming:NodeJsLambdaHandlerResolverTest.kt$NodeJsLambdaHandlerResolverTest$@Test fun findPsiElement_exportsAsync3Parameters()</ID>
+    <ID>FunctionNaming:NodeJsLambdaHandlerResolverTest.kt$NodeJsLambdaHandlerResolverTest$@Test fun findPsiElement_inSubFolderButHandlerIsNotFullPath()</ID>
+    <ID>FunctionNaming:NodeJsLambdaHandlerResolverTest.kt$NodeJsLambdaHandlerResolverTest$@Test fun findPsiElement_inSubFolderWithNoPackageJson()</ID>
+    <ID>FunctionNaming:NodeJsLambdaHandlerResolverTest.kt$NodeJsLambdaHandlerResolverTest$@Test fun findPsiElement_inSubFolderWithPackageJson()</ID>
+    <ID>FunctionNaming:NodeJsLambdaHandlerResolverTest.kt$NodeJsLambdaHandlerResolverTest$@Test fun findPsiElement_noExports()</ID>
+    <ID>FunctionNaming:NodeJsLambdaHandlerResolverTest.kt$NodeJsLambdaHandlerResolverTest$@Test fun findPsiElement_notAnAssignment()</ID>
+    <ID>FunctionNaming:NodeJsLocalLambdaRunConfigurationIntegrationTest.kt$NodeJsLocalLambdaRunConfigurationIntegrationTest$@Test fun samIsExecutedWithDebugger_sameFileNames()</ID>
+    <ID>FunctionNaming:NodeJsRuntimeGroupTest.kt$NodeJsRuntimeGroupTest$@Test fun testRuntime10_10()</ID>
+    <ID>FunctionNaming:NodeJsRuntimeGroupTest.kt$NodeJsRuntimeGroupTest$@Test fun testRuntime11_12()</ID>
+    <ID>FunctionNaming:NodeJsRuntimeGroupTest.kt$NodeJsRuntimeGroupTest$@Test fun testRuntime15_0()</ID>
+    <ID>FunctionNaming:NodeJsRuntimeGroupTest.kt$NodeJsRuntimeGroupTest$@Test fun testRuntime4_3()</ID>
+    <ID>FunctionNaming:NodeJsRuntimeGroupTest.kt$NodeJsRuntimeGroupTest$@Test fun testRuntime6_10()</ID>
+    <ID>FunctionNaming:NodeJsRuntimeGroupTest.kt$NodeJsRuntimeGroupTest$@Test fun testRuntime8_10()</ID>
+    <ID>FunctionNaming:RetrieveSavedQueryDialogTest.kt$RetrieveSavedQueryDialogTest$@Test fun populateParentEditor_noLogGroups()</ID>
+    <ID>FunctionNaming:RetrieveSavedQueryDialogTest.kt$RetrieveSavedQueryDialogTest$@Test fun populateParentEditor_withLogGroups()</ID>
+    <ID>FunctionNaming:SamCommonTest.kt$SamCommonTest$@Test fun getCodeUri_multipleUris()</ID>
+    <ID>FunctionNaming:SamCommonTest.kt$SamCommonTest$@Test fun getCodeUri_noUri()</ID>
+    <ID>FunctionNaming:SamCommonTest.kt$SamCommonTest$@Test fun getCodeUri_samAndNotSam()</ID>
+    <ID>FunctionNaming:SamCommonTest.kt$SamCommonTest$@Test fun getCodeUri_singleUri()</ID>
+    <ID>FunctionNaming:SamCommonTest.kt$SamCommonTest$@Test fun getTemplateFromDirectory_singleYaml()</ID>
+    <ID>FunctionNaming:SamCommonTest.kt$SamCommonTest$@Test fun getVersion_Valid_exitNonZero()</ID>
+    <ID>FunctionNaming:SamCommonTest.kt$SamCommonTest$@Test fun getVersion_badPath()</ID>
+    <ID>FunctionNaming:SamCommonTest.kt$SamCommonTest$@Test(expected = java.lang.AssertionError::class) fun getTemplateFromDirectory_multipleYaml()</ID>
+    <ID>FunctionNaming:SamCommonTest.kt$SamCommonTest$@Test(expected = java.lang.AssertionError::class) fun getTemplateFromDirectory_noYaml()</ID>
+    <ID>FunctionNaming:SamVersionCacheTest.kt$SamVersionCacheTest$@Test fun errorCode_InvalidOption()</ID>
+    <ID>FunctionNaming:SamVersionCacheTest.kt$SamVersionCacheTest$@Test fun errorCode_RandomError()</ID>
+    <ID>FunctionNaming:SamVersionCacheTest.kt$SamVersionCacheTest$@Test fun successExecution_EmptyOutput()</ID>
+    <ID>ImportOrdering:model.daemon.LambdaDaemonModel.kt:6</ID>
+    <ID>ImportOrdering:model.project.AwsProjectModel.kt:6</ID>
+    <ID>ImportOrdering:model.psi.LambdaPsiModel.kt:6</ID>
+    <ID>ImportOrdering:model.setting.AwsSettingModel.kt:6</ID>
+    <ID>ImportOrdering:software.aws.toolkits.gradle.changelog.ReleaseCreatorTest.kt:6</ID>
+    <ID>Indentation:DialogModalityRuleTest.kt:35</ID>
+    <ID>Indentation:software.aws.toolkits.gradle.jacoco.RemoteCoverage.kt:77</ID>
+    <ID>Indentation:software.aws.toolkits.jetbrains.services.lambda.LambdaExplorerNodes.kt:30</ID>
+    <ID>Indentation:software.aws.toolkits.jetbrains.services.lambda.LambdaExplorerNodes.kt:31</ID>
+    <ID>Indentation:software.aws.toolkits.jetbrains.services.lambda.LambdaExplorerNodes.kt:32</ID>
+    <ID>Indentation:software.aws.toolkits.jetbrains.services.lambda.LambdaExplorerNodes.kt:33</ID>
+    <ID>Indentation:software.aws.toolkits.jetbrains.services.lambda.LambdaExplorerNodes.kt:34</ID>
+    <ID>Indentation:software.aws.toolkits.jetbrains.services.schemas.SchemasExplorerNodes.kt:30</ID>
+    <ID>Indentation:software.aws.toolkits.jetbrains.services.schemas.SchemasExplorerNodes.kt:31</ID>
+    <ID>Indentation:software.aws.toolkits.jetbrains.services.schemas.SchemasExplorerNodes.kt:32</ID>
+    <ID>Indentation:software.aws.toolkits.jetbrains.services.schemas.SchemasExplorerNodes.kt:33</ID>
+    <ID>Indentation:software.aws.toolkits.jetbrains.services.schemas.SchemasExplorerNodes.kt:34</ID>
+    <ID>Indentation:toolkit-jacoco-report.gradle.kts:60</ID>
+    <ID>Indentation:toolkit-jacoco-report.gradle.kts:62</ID>
+    <ID>NoEmptyFirstLineInMethodBlock:software.aws.toolkits.core.utils.RemoteResourceResolverTest.kt:117</ID>
+    <ID>NoEmptyFirstLineInMethodBlock:software.aws.toolkits.jetbrains.services.clouddebug.actions.PseCliAction.kt:69</ID>
+    <ID>NoEmptyFirstLineInMethodBlock:software.aws.toolkits.jetbrains.services.cloudformation.DeleteWaiterTest.kt:104</ID>
+    <ID>NoEmptyFirstLineInMethodBlock:software.aws.toolkits.jetbrains.services.cloudformation.stack.TreeView.kt:54</ID>
+    <ID>NoEmptyFirstLineInMethodBlock:software.aws.toolkits.jetbrains.services.lambda.java.JavaLambdaLineMarkerTest.kt:120</ID>
+    <ID>NoEmptyFirstLineInMethodBlock:software.aws.toolkits.jetbrains.services.lambda.java.JavaLambdaLineMarkerTest.kt:159</ID>
+    <ID>NoEmptyFirstLineInMethodBlock:software.aws.toolkits.jetbrains.services.schemas.code.SchemaCodeDownloader.kt:199</ID>
+    <ID>NoEmptyFirstLineInMethodBlock:software.aws.toolkits.jetbrains.services.schemas.code.SchemaCodeDownloader.kt:39</ID>
+    <ID>NoEmptyFirstLineInMethodBlock:software.aws.toolkits.jetbrains.ui.clouddebug.ArtifactMappingPopup.kt:95</ID>
+    <ID>SpacingBetweenDeclarationsWithComments:software.aws.toolkits.core.credentials.sso.SsoAccessTokenProvider.kt:131</ID>
+    <ID>SpacingBetweenDeclarationsWithComments:software.aws.toolkits.jetbrains.core.help.HelpIds.kt:11</ID>
+    <ID>SpacingBetweenDeclarationsWithComments:software.aws.toolkits.jetbrains.core.help.HelpIds.kt:20</ID>
+    <ID>SpacingBetweenDeclarationsWithComments:software.aws.toolkits.jetbrains.core.help.HelpIds.kt:33</ID>
+    <ID>SpacingBetweenDeclarationsWithComments:software.aws.toolkits.jetbrains.core.help.HelpIds.kt:42</ID>
+    <ID>SpacingBetweenDeclarationsWithComments:software.aws.toolkits.jetbrains.core.help.HelpIds.kt:47</ID>
+    <ID>SpacingBetweenDeclarationsWithComments:software.aws.toolkits.jetbrains.core.help.HelpIds.kt:52</ID>
+    <ID>SpacingBetweenDeclarationsWithComments:software.aws.toolkits.jetbrains.core.help.HelpIds.kt:65</ID>
+    <ID>SpacingBetweenDeclarationsWithComments:software.aws.toolkits.jetbrains.services.clouddebug.CloudDebugExecutable.kt:46</ID>
+    <ID>SpacingBetweenDeclarationsWithComments:software.aws.toolkits.jetbrains.services.clouddebug.java.JvmDebuggerSupport.kt:78</ID>
+    <ID>SpacingBetweenDeclarationsWithComments:software.aws.toolkits.jetbrains.services.clouddebug.java.JvmDebuggerSupport.kt:83</ID>
+    <ID>SpacingBetweenDeclarationsWithComments:software.aws.toolkits.jetbrains.services.cloudwatch.logs.insights.DetailedLogRecord.kt:111</ID>
+    <ID>SpacingBetweenDeclarationsWithComments:software.aws.toolkits.jetbrains.services.cloudwatch.logs.insights.DetailedLogRecord.kt:112</ID>
+    <ID>SpacingBetweenDeclarationsWithComments:software.aws.toolkits.jetbrains.services.cloudwatch.logs.insights.DetailedLogRecord.kt:113</ID>
+    <ID>SpacingBetweenDeclarationsWithComments:software.aws.toolkits.jetbrains.services.cloudwatch.logs.insights.InsightsUtils.kt:12</ID>
+    <ID>SpacingBetweenDeclarationsWithComments:software.aws.toolkits.jetbrains.services.lambda.wizard.SchemaCodeGenUtils.kt:13</ID>
+    <ID>SpacingBetweenDeclarationsWithComments:software.aws.toolkits.jetbrains.services.lambda.wizard.SchemaCodeGenUtils.kt:14</ID>
+    <ID>SpacingBetweenDeclarationsWithComments:software.aws.toolkits.jetbrains.services.s3.editor.S3VirtualBucket.kt:41</ID>
+    <ID>SpacingBetweenDeclarationsWithComments:software.aws.toolkits.jetbrains.services.schemas.SchemaViewer.kt:143</ID>
+    <ID>TopLevelPropertyNaming:EventsFetcherTest.kt$private const val nonEmptyMessage = "Second call on the same page must not return anything"</ID>
+    <ID>TopLevelPropertyNaming:EventsFetcherTest.kt$private const val wrongPageMessage = "Wrong list of available pages"</ID>
+    <ID>TopLevelPropertyNaming:RdsResources.kt$// These are the member engine in DBInstance, but it is a string const val mysqlEngineType = "mysql"</ID>
+    <ID>TopLevelPropertyNaming:RdsResources.kt$const val jdbcMysql = "mysql"</ID>
+    <ID>TopLevelPropertyNaming:RdsResources.kt$const val jdbcMysqlAurora = "mysql:aurora"</ID>
+    <ID>TopLevelPropertyNaming:RdsResources.kt$const val jdbcPostgres = "postgresql"</ID>
+    <ID>TopLevelPropertyNaming:RdsResources.kt$const val postgresEngineType = "postgres"</ID>
+    <ID>TopLevelPropertyNaming:SqsUtils.kt$const val sqsPolicyStatementArray = "Statement"</ID>
+    <ID>VariableNaming:DownloadCodeForSchemaDialogTest.kt$DownloadCodeForSchemaDialogTest$private val LANGUAGE = SchemaCodeLangs.JAVA8</ID>
+    <ID>VariableNaming:DownloadCodeForSchemaDialogTest.kt$DownloadCodeForSchemaDialogTest$private val LATEST = "5"</ID>
+    <ID>VariableNaming:DownloadCodeForSchemaDialogTest.kt$DownloadCodeForSchemaDialogTest$private val REGISTRY = "registry"</ID>
+    <ID>VariableNaming:DownloadCodeForSchemaDialogTest.kt$DownloadCodeForSchemaDialogTest$private val SCHEMA = Schema(SCHEMA_NAME, REGISTRY, null)</ID>
+    <ID>VariableNaming:DownloadCodeForSchemaDialogTest.kt$DownloadCodeForSchemaDialogTest$private val SCHEMA_NAME = "schema"</ID>
+    <ID>VariableNaming:DownloadCodeForSchemaDialogTest.kt$DownloadCodeForSchemaDialogTest$private val VERSION = "4"</ID>
+    <ID>VariableNaming:DownloadCodeForSchemaDialogTest.kt$DownloadCodeForSchemaDialogTest$private val VERSIONS = listOf("3", VERSION, LATEST)</ID>
+    <ID>VariableNaming:InsightsQueryTest.kt$InsightsQueryTest$/** * We can't reach into jetbrains-core by design, so copy the default string out of * QueryEditorUtils.kt . If the string changes it needs to change in both places */ private val DEFAULT_INSIGHTS_QUERY_STRING = """fields @timestamp, @message | sort @timestamp desc | limit 20 """</ID>
+    <ID>VariableNaming:NodeJsDebugEndToEndTest.kt$NodeJsDebugEndToEndTest$private val WEB_CONSOLE_JB_REGISTRY_KEY = "js.debugger.webconsole"</ID>
+    <ID>VariableNaming:NodeJsDebuggerSupport.kt$NodeJsDebuggerSupport$private val NODE_DEBUG = "--inspect-brk"</ID>
+    <ID>VariableNaming:NodeJsDebuggerSupport.kt$NodeJsDebuggerSupport$private val NODE_EXECUTABLES = setOf("node", "nodejs")</ID>
+    <ID>VariableNaming:S3BrowserTest.kt$S3BrowserTest$private val S3 = "S3"</ID>
+    <ID>VariableNaming:SchemaCodeDownloaderTest.kt$SchemaCodeDownloaderTest$private lateinit var DESTINATION_FOLDER: String</ID>
+    <ID>VariableNaming:SchemaCodeDownloaderTest.kt$SchemaCodeDownloaderTest$private lateinit var DESTINATION_FOLDER_FILE: File</ID>
+    <ID>VariableNaming:SchemaCodeDownloaderTest.kt$SchemaCodeDownloaderTest$private lateinit var SOURCE_FOLDER: String</ID>
+    <ID>VariableNaming:SchemaCodeDownloaderTest.kt$SchemaCodeDownloaderTest$private lateinit var SOURCE_FOLDER_FILE: File</ID>
+    <ID>VariableNaming:SchemaCodeDownloaderTest.kt$SchemaCodeDownloaderTest$private lateinit var ZIP_FILE: File</ID>
+    <ID>VariableNaming:SchemaCodeDownloaderTest.kt$SchemaCodeDownloaderTest$private lateinit var ZIP_FILE_PATH: String</ID>
+    <ID>VariableNaming:SchemaCodeDownloaderTest.kt$SchemaCodeDownloaderTest$private val FAKE_DESTINATION = "/some/destination/anything/really"</ID>
+    <ID>VariableNaming:SchemaCodeDownloaderTest.kt$SchemaCodeDownloaderTest$private val LANGUAGE = SchemaCodeLangs.JAVA8</ID>
+    <ID>VariableNaming:SchemaCodeDownloaderTest.kt$SchemaCodeDownloaderTest$private val REGISTRY = "registry"</ID>
+    <ID>VariableNaming:SchemaCodeDownloaderTest.kt$SchemaCodeDownloaderTest$private val REQUEST = SchemaCodeDownloadRequestDetails(SCHEMA_SUMMARY, VERSION, LANGUAGE, FAKE_DESTINATION)</ID>
+    <ID>VariableNaming:SchemaCodeDownloaderTest.kt$SchemaCodeDownloaderTest$private val SCHEMA = "schema"</ID>
+    <ID>VariableNaming:SchemaCodeDownloaderTest.kt$SchemaCodeDownloaderTest$private val SCHEMA_SUMMARY = SchemaSummary(SCHEMA, REGISTRY)</ID>
+    <ID>VariableNaming:SchemaCodeDownloaderTest.kt$SchemaCodeDownloaderTest$private val SOME_TEXT = "someText"</ID>
+    <ID>VariableNaming:SchemaCodeDownloaderTest.kt$SchemaCodeDownloaderTest$private val VERSION = "2"</ID>
+    <ID>VariableNaming:SchemaCodeDownloaderTest.kt$SchemaCodeDownloaderTest$private val ZIP_FILE_1 = "File1.java"</ID>
+    <ID>VariableNaming:SchemaCodeDownloaderTest.kt$SchemaCodeDownloaderTest$private val ZIP_FILE_2 = "File2.java"</ID>
+    <ID>VariableNaming:SchemaCodeDownloaderTest.kt$SchemaCodeDownloaderTest$private val ZIP_FILE_SCHEMA_CORE_CODE_FILE_NAME = REQUEST.schemaCoreCodeFileName()</ID>
+    <ID>VariableNaming:SchemaCodeDownloaderTest.kt$SchemaCodeDownloaderTest$private val ZIP_FOLDER_HIERARCHY = "srcDir/comDir/fooBarDir/"</ID>
+    <ID>VariableNaming:SchemaSelectionPanelTest.kt$SchemaSelectionPanelTest$private val AWSToolkitUserAgent = "AWSToolkit"</ID>
+    <ID>VariableNaming:SchemaSelectionPanelTest.kt$SchemaSelectionPanelTest$private val AWS_SCHEMA = File(javaClass.getResource("/awsEventSchema.json.txt").toURI()).readText(Charsets.UTF_8)</ID>
+    <ID>VariableNaming:SchemaSelectionPanelTest.kt$SchemaSelectionPanelTest$private val AWS_SCHEMA_EXPECTED_PACKAGE_NAME = "schema.aws.ec2.ec2instancestatechangenotification"</ID>
+    <ID>VariableNaming:SchemaSelectionPanelTest.kt$SchemaSelectionPanelTest$private val AWS_SCHEMA_ITEM = SchemaSelectionItem.SchemaItem(AWS_SCHEMA_NAME, REGISTRY_NAME)</ID>
+    <ID>VariableNaming:SchemaSelectionPanelTest.kt$SchemaSelectionPanelTest$private val AWS_SCHEMA_NAME = "aws.ec2@EC2InstanceStateChangeNotification"</ID>
+    <ID>VariableNaming:SchemaSelectionPanelTest.kt$SchemaSelectionPanelTest$private val CUSTOMER_UPLOADED_SCHEMA = File(javaClass.getResource("/customerUploadedEventSchema.json.txt").toURI()).readText(Charsets.UTF_8)</ID>
+    <ID>VariableNaming:SchemaSelectionPanelTest.kt$SchemaSelectionPanelTest$private val CUSTOMER_UPLOADED_SCHEMA_EXPECTED_PACKAGE_NAME = "schema.somecustomer_someawesomeschema"</ID>
+    <ID>VariableNaming:SchemaSelectionPanelTest.kt$SchemaSelectionPanelTest$private val CUSTOMER_UPLOADED_SCHEMA_ITEM = SchemaSelectionItem.SchemaItem(CUSTOMER_UPLOADED_SCHEMA_NAME, REGISTRY_NAME)</ID>
+    <ID>VariableNaming:SchemaSelectionPanelTest.kt$SchemaSelectionPanelTest$private val CUSTOMER_UPLOADED_SCHEMA_MULTIPLE_TYPES = File(javaClass.getResource("/customerUploadedEventSchemaMultipleTypes.json.txt").toURI()).readText(Charsets.UTF_8)</ID>
+    <ID>VariableNaming:SchemaSelectionPanelTest.kt$SchemaSelectionPanelTest$private val CUSTOMER_UPLOADED_SCHEMA_MULTIPLE_TYPES_EXPECTED_PACKAGE_NAME = "schema.somecustomer_multipletypes.someotherawesomeschema"</ID>
+    <ID>VariableNaming:SchemaSelectionPanelTest.kt$SchemaSelectionPanelTest$private val CUSTOMER_UPLOADED_SCHEMA_MULTIPLE_TYPES_ITEM = SchemaSelectionItem.SchemaItem(CUSTOMER_UPLOADED_SCHEMA_MULTIPLE_TYPES_NAME, REGISTRY_NAME)</ID>
+    <ID>VariableNaming:SchemaSelectionPanelTest.kt$SchemaSelectionPanelTest$private val CUSTOMER_UPLOADED_SCHEMA_MULTIPLE_TYPES_NAME = "someCustomer.multipleTypes@SomeOtherAwesomeSchema"</ID>
+    <ID>VariableNaming:SchemaSelectionPanelTest.kt$SchemaSelectionPanelTest$private val CUSTOMER_UPLOADED_SCHEMA_NAME = "someCustomer.SomeAwesomeSchema"</ID>
+    <ID>VariableNaming:SchemaSelectionPanelTest.kt$SchemaSelectionPanelTest$private val PARTNER_SCHEMA = File(javaClass.getResource("/partnerEventSchema.json.txt").toURI()).readText(Charsets.UTF_8)</ID>
+    <ID>VariableNaming:SchemaSelectionPanelTest.kt$SchemaSelectionPanelTest$private val PARTNER_SCHEMA_EXPECTED_PACKAGE_NAME = "schema.aws.partner.mongodb_com_1234567_tickets.ticket_created"</ID>
+    <ID>VariableNaming:SchemaSelectionPanelTest.kt$SchemaSelectionPanelTest$private val PARTNER_SCHEMA_ITEM = SchemaSelectionItem.SchemaItem(PARTNER_SCHEMA_NAME, REGISTRY_NAME)</ID>
+    <ID>VariableNaming:SchemaSelectionPanelTest.kt$SchemaSelectionPanelTest$private val PARTNER_SCHEMA_NAME = "aws.partner-mongodb.com/1234567-tickets@Ticket.Created"</ID>
+    <ID>VariableNaming:SchemaSelectionPanelTest.kt$SchemaSelectionPanelTest$private val REGISTRY_ITEM = SchemaSelectionItem.RegistryItem(REGISTRY_NAME)</ID>
+    <ID>VariableNaming:SchemaSelectionPanelTest.kt$SchemaSelectionPanelTest$private val REGISTRY_NAME = "Registry"</ID>
+    <ID>VariableNaming:SchemaSelectionPanelTest.kt$SchemaSelectionPanelTest$private val SCHEMA_VERSION = "1"</ID>
+    <ID>VariableNaming:SchemasSearchDialogBase.kt$SchemasSearchDialogBase$private val DEFAULT_PADDING = 10</ID>
+    <ID>VariableNaming:SchemasSearchDialogBase.kt$SchemasSearchDialogBase$private val HIGHLIGHT_COLOR = Color.YELLOW</ID>
+    <ID>VariableNaming:SchemasSearchDialogBase.kt$SchemasSearchDialogBase$private val SEARCH_DELAY_MS = 300L</ID>
+    <ID>VariableNaming:SchemasViewerTest.kt$SchemasViewerTest$private val AWS_EVENT_SCHEMA_PRETTY = File(javaClass.getResource("/awsEventSchemaPretty.json.txt").toURI()).readText(Charsets.UTF_8)</ID>
+    <ID>VariableNaming:SchemasViewerTest.kt$SchemasViewerTest$private val AWS_EVENT_SCHEMA_RAW = File(javaClass.getResource("/awsEventSchemaRaw.json.txt").toURI()).readText(Charsets.UTF_8)</ID>
+    <ID>VariableNaming:SchemasViewerTest.kt$SchemasViewerTest$private val CREDENTIAL_IDENTIFIER = MockAwsConnectionManager.getInstance(projectRule.project).activeCredentialProvider.displayName</ID>
+    <ID>VariableNaming:SchemasViewerTest.kt$SchemasViewerTest$private val REGION = MockAwsConnectionManager.getInstance(projectRule.project).activeRegion.id</ID>
+    <ID>VariableNaming:SchemasViewerTest.kt$SchemasViewerTest$private val REGISTRY = "registry"</ID>
+    <ID>VariableNaming:SchemasViewerTest.kt$SchemasViewerTest$private val SCHEMA = "schema"</ID>
+    <ID>VariableNaming:SchemasViewerTest.kt$SchemasViewerTest$private val SCHEMA_SPECIAL_CHARACTER = "schema:awesome"</ID>
+    <ID>VariableNaming:SchemasViewerTest.kt$SchemasViewerTest$private val SCHEMA_SPECIAL_CHARACTER_SANITIZED = "schema_awesome"</ID>
+    <ID>VariableNaming:SchemasViewerTest.kt$SchemasViewerTest$private val SCHEMA_SUPER_LONG_NAME = "schema12345678901234567890123456789012345678901234567890123456789012345678901234567890123456789012345678901234567890123456789012345678901234567890" + "12345678901234567890123456789012345678901234567890123456789012345678901234567890"</ID>
+    <ID>VariableNaming:SchemasViewerTest.kt$SchemasViewerTest$private val VERSION = "2"</ID>
+  </CurrentIssues>
+</SmellBaseline>

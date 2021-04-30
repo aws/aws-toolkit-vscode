@@ -10,6 +10,7 @@ include("jetbrains-ultimate")
 include("jetbrains-rider")
 include("intellij")
 include("ui-tests")
+include("detekt-rules")
 
 plugins {
     id("com.gradle.enterprise").version("3.4.1")

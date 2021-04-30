@@ -28,9 +28,9 @@ class LambdaSampleEventProvider(private val resourceResolver: RemoteResourceReso
         if (value != null) {
             return CompletableFuture.completedFuture(value)
         } else {
-            return resourceResolver.resolve(LambdaSampleEventManifestResource).thenApply {
-                val resolved = mapper.readValue<LambdaSampleEventManifest>(it.inputStream()).requests.map {
-                    LambdaSampleEvent(it.name) { resourceResolver.resolve(LambdaSampleEventResource(it.filename)).thenApply { it?.readText() } }
+            return resourceResolver.resolve(LambdaSampleEventManifestResource).thenApply { resource ->
+                val resolved = mapper.readValue<LambdaSampleEventManifest>(resource.inputStream()).requests.map { request ->
+                    LambdaSampleEvent(request.name) { resourceResolver.resolve(LambdaSampleEventResource(request.filename)).thenApply { it?.readText() } }
                 }
                 manifest.set(resolved)
                 resolved

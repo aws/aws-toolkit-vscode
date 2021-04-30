@@ -36,7 +36,7 @@ coverage:
 comment: false
 
 ignore:
-  - "ktlint-rules/**/*"
+  - "detekt-rules/**/*"
   - "resources/**/*"
   - "sdk-codegen/**/*"
   - "jetbrains-rider/**/*.Generated.kt"
