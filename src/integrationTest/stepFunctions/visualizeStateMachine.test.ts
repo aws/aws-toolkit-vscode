@@ -10,6 +10,7 @@ import * as vscode from 'vscode'
 import { MessageObject } from '../../stepFunctions/commands/visualizeStateMachine/aslVisualization'
 import { makeTemporaryToolkitFolder } from '../../shared/filesystemUtilities'
 import { spy } from 'sinon'
+import { closeAllEditors } from '../../shared/utilities/vsCodeUtils'
 
 const sampleStateMachine = `
 	 {
@@ -110,7 +111,7 @@ describe('visualizeStateMachine', async function () {
 
     after(async function () {
         // Test suite cleans up after itself
-        await vscode.commands.executeCommand('workbench.action.closeAllEditors')
+        await closeAllEditors()
     })
 
     it('opens up a webview when there is an active text editor', async function () {
@@ -205,7 +206,7 @@ describe('visualizeStateMachine', async function () {
 
     it('throws an error if no active text editor is open', async function () {
         // Make sure nothing is open from previous tests.
-        await vscode.commands.executeCommand('workbench.action.closeAllEditors')
+        await closeAllEditors()
 
         await assert.rejects(async () => {
             await vscode.commands.executeCommand<vscode.WebviewPanel>('aws.previewStateMachine')

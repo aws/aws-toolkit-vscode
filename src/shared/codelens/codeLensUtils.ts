@@ -24,10 +24,11 @@ import * as csharpCodelens from './csharpCodeLensProvider'
 import * as javaCodelens from './javaCodeLensProvider'
 import * as pythonCodelens from './pythonCodeLensProvider'
 import * as tsCodelens from './typescriptCodeLensProvider'
+import * as goCodelens from './goCodeLensProvider'
 
-export type Language = 'python' | 'javascript' | 'csharp' | 'java'
+export type Language = 'python' | 'javascript' | 'csharp' | 'go' | 'java'
 
-export const STATE_NAME_SUPPRESS_CODELENSES = 'sam.suppressCodeLenses'
+export const STATE_NAME_ENABLE_CODELENSES = 'sam.enableCodeLenses'
 
 export async function makeCodeLenses({
     document,
@@ -309,7 +310,7 @@ export async function makePythonCodeLensProvider(
             token: vscode.CancellationToken,
             forceProvide?: boolean
         ): Promise<vscode.CodeLens[]> => {
-            if (forceProvide || !configuration.readSetting<boolean>(STATE_NAME_SUPPRESS_CODELENSES)) {
+            if (forceProvide || configuration.readSetting<boolean>(STATE_NAME_ENABLE_CODELENSES)) {
                 // Try to activate the Python Extension before requesting symbols from a python file
                 await pythonDebug.activatePythonExtensionIfInstalled()
                 if (token.isCancellationRequested) {
@@ -339,7 +340,7 @@ export async function makeCSharpCodeLensProvider(
             token: vscode.CancellationToken,
             forceProvide?: boolean
         ): Promise<vscode.CodeLens[]> => {
-            if (forceProvide || !configuration.readSetting<boolean>(STATE_NAME_SUPPRESS_CODELENSES)) {
+            if (forceProvide || configuration.readSetting<boolean>(STATE_NAME_ENABLE_CODELENSES)) {
                 const handlers: LambdaHandlerCandidate[] = await csharpCodelens.getLambdaHandlerCandidates(document)
                 return makeCodeLenses({
                     document,
@@ -361,13 +362,37 @@ export function makeTypescriptCodeLensProvider(configuration: SettingsConfigurat
             token: vscode.CancellationToken,
             forceProvide?: boolean
         ): Promise<vscode.CodeLens[]> => {
-            if (forceProvide || !configuration.readSetting<boolean>(STATE_NAME_SUPPRESS_CODELENSES)) {
+            if (forceProvide || configuration.readSetting<boolean>(STATE_NAME_ENABLE_CODELENSES)) {
                 const handlers = await tsCodelens.getLambdaHandlerCandidates(document)
                 return makeCodeLenses({
                     document,
                     handlers,
                     token,
                     runtimeFamily: RuntimeFamily.NodeJS,
+                })
+            }
+
+            return []
+        },
+    }
+}
+
+export async function makeGoCodeLensProvider(
+    configuration: SettingsConfiguration
+): Promise<OverridableCodeLensProvider> {
+    return {
+        provideCodeLenses: async (
+            document: vscode.TextDocument,
+            token: vscode.CancellationToken,
+            forceProvide?: boolean
+        ): Promise<vscode.CodeLens[]> => {
+            if (forceProvide || configuration.readSetting<boolean>(STATE_NAME_ENABLE_CODELENSES)) {
+                const handlers = await goCodelens.getLambdaHandlerCandidates(document)
+                return makeCodeLenses({
+                    document,
+                    handlers,
+                    token,
+                    runtimeFamily: RuntimeFamily.Go,
                 })
             }
 
@@ -385,7 +410,7 @@ export async function makeJavaCodeLensProvider(
             token: vscode.CancellationToken,
             forceProvide?: boolean
         ): Promise<vscode.CodeLens[]> => {
-            if (forceProvide || !configuration.readSetting<boolean>(STATE_NAME_SUPPRESS_CODELENSES)) {
+            if (forceProvide || configuration.readSetting<boolean>(STATE_NAME_ENABLE_CODELENSES)) {
                 // Try to activate the Java Extension before requesting symbols from a java file
                 await javaDebug.activateJavaExtensionIfInstalled()
                 if (token.isCancellationRequested) {

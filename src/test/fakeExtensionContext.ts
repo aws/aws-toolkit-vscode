@@ -16,7 +16,7 @@ import { MockOutputChannel } from './mockOutputChannel'
 import { SamCliContext } from '../shared/sam/cli/samCliContext'
 import {
     MINIMUM_SAM_CLI_VERSION_INCLUSIVE,
-    MINIMUM_SAM_CLI_VERSION_INCLUSIVE_FOR_IMAGE_SUPPORT,
+    MINIMUM_SAM_CLI_VERSION_INCLUSIVE_FOR_GO_SUPPORT,
     SamCliValidator,
     SamCliValidatorResult,
     SamCliVersionValidation,
@@ -98,7 +98,7 @@ export class FakeExtensionContext implements vscode.ExtensionContext {
                         return new FakeChildProcessResult({})
                     }
                 ),
-                validator: new FakeSamCliValidator(MINIMUM_SAM_CLI_VERSION_INCLUSIVE_FOR_IMAGE_SUPPORT),
+                validator: new FakeSamCliValidator(MINIMUM_SAM_CLI_VERSION_INCLUSIVE_FOR_GO_SUPPORT),
             } as SamCliContext
         }
         const regionProvider = new FakeRegionProvider()

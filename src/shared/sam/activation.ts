@@ -17,11 +17,12 @@ import * as codelensUtils from '../codelens/codeLensUtils'
 import * as csLensProvider from '../codelens/csharpCodeLensProvider'
 import * as javaLensProvider from '../codelens/javaCodeLensProvider'
 import * as pyLensProvider from '../codelens/pythonCodeLensProvider'
+import * as goLensProvider from '../codelens/goCodeLensProvider'
 import { SamTemplateCodeLensProvider } from '../codelens/samTemplateCodeLensProvider'
 import * as jsLensProvider from '../codelens/typescriptCodeLensProvider'
 import { ext } from '../extensionGlobals'
 import { ExtContext, VSCODE_EXTENSION_ID } from '../extensions'
-import { getIdeProperties, getIdeType, IDE } from '../extensionUtilities'
+import { getIdeProperties, getIdeType, IDE, isCloud9 } from '../extensionUtilities'
 import { getLogger } from '../logger/logger'
 import { SettingsConfiguration } from '../settingsConfiguration'
 import { TelemetryService } from '../telemetry/telemetryService'
@@ -126,8 +127,24 @@ async function activateCodeLensProviders(
     const disposables: vscode.Disposable[] = []
     const tsCodeLensProvider = codelensUtils.makeTypescriptCodeLensProvider(configuration)
     const pyCodeLensProvider = await codelensUtils.makePythonCodeLensProvider(configuration)
-    const csCodeLensProvider = await codelensUtils.makeCSharpCodeLensProvider(configuration)
     const javaCodeLensProvider = await codelensUtils.makeJavaCodeLensProvider(configuration)
+    const csCodeLensProvider = await codelensUtils.makeCSharpCodeLensProvider(configuration)
+    const goCodeLensProvider = await codelensUtils.makeGoCodeLensProvider(configuration)
+
+    const supportedLanguages: {
+        [language: string]: codelensUtils.OverridableCodeLensProvider
+    } = {
+        [jsLensProvider.JAVASCRIPT_LANGUAGE]: tsCodeLensProvider,
+        [pyLensProvider.PYTHON_LANGUAGE]: pyCodeLensProvider,
+    }
+
+    if (!isCloud9()) {
+        supportedLanguages[javaLensProvider.JAVA_LANGUAGE] = javaCodeLensProvider
+        supportedLanguages[csLensProvider.CSHARP_LANGUAGE] = csCodeLensProvider
+        supportedLanguages[goLensProvider.GO_LANGUAGE] = goCodeLensProvider
+    }
+
+    await vscode.commands.executeCommand('setContext', 'samSupportedLanguages', supportedLanguages)
 
     disposables.push(
         vscode.languages.registerCodeLensProvider(
@@ -143,23 +160,21 @@ async function activateCodeLensProviders(
     )
 
     disposables.push(vscode.languages.registerCodeLensProvider(jsLensProvider.JAVASCRIPT_ALL_FILES, tsCodeLensProvider))
-
     disposables.push(vscode.languages.registerCodeLensProvider(pyLensProvider.PYTHON_ALLFILES, pyCodeLensProvider))
-
-    disposables.push(vscode.languages.registerCodeLensProvider(csLensProvider.CSHARP_ALLFILES, csCodeLensProvider))
-
     disposables.push(vscode.languages.registerCodeLensProvider(javaLensProvider.JAVA_ALLFILES, javaCodeLensProvider))
+    disposables.push(vscode.languages.registerCodeLensProvider(csLensProvider.CSHARP_ALLFILES, csCodeLensProvider))
+    disposables.push(vscode.languages.registerCodeLensProvider(goLensProvider.GO_ALLFILES, goCodeLensProvider))
 
     disposables.push(
         vscode.commands.registerCommand('aws.toggleSamCodeLenses', () => {
-            configuration.readSetting<boolean>(codelensUtils.STATE_NAME_SUPPRESS_CODELENSES)
+            configuration.readSetting<boolean>(codelensUtils.STATE_NAME_ENABLE_CODELENSES)
                 ? configuration.writeSetting(
-                      codelensUtils.STATE_NAME_SUPPRESS_CODELENSES,
+                      codelensUtils.STATE_NAME_ENABLE_CODELENSES,
                       false,
                       vscode.ConfigurationTarget.Global
                   )
                 : configuration.writeSetting(
-                      codelensUtils.STATE_NAME_SUPPRESS_CODELENSES,
+                      codelensUtils.STATE_NAME_ENABLE_CODELENSES,
                       true,
                       vscode.ConfigurationTarget.Global
                   )
@@ -167,7 +182,8 @@ async function activateCodeLensProviders(
     )
 
     /**
-     * This should only be callable when the current editor is a JS, Python, C#, or Java editor.
+     * This should only be callable when the current editor is a language supported by our SAM implementation
+     * (see package.json's when clause for aws.addSamDebugConfig).
      * Error blocks should never be triggered, but messages will be provided regardless (I guess a user could tie this to a keyboard shortcut...)
      */
     disposables.push(
@@ -182,16 +198,8 @@ async function activateCodeLensProviders(
                 return
             }
             const document = activeEditor.document
-            let provider: codelensUtils.OverridableCodeLensProvider | undefined
-            if (document.languageId === 'javascript') {
-                provider = tsCodeLensProvider
-            } else if (document.languageId === 'python') {
-                provider = pyCodeLensProvider
-            } else if (document.languageId === 'csharp') {
-                provider = csCodeLensProvider
-            } else if (document.languageId === 'java') {
-                provider = javaCodeLensProvider
-            } else {
+            const provider = supportedLanguages[document.languageId]
+            if (!provider) {
                 getLogger().error(
                     `aws.addSamDebugConfig called on a document with an invalid language: ${document.languageId}`
                 )
@@ -218,6 +226,7 @@ async function activateCodeLensProviders(
         await registry.addWatchPattern(pyLensProvider.PYTHON_BASE_PATTERN)
         await registry.addWatchPattern(jsLensProvider.JAVASCRIPT_BASE_PATTERN)
         await registry.addWatchPattern(csLensProvider.CSHARP_BASE_PATTERN)
+        await registry.addWatchPattern(goLensProvider.GO_BASE_PATTERN)
         await registry.addWatchPattern(javaLensProvider.GRADLE_BASE_PATTERN)
         await registry.addWatchPattern(javaLensProvider.MAVEN_BASE_PATTERN)
 

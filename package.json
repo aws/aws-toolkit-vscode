@@ -2,7 +2,7 @@
     "name": "aws-toolkit-vscode",
     "displayName": "AWS Toolkit",
     "description": "An extension for working with Amazon Web Services",
-    "version": "1.24.0-SNAPSHOT",
+    "version": "1.25.0-SNAPSHOT",
     "publisher": "amazonwebservices",
     "license": "Apache-2.0",
     "repository": {
@@ -111,11 +111,6 @@
                     "default": 30000,
                     "markdownDescription": "%AWS.configuration.description.samcli.debug.attach.timeout%"
                 },
-                "aws.cdk.explorer.enabled": {
-                    "type": "boolean",
-                    "default": true,
-                    "description": "%AWS.configuration.description.cdk.explorer.enabled%"
-                },
                 "aws.logLevel": {
                     "type": "string",
                     "default": "info",
@@ -167,9 +162,10 @@
                     "description": "%AWS.samcli.deploy.bucket.recentlyUsed%",
                     "default": []
                 },
-                "aws.sam.suppressCodeLenses": {
+                "aws.sam.enableCodeLenses": {
                     "type": "boolean",
-                    "description": "%AWS.configuration.suppressCodeLenses%"
+                    "description": "%AWS.configuration.enableCodeLenses%",
+                    "default": "true"
                 }
             }
         },
@@ -558,7 +554,7 @@
                 {
                     "id": "aws.cdk.explorer",
                     "name": "%AWS.cdk.explorerTitle%",
-                    "when": "config.aws.cdk.explorer.enabled"
+                    "when": "!isCloud9"
                 }
             ]
         },
@@ -746,7 +742,7 @@
                 },
                 {
                     "command": "aws.addSamDebugConfig",
-                    "when": "editorLangId == javascript || editorLangId == python || editorLangId == java || editorLangId == csharp"
+                    "when": "editorLangId in samSupportedLanguages"
                 }
             ],
             "editor/title": [
@@ -1588,7 +1584,8 @@
         "mocha": "^7.1.1",
         "mocha-junit-reporter": "^1.23.3",
         "mocha-multi-reporters": "^1.1.7",
-        "prettier": "^2.1.2",
+        "prettier": "^2.2.1",
+        "prettier-plugin-sh": "^0.6.1",
         "pretty-quick": "^3.1.0",
         "readline-sync": "^1.4.9",
         "remap-istanbul": "^0.12.0",
