@@ -30,7 +30,7 @@ export class LoginManager {
      * @param provider  Credentials provider id
      */
     public async login(args: { passive: boolean; providerId: CredentialsProviderId }): Promise<void> {
-        let provider : CredentialsProvider | undefined
+        let provider: CredentialsProvider | undefined
         try {
             provider = await CredentialsProviderManager.getInstance().getCredentialsProvider(args.providerId)
             if (!provider) {
@@ -68,11 +68,10 @@ export class LoginManager {
             notifyUserInvalidCredentials(args.providerId)
         } finally {
             const credType = provider?.getCredentialsType2()
-            if (!args.passive) {
-                this.recordAwsSetCredentialsFn({
-                    credentialType: credType
-                })
-            }
+            this.recordAwsSetCredentialsFn({
+                passive: args.passive,
+                credentialType: credType,
+            })
         }
     }
 

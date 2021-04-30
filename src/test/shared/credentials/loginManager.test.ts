@@ -59,12 +59,12 @@ describe('LoginManager', async function () {
         sandbox.restore()
     })
 
-    it('passive login does NOT send telemetry', async function () {
+    it('passive login sends telemetry', async function () {
         const setCredentialsStub = sandbox.stub(awsContext, 'setCredentials')
         await loginManager.login({ passive: true, providerId: sampleCredentialsProviderId })
 
         assert.strictEqual(setCredentialsStub.callCount, 1)
-        assert.strictEqual(recordAwsSetCredentialsSpy.calledOnce, false)
+        assert.strictEqual(recordAwsSetCredentialsSpy.calledOnce, true)
     })
 
     it('non-passive login sends telemetry', async function () {
@@ -102,7 +102,7 @@ describe('LoginManager', async function () {
 
         await loginManager.login({ passive: true, providerId: sampleCredentialsProviderId })
         assert.strictEqual(setCredentialsStub.callCount, 1, 'Expected awsContext setCredentials to be called once')
-        assert.strictEqual(recordAwsSetCredentialsSpy.calledOnce, false)
+        assert.strictEqual(recordAwsSetCredentialsSpy.calledOnce, true)
     })
 
     it('logs out if an account Id could not be determined', async function () {
