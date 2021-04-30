@@ -73,7 +73,9 @@
         "onLanguage:python",
         "onLanguage:csharp",
         "onLanguage:yaml",
-        "onCommand:aws.launchConfigForm"
+        "onCommand:aws.launchConfigForm",
+        "onCommand:aws.toggleSamCodeLenses",
+        "onCommand:aws.addSamDebugConfig"
     ],
     "main": "./extensionMain",
     "contributes": {
@@ -159,6 +161,11 @@
                     "type": "object",
                     "description": "%AWS.samcli.deploy.bucket.recentlyUsed%",
                     "default": []
+                },
+                "aws.sam.enableCodeLenses": {
+                    "type": "boolean",
+                    "description": "%AWS.configuration.enableCodeLenses%",
+                    "default": "true"
                 }
             }
         },
@@ -727,6 +734,10 @@
                 {
                     "command": "aws.cdk.help",
                     "when": "!isCloud9"
+                },
+                {
+                    "command": "aws.addSamDebugConfig",
+                    "when": "editorLangId in samSupportedLanguages"
                 }
             ],
             "editor/title": [
@@ -1396,6 +1407,16 @@
                 "title": "%AWS.command.saveCurrentLogStreamContent%",
                 "category": "AWS",
                 "icon": "$(save-as)"
+            },
+            {
+                "command": "aws.addSamDebugConfig",
+                "title": "%AWS.command.addSamDebugConfig%",
+                "category": "AWS"
+            },
+            {
+                "command": "aws.toggleSamCodeLenses",
+                "title": "%AWS.command.toggleSamCodeLenses%",
+                "category": "AWS"
             }
         ],
         "jsonValidation": [
