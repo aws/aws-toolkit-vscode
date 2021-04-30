@@ -6,6 +6,7 @@
 import * as assert from 'assert'
 import * as FakeTimers from '@sinonjs/fake-timers'
 import * as timeoutUtils from '../../../shared/utilities/timeoutUtils'
+import { tickPromise } from '../../../test/testUtil'
 
 describe('timeoutUtils', async function () {
     let clock: FakeTimers.InstalledClock
@@ -50,16 +51,25 @@ describe('timeoutUtils', async function () {
             clock.tick(timerLengthMs + 1)
             await assert.rejects(
                 shortTimer.timer,
-                new Error(timeoutUtils.TIMEOUT_ERROR_MESSAGE),
+                new Error(timeoutUtils.TIMEOUT_EXPIRED_MESSAGE),
                 'Timer did not reject due to timeout'
             )
+        })
+
+        it('expiration error does not happen when refreshing a completed timer', async function () {
+            const timerLengthMs = 10
+            const shortTimer = new timeoutUtils.Timeout(timerLengthMs)
+            shortTimer.complete()
+            clock.tick(timerLengthMs + 1)
+            shortTimer.refresh()
+            await tickPromise(assert.doesNotReject(shortTimer.timer), clock, timerLengthMs + 1)
         })
 
         it('successfully kills active timers', async function () {
             const longTimer = new timeoutUtils.Timeout(300)
             // make sure this is an active Promise
             assert.strictEqual(longTimer.timer instanceof Promise, true)
-            longTimer.killTimer()
+            longTimer.complete()
             clock.tick(400)
 
             // if the timer was not killed, promise will reject
@@ -71,6 +81,17 @@ describe('timeoutUtils', async function () {
             const longTimer = new timeoutUtils.Timeout(checkTimerMs * 6)
 
             // Simulate a small amount of time, then measure elapsed time
+            clock.tick(checkTimerMs)
+
+            assert.strictEqual(longTimer.elapsedTime, checkTimerMs)
+        })
+
+        it('correctly reports an elapsed time after completion', async function () {
+            const checkTimerMs = 50
+            const longTimer = new timeoutUtils.Timeout(checkTimerMs * 6)
+
+            clock.tick(checkTimerMs)
+            longTimer.complete()
             clock.tick(checkTimerMs)
 
             assert.strictEqual(longTimer.elapsedTime, checkTimerMs)
@@ -97,7 +118,7 @@ describe('timeoutUtils', async function () {
             clock.tick(5)
             longTimer.refresh()
             clock.tick(6)
-            longTimer.killTimer()
+            longTimer.complete()
             clock.tick(10)
             await longTimer.timer
         })
@@ -230,6 +251,82 @@ describe('timeoutUtils', async function () {
                 truthy: true,
             })
             assert.strictEqual(result, undefined)
+        })
+    })
+
+    describe('waitTimeout', async function () {
+        let clock: FakeTimers.InstalledClock
+
+        before(function () {
+            clock = FakeTimers.install()
+        })
+
+        after(function () {
+            clock.uninstall()
+        })
+
+        afterEach(function () {
+            clock.reset()
+        })
+
+        async function testFunction(delay: number = 500, error?: Error) {
+            await new Promise(r => setTimeout(r, delay))
+
+            if (error) {
+                throw error
+            }
+
+            return 'test'
+        }
+
+        it('triggers "onExpire" callback', async function () {
+            const timeout = new timeoutUtils.Timeout(200)
+            const timedPromise = timeoutUtils.waitTimeout(testFunction(), timeout, { onExpire: () => 'expire' })
+            clock.tick(300)
+            assert.strictEqual(await timedPromise, 'expire')
+        })
+
+        it('triggers "onCancel" callback', async function () {
+            const timeout = new timeoutUtils.Timeout(400)
+            const timedPromise = timeoutUtils.waitTimeout(testFunction(), timeout, { onCancel: () => 'cancel' })
+            clock.tick(200)
+            timeout.complete(true)
+            assert.strictEqual(await timedPromise, 'cancel')
+        })
+
+        it('propagates exception from function', async function () {
+            const timeout = new timeoutUtils.Timeout(400)
+            const testError = new Error('test error')
+            const timedPromise = timeoutUtils.waitTimeout(testFunction(200, testError), timeout)
+            clock.tick(300)
+            await assert.rejects(timedPromise, testError)
+        })
+
+        it('timer does not reject when function finishes in time', async function () {
+            const timeout = new timeoutUtils.Timeout(400)
+            const timedPromise = timeoutUtils.waitTimeout(testFunction(200), timeout)
+            clock.tick(300)
+            timeout.complete()
+            clock.tick(200)
+            await assert.doesNotReject(timedPromise)
+        })
+
+        it('"allowUndefined" option set to false with undefined resolve throws error', async function () {
+            const timeout = new timeoutUtils.Timeout(400)
+            const timedPromise = timeoutUtils.waitTimeout(testFunction(500), timeout, { allowUndefined: false })
+            clock.tick(300)
+            timeout.complete() // Promise now resolves undefined
+            clock.tick(200)
+            await assert.rejects(timedPromise, new Error(timeoutUtils.TIMEOUT_UNEXPECTED_RESOLVE))
+        })
+
+        it('"completeTimeout" option set to false throws expired error', async function () {
+            const timeout = new timeoutUtils.Timeout(800)
+            const timedPromise = timeoutUtils.waitTimeout(testFunction(500), timeout, { completeTimeout: false })
+            clock.tick(600)
+            await timedPromise
+            clock.tick(300)
+            await assert.rejects(timeout.timer, new Error(timeoutUtils.TIMEOUT_EXPIRED_MESSAGE))
         })
     })
 })

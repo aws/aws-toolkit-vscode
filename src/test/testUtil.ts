@@ -7,6 +7,7 @@ import * as assert from 'assert'
 import * as path from 'path'
 import * as vscode from 'vscode'
 import * as fsextra from 'fs-extra'
+import * as FakeTimers from '@sinonjs/fake-timers'
 
 import * as pathutil from '../shared/utilities/pathUtils'
 import { makeTemporaryToolkitFolder } from '../shared/filesystemUtilities'
@@ -75,4 +76,10 @@ export function assertEqualPaths(actual: string, expected: string, message?: str
 export function assertFileText(file: string, expected: string, message?: string | Error) {
     const actualContents = fsextra.readFileSync(file, 'utf-8')
     assert.strictEqual(actualContents, expected, message)
+}
+
+/** A lot of code will create a Promise, tick the clock, then wait for resolution. This function turns 3 lines into 1. */
+export async function tickPromise<T>(promise: Promise<T>, clock: FakeTimers.InstalledClock, t: number): Promise<T> {
+    clock.tick(t)
+    return await promise
 }

@@ -8,7 +8,7 @@ import { Profile } from '../../shared/credentials/credentialsFile'
 import { getLogger } from '../../shared/logger'
 import { getStringHash } from '../../shared/utilities/textUtilities'
 import { getMfaTokenFromUser } from '../credentialsCreator'
-import { hasProfileProperty } from '../credentialsUtilities'
+import { hasProfileProperty, resolveProviderWithCancel } from '../credentialsUtilities'
 import { SSO_PROFILE_PROPERTIES, validateSsoProfile } from '../sso/sso'
 import { DiskCache } from '../sso/diskCache'
 import { SsoAccessTokenProvider } from '../sso/ssoAccessTokenProvider'
@@ -129,8 +129,7 @@ export class SharedCredentialsProvider implements CredentialsProvider {
                 return await ssoCredentialProvider.refreshCredentials()
             }
             const provider = new AWS.CredentialProviderChain([this.makeCredentialsProvider()])
-
-            return await provider.resolvePromise()
+            return await resolveProviderWithCancel(this.profileName, provider.resolvePromise())
         } finally {
             // Profiles with references involving non-aws partitions need help getting the right STS endpoint
             AWS.config.sts = originalStsConfiguration
