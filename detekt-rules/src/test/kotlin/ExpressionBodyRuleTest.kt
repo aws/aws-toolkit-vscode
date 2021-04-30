@@ -1,13 +1,10 @@
-// Copyright 2019 Amazon.com, Inc. or its affiliates. All Rights Reserved.
+// Copyright 2021 Amazon.com, Inc. or its affiliates. All Rights Reserved.
 // SPDX-License-Identifier: Apache-2.0
 
-package software.aws.toolkits.gradle.ktlint.rules
-
-import com.pinterest.ktlint.core.LintError
-import com.pinterest.ktlint.test.lint
+import io.gitlab.arturbosch.detekt.test.lint
 import org.assertj.core.api.Assertions.assertThat
-import org.intellij.lang.annotations.Language
 import org.junit.Test
+import software.aws.toolkits.gradle.detekt.rules.ExpressionBodyRule
 
 class ExpressionBodyRuleTest {
 
@@ -15,121 +12,106 @@ class ExpressionBodyRuleTest {
 
     @Test
     fun singleLineStatementsShouldBeMarkedAsExpressionBody() {
-        assertExpected(
-            """
+        val code = """
             private fun hello(): String {
                 return "hello"
             }
-        """,
-            1 to 1
-        )
+        """.trimIndent()
+        assertThat(rule.lint(code)).hasOnlyOneElementSatisfying {
+            it.id == "ExpressionBody" && it.message == "Use expression body instead of one line return"
+        }
     }
 
     @Test
     fun complexStatementsStillAreMarked() {
-        assertExpected(
-            """
+        val code = """
             fun hello(): List<String> {
                 return blah().map { it.displayName() }
             }
-        """,
-            1 to 1
-        )
+        """.trimIndent()
+        assertThat(rule.lint(code)).hasOnlyOneElementSatisfying {
+            it.id == "ExpressionBody" && it.message == "Use expression body instead of one line return"
+        }
     }
 
     @Test
     fun nonReturningMethod() {
-
-        assertExpected(
-            """
+        val code = """
             fun nonReturningMethod() {
                 blah()
             }
-        """
-        )
+        """.trimIndent()
+        assertThat(rule.lint(code)).isEmpty()
     }
 
     @Test
     fun multiLineReturningMethod() {
-        assertExpected(
-            """
+        val code = """
             fun multiLineReturningMethod(): String {
                 val blah = blah()
                 return blah
             }
-        """
-        )
+        """.trimIndent()
+        assertThat(rule.lint(code)).isEmpty()
     }
 
     @Test
     fun ifStatementsDontCount() {
-        assertExpected(
-            """
+        val code = """
             fun ifStatementsDontCount(): String {
                 if (blah) return ""
                 return blah
             }
-        """
-        )
+        """.trimIndent()
+        assertThat(rule.lint(code)).isEmpty()
     }
 
     @Test
     fun elvisOperator() {
-        assertExpected(
-            """
+        val code = """
             fun elvisOperator(): String? {
                 blah ?: return null
                 return ""
             }
-        """
-        )
+        """.trimIndent()
+        assertThat(rule.lint(code)).isEmpty()
     }
 
     @Test
     fun elvisOperatorNonReturn() {
-        assertExpected(
-            """
+        val code = """
             fun elvisOperatorNonReturn() {
                 blah ?: return
                 blah2()
             }
-        """
-        )
+        """.trimIndent()
+        assertThat(rule.lint(code)).isEmpty()
     }
 
     @Test
     fun commentsAreIgnored() {
-        assertExpected(
-            """
+        val code = """
             fun commentsAreIgnored(): String {
               //returning something
               return blah()
             }
-        """,
-            1 to 1
-        )
+        """.trimIndent()
+        assertThat(rule.lint(code))
+            .hasOnlyOneElementSatisfying {
+                it.id == "ExpressionBody" && it.message == "Use expression body instead of one line return"
+            }
     }
 
     @Test
     fun emptyBlockIsIgnored() {
-        assertExpected("fun blah() {}")
+        val code = "fun blah() {}"
+        assertThat(rule.lint(code)).isEmpty()
     }
 
     @Test
     fun expressionStatementsAreIgnored() {
-        assertExpected("fun blah() = \"hello\"")
-    }
-
-    private fun assertExpected(@Language("kotlin") kotlinText: String, vararg expectedErrors: Pair<Int, Int>) {
-        assertThat(rule.lint(kotlinText.trimIndent())).containsExactly(
-            *expectedErrors.map {
-                LintError(
-                    it.first,
-                    it.second,
-                    "expression-body",
-                    "Use expression body instead of one line return"
-                )
-            }.toTypedArray()
-        )
+        val code = "fun blah() = \"hello\""
+        assertThat(rule.lint(code)).isEmpty()
     }
 }
+

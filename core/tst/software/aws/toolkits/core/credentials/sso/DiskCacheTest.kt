@@ -21,8 +21,6 @@ import java.time.ZonedDateTime
 import java.time.format.DateTimeFormatter
 import java.time.temporal.ChronoUnit
 
-/* ktlint-disable parameter-list-wrapping */
-// TODO  bugs in parameter list wrapping in our multiline strings, https://github.com/pinterest/ktlint/issues/859
 class DiskCacheTest {
     @Rule
     @JvmField

@@ -7,6 +7,7 @@ import software.aws.toolkits.telemetry.generator.gradle.GenerateTelemetry
 
 plugins {
     id("toolkit-kotlin-conventions")
+    id("toolkit-detekt")
     id("toolkit-testing")
     id("toolkit-integration-testing")
     id("toolkit-intellij-subplugin")
