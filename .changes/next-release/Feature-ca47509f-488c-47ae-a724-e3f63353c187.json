@@ -1,0 +1,4 @@
+{
+	"type": "Feature",
+	"description": "Create aws-sam debug configurations via Command Palette using the `AWS: Add SAM Debug Configuration` command"
+}
