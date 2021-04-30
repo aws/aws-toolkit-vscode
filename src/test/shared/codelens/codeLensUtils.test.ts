@@ -96,7 +96,7 @@ describe('codeLensUtils', async function () {
                 spy.args[0][0].items![0],
                 {
                     label: 'No handlers found in current file',
-                    detail: 'Please ensure your language extension is working',
+                    detail: 'Ensure your language extension is working',
                     description: 'Click here to go back',
                 },
                 'createQuickPick called with incorrect item'

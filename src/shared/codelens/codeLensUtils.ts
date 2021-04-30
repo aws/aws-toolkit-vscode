@@ -170,7 +170,7 @@ export async function invokeCodeLensCommandPalette(
     if (handlers.length === 0) {
         handlers.push({
             label: localize('AWS.pickDebugHandler.noItems', 'No handlers found in current file'),
-            detail: localize('AWS.pickDebugHandler.noItems.detail', 'Please ensure your language extension is working'),
+            detail: localize('AWS.pickDebugHandler.noItems.detail', 'Ensure your language extension is working'),
             description: localize('AWS.picker.dynamic.noItemsFound.detail', 'Click here to go back'),
         })
     }
