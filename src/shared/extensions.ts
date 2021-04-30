@@ -17,6 +17,9 @@ export const VSCODE_EXTENSION_ID = {
     // python depends on jupyter plugin
     jupyter: 'ms-toolsai.jupyter',
     yaml: 'redhat.vscode-yaml',
+    go: 'golang.go',
+    java: 'redhat.java',
+    javadebug: 'vscjava.vscode-java-debug',
 }
 
 /**

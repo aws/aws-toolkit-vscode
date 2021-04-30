@@ -2,7 +2,7 @@
     "name": "aws-toolkit-vscode",
     "displayName": "AWS Toolkit",
     "description": "An extension for working with Amazon Web Services",
-    "version": "1.23.0-SNAPSHOT",
+    "version": "1.25.0-SNAPSHOT",
     "publisher": "amazonwebservices",
     "license": "Apache-2.0",
     "repository": {
@@ -69,6 +69,7 @@
         "onCommand:aws.ssmDocument.publishDocument",
         "onCommand:aws.ssmDocument.updateDocumentVersion",
         "onLanguage:javascript",
+        "onLanguage:java",
         "onLanguage:python",
         "onLanguage:csharp",
         "onLanguage:yaml",
@@ -107,11 +108,6 @@
                     "type": "number",
                     "default": 30000,
                     "markdownDescription": "%AWS.configuration.description.samcli.debug.attach.timeout%"
-                },
-                "aws.cdk.explorer.enabled": {
-                    "type": "boolean",
-                    "default": true,
-                    "description": "%AWS.configuration.description.cdk.explorer.enabled%"
                 },
                 "aws.logLevel": {
                     "type": "string",
@@ -547,13 +543,11 @@
                 {
                     "id": "aws.explorer",
                     "name": "%AWS.lambda.explorerTitle%"
-                }
-            ],
-            "explorer": [
+                },
                 {
                     "id": "aws.cdk.explorer",
                     "name": "%AWS.cdk.explorerTitle%",
-                    "when": "config.aws.cdk.explorer.enabled"
+                    "when": "!isCloud9"
                 }
             ]
         },
@@ -1528,7 +1522,7 @@
         "createRelease": "ts-node ./build-scripts/createRelease.ts"
     },
     "devDependencies": {
-        "@aws-toolkits/telemetry": "0.0.91",
+        "@aws-toolkits/telemetry": "0.0.94",
         "@sinonjs/fake-timers": "^7.0.2",
         "@types/adm-zip": "^0.4.32",
         "@types/async-lock": "^1.1.0",
@@ -1569,7 +1563,8 @@
         "mocha": "^7.1.1",
         "mocha-junit-reporter": "^1.23.3",
         "mocha-multi-reporters": "^1.1.7",
-        "prettier": "^2.1.2",
+        "prettier": "^2.2.1",
+        "prettier-plugin-sh": "^0.6.1",
         "pretty-quick": "^3.1.0",
         "readline-sync": "^1.4.9",
         "remap-istanbul": "^0.12.0",

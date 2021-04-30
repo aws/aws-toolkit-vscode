@@ -8,23 +8,40 @@ import { Runtime } from 'aws-sdk/clients/lambda'
 import { mkdirpSync, mkdtemp, removeSync } from 'fs-extra'
 import * as path from 'path'
 import * as vscode from 'vscode'
-import { getDependencyManager } from '../../src/lambda/models/samLambdaRuntime'
+import { DependencyManager } from '../../src/lambda/models/samLambdaRuntime'
 import { helloWorldTemplate } from '../../src/lambda/models/samTemplates'
 import { getSamCliContext } from '../../src/shared/sam/cli/samCliContext'
 import { runSamCliInit, SamCliInitArgs } from '../../src/shared/sam/cli/samCliInit'
-import { assertThrowsError } from '../../src/test/shared/utilities/assertUtils'
 import { Language } from '../shared/codelens/codeLensUtils'
 import { VSCODE_EXTENSION_ID } from '../shared/extensions'
 import { fileExists } from '../shared/filesystemUtilities'
 import { AddSamDebugConfigurationInput } from '../shared/sam/debugger/commands/addSamDebugConfiguration'
 import { findParentProjectFile } from '../shared/utilities/workspaceUtils'
-import { activateExtension, getCodeLenses, getTestWorkspaceFolder, sleep } from './integrationTestsUtilities'
+import * as testUtils from './integrationTestsUtilities'
 import { setTestTimeout } from './globalSetup.test'
 import { waitUntil } from '../shared/utilities/timeoutUtils'
 import { AwsSamDebuggerConfiguration } from '../shared/sam/debugger/awsSamDebugConfiguration.gen'
 import { ext } from '../shared/extensionGlobals'
+import { AwsSamTargetType } from '../shared/sam/debugger/awsSamDebugConfiguration'
+import { closeAllEditors } from '../shared/utilities/vsCodeUtils'
+import { insertTextIntoFile } from '../shared/utilities/textUtilities'
+const projectFolder = testUtils.getTestWorkspaceFolder()
 
-const projectFolder = getTestWorkspaceFolder()
+/* Test constants go here */
+const CODELENS_TIMEOUT: number = 60000
+const CODELENS_RETRY_INTERVAL: number = 200
+const DEBUG_TIMEOUT: number = 90000
+const NO_DEBUG_SESSION_TIMEOUT: number = 5000
+const NO_DEBUG_SESSION_INTERVAL: number = 100
+
+/**
+ * These languages are skipped on our minimum supported version
+ * For Go and Python this is because the extensions used do not support our minimum
+ */
+const SKIP_LANGUAGES_ON_MIN = ['python', 'go']
+
+/** Go can't handle API tests yet */
+const SKIP_LANGUAGES_ON_API = ['go']
 
 interface TestScenario {
     displayName: string
@@ -33,6 +50,7 @@ interface TestScenario {
     path: string
     debugSessionType: string
     language: Language
+    dependencyManager: DependencyManager
 }
 
 // When testing additional runtimes, consider pulling the docker container in buildspec\linuxIntegrationTests.yml
@@ -45,6 +63,7 @@ const scenarios: TestScenario[] = [
         path: 'hello-world/app.js',
         debugSessionType: 'pwa-node',
         language: 'javascript',
+        dependencyManager: 'npm',
     },
     {
         runtime: 'nodejs12.x',
@@ -52,6 +71,7 @@ const scenarios: TestScenario[] = [
         path: 'hello-world/app.js',
         debugSessionType: 'pwa-node',
         language: 'javascript',
+        dependencyManager: 'npm',
     },
     {
         runtime: 'nodejs14.x',
@@ -59,6 +79,7 @@ const scenarios: TestScenario[] = [
         path: 'hello-world/app.js',
         debugSessionType: 'pwa-node',
         language: 'javascript',
+        dependencyManager: 'npm',
     },
     {
         runtime: 'python2.7',
@@ -66,6 +87,7 @@ const scenarios: TestScenario[] = [
         path: 'hello_world/app.py',
         debugSessionType: 'python',
         language: 'python',
+        dependencyManager: 'pip',
     },
     {
         runtime: 'python3.6',
@@ -73,6 +95,7 @@ const scenarios: TestScenario[] = [
         path: 'hello_world/app.py',
         debugSessionType: 'python',
         language: 'python',
+        dependencyManager: 'pip',
     },
     {
         runtime: 'python3.7',
@@ -80,6 +103,7 @@ const scenarios: TestScenario[] = [
         path: 'hello_world/app.py',
         debugSessionType: 'python',
         language: 'python',
+        dependencyManager: 'pip',
     },
     {
         runtime: 'python3.8',
@@ -87,6 +111,39 @@ const scenarios: TestScenario[] = [
         path: 'hello_world/app.py',
         debugSessionType: 'python',
         language: 'python',
+        dependencyManager: 'pip',
+    },
+    {
+        runtime: 'java8',
+        displayName: 'java8 (Gradle ZIP)',
+        path: 'HelloWorldFunction/src/main/java/helloworld/App.java',
+        debugSessionType: 'java',
+        language: 'java',
+        dependencyManager: 'gradle',
+    },
+    {
+        runtime: 'java8.al2',
+        displayName: 'java8.al2 (Maven ZIP)',
+        path: 'HelloWorldFunction/src/main/java/helloworld/App.java',
+        debugSessionType: 'java',
+        language: 'java',
+        dependencyManager: 'maven',
+    },
+    {
+        runtime: 'java11',
+        displayName: 'java11 (Gradle ZIP)',
+        path: 'HelloWorldFunction/src/main/java/helloworld/App.java',
+        debugSessionType: 'java',
+        language: 'java',
+        dependencyManager: 'gradle',
+    },
+    {
+        runtime: 'go1.x',
+        displayName: 'go1.x (ZIP)',
+        path: 'hello-world/main.go',
+        debugSessionType: 'delve',
+        language: 'go',
+        dependencyManager: 'mod',
     },
     // { runtime: 'dotnetcore2.1', path: 'src/HelloWorld/Function.cs', debugSessionType: 'coreclr', language: 'csharp' },
     // { runtime: 'dotnetcore3.1', path: 'src/HelloWorld/Function.cs', debugSessionType: 'coreclr', language: 'csharp' },
@@ -99,6 +156,7 @@ const scenarios: TestScenario[] = [
         path: 'hello-world/app.js',
         debugSessionType: 'pwa-node',
         language: 'javascript',
+        dependencyManager: 'npm',
     },
     {
         runtime: 'nodejs12.x',
@@ -107,6 +165,7 @@ const scenarios: TestScenario[] = [
         path: 'hello-world/app.js',
         debugSessionType: 'pwa-node',
         language: 'javascript',
+        dependencyManager: 'npm',
     },
     {
         runtime: 'nodejs14.x',
@@ -115,6 +174,7 @@ const scenarios: TestScenario[] = [
         path: 'hello-world/app.js',
         debugSessionType: 'pwa-node',
         language: 'javascript',
+        dependencyManager: 'npm',
     },
     {
         runtime: 'python3.6',
@@ -123,6 +183,7 @@ const scenarios: TestScenario[] = [
         path: 'hello_world/app.py',
         debugSessionType: 'python',
         language: 'python',
+        dependencyManager: 'pip',
     },
     {
         runtime: 'python3.7',
@@ -131,6 +192,16 @@ const scenarios: TestScenario[] = [
         path: 'hello_world/app.py',
         debugSessionType: 'python',
         language: 'python',
+        dependencyManager: 'pip',
+    },
+    {
+        runtime: 'go1.x',
+        displayName: 'go1.x (Image)',
+        baseImage: 'amazon/go1.x-base',
+        path: 'hello-world/main.go',
+        debugSessionType: 'delve',
+        language: 'go',
+        dependencyManager: 'mod',
     },
     // {
     //     runtime: 'python3.8',
@@ -139,7 +210,35 @@ const scenarios: TestScenario[] = [
     //     path: 'hello_world/app.py',
     //     debugSessionType: 'python',
     //     language: 'python',
+    //     dependencyManager: 'pip',
     // },
+    {
+        runtime: 'java8',
+        displayName: 'java8 (Maven Image)',
+        path: 'HelloWorldFunction/src/main/java/helloworld/App.java',
+        baseImage: `amazon/java8-base`,
+        debugSessionType: 'java',
+        language: 'java',
+        dependencyManager: 'maven',
+    },
+    {
+        runtime: 'java8.al2',
+        displayName: 'java8.al2 (Gradle Image)',
+        path: 'HelloWorldFunction/src/main/java/helloworld/App.java',
+        baseImage: `amazon/java8.al2-base`,
+        debugSessionType: 'java',
+        language: 'java',
+        dependencyManager: 'gradle',
+    },
+    {
+        runtime: 'java11',
+        displayName: 'java11 (Maven Image)',
+        path: 'HelloWorldFunction/src/main/java/helloworld/App.java',
+        baseImage: `amazon/java11-base`,
+        debugSessionType: 'java',
+        language: 'java',
+        dependencyManager: 'maven',
+    },
     // { runtime: 'dotnetcore2.1', path: 'src/HelloWorld/Function.cs', debugSessionType: 'coreclr', language: 'csharp' },
     // { runtime: 'dotnetcore3.1', path: 'src/HelloWorld/Function.cs', debugSessionType: 'coreclr', language: 'csharp' },
 ]
@@ -158,32 +257,36 @@ function tryRemoveFolder(fullPath: string) {
     }
 }
 
-async function getAddConfigCodeLens(documentUri: vscode.Uri): Promise<vscode.CodeLens[]> {
-    while (true) {
-        try {
-            // this works without a sleep locally, but not on CodeBuild
-            await sleep(200)
-            let codeLenses = await getCodeLenses(documentUri)
-            if (!codeLenses || codeLenses.length === 0) {
-                continue
-            }
-
-            // omnisharp spits out some undefined code lenses for some reason, we filter them because they are
-            // not shown to the user and do not affect how our extension is working
-            codeLenses = codeLenses.filter(codeLens => {
-                if (codeLens.command && codeLens.command.arguments && codeLens.command.arguments.length === 3) {
-                    return codeLens.command.command === 'aws.pickAddSamDebugConfiguration'
+async function getAddConfigCodeLens(documentUri: vscode.Uri): Promise<vscode.CodeLens[] | undefined> {
+    return waitUntil(
+        async () => {
+            try {
+                let codeLenses = await testUtils.getCodeLenses(documentUri)
+                if (!codeLenses || codeLenses.length === 0) {
+                    return undefined
                 }
 
-                return false
-            })
-            if (codeLenses.length > 0) {
-                return codeLenses || []
+                // omnisharp spits out some undefined code lenses for some reason, we filter them because they are
+                // not shown to the user and do not affect how our extension is working
+                codeLenses = codeLenses.filter(codeLens => {
+                    if (codeLens.command && codeLens.command.arguments && codeLens.command.arguments.length === 3) {
+                        return codeLens.command.command === 'aws.pickAddSamDebugConfiguration'
+                    }
+
+                    return false
+                })
+
+                if (codeLenses.length > 0) {
+                    return codeLenses || []
+                }
+            } catch (e) {
+                console.log(`sam.test.ts: getAddConfigCodeLens() on "${documentUri.fsPath}" failed, retrying:\n${e}`)
             }
-        } catch (e) {
-            console.log(`sam.test.ts: getAddConfigCodeLens(): failed, retrying:\n${e}`)
-        }
-    }
+
+            return undefined
+        },
+        { timeout: CODELENS_TIMEOUT, interval: CODELENS_RETRY_INTERVAL, truthy: false }
+    )
 }
 
 /**
@@ -218,21 +321,30 @@ function validateSamDebugSession(
 async function startDebugger(
     scenario: TestScenario,
     scenarioIndex: number,
+    target: AwsSamTargetType,
     testConfig: vscode.DebugConfiguration,
     testDisposables: vscode.Disposable[],
     sessionLog: string[]
 ) {
+    function logSession(startEnd: 'START' | 'END', name: string) {
+        sessionLog.push(
+            `scenario ${scenarioIndex}.${target.toString()[0]} ${startEnd.padEnd(5, ' ')} ${target}/${
+                scenario.displayName
+            }: ${name}`
+        )
+    }
+
     // Create a Promise that encapsulates our success critera
     const success = new Promise<void>((resolve, reject) => {
         testDisposables.push(
-            vscode.debug.onDidTerminateDebugSession(async endedSession => {
-                sessionLog.push(`scenario ${scenarioIndex} (END) (runtime=${scenario.runtime}) ${endedSession.name}`)
-                const sessionRuntime = (endedSession.configuration as any).runtime
+            vscode.debug.onDidTerminateDebugSession(async session => {
+                logSession('END', session.name)
+                const sessionRuntime = (session.configuration as any).runtime
                 if (!sessionRuntime) {
                     // It's a coprocess, ignore it.
                     return
                 }
-                const failMsg = validateSamDebugSession(endedSession, testConfig.name, scenario.runtime)
+                const failMsg = validateSamDebugSession(session, testConfig.name, scenario.runtime)
                 if (failMsg) {
                     reject(new Error(failMsg))
                 }
@@ -245,17 +357,13 @@ async function startDebugger(
     // Executes the 'F5' action
     await vscode.debug.startDebugging(undefined, testConfig).then(
         async () => {
-            sessionLog.push(
-                `scenario ${scenarioIndex} (START) (runtime=${scenario.runtime}) ${
-                    vscode.debug.activeDebugSession!.name
-                }`
-            )
+            logSession('START', vscode.debug.activeDebugSession!.name)
 
-            await sleep(400)
+            await testUtils.sleep(400)
             await continueDebugger()
-            await sleep(400)
+            await testUtils.sleep(400)
             await continueDebugger()
-            await sleep(400)
+            await testUtils.sleep(400)
             await continueDebugger()
 
             await success
@@ -277,27 +385,13 @@ async function stopDebugger(logMsg: string | undefined): Promise<void> {
     await vscode.commands.executeCommand('workbench.action.debug.stop')
 }
 
-async function closeAllEditors(): Promise<void> {
-    await vscode.commands.executeCommand('workbench.action.closeAllEditors')
-}
-
 async function activateExtensions(): Promise<void> {
     console.log('Activating extensions...')
-    await activateExtension(VSCODE_EXTENSION_ID.python)
+    await testUtils.activateExtension(VSCODE_EXTENSION_ID.python)
+    await testUtils.activateExtension(VSCODE_EXTENSION_ID.go)
+    await testUtils.activateExtension(VSCODE_EXTENSION_ID.java)
+    await testUtils.activateExtension(VSCODE_EXTENSION_ID.javadebug)
     console.log('Extensions activated')
-}
-
-async function configurePythonExtension(): Promise<void> {
-    const configPy = vscode.workspace.getConfiguration('python')
-    // Disable linting to silence some of the Python extension's log spam
-    await configPy.update('linting.pylintEnabled', false, false)
-    await configPy.update('linting.enabled', false, false)
-}
-
-async function configureAwsToolkitExtension(): Promise<void> {
-    const configAws = vscode.workspace.getConfiguration('aws')
-    // Prevent the extension from preemptively cancelling a 'sam local' run
-    await configAws.update('samcli.debug.attach.timeout.millis', 90000, false)
 }
 
 describe('SAM Integration Tests', async function () {
@@ -307,12 +401,18 @@ describe('SAM Integration Tests', async function () {
      * us an idea of the timeline.
      */
     const sessionLog: string[] = []
+    let javaLanguageSetting: string | undefined
+    const config = vscode.workspace.getConfiguration('java')
     let testSuiteRoot: string
 
     before(async function () {
+        javaLanguageSetting = config.get('server.launchMode')
+        config.update('server.launchMode', 'Standard')
+
         await activateExtensions()
-        await configureAwsToolkitExtension()
-        await configurePythonExtension()
+        await testUtils.configureAwsToolkitExtension()
+        await testUtils.configurePythonExtension()
+        await testUtils.configureGoExtension()
 
         testSuiteRoot = await mkdtemp(path.join(projectFolder, 'inttest'))
         console.log('testSuiteRoot: ', testSuiteRoot)
@@ -323,7 +423,8 @@ describe('SAM Integration Tests', async function () {
         tryRemoveFolder(testSuiteRoot)
         // Print a summary of session that were seen by `onDidStartDebugSession`.
         const sessionReport = sessionLog.map(x => `    ${x}`).join('\n')
-        console.log(`DebugSessions seen in this run:${sessionReport}`)
+        config.update('server.launchMode', javaLanguageSetting)
+        console.log(`DebugSessions seen in this run:\n${sessionReport}`)
     })
 
     for (let scenarioIndex = 0; scenarioIndex < scenarios.length; scenarioIndex++) {
@@ -339,7 +440,10 @@ describe('SAM Integration Tests', async function () {
             })
 
             after(async function () {
-                tryRemoveFolder(runtimeTestRoot)
+                // don't clean up after java tests so the java language server doesn't freak out
+                if (scenario.language !== 'java') {
+                    tryRemoveFolder(runtimeTestRoot)
+                }
             })
 
             function log(o: any) {
@@ -358,7 +462,10 @@ describe('SAM Integration Tests', async function () {
                 })
 
                 afterEach(async function () {
-                    tryRemoveFolder(testDir)
+                    // don't clean up after java tests so the java language server doesn't freak out
+                    if (scenario.language !== 'java') {
+                        tryRemoveFolder(testDir)
+                    }
                 })
 
                 it('creates a new SAM Application (happy path)', async function () {
@@ -390,6 +497,7 @@ describe('SAM Integration Tests', async function () {
                     appPath = path.join(testDir, samApplicationName, scenario.path)
                     cfnTemplatePath = path.join(testDir, samApplicationName, 'template.yaml')
                     assert.ok(await fileExists(cfnTemplatePath), `Expected SAM template to exist at ${cfnTemplatePath}`)
+
                     samAppCodeUri = await openSamAppFile(appPath)
                 })
 
@@ -404,20 +512,25 @@ describe('SAM Integration Tests', async function () {
                 })
 
                 after(async function () {
-                    tryRemoveFolder(testDir)
+                    // don't clean up after java tests so the java language server doesn't freak out
+                    if (scenario.language !== 'java') {
+                        tryRemoveFolder(testDir)
+                    }
                 })
 
                 it('produces an error when creating a SAM Application to the same location', async function () {
-                    const err = await assertThrowsError(async () => await createSamApplication(testDir))
-                    assert(err.message.includes('directory already exists'))
+                    await assert.rejects(
+                        createSamApplication(testDir),
+                        /directory already exists/,
+                        'Promise was not rejected'
+                    )
                 })
 
                 it('produces an Add Debug Configuration codelens', async function () {
-                    if (vscode.version.startsWith('1.42') && scenario.language === 'python') {
+                    if (vscode.version.startsWith('1.42') && SKIP_LANGUAGES_ON_MIN.includes(scenario.language)) {
                         this.skip()
                     }
 
-                    setTestTimeout(this.test?.fullTitle(), 60000)
                     const codeLenses = await getAddConfigCodeLens(samAppCodeUri)
                     assert.ok(codeLenses && codeLenses.length === 2)
 
@@ -432,6 +545,19 @@ describe('SAM Integration Tests', async function () {
                         case 'csharp':
                             manifestFile = /^.*\.csproj$/
                             break
+                        case 'go':
+                            manifestFile = /^go\.mod$/
+                            break
+                        case 'java':
+                            if (scenario.dependencyManager === 'maven') {
+                                manifestFile = /^.*pom\.xml$/
+                                break
+                            } else if (scenario.dependencyManager === 'gradle') {
+                                manifestFile = /^.*build\.gradle$/
+                                break
+                            }
+                            assert.fail(`invalid dependency manager for java: ${scenario.dependencyManager}`)
+                            break
                         default:
                             assert.fail('invalid scenario language')
                     }
@@ -443,38 +569,68 @@ describe('SAM Integration Tests', async function () {
                     }
                 })
 
-                it('invokes and attaches on debug request (F5)', async function () {
-                    if (vscode.version.startsWith('1.42') && scenario.language === 'python') {
+                it('target=api: invokes and attaches on debug request (F5)', async function () {
+                    if (
+                        (vscode.version.startsWith('1.42') && SKIP_LANGUAGES_ON_MIN.includes(scenario.language)) ||
+                        SKIP_LANGUAGES_ON_API.includes(scenario.language)
+                    ) {
                         this.skip()
                     }
 
-                    setTestTimeout(this.test?.fullTitle(), 90000)
+                    setTestTimeout(this.test?.fullTitle(), DEBUG_TIMEOUT)
+                    await testTarget('api', {
+                        api: {
+                            path: '/hello',
+                            httpMethod: 'get',
+                            headers: { 'accept-language': 'fr-FR' },
+                        },
+                    })
+                })
+
+                it('target=template: invokes and attaches on debug request (F5)', async function () {
+                    if (vscode.version.startsWith('1.42') && SKIP_LANGUAGES_ON_MIN.includes(scenario.language)) {
+                        this.skip()
+                    }
+
+                    setTestTimeout(this.test?.fullTitle(), DEBUG_TIMEOUT)
+                    await testTarget('template')
+                })
+
+                async function testTarget(target: AwsSamTargetType, extraConfig: any = {}) {
                     // Allow previous sessions to go away.
                     const noDebugSession: boolean | undefined = await waitUntil(
                         async () => vscode.debug.activeDebugSession === undefined,
-                        { timeout: 10000, interval: 100, truthy: true }
+                        { timeout: NO_DEBUG_SESSION_TIMEOUT, interval: NO_DEBUG_SESSION_INTERVAL, truthy: true }
                     )
 
-                    assert.strictEqual(
-                        noDebugSession,
-                        true,
-                        `unexpected debug session in progress: ${JSON.stringify(
-                            vscode.debug.activeDebugSession,
-                            undefined,
-                            2
-                        )}`
-                    )
+                    // We exclude the Node debug type since it causes the most erroneous failures with CI.
+                    // However, the fact that there are sessions from previous tests is still an issue, so
+                    // a warning will be logged under the current session.
+                    if (!noDebugSession) {
+                        assert.strictEqual(
+                            vscode.debug.activeDebugSession!.type,
+                            'pwa-node',
+                            `unexpected debug session in progress: ${JSON.stringify(
+                                vscode.debug.activeDebugSession,
+                                undefined,
+                                2
+                            )}`
+                        )
+
+                        sessionLog.push(`(WARNING) Unexpected debug session ${vscode.debug.activeDebugSession!.name}`)
+                    }
 
                     const testConfig = {
                         type: 'aws-sam',
                         request: 'direct-invoke',
                         name: `test-config-${scenarioIndex}`,
                         invokeTarget: {
-                            target: 'template',
+                            target: target,
                             // Resource defined in `src/testFixtures/.../template.yaml`.
                             logicalId: 'HelloWorldFunction',
                             templatePath: cfnTemplatePath,
                         },
+                        ...extraConfig,
                     } as AwsSamDebuggerConfiguration
 
                     // runtime is optional for ZIP, but required for image-based
@@ -482,13 +638,20 @@ describe('SAM Integration Tests', async function () {
                         testConfig.lambda = {
                             runtime: scenario.runtime,
                         }
+
+                        // HACK: set GOPROXY=direct or it will fail to build. https://golang.org/ref/mod#module-proxy
+                        // This only applies for our internal systems
+                        if (scenario.language === 'go') {
+                            const dockerfilePath: string = path.join(path.dirname(appPath), 'Dockerfile')
+                            insertTextIntoFile('ENV GOPROXY=direct', dockerfilePath, 1)
+                        }
                     }
 
                     // XXX: force load since template registry seems a bit flakey
                     await ext.templateRegistry.addItemToRegistry(vscode.Uri.file(cfnTemplatePath))
 
-                    await startDebugger(scenario, scenarioIndex, testConfig, testDisposables, sessionLog)
-                })
+                    await startDebugger(scenario, scenarioIndex, target, testConfig, testDisposables, sessionLog)
+                }
             })
         })
 
@@ -496,7 +659,7 @@ describe('SAM Integration Tests', async function () {
             const initArguments: SamCliInitArgs = {
                 name: samApplicationName,
                 location: location,
-                dependencyManager: getDependencyManager(scenario.runtime),
+                dependencyManager: scenario.dependencyManager,
             }
             if (scenario.baseImage) {
                 initArguments.baseImage = scenario.baseImage

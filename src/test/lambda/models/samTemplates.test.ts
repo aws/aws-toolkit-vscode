@@ -17,7 +17,6 @@ import {
     stepFunctionsSampleApp,
 } from '../../../lambda/models/samTemplates'
 import { Set } from 'immutable'
-import { assertThrowsError } from '../../../test/shared/utilities/assertUtils'
 
 import { samZipLambdaRuntimes } from '../../../lambda/models/samLambdaRuntime'
 
@@ -72,9 +71,11 @@ describe('getSamCliTemplateParameter', function () {
     })
 
     it('should return error if the template option is not valid', async function () {
-        const errorMessage = `${repromptUserForTemplate} is not valid sam template`
-        const error = await assertThrowsError(async () => getSamCliTemplateParameter(repromptUserForTemplate))
-        assert.strictEqual(error.message, errorMessage, 'Should fail for same error')
+        assert.throws(
+            () => getSamCliTemplateParameter(repromptUserForTemplate),
+            new Error(`${repromptUserForTemplate} is not valid sam template`),
+            'Should fail for same error'
+        )
     })
 })
 

@@ -13,8 +13,10 @@ async function setupVSCode(): Promise<string> {
     const vsCodeExecutablePath = await setupVSCodeTestInstance()
     await installVSCodeExtension(vsCodeExecutablePath, VSCODE_EXTENSION_ID.python)
     await installVSCodeExtension(vsCodeExecutablePath, VSCODE_EXTENSION_ID.yaml)
+    await installVSCodeExtension(vsCodeExecutablePath, VSCODE_EXTENSION_ID.go)
+    await installVSCodeExtension(vsCodeExecutablePath, VSCODE_EXTENSION_ID.java)
+    await installVSCodeExtension(vsCodeExecutablePath, VSCODE_EXTENSION_ID.javadebug)
     console.log('VS Code Test instance has been set up')
-
     return vsCodeExecutablePath
 }
 
@@ -30,7 +32,14 @@ async function setupVSCode(): Promise<string> {
         process.env.AWS_TOOLKIT_IGNORE_WEBPACK_BUNDLE = 'true'
 
         const disableExtensions = await getCliArgsToDisableExtensions(vsCodeExecutablePath, {
-            except: [VSCODE_EXTENSION_ID.python, VSCODE_EXTENSION_ID.yaml, VSCODE_EXTENSION_ID.jupyter],
+            except: [
+                VSCODE_EXTENSION_ID.python,
+                VSCODE_EXTENSION_ID.yaml,
+                VSCODE_EXTENSION_ID.jupyter,
+                VSCODE_EXTENSION_ID.go,
+                VSCODE_EXTENSION_ID.java,
+                VSCODE_EXTENSION_ID.javadebug,
+            ],
         })
         const args = {
             vscodeExecutablePath: vsCodeExecutablePath,

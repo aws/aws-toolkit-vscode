@@ -46,21 +46,29 @@ export async function* detectLocalCdkProjects({
     workspaceUris: vscode.Uri[]
 }): AsyncIterableIterator<vscode.Uri> {
     for (const workspaceFolder of workspaceUris) {
-        for await (const folder of getFolderCandidates(workspaceFolder)) {
+        for await (const folder of getFolderCandidates(workspaceFolder, 2, 0)) {
             yield* detectCdkProjectsInFolder(folder)
         }
     }
 }
 
-async function* getFolderCandidates(uri: vscode.Uri): AsyncIterableIterator<string> {
-    // Search the root and first level of children only.
+/**
+ * Generates names of directory `uri` and its descendant directories up to `maxLevels` levels.
+ */
+async function* getFolderCandidates(uri: vscode.Uri, maxLevels: number, level: number): AsyncIterableIterator<string> {
+    if (!(await stat(uri.fsPath)).isDirectory()) {
+        throw Error(`not a directory: "${uri.fsPath}"`)
+    }
     yield uri.fsPath
 
     const entries = await readdir(uri.fsPath)
     for (const entry of entries.map(p => path.join(uri.fsPath, p))) {
         const stats = await stat(entry)
         if (stats.isDirectory()) {
-            yield entry
+            if (level <= maxLevels) {
+                const dirUri = vscode.Uri.file(entry)
+                yield* getFolderCandidates(dirUri, maxLevels, level + 1)
+            }
         }
     }
 }

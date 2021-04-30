@@ -1,0 +1,30 @@
+{
+	"date": "2021-04-16",
+	"version": "1.23.0",
+	"entries": [
+		{
+			"type": "Feature",
+			"description": "Beta UI for editing and directly invoking AWS SAM debug configurations"
+		},
+		{
+			"type": "Feature",
+			"description": "AWS Explorer: clicking \"Failed to load\" node navigates to failure details #1569"
+		},
+		{
+			"type": "Feature",
+			"description": "SAM Deploy wizard: show recently-used S3 buckets; ability to input S3 bucket name manually #1527"
+		},
+		{
+			"type": "Feature",
+			"description": "Step Functions: adds ability to publish/update state machine from ASL YAML files."
+		},
+		{
+			"type": "Feature",
+			"description": "SAM run/debug: improve display of partial lines #1581"
+		},
+		{
+			"type": "Feature",
+			"description": "\"Create Lambda SAM Application\": navigate to README.md instead of template.yaml #1574"
+		}
+	]
+}

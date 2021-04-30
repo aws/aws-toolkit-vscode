@@ -32,7 +32,7 @@ import { SamCliValidator } from '../../shared/sam/cli/samCliValidator'
 import { recordSamInit, Result, Runtime as TelemetryRuntime } from '../../shared/telemetry/telemetry'
 import { makeCheckLogsMessage } from '../../shared/utilities/messages'
 import { addFolderToWorkspace } from '../../shared/utilities/workspaceUtils'
-import { getDependencyManager } from '../models/samLambdaRuntime'
+import { goRuntimes } from '../models/samLambdaRuntime'
 import { eventBridgeStarterAppTemplate } from '../models/samTemplates'
 import {
     CreateNewSamAppWizard,
@@ -46,14 +46,15 @@ import { isTemplateTargetProperties } from '../../shared/sam/debugger/awsSamDebu
 import { TemplateTargetProperties } from '../../shared/sam/debugger/awsSamDebugConfiguration'
 import { openLaunchJsonFile } from '../../shared/sam/debugger/commands/addSamDebugConfiguration'
 import { waitUntil } from '../../shared/utilities/timeoutUtils'
-import { launchConfigDocUrl } from '../../shared/constants'
+import { debugNewSamAppUrl, launchConfigDocUrl } from '../../shared/constants'
 import { Runtime } from 'aws-sdk/clients/lambda'
 import { getIdeProperties, isCloud9 } from '../../shared/extensionUtilities'
+import { execSync } from 'child_process'
 
 type CreateReason = 'unknown' | 'userCancelled' | 'fileNotFound' | 'complete' | 'error'
 
-/** Target file to open after creating a new SAM application */
-export const SAM_INIT_OPEN_TARGET: string = 'README.md'
+export const SAM_INIT_TEMPLATE_FILE: string = 'template.yaml'
+export const SAM_INIT_README_FILE: string = 'README.md'
 
 export async function resumeCreateNewSamApp(
     extContext: ExtContext,
@@ -64,8 +65,9 @@ export async function resumeCreateNewSamApp(
     let samVersion: string | undefined
     const samInitState: SamInitState | undefined = activationReloadState.getSamInitState()
     try {
-        const uri = vscode.Uri.file(samInitState?.path!)
-        const folder = vscode.workspace.getWorkspaceFolder(uri)
+        const templateUri = vscode.Uri.file(samInitState?.template!)
+        const readmeUri = vscode.Uri.file(samInitState?.readme!)
+        const folder = vscode.workspace.getWorkspaceFolder(templateUri)
         if (!folder) {
             createResult = 'Failed'
             reason = 'error'
@@ -75,7 +77,7 @@ export async function resumeCreateNewSamApp(
                 localize(
                     'AWS.samcli.initWizard.source.error.notInWorkspace',
                     "Could not open file '{0}'. If this file exists on disk, try adding it to your workspace.",
-                    uri.fsPath
+                    templateUri.fsPath
                 )
             )
 
@@ -87,10 +89,12 @@ export async function resumeCreateNewSamApp(
         await addInitialLaunchConfiguration(
             extContext,
             folder,
-            uri,
+            templateUri,
             samInitState?.isImage ? samInitState?.runtime : undefined
         )
-        await vscode.window.showTextDocument(uri)
+        isCloud9()
+            ? await vscode.workspace.openTextDocument(readmeUri)
+            : await vscode.commands.executeCommand('markdown.showPreviewToSide', readmeUri)
     } catch (err) {
         createResult = 'Failed'
         reason = 'error'
@@ -165,13 +169,10 @@ export async function createNewSamApplication(
         // section of types as Runtime
         createRuntime = config.runtime as Runtime
 
-        // TODO: Make this selectable in the wizard to account for runtimes with multiple dependency managers
-        const dependencyManager = getDependencyManager(createRuntime)
-
         initArguments = {
             name: config.name,
             location: config.location.fsPath,
-            dependencyManager: dependencyManager,
+            dependencyManager: config.dependencyManager,
         }
 
         let request: SchemaCodeDownloadRequestDetails
@@ -201,11 +202,26 @@ export async function createNewSamApplication(
 
         await runSamCliInit(initArguments, samCliContext)
 
-        const uri = await getMainUri(config)
-        if (!uri) {
+        const templateUri = await getProjectUri(config, SAM_INIT_TEMPLATE_FILE)
+        const readmeUri = await getProjectUri(config, SAM_INIT_README_FILE)
+        if (!templateUri || !readmeUri) {
             reason = 'fileNotFound'
 
             return
+        }
+
+        // Needs to be done or else gopls won't start
+        if (goRuntimes.includes(createRuntime)) {
+            try {
+                execSync('go mod tidy', { cwd: path.join(path.dirname(readmeUri.fsPath), 'hello-world') })
+            } catch (err) {
+                getLogger().warn(
+                    localize(
+                        'AWS.message.warning.gotidyfailed',
+                        'Failed to initialize package directory with "go mod tidy". Launch config will not be automatically created.'
+                    )
+                )
+            }
         }
 
         if (config.template === eventBridgeStarterAppTemplate) {
@@ -239,7 +255,8 @@ export async function createNewSamApplication(
 
         // In case adding the workspace folder triggers a VS Code restart, persist relevant state to be used after reload
         activationReloadState.setSamInitState({
-            path: uri.fsPath,
+            template: templateUri.fsPath,
+            readme: readmeUri.fsPath,
             runtime: createRuntime,
             isImage: config.packageType === 'Image',
         })
@@ -254,7 +271,7 @@ export async function createNewSamApplication(
 
         // Race condition where SAM app is created but template doesn't register in time.
         // Poll for 5 seconds, otherwise direct user to codelens.
-        const isTemplateRegistered = await waitUntil(async () => ext.templateRegistry.getRegisteredItem(uri), {
+        const isTemplateRegistered = await waitUntil(async () => ext.templateRegistry.getRegisteredItem(templateUri), {
             timeout: 5000,
             interval: 500,
             truthy: false,
@@ -263,8 +280,8 @@ export async function createNewSamApplication(
         if (isTemplateRegistered) {
             const newLaunchConfigs = await addInitialLaunchConfiguration(
                 extContext,
-                vscode.workspace.getWorkspaceFolder(uri)!,
-                uri,
+                vscode.workspace.getWorkspaceFolder(templateUri)!,
+                templateUri,
                 createRuntime
             )
             if (newLaunchConfigs && newLaunchConfigs.length > 0) {
@@ -296,8 +313,8 @@ export async function createNewSamApplication(
         activationReloadState.clearSamInitState()
         // TODO: Replace when Cloud9 supports `markdown` commands
         isCloud9()
-            ? await vscode.workspace.openTextDocument(uri)
-            : await vscode.commands.executeCommand('markdown.showPreviewToSide', uri)
+            ? await vscode.workspace.openTextDocument(readmeUri)
+            : await vscode.commands.executeCommand('markdown.showPreviewToSide', readmeUri)
     } catch (err) {
         createResult = 'Failed'
         reason = 'error'
@@ -333,10 +350,11 @@ async function validateSamCli(samCliValidator: SamCliValidator): Promise<void> {
     throwAndNotifyIfInvalid(validationResult)
 }
 
-export async function getMainUri(
-    config: Pick<CreateNewSamAppWizardResponse, 'location' | 'name'>
+export async function getProjectUri(
+    config: Pick<CreateNewSamAppWizardResponse, 'location' | 'name'>,
+    file: string
 ): Promise<vscode.Uri | undefined> {
-    const cfnTemplatePath = path.resolve(config.location.fsPath, config.name, SAM_INIT_OPEN_TARGET)
+    const cfnTemplatePath = path.resolve(config.location.fsPath, config.name, file)
     if (await fileExists(cfnTemplatePath)) {
         return vscode.Uri.file(cfnTemplatePath)
     } else {
@@ -344,7 +362,7 @@ export async function getMainUri(
             localize(
                 'AWS.samcli.initWizard.source.error.notFound',
                 'Project created successfully, but {0} file not found: {1}',
-                SAM_INIT_OPEN_TARGET,
+                file,
                 cfnTemplatePath
             )
         )
@@ -393,6 +411,8 @@ export async function addInitialLaunchConfiguration(
 }
 
 async function showCompletionNotification(appName: string, configs: string): Promise<void> {
+    const openJson = localize('AWS.generic.open', 'Open {0}', 'launch.json')
+    const learnMore = localize('AWS.generic.message.learnMore', 'Learn More')
     const action = await vscode.window.showInformationMessage(
         localize(
             'AWS.samcli.initWizard.completionMessage',
@@ -400,10 +420,13 @@ async function showCompletionNotification(appName: string, configs: string): Pro
             appName,
             configs
         ),
-        localize('AWS.generic.open', 'Open {0}', 'launch.json')
+        openJson,
+        learnMore
     )
 
-    if (action) {
+    if (action === openJson) {
         await openLaunchJsonFile()
+    } else if (action === learnMore) {
+        vscode.env.openExternal(vscode.Uri.parse(debugNewSamAppUrl))
     }
 }

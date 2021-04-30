@@ -8,7 +8,7 @@ import { CloudFormation } from './cloudformation'
 import * as pathutils from '../utilities/pathUtils'
 import * as path from 'path'
 import { isInDirectory } from '../filesystemUtilities'
-import { dotNetRuntimes } from '../../lambda/models/samLambdaRuntime'
+import { dotNetRuntimes, goRuntimes, javaRuntimes } from '../../lambda/models/samLambdaRuntime'
 import { getLambdaDetails } from '../../lambda/utils'
 import { ext } from '../extensionGlobals'
 import { WatchedFiles, WatchedItem } from '../watchedFiles'
@@ -119,10 +119,10 @@ export function getResourcesForHandlerFromTemplateDatum(
             )
 
             if (registeredRuntime && registeredHandler && registeredCodeUri) {
-                // .NET is currently a special case in that the filepath and handler aren't specific.
+                // Java and .NET are currently special cases in that the filepath and handler aren't specific.
                 // For now: check if handler matches and check if the code URI contains the filepath.
-                // TODO: Can we use Omnisharp to help guide us better?
-                if (dotNetRuntimes.includes(registeredRuntime)) {
+                // TODO: Can we use Omnisharp or some sort of Java tooling to help guide us better?
+                if (dotNetRuntimes.includes(registeredRuntime) || javaRuntimes.includes(registeredRuntime)) {
                     if (
                         handler === registeredHandler &&
                         isInDirectory(
@@ -132,10 +132,22 @@ export function getResourcesForHandlerFromTemplateDatum(
                     ) {
                         matchingResources.push({ name: key, resourceData: resource })
                     }
+                } else if (goRuntimes.includes(registeredRuntime)) {
+                    // Go is another special case. The handler merely refers to the compiled binary.
+                    // We ignore checking for a handler name match, since it is not relevant
+                    // See here: https://github.com/aws/aws-lambda-go
+                    if (
+                        isInDirectory(
+                            pathutils.normalize(path.join(templateDirname, registeredCodeUri)),
+                            pathutils.normalize(filepath)
+                        )
+                    ) {
+                        matchingResources.push({ name: key, resourceData: resource })
+                    }
+                } else {
                     // Interpreted languages all follow the same spec:
                     // ./path/to/handler/without/file/extension.handlerName
                     // Check to ensure filename and handler both match.
-                } else {
                     try {
                         const parsedLambda = getLambdaDetails({
                             Handler: registeredHandler,

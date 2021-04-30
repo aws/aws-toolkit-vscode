@@ -1,3 +1,20 @@
+## 1.24.0 2021-04-22
+
+- **Bug Fix** SAM Python debugging: restore retry to ensure successful attach #1666
+- **Feature** SAM run/debug: Add support for Java 8, Java 8.al2, and Java 11 runtimes using Maven and Gradle
+- **Feature** CDK panel now appears below the AWS Explorer instead of the VSCode File Explorer
+- **Feature** UI: Refresh AWS Explorer after performing "Deploy SAM application"
+
+## 1.23.0 2021-04-16
+
+- **Feature** Beta UI for editing and directly invoking AWS SAM debug configurations
+- **Feature** AWS Explorer: clicking "Failed to load" node navigates to failure details #1569
+- **Feature** SAM Deploy wizard: show recently-used S3 buckets; ability to input S3 bucket name manually #1527
+- **Feature** SAM run/debug: Add support for Java 8, Java 8.al2, and Java 11 runtimes using Maven and Gradle
+- **Feature** Step Functions: adds ability to publish/update state machine from ASL YAML files.
+- **Feature** SAM run/debug: improve display of partial lines #1581
+- **Feature** "Create Lambda SAM Application": navigate to README.md instead of template.yaml #1574
+
 ## 1.22.0 2021-03-19
 
 - **Bug Fix** fix unwanted "invalid SAM CLI" error on startup

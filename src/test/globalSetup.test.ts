@@ -40,19 +40,21 @@ before(async function () {
     const service = new DefaultTelemetryService(fakeContext, fakeAws, undefined, fakeTelemetryPublisher)
     ext.init(fakeContext, extWindow.Window.vscode())
     ext.telemetry = service
+})
+
+beforeEach(function () {
+    // Set every test up so that TestLogger is the logger used by toolkit code
+    testLogger = setupTestLogger()
     ext.templateRegistry = new CloudFormationTemplateRegistry()
     ext.codelensRootRegistry = new CodelensRootRegistry()
 })
 
-beforeEach(async function () {
-    // Set every test up so that TestLogger is the logger used by toolkit code
-    testLogger = setupTestLogger()
-})
-
-afterEach(async function () {
+afterEach(function () {
     // Prevent other tests from using the same TestLogger instance
     teardownTestLogger(this.currentTest?.fullTitle() as string)
     testLogger = undefined
+    ext.templateRegistry.dispose()
+    ext.codelensRootRegistry.dispose()
 })
 
 /**
