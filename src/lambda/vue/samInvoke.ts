@@ -32,6 +32,8 @@ import { CloudFormation } from '../../shared/cloudformation/cloudformation'
 import { openLaunchJsonFile } from '../../shared/sam/debugger/commands/addSamDebugConfiguration'
 import { recordSamOpenConfigUi } from '../../shared/telemetry/telemetry.gen'
 import { getSampleLambdaPayloads } from '../utils'
+import { isCloud9 } from '../../shared/extensionUtilities'
+import { SamDebugConfigProvider } from '../../shared/sam/debugger/awsSamDebugger'
 
 const localize = nls.loadMessageBundle()
 
@@ -375,9 +377,17 @@ async function invokeLaunchConfig(config: AwsSamDebuggerConfiguration, context: 
     const targetUri = getUriFromLaunchConfig(finalConfig)
     const folder = targetUri ? vscode.workspace.getWorkspaceFolder(targetUri) : undefined
 
-    await vscode.debug.startDebugging(folder, finalConfig)
-
-    // await new SamDebugConfigProvider(context).resolveDebugConfigurationWithSubstitutedVariables(folder, finalConfig)
+    // Cloud9 currently can't resolve the `aws-sam` debug config provider.
+    // Directly invoke the config instead.
+    // NOTE: This bypasses the `${workspaceFolder}` resolution, but shouldn't naturally occur in Cloud9
+    // (Cloud9 also doesn't currently have variable resolution support anyways)
+    if (isCloud9()) {
+        const provider = new SamDebugConfigProvider(context)
+        await provider.resolveDebugConfiguration(folder, finalConfig)
+    } else {
+        // startDebugging on VS Code goes through the whole resolution chain
+        await vscode.debug.startDebugging(folder, finalConfig)
+    }
 }
 
 function getUriFromLaunchConfig(config: AwsSamDebuggerConfiguration): vscode.Uri | undefined {
