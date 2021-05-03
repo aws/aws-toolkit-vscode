@@ -4,7 +4,7 @@
  */
 
 import * as vscode from 'vscode'
-import { getIdeProperties } from '../extensionUtilities'
+import { getIdeProperties, isCloud9 } from '../extensionUtilities'
 import { getLogger, showLogOutputChannel } from '../../shared/logger'
 import { localize } from '../../shared/utilities/vsCodeUtils'
 import { Window } from '../../shared/vscode/window'
@@ -93,6 +93,11 @@ async function showProgressWithTimeout(
     timeout: Timeout,
     window: Window = ext.window
 ): Promise<vscode.Progress<{ message?: string; increment?: number }>> {
+    // Cloud9 doesn't support Progress notifications. User won't be able to cancel.
+    if (isCloud9()) {
+        options.location = vscode.ProgressLocation.Window
+    }
+
     const progressPromise: Promise<vscode.Progress<{ message?: string; increment?: number }>> = new Promise(resolve => {
         window.withProgress(options, function (progress, token) {
             token.onCancellationRequested(() => timeout.complete(true))
