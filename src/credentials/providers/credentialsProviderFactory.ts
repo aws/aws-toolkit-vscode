@@ -35,7 +35,7 @@ export abstract class BaseCredentialsProviderFactory<T extends CredentialsProvid
         return undefined
     }
 
-    public abstract async refresh(): Promise<void>
+    public abstract refresh(): Promise<void>
 
     protected addProvider(provider: T) {
         this.providers.push(provider)

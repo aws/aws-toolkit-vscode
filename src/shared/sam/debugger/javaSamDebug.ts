@@ -9,7 +9,7 @@ import { RuntimeFamily } from '../../../lambda/models/samLambdaRuntime'
 import { ExtContext, VSCODE_EXTENSION_ID } from '../../extensions'
 import { getLogger } from '../../logger'
 import { DefaultSamLocalInvokeCommand, WAIT_FOR_DEBUGGER_MESSAGES } from '../cli/samCliLocalInvoke'
-import { invokeLambdaFunction, makeInputTemplate, waitForPort } from '../localLambdaRunner'
+import { runLambdaFunction, makeInputTemplate, waitForPort } from '../localLambdaRunner'
 import { SamLaunchRequestArgs } from './awsSamDebugger'
 
 export async function activateJavaExtensionIfInstalled() {
@@ -64,5 +64,5 @@ export async function invokeJavaLambda(ctx: ExtContext, config: SamLaunchRequest
             setTimeout(resolve, 1000)
         })
     }
-    return await invokeLambdaFunction(ctx, config, async () => {})
+    return await runLambdaFunction(ctx, config, async () => {})
 }

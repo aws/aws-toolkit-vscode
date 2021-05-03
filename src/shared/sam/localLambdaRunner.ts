@@ -17,7 +17,6 @@ import { DefaultSettingsConfiguration, SettingsConfiguration } from '../settings
 import * as telemetry from '../telemetry/telemetry'
 import { SamTemplateGenerator } from '../templates/sam/samTemplateGenerator'
 import * as pathutil from '../utilities/pathUtils'
-import { normalizeSeparator } from '../utilities/pathUtils'
 import { Timeout } from '../utilities/timeoutUtils'
 import { tryGetAbsolutePath } from '../utilities/workspaceUtils'
 import { SamCliBuildInvocation, SamCliBuildInvocationArguments } from './cli/samCliBuild'
@@ -83,24 +82,8 @@ const SAM_LOCAL_PORT_CHECK_RETRY_TIMEOUT_MILLIS_DEFAULT: number = 30000
 const ATTACH_DEBUGGER_RETRY_DELAY_MILLIS: number = 1000
 
 /** "sam local start-api" wrapper from the current debug-session. */
-let samStartApi: Promise<void>
+let samStartApi: Promise<boolean>
 let samStartApiProc: ChildProcess | undefined
-
-export function getRelativeFunctionHandler(params: {
-    handlerName: string
-    runtime: string
-    handlerRelativePath: string
-}): string {
-    // Make function handler relative to baseDir
-    let relativeFunctionHandler: string
-    if (shouldAppendRelativePathToFunctionHandler(params.runtime)) {
-        relativeFunctionHandler = normalizeSeparator(path.join(params.handlerRelativePath, params.handlerName))
-    } else {
-        relativeFunctionHandler = params.handlerName
-    }
-
-    return relativeFunctionHandler
-}
 
 export async function makeInputTemplate(config: SamLaunchRequestArgs): Promise<string> {
     let newTemplate: SamTemplateGenerator
@@ -154,31 +137,11 @@ export async function makeInputTemplate(config: SamLaunchRequestArgs): Promise<s
     return pathutil.normalize(inputTemplatePath)
 }
 
-/**
- * Prepares and invokes a lambda function via `sam local invoke`.
- *
- * @param ctx
- * @param config
- * @param onAfterBuild  Called after `SamCliBuildInvocation.execute()`
- */
-export async function invokeLambdaFunction(
-    ctx: ExtContext,
-    config: SamLaunchRequestArgs,
-    onAfterBuild: () => Promise<void>
-): Promise<SamLaunchRequestArgs> {
-    // Switch over to the output channel so the user has feedback that we're getting things ready
-    ctx.outputChannel.show(true)
-    if (!config.noDebug) {
-        const msg =
-            (config.invokeTarget.target === 'api' ? `API "${config.api?.path}", ` : '') +
-            `Lambda "${config.handlerName}"`
-        getLogger('channel').info(localize('AWS.output.sam.local.startDebug', 'Preparing to debug locally: {0}', msg))
-    } else {
-        getLogger('channel').info(
-            localize('AWS.output.sam.local.startRun', 'Preparing to run locally: {0}', config.handlerName)
-        )
-    }
-
+async function buildLambdaHandler(
+    timer: Timeout,
+    env: NodeJS.ProcessEnv,
+    config: SamLaunchRequestArgs
+): Promise<boolean> {
     const processInvoker = new DefaultSamCliProcessInvoker({
         preloadedConfig: new DefaultSamCliConfiguration(
             new DefaultSettingsConfiguration(extensionSettingsPrefix),
@@ -188,10 +151,7 @@ export async function invokeLambdaFunction(
 
     getLogger('channel').info(localize('AWS.output.building.sam.application', 'Building SAM application...'))
     const samBuildOutputFolder = path.join(config.baseBuildDir!, 'output')
-    const envVars = {
-        ...(config.awsCredentials ? asEnvironmentVariables(config.awsCredentials) : {}),
-        ...(config.aws?.region ? { AWS_DEFAULT_REGION: config.aws.region } : {}),
-    }
+
     const samCliArgs: SamCliBuildInvocationArguments = {
         buildDir: samBuildOutputFolder,
         // undefined triggers SAM to use the template's dir as the code root
@@ -199,7 +159,7 @@ export async function invokeLambdaFunction(
         templatePath: config.templatePath!,
         invoker: processInvoker,
         manifestPath: config.manifestPath,
-        environmentVariables: envVars,
+        environmentVariables: env,
         useContainer: config.sam?.containerBuild || false,
         extraArgs: config.sam?.buildArguments,
         skipPullImage: config.sam?.skipNewImageCheck,
@@ -228,22 +188,26 @@ export async function invokeLambdaFunction(
         await remove(config.templatePath)
         config.templatePath = path.join(samBuildOutputFolder, 'template.yaml')
         getLogger('channel').info(localize('AWS.output.building.sam.application.complete', 'Build complete.'))
+        return true
     } catch (err) {
         // build unsuccessful: don't delete temp template and continue using it for invocation
         // will be cleaned up in the last `finally` step
         getLogger('channel').warn(
             localize('AWS.samcli.build.failedBuild', '"sam build" failed: {0}', config.templatePath)
         )
+        return false
     }
+}
 
-    await onAfterBuild()
-
+async function invokeLambdaHandler(
+    timer: Timeout,
+    env: NodeJS.ProcessEnv,
+    config: SamLaunchRequestArgs
+): Promise<boolean> {
     getLogger('channel').info(localize('AWS.output.starting.sam.app.locally', 'Starting SAM application locally'))
     getLogger().debug(`localLambdaRunner.invokeLambdaFunction: ${config.name}`)
 
-    const timer = createInvokeTimer(ctx.settings)
     const debugPort = !config.noDebug ? config.debugPort?.toString() : undefined
-    const lambdaPackageType = isImageLambdaConfig(config) ? 'Image' : 'Zip'
 
     if (config.invokeTarget.target === 'api') {
         // sam local start-api ...
@@ -259,7 +223,7 @@ export async function invokeLambdaFunction(
             templatePath: config.templatePath,
             dockerNetwork: config.sam?.dockerNetwork,
             environmentVariablePath: config.envFile,
-            environmentVariables: envVars,
+            environmentVariables: env,
             port: config.apiPort?.toString(),
             debugPort: debugPort,
             debuggerPath: config.debuggerPath,
@@ -282,36 +246,42 @@ export async function invokeLambdaFunction(
 
         // We want async behavior so `await` is intentionally not used here, we
         // need to call requestLocalApi() while it is up.
-        samStartApi = config
-            .samLocalInvokeCommand!.invoke({
-                options: {
-                    env: {
-                        ...process.env,
-                        ...envVars,
+        samStartApi = new Promise(resolve => {
+            config
+                .samLocalInvokeCommand!.invoke({
+                    options: {
+                        env: {
+                            ...process.env,
+                            ...env,
+                        },
                     },
-                },
-                command: samCommand,
-                args: samArgs,
-                // "sam local start-api" produces "attach" messages similar to "sam local invoke".
-                waitForCues: true,
-                timeout: timer,
-                name: config.name,
-            })
-            .then(sam => {
-                recordApigwTelemetry('Succeeded')
-                samStartApiProc = sam
-            })
-            .catch(e => {
-                recordApigwTelemetry('Failed')
-                getLogger().warn(e as Error)
-                getLogger('channel').error(
-                    localize(
-                        'AWS.error.during.apig.local',
-                        'Failed to start local API Gateway: {0}',
-                        (e as Error).message
+                    command: samCommand,
+                    args: samArgs,
+                    // "sam local start-api" produces "attach" messages similar to "sam local invoke".
+                    waitForCues: true,
+                    timeout: timer,
+                    name: config.name,
+                })
+                .then(sam => {
+                    recordApigwTelemetry('Succeeded')
+                    samStartApiProc = sam
+                    resolve(true)
+                })
+                .catch(e => {
+                    recordApigwTelemetry('Failed')
+                    getLogger().warn(e as Error)
+                    getLogger('channel').error(
+                        localize(
+                            'AWS.error.during.apig.local',
+                            'Failed to start local API Gateway: {0}',
+                            (e as Error).message
+                        )
                     )
-                )
-            })
+                    resolve(false)
+                })
+        })
+
+        return true
     } else {
         // 'target=code' or 'target=template'
         const localInvokeArgs: SamCliLocalInvokeInvocationArguments = {
@@ -319,7 +289,7 @@ export async function invokeLambdaFunction(
             templatePath: config.templatePath,
             eventPath: config.eventPayloadFile,
             environmentVariablePath: config.envFile,
-            environmentVariables: envVars,
+            environmentVariables: env,
             invoker: config.samLocalInvokeCommand!,
             dockerNetwork: config.sam?.dockerNetwork,
             debugPort: debugPort,
@@ -349,16 +319,63 @@ export async function invokeLambdaFunction(
                     (err as Error).message
                 )
             )
+
+            return false
         } finally {
             await remove(config.templatePath)
             telemetry.recordLambdaInvokeLocal({
-                lambdaPackageType: lambdaPackageType,
+                lambdaPackageType: isImageLambdaConfig(config) ? 'Image' : 'Zip',
                 result: invokeResult,
                 runtime: config.runtime as telemetry.Runtime,
                 debug: !config.noDebug,
                 version: samVersion,
             })
         }
+
+        return true
+    }
+}
+
+/**
+ * Prepares and invokes a lambda function via `sam local (invoke/api)`.
+ *
+ * @param ctx
+ * @param config
+ * @param onAfterBuild  Called after `SamCliBuildInvocation.execute()`
+ */
+export async function runLambdaFunction(
+    ctx: ExtContext,
+    config: SamLaunchRequestArgs,
+    onAfterBuild: () => Promise<void>
+): Promise<SamLaunchRequestArgs> {
+    // Switch over to the output channel so the user has feedback that we're getting things ready
+    ctx.outputChannel.show(true)
+    if (!config.noDebug) {
+        const msg =
+            (config.invokeTarget.target === 'api' ? `API "${config.api?.path}", ` : '') +
+            `Lambda "${config.handlerName}"`
+        getLogger('channel').info(localize('AWS.output.sam.local.startDebug', 'Preparing to debug locally: {0}', msg))
+    } else {
+        getLogger('channel').info(
+            localize('AWS.output.sam.local.startRun', 'Preparing to run locally: {0}', config.handlerName)
+        )
+    }
+
+    const envVars = {
+        ...(config.awsCredentials ? asEnvironmentVariables(config.awsCredentials) : {}),
+        ...(config.aws?.region ? { AWS_DEFAULT_REGION: config.aws.region } : {}),
+    }
+
+    const timer = createInvokeTimer(ctx.settings)
+
+    if (!(await buildLambdaHandler(timer, envVars, config))) {
+        return config
+    }
+
+    await onAfterBuild()
+
+    if (!(await invokeLambdaHandler(timer, envVars, config))) {
+        return config
     }
 
     if (!config.noDebug) {
@@ -367,7 +384,9 @@ export async function invokeLambdaFunction(
             // Send the request to the local API server.
             await requestLocalApi(ctx, config.api!, config.apiPort!, payload)
             // Wait for cue messages ("Starting debugger" etc.) before attach.
-            await samStartApi
+            if (!(await samStartApi)) {
+                return config
+            }
         }
 
         if (config.onWillAttachDebugger) {
@@ -387,7 +406,7 @@ export async function invokeLambdaFunction(
             retryDelayMillis: ATTACH_DEBUGGER_RETRY_DELAY_MILLIS,
             onRecordAttachDebuggerMetric: (attachResult: boolean | undefined, attempts: number): void => {
                 telemetry.recordSamAttachDebugger({
-                    lambdaPackageType: lambdaPackageType,
+                    lambdaPackageType: isImageLambdaConfig(config) ? 'Image' : 'Zip',
                     runtime: config.runtime as telemetry.Runtime,
                     result: attachResult ? 'Succeeded' : 'Failed',
                     attempts: attempts,

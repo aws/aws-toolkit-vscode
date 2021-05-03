@@ -28,8 +28,10 @@ export class LoginManager {
      *
      * @param passive  If true, this was _not_ a user-initiated action.
      * @param provider  Credentials provider id
+     * @returns True if the toolkit could connect with the providerId
      */
-    public async login(args: { passive: boolean; providerId: CredentialsProviderId }): Promise<void> {
+
+    public async login(args: { passive: boolean; providerId: CredentialsProviderId }): Promise<boolean> {
         let provider: CredentialsProvider | undefined
         try {
             provider = await CredentialsProviderManager.getInstance().getCredentialsProvider(args.providerId)
@@ -54,18 +56,25 @@ export class LoginManager {
                 accountId: accountId,
                 defaultRegion: provider.getDefaultRegion(),
             })
+
+            return true
         } catch (err) {
-            getLogger().error(
-                `Error trying to connect to AWS with Credentials Provider ${asString(
-                    args.providerId
-                )}. Toolkit will now disconnect from AWS. %O`,
-                err as Error
-            )
-            this.store.invalidateCredentials(args.providerId)
+            // TODO: don't hardcode logic using error message, have a 'type' field instead
+            if (!(err as Error).message.includes('cancel')) {
+                notifyUserInvalidCredentials(args.providerId)
+                getLogger().error(
+                    `Error trying to connect to AWS with Credentials Provider ${asString(
+                        args.providerId
+                    )}. Toolkit will now disconnect from AWS. %O`,
+                    err as Error
+                )
+            } else {
+                getLogger().info(`Cancelled getting credentials from provider: ${asString(args.providerId)}`)
+            }
 
             await this.logout()
-
-            notifyUserInvalidCredentials(args.providerId)
+            this.store.invalidateCredentials(args.providerId)
+            return false
         } finally {
             const credType = provider?.getCredentialsType2()
             this.recordAwsSetCredentialsFn({
