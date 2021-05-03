@@ -58,6 +58,10 @@ configurations {
     }
 }
 
+tasks.processResources {
+    // needed because both rider and ultimate include plugin-datagrip.xml which we are fine with
+    duplicatesStrategy = DuplicatesStrategy.INCLUDE
+}
 
 // Run after the project has been evaluated so that the extension (intellijToolkit) has been configured
 afterEvaluate {
