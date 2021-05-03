@@ -10,7 +10,7 @@ import * as nls from 'vscode-nls'
 import { activate as activateAwsExplorer } from './awsexplorer/activation'
 import { activate as activateCdk } from './cdk/activation'
 import { activate as activateCloudWatchLogs } from './cloudWatchLogs/activation'
-import { initialize as initializeCredentials, loginWithMostRecentCredentials } from './credentials/activation'
+import { initialize as initializeCredentials } from './credentials/activation'
 import { initializeAwsCredentialsStatusBarItem } from './credentials/awsCredentialsStatusBarItem'
 import { LoginManager } from './credentials/loginManager'
 import { CredentialsProviderManager } from './credentials/providers/credentialsProviderManager'
@@ -200,7 +200,6 @@ export async function activate(context: vscode.ExtensionContext) {
 
         await activateAwsExplorer({
             awsContext,
-            context,
             awsContextTrees,
             regionProvider,
             toolkitOutputChannel,
@@ -239,8 +238,6 @@ export async function activate(context: vscode.ExtensionContext) {
         }
 
         showWelcomeMessage(context)
-
-        await loginWithMostRecentCredentials(toolkitSettings, loginManager)
 
         recordToolkitInitialization(activationStartedOn, getLogger())
 
