@@ -1,9 +1,10 @@
-# Please see the documentation for all configuration options:
+# Documentation for configuration options:
 # https://help.github.com/github/administering-a-repository/configuration-options-for-dependency-updates
 
 version: 2
 updates:
-  - package-ecosystem: "npm" # See documentation for possible values
-    directory: "/" # Location of package manifests
-    schedule:
-      interval: "daily"
+    - package-ecosystem: 'npm'
+      directory: '/' # Location of package manifests.
+      target-branch: 'master' # Avoid updates to "staging".
+      schedule:
+          interval: 'daily'
