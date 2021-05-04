@@ -66,7 +66,7 @@ describe('SharedCredentialsProviderFactory', async function () {
         assert.ok(
             providers.find(p =>
                 isEqual(p.getCredentialsProviderId(), {
-                    credentialType: 'profile',
+                    credentialType: 'sharedCredentials',
                     credentialTypeId: validProfileName1,
                 })
             ),
@@ -75,7 +75,7 @@ describe('SharedCredentialsProviderFactory', async function () {
         assert.ok(
             providers.find(p =>
                 isEqual(p.getCredentialsProviderId(), {
-                    credentialType: 'profile',
+                    credentialType: 'sharedCredentials',
                     credentialTypeId: validProfileName2,
                 })
             ),
