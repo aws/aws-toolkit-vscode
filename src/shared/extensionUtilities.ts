@@ -188,7 +188,8 @@ export async function createQuickStartWebview(
     const view = vscode.window.createWebviewPanel(
         'html',
         localize('AWS.command.quickStart.title', 'AWS Toolkit - Quick Start'),
-        { viewColumn: vscode.ViewColumn.Active, preserveFocus: true }
+        { viewColumn: vscode.ViewColumn.Active, preserveFocus: true },
+        { enableScripts: true }
     )
     view.webview.html = convertExtensionRootTokensToPath(
         await readFileAsString(path.join(context.extensionPath, actualPage)),
