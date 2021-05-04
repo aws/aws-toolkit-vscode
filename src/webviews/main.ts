@@ -5,7 +5,7 @@
 
 import * as path from 'path'
 import * as vscode from 'vscode'
-import { ExtensionUtilities } from '../shared/extensionUtilities'
+import { ExtensionUtilities, isCloud9 } from '../shared/extensionUtilities'
 
 interface WebviewParams<TRequest, TResponse> {
     id: string
@@ -39,16 +39,23 @@ export async function createVueWebview<TRequest, TResponse>(params: WebviewParam
     const cssPath: string = path.join(params.context.extensionPath, 'media', 'css')
     const webviewPath: string = path.join(params.context.extensionPath, 'dist', 'compiledWebviews')
 
-    const view = vscode.window.createWebviewPanel(params.id, params.name, vscode.ViewColumn.Beside, {
-        enableScripts: true,
-        localResourceRoots: [
-            vscode.Uri.file(libsPath),
-            vscode.Uri.file(jsPath),
-            vscode.Uri.file(cssPath),
-            vscode.Uri.file(webviewPath),
-        ],
-        retainContextWhenHidden: params.persistWithoutFocus,
-    })
+    const view = vscode.window.createWebviewPanel(
+        params.id,
+        params.name,
+        // Cloud9 opens the webview in the bottom pane unless a second pane already exists on the main level.
+        isCloud9() ? vscode.ViewColumn.Two : vscode.ViewColumn.Beside,
+        {
+            enableScripts: true,
+            localResourceRoots: [
+                vscode.Uri.file(libsPath),
+                vscode.Uri.file(jsPath),
+                vscode.Uri.file(cssPath),
+                vscode.Uri.file(webviewPath),
+            ],
+            // HACK: Cloud9 does not have get/setState support. Remove when it does.
+            retainContextWhenHidden: isCloud9() ? true : params.persistWithoutFocus,
+        }
+    )
 
     const loadLibs = ExtensionUtilities.getFilesAsVsCodeResources(
         libsPath,
