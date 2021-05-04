@@ -30,6 +30,7 @@ export class LoginManager {
      * @param provider  Credentials provider id
      * @returns True if the toolkit could connect with the providerId
      */
+
     public async login(args: { passive: boolean; providerId: CredentialsProviderId }): Promise<boolean> {
         let provider: CredentialsProvider | undefined
         try {
@@ -76,11 +77,10 @@ export class LoginManager {
             return false
         } finally {
             const credType = provider?.getCredentialsType2()
-            if (!args.passive) {
-                this.recordAwsSetCredentialsFn({
-                    credentialType: credType,
-                })
-            }
+            this.recordAwsSetCredentialsFn({
+                passive: args.passive,
+                credentialType: credType,
+            })
         }
     }
 
