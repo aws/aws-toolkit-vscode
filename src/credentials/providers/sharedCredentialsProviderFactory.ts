@@ -13,6 +13,7 @@ import {
 } from '../sharedCredentials'
 import { BaseCredentialsProviderFactory } from './credentialsProviderFactory'
 import { SharedCredentialsProvider } from './sharedCredentialsProvider'
+import { CredentialSourceId } from '../../shared/telemetry/telemetry.gen'
 
 export class SharedCredentialsProviderFactory extends BaseCredentialsProviderFactory<SharedCredentialsProvider> {
     private readonly logger: Logger = getLogger()
@@ -20,7 +21,7 @@ export class SharedCredentialsProviderFactory extends BaseCredentialsProviderFac
     private loadedCredentialsModificationMillis?: number
     private loadedConfigModificationMillis?: number
 
-    public getCredentialType(): string {
+    public getCredentialType(): CredentialSourceId {
         return SharedCredentialsProvider.getCredentialsType()
     }
 

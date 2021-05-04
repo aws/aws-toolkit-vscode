@@ -48,7 +48,7 @@ describe('SharedCredentialsProvider', async function () {
         )
 
         assert.deepStrictEqual(sut.getCredentialsProviderId(), {
-            credentialType: 'profile',
+            credentialType: 'sharedCredentials',
             credentialTypeId: 'default',
         })
     })
