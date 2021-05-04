@@ -1533,7 +1533,7 @@
         "createRelease": "ts-node ./build-scripts/createRelease.ts"
     },
     "devDependencies": {
-        "@aws-toolkits/telemetry": "0.0.94",
+        "@aws-toolkits/telemetry": "0.0.100",
         "@sinonjs/fake-timers": "^7.0.5",
         "@types/adm-zip": "^0.4.32",
         "@types/async-lock": "^1.1.0",
@@ -1546,7 +1546,7 @@
         "@types/marked": "^0.6.5",
         "@types/mime-types": "^2.1.0",
         "@types/mocha": "^7.0.2",
-        "@types/node": "^10.14.22",
+        "@types/node": "^15.0.1",
         "@types/readline-sync": "^1.4.3",
         "@types/request": "^2.47.1",
         "@types/semver": "^5.5.0",
