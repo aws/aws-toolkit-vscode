@@ -15,7 +15,7 @@ import { SsoAccessTokenProvider } from '../sso/ssoAccessTokenProvider'
 import { CredentialsProvider } from './credentialsProvider'
 import { CredentialsProviderId } from './credentialsProviderId'
 import { SsoCredentialProvider } from './ssoCredentialProvider'
-import { CredentialSourceId, CredentialType } from '../../shared/telemetry/telemetry.gen'
+import { CredentialType } from '../../shared/telemetry/telemetry.gen'
 
 const SHARED_CREDENTIAL_PROPERTIES = {
     AWS_ACCESS_KEY_ID: 'aws_access_key_id',
@@ -36,7 +36,7 @@ const SHARED_CREDENTIAL_PROPERTIES = {
  * Represents one profile from the AWS Shared Credentials files, and produces Credentials from this profile.
  */
 export class SharedCredentialsProvider implements CredentialsProvider {
-    private static readonly CREDENTIALS_TYPE: CredentialSourceId = 'sharedCredentials'
+    private static readonly CREDENTIALS_TYPE = 'profile'
 
     private readonly profile: Profile
 
@@ -251,7 +251,7 @@ export class SharedCredentialsProvider implements CredentialsProvider {
      *
      * TODO: deprecated / why is this static?!
      */
-    public static getCredentialsType(): CredentialSourceId {
+    public static getCredentialsType(): string {
         return SharedCredentialsProvider.CREDENTIALS_TYPE
     }
 
