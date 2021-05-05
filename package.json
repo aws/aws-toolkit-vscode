@@ -165,7 +165,7 @@
                 "aws.sam.enableCodeLenses": {
                     "type": "boolean",
                     "description": "%AWS.configuration.enableCodeLenses%",
-                    "default": "true"
+                    "default": true
                 }
             }
         },
