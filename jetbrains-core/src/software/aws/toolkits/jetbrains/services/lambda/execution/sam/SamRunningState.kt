@@ -154,10 +154,11 @@ class SamRunningState(
                         override fun buildChildSteps(context: Context): List<Step> = listOf(
                             startSam,
                             AttachDebuggerParent(
-                                state.settings.resolveDebuggerSupport().additionalDebugProcessSteps(environment, state) + AttachDebugger(
-                                    environment,
-                                    state
-                                )
+                                state.settings.resolveDebuggerSupport().additionalDebugProcessSteps(environment, state) +
+                                    AttachDebugger(
+                                        environment,
+                                        state
+                                    )
                             )
                         )
 
