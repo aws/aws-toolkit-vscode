@@ -167,17 +167,12 @@ async function activateCodeLensProviders(
 
     disposables.push(
         vscode.commands.registerCommand('aws.toggleSamCodeLenses', () => {
-            configuration.readSetting<boolean>(codelensUtils.STATE_NAME_ENABLE_CODELENSES)
-                ? configuration.writeSetting(
-                      codelensUtils.STATE_NAME_ENABLE_CODELENSES,
-                      false,
-                      vscode.ConfigurationTarget.Global
-                  )
-                : configuration.writeSetting(
-                      codelensUtils.STATE_NAME_ENABLE_CODELENSES,
-                      true,
-                      vscode.ConfigurationTarget.Global
-                  )
+            const toggled = !configuration.readSetting<boolean>(codelensUtils.STATE_NAME_ENABLE_CODELENSES)
+            configuration.writeSetting(
+                codelensUtils.STATE_NAME_ENABLE_CODELENSES,
+                toggled,
+                vscode.ConfigurationTarget.Global
+            )
         })
     )
 
