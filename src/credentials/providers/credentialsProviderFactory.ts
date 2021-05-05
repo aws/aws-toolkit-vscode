@@ -3,7 +3,6 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
-import { CredentialSourceId } from '../../shared/telemetry/telemetry.gen'
 import { CredentialsProvider } from './credentialsProvider'
 import { CredentialsProviderId, isEqual } from './credentialsProviderId'
 
@@ -11,7 +10,7 @@ import { CredentialsProviderId, isEqual } from './credentialsProviderId'
  * Responsible for producing CredentialsProvider objects for a Credential Type
  */
 export interface CredentialsProviderFactory {
-    getCredentialType(): CredentialSourceId
+    getCredentialType(): string
     listProviders(): CredentialsProvider[]
     getProvider(credentialsProviderId: CredentialsProviderId): CredentialsProvider | undefined
     refresh(): Promise<void>
@@ -20,7 +19,7 @@ export interface CredentialsProviderFactory {
 export abstract class BaseCredentialsProviderFactory<T extends CredentialsProvider>
     implements CredentialsProviderFactory {
     protected providers: T[] = []
-    public abstract getCredentialType(): CredentialSourceId
+    public abstract getCredentialType(): string
 
     public listProviders(): T[] {
         return [...this.providers]
