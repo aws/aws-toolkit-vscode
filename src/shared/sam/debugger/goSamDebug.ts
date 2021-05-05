@@ -15,11 +15,11 @@ import { DefaultSamLocalInvokeCommand, WAIT_FOR_DEBUGGER_MESSAGES } from '../cli
 import { runLambdaFunction, makeInputTemplate } from '../localLambdaRunner'
 import { SamLaunchRequestArgs } from './awsSamDebugger'
 import { getLogger } from '../../logger'
-import { chmod, ensureDir, writeFile, pathExistsSync, unlinkSync, existsSync } from 'fs-extra'
+import { chmod, ensureDir, writeFile, unlinkSync, existsSync } from 'fs-extra'
 import { ChildProcess } from '../../utilities/childProcess'
 import { Timeout } from '../../utilities/timeoutUtils'
 import { SystemUtilities } from '../../../shared/systemUtilities'
-import { execSync, SpawnOptions } from 'child_process'
+import { execFileSync, SpawnOptions } from 'child_process'
 import { ext } from '../../../shared/extensionGlobals'
 import * as nls from 'vscode-nls'
 import { showErrorWithLogs } from '../../../shared/utilities/messages'
@@ -166,12 +166,28 @@ async function makeInstallScript(debuggerPath: string, isWindows: boolean): Prom
     const installOptions: SpawnOptions = { env: { ...process.env } }
     let delveVersion: string = ''
 
+    // Since Go1.16, GO111MODULE is on by default. This causes Go to require the
+    // existence of a go.mod file or else it gives up. GO111MODULE=off prevents
+    // Go from trying to find the manifest file and uses GOPATH provided below.
+    installOptions.env!['GO111MODULE'] = 'off'
+
     // It's fine if we can't get the latest Delve version, the Toolkit will use the last built one instead
     try {
-        const goPath: string = JSON.parse(execSync('go env -json').toString()).GOPATH
+        const goPath: string = JSON.parse(execFileSync('go', ['env', '-json']).toString()).GOPATH
         let repoPath: string = path.join(goPath, 'src', DELVE_REPO)
 
-        if (!pathExistsSync(repoPath)) {
+        function getDelveVersion(repo: string, silent: boolean): string {
+            try {
+                return execFileSync('git', ['-C', repo, 'describe', '--tags', '--abbrev=0']).toString().trim()
+            } catch (e) {
+                if (!silent) {
+                    throw e
+                }
+                return ''
+            }
+        }
+
+        if (!getDelveVersion(repoPath, true)) {
             getLogger('channel').info(
                 localize(
                     'AWS.sam.debugger.godelve.download',
@@ -180,10 +196,12 @@ async function makeInstallScript(debuggerPath: string, isWindows: boolean): Prom
             )
             installOptions.env!['GOPATH'] = debuggerPath
             repoPath = path.join(debuggerPath, 'src', DELVE_REPO)
-            execSync(`go get -d ${DELVE_REPO}/cmd/dlv`, installOptions as any)
+            const args = ['get', '-d', `${DELVE_REPO}/cmd/dlv`]
+            const out = execFileSync('go', args, installOptions as any)
+            getLogger().debug('"go %O": %s', args, out)
         }
 
-        delveVersion = execSync(`cd "${repoPath}" && git describe --tags --abbrev=0`).toString().trim()
+        delveVersion = getDelveVersion(repoPath, false)
     } catch (e) {
         getLogger().debug('Failed to get latest Delve version: %O', e as Error)
     }
@@ -198,7 +216,6 @@ async function makeInstallScript(debuggerPath: string, isWindows: boolean): Prom
 
     installOptions.env!['GOARCH'] = 'amd64'
     installOptions.env!['GOOS'] = 'linux'
-    installOptions.env!['GO111MODULE'] = 'off'
 
     script += `go build -o "${delvePath}" "${DELVE_REPO}/cmd/dlv"\n`
 
