@@ -3,10 +3,14 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
-export const TIMEOUT_ERROR_MESSAGE = 'Timeout token expired'
+export const TIMEOUT_EXPIRED_MESSAGE = 'Timeout token expired'
+export const TIMEOUT_CANCELLED_MESSAGE = 'Timeout token cancelled'
+export const TIMEOUT_UNEXPECTED_RESOLVE = 'Promise resolved with an unexpected object'
 
 /**
- * Timeout that can handle both cancellation token-style and time limit-style timeout situations.
+ * Timeout that can handle both cancellation token-style and time limit-style timeout situations. Timeouts
+ * cannot be used after 'complete' has been called or if the Timeout expired.
+ *
  * @param timeoutLength Length of timeout duration (in ms)
  */
 export class Timeout {
@@ -14,18 +18,27 @@ export class Timeout {
     private startTime: number
     private endTime: number
     private readonly timeoutLength: number
-    private readonly timerPromise: Promise<void>
-    private timerTimeout?: NodeJS.Timeout
-    private timerResolve?: (value?: void | PromiseLike<void> | undefined) => void
+    private readonly timerPromise: Promise<undefined>
+    private timerTimeout: NodeJS.Timeout
+    private timerResolve!: (value?: Promise<undefined> | undefined) => void
+    private timerReject!: (value?: Error | Promise<Error> | undefined) => void
+    private _completed: boolean = false
+
     public constructor(timeoutLength: number) {
         this.startTime = Date.now()
         this.originalStartTime = this.startTime
         this.endTime = this.startTime + timeoutLength
         this.timeoutLength = timeoutLength
-        this.timerPromise = new Promise<void>((resolve, reject) => {
-            this.timerTimeout = setTimeout(() => reject(new Error(TIMEOUT_ERROR_MESSAGE)), timeoutLength)
+
+        this.timerPromise = new Promise<undefined>((resolve, reject) => {
+            this.timerReject = reject
             this.timerResolve = resolve
         })
+
+        this.timerTimeout = setTimeout(() => {
+            this.timerReject(new Error(TIMEOUT_EXPIRED_MESSAGE))
+            this._completed = true
+        }, timeoutLength)
     }
 
     /**
@@ -40,15 +53,26 @@ export class Timeout {
     }
 
     /**
+     * True when the Timeout has completed
+     */
+    public get completed(): boolean {
+        return this._completed
+    }
+
+    /**
      * Updates the timer to timeout in timeout length from now
      */
     public refresh() {
+        if (this._completed === true) {
+            return
+        }
+
         // These will not align, but we don't have visibility into a NodeJS.Timeout
         // so remainingtime will be approximate. Timers are approximate anyway and are
         // not highly accurate in when they fire.
         this.startTime = Date.now()
         this.endTime = this.startTime + this.timeoutLength
-        this.timerTimeout?.refresh()
+        this.timerTimeout.refresh()
     }
 
     /**
@@ -56,7 +80,7 @@ export class Timeout {
      * Use this in Promise.race() calls in order to time out awaited functions
      * Once this timer has finished, cannot be restarted
      */
-    public get timer(): Promise<void> {
+    public get timer(): Promise<undefined> {
         return this.timerPromise
     }
 
@@ -64,19 +88,30 @@ export class Timeout {
      * Returns the elapsed time from the initial Timeout object creation
      */
     public get elapsedTime(): number {
-        return Date.now() - this.originalStartTime
+        return (this._completed ? this.endTime : Date.now()) - this.originalStartTime
     }
 
     /**
-     * Kills the internal timer and resolves the timer's promise
+     * Marks the Timeout token as being completed, preventing further use and locking in the elapsed time.
+     *
+     * @param reject Rejects the token with a cancelled error message
      */
-    public killTimer(): void {
-        if (this.timerTimeout) {
-            clearTimeout(this.timerTimeout)
+    public complete(reject?: boolean): void {
+        // Caller tried to call complete after the token expired
+        if (this._completed === true) {
+            return
         }
-        if (this.timerResolve) {
+
+        this.endTime = Date.now()
+        clearTimeout(this.timerTimeout!)
+
+        if (reject) {
+            this.timerReject(new Error(TIMEOUT_CANCELLED_MESSAGE))
+        } else {
             this.timerResolve()
         }
+
+        this._completed = true
     }
 }
 
@@ -117,4 +152,58 @@ export async function waitUntil<T>(
 
         await new Promise(r => setTimeout(r, opt.interval))
     }
+}
+
+/**
+ * Race a Timeout object against a Promise. Handles Timeout expiration and cancellation, exposing access through
+ * the use of callbacks. Timeout tokens are cleaned up automatically after completion. Set `opt.completeTimeout`
+ * to false if this is not desired.
+ *
+ * @param promise Promise or a function that evaluates to a promise
+ * @param timeout Timeout token that will race against the promise
+ * @param opt.allowUndefined Output promise can resolve undefined (default: true)
+ * @param opt.onExpire Callback for when the promise expired. The callback can return a value
+ * @param opt.onCancel Callback for when the promise was cancelled. The callback can return a value
+ * @param opt.completeTimeout Automatically completes the Timeout upon resolution (default: true)
+ *
+ * @returns A Promise that returns if successful, or rejects when the Timeout was cancelled or expired.
+ */
+export function waitTimeout<T>(
+    promise: Promise<T> | (() => Promise<T>),
+    timeout: Timeout,
+    opt: {
+        allowUndefined?: boolean
+        onExpire?: () => T | undefined
+        onCancel?: () => T | undefined
+        completeTimeout?: boolean
+    } = {}
+): Promise<T | undefined> {
+    if (typeof promise === 'function') {
+        promise = promise()
+    }
+
+    return Promise.race([promise, timeout.timer])
+        .then(obj => {
+            if (opt.allowUndefined === false && obj === undefined) {
+                throw new Error(TIMEOUT_UNEXPECTED_RESOLVE)
+            }
+            if (obj !== undefined) {
+                return obj
+            }
+            return undefined
+        })
+        .catch(err => {
+            if (opt.onExpire && (err as Error).message === TIMEOUT_EXPIRED_MESSAGE) {
+                return opt.onExpire()
+            }
+            if (opt.onCancel && (err as Error).message === TIMEOUT_CANCELLED_MESSAGE) {
+                return opt.onCancel()
+            }
+            throw err
+        })
+        .finally(() => {
+            if ((opt.completeTimeout ?? true) === true) {
+                timeout.complete()
+            }
+        })
 }

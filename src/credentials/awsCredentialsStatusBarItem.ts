@@ -11,6 +11,11 @@ import { AwsContext, ContextChangeEventsArgs } from '../shared/awsContext'
 
 const STATUSBAR_PRIORITY = 100
 const STATUSBAR_TEXT_NO_CREDENTIALS = localize('AWS.credentials.statusbar.no.credentials', '(not connected)')
+const STATUSBAR_TEXT_CONNECTED = localize('AWS.credentials.statusbar.connected', '(connected)')
+const STATUSBAR_CONNECTED_DELAY = 1000
+
+// This is a module global since this code doesn't really warrant its own class
+let timeoutID: NodeJS.Timeout
 
 export async function initializeAwsCredentialsStatusBarItem(
     awsContext: AwsContext,
@@ -23,6 +28,7 @@ export async function initializeAwsCredentialsStatusBarItem(
         'The current credentials used by the AWS Toolkit.\n\nClick this status bar item to use different credentials.'
     )
     statusBarItem.show()
+    updateCredentialsStatusBarItem(statusBarItem)
 
     context.subscriptions.push(statusBarItem)
 
@@ -33,10 +39,26 @@ export async function initializeAwsCredentialsStatusBarItem(
     )
 }
 
-export function updateCredentialsStatusBarItem(statusBarItem: vscode.StatusBarItem, credentialsId?: string) {
-    statusBarItem.text = localize(
-        'AWS.credentials.statusbar.text',
-        'AWS: {0}',
-        credentialsId ?? STATUSBAR_TEXT_NO_CREDENTIALS
+// Resolves when the status bar reaches its final state
+export async function updateCredentialsStatusBarItem(statusBarItem: vscode.StatusBarItem, credentialsId?: string) {
+    clearTimeout(timeoutID)
+
+    // Shows confirmation text in the status bar message
+    let delay = 0
+    if (credentialsId) {
+        delay = STATUSBAR_CONNECTED_DELAY
+        statusBarItem.text = localize('AWS.credentials.statusbar.text', 'AWS: {0}', STATUSBAR_TEXT_CONNECTED)
+    }
+
+    return new Promise<void>(
+        resolve =>
+            (timeoutID = setTimeout(() => {
+                statusBarItem.text = localize(
+                    'AWS.credentials.statusbar.text',
+                    'AWS: {0}',
+                    credentialsId ?? STATUSBAR_TEXT_NO_CREDENTIALS
+                )
+                resolve()
+            }, delay))
     )
 }

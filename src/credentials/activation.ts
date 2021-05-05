@@ -13,6 +13,9 @@ import { CredentialsProviderId, fromString } from './providers/credentialsProvid
 import { CredentialsProviderManager } from './providers/credentialsProviderManager'
 import { SharedCredentialsProvider } from './providers/sharedCredentialsProvider'
 
+import * as nls from 'vscode-nls'
+const localize = nls.loadMessageBundle()
+
 export interface CredentialsInitializeParameters {
     extensionContext: vscode.ExtensionContext
     awsContext: AwsContext
@@ -44,7 +47,10 @@ export async function loginWithMostRecentCredentials(
             credentialType: SharedCredentialsProvider.getCredentialsType(),
             credentialTypeId: previousCredentialsId,
         }
-        if ((await manager.getCredentialsProvider(loginCredentialsId))!.canAutoConnect()) {
+        const provider = await manager.getCredentialsProvider(loginCredentialsId)
+
+        // 'provider' may be undefined if the last-used credentials no longer exists.
+        if (provider && provider.canAutoConnect()) {
             await loginManager.login({ passive: true, providerId: loginCredentialsId })
         } else {
             await loginManager.logout()
@@ -55,9 +61,12 @@ export async function loginWithMostRecentCredentials(
         (await manager.getCredentialsProvider(providerMap[profileNames[0]]))!.canAutoConnect()
     ) {
         // Auto-connect if there is exactly one profile.
-        await loginManager.login({ passive: true, providerId: providerMap[profileNames[0]] })
-        // Toast.
-        vscode.window.showInformationMessage(`Connected to AWS as "${profileNames[0]}"`)
+        if (await loginManager.login({ passive: true, providerId: providerMap[profileNames[0]] })) {
+            // Toast.
+            vscode.window.showInformationMessage(
+                localize('AWS.message.credentials.connected', 'Connected to AWS as {0}', profileNames[0])
+            )
+        }
     } else {
         await loginManager.logout()
     }

@@ -12,7 +12,7 @@ import * as pathutil from '../../../shared/utilities/pathUtils'
 import { ExtContext } from '../../extensions'
 import { findParentProjectFile } from '../../utilities/workspaceUtils'
 import { DefaultSamLocalInvokeCommand, WAIT_FOR_DEBUGGER_MESSAGES } from '../cli/samCliLocalInvoke'
-import { invokeLambdaFunction, makeInputTemplate } from '../localLambdaRunner'
+import { runLambdaFunction, makeInputTemplate } from '../localLambdaRunner'
 import { SamLaunchRequestArgs } from './awsSamDebugger'
 import { getLogger } from '../../logger'
 import { chmod, ensureDir, writeFile, pathExistsSync, unlinkSync, existsSync } from 'fs-extra'
@@ -35,17 +35,14 @@ export async function invokeGoLambda(ctx: ExtContext, config: GoDebugConfigurati
 
     if (!config.noDebug && !(await installDebugger(config.debuggerPath!))) {
         showErrorWithLogs(
-            localize(
-                'AWS.sam.debugger.godelve.failed',
-                'Failed to install Delve for the lambda container.'
-            )
+            localize('AWS.sam.debugger.godelve.failed', 'Failed to install Delve for the lambda container.')
         )
 
         // Terminates the debug session by sending up a dummy config
         return {} as GoDebugConfiguration
     }
 
-    const c = (await invokeLambdaFunction(ctx, config, async () => {})) as GoDebugConfiguration
+    const c = (await runLambdaFunction(ctx, config, async () => {})) as GoDebugConfiguration
     return c
 }
 
