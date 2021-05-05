@@ -27,6 +27,16 @@ class SamExecutable : ExecutableType<SemVer>, AutoResolvable, Validatable {
 
         // exclusive
         val maxVersion = SemVer("2.0.0", 2, 0, 0)
+
+        /**
+         * The text SAM cli prints after the user code finishes running and
+         * the debugger is disconnected.
+         */
+        const val endDebuggingText = "END RequestId: "
+
+        // Reliable start message printed when delve starts
+        // Comes from: https://github.com/go-delve/delve/blob/f5d2e132bca763d222680815ace98601c2396517/service/debugger/debugger.go#L187
+        const val goStartMessage = "launching process with args"
     }
 
     override val displayName: String = "sam"

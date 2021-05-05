@@ -31,6 +31,7 @@ import software.aws.toolkits.jetbrains.utils.rules.PythonCodeInsightTestFixtureR
 import software.aws.toolkits.jetbrains.utils.rules.addBreakpoint
 import software.aws.toolkits.jetbrains.utils.samImageRunDebugTest
 import software.aws.toolkits.jetbrains.utils.setSamExecutableFromEnvironment
+import software.aws.toolkits.jetbrains.utils.stopOnPause
 
 @RunWith(Parameterized::class)
 class PythonLocalLambdaRunConfigurationIntegrationTest(private val runtime: Runtime) {
@@ -67,6 +68,7 @@ class PythonLocalLambdaRunConfigurationIntegrationTest(private val runtime: Runt
             "src/hello_world/app.py",
             """
             import os
+            import time
 
             def lambda_handler(event, context):
                 print(os.environ)
@@ -74,6 +76,11 @@ class PythonLocalLambdaRunConfigurationIntegrationTest(private val runtime: Runt
 
             def env_print(event, context):
                 return dict(**os.environ)
+                
+            def run_forever(event, context):
+                print(os.environ)
+                while true:
+                   time.sleep(1)
             """.trimIndent()
         )
 
@@ -326,6 +333,27 @@ class PythonLocalLambdaRunConfigurationIntegrationTest(private val runtime: Runt
         assertThat(executeLambda.stdout).contains("Hello world")
 
         assertThat(debuggerIsHit.get()).isTrue()
+    }
+
+    @Test
+    fun stopDebuggerStopsSamCli() {
+        projectRule.fixture.addFileToProject("requirements.txt", "")
+
+        val runConfiguration = createHandlerBasedRunConfiguration(
+            project = projectRule.project,
+            runtime = runtime,
+            handler = "src/hello_world.app.run_forever",
+            input = "\"Hello World\"",
+            credentialsProviderId = mockId,
+        )
+        assertThat(runConfiguration).isNotNull
+
+        projectRule.addBreakpoint()
+        stopOnPause(projectRule.project)
+
+        val executeLambda = executeRunConfigurationAndWait(runConfiguration, DefaultDebugExecutor.EXECUTOR_ID)
+
+        assertThat(executeLambda.exitCode).isEqualTo(0)
     }
 
     // Extracts the first json structure. Needed since output has all build output and sam cli messages
