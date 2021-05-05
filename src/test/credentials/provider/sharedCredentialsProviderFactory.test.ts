@@ -66,7 +66,7 @@ describe('SharedCredentialsProviderFactory', async function () {
         assert.ok(
             providers.find(p =>
                 isEqual(p.getCredentialsProviderId(), {
-                    credentialType: 'sharedCredentials',
+                    credentialSource: 'profile',
                     credentialTypeId: validProfileName1,
                 })
             ),
@@ -75,7 +75,7 @@ describe('SharedCredentialsProviderFactory', async function () {
         assert.ok(
             providers.find(p =>
                 isEqual(p.getCredentialsProviderId(), {
-                    credentialType: 'sharedCredentials',
+                    credentialSource: 'profile',
                     credentialTypeId: validProfileName2,
                 })
             ),
@@ -96,7 +96,7 @@ describe('SharedCredentialsProviderFactory', async function () {
         assert.strictEqual(providers.length, 2, 'Expected two providers to be created') // the valid ones
         assert.strictEqual(
             sut.getProvider({
-                credentialType: 'default',
+                credentialSource: 'profile',
                 credentialTypeId: invalidProfileName,
             }),
             undefined

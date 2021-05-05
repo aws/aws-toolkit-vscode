@@ -4,8 +4,7 @@
  */
 
 import * as assert from 'assert'
-import { CredentialSourceId } from '../../../shared/telemetry/telemetry.gen'
-import { CredentialsProvider } from '../../../credentials/providers/credentialsProvider'
+import { CredentialsProvider, CredentialsProviderType } from '../../../credentials/providers/credentialsProvider'
 import { BaseCredentialsProviderFactory } from '../../../credentials/providers/credentialsProviderFactory'
 import { CredentialsProviderId } from '../../../credentials/providers/credentialsProviderId'
 
@@ -14,8 +13,8 @@ describe('BaseCredentialsProviderFactory', async function () {
      * This class exposes abstract class functionality for the purpose of testing it.
      */
     class TestCredentialsProviderFactory extends BaseCredentialsProviderFactory<CredentialsProvider> {
-        public getCredentialType(): CredentialSourceId {
-            return 'sharedCredentials'
+        public getProviderType(): CredentialsProviderType {
+            return 'profile'
         }
 
         public getProviders(): CredentialsProvider[] {
@@ -92,7 +91,7 @@ describe('BaseCredentialsProviderFactory', async function () {
 
     function makeSampleCredentialsProviderId(testProviderId: string): CredentialsProviderId {
         return {
-            credentialType: 'test',
+            credentialSource: 'profile',
             credentialTypeId: testProviderId,
         }
     }

@@ -3,7 +3,7 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
-import { CredentialsProvider } from './credentialsProvider'
+import { CredentialsProvider, credentialsProviderToTelemetryType, CredentialsProviderType } from './credentialsProvider'
 import { CredentialsProviderFactory } from './credentialsProviderFactory'
 import { recordAwsLoadCredentials } from '../../shared/telemetry/telemetry'
 import { asString, CredentialsProviderId } from './credentialsProviderId'
@@ -20,9 +20,13 @@ export class CredentialsProviderManager {
 
         for (const factory of this.providerFactories) {
             await factory.refresh()
-
             const refreshed = factory.listProviders()
-            recordAwsLoadCredentials({ credentialSourceId: factory.getCredentialType(), value: refreshed.length })
+            const providerType = factory.getProviderType()
+            if (!providerType) {
+                continue
+            }
+            const telemType = credentialsProviderToTelemetryType(providerType)
+            recordAwsLoadCredentials({ credentialSourceId: telemType, value: refreshed.length })
             providers = providers.concat(refreshed)
         }
 
@@ -45,7 +49,7 @@ export class CredentialsProviderManager {
     public async getCredentialsProvider(
         credentialsProviderId: CredentialsProviderId
     ): Promise<CredentialsProvider | undefined> {
-        const factories = this.getFactories(credentialsProviderId.credentialType)
+        const factories = this.getFactories(credentialsProviderId.credentialSource)
         for (const factory of factories) {
             await factory.refresh()
 
@@ -62,8 +66,8 @@ export class CredentialsProviderManager {
         this.providerFactories.push(factory)
     }
 
-    private getFactories(credentialsType: string): CredentialsProviderFactory[] {
-        return this.providerFactories.filter(f => f.getCredentialType() === credentialsType)
+    private getFactories(credentialsType: CredentialsProviderType): CredentialsProviderFactory[] {
+        return this.providerFactories.filter(f => f.getProviderType() === credentialsType)
     }
 
     public static getInstance(): CredentialsProviderManager {

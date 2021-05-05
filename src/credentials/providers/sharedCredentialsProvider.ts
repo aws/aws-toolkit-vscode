@@ -12,10 +12,10 @@ import { hasProfileProperty, resolveProviderWithCancel } from '../credentialsUti
 import { SSO_PROFILE_PROPERTIES, validateSsoProfile } from '../sso/sso'
 import { DiskCache } from '../sso/diskCache'
 import { SsoAccessTokenProvider } from '../sso/ssoAccessTokenProvider'
-import { CredentialsProvider } from './credentialsProvider'
+import { CredentialsProvider, CredentialsProviderType } from './credentialsProvider'
 import { CredentialsProviderId } from './credentialsProviderId'
 import { SsoCredentialProvider } from './ssoCredentialProvider'
-import { CredentialSourceId, CredentialType } from '../../shared/telemetry/telemetry.gen'
+import { CredentialType } from '../../shared/telemetry/telemetry.gen'
 
 const SHARED_CREDENTIAL_PROPERTIES = {
     AWS_ACCESS_KEY_ID: 'aws_access_key_id',
@@ -33,11 +33,9 @@ const SHARED_CREDENTIAL_PROPERTIES = {
 }
 
 /**
- * Represents one profile from the AWS Shared Credentials files, and produces Credentials from this profile.
+ * Represents one profile from the AWS Shared Credentials files.
  */
 export class SharedCredentialsProvider implements CredentialsProvider {
-    private static readonly CREDENTIALS_TYPE: CredentialSourceId = 'sharedCredentials'
-
     private readonly profile: Profile
 
     public constructor(
@@ -55,9 +53,21 @@ export class SharedCredentialsProvider implements CredentialsProvider {
 
     public getCredentialsProviderId(): CredentialsProviderId {
         return {
-            credentialType: SharedCredentialsProvider.getCredentialsType(),
+            credentialSource: this.getProviderType(),
             credentialTypeId: this.profileName,
         }
+    }
+
+    public static getProviderType(): CredentialsProviderType {
+        return 'profile'
+    }
+
+    public getProviderType(): CredentialsProviderType {
+        return SharedCredentialsProvider.getProviderType()
+    }
+
+    public getTelemetryType(): CredentialType {
+        return this.isSsoProfile() ? 'ssoProfile' : 'staticProfile'
     }
 
     public getHashCode(): string {
@@ -68,11 +78,6 @@ export class SharedCredentialsProvider implements CredentialsProvider {
         return this.profile[SHARED_CREDENTIAL_PROPERTIES.REGION]
     }
 
-    /**
-     * Decides if the credential is the kind that may be auto-connected at
-     * first use (in particular, credentials that may prompt, such as SSO/MFA,
-     * should _not_ attempt to auto-connect).
-     */
     public canAutoConnect(): boolean {
         return !hasProfileProperty(this.profile, SHARED_CREDENTIAL_PROPERTIES.MFA_SERIAL) && !this.isSsoProfile()
     }
@@ -242,21 +247,6 @@ export class SharedCredentialsProvider implements CredentialsProvider {
         }
 
         AWS.config.sts.region = this.getDefaultRegion()
-    }
-
-    /**
-     * Legacy function that does nothing particularly useful.
-     *
-     * You are probably looking for `getCredentialsType2()`.
-     *
-     * TODO: deprecated / why is this static?!
-     */
-    public static getCredentialsType(): CredentialSourceId {
-        return SharedCredentialsProvider.CREDENTIALS_TYPE
-    }
-
-    public getCredentialsType2(): CredentialType {
-        return this.isSsoProfile() ? 'ssoProfile' : 'staticProfile'
     }
 
     public isSsoProfile(): boolean {

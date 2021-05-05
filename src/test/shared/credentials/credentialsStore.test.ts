@@ -14,7 +14,7 @@ describe('CredentialsStore', async function () {
     let sut: CredentialsStore
     const sampleCredentials = ({} as any) as AWS.Credentials
     const sampleCredentialsProviderId: CredentialsProviderId = {
-        credentialType: 'test',
+        credentialSource: 'profile',
         credentialTypeId: 'someId',
     }
     const sampleExpiredCredentials = ({ expired: true } as any) as AWS.Credentials

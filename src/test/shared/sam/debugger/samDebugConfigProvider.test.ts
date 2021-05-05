@@ -299,9 +299,10 @@ describe('SamDebugConfigurationProvider', async function () {
 
             const credentialsProvider: CredentialsProvider = {
                 getCredentials: sandbox.stub().resolves(({} as any) as AWS.Credentials),
-                getCredentialsType2: sandbox.stub().resolves('staticProfile'),
+                getProviderType: sandbox.stub().resolves('profile'),
+                getTelemetryType: sandbox.stub().resolves('staticProfile'),
                 getCredentialsProviderId: sandbox.stub().returns({
-                    credentialType: 'test',
+                    credentialSource: 'sharedCredentials',
                     credentialTypeId: 'someId',
                 }),
                 getDefaultRegion: sandbox.stub().returns('someRegion'),
@@ -3264,9 +3265,10 @@ Resources:
 
             const credentialsProvider: CredentialsProvider = {
                 getCredentials: sandbox.stub().resolves(({} as any) as AWS.Credentials),
-                getCredentialsType2: sandbox.stub().resolves('staticProfile'),
+                getProviderType: sandbox.stub().resolves('profile'),
+                getTelemetryType: sandbox.stub().resolves('staticProfile'),
                 getCredentialsProviderId: sandbox.stub().returns({
-                    credentialType: 'test',
+                    credentialSource: 'profile',
                     credentialTypeId: 'someId',
                 }),
                 getDefaultRegion: sandbox.stub().returns('someRegion'),

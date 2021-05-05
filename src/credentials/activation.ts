@@ -70,10 +70,9 @@ export async function loginWithMostRecentCredentials(
     }
 
     if (previousCredentialsId) {
-        // Migrate from older Toolkits - If the last providerId isn't in the new CredentialProviderId format,
-        // treat it like a Shared Crdentials Provider.
+        // Migrate from old Toolkits: default to "shared" provider type.
         const loginCredentialsId = tryMakeCredentialsProviderId(previousCredentialsId) ?? {
-            credentialType: SharedCredentialsProvider.getCredentialsType(),
+            credentialSource: SharedCredentialsProvider.getProviderType(),
             credentialTypeId: previousCredentialsId,
         }
         if (await tryConnect(loginCredentialsId, false)) {

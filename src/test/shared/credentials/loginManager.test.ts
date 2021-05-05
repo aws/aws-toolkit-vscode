@@ -23,7 +23,7 @@ describe('LoginManager', async function () {
     } as any) as AwsContext
     const sampleCredentials = ({} as any) as AWS.Credentials
     const sampleCredentialsProviderId: CredentialsProviderId = {
-        credentialType: 'test',
+        credentialSource: 'profile',
         credentialTypeId: 'someId',
     }
 
@@ -42,7 +42,8 @@ describe('LoginManager', async function () {
         loginManager = new LoginManager(awsContext, credentialsStore, recordAwsSetCredentialsSpy)
         credentialsProvider = {
             getCredentials: sandbox.stub().resolves(sampleCredentials),
-            getCredentialsType2: sandbox.stub().returns('staticProfile'),
+            getProviderType: sandbox.stub().returns('profile'),
+            getTelemetryType: sandbox.stub().returns('staticProfile'),
             getCredentialsProviderId: sandbox.stub().returns(sampleCredentialsProviderId),
             getDefaultRegion: sandbox.stub().returns('someRegion'),
             getHashCode: sandbox.stub().returns('1234'),
