@@ -166,9 +166,9 @@ async function makeInstallScript(debuggerPath: string, isWindows: boolean): Prom
     const installOptions: SpawnOptions = { env: { ...process.env } }
     let delveVersion: string = ''
 
-    // `go get` will run in the current directory; if Go can't find a go.mod
-    // file somewhere it just gives up. GO111MODULE=off prevents Go trying to
-    // find the manifest file.
+    // Since Go1.16, GO111MODULE is on by default. This causes Go to require the
+    // existence of a go.mod file or else it gives up. GO111MODULE=off prevents
+    // Go from trying to find the manifest file and uses GOPATH provided below.
     installOptions.env!['GO111MODULE'] = 'off'
 
     // It's fine if we can't get the latest Delve version, the Toolkit will use the last built one instead
