@@ -3,15 +3,22 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
+import * as vscode from 'vscode'
 import { AwsContext } from '../shared/awsContext'
+import { extensionSettingsPrefix, profileSettingKey } from '../shared/constants'
 import { getAccountId } from '../shared/credentials/accountId'
 import { getLogger } from '../shared/logger'
+import { DefaultSettingsConfiguration, SettingsConfiguration } from '../shared/settingsConfiguration'
 import { recordAwsSetCredentials } from '../shared/telemetry/telemetry'
+import { localize } from '../shared/utilities/vsCodeUtils'
 import { CredentialsStore } from './credentialsStore'
 import { notifyUserInvalidCredentials } from './credentialsUtilities'
 import { CredentialsProvider } from './providers/credentialsProvider'
-import { asString, CredentialsProviderId } from './providers/credentialsProviderId'
+import { asString, CredentialsProviderId, fromString } from './providers/credentialsProviderId'
 import { CredentialsProviderManager } from './providers/credentialsProviderManager'
+import { SharedCredentialsProvider } from './providers/sharedCredentialsProvider'
+
+let didTryAutoConnect = false
 
 export class LoginManager {
     private readonly defaultCredentialsRegion = 'us-east-1'
@@ -89,5 +96,73 @@ export class LoginManager {
      */
     public async logout(): Promise<void> {
         await this.awsContext.setCredentials(undefined)
+    }
+}
+
+/**
+ * Connects last-used AWS credentials, if not already attempted in the current session.
+ *
+ * @returns true if login succeeded or credentials exist; false if login failed
+ * or was already tried this session.
+ */
+export async function tryAutoLogin(awsContext: AwsContext): Promise<boolean> {
+    let creds = await awsContext.getCredentials() // Current credentials?
+    if (creds) {
+        return true
+    }
+    if (didTryAutoConnect) {
+        return false
+    }
+    didTryAutoConnect = true
+    const toolkitSettings = new DefaultSettingsConfiguration(extensionSettingsPrefix)
+    const loginManager = new LoginManager(awsContext, new CredentialsStore())
+    await loginWithMostRecentCredentials(toolkitSettings, loginManager)
+    creds = await awsContext.getCredentials() // Connected credentials?
+    return !!creds
+}
+
+export async function loginWithMostRecentCredentials(
+    toolkitSettings: SettingsConfiguration,
+    loginManager: LoginManager
+): Promise<void> {
+    const manager = CredentialsProviderManager.getInstance()
+    const providerMap = await manager.getCredentialProviderNames()
+    const profileNames = Object.keys(providerMap)
+    const previousCredentialsId = toolkitSettings.readSetting<string>(profileSettingKey, '')
+
+    if (previousCredentialsId) {
+        // Migrate from older Toolkits - If the last providerId isn't in the new CredentialProviderId format,
+        // treat it like a Shared Crdentials Provider.
+        let loginCredentialsId
+        try {
+            loginCredentialsId = fromString(previousCredentialsId)
+        } catch (err) {
+            loginCredentialsId = {
+                credentialType: SharedCredentialsProvider.getCredentialsType(),
+                credentialTypeId: previousCredentialsId,
+            }
+        }
+        const provider = await manager.getCredentialsProvider(loginCredentialsId)
+
+        // 'provider' may be undefined if the last-used credentials no longer exists.
+        if (provider && provider.canAutoConnect()) {
+            await loginManager.login({ passive: true, providerId: loginCredentialsId })
+        } else {
+            await loginManager.logout()
+        }
+    } else if (
+        providerMap &&
+        profileNames.length === 1 &&
+        (await manager.getCredentialsProvider(providerMap[profileNames[0]]))!.canAutoConnect()
+    ) {
+        // Auto-connect if there is exactly one profile.
+        if (await loginManager.login({ passive: true, providerId: providerMap[profileNames[0]] })) {
+            // Toast.
+            vscode.window.showInformationMessage(
+                localize('AWS.message.credentials.connected', 'Connected to AWS as {0}', profileNames[0])
+            )
+        }
+    } else {
+        await loginManager.logout()
     }
 }

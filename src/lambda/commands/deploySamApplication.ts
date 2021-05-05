@@ -6,14 +6,14 @@
 import * as path from 'path'
 import * as vscode from 'vscode'
 import * as nls from 'vscode-nls'
-
 import { asEnvironmentVariables } from '../../credentials/credentialsUtilities'
-import { AwsContext, NoActiveCredentialError } from '../../shared/awsContext'
+import { tryAutoLogin } from '../../credentials/loginManager'
+import { AwsContext } from '../../shared/awsContext'
 import { ext } from '../../shared/extensionGlobals'
 import { makeTemporaryToolkitFolder, tryRemoveFolder } from '../../shared/filesystemUtilities'
 import { getLogger } from '../../shared/logger'
 import { SamCliBuildInvocation } from '../../shared/sam/cli/samCliBuild'
-import { getSamCliContext, SamCliContext, getSamCliVersion } from '../../shared/sam/cli/samCliContext'
+import { getSamCliContext, getSamCliVersion, SamCliContext } from '../../shared/sam/cli/samCliContext'
 import { runSamCliDeploy } from '../../shared/sam/cli/samCliDeploy'
 import { SamCliProcessInvoker } from '../../shared/sam/cli/samCliInvokerUtils'
 import { runSamCliPackage } from '../../shared/sam/cli/samCliPackage'
@@ -56,7 +56,7 @@ export async function deploySamApplication(
         settings,
         window = getDefaultWindowFunctions(),
     }: {
-        awsContext: Pick<AwsContext, 'getCredentials' | 'getCredentialProfileName'>
+        awsContext: AwsContext
         settings: SettingsConfiguration
         window?: WindowFunctions
     }
@@ -65,9 +65,10 @@ export async function deploySamApplication(
     let samVersion: string | undefined
     let deployFolder: string | undefined
     try {
+        await tryAutoLogin(awsContext)
         const credentials = await awsContext.getCredentials()
         if (!credentials) {
-            throw new NoActiveCredentialError()
+            throw new Error('No credentials')
         }
 
         throwAndNotifyIfInvalid(await samCliContext.validator.detectValidSamCli())

@@ -9,7 +9,6 @@ import * as path from 'path'
 import * as vscode from 'vscode'
 import { deploySamApplication, WindowFunctions } from '../../../lambda/commands/deploySamApplication'
 import { CHOSEN_BUCKET_KEY, SamDeployWizardResponse } from '../../../lambda/wizards/samDeployWizard'
-import { AwsContext } from '../../../shared/awsContext'
 import { ext } from '../../../shared/extensionGlobals'
 import { makeTemporaryToolkitFolder } from '../../../shared/filesystemUtilities'
 import { SamCliContext } from '../../../shared/sam/cli/samCliContext'
@@ -24,6 +23,7 @@ import { SettingsConfiguration } from '../../../shared/settingsConfiguration'
 import { ChildProcessResult } from '../../../shared/utilities/childProcess'
 import { assertLogsContain, getTestLogger } from '../../globalSetup.test'
 import { FakeChildProcessResult, TestSamCliProcessInvoker } from '../../shared/sam/cli/testSamCliProcessInvoker'
+import { FakeAwsContext } from '../../utilities/fakeAwsContext'
 import { TestSettingsConfiguration } from '../../utilities/testSettingsConfiguration'
 
 describe('deploySamApplication', async function () {
@@ -112,10 +112,11 @@ describe('deploySamApplication', async function () {
     const placeholderCredentials = ({} as any) as AWS.Credentials
     let testCredentials: AWS.Credentials | undefined
     let profile: string = ''
-    const awsContext: Pick<AwsContext, 'getCredentials' | 'getCredentialProfileName'> = {
-        getCredentials: async () => testCredentials,
-        getCredentialProfileName: () => profile,
-    }
+
+    const awsContext = new FakeAwsContext()
+    awsContext.getCredentials = async () => testCredentials
+    awsContext.getCredentialProfileName = () => profile
+
     let settings: SettingsConfiguration
 
     let samDeployWizardResponse: SamDeployWizardResponse | undefined
@@ -126,7 +127,15 @@ describe('deploySamApplication', async function () {
     let templatePath: string
 
     let tempToolkitFolder: string
+
+    // Fake "aws.refreshAwsExplorer" command. 50b5a28b8e35 #1665
+    let didCommand_aws_refreshAwsExplorer = false
+    vscode.commands.registerCommand('aws.refreshAwsExplorer', async () => {
+        didCommand_aws_refreshAwsExplorer = true
+    })
+
     beforeEach(async function () {
+        didCommand_aws_refreshAwsExplorer = false
         settings = new TestSettingsConfiguration()
         profile = 'testAcct'
         tempToolkitFolder = await makeTemporaryToolkitFolder()
@@ -199,6 +208,7 @@ describe('deploySamApplication', async function () {
             settings.readSetting(CHOSEN_BUCKET_KEY, ''),
             JSON.stringify({ [profile]: { region: 'bucket' } })
         )
+        assert.ok(didCommand_aws_refreshAwsExplorer)
     })
 
     it('saves one bucket max to multiple regions', async () => {
@@ -294,6 +304,7 @@ describe('deploySamApplication', async function () {
                 },
             })
         )
+        assert.ok(didCommand_aws_refreshAwsExplorer)
     })
 
     it('saves one bucket per region per profile', async () => {
@@ -352,6 +363,7 @@ describe('deploySamApplication', async function () {
                 },
             })
         )
+        assert.ok(didCommand_aws_refreshAwsExplorer)
     })
 
     it('informs user of error when user is not logged in', async function () {
@@ -435,6 +447,7 @@ describe('deploySamApplication', async function () {
         await waitForDeployToComplete()
         assert.strictEqual(invokerCalledCount, 3, 'Unexpected sam cli invoke count')
         assertErrorLogsSwallowed('broken build', false)
+        assert.ok(didCommand_aws_refreshAwsExplorer)
     })
 
     it('informs user of error if invoking sam package fails', async function () {
@@ -466,6 +479,8 @@ describe('deploySamApplication', async function () {
         assert.strictEqual(invokerCalledCount, 2, 'Unexpected sam cli invoke count')
         assertLogsContain('broken package', false, 'error')
         assertGeneralErrorLogged()
+        // Deploy aborted, so this is false.
+        assert.ok(!didCommand_aws_refreshAwsExplorer)
     })
 
     it('informs user of error if invoking sam deploy fails', async function () {
@@ -498,6 +513,8 @@ describe('deploySamApplication', async function () {
         assertLogsContain('broken deploy', false, 'error')
         assertGeneralErrorLogged()
         assert.strictEqual(settings.readSetting(CHOSEN_BUCKET_KEY), undefined)
+        // Deploy aborted, so this is false.
+        assert.ok(!didCommand_aws_refreshAwsExplorer)
     })
 
     async function waitForDeployToComplete(): Promise<void> {

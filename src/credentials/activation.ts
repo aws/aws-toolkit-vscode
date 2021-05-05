@@ -8,13 +8,6 @@ import { AwsContext } from '../shared/awsContext'
 import { profileSettingKey } from '../shared/constants'
 import { CredentialsProfileMru } from '../shared/credentials/credentialsProfileMru'
 import { SettingsConfiguration } from '../shared/settingsConfiguration'
-import { LoginManager } from './loginManager'
-import { CredentialsProviderId, fromString } from './providers/credentialsProviderId'
-import { CredentialsProviderManager } from './providers/credentialsProviderManager'
-import { SharedCredentialsProvider } from './providers/sharedCredentialsProvider'
-
-import * as nls from 'vscode-nls'
-const localize = nls.loadMessageBundle()
 
 export interface CredentialsInitializeParameters {
     extensionContext: vscode.ExtensionContext
@@ -29,47 +22,6 @@ export async function initialize(parameters: CredentialsInitializeParameters): P
         parameters.awsContext,
         parameters.extensionContext
     )
-}
-
-export async function loginWithMostRecentCredentials(
-    toolkitSettings: SettingsConfiguration,
-    loginManager: LoginManager
-): Promise<void> {
-    const manager = CredentialsProviderManager.getInstance()
-    const providerMap = await manager.getCredentialProviderNames()
-    const profileNames = Object.keys(providerMap)
-    const previousCredentialsId = toolkitSettings.readSetting<string>(profileSettingKey, '')
-
-    if (previousCredentialsId) {
-        // Migrate from older Toolkits - If the last providerId isn't in the new CredentialProviderId format,
-        // treat it like a Shared Crdentials Provider.
-        const loginCredentialsId = tryMakeCredentialsProviderId(previousCredentialsId) ?? {
-            credentialType: SharedCredentialsProvider.getCredentialsType(),
-            credentialTypeId: previousCredentialsId,
-        }
-        const provider = await manager.getCredentialsProvider(loginCredentialsId)
-
-        // 'provider' may be undefined if the last-used credentials no longer exists.
-        if (provider && provider.canAutoConnect()) {
-            await loginManager.login({ passive: true, providerId: loginCredentialsId })
-        } else {
-            await loginManager.logout()
-        }
-    } else if (
-        providerMap &&
-        profileNames.length === 1 &&
-        (await manager.getCredentialsProvider(providerMap[profileNames[0]]))!.canAutoConnect()
-    ) {
-        // Auto-connect if there is exactly one profile.
-        if (await loginManager.login({ passive: true, providerId: providerMap[profileNames[0]] })) {
-            // Toast.
-            vscode.window.showInformationMessage(
-                localize('AWS.message.credentials.connected', 'Connected to AWS as {0}', profileNames[0])
-            )
-        }
-    } else {
-        await loginManager.logout()
-    }
 }
 
 function updateMruWhenAwsContextChanges(awsContext: AwsContext, extensionContext: vscode.ExtensionContext) {
@@ -102,12 +54,4 @@ function updateConfigurationWhenAwsContextChanges(
             )
         })
     )
-}
-
-function tryMakeCredentialsProviderId(credentialsProviderId: string): CredentialsProviderId | undefined {
-    try {
-        return fromString(credentialsProviderId)
-    } catch (err) {
-        return undefined
-    }
 }
