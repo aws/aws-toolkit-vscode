@@ -13,7 +13,7 @@ export interface CredentialsProviderId {
 }
 
 /**
- * Gets a user-friendly string represention of the given `CredentialsProvider`.
+ * Gets the string form of the given `CredentialsProvider`.
  *
  * For use in e.g. the statusbar, selecting profiles in a menu, etc.
  * Includes information related to the credentials type, as well as

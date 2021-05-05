@@ -30,8 +30,8 @@ export class CredentialsProviderManager {
     }
 
     /**
-     * Returns a map of `CredentialsProviderId` "friendly names" to ids, from
-     * all credential sources.
+     * Returns a map of `CredentialsProviderId` string-forms to object-forms,
+     * from all credential sources.
      */
     public async getCredentialProviderNames(): Promise<{ [key: string]: CredentialsProviderId }> {
         const m: { [key: string]: CredentialsProviderId } = {}
