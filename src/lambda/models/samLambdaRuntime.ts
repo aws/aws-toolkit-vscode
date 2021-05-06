@@ -70,8 +70,8 @@ export const samLambdaCreatableRuntimes: ImmutableSet<Runtime> = isCloud9()
 const dotnet50 = 'dotnet5.0'
 export const samImageLambdaRuntimes = ImmutableSet<Runtime>([
     ...samLambdaCreatableRuntimes,
-    dotnet50,
-    // SAM also supports ruby, go, java, but toolkit does not support
+    ...(isCloud9() ? [] : [dotnet50]),
+    // SAM also supports ruby but toolkit does not support
 ])
 
 export const samLambdaRuntimes: ImmutableSet<Runtime> = ImmutableSet.union([
