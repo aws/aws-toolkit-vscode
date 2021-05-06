@@ -77,7 +77,6 @@ describe('runtimes', function () {
     })
     it('vscode', async function () {
         assert.deepStrictEqual(samLambdaCreatableRuntimes(false).toArray().sort(), [
-            'dotnet5.0',
             'dotnetcore2.1',
             'dotnetcore3.1',
             'go1.x',
