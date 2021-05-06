@@ -181,7 +181,7 @@ export function createCodeAwsSamDebugConfig(
     runtime: Runtime
 ): AwsSamDebuggerConfiguration {
     const workspaceRelativePath = makeWorkspaceRelativePath(folder, projectRoot)
-    const parentDir = path.basename(path.dirname(projectRoot))
+    const parentDir = path.basename(projectRoot)
 
     return {
         type: AWS_SAM_DEBUG_TYPE,
@@ -245,7 +245,7 @@ export function createApiAwsSamDebugConfig(
 function makeWorkspaceRelativePath(folder: vscode.WorkspaceFolder | undefined, target: string): string {
     if (vscode.workspace.workspaceFolders && vscode.workspace.workspaceFolders.length <= 1) {
         return folder
-            ? isCloud9()  // TODO: remove when Cloud9 supports ${workspaceFolder}.
+            ? isCloud9() // TODO: remove when Cloud9 supports ${workspaceFolder}.
                 ? getNormalizedRelativePath(folder.uri.fsPath, target)
                 : `\${workspaceFolder}/${getNormalizedRelativePath(folder.uri.fsPath, target)}`
             : target
