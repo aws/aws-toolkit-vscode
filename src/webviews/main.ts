@@ -112,6 +112,10 @@ export async function createVueWebview<TRequest, TResponse>(params: WebviewParam
 </html>`
 
     if (params.initialCalls) {
+        // give the webview a little more time before adding content
+        if (isCloud9()) {
+            await new Promise(resolve => setTimeout(resolve, 500))
+        }
         for (const call of params.initialCalls) view.webview.postMessage(call)
     }
 
