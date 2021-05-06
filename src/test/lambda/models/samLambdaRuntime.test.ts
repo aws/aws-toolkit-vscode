@@ -11,6 +11,8 @@ import {
     getFamily,
     samZipLambdaRuntimes,
     RuntimeFamily,
+    samImageLambdaRuntimes,
+    samLambdaCreatableRuntimes,
 } from '../../../lambda/models/samLambdaRuntime'
 
 describe('compareSamLambdaRuntime', async function () {
@@ -53,5 +55,58 @@ describe('getFamily', async function () {
         samZipLambdaRuntimes.forEach(runtime => {
             assert.notStrictEqual(getFamily(runtime), RuntimeFamily.Unknown)
         })
+    })
+})
+
+describe('runtimes', function () {
+    it('cloud9', async function () {
+        assert.deepStrictEqual(samLambdaCreatableRuntimes(true).toArray().sort(), [
+            'nodejs10.x',
+            'nodejs12.x',
+            'nodejs14.x',
+            'python3.7',
+            'python3.8',
+        ])
+        assert.deepStrictEqual(samImageLambdaRuntimes(true).toArray().sort(), [
+            'nodejs10.x',
+            'nodejs12.x',
+            'nodejs14.x',
+            'python3.7',
+            'python3.8',
+        ])
+    })
+    it('vscode', async function () {
+        assert.deepStrictEqual(samLambdaCreatableRuntimes(false).toArray().sort(), [
+            'dotnet5.0',
+            'dotnetcore2.1',
+            'dotnetcore3.1',
+            'go1.x',
+            'java11',
+            'java8',
+            'java8.al2',
+            'nodejs10.x',
+            'nodejs12.x',
+            'nodejs14.x',
+            'python2.7',
+            'python3.6',
+            'python3.7',
+            'python3.8',
+        ])
+        assert.deepStrictEqual(samImageLambdaRuntimes(false).toArray().sort(), [
+            'dotnet5.0',
+            'dotnetcore2.1',
+            'dotnetcore3.1',
+            'go1.x',
+            'java11',
+            'java8',
+            'java8.al2',
+            'nodejs10.x',
+            'nodejs12.x',
+            'nodejs14.x',
+            'python2.7',
+            'python3.6',
+            'python3.7',
+            'python3.8',
+        ])
     })
 })
