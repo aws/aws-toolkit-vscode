@@ -112,7 +112,7 @@ export async function createVueWebview<TRequest, TResponse>(params: WebviewParam
 </html>`
 
     if (params.initialCalls) {
-        // give the webview a little more time before adding content
+        // TODO: workaround for cloud9 webviews, remove after cloud9 issue is fixed.
         if (isCloud9()) {
             await new Promise(resolve => setTimeout(resolve, 500))
         }
