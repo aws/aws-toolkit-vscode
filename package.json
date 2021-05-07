@@ -1602,7 +1602,7 @@
         "immutable": "^4.0.0-rc.12",
         "js-yaml": "^3.13.1",
         "jsonc-parser": "^2.0.2",
-        "lodash": "^4.17.19",
+        "lodash": "^4.17.21",
         "mime-types": "^2.1.27",
         "moment": "^2.29.1",
         "portfinder": "^1.0.25",
