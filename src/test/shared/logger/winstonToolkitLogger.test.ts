@@ -20,9 +20,7 @@ describe('WinstonToolkitLogger', function () {
     })
 
     after(async function () {
-        if (await filesystemUtilities.fileExists(tempFolder)) {
-            await fs.remove(tempFolder)
-        }
+        await fs.remove(tempFolder)
     })
 
     it('logLevelEnabled()', function () {
@@ -293,8 +291,8 @@ describe('WinstonToolkitLogger', function () {
             testLogger.logToFile(tempLogPath)
             testLogger.error(new Error('Test start'))
             const logExists: boolean | undefined = await waitUntil(() => filesystemUtilities.fileExists(tempLogPath), {
-                timeout: 1000,
-                interval: 10,
+                timeout: 2000,
+                interval: 100,
                 truthy: true,
             })
 

@@ -25,7 +25,8 @@ TOOLKIT_LATEST_VERSION="$(echo "$TOOLKIT_LATEST_RELEASE_URL" | grep -oh '[0-9]\+
 TOOLKIT_LATEST_ARTIFACT_URL="https://github.com/aws/aws-toolkit-vscode/releases/download/v${TOOLKIT_LATEST_VERSION}/aws-toolkit-vscode-${TOOLKIT_LATEST_VERSION}.vsix"
 # URL or local filepath pointing to toolkit VSIX or ZIP (containing a VSIX).
 TOOLKIT_FILE=${1:-}
-TOOLKIT_INSTALL_DIR="$HOME/environment/.c9/extensions/aws-toolkit-vscode"
+TOOLKIT_INSTALL_PARENT="$HOME/environment/.c9/extensions"
+TOOLKIT_INSTALL_DIR="$TOOLKIT_INSTALL_PARENT/aws-toolkit-vscode"
 SCRIPT_WORKDIR="$HOME/environment/toolkit"
 
 _log() {
@@ -62,7 +63,8 @@ _main() {
         rm -rf "$SCRIPT_WORKDIR"
 
         cd "$HOME/environment"
-        mkdir "${SCRIPT_WORKDIR}"
+        mkdir -p "$SCRIPT_WORKDIR"
+        mkdir -p "$TOOLKIT_INSTALL_PARENT"
         cd "${SCRIPT_WORKDIR}"
 
         # Set default URL if no argument was provided.
