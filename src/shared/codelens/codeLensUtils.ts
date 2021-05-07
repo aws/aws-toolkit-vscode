@@ -135,13 +135,7 @@ function makeAddCodeSamDebugCodeLens(
  */
 export async function invokeCodeLensCommandPalette(
     document: Pick<vscode.TextDocument, 'getText'>,
-    lenses: vscode.CodeLens[],
-    nextStep: (
-        codeConfig: AddSamDebugConfigurationInput,
-        templateConfigs: AddSamDebugConfigurationInput[],
-        openWebview: boolean,
-        continuationStep?: boolean
-    ) => Promise<void> = pickAddSamDebugConfiguration
+    lenses: vscode.CodeLens[]
 ): Promise<void> {
     const labelRenderRange = 200
     const handlers: (vscode.QuickPickItem & { lens?: vscode.CodeLens })[] = lenses
@@ -201,7 +195,13 @@ export async function invokeCodeLensCommandPalette(
     }
 
     // note: val.lens.command.arguments[2] should always be false (aka no invoke UI) based on the filter statement
-    await nextStep(val.lens.command.arguments![0], val.lens.command.arguments![1], val.lens.command.arguments![2], true)
+    // HACK: `exports.` is for the sake of sinon stubbing; you can't stub a function in the same file
+    await exports.pickAddSamDebugConfiguration(
+        val.lens.command.arguments![0],
+        val.lens.command.arguments![1],
+        val.lens.command.arguments![2],
+        true
+    )
 }
 
 /**

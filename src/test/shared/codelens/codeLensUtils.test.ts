@@ -124,27 +124,15 @@ describe('codeLensUtils', async function () {
                 ])
             const createSpy = sandbox.spy(Picker, 'createQuickPick')
             const finalSpy = sandbox.spy(codeLensUtils, 'pickAddSamDebugConfiguration')
-            await codeLensUtils.invokeCodeLensCommandPalette(
-                doc,
-                [
-                    /* stub handles all pick logic */
-                ],
-                finalSpy
-            )
-            await codeLensUtils.invokeCodeLensCommandPalette(
-                doc,
-                [
-                    /* stub handles all pick logic */
-                ],
-                finalSpy
-            )
-            await codeLensUtils.invokeCodeLensCommandPalette(
-                doc,
-                [
-                    /* stub handles all pick logic */
-                ],
-                finalSpy
-            )
+            await codeLensUtils.invokeCodeLensCommandPalette(doc, [
+                /* stub handles all pick logic */
+            ])
+            await codeLensUtils.invokeCodeLensCommandPalette(doc, [
+                /* stub handles all pick logic */
+            ])
+            await codeLensUtils.invokeCodeLensCommandPalette(doc, [
+                /* stub handles all pick logic */
+            ])
 
             assert.ok(createSpy.calledThrice, 'Not all test payloads run')
             assert.ok(finalSpy.notCalled, 'pickAddSamDebugConfiguration called; function did not return undefined')
@@ -179,13 +167,9 @@ describe('codeLensUtils', async function () {
                 .onFirstCall()
                 .resolves(undefined)
 
-            await codeLensUtils.invokeCodeLensCommandPalette(
-                doc,
-                [
-                    /* stub handles all pick logic */
-                ],
-                finalStub
-            )
+            await codeLensUtils.invokeCodeLensCommandPalette(doc, [
+                /* stub handles all pick logic */
+            ])
 
             assert.ok(finalStub.calledOnce, 'pickAddSamDebugConfiguration not called once and only once')
             assert.ok(finalStub.calledWith(arg0, arg1, arg2), 'pickAddSamDebugConfiguration called with incorrect args')
