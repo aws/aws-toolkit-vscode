@@ -18,6 +18,25 @@ import {
 import * as filesystemUtilities from '../../shared/filesystemUtilities'
 import { FakeExtensionContext } from '../fakeExtensionContext'
 
+function baseHtmlWithBody(body: string) {
+    return `
+        <html>
+        <head>
+            <meta charset="UTF-8">
+            <meta name="viewport" content="width=device-width, initial-scale=1.0">
+            <meta http-equiv="Content-Security-Policy"
+                content="default-src 'none';
+                img-src https://*.vscode-webview-test.com https: data:;
+                script-src https://*.vscode-webview-test.com 'self' 'unsafe-eval';
+                style-src https://*.vscode-webview-test.com;"
+            >
+        </head>
+            <body>
+                ${body}
+            </body>
+        </html>`
+}
+
 describe('extensionUtilities', function () {
     describe('safeGet', function () {
         class Blah {
@@ -71,7 +90,7 @@ describe('extensionUtilities', function () {
 
             assert.strictEqual(typeof webview, 'object')
             const forcedWebview = webview as vscode.WebviewPanel
-            assert.strictEqual(forcedWebview.webview.html, filetext)
+            assert.strictEqual(forcedWebview.webview.html, baseHtmlWithBody(filetext))
         })
 
         it('returns a webview with tokens replaced', async function () {
@@ -86,7 +105,7 @@ describe('extensionUtilities', function () {
             const forcedWebview = webview as vscode.WebviewPanel
 
             const pathAsVsCodeResource = forcedWebview.webview.asWebviewUri(vscode.Uri.file(context.extensionPath))
-            assert.strictEqual(forcedWebview.webview.html, `${basetext}${pathAsVsCodeResource}`)
+            assert.strictEqual(forcedWebview.webview.html, baseHtmlWithBody(basetext + pathAsVsCodeResource.toString()))
         })
     })
 
