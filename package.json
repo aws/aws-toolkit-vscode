@@ -1603,7 +1603,7 @@
         "cloudformation-schema-js-yaml": "^1.0.1",
         "cross-spawn": "^6.0.5",
         "fs-extra": "^9.0.1",
-        "handlebars": "^4.7.6",
+        "handlebars": "^4.7.7",
         "immutable": "^4.0.0-rc.12",
         "js-yaml": "^3.13.1",
         "jsonc-parser": "^2.0.2",
