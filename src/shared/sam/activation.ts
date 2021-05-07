@@ -144,8 +144,6 @@ async function activateCodeLensProviders(
         supportedLanguages[goLensProvider.GO_LANGUAGE] = goCodeLensProvider
     }
 
-    await vscode.commands.executeCommand('setContext', 'samSupportedLanguages', supportedLanguages)
-
     disposables.push(
         vscode.languages.registerCodeLensProvider(
             [
@@ -176,11 +174,6 @@ async function activateCodeLensProviders(
         })
     )
 
-    /**
-     * This should only be callable when the current editor is a language supported by our SAM implementation
-     * (see package.json's when clause for aws.addSamDebugConfig).
-     * Error blocks should never be triggered, but messages will be provided regardless (I guess a user could tie this to a keyboard shortcut...)
-     */
     disposables.push(
         vscode.commands.registerCommand('aws.addSamDebugConfig', async () => {
             const activeEditor = vscode.window.activeTextEditor
