@@ -34,6 +34,7 @@ import { recordSamOpenConfigUi } from '../../shared/telemetry/telemetry.gen'
 import { getSampleLambdaPayloads } from '../utils'
 import { isCloud9 } from '../../shared/extensionUtilities'
 import { SamDebugConfigProvider } from '../../shared/sam/debugger/awsSamDebugger'
+import { samLambdaCreatableRuntimes } from '../models/samLambdaRuntime'
 
 const localize = nls.loadMessageBundle()
 
@@ -51,6 +52,12 @@ export function registerSamInvokeVueCommand(context: ExtContext): vscode.Disposa
                 cssFiles: ['samInvokeForm.css'],
                 initialCalls: launchConfig
                     ? [
+                          {
+                              command: 'getRuntimes',
+                              data: {
+                                  runtimes: samLambdaCreatableRuntimes().toArray().sort(),
+                              },
+                          },
                           {
                               command: 'loadSamLaunchConfig',
                               data: {
@@ -103,6 +110,13 @@ export interface GetTemplateResponse {
     }
 }
 
+export interface GetRuntimesResponse {
+    command: 'getRuntimes'
+    data: {
+        runtimes: string[]
+    }
+}
+
 export interface SamInvokerBasicRequest {
     command: 'loadSamLaunchConfig' | 'getSamplePayload' | 'getTemplate' | 'feedback'
 }
@@ -115,7 +129,11 @@ export interface SamInvokerLaunchRequest {
 }
 
 export type SamInvokerRequest = SamInvokerBasicRequest | SamInvokerLaunchRequest
-export type SamInvokerResponse = LoadSamLaunchConfigResponse | GetSamplePayloadResponse | GetTemplateResponse
+export type SamInvokerResponse =
+    | LoadSamLaunchConfigResponse
+    | GetSamplePayloadResponse
+    | GetTemplateResponse
+    | GetRuntimesResponse
 
 async function handleFrontendToBackendMessage(
     message: SamInvokerRequest,
