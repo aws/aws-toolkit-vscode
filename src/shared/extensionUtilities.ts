@@ -14,6 +14,7 @@ import { readFileAsString } from './filesystemUtilities'
 import { getLogger } from './logger'
 import { VSCODE_EXTENSION_ID, EXTENSION_ALPHA_VERSION } from './extensions'
 import { DefaultSettingsConfiguration } from './settingsConfiguration'
+import { BaseTemplates } from './templates/baseTemplates'
 
 const localize = nls.loadMessageBundle()
 
@@ -191,11 +192,19 @@ export async function createQuickStartWebview(
         { viewColumn: vscode.ViewColumn.Active, preserveFocus: true },
         { enableScripts: true }
     )
-    view.webview.html = convertExtensionRootTokensToPath(
+
+    const baseTemplateFn = _.template(BaseTemplates.SIMPLE_HTML)
+
+    const htmlBody = convertExtensionRootTokensToPath(
         await readFileAsString(path.join(context.extensionPath, actualPage)),
         context.extensionPath,
         view.webview
     )
+
+    view.webview.html = baseTemplateFn({
+        cspSource: view.webview.cspSource,
+        content: htmlBody,
+    })
 
     return view
 }
