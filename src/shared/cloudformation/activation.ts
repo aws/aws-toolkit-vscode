@@ -11,6 +11,7 @@ import { CloudFormationTemplateRegistry } from './templateRegistry'
 import { ext } from '../extensionGlobals'
 import { getIdeProperties } from '../extensionUtilities'
 import { NoopWatcher } from '../watchedFiles'
+import { refreshSchemas } from './utils'
 
 export const TEMPLATE_FILE_GLOB_PATTERN = '**/template.{yaml,yml}'
 
@@ -29,6 +30,8 @@ export const TEMPLATE_FILE_EXCLUDE_PATTERN = /.*[/\\]\.aws-sam([/\\].*|$)/
  * @param extensionContext VS Code extension context
  */
 export async function activate(extensionContext: vscode.ExtensionContext): Promise<void> {
+    refreshSchemas(extensionContext)
+
     try {
         const registry = new CloudFormationTemplateRegistry()
         await registry.addExcludedPattern(TEMPLATE_FILE_EXCLUDE_PATTERN)

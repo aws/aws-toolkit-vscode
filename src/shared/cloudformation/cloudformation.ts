@@ -204,6 +204,10 @@ export namespace CloudFormation {
     }
 
     export interface Template {
+        AWSTemplateFormatVersion?: string
+
+        Transform?: { properties: any } | string
+
         Parameters?: {
             [key: string]: Parameter | undefined
         }
