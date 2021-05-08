@@ -21,7 +21,7 @@ import {
 import { ActivationReloadState, SamInitState } from '../../shared/activationReloadState'
 import { AwsContext } from '../../shared/awsContext'
 import { ext } from '../../shared/extensionGlobals'
-import { fileExists } from '../../shared/filesystemUtilities'
+import { fileExists, isInDirectory } from '../../shared/filesystemUtilities'
 import { getLogger } from '../../shared/logger'
 import { RegionProvider } from '../../shared/regions/regionProvider'
 import { getRegionsForActiveCredentials } from '../../shared/regions/regionUtilities'
@@ -31,7 +31,7 @@ import { throwAndNotifyIfInvalid } from '../../shared/sam/cli/samCliValidationUt
 import { SamCliValidator } from '../../shared/sam/cli/samCliValidator'
 import { recordSamInit, Result, Runtime as TelemetryRuntime } from '../../shared/telemetry/telemetry'
 import { makeCheckLogsMessage } from '../../shared/utilities/messages'
-import { addFolderToWorkspace } from '../../shared/utilities/workspaceUtils'
+import { addFolderToWorkspace, tryGetAbsolutePath } from '../../shared/utilities/workspaceUtils'
 import { goRuntimes } from '../models/samLambdaRuntime'
 import { eventBridgeStarterAppTemplate } from '../models/samTemplates'
 import {
@@ -391,7 +391,7 @@ export async function addInitialLaunchConfiguration(
 
             return (
                 isTemplateTargetProperties(config.invokeTarget) &&
-                !path.relative(targetDir, templatePath).startsWith('..')
+                isInDirectory(targetDir, tryGetAbsolutePath(folder, templatePath))
             )
         })
 
