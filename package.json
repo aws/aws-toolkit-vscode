@@ -739,10 +739,6 @@
                 {
                     "command": "aws.cdk.help",
                     "when": "!isCloud9"
-                },
-                {
-                    "command": "aws.addSamDebugConfig",
-                    "when": "editorLangId in samSupportedLanguages"
                 }
             ],
             "editor/title": [
