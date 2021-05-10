@@ -1032,11 +1032,6 @@
                     "group": "1@1"
                 },
                 {
-                    "command": "aws.showErrorDetails",
-                    "when": "view == aws.explorer && viewItem == awsErrorNode",
-                    "group": "0@5"
-                },
-                {
                     "command": "aws.hideRegion",
                     "group": "0@1",
                     "when": "view == aws.explorer && viewItem == awsRegionNode"
