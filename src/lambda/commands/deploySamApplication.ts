@@ -22,7 +22,7 @@ import { SettingsConfiguration } from '../../shared/settingsConfiguration'
 import { recordSamDeploy, Result } from '../../shared/telemetry/telemetry'
 import { makeCheckLogsMessage } from '../../shared/utilities/messages'
 import { addCodiconToString } from '../../shared/utilities/textUtilities'
-import { CHOSEN_BUCKET_KEY, SamDeployWizardResponse } from '../wizards/samDeployWizard'
+import { CHOSEN_BUCKET_KEY, SamDeployWizardResponse, SavedBuckets } from '../wizards/samDeployWizard'
 
 const localize = nls.loadMessageBundle()
 
@@ -116,23 +116,22 @@ export async function deploySamApplication(
 
         // successful deploy: retain S3 bucket for quick future access
         // JSON object of type: { [profile: string]: { [region: string]: bucket } }
-        const bucketsJson = settings.readSetting<string | undefined>(CHOSEN_BUCKET_KEY)
+        const bucketsJson = settings.readSetting<SavedBuckets | undefined>(CHOSEN_BUCKET_KEY)
         const profile = awsContext.getCredentialProfileName()
         if (profile) {
             try {
-                const buckets = bucketsJson ? JSON.parse(bucketsJson) : undefined
                 if (!bucketsJson) {
                     writeFreshJson(profile, deployWizardResponse, settings)
                 } else {
                     settings.writeSetting(
                         CHOSEN_BUCKET_KEY,
-                        JSON.stringify({
-                            ...buckets,
+                        {
+                            ...bucketsJson,
                             [profile]: {
-                                ...(buckets[profile] ? buckets[profile] : {}),
+                                ...(bucketsJson[profile] ? bucketsJson[profile] : {}),
                                 [deployWizardResponse.region]: deployWizardResponse.s3Bucket,
                             },
-                        }),
+                        } as SavedBuckets,
                         vscode.ConfigurationTarget.Global
                     )
                 }
@@ -162,11 +161,11 @@ function writeFreshJson(
 ): void {
     settings.writeSetting(
         CHOSEN_BUCKET_KEY,
-        JSON.stringify({
+        {
             [profile]: {
                 [deployWizardResponse.region]: deployWizardResponse.s3Bucket,
             },
-        }),
+        } as SavedBuckets,
         vscode.ConfigurationTarget.Global
     )
 }

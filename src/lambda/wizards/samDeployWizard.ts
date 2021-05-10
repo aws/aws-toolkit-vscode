@@ -44,6 +44,10 @@ const CREATE_NEW_BUCKET = localize('AWS.command.s3.createBucket', 'Create Bucket
 const ENTER_BUCKET = localize('AWS.samcli.deploy.bucket.existingLabel', 'Enter Existing Bucket Name...')
 export const CHOSEN_BUCKET_KEY = 'manuallySelectedBuckets'
 
+export interface SavedBuckets {
+    [profile: string]: { [region: string]: string }
+}
+
 export interface SamDeployWizardResponse {
     parameterOverrides: Map<string, string>
     region: string
@@ -943,9 +947,7 @@ async function populateS3QuickPick(
 
         let recent: string = ''
         try {
-            const bucketsJson = settings.readSetting<string | undefined>(CHOSEN_BUCKET_KEY)
-            const existingBuckets = bucketsJson ? JSON.parse(bucketsJson) : undefined
-            // JSON object of type: { [profile: string]: { [region: string]: bucket } }
+            const existingBuckets = settings.readSetting<SavedBuckets | undefined>(CHOSEN_BUCKET_KEY)
             if (existingBuckets && profile && existingBuckets[profile] && existingBuckets[profile][selectedRegion]) {
                 recent = existingBuckets[profile][selectedRegion]
                 baseItems.push({

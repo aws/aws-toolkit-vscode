@@ -158,7 +158,7 @@
                     "maximum": 10000
                 },
                 "aws.manuallySelectedBuckets": {
-                    "type": "string",
+                    "type": "object",
                     "description": "%AWS.samcli.deploy.bucket.recentlyUsed%",
                     "default": []
                 },
