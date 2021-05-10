@@ -75,11 +75,13 @@ class JvmDebuggerSupport : DebuggerSupport() {
     private companion object {
         // java start command
         private const val JAVA_EXECUTABLE = "java"
+
         /*
          * This is the debugging syntax pre java 5. it is still valid but requires 2 flags (with -Xdebug as well), so
          * we go with the new syntax.
          */
         private const val JAVA_DEBUG = "-Xrunjdwp:transport="
+
         /*
          * This is valid for Java 5 and higher.
          */

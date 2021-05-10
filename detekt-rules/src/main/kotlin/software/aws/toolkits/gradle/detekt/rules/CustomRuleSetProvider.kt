@@ -20,4 +20,3 @@ class CustomRuleSetProvider : RuleSetProvider {
         )
     )
 }
-

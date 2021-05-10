@@ -9,8 +9,6 @@ import io.gitlab.arturbosch.detekt.api.Entity
 import io.gitlab.arturbosch.detekt.api.Issue
 import io.gitlab.arturbosch.detekt.api.Rule
 import io.gitlab.arturbosch.detekt.api.Severity
-import org.jetbrains.kotlin.com.intellij.psi.PsiElement
-import org.jetbrains.kotlin.psi.KtElement
 import org.jetbrains.kotlin.psi.KtFile
 
 class BannedPatternRule(private val patterns: List<BannedPattern>) : Rule() {
@@ -52,4 +50,3 @@ class BannedPatternRule(private val patterns: List<BannedPattern>) : Rule() {
 }
 
 data class BannedPattern(val regex: Regex, val message: String)
-

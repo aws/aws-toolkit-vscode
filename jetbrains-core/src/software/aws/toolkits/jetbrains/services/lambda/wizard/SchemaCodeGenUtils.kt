@@ -10,8 +10,12 @@ class SchemaCodeGenUtils {
         private const val SCHEMA_PACKAGE_PREFIX = "schema"
         private const val AWS = "aws"
         private const val PARTNER = "partner"
-        private const val AWS_PARTNER_PREFIX = "$AWS.$PARTNER-" // dash suffix because of 3p partner registry name format
-        private const val AWS_EVENTS_PREFIX = "$AWS." // . suffix because of 1p event registry schema format
+
+        // dash suffix because of 3p partner registry name format
+        private const val AWS_PARTNER_PREFIX = "$AWS.$PARTNER-"
+
+        // . suffix because of 1p event registry schema format
+        private const val AWS_EVENTS_PREFIX = "$AWS."
 
         fun buildSchemaPackageName(schemaName: String): String {
             val builder = CodeGenPackageBuilder()

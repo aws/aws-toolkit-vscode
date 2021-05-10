@@ -92,9 +92,9 @@ class PathMappingPopupCellRenderer : CellRendererPanel(), ListCellRenderer<Artif
         selected: Boolean,
         hasFocus: Boolean
     ): Component {
-
-        if (leftComponentWidth == -1)
+        if (leftComponentWidth == -1) {
             leftComponentWidth = getMaxListComponentLocalPathSize(list)
+        }
 
         localPathLabel.text = value?.localPath.toString()
         remotePathLabel.text = value?.remotePath.toString()
@@ -148,8 +148,9 @@ class PathMappingPopupCellRenderer : CellRendererPanel(), ListCellRenderer<Artif
                 return LEFT_COMPONENT_MAX_WIDTH
             }
 
-            if (bounds.width > maxStringSize)
+            if (bounds.width > maxStringSize) {
                 maxStringSize = bounds.width.toInt()
+            }
         }
 
         logger.trace { "Found component with max width: '$maxStringSize'." }

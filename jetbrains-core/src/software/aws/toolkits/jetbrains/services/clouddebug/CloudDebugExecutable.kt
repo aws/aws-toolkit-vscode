@@ -43,6 +43,7 @@ class CloudDebugExecutable : ExecutableType<SemVer>, AutoResolvable, Validatable
         // Min version and max version should be spaced 1 minor version (or 1 major version) apart.
         // This will preserve backwards compatibility as we can always look at the min version's major/minor to find a working executable
         val MAX_VERSION: SemVer = SemVer("2.0.0", 2, 0, 0) // exclusive
+
         val MIN_VERSION: SemVer = SemVer("1.0.209", 1, 0, 209) // inclusive
     }
 }

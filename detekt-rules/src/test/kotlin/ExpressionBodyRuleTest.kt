@@ -114,4 +114,3 @@ class ExpressionBodyRuleTest {
         assertThat(rule.lint(code)).isEmpty()
     }
 }
-

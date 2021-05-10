@@ -114,7 +114,6 @@ class RemoteResourceResolverTest {
 
     @Test
     fun canFallbackDownListOfUrls() {
-
         val urlFetcher = mock<UrlFetcher> {
             on { fetch(eq(PRIMARY_URL), any()) }.thenThrow(RuntimeException("BOOM!"))
             on { fetch(eq(SECONDARY_URL), any()) }.doAnswer(writeDataToFile("data"))

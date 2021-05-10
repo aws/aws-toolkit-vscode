@@ -128,6 +128,7 @@ class SsoAccessTokenProvider(
     private companion object {
         const val CLIENT_REGISTRATION_TYPE = "public"
         const val GRANT_TYPE = "urn:ietf:params:oauth:grant-type:device_code"
+
         // Default number of seconds to poll for token, https://tools.ietf.org/html/draft-ietf-oauth-device-flow-15#section-3.5
         const val DEFAULT_INTERVAL_SECS = 5L
         const val SLOW_DOWN_DELAY_SECS = 5L

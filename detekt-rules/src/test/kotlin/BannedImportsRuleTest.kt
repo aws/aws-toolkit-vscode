@@ -47,4 +47,3 @@ class BannedImportsRuleTest {
         assertThat(rule.lint("import org.assertj.core.api.Assertions.assertThat")).isEmpty()
     }
 }
-

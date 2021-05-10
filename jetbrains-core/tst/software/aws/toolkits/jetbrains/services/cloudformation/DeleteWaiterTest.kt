@@ -101,7 +101,6 @@ class DeleteWaiterTest {
     }
 
     private fun CloudFormationClient.stackReturn(stackName: String, times: Int, status: StackStatus) {
-
         val responses = mutableListOf<DescribeStacksResponse>()
         val inProgressResponseBuilder = DescribeStacksResponse.builder()
             .stacks(

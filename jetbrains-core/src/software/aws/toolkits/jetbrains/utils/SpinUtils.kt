@@ -14,8 +14,9 @@ fun spinUntil(duration: Duration, condition: () -> Boolean) {
     val start = System.nanoTime()
     runBlocking {
         while (!condition()) {
-            if (System.nanoTime() - start > duration.toNanos())
+            if (System.nanoTime() - start > duration.toNanos()) {
                 throw IllegalStateException("Condition not reached within $duration")
+            }
             delay(100)
         }
     }
