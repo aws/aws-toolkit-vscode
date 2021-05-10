@@ -18,8 +18,9 @@ import java.time.Instant
 abstract class FileInfoCache<T> : CachingAsyncEvaluator<String, FileInfoCache.InfoResult<T>>() {
 
     override fun getValue(entry: String): InfoResult<T> {
-        if (!FileUtil.exists(entry))
+        if (!FileUtil.exists(entry)) {
             throw IllegalStateException(message("general.file_not_found", entry))
+        }
 
         return InfoResult(getFileInfo(entry), getLastModificationDate(entry))
     }

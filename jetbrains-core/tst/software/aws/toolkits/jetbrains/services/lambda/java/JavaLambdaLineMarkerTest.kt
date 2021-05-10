@@ -117,7 +117,6 @@ class JavaLambdaLineMarkerTest {
 
     @Test
     fun singleArgumentStaticMethodsMarkedWhenDisablingLambdaSettingButDefinedInTemplate() {
-
         val fixture = projectRule.fixture
         LambdaSettings.getInstance(projectRule.project).showAllHandlerGutterIcons = false
 
@@ -156,7 +155,6 @@ Resources:
 
     @Test
     fun singleArgumentStaticMethodsMarkedWhenDisablingLambdaSettingButDefinedInTemplateGlobals() {
-
         val fixture = projectRule.fixture
         LambdaSettings.getInstance(projectRule.project).showAllHandlerGutterIcons = false
 

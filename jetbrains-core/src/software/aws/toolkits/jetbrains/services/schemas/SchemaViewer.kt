@@ -140,6 +140,7 @@ class SchemaPreviewer() {
 
     companion object {
         const val SCHEMA_EXTENSION = ".json"
+
         const val MAX_FILE_LENGTH = 255 - SCHEMA_EXTENSION.length // min(MAX_FILE_NAME_LENGTH_WINDOWS, MAX_FILE_NAME_LENGTH_MAC)
     }
 }

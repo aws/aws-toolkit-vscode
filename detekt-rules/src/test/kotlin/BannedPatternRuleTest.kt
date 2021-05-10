@@ -42,10 +42,12 @@ class BannedPatternRuleTest {
         )
             .hasSize(2)
             .anyMatch {
-                it.id == "BannedPattern" && it.message == "[1:8] PsiUtil (java-api.jar) is not available in all IDEs, use PsiUtilCore or PsiManager instead (platform-api.jar)"
+                it.id == "BannedPattern" &&
+                    it.message == "[1:8] PsiUtil (java-api.jar) is not available in all IDEs, use PsiUtilCore or PsiManager instead (platform-api.jar)"
             }
             .anyMatch {
-                it.id == "BannedPattern" && it.message == "[4:23] PsiUtil (java-api.jar) is not available in all IDEs, use PsiManager.getInstance(project).findFile() instead"
+                it.id == "BannedPattern" &&
+                    it.message == "[4:23] PsiUtil (java-api.jar) is not available in all IDEs, use PsiManager.getInstance(project).findFile() instead"
             }
     }
 }

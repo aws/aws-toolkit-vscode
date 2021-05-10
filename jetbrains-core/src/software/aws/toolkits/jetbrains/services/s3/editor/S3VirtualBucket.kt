@@ -38,6 +38,7 @@ class S3VirtualBucket(private val s3Bucket: Bucket, val client: S3Client, val pr
     override fun isValid(): Boolean = true
     override fun getParent(): VirtualFile? = null
     override fun toString(): String = s3Bucket.name()
+
     override fun isDirectory(): Boolean = false /* Unit tests refuse to open this in an editor if this is true */
 
     override fun equals(other: Any?): Boolean {

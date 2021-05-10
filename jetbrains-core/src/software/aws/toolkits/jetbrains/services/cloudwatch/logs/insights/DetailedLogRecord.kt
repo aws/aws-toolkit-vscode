@@ -108,6 +108,7 @@ class DetailedLogRecord(
 
     companion object {
         private val LOG = getLogger<DetailedLogRecord>()
+
         // Log group names can be between 1 and 512 characters long.
         // Log group names consist of the following characters: a-z, A-Z, 0-9, '_' (underscore), '-' (hyphen), '/' (forward slash), '.' (period), and '#' (number sign)
         // https://docs.aws.amazon.com/AmazonCloudWatchLogs/latest/APIReference/API_CreateLogGroup.html

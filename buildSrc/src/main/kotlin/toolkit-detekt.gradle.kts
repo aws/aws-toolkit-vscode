@@ -18,12 +18,13 @@ dependencies {
 
 detekt {
     val rulesProject = project(":detekt-rules").projectDir
-    input.from("$projectDir")
+    input.setFrom("$projectDir")
     buildUponDefaultConfig = false
     parallel = true
     allRules = false
     config = files("$rulesProject/detekt.yml")
     baseline = file("$rulesProject/baseline.xml")
+    autoCorrect = true
 
     reports {
         html.enabled = true // Human readable report
@@ -33,7 +34,7 @@ detekt {
 
 val detektProjectBaseline by tasks.registering(DetektCreateBaselineTask::class) {
     val rulesProject = project(":detekt-rules").projectDir
-    description = "Updates the DeteKt baseline file"
+    description = "Updates the detekt baseline file"
     buildUponDefaultConfig.set(false)
     ignoreFailures.set(true)
     parallel.set(true)

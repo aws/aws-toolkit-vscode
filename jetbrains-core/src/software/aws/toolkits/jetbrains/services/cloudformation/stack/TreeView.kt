@@ -51,7 +51,6 @@ internal class TreeViewImpl(private val project: Project, stackName: String) : T
      * Remove outdated nodes, add new nodes, update status
      */
     private fun updateResourceList(resources: Collection<StackResource>) {
-
         val resourcesByName = resources.map { it.logicalResourceId() to it }.toMap()
         val existingResources = mutableSetOf<String>()
         val nodesToDelete = mutableListOf<MutableTreeNode>()

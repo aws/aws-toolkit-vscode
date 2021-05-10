@@ -66,7 +66,6 @@ abstract class PseCliAction(val project: Project, val actionName: String, privat
                 PerformInBackgroundOption.ALWAYS_BACKGROUND
             ) {
                 override fun run(indicator: ProgressIndicator) {
-
                     val startTime = Instant.now()
                     val buildViewManager = ServiceManager.getService(project, BuildViewManager::class.java)
                     val descriptor = DefaultBuildDescriptor(
