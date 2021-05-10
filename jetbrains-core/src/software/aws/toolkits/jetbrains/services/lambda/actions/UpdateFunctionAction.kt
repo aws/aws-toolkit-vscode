@@ -6,6 +6,7 @@ package software.aws.toolkits.jetbrains.services.lambda.actions
 import com.intellij.openapi.actionSystem.AnActionEvent
 import com.intellij.openapi.actionSystem.PlatformDataKeys
 import com.intellij.openapi.application.ApplicationManager
+import com.intellij.openapi.application.runInEdt
 import com.intellij.openapi.project.Project
 import software.amazon.awssdk.services.lambda.LambdaClient
 import software.amazon.awssdk.services.lambda.model.PackageType
@@ -25,8 +26,6 @@ abstract class UpdateFunctionAction(title: String) : SingleResourceNodeAction<La
         val project = e.getRequiredData(PlatformDataKeys.PROJECT)
 
         ApplicationManager.getApplication().executeOnPooledThread {
-            val selectedFunction = selected.value
-
             val client: LambdaClient = project.awsClient()
 
             // Fetch latest version just in case
@@ -35,15 +34,17 @@ abstract class UpdateFunctionAction(title: String) : SingleResourceNodeAction<La
             }.configuration()
 
             val lambdaFunction = functionConfiguration.toDataClass()
-            updateLambda(project, lambdaFunction)
+            runInEdt {
+                showDialog(project, lambdaFunction)
+            }
         }
     }
 
-    abstract fun updateLambda(project: Project, lambdaFunction: LambdaFunction)
+    protected abstract fun showDialog(project: Project, lambdaFunction: LambdaFunction)
 }
 
 class UpdateFunctionConfigurationAction : UpdateFunctionAction(message("lambda.function.updateConfiguration.action")) {
-    override fun updateLambda(project: Project, lambdaFunction: LambdaFunction) {
+    override fun showDialog(project: Project, lambdaFunction: LambdaFunction) {
         UpdateFunctionConfigDialog(project, lambdaFunction).show()
     }
 }
@@ -59,7 +60,7 @@ class UpdateFunctionCodeAction : UpdateFunctionAction(message("lambda.function.u
         e.presentation.isVisible = false
     }
 
-    override fun updateLambda(project: Project, lambdaFunction: LambdaFunction) {
+    override fun showDialog(project: Project, lambdaFunction: LambdaFunction) {
         UpdateFunctionCodeDialog(project, lambdaFunction).show()
     }
 }
