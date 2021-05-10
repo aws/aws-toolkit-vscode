@@ -29,7 +29,7 @@ sourceSets {
 
     test {
         java {
-            setSrcDirs(listOf(sdkGenerator.testDir()))
+            setSrcDirs(emptyList<String>())
         }
     }
 }
