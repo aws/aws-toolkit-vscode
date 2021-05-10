@@ -1,0 +1,50 @@
+{
+	"date": "2021-05-10",
+	"version": "1.25.0",
+	"entries": [
+		{
+			"type": "Bug Fix",
+			"description": "Credentials: cannot access 'canAutoConnect' of undefined"
+		},
+		{
+			"type": "Feature",
+			"description": "UX: Add progress notification when connecting to AWS"
+		},
+		{
+			"type": "Feature",
+			"description": "SAM run/debug: fail early so that build/invoke errors are more obvious #1689"
+		},
+		{
+			"type": "Feature",
+			"description": "CDK: search for CDK projects up to 2 levels deep (previously 1)"
+		},
+		{
+			"type": "Feature",
+			"description": "CDK: menu includes standard items if AWS view is hidden"
+		},
+		{
+			"type": "Feature",
+			"description": "Skip auto-connect until AWS Explorer is shown #1433"
+		},
+		{
+			"type": "Feature",
+			"description": "Toggle CodeLenses via \"AWS: Toggle SAM hints in source files\" command"
+		},
+		{
+			"type": "Feature",
+			"description": "SAM run/debug: Add support for Go 1.x"
+		},
+		{
+			"type": "Feature",
+			"description": "UX: write logs to extension's 'globalStoragePath' for all operating systems #1692"
+		},
+		{
+			"type": "Feature",
+			"description": "Create aws-sam debug configurations via Command Palette using the `AWS: Add SAM Debug Configuration` command"
+		},
+		{
+			"type": "Removal",
+			"description": "Settings: remove \"Enable CDK Explorer\" option (VSCode has built-in support for showing/hiding panels already)"
+		}
+	]
+}
