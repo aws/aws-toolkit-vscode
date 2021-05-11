@@ -8,7 +8,13 @@ import * as fs from 'fs-extra'
 import * as path from 'path'
 import * as vscode from 'vscode'
 import { deploySamApplication, WindowFunctions } from '../../../lambda/commands/deploySamApplication'
-import { CHOSEN_BUCKET_KEY, SamDeployWizardResponse, SavedBuckets } from '../../../lambda/wizards/samDeployWizard'
+import {
+    readSavedBuckets,
+    writeSavedBucket,
+    SamDeployWizardResponse,
+    SavedBuckets,
+    CHOSEN_BUCKET_KEY,
+} from '../../../lambda/wizards/samDeployWizard'
 import { AwsContext } from '../../../shared/awsContext'
 import { ext } from '../../../shared/extensionGlobals'
 import { makeTemporaryToolkitFolder } from '../../../shared/filesystemUtilities'
@@ -167,17 +173,24 @@ describe('deploySamApplication', async function () {
 
         await waitForDeployToComplete()
         assert.strictEqual(invokerCalledCount, 3, 'Unexpected sam cli invoke count')
-        assert.deepStrictEqual(settings.readSetting(CHOSEN_BUCKET_KEY, ''), {
+        assert.deepStrictEqual(readSavedBuckets(settings), {
             [profile]: { region: 'bucket' },
         } as SavedBuckets)
     })
 
-    it('overwrites recently selected bucket', async () => {
-        settings.writeSetting(
-            CHOSEN_BUCKET_KEY,
-            { [profile]: { region: 'oldBucket' } } as SavedBuckets,
-            vscode.ConfigurationTarget.Global
-        )
+    it('handles previously stored stringified buckets', async () => {
+        const testSavedBuckets = {
+            profile1: {
+                region1: 'mybucket1',
+                region2: 'mybucket2',
+            },
+            profile2: {
+                region1: 'mybucket3',
+                region3: 'mybucket4',
+            },
+        }
+        settings.writeSetting(CHOSEN_BUCKET_KEY, JSON.stringify(testSavedBuckets), vscode.ConfigurationTarget.Global)
+
         await deploySamApplication(
             {
                 samCliContext: goodSamCliContext(),
@@ -192,9 +205,46 @@ describe('deploySamApplication', async function () {
 
         await waitForDeployToComplete()
         assert.strictEqual(invokerCalledCount, 3, 'Unexpected sam cli invoke count')
-        assert.deepStrictEqual(settings.readSetting(CHOSEN_BUCKET_KEY, ''), {
-            [profile]: { region: 'bucket' },
-        } as SavedBuckets)
+        assert.deepStrictEqual(readSavedBuckets(settings), { ...testSavedBuckets, [profile]: { region: 'bucket' } })
+    })
+
+    it('handles malformed stored buckets', async () => {
+        settings.writeSetting(CHOSEN_BUCKET_KEY, 'ilovebuckets', vscode.ConfigurationTarget.Global)
+
+        await deploySamApplication(
+            {
+                samCliContext: goodSamCliContext(),
+                samDeployWizard,
+            },
+            {
+                awsContext,
+                settings,
+                window,
+            }
+        )
+
+        await waitForDeployToComplete()
+        assert.deepStrictEqual(readSavedBuckets(settings), { [profile]: { region: 'bucket' } })
+    })
+
+    it('overwrites recently selected bucket', async () => {
+        writeSavedBucket(settings, profile, 'region', 'oldBucket')
+
+        await deploySamApplication(
+            {
+                samCliContext: goodSamCliContext(),
+                samDeployWizard,
+            },
+            {
+                awsContext,
+                settings,
+                window,
+            }
+        )
+
+        await waitForDeployToComplete()
+        assert.strictEqual(invokerCalledCount, 3, 'Unexpected sam cli invoke count')
+        assert.deepStrictEqual(readSavedBuckets(settings), { [profile]: { region: 'bucket' } } as SavedBuckets)
     })
 
     it('saves one bucket max to multiple regions', async () => {
@@ -280,7 +330,7 @@ describe('deploySamApplication', async function () {
 
         await waitForDeployToComplete()
         assert.strictEqual(invokerCalledCount, 12, 'Unexpected sam cli invoke count')
-        assert.deepStrictEqual(settings.readSetting(CHOSEN_BUCKET_KEY, ''), {
+        assert.deepStrictEqual(readSavedBuckets(settings), {
             [profile]: {
                 region0: 'bucket3',
                 region1: 'bucket1',
@@ -334,7 +384,7 @@ describe('deploySamApplication', async function () {
 
         await waitForDeployToComplete()
         assert.strictEqual(invokerCalledCount, 6, 'Unexpected sam cli invoke count')
-        assert.deepStrictEqual(settings.readSetting(CHOSEN_BUCKET_KEY, ''), {
+        assert.deepStrictEqual(readSavedBuckets(settings), {
             testAcct0: {
                 region0: 'bucket0',
             },
@@ -481,7 +531,7 @@ describe('deploySamApplication', async function () {
         assert.strictEqual(invokerCalledCount, 3, 'Unexpected sam cli invoke count')
         assertLogsContain('broken deploy', false, 'error')
         assertGeneralErrorLogged()
-        assert.strictEqual(settings.readSetting(CHOSEN_BUCKET_KEY), undefined)
+        assert.strictEqual(readSavedBuckets(settings), undefined)
     })
 
     async function waitForDeployToComplete(): Promise<void> {

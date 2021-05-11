@@ -22,7 +22,7 @@ import { SettingsConfiguration } from '../../shared/settingsConfiguration'
 import { recordSamDeploy, Result } from '../../shared/telemetry/telemetry'
 import { makeCheckLogsMessage } from '../../shared/utilities/messages'
 import { addCodiconToString } from '../../shared/utilities/textUtilities'
-import { CHOSEN_BUCKET_KEY, SamDeployWizardResponse, SavedBuckets } from '../wizards/samDeployWizard'
+import { SamDeployWizardResponse, writeSavedBucket } from '../wizards/samDeployWizard'
 
 const localize = nls.loadMessageBundle()
 
@@ -115,30 +115,9 @@ export async function deploySamApplication(
         vscode.commands.executeCommand('aws.refreshAwsExplorer')
 
         // successful deploy: retain S3 bucket for quick future access
-        // JSON object of type: { [profile: string]: { [region: string]: bucket } }
-        const bucketsJson = settings.readSetting<SavedBuckets | undefined>(CHOSEN_BUCKET_KEY)
         const profile = awsContext.getCredentialProfileName()
         if (profile) {
-            try {
-                if (!bucketsJson) {
-                    writeFreshJson(profile, deployWizardResponse, settings)
-                } else {
-                    settings.writeSetting(
-                        CHOSEN_BUCKET_KEY,
-                        {
-                            ...bucketsJson,
-                            [profile]: {
-                                ...(bucketsJson[profile] ? bucketsJson[profile] : {}),
-                                [deployWizardResponse.region]: deployWizardResponse.s3Bucket,
-                            },
-                        } as SavedBuckets,
-                        vscode.ConfigurationTarget.Global
-                    )
-                }
-            } catch (e) {
-                getLogger().error('Recent bucket JSON not parseable. Rewriting recent buckets from scratch...', e)
-                writeFreshJson(profile, deployWizardResponse, settings)
-            }
+            writeSavedBucket(settings, profile, deployWizardResponse.region, deployWizardResponse.s3Bucket)
         } else {
             getLogger().warn('Profile not provided; cannot write recent buckets.')
         }
@@ -152,22 +131,6 @@ export async function deploySamApplication(
         await tryRemoveFolder(deployFolder)
         recordSamDeploy({ result: deployResult, version: samVersion })
     }
-}
-
-function writeFreshJson(
-    profile: string,
-    deployWizardResponse: SamDeployWizardResponse,
-    settings: SettingsConfiguration
-): void {
-    settings.writeSetting(
-        CHOSEN_BUCKET_KEY,
-        {
-            [profile]: {
-                [deployWizardResponse.region]: deployWizardResponse.s3Bucket,
-            },
-        } as SavedBuckets,
-        vscode.ConfigurationTarget.Global
-    )
 }
 
 function getBuildRootFolder(deployRootFolder: string): string {

@@ -194,6 +194,47 @@ function getSingleResponse(responses: vscode.QuickPickItem[] | undefined): strin
     return responses[0].label
 }
 
+/**
+ * The toolkit used to store saved buckets as a stringified JSON object. To ensure compatability,
+ * we need to check for this and convert them into objects.
+ */
+export function readSavedBuckets(settings: SettingsConfiguration): SavedBuckets | undefined {
+    try {
+        const buckets = settings.readSetting<SavedBuckets | string | undefined>(CHOSEN_BUCKET_KEY)
+        return typeof buckets === 'string' ? JSON.parse(buckets) : buckets
+    } catch (e) {
+        // If we fail to read settings then remove the bad data completely
+        getLogger().error('Recent bucket JSON not parseable. Rewriting recent buckets from scratch...', e)
+        settings.writeSetting(CHOSEN_BUCKET_KEY, {}, vscode.ConfigurationTarget.Global)
+        return undefined
+    }
+}
+
+/**
+ * Writes a single new saved bucket to the stored buckets setting, combining previous saved data
+ * if it exists. One saved bucket is limited per region per profile.
+ */
+export function writeSavedBucket(
+    settings: SettingsConfiguration,
+    profile: string,
+    region: string,
+    bucket: string
+): void {
+    const oldBuckets = readSavedBuckets(settings)
+
+    settings.writeSetting(
+        CHOSEN_BUCKET_KEY,
+        {
+            ...oldBuckets,
+            [profile]: {
+                ...(oldBuckets && oldBuckets[profile] ? oldBuckets[profile] : {}),
+                [region]: bucket,
+            },
+        } as SavedBuckets,
+        vscode.ConfigurationTarget.Global
+    )
+}
+
 export class DefaultSamDeployWizardContext implements SamDeployWizardContext {
     public readonly getParameters = getParameters
     public readonly getOverriddenParameters = getOverriddenParameters
@@ -947,7 +988,7 @@ async function populateS3QuickPick(
 
         let recent: string = ''
         try {
-            const existingBuckets = settings.readSetting<SavedBuckets | undefined>(CHOSEN_BUCKET_KEY)
+            const existingBuckets = readSavedBuckets(settings)
             if (existingBuckets && profile && existingBuckets[profile] && existingBuckets[profile][selectedRegion]) {
                 recent = existingBuckets[profile][selectedRegion]
                 baseItems.push({
