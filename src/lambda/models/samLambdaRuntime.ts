@@ -62,22 +62,16 @@ const cloud9SupportedCreateRuntimes = cloud9SupportedBaseRuntimes.filter(
 // only interpreted languages are importable as compiled languages won't provide a useful artifact for editing.
 export const samLambdaImportableRuntimes: ImmutableSet<Runtime> = ImmutableSet.union([nodeJsRuntimes, pythonRuntimes])
 
-export const samLambdaCreatableRuntimes: ImmutableSet<Runtime> = isCloud9()
-    ? cloud9SupportedCreateRuntimes
-    : samZipLambdaRuntimes
+export function samLambdaCreatableRuntimes(cloud9: boolean = isCloud9()): ImmutableSet<Runtime> {
+    return cloud9 ? cloud9SupportedCreateRuntimes : samZipLambdaRuntimes
+}
 
 // Image runtimes are not a direct subset of valid ZIP lambda types
 const dotnet50 = 'dotnet5.0'
-export const samImageLambdaRuntimes = ImmutableSet<Runtime>([
-    ...samLambdaCreatableRuntimes,
-    dotnet50,
-    // SAM also supports ruby, go, java, but toolkit does not support
-])
-
-export const samLambdaRuntimes: ImmutableSet<Runtime> = ImmutableSet.union([
-    samZipLambdaRuntimes,
-    samImageLambdaRuntimes,
-])
+export function samImageLambdaRuntimes(cloud9: boolean = isCloud9()): ImmutableSet<Runtime> {
+    // Note: SAM also supports ruby, but Toolkit does not.
+    return ImmutableSet<Runtime>([...samLambdaCreatableRuntimes(cloud9), ...(cloud9 ? [] : [dotnet50])])
+}
 
 export type DependencyManager = 'cli-package' | 'mod' | 'gradle' | 'pip' | 'npm' | 'maven' | 'bundler'
 
@@ -193,12 +187,12 @@ export function createRuntimeQuickPick(params: {
     totalSteps?: number
 }): vscode.QuickPick<RuntimeQuickPickItem> {
     const zipRuntimes = params.runtimeFamily
-        ? getRuntimesForFamily(params.runtimeFamily) ?? samLambdaCreatableRuntimes
-        : samLambdaCreatableRuntimes
+        ? getRuntimesForFamily(params.runtimeFamily) ?? samLambdaCreatableRuntimes()
+        : samLambdaCreatableRuntimes()
 
     const zipRuntimeItems = zipRuntimes
         // remove uncreatable runtimes
-        .filter(value => samLambdaCreatableRuntimes.has(value))
+        .filter(value => samLambdaCreatableRuntimes().has(value))
         .toArray()
         .map<RuntimeQuickPickItem>(runtime => ({
             packageType: 'Zip',
@@ -213,7 +207,7 @@ export function createRuntimeQuickPick(params: {
     // behavior is keyed off of what is specified in the cloudformation template
     let imageRuntimeItems: RuntimeQuickPickItem[] = []
     if (params.showImageRuntimes) {
-        imageRuntimeItems = samImageLambdaRuntimes
+        imageRuntimeItems = samImageLambdaRuntimes()
             .map<RuntimeQuickPickItem>(runtime => ({
                 packageType: 'Image',
                 runtime: runtime,

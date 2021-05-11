@@ -25,6 +25,14 @@ export async function activate(activateArguments: { extensionContext: vscode.Ext
     })
     activateArguments.extensionContext.subscriptions.push(view)
 
+    activateArguments.extensionContext.subscriptions.push(
+        view.onDidChangeVisibility(e => {
+            explorer.visible = e.visible
+            if (e.visible) {
+                explorer.refresh()
+            }
+        })
+    )
     // Indicates workspace includes a CDK app and user has expanded the Node
     activateArguments.extensionContext.subscriptions.push(
         view.onDidExpandElement(e => {

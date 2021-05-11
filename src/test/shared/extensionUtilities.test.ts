@@ -59,7 +59,7 @@ describe('extensionUtilities', function () {
             }
         })
 
-        it("throws error if a quick start page doesn' exist", async () => {
+        it("throws error if a quick start page doesn't exist", async () => {
             await assert.rejects(createQuickStartWebview(context, 'irresponsibly-named-file'))
         })
 
@@ -71,7 +71,7 @@ describe('extensionUtilities', function () {
 
             assert.strictEqual(typeof webview, 'object')
             const forcedWebview = webview as vscode.WebviewPanel
-            assert.strictEqual(forcedWebview.webview.html, filetext)
+            assert.strictEqual(forcedWebview.webview.html.includes(filetext), true)
         })
 
         it('returns a webview with tokens replaced', async function () {
@@ -86,7 +86,7 @@ describe('extensionUtilities', function () {
             const forcedWebview = webview as vscode.WebviewPanel
 
             const pathAsVsCodeResource = forcedWebview.webview.asWebviewUri(vscode.Uri.file(context.extensionPath))
-            assert.strictEqual(forcedWebview.webview.html, `${basetext}${pathAsVsCodeResource}`)
+            assert.strictEqual(forcedWebview.webview.html.includes(`${basetext}${pathAsVsCodeResource}`), true)
         })
     })
 
