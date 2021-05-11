@@ -4,8 +4,10 @@
 package software.aws.toolkits.jetbrains.services.s3.editor
 
 import com.intellij.icons.AllIcons
+import com.intellij.ide.projectView.PresentationData
 import com.intellij.openapi.fileTypes.FileTypeRegistry
 import com.intellij.openapi.util.io.FileUtilRt
+import com.intellij.ui.SimpleTextAttributes
 import com.intellij.ui.treeStructure.SimpleNode
 import kotlinx.coroutines.runBlocking
 import software.amazon.awssdk.services.s3.model.NoSuchBucketException
@@ -77,7 +79,16 @@ abstract class S3LazyLoadParentNode<T>(bucket: S3VirtualBucket, parent: S3LazyLo
     protected abstract fun loadObjects(continuationMarker: T? = null): List<S3TreeNode>
 }
 
-class S3TreeDirectoryNode(bucket: S3VirtualBucket, parent: S3TreeDirectoryNode?, key: String) :
+class S3TreePrefixedDirectoryNode(bucket: S3VirtualBucket) : S3TreeDirectoryNode(bucket, null, bucket.prefix) {
+    fun isDelimited() = key.isNotEmpty() && !key.endsWith("/")
+    override fun displayName() = if (isDelimited()) {
+        message("s3.prefix.label", key)
+    } else {
+        key
+    }
+}
+
+open class S3TreeDirectoryNode(bucket: S3VirtualBucket, parent: S3TreeDirectoryNode?, key: String) :
     S3LazyLoadParentNode<String>(bucket, parent, key) {
     init {
         icon = AllIcons.Nodes.Folder
@@ -102,11 +113,18 @@ class S3TreeDirectoryNode(bucket: S3VirtualBucket, parent: S3TreeDirectoryNode?,
             val s3Objects = response
                 .contents()
                 ?.filterNotNull()
-                ?.filterNot { it.key() == key }
+                // filter out the directory root
+                // if the root was a non-delimited prefix, it should not be filtered out
+                ?.filterNot { it.key() == key && (this as? S3TreePrefixedDirectoryNode)?.isDelimited() != true }
                 ?.map { S3TreeObjectNode(this, it.key(), it.size(), it.lastModified()) }
                 ?: emptyList()
 
-            return (folders + s3Objects).sortedBy { it.key } + continuation
+            val results = (folders + s3Objects).sortedBy { it.key } + continuation
+            if (results.isEmpty()) {
+                return listOf(S3TreeEmptyNode(bucket, this))
+            }
+
+            return results
         } catch (e: NoSuchBucketException) {
             bucket.handleDeletedBucket()
             return emptyList()
@@ -284,4 +302,14 @@ class S3TreeErrorNode(
     }
 
     override fun displayName(): String = message("s3.error_loading")
+}
+
+class S3TreeEmptyNode(
+    bucket: S3VirtualBucket,
+    parentNode: S3LazyLoadParentNode<*>
+) : S3TreeNode(bucket, parentNode, "${parentNode.key}empty") {
+    override fun displayName(): String = message("explorer.empty_node")
+    override fun update(presentation: PresentationData) {
+        presentation.addText(displayName(), SimpleTextAttributes.GRAYED_ATTRIBUTES)
+    }
 }

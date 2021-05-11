@@ -329,6 +329,8 @@ with what features/services are supported.
         <group id="aws.toolkit.explorer.s3.bucket" popup="true" compact="false">
             <action id="s3.open.bucket.viewer"
                     class="software.aws.toolkits.jetbrains.services.s3.bucketActions.OpenBucketViewerAction"/>
+            <action id="s3.open.bucket.viewer.prefixed"
+                    class="software.aws.toolkits.jetbrains.services.s3.bucketActions.OpenPrefixedBucketViewerAction"/>
             <separator/>
             <action id="s3.copy.bucketname.check"
                     class="software.aws.toolkits.jetbrains.services.s3.bucketActions.CopyBucketNameAction"/>

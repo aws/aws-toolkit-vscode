@@ -29,7 +29,7 @@ class S3TreeObjectVersionNodeTest {
 
     @Before
     fun setUp() {
-        bucket = S3VirtualBucket(s3Bucket, s3Client, projectRule.project)
+        bucket = S3VirtualBucket(s3Bucket, "", s3Client, projectRule.project)
         dirNode = S3TreeDirectoryNode(bucket, null, "my/folder/")
     }
 

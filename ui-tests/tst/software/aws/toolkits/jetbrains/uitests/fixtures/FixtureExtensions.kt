@@ -28,6 +28,27 @@ fun ContainerFixture.fillSingleTextField(text: String) = step("Fill single text 
     find<JTextFieldFixture>(byXpath("//div[@class='JTextField']"), Duration.ofSeconds(5)).text = text
 }
 
+fun ContainerFixture.fillSearchTextField(text: String) = step("Fill search text field with $text") {
+    val field = find<ComponentFixture>(byXpath("//div[@class='SearchTextField']"), Duration.ofSeconds(5))
+    field.runJs(
+        """
+            component.getTextEditor().setText('$text');
+            component.getTextEditor().postActionEvent();
+        """.trimIndent(),
+        runInEdt = true
+    )
+}
+
+fun ContainerFixture.clearSearchTextField() = step("Clear search text field") {
+    val field = find<ComponentFixture>(byXpath("//div[@class='SearchTextField']"), Duration.ofSeconds(5))
+    field.runJs(
+        """
+            component.getTextEditor().getClientProperty('JTextField.Search.CancelAction').actionPerformed(null)
+        """.trimIndent(),
+        runInEdt = true
+    )
+}
+
 fun ContainerFixture.fillDeletionAndConfirm() = step("Fill in delete me and delete") {
     find<JTextFieldFixture>(byXpath("//div[@accessiblename='Delete confirmation box']"), Duration.ofSeconds(5)).text = "delete me"
     pressOk()

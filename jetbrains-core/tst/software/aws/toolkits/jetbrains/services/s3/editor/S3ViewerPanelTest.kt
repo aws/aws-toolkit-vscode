@@ -32,6 +32,7 @@ class S3ViewerPanelTest {
     @Before
     fun setUp() {
         s3Bucket = mock {
+            on { prefix }.thenReturn("")
             on { name }.thenReturn(aString())
 
             onBlocking { listObjects(any(), anyOrNull()) }.thenReturn(
