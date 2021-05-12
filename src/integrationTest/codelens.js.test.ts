@@ -6,11 +6,12 @@
 import * as assert from 'assert'
 import { dirname, join } from 'path'
 import * as vscode from 'vscode'
-import { expectCodeLenses, getTestWorkspaceFolder } from './integrationTestsUtilities'
+import { getAddConfigCodeLens, getTestWorkspaceFolder } from './integrationTestsUtilities'
 import { AddSamDebugConfigurationInput } from '../shared/sam/debugger/commands/addSamDebugConfiguration'
 
 const ACTIVATE_EXTENSION_TIMEOUT_MILLIS = 30000
 const CODELENS_TEST_TIMEOUT_MILLIS = 10000
+const CODELENS_RETRY_INTERVAL = 1000
 
 const workspaceFolder = getTestWorkspaceFolder()
 
@@ -26,7 +27,11 @@ describe('SAM Local CodeLenses (JS)', async function () {
         const expectedHandlerName = 'app.handlerBesidePackageJson'
         const document = await vscode.workspace.openTextDocument(appCodePath)
 
-        const codeLenses = await expectCodeLenses(document.uri)
+        const codeLenses = await getAddConfigCodeLens(
+            document.uri,
+            CODELENS_TEST_TIMEOUT_MILLIS,
+            CODELENS_RETRY_INTERVAL
+        )
 
         assertAddDebugConfigCodeLensExists(codeLenses, expectedHandlerName, dirname(appCodePath))
     }).timeout(CODELENS_TEST_TIMEOUT_MILLIS)
@@ -37,7 +42,11 @@ describe('SAM Local CodeLenses (JS)', async function () {
         const expectedHandlerName = 'src/subfolder/app.handlerTwoFoldersDeep'
         const document = await vscode.workspace.openTextDocument(appCodePath)
 
-        const codeLenses = await expectCodeLenses(document.uri)
+        const codeLenses = await getAddConfigCodeLens(
+            document.uri,
+            CODELENS_TEST_TIMEOUT_MILLIS,
+            CODELENS_RETRY_INTERVAL
+        )
 
         assertAddDebugConfigCodeLensExists(codeLenses, expectedHandlerName, join(dirname(appCodePath), '..', '..'))
     }).timeout(CODELENS_TEST_TIMEOUT_MILLIS)
@@ -48,7 +57,11 @@ describe('SAM Local CodeLenses (JS)', async function () {
         const expectedHandlerName = 'subfolder/app.handlerInManifestSubfolder'
         const document = await vscode.workspace.openTextDocument(appCodePath)
 
-        const codeLenses = await expectCodeLenses(document.uri)
+        const codeLenses = await getAddConfigCodeLens(
+            document.uri,
+            CODELENS_TEST_TIMEOUT_MILLIS,
+            CODELENS_RETRY_INTERVAL
+        )
 
         assertAddDebugConfigCodeLensExists(codeLenses, expectedHandlerName, join(dirname(appCodePath), '..'))
     }).timeout(CODELENS_TEST_TIMEOUT_MILLIS)
@@ -59,16 +72,22 @@ describe('SAM Local CodeLenses (JS)', async function () {
         const expectedHandlerName = 'app.projectDeepInWorkspace'
         const document = await vscode.workspace.openTextDocument(appCodePath)
 
-        const codeLenses = await expectCodeLenses(document.uri)
+        const codeLenses = await getAddConfigCodeLens(
+            document.uri,
+            CODELENS_TEST_TIMEOUT_MILLIS,
+            CODELENS_RETRY_INTERVAL
+        )
 
         assertAddDebugConfigCodeLensExists(codeLenses, expectedHandlerName, dirname(appCodePath))
     })
 
     function assertAddDebugConfigCodeLensExists(
-        codeLenses: vscode.CodeLens[],
+        codeLenses: vscode.CodeLens[] | undefined,
         expectedHandlerName: string,
         manifestPath: string
     ) {
+        assert.ok(codeLenses !== undefined, 'Did not expect undefined when requesting CodeLenses')
+
         const debugCodeLenses = getLocalInvokeCodeLenses(codeLenses).filter(codeLens =>
             hasLocalInvokeArguments(codeLens, expectedHandlerName, manifestPath)
         )
