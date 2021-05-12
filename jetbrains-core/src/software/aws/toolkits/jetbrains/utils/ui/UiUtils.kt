@@ -7,6 +7,7 @@ package software.aws.toolkits.jetbrains.utils.ui
 import com.intellij.lang.Language
 import com.intellij.openapi.application.runWriteAction
 import com.intellij.openapi.command.CommandProcessor
+import com.intellij.openapi.ui.DialogPanel
 import com.intellij.openapi.ui.GraphicsConfig
 import com.intellij.openapi.ui.ValidationInfo
 import com.intellij.ui.CellRendererPanel
@@ -15,6 +16,8 @@ import com.intellij.ui.EditorTextField
 import com.intellij.ui.JBColor
 import com.intellij.ui.JreHiDpiUtil
 import com.intellij.ui.components.JBTextArea
+import com.intellij.ui.layout.CellBuilder
+import com.intellij.ui.layout.ComponentPredicate
 import com.intellij.ui.paint.LinePainter2D
 import com.intellij.ui.speedSearch.SpeedSearchSupply
 import com.intellij.util.text.DateFormatUtil
@@ -224,4 +227,35 @@ class ResizingDateColumnRenderer(showSeconds: Boolean) : ResizingColumnRenderer(
 
 class ResizingTextColumnRenderer : ResizingColumnRenderer() {
     override fun getText(value: Any?): String? = (value as? String)?.trim()
+}
+
+/**
+ * When a panel is made of more than one panel, apply and the validation callbacks do not work as expected for
+ * the child panels. This function makes it so the validation callbacks and apply are actually called.
+ * @param applies An additional function that allows control based on visibility of other components or other factors
+ */
+fun CellBuilder<DialogPanel>.installOnParent(applies: () -> Boolean = { true }): CellBuilder<DialogPanel> {
+    withValidationOnApply {
+        if (!applies()) {
+            null
+        } else {
+            val errors = this@installOnParent.component.validateCallbacks.mapNotNull { it() }
+            if (errors.isEmpty()) {
+                this@installOnParent.component.apply()
+            }
+            errors.firstOrNull()
+        }
+    }
+    return this
+}
+
+/**
+ * Similar to {@link com.intellij.ui.layout.CellBuilder#enableIf} but for component visibility
+ */
+fun CellBuilder<JComponent>.visibleIf(predicate: ComponentPredicate): CellBuilder<JComponent> {
+    component.isVisible = predicate()
+    predicate.addListener {
+        component.isVisible = it
+    }
+    return this
 }

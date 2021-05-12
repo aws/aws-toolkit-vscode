@@ -1,0 +1,12 @@
+<!-- Copyright 2021 Amazon.com, Inc. or its affiliates. All Rights Reserved. -->
+<!-- SPDX-License-Identifier: Apache-2.0 -->
+
+<idea-plugin>
+    <actions>
+        <group>
+            <add-to-group group-id="ecr.repository.push.group"/>
+
+            <action id="ecr.repository.push" class="software.aws.toolkits.jetbrains.services.ecr.actions.PushToRepositoryAction"/>
+        </group>
+    </actions>
+</idea-plugin>

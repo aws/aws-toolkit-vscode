@@ -10,12 +10,11 @@ import com.intellij.openapi.project.DumbAware
 import software.aws.toolkits.jetbrains.core.explorer.nodes.AwsExplorerResourceNode
 import software.aws.toolkits.resources.message
 import software.aws.toolkits.telemetry.AwsTelemetry
-import software.aws.toolkits.telemetry.ServiceType
 import java.awt.datatransfer.StringSelection
 
 class CopyArnAction : SingleResourceNodeAction<AwsExplorerResourceNode<*>>(message("explorer.copy_arn"), icon = AllIcons.Actions.Copy), DumbAware {
     override fun actionPerformed(selected: AwsExplorerResourceNode<*>, e: AnActionEvent) {
         CopyPasteManager.getInstance().setContents(StringSelection(selected.resourceArn()))
-        AwsTelemetry.copyArn(e.project, ServiceType.from(selected.serviceId))
+        AwsTelemetry.copyArn(e.project, selected.serviceId)
     }
 }
