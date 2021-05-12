@@ -6,15 +6,13 @@ package software.aws.toolkits.jetbrains.services.ecr.resources
 import software.amazon.awssdk.services.ecr.EcrClient
 import software.aws.toolkits.jetbrains.core.ClientBackedCachedResource
 import software.aws.toolkits.jetbrains.core.Resource
+import software.aws.toolkits.jetbrains.services.ecr.toToolkitEcrRepository
 
 object EcrResources {
     @JvmStatic
     val LIST_REPOS: Resource.Cached<List<Repository>> = ClientBackedCachedResource(EcrClient::class, "ecr.list_repos") {
         describeRepositoriesPaginator().repositories().toList().mapNotNull {
-            val name = it.repositoryName() ?: return@mapNotNull null
-            val arn = it.repositoryArn() ?: return@mapNotNull null
-            val uri = it.repositoryUri() ?: return@mapNotNull null
-            Repository(name, arn, uri)
+            it.toToolkitEcrRepository()
         }
     }
 

@@ -69,7 +69,7 @@ with what features/services are supported.
     <depends optional="true">org.jetbrains.plugins.gradle</depends>
     <depends optional="true">org.jetbrains.plugins.terminal</depends>
     <depends optional="true">com.intellij.modules.externalSystem</depends>
-    <depends optional="true">Docker</depends>
+    <depends optional="true" config-file="ext-docker.xml">Docker</depends>
     <depends optional="true" config-file="ext-java.xml">com.intellij.modules.java</depends>
     <depends optional="true" config-file="ext-python.xml">com.intellij.modules.python</depends>
 
@@ -249,11 +249,15 @@ with what features/services are supported.
     </extensions>
 
     <actions>
+        <group id="ecr.repository.push.group"/>
+
         <group id="aws.toolkit.explorer.ecr" popup="true" compact="false">
             <action id="ecr.repository.create" class="software.aws.toolkits.jetbrains.services.ecr.actions.CreateRepositoryAction"/>
+            <reference id="ecr.repository.push.group"/>
         </group>
 
         <group id="aws.toolkit.explorer.ecr.repository" popup="true" compact="false">
+            <reference id="ecr.repository.push.group"/>
             <action id="ecr.repository.copyUri" class="software.aws.toolkits.jetbrains.services.ecr.actions.CopyRepositoryUriAction"/>
             <separator/>
             <action id="ecr.repository.delete" class="software.aws.toolkits.jetbrains.services.ecr.actions.DeleteRepositoryAction"/>

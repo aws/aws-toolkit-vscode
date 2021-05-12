@@ -9,7 +9,7 @@ import com.intellij.openapi.project.guessProjectDir
 import com.intellij.openapi.ui.TextBrowseFolderListener
 import com.intellij.openapi.vfs.VirtualFile
 
-class ProjectFileBrowseListener @JvmOverloads constructor(
+open class ProjectFileBrowseListener @JvmOverloads constructor(
     project: Project,
     chooserDescriptor: FileChooserDescriptor,
     private val onChosen: ((VirtualFile) -> Unit)? = null
