@@ -47,7 +47,7 @@ class CloudApiTester {
                                 if (e.isThrottlingException) {
                                     Thread.sleep(3000)
                                 } else {
-                                    if(e.message?.contains("does not support LIST action") == true) {
+                                    if (e.message?.contains("does not support LIST action") == true) {
                                         add("Failed - Unsupported")
                                     } else {
                                         add("Failed - Other")
@@ -61,7 +61,6 @@ class CloudApiTester {
                                 add(DateTimeFormatter.ISO_DATE_TIME.format(Instant.now().atOffset(ZoneOffset.UTC)))
                             }
                         }
-
                     }.joinToString(separator = ",", postfix = "\n")
                 )
             }
