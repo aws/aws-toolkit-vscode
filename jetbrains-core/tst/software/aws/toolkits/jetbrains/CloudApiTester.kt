@@ -4,6 +4,7 @@
 package software.aws.toolkits.jetbrains
 
 import kotlinx.coroutines.runBlocking
+import org.junit.Ignore
 import org.junit.Test
 import software.amazon.awssdk.awscore.exception.AwsServiceException
 import software.amazon.awssdk.services.cloudformation.CloudFormationClient
@@ -17,6 +18,7 @@ import java.time.format.DateTimeFormatter
 class CloudApiTester {
     @OptIn(ExperimentalStdlibApi::class)
     @Test
+    @Ignore
     fun whatBlowsUp() {
         val results = Paths.get("./cloudApiBlowUp.csv")
         results.outputStream().bufferedWriter().use {
