@@ -228,7 +228,7 @@ async function invokeLambdaHandler(
             debugPort: debugPort,
             debuggerPath: config.debuggerPath,
             debugArgs: config.debugArgs,
-            skipPullImage: config.sam?.skipNewImageCheck,
+            skipPullImage: true, // We already built the image, but `sam local start-api` will try to build it again
             parameterOverrides: config.parameterOverrides,
             containerEnvFile: config.containerEnvFile,
             extraArgs: config.sam?.localArguments,
