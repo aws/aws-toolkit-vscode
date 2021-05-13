@@ -30,7 +30,7 @@ const projectFolder = testUtils.getTestWorkspaceFolder()
 /* Test constants go here */
 const CODELENS_TIMEOUT: number = 60000
 const CODELENS_RETRY_INTERVAL: number = 200
-const DEBUG_TIMEOUT: number = 90000
+const DEBUG_TIMEOUT: number = 120000
 const NO_DEBUG_SESSION_TIMEOUT: number = 5000
 const NO_DEBUG_SESSION_INTERVAL: number = 100
 
@@ -255,38 +255,6 @@ function tryRemoveFolder(fullPath: string) {
     } catch (e) {
         console.error(`Failed to remove path ${fullPath}`, e)
     }
-}
-
-async function getAddConfigCodeLens(documentUri: vscode.Uri): Promise<vscode.CodeLens[] | undefined> {
-    return waitUntil(
-        async () => {
-            try {
-                let codeLenses = await testUtils.getCodeLenses(documentUri)
-                if (!codeLenses || codeLenses.length === 0) {
-                    return undefined
-                }
-
-                // omnisharp spits out some undefined code lenses for some reason, we filter them because they are
-                // not shown to the user and do not affect how our extension is working
-                codeLenses = codeLenses.filter(codeLens => {
-                    if (codeLens.command && codeLens.command.arguments && codeLens.command.arguments.length === 3) {
-                        return codeLens.command.command === 'aws.pickAddSamDebugConfiguration'
-                    }
-
-                    return false
-                })
-
-                if (codeLenses.length > 0) {
-                    return codeLenses || []
-                }
-            } catch (e) {
-                console.log(`sam.test.ts: getAddConfigCodeLens() on "${documentUri.fsPath}" failed, retrying:\n${e}`)
-            }
-
-            return undefined
-        },
-        { timeout: CODELENS_TIMEOUT, interval: CODELENS_RETRY_INTERVAL, truthy: false }
-    )
 }
 
 /**
@@ -531,7 +499,11 @@ describe('SAM Integration Tests', async function () {
                         this.skip()
                     }
 
-                    const codeLenses = await getAddConfigCodeLens(samAppCodeUri)
+                    const codeLenses = await testUtils.getAddConfigCodeLens(
+                        samAppCodeUri,
+                        CODELENS_TIMEOUT,
+                        CODELENS_RETRY_INTERVAL
+                    )
                     assert.ok(codeLenses && codeLenses.length === 2)
 
                     let manifestFile: RegExp
