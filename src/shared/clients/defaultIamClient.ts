@@ -19,10 +19,6 @@ export class DefaultIamClient implements IamClient {
     }
 
     private async createSdkClient(): Promise<IAM> {
-        return await ext.sdkClientBuilder.createAndConfigureServiceClient(
-            options => new IAM(options),
-            undefined,
-            this.regionCode
-        )
+        return await ext.sdkClientBuilder.createAwsService(IAM, undefined, this.regionCode)
     }
 }

@@ -71,10 +71,6 @@ export class DefaultEcsClient implements EcsClient {
     }
 
     protected async createSdkClient(): Promise<ECS> {
-        return await ext.sdkClientBuilder.createAndConfigureServiceClient(
-            options => new ECS(options),
-            undefined,
-            this.regionCode
-        )
+        return await ext.sdkClientBuilder.createAwsService(ECS, undefined, this.regionCode)
     }
 }
