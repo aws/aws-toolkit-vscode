@@ -75,7 +75,7 @@ class CloudFormationTemplateIndex : FileBasedIndexExtension<String, MutableList<
 
     override fun getKeyDescriptor(): KeyDescriptor<String> = EnumeratorStringDescriptor.INSTANCE
 
-    override fun getVersion(): Int = 2
+    override fun getVersion(): Int = 3
 
     override fun getInputFilter(): FileBasedIndex.InputFilter = fileFilter
 

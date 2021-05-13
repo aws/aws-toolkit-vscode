@@ -26,7 +26,8 @@ class NodeJsSamProjectWizard : SamProjectWizard {
     override fun createSdkSelectionPanel(projectLocation: TextFieldWithBrowseButton?): SdkSelector? = NodeJsSdkSelectionPanel()
 
     override fun listTemplates(): Collection<SamProjectTemplate> = listOf(
-        SamHelloWorldNodeJs()
+        SamHelloWorldNodeJs(),
+        SamHelloWorldNodeJsTypeScript()
     )
 }
 
@@ -64,6 +65,20 @@ class SamHelloWorldNodeJs : SamAppTemplateBased() {
     override fun supportedImageRuntimes(): Set<LambdaRuntime> = setOf(LambdaRuntime.NODEJS10_X, LambdaRuntime.NODEJS12_X, LambdaRuntime.NODEJS14_X)
 
     override val appTemplateName: String = "hello-world"
+
+    override val dependencyManager: String = "npm"
+}
+
+class SamHelloWorldNodeJsTypeScript : SamAppTemplateBased() {
+    override fun displayName() = message("sam.init.template.hello_world_typescript.name")
+
+    override fun description() = message("sam.init.template.hello_world_typescript.description")
+
+    override fun supportedZipRuntimes(): Set<LambdaRuntime> = setOf(LambdaRuntime.NODEJS12_X)
+
+    override fun supportedImageRuntimes(): Set<LambdaRuntime> = setOf()
+
+    override val appTemplateName: String = "quick-start-typescript-app"
 
     override val dependencyManager: String = "npm"
 }

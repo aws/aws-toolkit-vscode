@@ -398,4 +398,56 @@ Resources:
             assertThat(functions).hasSize(0)
         }
     }
+
+    @Test
+    fun `supports BuildMethod in Metadata block`() {
+        val fixture = projectRule.fixture
+
+        fixture.openFile(
+            "template.yaml",
+            """
+Resources:
+  ServerlessFunction:
+    Type: AWS::Lambda::Function
+    Metadata:
+      BuildMethod: makefile
+    Properties:
+      Code: lambda
+      Handler: lambda::bar
+      Runtime: java8
+"""
+        )
+
+        runInEdtAndWait {
+            val functions = CloudFormationTemplateIndex.listFunctions(projectRule.project)
+            assertThat(functions).hasSize(1)
+            val indexedFunction = functions.toList()[0]
+            assertThat(indexedFunction.buildMethod()).isEqualTo("makefile")
+        }
+    }
+
+    @Test
+    fun `supports no Metadata block`() {
+        val fixture = projectRule.fixture
+
+        fixture.openFile(
+            "template.yaml",
+            """
+Resources:
+  ServerlessFunction:
+    Type: AWS::Lambda::Function
+    Properties:
+      Code: lambda
+      Handler: lambda::bar
+      Runtime: java8
+"""
+        )
+
+        runInEdtAndWait {
+            val functions = CloudFormationTemplateIndex.listFunctions(projectRule.project)
+            assertThat(functions).hasSize(1)
+            val indexedFunction = functions.toList()[0]
+            assertThat(indexedFunction.buildMethod()).isNull()
+        }
+    }
 }
