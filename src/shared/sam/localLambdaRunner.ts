@@ -366,16 +366,20 @@ export async function runLambdaFunction(
         ...(config.aws?.region ? { AWS_DEFAULT_REGION: config.aws.region } : {}),
     }
 
-    const buildTimer = createInvokeTimer(ctx.settings)
+    const timer = createInvokeTimer(ctx.settings)
 
-    if (!(await buildLambdaHandler(buildTimer, envVars, config))) {
+    if (!(await buildLambdaHandler(timer, envVars, config))) {
         return config
     }
 
     await onAfterBuild()
 
-    const invokeTimer = createInvokeTimer(ctx.settings)
-    if (!(await invokeLambdaHandler(invokeTimer, envVars, config))) {
+    // If the build successfully but expires the timer, reset the timer
+    if (timer.completed) {
+        timer.reset()
+    }
+
+    if (!(await invokeLambdaHandler(timer, envVars, config))) {
         return config
     }
 
@@ -394,7 +398,7 @@ export async function runLambdaFunction(
             getLogger('channel').info(
                 localize('AWS.output.sam.local.waiting', 'Waiting for SAM application to start...')
             )
-            await config.onWillAttachDebugger(config.debugPort!, invokeTimer)
+            await config.onWillAttachDebugger(config.debugPort!, timer)
         }
         // HACK: remove non-serializable properties before attaching.
         // TODO: revisit this :)
@@ -411,7 +415,7 @@ export async function runLambdaFunction(
                     runtime: config.runtime as telemetry.Runtime,
                     result: attachResult ? 'Succeeded' : 'Failed',
                     attempts: attempts,
-                    duration: invokeTimer.elapsedTime,
+                    duration: timer.elapsedTime,
                 })
             },
         })
