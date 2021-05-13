@@ -3,16 +3,8 @@
 
 package software.aws.toolkits.jetbrains.services.lambda.nodejs
 
-import com.intellij.lang.javascript.psi.JSDefinitionExpression
-import com.intellij.psi.PsiElement
-import com.intellij.psi.search.GlobalSearchScope
-import com.intellij.testFramework.runInEdtAndWait
-import org.assertj.core.api.Assertions.assertThat
 import org.junit.Rule
 import org.junit.Test
-import software.aws.toolkits.jetbrains.services.lambda.BuiltInRuntimeGroups
-import software.aws.toolkits.jetbrains.services.lambda.LambdaHandlerResolver
-import software.aws.toolkits.jetbrains.services.lambda.RuntimeGroup
 import software.aws.toolkits.jetbrains.utils.rules.NodeJsCodeInsightTestFixtureRule
 import software.aws.toolkits.jetbrains.utils.rules.addLambdaHandler
 import software.aws.toolkits.jetbrains.utils.rules.addPackageJsonFile
@@ -146,6 +138,7 @@ class NodeJsLambdaHandlerResolverTest {
 
     @Test
     fun determineHandler_notAFunction() {
+        projectRule.fixture.addPackageJsonFile()
         val handlerElement = projectRule.fixture.addLambdaHandler(
             subPath = "foo/bar",
             fileContent = """
@@ -154,26 +147,6 @@ class NodeJsLambdaHandlerResolverTest {
         )
 
         assertDetermineHandler(handlerElement, null)
-    }
-
-    @Test
-    fun findPsiElement_exportsAsync2Parameters() {
-        projectRule.fixture.addPackageJsonFile()
-        projectRule.fixture.addLambdaHandler()
-        assertFindPsiElements("app.lambdaHandler", true)
-    }
-
-    @Test
-    fun findPsiElement_exportsAsync3Parameters() {
-        val fileContent = """
-            exports.lambdaHandler = async (event, context, callback) => {
-                return "Hello World";
-            }
-        """.trimIndent()
-
-        projectRule.fixture.addFileToProject("app.js", fileContent)
-        projectRule.fixture.addPackageJsonFile()
-        assertFindPsiElements("app.lambdaHandler", false)
     }
 
     @Test
@@ -187,7 +160,34 @@ class NodeJsLambdaHandlerResolverTest {
 
         projectRule.fixture.addFileToProject("app.js", fileContent)
         projectRule.fixture.addPackageJsonFile()
-        assertFindPsiElements("app.lambdaHandler", true)
+        assertFindPsiElements(projectRule, "app.lambdaHandler", true)
+    }
+
+    @Test
+    fun findPsiElement_exportsAsync2Parameters() {
+        val fileContent =
+            """
+            exports.lambdaHandler = async (event, context) => {
+                return "Hello World";
+            }
+            """.trimIndent()
+
+        projectRule.fixture.addFileToProject("app.js", fileContent)
+        projectRule.fixture.addPackageJsonFile()
+        assertFindPsiElements(projectRule, "app.lambdaHandler", true)
+    }
+
+    @Test
+    fun findPsiElement_exportsAsync3Parameters() {
+        val fileContent = """
+            exports.lambdaHandler = async (event, context, callback) => {
+                return "Hello World";
+            }
+        """.trimIndent()
+
+        projectRule.fixture.addFileToProject("app.js", fileContent)
+        projectRule.fixture.addPackageJsonFile()
+        assertFindPsiElements(projectRule, "app.lambdaHandler", false)
     }
 
     @Test
@@ -201,7 +201,7 @@ class NodeJsLambdaHandlerResolverTest {
 
         projectRule.fixture.addFileToProject("app.js", fileContent)
         projectRule.fixture.addPackageJsonFile()
-        assertFindPsiElements("app.lambdaHandler", false)
+        assertFindPsiElements(projectRule, "app.lambdaHandler", false)
     }
 
     @Test
@@ -215,7 +215,7 @@ class NodeJsLambdaHandlerResolverTest {
 
         projectRule.fixture.addFileToProject("app.js", fileContent)
         projectRule.fixture.addPackageJsonFile()
-        assertFindPsiElements("app.lambdaHandler", false)
+        assertFindPsiElements(projectRule, "app.lambdaHandler", false)
     }
 
     @Test
@@ -228,7 +228,7 @@ class NodeJsLambdaHandlerResolverTest {
             """.trimIndent()
 
         projectRule.fixture.addFileToProject("foo/app.js", fileContent)
-        assertFindPsiElements("foo/app.lambdaHandler", false)
+        assertFindPsiElements(projectRule, "foo/app.lambdaHandler", false)
     }
 
     @Test
@@ -242,8 +242,8 @@ class NodeJsLambdaHandlerResolverTest {
 
         projectRule.fixture.addFileToProject("foo/bar/app.js", fileContent)
         projectRule.fixture.addPackageJsonFile("foo")
-        assertFindPsiElements("bar/app.lambdaHandler", true)
-        assertFindPsiElements("foo/bar/app.lambdaHandler", false)
+        assertFindPsiElements(projectRule, "bar/app.lambdaHandler", true)
+        assertFindPsiElements(projectRule, "foo/bar/app.lambdaHandler", false)
     }
 
     @Test
@@ -257,32 +257,6 @@ class NodeJsLambdaHandlerResolverTest {
 
         projectRule.fixture.addFileToProject("foo/app.js", fileContent)
         projectRule.fixture.addPackageJsonFile()
-        assertFindPsiElements("app.lambdaHandler", false)
-    }
-
-    private fun assertDetermineHandler(handlerElement: PsiElement, expectedHandlerFullName: String?) {
-        val resolver = LambdaHandlerResolver.getInstance(RuntimeGroup.getById(BuiltInRuntimeGroups.NodeJs))
-
-        runInEdtAndWait {
-            if (expectedHandlerFullName != null) {
-                assertThat(resolver.determineHandler(handlerElement)).isEqualTo(expectedHandlerFullName)
-            } else {
-                assertThat(resolver.determineHandler(handlerElement)).isNull()
-            }
-        }
-    }
-
-    private fun assertFindPsiElements(handler: String, shouldBeFound: Boolean) {
-        val resolver = LambdaHandlerResolver.getInstance(RuntimeGroup.getById(BuiltInRuntimeGroups.NodeJs))
-        runInEdtAndWait {
-            val project = projectRule.fixture.project
-            val lambdas = resolver.findPsiElements(project, handler, GlobalSearchScope.allScope(project))
-            if (shouldBeFound) {
-                assertThat(lambdas).hasSize(1)
-                assertThat(lambdas[0]).isInstanceOf(JSDefinitionExpression::class.java)
-            } else {
-                assertThat(lambdas).isEmpty()
-            }
-        }
+        assertFindPsiElements(projectRule, "app.lambdaHandler", false)
     }
 }

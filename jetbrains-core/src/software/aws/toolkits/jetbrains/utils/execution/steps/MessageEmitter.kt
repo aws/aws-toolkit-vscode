@@ -22,6 +22,7 @@ interface MessageEmitter {
     fun finishExceptionally(e: Throwable)
     fun addListener(listener: BuildProgressListener)
     fun emitMessage(message: String, isError: Boolean)
+    fun emitMessageLine(message: String, isError: Boolean) = emitMessage("$message\n", isError)
 }
 
 class DefaultMessageEmitter private constructor(

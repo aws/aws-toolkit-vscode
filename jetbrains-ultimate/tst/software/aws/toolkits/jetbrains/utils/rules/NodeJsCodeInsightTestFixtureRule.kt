@@ -24,6 +24,7 @@ import com.intellij.testFramework.runInEdtAndGet
 import com.intellij.testFramework.runInEdtAndWait
 import com.intellij.util.text.SemVer
 import com.intellij.xdebugger.XDebuggerUtil
+import org.intellij.lang.annotations.Language
 
 /**
  * JUnit test Rule that will create a Light [Project] and [CodeInsightTestFixture] with NodeJs support. Projects are
@@ -112,7 +113,7 @@ fun CodeInsightTestFixture.addLambdaHandler(
     subPath: String = ".",
     fileName: String = "app",
     handlerName: String = "lambdaHandler",
-    fileContent: String =
+    @Language("JS") fileContent: String =
         """
         exports.$handlerName = function (event, context, callback) {
             return 'HelloWorld'
@@ -126,9 +127,27 @@ fun CodeInsightTestFixture.addLambdaHandler(
     }
 }
 
+fun CodeInsightTestFixture.addTypeScriptLambdaHandler(
+    subPath: String = ".",
+    fileName: String = "app",
+    handlerName: String = "lambdaHandler",
+    @Language("TS") fileContent: String =
+        """
+        export const $handlerName = (event: APIGatewayProxyEvent, context: Context, callback: Callback<APIGatewayProxyResult>): APIGatewayProxyResult => {
+            return { statusCode: 200 }
+        }
+        """.trimIndent()
+): PsiElement {
+    val psiFile = this.addFileToProject("$subPath/$fileName.ts", fileContent) as JSFile
+
+    return runInEdtAndGet {
+        psiFile.findElementAt(fileContent.indexOf(handlerName))!!
+    }
+}
+
 fun CodeInsightTestFixture.addPackageJsonFile(
     subPath: String = ".",
-    content: String =
+    @Language("JSON") content: String =
         """
         {
             "name": "hello-world",
@@ -136,3 +155,17 @@ fun CodeInsightTestFixture.addPackageJsonFile(
         }
         """.trimIndent()
 ): PsiFile = this.addFileToProject("$subPath/package.json", content)
+
+fun CodeInsightTestFixture.addTypeScriptPackageJsonFile(
+    subPath: String = ".",
+    @Language("JSON") content: String =
+        """
+        {
+            "name": "hello-world",
+            "version": "1.0.0",
+            "devDependencies": {
+              "typescript": "*"
+            }
+        }
+        """.trimIndent()
+): PsiFile = this.addPackageJsonFile(subPath, content)

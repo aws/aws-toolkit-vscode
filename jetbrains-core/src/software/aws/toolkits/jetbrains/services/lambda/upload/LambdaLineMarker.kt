@@ -78,7 +78,9 @@ class LambdaLineMarker : LineMarkerProviderDescriptor() {
     // Handler defined in template with the same runtime group is valid
     private fun handlerInTemplate(project: Project, handler: String, runtimeGroup: RuntimeGroup): Boolean =
         listFunctions(project).any {
-            it.handler() == handler && Runtime.fromValue(it.runtime())?.runtimeGroup == runtimeGroup
+            Runtime.fromValue(it.runtime())?.runtimeGroup == runtimeGroup &&
+                // if user has a custom makefile, assume they know what they're doing with the handler since we don't have enough information
+                (it.handler() == handler || it.buildMethod() == "makefile")
         }
 
     class LambdaGutterIcon(markerInfo: LineMarkerInfo<PsiElement>, private val actionGroup: ActionGroup) :

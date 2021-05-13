@@ -8,7 +8,10 @@ import com.intellij.lang.javascript.psi.JSAssignmentExpression
 import com.intellij.lang.javascript.psi.JSDefinitionExpression
 import com.intellij.lang.javascript.psi.JSFunction
 import com.intellij.lang.javascript.psi.JSReferenceExpression
+import com.intellij.lang.javascript.psi.ecma6.TypeScriptFunction
+import com.intellij.lang.javascript.psi.ecma6.TypeScriptVariable
 import com.intellij.lang.javascript.psi.ecmal4.JSAttributeList
+import com.intellij.lang.javascript.psi.ecmal4.JSQualifiedNamedElement
 import com.intellij.lang.javascript.psi.resolve.JSClassResolver
 import com.intellij.openapi.project.Project
 import com.intellij.openapi.util.io.FileUtilRt
@@ -46,7 +49,7 @@ class NodeJsLambdaHandlerResolver : LambdaHandlerResolver {
 
         val relativePath = VfsUtilCore.findRelativePath(sourceRoot, virtualFile, '/') ?: return false
         return this is NavigatablePsiElement &&
-            this.parent?.isValidLambdaHandler() == true &&
+            (this.parent?.isValidJsLambdaHandler() == true || this.isValidTypeScriptLambdaHandler()) &&
             FileUtilRt.getNameWithoutExtension(relativePath) == fileName
     }
 
@@ -78,6 +81,11 @@ class NodeJsLambdaHandlerResolver : LambdaHandlerResolver {
             return false
         }
 
+        if (this.parent is TypeScriptVariable || this.parent is TypeScriptFunction) {
+            // in TS, exports are modifiers rather than the target of an assignment expression
+            return this.parent.isValidTypeScriptLambdaHandler()
+        }
+
         val exportsDefinition = this.parent?.parent ?: return false
 
         if (!exportsDefinition.isExportsDefinition()) {
@@ -94,9 +102,27 @@ class NodeJsLambdaHandlerResolver : LambdaHandlerResolver {
 
     /**
      * Whether the element is top level PSI element for a valid Lambda handler. It must be in the format as:
+     * export const lambdaHandler = functionExpression
+     * or
+     * export function lambdaHandler(...) { ... }
+     */
+    private fun PsiElement.isValidTypeScriptLambdaHandler(): Boolean {
+        if ((this as? JSQualifiedNamedElement)?.isExported != true) {
+            return false
+        }
+
+        return when (this) {
+            is TypeScriptVariable -> this.lastChild.isLambdaFunctionExpression()
+            is TypeScriptFunction -> this.isLambdaFunctionExpression()
+            else -> false
+        }
+    }
+
+    /**
+     * Whether the element is top level PSI element for a valid Lambda handler. It must be in the format as:
      * exports.lambdaHandler = functionExpression
      */
-    private fun PsiElement.isValidLambdaHandler(): Boolean =
+    private fun PsiElement.isValidJsLambdaHandler(): Boolean =
         this is JSAssignmentExpression &&
             this.lOperand?.isExportsDefinition() == true &&
             this.rOperand?.isLambdaFunctionExpression() == true
