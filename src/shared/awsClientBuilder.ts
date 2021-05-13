@@ -9,11 +9,20 @@ import { AwsContext } from './awsContext'
 import { pluginVersion } from './extensionUtilities'
 
 export interface AWSClientBuilder {
-    createAndConfigureServiceClient<T>(
-        awsServiceFactory: (options: ServiceConfigurationOptions) => T,
-        awsServiceOpts?: ServiceConfigurationOptions,
+    /**
+     * Creates AWS service object of the given type, and sets options defaults.
+     *
+     * @param type  AWS service type
+     * @param options  AWS service configuration options
+     * @param region  AWS region override
+     * @param userAgent  Set the Toolkit user agent
+     * @returns
+     */
+    createAwsService<T extends AWS.Service>(
+        type: new (o: ServiceConfigurationOptions) => T,
+        options?: ServiceConfigurationOptions,
         region?: string,
-        addUserAgent?: boolean
+        userAgent?: boolean
     ): Promise<T>
 }
 
@@ -24,31 +33,29 @@ export class DefaultAWSClientBuilder implements AWSClientBuilder {
         this._awsContext = awsContext
     }
 
-    // centralized construction of transient AWS service clients, allowing us
-    // to customize requests and/or user agent
-    public async createAndConfigureServiceClient<T>(
-        awsServiceFactory: (options: ServiceConfigurationOptions) => T,
-        awsServiceOpts?: ServiceConfigurationOptions,
+    /** @inheritdoc */
+    public async createAwsService<T extends AWS.Service>(
+        type: new (o: ServiceConfigurationOptions) => T,
+        options?: ServiceConfigurationOptions,
         region?: string,
-        addUserAgent: boolean = true
+        userAgent: boolean = true
     ): Promise<T> {
-        if (!awsServiceOpts) {
-            awsServiceOpts = {}
+        const opt = { ...options }
+
+        if (!opt.credentials) {
+            opt.credentials = await this._awsContext.getCredentials()
         }
 
-        if (!awsServiceOpts.credentials) {
-            awsServiceOpts.credentials = await this._awsContext.getCredentials()
+        if (!opt.region && region) {
+            opt.region = region
         }
 
-        if (!awsServiceOpts.region && region) {
-            awsServiceOpts.region = region
-        }
-
-        if (!awsServiceOpts.customUserAgent && addUserAgent) {
+        if (userAgent && !opt.customUserAgent) {
             const platformName = env.appName.replace(/\s/g, '-')
-            awsServiceOpts.customUserAgent = `AWS-Toolkit-For-VSCode/${pluginVersion} ${platformName}/${version}`
+            opt.customUserAgent = `AWS-Toolkit-For-VSCode/${pluginVersion} ${platformName}/${version}`
         }
 
-        return awsServiceFactory(awsServiceOpts)
+        const service = new type(opt)
+        return service
     }
 }

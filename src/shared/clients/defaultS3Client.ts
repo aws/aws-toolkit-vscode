@@ -533,11 +533,7 @@ function buildArn({ partitionId, bucketName, key }: { partitionId: string; bucke
 async function createSdkClient(regionCode: string): Promise<S3> {
     clearInternalBucketCache()
 
-    return await ext.sdkClientBuilder.createAndConfigureServiceClient(
-        options => new S3(options),
-        { computeChecksums: true },
-        regionCode
-    )
+    return await ext.sdkClientBuilder.createAwsService(S3, { computeChecksums: true }, regionCode)
 }
 
 /**
