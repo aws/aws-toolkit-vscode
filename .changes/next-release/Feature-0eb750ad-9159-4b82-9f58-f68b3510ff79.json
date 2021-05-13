@@ -1,4 +1,0 @@
-{
-	"type": "Feature",
-	"description": "SAM run/debug: fail early so that build/invoke errors are more obvious #1689"
-}

@@ -15,7 +15,7 @@ import { DefaultSamLocalInvokeCommand, WAIT_FOR_DEBUGGER_MESSAGES } from '../cli
 import { runLambdaFunction, makeInputTemplate } from '../localLambdaRunner'
 import { SamLaunchRequestArgs } from './awsSamDebugger'
 import { getLogger } from '../../logger'
-import { chmod, ensureDir, writeFile, unlinkSync, existsSync } from 'fs-extra'
+import * as fs from 'fs-extra'
 import { ChildProcess } from '../../utilities/childProcess'
 import { Timeout } from '../../utilities/timeoutUtils'
 import { SystemUtilities } from '../../../shared/systemUtilities'
@@ -26,7 +26,28 @@ import { showErrorWithLogs } from '../../../shared/utilities/messages'
 const localize = nls.loadMessageBundle()
 
 /**
- * Launches and attaches debugger to a SAM Go project.
+ * Launches and attaches debugger to a SAM Go project. A general overview of the program flow:
+ * 1. We cross-compile a Delve binary for the container using Delve's source, either from the user's
+ *    GOPATH or using 'go get'. The binary is placed in the extension's global storage path with
+ *    path 'debuggers/delve/dlv'
+ * 3. SAM CLI will then mount the 'delve' directory to '/tmp/lambci_debug'. We use --debugger-path
+ *    to specify which directory to mount. SAM CLI will always look for 'dlv', so the binary must
+ *    be compiled with that name.
+ * 4. The generate configuration options are passed along to SAM build + SAM invoke which will
+ *    compile the handler using the path specified by 'codeRoot'. The handler entry point must be
+ *    a direct child of 'codeRoot', otherwise it will fail to build. Builds are done by a sub-module
+ *    of SAM CLI [1]. SAM invoke then mounts the build-artifact directory as '/var/task/[HandlerName]'
+ * 5. Something called the 'Runtime Interface Emulator' is started in the container, which then
+ *    starts an intermediate program [2] that starts the Delve debugger in 'headless exec' mode.
+ *    The handler is finally executed by Delve. We can now communicate with Delve using the Go
+ *    extension's debug adapter client.
+ * 6. All paths communicated by Delve will be absolute from the moment it was compiled. So any
+ *    kind of path mappings are unncessary as long as the binary is compiled directly from source.
+ *    In other words, don't build the binary from a copy of the source.
+ *
+ * References:
+ *  [1] https://github.com/aws/aws-lambda-builders/blob/b663326079c871e50f1545f36f9695f6958cfaa2/aws_lambda_builders/workflows/go_modules/builder.py
+ *  [2] https://github.com/lambci/docker-lambda/blob/f6b4765a9b659ceb949c34b19390026820ddd462/go1.x/run/aws-lambda-mock.go
  */
 export async function invokeGoLambda(ctx: ExtContext, config: GoDebugConfiguration): Promise<GoDebugConfiguration> {
     config.samLocalInvokeCommand = new DefaultSamLocalInvokeCommand([WAIT_FOR_DEBUGGER_MESSAGES.GO_DELVE])
@@ -86,8 +107,6 @@ export async function makeGoConfig(config: SamLaunchRequestArgs): Promise<GoDebu
         throw Error('missing launch.json, template.yaml, and failed to discover project root')
     }
 
-    let localRoot: string | undefined
-    let remoteRoot: string | undefined
     const port: number = config.debugPort ?? -1
 
     config.codeRoot = pathutil.normalize(config.codeRoot)
@@ -112,19 +131,7 @@ export async function makeGoConfig(config: SamLaunchRequestArgs): Promise<GoDebu
         }
     }
 
-    // if provided, use the user's mapping instead
-    if (config.lambda?.pathMappings !== undefined && config.lambda.pathMappings.length > 0) {
-        const mappings = config.lambda.pathMappings
-        if (mappings.length !== 1) {
-            getLogger().warn(
-                'This language only supports a single path mapping entry. Taking the first entry in the list.'
-            )
-        }
-        localRoot = mappings[0].localRoot
-        remoteRoot = mappings[0].remoteRoot
-    }
-
-    //  Make a go launch-config from the generic config.
+    // Make a go launch-config from the generic config.
     const goLaunchConfig: GoDebugConfiguration = {
         ...config, // Compose.
         type: 'go',
@@ -137,8 +144,7 @@ export async function makeGoConfig(config: SamLaunchRequestArgs): Promise<GoDebu
         port: port,
         skipFiles: [],
         debugArgs: isImageLambda || config.noDebug ? undefined : ['-delveAPI=2'],
-        localRoot: localRoot ?? config.codeRoot,
-        remoteRoot: remoteRoot ?? '/var/task',
+        debugAdapter: 'legacy', // Just in case the Go extension decides to make Delve DAP the default
     }
 
     return goLaunchConfig
@@ -219,8 +225,8 @@ async function makeInstallScript(debuggerPath: string, isWindows: boolean): Prom
 
     script += `go build -o "${delvePath}" "${DELVE_REPO}/cmd/dlv"\n`
 
-    await writeFile(installScriptPath, script, 'utf8')
-    await chmod(installScriptPath, 0o755)
+    await fs.writeFile(installScriptPath, script, 'utf8')
+    await fs.chmod(installScriptPath, 0o755)
 
     return { path: installScriptPath, options: installOptions }
 }
@@ -232,7 +238,7 @@ async function makeInstallScript(debuggerPath: string, isWindows: boolean): Prom
  * @returns False when installation fails
  */
 async function installDebugger(debuggerPath: string): Promise<boolean> {
-    await ensureDir(debuggerPath)
+    await fs.ensureDir(debuggerPath)
     const isWindows: boolean = os.platform() === 'win32'
     let installScript: InstallScript | undefined
 
@@ -250,7 +256,7 @@ async function installDebugger(debuggerPath: string): Promise<boolean> {
                 onStdout: (text: string) => getLogger('channel').info(`[Delve install script] -> ${text}`),
                 onStderr: (text: string) => getLogger('channel').error(`[Delve install script] -> ${text}`),
                 onExit: (code: number | null) => {
-                    if (!existsSync(path.join(debuggerPath, 'dlv'))) {
+                    if (!fs.existsSync(path.join(debuggerPath, 'dlv'))) {
                         reject(`Install script did not generate the Delve binary: exit code ${code}`)
                     } else if (code) {
                         getLogger('channel').warn(`Install script did not sucessfully run, using old Delve binary...`)
@@ -264,7 +270,7 @@ async function installDebugger(debuggerPath: string): Promise<boolean> {
         })
     } catch (e) {
         if (installScript && (await SystemUtilities.fileExists(installScript.path))) {
-            unlinkSync(installScript.path) // Removes the install script since it failed
+            fs.unlinkSync(installScript.path) // Removes the install script since it failed
         }
         getLogger().error('Failed to cross-compile Delve debugger: %O', e as Error)
         return false
