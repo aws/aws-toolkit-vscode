@@ -373,10 +373,11 @@ class ProfileCredentialProviderFactory(private val ssoCache: SsoCache = diskCach
 private fun Profile.toCredentialType(): CredentialType? = when {
     this.propertyExists(SSO_URL) -> CredentialType.SsoProfile
     this.propertyExists(ProfileProperty.ROLE_ARN) -> {
-        if (this.propertyExists(ProfileProperty.MFA_SERIAL))
+        if (this.propertyExists(ProfileProperty.MFA_SERIAL)) {
             CredentialType.AssumeMfaRoleProfile
-        else
+        } else {
             CredentialType.AssumeRoleProfile
+        }
     }
     this.propertyExists(ProfileProperty.AWS_SESSION_TOKEN) -> CredentialType.StaticSessionProfile
     this.propertyExists(ProfileProperty.AWS_ACCESS_KEY_ID) -> CredentialType.StaticProfile

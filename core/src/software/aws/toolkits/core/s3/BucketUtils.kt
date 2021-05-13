@@ -18,7 +18,7 @@ fun S3Client.deleteBucketAndContents(bucket: String) {
         if (versions.isEmpty()) {
             return@forEach
         }
-        this.deleteObjects { it.bucket(bucket).delete { it.objects(versions) } }
+        this.deleteObjects { it.bucket(bucket).delete { obj -> obj.objects(versions) } }
     }
 
     this.deleteBucket { it.bucket(bucket) }

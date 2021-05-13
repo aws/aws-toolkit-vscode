@@ -75,11 +75,11 @@ class S3ViewerEditor(project: Project, bucket: S3VirtualBucket) : UserDataHolder
     override fun setState(state: FileEditorState) {}
 }
 
-fun openEditor(project: Project, bucket: Bucket): Editor? = try {
+fun openEditor(project: Project, bucket: Bucket, prefix: String = ""): Editor? = try {
     FileEditorManager.getInstance(project).openTextEditor(
         OpenFileDescriptor(
             project,
-            S3VirtualBucket(bucket, project.awsClient(), project)
+            S3VirtualBucket(bucket, prefix, project.awsClient(), project)
         ),
         true
     ).also {

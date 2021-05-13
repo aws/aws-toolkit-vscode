@@ -37,7 +37,7 @@ class S3TreeObjectNodeTest {
     @Test
     fun `directory path`() {
         val s3Client = delegateMock<S3Client>()
-        val bucket = S3VirtualBucket(s3Bucket, s3Client, projectRule.project)
+        val bucket = S3VirtualBucket(s3Bucket, "", s3Client, projectRule.project)
         val parent = S3TreeDirectoryNode(bucket, null, "my/folder/")
         val sut = S3TreeObjectNode(parent, "my/folder/file.txt", objectSize, lastModifiedTime)
 
@@ -47,7 +47,7 @@ class S3TreeObjectNodeTest {
     @Test
     fun `display name`() {
         val s3Client = delegateMock<S3Client>()
-        val bucket = S3VirtualBucket(s3Bucket, s3Client, projectRule.project)
+        val bucket = S3VirtualBucket(s3Bucket, "", s3Client, projectRule.project)
         val parent = S3TreeDirectoryNode(bucket, null, "my/folder/")
         val sut = S3TreeObjectNode(parent, "my/folder/file.txt", objectSize, lastModifiedTime)
 
@@ -57,7 +57,7 @@ class S3TreeObjectNodeTest {
     @Test
     fun `file name with extension`() {
         val s3Client = delegateMock<S3Client>()
-        val bucket = S3VirtualBucket(s3Bucket, s3Client, projectRule.project)
+        val bucket = S3VirtualBucket(s3Bucket, "", s3Client, projectRule.project)
         val parent = S3TreeDirectoryNode(bucket, null, "my/folder/")
         val sut = S3TreeObjectNode(parent, "my/folder/file.txt", objectSize, lastModifiedTime)
 
@@ -67,7 +67,7 @@ class S3TreeObjectNodeTest {
     @Test
     fun `file name without extension`() {
         val s3Client = delegateMock<S3Client>()
-        val bucket = S3VirtualBucket(s3Bucket, s3Client, projectRule.project)
+        val bucket = S3VirtualBucket(s3Bucket, "", s3Client, projectRule.project)
         val parent = S3TreeDirectoryNode(bucket, null, "my/folder/")
         val sut = S3TreeObjectNode(parent, "my/folder/file", objectSize, lastModifiedTime)
 
@@ -77,7 +77,7 @@ class S3TreeObjectNodeTest {
     @Test
     fun `known file type icon`() {
         val s3Client = delegateMock<S3Client>()
-        val bucket = S3VirtualBucket(s3Bucket, s3Client, projectRule.project)
+        val bucket = S3VirtualBucket(s3Bucket, "", s3Client, projectRule.project)
         val parent = S3TreeDirectoryNode(bucket, null, "my/folder/")
         val sut = S3TreeObjectNode(parent, "my/folder/file.txt", objectSize, lastModifiedTime)
 
@@ -87,7 +87,7 @@ class S3TreeObjectNodeTest {
     @Test
     fun `unknown file type icon`() {
         val s3Client = delegateMock<S3Client>()
-        val bucket = S3VirtualBucket(s3Bucket, s3Client, projectRule.project)
+        val bucket = S3VirtualBucket(s3Bucket, "", s3Client, projectRule.project)
         val parent = S3TreeDirectoryNode(bucket, null, "my/folder/")
         val sut = S3TreeObjectNode(parent, "my/folder/file.unknownFile", objectSize, lastModifiedTime)
 
@@ -97,7 +97,7 @@ class S3TreeObjectNodeTest {
     @Test
     fun `showHistory false has no children`() {
         val s3Client = delegateMock<S3Client>()
-        val bucket = S3VirtualBucket(s3Bucket, s3Client, projectRule.project)
+        val bucket = S3VirtualBucket(s3Bucket, "", s3Client, projectRule.project)
         val parent = S3TreeDirectoryNode(bucket, null, "my/folder/")
         val sut = S3TreeObjectNode(parent, "my/folder/picture.png", objectSize, lastModifiedTime)
         sut.showHistory = false
@@ -114,7 +114,7 @@ class S3TreeObjectNodeTest {
                     .versions(createS3ObjectVersion("my/folder/picture.png", "1"), createS3ObjectVersion("my/folder/picture.png", "2"))
                     .build()
         }
-        val bucket = S3VirtualBucket(s3Bucket, s3Client, projectRule.project)
+        val bucket = S3VirtualBucket(s3Bucket, "", s3Client, projectRule.project)
         val parent = S3TreeDirectoryNode(bucket, null, "my/folder/")
         val sut = S3TreeObjectNode(parent, "my/folder/picture.png", objectSize, lastModifiedTime)
         sut.showHistory = true
@@ -141,7 +141,7 @@ class S3TreeObjectNodeTest {
                 .build()
         }
 
-        val bucket = S3VirtualBucket(s3Bucket, s3Client, projectRule.project)
+        val bucket = S3VirtualBucket(s3Bucket, "", s3Client, projectRule.project)
         val parent = S3TreeDirectoryNode(bucket, null, "my/folder/")
         val sut = S3TreeObjectNode(parent, "my/folder/picture.png", objectSize, lastModifiedTime)
         sut.showHistory = true
@@ -165,7 +165,7 @@ class S3TreeObjectNodeTest {
                 .build()
         }
 
-        val bucket = S3VirtualBucket(s3Bucket, s3Client, projectRule.project)
+        val bucket = S3VirtualBucket(s3Bucket, "", s3Client, projectRule.project)
         val parent = S3TreeDirectoryNode(bucket, null, "my/folder/")
         val sut = S3TreeObjectNode(parent, "my/folder/picture.png", objectSize, lastModifiedTime)
         sut.showHistory = true
@@ -181,7 +181,7 @@ class S3TreeObjectNodeTest {
         val s3Client = delegateMock<S3Client> {
             on { listObjectVersions(any<ListObjectVersionsRequest>()) } doThrow IllegalStateException("Network broke")
         }
-        val bucket = S3VirtualBucket(s3Bucket, s3Client, projectRule.project)
+        val bucket = S3VirtualBucket(s3Bucket, "", s3Client, projectRule.project)
         val parent = S3TreeDirectoryNode(bucket, null, "my/folder/")
         val sut = S3TreeObjectNode(parent, "my/folder/picture.png", objectSize, lastModifiedTime).apply { showHistory = true }
 
@@ -211,7 +211,7 @@ class S3TreeObjectNodeTest {
                 )
         }
 
-        val bucket = S3VirtualBucket(s3Bucket, s3Client, projectRule.project)
+        val bucket = S3VirtualBucket(s3Bucket, "", s3Client, projectRule.project)
         val parent = S3TreeDirectoryNode(bucket, null, "my/folder/")
         val sut = S3TreeObjectNode(parent, "my/folder/picture.png", objectSize, lastModifiedTime)
         sut.showHistory = true
@@ -245,7 +245,7 @@ class S3TreeObjectNodeTest {
                     .versions(createS3ObjectVersion("my/folder/picture.png", "null"))
                     .build()
         }
-        val bucket = S3VirtualBucket(s3Bucket, s3Client, projectRule.project)
+        val bucket = S3VirtualBucket(s3Bucket, "", s3Client, projectRule.project)
         val parent = S3TreeDirectoryNode(bucket, null, "my/folder/")
         val sut = S3TreeObjectNode(parent, "my/folder/picture.png", objectSize, lastModifiedTime)
         sut.showHistory = true
@@ -270,7 +270,7 @@ class S3TreeObjectNodeTest {
             )
         }
 
-        val bucket = S3VirtualBucket(s3Bucket, s3Client, projectRule.project)
+        val bucket = S3VirtualBucket(s3Bucket, "", s3Client, projectRule.project)
         val parent = S3TreeDirectoryNode(bucket, null, "my/folder/")
         val sut = S3TreeObjectNode(parent, "my/folder/picture.png", objectSize, lastModifiedTime)
         sut.showHistory = true
@@ -320,7 +320,7 @@ class S3TreeObjectNodeTest {
             )
         }
 
-        val bucket = S3VirtualBucket(s3Bucket, s3Client, projectRule.project)
+        val bucket = S3VirtualBucket(s3Bucket, "", s3Client, projectRule.project)
         val parent = S3TreeDirectoryNode(bucket, null, "my/folder/")
         val sut = S3TreeObjectNode(parent, "my/folder/picture.png", objectSize, lastModifiedTime)
         sut.showHistory = true
@@ -368,7 +368,7 @@ class S3TreeObjectNodeTest {
             }
         }
 
-        val bucket = S3VirtualBucket(s3Bucket, s3Client, projectRule.project)
+        val bucket = S3VirtualBucket(s3Bucket, "", s3Client, projectRule.project)
         val parent = S3TreeDirectoryNode(bucket, null, "my/folder/")
         val sut = S3TreeObjectNode(parent, "my/folder/picture.png", objectSize, lastModifiedTime)
         sut.showHistory = true

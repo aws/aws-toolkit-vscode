@@ -9,5 +9,5 @@ import software.aws.toolkits.jetbrains.services.lambda.LambdaServiceNode
 
 class LambdaExplorerRootNode : AwsExplorerServiceNode {
     override val serviceId: String = LambdaClient.SERVICE_NAME
-    override fun buildServiceRootNode(project: Project) = LambdaServiceNode(project, this)
+    override fun buildServiceRootNode(project: Project): AwsExplorerNode<*> = LambdaServiceNode(project, this)
 }

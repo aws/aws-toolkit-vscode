@@ -9,5 +9,5 @@ import software.aws.toolkits.jetbrains.services.cloudformation.CloudFormationSer
 
 class CloudFormationExplorerRootNode : AwsExplorerServiceNode {
     override val serviceId: String = CloudFormationClient.SERVICE_NAME
-    override fun buildServiceRootNode(project: Project) = CloudFormationServiceNode(project, this)
+    override fun buildServiceRootNode(project: Project): AwsExplorerNode<*> = CloudFormationServiceNode(project, this)
 }

@@ -6,6 +6,7 @@ package software.aws.toolkits.jetbrains.services.s3.editor
 import com.intellij.openapi.fileEditor.FileEditorManager
 import com.intellij.openapi.project.Project
 import com.intellij.openapi.vfs.VirtualFile
+import com.intellij.openapi.vfs.VirtualFileManager
 import com.intellij.testFramework.LightVirtualFile
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
@@ -30,24 +31,33 @@ import java.io.InputStream
 import java.io.OutputStream
 import java.net.URL
 
-class S3VirtualBucket(private val s3Bucket: Bucket, val client: S3Client, val project: Project) :
-    LightVirtualFile(s3Bucket.name()),
+class S3VirtualBucket(val s3Bucket: Bucket, prefix: String, val client: S3Client, val project: Project) :
+    LightVirtualFile(vfsName(s3Bucket, prefix)),
     CoroutineScope by ApplicationThreadPoolScope("S3VirtualBucket") {
-    override fun isWritable(): Boolean = false
-    override fun getPath(): String = s3Bucket.name()
-    override fun isValid(): Boolean = true
-    override fun getParent(): VirtualFile? = null
-    override fun toString(): String = s3Bucket.name()
+
+    var prefix = prefix
+        set(value) {
+            val oldName = name
+            field = value
+            VirtualFileManager.getInstance().notifyPropertyChanged(this, PROP_NAME, oldName, name)
+        }
+
     override fun isDirectory(): Boolean = false /* Unit tests refuse to open this in an editor if this is true */
+    override fun isValid(): Boolean = true
+    override fun isWritable(): Boolean = false
+    override fun getName(): String = vfsName(s3Bucket, prefix)
+    override fun getParent(): VirtualFile? = null
+    override fun getPath(): String = super.getName()
+    override fun toString(): String = super.getName()
 
     override fun equals(other: Any?): Boolean {
         if (other !is S3VirtualBucket) {
             return false
         }
-        return s3Bucket.name() == (other as? S3VirtualBucket)?.s3Bucket?.name()
+        return s3Bucket.name() == (other as? S3VirtualBucket)?.s3Bucket?.name() && prefix == (other as? S3VirtualBucket)?.prefix
     }
 
-    override fun hashCode(): Int = s3Bucket.name().hashCode()
+    override fun hashCode(): Int = s3Bucket.name().hashCode() + prefix.hashCode()
 
     suspend fun newFolder(name: String) {
         withContext(Dispatchers.IO) {
@@ -114,5 +124,11 @@ class S3VirtualBucket(private val s3Bucket: Bucket, val client: S3Client, val pr
 
     private companion object {
         const val MAX_ITEMS_TO_LOAD = 300
+
+        fun vfsName(s3Bucket: Bucket, subroot: String): String = if (subroot.isBlank()) {
+            s3Bucket.name()
+        } else {
+            "${s3Bucket.name()}/$subroot"
+        }
     }
 }

@@ -158,8 +158,9 @@ class DotNetDebuggerSupport : DebuggerSupport() {
     }
 
     override fun automaticallyAugmentable(input: List<String>): Boolean {
-        if (input.first().trim() != DOTNET_EXECUTABLE)
+        if (input.first().trim() != DOTNET_EXECUTABLE) {
             throw RuntimeConfigurationError(message("cloud_debug.run_configuration.dotnet.start_command.miss_runtime", DOTNET_EXECUTABLE))
+        }
 
         val restCommands = input.drop(1)
         val path = restCommands.firstOrNull()?.trim()
@@ -167,8 +168,9 @@ class DotNetDebuggerSupport : DebuggerSupport() {
                 message("cloud_debug.run_configuration.dotnet.start_command.miss_assembly_path", START_COMMAND_ASSEMBLY_PLACEHOLDER)
             )
 
-        if (!path.contains('/'))
+        if (!path.contains('/')) {
             throw RuntimeConfigurationError(message("cloud_debug.run_configuration.dotnet.start_command.assembly_path_not_valid", path))
+        }
 
         // Start command should follow the pattern 'dotnet <remote_path_to_assembly>'. Take a remote assembly path.
         exeRemotePath = path
@@ -393,8 +395,9 @@ class DotNetDebuggerSupport : DebuggerSupport() {
             }
         }
 
-        if (assemblyFileErrors.isNotEmpty())
+        if (assemblyFileErrors.isNotEmpty()) {
             throw IllegalStateException("Unable to find necessary assembly with names: '${assemblyFileErrors.joinToString(", ")}'")
+        }
 
         val linuxSubdirectoryName = "linux-x64"
 

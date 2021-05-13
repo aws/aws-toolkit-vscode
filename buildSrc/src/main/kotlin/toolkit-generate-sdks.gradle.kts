@@ -29,7 +29,7 @@ sourceSets {
 
     test {
         java {
-            setSrcDirs(listOf(sdkGenerator.testDir()))
+            setSrcDirs(emptyList<String>())
         }
     }
 }
@@ -37,6 +37,10 @@ sourceSets {
 java {
     sourceCompatibility = JavaVersion.VERSION_1_8
     targetCompatibility = JavaVersion.VERSION_1_8
+}
+
+tasks.withType<JavaCompile>().configureEach {
+    options.encoding = "UTF-8"
 }
 
 val generateTask = tasks.register<GenerateSdk>("generateSdks")

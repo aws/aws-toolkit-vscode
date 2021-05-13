@@ -20,10 +20,11 @@ class DotNetHandlerCompletion : HandlerCompletion {
         val completionItems = getHandlersFromBackend(project)
         return completionItems.map { completionItem ->
             LookupElementBuilder.create(completionItem.handler).let { element ->
-                if (completionItem.iconId != null)
+                if (completionItem.iconId != null) {
                     element.withIcon(completionItemToIcon(project, completionItem.iconId))
-                else
+                } else {
                     element
+                }
             }.withInsertHandler { context, item -> context.document.setText(item.lookupString) }
         }
     }

@@ -28,6 +28,7 @@ val ideProfile = IdeVersions.ideProfile(project)
 
 plugins {
     id("toolkit-kotlin-conventions")
+    id("toolkit-detekt")
     id("toolkit-intellij-subplugin")
     id("toolkit-testing")
     id("toolkit-integration-testing")
@@ -239,6 +240,9 @@ val resharperDllsDir = tasks.register<Sync>("resharperDllsDir") {
     eachFile {
         path = name // Clear out the path to flatten it
     }
+
+    // TODO how is this being called twice? Can we fix it?
+    duplicatesStrategy = DuplicatesStrategy.INCLUDE
 }
 
 artifacts {

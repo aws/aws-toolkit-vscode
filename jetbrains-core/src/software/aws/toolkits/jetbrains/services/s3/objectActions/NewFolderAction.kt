@@ -18,6 +18,8 @@ import software.aws.toolkits.jetbrains.services.s3.editor.S3TreeObjectNode
 import software.aws.toolkits.jetbrains.utils.ApplicationThreadPoolScope
 import software.aws.toolkits.jetbrains.utils.notifyError
 import software.aws.toolkits.resources.message
+import software.aws.toolkits.telemetry.Result
+import software.aws.toolkits.telemetry.S3Telemetry
 
 class NewFolderAction : S3ObjectAction(message("s3.new.folder"), AllIcons.Actions.NewFolder), CoroutineScope by ApplicationThreadPoolScope("NewFolderAction") {
     override fun performAction(dataContext: DataContext, nodes: List<S3TreeNode>) {
@@ -27,17 +29,21 @@ class NewFolderAction : S3ObjectAction(message("s3.new.folder"), AllIcons.Action
 
         Messages.showInputDialog(project, message("s3.new.folder.name"), message("s3.new.folder"), null)?.let { key ->
             launch {
+                var result = Result.Failed
                 try {
                     node.bucket.newFolder(node.directoryPath() + key)
                     treeTable.invalidateLevel(node)
                     treeTable.refresh()
+                    result = Result.Succeeded
                 } catch (e: NoSuchBucketException) {
                     node.bucket.handleDeletedBucket()
                 } catch (e: Exception) {
                     e.notifyError(project = project)
+                } finally {
+                    S3Telemetry.createFolder(project, result)
                 }
             }
-        }
+        } ?: S3Telemetry.createFolder(project, Result.Cancelled)
     }
 
     override fun enabled(nodes: List<S3TreeNode>): Boolean = nodes.isEmpty() ||

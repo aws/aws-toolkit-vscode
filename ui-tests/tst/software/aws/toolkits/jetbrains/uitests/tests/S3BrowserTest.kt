@@ -27,8 +27,10 @@ import software.aws.toolkits.jetbrains.uitests.fixtures.JTreeFixture
 import software.aws.toolkits.jetbrains.uitests.fixtures.actionButton
 import software.aws.toolkits.jetbrains.uitests.fixtures.actionMenuItem
 import software.aws.toolkits.jetbrains.uitests.fixtures.awsExplorer
+import software.aws.toolkits.jetbrains.uitests.fixtures.clearSearchTextField
 import software.aws.toolkits.jetbrains.uitests.fixtures.fileBrowser
 import software.aws.toolkits.jetbrains.uitests.fixtures.fillDeletionAndConfirm
+import software.aws.toolkits.jetbrains.uitests.fixtures.fillSearchTextField
 import software.aws.toolkits.jetbrains.uitests.fixtures.fillSingleTextField
 import software.aws.toolkits.jetbrains.uitests.fixtures.findAndClick
 import software.aws.toolkits.jetbrains.uitests.fixtures.idea
@@ -156,6 +158,49 @@ class S3BrowserTest {
                 Thread.sleep(1000)
                 s3Tree {
                     waitUntilLoaded()
+                    findText(newJsonName)
+                }
+            }
+
+            step("Filter by partial prefix") {
+                fillSearchTextField("hello")
+                s3Tree {
+                    waitUntilLoaded()
+                    assertThat(this.callJs<String>("component.rootNode.name")).isEqualTo("Prefix: hello")
+                    assertThat(findAllText(folder)).isEmpty()
+                    findText(newJsonName)
+                }
+
+                fillSearchTextField(folder)
+                s3Tree {
+                    waitUntilLoaded()
+                    assertThat(this.callJs<String>("component.rootNode.name")).isEqualTo("Prefix: $folder")
+                    findText(folder).doubleClick()
+                    waitUntilLoaded()
+                    findText(jsonFile2)
+                    assertThat(findAllText(newJsonName)).isEmpty()
+                }
+            }
+
+            step("Filter by delimited prefix") {
+                fillSearchTextField("$folder/")
+                s3Tree {
+                    waitUntilLoaded()
+                    assertThat(this.callJs<String>("component.rootNode.name")).isEqualTo("$folder/")
+                    // no child with name equal to folder
+                    assertThat(findAllText(folder)).isEmpty()
+                    findText(jsonFile2)
+                    assertThat(findAllText(newJsonName)).isEmpty()
+                }
+            }
+
+            step("Clear filter") {
+                clearSearchTextField()
+                s3Tree {
+                    waitUntilLoaded()
+                    assertThat(this.callJs<String>("component.rootNode.name")).isEqualTo("")
+                    // restore tree to original state
+                    findText(folder).doubleClick()
                     findText(newJsonName)
                 }
             }

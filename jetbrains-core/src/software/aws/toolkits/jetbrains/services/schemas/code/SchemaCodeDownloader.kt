@@ -36,7 +36,6 @@ class SchemaCodeDownloader(
         schemaDownloadRequest: SchemaCodeDownloadRequestDetails,
         indicator: ProgressIndicator
     ): CompletionStage<File?> {
-
         val schemaName = schemaDownloadRequest.schema.name
         indicator.updateProgress(message("schemas.schema.download_code_bindings.notification.start", schemaName))
 
@@ -196,7 +195,6 @@ class CodeExtractor {
         request: SchemaCodeDownloadRequestDetails,
         downloadedSchemaCode: DownloadedSchemaCode
     ): CompletionStage<File?> {
-
         val zipContents = downloadedSchemaCode.zipContents
         val zipFileName = "${request.schema.registryName}.${request.schema.name}.${request.version}.${request.language.apiValue}.zip"
 

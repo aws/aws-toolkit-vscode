@@ -9,6 +9,7 @@ import software.amazon.awssdk.services.cloudwatchlogs.model.ResultField
  * Mapped from response from the GetQueryResults call
  */
 typealias LogResult = Map<String, String>
+
 /**
  * Returned from the GetLogRecordResponse call
  */

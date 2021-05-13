@@ -9,5 +9,5 @@ import software.aws.toolkits.jetbrains.services.cloudwatch.logs.CloudWatchLogsSe
 
 class CloudWatchRootNode : AwsExplorerServiceNode {
     override val serviceId: String = CloudWatchLogsClient.SERVICE_NAME
-    override fun buildServiceRootNode(project: Project) = CloudWatchLogsServiceNode(project, this)
+    override fun buildServiceRootNode(project: Project): AwsExplorerNode<*> = CloudWatchLogsServiceNode(project, this)
 }

@@ -20,19 +20,17 @@ dependencies {
     implementation("org.eclipse.jgit:org.eclipse.jgit:$jgitVersion")
     implementation("org.commonmark:commonmark:$commonsMarkVersion")
 
+    implementation(kotlin("gradle-plugin", kotlinVersion))
+
     implementation("software.amazon.awssdk:codegen:$awsSdkVersion")
 
     implementation("org.jetbrains.intellij.plugins:gradle-intellij-plugin:$ideaPluginVersion")
 
-    implementation("org.jlleitschuh.gradle:ktlint-gradle:$ktintPluginVersion")
-    compileOnly("com.pinterest.ktlint:ktlint-core:$ktlintVersion")
-    implementation("org.jetbrains.kotlin:kotlin-gradle-plugin:$kotlinVersion")
-    testImplementation("com.pinterest.ktlint:ktlint-core:$ktlintVersion")
-    testImplementation("com.pinterest.ktlint:ktlint-test:$ktlintVersion")
-
     implementation("org.jacoco:org.jacoco.core:${JacocoPlugin.DEFAULT_JACOCO_VERSION}")
     implementation("org.gradle:test-retry-gradle-plugin:$gradleRetryPluginVersion")
     implementation("com.adarshr:gradle-test-logger-plugin:$gradleTestLoggerPlugin")
+
+    implementation("io.gitlab.arturbosch.detekt:detekt-gradle-plugin:$detektVersion")
 
     testImplementation("org.assertj:assertj-core:$assertjVersion")
     testImplementation("junit:junit:$junitVersion")

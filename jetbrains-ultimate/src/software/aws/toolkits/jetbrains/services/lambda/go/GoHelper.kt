@@ -20,6 +20,7 @@ import com.intellij.xdebugger.XDebugSession
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
+import software.aws.toolkits.jetbrains.services.lambda.sam.SamExecutable
 import software.aws.toolkits.jetbrains.services.lambda.steps.SamRunnerStep
 import software.aws.toolkits.jetbrains.utils.ApplicationThreadPoolScope
 import software.aws.toolkits.jetbrains.utils.execution.steps.Context
@@ -53,10 +54,6 @@ fun inferSourceRoot(project: Project, virtualFile: VirtualFile): VirtualFile? {
 }
 
 object GoDebugHelper : CoroutineScope by ApplicationThreadPoolScope("GoDebugHelper") {
-    // Reliable start message printed when delve starts
-    // Comes from: https://github.com/go-delve/delve/blob/f5d2e132bca763d222680815ace98601c2396517/service/debugger/debugger.go#L187
-    private const val startMessage = "launching process with args"
-
     // TODO see https://youtrack.jetbrains.com/issue/GO-10775 for "Debugger disconnected unexpectedly" when the lambda finishes
     suspend fun createGoDebugProcess(
         debugHost: String,
@@ -82,7 +79,7 @@ object GoDebugHelper : CoroutineScope by ApplicationThreadPoolScope("GoDebugHelp
                                 // See https://youtrack.jetbrains.com/issue/GO-10279
                                 // TODO revisit this to see if higher IDE versions help FIX_WHEN_MIN_IS_211 (?)
                                 override fun onTextAvailable(event: ProcessEvent, outputType: Key<*>) {
-                                    if (event.text.contains(startMessage) && !connected.getAndSet(true)) {
+                                    if (event.text.contains(SamExecutable.goStartMessage) && !connected.getAndSet(true)) {
                                         process.connect(socketAddress)
                                     }
                                 }

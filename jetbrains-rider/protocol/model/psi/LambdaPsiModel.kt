@@ -3,22 +3,22 @@
 
 package model.psi
 
-import com.jetbrains.rd.generator.nova.async
-import com.jetbrains.rd.generator.nova.csharp.CSharp50Generator
-import com.jetbrains.rd.generator.nova.call
-import com.jetbrains.rd.generator.nova.doc
 import com.jetbrains.rd.generator.nova.Ext
 import com.jetbrains.rd.generator.nova.ExternalGenerator
 import com.jetbrains.rd.generator.nova.FlowTransform
-import com.jetbrains.rd.generator.nova.field
 import com.jetbrains.rd.generator.nova.GeneratorBase
-import com.jetbrains.rd.generator.nova.immutableList
-import com.jetbrains.rd.generator.nova.kotlin.Kotlin11Generator
-import com.jetbrains.rd.generator.nova.nullable
 import com.jetbrains.rd.generator.nova.PredefinedType.bool
 import com.jetbrains.rd.generator.nova.PredefinedType.int
 import com.jetbrains.rd.generator.nova.PredefinedType.string
 import com.jetbrains.rd.generator.nova.PredefinedType.void
+import com.jetbrains.rd.generator.nova.async
+import com.jetbrains.rd.generator.nova.call
+import com.jetbrains.rd.generator.nova.csharp.CSharp50Generator
+import com.jetbrains.rd.generator.nova.doc
+import com.jetbrains.rd.generator.nova.field
+import com.jetbrains.rd.generator.nova.immutableList
+import com.jetbrains.rd.generator.nova.kotlin.Kotlin11Generator
+import com.jetbrains.rd.generator.nova.nullable
 import com.jetbrains.rd.generator.nova.setting
 import com.jetbrains.rd.generator.nova.util.syspropertyOrInvalid
 import com.jetbrains.rider.model.nova.ide.IdeRoot

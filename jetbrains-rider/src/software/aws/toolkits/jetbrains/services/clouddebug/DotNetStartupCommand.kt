@@ -53,8 +53,9 @@ class DotNetStartupCommand : CloudDebugStartupCommand(CloudDebuggingPlatform.DOT
             if (remoteFile.isFile) {
                 logger.info { "Remote path is set file in Artifacts mapping table: '$remotePath'. Take base path." }
                 remoteFile.parentFile
-            } else
+            } else {
                 remoteFile
+            }
 
         // We make a protocol call to get an information about project output and assembly. This call is started on AWT thread with modality of current
         // run configuration dialog. The response is back on AWS message queue When call is completed. So, a protocol handler is waiting for a
