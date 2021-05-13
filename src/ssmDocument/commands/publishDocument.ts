@@ -20,7 +20,6 @@ import {
     PublishSSMDocumentWizardContext,
     PublishSSMDocumentWizardResponse,
 } from '../wizards/publishDocumentWizard'
-import { stringify } from 'querystring'
 import * as telemetry from '../../shared/telemetry/telemetry'
 import { Window } from '../../shared/vscode/window'
 import { showConfirmationMessage } from '../util/util'
@@ -93,7 +92,7 @@ export async function createDocument(
         }
 
         const createResult = await client.createDocument(request)
-        logger.info(`Created Systems Manager Document successfully ${stringify(createResult.DocumentDescription)}`)
+        logger.info(`Created Systems Manager Document successfully ${JSON.stringify(createResult.DocumentDescription)}`)
         vscode.window.showInformationMessage(`Created Systems Manager Document ${wizardResponse.name} successfully`)
     } catch (err) {
         const error = err as Error
@@ -129,7 +128,7 @@ export async function updateDocument(
 
         const updateResult = await client.updateDocument(request)
 
-        logger.info(`Updated Systems Manager Document successfully ${stringify(updateResult.DocumentDescription)}`)
+        logger.info(`Updated Systems Manager Document successfully ${JSON.stringify(updateResult.DocumentDescription)}`)
         vscode.window.showInformationMessage(`Updated Systems Manager Document ${wizardResponse.name} successfully`)
 
         const isConfirmed = await showConfirmationMessage(

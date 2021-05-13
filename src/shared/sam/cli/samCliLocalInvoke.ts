@@ -92,7 +92,7 @@ export class DefaultSamLocalInvokeCommand implements SamLocalInvokeCommand {
                         }
                     }
                 },
-                onClose: (code: number, _: string): void => {
+                onClose: (code: number, _: NodeJS.Signals): void => {
                     this.logger.verbose(`SAM: command exited (code: ${code}): ${childProcess}`)
                     // onStdout/onStderr may print partial lines. Force a newline
                     // to ensure "Command stopped" appears on its own line.
