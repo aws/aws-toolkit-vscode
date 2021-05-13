@@ -95,10 +95,6 @@ export class DefaultLambdaClient implements LambdaClient {
     }
 
     private async createSdkClient(): Promise<Lambda> {
-        return await ext.sdkClientBuilder.createAndConfigureServiceClient(
-            options => new Lambda(options),
-            undefined,
-            this.regionCode
-        )
+        return await ext.sdkClientBuilder.createAwsService(Lambda, undefined, this.regionCode)
     }
 }

@@ -70,10 +70,6 @@ export class DefaultEcrClient implements EcrClient {
     }
 
     protected async createSdkClient(): Promise<ECR> {
-        return await ext.sdkClientBuilder.createAndConfigureServiceClient(
-            options => new ECR(options),
-            undefined,
-            this.regionCode
-        )
+        return await ext.sdkClientBuilder.createAwsService(ECR, undefined, this.regionCode)
     }
 }
