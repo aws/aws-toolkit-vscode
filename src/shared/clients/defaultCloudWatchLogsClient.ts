@@ -46,10 +46,6 @@ export class DefaultCloudWatchLogsClient implements CloudWatchLogsClient {
     }
 
     protected async createSdkClient(): Promise<CloudWatchLogs> {
-        return await ext.sdkClientBuilder.createAndConfigureServiceClient(
-            options => new CloudWatchLogs(options),
-            undefined,
-            this.regionCode
-        )
+        return await ext.sdkClientBuilder.createAwsService(CloudWatchLogs, undefined, this.regionCode)
     }
 }
