@@ -4,6 +4,7 @@
  */
 
 import * as assert from 'assert'
+import { waitUntil } from '../shared/utilities/timeoutUtils'
 import * as vscode from 'vscode'
 
 const SECOND = 1000
@@ -34,16 +35,6 @@ export async function sleep(miliseconds: number): Promise<void> {
 // Retrieves CodeLenses from VS Code
 export async function getCodeLenses(uri: vscode.Uri): Promise<vscode.CodeLens[] | undefined> {
     return vscode.commands.executeCommand('vscode.executeCodeLensProvider', uri)
-}
-
-// Retrieves CodeLenses and asserts that undefined is not returned.
-// Convenience wrapper around the linter too.
-export async function expectCodeLenses(uri: vscode.Uri): Promise<vscode.CodeLens[]> {
-    const codeLenses = await getCodeLenses(uri)
-
-    assert.ok(codeLenses, 'Did not expect undefined when requesting CodeLenses')
-
-    return codeLenses! // appease the linter
 }
 
 export function getTestWorkspaceFolder(): string {
@@ -100,4 +91,40 @@ export async function configureGoExtension(): Promise<void> {
     }
 
     await vscode.commands.executeCommand('go.tools.install', [gopls, dlv])
+}
+
+export async function getAddConfigCodeLens(
+    documentUri: vscode.Uri,
+    timeout: number,
+    retryInterval: number
+): Promise<vscode.CodeLens[] | undefined> {
+    return waitUntil(
+        async () => {
+            try {
+                let codeLenses = await getCodeLenses(documentUri)
+                if (!codeLenses || codeLenses.length === 0) {
+                    return undefined
+                }
+
+                // omnisharp spits out some undefined code lenses for some reason, we filter them because they are
+                // not shown to the user and do not affect how our extension is working
+                codeLenses = codeLenses.filter(codeLens => {
+                    if (codeLens.command && codeLens.command.arguments && codeLens.command.arguments.length === 3) {
+                        return codeLens.command.command === 'aws.pickAddSamDebugConfiguration'
+                    }
+
+                    return false
+                })
+
+                if (codeLenses.length > 0) {
+                    return codeLenses || []
+                }
+            } catch (e) {
+                console.log(`sam.test.ts: getAddConfigCodeLens() on "${documentUri.fsPath}" failed, retrying:\n${e}`)
+            }
+
+            return undefined
+        },
+        { timeout: timeout, interval: retryInterval, truthy: false }
+    )
 }
