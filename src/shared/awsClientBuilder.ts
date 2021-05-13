@@ -40,7 +40,7 @@ export class DefaultAWSClientBuilder implements AWSClientBuilder {
         region?: string,
         userAgent: boolean = true
     ): Promise<T> {
-        const opt = { ...options }
+        const opt = { ...options } as ServiceConfigurationOptions
 
         if (!opt.credentials) {
             opt.credentials = await this._awsContext.getCredentials()
