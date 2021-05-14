@@ -30,7 +30,6 @@ import software.aws.toolkits.jetbrains.uitests.fixtures.JTreeFixture
 import software.aws.toolkits.jetbrains.uitests.fixtures.awsExplorer
 import software.aws.toolkits.jetbrains.uitests.fixtures.findAndClick
 import software.aws.toolkits.jetbrains.uitests.fixtures.idea
-import software.aws.toolkits.jetbrains.uitests.fixtures.rightClick
 import software.aws.toolkits.jetbrains.uitests.fixtures.waitUntilLoaded
 import software.aws.toolkits.jetbrains.uitests.fixtures.welcomeFrame
 import java.nio.file.Path

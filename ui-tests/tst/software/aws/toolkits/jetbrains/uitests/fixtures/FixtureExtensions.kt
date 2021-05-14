@@ -13,10 +13,6 @@ import com.intellij.remoterobot.stepsProcessing.step
 import com.intellij.remoterobot.utils.keyboard
 import java.time.Duration
 
-fun ComponentFixture.rightClick() = step("Right click") {
-    runJs("robot.rightClick(component);")
-}
-
 fun ContainerFixture.pressOk() = findAndClick("//div[@text='OK']")
 fun ContainerFixture.pressDelete() = findAndClick("//div[@text='Delete']")
 fun ContainerFixture.pressCancel() = findAndClick("//div[@text='Cancel']")

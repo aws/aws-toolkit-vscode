@@ -6,7 +6,6 @@ import software.aws.toolkits.gradle.jacoco.RemoteCoverage.Companion.enableRemote
 val remoteRobotPort: String by project
 val junit5Version: String by project
 val remoteRobotVersion: String by project
-val uiTestFixturesVersion: String by project
 val awsSdkVersion: String by project
 val coroutinesVersion: String by project
 val apacheCommonsVersion: String by project
@@ -28,7 +27,7 @@ dependencies {
     testImplementation("org.junit.jupiter:junit-jupiter-api:$junit5Version")
     testImplementation("org.jetbrains.kotlinx:kotlinx-coroutines-core:$coroutinesVersion")
     testImplementation("com.intellij.remoterobot:remote-robot:$remoteRobotVersion")
-    testImplementation("com.intellij.remoterobot:remote-fixtures:$uiTestFixturesVersion")
+    testImplementation("com.intellij.remoterobot:remote-fixtures:$remoteRobotVersion")
     testImplementation("software.amazon.awssdk:cloudformation:$awsSdkVersion")
     testImplementation("software.amazon.awssdk:cloudwatchlogs:$awsSdkVersion")
     testImplementation("software.amazon.awssdk:s3:$awsSdkVersion")

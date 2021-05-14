@@ -45,7 +45,7 @@ open class AwsExplorer(
     }
 
     fun expandExplorerNode(vararg path: String) {
-        explorerTree().expandPath(*path)
+        explorerTree().expand(*path)
         explorerTree().waitUntilLoaded()
     }
 
