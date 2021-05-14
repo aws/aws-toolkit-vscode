@@ -40,9 +40,7 @@ class FileBrowserFixture(
     remoteComponent: RemoteComponent
 ) : DialogFixture(remoteRobot, remoteComponent) {
     private val tree by lazy {
-        find<JTreeFixture>(byXpath("//div[@class='Tree']"), Duration.ofSeconds(10)).also {
-            it.separator = "|" // switch out the separator since tree has path "/" as the root
-        }
+        find<JTreeFixture>(byXpath("//div[@class='Tree']"), Duration.ofSeconds(10))
     }
 
     fun selectFile(path: Path) {
@@ -52,8 +50,7 @@ class FileBrowserFixture(
                 waitForIgnoringError(duration = Duration.ofSeconds(30), interval = Duration.ofSeconds(10)) {
                     setFilePath(absolutePath)
                     findAndClick("//div[@accessiblename='Refresh']")
-                    tree.requireSelection(*absolutePath.toParts())
-                    true
+                    tree.collectSelectedPaths().any { it == absolutePath.toParts() }
                 }
             }
 
@@ -82,12 +79,12 @@ class FileBrowserFixture(
         }
     }
 
-    private fun Path.toParts(): Array<String> {
+    private fun Path.toParts(): List<String> {
         val parts = this.toString().split(File.separatorChar).toMutableList()
         // Need to re-add "/" on linux
         if (this.toString().startsWith(File.separatorChar)) {
             parts[0] = File.separator
         }
-        return parts.toTypedArray()
+        return parts
     }
 }

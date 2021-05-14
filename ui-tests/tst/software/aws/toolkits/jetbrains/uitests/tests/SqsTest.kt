@@ -5,6 +5,7 @@ package software.aws.toolkits.jetbrains.uitests.tests
 
 import com.intellij.remoterobot.fixtures.ComponentFixture
 import com.intellij.remoterobot.fixtures.JTextFieldFixture
+import com.intellij.remoterobot.fixtures.JTreeFixture
 import com.intellij.remoterobot.search.locators.byXpath
 import com.intellij.remoterobot.stepsProcessing.log
 import com.intellij.remoterobot.stepsProcessing.step
@@ -23,7 +24,6 @@ import software.amazon.awssdk.services.sqs.model.SendMessageBatchRequestEntry
 import software.aws.toolkits.jetbrains.uitests.CoreTest
 import software.aws.toolkits.jetbrains.uitests.extensions.uiTest
 import software.aws.toolkits.jetbrains.uitests.fixtures.IdeaFrame
-import software.aws.toolkits.jetbrains.uitests.fixtures.JTreeFixture
 import software.aws.toolkits.jetbrains.uitests.fixtures.actionMenuItem
 import software.aws.toolkits.jetbrains.uitests.fixtures.awsExplorer
 import software.aws.toolkits.jetbrains.uitests.fixtures.dialog
@@ -37,7 +37,6 @@ import software.aws.toolkits.jetbrains.uitests.fixtures.idea
 import software.aws.toolkits.jetbrains.uitests.fixtures.pressCreate
 import software.aws.toolkits.jetbrains.uitests.fixtures.pressSave
 import software.aws.toolkits.jetbrains.uitests.fixtures.pressYes
-import software.aws.toolkits.jetbrains.uitests.fixtures.rightClick
 import software.aws.toolkits.jetbrains.uitests.fixtures.welcomeFrame
 import software.aws.toolkits.jetbrains.uitests.utils.reattemptAssert
 import software.aws.toolkits.jetbrains.uitests.utils.recheckAssert
@@ -46,7 +45,7 @@ import java.time.Duration
 import java.util.UUID
 
 @TestInstance(TestInstance.Lifecycle.PER_CLASS)
-class SQSTest {
+class SqsTest {
     @TempDir
     lateinit var tempDir: Path
 
@@ -97,8 +96,11 @@ class SQSTest {
                     client.waitForCreation(fifoQueueName)
                 }
             }
-            val queueUrl = client.getQueueUrl { it.queueName(queueName) }.queueUrl()
+
             step("Expand SQS node") { awsExplorer { expandExplorerNode(sqsNodeLabel) } }
+
+            val queueUrl = client.getQueueUrl { it.queueName(queueName) }.queueUrl()
+
             step("Standard queue") {
                 openSendMessagePane(queueName)
                 step("Send a message and validate it is sent") {
@@ -126,7 +128,7 @@ class SQSTest {
                     }
                 }
             }
-            closeToolWindowTab()
+
             step("FIFO queue") {
                 openSendMessagePane(fifoQueueName)
                 step("Send a message and validate it is sent") {
@@ -139,7 +141,7 @@ class SQSTest {
                     findByXpath("//div[contains(@accessiblename, 'Sent message ID')]")
                 }
             }
-            closeToolWindowTab()
+
             step("Edit queue parameters") {
                 step("Open queue parameters and change visibility to a different value") {
                     awsExplorer {
@@ -153,9 +155,11 @@ class SQSTest {
                         }
                     }
                 }
+
                 assertThat(findToastText()).anySatisfy {
                     assertThat(it).contains("Updated queue parameters")
                 }
+
                 step("Reopen the dialog to make sure the new value was saved") {
                     awsExplorer {
                         openExplorerActionMenu(sqsNodeLabel, queueName)
@@ -167,6 +171,7 @@ class SQSTest {
                     }
                 }
             }
+
             step("Purge queue") {
                 awsExplorer {
                     openExplorerActionMenu(sqsNodeLabel, queueName)
@@ -214,6 +219,7 @@ class SQSTest {
                     }
                 }
             }
+
             step("Delete queues") {
                 step("Delete queue $queueName") {
                     awsExplorer {
@@ -262,13 +268,6 @@ class SQSTest {
             openExplorerActionMenu(sqsNodeLabel, queueName)
             actionMenuItem("Send a Message").click()
         }
-    }
-
-    // If we don't do this, it fails to find the entry in the explorer
-    private fun IdeaFrame.closeToolWindowTab() = step("Close tool window so the robot can see the queues in the explorer") {
-        val firstTab = findAll(ComponentFixture::class.java, byXpath("//div[contains(@accessiblename, 'uitest') and @class='ContentTabLabel']")).first()
-        firstTab.rightClick()
-        actionMenuItem("Close Tab").click()
     }
 
     private fun IdeaFrame.openPollMessagePane(queueName: String) = step("Open view message pane") {
