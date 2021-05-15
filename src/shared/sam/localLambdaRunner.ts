@@ -374,7 +374,7 @@ export async function runLambdaFunction(
 
     await onAfterBuild()
 
-    // If the build successfully but expires the timer, reset the timer
+    // If the build finishes successfully but expires the timer, reset the timer
     if (timer.completed) {
         timer.reset()
     }
