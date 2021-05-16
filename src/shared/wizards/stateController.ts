@@ -12,7 +12,7 @@ export interface StateMachineStepResult<TState> {
 
 type StepCache = { [key: string]: any }
 
-interface ExtendedState {
+export interface ExtendedState {
     currentStep: number
     totalSteps: number
     /**
