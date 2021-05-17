@@ -5,17 +5,24 @@ package software.aws.toolkits.jetbrains.utils
 
 import com.intellij.openapi.Disposable
 import com.intellij.openapi.application.AppUIExecutor
+import com.intellij.openapi.application.ExpirableExecutor
 import com.intellij.openapi.application.ModalityState
 import com.intellij.openapi.application.impl.coroutineDispatchingContext
+import com.intellij.util.concurrency.AppExecutorUtil
 
 fun getCoroutineUiContext(
     modalityState: ModalityState = ModalityState.defaultModalityState(),
     disposable: Disposable? = null
-) = AppUIExecutor.onUiThread(modalityState).let {
-    if (disposable == null) {
-        it
-    } else {
-        // This is not actually scheduled for removal in 2019.3
-        it.expireWith(disposable)
+) = AppUIExecutor.onUiThread(modalityState).also { exec ->
+    disposable?.let {
+        exec.expireWith(disposable)
+    }
+}.coroutineDispatchingContext()
+
+fun getCoroutineBgContext(
+    disposable: Disposable? = null
+) = ExpirableExecutor.on(AppExecutorUtil.getAppExecutorService()).also { exec ->
+    disposable?.let {
+        exec.expireWith(disposable)
     }
 }.coroutineDispatchingContext()

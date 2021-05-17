@@ -66,6 +66,7 @@ tasks.processTestResources {
 dependencies {
     api(project(":core"))
     api("software.amazon.awssdk:s3:$awsSdkVersion")
+    api("software.amazon.awssdk:dynamodb:$awsSdkVersion")
     api("software.amazon.awssdk:lambda:$awsSdkVersion")
     api("software.amazon.awssdk:iam:$awsSdkVersion")
     api("software.amazon.awssdk:ecr:$awsSdkVersion")
