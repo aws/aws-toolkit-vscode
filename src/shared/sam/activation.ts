@@ -157,26 +157,13 @@ async function activateCodeLensProviders(
         )
     )
 
-    disposables.push(vscode.languages.registerCodeLensProvider(jsLensProvider.JAVASCRIPT_ALL_FILES, tsCodeLensProvider))
+    disposables.push(vscode.languages.registerCodeLensProvider(jsLensProvider.TYPESCRIPT_ALL_FILES, tsCodeLensProvider))
     disposables.push(vscode.languages.registerCodeLensProvider(pyLensProvider.PYTHON_ALLFILES, pyCodeLensProvider))
     disposables.push(vscode.languages.registerCodeLensProvider(javaLensProvider.JAVA_ALLFILES, javaCodeLensProvider))
     disposables.push(vscode.languages.registerCodeLensProvider(csLensProvider.CSHARP_ALLFILES, csCodeLensProvider))
     disposables.push(vscode.languages.registerCodeLensProvider(goLensProvider.GO_ALLFILES, goCodeLensProvider))
 
     disposables.push(
-<<<<<<< HEAD
-        vscode.languages.registerCodeLensProvider(
-            jsLensProvider.TYPESCRIPT_ALL_FILES,
-            codelensUtils.makeTypescriptCodeLensProvider()
-        )
-    )
-
-    disposables.push(
-        vscode.languages.registerCodeLensProvider(
-            pyLensProvider.PYTHON_ALLFILES,
-            await codelensUtils.makePythonCodeLensProvider()
-        )
-=======
         vscode.commands.registerCommand('aws.toggleSamCodeLenses', () => {
             const toggled = !configuration.readSetting<boolean>(codelensUtils.STATE_NAME_ENABLE_CODELENSES)
             configuration.writeSetting(
@@ -185,7 +172,6 @@ async function activateCodeLensProviders(
                 vscode.ConfigurationTarget.Global
             )
         })
->>>>>>> master
     )
 
     disposables.push(

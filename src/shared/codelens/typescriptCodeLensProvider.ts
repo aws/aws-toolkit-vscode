@@ -14,14 +14,11 @@ export const JAVASCRIPT_LANGUAGE = 'javascript'
 
 export const TYPESCRIPT_LANGUAGE = 'typescript'
 
-export const JAVASCRIPT_ALL_FILES: vscode.DocumentFilter[] = [
+export const TYPESCRIPT_ALL_FILES: vscode.DocumentFilter[] = [
     {
         language: JAVASCRIPT_LANGUAGE,
         scheme: 'file',
     },
-]
-
-export const TYPESCRIPT_ALL_FILES: vscode.DocumentFilter[] = [
     {
         language: TYPESCRIPT_LANGUAGE,
         scheme: 'file',
