@@ -1542,7 +1542,7 @@
         "@types/marked": "^0.6.5",
         "@types/mime-types": "^2.1.0",
         "@types/mocha": "^7.0.2",
-        "@types/node": "^10.14.22",
+        "@types/node": "^15.0.3",
         "@types/readline-sync": "^1.4.3",
         "@types/request": "^2.47.1",
         "@types/semver": "^5.5.0",
