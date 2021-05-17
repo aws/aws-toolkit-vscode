@@ -50,7 +50,7 @@ export async function getRemoteOrCachedFileWithManifest(params: {
     cacheKey: string
 }): Promise<string | undefined> {
     const dir = path.parse(params.filepath).dir
-    if (!fileExists(dir)) {
+    if (!(await fileExists(dir))) {
         mkdirSync(dir, { recursive: true })
     }
     const manifestDetails = await getManifestDetails(params.manifestUrl, params.urlTransform)
