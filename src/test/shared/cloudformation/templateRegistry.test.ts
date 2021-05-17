@@ -53,7 +53,7 @@ describe('CloudFormation Template Registry', async function () {
                 const filename = vscode.Uri.file(path.join(tempFolder, 'template.yaml'))
                 await strToYamlFile(badYaml, filename.fsPath)
 
-                await assert.rejects(testRegistry.addItemToRegistry(vscode.Uri.file(filename.fsPath)))
+                assert.strictEqual(await testRegistry.addItemToRegistry(vscode.Uri.file(filename.fsPath)), undefined)
             })
         })
 
