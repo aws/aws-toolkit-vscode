@@ -6,7 +6,6 @@
 import * as child_process from 'child_process'
 import * as crossSpawn from 'cross-spawn'
 import * as logger from '../logger'
-import { getLogger } from '../logger/logger'
 import { waitUntil } from './timeoutUtils'
 
 export interface ChildProcessStartArguments {
