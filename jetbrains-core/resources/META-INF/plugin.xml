@@ -217,6 +217,12 @@ with what features/services are supported.
         <!-- See this post why order="first" is required https://intellij-support.jetbrains.com/hc/en-us/community/posts/360003460619-fileIconProvider-is-not-showing-Icon-for-custom-LightVirtualFile -->
         <fileIconProvider order="first" implementation="software.aws.toolkits.jetbrains.services.s3.editor.S3FileIconProvider"/>
 
+        <!-- DynamoDB -->
+        <!--
+        <fileEditorProvider implementation="software.aws.toolkits.jetbrains.services.dynamodb.editor.DynamoDbTableEditorProvider"/>
+        <fileIconProvider order="first" implementation="software.aws.toolkits.jetbrains.services.dynamodb.editor.DynamoDbFileIconProvider"/>
+        -->
+
         <registryKey key="aws.credentialProcess.timeout" description="AWS Credential Process timeout (ms)" restartRequired="false" defaultValue="30000"/>
         <registryKey key="aws.debuggerAttach.timeout" description="Time allowed for debuggers to attach before timing out (ms)" restartRequired="false" defaultValue="60000"/>
     </extensions>
@@ -240,6 +246,7 @@ with what features/services are supported.
         <!-- Explorer nodes -->
         <explorer.serviceNode implementation="software.aws.toolkits.jetbrains.core.explorer.nodes.CloudFormationExplorerRootNode"/>
         <explorer.serviceNode implementation="software.aws.toolkits.jetbrains.core.explorer.nodes.CloudWatchRootNode"/>
+        <explorer.serviceNode implementation="software.aws.toolkits.jetbrains.core.explorer.nodes.DynamoDbExplorerRootNode"/>
         <explorer.serviceNode implementation="software.aws.toolkits.jetbrains.core.explorer.nodes.LambdaExplorerRootNode"/>
         <explorer.serviceNode implementation="software.aws.toolkits.jetbrains.core.explorer.nodes.S3ExplorerRootNode"/>
         <explorer.serviceNode implementation="software.aws.toolkits.jetbrains.core.explorer.nodes.EcrExplorerRootNode"/>
@@ -438,6 +445,15 @@ with what features/services are supported.
             <reference ref="aws.toolkit.s3viewer.mutateActions"/>
             <separator/>
             <reference ref="aws.toolkit.s3viewer.miscActions"/>
+        </group>
+
+        <group id="aws.toolkit.dynamoViewer.toolbar.primary">
+        </group>
+
+        <group id="aws.toolkit.dynamoViewer.toolbar.secondary">
+            <group popup="true" id="aws.toolkit.dynamoViewer.toolbar.settings" icon="AllIcons.General.GearPlain" >
+                <action id="aws.toolkit.dynamoViewer.changeMaxResults" class="software.aws.toolkits.jetbrains.services.dynamodb.editor.actions.ConfigureMaxResultsAction"/>
+            </group>
         </group>
     </actions>
 

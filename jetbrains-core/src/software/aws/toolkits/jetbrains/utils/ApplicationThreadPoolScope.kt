@@ -3,10 +3,9 @@
 
 package software.aws.toolkits.jetbrains.utils
 
-import com.intellij.application.ApplicationThreadPool
+import com.intellij.openapi.Disposable
 import kotlinx.coroutines.CoroutineName
 import kotlinx.coroutines.CoroutineScope
-import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.SupervisorJob
 
 /**
@@ -14,6 +13,6 @@ import kotlinx.coroutines.SupervisorJob
  *
  * see: [com.intellij.openapi.application.Application.executeOnPooledThread]
  */
-class ApplicationThreadPoolScope(coroutineName: String) : CoroutineScope {
-    override val coroutineContext = SupervisorJob() + Dispatchers.ApplicationThreadPool + CoroutineName(coroutineName)
+class ApplicationThreadPoolScope(coroutineName: String, disposable: Disposable? = null) : CoroutineScope {
+    override val coroutineContext = SupervisorJob() + getCoroutineBgContext(disposable) + CoroutineName(coroutineName)
 }
