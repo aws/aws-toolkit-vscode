@@ -188,6 +188,22 @@ describe('SharedCredentialsProvider', async function () {
         assert.strictEqual(sut.validate(), undefined)
     })
 
+    it('invalidates a chain with an unsupported combination', async function () {
+        const sut = new SharedCredentialsProvider(
+            'default',
+            new Map<string, Profile>([
+                ['default', { role_arn: 'x', source_profile: 'B' }],
+                ['B', { credential_process: 'y' }],
+            ])
+        )
+
+        await assert.rejects(
+            sut.getCredentials(),
+            /is not a valid Credential Profile/,
+            'Invalid profile error was not thrown'
+        )    
+    })
+
     it('getCredentials throws when the profile is not valid', async function () {
         const sut = new SharedCredentialsProvider(
             'default',

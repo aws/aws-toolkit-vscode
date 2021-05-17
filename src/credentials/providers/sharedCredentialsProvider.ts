@@ -32,6 +32,12 @@ const SHARED_CREDENTIAL_PROPERTIES = {
     SSO_ROLE_NAME: 'sso_role_name',
 }
 
+const INVALID_SOURCE_PROFILE_PROPERTIES = [
+    SHARED_CREDENTIAL_PROPERTIES.MFA_SERIAL,
+    SHARED_CREDENTIAL_PROPERTIES.CREDENTIAL_PROCESS,
+    SHARED_CREDENTIAL_PROPERTIES.SSO_START_URL,
+]
+
 /**
  * Represents one profile from the AWS Shared Credentials files, and produces Credentials from this profile.
  */
@@ -170,6 +176,12 @@ export class SharedCredentialsProvider implements CredentialsProvider {
             }
 
             profile = this.allSharedCredentialProfiles.get(profileName)!
+        }
+
+        // Unsupported combination
+        const invalidProperties = INVALID_SOURCE_PROFILE_PROPERTIES.map(key => profile[key] ? key : undefined).filter(x => x)
+        if (invalidProperties.length > 0) {
+            return `'${invalidProperties[0]}' in combination with 'source_profile' is not currently supported.`
         }
     }
 
