@@ -79,14 +79,14 @@ function main() {
             fs.copyFileSync(packageJsonFile, `${packageJsonFile}.bk`)
             fs.copyFileSync(webpackConfigJsFile, `${webpackConfigJsFile}.bk`)
 
-            const packageJson = JSON.parse(fs.readFileSync(packageJsonFile, { encoding: 'UTF-8' }).toString())
+            const packageJson = JSON.parse(fs.readFileSync(packageJsonFile).toString('utf-8'))
             const versionSuffix = getVersionSuffix()
             const version: string = packageJson.version?.toString()
             packageJson.version = args.debug ? `1.99.0${versionSuffix}` : version.replace('-SNAPSHOT', versionSuffix)
             fs.writeFileSync(packageJsonFile, JSON.stringify(packageJson, undefined, '    '))
 
             if (args.debug) {
-                const webpackConfigJs = fs.readFileSync(webpackConfigJsFile, { encoding: 'UTF-8' }).toString()
+                const webpackConfigJs = fs.readFileSync(webpackConfigJsFile).toString('utf-8')
                 fs.writeFileSync(webpackConfigJsFile, webpackConfigJs.replace(/minimize: true/, 'minimize: false'))
             }
         }
