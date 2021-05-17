@@ -154,7 +154,7 @@ export class ChildProcess {
         // Emitted when streams are closed.
         this.childProcess.once('close', (code, signal) => {
             if (typeof code !== 'number') {
-                getLogger().debug(`child_process: terminated by signal '${signal}'`)
+                this.log.warn(`child_process: terminated by signal '${signal}'`)
             }
 
             const result = this.makeResult(typeof code !== 'number' ? -1 : code)
