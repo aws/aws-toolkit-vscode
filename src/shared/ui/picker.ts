@@ -19,7 +19,12 @@ export interface AdditionalQuickPickOptions {
     value?: string
     step?: number
     totalSteps?: number
+    /** User can type their own entry */
+    customUserInputLabel?: string
 }
+
+export type ExtendedQuickPickOptions = vscode.QuickPickOptions & AdditionalQuickPickOptions
+export const CUSTOM_USER_INPUT = Symbol('custom quick pick')
 
 /**
  * Creates a QuickPick to let the user pick an item from a list
@@ -34,21 +39,38 @@ export interface AdditionalQuickPickOptions {
  *  buttons - set of buttons to initialize the picker with
  * @return A new QuickPick.
  */
-export function createQuickPick<T extends vscode.QuickPickItem>({
+export function createQuickPick<T extends vscode.QuickPickItem & { metadata?: any }>({
     options,
     items,
     buttons,
 }: {
-    options?: vscode.QuickPickOptions & AdditionalQuickPickOptions
+    options?: ExtendedQuickPickOptions
     items?: T[]
     buttons?: vscode.QuickInputButton[]
 }): vscode.QuickPick<T> {
     const picker = vscode.window.createQuickPick<T>()
 
+    function update(value?: string) {
+        if (value) {
+            picker.items = [
+                {
+                    label: options!.customUserInputLabel,
+                    description: value,
+                    alwaysShow: true,
+                    metadata: CUSTOM_USER_INPUT,
+                } as T,
+                ...(items ?? []),
+            ]
+        } else {
+            picker.items = items ?? []
+        }
+    }
+
     if (options) {
         picker.title = options.title
         picker.placeholder = options.placeHolder
         picker.value = options.value || ''
+
         if (options.matchOnDescription !== undefined) {
             picker.matchOnDescription = options.matchOnDescription
         }
@@ -61,12 +83,14 @@ export function createQuickPick<T extends vscode.QuickPickItem>({
         picker.step = options.step
         picker.totalSteps = options.totalSteps
 
+        if (options.customUserInputLabel) {
+            picker.onDidChangeValue(update)
+        }
+
         // TODO : Apply more options as they are needed in the future, and add corresponding tests
     }
 
-    if (items) {
-        picker.items = items
-    }
+    update(picker.value)
 
     if (buttons) {
         picker.buttons = buttons
