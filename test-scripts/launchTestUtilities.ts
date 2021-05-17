@@ -38,7 +38,7 @@ export async function setupVSCodeTestInstance(): Promise<string> {
     return vsCodeExecutablePath
 }
 
-export async function invokeVSCodeCli(vsCodeExecutablePath: string, args: string[]): Promise<string> {
+export async function invokeVSCodeCli(vsCodeExecutablePath: string, args: string[]): Promise<Buffer> {
     const vsCodeCliPath = resolveCliPathFromVSCodeExecutablePath(vsCodeExecutablePath)
 
     const cmdArgs = [...args]
@@ -87,7 +87,7 @@ export async function getCliArgsToDisableExtensions(
 ): Promise<string[]> {
     console.log(`Disabling all VS Code extensions *except*: ${params.except}`)
     const output = await invokeVSCodeCli(vsCodeExecutablePath, ['--list-extensions'])
-    const foundExtensions = output.split('\n')
+    const foundExtensions = output.toString('utf8').split('\n')
     const ids: string[] = []
     for (const extId of foundExtensions) {
         if (extId.trim() && !params.except.includes(extId)) {

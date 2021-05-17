@@ -89,10 +89,10 @@ function teardownTestLogger(testName: string) {
 }
 
 function writeLogsToFile(testName: string) {
-    const entries = testLogger!.getLoggedEntries()
-    entries.unshift(`=== Starting test "${testName}" ===`)
-    entries.push(`=== Ending test "${testName}" ===\n\n`)
-    appendFileSync(testLogOutput, entries.join('\n'), 'utf8')
+    const entries = testLogger?.getLoggedEntries()
+    entries?.unshift(`=== Starting test "${testName}" ===`)
+    entries?.push(`=== Ending test "${testName}" ===\n\n`)
+    appendFileSync(testLogOutput, entries?.join('\n'), 'utf8')
 }
 
 export function assertLogsContain(text: string, exactMatch: boolean, severity: LogLevel) {

@@ -14,8 +14,8 @@ export interface ChildProcessStartArguments {
     onStdout?(text: string): void
     onStderr?(text: string): void
     onError?(error: Error): void
-    onClose?(code: number | null, signal: NodeJS.Signals | null): void
-    onExit?(code: number | null, signal: NodeJS.Signals | null): void
+    onClose?(code: number, signal: string): void
+    onExit?(code: number | null, signal: string | null): void
 }
 
 export interface ChildProcessResult {
@@ -57,7 +57,7 @@ export class ChildProcess {
     public constructor(
         logging: boolean,
         private readonly command: string,
-        private readonly options: child_process.SpawnOptions = {},
+        private readonly options?: child_process.SpawnOptions,
         ...args: string[]
     ) {
         this.log = logging ? logger.getLogger() : logger.getNullLogger()
@@ -152,11 +152,7 @@ export class ChildProcess {
 
         // Emitted when streams are closed.
         this.childProcess.once('close', (code, signal) => {
-            if (typeof code !== 'number') {
-                this.log.warn(`child_process: terminated by signal '${signal}'`)
-            }
-
-            const result = this.makeResult(typeof code !== 'number' ? -1 : code)
+            const result = this.makeResult(code)
             this.processResult = result
 
             if (params.onClose) {
@@ -211,7 +207,7 @@ export class ChildProcess {
      * @param signal  Signal to send, defaults to SIGTERM.
      *
      */
-    public stop(force: boolean = false, signal: NodeJS.Signals = 'SIGTERM'): void {
+    public stop(force: boolean = false, signal: string = 'SIGTERM'): void {
         const child = this.childProcess
         if (!child) {
             return
