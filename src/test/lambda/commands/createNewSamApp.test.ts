@@ -14,6 +14,7 @@ import {
     addInitialLaunchConfiguration,
     getProjectUri,
     SAM_INIT_TEMPLATE_FILE,
+    SAM_INIT_TEMPLATE_FILE_ALT_EXT
 } from '../../../lambda/commands/createNewSamApp'
 import { LaunchConfiguration } from '../../../shared/debug/launchConfiguration'
 import { anything, capture, instance, mock, when } from 'ts-mockito'
@@ -77,6 +78,16 @@ describe('createNewSamApp', function () {
         it('returns the target file when it exists', async function () {
             assert.strictEqual(
                 normalize((await getProjectUri(fakeResponse, SAM_INIT_TEMPLATE_FILE))?.fsPath ?? ''),
+                normalize(fakeTarget)
+            )
+        })
+        it('returns the target ".yml" file when it exists', async function () {
+            fs.unlinkSync(fakeTarget)
+            tempTemplate = vscode.Uri.file(path.join(tempFolder, 'test.yml'))
+            fakeTarget = path.join(tempFolder, SAM_INIT_TEMPLATE_FILE_ALT_EXT)
+            testutil.toFile('target file', fakeTarget)
+            assert.strictEqual(
+                normalize((await getProjectUri(fakeResponse, SAM_INIT_TEMPLATE_FILE, SAM_INIT_TEMPLATE_FILE_ALT_EXT))?.fsPath ?? ''),
                 normalize(fakeTarget)
             )
         })

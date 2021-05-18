@@ -54,6 +54,7 @@ import { execSync } from 'child_process'
 type CreateReason = 'unknown' | 'userCancelled' | 'fileNotFound' | 'complete' | 'error'
 
 export const SAM_INIT_TEMPLATE_FILE: string = 'template.yaml'
+export const SAM_INIT_TEMPLATE_FILE_ALT_EXT: string = 'template.yml'
 export const SAM_INIT_README_FILE: string = 'README.md'
 
 export async function resumeCreateNewSamApp(
@@ -202,7 +203,7 @@ export async function createNewSamApplication(
 
         await runSamCliInit(initArguments, samCliContext)
 
-        const templateUri = await getProjectUri(config, SAM_INIT_TEMPLATE_FILE)
+        const templateUri = await getProjectUri(config, SAM_INIT_TEMPLATE_FILE, SAM_INIT_TEMPLATE_FILE_ALT_EXT)
         const readmeUri = await getProjectUri(config, SAM_INIT_README_FILE)
         if (!templateUri || !readmeUri) {
             reason = 'fileNotFound'
@@ -352,11 +353,15 @@ async function validateSamCli(samCliValidator: SamCliValidator): Promise<void> {
 
 export async function getProjectUri(
     config: Pick<CreateNewSamAppWizardResponse, 'location' | 'name'>,
-    file: string
+    file: string,
+    altFile?: string
 ): Promise<vscode.Uri | undefined> {
     const cfnTemplatePath = path.resolve(config.location.fsPath, config.name, file)
+    const cfnAltTemplatePath = altFile ? path.resolve(config.location.fsPath, config.name, altFile) : undefined
     if (await fileExists(cfnTemplatePath)) {
         return vscode.Uri.file(cfnTemplatePath)
+    } else if (cfnAltTemplatePath && await fileExists(cfnAltTemplatePath)) { 
+        return vscode.Uri.file(cfnAltTemplatePath)
     } else {
         vscode.window.showWarningMessage(
             localize(
