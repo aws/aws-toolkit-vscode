@@ -373,7 +373,8 @@ export async function runLambdaFunction(
     }
 
     await onAfterBuild()
-
+    timer.refresh()
+    
     if (!(await invokeLambdaHandler(timer, envVars, config))) {
         return config
     }
