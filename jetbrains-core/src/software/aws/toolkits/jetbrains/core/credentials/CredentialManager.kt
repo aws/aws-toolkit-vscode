@@ -130,7 +130,10 @@ class DefaultCredentialManager : CredentialManager() {
                         removeProvider(it)
                         count.decrementAndGet()
                     }
-                    AwsTelemetry.loadCredentials(credentialSourceId = providerFactory.id, value = count.get().toDouble())
+                    AwsTelemetry.loadCredentials(
+                        credentialSourceId = providerFactory.credentialSourceId.toTelemetryCredentialSourceId(),
+                        value = count.get().toDouble()
+                    )
                 }
             }
         }

@@ -14,6 +14,13 @@ enum class CredentialType {
     SsoProfile
 }
 
+enum class CredentialSourceId {
+    SharedCredentials,
+    SdkStore,
+    Ec2,
+    EnvVars
+}
+
 /**
  * Represents a possible credential provider that can be used within the toolkit.
  *
