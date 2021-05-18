@@ -45,7 +45,6 @@ import software.amazon.awssdk.services.ecr.EcrClient
 import software.aws.toolkits.core.utils.error
 import software.aws.toolkits.core.utils.getLogger
 import software.aws.toolkits.jetbrains.core.awsClient
-import software.aws.toolkits.jetbrains.core.credentials.activeRegion
 import software.aws.toolkits.jetbrains.core.explorer.ExplorerDataKeys
 import software.aws.toolkits.jetbrains.services.ecr.DockerRunConfiguration
 import software.aws.toolkits.jetbrains.services.ecr.DockerfileEcrPushRequest
@@ -91,7 +90,7 @@ class PushToRepositoryAction :
 
         if (!result) {
             // user cancelled; noop
-            EcrTelemetry.deployImage(project, Result.Cancelled, project.activeRegion().id)
+            EcrTelemetry.deployImage(project, Result.Cancelled)
             return
         }
 
@@ -124,7 +123,6 @@ class PushToRepositoryAction :
                 EcrTelemetry.deployImage(
                     project,
                     result,
-                    regionId = project.activeRegion().id,
                     ecrDeploySource = type
                 )
             }

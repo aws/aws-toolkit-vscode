@@ -11,7 +11,6 @@ import com.intellij.openapi.ui.ValidationInfo
 import com.intellij.util.text.nullize
 import org.jetbrains.annotations.TestOnly
 import software.amazon.awssdk.services.lambda.model.PackageType
-import software.aws.toolkits.jetbrains.core.credentials.activeRegion
 import software.aws.toolkits.jetbrains.core.help.HelpIds
 import software.aws.toolkits.jetbrains.services.lambda.Lambda.findPsiElementsForHandler
 import software.aws.toolkits.jetbrains.services.lambda.LambdaBuilder
@@ -58,7 +57,6 @@ class UpdateFunctionCodeDialog(private val project: Project, private val initial
         LambdaTelemetry.deploy(
             project,
             result = Result.Cancelled,
-            regionId = project.activeRegion().id,
             lambdaPackageType = LambdaPackageType.from(initialSettings.packageType.toString()),
             initialDeploy = false
         )
@@ -88,7 +86,6 @@ class UpdateFunctionCodeDialog(private val project: Project, private val initial
             LambdaTelemetry.deploy(
                 project,
                 result = Result.Succeeded,
-                regionId = project.activeRegion().id,
                 lambdaPackageType = LambdaPackageType.from(initialSettings.packageType.toString()),
                 initialDeploy = false
             )
@@ -99,7 +96,6 @@ class UpdateFunctionCodeDialog(private val project: Project, private val initial
             LambdaTelemetry.deploy(
                 project,
                 result = Result.Failed,
-                regionId = project.activeRegion().id,
                 lambdaPackageType = LambdaPackageType.from(initialSettings.packageType.toString()),
                 initialDeploy = false
             )

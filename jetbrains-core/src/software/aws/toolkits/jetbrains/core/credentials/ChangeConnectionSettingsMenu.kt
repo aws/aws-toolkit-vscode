@@ -169,9 +169,7 @@ internal class ChangeRegionAction(private val region: AwsRegion) : ToggleAction(
                 )
             }
 
-            AwsTelemetry.setRegion(
-                regionId = region.id
-            )
+            AwsTelemetry.setRegion(e.project)
         }
     }
 }
