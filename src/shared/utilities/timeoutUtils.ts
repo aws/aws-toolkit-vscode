@@ -18,7 +18,7 @@ export class Timeout {
     private startTime: number
     private endTime: number
     private readonly timeoutLength: number
-    private timerPromise: Promise<undefined>
+    private readonly timerPromise: Promise<undefined>
     private timerTimeout: NodeJS.Timeout
     private timerResolve!: (value?: Promise<undefined> | undefined) => void
     private timerReject!: (value?: Error | Promise<Error> | undefined) => void
@@ -112,15 +112,6 @@ export class Timeout {
         }
 
         this._completed = true
-    }
-
-    public reset(): void {
-        this._completed = false
-        this.timerPromise = new Promise<undefined>((resolve, reject) => {
-            this.timerReject = reject
-            this.timerResolve = resolve
-        })
-        this.refresh()
     }
 }
 
