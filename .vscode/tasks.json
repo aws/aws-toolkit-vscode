@@ -22,12 +22,12 @@
         {
             "type": "npm",
             "script": "lint",
-            "problemMatcher": "$tslint5"
+            "problemMatcher": "$eslint-stylish"
         },
         {
             "type": "npm",
             "script": "lintfix",
-            "problemMatcher": "$tslint5"
+            "problemMatcher": "$eslint-stylish"
         },
         {
             "type": "npm",

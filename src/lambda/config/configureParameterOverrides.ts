@@ -42,7 +42,7 @@ export async function configureParameterOverrides(
         requiredParameterNames?: Iterable<string>
     },
     context: ConfigureParameterOverridesContext = new DefaultConfigureParameterOverridesContext()
-) {
+): Promise<void> {
     const workspaceFolder = context.getWorkspaceFolder(templateUri)
     if (!workspaceFolder) {
         throw new Error(`Template ${templateUri.fsPath} is not in the workspace`)
