@@ -119,7 +119,7 @@ export async function makeTypescriptConfig(config: SamLaunchRequestArgs): Promis
 async function compileTypeScript(config: NodejsDebugConfiguration): Promise<void> {
     if (config.invokeTarget.target === 'code') {
         const tscResponse = await new ChildProcess(true, 'tsc', undefined, '-v').run()
-        if (!tscResponse.stdout.startsWith('Version') ) {
+        if (tscResponse.exitCode === 0 || !tscResponse.stdout.startsWith('Version')) {
             throw new Error('TypeScript compiler "tsc" not found.')
         }
         const samBuildOutputAppRoot = path.join(config.baseBuildDir!, 'output', path.parse(config.invokeTarget.projectRoot).name)
