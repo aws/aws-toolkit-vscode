@@ -1622,7 +1622,7 @@
         "winston": "^3.2.1",
         "winston-transport": "^4.3.0",
         "xml2js": "^0.4.19",
-        "yaml": "^1.9.2"
+        "yaml": "^1.10.2"
     },
     "prettier": {
         "printWidth": 120,
