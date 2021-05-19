@@ -20,6 +20,12 @@ export class DefaultStsClient implements StsClient {
         return response
     }
 
+    public async assumeRole(request: STS.AssumeRoleRequest): Promise<STS.AssumeRoleResponse> {
+        const sdkClient = await this.createSdkClient()
+        const response = await sdkClient.assumeRole(request).promise()
+        return response
+    }
+
     private async createSdkClient(): Promise<STS> {
         return await ext.sdkClientBuilder.createAwsService(
             STS,

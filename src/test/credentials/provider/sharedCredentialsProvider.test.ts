@@ -8,8 +8,10 @@ import * as FakeTimers from '@sinonjs/fake-timers'
 import * as sinon from 'sinon'
 import { SharedCredentialsProvider } from '../../../credentials/providers/sharedCredentialsProvider'
 import { Profile } from '../../../shared/credentials/credentialsFile'
-import AWS = require('aws-sdk')
 import { tickPromise } from '../../testUtil'
+import * as credProperties from '@aws-sdk/property-provider'
+import * as credProcess from '@aws-sdk/credential-provider-process'
+
 
 const MISSING_PROPERTIES_FRAGMENT = 'missing properties'
 
@@ -199,21 +201,6 @@ describe('SharedCredentialsProvider', async function () {
             /is not a valid Credential Profile/,
             'Invalid profile error was not thrown'
         )
-    })
-
-    it('getCredentials does not wait forever for the SDK to respond', async function () {
-        const sut = new SharedCredentialsProvider(
-            'default',
-            new Map<string, Profile>([['default', { credential_process: 'test' }]])
-        )
-
-        // ideally we would stub out 'load' but since it's callback based that's tricky to do
-        sandbox
-            .stub(AWS.CredentialProviderChain.prototype, 'resolvePromise')
-            .onFirstCall()
-            .returns(new Promise(r => setTimeout(r, 60 * 60 * 1000)))
-
-        await tickPromise(assert.rejects(sut.getCredentials(), /expired/), clock, 10 * 60 * 1000)
     })
 })
 

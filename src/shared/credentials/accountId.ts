@@ -5,6 +5,7 @@
 
 import { ext } from '../extensionGlobals'
 import { getLogger } from '../logger'
+import * as AWS from '@aws-sdk/types'
 
 /**
  * Looks up the Credentials associated Account ID with its own STS Client.

@@ -5,6 +5,7 @@
 
 import { CredentialType } from '../../shared/telemetry/telemetry.gen';
 import { CredentialsProviderId } from './credentialsProviderId'
+import * as AWS from '@aws-sdk/types'
 
 export interface CredentialsProvider {
     getCredentialsProviderId(): CredentialsProviderId

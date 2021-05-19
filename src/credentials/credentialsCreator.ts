@@ -25,9 +25,8 @@ const ERROR_MESSAGE_USER_CANCELLED = localize(
  */
 export async function getMfaTokenFromUser(
     mfaSerial: string,
-    profileName: string,
-    callback: (err?: Error, token?: string) => void
-): Promise<void> {
+    profileName: string
+): Promise<string> {
     try {
         const inputBox = createInputBox({
             options: {
@@ -45,9 +44,8 @@ export async function getMfaTokenFromUser(
             throw new Error(ERROR_MESSAGE_USER_CANCELLED)
         }
 
-        callback(undefined, token)
+        return token
     } catch (err) {
-        const error = err as Error
-        callback(error)
+        throw err as Error
     }
 }

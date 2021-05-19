@@ -3,7 +3,7 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
-import * as AWS from 'aws-sdk'
+import * as AWS from '@aws-sdk/types'
 import { getLogger } from '../shared/logger/logger'
 import { CredentialsProvider } from './providers/credentialsProvider'
 import { asString, CredentialsProviderId } from './providers/credentialsProviderId'
@@ -25,13 +25,21 @@ export class CredentialsStore {
     }
 
     /**
+     * Checks if the stored credentials are valid. Non-existent or expired credentials returns false.
+     */
+    public isValid(key: string): boolean {
+        if (this.credentialsCache[key]) {
+            return (this.credentialsCache[key].credentials.expiration ?? new Date(0)) >= new Date()
+        }
+
+        return false
+    }
+
+    /**
      * Returns undefined if the specified credentials are expired or not found.
      */
     public async getCredentials(credentialsProviderId: CredentialsProviderId): Promise<CachedCredentials | undefined> {
-        if (
-            this.credentialsCache[asString(credentialsProviderId)] &&
-            !this.credentialsCache[asString(credentialsProviderId)].credentials.expired
-        ) {
+        if (this.isValid(asString(credentialsProviderId))) {
             return this.credentialsCache[asString(credentialsProviderId)]
         } else {
             return undefined

@@ -9,4 +9,5 @@ export interface StsClient {
     readonly regionCode: string
 
     getCallerIdentity(): Promise<STS.GetCallerIdentityResponse>
+    assumeRole(request: STS.AssumeRoleRequest): Promise<STS.AssumeRoleResponse>
 }
