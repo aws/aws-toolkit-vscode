@@ -78,7 +78,7 @@ function makeResourceName(config: SamLaunchRequestArgs): string {
 }
 
 const SAM_LOCAL_PORT_CHECK_RETRY_INTERVAL_MILLIS: number = 125
-const SAM_LOCAL_PORT_CHECK_RETRY_TIMEOUT_MILLIS_DEFAULT: number = 30000
+const SAM_LOCAL_PORT_CHECK_RETRY_TIMEOUT_MILLIS_DEFAULT: number = 90000
 const ATTACH_DEBUGGER_RETRY_DELAY_MILLIS: number = 1000
 
 /** "sam local start-api" wrapper from the current debug-session. */
@@ -373,7 +373,8 @@ export async function runLambdaFunction(
     }
 
     await onAfterBuild()
-
+    timer.refresh()
+    
     if (!(await invokeLambdaHandler(timer, envVars, config))) {
         return config
     }
