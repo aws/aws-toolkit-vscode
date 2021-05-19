@@ -118,6 +118,10 @@ export async function makeTypescriptConfig(config: SamLaunchRequestArgs): Promis
  */
 async function compileTypeScript(config: NodejsDebugConfiguration): Promise<void> {
     if (config.invokeTarget.target === 'code') {
+        const tscResponse = await new ChildProcess(true, 'tsc -v').run()
+        if (!tscResponse.stdout.startsWith('Version') ) {
+            throw new Error('The TypeScript compiler was not found. To install globally on your machine, run "npm install -g typescript" in the terminal.')
+        }
         const samBuildOutputAppRoot = path.join(config.baseBuildDir!, 'output', path.parse(config.invokeTarget.projectRoot).name)
         const tsconfigPath = path.join(samBuildOutputAppRoot, 'tsconfig.json')
         if ((await readdir(config.codeRoot)).includes('tsconfig.json') || (await hasFileWithSuffix(config.codeRoot, '.ts', '**/node_modules/**'))) {
