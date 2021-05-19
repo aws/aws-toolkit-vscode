@@ -8,6 +8,8 @@ import { AWSTreeNodeBase } from '../../shared/treeview/nodes/awsTreeNodeBase'
 import { RestApi } from 'aws-sdk/clients/apigateway'
 
 export class RestApiNode extends AWSTreeNodeBase implements AWSResourceNode {
+    public id!: string
+
     public constructor(
         public readonly parent: AWSTreeNodeBase,
         public readonly partitionId: string,
@@ -23,6 +25,12 @@ export class RestApiNode extends AWSTreeNodeBase implements AWSResourceNode {
         this.api = api
         this.label = `${this.api.name} (${this.api.id})` || ''
         this.tooltip = this.api.description
+
+        if (api.id === undefined) {
+            throw new Error('REST API id expected but not found')
+        }
+
+        this.id = api.id
     }
 
     public get name(): string {
@@ -31,14 +39,6 @@ export class RestApiNode extends AWSTreeNodeBase implements AWSResourceNode {
         }
 
         return this.api.name
-    }
-
-    public get id(): string {
-        if (this.api.id === undefined) {
-            throw new Error('REST API id expected but not found')
-        }
-
-        return this.api.id
     }
 
     public get arn(): string {
