@@ -504,7 +504,7 @@ export namespace CloudFormation {
      */
     function isRef(property: unknown): boolean {
         return (
-            typeof property === 'object' && Object.keys(property as Record<string, unknown>).length === 1 && Object.keys(property as Record<string, unknown>).includes('Ref')
+            typeof property === 'object' && Object.keys(property!).length === 1 && Object.keys(property!).includes('Ref')
         )
     }
 

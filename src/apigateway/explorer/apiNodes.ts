@@ -14,7 +14,7 @@ export class RestApiNode extends AWSTreeNodeBase implements AWSResourceNode {
         public readonly parent: AWSTreeNodeBase,
         public readonly partitionId: string,
         public readonly regionCode: string,
-        public api: RestApi
+        private api: RestApi
     ) {
         super('')
         this.update(api)
