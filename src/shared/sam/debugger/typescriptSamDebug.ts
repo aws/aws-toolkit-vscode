@@ -118,7 +118,7 @@ export async function makeTypescriptConfig(config: SamLaunchRequestArgs): Promis
  */
 async function compileTypeScript(config: NodejsDebugConfiguration): Promise<void> {
     if (config.invokeTarget.target === 'code') {
-        const tscResponse = await new ChildProcess(true, 'tsc -v').run()
+        const tscResponse = await new ChildProcess(true, 'tsc', undefined, '-v').run()
         if (!tscResponse.stdout.startsWith('Version') ) {
             throw new Error('The TypeScript compiler was not found. To install globally on your machine, run "npm install -g typescript" in the terminal.')
         }
