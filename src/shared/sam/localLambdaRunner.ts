@@ -348,6 +348,11 @@ export async function runLambdaFunction(
     config: SamLaunchRequestArgs,
     onAfterBuild: () => Promise<void>
 ): Promise<SamLaunchRequestArgs> {
+    // Verify if Docker is running
+    const dockerResponse = await new ChildProcess(true, 'docker', undefined, 'version').run()
+    if (dockerResponse.exitCode !==0 || dockerResponse.stdout.includes('error during connect')) {
+        throw new Error('Running AWS SAM projects locally requires Docker. Have you got it installed and running?')
+    }
     // Switch over to the output channel so the user has feedback that we're getting things ready
     ctx.outputChannel.show(true)
     if (!config.noDebug) {

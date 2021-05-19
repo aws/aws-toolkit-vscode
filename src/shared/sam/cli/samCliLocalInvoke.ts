@@ -17,8 +17,6 @@ import * as vscode from 'vscode'
 
 const localize = nls.loadMessageBundle()
 
-const DOCKER_NOT_REACHABLE = 'Docker is not reachable'
-
 export const WAIT_FOR_DEBUGGER_MESSAGES = {
     PYTHON: 'Debugger waiting for client...',
     PYTHON_IKPDB: 'IKP3db listening on',
@@ -91,10 +89,6 @@ export class DefaultSamLocalInvokeCommand implements SamLocalInvokeCommand {
                             )
                             // Process will continue running, while user debugs it.
                             resolve()
-                        }
-                        if (this.debuggerAttachCues.some(cue => text.includes(DOCKER_NOT_REACHABLE))) {
-                            this.logger.verbose(`Docker is either not installed or not running`)
-                            reject()
                         }
                     }
                 },
