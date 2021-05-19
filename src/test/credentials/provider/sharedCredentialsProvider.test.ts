@@ -8,10 +8,6 @@ import * as FakeTimers from '@sinonjs/fake-timers'
 import * as sinon from 'sinon'
 import { SharedCredentialsProvider } from '../../../credentials/providers/sharedCredentialsProvider'
 import { Profile } from '../../../shared/credentials/credentialsFile'
-import { tickPromise } from '../../testUtil'
-import * as credProperties from '@aws-sdk/property-provider'
-import * as credProcess from '@aws-sdk/credential-provider-process'
-
 
 const MISSING_PROPERTIES_FRAGMENT = 'missing properties'
 
