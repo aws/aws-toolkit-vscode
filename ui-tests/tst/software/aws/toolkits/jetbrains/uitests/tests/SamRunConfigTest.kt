@@ -75,7 +75,7 @@ class SamRunConfigTest {
                 step("Validate template run configuration was saved and loads properly") {
                     step("Reopen the run configuration") {
                         findAndClick("//div[@accessiblename='[Local] SomeFunction']")
-                        find<JListFixture>(byXpath("//div[@class='MyList']")).selectItem("Edit Configurations...")
+                        find<JListFixture>(byXpath("//div[@class='MyList']")).clickItem("Edit Configurations...")
                     }
                     step("Assert the same function is selected") {
                         assertThat(functionModel().selectedText()).isEqualTo("SomeFunction")
@@ -94,7 +94,7 @@ class SamRunConfigTest {
                 step("Setup handler based run configuration") {
                     step("Reopen the run configuration menu") {
                         findAndClick("//div[@accessiblename='[Local] SomeFunction']")
-                        find<JListFixture>(byXpath("//div[@class='MyList']")).selectItem("Edit Configurations...")
+                        find<JListFixture>(byXpath("//div[@class='MyList']")).clickItem("Edit Configurations...")
                     }
                     addRunConfig()
                     find<ComboBoxFixture>(byXpath("//div[@text='Runtime:']/following-sibling::div[@class='ComboBox']")).selectItem("java11")
@@ -107,7 +107,7 @@ class SamRunConfigTest {
                 step("Validate handler run configuration was saved and loads properly") {
                     step("Reopen the run configuration") {
                         findAndClick("//div[@accessiblename='[Local] App.handleRequest']")
-                        find<JListFixture>(byXpath("//div[@class='MyList']")).selectItem("Edit Configurations...")
+                        find<JListFixture>(byXpath("//div[@class='MyList']")).clickItem("Edit Configurations...")
                     }
                     step("Assert the same handler is selected") {
                         val fixture = findRunDialog().find<ContainerFixture>(byXpath("//div[@class='HandlerPanel']"))

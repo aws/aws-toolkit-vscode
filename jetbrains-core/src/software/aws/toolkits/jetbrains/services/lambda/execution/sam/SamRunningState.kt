@@ -25,11 +25,9 @@ import software.aws.toolkits.core.telemetry.DefaultMetricEvent
 import software.aws.toolkits.jetbrains.core.AwsResourceCache
 import software.aws.toolkits.jetbrains.core.utils.buildList
 import software.aws.toolkits.jetbrains.services.PathMapping
-import software.aws.toolkits.jetbrains.services.lambda.Lambda
 import software.aws.toolkits.jetbrains.services.lambda.LambdaBuilder
 import software.aws.toolkits.jetbrains.services.lambda.sam.SamCommon
 import software.aws.toolkits.jetbrains.services.lambda.sam.SamOptions
-import software.aws.toolkits.jetbrains.services.lambda.sam.SamTemplateUtils
 import software.aws.toolkits.jetbrains.services.lambda.steps.AttachDebugger
 import software.aws.toolkits.jetbrains.services.lambda.steps.AttachDebuggerParent
 import software.aws.toolkits.jetbrains.services.lambda.steps.BuildLambda
@@ -49,7 +47,6 @@ import software.aws.toolkits.telemetry.LambdaPackageType
 import software.aws.toolkits.telemetry.LambdaTelemetry
 import software.aws.toolkits.telemetry.Result
 import software.aws.toolkits.telemetry.Runtime
-import java.nio.file.Path
 import java.nio.file.Paths
 
 class SamRunningState(
@@ -147,6 +144,9 @@ class SamRunningState(
         val workflow = StepWorkflow(
             buildList {
                 add(ValidateDocker())
+                if (buildRequest.preBuildSteps.isNotEmpty()) {
+                    addAll(buildRequest.preBuildSteps)
+                }
                 add(BuildLambda(buildRequest))
                 if (environment.isDebug()) {
                     add(GetPorts(settings))
@@ -180,8 +180,6 @@ class SamRunningState(
         return executor.startExecution()
     }
 
-    private data class BuildRequest(val template: Path, val logicalId: String, val buildEnvVars: Map<String, String>, val buildDir: Path)
-
     private fun runConfigId() = environment.executionId.toString()
 
     companion object {
@@ -199,7 +197,7 @@ class SamRunningState(
                     lambdaSettings
                 )
             is HandlerRunSettings ->
-                buildLambdaFromHandler(
+                lambdaSettings.lambdaBuilder().buildFromHandler(
                     project,
                     lambdaSettings
                 )
@@ -240,38 +238,6 @@ class SamRunningState(
             val additionalBuildEnvironmentVariables = lambdaBuilder.additionalBuildEnvironmentVariables(project, module, samOptions)
 
             return BuildLambdaRequest(templatePath, logicalId, buildDir, additionalBuildEnvironmentVariables, samOptions)
-        }
-
-        private fun buildLambdaFromHandler(project: Project, settings: HandlerRunSettings): BuildLambdaRequest {
-            val samOptions = settings.samOptions
-            val runtime = settings.runtime
-            val handler = settings.handler
-
-            val element = Lambda.findPsiElementsForHandler(project, runtime, handler).first()
-            val module = getModule(element.containingFile)
-
-            val lambdaBuilder = settings.lambdaBuilder()
-            val buildDirectory = lambdaBuilder.getBuildDirectory(module)
-            val dummyTemplate = buildDirectory.parent.resolve("temp-template.yaml")
-
-            SamTemplateUtils.writeDummySamTemplate(
-                tempFile = dummyTemplate,
-                logicalId = dummyLogicalId,
-                runtime = runtime,
-                handler = handler,
-                timeout = settings.timeout,
-                memorySize = settings.memorySize,
-                codeUri = lambdaBuilder.handlerBaseDirectory(module, element).toAbsolutePath().toString(),
-                envVars = settings.environmentVariables
-            )
-
-            return BuildLambdaRequest(
-                dummyTemplate,
-                dummyLogicalId,
-                buildDirectory,
-                lambdaBuilder.additionalBuildEnvironmentVariables(project, module, samOptions),
-                samOptions
-            )
         }
 
         private fun getModule(psiFile: PsiFile): Module = ModuleUtil.findModuleForFile(psiFile)

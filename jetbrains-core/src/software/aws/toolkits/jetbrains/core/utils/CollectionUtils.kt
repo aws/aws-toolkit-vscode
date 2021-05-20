@@ -7,6 +7,7 @@ package software.aws.toolkits.jetbrains.core.utils
  * Replace with [kotlin.collections.buildList] when experimental is removed
  */
 inline fun <E> buildList(builderAction: MutableList<E>.() -> Unit): List<E> = ArrayList<E>().apply(builderAction)
+inline fun <E> buildList(capacity: Int, builderAction: MutableList<E>.() -> Unit): List<E> = ArrayList<E>(capacity).apply(builderAction)
 
 /*
  * Replace with [kotlin.collections.buildMap] when experimental is removed

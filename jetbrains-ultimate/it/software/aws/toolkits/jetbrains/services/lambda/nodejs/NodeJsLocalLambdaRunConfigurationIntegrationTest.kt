@@ -34,11 +34,7 @@ class NodeJsLocalLambdaRunConfigurationIntegrationTest(private val runtime: Runt
     companion object {
         @JvmStatic
         @Parameterized.Parameters(name = "{0}")
-        fun parameters(): Collection<Array<Runtime>> = listOf(
-            arrayOf(Runtime.NODEJS10_X),
-            arrayOf(Runtime.NODEJS12_X),
-            arrayOf(Runtime.NODEJS14_X)
-        )
+        fun parameters(): Collection<Array<Runtime>> = SUPPORTED_NODE_RUNTIMES
     }
 
     @Rule
@@ -51,6 +47,7 @@ class NodeJsLocalLambdaRunConfigurationIntegrationTest(private val runtime: Runt
 
     private val input = RuleUtils.randomName()
     private val fileContents =
+        // language=JS
         """
         function abc() {
             return 'Hello World'
@@ -132,6 +129,7 @@ class NodeJsLocalLambdaRunConfigurationIntegrationTest(private val runtime: Runt
         val templateFile = projectRule.fixture.addFileToModule(
             projectRule.module,
             "template.yaml",
+            // language=yaml
             """
             Resources:
               SomeFunction:

@@ -49,7 +49,7 @@ class DeleteTagAction : ExplorerNodeAction<EcrTagNode>(message("ecr.delete.tag.a
         )
 
         if (response != Messages.OK) {
-            EcrTelemetry.deleteTags(project, Result.Cancelled, selected.size.toDouble())
+            EcrTelemetry.deleteTags(project = project, result = Result.Cancelled, value = selected.size.toDouble())
             return
         }
 
@@ -78,14 +78,14 @@ class DeleteTagAction : ExplorerNodeAction<EcrTagNode>(message("ecr.delete.tag.a
                             content = message("ecr.delete.tag.succeeded", selected.size, repositoryName)
                         )
                         project.refreshAwsTree(EcrResources.listTags(repositoryName))
-                        EcrTelemetry.deleteTags(project, Result.Succeeded, selected.size.toDouble())
+                        EcrTelemetry.deleteTags(project = project, result = Result.Succeeded, value = selected.size.toDouble())
                     } catch (e: Exception) {
                         LOG.error(e) { "Exception thrown while trying to delete ${selected.size} tags" }
                         notifyError(
                             project = project,
                             content = message("ecr.delete.tag.failed", selected.size, repositoryName)
                         )
-                        EcrTelemetry.deleteTags(project, Result.Failed, selected.size.toDouble())
+                        EcrTelemetry.deleteTags(project = project, result = Result.Failed, value = selected.size.toDouble())
                     }
                 }
             }

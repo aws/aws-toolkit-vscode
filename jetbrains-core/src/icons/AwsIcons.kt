@@ -38,6 +38,9 @@ object AwsIcons {
         @JvmField val SERVERLESS_APP = load("/icons/resources/ServerlessApp.svg") // 16x16
         @JvmField val S3_BUCKET = load("/icons/resources/S3Bucket.svg") // 16x16
         @JvmField val REDSHIFT = load("/icons/resources/Redshift.svg") // 16x16
+        object DynamoDb {
+            @JvmField val TABLE = load("/icons/resources/dynamodb/DynamoDbTable.svg")
+        }
         object Ecs {
             @JvmField val ECS_CLUSTER = load("/icons/resources/ecs/EcsCluster.svg")
             @JvmField val ECS_SERVICE = load("/icons/resources/ecs/EcsService.svg")

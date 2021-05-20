@@ -5,7 +5,6 @@ package software.aws.toolkits.jetbrains.uitests.fixtures
 
 import com.intellij.remoterobot.RemoteRobot
 import com.intellij.remoterobot.data.RemoteComponent
-import com.intellij.remoterobot.fixtures.ActionLinkFixture
 import com.intellij.remoterobot.fixtures.CommonContainerFixture
 import com.intellij.remoterobot.fixtures.ComponentFixture
 import com.intellij.remoterobot.fixtures.DefaultXpath
@@ -27,7 +26,7 @@ class WelcomeFrame(remoteRobot: RemoteRobot, remoteComponent: RemoteComponent) :
     fun openNewProjectWizard() {
         // TODO: Remove FIX_WHEN_MIN_IS_203
         if (remoteRobot.ideMajorVersion() <= 202) {
-            actionLink(ActionLinkFixture.byTextContains("New Project")).click()
+            actionLink(ActionLinkFixtureExt.byTextContains("New Project")).click()
         } else {
             selectTab("Projects")
             // This can match two things: If no previous projects, its a SVG icon, else a jbutton
@@ -38,7 +37,7 @@ class WelcomeFrame(remoteRobot: RemoteRobot, remoteComponent: RemoteComponent) :
     fun openPreferences() = step("Opening preferences dialog") {
         // TODO: Remove FIX_WHEN_MIN_IS_203
         if (remoteRobot.ideMajorVersion() <= 202) {
-            actionLink("Configure").click()
+            actionLink(ActionLinkFixtureExt.byText("Configure")).click()
 
             // MyList finds both the list of actions and the most recently used file list, so get all candidates
             val found = findAll(ComponentFixture::class.java, byXpath("//div[@class='MyList']"))
@@ -65,13 +64,13 @@ class WelcomeFrame(remoteRobot: RemoteRobot, remoteComponent: RemoteComponent) :
     fun selectTab(tabName: String) {
         // TODO: Remove FIX_WHEN_MIN_IS_203
         if (remoteRobot.ideMajorVersion() <= 202) return
-        jList(byXpath("//div[@accessiblename='Welcome screen categories']")).selectItem(tabName)
+        jList(byXpath("//div[@accessiblename='Welcome screen categories']")).clickItem(tabName)
     }
 
     fun openFolder(path: Path) {
         // TODO: Remove FIX_WHEN_MIN_IS_203
         if (remoteRobot.ideMajorVersion() <= 202) {
-            actionLink(ActionLinkFixture.byTextContains("Open")).click()
+            actionLink(ActionLinkFixtureExt.byTextContains("Open")).click()
         } else {
             selectTab("Projects")
             findAll<ComponentFixture>(byXpath("//div[contains(@accessiblename, 'Open') and (@class='MainButton' or @class='JButton')]")).first().click()

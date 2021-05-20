@@ -13,7 +13,6 @@ import org.jetbrains.annotations.TestOnly
 import software.amazon.awssdk.services.lambda.model.PackageType
 import software.amazon.awssdk.services.lambda.model.Runtime
 import software.aws.toolkits.core.lambda.validOrNull
-import software.aws.toolkits.jetbrains.core.credentials.activeRegion
 import software.aws.toolkits.jetbrains.core.explorer.refreshAwsTree
 import software.aws.toolkits.jetbrains.core.help.HelpIds
 import software.aws.toolkits.jetbrains.services.lambda.Lambda.findPsiElementsForHandler
@@ -73,7 +72,6 @@ class CreateFunctionDialog(private val project: Project, private val initialRunt
         LambdaTelemetry.deploy(
             project,
             result = Result.Cancelled,
-            regionId = project.activeRegion().id,
             lambdaPackageType = LambdaPackageType.from(view.configSettings.packageType().toString()),
             initialDeploy = true
         )
@@ -106,11 +104,9 @@ class CreateFunctionDialog(private val project: Project, private val initialRunt
             LambdaTelemetry.deploy(
                 project,
                 result = Result.Succeeded,
-                regionId = project.activeRegion().id,
                 lambdaPackageType = packageType,
                 initialDeploy = true
             )
-
             project.refreshAwsTree(LambdaResources.LIST_FUNCTIONS)
         }
 
@@ -119,7 +115,6 @@ class CreateFunctionDialog(private val project: Project, private val initialRunt
             LambdaTelemetry.deploy(
                 project,
                 result = Result.Failed,
-                regionId = project.activeRegion().id,
                 lambdaPackageType = packageType,
                 initialDeploy = true
             )

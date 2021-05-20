@@ -9,6 +9,7 @@ import software.aws.toolkits.jetbrains.services.lambda.sam.SamOptions
 import software.aws.toolkits.jetbrains.services.lambda.sam.samBuildCommand
 import software.aws.toolkits.jetbrains.utils.execution.steps.Context
 import software.aws.toolkits.jetbrains.utils.execution.steps.MessageEmitter
+import software.aws.toolkits.jetbrains.utils.execution.steps.Step
 import software.aws.toolkits.resources.message
 import java.nio.file.Path
 
@@ -17,7 +18,8 @@ data class BuildLambdaRequest(
     val logicalId: String? = null,
     val buildDir: Path,
     val buildEnvVars: Map<String, String> = emptyMap(),
-    val samOptions: SamOptions
+    val samOptions: SamOptions,
+    val preBuildSteps: List<Step> = emptyList()
 )
 
 class BuildLambda(private val request: BuildLambdaRequest) : SamCliStep() {
