@@ -15,18 +15,20 @@ class BannedPatternRule(private val patterns: List<BannedPattern>) : Rule() {
     override val issue = Issue("BannedPattern", Severity.Defect, "Banned calls", Debt.FIVE_MINS)
 
     override fun visitKtFile(file: KtFile) {
-        super.visitKtFile(file)
+        var offset = 0
         file.text.split("\n").forEachIndexed { line, text ->
             patterns.forEach { pattern ->
                 val match = pattern.regex.find(text) ?: return@forEach
                 report(
                     CodeSmell(
                         issue,
-                        Entity.from(file),
-                        message = "[${line + 1}:${match.range.first + 1}] ${pattern.message}"
+                        Entity.from(file, offset + match.range.first),
+                        message = pattern.message
                     )
                 )
             }
+            // account for delimiter
+            offset += text.length + 1
         }
     }
 
@@ -42,7 +44,7 @@ class BannedPatternRule(private val patterns: List<BannedPattern>) : Rule() {
                 "PsiUtil (java-api.jar) is not available in all IDEs, use PsiManager.getInstance(project).findFile() instead"
             ),
             BannedPattern(
-                """com\.intellij\.psi\.util\.PsiUtil""".toRegex(),
+                """com\.intellij\.psi\.util\.PsiUtil$""".toRegex(),
                 "PsiUtil (java-api.jar) is not available in all IDEs, use PsiUtilCore or PsiManager instead (platform-api.jar)"
             )
         )

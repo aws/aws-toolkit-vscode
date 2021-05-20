@@ -21,7 +21,9 @@ class BannedPatternRuleTest {
             )
         )
             .hasOnlyOneElementSatisfying {
-                it.id == "BannedPattern" && it.message == "[2:5] Use of method blah() is banned."
+                it.id == "BannedPattern" && it.message == "Use of method blah() is banned." &&
+                    it.location.source.line == 2 &&
+                    it.location.source.column == 5
             }
     }
 
@@ -30,7 +32,7 @@ class BannedPatternRuleTest {
         val rule = BannedPatternRule(BannedPatternRule.DEFAULT_PATTERNS)
         assertThat(
             rule.lint(
-                """ 
+                """
             import com.intellij.psi.util.PsiUtil
             class DockerfileParser(private val project: Project) {
                 fun parse(virtualFile: VirtualFile): DockerfileDetails? {
@@ -43,11 +45,33 @@ class BannedPatternRuleTest {
             .hasSize(2)
             .anyMatch {
                 it.id == "BannedPattern" &&
-                    it.message == "[1:8] PsiUtil (java-api.jar) is not available in all IDEs, use PsiUtilCore or PsiManager instead (platform-api.jar)"
+                    it.message == "PsiUtil (java-api.jar) is not available in all IDEs, use PsiUtilCore or PsiManager instead (platform-api.jar)" &&
+                    it.location.source.line == 1 &&
+                    it.location.source.column == 8
             }
             .anyMatch {
                 it.id == "BannedPattern" &&
-                    it.message == "[4:23] PsiUtil (java-api.jar) is not available in all IDEs, use PsiManager.getInstance(project).findFile() instead"
+                    it.message == "PsiUtil (java-api.jar) is not available in all IDEs, use PsiManager.getInstance(project).findFile() instead" &&
+                    it.location.source.line == 4 &&
+                    it.location.source.column == 23
             }
+    }
+
+    @Test
+    fun allowPsiUtilCore() {
+        val rule = BannedPatternRule(BannedPatternRule.DEFAULT_PATTERNS)
+        assertThat(
+            rule.lint(
+                """
+            import com.intellij.psi.util.PsiUtilCore
+            class DockerfileParser(private val project: Project) {
+                fun parse(virtualFile: VirtualFile): DockerfileDetails? {
+                    val psiFile = PsiUtilCore.getPsiFile(project, virtualFile)
+                }
+            }
+                """.trimIndent()
+            )
+        )
+            .hasSize(0)
     }
 }
