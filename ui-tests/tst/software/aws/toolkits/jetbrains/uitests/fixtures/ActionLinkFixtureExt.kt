@@ -7,8 +7,8 @@ import com.intellij.remoterobot.utils.Locators
 
 object ActionLinkFixtureExt {
     fun byText(text: String) =
-        LocatorsExt.byTypeAndProperties("com.intellij.ui.components.labels.ActionLink", Locators.XpathProperty.TEXT to text)
+        Locators.byTypeAndProperties("com.intellij.ui.components.labels.ActionLink", Locators.XpathProperty.TEXT to text)
 
     fun byTextContains(text: String) =
-        LocatorsExt.byTypeAndPropertiesContains("com.intellij.ui.components.labels.ActionLink", Locators.XpathProperty.TEXT to text)
+        Locators.byTypeAndPropertiesContains("com.intellij.ui.components.labels.ActionLink", Locators.XpathProperty.TEXT to text)
 }
