@@ -108,7 +108,7 @@
                 },
                 "aws.samcli.debug.attach.timeout.millis": {
                     "type": "number",
-                    "default": 30000,
+                    "default": 90000,
                     "markdownDescription": "%AWS.configuration.description.samcli.debug.attach.timeout%"
                 },
                 "aws.logLevel": {
