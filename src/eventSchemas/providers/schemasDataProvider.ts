@@ -3,7 +3,8 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
-import { Credentials, Schemas } from 'aws-sdk'
+import * as AWS from '@aws-sdk/types'
+import { Schemas } from 'aws-sdk'
 import { SchemaClient } from '../../shared/clients/schemaClient'
 import { getLogger, Logger } from '../../shared/logger'
 import { toArrayAsync } from '../../shared/utilities/collectionUtils'
@@ -13,7 +14,7 @@ export class Cache {
 }
 
 export interface credentialsRegionDataListMap {
-    credentials: Credentials
+    credentials: AWS.Credentials
     regionDataList: regionRegistryMap[]
 }
 
@@ -37,7 +38,7 @@ export class SchemasDataProvider {
 
     public constructor(private readonly cache: Cache) {}
 
-    public async getRegistries(region: string, client: SchemaClient, credentials: Credentials) {
+    public async getRegistries(region: string, client: SchemaClient, credentials: AWS.Credentials) {
         const cachedRegion = this.cache.credentialsRegionDataList
             .filter(x => x.credentials === credentials)
             .shift()
@@ -63,7 +64,7 @@ export class SchemasDataProvider {
         return cachedRegion!.registryNames
     }
 
-    public async getSchemas(region: string, registryName: string, client: SchemaClient, credentials: Credentials) {
+    public async getSchemas(region: string, registryName: string, client: SchemaClient, credentials: AWS.Credentials) {
         const registrySchemasMapList = this.cache.credentialsRegionDataList
             .filter(x => x.credentials === credentials)
             .shift()
@@ -98,7 +99,7 @@ export class SchemasDataProvider {
         region: string,
         registryNames: string[],
         registrySchemasMapList: registrySchemasMap[],
-        credentials?: Credentials
+        credentials?: AWS.Credentials
     ): void {
         const regionData: regionRegistryMap = {
             region: region,

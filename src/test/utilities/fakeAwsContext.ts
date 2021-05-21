@@ -4,6 +4,7 @@
  */
 
 import * as vscode from 'vscode'
+import * as AWS from '@aws-sdk/types'
 import { AwsContext, AwsContextCredentials, ContextChangeEventsArgs } from '../../shared/awsContext'
 import { Region } from '../../shared/regions/endpoints'
 import { RegionProvider } from '../../shared/regions/regionProvider'

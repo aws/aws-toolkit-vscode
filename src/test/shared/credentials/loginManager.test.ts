@@ -3,6 +3,7 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
+import * as AWS from '@aws-sdk/types'
 import * as assert from 'assert'
 import * as sinon from 'sinon'
 import { LoginManager } from '../../../credentials/loginManager'

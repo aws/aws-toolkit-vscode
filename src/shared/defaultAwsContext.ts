@@ -3,7 +3,7 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
-import * as AWS from 'aws-sdk'
+import * as AWS from '@aws-sdk/types'
 import * as vscode from 'vscode'
 import { AwsContext, AwsContextCredentials, ContextChangeEventsArgs } from './awsContext'
 import { regionSettingKey } from './constants'

@@ -31,8 +31,8 @@ export class SsoCredentialProvider {
                 })
 
             return {
-                accessKeyId: roleCredentials.roleCredentials.accessKeyId!,
-                secretAccessKey: roleCredentials.roleCredentials.secretAccessKey!,
+                accessKeyId: roleCredentials.roleCredentials!.accessKeyId!,
+                secretAccessKey: roleCredentials.roleCredentials!.secretAccessKey!,
                 sessionToken: roleCredentials.roleCredentials?.sessionToken,
             }
         } catch (err) {
