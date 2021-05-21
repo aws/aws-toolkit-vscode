@@ -248,8 +248,8 @@ export class SharedCredentialsProvider implements CredentialsProvider {
             const stsClient = ext.toolkitClientBuilder.createStsClient(region, { credentials })
             const response = await stsClient.assumeRole(params)
             return { 
-                accessKeyId: response.Credentials?.AccessKeyId!,
-                secretAccessKey: response.Credentials?.SecretAccessKey!,
+                accessKeyId: response.Credentials!.AccessKeyId!,
+                secretAccessKey: response.Credentials!.SecretAccessKey!,
                 sessionToken: response.Credentials?.SessionToken,
                 expiration: response.Credentials?.Expiration
             }
