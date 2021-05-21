@@ -11,6 +11,7 @@ import { installVSCodeExtension, setupVSCodeTestInstance, getCliArgsToDisableExt
 async function setupVSCode(): Promise<string> {
     console.log('Setting up VS Code Test instance...')
     const vsCodeExecutablePath = await setupVSCodeTestInstance()
+    await installVSCodeExtension(vsCodeExecutablePath, VSCODE_EXTENSION_ID.redhatCommon)
     await installVSCodeExtension(vsCodeExecutablePath, VSCODE_EXTENSION_ID.python)
     await installVSCodeExtension(vsCodeExecutablePath, VSCODE_EXTENSION_ID.yaml)
     await installVSCodeExtension(vsCodeExecutablePath, VSCODE_EXTENSION_ID.go)
