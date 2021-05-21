@@ -34,6 +34,7 @@ describe('SamTemplateCodeLensProvider', async function () {
             this.skip()
         }
 
+        // Note: redhat.vscode-yaml no longer works on vscode 1.42
         await activateExtension(VSCODE_EXTENSION_ID.yaml)
 
         const codeLenses = await codeLensProvider.provideCodeLenses(
