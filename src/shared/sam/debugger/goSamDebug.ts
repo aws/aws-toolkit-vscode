@@ -101,7 +101,7 @@ export async function makeGoConfig(config: SamLaunchRequestArgs): Promise<GoDebu
 
     config.codeRoot =
         config.codeRoot ??
-        pathutil.normalize(await getSamProjectDirPathForFile(config?.templatePath ?? config.documentUri!!.fsPath))
+        pathutil.normalize(await getSamProjectDirPathForFile(config?.templatePath ?? config.documentUri!.fsPath))
 
     if (!config.codeRoot) {
         throw Error('missing launch.json, template.yaml, and failed to discover project root')

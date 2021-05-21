@@ -50,7 +50,7 @@ export class AwsCdkExplorer implements vscode.TreeDataProvider<AWSTreeNodeBase>,
         }
     }
 
-    public refresh(node?: AWSTreeNodeBase) {
+    public refresh(node?: AWSTreeNodeBase): void {
         this.onDidChangeTreeDataEventEmitter.fire(undefined)
     }
 }

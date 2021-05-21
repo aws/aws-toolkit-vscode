@@ -99,11 +99,11 @@ export class AwsExplorer implements vscode.TreeDataProvider<AWSTreeNodeBase>, Re
         return childNodes
     }
 
-    public getRegionNodesSize() {
+    public getRegionNodesSize(): number {
         return this.regionNodes.size
     }
 
-    public refresh(node?: AWSTreeNodeBase) {
+    public refresh(node?: AWSTreeNodeBase): void {
         this._onDidChangeTreeData.fire(node)
     }
 

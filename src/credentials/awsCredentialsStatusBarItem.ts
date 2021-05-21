@@ -40,7 +40,7 @@ export async function initializeAwsCredentialsStatusBarItem(
 }
 
 // Resolves when the status bar reaches its final state
-export async function updateCredentialsStatusBarItem(statusBarItem: vscode.StatusBarItem, credentialsId?: string) {
+export async function updateCredentialsStatusBarItem(statusBarItem: vscode.StatusBarItem, credentialsId?: string): Promise<void> {
     clearTimeout(timeoutID)
 
     // Shows confirmation text in the status bar message

@@ -14,7 +14,7 @@ export class LogStreamCodeLensProvider implements vscode.CodeLensProvider {
     public constructor(private readonly registry: LogStreamRegistry) {}
 
     private _onDidChangeCodeLenses = new vscode.EventEmitter<void>()
-    public get onDidChangeCodeLenses() {
+    public get onDidChangeCodeLenses(): vscode.Event<void> {
         return this._onDidChangeCodeLenses.event
     }
 
