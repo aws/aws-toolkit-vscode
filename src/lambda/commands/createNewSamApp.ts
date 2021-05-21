@@ -354,10 +354,10 @@ export async function getProjectUri(
     config: Pick<CreateNewSamAppWizardResponse, 'location' | 'name'>,
     files: string[]
 ): Promise<vscode.Uri | undefined> {
-    let file: string = files[0]
-    let cfnTemplatePath: string = path.resolve(config.location.fsPath, config.name, file)
-    for (let i = 0; i < files.length; i++) {
-         file = files[i];
+    let file: string
+    let cfnTemplatePath: string
+    for (const f of files) {
+         file = f
          cfnTemplatePath = path.resolve(config.location.fsPath, config.name, file)
         
         if (await fileExists(cfnTemplatePath)) {
@@ -368,8 +368,8 @@ export async function getProjectUri(
         localize(
             'AWS.samcli.initWizard.source.error.notFound',
             'Project created successfully, but {0} file not found: {1}',
-            file,
-            cfnTemplatePath
+            file!,
+            cfnTemplatePath!
         )
     )
 }
