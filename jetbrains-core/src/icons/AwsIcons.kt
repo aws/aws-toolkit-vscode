@@ -25,6 +25,7 @@ object AwsIcons {
     }
 
     object Resources {
+        @JvmField val APPRUNNER_SERVICE = load("/icons/resources/AppRunnerService.svg") // 16x16
         @JvmField val CLOUDFORMATION_STACK = load("/icons/resources/CloudFormationStack.svg") // 16x16
         object CloudWatch {
             @JvmField val LOGS = load("/icons/resources/cloudwatchlogs/CloudWatchLogs.svg") // 16x16

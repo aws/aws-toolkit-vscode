@@ -34,6 +34,7 @@ interface ToolkitToolWindow {
 }
 
 interface ToolkitToolWindowTab : Disposable {
+    val name: String
     fun show(refresh: Boolean = false)
 }
 
@@ -92,6 +93,8 @@ class ToolkitToolWindowManager(private val project: Project) : Disposable {
 
     class ManagedToolkitToolWindowTab(private val toolWindow: ToolWindow, internal val content: Content, private val refresh: () -> Unit) :
         ToolkitToolWindowTab {
+        override val name: String = content.displayName
+
         override fun show(refresh: Boolean) {
             toolWindow.activate(null, true)
             toolWindow.contentManager.setSelectedContent(content)

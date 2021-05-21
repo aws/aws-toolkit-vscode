@@ -245,6 +245,7 @@ with what features/services are supported.
         <notice implementation="software.aws.toolkits.jetbrains.core.notification.JetBrainsMinimumVersionChange"/>
 
         <!-- Explorer nodes -->
+        <explorer.serviceNode implementation="software.aws.toolkits.jetbrains.core.explorer.nodes.AppRunnerExplorerRootNode"/>
         <explorer.serviceNode implementation="software.aws.toolkits.jetbrains.core.explorer.nodes.CloudFormationExplorerRootNode"/>
         <explorer.serviceNode implementation="software.aws.toolkits.jetbrains.core.explorer.nodes.CloudWatchRootNode"/>
         <explorer.serviceNode implementation="software.aws.toolkits.jetbrains.core.explorer.nodes.DynamoDbExplorerRootNode"/>
@@ -290,6 +291,23 @@ with what features/services are supported.
             <action id="ecs.function.instrument" class="software.aws.toolkits.jetbrains.services.clouddebug.actions.InstrumentResourceFromExplorerAction"/>
             <action id="clouddebug.resource.deinstrument" class="software.aws.toolkits.jetbrains.services.clouddebug.actions.DeinstrumentResourceFromExplorerAction"/>
             <separator/>
+        </group>
+
+        <group id="aws.toolkit.explorer.apprunner" popup="true" compact="false">
+            <action id="apprunner.service.create" class="software.aws.toolkits.jetbrains.services.apprunner.actions.CreateServiceAction"/>
+        </group>
+
+        <group id="aws.toolkit.explorer.apprunner.service" popup="true" compact="false">
+            <action id="apprunner.service.deploy" class="software.aws.toolkits.jetbrains.services.apprunner.actions.DeployAction"/>
+            <action id="apprunner.service.pause" class="software.aws.toolkits.jetbrains.services.apprunner.actions.PauseServiceAction"/>
+            <action id="apprunner.service.resume" class="software.aws.toolkits.jetbrains.services.apprunner.actions.ResumeServiceAction"/>
+            <separator/>
+            <action id="apprunner.service.copyServiceUri" class="software.aws.toolkits.jetbrains.services.apprunner.actions.CopyServiceUrlAction"/>
+            <separator/>
+            <action id="apprunner.service.showSystemLogs" class="software.aws.toolkits.jetbrains.services.apprunner.actions.ViewSystemLogsAction"/>
+            <action id="apprunner.service.showApplicationLogs" class="software.aws.toolkits.jetbrains.services.apprunner.actions.ViewApplicationLogsAction"/>
+            <separator/>
+            <action id="apprunner.service.delete" class="software.aws.toolkits.jetbrains.services.apprunner.actions.DeleteServiceAction"/>
         </group>
 
         <group id="aws.toolkit.explorer.lambda" popup="true" compact="false">

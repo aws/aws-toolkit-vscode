@@ -14,6 +14,7 @@ import com.intellij.ui.IdeBorderFactory
 import com.intellij.ui.SideBorder
 import com.intellij.ui.components.breadcrumbs.Breadcrumbs
 import com.intellij.ui.components.breadcrumbs.Crumb
+import kotlinx.coroutines.runBlocking
 import software.aws.toolkits.jetbrains.core.credentials.activeCredentialProvider
 import software.aws.toolkits.jetbrains.core.credentials.activeRegion
 import software.aws.toolkits.jetbrains.services.cloudwatch.logs.CloudWatchLogWindow
@@ -55,7 +56,7 @@ class LocationCrumbs(project: Project, logGroup: String, logStream: String? = nu
             logGroup,
             null,
             object : AbstractAction(message("cloudwatch.logs.view_log_streams")), DumbAware {
-                override fun actionPerformed(e: ActionEvent?) {
+                override fun actionPerformed(e: ActionEvent?): Unit = runBlocking {
                     CloudWatchLogWindow.getInstance(project)?.showLogGroup(logGroup)
                 }
             }
@@ -66,7 +67,7 @@ class LocationCrumbs(project: Project, logGroup: String, logStream: String? = nu
                 it,
                 null,
                 object : AbstractAction(message("cloudwatch.logs.view_log_stream")), DumbAware {
-                    override fun actionPerformed(e: ActionEvent?) {
+                    override fun actionPerformed(e: ActionEvent?): Unit = runBlocking {
                         CloudWatchLogWindow.getInstance(project)?.showLogStream(logGroup, it)
                     }
                 }

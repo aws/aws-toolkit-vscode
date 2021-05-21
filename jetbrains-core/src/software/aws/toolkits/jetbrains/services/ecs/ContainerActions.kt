@@ -9,6 +9,7 @@ import com.intellij.openapi.actionSystem.AnActionEvent
 import com.intellij.openapi.actionSystem.Separator
 import com.intellij.openapi.project.Project
 import icons.AwsIcons
+import kotlinx.coroutines.runBlocking
 import software.amazon.awssdk.services.cloudwatchlogs.CloudWatchLogsClient
 import software.amazon.awssdk.services.ecs.model.ContainerDefinition
 import software.amazon.awssdk.services.ecs.model.LogDriver
@@ -87,19 +88,21 @@ class ContainerLogsAction(
 
         project.getResource(EcsResources.listTaskIds(container.service.clusterArn(), container.service.serviceArn()))
             .thenAccept { tasks ->
-                when {
-                    tasks.isEmpty() -> notifyInfo(message("ecs.service.logs.no_running_tasks"))
-                    tasks.size == 1 && showSingleStream(
-                        window,
-                        logGroup,
-                        "$logPrefix/${container.containerDefinition.name()}/${tasks.first()}"
-                    ) -> return@thenAccept
+                runBlocking {
+                    when {
+                        tasks.isEmpty() -> notifyInfo(message("ecs.service.logs.no_running_tasks"))
+                        tasks.size == 1 && showSingleStream(
+                            window,
+                            logGroup,
+                            "$logPrefix/${container.containerDefinition.name()}/${tasks.first()}"
+                        ) -> return@runBlocking
+                    }
+                    window.showLogGroup(logGroup)
                 }
-                window.showLogGroup(logGroup)
             }
     }
 
-    private fun showSingleStream(window: CloudWatchLogWindow, logGroup: String, logStream: String): Boolean {
+    private suspend fun showSingleStream(window: CloudWatchLogWindow, logGroup: String, logStream: String): Boolean {
         if (!project.awsClient<CloudWatchLogsClient>().checkIfLogStreamExists(logGroup, logStream)) {
             notifyInfo(message("ecs.service.logs.no_log_stream"))
             return false
