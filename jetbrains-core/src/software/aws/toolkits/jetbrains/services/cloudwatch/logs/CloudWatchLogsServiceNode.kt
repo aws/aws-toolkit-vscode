@@ -5,6 +5,7 @@ package software.aws.toolkits.jetbrains.services.cloudwatch.logs
 
 import com.intellij.openapi.project.Project
 import icons.AwsIcons
+import kotlinx.coroutines.runBlocking
 import software.amazon.awssdk.services.cloudwatchlogs.CloudWatchLogsClient
 import software.amazon.awssdk.services.cloudwatchlogs.model.LogGroup
 import software.aws.toolkits.jetbrains.core.explorer.nodes.AwsExplorerNode
@@ -39,7 +40,7 @@ class CloudWatchLogsNode(
 
     override fun displayName() = logGroupName
 
-    override fun onDoubleClick() {
+    override fun onDoubleClick(): Unit = runBlocking {
         CloudWatchLogWindow.getInstance(nodeProject)?.showLogGroup(logGroupName)
     }
 }

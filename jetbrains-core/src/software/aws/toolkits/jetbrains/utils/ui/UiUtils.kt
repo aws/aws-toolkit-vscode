@@ -4,6 +4,8 @@
 
 package software.aws.toolkits.jetbrains.utils.ui
 
+import com.intellij.icons.AllIcons
+import com.intellij.ide.HelpTooltip
 import com.intellij.lang.Language
 import com.intellij.openapi.application.runWriteAction
 import com.intellij.openapi.command.CommandProcessor
@@ -15,9 +17,12 @@ import com.intellij.ui.ClickListener
 import com.intellij.ui.EditorTextField
 import com.intellij.ui.JBColor
 import com.intellij.ui.JreHiDpiUtil
+import com.intellij.ui.components.JBLabel
 import com.intellij.ui.components.JBTextArea
+import com.intellij.ui.layout.Cell
 import com.intellij.ui.layout.CellBuilder
 import com.intellij.ui.layout.ComponentPredicate
+import com.intellij.ui.layout.Row
 import com.intellij.ui.paint.LinePainter2D
 import com.intellij.ui.speedSearch.SpeedSearchSupply
 import com.intellij.util.text.DateFormatUtil
@@ -258,4 +263,31 @@ fun CellBuilder<JComponent>.visibleIf(predicate: ComponentPredicate): CellBuilde
         component.isVisible = it
     }
     return this
+}
+
+fun Row.visibleIf(predicate: ComponentPredicate): Row {
+    visible = predicate()
+    predicate.addListener { visible = it }
+    return this
+}
+
+val AbstractButton.notSelected: ComponentPredicate
+    get() = object : ComponentPredicate() {
+        override fun invoke(): Boolean = !isSelected
+
+        override fun addListener(listener: (Boolean) -> Unit) {
+            addChangeListener { listener(!isSelected) }
+        }
+    }
+
+/**
+ * Add a contextual help icon component
+ */
+fun Cell.contextualHelp(description: String): CellBuilder<JBLabel> {
+    val l = JBLabel(AllIcons.General.ContextHelp)
+    HelpTooltip().apply {
+        setDescription(description)
+        installOn(l)
+    }
+    return component(l)
 }

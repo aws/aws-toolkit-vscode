@@ -32,6 +32,10 @@ class TailLogsAction(private val project: Project, private val channel: () -> Ch
     override fun isSelected(e: AnActionEvent): Boolean = isSelected
 
     override fun setSelected(e: AnActionEvent, state: Boolean) {
+        setSelected(state)
+    }
+
+    fun setSelected(state: Boolean) {
         CloudwatchlogsTelemetry.tailStream(project, enabled = state)
         isSelected = state
         if (state) {

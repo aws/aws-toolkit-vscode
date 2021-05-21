@@ -10,6 +10,7 @@ import com.intellij.openapi.actionSystem.PlatformDataKeys
 import com.intellij.openapi.project.DumbAware
 import com.intellij.openapi.project.Project
 import com.intellij.ui.table.TableView
+import kotlinx.coroutines.runBlocking
 import software.aws.toolkits.jetbrains.services.cloudwatch.logs.CloudWatchLogWindow
 import software.aws.toolkits.jetbrains.services.cloudwatch.logs.LogStreamEntry
 import software.aws.toolkits.resources.message
@@ -41,15 +42,15 @@ private class ShowLogsAround(
     timeMessage: String,
     private val duration: Duration
 ) : AnAction(timeMessage, null, null), DumbAware {
-    override fun actionPerformed(e: AnActionEvent) {
+    override fun actionPerformed(e: AnActionEvent) = runBlocking {
         CloudwatchlogsTelemetry.showEventsAround(project, success = true, value = duration.toMillis().toDouble())
         val project = e.getRequiredData(PlatformDataKeys.PROJECT)
         val window = CloudWatchLogWindow.getInstance(project)
         val selectedRow = treeTable.selectedRow
         if (selectedRow >= treeTable.listTableModel.rowCount || selectedRow < 0) {
-            return
+            return@runBlocking
         }
-        val selectedObject = treeTable.listTableModel.getItem(selectedRow) ?: return
+        val selectedObject = treeTable.listTableModel.getItem(selectedRow) ?: return@runBlocking
         window.showLogStream(logGroup, logStream, selectedObject, duration)
     }
 }

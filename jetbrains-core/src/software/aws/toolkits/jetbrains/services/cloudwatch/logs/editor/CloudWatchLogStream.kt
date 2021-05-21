@@ -39,7 +39,8 @@ class CloudWatchLogStream(
     private val logGroup: String,
     private val logStream: String,
     private val previousEvent: LogStreamEntry? = null,
-    private val duration: Duration? = null
+    private val duration: Duration? = null,
+    streamLogs: Boolean = false
 ) : CoroutineScope by ApplicationThreadPoolScope("CloudWatchLogStream"), Disposable {
     lateinit var content: JPanel
         private set
@@ -55,6 +56,7 @@ class CloudWatchLogStream(
         Disposer.register(this@CloudWatchLogStream, it)
     }
     private var searchStreamTable: LogStreamTable? = null
+    private val tailLogsAction = TailLogsAction(project) { searchStreamTable?.channel ?: logStreamTable.channel }
 
     private fun createUIComponents() {
         tablePanel = SimpleToolWindowPanel(false, true)
@@ -75,6 +77,10 @@ class CloudWatchLogStream(
         addSearchListener()
 
         refreshTable()
+
+        if (streamLogs) {
+            tailLogsAction.setSelected(true)
+        }
     }
 
     private fun addSearchListener() {
@@ -129,7 +135,7 @@ class CloudWatchLogStream(
                 searchStreamTable?.logsTable?.listTableModel?.items ?: logStreamTable.logsTable.listTableModel.items
             }
         )
-        actionGroup.add(TailLogsAction(project) { searchStreamTable?.channel ?: logStreamTable.channel })
+        actionGroup.add(tailLogsAction)
         actionGroup.add(WrapLogsAction(project) { searchStreamTable?.logsTable ?: logStreamTable.logsTable })
         val toolbar = ActionManager.getInstance().createActionToolbar("CloudWatchLogStream", actionGroup, false)
         tablePanel.toolbar = toolbar.component
