@@ -56,8 +56,8 @@ export async function copyUrlCommand(
     }
 
     const quickPickItems = stages.map<StageInvokeUrlQuickPick>(stage => ({
-        label: stage.stageName!!,
-        detail: buildDefaultApiInvokeUrl(node.id, region, dnsSuffix, stage.stageName!!),
+        label: stage.stageName!,
+        detail: buildDefaultApiInvokeUrl(node.id, region, dnsSuffix, stage.stageName!),
     }))
 
     if (quickPickItems.length === 0) {

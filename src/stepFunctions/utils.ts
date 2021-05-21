@@ -59,6 +59,7 @@ export class StateMachineGraphCache {
     protected dirPath: string
 
     public constructor(options: StateMachineGraphCacheOptions = {}) {
+        // eslint-disable-next-line @typescript-eslint/unbound-method
         const { makeDir, writeFile: writeFileCustom, getFileData, fileExists: fileExistsCustom } = options
 
         this.makeDir = makeDir ?? mkdir

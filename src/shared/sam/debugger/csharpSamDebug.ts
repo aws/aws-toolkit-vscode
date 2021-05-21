@@ -71,7 +71,7 @@ export async function invokeCsharpLambda(ctx: ExtContext, config: SamLaunchReque
     return await runLambdaFunction(ctx, config, async () => {
         if (!config.noDebug) {
             await _installDebugger({
-                debuggerPath: config.debuggerPath!!,
+                debuggerPath: config.debuggerPath!,
             })
         }
     })

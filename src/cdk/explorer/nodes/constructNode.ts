@@ -17,14 +17,6 @@ export class ConstructNode extends AWSTreeNodeBase {
     private readonly type: string
     private readonly properties: ConstructProps | undefined
 
-    get tooltip(): string {
-        return this.type || this.construct.path
-    }
-
-    get id(): string {
-        return `${this.parent.id}/${this.label}`
-    }
-
     public constructor(
         public readonly parent: AWSTreeNodeBase,
         public readonly label: string,
@@ -48,6 +40,9 @@ export class ConstructNode extends AWSTreeNodeBase {
                 light: vscode.Uri.file(cdk.iconPaths.light.cdk),
             }
         }
+
+        this.tooltip = this.type || this.construct.path
+        this.id = `${this.parent.id}/${this.label}`
     }
 
     public async getChildren(): Promise<(ConstructNode | PropertyNode)[]> {
