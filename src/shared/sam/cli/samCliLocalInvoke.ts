@@ -81,10 +81,6 @@ export class DefaultSamLocalInvokeCommand implements SamLocalInvokeCommand {
                     // If we have a timeout (as we do on debug) refresh the timeout as we receive text
                     params.timeout?.refresh()
                     this.logger.verbose('SAM: pid %d: stderr: %s', childProcess.pid(), removeAnsi(text))
-                    if (text.match(/Docker is not reachable/)) {
-                        vscode.window.showErrorMessage('Running AWS SAM projects locally requires Docker. Have you got it installed and running?')
-                        throw new Error('Docker is not installed or not running')
-                    }
                     if (checkForCues) {
                         // Look for messages like "Debugger attached" before returning back to caller
                         if (this.debuggerAttachCues.some(cue => text.includes(cue))) {
