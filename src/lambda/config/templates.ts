@@ -36,7 +36,7 @@ export interface TemplateConfig {
 }
 
 export interface HandlerConfig {
-    event: {}
+    event: Record<string, unknown>
     environmentVariables: {
         [name: string]: string
     }
@@ -176,7 +176,7 @@ export function loadTemplatesConfigFromJson(json: string): TemplatesConfig {
 export function showTemplatesConfigurationError(
     error: TemplatesConfigFieldTypeError,
     showErrorMessage: typeof vscode.window.showErrorMessage = vscode.window.showErrorMessage
-) {
+): void {
     const logger: Logger = getLogger()
 
     showErrorMessage(
@@ -422,7 +422,7 @@ export async function getExistingConfiguration(
             const handlerData = json.templates[templateRelativePath]?.handlers?.[handler]
             if (handlerData) {
                 return {
-                    eventJson: handlerData.event,
+                    eventJson: handlerData.event as any,
                     environmentVariables: handlerData.environmentVariables,
                     dockerNetwork: handlerData.dockerNetwork,
                     useContainer: handlerData.useContainer,

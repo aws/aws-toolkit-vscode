@@ -148,7 +148,7 @@ async function downloadAndUnzipLambda(
         const downloadLocation = path.join(tempDir, 'function.zip')
 
         const response = await lambda.getFunction(functionArn)
-        const codeLocation = response.Code?.Location!
+        const codeLocation = response.Code!.Location!
 
         // arbitrary increments since there's no "busy" state for progress bars
         progress.report({ increment: 10 })

@@ -161,7 +161,7 @@ export function getHandlerName(
             }
 
             const propertyValue = CloudFormation.resolvePropertyWithOverrides(
-                templateResource?.Properties?.Handler!!,
+                templateResource?.Properties?.Handler,
                 template,
                 config.sam?.template?.parameters
             )
@@ -214,7 +214,7 @@ export function getTemplateResource(
     if (!cfnTemplate?.Resources) {
         throw Error(`no Resources in template: ${templateInvoke.templatePath}`)
     }
-    const templateResource: CloudFormation.Resource | undefined = cfnTemplate?.Resources![templateInvoke.logicalId!!]
+    const templateResource: CloudFormation.Resource | undefined = cfnTemplate?.Resources![templateInvoke.logicalId!]
     if (!templateResource) {
         throw Error(
             `template Resources object does not contain key '${templateInvoke.logicalId}':` +
