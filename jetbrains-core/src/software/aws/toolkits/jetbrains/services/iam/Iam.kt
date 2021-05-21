@@ -3,6 +3,7 @@
 
 package software.aws.toolkits.jetbrains.services.iam
 
+import org.intellij.lang.annotations.Language
 import software.amazon.awssdk.services.iam.IamClient
 import software.amazon.awssdk.services.iam.model.Role
 import software.aws.toolkits.core.utils.getLogger
@@ -41,6 +42,25 @@ object IamResources {
             .toList()
     }
 }
+
+fun managedPolicyNameToArn(policyName: String) = "arn:aws:iam::aws:policy/$policyName"
+
+@Language("JSON")
+fun assumeRolePolicy(servicePrincipal: String) =
+    """
+        {
+          "Version": "2012-10-17",
+          "Statement": [
+            {
+              "Effect": "Allow",
+              "Principal": {
+                "Service": "$servicePrincipal"
+              },
+              "Action": "sts:AssumeRole"
+            }
+          ]
+        }
+    """.trimIndent()
 
 object Iam {
     private val LOG = getLogger<Iam>()

@@ -3,6 +3,7 @@
 
 package software.aws.toolkits.jetbrains.services.cloudwatch.logs.actions
 
+import kotlinx.coroutines.runBlocking
 import software.amazon.awssdk.services.cloudwatchlogs.CloudWatchLogsClient
 import software.aws.toolkits.jetbrains.core.awsClient
 import software.aws.toolkits.jetbrains.core.explorer.actions.DeleteResourceAction
@@ -13,7 +14,7 @@ import software.aws.toolkits.jetbrains.services.cloudwatch.logs.resources.CloudW
 import software.aws.toolkits.resources.message
 
 class DeleteGroupAction : DeleteResourceAction<CloudWatchLogsNode>(message("cloudwatch.logs.delete_log_group")) {
-    override fun performDelete(selected: CloudWatchLogsNode) {
+    override fun performDelete(selected: CloudWatchLogsNode) = runBlocking {
         val client: CloudWatchLogsClient = selected.nodeProject.awsClient()
 
         CloudWatchLogWindow.getInstance(selected.nodeProject)?.closeLogGroup(selected.logGroupName)

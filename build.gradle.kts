@@ -26,8 +26,8 @@ allprojects {
                 }
             }
         }
-        gradlePluginPortal()
         mavenCentral()
+        gradlePluginPortal()
     }
 }
 

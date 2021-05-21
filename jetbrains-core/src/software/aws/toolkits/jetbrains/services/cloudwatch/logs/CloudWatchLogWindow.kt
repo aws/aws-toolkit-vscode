@@ -8,7 +8,6 @@ import com.intellij.openapi.project.Project
 import com.intellij.util.text.DateFormatUtil
 import icons.AwsIcons
 import kotlinx.coroutines.CoroutineScope
-import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 import software.amazon.awssdk.services.cloudwatchlogs.CloudWatchLogsClient
 import software.aws.toolkits.core.utils.error
@@ -31,11 +30,11 @@ class CloudWatchLogWindow(private val project: Project) : CoroutineScope by Appl
     private val toolWindow = ToolkitToolWindowManager.getInstance(project, CW_LOGS_TOOL_WINDOW)
     private val edtContext = getCoroutineUiContext()
 
-    fun showLogGroup(logGroup: String) = launch {
+    suspend fun showLogGroup(logGroup: String) {
         var result = Result.Succeeded
         try {
             if (showWindow(logGroup)) {
-                return@launch
+                return
             }
             val group = CloudWatchLogGroup(project, logGroup)
             val title = message("cloudwatch.logs.log_group_title", logGroup.split("/").last())
@@ -51,17 +50,18 @@ class CloudWatchLogWindow(private val project: Project) : CoroutineScope by Appl
         }
     }
 
-    fun showLogStream(
+    suspend fun showLogStream(
         logGroup: String,
         logStream: String,
         previousEvent: LogStreamEntry? = null,
-        duration: Duration? = null
-    ) = launch {
+        duration: Duration? = null,
+        streamLogs: Boolean = false
+    ) {
         var result = Result.Succeeded
         try {
             val id = "$logGroup/$logStream/${previousEvent?.timestamp}/${previousEvent?.message}/$duration"
             if (showWindow(id)) {
-                return@launch
+                return
             }
             val title = if (previousEvent != null && duration != null) {
                 message(
@@ -73,7 +73,7 @@ class CloudWatchLogWindow(private val project: Project) : CoroutineScope by Appl
             } else {
                 message("cloudwatch.logs.log_stream_title", logStream)
             }
-            val stream = CloudWatchLogStream(project, logGroup, logStream, previousEvent, duration)
+            val stream = CloudWatchLogStream(project, logGroup, logStream, previousEvent, duration, streamLogs)
             withContext(edtContext) {
                 toolWindow.addTab(title, stream.content, activate = true, id = id, disposable = stream, refresh = { stream.refreshTable() })
             }
@@ -86,9 +86,9 @@ class CloudWatchLogWindow(private val project: Project) : CoroutineScope by Appl
         }
     }
 
-    fun showQueryResults(queryDetails: QueryDetails, queryId: String, fields: List<String>) = launch {
+    suspend fun showQueryResults(queryDetails: QueryDetails, queryId: String, fields: List<String>) {
         if (showWindow(queryId)) {
-            return@launch
+            return
         }
 
         val queryResult = QueryResultList(project, fields, queryId, queryDetails)
@@ -98,9 +98,9 @@ class CloudWatchLogWindow(private val project: Project) : CoroutineScope by Appl
         }
     }
 
-    fun showDetailedEvent(client: CloudWatchLogsClient, identifier: String) = launch {
+    suspend fun showDetailedEvent(client: CloudWatchLogsClient, identifier: String) {
         if (showWindow(identifier)) {
-            return@launch
+            return
         }
 
         val detailedLogEvent = DetailedLogRecord(project, client, identifier)
@@ -109,7 +109,7 @@ class CloudWatchLogWindow(private val project: Project) : CoroutineScope by Appl
         }
     }
 
-    fun closeLogGroup(logGroup: String) = launch {
+    suspend fun closeLogGroup(logGroup: String) {
         toolWindow.findPrefix(logGroup).forEach {
             withContext(edtContext) {
                 it.dispose()
