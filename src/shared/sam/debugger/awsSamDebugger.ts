@@ -361,8 +361,8 @@ export class SamDebugConfigProvider implements vscode.DebugConfigurationProvider
         } else {
             const rv = configValidator.validate(config)
             if (!rv.isValid) {
-                getLogger().error(`SAM debug: invalid config: ${rv.message!!}`)
-                vscode.window.showErrorMessage(rv.message!!)
+                getLogger().error(`SAM debug: invalid config: ${rv.message!}`)
+                vscode.window.showErrorMessage(rv.message!)
                 return undefined
             } else if (rv.message) {
                 vscode.window.showInformationMessage(rv.message)
@@ -450,7 +450,7 @@ export class SamDebugConfigProvider implements vscode.DebugConfigurationProvider
         const documentUri =
             vscode.window.activeTextEditor?.document.uri ??
             // XXX: don't know what URI to choose...
-            vscode.Uri.parse(templateInvoke.templatePath!!)
+            vscode.Uri.parse(templateInvoke.templatePath!)
 
         let awsCredentials: Credentials | undefined
 

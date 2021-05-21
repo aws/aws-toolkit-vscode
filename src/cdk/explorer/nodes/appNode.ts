@@ -22,13 +22,6 @@ import { ConstructNode } from './constructNode'
  */
 export class AppNode extends AWSTreeNodeBase {
     public expandMetricRecorded: boolean = false
-    get tooltip(): string {
-        return this.app.cdkJsonPath
-    }
-
-    get id(): string {
-        return this.app.treePath
-    }
 
     public constructor(public readonly app: CdkAppLocation) {
         super(app.cdkJsonPath, vscode.TreeItemCollapsibleState.Collapsed)
@@ -39,6 +32,9 @@ export class AppNode extends AWSTreeNodeBase {
             dark: vscode.Uri.file(cdk.iconPaths.dark.cdk),
             light: vscode.Uri.file(cdk.iconPaths.light.cdk),
         }
+
+        this.id = app.treePath
+        this.tooltip = app.cdkJsonPath
     }
 
     public async getChildren(): Promise<(ConstructNode | PlaceholderNode)[]> {

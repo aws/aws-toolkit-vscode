@@ -66,7 +66,7 @@ export class SsoAccessTokenProvider {
         return token
     }
 
-    public invalidate() {
+    public invalidate(): void {
         this.cache.invalidateAccessToken(this.ssoUrl)
     }
 

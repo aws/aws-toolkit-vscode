@@ -28,7 +28,7 @@ import { SchemaTemplates } from '../templates/searchSchemasTemplates'
 export async function createSearchSchemasWebView(params: {
     node: RegistryItemNode | SchemasNode
     outputChannel: vscode.OutputChannel
-}) {
+}): Promise<void> {
     const logger: Logger = getLogger()
     const client: SchemaClient = ext.toolkitClientBuilder.createSchemaClient(params.node.regionCode)
     const registryNames = await getRegistryNames(params.node, client)
@@ -101,7 +101,7 @@ export async function createSearchSchemasWebView(params: {
     }
 }
 
-export async function getRegistryNames(node: RegistryItemNode | SchemasNode, client: SchemaClient) {
+export async function getRegistryNames(node: RegistryItemNode | SchemasNode, client: SchemaClient): Promise<string[]> {
     const registryNames: string[] = []
 
     if (node instanceof SchemasNode) {
@@ -124,7 +124,7 @@ export async function getRegistryNames(node: RegistryItemNode | SchemasNode, cli
     return registryNames
 }
 
-export function getPageHeader(registryNames: string[]) {
+export function getPageHeader(registryNames: string[]): string {
     if (registryNames.length === 1) {
         return localize('AWS.schemas.search.header.text.singleRegistry', 'Search "{0}" registry', registryNames[0])
     }
@@ -150,7 +150,7 @@ export function createMessageReceivedFunc({
     telemetryService: TelemetryService
     onPostMessage(message: any): Thenable<boolean>
     outputChannel: vscode.OutputChannel
-}) {
+}): (message: CommandMessage) => Promise<void> {
     return async (message: CommandMessage) => {
         switch (message.command) {
             case 'fetchSchemaContent': {
@@ -226,7 +226,7 @@ export async function getSearchListForSingleRegistry(
     registryName: string,
     keyword: string,
     prefix: string = ''
-) {
+): Promise<SchemaVersionedSummary[]> {
     let results: SchemaVersionedSummary[] = []
     try {
         const schemas = await toArrayAsync(searchSchemas(schemaClient, keyword, registryName))
@@ -247,7 +247,7 @@ export async function getSearchListForSingleRegistry(
     return results
 }
 
-export async function getSearchResults(schemaClient: SchemaClient, registries: string[], keyword: string) {
+export async function getSearchResults(schemaClient: SchemaClient, registries: string[], keyword: string): Promise<SchemaVersionedSummary[]> {
     let results: SchemaVersionedSummary[] = []
 
     await Promise.all(
