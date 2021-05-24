@@ -16,7 +16,6 @@ import com.intellij.openapi.actionSystem.LangDataKeys
 import com.intellij.openapi.application.ModalityState
 import com.intellij.openapi.application.runInEdt
 import com.intellij.openapi.fileChooser.FileChooserDescriptorFactory
-import com.intellij.openapi.project.DumbAwareAction
 import com.intellij.openapi.project.Project
 import com.intellij.openapi.project.guessProjectDir
 import com.intellij.openapi.ui.DialogWrapper
@@ -45,7 +44,7 @@ import software.amazon.awssdk.services.ecr.EcrClient
 import software.aws.toolkits.core.utils.error
 import software.aws.toolkits.core.utils.getLogger
 import software.aws.toolkits.jetbrains.core.awsClient
-import software.aws.toolkits.jetbrains.core.explorer.ExplorerDataKeys
+import software.aws.toolkits.jetbrains.core.explorer.actions.SingleExplorerNodeAction
 import software.aws.toolkits.jetbrains.services.ecr.DockerRunConfiguration
 import software.aws.toolkits.jetbrains.services.ecr.DockerfileEcrPushRequest
 import software.aws.toolkits.jetbrains.services.ecr.EcrPushRequest
@@ -70,22 +69,16 @@ import javax.swing.JTextField
 import javax.swing.plaf.basic.BasicComboBoxEditor
 
 class PushToRepositoryAction :
-    DumbAwareAction(),
+    SingleExplorerNodeAction<EcrRepositoryNode>(message("action.ecr.repository.push.text")),
     CoroutineScope by ApplicationThreadPoolScope("PushRepositoryAction") {
     private val dockerServerRuntime: Deferred<DockerServerRuntimeInstance> =
         async(start = CoroutineStart.LAZY) { EcrUtils.getDockerServerRuntimeInstance().runtimeInstance }
 
-    override fun actionPerformed(e: AnActionEvent) {
+    override fun actionPerformed(selected: EcrRepositoryNode, e: AnActionEvent) {
         val project = e.getRequiredData(LangDataKeys.PROJECT)
         val client: EcrClient = project.awsClient()
 
-        val selectedRepository = e.getData(ExplorerDataKeys.SELECTED_NODES)
-            ?.takeIf { it.size == 1 }
-            ?.mapNotNull { it as? EcrRepositoryNode }
-            ?.first()
-            ?.repository
-
-        val dialog = PushToEcrDialog(project, selectedRepository, dockerServerRuntime)
+        val dialog = PushToEcrDialog(project, selected.repository, dockerServerRuntime)
         val result = dialog.showAndGet()
 
         if (!result) {
