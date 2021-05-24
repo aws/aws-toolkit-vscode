@@ -78,7 +78,7 @@ function makeResourceName(config: SamLaunchRequestArgs): string {
 }
 
 const SAM_LOCAL_PORT_CHECK_RETRY_INTERVAL_MILLIS: number = 125
-const SAM_LOCAL_PORT_CHECK_RETRY_TIMEOUT_MILLIS_DEFAULT: number = 90000
+const SAM_LOCAL_TIMEOUT_DEFAULT_MILLIS: number = 90000
 const ATTACH_DEBUGGER_RETRY_DELAY_MILLIS: number = 1000
 
 /** "sam local start-api" wrapper from the current debug-session. */
@@ -366,7 +366,7 @@ export async function runLambdaFunction(
         ...(config.aws?.region ? { AWS_DEFAULT_REGION: config.aws.region } : {}),
     }
 
-    const timer = createInvokeTimer(ctx.settings)
+    const timer = createLambdaTimer(ctx.settings)
 
     if (!(await buildLambdaHandler(timer, envVars, config))) {
         return config
@@ -641,10 +641,10 @@ export function shouldAppendRelativePathToFunctionHandler(runtime: string): bool
     }
 }
 
-function createInvokeTimer(configuration: SettingsConfiguration): Timeout {
+function createLambdaTimer(configuration: SettingsConfiguration): Timeout {
     const timelimit = configuration.readSetting<number>(
-        'samcli.debug.attach.timeout.millis',
-        SAM_LOCAL_PORT_CHECK_RETRY_TIMEOUT_MILLIS_DEFAULT
+        'samcli.lambda.timeout',
+        SAM_LOCAL_TIMEOUT_DEFAULT_MILLIS
     )
 
     return new Timeout(timelimit)

@@ -106,10 +106,10 @@
                     "default": "",
                     "markdownDescription": "%AWS.configuration.description.samcli.location%"
                 },
-                "aws.samcli.debug.attach.timeout.millis": {
+                "aws.samcli.lambda.timeout": {
                     "type": "number",
                     "default": 90000,
-                    "markdownDescription": "%AWS.configuration.description.samcli.debug.attach.timeout%"
+                    "markdownDescription": "%AWS.configuration.description.samcli.lambda.timeout%"
                 },
                 "aws.logLevel": {
                     "type": "string",
