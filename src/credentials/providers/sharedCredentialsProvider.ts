@@ -117,7 +117,7 @@ export class SharedCredentialsProvider implements CredentialsProvider {
         return undefined
     }
 
-    // Patch source profiles so the SDK doesn't need to worry about resolving profile chains.
+    // Patches 'source_profile' credentials as static representations, which the SDK can handle in all cases
     private async patchSourceCredentials(): Promise<ParsedIniData> {
         const loadedCreds: ParsedIniData = {}
 

@@ -4,7 +4,7 @@
     "compilerOptions": {
         "baseUrl": ".",
         "paths": {
-            "*": ["types/*", "./node_modules/@aws-sdk/types/*"], 
+            "*": ["types/*"],
             "@sinonjs/fake-timers": ["node_modules/@types/sinonjs__fake-timers"]
         },
         "incremental": true,

@@ -83,3 +83,28 @@ export async function tickPromise<T>(promise: Promise<T>, clock: FakeTimers.Inst
     clock.tick(t)
     return await promise
 }
+
+/** Recursively delete undefined key/value pairs */
+export function stripUndefined(obj: any): void {
+    Object.keys(obj).forEach(key => {
+        if (obj[key] === undefined) {
+            delete obj[key]
+        } else if (typeof obj[key] === 'object') {
+            stripUndefined(obj[key])
+        }
+    })
+}
+
+export function assertDeepCompare(obj1: any, obj2: any): void {
+    assert.ok(typeof obj1 === typeof obj2)
+    assert.ok(Object.keys(obj1).length === Object.keys(obj2).length)
+    assert.ok(Object.keys(obj1).every(key => {
+        if (typeof obj1[key] === 'object' || typeof obj2[key] === 'object') {
+            assertDeepCompare(obj1[key], obj2[key])
+        } else {
+            assert.strictEqual(obj1[key], obj2[key])
+        }
+
+        return true
+    }))
+}

@@ -8,6 +8,10 @@ import * as FakeTimers from '@sinonjs/fake-timers'
 import * as sinon from 'sinon'
 import { SharedCredentialsProvider } from '../../../credentials/providers/sharedCredentialsProvider'
 import { Profile } from '../../../shared/credentials/credentialsFile'
+import { stripUndefined, assertDeepCompare } from '../../../test/testUtil'
+import * as process from '@aws-sdk/credential-provider-process'
+import { ParsedIniData } from '@aws-sdk/shared-ini-file-loader'
+
 
 const MISSING_PROPERTIES_FRAGMENT = 'missing properties'
 
@@ -197,6 +201,123 @@ describe('SharedCredentialsProvider', async function () {
             /is not a valid Credential Profile/,
             'Invalid profile error was not thrown'
         )
+    })
+
+    describe('patchSourceCredentials', async function () {
+        let childProfile: { [key: string]: string } = {}
+        let resolvedBaseProfile: { [key: string]: string }  = {}
+
+        beforeEach(function () {
+            childProfile = { 
+                source_profile: 'base', 
+                role_arn: 'testarn' 
+            }
+            resolvedBaseProfile = {
+                aws_access_key_id: 'id',
+                aws_secret_access_key: 'secret',
+            }
+        })
+
+        async function assertIniProviderResolves(sut: SharedCredentialsProvider, resolvedProfile: ParsedIniData): Promise<void> {
+            const makeIni = sandbox
+                .stub(sut as any, 'makeSharedIniFileCredentialsProvider')
+                .callsFake(profile => {
+                    // The SDK does not care if fields are undefined, but we need to remove them to test
+                    stripUndefined(profile)
+                    assertDeepCompare(profile, resolvedProfile)
+                    return () => Promise.resolve({})
+                })
+
+            await sut.getCredentials()
+            assert.ok(makeIni.calledOnce)
+        }
+
+        it('resolves profile with source_profile as credential_process', async function () {
+            const resolvedProfile = {
+                base: resolvedBaseProfile,
+                child: childProfile,
+            }
+            const sut = new SharedCredentialsProvider(
+                'child',
+                new Map<string, Profile>([
+                    ['base', { credential_process: 'test_process' }],
+                    ['child', { ...childProfile }]
+                ])
+            )
+
+            sandbox
+                .stub(process, 'fromProcess')
+                .returns(() => Promise.resolve({
+                    accessKeyId: resolvedBaseProfile['aws_access_key_id'],
+                    secretAccessKey: resolvedBaseProfile['aws_secret_access_key'],
+                }))
+
+            await assertIniProviderResolves(sut, resolvedProfile)
+        })
+
+        it('resolves profile with source_profile as sso', async function () {
+            resolvedBaseProfile['aws_session_token'] = 'token'
+            const resolvedProfile = {
+                base: resolvedBaseProfile,
+                child: childProfile,
+            }
+            const sut = new SharedCredentialsProvider(
+                'child',
+                new Map<string, Profile>([
+                    ['base', { 
+                        sso_start_url: 'sso_url',
+                        sso_region: 'region',
+                        sso_account_id: 'account',
+                        sso_role_name: 'role',
+                    }],
+                    ['child', { ...childProfile }]
+                ])
+            )
+
+            sandbox
+                .stub(SharedCredentialsProvider.prototype as any, 'makeSsoProvider')
+                .returns({
+                    refreshCredentials: () => Promise.resolve({
+                        accessKeyId: resolvedBaseProfile['aws_access_key_id'],
+                        secretAccessKey: resolvedBaseProfile['aws_secret_access_key'],
+                        sessionToken: resolvedBaseProfile['aws_session_token'],
+                    })
+                })
+
+            await assertIniProviderResolves(sut, resolvedProfile)
+        })
+
+        it('resolves profile with source_profile and MFA', async function () {
+            const mfaSerial = 'serial'
+            const resolvedProfile = {
+                base: resolvedBaseProfile,
+                child: {
+                    ...childProfile,
+                    mfa_serial: mfaSerial,
+                },
+            }
+            const sut = new SharedCredentialsProvider(
+                'child',
+                new Map<string, Profile>([
+                    ['base', { 
+                        credential_process: 'test_process', 
+                        mfa_serial: mfaSerial,
+                    }],
+                    ['child', { ...childProfile }]
+                ])
+            )
+
+            // We use 'credential_process' here to simulate static credentials since we can't 
+            // stub out 'makeSharedIniFileCredentialsProvider' as it is already stubbed
+            sandbox
+                .stub(process, 'fromProcess')
+                .returns(() => Promise.resolve({
+                    accessKeyId: resolvedBaseProfile['aws_access_key_id'],
+                    secretAccessKey: resolvedBaseProfile['aws_secret_access_key'],
+                }))
+
+            await assertIniProviderResolves(sut, resolvedProfile)
+        })
     })
 })
 
