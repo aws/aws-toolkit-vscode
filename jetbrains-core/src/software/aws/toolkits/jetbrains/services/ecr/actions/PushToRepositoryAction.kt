@@ -16,6 +16,7 @@ import com.intellij.openapi.actionSystem.LangDataKeys
 import com.intellij.openapi.application.ModalityState
 import com.intellij.openapi.application.runInEdt
 import com.intellij.openapi.fileChooser.FileChooserDescriptorFactory
+import com.intellij.openapi.project.DumbAware
 import com.intellij.openapi.project.Project
 import com.intellij.openapi.project.guessProjectDir
 import com.intellij.openapi.ui.DialogWrapper
@@ -69,7 +70,8 @@ import javax.swing.JTextField
 import javax.swing.plaf.basic.BasicComboBoxEditor
 
 class PushToRepositoryAction :
-    SingleExplorerNodeAction<EcrRepositoryNode>(message("action.ecr.repository.push.text")),
+    SingleExplorerNodeAction<EcrRepositoryNode>(),
+    DumbAware,
     CoroutineScope by ApplicationThreadPoolScope("PushRepositoryAction") {
     private val dockerServerRuntime: Deferred<DockerServerRuntimeInstance> =
         async(start = CoroutineStart.LAZY) { EcrUtils.getDockerServerRuntimeInstance().runtimeInstance }
@@ -79,9 +81,7 @@ class PushToRepositoryAction :
         val client: EcrClient = project.awsClient()
 
         val dialog = PushToEcrDialog(project, selected.repository, dockerServerRuntime)
-        val result = dialog.showAndGet()
-
-        if (!result) {
+        if (!dialog.showAndGet()) {
             // user cancelled; noop
             EcrTelemetry.deployImage(project, Result.Cancelled)
             return
@@ -134,7 +134,7 @@ internal data class LocalImage(
 
 internal class PushToEcrDialog(
     private val project: Project,
-    selectedRepository: Repository?,
+    selectedRepository: Repository,
     private val dockerServerRuntime: Deferred<DockerServerRuntimeInstance>
 ) : DialogWrapper(project, null, false, IdeModalityType.PROJECT),
     CoroutineScope by ApplicationThreadPoolScope("PushRepositoryDialog") {
@@ -153,7 +153,7 @@ internal class PushToEcrDialog(
         .build()
 
     init {
-        selectedRepository?.let { repo -> remoteRepos.selectedItem { it == repo } }
+        remoteRepos.selectedItem { it == selectedRepository }
 
         title = message("ecr.push.title")
         setOKButtonText(message("ecr.push.confirm"))
