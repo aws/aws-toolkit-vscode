@@ -1,4 +1,0 @@
-{
-  "type" : "feature",
-  "description" : "Add support for building and pushing local images to ECR"
-}
