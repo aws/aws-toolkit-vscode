@@ -354,12 +354,14 @@ export async function getProjectUri(
     config: Pick<CreateNewSamAppWizardResponse, 'location' | 'name'>,
     files: string[]
 ): Promise<vscode.Uri | undefined> {
+    if (files.length === 0) {
+        throw Error('expected "files" parameter to have at least one item')
+    }
     let file: string
     let cfnTemplatePath: string
     for (const f of files) {
          file = f
          cfnTemplatePath = path.resolve(config.location.fsPath, config.name, file)
-        
         if (await fileExists(cfnTemplatePath)) {
             return vscode.Uri.file(cfnTemplatePath)
         }
