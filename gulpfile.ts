@@ -97,7 +97,8 @@ const umdPlugin = {
 const nlsPlugin = {
     name: 'vscode-nls',
     setup(build) {
-        const cache = new Map()
+        // TODO: implement cache for even faster builds
+        // const cache = new Map()
 
         build.onLoad({ filter: /[^.]*\.ts$/ }, async args => {
             const relativePath = path.relative('.', args.path)
@@ -213,9 +214,12 @@ gulp.task('translations-import', done => {
     )
 })
 
+/*
+// Need to use this after cleaning up the package localization
 const generatePackageLocalization = () => {
     return gulp
         .src(['package.nls.json'])
         .pipe(nls.createAdditionalLanguageFiles(languages, 'i18n'))
         .pipe(gulp.dest('.'))
 }
+*/
