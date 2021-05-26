@@ -1502,12 +1502,11 @@
         ]
     },
     "scripts": {
-        "gulpgulp": "npm run buildScripts && gulp translations-export",
+        "exportLocalization": "npm run buildScripts && gulp translations-export",
         "vscode:prepublish": "npm run clean && npm run lint && webpack --mode production && npm run buildScripts",
         "bundleDeps": "node ./build-scripts/bundleDeps.js",
         "clean": "node ./build-scripts/clean.js dist",
         "generateNonCodeFiles": "ts-node ./build-scripts/generateNonCodeFiles.ts",
-        "generateNlsPackage": "ts-node ./build-scripts/generateNlsPackage.ts",
         "reset": "node ./build-scripts/clean.js dist node_modules && npm install",
         "copyNonCodeFiles": "node ./build-scripts/copyNonCodeFiles.js",
         "copyExtensionMain": "node ./build-scripts/copyExtensionMain.js",

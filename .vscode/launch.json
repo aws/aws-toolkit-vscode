@@ -41,7 +41,7 @@
             "runtimeExecutable": "${execPath}",
             "args": ["--extensionDevelopmentPath=${workspaceFolder}"],
             "outFiles": ["${workspaceFolder}/dist/**/*.js"],
-            "preLaunchTask": "npm: gulpgulp"
+            "preLaunchTask": "npm: compile"
         },
         {
             "name": "Extension Tests",

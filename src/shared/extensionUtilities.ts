@@ -3,7 +3,7 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
-import * as lodash from 'lodash'
+import * as _ from 'lodash'
 import * as os from 'os'
 import * as path from 'path'
 import * as semver from 'semver'
@@ -115,7 +115,7 @@ export class ExtensionUtilities {
 
     private static resolveResourceURIs(basePath: string, names: string[], webview: vscode.Webview): vscode.Uri[] {
         const scripts: vscode.Uri[] = []
-        lodash.forEach(names, scriptName => {
+        _.forEach(names, scriptName => {
             const scriptPathOnDisk = vscode.Uri.file(path.join(basePath, scriptName))
             scripts.push(webview.asWebviewUri(scriptPathOnDisk))
         })

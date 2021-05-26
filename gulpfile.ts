@@ -1,5 +1,5 @@
 /*!
- * Copyright 2019 Amazon.com, Inc. or its affiliates. All Rights Reserved.
+ * Copyright 2021 Amazon.com, Inc. or its affiliates. All Rights Reserved.
  * SPDX-License-Identifier: Apache-2.0
  */
 
@@ -10,12 +10,10 @@ import * as nls from 'vscode-nls-dev'
 import { processFile, removePathPrefix } from 'vscode-nls-dev/lib/lib'
 import * as path from 'path'
 import * as fs from 'fs-extra'
-//import * as minimist from 'minimist'
 import * as es from 'event-stream'
-//import * as sourcemaps from 'gulp-sourcemaps'
 import * as ts from 'gulp-typescript'
 import filter from 'gulp-filter'
-import gulpEsbuild from 'gulp-esbuild' // remove this
+import gulpEsbuild from 'gulp-esbuild'
 
 /** ISO 639-2 language codes */
 const languages = [
@@ -30,11 +28,13 @@ const packageId = `${packageJson.publisher}.${packageJson.name}`
 import * as recast from 'recast'
 import * as types from 'ast-types'
 
-function sniff(content) {
+// UMD unwrapping code is based off the Webpack plugin 'umd-compat-loader'
+
+function checkUmd(content) {
     return content.indexOf('var v = factory(require, exports);') > -1
 }
 
-function sniffDownEmittedImport(content) {
+function checkUmdImport(content) {
     return content.indexOf('__syncRequire ? Promise.resolve().then') > -1
 }
 
@@ -55,7 +55,7 @@ function unwrap(content, name) {
                 const body = tree.program.body
                 body.pop()
                 tree.program.body = [...body, ...path.node.body.body]
-                if (!sniffDownEmittedImport(content)) {
+                if (!checkUmdImport(content)) {
                     this.abort()
                 }
             }
@@ -77,9 +77,9 @@ const umdPlugin = {
             const fileContents = fs.readFileSync(args.path).toString()
             const result = { contents: fileContents, loader: 'js' }
 
-            if (sniff(fileContents)) {
+            if (checkUmd(fileContents)) {
                 const tree = unwrap(fileContents, path.basename(args.path))
-                const sourceMapPath = args.path + '.map'
+                const sourceMapPath = `${args.path}.map`
                 const sourceMap = recast.print(tree, { sourceMapName: path.basename(sourceMapPath) })
 
                 fs.writeFileSync(sourceMapPath, JSON.stringify(sourceMap.map, undefined, '\t'))
@@ -92,8 +92,7 @@ const umdPlugin = {
 }
 
 /**
- * Implements vscode-nls as an esbuild plugin
- * Esbuild doesn't play nice with our code unfortunately (but it works with webpack??)
+ * Implements vscode-nls as an esbuild plugin, replacing localize calls and extracting localization strings
  */
 const nlsPlugin = {
     name: 'vscode-nls',
@@ -128,7 +127,7 @@ const nlsPlugin = {
             }
 
             if (result.sourceMap) {
-                const sourceMapPath = args.path + '.map'
+                const sourceMapPath = `${args.path}.map`
                 fs.writeFileSync(sourceMapPath, JSON.stringify(metaDataContent, undefined, '\t'))
                 result.contents += `//# sourceMappingURL=${sourceMapPath}`
             }
@@ -139,7 +138,7 @@ const nlsPlugin = {
 }
 
 gulp.task('build', () => {
-    // Transpile the TS to JS, and let vscode-nls-dev scan the files for calls to localize.
+    // Transpile Typescript and replace localize calls
     const esbuild = gulp
         .src(['./src/extension.ts', './src/stepFunctions/asl/aslServer.ts'])
         .pipe(
@@ -158,16 +157,11 @@ gulp.task('build', () => {
             })
         )
         .pipe(gulp.dest('./dist/'))
-        // Have to move the bundled stepfunctions code now
-        .on('end', () =>
-            gulp
-                .src(['./dist/aslServer.js', './dist/aslServer.js.map'])
-                .pipe(gulp.dest('./dist/src/stepFunctions/asl/'))
-        )
 
     return esbuild
 })
 
+// Eventually change the environment variable to specify ESBuild rather than Webpack
 function useBundledEntrypoint() {
     return (process.env.AWS_TOOLKIT_IGNORE_WEBPACK_BUNDLE || 'false').toLowerCase() !== 'true'
 }
@@ -199,7 +193,8 @@ gulp.task('localize-package', () => {
 
 gulp.task('translations-export', gulp.series('build', 'localize-package', 'build-localization'))
 
-// Imports translations from raw localized MLCP strings to VS Code .i18n.json files
+// Imports translations from xlf files to the i18n folder
+// NOT CURRENTLY WORKING
 gulp.task('translations-import', done => {
     const location = process.argv[3] ?? './dist'
 
@@ -218,9 +213,7 @@ gulp.task('translations-import', done => {
     )
 })
 
-// Generate package.nls.*.json files from: ./i18n/ package.i18n.json
-// Outputs to root path, as these nls files need to be along side package.json
-const generateAdditionalLocFiles = () => {
+const generatePackageLocalization = () => {
     return gulp
         .src(['package.nls.json'])
         .pipe(nls.createAdditionalLanguageFiles(languages, 'i18n'))
