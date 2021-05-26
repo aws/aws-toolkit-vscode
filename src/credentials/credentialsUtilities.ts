@@ -12,6 +12,11 @@ import { credentialHelpUrl } from '../shared/constants'
 import { Profile } from '../shared/credentials/credentialsFile'
 import { isCloud9 } from '../shared/extensionUtilities'
 import { CredentialsProviderId, asString } from './providers/credentialsProviderId'
+import { waitTimeout, Timeout } from '../shared/utilities/timeoutUtils'
+import { showMessageWithCancel } from '../shared/utilities/messages'
+
+const CREDENTIALS_TIMEOUT = 300000 // 5 minutes
+const CREDENTIALS_PROGRESS_DELAY = 1000
 
 export function asEnvironmentVariables(credentials: Credentials): NodeJS.ProcessEnv {
     const environmentVariables: NodeJS.ProcessEnv = {}
@@ -52,4 +57,45 @@ export function notifyUserInvalidCredentials(credentialProviderId: CredentialsPr
 
 export function hasProfileProperty(profile: Profile, propertyName: string): boolean {
     return !!profile[propertyName]
+}
+
+/**
+ * Attempts to resolve (or refresh) a provider with a 'Cancel' progress message.
+ * User cancellation or timeout expiration will cause rejection.
+ *
+ * @param profile Profile name to display for the progress message
+ * @param provider This can be a Promise that returns Credentials, or void if using 'refresh'
+ * @param timeout How long to wait for resolution without user intervention (default: 5 minutes)
+ *
+ * @returns The resolved Credentials or undefined if the the provider was a 'refresh' Promise
+ */
+export async function resolveProviderWithCancel<T extends AWS.Credentials | void>(
+    profile: string,
+    provider: Promise<T>,
+    timeout: Timeout | number = CREDENTIALS_TIMEOUT
+): Promise<T> {
+    if (typeof timeout === 'number') {
+        timeout = new Timeout(timeout)
+    }
+
+    setTimeout(() => {
+        timeout = timeout as Timeout // Typescript lost scope of the correct type here
+        if (timeout.completed !== true) {
+            showMessageWithCancel(
+                localize('AWS.message.credentials.pending', 'Getting credentials for profile: {0}', profile),
+                timeout
+            )
+        }
+    }, CREDENTIALS_PROGRESS_DELAY)
+
+    await waitTimeout(provider, timeout, {
+        onCancel: () => {
+            throw new Error(`Request to get credentials for "${profile}" cancelled`)
+        },
+        onExpire: () => {
+            throw new Error(`Request to get credentials for "${profile}" expired`)
+        },
+    })
+
+    return provider
 }

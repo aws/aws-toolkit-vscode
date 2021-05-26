@@ -4,7 +4,6 @@
  */
 
 import moment from 'moment'
-import * as os from 'os'
 import * as path from 'path'
 import * as vscode from 'vscode'
 import * as nls from 'vscode-nls'
@@ -16,12 +15,14 @@ import { recordVscodeViewLogs } from '../telemetry/telemetry'
 import { setLogger } from './logger'
 import { LOG_OUTPUT_CHANNEL } from './outputChannel'
 import { WinstonToolkitLogger } from './winstonToolkitLogger'
+import { ext } from '../extensionGlobals'
 
 const localize = nls.loadMessageBundle()
 
-const LOG_PATH = path.join(getLogBasePath(), 'Code', 'logs', 'aws_toolkit', makeLogFilename())
-const LOG_URI = vscode.Uri.file(path.normalize(LOG_PATH))
 const DEFAULT_LOG_LEVEL: LogLevel = 'info'
+
+/** One log per session */
+let logPath: string
 
 /**
  * Activate Logger functionality for the extension.
@@ -31,7 +32,7 @@ export async function activate(
     outputChannel: vscode.OutputChannel
 ): Promise<void> {
     const logOutputChannel = LOG_OUTPUT_CHANNEL
-    const logPath = LOG_PATH
+    logPath = getLogPath()
 
     await fs.ensureDir(path.dirname(logPath))
 
@@ -133,14 +134,19 @@ function getLogLevel(): LogLevel {
     return configuration.readSetting<LogLevel>('logLevel', DEFAULT_LOG_LEVEL)
 }
 
-function getLogBasePath(): string {
-    if (os.platform() === 'win32') {
-        return path.join(os.homedir(), 'AppData', 'Roaming')
-    } else if (os.platform() === 'darwin') {
-        return path.join(os.homedir(), 'Library', 'Application Support')
-    } else {
-        return path.join(os.homedir(), '.config')
+function getLogPath(): string {
+    if (logPath !== undefined) {
+        return logPath
     }
+
+    // TODO: 'globalStoragePath' is deprecated in later versions of VS Code, use 'globalStorageUri' when min >= 1.48
+    const logsDir = path.join(ext.context.globalStoragePath, 'logs')
+
+    return path.join(logsDir, makeLogFilename())
+}
+
+function getLogUri(): vscode.Uri {
+    return vscode.Uri.file(path.normalize(getLogPath()))
 }
 
 function makeLogFilename(): string {
@@ -159,11 +165,11 @@ async function openLogUri(logUri: vscode.Uri): Promise<vscode.TextEditor | undef
 }
 
 async function registerLoggerCommands(context: vscode.ExtensionContext): Promise<void> {
-    context.subscriptions.push(vscode.commands.registerCommand('aws.viewLogs', async () => openLogUri(LOG_URI)))
+    context.subscriptions.push(vscode.commands.registerCommand('aws.viewLogs', async () => openLogUri(getLogUri())))
     context.subscriptions.push(
         vscode.commands.registerCommand(
             'aws.viewLogsAtMessage',
-            async (logID: number = -1, logUri: vscode.Uri = LOG_URI) => {
+            async (logID: number = -1, logUri: vscode.Uri = getLogUri()) => {
                 const msg: string | undefined = getLogger().getLogById(logID, logUri)
                 const editor: vscode.TextEditor | undefined = await openLogUri(logUri)
 

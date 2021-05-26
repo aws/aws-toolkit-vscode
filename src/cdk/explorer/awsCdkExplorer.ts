@@ -18,6 +18,7 @@ import { CdkErrorNode } from './nodes/errorNode'
  */
 export class AwsCdkExplorer implements vscode.TreeDataProvider<AWSTreeNodeBase>, RefreshableAwsTreeProvider {
     public viewProviderId: string = 'aws.cdk.explorer'
+    public visible = false
     private readonly onDidChangeTreeDataEventEmitter: vscode.EventEmitter<AWSTreeNodeBase | undefined>
 
     public get onDidChangeTreeData(): vscode.Event<AWSTreeNodeBase | undefined> {
@@ -33,6 +34,9 @@ export class AwsCdkExplorer implements vscode.TreeDataProvider<AWSTreeNodeBase>,
     }
 
     public async getChildren(element?: AWSTreeNodeBase): Promise<AWSTreeNodeBase[]> {
+        if (!this.visible) {
+            return []
+        }
         if (element) {
             return element.getChildren()
         } else {
@@ -46,7 +50,7 @@ export class AwsCdkExplorer implements vscode.TreeDataProvider<AWSTreeNodeBase>,
         }
     }
 
-    public refresh(node?: AWSTreeNodeBase) {
+    public refresh(node?: AWSTreeNodeBase): void {
         this.onDidChangeTreeDataEventEmitter.fire(undefined)
     }
 }

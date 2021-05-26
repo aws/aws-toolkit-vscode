@@ -20,9 +20,9 @@ export * from './awsSamDebugConfiguration.gen'
 
 export const AWS_SAM_DEBUG_TYPE = 'aws-sam'
 export const DIRECT_INVOKE_TYPE = 'direct-invoke'
-export const TEMPLATE_TARGET_TYPE: 'template' = 'template'
-export const CODE_TARGET_TYPE: 'code' = 'code'
-export const API_TARGET_TYPE: 'api' = 'api'
+export const TEMPLATE_TARGET_TYPE = 'template' as const
+export const CODE_TARGET_TYPE = 'code' as const 
+export const API_TARGET_TYPE = 'api' as const
 export const AWS_SAM_DEBUG_REQUEST_TYPES = [DIRECT_INVOKE_TYPE]
 export const AWS_SAM_DEBUG_TARGET_TYPES = [TEMPLATE_TARGET_TYPE, CODE_TARGET_TYPE, API_TARGET_TYPE]
 export type AwsSamTargetType = 'api' | 'code' | 'template'
@@ -181,7 +181,7 @@ export function createCodeAwsSamDebugConfig(
     runtime: Runtime
 ): AwsSamDebuggerConfiguration {
     const workspaceRelativePath = makeWorkspaceRelativePath(folder, projectRoot)
-    const parentDir = path.basename(path.dirname(projectRoot))
+    const parentDir = path.basename(projectRoot)
 
     return {
         type: AWS_SAM_DEBUG_TYPE,
@@ -245,7 +245,7 @@ export function createApiAwsSamDebugConfig(
 function makeWorkspaceRelativePath(folder: vscode.WorkspaceFolder | undefined, target: string): string {
     if (vscode.workspace.workspaceFolders && vscode.workspace.workspaceFolders.length <= 1) {
         return folder
-            ? isCloud9()  // TODO: remove when Cloud9 supports ${workspaceFolder}.
+            ? isCloud9() // TODO: remove when Cloud9 supports ${workspaceFolder}.
                 ? getNormalizedRelativePath(folder.uri.fsPath, target)
                 : `\${workspaceFolder}/${getNormalizedRelativePath(folder.uri.fsPath, target)}`
             : target

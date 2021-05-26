@@ -92,7 +92,7 @@ export function runTestsInFolder(testFolder: string, initTests: string[] = []): 
 
 // Adapted from https://github.com/codecov/example-typescript-vscode-extension
 class CoverageRunner {
-    private coverageVar: string = '$$cov_' + new Date().getTime() + '$$'
+    private coverageVar: string = `$$cov_${new Date().getTime()}$$`
     private transformer: any = undefined
     private matchFn: any = undefined
     private instrumenter: any = undefined
@@ -210,7 +210,7 @@ class CoverageRunner {
         // TODO Allow config of reporting directory with
         const reportingDir = path.join(self.testsRoot, self.options.relativeCoverageDir)
         const includePid = self.options.includePid
-        const pidExt = includePid ? '-' + process.pid : ''
+        const pidExt = includePid ? `-${process.pid}` : ''
         const coverageFile = path.resolve(reportingDir, 'coverage' + pidExt + '.json')
 
         _mkDirIfExists(reportingDir) // yes, do this again since some test runners could clean the dir initially created

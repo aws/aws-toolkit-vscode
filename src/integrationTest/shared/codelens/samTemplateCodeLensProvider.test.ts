@@ -11,6 +11,8 @@ import { SamTemplateCodeLensProvider } from '../../../shared/codelens/samTemplat
 import { LaunchConfiguration } from '../../../shared/debug/launchConfiguration'
 import { API_TARGET_TYPE, TEMPLATE_TARGET_TYPE } from '../../../shared/sam/debugger/awsSamDebugConfiguration'
 import * as workspaceUtils from '../../../shared/utilities/workspaceUtils'
+import { activateExtension } from '../../../integrationTest/integrationTestsUtilities'
+import { VSCODE_EXTENSION_ID } from '../../../shared/extensions'
 
 describe('SamTemplateCodeLensProvider', async function () {
     let codeLensProvider: SamTemplateCodeLensProvider = new SamTemplateCodeLensProvider()
@@ -31,6 +33,9 @@ describe('SamTemplateCodeLensProvider', async function () {
         if (vscode.version.startsWith('1.42')) {
             this.skip()
         }
+
+        // Note: redhat.vscode-yaml no longer works on vscode 1.42
+        await activateExtension(VSCODE_EXTENSION_ID.yaml)
 
         const codeLenses = await codeLensProvider.provideCodeLenses(
             document,

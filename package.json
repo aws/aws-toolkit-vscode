@@ -2,7 +2,7 @@
     "name": "aws-toolkit-vscode",
     "displayName": "AWS Toolkit",
     "description": "An extension for working with Amazon Web Services",
-    "version": "1.25.0-SNAPSHOT",
+    "version": "1.26.0-SNAPSHOT",
     "publisher": "amazonwebservices",
     "license": "Apache-2.0",
     "repository": {
@@ -73,7 +73,9 @@
         "onLanguage:python",
         "onLanguage:csharp",
         "onLanguage:yaml",
-        "onCommand:aws.launchConfigForm"
+        "onCommand:aws.launchConfigForm",
+        "onCommand:aws.toggleSamCodeLenses",
+        "onCommand:aws.addSamDebugConfig"
     ],
     "main": "./extensionMain",
     "contributes": {
@@ -106,13 +108,8 @@
                 },
                 "aws.samcli.debug.attach.timeout.millis": {
                     "type": "number",
-                    "default": 30000,
+                    "default": 90000,
                     "markdownDescription": "%AWS.configuration.description.samcli.debug.attach.timeout%"
-                },
-                "aws.cdk.explorer.enabled": {
-                    "type": "boolean",
-                    "default": true,
-                    "description": "%AWS.configuration.description.cdk.explorer.enabled%"
                 },
                 "aws.logLevel": {
                     "type": "string",
@@ -164,6 +161,11 @@
                     "type": "object",
                     "description": "%AWS.samcli.deploy.bucket.recentlyUsed%",
                     "default": []
+                },
+                "aws.sam.enableCodeLenses": {
+                    "type": "boolean",
+                    "description": "%AWS.configuration.enableCodeLenses%",
+                    "default": true
                 }
             }
         },
@@ -552,7 +554,7 @@
                 {
                     "id": "aws.cdk.explorer",
                     "name": "%AWS.cdk.explorerTitle%",
-                    "when": "config.aws.cdk.explorer.enabled"
+                    "when": "!isCloud9"
                 }
             ]
         },
@@ -806,27 +808,27 @@
                 },
                 {
                     "command": "aws.help",
-                    "when": "view == aws.explorer",
+                    "when": "view == aws.explorer || !aws.explorer.visible && view =~ /^aws/",
                     "group": "y_externalLinks@1"
                 },
                 {
                     "command": "aws.github",
-                    "when": "view == aws.explorer",
+                    "when": "view == aws.explorer || !aws.explorer.visible && view =~ /^aws/",
                     "group": "y_externalLinks@2"
                 },
                 {
                     "command": "aws.createIssueOnGitHub",
-                    "when": "view == aws.explorer",
+                    "when": "view == aws.explorer || !aws.explorer.visible && view =~ /^aws/",
                     "group": "y_externalLinks@3"
                 },
                 {
                     "command": "aws.submitFeedback",
-                    "when": "view == aws.explorer",
+                    "when": "view == aws.explorer || !aws.explorer.visible && view =~ /^aws/",
                     "group": "y_externalLinks@4"
                 },
                 {
                     "command": "aws.aboutToolkit",
-                    "when": "view == aws.explorer",
+                    "when": "view == aws.explorer || !aws.explorer.visible && view =~ /^aws/",
                     "group": "z_about@1"
                 },
                 {
@@ -838,16 +840,6 @@
                     "command": "aws.cdk.help",
                     "when": "view == aws.cdk.explorer",
                     "group": "z_externalLinks@1"
-                },
-                {
-                    "command": "aws.createIssueOnGitHub",
-                    "when": "view == aws.cdk.explorer",
-                    "group": "z_externalLinks@2"
-                },
-                {
-                    "command": "aws.submitFeedback",
-                    "when": "view == aws.cdk.explorer",
-                    "group": "z_externalLinks@3"
                 }
             ],
             "view/item/context": [
@@ -1406,6 +1398,16 @@
                 "title": "%AWS.command.saveCurrentLogStreamContent%",
                 "category": "AWS",
                 "icon": "$(save-as)"
+            },
+            {
+                "command": "aws.addSamDebugConfig",
+                "title": "%AWS.command.addSamDebugConfig%",
+                "category": "AWS"
+            },
+            {
+                "command": "aws.toggleSamCodeLenses",
+                "title": "%AWS.command.toggleSamCodeLenses%",
+                "category": "AWS"
             }
         ],
         "jsonValidation": [
@@ -1530,7 +1532,7 @@
     },
     "devDependencies": {
         "@aws-toolkits/telemetry": "0.0.94",
-        "@sinonjs/fake-timers": "^7.0.2",
+        "@sinonjs/fake-timers": "^7.0.5",
         "@types/adm-zip": "^0.4.32",
         "@types/async-lock": "^1.1.0",
         "@types/bytes": "^3.1.0",
@@ -1547,79 +1549,78 @@
         "@types/readline-sync": "^1.4.3",
         "@types/request": "^2.47.1",
         "@types/semver": "^5.5.0",
-        "@types/sinon": "^9.0.11",
+        "@types/sinon": "^10.0.0",
         "@types/sinonjs__fake-timers": "^6.0.2",
         "@types/tcp-port-used": "^1.0.0",
-        "@types/uuid": "^3.4.4",
+        "@types/uuid": "^8.3.0",
         "@types/vscode": "1.42.0",
-        "@types/xml2js": "^0.4.3",
-        "@typescript-eslint/eslint-plugin": "^2.27.0",
-        "@typescript-eslint/eslint-plugin-tslint": "^2.27.0",
-        "@typescript-eslint/parser": "^2.27.0",
+        "@types/xml2js": "^0.4.8",
+        "@typescript-eslint/eslint-plugin": "^4.24.0",
+        "@typescript-eslint/parser": "^4.24.0",
         "ast-types": "^0.9.14",
         "circular-dependency-plugin": "^5.2.0",
         "decache": "^4.4.0",
         "esbuild": "^0.11.15",
         "esbuild-loader": "2.10.0",
-        "eslint": "^6.8.0",
-        "eslint-config-prettier": "^6.10.1",
-        "eslint-plugin-header": "^3.0.0",
+        "eslint": "^7.26.0",
+        "eslint-config-prettier": "8.3",
+        "eslint-plugin-header": "^3.1.1",
         "eslint-plugin-no-null": "^1.0.2",
         "glob": "^7.1.4",
         "gulp": "^4.0.2",
         "gulp-esbuild": "^0.7.2",
         "gulp-filter": "^6.0.0",
         "gulp-typescript": "^6.0.0-alpha.1",
-        "husky": "^2.3.0",
+        "husky": "^6.0.0",
         "istanbul": "^0.4.5",
         "json-schema-to-typescript": "^8.2.0",
-        "marked": "^0.7.0",
+        "marked": "^2.0.3",
         "mocha": "^7.1.1",
-        "mocha-junit-reporter": "^1.23.3",
+        "mocha-junit-reporter": "^2.0.0",
         "mocha-multi-reporters": "^1.1.7",
-        "prettier": "^2.1.2",
+        "prettier": "^2.2.1",
+        "prettier-plugin-sh": "^0.6.1",
         "pretty-quick": "^3.1.0",
         "readline-sync": "^1.4.9",
         "recast": "^0.11.23",
         "remap-istanbul": "^0.12.0",
-        "sinon": "^7.4.2",
+        "sinon": "^10.0.0",
         "source-map-support": "^0.5.19",
         "ts-mockito": "^2.5.0",
-        "ts-node": "^9.0.0",
-        "tslint": "^6.1.3",
+        "ts-node": "^9.1.1",
         "umd-compat-loader": "^2.1.2",
-        "vsce": "^1.81.1",
+        "vsce": "^1.88.0",
         "vscode-nls-dev": "^3.3.1",
         "vscode-test": "^1.4.0",
         "vue-loader": "^15.9.6",
         "vue-template-compiler": "^2.6.12",
-        "webpack": "^4.41.2",
+        "webpack": "^5.36.2",
         "webpack-cli": "^3.3.10"
     },
     "dependencies": {
         "adm-zip": "^0.4.13",
         "amazon-states-language-service": "^1.6.4",
-        "async-lock": "^1.1.3",
+        "async-lock": "^1.3.0",
         "aws-sdk": "^2.882.0",
         "aws-ssm-document-language-service": "^1.0.0",
         "bytes": "^3.1.0",
         "cloudformation-schema-js-yaml": "^1.0.1",
-        "cross-spawn": "^6.0.5",
+        "cross-spawn": "^7.0.3",
         "fs-extra": "^9.0.1",
-        "handlebars": "^4.7.6",
+        "handlebars": "^4.7.7",
         "immutable": "^4.0.0-rc.12",
         "js-yaml": "^3.13.1",
         "jsonc-parser": "^2.0.2",
-        "lodash": "^4.17.19",
+        "lodash": "^4.17.21",
         "mime-types": "^2.1.27",
         "moment": "^2.29.1",
         "portfinder": "^1.0.25",
         "request": "^2.88.0",
-        "semver": "^5.6.0",
-        "sleep-promise": "^8.0.1",
+        "semver": "^7.3.5",
+        "sleep-promise": "^9.1.0",
         "strip-ansi": "^5.2.0",
         "tcp-port-used": "^1.0.1",
-        "typescript": "^3.7.2",
+        "typescript": "^4.2.4",
         "uuid": "^8.3.2",
         "vscode-json-languageservice": "^3.4.9",
         "vscode-languageclient": "^6.1.1",

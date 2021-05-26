@@ -4,11 +4,12 @@
  */
 
 import * as vscode from 'vscode'
-import { getIdeProperties } from '../extensionUtilities'
+import { getIdeProperties, isCloud9 } from '../extensionUtilities'
 import { getLogger, showLogOutputChannel } from '../../shared/logger'
 import { localize } from '../../shared/utilities/vsCodeUtils'
 import { Window } from '../../shared/vscode/window'
 import { ext } from '../extensionGlobals'
+import { Timeout } from './timeoutUtils'
 
 const commandName = localize('AWS.command.viewLogs', 'View AWS Toolkit Logs')
 
@@ -80,4 +81,48 @@ export function showOutputMessage(message: string, outputChannel: vscode.OutputC
     outputChannel.show(true)
     outputChannel.appendLine(message)
     getLogger().info(message)
+}
+
+/**
+ * Attaches a Timeout object to VS Code's Progress notification system.
+ * Not exported since it isn't used (yet)
+ * @see showMessageWithCancel for an example usage
+ */
+async function showProgressWithTimeout(
+    options: vscode.ProgressOptions,
+    timeout: Timeout,
+    window: Window = ext.window
+): Promise<vscode.Progress<{ message?: string; increment?: number }>> {
+    // Cloud9 doesn't support Progress notifications. User won't be able to cancel.
+    if (isCloud9()) {
+        options.location = vscode.ProgressLocation.Window
+    }
+
+    const progressPromise: Promise<vscode.Progress<{ message?: string; increment?: number }>> = new Promise(resolve => {
+        window.withProgress(options, function (progress, token) {
+            token.onCancellationRequested(() => timeout.complete(true))
+            resolve(progress)
+            return timeout.timer
+        })
+    })
+
+    return progressPromise
+}
+
+/**
+ * Presents the user with a notification to cancel a pending process.
+ *
+ * @param message Message to display
+ * @param timeout Timeout object that will be killed if the user clicks 'Cancel'
+ * @param window Window to display the message on (default: ext.window)
+ *
+ * @returns Progress object allowing the caller to update progress status
+ */
+export async function showMessageWithCancel(
+    message: string,
+    timeout: Timeout,
+    window: Window = ext.window
+): Promise<vscode.Progress<{ message?: string; increment?: number }>> {
+    const progressOptions = { location: vscode.ProgressLocation.Notification, title: message, cancellable: true }
+    return showProgressWithTimeout(progressOptions, timeout, window)
 }

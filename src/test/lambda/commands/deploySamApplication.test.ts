@@ -8,7 +8,13 @@ import * as fs from 'fs-extra'
 import * as path from 'path'
 import * as vscode from 'vscode'
 import { deploySamApplication, WindowFunctions } from '../../../lambda/commands/deploySamApplication'
-import { CHOSEN_BUCKET_KEY, SamDeployWizardResponse } from '../../../lambda/wizards/samDeployWizard'
+import {
+    readSavedBuckets,
+    writeSavedBucket,
+    SamDeployWizardResponse,
+    SavedBuckets,
+    CHOSEN_BUCKET_KEY,
+} from '../../../lambda/wizards/samDeployWizard'
 import { AwsContext } from '../../../shared/awsContext'
 import { ext } from '../../../shared/extensionGlobals'
 import { makeTemporaryToolkitFolder } from '../../../shared/filesystemUtilities'
@@ -42,7 +48,7 @@ describe('deploySamApplication', async function () {
 
     // Bad Invoker
 
-    const badSamCliProcessInvoker = ({} as any) as SamCliProcessInvoker
+    const badSamCliProcessInvoker = {} as any as SamCliProcessInvoker
 
     const invalidSamCliContext: SamCliContext = {
         invoker: badSamCliProcessInvoker,
@@ -68,13 +74,11 @@ describe('deploySamApplication', async function () {
     // Good Invoker
 
     let invokerCalledCount: number
-    let goodSamCliProcessInvoker = new TestSamCliProcessInvoker(
-        (spawnOptions, args: any[]): ChildProcessResult => {
-            invokerCalledCount++
+    let goodSamCliProcessInvoker = new TestSamCliProcessInvoker((spawnOptions, args: any[]): ChildProcessResult => {
+        invokerCalledCount++
 
-            return new FakeChildProcessResult({})
-        }
-    )
+        return new FakeChildProcessResult({})
+    })
 
     const goodSamCliContext = (): SamCliContext => {
         return {
@@ -109,7 +113,7 @@ describe('deploySamApplication', async function () {
     }
 
     // Other support stubs
-    const placeholderCredentials = ({} as any) as AWS.Credentials
+    const placeholderCredentials = {} as any as AWS.Credentials
     let testCredentials: AWS.Credentials | undefined
     let profile: string = ''
     const awsContext: Pick<AwsContext, 'getCredentials' | 'getCredentialProfileName'> = {
@@ -169,18 +173,24 @@ describe('deploySamApplication', async function () {
 
         await waitForDeployToComplete()
         assert.strictEqual(invokerCalledCount, 3, 'Unexpected sam cli invoke count')
-        assert.deepStrictEqual(
-            settings.readSetting(CHOSEN_BUCKET_KEY, ''),
-            JSON.stringify({ [profile]: { region: 'bucket' } })
-        )
+        assert.deepStrictEqual(readSavedBuckets(settings), {
+            [profile]: { region: 'bucket' },
+        } as SavedBuckets)
     })
 
-    it('overwrites recently selected bucket', async () => {
-        settings.writeSetting(
-            CHOSEN_BUCKET_KEY,
-            JSON.stringify({ [profile]: { region: 'oldBucket' } }),
-            vscode.ConfigurationTarget.Global
-        )
+    it('handles previously stored stringified buckets', async () => {
+        const testSavedBuckets = {
+            profile1: {
+                region1: 'mybucket1',
+                region2: 'mybucket2',
+            },
+            profile2: {
+                region1: 'mybucket3',
+                region3: 'mybucket4',
+            },
+        }
+        settings.writeSetting(CHOSEN_BUCKET_KEY, JSON.stringify(testSavedBuckets), vscode.ConfigurationTarget.Global)
+
         await deploySamApplication(
             {
                 samCliContext: goodSamCliContext(),
@@ -195,10 +205,46 @@ describe('deploySamApplication', async function () {
 
         await waitForDeployToComplete()
         assert.strictEqual(invokerCalledCount, 3, 'Unexpected sam cli invoke count')
-        assert.deepStrictEqual(
-            settings.readSetting(CHOSEN_BUCKET_KEY, ''),
-            JSON.stringify({ [profile]: { region: 'bucket' } })
+        assert.deepStrictEqual(readSavedBuckets(settings), { ...testSavedBuckets, [profile]: { region: 'bucket' } })
+    })
+
+    it('handles malformed stored buckets', async () => {
+        settings.writeSetting(CHOSEN_BUCKET_KEY, 'ilovebuckets', vscode.ConfigurationTarget.Global)
+
+        await deploySamApplication(
+            {
+                samCliContext: goodSamCliContext(),
+                samDeployWizard,
+            },
+            {
+                awsContext,
+                settings,
+                window,
+            }
         )
+
+        await waitForDeployToComplete()
+        assert.deepStrictEqual(readSavedBuckets(settings), { [profile]: { region: 'bucket' } })
+    })
+
+    it('overwrites recently selected bucket', async () => {
+        writeSavedBucket(settings, profile, 'region', 'oldBucket')
+
+        await deploySamApplication(
+            {
+                samCliContext: goodSamCliContext(),
+                samDeployWizard,
+            },
+            {
+                awsContext,
+                settings,
+                window,
+            }
+        )
+
+        await waitForDeployToComplete()
+        assert.strictEqual(invokerCalledCount, 3, 'Unexpected sam cli invoke count')
+        assert.deepStrictEqual(readSavedBuckets(settings), { [profile]: { region: 'bucket' } } as SavedBuckets)
     })
 
     it('saves one bucket max to multiple regions', async () => {
@@ -284,16 +330,13 @@ describe('deploySamApplication', async function () {
 
         await waitForDeployToComplete()
         assert.strictEqual(invokerCalledCount, 12, 'Unexpected sam cli invoke count')
-        assert.deepStrictEqual(
-            settings.readSetting(CHOSEN_BUCKET_KEY, ''),
-            JSON.stringify({
-                [profile]: {
-                    region0: 'bucket3',
-                    region1: 'bucket1',
-                    region2: 'bucket2',
-                },
-            })
-        )
+        assert.deepStrictEqual(readSavedBuckets(settings), {
+            [profile]: {
+                region0: 'bucket3',
+                region1: 'bucket1',
+                region2: 'bucket2',
+            },
+        } as SavedBuckets)
     })
 
     it('saves one bucket per region per profile', async () => {
@@ -341,17 +384,14 @@ describe('deploySamApplication', async function () {
 
         await waitForDeployToComplete()
         assert.strictEqual(invokerCalledCount, 6, 'Unexpected sam cli invoke count')
-        assert.deepStrictEqual(
-            settings.readSetting(CHOSEN_BUCKET_KEY, ''),
-            JSON.stringify({
-                testAcct0: {
-                    region0: 'bucket0',
-                },
-                testAcct1: {
-                    region0: 'bucket1',
-                },
-            })
-        )
+        assert.deepStrictEqual(readSavedBuckets(settings), {
+            testAcct0: {
+                region0: 'bucket0',
+            },
+            testAcct1: {
+                region0: 'bucket1',
+            },
+        } as SavedBuckets)
     })
 
     it('informs user of error when user is not logged in', async function () {
@@ -407,18 +447,16 @@ describe('deploySamApplication', async function () {
     })
 
     it('continues deploying with initial template if invoking sam build fails', async function () {
-        goodSamCliProcessInvoker = new TestSamCliProcessInvoker(
-            (spawnOptions, args: any[]): ChildProcessResult => {
-                invokerCalledCount++
+        goodSamCliProcessInvoker = new TestSamCliProcessInvoker((spawnOptions, args: any[]): ChildProcessResult => {
+            invokerCalledCount++
 
-                const isDeployInvoke = args.some(arg => arg === 'build')
+            const isDeployInvoke = args.some(arg => arg === 'build')
 
-                return new FakeChildProcessResult({
-                    exitCode: isDeployInvoke ? -1 : 0,
-                    error: isDeployInvoke ? new Error('broken build') : undefined,
-                })
-            }
-        )
+            return new FakeChildProcessResult({
+                exitCode: isDeployInvoke ? -1 : 0,
+                error: isDeployInvoke ? new Error('broken build') : undefined,
+            })
+        })
 
         await deploySamApplication(
             {
@@ -438,18 +476,16 @@ describe('deploySamApplication', async function () {
     })
 
     it('informs user of error if invoking sam package fails', async function () {
-        goodSamCliProcessInvoker = new TestSamCliProcessInvoker(
-            (spawnOptions, args: any[]): ChildProcessResult => {
-                invokerCalledCount++
+        goodSamCliProcessInvoker = new TestSamCliProcessInvoker((spawnOptions, args: any[]): ChildProcessResult => {
+            invokerCalledCount++
 
-                const isDeployInvoke = args.some(arg => arg === 'package')
+            const isDeployInvoke = args.some(arg => arg === 'package')
 
-                return new FakeChildProcessResult({
-                    exitCode: isDeployInvoke ? -1 : 0,
-                    error: isDeployInvoke ? new Error('broken package') : undefined,
-                })
-            }
-        )
+            return new FakeChildProcessResult({
+                exitCode: isDeployInvoke ? -1 : 0,
+                error: isDeployInvoke ? new Error('broken package') : undefined,
+            })
+        })
 
         await deploySamApplication(
             {
@@ -469,18 +505,16 @@ describe('deploySamApplication', async function () {
     })
 
     it('informs user of error if invoking sam deploy fails', async function () {
-        goodSamCliProcessInvoker = new TestSamCliProcessInvoker(
-            (spawnOptions, args: any[]): ChildProcessResult => {
-                invokerCalledCount++
+        goodSamCliProcessInvoker = new TestSamCliProcessInvoker((spawnOptions, args: any[]): ChildProcessResult => {
+            invokerCalledCount++
 
-                const isDeployInvoke = args.some(arg => arg === 'deploy')
+            const isDeployInvoke = args.some(arg => arg === 'deploy')
 
-                return new FakeChildProcessResult({
-                    exitCode: isDeployInvoke ? -1 : 0,
-                    error: isDeployInvoke ? new Error('broken deploy') : undefined,
-                })
-            }
-        )
+            return new FakeChildProcessResult({
+                exitCode: isDeployInvoke ? -1 : 0,
+                error: isDeployInvoke ? new Error('broken deploy') : undefined,
+            })
+        })
 
         await deploySamApplication(
             {
@@ -497,7 +531,7 @@ describe('deploySamApplication', async function () {
         assert.strictEqual(invokerCalledCount, 3, 'Unexpected sam cli invoke count')
         assertLogsContain('broken deploy', false, 'error')
         assertGeneralErrorLogged()
-        assert.strictEqual(settings.readSetting(CHOSEN_BUCKET_KEY), undefined)
+        assert.strictEqual(readSavedBuckets(settings), undefined)
     })
 
     async function waitForDeployToComplete(): Promise<void> {

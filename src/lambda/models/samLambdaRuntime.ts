@@ -17,6 +17,7 @@ export enum RuntimeFamily {
     Python,
     NodeJS,
     DotNetCore,
+    Go,
     Java,
 }
 
@@ -31,12 +32,14 @@ export const pythonRuntimes: ImmutableSet<Runtime> = ImmutableSet<Runtime>([
     'python3.6',
     'python2.7',
 ])
+export const goRuntimes: ImmutableSet<Runtime> = ImmutableSet<Runtime>(['go1.x'])
 export const javaRuntimes: ImmutableSet<Runtime> = ImmutableSet<Runtime>(['java11', 'java8', 'java8.al2'])
 export const dotNetRuntimes: ImmutableSet<Runtime> = ImmutableSet<Runtime>(['dotnetcore2.1', 'dotnetcore3.1'])
 const DEFAULT_RUNTIMES = ImmutableMap<RuntimeFamily, Runtime>([
     [RuntimeFamily.NodeJS, 'nodejs12.x'],
     [RuntimeFamily.Python, 'python3.8'],
     [RuntimeFamily.DotNetCore, 'dotnetcore2.1'],
+    [RuntimeFamily.Go, 'go1.x'],
     [RuntimeFamily.Java, 'java11'],
 ])
 
@@ -44,6 +47,7 @@ export const samZipLambdaRuntimes: ImmutableSet<Runtime> = ImmutableSet.union([
     nodeJsRuntimes,
     pythonRuntimes,
     dotNetRuntimes,
+    goRuntimes,
     javaRuntimes,
 ])
 
@@ -58,22 +62,16 @@ const cloud9SupportedCreateRuntimes = cloud9SupportedBaseRuntimes.filter(
 // only interpreted languages are importable as compiled languages won't provide a useful artifact for editing.
 export const samLambdaImportableRuntimes: ImmutableSet<Runtime> = ImmutableSet.union([nodeJsRuntimes, pythonRuntimes])
 
-export const samLambdaCreatableRuntimes: ImmutableSet<Runtime> = isCloud9()
-    ? cloud9SupportedCreateRuntimes
-    : samZipLambdaRuntimes
+export function samLambdaCreatableRuntimes(cloud9: boolean = isCloud9()): ImmutableSet<Runtime> {
+    return cloud9 ? cloud9SupportedCreateRuntimes : samZipLambdaRuntimes
+}
 
 // Image runtimes are not a direct subset of valid ZIP lambda types
 const dotnet50 = 'dotnet5.0'
-export const samImageLambdaRuntimes = ImmutableSet<Runtime>([
-    ...samLambdaCreatableRuntimes,
-    dotnet50,
-    // SAM also supports ruby, go, java, but toolkit does not support
-])
-
-export const samLambdaRuntimes: ImmutableSet<Runtime> = ImmutableSet.union([
-    samZipLambdaRuntimes,
-    samImageLambdaRuntimes,
-])
+export function samImageLambdaRuntimes(cloud9: boolean = isCloud9()): ImmutableSet<Runtime> {
+    // Note: SAM also supports ruby, but Toolkit does not.
+    return ImmutableSet<Runtime>([...samLambdaCreatableRuntimes(cloud9), ...(cloud9 ? [] : [dotnet50])])
+}
 
 export type DependencyManager = 'cli-package' | 'mod' | 'gradle' | 'pip' | 'npm' | 'maven' | 'bundler'
 
@@ -84,6 +82,8 @@ export function getDependencyManager(runtime: Runtime): DependencyManager[] {
         return ['pip']
     } else if (dotNetRuntimes.has(runtime) || runtime === dotnet50) {
         return ['cli-package']
+    } else if (goRuntimes.has(runtime)) {
+        return ['mod']
     } else if (javaRuntimes.has(runtime)) {
         return ['gradle', 'maven']
     }
@@ -97,6 +97,8 @@ export function getFamily(runtime: string): RuntimeFamily {
         return RuntimeFamily.Python
     } else if (dotNetRuntimes.has(runtime) || runtime === dotnet50) {
         return RuntimeFamily.DotNetCore
+    } else if (goRuntimes.has(runtime)) {
+        return RuntimeFamily.Go
     } else if (javaRuntimes.has(runtime)) {
         return RuntimeFamily.Java
     }
@@ -127,6 +129,8 @@ export function getRuntimeFamily(langId: string): RuntimeFamily {
             return RuntimeFamily.DotNetCore
         case 'python':
             return RuntimeFamily.Python
+        case 'go':
+            return RuntimeFamily.Go
         default:
             return RuntimeFamily.Unknown
     }
@@ -151,6 +155,8 @@ function getRuntimesForFamily(family: RuntimeFamily): ImmutableSet<Runtime> | un
             return pythonRuntimes
         case RuntimeFamily.DotNetCore:
             return dotNetRuntimes
+        case RuntimeFamily.Go:
+            return goRuntimes
         case RuntimeFamily.Java:
             return javaRuntimes
         default:
@@ -181,12 +187,12 @@ export function createRuntimeQuickPick(params: {
     totalSteps?: number
 }): vscode.QuickPick<RuntimeQuickPickItem> {
     const zipRuntimes = params.runtimeFamily
-        ? getRuntimesForFamily(params.runtimeFamily) ?? samLambdaCreatableRuntimes
-        : samLambdaCreatableRuntimes
+        ? getRuntimesForFamily(params.runtimeFamily) ?? samLambdaCreatableRuntimes()
+        : samLambdaCreatableRuntimes()
 
     const zipRuntimeItems = zipRuntimes
         // remove uncreatable runtimes
-        .filter(value => samLambdaCreatableRuntimes.has(value))
+        .filter(value => samLambdaCreatableRuntimes().has(value))
         .toArray()
         .map<RuntimeQuickPickItem>(runtime => ({
             packageType: 'Zip',
@@ -201,7 +207,7 @@ export function createRuntimeQuickPick(params: {
     // behavior is keyed off of what is specified in the cloudformation template
     let imageRuntimeItems: RuntimeQuickPickItem[] = []
     if (params.showImageRuntimes) {
-        imageRuntimeItems = samImageLambdaRuntimes
+        imageRuntimeItems = samImageLambdaRuntimes()
             .map<RuntimeQuickPickItem>(runtime => ({
                 packageType: 'Image',
                 runtime: runtime,

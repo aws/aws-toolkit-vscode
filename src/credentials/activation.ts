@@ -9,9 +9,14 @@ import { profileSettingKey } from '../shared/constants'
 import { CredentialsProfileMru } from '../shared/credentials/credentialsProfileMru'
 import { SettingsConfiguration } from '../shared/settingsConfiguration'
 import { LoginManager } from './loginManager'
-import { CredentialsProviderId, fromString } from './providers/credentialsProviderId'
+import { asString, CredentialsProviderId, fromString } from './providers/credentialsProviderId'
 import { CredentialsProviderManager } from './providers/credentialsProviderManager'
 import { SharedCredentialsProvider } from './providers/sharedCredentialsProvider'
+
+import * as nls from 'vscode-nls'
+import { isCloud9 } from '../shared/extensionUtilities'
+import { getLogger } from '../shared/logger/logger'
+const localize = nls.loadMessageBundle()
 
 export interface CredentialsInitializeParameters {
     extensionContext: vscode.ExtensionContext
@@ -37,6 +42,33 @@ export async function loginWithMostRecentCredentials(
     const profileNames = Object.keys(providerMap)
     const previousCredentialsId = toolkitSettings.readSetting<string>(profileSettingKey, '')
 
+    async function tryConnect(creds: CredentialsProviderId, popup: boolean): Promise<boolean> {
+        const provider = await manager.getCredentialsProvider(creds)
+        // 'provider' may be undefined if the last-used credentials no longer exists.
+        if (!provider) {
+            getLogger().warn('autoconnect: getCredentialsProvider() lookup failed for profile: %O', asString(creds))
+        } else if (provider.canAutoConnect()) {
+            if (!(await loginManager.login({ passive: true, providerId: creds }))) {
+                getLogger().warn('autoconnect: failed to connect: %O', asString(creds))
+                return false
+            }
+            getLogger().info('autoconnect: connected: %O', asString(creds))
+            if (popup) {
+                vscode.window.showInformationMessage(
+                    localize('AWS.message.credentials.connected', 'Connected to AWS as {0}', asString(creds))
+                )
+            }
+            return true
+        }
+        return false
+    }
+
+    if (!previousCredentialsId && !(providerMap && profileNames.length === 1)) {
+        await loginManager.logout()
+        getLogger().info('autoconnect: skipped')
+        return
+    }
+
     if (previousCredentialsId) {
         // Migrate from older Toolkits - If the last providerId isn't in the new CredentialProviderId format,
         // treat it like a Shared Crdentials Provider.
@@ -44,23 +76,19 @@ export async function loginWithMostRecentCredentials(
             credentialType: SharedCredentialsProvider.getCredentialsType(),
             credentialTypeId: previousCredentialsId,
         }
-        if ((await manager.getCredentialsProvider(loginCredentialsId))!.canAutoConnect()) {
-            await loginManager.login({ passive: true, providerId: loginCredentialsId })
-        } else {
-            await loginManager.logout()
+        if (await tryConnect(loginCredentialsId, false)) {
+            return
         }
-    } else if (
-        providerMap &&
-        profileNames.length === 1 &&
-        (await manager.getCredentialsProvider(providerMap[profileNames[0]]))!.canAutoConnect()
-    ) {
-        // Auto-connect if there is exactly one profile.
-        await loginManager.login({ passive: true, providerId: providerMap[profileNames[0]] })
-        // Toast.
-        vscode.window.showInformationMessage(`Connected to AWS as "${profileNames[0]}"`)
-    } else {
-        await loginManager.logout()
     }
+
+    if (providerMap && profileNames.length === 1) {
+        // Auto-connect if there is exactly one profile.
+        if (await tryConnect(providerMap[profileNames[0]], !isCloud9())) {
+            return
+        }
+    }
+
+    await loginManager.logout()
 }
 
 function updateMruWhenAwsContextChanges(awsContext: AwsContext, extensionContext: vscode.ExtensionContext) {

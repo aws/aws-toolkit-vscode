@@ -24,6 +24,7 @@ import { ext } from '../../shared/extensionGlobals'
  * https://github.com/aws/aws-sam-cli/blob/2201b17bff0a438b934abbb53f6c76eff9ccfa6d/samcli/local/docker/lambda_container.py#L25
  */
 export const DOTNET_CORE_DEBUGGER_PATH = '/tmp/lambci_debug_files/vsdbg'
+export const GO_DEBUGGER_PATH = '/tmp/lambci_debug_files'
 
 export interface NodejsDebugConfiguration extends SamLaunchRequestArgs {
     readonly runtimeFamily: RuntimeFamily.NodeJS
@@ -75,6 +76,13 @@ export interface DotNetCoreDebugConfiguration extends SamLaunchRequestArgs {
     sourceFileMap?: {
         [key: string]: string
     }
+}
+
+export interface GoDebugConfiguration extends SamLaunchRequestArgs {
+    readonly runtimeFamily: RuntimeFamily.Go
+    readonly preLaunchTask?: string
+    readonly host: 'localhost'
+    readonly port: number
 }
 
 export interface PipeTransport {
@@ -153,7 +161,7 @@ export function getHandlerName(
             }
 
             const propertyValue = CloudFormation.resolvePropertyWithOverrides(
-                templateResource?.Properties?.Handler!!,
+                templateResource?.Properties?.Handler,
                 template,
                 config.sam?.template?.parameters
             )
@@ -206,7 +214,7 @@ export function getTemplateResource(
     if (!cfnTemplate?.Resources) {
         throw Error(`no Resources in template: ${templateInvoke.templatePath}`)
     }
-    const templateResource: CloudFormation.Resource | undefined = cfnTemplate?.Resources![templateInvoke.logicalId!!]
+    const templateResource: CloudFormation.Resource | undefined = cfnTemplate?.Resources![templateInvoke.logicalId!]
     if (!templateResource) {
         throw Error(
             `template Resources object does not contain key '${templateInvoke.logicalId}':` +

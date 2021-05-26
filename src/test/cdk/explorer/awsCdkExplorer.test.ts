@@ -21,19 +21,24 @@ beforeEach(function () {
 afterEach(function () {
     sandbox.restore()
 })
+
 describe('AwsCdkExplorer', function () {
-    it('Displays Error node indicating that no CDK projects were found in empty workspace', async function () {
+    it('does nothing if not visible', async function () {
         const awsCdkExplorer = new AwsCdkExplorer()
+        awsCdkExplorer.visible = false
+        const treeNodes = await awsCdkExplorer.getChildren()
+        assert.strictEqual(treeNodes.length, 0)
+    })
 
-        const treeNodesPromise = awsCdkExplorer.getChildren()
-
-        const treeNodes = await treeNodesPromise
-        assert(treeNodes)
+    it('shows a message if no CDK projects were found', async function () {
+        const awsCdkExplorer = new AwsCdkExplorer()
+        awsCdkExplorer.visible = true
+        const treeNodes = await awsCdkExplorer.getChildren()
         assert.strictEqual(treeNodes.length, 1)
         assert.strictEqual(treeNodes[0] instanceof CdkErrorNode, true)
     })
 
-    it('Displays a project node when workspaces are detected', async function () {
+    it('shows CDK projects', async function () {
         const stubUri = sandbox.createStubInstance(vscode.Uri)
         const workspaceFolder: vscode.WorkspaceFolder = { uri: stubUri, index: 0, name: 'testworkspace' }
 
@@ -48,9 +53,8 @@ describe('AwsCdkExplorer', function () {
         sandbox.stub(app, 'AppNode').returns(stubAppNode)
 
         const awsCdkExplorer = new AwsCdkExplorer()
-        const treeNodesPromise = awsCdkExplorer.getChildren()
-        const treeNodes = await treeNodesPromise
-        assert(treeNodes)
+        awsCdkExplorer.visible = true
+        const treeNodes = await awsCdkExplorer.getChildren()
         assert.strictEqual(treeNodes.length, 1)
         assert.strictEqual(treeNodes[0], stubAppNode)
     })

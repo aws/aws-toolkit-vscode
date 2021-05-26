@@ -329,6 +329,42 @@ describe('SamDebugConfigurationProvider', async function () {
             )
         })
 
+        it('generates a valid resource name based on the projectDir #1685', async function () {
+            const appDir = pathutil.normalize(
+                path.join(testutil.getProjectDir(), 'testFixtures/workspaceFolder/go1-plain-sam-app')
+            )
+            const folder = testutil.getWorkspaceFolder(appDir)
+            const input = {
+                type: AWS_SAM_DEBUG_TYPE,
+                name: 'test-go-code-logicalid',
+                request: DIRECT_INVOKE_TYPE,
+                invokeTarget: {
+                    target: CODE_TARGET_TYPE,
+                    lambdaHandler: 'hello-world',
+                    projectRoot: '.', // Issue #1685
+                },
+                lambda: {
+                    runtime: 'go1.x',
+                },
+            }
+            const config = (await debugConfigProvider.makeConfig(folder, input))!
+
+            assertFileText(
+                config.templatePath,
+                `Resources:
+  go1plainsamapp:
+    Type: 'AWS::Serverless::Function'
+    Properties:
+      Handler: hello-world
+      CodeUri: >-
+        ${config.codeRoot}
+      Runtime: go1.x
+      Environment:
+        Variables: {}
+`
+            )
+        })
+
         it('returns undefined when resolving debug configurations with an invalid request type', async function () {
             const resolved = await debugConfigProvider.makeConfig(undefined, {
                 type: AWS_SAM_DEBUG_TYPE,
@@ -2200,12 +2236,12 @@ Outputs:
             }
 
             assertEqualLaunchConfigs(actual, expected)
-            assertFileText(expected.envFile, '{"hello_world":{}}')
+            assertFileText(expected.envFile, '{"helloworld":{}}')
             assert.strictEqual(readFileSync(actual.eventPayloadFile, 'utf-8'), readFileSync(absPayloadPath, 'utf-8'))
             assertFileText(
                 expected.templatePath,
                 `Resources:
-  hello_world:
+  helloworld:
     Type: 'AWS::Serverless::Function'
     Properties:
       Handler: ${expected.handlerName}
@@ -2915,7 +2951,7 @@ Outputs:
             }
 
             assertEqualLaunchConfigs(actual, expected)
-            assertFileText(expected.envFile, '{"hello_world":{}}')
+            assertFileText(expected.envFile, '{"helloworld":{}}')
             assert.strictEqual(
                 readFileSync(actual.eventPayloadFile, 'utf-8'),
                 readFileSync(input.lambda.payload.path, 'utf-8')
@@ -2923,7 +2959,7 @@ Outputs:
             assertFileText(
                 expected.templatePath,
                 `Resources:
-  hello_world:
+  helloworld:
     Type: 'AWS::Serverless::Function'
     Properties:
       Handler: ${expected.handlerName}
@@ -3345,6 +3381,130 @@ Resources:
             }
 
             assertEqualLaunchConfigs(actual, expected)
+        })
+
+        it('target=code: go', async function () {
+            const appDir = pathutil.normalize(
+                path.join(testutil.getProjectDir(), 'testFixtures/workspaceFolder/go1-plain-sam-app')
+            )
+            const folder = testutil.getWorkspaceFolder(appDir)
+            const input = {
+                type: AWS_SAM_DEBUG_TYPE,
+                name: 'test-go-code',
+                request: DIRECT_INVOKE_TYPE,
+                invokeTarget: {
+                    target: CODE_TARGET_TYPE,
+                    lambdaHandler: 'hello-world',
+                    projectRoot: 'hello-world',
+                },
+                lambda: {
+                    runtime: 'go1.x',
+                    // For target=code these envvars are written to the input-template.yaml.
+                    environmentVariables: {
+                        'test-envvar-1': 'test value 1',
+                        'test-envvar-2': 'test value 2',
+                    },
+                    memoryMb: 1.2,
+                    timeoutSec: 9000,
+                    payload: {
+                        json: {
+                            'test-payload-key-1': 'test payload value 1',
+                            'test-payload-key-2': 'test payload value 2',
+                        },
+                    },
+                },
+            }
+            const actual = (await debugConfigProvider.makeConfig(folder, input))!
+            const expected: SamLaunchRequestArgs = {
+                type: AWS_SAM_DEBUG_TYPE,
+                awsCredentials: undefined,
+                request: 'attach', // Input "direct-invoke", output "attach".
+                runtime: 'go1.x',
+                runtimeFamily: lambdaModel.RuntimeFamily.Go,
+                useIkpdb: false,
+                workspaceFolder: {
+                    index: 0,
+                    name: 'test-workspace-folder',
+                    uri: vscode.Uri.file(appDir),
+                },
+                baseBuildDir: actual.baseBuildDir, // Random, sanity-checked by assertEqualLaunchConfigs().
+                envFile: `${actual.baseBuildDir}/env-vars.json`,
+                eventPayloadFile: `${actual.baseBuildDir}/event.json`,
+                codeRoot: pathutil.normalize(path.join(appDir, 'hello-world')), // Normalized to absolute path.
+                apiPort: undefined,
+                debugPort: actual.debugPort,
+                documentUri: vscode.Uri.file(''), // TODO: remove or test.
+                handlerName: 'hello-world',
+                invokeTarget: { ...input.invokeTarget },
+                lambda: {
+                    ...input.lambda,
+                },
+                name: input.name,
+                templatePath: pathutil.normalize(path.join(appDir, 'hello-world', 'app___vsctk___template.yaml')),
+                parameterOverrides: undefined,
+
+                //
+                // Go-related fields
+                //
+                host: 'localhost',
+                mode: 'remote',
+                processName: 'godelve',
+                port: actual.debugPort,
+                preLaunchTask: undefined,
+                skipFiles: [],
+                debugArgs: ['-delveAPI=2'],
+                debugAdapter: 'legacy',
+            }
+
+            assertEqualLaunchConfigs(actual, expected)
+            assertFileText(
+                expected.envFile,
+                '{"helloworld":{"test-envvar-1":"test value 1","test-envvar-2":"test value 2"}}'
+            )
+            assertFileText(
+                expected.eventPayloadFile,
+                '{"test-payload-key-1":"test payload value 1","test-payload-key-2":"test payload value 2"}'
+            )
+            assertFileText(
+                expected.templatePath,
+                `Resources:
+  helloworld:
+    Type: 'AWS::Serverless::Function'
+    Properties:
+      Handler: hello-world
+      CodeUri: >-
+        ${expected.codeRoot}
+      Runtime: go1.x
+      Environment:
+        Variables:
+          test-envvar-1: test value 1
+          test-envvar-2: test value 2
+      MemorySize: 1.2
+      Timeout: 9000
+`
+            )
+
+            //
+            // Test noDebug=true.
+            //
+            ;(input as any).noDebug = true
+            const actualNoDebug = (await debugConfigProvider.makeConfig(folder, input))!
+            const expectedNoDebug: SamLaunchRequestArgs = {
+                ...expected,
+                noDebug: true,
+                request: 'attach',
+                mode: undefined,
+                debugPort: undefined,
+                port: -1,
+                baseBuildDir: actualNoDebug.baseBuildDir,
+                envFile: `${actualNoDebug.baseBuildDir}/env-vars.json`,
+                eventPayloadFile: `${actualNoDebug.baseBuildDir}/event.json`,
+            }
+            // The assert function should just check for this but all well
+            if (actualNoDebug.debugArgs === undefined) {
+                delete actualNoDebug.debugArgs
+            }
+            assertEqualLaunchConfigs(actualNoDebug, expectedNoDebug)
         })
     })
 })

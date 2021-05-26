@@ -110,10 +110,6 @@ export class DefaultSsmDocumentClient implements SsmDocumentClient {
     }
 
     private async createSdkClient(): Promise<SSM> {
-        return await ext.sdkClientBuilder.createAndConfigureServiceClient(
-            options => new SSM(options),
-            undefined,
-            this.regionCode
-        )
+        return await ext.sdkClientBuilder.createAwsService(SSM, undefined, this.regionCode)
     }
 }

@@ -302,7 +302,7 @@ async function confirmLambdaDeployment(functionNode: LambdaFunctionNode, window 
         {
             prompt: localize(
                 'AWS.lambda.upload.confirm',
-                'This will immediately publish the selected code as a new version of Lambda: {0}.\n\nAWS Toolkit cannot guarantee that the built code will work.\n\nContinue?',
+                'This will immediately publish the selected code as the $LATEST version of Lambda: {0}.\n\nContinue?',
                 functionNode.functionName
             ),
             confirm: localizedText.yes,

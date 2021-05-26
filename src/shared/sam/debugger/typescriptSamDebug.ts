@@ -11,7 +11,7 @@ import * as pathutil from '../../../shared/utilities/pathUtils'
 import { ExtContext } from '../../extensions'
 import { findParentProjectFile } from '../../utilities/workspaceUtils'
 import { DefaultSamLocalInvokeCommand, WAIT_FOR_DEBUGGER_MESSAGES } from '../cli/samCliLocalInvoke'
-import { invokeLambdaFunction, makeInputTemplate, waitForPort } from '../localLambdaRunner'
+import { runLambdaFunction, makeInputTemplate, waitForPort } from '../localLambdaRunner'
 import { SamLaunchRequestArgs } from './awsSamDebugger'
 import { getLogger } from '../../logger'
 
@@ -25,7 +25,7 @@ export async function invokeTypescriptLambda(
     config.samLocalInvokeCommand = new DefaultSamLocalInvokeCommand([WAIT_FOR_DEBUGGER_MESSAGES.NODEJS])
     // eslint-disable-next-line @typescript-eslint/unbound-method
     config.onWillAttachDebugger = waitForPort
-    const c = (await invokeLambdaFunction(ctx, config, async () => {})) as NodejsDebugConfiguration
+    const c = (await runLambdaFunction(ctx, config, async () => {})) as NodejsDebugConfiguration
     return c
 }
 
@@ -52,7 +52,7 @@ export async function makeTypescriptConfig(config: SamLaunchRequestArgs): Promis
         // Last-resort attempt to discover the project root (when there is no
         // `launch.json` nor `template.yaml`).
         config.codeRoot = pathutil.normalize(
-            await getSamProjectDirPathForFile(config?.templatePath ?? config.documentUri!!.fsPath)
+            await getSamProjectDirPathForFile(config?.templatePath ?? config.documentUri!.fsPath)
         )
         if (!config.codeRoot) {
             // TODO: return error and show it at the caller.

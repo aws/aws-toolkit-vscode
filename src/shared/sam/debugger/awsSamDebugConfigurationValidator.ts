@@ -175,13 +175,13 @@ export class DefaultAwsSamDebugConfigurationValidator implements AwsSamDebugConf
                 }
             }
             // can't infer the runtime for image-based lambdas
-            if (!config.lambda?.runtime || !samImageLambdaRuntimes.has(config.lambda.runtime)) {
+            if (!config.lambda?.runtime || !samImageLambdaRuntimes().has(config.lambda.runtime)) {
                 return {
                     isValid: false,
                     message: localize(
                         'AWS.sam.debugger.missingRuntimeForImage',
                         'Run configurations for Image-based Lambdas require a valid Lambda runtime value, expected one of [{0}]',
-                        Array.from(samImageLambdaRuntimes).join(', ')
+                        Array.from(samImageLambdaRuntimes()).join(', ')
                     ),
                 }
             }

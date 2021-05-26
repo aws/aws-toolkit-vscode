@@ -21,7 +21,7 @@ import * as pathutil from '../../utilities/pathUtils'
 import { getLocalRootVariants } from '../../utilities/pathUtils'
 import { Timeout } from '../../utilities/timeoutUtils'
 import { DefaultSamLocalInvokeCommand, WAIT_FOR_DEBUGGER_MESSAGES } from '../cli/samCliLocalInvoke'
-import { invokeLambdaFunction, makeInputTemplate } from '../localLambdaRunner'
+import { runLambdaFunction, makeInputTemplate } from '../localLambdaRunner'
 import { SamLaunchRequestArgs } from './awsSamDebugger'
 import { ext } from '../../extensionGlobals'
 import { Runtime } from 'aws-sdk/clients/lambda'
@@ -85,7 +85,7 @@ export async function makePythonDebugConfig(
     if (!config.codeRoot) {
         // Last-resort attempt to discover the project root (when there is no
         // `launch.json` nor `template.yaml`).
-        config.codeRoot = await getSamProjectDirPathForFile(config?.templatePath ?? config.documentUri!!.fsPath)
+        config.codeRoot = await getSamProjectDirPathForFile(config?.templatePath ?? config.documentUri!.fsPath)
         if (!config.codeRoot) {
             // TODO: return error and show it at the caller.
             throw Error('missing launch.json, template.yaml, and failed to discover project root')
@@ -231,7 +231,7 @@ export async function invokePythonLambda(
     //
     // eslint-disable-next-line @typescript-eslint/unbound-method
     config.onWillAttachDebugger = config.useIkpdb ? waitForIkpdb : undefined
-    const c = (await invokeLambdaFunction(ctx, config, async () => {})) as PythonDebugConfiguration
+    const c = (await runLambdaFunction(ctx, config, async () => {})) as PythonDebugConfiguration
     return c
 }
 

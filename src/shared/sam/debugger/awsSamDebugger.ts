@@ -13,14 +13,22 @@ import {
     getTemplateResource,
     NodejsDebugConfiguration,
     PythonDebugConfiguration,
+    GoDebugConfiguration,
     getTemplate,
 } from '../../../lambda/local/debugConfiguration'
-import { getDefaultRuntime, getFamily, getRuntimeFamily, RuntimeFamily } from '../../../lambda/models/samLambdaRuntime'
+import {
+    getDefaultRuntime,
+    getFamily,
+    getRuntimeFamily,
+    goRuntimes,
+    RuntimeFamily,
+} from '../../../lambda/models/samLambdaRuntime'
 import { Timeout } from '../../utilities/timeoutUtils'
 import * as csharpDebug from './csharpSamDebug'
 import * as javaDebug from './javaSamDebug'
 import * as pythonDebug from './pythonSamDebug'
 import * as tsDebug from './typescriptSamDebug'
+import * as goDebug from './goSamDebug'
 import { ExtContext } from '../../extensions'
 import { isInDirectory, makeTemporaryToolkitFolder } from '../../filesystemUtilities'
 import { getLogger } from '../../logger'
@@ -48,7 +56,10 @@ import { CloudFormation } from '../../cloudformation/cloudformation'
 import { getSamCliVersion } from '../cli/samCliContext'
 import { ext } from '../../extensionGlobals'
 import * as pathutils from '../../utilities/pathUtils'
-import { MINIMUM_SAM_CLI_VERSION_INCLUSIVE_FOR_IMAGE_SUPPORT } from '../cli/samCliValidator'
+import {
+    MINIMUM_SAM_CLI_VERSION_INCLUSIVE_FOR_IMAGE_SUPPORT,
+    MINIMUM_SAM_CLI_VERSION_INCLUSIVE_FOR_GO_SUPPORT,
+} from '../cli/samCliValidator'
 import { isCloud9 } from '../../extensionUtilities'
 
 const localize = nls.loadMessageBundle()
@@ -350,8 +361,8 @@ export class SamDebugConfigProvider implements vscode.DebugConfigurationProvider
         } else {
             const rv = configValidator.validate(config)
             if (!rv.isValid) {
-                getLogger().error(`SAM debug: invalid config: ${rv.message!!}`)
-                vscode.window.showErrorMessage(rv.message!!)
+                getLogger().error(`SAM debug: invalid config: ${rv.message!}`)
+                vscode.window.showErrorMessage(rv.message!)
                 return undefined
             } else if (rv.message) {
                 vscode.window.showInformationMessage(rv.message)
@@ -419,11 +430,27 @@ export class SamDebugConfigProvider implements vscode.DebugConfigurationProvider
             return undefined
         }
 
+        // SAM CLI versions before 1.18.1 do not work correctly for Go debugging.
+        // TODO: remove this when min sam version is >= 1.18.1
+        if (goRuntimes.includes(runtime) && !config.noDebug) {
+            const samCliVersion = await getSamCliVersion(this.ctx.samCliContext())
+            if (semver.lt(samCliVersion, MINIMUM_SAM_CLI_VERSION_INCLUSIVE_FOR_GO_SUPPORT)) {
+                vscode.window.showWarningMessage(
+                    localize(
+                        'AWS.output.sam.local.no.go.support',
+                        'Debugging go1.x lambdas requires a minimum SAM CLI version of {0}. Function will run locally without debug.',
+                        MINIMUM_SAM_CLI_VERSION_INCLUSIVE_FOR_GO_SUPPORT
+                    )
+                )
+                config.noDebug = true
+            }
+        }
+
         const runtimeFamily = getFamily(runtime)
         const documentUri =
             vscode.window.activeTextEditor?.document.uri ??
             // XXX: don't know what URI to choose...
-            vscode.Uri.parse(templateInvoke.templatePath!!)
+            vscode.Uri.parse(templateInvoke.templatePath!)
 
         let awsCredentials: Credentials | undefined
 
@@ -434,7 +461,7 @@ export class SamDebugConfigProvider implements vscode.DebugConfigurationProvider
                 vscode.window.showWarningMessage(
                     localize(
                         'AWS.output.sam.local.no.net.3.1.debug',
-                        'Debugging dotnetcore3.1 requires a minimum SAM CLI version of 1.4.0. Function will run locally without debug.'
+                        'Debugging dotnetcore3.1 lambdas requires a minimum SAM CLI version of 1.4.0. Function will run locally without debug.'
                     )
                 )
                 config.noDebug = true
@@ -522,6 +549,10 @@ export class SamDebugConfigProvider implements vscode.DebugConfigurationProvider
                 launchConfig = await csharpDebug.makeCsharpConfig(launchConfig)
                 break
             }
+            case RuntimeFamily.Go: {
+                launchConfig = await goDebug.makeGoConfig(launchConfig)
+                break
+            }
             case RuntimeFamily.Java: {
                 // Make a Java launch-config from the generic config.
                 launchConfig = await javaDebug.makeJavaConfig(launchConfig)
@@ -573,6 +604,10 @@ export class SamDebugConfigProvider implements vscode.DebugConfigurationProvider
             case RuntimeFamily.DotNetCore: {
                 config.type = 'coreclr'
                 return await csharpDebug.invokeCsharpLambda(this.ctx, config)
+            }
+            case RuntimeFamily.Go: {
+                config.type = 'go'
+                return await goDebug.invokeGoLambda(this.ctx, config as GoDebugConfiguration)
             }
             case RuntimeFamily.Java: {
                 config.type = 'java'

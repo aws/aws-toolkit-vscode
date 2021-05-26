@@ -21,7 +21,7 @@ import {
 import { ActivationReloadState, SamInitState } from '../../shared/activationReloadState'
 import { AwsContext } from '../../shared/awsContext'
 import { ext } from '../../shared/extensionGlobals'
-import { fileExists } from '../../shared/filesystemUtilities'
+import { fileExists, isInDirectory } from '../../shared/filesystemUtilities'
 import { getLogger } from '../../shared/logger'
 import { RegionProvider } from '../../shared/regions/regionProvider'
 import { getRegionsForActiveCredentials } from '../../shared/regions/regionUtilities'
@@ -31,7 +31,8 @@ import { throwAndNotifyIfInvalid } from '../../shared/sam/cli/samCliValidationUt
 import { SamCliValidator } from '../../shared/sam/cli/samCliValidator'
 import { recordSamInit, Result, Runtime as TelemetryRuntime } from '../../shared/telemetry/telemetry'
 import { makeCheckLogsMessage } from '../../shared/utilities/messages'
-import { addFolderToWorkspace } from '../../shared/utilities/workspaceUtils'
+import { addFolderToWorkspace, tryGetAbsolutePath } from '../../shared/utilities/workspaceUtils'
+import { goRuntimes } from '../models/samLambdaRuntime'
 import { eventBridgeStarterAppTemplate } from '../models/samTemplates'
 import {
     CreateNewSamAppWizard,
@@ -48,6 +49,7 @@ import { waitUntil } from '../../shared/utilities/timeoutUtils'
 import { debugNewSamAppUrl, launchConfigDocUrl } from '../../shared/constants'
 import { Runtime } from 'aws-sdk/clients/lambda'
 import { getIdeProperties, isCloud9 } from '../../shared/extensionUtilities'
+import { execSync } from 'child_process'
 
 type CreateReason = 'unknown' | 'userCancelled' | 'fileNotFound' | 'complete' | 'error'
 
@@ -63,8 +65,8 @@ export async function resumeCreateNewSamApp(
     let samVersion: string | undefined
     const samInitState: SamInitState | undefined = activationReloadState.getSamInitState()
     try {
-        const templateUri = vscode.Uri.file(samInitState?.template!)
-        const readmeUri = vscode.Uri.file(samInitState?.readme!)
+        const templateUri = vscode.Uri.file(samInitState!.template!)
+        const readmeUri = vscode.Uri.file(samInitState!.readme!)
         const folder = vscode.workspace.getWorkspaceFolder(templateUri)
         if (!folder) {
             createResult = 'Failed'
@@ -206,6 +208,20 @@ export async function createNewSamApplication(
             reason = 'fileNotFound'
 
             return
+        }
+
+        // Needs to be done or else gopls won't start
+        if (goRuntimes.includes(createRuntime)) {
+            try {
+                execSync('go mod tidy', { cwd: path.join(path.dirname(readmeUri.fsPath), 'hello-world') })
+            } catch (err) {
+                getLogger().warn(
+                    localize(
+                        'AWS.message.warning.gotidyfailed',
+                        'Failed to initialize package directory with "go mod tidy". Launch config will not be automatically created.'
+                    )
+                )
+            }
         }
 
         if (config.template === eventBridgeStarterAppTemplate) {
@@ -375,7 +391,7 @@ export async function addInitialLaunchConfiguration(
 
             return (
                 isTemplateTargetProperties(config.invokeTarget) &&
-                !path.relative(targetDir, templatePath).startsWith('..')
+                isInDirectory(targetDir, tryGetAbsolutePath(folder, templatePath))
             )
         })
 
