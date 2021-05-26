@@ -1,4 +1,0 @@
-{
-  "type" : "bugfix",
-  "description" : "While debugging a Lambda function locally, make sure stopping the debugger will always stop the underlying SAM cli process (#2564)"
-}

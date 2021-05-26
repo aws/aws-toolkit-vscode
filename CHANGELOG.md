@@ -1,3 +1,10 @@
+# _1.27_ (2021-05-24)
+- **(Feature)** Add support for AppRunner. Create/delete/pause/resume/deploy and view logs for your AppRunner services.
+- **(Feature)** Add support for building and pushing local images to ECR
+- **(Feature)** Add support for running/debugging Typescript Lambdas
+- **(Bug Fix)** Fix Rider locking up when right clicking a Lambda in the AWS Explorer with a dotnet runtime in 2021.1
+- **(Bug Fix)** While debugging a Lambda function locally, make sure stopping the debugger will always stop the underlying SAM cli process ([#2564](https://github.com/aws/aws-toolkit-jetbrains/issues/2564))
+
 # _1.26_ (2021-04-14)
 - **(Feature)** Add support for creating/debugging Golang Lambdas ([#649](https://github.com/aws/aws-toolkit-jetbrains/issues/649))
 - **(Bug Fix)** Fix breaking run configuration gutter icons when the IDE has no languages installed that support Lambda local runtime ([#2504](https://github.com/aws/aws-toolkit-jetbrains/issues/2504))

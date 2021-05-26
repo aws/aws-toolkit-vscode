@@ -1,0 +1,20 @@
+{
+  "date" : "2021-05-24",
+  "version" : "1.27",
+  "entries" : [ {
+    "type" : "feature",
+    "description" : "Add support for AppRunner. Create/delete/pause/resume/deploy and view logs for your AppRunner services."
+  }, {
+    "type" : "feature",
+    "description" : "Add support for building and pushing local images to ECR"
+  }, {
+    "type" : "feature",
+    "description" : "Add support for running/debugging Typescript Lambdas"
+  }, {
+    "type" : "bugfix",
+    "description" : "Fix Rider locking up when right clicking a Lambda in the AWS Explorer with a dotnet runtime in 2021.1"
+  }, {
+    "type" : "bugfix",
+    "description" : "While debugging a Lambda function locally, make sure stopping the debugger will always stop the underlying SAM cli process (#2564)"
+  } ]
+}
