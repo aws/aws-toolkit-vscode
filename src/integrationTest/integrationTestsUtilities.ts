@@ -51,7 +51,7 @@ export function getTestWorkspaceFolder(): string {
 export async function configureAwsToolkitExtension(): Promise<void> {
     const configAws = vscode.workspace.getConfiguration('aws')
     // Prevent the extension from preemptively cancelling a 'sam local' run
-    await configAws.update('samcli.debug.attach.timeout.millis', 90000, false)
+    await configAws.update('samcli.lambda.timeout', 90000, false)
 }
 
 export async function configurePythonExtension(): Promise<void> {
