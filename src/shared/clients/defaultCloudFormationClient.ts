@@ -52,10 +52,6 @@ export class DefaultCloudFormationClient implements CloudFormationClient {
     }
 
     private async createSdkClient(): Promise<CloudFormation> {
-        return await ext.sdkClientBuilder.createAndConfigureServiceClient(
-            options => new CloudFormation(options),
-            undefined,
-            this.regionCode
-        )
+        return await ext.sdkClientBuilder.createAwsService(CloudFormation, undefined, this.regionCode)
     }
 }

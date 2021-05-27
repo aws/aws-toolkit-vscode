@@ -11,7 +11,7 @@ export class LogStreamDocumentProvider implements vscode.TextDocumentContentProv
     // Expose an event to signal changes of _virtual_ documents
     // to the editor
     private _onDidChange = new vscode.EventEmitter<vscode.Uri>()
-    public get onDidChange() {
+    public get onDidChange(): vscode.Event<vscode.Uri> {
         return this._onDidChange.event
     }
 

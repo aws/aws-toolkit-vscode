@@ -78,10 +78,6 @@ export class DefaultApiGatewayClient implements ApiGatewayClient {
     }
 
     private async createSdkClient(): Promise<APIGateway> {
-        return await ext.sdkClientBuilder.createAndConfigureServiceClient(
-            options => new APIGateway(options),
-            undefined,
-            this.regionCode
-        )
+        return await ext.sdkClientBuilder.createAwsService(APIGateway, undefined, this.regionCode)
     }
 }

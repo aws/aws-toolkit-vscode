@@ -5,7 +5,7 @@
 
 import * as nls from 'vscode-nls'
 const localize = nls.loadMessageBundle()
-import { safeDump, safeLoad } from 'js-yaml'
+import { dump, load } from 'js-yaml'
 
 import * as path from 'path'
 import * as vscode from 'vscode'
@@ -57,7 +57,7 @@ async function getTextDocumentForSelectedItem(
 
     if (format === TemplateFormats.YAML) {
         // Convert JSON string to YAML string
-        content = safeDump(safeLoad(content))
+        content = dump(load(content))
     }
 
     const options = {
