@@ -5,7 +5,7 @@
 
 import * as vscode from 'vscode'
 import * as nls from 'vscode-nls'
-import { safeLoad } from 'js-yaml'
+import { load } from 'js-yaml'
 const localize = nls.loadMessageBundle()
 import { AwsContext } from '../../shared/awsContext'
 import { StepFunctionsClient } from '../../shared/clients/stepFunctionsClient'
@@ -45,7 +45,7 @@ export async function publishStateMachine(awsContext: AwsContext, outputChannel:
 
     if (YAML_FORMATS.includes(textDocument.languageId)) {
         try {
-            text = JSON.stringify(safeLoad(text), undefined, '  ')
+            text = JSON.stringify(load(text), undefined, '  ')
         } catch (error) {
             const localizedMsg = localize(
                 'AWS.message.error.stepFunctions.publishStateMachine.invalidYAML',
