@@ -117,7 +117,7 @@ export class SamTemplateGenerator {
             ...templateAdditions,
         }
 
-        const templateAsYaml: string = yaml.safeDump(template, { skipInvalid: true })
+        const templateAsYaml: string = yaml.dump(template, { skipInvalid: true })
 
         const parentDirectory: string = path.dirname(filename)
         if (!(await filesystemUtilities.fileExists(parentDirectory))) {
