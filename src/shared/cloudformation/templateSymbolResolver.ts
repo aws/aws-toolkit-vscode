@@ -3,7 +3,7 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
-import { safeLoad } from 'js-yaml'
+import { load } from 'js-yaml'
 import * as vscode from 'vscode'
 import { CloudFormation } from './cloudformation'
 import { waitUntil } from '../utilities/timeoutUtils'
@@ -107,7 +107,7 @@ export class TemplateSymbolResolver {
         if (!typeSymbol) {
             return false
         }
-        const parsedSymbol = safeLoad(this.symbolProvider.getText(typeSymbol, this.document)) as { Type: string }
+        const parsedSymbol = load(this.symbolProvider.getText(typeSymbol, this.document)) as { Type: string }
         return parsedSymbol.Type === cfnType
     }
 }
