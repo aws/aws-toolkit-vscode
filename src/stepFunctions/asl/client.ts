@@ -37,12 +37,13 @@ import {
     NotificationType,
     ServerOptions,
     TransportKind,
-} from 'vscode-languageclient'
+} from 'vscode-languageclient/node'
 
 import { YAML_ASL, JSON_ASL, ASL_FORMATS } from '../constants/aslFormats'
+import { getLogger } from '../../shared/logger/logger'
 
 namespace ResultLimitReachedNotification {
-    export const type: NotificationType<string, any> = new NotificationType('asl/resultLimitReached')
+    export const type: NotificationType<string> = new NotificationType('asl/resultLimitReached')
 }
 
 interface Settings {
@@ -135,13 +136,13 @@ export async function activate(extensionContext: ExtensionContext) {
                     const params: DocumentRangeFormattingParams = {
                         textDocument: client.code2ProtocolConverter.asTextDocumentIdentifier(document),
                         range: client.code2ProtocolConverter.asRange(range),
-                        options: client.code2ProtocolConverter.asFormattingOptions(options),
+                        options: client.code2ProtocolConverter.asFormattingOptions(options, {}),
                     }
 
                     return client.sendRequest(DocumentRangeFormattingRequest.type, params, token).then(
                         response => client.protocol2CodeConverter.asTextEdits(response),
                         async error => {
-                            client.logFailedRequest(DocumentRangeFormattingRequest.type, error)
+                            getLogger().verbose('[step functions]: client request failed: %O', error)
 
                             return Promise.resolve([])
                         }

@@ -20,10 +20,10 @@ import {
     NotificationType,
     ServerOptions,
     TransportKind,
-} from 'vscode-languageclient'
+} from 'vscode-languageclient/node'
 
 namespace ResultLimitReachedNotification {
-    export const type: NotificationType<string, any> = new NotificationType('ssm/resultLimitReached')
+    export const type: NotificationType<string> = new NotificationType('ssm/resultLimitReached')
 }
 
 const jsonLanguageConfiguration: LanguageConfiguration = {

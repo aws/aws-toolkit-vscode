@@ -22,7 +22,7 @@ import {
     Diagnostic,
     Disposable,
     DocumentRangeFormattingRequest,
-    IConnection,
+    Connection,
     InitializeParams,
     InitializeResult,
     NotificationType,
@@ -30,7 +30,7 @@ import {
     ServerCapabilities,
     TextDocuments,
     TextDocumentSyncKind,
-} from 'vscode-languageserver'
+} from 'vscode-languageserver/node'
 
 import { posix } from 'path'
 import { clearTimeout, setTimeout } from 'timers'
@@ -41,15 +41,15 @@ import { formatError, runSafe, runSafeAsync } from '../../shared/languageServer/
 import { YAML_ASL, JSON_ASL } from '../constants/aslFormats'
 
 namespace ResultLimitReachedNotification {
-    export const type: NotificationType<string, any> = new NotificationType('asl/resultLimitReached')
+    export const type: NotificationType<string> = new NotificationType('asl/resultLimitReached')
 }
 
 namespace ForceValidateRequest {
-    export const type: RequestType<string, Diagnostic[], any, any> = new RequestType('asl/validate')
+    export const type: RequestType<string, Diagnostic[], any> = new RequestType('asl/validate')
 }
 
 // Create a connection for the server
-const connection: IConnection = createConnection()
+const connection: Connection = createConnection()
 
 process.on('unhandledRejection', (e: any) => {
     console.error(formatError('Unhandled exception', e))
