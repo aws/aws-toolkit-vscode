@@ -357,8 +357,8 @@ export namespace CloudFormation {
         }
 
         const templateAsYaml: string = await filesystemUtilities.readFileAsString(filename)
-        const template = yaml.safeLoad(templateAsYaml, {
-            schema: schema as yaml.SchemaDefinition,
+        const template = yaml.load(templateAsYaml, {
+            schema: new yaml.Schema(schema),
         }) as Template
         validateTemplate(template)
 
@@ -366,7 +366,7 @@ export namespace CloudFormation {
     }
 
     export async function save(template: Template, filename: string): Promise<void> {
-        const templateAsYaml: string = yaml.safeDump(template)
+        const templateAsYaml: string = yaml.dump(template)
 
         await writeFile(filename, templateAsYaml, 'utf8')
     }
