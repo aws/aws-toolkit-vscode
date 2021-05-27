@@ -4,7 +4,7 @@
  */
 
 import * as vscode from 'vscode'
-import * as Transport from 'winston-transport'
+import Transport from 'winston-transport'
 
 export const MESSAGE = Symbol.for('message')
 

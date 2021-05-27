@@ -5,8 +5,8 @@
 
 import * as child_process from 'child_process'
 import * as fs from 'fs-extra'
-import * as marked from 'marked'
 import * as path from 'path'
+import marked from 'marked'
 
 // doesn't use path utils as this should be formatted for finding images with HTML markup
 const REPO_ROOT = path.dirname(__dirname)

@@ -6,7 +6,7 @@
 /**
  * Before/After hooks for all "unit" tests
  */
-import * as assert from 'assert'
+import assert from 'assert'
 import { appendFileSync, mkdirpSync, remove } from 'fs-extra'
 import { join } from 'path'
 import { CodelensRootRegistry } from '../shared/sam/codelensRootRegistry'

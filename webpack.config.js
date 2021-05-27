@@ -56,7 +56,7 @@ const baseConfig = {
                         // * rewrite nls-calls
                         loader: 'vscode-nls-dev/lib/webpack-loader',
                         options: {
-                            base: path.join(__dirname, 'src'),
+                            base: __dirname,
                         },
                     },
                     {

@@ -3,7 +3,7 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
-import * as Transport from 'winston-transport'
+import Transport from 'winston-transport'
 
 const MESSAGE = Symbol.for('message')
 

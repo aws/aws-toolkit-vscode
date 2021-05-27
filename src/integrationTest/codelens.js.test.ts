@@ -3,7 +3,7 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
-import * as assert from 'assert'
+import assert from 'assert'
 import { dirname, join } from 'path'
 import * as vscode from 'vscode'
 import { getAddConfigCodeLens, getTestWorkspaceFolder } from './integrationTestsUtilities'

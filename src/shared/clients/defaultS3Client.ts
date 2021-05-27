@@ -4,7 +4,7 @@
  */
 
 import { AWSError, S3 } from 'aws-sdk'
-import * as _ from 'lodash'
+import _ = require('lodash')
 import * as mime from 'mime-types'
 import * as path from 'path'
 import { inspect } from 'util'

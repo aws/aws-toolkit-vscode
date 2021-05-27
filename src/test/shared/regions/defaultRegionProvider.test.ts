@@ -5,7 +5,7 @@
 
 'use strict'
 
-import * as assert from 'assert'
+import assert from 'assert'
 import * as sinon from 'sinon'
 import { DefaultRegionProvider } from '../../../shared/regions/defaultRegionProvider'
 import { Endpoints } from '../../../shared/regions/endpoints'

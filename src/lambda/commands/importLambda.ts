@@ -3,9 +3,8 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
-import * as AdmZip from 'adm-zip'
+import AdmZip from 'adm-zip'
 import * as fs from 'fs-extra'
-import * as _ from 'lodash'
 import * as path from 'path'
 import * as vscode from 'vscode'
 import { LambdaFunctionNode } from '../explorer/lambdaFunctionNode'
@@ -166,26 +165,29 @@ async function downloadAndUnzipLambda(
         // Brings up issues in less performant systems.
         // keep attempting the unzip until the zip is fully built or fail after 5 seconds
         let zipErr: Error | undefined
-        const val = await waitUntil(async () => {
-            return await new Promise<boolean | undefined>(resolve => {
-                try {
-                    new AdmZip(downloadLocation).extractAllToAsync(importLocation, true, err => {
-                        if (err) {
-                            // err unzipping
-                            zipErr = err
-                            resolve(false)
-                        } else {
-                            progress.report({ increment: 10 })
-                            resolve(true)
-                        }
-                    })
-                } catch (err) {
-                    // err loading zip into AdmZip, prior to attempting an unzip
-                    zipErr = err
-                    resolve(false)
-                }
-            })
-        }, { timeout: 10000, interval: 1000, truthy: true })
+        const val = await waitUntil(
+            async () => {
+                return await new Promise<boolean | undefined>(resolve => {
+                    try {
+                        new AdmZip(downloadLocation).extractAllToAsync(importLocation, true, err => {
+                            if (err) {
+                                // err unzipping
+                                zipErr = err
+                                resolve(false)
+                            } else {
+                                progress.report({ increment: 10 })
+                                resolve(true)
+                            }
+                        })
+                    } catch (err) {
+                        // err loading zip into AdmZip, prior to attempting an unzip
+                        zipErr = err
+                        resolve(false)
+                    }
+                })
+            },
+            { timeout: 10000, interval: 1000, truthy: true }
+        )
 
         if (!val) {
             throw zipErr

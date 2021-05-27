@@ -3,7 +3,7 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
-import * as assert from 'assert'
+import assert from 'assert'
 import { listValidMethods } from '../../../apigateway/commands/invokeRemoteRestApi'
 import { Resource } from 'aws-sdk/clients/apigateway'
 

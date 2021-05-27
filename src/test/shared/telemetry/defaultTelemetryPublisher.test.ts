@@ -3,7 +3,7 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
-import * as assert from 'assert'
+import assert from 'assert'
 import AWS = require('aws-sdk')
 import { DefaultTelemetryPublisher } from '../../../shared/telemetry/defaultTelemetryPublisher'
 import { TelemetryClient } from '../../../shared/telemetry/telemetryClient'

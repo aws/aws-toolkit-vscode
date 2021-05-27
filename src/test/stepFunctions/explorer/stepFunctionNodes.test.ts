@@ -3,7 +3,7 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
-import * as assert from 'assert'
+import assert from 'assert'
 import { StepFunctions } from 'aws-sdk'
 import * as sinon from 'sinon'
 import { ToolkitClientBuilder } from '../../../shared/clients/toolkitClientBuilder'

@@ -3,7 +3,7 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
-import * as assert from 'assert'
+import assert from 'assert'
 import { QuickPickItem } from 'vscode'
 import { CredentialSelectionDataProvider } from '../../../shared/credentials/credentialSelectionDataProvider'
 import { CredentialSelectionState } from '../../../shared/credentials/credentialSelectionState'

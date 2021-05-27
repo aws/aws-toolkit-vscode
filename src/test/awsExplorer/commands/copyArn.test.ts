@@ -3,7 +3,7 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
-import * as assert from 'assert'
+import assert from 'assert'
 import { copyArnCommand } from '../../../awsexplorer/commands/copyArn'
 import { AWSResourceNode } from '../../../shared/treeview/nodes/awsResourceNode'
 import { FakeEnv } from '../../shared/vscode/fakeEnv'

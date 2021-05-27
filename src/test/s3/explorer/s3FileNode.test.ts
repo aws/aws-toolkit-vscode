@@ -3,8 +3,8 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
-import * as assert from 'assert'
-import * as moment from 'moment'
+import assert from 'assert'
+import moment from 'moment'
 import { S3BucketNode } from '../../../s3/explorer/s3BucketNode'
 import { S3_DATE_FORMAT, S3FileNode } from '../../../s3/explorer/s3FileNode'
 import { S3Client } from '../../../shared/clients/s3Client'

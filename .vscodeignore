@@ -24,4 +24,5 @@ Dockerfile
 tsconfig.json
 tslint.json
 codebuild-image-buildspec.yml
-node_modules
+node_modules/**
+gulpfile.ts

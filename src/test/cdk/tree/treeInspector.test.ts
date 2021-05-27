@@ -3,7 +3,7 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
-import * as assert from 'assert'
+import assert from 'assert'
 import * as treeInspector from '../../../cdk/explorer/tree/treeInspector'
 import { CfnResourceKeys, ConstructProps, ConstructTreeEntity } from '../../../cdk/explorer/tree/types'
 import * as treeUtils from '../utilities/treeTestUtils'

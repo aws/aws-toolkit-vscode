@@ -4,7 +4,7 @@
  */
 
 import * as sinon from 'sinon'
-import * as assert from 'assert'
+import assert from 'assert'
 import { FakeWindow } from '../../shared/vscode/fakeWindow'
 import { EcrNode } from '../../../ecr/explorer/ecrNode'
 import { EcrClient } from '../../../shared/clients/ecrClient'

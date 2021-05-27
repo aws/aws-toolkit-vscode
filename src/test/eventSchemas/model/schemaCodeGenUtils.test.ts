@@ -3,7 +3,7 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
-import * as assert from 'assert'
+import assert from 'assert'
 import { IdentifierFormatter, SchemaCodeGenUtils } from '../../../eventSchemas/models/schemaCodeGenUtils'
 
 describe('SchemaCodeGenUtils', async function () {

@@ -66,11 +66,10 @@ import { CredentialsStore } from './credentials/credentialsStore'
 import { getSamCliContext } from './shared/sam/cli/samCliContext'
 import * as extWindow from './shared/vscode/window'
 
-let localize: nls.LocalizeFunc
+const localize = nls.config({ messageFormat: nls.MessageFormat.bundle, bundleFormat: nls.BundleFormat.standalone })()
 
 export async function activate(context: vscode.ExtensionContext) {
     const activationStartedOn = Date.now()
-    localize = nls.loadMessageBundle()
     ext.init(context, extWindow.Window.vscode())
 
     const toolkitOutputChannel = vscode.window.createOutputChannel(localize('AWS.channel.aws.toolkit', 'AWS Toolkit'))

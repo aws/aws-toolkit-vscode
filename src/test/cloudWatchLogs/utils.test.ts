@@ -3,7 +3,7 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
-import * as assert from 'assert'
+import assert from 'assert'
 import * as vscode from 'vscode'
 import { convertLogGroupInfoToUri, parseCloudWatchLogsUri } from '../../cloudWatchLogs/cloudWatchLogsUtils'
 import { CLOUDWATCH_LOGS_SCHEME } from '../../shared/constants'

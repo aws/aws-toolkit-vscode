@@ -7,7 +7,7 @@ import { AWSTreeNodeBase } from '../shared/treeview/nodes/awsTreeNodeBase'
 import { LoadMoreNode } from '../shared/treeview/nodes/loadMoreNode'
 import { MoreResultsNode } from './moreResultsNode'
 import { ChildNodeCache } from './childNodeCache'
-import * as AsyncLock from 'async-lock'
+import AsyncLock from 'async-lock'
 
 const LOCK_KEY = 'ChildNodeLoader'
 

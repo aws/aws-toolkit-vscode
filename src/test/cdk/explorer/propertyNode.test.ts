@@ -3,7 +3,7 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
-import * as assert from 'assert'
+import assert from 'assert'
 import * as vscode from 'vscode'
 import { PropertyNode } from '../../../cdk/explorer/nodes/propertyNode'
 import { ext } from '../../../shared/extensionGlobals'

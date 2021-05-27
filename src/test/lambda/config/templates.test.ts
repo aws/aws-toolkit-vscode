@@ -3,7 +3,7 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
-import * as assert from 'assert'
+import assert from 'assert'
 import { mkdir, remove, writeFile } from 'fs-extra'
 import * as path from 'path'
 import { ext } from '../../../shared/extensionGlobals'

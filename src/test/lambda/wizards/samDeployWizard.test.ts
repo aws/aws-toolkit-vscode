@@ -3,7 +3,7 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
-import * as assert from 'assert'
+import assert from 'assert'
 import * as path from 'path'
 import * as sinon from 'sinon'
 import * as vscode from 'vscode'
@@ -771,13 +771,10 @@ describe('DefaultSamDeployWizardContext', async function () {
             assert.strictEqual(output, bucketName)
         })
 
-        it('returns undefined if nothing is entered', async function() {
-            sandbox
-                .stub(input, 'promptUser')
-                .onFirstCall()
-                .returns(Promise.resolve(undefined))
+        it('returns undefined if nothing is entered', async function () {
+            sandbox.stub(input, 'promptUser').onFirstCall().returns(Promise.resolve(undefined))
             const output = await context.promptUserForS3BucketName(1, { title: 'asdf' })
-            assert.strictEqual(output, undefined) 
-        })  
+            assert.strictEqual(output, undefined)
+        })
     })
 })

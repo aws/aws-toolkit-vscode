@@ -3,7 +3,7 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
-import * as AsyncLock from 'async-lock'
+import AsyncLock from 'async-lock'
 import * as vscode from 'vscode'
 import * as nls from 'vscode-nls'
 import { recordSamDetect } from '../../../shared/telemetry/telemetry'

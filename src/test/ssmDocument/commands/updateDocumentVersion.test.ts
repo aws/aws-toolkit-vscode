@@ -5,7 +5,7 @@
 
 import { SSM } from 'aws-sdk'
 import * as sinon from 'sinon'
-import * as assert from 'assert'
+import assert from 'assert'
 
 import { updateDocumentVersion } from '../../../ssmDocument/commands/updateDocumentVersion'
 import { DocumentItemNodeWriteable } from '../../../ssmDocument/explorer/documentItemNodeWriteable'

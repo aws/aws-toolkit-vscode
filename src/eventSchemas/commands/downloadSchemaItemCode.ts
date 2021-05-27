@@ -23,7 +23,7 @@ import {
     SchemaCodeDownloadWizardResponse,
 } from '../wizards/schemaCodeDownloadWizard'
 
-import * as admZip from 'adm-zip'
+import admZip from 'adm-zip'
 
 enum CodeGenerationStatus {
     CREATE_COMPLETE = 'CREATE_COMPLETE',

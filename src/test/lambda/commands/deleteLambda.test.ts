@@ -3,7 +3,7 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
-import * as assert from 'assert'
+import assert from 'assert'
 import { deleteLambda } from '../../../lambda/commands/deleteLambda'
 import { MockOutputChannel } from '../../mockOutputChannel'
 import { MockLambdaClient } from '../../shared/clients/mockClients'
