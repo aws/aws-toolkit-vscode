@@ -9,97 +9,15 @@ import { ExtendedState } from './stateController'
 import * as vscode from 'vscode'
 import * as picker from '../../shared/ui/picker'
 import * as input from '../../shared/ui/input'
+import * as nls from 'vscode-nls'
+const localize = nls.loadMessageBundle()
 
-type MetadataQuickPickItem<T> = vscode.QuickPickItem & { metadata: T | symbol }
+import * as os from 'os'
 
-function isUserInput<TProp>(results: MetadataQuickPickItem<TProp>[] | undefined): boolean {
-    if (results !== undefined && results.length === 1) {
-        return results[0].metadata === picker.CUSTOM_USER_INPUT
-    }
+import { addCodiconToString } from '../utilities/textUtilities'
+import { WIZARD_RETRY } from './wizard'
 
-    return false
-}
-
-type PromptQuickPickOptions<TProp> = {
-    transformUserInput?: (input?: string) => TProp,
-    buttons?: Map<
-        vscode.QuickInputButton, 
-        (resolve: (v: MetadataQuickPickItem<TProp>[] | undefined) => void, reject: (reason?: any) => void) => void
-    >,
-} & picker.ExtendedQuickPickOptions
-
-export async function promptQuickPick<TProp>(
-    items: MetadataQuickPickItem<TProp>[],
-    options: PromptQuickPickOptions<TProp> = {}
-): Promise<MetadataQuickPickItem<TProp | symbol>[] | undefined> {
-    //const picked: MetadataQuickPickItem<any>[] = state.stepCache ? state.stepCache.picked : undefined
-    //const isUserInput = picked && picked[0].metadata === picker.CUSTOM_USER_INPUT
-
-    // TODO: undefined items will be inferred as a quick input by convention
-    options.buttons = options.buttons ?? new Map()
-
-
-    const quickPick = picker.createQuickPick<MetadataQuickPickItem<TProp>>({
-        ...options,
-        buttons: [...options.buttons.keys(), vscode.QuickInputButtons.Back],
-        items: items,
-    })
-
-    const results = await picker.promptUser({
-        picker: quickPick,
-        onDidTriggerButton: (button, resolve, reject) => {
-            if (button === vscode.QuickInputButtons.Back) {
-                resolve(undefined)
-            } else if (options.buttons!.has(button)) {
-                options.buttons!.get(button)!(resolve, reject)
-            }
-        },
-    })
-    
-    if (isUserInput(results)) {
-        return results!.slice(0, 0)
-    } 
-
-    return results
-}
-
-type PromptType = 'QuickPick' | 'InputBox'
-interface GenericOptions {
-    value?: string
-    step?: number
-    totalStep?: number
-}
-
-export function promptUser<TState extends ExtendedState, TProp>(
-    type: 'QuickPick', 
-    items: MetadataQuickPickItem<TProp>[], 
-    options: PromptQuickPickOptions<TProp>
-): Promise<TState | undefined>
-
-export function promptUser<TState extends ExtendedState, TProp>(
-    type: 'InputBox', 
-    options?: PrompInputBoxOptions<TProp>,
-): Promise<TState | undefined>
-
-export async function promptUser<TState extends ExtendedState, TProp>(
-    type: PromptType,
-    arg1?: MetadataQuickPickItem<TProp>[] | PrompInputBoxOptions<TProp>,
-    arg2?: PromptQuickPickOptions<TProp>,
-): Promise<TState | undefined> {
-    const lastPicked: MetadataQuickPickItem<any>[] = state.stepCache ? state.stepCache.picked : undefined
-    const options = ((type === 'QuickPick' ? arg2 : arg1) ?? {}) as GenericOptions
-    options
-
-    return 
-}
-
-type PrompInputBoxOptions<TProp> = {
-    onValidateInput?: (value: string) => string | undefined,
-    buttons?: Map<
-        vscode.QuickInputButton, 
-        (resolve: (v: MetadataQuickPickItem<TProp>[] | undefined) => void, reject: (reason?: any) => void) => void
-    >,
-} & input.ExtendedInputBoxOptions
+type MetadataQuickPickItem<T> = vscode.QuickPickItem & { metadata: T | (() => Promise<T | symbol>) | symbol }
 
 // mutates a state's property
 //
@@ -220,3 +138,85 @@ export async function promptForPropertyWithInputBox<
  *      
  * ]
  */
+
+type WizardQuickPick<T> = vscode.QuickPick<MetadataQuickPickItem<T>>
+export class FolderQuickPickItem implements MetadataQuickPickItem<vscode.Uri> {
+    public readonly label: string
+
+    public constructor(private readonly folder: Folder | vscode.WorkspaceFolder) {
+        this.label = addCodiconToString('root-folder-opened', folder.name)
+    }
+
+    public get metadata(): vscode.Uri {
+        return this.folder.uri
+    }
+}
+
+ export class BrowseFolderQuickPickItem implements MetadataQuickPickItem<vscode.Uri> {
+    public alwaysShow: boolean = true
+
+    public constructor(
+        public readonly label: string, 
+        public readonly detail: string,
+        private readonly defaultUri: vscode.Uri = vscode.Uri.file(os.homedir())
+    ) {}
+
+    public get metadata(): () => Promise<vscode.Uri | symbol> {
+        return async () => {
+            const result = await vscode.window.showOpenDialog({
+                defaultUri: this.defaultUri,
+                openLabel: localize('AWS.samcli.initWizard.name.browse.openLabel', 'Open'),
+                canSelectFiles: false,
+                canSelectFolders: true,
+                canSelectMany: false,
+            })
+
+            if (!result || !result.length) {
+                return WIZARD_RETRY
+            }
+
+            return result[0]
+        }
+    }
+}
+
+interface Folder {
+    readonly uri: vscode.Uri
+    readonly name: string
+}
+
+ export function createLocationPrompt(
+    folders: Folder[]
+): WizardQuickPick<vscode.Uri> {
+    const browseLabel = 
+        (folders && folders.length > 0) ?
+        addCodiconToString(
+            'folder-opened',
+            localize('AWS.initWizard.location.select.folder', 'Select a different folder...')
+        ) 
+        : localize(
+            'AWS.initWizard.location.select.folder.empty.workspace',
+            'There are no workspace folders open. Select a folder...'
+        )
+    const items: MetadataQuickPickItem<vscode.Uri>[] = folders.map(f => new FolderQuickPickItem(f))
+        
+    items.push(
+            new BrowseFolderQuickPickItem(
+                browseLabel,
+                localize(
+                    'AWS.wizard.location.select.folder.detail',
+                    'The selected folder will be added to the workspace.'
+                ),
+                (folders !== undefined && folders.length > 0) ? folders[0].uri : undefined,
+            )
+    )
+
+    return picker.createQuickPick({
+        options: {
+            ignoreFocusOut: true,
+            title: localize('AWS.wizard.location.prompt', 'Select a workspace folder for your new project'),
+        },
+        items: items,
+            //...(additionalParams?.helpButton ? [additionalParams.helpButton.button] : []),
+    })
+}

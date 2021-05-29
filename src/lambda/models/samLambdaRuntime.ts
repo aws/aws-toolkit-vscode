@@ -164,12 +164,14 @@ function getRuntimesForFamily(family: RuntimeFamily): ImmutableSet<Runtime> | un
     }
 }
 
-export interface RuntimeQuickPickItem extends vscode.QuickPickItem {
-    packageType: RuntimePackageType
-    runtime: Runtime
-}
-
 export type RuntimeTuple = [Runtime, RuntimePackageType]
+
+type MetadataQuickPickItem<T> = vscode.QuickPickItem & { metadata: T | symbol | (() => Promise<T | symbol>) }
+
+type RuntimeQuickPickItem = MetadataQuickPickItem<{
+    packageType: RuntimePackageType,
+    runtime: Runtime,
+}>
 
 /**
  * Creates a quick pick for a Runtime with the following parameters (all optional)
@@ -195,12 +197,11 @@ export function createRuntimeQuickPick(params: {
         .filter(value => samLambdaCreatableRuntimes().has(value))
         .toArray()
         .map<RuntimeQuickPickItem>(runtime => ({
-            packageType: 'Zip',
-            runtime: runtime,
+            metadata: {
+                packageType: 'Zip',
+                runtime: runtime,
+            },
             label: runtime,
-            alwaysShow: runtime === params.currRuntime,
-            description:
-                runtime === params.currRuntime ? localize('AWS.wizard.selectedPreviously', 'Selected Previously') : '',
         }))
 
     // internally, after init there is essentially no difference between a ZIP and Image runtime;
@@ -209,14 +210,11 @@ export function createRuntimeQuickPick(params: {
     if (params.showImageRuntimes) {
         imageRuntimeItems = samImageLambdaRuntimes()
             .map<RuntimeQuickPickItem>(runtime => ({
-                packageType: 'Image',
-                runtime: runtime,
+                metadata: {
+                    packageType: 'Image',
+                    runtime: runtime,
+                },
                 label: `${runtime} (Image)`,
-                alwaysShow: runtime === params.currRuntime,
-                description:
-                    runtime === params.currRuntime
-                        ? localize('AWS.wizard.selectedPreviously', 'Selected Previously')
-                        : '',
             }))
             .toArray()
     }

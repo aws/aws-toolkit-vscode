@@ -36,6 +36,7 @@ import { goRuntimes } from '../models/samLambdaRuntime'
 import { eventBridgeStarterAppTemplate } from '../models/samTemplates'
 import {
     CreateNewSamAppWizard,
+    CreateNewSamAppWizard2,
     CreateNewSamAppWizardResponse,
     DefaultCreateNewSamAppWizardContext,
 } from '../wizards/samInitWizard'
@@ -152,11 +153,11 @@ export async function createNewSamApplication(
 
         const currentCredentials = await awsContext.getCredentials()
         const availableRegions = getRegionsForActiveCredentials(awsContext, regionProvider)
-        const schemasRegions = availableRegions.filter(region => regionProvider.isServiceInRegion('schemas', region.id))
+        //const schemasRegions = availableRegions.filter(region => regionProvider.isServiceInRegion('schemas', region.id))
         samVersion = await getSamCliVersion(samCliContext)
 
-        const wizardContext = new DefaultCreateNewSamAppWizardContext(currentCredentials, schemasRegions, samVersion)
-        config = await new CreateNewSamAppWizard(wizardContext).run()
+        //const wizardContext = new DefaultCreateNewSamAppWizardContext(currentCredentials, schemasRegions, samVersion)
+        config = await new CreateNewSamAppWizard2(currentCredentials, availableRegions, samVersion).run()
 
         if (!config) {
             createResult = 'Cancelled'
