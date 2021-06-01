@@ -23,6 +23,10 @@ import {
 import { DependencyManager, RuntimePackageType } from '../../../lambda/models/samLambdaRuntime'
 import { makeTemporaryToolkitFolder } from '../../../shared/filesystemUtilities'
 import { assertEqualPaths } from '../../testUtil'
+import { Prompter, DataQuickPickItem, ButtonBinds } from '../../../shared/ui/prompter'
+import { Credentials } from 'aws-sdk'
+import { Region } from '../../../shared/regions/endpoints'
+
 
 function isMultiDimensionalArray(array: any[] | any[][] | undefined): boolean {
     if (!array) {
@@ -36,6 +40,22 @@ function isMultiDimensionalArray(array: any[] | any[][] | undefined): boolean {
     }
 
     return false
+}
+
+
+class MockPrompter<T> extends Prompter<T> {
+    constructor(private output: T | undefined) {
+        super(vscode.window.createInputBox())
+    }
+    public async prompt(): Promise<symbol | T | undefined> {
+        return this.output
+    }
+    public setLastPicked(picked?: T | DataQuickPickItem<T> | DataQuickPickItem<T>[]): void {
+        return
+    }
+    public getLastPicked(): undefined {
+        return undefined
+    }
 }
 
 class MockCreateNewSamAppWizardContext implements CreateNewSamAppWizardContext {
@@ -100,7 +120,7 @@ class MockCreateNewSamAppWizardContext implements CreateNewSamAppWizardContext {
         private readonly _workspaceFolders: vscode.WorkspaceFolder[] | vscode.WorkspaceFolder[][],
         private readonly _lambdaRuntimes: Set<Runtime> | Set<Runtime>[],
         private readonly _dependencyManagers: (DependencyManager | undefined)[],
-        private readonly inputBoxResult: string | string[],
+        private readonly inputBoxResult: string | (string | undefined)[],
         private readonly openDialogResult: (vscode.Uri[] | undefined) | (vscode.Uri[] | undefined)[],
         private readonly _samTemplates: (Set<SamTemplate> | undefined) | (Set<SamTemplate> | undefined)[],
         private readonly currRegion: (string | undefined) | (string | undefined)[],
@@ -134,8 +154,49 @@ class MockCreateNewSamAppWizardContext implements CreateNewSamAppWizardContext {
         // keeps things in line with the set reverse above
         this._dependencyManagers = this._dependencyManagers.reverse()
     }
+    public samButtons: ButtonBinds = new Map()
+    public schemaButtons: ButtonBinds = new Map()
+    public currentCredentials: Credentials | undefined
+    public schemasRegions: Region[] = []
+    public samCliVersion: string = ''
 
-    public async showOpenDialog(options: vscode.OpenDialogOptions): Promise<vscode.Uri[] | undefined> {
+    public createTemplatePrompter(currRuntime: string, packageType: RuntimePackageType): Prompter<SamTemplate> {
+        return new MockPrompter(this.samTemplates.toArray().pop()) 
+    }
+    public createRegionPrompter(): Prompter<string> {
+        return new MockPrompter(this.getUserInput(this.currRegion, 'region'))
+    }
+    public createDependencyPrompter(currRuntime: string): Prompter<DependencyManager> {
+        return new MockPrompter(this._dependencyManagers.pop())
+    }
+    public createRegistryPrompter(currRegion: string): Prompter<string> {
+        return new MockPrompter(this.getUserInput(this.currRegistry, 'registry'))
+    }
+    public createSchemaPrompter(currRegion: string, currRegistry: string): Prompter<string> {
+        return new MockPrompter(this.getUserInput(this.currSchema, 'schema'))
+    }
+    public createNamePrompter(defaultValue: string): Prompter<string> {
+        return new MockPrompter(this.getUserInput(this.inputBoxResult, 'inputBoxResult'))
+    }
+    public createRuntimePrompter(): Prompter<{ runtime: string, packageType: RuntimePackageType }> {
+        const runtime = this.lambdaRuntimes.toArray().pop()
+        const output: { runtime: string, packageType: RuntimePackageType } | undefined = 
+            runtime ? { runtime: runtime, packageType: 'Zip' } : undefined
+        return new MockPrompter(output)
+    }
+    public createLocationPrompter(): Prompter<vscode.Uri> {
+        if (this.workspaceFolders && this.workspaceFolders.length > 0) {
+            const temp = this.workspaceFolders[0]
+
+            return new MockPrompter(temp ? temp.uri : undefined)
+        } else {
+            const locations = this.showOpenDialog({})
+
+            return new MockPrompter(locations ? locations.pop() : undefined)
+        }
+    }
+
+    public showOpenDialog(options: vscode.OpenDialogOptions): vscode.Uri[] | undefined {
         if (isMultiDimensionalArray(this.openDialogResult)) {
             if (this.openDialogResult!.length <= 0) {
                 throw new Error('showOpenDialog was called more times than expected')
@@ -145,53 +206,6 @@ class MockCreateNewSamAppWizardContext implements CreateNewSamAppWizardContext {
         }
 
         return this.openDialogResult as vscode.Uri[]
-    }
-
-    public async promptUserForRuntimeAndDependencyManager(
-        currRuntime?: Runtime
-    ): Promise<[Runtime, RuntimePackageType, DependencyManager | undefined] | undefined> {
-        const runtime = this.lambdaRuntimes.toArray().pop()
-        return runtime ? [runtime, 'Zip', this._dependencyManagers.pop()] : undefined
-    }
-
-    public async promptUserForTemplate(
-        currRuntime: Runtime,
-        packageType: RuntimePackageType,
-        currTemplate?: SamTemplate
-    ): Promise<SamTemplate | undefined> {
-        return this.samTemplates.toArray().pop()
-    }
-
-    public async promptUserForRegion(currRegion?: string): Promise<string | undefined> {
-        return this.getUserInput(this.currRegion, 'region')
-    }
-
-    public async promptUserForRegistry(currRegion: string, currRegistry?: string): Promise<string | undefined> {
-        return this.getUserInput(this.currRegistry, 'registry')
-    }
-
-    public async promptUserForSchema(
-        currRegion: string,
-        currRegistry: string,
-        currSchema?: string
-    ): Promise<string | undefined> {
-        return this.getUserInput(this.currSchema, 'schema')
-    }
-
-    public async promptUserForLocation(): Promise<vscode.Uri | undefined> {
-        if (this.workspaceFolders && this.workspaceFolders.length > 0) {
-            const temp = this.workspaceFolders[0]
-
-            return temp ? temp.uri : undefined
-        } else {
-            const locations = await this.showOpenDialog({})
-
-            return locations ? locations.pop() : undefined
-        }
-    }
-
-    public async promptUserForName(defaultValue: string): Promise<string | undefined> {
-        return this.getUserInput(this.inputBoxResult, 'inputBoxResult')
     }
 
     public getUserInput(
@@ -283,7 +297,7 @@ describe('CreateNewSamAppWizard', async function () {
         it('exits when a runtime is selected, a dependency manager is not, and then cancelled', async function () {
             const context: CreateNewSamAppWizardContext = new MockCreateNewSamAppWizardContext(
                 [],
-                [Set<Runtime>('java11'), Set<Runtime>()],
+                [Set<Runtime>(['java11']), Set<Runtime>()],
                 [],
                 'myName',
                 [vscode.Uri.file(dir)],
@@ -589,7 +603,7 @@ describe('CreateNewSamAppWizard', async function () {
                 [],
                 Set<Runtime>(['nodejs10.x']),
                 ['npm'],
-                ['', 'myName'],
+                [undefined, 'myName'],
                 [[vscode.Uri.file(dir)], [vscode.Uri.file(dir2)]],
                 Set<SamTemplate>([helloWorldTemplate]),
                 [],

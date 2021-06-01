@@ -32,7 +32,7 @@ export async function getMfaTokenFromUser(
         const inputBox = createInputBox({
             options: {
                 ignoreFocusOut: true,
-                placeHolder: localize('AWS.prompt.mfa.enterCode.placeholder', 'Enter Authentication Code Here'),
+                placeholder: localize('AWS.prompt.mfa.enterCode.placeholder', 'Enter Authentication Code Here'),
                 title: localize('AWS.prompt.mfa.enterCode.title', 'MFA Challenge for {0}', profileName),
                 prompt: localize('AWS.prompt.mfa.enterCode.prompt', 'Enter code for MFA device {0}', mfaSerial),
             },

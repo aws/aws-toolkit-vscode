@@ -112,7 +112,7 @@ class MockSamDeployWizardContext implements SamDeployWizardContext {
         bucketProps: {
             title: string
             prompt?: string | undefined
-            placeHolder?: string | undefined
+            placeholder?: string | undefined
             value?: string | undefined
             buttons?: vscode.QuickInputButton[] | undefined
             buttonHandler?:

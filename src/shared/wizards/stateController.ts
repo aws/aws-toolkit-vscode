@@ -3,59 +3,42 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 import * as _ from 'lodash'
-import { getLogger } from '../logger/logger'
 
 export interface StateMachineStepResult<TState> {
-    nextState?: MachineState<TState>
+    nextState?: TState
     nextSteps?: StateStepFunction<TState>[]
     repeatStep?: boolean
 }
 
-type StepCache = { [key: string]: any }
-
-export interface ExtendedState {
-    currentStep: number
-    totalSteps: number
-    /**
-     * Persistent information that exists on a per-step basis
-     * This should not be used for determining state transitions as it would violate
-     * the deterministic nature of the state machine
-     */
-    stepCache?: StepCache
-}
 type RecursiveReadonly<T> = {
     readonly [Property in keyof T]: RecursiveReadonly<T[Property]> 
 }
 
-export type StateStepFunction<TState> = (state: MachineState<TState>) => Promise<StateMachineStepResult<TState> | TState>
+export type StateStepFunction<TState> = (state: TState) => Promise<StateMachineStepResult<TState> | TState>
 export type StateBranch<TState> = StateStepFunction<TState>[]
-export type MachineState<TState> = TState & ExtendedState
+
+export const WIZARD_GOBACK = undefined
+export const WIZARD_RETRY = { repeatStep: true }
 
 /**
- * A multi-step wizard controller. Very fancy, very cool.
+ * State machine with backtracking and dynamic branching functionality.
+ * Transitions are abstracted away as a 'step' function, which return both the
+ * new state and any extra steps that the machine should use.
  */
 export class StateMachineController<TState> {
-    private previousStates: MachineState<TState>[] = []
-    private stepCaches: WeakMap<StateStepFunction<TState>, StepCache | undefined> = new WeakMap()
+    private previousStates: TState[] = []
     private extraSteps = new Map<number, StateBranch<TState>>()
     private steps: StateBranch<TState> = []
     private internalStep: number = 0
-    private state!: MachineState<TState>
+    private state!: TState
 
-    public constructor(
-        private readonly options: {
-            initState?: TState | MachineState<TState>
-            disableFutureMemory?: boolean
-        } = {}
-    ) {
-        this.setState(options.initState)
+    public constructor(private readonly initState?: TState) {
+        this.setState(this.initState)
     }
 
     public setState(state?: TState) {
         this.reset()
-        this.state = { ...state } as MachineState<TState>
-        this.state.currentStep = this.state.currentStep ?? 1
-        this.state.totalSteps = (this.steps.length ?? 0) + (this.state.totalSteps ?? 0)
+        this.state = state ?? {} as TState
     }
 
     public getState(): RecursiveReadonly<TState> {
@@ -69,19 +52,19 @@ export class StateMachineController<TState> {
         while (this.internalStep > 0) {
             this.rollbackState()
         }
-
-        this.stepCaches = new WeakMap()
     }
 
     /** Adds a single step to the state machine. */
     public addStep(step: StateStepFunction<TState>): void {
         this.steps.push(step)
-        this.state.totalSteps += 1
     }
 
-    protected containsStep(step: StateStepFunction<TState> | undefined): boolean {
+    public containsStep(step: StateStepFunction<TState> | undefined): boolean {
         return step !== undefined && this.steps.indexOf(step) > -1
     }
+
+    public get currentStep(): number { return this.internalStep + 1 }
+    public get totalSteps(): number { return this.steps.length }
 
     protected rollbackState(): void {
         if (this.internalStep === 0) {
@@ -97,74 +80,62 @@ export class StateMachineController<TState> {
         this.internalStep -= 1
     }
 
-    protected advanceState(nextState: MachineState<TState>): void {
+    protected advanceState(nextState: TState): void {
         this.previousStates.push(_.cloneDeep(this.state))
-        this.stepCaches.set(this.steps[this.internalStep], this.state.stepCache)
         this.state = nextState
-        this.state.stepCache = undefined
         this.internalStep += 1
-        this.state.currentStep += 1
     }
 
     /**
-     * Adds new steps to the state machine controller
+     * Add new steps dynamically at runtime. Only used internally.
      */
     protected dynamicBranch(nextSteps: StateBranch<TState> | undefined): void {
         if (nextSteps !== undefined && nextSteps.length > 0) {
+            // This cycle detect logic could be improved. Returning to
+            // a previous step is not a cycle unless the states are equivalent.
             if (nextSteps.filter(step => this.containsStep(step)).length !== 0) {
                 throw Error('Cycle detected in state machine conroller')
             }
             this.steps.splice(this.internalStep, 0, ...nextSteps)
             this.extraSteps.set(this.internalStep, nextSteps)
-            this.state.totalSteps += nextSteps.length
         }
     }
 
     protected async processNextStep(): Promise<StateMachineStepResult<TState>> {
         const result = await this.steps[this.internalStep](this.state)
-        
-        if ((result as StateMachineStepResult<TState>).nextSteps !== undefined) {
+
+        function isMachineResult(result: any): result is StateMachineStepResult<TState> {
+            return result !== undefined && 
+                (result.nextState !== undefined || result.nextSteps !== undefined || result.repeatStep !== undefined)
+        }
+
+        if (isMachineResult(result)) {
             return result
         } else {
-            return { nextState: result as MachineState<TState> }
+            return { nextState: result }
         }
     }
 
     /**
      * Runs the added steps until termination or failure
      */
-    public async runMachine(): Promise<TState | undefined> {
+    public async run(): Promise<TState | undefined> {
         this.previousStates.push(_.cloneDeep(this.state))
 
         while (this.internalStep < this.steps.length) {
-            try {
-                //const unmutatedState = _.cloneDeep(this.state)
-                const { nextState, nextSteps, repeatStep } = await this.processNextStep()
+            const { nextState, nextSteps, repeatStep } = await this.processNextStep()
 
-                if (repeatStep === true) {
-                    //this.state = unmutatedState
-                    this.state.stepCache = nextState?.stepCache
-                    continue
-                } if (nextState === undefined) {
-                    if (this.internalStep === 0) {
-                        return undefined
-                    }
-
-                    this.rollbackState()
-                } else {
-                    this.advanceState(nextState as MachineState<TState>)
-                    this.dynamicBranch(nextSteps)
-
-                    if (this.options.disableFutureMemory !== true) {
-                        this.state.stepCache = this.stepCaches.get(this.steps[this.internalStep])
-                    }
+            if (repeatStep === true) {
+                continue
+            } if (nextState === undefined) {
+                if (this.internalStep === 0) {
+                    return undefined
                 }
-            } catch (err) {
-                getLogger().debug(
-                    'state machine controller: terminated due to unhandled exception with current state %O',
-                    this.state
-                )
-                throw err
+
+                this.rollbackState()
+            } else {
+                this.advanceState(nextState as TState)
+                this.dynamicBranch(nextSteps)
             }
         }
 

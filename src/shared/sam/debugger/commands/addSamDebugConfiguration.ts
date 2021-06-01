@@ -112,12 +112,12 @@ export async function addSamDebugConfiguration(
                             }
                         },
                     })
-                    const userRuntime = picker.verifySinglePickerOutput(choices)?.runtime
-                    if (!userRuntime) {
+                    const userRuntime = picker.verifySinglePickerOutput(choices)
+                    if (!userRuntime || typeof userRuntime.data === 'symbol' || userRuntime.data instanceof Function) {
                         // User selected "Cancel". Abandon config creation
                         return
                     }
-                    runtimeName = userRuntime
+                    runtimeName = userRuntime.data.runtime
                     addRuntimeNameToConfig = true
                 }
             }

@@ -307,7 +307,7 @@ export class DefaultAWSContextCommands {
 
         const picker = createQuickPick({
             options: {
-                placeHolder: localize('AWS.message.selectRegion', 'Select an AWS region'),
+                placeholder: localize('AWS.message.selectRegion', 'Select an AWS region'),
                 title: title,
                 matchOnDetail: true,
                 step: params?.step,

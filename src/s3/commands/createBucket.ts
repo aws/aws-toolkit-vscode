@@ -28,7 +28,7 @@ export async function createBucketCommand(
 
     const bucketName = await window.showInputBox({
         prompt: localize('AWS.s3.createBucket.prompt', 'Enter a new bucket name'),
-        placeHolder: localize('AWS.s3.createBucket.placeHolder', 'Bucket Name'),
+        placeHolder: localize('AWS.s3.createBucket.placeholder', 'Bucket Name'),
         validateInput: validateBucketName,
     })
 

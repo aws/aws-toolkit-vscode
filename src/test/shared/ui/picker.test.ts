@@ -58,7 +58,7 @@ describe('createQuickPick', async function () {
     it('Sets Options', async function () {
         const options = {
             title: 'title',
-            placeHolder: 'placeholder',
+            placeholder: 'placeholder',
             matchOnDescription: true,
             matchOnDetail: true,
             ignoreFocusOut: true,
@@ -114,8 +114,8 @@ describe('createQuickPick', async function () {
 
         assert.strictEqual(
             actualPicker.placeholder,
-            expectedOptions.placeHolder,
-            `Picker placeHolder mismatch, expected ${expectedOptions.placeHolder}, got ${actualPicker.placeholder}`
+            expectedOptions.placeholder,
+            `Picker placeholder mismatch, expected ${expectedOptions.placeholder}, got ${actualPicker.placeholder}`
         )
 
         // vscode.window.createQuickPick defaults matchOnDescription to true

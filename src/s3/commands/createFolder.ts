@@ -34,7 +34,7 @@ export async function createFolderCommand(
 
     const folderName = await window.showInputBox({
         prompt: localize('AWS.s3.createFolder.prompt', 'Enter a folder to create in {0}', readablePath(node)),
-        placeHolder: localize('AWS.s3.createFolder.placeHolder', 'Folder Name'),
+        placeHolder: localize('AWS.s3.createFolder.placeholder', 'Folder Name'),
         validateInput: validateFolderName,
     })
 

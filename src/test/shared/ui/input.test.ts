@@ -30,7 +30,7 @@ describe('createInputBox', async function () {
     it('Sets Options', async function () {
         const options = {
             title: 'title',
-            placeHolder: 'placeholder',
+            placeholder: 'placeholder',
             ignoreFocusOut: true,
         }
 
@@ -81,8 +81,8 @@ describe('createInputBox', async function () {
 
         assert.strictEqual(
             actualInput.placeholder,
-            expectedOptions.placeHolder,
-            `InputBox placeHolder mismatch, expected ${expectedOptions.placeHolder}, got ${actualInput.placeholder}`
+            expectedOptions.placeholder,
+            `InputBox placeholder mismatch, expected ${expectedOptions.placeholder}, got ${actualInput.placeholder}`
         )
 
         // vscode.window.createInputBox defaults ignoreFocusOut to true

@@ -21,7 +21,7 @@ export async function createRepository(
 
     const repositoryName = await window.showInputBox({
         prompt: localize('AWS.ecr.createRepository.prompt', 'Enter a new repository name'),
-        placeHolder: localize('AWS.ecr.createRepository.placeHolder', 'Repository Name'),
+        placeHolder: localize('AWS.ecr.createRepository.placeholder', 'Repository Name'),
         validateInput: validateRepositoryName,
     })
 

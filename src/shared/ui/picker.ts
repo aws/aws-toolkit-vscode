@@ -18,13 +18,20 @@ export interface AdditionalQuickPickOptions {
     title?: string
     value?: string
     step?: number
+    placeholder?: string
     totalSteps?: number
-    /** User can type their own entry */
+    /** Allows the user to make their own QuickPick item. The label sets the 'name' of this custom item. */
     customUserInputLabel?: string
+    /** Maps QuickInputButtons to a corresponding function */
+    buttonBinds?: Map<vscode.QuickInputButton, (resolve: any, reject: any) => void>
 }
 
 export type ExtendedQuickPickOptions = vscode.QuickPickOptions & AdditionalQuickPickOptions
-export const CUSTOM_USER_INPUT = Symbol('custom quick pick')
+export const CUSTOM_USER_INPUT = Symbol()
+
+function applySettings<T1, T2 extends T1>(obj: T2, settings: T1): void {
+    Object.assign(obj, settings)
+}
 
 /**
  * Creates a QuickPick to let the user pick an item from a list
@@ -39,7 +46,7 @@ export const CUSTOM_USER_INPUT = Symbol('custom quick pick')
  *  buttons - set of buttons to initialize the picker with
  * @return A new QuickPick.
  */
-export function createQuickPick<T extends vscode.QuickPickItem & { metadata?: any }>({
+export function createQuickPick<T extends vscode.QuickPickItem & { data?: any }>({
     options,
     items,
     buttons,
@@ -57,7 +64,7 @@ export function createQuickPick<T extends vscode.QuickPickItem & { metadata?: an
                     label: options!.customUserInputLabel,
                     description: value,
                     alwaysShow: true,
-                    metadata: CUSTOM_USER_INPUT,
+                    data: CUSTOM_USER_INPUT,
                 } as T,
                 ...(items ?? []),
             ]
@@ -67,32 +74,16 @@ export function createQuickPick<T extends vscode.QuickPickItem & { metadata?: an
     }
 
     if (options) {
-        picker.title = options.title
-        picker.placeholder = options.placeHolder
-        picker.value = options.value || ''
-
-        if (options.matchOnDescription !== undefined) {
-            picker.matchOnDescription = options.matchOnDescription
-        }
-        if (options.matchOnDetail !== undefined) {
-            picker.matchOnDetail = options.matchOnDetail
-        }
-        if (options.ignoreFocusOut !== undefined) {
-            picker.ignoreFocusOut = options.ignoreFocusOut
-        }
-        picker.step = options.step
-        picker.totalSteps = options.totalSteps
+        applySettings(picker, options)
 
         if (options.customUserInputLabel) {
             picker.onDidChangeValue(update)
         }
-
-        // TODO : Apply more options as they are needed in the future, and add corresponding tests
     }
 
     update(picker.value)
 
-    if (buttons) {
+    if (buttons !== undefined) {
         picker.buttons = buttons
     }
 

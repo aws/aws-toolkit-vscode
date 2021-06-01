@@ -166,7 +166,7 @@ function getRuntimesForFamily(family: RuntimeFamily): ImmutableSet<Runtime> | un
 
 export type RuntimeTuple = [Runtime, RuntimePackageType]
 
-type MetadataQuickPickItem<T> = vscode.QuickPickItem & { metadata: T | symbol | (() => Promise<T | symbol>) }
+type MetadataQuickPickItem<T> = vscode.QuickPickItem & { data: T | symbol | (() => Promise<T | symbol>) }
 
 type RuntimeQuickPickItem = MetadataQuickPickItem<{
     packageType: RuntimePackageType,
@@ -197,7 +197,7 @@ export function createRuntimeQuickPick(params: {
         .filter(value => samLambdaCreatableRuntimes().has(value))
         .toArray()
         .map<RuntimeQuickPickItem>(runtime => ({
-            metadata: {
+            data: {
                 packageType: 'Zip',
                 runtime: runtime,
             },
@@ -210,7 +210,7 @@ export function createRuntimeQuickPick(params: {
     if (params.showImageRuntimes) {
         imageRuntimeItems = samImageLambdaRuntimes()
             .map<RuntimeQuickPickItem>(runtime => ({
-                metadata: {
+                data: {
                     packageType: 'Image',
                     runtime: runtime,
                 },

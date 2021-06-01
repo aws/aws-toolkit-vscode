@@ -12,10 +12,17 @@ import * as vscode from 'vscode'
 export interface AdditionalInputBoxOptions {
     title?: string
     step?: number
+    placeholder?: string
     totalSteps?: number
+    buttonBinds?: Map<vscode.QuickInputButton, (resolve: any, reject: any) => void>
+    validateInput?(value: string): string | undefined
 }
 
 export type ExtendedInputBoxOptions = vscode.InputBoxOptions & AdditionalInputBoxOptions
+
+function applySettings<T1, T2 extends T1>(obj: T2, settings: T1): void {
+    Object.assign(obj, settings)
+}
 
 /**
  * Creates an InputBox to get a text response from the user.
@@ -36,22 +43,18 @@ export function createInputBox({
     buttons?: vscode.QuickInputButton[]
 }): vscode.InputBox {
     const inputBox = vscode.window.createInputBox()
+    applySettings(inputBox, options)
 
-    if (options) {
-        inputBox.title = options.title
-        inputBox.value = options.value ?? ''
-        inputBox.placeholder = options.placeHolder
-        inputBox.prompt = options.prompt
-        inputBox.step = options.step
-        inputBox.totalSteps = options.totalSteps
-        if (options.ignoreFocusOut !== undefined) {
-            inputBox.ignoreFocusOut = options.ignoreFocusOut
-        }
-
-        // TODO : Apply more options as they are needed in the future, and add corresponding tests
+    if (options?.validateInput !== undefined) {
+        inputBox.onDidChangeValue(
+            value => {
+                inputBox.validationMessage = options.validateInput!(value) as any
+            },
+            inputBox
+        )
     }
 
-    if (buttons) {
+    if (buttons !== undefined) {
         inputBox.buttons = buttons
     }
 

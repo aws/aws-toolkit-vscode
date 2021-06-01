@@ -140,7 +140,7 @@ export interface SamDeployWizardContext {
         bucketProps: {
             title: string
             prompt?: string
-            placeHolder?: string
+            placeholder?: string
             value?: string
             buttons?: vscode.QuickInputButton[]
             buttonHandler?: (
@@ -516,7 +516,7 @@ export class DefaultSamDeployWizardContext implements SamDeployWizardContext {
         bucketProps: {
             title: string
             prompt?: string
-            placeHolder?: string
+            placeholder?: string
             value?: string
             buttons?: vscode.QuickInputButton[]
             buttonHandler?: (
@@ -544,7 +544,7 @@ export class DefaultSamDeployWizardContext implements SamDeployWizardContext {
                 totalSteps: this.totalSteps + this.additionalSteps,
                 value: bucketProps.value,
                 prompt: bucketProps.prompt,
-                placeHolder: bucketProps.placeHolder,
+                placeholder: bucketProps.placeholder,
             },
         })
 
