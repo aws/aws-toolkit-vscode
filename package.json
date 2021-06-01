@@ -1594,12 +1594,11 @@
         "aws-sdk": "^2.882.0",
         "aws-ssm-document-language-service": "^1.0.0",
         "bytes": "^3.1.0",
-        "cloudformation-schema-js-yaml": "^1.0.1",
         "cross-spawn": "^7.0.3",
         "fs-extra": "^9.0.1",
         "handlebars": "^4.7.7",
         "immutable": "^4.0.0-rc.12",
-        "js-yaml": "^3.13.1",
+        "js-yaml": "^4.1.0",
         "jsonc-parser": "^2.0.2",
         "lodash": "^4.17.21",
         "mime-types": "^2.1.27",
@@ -1620,7 +1619,8 @@
         "winston": "^3.2.1",
         "winston-transport": "^4.3.0",
         "xml2js": "^0.4.19",
-        "yaml": "^1.9.2"
+        "yaml": "^1.9.2",
+        "yaml-cfn": "^0.3.0"
     },
     "prettier": {
         "printWidth": 120,
