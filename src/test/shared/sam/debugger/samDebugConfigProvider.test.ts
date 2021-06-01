@@ -353,7 +353,7 @@ describe('SamDebugConfigurationProvider', async function () {
                 config.templatePath,
                 `Resources:
   go1plainsamapp:
-    Type: 'AWS::Serverless::Function'
+    Type: AWS::Serverless::Function
     Properties:
       Handler: hello-world
       CodeUri: >-
@@ -563,7 +563,7 @@ describe('SamDebugConfigurationProvider', async function () {
                 expected.templatePath,
                 `Resources:
   src:
-    Type: 'AWS::Serverless::Function'
+    Type: AWS::Serverless::Function
     Properties:
       Handler: my.test.handler
       CodeUri: >-
@@ -871,7 +871,7 @@ describe('SamDebugConfigurationProvider', async function () {
                 expected.templatePath,
                 `Resources:
   SourceCodeTwoFoldersDeep:
-    Type: 'AWS::Serverless::Function'
+    Type: AWS::Serverless::Function
     Properties:
       CodeUri: .
       Handler: src/subfolder/app.handlerTwoFoldersDeep
@@ -1016,7 +1016,7 @@ describe('SamDebugConfigurationProvider', async function () {
             assertFileText(
                 expected.templatePath,
                 `AWSTemplateFormatVersion: '2010-09-09'
-Transform: 'AWS::Serverless-2016-10-31'
+Transform: AWS::Serverless-2016-10-31
 Description: |
   js-image-sam-app
   Sample SAM Template for js-image-sam-app
@@ -1025,7 +1025,7 @@ Globals:
     Timeout: 3
 Resources:
   HelloWorldFunction:
-    Type: 'AWS::Serverless::Function'
+    Type: AWS::Serverless::Function
     Properties:
       PackageType: Image
       Events:
@@ -1042,18 +1042,18 @@ Outputs:
   HelloWorldApi:
     Description: API Gateway endpoint URL for Prod stage for Hello World function
     Value:
-      'Fn::Sub': >-
+      Fn::Sub: >-
         https://\${ServerlessRestApi}.execute-api.\${AWS::Region}.amazonaws.com/Prod/hello/
   HelloWorldFunction:
     Description: Hello World Lambda Function ARN
     Value:
-      'Fn::GetAtt':
+      Fn::GetAtt:
         - HelloWorldFunction
         - Arn
   HelloWorldFunctionIamRole:
     Description: Implicit IAM Role created for Hello World function
     Value:
-      'Fn::GetAtt':
+      Fn::GetAtt:
         - HelloWorldFunctionRole
         - Arn
 `
@@ -1200,7 +1200,7 @@ Outputs:
                 expected.templatePath,
                 `Resources:
   SourceCodeTwoFoldersDeep:
-    Type: 'AWS::Serverless::Function'
+    Type: AWS::Serverless::Function
     Properties:
       CodeUri: .
       Handler: src/subfolder/app.handlerTwoFoldersDeep
@@ -1287,9 +1287,9 @@ Outputs:
                 expected.templatePath,
                 `Resources:
   HelloWorldFunction:
-    Type: 'AWS::Serverless::Function'
+    Type: AWS::Serverless::Function
     Properties:
-      Handler: '${handler}'
+      Handler: ${handler}
       CodeUri: >-
         ${appDir}${input.invokeTarget.projectRoot}
       Runtime: java11
@@ -1393,9 +1393,9 @@ Outputs:
                 expectedDebug.templatePath,
                 `Resources:
   HelloWorldFunction:
-    Type: 'AWS::Serverless::Function'
+    Type: AWS::Serverless::Function
     Properties:
-      Handler: '${handler}'
+      Handler: ${handler}
       CodeUri: >-
         ${appDir}${input.invokeTarget.projectRoot}
       Runtime: java11
@@ -1507,7 +1507,7 @@ Outputs:
             assertFileText(
                 expectedDebug.templatePath,
                 `AWSTemplateFormatVersion: '2010-09-09'
-Transform: 'AWS::Serverless-2016-10-31'
+Transform: AWS::Serverless-2016-10-31
 Description: |
   Test SAM Template
 Globals:
@@ -1515,10 +1515,10 @@ Globals:
     Timeout: 20
 Resources:
   HelloWorldFunction:
-    Type: 'AWS::Serverless::Function'
+    Type: AWS::Serverless::Function
     Properties:
       CodeUri: HelloWorldFunction
-      Handler: '${handler}'
+      Handler: ${handler}
       Runtime: java11
       MemorySize: 512
       Environment:
@@ -1534,18 +1534,18 @@ Outputs:
   HelloWorldApi:
     Description: API Gateway endpoint URL for Prod stage for Hello World function
     Value:
-      'Fn::Sub': >-
+      Fn::Sub: >-
         https://\${ServerlessRestApi}.execute-api.\${AWS::Region}.amazonaws.com/Prod/hello/
   HelloWorldFunction:
     Description: Hello World Lambda Function ARN
     Value:
-      'Fn::GetAtt':
+      Fn::GetAtt:
         - HelloWorldFunction
         - Arn
   HelloWorldFunctionIamRole:
     Description: Implicit IAM Role created for Hello World function
     Value:
-      'Fn::GetAtt':
+      Fn::GetAtt:
         - HelloWorldFunctionRole
         - Arn
 `
@@ -1662,7 +1662,7 @@ Outputs:
             assertFileText(
                 expectedDebug.templatePath,
                 `AWSTemplateFormatVersion: '2010-09-09'
-Transform: 'AWS::Serverless-2016-10-31'
+Transform: AWS::Serverless-2016-10-31
 Description: |
   java11-image-gradle-sam-app
   Sample SAM Template for java11-image-gradle-sam-app
@@ -1671,7 +1671,7 @@ Globals:
     Timeout: 20
 Resources:
   HelloWorldFunction:
-    Type: 'AWS::Serverless::Function'
+    Type: AWS::Serverless::Function
     Properties:
       PackageType: Image
       Events:
@@ -1688,18 +1688,18 @@ Outputs:
   HelloWorldApi:
     Description: API Gateway endpoint URL for Prod stage for Hello World function
     Value:
-      'Fn::Sub': >-
+      Fn::Sub: >-
         https://\${ServerlessRestApi}.execute-api.\${AWS::Region}.amazonaws.com/Prod/hello/
   HelloWorldFunction:
     Description: Hello World Lambda Function ARN
     Value:
-      'Fn::GetAtt':
+      Fn::GetAtt:
         - HelloWorldFunction
         - Arn
   HelloWorldFunctionIamRole:
     Description: Implicit IAM Role created for Hello World function
     Value:
-      'Fn::GetAtt':
+      Fn::GetAtt:
         - HelloWorldFunctionRole
         - Arn
 `
@@ -1814,9 +1814,9 @@ Outputs:
                 expected.templatePath,
                 `Resources:
   HelloWorld:
-    Type: 'AWS::Serverless::Function'
+    Type: AWS::Serverless::Function
     Properties:
-      Handler: 'HelloWorld::HelloWorld.Function::FunctionHandler'
+      Handler: HelloWorld::HelloWorld.Function::FunctionHandler
       CodeUri: >-
         ${appDir}${input.invokeTarget.projectRoot}
       Runtime: dotnetcore2.1
@@ -1981,7 +1981,7 @@ Outputs:
             assertFileText(
                 expected.templatePath,
                 `AWSTemplateFormatVersion: '2010-09-09'
-Transform: 'AWS::Serverless-2016-10-31'
+Transform: AWS::Serverless-2016-10-31
 Description: |
   Test SAM Template
 Globals:
@@ -1989,10 +1989,10 @@ Globals:
     Timeout: 10
 Resources:
   HelloWorldFunction:
-    Type: 'AWS::Serverless::Function'
+    Type: AWS::Serverless::Function
     Properties:
       CodeUri: ./src/HelloWorld/
-      Handler: 'HelloWorld::HelloWorld.Function::FunctionHandler'
+      Handler: HelloWorld::HelloWorld.Function::FunctionHandler
       Runtime: dotnetcore2.1
       Environment:
         Variables:
@@ -2007,18 +2007,18 @@ Outputs:
   HelloWorldApi:
     Description: API Gateway endpoint URL for Prod stage for Hello World function
     Value:
-      'Fn::Sub': >-
+      Fn::Sub: >-
         https://\${ServerlessRestApi}.execute-api.\${AWS::Region}.amazonaws.com/Prod/hello/
   HelloWorldFunction:
     Description: Hello World Lambda Function ARN
     Value:
-      'Fn::GetAtt':
+      Fn::GetAtt:
         - HelloWorldFunction
         - Arn
   HelloWorldFunctionIamRole:
     Description: Implicit IAM Role created for Hello World function
     Value:
-      'Fn::GetAtt':
+      Fn::GetAtt:
         - HelloWorldFunctionRole
         - Arn
 `
@@ -2197,7 +2197,7 @@ Outputs:
             assertFileText(
                 expected.templatePath,
                 `AWSTemplateFormatVersion: '2010-09-09'
-Transform: 'AWS::Serverless-2016-10-31'
+Transform: AWS::Serverless-2016-10-31
 Description: |
   Sample SAM Template for csharp2.1-image-sam-app
 Globals:
@@ -2205,7 +2205,7 @@ Globals:
     Timeout: 10
 Resources:
   HelloWorldFunction:
-    Type: 'AWS::Serverless::Function'
+    Type: AWS::Serverless::Function
     Properties:
       PackageType: Image
       Events:
@@ -2222,18 +2222,18 @@ Outputs:
   HelloWorldApi:
     Description: API Gateway endpoint URL for Prod stage for Hello World function
     Value:
-      'Fn::Sub': >-
+      Fn::Sub: >-
         https://\${ServerlessRestApi}.execute-api.\${AWS::Region}.amazonaws.com/Prod/hello/
   HelloWorldFunction:
     Description: Hello World Lambda Function ARN
     Value:
-      'Fn::GetAtt':
+      Fn::GetAtt:
         - HelloWorldFunction
         - Arn
   HelloWorldFunctionIamRole:
     Description: Implicit IAM Role created for Hello World function
     Value:
-      'Fn::GetAtt':
+      Fn::GetAtt:
         - HelloWorldFunctionRole
         - Arn
 `
@@ -2392,7 +2392,7 @@ Outputs:
                 expected.templatePath,
                 `Resources:
   helloworld:
-    Type: 'AWS::Serverless::Function'
+    Type: AWS::Serverless::Function
     Properties:
       Handler: ${expected.handlerName}
       CodeUri: >-
@@ -2541,7 +2541,7 @@ Outputs:
             assertFileText(
                 expected.templatePath,
                 `AWSTemplateFormatVersion: '2010-09-09'
-Transform: 'AWS::Serverless-2016-10-31'
+Transform: AWS::Serverless-2016-10-31
 Description: |
   python3.7-plain-sam-app
   Sample SAM Template for python3.7-plain-sam-app
@@ -2550,7 +2550,7 @@ Globals:
     Timeout: 3
 Resources:
   HelloWorldFunction:
-    Type: 'AWS::Serverless::Function'
+    Type: AWS::Serverless::Function
     Properties:
       CodeUri: hello_world/
       Handler: app.lambda_handler
@@ -2562,13 +2562,13 @@ Resources:
             Path: /hello
             Method: get
   Function2NotInLaunchJson:
-    Type: 'AWS::Serverless::Function'
+    Type: AWS::Serverless::Function
     Properties:
       CodeUri: hello_world/
       Handler: app.lambda_handler_2
       Runtime: python3.7
   Function3NotInLaunchJson:
-    Type: 'AWS::Serverless::Function'
+    Type: AWS::Serverless::Function
     Properties:
       CodeUri: hello_world/
       Handler: app.lambda_handler_3
@@ -2580,25 +2580,25 @@ Resources:
             Path: /apipath1
             Method: get
   ServerlessApi:
-    Type: 'AWS::Serverless::Api'
+    Type: AWS::Serverless::Api
     Properties:
       Name: ResourceName
 Outputs:
   HelloWorldApi:
     Description: API Gateway endpoint URL for Prod stage for Hello World function
     Value:
-      'Fn::Sub': >-
+      Fn::Sub: >-
         https://\${ServerlessRestApi}.execute-api.\${AWS::Region}.amazonaws.com/Prod/hello/
   HelloWorldFunction:
     Description: Hello World Lambda Function ARN
     Value:
-      'Fn::GetAtt':
+      Fn::GetAtt:
         - HelloWorldFunction
         - Arn
   HelloWorldFunctionIamRole:
     Description: Implicit IAM Role created for Hello World function
     Value:
-      'Fn::GetAtt':
+      Fn::GetAtt:
         - HelloWorldFunctionRole
         - Arn
 `
@@ -2739,7 +2739,7 @@ Outputs:
             assertFileText(
                 expected.templatePath,
                 `AWSTemplateFormatVersion: '2010-09-09'
-Transform: 'AWS::Serverless-2016-10-31'
+Transform: AWS::Serverless-2016-10-31
 Description: |
   python3.7-plain-sam-app
   Sample SAM Template for python3.7-plain-sam-app
@@ -2748,7 +2748,7 @@ Globals:
     Timeout: 3
 Resources:
   HelloWorldFunction:
-    Type: 'AWS::Serverless::Function'
+    Type: AWS::Serverless::Function
     Properties:
       CodeUri: hello_world/
       Handler: app.lambda_handler
@@ -2760,13 +2760,13 @@ Resources:
             Path: /hello
             Method: get
   Function2NotInLaunchJson:
-    Type: 'AWS::Serverless::Function'
+    Type: AWS::Serverless::Function
     Properties:
       CodeUri: hello_world/
       Handler: app.lambda_handler_2
       Runtime: python3.7
   Function3NotInLaunchJson:
-    Type: 'AWS::Serverless::Function'
+    Type: AWS::Serverless::Function
     Properties:
       CodeUri: hello_world/
       Handler: app.lambda_handler_3
@@ -2778,25 +2778,25 @@ Resources:
             Path: /apipath1
             Method: get
   ServerlessApi:
-    Type: 'AWS::Serverless::Api'
+    Type: AWS::Serverless::Api
     Properties:
       Name: ResourceName
 Outputs:
   HelloWorldApi:
     Description: API Gateway endpoint URL for Prod stage for Hello World function
     Value:
-      'Fn::Sub': >-
+      Fn::Sub: >-
         https://\${ServerlessRestApi}.execute-api.\${AWS::Region}.amazonaws.com/Prod/hello/
   HelloWorldFunction:
     Description: Hello World Lambda Function ARN
     Value:
-      'Fn::GetAtt':
+      Fn::GetAtt:
         - HelloWorldFunction
         - Arn
   HelloWorldFunctionIamRole:
     Description: Implicit IAM Role created for Hello World function
     Value:
-      'Fn::GetAtt':
+      Fn::GetAtt:
         - HelloWorldFunctionRole
         - Arn
 `
@@ -2898,7 +2898,7 @@ Outputs:
             assertFileText(
                 expected.templatePath,
                 `AWSTemplateFormatVersion: '2010-09-09'
-Transform: 'AWS::Serverless-2016-10-31'
+Transform: AWS::Serverless-2016-10-31
 Description: |
   python3.7-image-sam-app
   Sample SAM Template for python3.7-image-sam-app
@@ -2907,7 +2907,7 @@ Globals:
     Timeout: 3
 Resources:
   HelloWorldFunction:
-    Type: 'AWS::Serverless::Function'
+    Type: AWS::Serverless::Function
     Properties:
       PackageType: Image
       Events:
@@ -2924,18 +2924,18 @@ Outputs:
   HelloWorldApi:
     Description: API Gateway endpoint URL for Prod stage for Hello World function
     Value:
-      'Fn::Sub': >-
+      Fn::Sub: >-
         https://\${ServerlessRestApi}.execute-api.\${AWS::Region}.amazonaws.com/Prod/hello/
   HelloWorldFunction:
     Description: Hello World Lambda Function ARN
     Value:
-      'Fn::GetAtt':
+      Fn::GetAtt:
         - HelloWorldFunction
         - Arn
   HelloWorldFunctionIamRole:
     Description: Implicit IAM Role created for Hello World function
     Value:
-      'Fn::GetAtt':
+      Fn::GetAtt:
         - HelloWorldFunctionRole
         - Arn
 `
@@ -3110,7 +3110,7 @@ Outputs:
                 expected.templatePath,
                 `Resources:
   helloworld:
-    Type: 'AWS::Serverless::Function'
+    Type: AWS::Serverless::Function
     Properties:
       Handler: ${expected.handlerName}
       CodeUri: >-
@@ -3216,7 +3216,7 @@ Outputs:
             assertFileText(
                 expected.templatePath,
                 `AWSTemplateFormatVersion: '2010-09-09'
-Transform: 'AWS::Serverless-2016-10-31'
+Transform: AWS::Serverless-2016-10-31
 Description: |
   python3.7-plain-sam-app
   Sample SAM Template for python3.7-plain-sam-app
@@ -3225,7 +3225,7 @@ Globals:
     Timeout: 3
 Resources:
   HelloWorldFunction:
-    Type: 'AWS::Serverless::Function'
+    Type: AWS::Serverless::Function
     Properties:
       CodeUri: hello_world/
       Handler: app.lambda_handler
@@ -3237,13 +3237,13 @@ Resources:
             Path: /hello
             Method: get
   Function2NotInLaunchJson:
-    Type: 'AWS::Serverless::Function'
+    Type: AWS::Serverless::Function
     Properties:
       CodeUri: hello_world/
       Handler: app.lambda_handler_2
       Runtime: python3.7
   Function3NotInLaunchJson:
-    Type: 'AWS::Serverless::Function'
+    Type: AWS::Serverless::Function
     Properties:
       CodeUri: hello_world/
       Handler: app.lambda_handler_3
@@ -3255,25 +3255,25 @@ Resources:
             Path: /apipath1
             Method: get
   ServerlessApi:
-    Type: 'AWS::Serverless::Api'
+    Type: AWS::Serverless::Api
     Properties:
       Name: ResourceName
 Outputs:
   HelloWorldApi:
     Description: API Gateway endpoint URL for Prod stage for Hello World function
     Value:
-      'Fn::Sub': >-
+      Fn::Sub: >-
         https://\${ServerlessRestApi}.execute-api.\${AWS::Region}.amazonaws.com/Prod/hello/
   HelloWorldFunction:
     Description: Hello World Lambda Function ARN
     Value:
-      'Fn::GetAtt':
+      Fn::GetAtt:
         - HelloWorldFunction
         - Arn
   HelloWorldFunctionIamRole:
     Description: Implicit IAM Role created for Hello World function
     Value:
-      'Fn::GetAtt':
+      Fn::GetAtt:
         - HelloWorldFunctionRole
         - Arn
 `
@@ -3396,7 +3396,7 @@ Outputs:
     Timeout: 5
 Resources:
   myResource:
-    Type: 'AWS::Serverless::Function'
+    Type: AWS::Serverless::Function
     Properties:
       Handler: my.test.handler
       CodeUri: codeuri
@@ -3619,7 +3619,7 @@ Resources:
                 expected.templatePath,
                 `Resources:
   helloworld:
-    Type: 'AWS::Serverless::Function'
+    Type: AWS::Serverless::Function
     Properties:
       Handler: hello-world
       CodeUri: >-
