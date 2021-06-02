@@ -3,6 +3,6 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
-export async function handler(event: {}) {
+export async function handler(event: any) {
     console.log('hello world')
 }
