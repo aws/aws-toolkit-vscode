@@ -12,7 +12,7 @@ import { WIZARD_RETRY } from '../wizards/wizard'
 
 const localize = nls.loadMessageBundle()
 
-interface Folder {
+export interface Folder {
     readonly uri: vscode.Uri
     readonly name: string
 }
@@ -58,11 +58,15 @@ export class BrowseFolderQuickPickItem implements DataQuickPickItem<vscode.Uri> 
 }
 
  export function createLocationPrompt(
-    folders: Folder[],
-    buttonBinds?: ButtonBinds
+    folders: Folder[] | readonly vscode.WorkspaceFolder[] = [],
+    buttonBinds?: ButtonBinds,
+    overrideText?: {
+        detail?: string,
+        title?: string,
+    }
 ): Prompter<vscode.Uri> {
     const browseLabel = 
-        (folders && folders.length > 0) ?
+        (folders.length > 0) ?
         addCodiconToString(
             'folder-opened',
             localize('AWS.initWizard.location.select.folder', 'Select a different folder...')
@@ -71,22 +75,23 @@ export class BrowseFolderQuickPickItem implements DataQuickPickItem<vscode.Uri> 
             'AWS.initWizard.location.select.folder.empty.workspace',
             'There are no workspace folders open. Select a folder...'
         )
-    const items: DataQuickPickItem<vscode.Uri>[] = folders.map(f => new FolderQuickPickItem(f))
+    const items: DataQuickPickItem<vscode.Uri>[] = folders.map(
+        (f: Folder | vscode.WorkspaceFolder) => new FolderQuickPickItem(f))
         
     items.push(
             new BrowseFolderQuickPickItem(
                 browseLabel,
-                localize(
+                overrideText?.detail ?? localize(
                     'AWS.wizard.location.select.folder.detail',
                     'The selected folder will be added to the workspace.'
                 ),
-                (folders !== undefined && folders.length > 0) ? folders[0].uri : undefined,
+                folders.length > 0 ? folders[0].uri : undefined,
             )
     )
 
     return createPrompter(items, { 
         ignoreFocusOut: true, 
-        title: localize('AWS.wizard.location.prompt', 'Select a workspace folder for your new project'),
+        title: overrideText?.title ?? localize('AWS.wizard.location.prompt', 'Select a workspace folder for your new project'),
         buttonBinds: buttonBinds,
     })
 }

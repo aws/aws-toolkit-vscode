@@ -7,30 +7,18 @@ import * as nls from 'vscode-nls'
 const localize = nls.loadMessageBundle()
 
 import * as vscode from 'vscode'
-import * as picker from '../../shared/ui/picker'
+import { Prompter, ButtonBinds, createPrompter, DataQuickPickItem } from '../../shared/ui/prompter'
+import { Wizard } from '../../shared/wizards/wizard'
+import { initializeInterface } from '../../shared/transformers'
 
-import {
-    MultiStepWizard,
-    WIZARD_GOBACK,
-    WIZARD_TERMINATE,
-    wizardContinue,
-    WizardStep,
-} from '../../shared/wizards/multiStepWizard'
-
-export interface StateMachineTemplateQuickPickItem {
-    label: string
-    description: string
-    fileName: string
-}
-
-export const STARTER_TEMPLATES: StateMachineTemplateQuickPickItem[] = [
+export const STARTER_TEMPLATES: DataQuickPickItem<string>[] = [
     {
         label: localize('AWS.stepfunctions.template.helloWorld.label', 'Hello world'),
         description: localize(
             'AWS.stepfunctions.template.helloWorld.description',
             'A basic example using a Pass state.'
         ),
-        fileName: 'HelloWorld.asl.json',
+        data: 'HelloWorld.asl.json',
     },
     {
         label: localize('AWS.stepfunctions.template.retryFailure.label', 'Retry failure'),
@@ -38,7 +26,7 @@ export const STARTER_TEMPLATES: StateMachineTemplateQuickPickItem[] = [
             'AWS.stepfunctions.template.retryFailure.description',
             'An example of a Task state using a retry policy to handle Lambda failures.'
         ),
-        fileName: 'RetryFailure.asl.json',
+        data: 'RetryFailure.asl.json',
     },
     {
         label: localize('AWS.stepfunctions.template.waitState.label', 'Wait state'),
@@ -46,7 +34,7 @@ export const STARTER_TEMPLATES: StateMachineTemplateQuickPickItem[] = [
             'AWS.stepfunctions.template.waitState.description',
             'Delays the state machine from continuing for a specified time.'
         ),
-        fileName: 'WaitState.asl.json',
+        data: 'WaitState.asl.json',
     },
     {
         label: localize('AWS.stepfunctions.template.parallel.label', 'Parallel'),
@@ -54,7 +42,7 @@ export const STARTER_TEMPLATES: StateMachineTemplateQuickPickItem[] = [
             'AWS.stepfunctions.template.parallel.description',
             'Used to create parallel branches of execution in your state machine.'
         ),
-        fileName: 'Parallel.asl.json',
+        data: 'Parallel.asl.json',
     },
     {
         label: localize('AWS.stepfunctions.template.mapState.label', 'Map state'),
@@ -62,7 +50,7 @@ export const STARTER_TEMPLATES: StateMachineTemplateQuickPickItem[] = [
             'AWS.stepfunctions.template.mapState.description',
             'Use a Map state to dynamically process data in an array.'
         ),
-        fileName: 'MapState.asl.json',
+        data: 'MapState.asl.json',
     },
     {
         label: localize('AWS.stepfunctions.template.catchFailure.label', 'Catch failure'),
@@ -70,7 +58,7 @@ export const STARTER_TEMPLATES: StateMachineTemplateQuickPickItem[] = [
             'AWS.stepfunctions.template.catchFailure.description',
             'An example of a Task state using Catchers to handle Lambda failures.'
         ),
-        fileName: 'CatchFailure.asl.json',
+        data: 'CatchFailure.asl.json',
     },
     {
         label: localize('AWS.stepfunctions.template.choiceState.label', 'Choice state'),
@@ -78,7 +66,7 @@ export const STARTER_TEMPLATES: StateMachineTemplateQuickPickItem[] = [
             'AWS.stepfunctions.template.choiceState.description',
             'Adds branching logic to a state machine.'
         ),
-        fileName: 'ChoiceState.asl.json',
+        data: 'ChoiceState.asl.json',
     },
 ]
 
@@ -90,91 +78,38 @@ export enum TemplateFormats {
 const TEMPLATE_FORMATS = [{ label: TemplateFormats.JSON }, { label: TemplateFormats.YAML }]
 
 interface CreateStateMachineWizardResponse {
-    template: StateMachineTemplateQuickPickItem
+    templateFile: string
     templateFormat: TemplateFormats
 }
 
-export default class CreateStateMachineWizard extends MultiStepWizard<CreateStateMachineWizardResponse> {
-    private template?: StateMachineTemplateQuickPickItem
-    private templateFormat?: TemplateFormats
-    private promptUser: typeof picker.promptUser
+export interface CreateStateMachineWizardPrompters {
+    templateFile: () => Prompter<string>
+    templateFormat: () => Prompter<TemplateFormats>
+}
 
-    public constructor(promptUser?: typeof picker.promptUser) {
-        super()
+const BUTTONS: ButtonBinds = new Map([[vscode.QuickInputButtons.Back, resolve => resolve(undefined)]])
 
-        this.promptUser = promptUser || picker.promptUser.bind(picker)
-    }
+const DEFAULT_PROMPTERS: CreateStateMachineWizardPrompters = {
+    templateFile: () => createPrompter(STARTER_TEMPLATES, {
+        title: localize(
+            'AWS.message.prompt.selectStateMachineTemplate.placeholder',
+            'Select a starter template'
+        ),
+        buttonBinds: BUTTONS,
+    }),
+    templateFormat: () => createPrompter(TEMPLATE_FORMATS, {
+        title: localize(
+            'AWS.message.prompt.selectStateMachineTemplateFormat.placeholder',
+            'Select template format'
+        ),
+        buttonBinds: BUTTONS,
+    })
+}
 
-    protected get startStep() {
-        return this.CREATE_TEMPLATE_ACTION
-    }
-
-    private readonly CREATE_TEMPLATE_ACTION: WizardStep = async () => {
-        const quickPick = picker.createQuickPick<StateMachineTemplateQuickPickItem>({
-            options: {
-                ignoreFocusOut: true,
-                title: localize(
-                    'AWS.message.prompt.selectStateMachineTemplate.placeholder',
-                    'Select a starter template'
-                ),
-                step: 1,
-                totalSteps: 2,
-            },
-            buttons: [vscode.QuickInputButtons.Back],
-            items: STARTER_TEMPLATES,
-        })
-
-        const choices = await this.promptUser({
-            picker: quickPick,
-            onDidTriggerButton: (button, resolve) => {
-                if (button === vscode.QuickInputButtons.Back) {
-                    resolve(undefined)
-                }
-            },
-        })
-
-        this.template = picker.verifySinglePickerOutput<StateMachineTemplateQuickPickItem>(choices)
-
-        return this.template ? wizardContinue(this.TEMPLATE_FORMAT_ACTION) : WIZARD_GOBACK
-    }
-
-    private readonly TEMPLATE_FORMAT_ACTION: WizardStep = async () => {
-        const quickPick = picker.createQuickPick({
-            options: {
-                ignoreFocusOut: true,
-                title: localize(
-                    'AWS.message.prompt.selectStateMachineTemplateFormat.placeholder',
-                    'Select template format'
-                ),
-                step: 2,
-                totalSteps: 2,
-            },
-            buttons: [vscode.QuickInputButtons.Back],
-            items: TEMPLATE_FORMATS,
-        })
-
-        const choices = await this.promptUser({
-            picker: quickPick,
-            onDidTriggerButton: (button, resolve) => {
-                if (button === vscode.QuickInputButtons.Back) {
-                    resolve(undefined)
-                }
-            },
-        })
-
-        this.templateFormat = picker.verifySinglePickerOutput<{ label: TemplateFormats }>(choices)?.label
-
-        return this.templateFormat ? WIZARD_TERMINATE : WIZARD_GOBACK
-    }
-
-    protected getResult() {
-        return (
-            (this.template &&
-                this.templateFormat && {
-                    template: this.template,
-                    templateFormat: this.templateFormat,
-                }) ||
-            undefined
-        )
+export default class CreateStateMachineWizard extends Wizard<CreateStateMachineWizardResponse> {
+    public constructor(prompters: CreateStateMachineWizardPrompters = DEFAULT_PROMPTERS) {
+        super(initializeInterface<CreateStateMachineWizardResponse>())
+        this.form.templateFile.bindPrompter(prompters.templateFile)
+        this.form.templateFormat.bindPrompter(prompters.templateFormat)
     }
 }

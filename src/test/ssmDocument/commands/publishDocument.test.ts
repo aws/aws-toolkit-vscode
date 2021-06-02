@@ -17,6 +17,7 @@ import * as ssmUtils from '../../../ssmDocument/util/util'
 import {
     PublishSSMDocumentWizardResponse,
     PublishSSMDocumentWizard,
+    PublishSSMDocumentAction,
 } from '../../../ssmDocument/wizards/publishDocumentWizard'
 import { MockSsmDocumentClient } from '../../shared/clients/mockClients'
 import * as picker from '../../../shared/ui/picker'
@@ -98,7 +99,7 @@ describe('publishSSMDocument', async function () {
     it('tests calling createDocument', async function () {
         const wizardStub = sandbox.stub(PublishSSMDocumentWizard.prototype, 'run').returns(
             Promise.resolve({
-                PublishSsmDocAction: 'Create',
+                PublishSsmDocAction: PublishSSMDocumentAction.QuickCreate,
                 name: 'testName',
                 documentType: 'Command',
                 region: '',
@@ -114,7 +115,7 @@ describe('publishSSMDocument', async function () {
     it('tests calling updateDocument', async function () {
         const wizardStub = sandbox.stub(PublishSSMDocumentWizard.prototype, 'run').returns(
             Promise.resolve({
-                PublishSsmDocAction: 'Update',
+                PublishSsmDocAction: PublishSSMDocumentAction.QuickUpdate,
                 name: 'testName',
                 region: '',
             })
@@ -168,7 +169,7 @@ describe('publishDocument', async function () {
         sandbox = sinon.createSandbox()
 
         wizardResponse = {
-            PublishSsmDocAction: 'Update',
+            PublishSsmDocAction: PublishSSMDocumentAction.QuickUpdate,
             name: 'test',
             documentType: 'Automation',
             region: '',

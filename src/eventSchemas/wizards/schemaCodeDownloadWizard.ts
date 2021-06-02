@@ -11,137 +11,72 @@ import * as vscode from 'vscode'
 
 import { eventBridgeSchemasDocUrl } from '../../shared/constants'
 import { createHelpButton } from '../../shared/ui/buttons'
-import * as picker from '../../shared/ui/picker'
-import {
-    MultiStepWizard,
-    promptUserForLocation,
-    WIZARD_GOBACK,
-    WIZARD_TERMINATE,
-    WizardContext,
-    wizardContinue,
-    WizardStep,
-} from '../../shared/wizards/multiStepWizard'
+import { ButtonBinds, createPrompter, Prompter } from '../../shared/ui/prompter'
 
 import * as codeLang from '../models/schemaCodeLangs'
 
 import { SchemaItemNode } from '../explorer/schemaItemNode'
+import { createLocationPrompt } from '../../shared/ui/prompts'
+import { Wizard } from '../../shared/wizards/wizard'
+import { initializeInterface } from '../../shared/transformers'
 
 export interface SchemaCodeDownloadWizardContext {
     readonly schemaLangs: ImmutableSet<codeLang.SchemaCodeLangs>
-    readonly workspaceFolders: readonly vscode.WorkspaceFolder[] | undefined
+    readonly workspaceFolders?: readonly vscode.WorkspaceFolder[]
 
-    promptUserForVersion(currSchemaVersion?: string): Promise<string | undefined>
-
-    promptUserForLanguage(currLang?: codeLang.SchemaCodeLangs): Promise<codeLang.SchemaCodeLangs | undefined>
-
-    promptUserForLocation(): Promise<vscode.Uri | undefined>
-
-    showOpenDialog(options: vscode.OpenDialogOptions): Thenable<vscode.Uri[] | undefined>
+    createLanguagePrompter(): Prompter<codeLang.SchemaCodeLangs>
+    createVersionPrompter(): Prompter<string>
+    createLocationPrompter(): Prompter<vscode.Uri>
 }
 
-export class DefaultSchemaCodeDownloadWizardContext extends WizardContext implements SchemaCodeDownloadWizardContext {
+export class DefaultSchemaCodeDownloadWizardContext implements SchemaCodeDownloadWizardContext {
     public readonly schemaLangs = codeLang.schemaCodeLangs
     private readonly helpButton = createHelpButton(localize('AWS.command.help', 'View Toolkit Documentation'))
-    private readonly totalSteps = 3
-    public constructor(private readonly node: SchemaItemNode) {
-        super()
+    private readonly buttons: ButtonBinds = new Map([
+        [vscode.QuickInputButtons.Back, resolve => resolve(undefined)],
+        [this.helpButton, () => vscode.env.openExternal(vscode.Uri.parse(eventBridgeSchemasDocUrl))],
+    ])
+
+    constructor(
+        private readonly node: SchemaItemNode,
+        readonly workspaceFolders?: readonly vscode.WorkspaceFolder[]
+    ) {
         this.node = node
     }
 
-    public async promptUserForLanguage(
-        currLanguage?: codeLang.SchemaCodeLangs
-    ): Promise<codeLang.SchemaCodeLangs | undefined> {
-        const quickPick = picker.createQuickPick<vscode.QuickPickItem>({
-            options: {
-                ignoreFocusOut: true,
-                title: localize(
-                    'AWS.schemas.downloadCodeBindings.initWizard.language.prompt',
-                    'Select a code binding language'
-                ),
-                value: currLanguage ? currLanguage : '',
-                step: 2,
-                totalSteps: this.totalSteps,
-            },
-            buttons: [this.helpButton, vscode.QuickInputButtons.Back],
-            items: this.schemaLangs.toArray().map(language => ({
-                label: language,
-                alwaysShow: language === currLanguage,
-                description:
-                    language === currLanguage ? localize('AWS.wizard.selectedPreviously', 'Selected Previously') : '',
-            })),
+    public createLanguagePrompter(): Prompter<codeLang.SchemaCodeLangs> {
+        return createPrompter(this.schemaLangs.toArray().map(language => ({ label: language })), {
+            title: localize(
+                'AWS.schemas.downloadCodeBindings.initWizard.language.prompt',
+                'Select a code binding language'
+            ),
+            buttonBinds: this.buttons,
         })
-
-        const choices = await picker.promptUser({
-            picker: quickPick,
-            onDidTriggerButton: (button, resolve, reject) => {
-                if (button === vscode.QuickInputButtons.Back) {
-                    resolve(undefined)
-                } else if (button === this.helpButton) {
-                    vscode.env.openExternal(vscode.Uri.parse(eventBridgeSchemasDocUrl))
-                }
-            },
-        })
-        const val = picker.verifySinglePickerOutput(choices)
-
-        return val ? (val.label as codeLang.SchemaCodeLangs) : undefined
     }
 
-    public async promptUserForVersion(currSchemaVersion?: string): Promise<string | undefined> {
-        const versions = await this.node.listSchemaVersions()
+    public createVersionPrompter(): Prompter<string> {
+        const items = this.node.listSchemaVersions().then(versions => versions.map(v => ({ label: v.SchemaVersion! })))
 
-        const quickPick = picker.createQuickPick<vscode.QuickPickItem>({
-            options: {
-                ignoreFocusOut: true,
-                title: localize(
-                    'AWS.schemas.downloadCodeBindings.initWizard.version.prompt',
-                    'Select a version for schema {0} :',
-                    this.node.schemaName
-                ),
-                value: currSchemaVersion ? currSchemaVersion : '',
-                step: 1,
-                totalSteps: this.totalSteps,
-            },
-            buttons: [this.helpButton, vscode.QuickInputButtons.Back],
-            items: versions!.map(schemaVersion => ({
-                label: schemaVersion.SchemaVersion!,
-                alwaysShow: schemaVersion.SchemaVersion === currSchemaVersion,
-                description:
-                    schemaVersion === currSchemaVersion
-                        ? localize('AWS.wizard.selectedPreviously', 'Selected Previously')
-                        : '',
-            })),
+        return createPrompter(items, {
+            title: localize(
+                'AWS.schemas.downloadCodeBindings.initWizard.version.prompt',
+                'Select a version for schema {0} :',
+                this.node.schemaName
+            ),
+            buttonBinds: this.buttons,
         })
-
-        const choices = await picker.promptUser({
-            picker: quickPick,
-            onDidTriggerButton: (button, resolve, reject) => {
-                if (button === vscode.QuickInputButtons.Back) {
-                    resolve(undefined)
-                } else if (button === this.helpButton) {
-                    vscode.env.openExternal(vscode.Uri.parse(eventBridgeSchemasDocUrl))
-                }
-            },
-        })
-        const val = picker.verifySinglePickerOutput(choices)
-
-        return val ? (val.label as codeLang.SchemaCodeLangs) : undefined
     }
 
-    public async promptUserForLocation(): Promise<vscode.Uri | undefined> {
-        return promptUserForLocation(this, {
-            helpButton: { button: this.helpButton, url: eventBridgeSchemasDocUrl },
-            overrideText: {
-                detail: localize(
-                    'AWS.schemas.downloadCodeBindings.initWizard.location.select.folder.detail',
-                    'Code bindings will be downloaded to selected folder.'
-                ),
-                title: localize(
-                    'AWS.schemas.downloadCodeBindings.initWizard.location.prompt',
-                    'Select a workspace folder to download code bindings'
-                ),
-            },
-            step: 3,
-            totalSteps: this.totalSteps,
+    public createLocationPrompter(): Prompter<vscode.Uri> {
+        return createLocationPrompt(this.workspaceFolders, this.buttons, {
+            detail: localize(
+                'AWS.schemas.downloadCodeBindings.initWizard.location.select.folder.detail',
+                'Code bindings will be downloaded to selected folder.'
+            ),
+            title: localize(
+                'AWS.schemas.downloadCodeBindings.initWizard.location.prompt',
+                'Select a workspace folder to download code bindings'
+            ),
         })
     }
 }
@@ -152,46 +87,12 @@ export interface SchemaCodeDownloadWizardResponse {
     schemaVersion: string
 }
 
-export class SchemaCodeDownloadWizard extends MultiStepWizard<SchemaCodeDownloadWizardResponse> {
-    private schemaVersion?: string
-    private language?: codeLang.SchemaCodeLangs
-    private location?: vscode.Uri
+export class SchemaCodeDownloadWizard extends Wizard<SchemaCodeDownloadWizardResponse> {
+    public constructor(readonly context: SchemaCodeDownloadWizardContext) {
+        super(initializeInterface<SchemaCodeDownloadWizardResponse>())
 
-    public constructor(private readonly context: SchemaCodeDownloadWizardContext) {
-        super()
-    }
-
-    protected get startStep() {
-        return this.SCHEMA_VERSION
-    }
-
-    protected getResult(): SchemaCodeDownloadWizardResponse | undefined {
-        if (!this.language || !this.location || !this.schemaVersion) {
-            return undefined
-        }
-
-        return {
-            schemaVersion: this.schemaVersion,
-            language: this.language,
-            location: this.location,
-        }
-    }
-
-    private readonly SCHEMA_VERSION: WizardStep = async () => {
-        this.schemaVersion = await this.context.promptUserForVersion(this.schemaVersion)
-
-        return this.schemaVersion ? wizardContinue(this.LANGUAGE) : WIZARD_TERMINATE
-    }
-
-    private readonly LANGUAGE: WizardStep = async () => {
-        this.language = await this.context.promptUserForLanguage(this.language)
-
-        return this.language ? wizardContinue(this.LOCATION) : WIZARD_GOBACK
-    }
-
-    private readonly LOCATION: WizardStep = async () => {
-        this.location = await this.context.promptUserForLocation()
-
-        return this.location ? WIZARD_TERMINATE : WIZARD_GOBACK
+        this.form.schemaVersion.bindPrompter(() => context.createVersionPrompter())
+        this.form.language.bindPrompter(() => context.createLanguagePrompter())
+        this.form.location.bindPrompter(() => context.createLocationPrompter())
     }
 }

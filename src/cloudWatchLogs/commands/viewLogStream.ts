@@ -19,6 +19,9 @@ import { LOCALIZED_DATE_FORMAT } from '../../shared/constants'
 import { getPaginatedAwsCallIter, IteratorTransformer } from '../../shared/utilities/collectionUtils'
 import { LogStreamRegistry } from '../registry/logStreamRegistry'
 import { convertLogGroupInfoToUri } from '../cloudWatchLogsUtils'
+import { Prompter } from '../../shared/ui/prompter'
+import { initializeInterface } from '../../shared/transformers'
+import { Wizard } from '../../shared/wizards/wizard'
 
 export interface SelectLogStreamResponse {
     region: string
@@ -48,11 +51,21 @@ export async function viewLogStream(node: LogGroupNode, registry: LogStreamRegis
 
 export interface SelectLogStreamWizardContext {
     pickLogStream(): Promise<string | undefined>
+    createLogStreamPrompter(): Prompter<string>
 }
 
 export class DefaultSelectLogStreamWizardContext implements SelectLogStreamWizardContext {
-    private readonly totalSteps = 1
     public constructor(private readonly regionCode: string, private readonly logGroupName: string) {}
+
+    public createLogStreamPrompter(): Prompter<string> {
+        let telemetryResult: telemetry.Result = 'Succeeded'
+        const client: CloudWatchLogsClient = ext.toolkitClientBuilder.createCloudWatchLogsClient(this.regionCode)
+        const request: CloudWatchLogs.DescribeLogStreamsRequest = {
+            logGroupName: this.logGroupName,
+            orderBy: 'LastEventTime',
+            descending: true,
+        }
+    }
 
     public async pickLogStream(): Promise<string | undefined> {
         let telemetryResult: telemetry.Result = 'Succeeded'
@@ -122,39 +135,24 @@ export function convertDescribeLogStreamsToQuickPickItems(
     }))
 }
 
-export class SelectLogStreamWizard extends MultiStepWizard<SelectLogStreamResponse> {
-    private readonly response: Partial<SelectLogStreamResponse>
-
+export class SelectLogStreamWizard extends Wizard<Partial<SelectLogStreamResponse>> {
     public constructor(
-        node: LogGroupNode,
+        private readonly node: LogGroupNode,
         private readonly context: SelectLogStreamWizardContext = new DefaultSelectLogStreamWizardContext(
             node.regionCode,
             node.logGroup.logGroupName!
         )
     ) {
-        super()
-        this.response = {
-            region: node.regionCode,
-            logGroupName: node.logGroup.logGroupName,
-        }
+        super(
+            initializeInterface<SelectLogStreamResponse>(), 
+            { region: node.regionCode, logGroupName: node.logGroup.logGroupName! }
+        )
     }
 
     protected get startStep(): WizardStep {
         return this.SELECT_STREAM
     }
-
-    protected getResult(): SelectLogStreamResponse | undefined {
-        if (!this.response.region || !this.response.logGroupName || !this.response.logStreamName) {
-            return undefined
-        }
-
-        return {
-            region: this.response.region,
-            logGroupName: this.response.logGroupName,
-            logStreamName: this.response.logStreamName,
-        }
-    }
-
+    
     private readonly SELECT_STREAM: WizardStep = async () => {
         const returnVal = await this.context.pickLogStream()
 

@@ -3,6 +3,8 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 import * as assert from 'assert'
+import { Prompter } from '../../../shared/ui/prompter'
+import { MockPrompter } from '../../lambda/wizards/wizardFramework'
 import {
     PublishStateMachineAction,
     PublishStateMachineWizard,
@@ -88,24 +90,19 @@ class MockPublishStateMachineWizardContext implements PublishStateMachineWizardC
         private readonly stateMachineArn?: string[]
     ) {}
 
-    public async promptUserForStateMachineToUpdate(): Promise<string | undefined> {
-        return this.stateMachineArn?.shift()
+    public createUpdateStateMachinePrompter(): Prompter<string> {
+        return new MockPrompter(this.stateMachineArn?.shift())
     }
 
-    public async promptUserForPublishAction(
-        publishAction: PublishStateMachineAction | undefined
-    ): Promise<PublishStateMachineAction | undefined> {
-        return this.publishAction?.shift()
+    public createPublishActionPrompter(): Prompter<PublishStateMachineAction> {
+        return new MockPrompter(this.publishAction?.shift())
     }
 
-    public async promptUserForStateMachineName(): Promise<string | undefined> {
-        return this.stateMachineName?.shift()
+    public createNamePrompter(): Prompter<string> {
+        return new MockPrompter(this.stateMachineName?.shift())
     }
 
-    public async promptUserForIamRole(currRoleArn?: string | undefined): Promise<string | undefined> {
-        return this.iamRoleArn?.shift()
+    public createRolePrompter(): Prompter<string> {
+        return new MockPrompter(this.iamRoleArn?.shift())
     }
-
-    public async loadIamRoles(): Promise<void> {}
-    public async loadStateMachines(): Promise<void> {}
 }

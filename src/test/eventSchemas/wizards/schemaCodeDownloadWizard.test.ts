@@ -6,12 +6,14 @@
 import * as assert from 'assert'
 import { Set } from 'immutable'
 import * as path from 'path'
+import { Prompter } from '../../../shared/ui/prompter'
 import * as vscode from 'vscode'
 import { JAVA, PYTHON, SchemaCodeLangs } from '../../../eventSchemas/models/schemaCodeLangs'
 import {
     SchemaCodeDownloadWizard,
     SchemaCodeDownloadWizardContext,
 } from '../../../eventSchemas/wizards/schemaCodeDownloadWizard'
+import { MockPrompter } from '../../lambda/wizards/wizardFramework'
 
 function isMultiDimensionalArray(array: any[] | any[][] | undefined): boolean {
     if (!array) {
@@ -28,7 +30,7 @@ function isMultiDimensionalArray(array: any[] | any[][] | undefined): boolean {
 }
 
 class MockSchemaCodeDownloadWizardContext implements SchemaCodeDownloadWizardContext {
-    public get schemaVersions(): string[] {
+    public get schemaVersions(): (string | undefined)[] {
         if (Array.isArray(this._schemaVersions)) {
             if (this._schemaVersions!.length <= 0) {
                 throw new Error('schemaLangs was called more times than expected')
@@ -39,7 +41,7 @@ class MockSchemaCodeDownloadWizardContext implements SchemaCodeDownloadWizardCon
             return (this._schemaVersions as string[]) || []
         }
 
-        return [this._schemaVersions] || []
+        return [this._schemaVersions]
     }
 
     public get schemaLangs(): Set<SchemaCodeLangs> {
@@ -82,7 +84,7 @@ class MockSchemaCodeDownloadWizardContext implements SchemaCodeDownloadWizardCon
     public constructor(
         private readonly _workspaceFolders: vscode.WorkspaceFolder[] | vscode.WorkspaceFolder[][],
         private readonly _schemaLangs: (Set<SchemaCodeLangs> | undefined) | (Set<SchemaCodeLangs>[] | undefined),
-        private readonly _schemaVersions: string | string[],
+        private readonly _schemaVersions: string | undefined | (string | undefined)[],
         private readonly openDialogResult: (vscode.Uri[] | undefined) | (vscode.Uri[] | undefined)[]
     ) {
         if (isMultiDimensionalArray(this._workspaceFolders)) {
@@ -98,8 +100,27 @@ class MockSchemaCodeDownloadWizardContext implements SchemaCodeDownloadWizardCon
             this.openDialogResult = (openDialogResult as vscode.Uri[][]).reverse()
         }
     }
+    public createLanguagePrompter(): Prompter<SchemaCodeLangs> {
+        return new MockPrompter(this.schemaLangs.toArray().pop())
+    }
 
-    public async showOpenDialog(options: vscode.OpenDialogOptions): Promise<vscode.Uri[] | undefined> {
+    public createVersionPrompter(): Prompter<string> {
+        return new MockPrompter(this.schemaVersions.pop())
+    }
+
+    public createLocationPrompter(): Prompter<vscode.Uri> {
+        if (this.workspaceFolders && this.workspaceFolders.length > 0) {
+            const temp = this.workspaceFolders[0]
+
+            return new MockPrompter(temp ? temp.uri : undefined)
+        } else {
+            const locations = this.showOpenDialog({})
+
+            return new MockPrompter(locations ? locations.pop() : undefined)
+        }
+    }
+
+    public showOpenDialog(options: vscode.OpenDialogOptions): vscode.Uri[] | undefined {
         if (isMultiDimensionalArray(this.openDialogResult)) {
             if (this.openDialogResult!.length <= 0) {
                 throw new Error('showOpenDialog was called more times than expected')
@@ -109,26 +130,6 @@ class MockSchemaCodeDownloadWizardContext implements SchemaCodeDownloadWizardCon
         }
 
         return this.openDialogResult as vscode.Uri[]
-    }
-
-    public async promptUserForVersion(currVersion?: string): Promise<string | undefined> {
-        return this.schemaVersions.pop()
-    }
-
-    public async promptUserForLanguage(currRuntime?: SchemaCodeLangs): Promise<SchemaCodeLangs | undefined> {
-        return this.schemaLangs.toArray().pop()
-    }
-
-    public async promptUserForLocation(): Promise<vscode.Uri | undefined> {
-        if (this.workspaceFolders && this.workspaceFolders.length > 0) {
-            const temp = this.workspaceFolders[0]
-
-            return temp ? temp.uri : undefined
-        } else {
-            const locations = await this.showOpenDialog({})
-
-            return locations ? locations.pop() : undefined
-        }
     }
 }
 
@@ -153,7 +154,7 @@ describe('SchemaCodeDownloadWizard', async function () {
             const context: SchemaCodeDownloadWizardContext = new MockSchemaCodeDownloadWizardContext(
                 [],
                 Set<SchemaCodeLangs>([JAVA]),
-                '',
+                undefined,
                 [vscode.Uri.file(path.join('my', 'workspace', 'folder'))]
             )
             const wizard = new SchemaCodeDownloadWizard(context)

@@ -23,9 +23,10 @@ import {
 import { DependencyManager, RuntimePackageType } from '../../../lambda/models/samLambdaRuntime'
 import { makeTemporaryToolkitFolder } from '../../../shared/filesystemUtilities'
 import { assertEqualPaths } from '../../testUtil'
-import { Prompter, DataQuickPickItem, ButtonBinds } from '../../../shared/ui/prompter'
+import { Prompter, ButtonBinds } from '../../../shared/ui/prompter'
 import { Credentials } from 'aws-sdk'
 import { Region } from '../../../shared/regions/endpoints'
+import { MockPrompter } from './wizardFramework'
 
 
 function isMultiDimensionalArray(array: any[] | any[][] | undefined): boolean {
@@ -40,22 +41,6 @@ function isMultiDimensionalArray(array: any[] | any[][] | undefined): boolean {
     }
 
     return false
-}
-
-
-class MockPrompter<T> extends Prompter<T> {
-    constructor(private output: T | undefined) {
-        super(vscode.window.createInputBox())
-    }
-    public async prompt(): Promise<symbol | T | undefined> {
-        return this.output
-    }
-    public setLastPicked(picked?: T | DataQuickPickItem<T> | DataQuickPickItem<T>[]): void {
-        return
-    }
-    public getLastPicked(): undefined {
-        return undefined
-    }
 }
 
 class MockCreateNewSamAppWizardContext implements CreateNewSamAppWizardContext {

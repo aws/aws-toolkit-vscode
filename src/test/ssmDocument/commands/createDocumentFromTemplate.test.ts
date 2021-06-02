@@ -6,16 +6,13 @@
 import * as vscode from 'vscode'
 import * as assert from 'assert'
 import * as sinon from 'sinon'
-import * as picker from '../../../shared/ui/picker'
-import {
-    createSsmDocumentFromTemplate,
-    SsmDocumentTemplateQuickPickItem,
-} from '../../../ssmDocument/commands/createDocumentFromTemplate'
-import * as ssmDocumentUtil from '../../../ssmDocument/util/util'
+import { createSsmDocumentFromTemplate, CreateSSMDocumentFromTemplateContext, SSMDocument } from '../../../ssmDocument/commands/createDocumentFromTemplate'
 import * as fsUtilities from '../../../shared/filesystemUtilities'
 
 import * as YAML from 'yaml'
 import { FakeExtensionContext } from '../../fakeExtensionContext'
+import { MockPrompter } from '../../lambda/wizards/wizardFramework'
+import { Prompter } from '../../../shared/ui/prompter'
 
 describe('createDocumentFromTemplate', async function () {
     let mockContext: vscode.ExtensionContext
@@ -36,27 +33,29 @@ describe('createDocumentFromTemplate', async function () {
         "mainSteps": []
     }`
 
-    const fakeSelectionResult: SsmDocumentTemplateQuickPickItem = {
-        label: 'test template',
-        description: 'an example to test creating from template',
+    const fakeSelectionResult: SSMDocument = {
+        templateName: 'test template',
         filename: 'test.command.ssm.json',
         docType: 'command',
     }
 
-    const fakeSelection: SsmDocumentTemplateQuickPickItem[] = []
-    fakeSelection.push(fakeSelectionResult)
+    class FakeWizardContext implements CreateSSMDocumentFromTemplateContext {
+        public createDocumentFormatPrompter(formats: string[]): Prompter<string> {
+            return new MockPrompter('JSON')
+        }
+        public createDocumentTemplatePrompter(): Prompter<SSMDocument> {
+            return new MockPrompter(fakeSelectionResult)
+        }
+    }
 
     it('open and save document based on selected template', async function () {
-        sandbox.stub(picker, 'promptUser').returns(Promise.resolve(fakeSelection))
-        sandbox.stub(picker, 'verifySinglePickerOutput').returns(fakeSelectionResult)
         sandbox.stub(fsUtilities, 'readFileAsString').returns(Promise.resolve(fakeContent))
-        sandbox.stub(ssmDocumentUtil, 'promptUserForDocumentFormat').returns(Promise.resolve('JSON'))
         sandbox.stub(JSON, 'stringify').returns(fakeContent)
         sandbox.stub(YAML, 'stringify').returns(fakeContent)
 
         const openTextDocumentStub = sandbox.stub(vscode.workspace, 'openTextDocument')
 
-        await createSsmDocumentFromTemplate(mockContext)
+        await createSsmDocumentFromTemplate(mockContext, new FakeWizardContext())
 
         assert.strictEqual(openTextDocumentStub.getCall(0).args[0]?.content, fakeContent)
         assert.strictEqual(openTextDocumentStub.getCall(0).args[0]?.language, 'ssm-json')

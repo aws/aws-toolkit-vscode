@@ -25,6 +25,9 @@ interface PropertyOptions<TState, TProp> {
      * the step is added to the wizard, decreasing the total number of steps.
      */
     //autoSelect?: boolean (not implemented)
+
+    // Does stuff after
+    after?: (state: WizardSchema<TState>, response: QuickInputTypes<TProp>) => Promise<TState>
 }
 
 export type WizardQuickPickItem<T> =  T extends string 
@@ -33,6 +36,8 @@ export type WizardQuickPickItem<T> =  T extends string
 
 /** Returning this causes the wizard to retry the current step */
 export const WIZARD_RETRY = Symbol()
+
+export const WIZARD_GOBACK = Symbol()
 
 function isRetry<T>(picked: QuickInputTypes<T> | undefined): boolean {
     return picked !== undefined && picked === WIZARD_RETRY
@@ -56,10 +61,10 @@ interface WizardFormElement<TProp, TState> {
 /**
  * Transforms an interface into a collection of WizardFormElements
  */
-type WizardForm<T> = {
+type WizardForm<T, TState=T> = {
     [Property in keyof T]-?: T[Property] extends Record<string, unknown> 
-        ? WizardForm<T[Property]> & WizardFormElement<T[Property], T>
-        : WizardFormElement<T[Property], T>
+        ? WizardForm<T[Property], TState> & WizardFormElement<T[Property], TState>
+        : WizardFormElement<T[Property], TState>
 }
 
 type ObjectKeys<T> = {
@@ -109,6 +114,7 @@ function readPath(obj: any, path: string[]): any {
 // Persistent storage that exists on a per-property basis
 type StepCache = { [key: string]: any }
 
+
 /**
  * A generic wizard that consumes data from a series of 'prompts'. Wizards will modify a single property of
  * their internal state with each prompt. Classes that extend this base class can assign Prompters to individual
@@ -120,9 +126,9 @@ export abstract class Wizard<TState extends WizardSchema<TState>, TResult=TState
     protected readonly form!: WizardForm<TState> 
     private readonly stateController!: StateMachineController<TState>
 
-    public constructor(private readonly schema: WizardSchema<TState>, initState?: TState) {
+    public constructor(private readonly schema: WizardSchema<TState>, initState?: Partial<TState>) {
         this.form = this.createWizardForm(schema)
-        this.stateController = new StateMachineController({ ...schema, ...initState} as TState)
+        this.stateController = new StateMachineController({ ...initState } as TState)
     }
 
     private applyDefaults(state: TState): TState {
@@ -142,6 +148,10 @@ export abstract class Wizard<TState extends WizardSchema<TState>, TResult=TState
     public async run(): Promise<TState | TResult | undefined> {
         this.resolveNextSteps(this.schema as any).forEach(step => this.stateController.addStep(step))
         const outputState = await this.stateController.run()
+        // remove cache
+        if (outputState !== undefined) {
+            delete (outputState as any)['stepCache']
+        }
         return outputState ? this.applyDefaults(outputState) : undefined
     }
 
@@ -160,13 +170,16 @@ export abstract class Wizard<TState extends WizardSchema<TState>, TResult=TState
 
             const stepCache: StepCache = {}
             const boundStep = async (state: TState) => {
+                // TODO: move this code somewhere else
                 const stateWithCache = Object.assign(state, { stepCache: stepCache })
                 const response = await this.promptUser(stateWithCache, prompterProvider(stateWithCache))
+                if (options.after !== undefined) {
+                    state = await options.after(state, response)
+                }
                 writePath(state, propPath, response)
-                const steps = this.resolveNextSteps(state)
                 return { 
-                    nextState: response !== undefined ? state : undefined,
-                    nextSteps: steps, 
+                    nextState: response !== undefined && response !== WIZARD_GOBACK ? state : undefined,
+                    nextSteps: response !== undefined ? this.resolveNextSteps(state) : undefined, 
                     repeatStep: isRetry(response) 
                 }
             }
@@ -183,7 +196,7 @@ export abstract class Wizard<TState extends WizardSchema<TState>, TResult=TState
             const element = {
                 bindPrompter: this.createBindPrompterMethod(newPath),
                 ...(typeof value === 'object' ?  this.createWizardForm(value, newPath) : {})
-            } as WizardFormElement<any, any>
+            } as WizardFormElement<any, TState>
 
             Object.assign(form, { [key]: element })
         })

@@ -15,19 +15,9 @@ import * as localizedText from '../../shared/localizedText'
 import { getLogger } from '../../shared/logger'
 import { getRegionsForActiveCredentials } from '../../shared/regions/regionUtilities'
 import { createHelpButton } from '../../shared/ui/buttons'
-import * as input from '../../shared/ui/input'
 import * as picker from '../../shared/ui/picker'
 import * as telemetry from '../../shared/telemetry/telemetry'
 import { difference, filter, IteratorTransformer } from '../../shared/utilities/collectionUtils'
-import {
-    MultiStepWizard,
-    WIZARD_GOBACK,
-    WIZARD_TERMINATE,
-    wizardContinue,
-    WizardStep,
-    WIZARD_RETRY,
-} from '../../shared/wizards/multiStepWizard'
-import { configureParameterOverrides } from '../config/configureParameterOverrides'
 import { getOverriddenParameters, getParameters } from '../utilities/parameterUtils'
 import { ext } from '../../shared/extensionGlobals'
 import { EcrRepository } from '../../shared/clients/ecrClient'
@@ -39,6 +29,10 @@ import { validateBucketName } from '../../s3/util'
 import { showErrorWithLogs } from '../../shared/utilities/messages'
 import { isCloud9 } from '../../shared/extensionUtilities'
 import { SettingsConfiguration } from '../../shared/settingsConfiguration'
+import { ButtonBinds, createPrompter, DataQuickPick, DataQuickPickItem, Prompter } from '../../shared/ui/prompter'
+import { CloudFormation } from '../../shared/cloudformation/cloudformation'
+import { Wizard, WIZARD_GOBACK } from '../../shared/wizards/wizard'
+import { initializeInterface } from '../../shared/transformers'
 
 const CREATE_NEW_BUCKET = localize('AWS.command.s3.createBucket', 'Create Bucket...')
 const ENTER_BUCKET = localize('AWS.samcli.deploy.bucket.existingLabel', 'Enter Existing Bucket Name...')
@@ -51,7 +45,7 @@ export interface SavedBuckets {
 export interface SamDeployWizardResponse {
     parameterOverrides: Map<string, string>
     region: string
-    template: vscode.Uri
+    template: CloudFormation.Template,
     s3Bucket: string
     ecrRepo?: EcrRepository
     stackName: string
@@ -65,7 +59,6 @@ export const enum ParameterPromptResult {
 export interface SamDeployWizardContext {
     readonly extContext: ExtContext
     readonly workspaceFolders: vscode.Uri[] | undefined
-    additionalSteps: number
 
     /**
      * Returns the parameters in the specified template, or `undefined`
@@ -75,13 +68,6 @@ export interface SamDeployWizardContext {
      * @param templateUri The URL of the SAM template to inspect.
      */
     getParameters: typeof getParameters
-
-    /**
-     * Returns true if the teamplate has images and needs an ECR repo to upload them to
-     * TODO refactor this to not be needed by making getTemplate also return the template in addition
-     * to the URI
-     */
-    determineIfTemplateHasImages(templatePath: vscode.Uri): Promise<boolean>
 
     /**
      * Returns the names and values of parameters from the specified template
@@ -97,8 +83,7 @@ export interface SamDeployWizardContext {
      *
      * @returns vscode.Uri of a Sam Template. undefined represents cancel.
      */
-    promptUserForSamTemplate(initialValue?: vscode.Uri): Promise<vscode.Uri | undefined>
-
+    createSamTemplatePrompter(): Prompter<CloudFormation.Template> 
     /**
      * Prompts the user to configure parameter overrides, then either pre-fills and opens
      * `templates.json`, or returns true.
@@ -108,12 +93,10 @@ export interface SamDeployWizardContext {
      * @returns A value indicating whether the wizard should proceed. `false` if `missingParameters` was
      *          non-empty, or if it was empty and the user opted to configure overrides instead of continuing.
      */
-    promptUserForParametersIfApplicable(options: {
-        templateUri: vscode.Uri
-        missingParameters?: Set<string>
-    }): Promise<ParameterPromptResult>
 
-    promptUserForRegion(step: number, initialValue?: string): Promise<string | undefined>
+    createParametersPrompter(templateUri: vscode.Uri, missingParameters?: Set<string>): Prompter<ParameterPromptResult>
+
+    createRegionPrompter(): Prompter<string>
 
     /**
      * Retrieves an S3 Bucket to deploy to from the user.
@@ -122,35 +105,14 @@ export interface SamDeployWizardContext {
      *
      * @returns S3 Bucket name. Undefined represents cancel.
      */
-    promptUserForS3Bucket(
-        step: number,
-        selectedRegion: string,
-        profile?: string,
-        accountId?: string,
-        initialValue?: string
-    ): Promise<string | undefined>
+
+    createS3BucketPrompter(region: string, profile?: string, accountId?: string): Prompter<string>
 
     /**
      * Prompts user to enter a bucket name
      *
      * @returns S3 Bucket name. Undefined represents cancel.
      */
-    promptUserForS3BucketName(
-        step: number,
-        bucketProps: {
-            title: string
-            prompt?: string
-            placeholder?: string
-            value?: string
-            buttons?: vscode.QuickInputButton[]
-            buttonHandler?: (
-                button: vscode.QuickInputButton,
-                inputBox: vscode.InputBox,
-                resolve: (value: string | PromiseLike<string | undefined> | undefined) => void,
-                reject: (value: string | PromiseLike<string | undefined> | undefined) => void
-            ) => void
-        }
-    ): Promise<string | undefined>
 
     /**
      * Retrieves an ECR Repo to deploy to from the user.
@@ -159,11 +121,6 @@ export interface SamDeployWizardContext {
      *
      * @returns ECR Repo URI. Undefined represents cancel.
      */
-    promptUserForEcrRepo(
-        step: number,
-        selectedRegion?: string,
-        initialValue?: EcrRepository
-    ): Promise<EcrRepository | undefined>
 
     /**
      * Retrieves a Stack Name to deploy to from the user.
@@ -173,27 +130,7 @@ export interface SamDeployWizardContext {
      *
      * @returns Stack name. Undefined represents cancel.
      */
-    promptUserForStackName({
-        initialValue,
-        validateInput,
-    }: {
-        initialValue?: string
-        validateInput(value: string): string | undefined
-    }): Promise<string | undefined>
 }
-
-function getSingleResponse(responses: vscode.QuickPickItem[] | undefined): string | undefined {
-    if (!responses) {
-        return undefined
-    }
-
-    if (responses.length !== 1) {
-        throw new Error(`Expected a single response, but got ${responses.length}`)
-    }
-
-    return responses[0].label
-}
-
 /**
  * The toolkit used to store saved buckets as a stringified JSON object. To ensure compatability,
  * we need to check for this and convert them into objects.
@@ -239,115 +176,49 @@ export class DefaultSamDeployWizardContext implements SamDeployWizardContext {
     public readonly getParameters = getParameters
     public readonly getOverriddenParameters = getOverriddenParameters
     private readonly helpButton = createHelpButton(localize('AWS.command.help', 'View Toolkit Documentation'))
-
-    private readonly totalSteps: number = 4
-    public additionalSteps: number = 0
+    private readonly buttonBinds: ButtonBinds = new Map([
+        [vscode.QuickInputButtons.Back, resolve => resolve(undefined)],
+        [this.helpButton, () => vscode.env.openExternal(vscode.Uri.parse(samDeployDocUrl))]
+    ])
     public newBucketCalled = false
 
     public constructor(readonly extContext: ExtContext) {}
 
-    public get workspaceFolders(): vscode.Uri[] | undefined {
-        return (vscode.workspace.workspaceFolders || []).map(f => f.uri)
-    }
-
-    public async determineIfTemplateHasImages(templatePath: vscode.Uri): Promise<boolean> {
-        const template = ext.templateRegistry.getRegisteredItem(templatePath.fsPath)
-        const resources = template?.item?.Resources
-        if (resources === undefined) {
-            return false
-        } else {
-            return Object.keys(resources)
-                .filter(key => resources[key]?.Type === 'AWS::Serverless::Function')
-                .map(key => resources[key]?.Properties?.PackageType)
-                .some(it => it === 'Image')
-        }
-    }
-
-    /**
-     * Retrieves the URI of a Sam template to deploy from the user
-     *
-     * @returns vscode.Uri of a Sam Template. undefined represents cancel.
-     */
-    public async promptUserForSamTemplate(initialValue?: vscode.Uri): Promise<vscode.Uri | undefined> {
-        const workspaceFolders = this.workspaceFolders || []
-
-        const quickPick = picker.createQuickPick<SamTemplateQuickPickItem>({
-            options: {
-                ignoreFocusOut: true,
-                title: localize(
-                    'AWS.samcli.deploy.template.prompt',
-                    'Which SAM Template would you like to deploy to AWS?'
-                ),
-                step: 1,
-                totalSteps: this.totalSteps,
-            },
-            buttons: [this.helpButton, vscode.QuickInputButtons.Back],
-            items: await getTemplateChoices(...workspaceFolders),
+    public createSamTemplatePrompter(): Prompter<CloudFormation.Template> {
+        return createPrompter(getTemplateChoices(...(this.workspaceFolders || [])), {
+            title: localize(
+                'AWS.samcli.deploy.template.prompt',
+                'Which SAM Template would you like to deploy to AWS?'
+            ),
         })
-
-        const choices = await picker.promptUser({
-            picker: quickPick,
-            onDidTriggerButton: (button, resolve, reject) => {
-                if (button === vscode.QuickInputButtons.Back) {
-                    resolve(undefined)
-                } else if (button === this.helpButton) {
-                    vscode.env.openExternal(vscode.Uri.parse(samDeployDocUrl))
-                }
-            },
-        })
-        const val = picker.verifySinglePickerOutput<SamTemplateQuickPickItem>(choices)
-
-        return val ? val.uri : undefined
     }
-
-    public async promptUserForParametersIfApplicable({
-        templateUri,
-        missingParameters = new Set<string>(),
-    }: {
-        templateUri: vscode.Uri
-        missingParameters?: Set<string>
-    }): Promise<ParameterPromptResult> {
+    public createParametersPrompter(
+        templateUri: vscode.Uri, 
+        missingParameters: Set<string> = new Set<string>()
+    ): Prompter<ParameterPromptResult> {
         if (missingParameters.size < 1) {
-            const prompt = localize(
+            const title = localize(
                 'AWS.samcli.deploy.parameters.optionalPrompt.message',
                 // prettier-ignore
                 'The template {0} contains parameters. Would you like to override the default values for these parameters?',
                 templateUri.fsPath
             )
-            const quickPick = picker.createQuickPick<vscode.QuickPickItem>({
-                options: {
-                    ignoreFocusOut: true,
-                    title: prompt,
-                    step: 2,
-                    totalSteps: this.totalSteps + this.additionalSteps,
-                },
-                buttons: [this.helpButton, vscode.QuickInputButtons.Back],
-                items: [{ label: localizedText.yes }, { label: localizedText.no }],
-            })
-            const response = getSingleResponse(
-                await picker.promptUser({
-                    picker: quickPick,
-                    onDidTriggerButton: (button, resolve, reject) => {
-                        if (button === vscode.QuickInputButtons.Back) {
-                            resolve(undefined)
-                        } else if (button === this.helpButton) {
-                            vscode.env.openExternal(vscode.Uri.parse(samDeployDocUrl))
-                        }
-                    },
-                })
-            )
-            if (response !== localizedText.yes) {
-                return ParameterPromptResult.Continue
-            }
 
+            const items: DataQuickPickItem<ParameterPromptResult>[] = [
+                { label: localizedText.yes, data: ParameterPromptResult.Cancel }, // always cancel if override
+                { label: localizedText.no, data: ParameterPromptResult.Continue }
+            ]
+
+            /*
             await configureParameterOverrides({
                 templateUri,
                 requiredParameterNames: missingParameters.keys(),
             })
+            */
 
-            return ParameterPromptResult.Cancel
+            return createPrompter(items, { title })
         } else {
-            const prompt = localize(
+            const title = localize(
                 'AWS.samcli.deploy.parameters.mandatoryPrompt.message',
                 // prettier-ignore
                 'The template {0} contains parameters without default values. In order to deploy, you must provide values for these parameters. Configure them now?',
@@ -359,105 +230,46 @@ export class DefaultSamDeployWizardContext implements SamDeployWizardContext {
             )
             const responseCancel = localizedText.cancel
 
-            // no step number needed since this is a dead end?
-            const quickPick = picker.createQuickPick<vscode.QuickPickItem>({
-                options: {
-                    ignoreFocusOut: true,
-                    title: prompt,
-                },
-                buttons: [this.helpButton, vscode.QuickInputButtons.Back],
-                items: [{ label: responseConfigure }, { label: responseCancel }],
-            })
-            const response = getSingleResponse(
-                await picker.promptUser({
-                    picker: quickPick,
-                    onDidTriggerButton: (button, resolve, reject) => {
-                        if (button === vscode.QuickInputButtons.Back) {
-                            resolve(undefined)
-                        } else if (button === this.helpButton) {
-                            vscode.env.openExternal(vscode.Uri.parse(samDeployDocUrl))
-                        }
-                    },
-                })
-            )
+            const items: DataQuickPickItem<ParameterPromptResult>[] = [
+                { label: responseConfigure, data: ParameterPromptResult.Cancel }, // fix this
+                { label: responseCancel, data: ParameterPromptResult.Continue }
+            ]
+
+            /*
             if (response === responseConfigure) {
                 await configureParameterOverrides({
                     templateUri,
                     requiredParameterNames: missingParameters.keys(),
                 })
             }
+            */
 
-            return ParameterPromptResult.Cancel
+            return createPrompter(items, { title })
         }
     }
-
-    public async promptUserForRegion(step: number, initialRegionCode?: string): Promise<string | undefined> {
+    public createRegionPrompter(): Prompter<string> {
         const partitionRegions = getRegionsForActiveCredentials(
             this.extContext.awsContext,
             this.extContext.regionProvider
         )
 
-        const quickPick = picker.createQuickPick<vscode.QuickPickItem>({
-            options: {
-                title: localize('AWS.samcli.deploy.region.prompt', 'Which AWS Region would you like to deploy to?'),
-                value: initialRegionCode,
-                matchOnDetail: true,
-                ignoreFocusOut: true,
-                step: step,
-                totalSteps: this.totalSteps + this.additionalSteps,
-            },
-            items: partitionRegions.map(region => ({
-                label: region.name,
-                detail: region.id,
-                // this is the only way to get this to show on going back
-                // this will make it so it always shows even when searching for something else
-                alwaysShow: region.id === initialRegionCode,
-                description:
-                    region.id === initialRegionCode
-                        ? localize('AWS.wizard.selectedPreviously', 'Selected Previously')
-                        : '',
-            })),
-            buttons: [this.helpButton, vscode.QuickInputButtons.Back],
-        })
+        const items: DataQuickPickItem<string>[] = partitionRegions.map(region => ({
+            label: region.name,
+            detail: region.id,
+            data: region.id,
+        }))
 
-        const choices = await picker.promptUser<vscode.QuickPickItem>({
-            picker: quickPick,
-            onDidTriggerButton: (button, resolve, reject) => {
-                if (button === vscode.QuickInputButtons.Back) {
-                    resolve(undefined)
-                } else if (button === this.helpButton) {
-                    vscode.env.openExternal(vscode.Uri.parse(samDeployDocUrl))
-                }
-            },
+        return createPrompter(items, {
+            title: localize('AWS.samcli.deploy.region.prompt', 'Which AWS Region would you like to deploy to?'),
+            matchOnDetail: true,
         })
-        const val = picker.verifySinglePickerOutput(choices)
-
-        return val?.detail
     }
 
-    /**
-     * Retrieves an S3 Bucket to deploy to from the user.
-     *
-     * @param selectedRegion Selected region for S3 client usage
-     * @param initialValue Optional, Initial value to prompt with
-     * @param messages Passthrough strings for testing
-     *
-     * @returns S3 Bucket name. Undefined represents cancel.
-     */
-    public async promptUserForS3Bucket(
-        step: number,
-        selectedRegion: string,
-        profile?: string,
-        accountId?: string,
-        initialValue?: string,
-        messages: {
-            noBuckets: string
-            bucketError: string
-        } = {
+    public createS3BucketPrompter(region: string, profile?: string, accountId?: string): Prompter<string> {
+        const messages = {
             noBuckets: localize('AWS.samcli.deploy.s3bucket.picker.noBuckets', 'No buckets found.'),
             bucketError: localize('AWS.samcli.deploy.s3bucket.picker.error', 'There was an error loading S3 buckets.'),
         }
-    ): Promise<string | undefined> {
         const createBucket = {
             iconPath: {
                 light: vscode.Uri.file(ext.iconPaths.light.plus),
@@ -472,17 +284,16 @@ export class DefaultSamDeployWizardContext implements SamDeployWizardContext {
             },
             tooltip: ENTER_BUCKET,
         }
-        const quickPick = picker.createQuickPick<vscode.QuickPickItem>({
-            buttons: [enterBucket, createBucket, this.helpButton, vscode.QuickInputButtons.Back],
-            options: {
-                title: localize('AWS.samcli.deploy.s3Bucket.prompt', 'Select an AWS S3 Bucket to deploy code to'),
-                value: initialValue,
-                matchOnDetail: true,
-                ignoreFocusOut: true,
-                step: step,
-                totalSteps: this.totalSteps + this.additionalSteps,
-            },
+
+        const bucketButtons = new Map(this.buttonBinds)
+        bucketButtons.set(createBucket, resolve => resolve(NEW_BUCKET_OPTION))
+        bucketButtons.set(enterBucket, resolve => resolve(ENTER_BUCKET_OPTION))
+        const prompter = createPrompter<string>([], {
+            title: localize('AWS.samcli.deploy.s3Bucket.prompt', 'Select an AWS S3 Bucket to deploy code to'),
+            matchOnDetail: true,
+            buttonBinds: bucketButtons,
         })
+        const quickPick = prompter.quickInput as any
 
         quickPick.busy = true
 
@@ -490,128 +301,32 @@ export class DefaultSamDeployWizardContext implements SamDeployWizardContext {
         // This will background load the S3 buckets and load them all (in one chunk) when the operation completes.
         // Not awaiting lets us display a "loading" quick pick for immediate feedback.
         // Does not use an IteratingQuickPick because listing S3 buckets by region is not a paginated operation.
-        populateS3QuickPick(quickPick, selectedRegion, this.extContext.settings, messages, profile, accountId)
-
-        const choices = await picker.promptUser<vscode.QuickPickItem>({
-            picker: quickPick,
-            onDidTriggerButton: (button, resolve, reject) => {
-                if (button === vscode.QuickInputButtons.Back) {
-                    resolve(undefined)
-                } else if (button === this.helpButton) {
-                    vscode.env.openExternal(vscode.Uri.parse(samDeployDocUrl))
-                } else if (button === createBucket) {
-                    resolve([{ label: CREATE_NEW_BUCKET }])
-                } else if (button === enterBucket) {
-                    resolve([{ label: ENTER_BUCKET }])
-                }
-            },
-        })
-        const val = picker.verifySinglePickerOutput(choices)
-
-        return val?.label && ![messages.noBuckets, messages.bucketError].includes(val.label) ? val.label : undefined
+        populateS3QuickPick(quickPick, region, this.extContext.settings, messages, profile, accountId)
+    
+        return prompter
     }
 
-    public async promptUserForS3BucketName(
-        step: number,
-        bucketProps: {
-            title: string
-            prompt?: string
-            placeholder?: string
-            value?: string
-            buttons?: vscode.QuickInputButton[]
-            buttonHandler?: (
-                button: vscode.QuickInputButton,
-                inputBox: vscode.InputBox,
-                resolve: (value: string | PromiseLike<string | undefined> | undefined) => void,
-                reject: (value: string | PromiseLike<string | undefined> | undefined) => void
-            ) => void
-        }
-    ): Promise<string | undefined> {
-        if (!this.newBucketCalled) {
-            this.additionalSteps++
-            this.newBucketCalled = true
-        }
-        const inputBox = input.createInputBox({
-            buttons: [
-                this.helpButton,
-                vscode.QuickInputButtons.Back,
-                ...(bucketProps.buttons ? bucketProps.buttons : []),
-            ],
-            options: {
-                title: bucketProps.title,
-                ignoreFocusOut: true,
-                step: step + 1,
-                totalSteps: this.totalSteps + this.additionalSteps,
-                value: bucketProps.value,
-                prompt: bucketProps.prompt,
-                placeholder: bucketProps.placeholder,
-            },
-        })
-
-        const response = await input.promptUser({
-            inputBox: inputBox,
-            onDidTriggerButton: (button, resolve, reject) => {
-                if (button === vscode.QuickInputButtons.Back) {
-                    resolve(undefined)
-                } else if (button === this.helpButton) {
-                    vscode.env.openExternal(vscode.Uri.parse(samDeployDocUrl))
-                } else if (bucketProps.buttonHandler) {
-                    bucketProps.buttonHandler(button, inputBox, resolve, reject)
-                }
-            },
-            onValidateInput: validateBucketName,
-        })
-
-        if (!response) {
-            return undefined
-        } else {
-            return response
-        }
+    public get workspaceFolders(): vscode.Uri[] | undefined {
+        return (vscode.workspace.workspaceFolders || []).map(f => f.uri)
     }
 
-    public async promptUserForEcrRepo(
-        step: number,
-        selectedRegion: string,
-        initialValue?: EcrRepository
-    ): Promise<EcrRepository | undefined> {
-        const quickPick = picker.createQuickPick<vscode.QuickPickItem>({
-            buttons: [this.helpButton, vscode.QuickInputButtons.Back],
-            options: {
-                title: localize('AWS.samcli.deploy.ecrRepo.prompt', 'Select a ECR repo to deploy images to'),
-                value: initialValue?.repositoryName,
-                matchOnDetail: true,
-                ignoreFocusOut: true,
-                step: step,
-                totalSteps: this.totalSteps + this.additionalSteps,
-            },
-        })
+    public createS3BucketNamePrompter(title: string): Prompter<string> {
+        return createPrompter({ title, buttonBinds: this.buttonBinds, validateInput: validateBucketName })
+    }
 
-        const populator = new IteratorTransformer<EcrRepository, vscode.QuickPickItem>(
-            () => ext.toolkitClientBuilder.createEcrClient(selectedRegion).describeRepositories(),
-            response => (response === undefined ? [] : [{ label: response.repositoryName, repository: response }])
+    public createEcrRepoPrompter(region: string): Prompter<EcrRepository> {
+        const prompter = createPrompter<EcrRepository>([], {
+            title: localize('AWS.samcli.deploy.ecrRepo.prompt', 'Select a ECR repo to deploy images to'),
+            matchOnDetail: true,
+        })
+        const populator = new IteratorTransformer<EcrRepository, DataQuickPickItem<EcrRepository>>(
+            () => ext.toolkitClientBuilder.createEcrClient(region).describeRepositories(),
+            response => (response === undefined ? [] : [{ label: response.repositoryName, data: response }])
         )
-        const controller = new picker.IteratingQuickPickController(quickPick, populator)
+        const controller = new picker.IteratingQuickPickController(
+            prompter.quickInput as vscode.QuickPick<DataQuickPickItem<EcrRepository>>, populator)
         controller.startRequests()
-        const choices = await picker.promptUser({
-            picker: quickPick,
-            onDidTriggerButton: (button, resolve, reject) => {
-                if (button === vscode.QuickInputButtons.Back) {
-                    resolve(undefined)
-                } else if (button === this.helpButton) {
-                    vscode.env.openExternal(vscode.Uri.parse(samDeployDocUrl))
-                }
-            },
-        })
-
-        const result = picker.verifySinglePickerOutput(choices)
-        const repository: EcrRepository | undefined = (result as any)?.repository
-        const label = result?.label
-
-        if (!repository || label === picker.IteratingQuickPickController.NO_ITEMS_ITEM.label) {
-            return undefined
-        }
-
-        return repository
+        return prompter
     }
 
     /**
@@ -622,81 +337,81 @@ export class DefaultSamDeployWizardContext implements SamDeployWizardContext {
      *
      * @returns Stack name. Undefined represents cancel.
      */
-    public async promptUserForStackName({
-        initialValue,
-        validateInput,
-    }: {
-        initialValue?: string
-        validateInput(value: string): string | undefined
-    }): Promise<string | undefined> {
-        const inputBox = input.createInputBox({
-            buttons: [this.helpButton, vscode.QuickInputButtons.Back],
-            options: {
-                title: localize('AWS.samcli.deploy.stackName.prompt', 'Enter the name to use for the deployed stack'),
-                ignoreFocusOut: true,
-                step: 4 + this.additionalSteps,
-                totalSteps: this.totalSteps + this.additionalSteps,
-            },
-        })
 
-        // Pre-populate the value if it was already set
-        if (initialValue) {
-            inputBox.value = initialValue
-        }
-
-        return await input.promptUser({
-            inputBox: inputBox,
-            onValidateInput: validateInput,
-            onDidTriggerButton: (button, resolve, reject) => {
-                if (button === vscode.QuickInputButtons.Back) {
-                    resolve(undefined)
-                } else if (button === this.helpButton) {
-                    vscode.env.openExternal(vscode.Uri.parse(samDeployDocUrl))
-                }
-            },
+    public createStackNamePrompter(): Prompter<string> {
+        return createPrompter({
+            title: localize('AWS.samcli.deploy.stackName.prompt', 'Enter the name to use for the deployed stack'),
+            validateInput: validateStackName,
+            buttonBinds: this.buttonBinds,
         })
     }
 }
 
-export class SamDeployWizard extends MultiStepWizard<SamDeployWizardResponse> {
-    private readonly response: Partial<SamDeployWizardResponse> = {}
-    /**
-     * If the selected template has Image based lambdas. If it does, we also need to prompt for
-     * an ECR repo to push the images to
-     */
-    private hasImages: boolean = false
+export class SamDeployWizard extends Wizard<SamDeployWizardResponse> {    
+    public constructor(private readonly context: SamDeployWizardContext, private readonly regionNode?: { regionCode: string }) {
+        super(initializeInterface<SamDeployWizardResponse>(), { region: regionNode?.regionCode })
+        this.form.template.bindPrompter(() => context.createSamTemplatePrompter(), {
+            after: async form => {
+                const template = form.template!
 
-    public constructor(private readonly context: SamDeployWizardContext, private readonly regionNode?: any) {
-        super()
-        // All nodes in the explorer should have a regionCode property, but let's make sure.
-        if (regionNode && Object.prototype.hasOwnProperty.call(regionNode, 'regionCode')) {
-            this.response.region = regionNode.regionCode
-        }
-    }
-
-    protected get startStep() {
-        return this.TEMPLATE
-    }
-
-    protected getResult(): SamDeployWizardResponse | undefined {
-        if (
-            !this.response.parameterOverrides ||
-            !this.response.template ||
-            !this.response.region ||
-            !this.response.s3Bucket ||
-            !this.response.stackName
-        ) {
-            return undefined
-        }
-
-        return {
-            parameterOverrides: this.response.parameterOverrides,
-            template: this.response.template,
-            region: this.response.region,
-            s3Bucket: this.response.s3Bucket,
-            ecrRepo: this.response.ecrRepo,
-            stackName: this.response.stackName,
-        }
+                if (isImage(template)) {
+                    // TODO: remove check when min version is high enough
+                    const samCliVersion = await getSamCliVersion(this.context.extContext.samCliContext())
+                    if (semver.lt(samCliVersion, MINIMUM_SAM_CLI_VERSION_INCLUSIVE_FOR_IMAGE_SUPPORT)) {
+                        vscode.window.showErrorMessage(
+                            localize(
+                                'AWS.output.sam.no.image.support',
+                                'Support for Image-based Lambdas requires a minimum SAM CLI version of 1.13.0.'
+                            )
+                        )
+                        return WIZARD_GOBACK
+                    }
+                }
+        
+                const parameters = await this.context.getParameters(template)
+                if (parameters.size < 1) {
+                    form.parameterOverrides = new Map<string, string>()
+                    return form
+                }
+        
+                const requiredParameterNames = new Set<string>(
+                    filter(parameters.keys(), name => parameters.get(name)!.required)
+                )
+                const overriddenParameters = await this.context.getOverriddenParameters(template)
+                if (!overriddenParameters) {
+                    // In there are no missing required parameters case, it isn't mandatory to override any parameters,
+                    // but we still want to inform users of the option to override. Once we have prompted (i.e., if the
+                    // parameter overrides section is empty instead of undefined), don't prompt again unless required.
+                    this.context.additionalSteps++
+        
+                    const options = {
+                        templateUri: this.response.template,
+                        missingParameters: requiredParameterNames.size > 0 ? requiredParameterNames : undefined,
+                    }
+        
+                    this.response.parameterOverrides = new Map<string, string>()
+        
+                    return getNextStep(await this.context.promptUserForParametersIfApplicable(options))
+                }
+        
+                const missingParameters = difference(requiredParameterNames, overriddenParameters.keys())
+                if (missingParameters.size > 0) {
+                    this.context.additionalSteps++
+        
+                    return getNextStep(
+                        await this.context.promptUserForParametersIfApplicable({
+                            templateUri: this.response.template,
+                            missingParameters,
+                        })
+                    )
+                }
+        
+                this.response.parameterOverrides = overriddenParameters
+        
+                return wizardContinue(this.skipOrPromptRegion(this.S3_BUCKET))
+            }
+        })
+        // TODO: support 'after' option that is asynchronous. Happens after user enters a valid input. Can modify state.
     }
 
     private readonly TEMPLATE: WizardStep = async () => {
@@ -718,7 +433,6 @@ export class SamDeployWizard extends MultiStepWizard<SamDeployWizardResponse> {
             }
         }
 
-        this.hasImages = await this.context.determineIfTemplateHasImages(this.response.template)
         if (this.hasImages) {
             // TODO: remove check when min version is high enough
             const samCliVersion = await getSamCliVersion(this.context.extContext.samCliContext())
@@ -867,23 +581,39 @@ export class SamDeployWizard extends MultiStepWizard<SamDeployWizardResponse> {
     }
 }
 
-class SamTemplateQuickPickItem implements vscode.QuickPickItem {
+function isImage(template?: CloudFormation.Template): boolean {
+    const resources = template?.Resources
+
+    return resources !== undefined && 
+        Object.keys(resources)
+            .filter(key => resources[key]?.Type === 'AWS::Serverless::Function')
+            .map(key => resources[key]?.Properties?.PackageType)
+            .some(it => it === 'Image')
+}
+
+
+class SamTemplateQuickPickItem implements DataQuickPickItem<CloudFormation.Template> {
     public readonly label: string
 
     public description?: string
     public detail?: string
 
-    public constructor(public readonly uri: vscode.Uri, showWorkspaceFolderDetails: boolean) {
+    public constructor(
+        public readonly template: CloudFormation.Template, 
+        public readonly uri: vscode.Uri
+    ) {
         this.label = SamTemplateQuickPickItem.getLabel(uri)
+    }
 
-        if (showWorkspaceFolderDetails) {
-            const workspaceFolder = vscode.workspace.getWorkspaceFolder(uri)
+    public showWorkspaceFolderDetails(): void {
+        const workspaceFolder = vscode.workspace.getWorkspaceFolder(this.uri)
 
-            if (workspaceFolder) {
-                this.description = `in ${workspaceFolder.uri.fsPath}`
-            }
+        if (workspaceFolder) {
+            this.description = `in ${workspaceFolder.uri.fsPath}`
         }
     }
+
+    public get data() { return this.template }
 
     public compareTo(rhs: SamTemplateQuickPickItem): number {
         const labelComp = this.label.localeCompare(rhs.label)
@@ -946,23 +676,31 @@ function validateStackName(value: string): string | undefined {
     return undefined
 }
 
-async function getTemplateChoices(...workspaceFolders: vscode.Uri[]): Promise<SamTemplateQuickPickItem[]> {
-    const templateUris = ext.templateRegistry.registeredItems.map(o => vscode.Uri.file(o.path))
-    const uriToLabel: Map<vscode.Uri, string> = new Map<vscode.Uri, string>()
+function getTemplateChoices(...workspaceFolders: vscode.Uri[]): SamTemplateQuickPickItem[] {
+    const templates = ext.templateRegistry.registeredItems
+    const templateToLabel: Map<CloudFormation.Template, string> = new Map()
     const labelCounts: Map<string, number> = new Map()
 
-    templateUris.forEach(uri => {
+    const templateItems = templates.map(template => {
+        const uri =vscode.Uri.file(template.path)
         const label = SamTemplateQuickPickItem.getLabel(uri)
-        uriToLabel.set(uri, label)
+
+        templateToLabel.set(template.item, label)
         labelCounts.set(label, 1 + (labelCounts.get(label) || 0))
-    })
 
-    return Array.from(uriToLabel, ([uri, label]) => {
-        const showWorkspaceFolderDetails: boolean = (labelCounts.get(label) || 0) > 1
-
-        return new SamTemplateQuickPickItem(uri, showWorkspaceFolderDetails)
+        return new SamTemplateQuickPickItem(template.item, uri)
+    }).map(item => {
+        if (labelCounts.get(item.label)! > 1) {
+            item.showWorkspaceFolderDetails()
+        }
+        return item
     }).sort((a, b) => a.compareTo(b))
+
+    return templateItems
 }
+
+const NEW_BUCKET_OPTION = Symbol()
+const ENTER_BUCKET_OPTION = Symbol()
 
 /**
  * Loads S3 buckets into a quick pick.
@@ -974,82 +712,81 @@ async function getTemplateChoices(...workspaceFolders: vscode.Uri[]): Promise<Sa
  * @param messages Messages to denote no available buckets and errors.
  */
 async function populateS3QuickPick(
-    quickPick: vscode.QuickPick<vscode.QuickPickItem>,
+    quickPick: DataQuickPick<string>,
     selectedRegion: string,
     settings: SettingsConfiguration,
     messages: { noBuckets: string; bucketError: string },
     profile?: string,
     accountId?: string
 ): Promise<void> {
-    return new Promise(async resolve => {
-        const goBack: string = localize('AWS.picker.dynamic.noItemsFound.detail', 'Click here to go back')
-        const baseItems: vscode.QuickPickItem[] = []
-        const cloud9Bucket = `cloud9-${accountId}-sam-deployments-${selectedRegion}`
+    const goBack: string = localize('AWS.picker.dynamic.noItemsFound.detail', 'Click here to go back')
+    const baseItems: DataQuickPickItem<string>[] = []
+    const cloud9Bucket = `cloud9-${accountId}-sam-deployments-${selectedRegion}`
 
-        let recent: string = ''
-        try {
-            const existingBuckets = readSavedBuckets(settings)
-            if (existingBuckets && profile && existingBuckets[profile] && existingBuckets[profile][selectedRegion]) {
-                recent = existingBuckets[profile][selectedRegion]
-                baseItems.push({
-                    label: recent,
-                    description: localize('AWS.profile.recentlyUsed', 'recently used'),
-                })
-            }
-        } catch (e) {
-            getLogger().error('Recent bucket JSON not parseable.', e)
-        }
-
-        if (isCloud9() && recent !== cloud9Bucket) {
+    let recent: string = ''
+    try {
+        const existingBuckets = readSavedBuckets(settings)
+        if (existingBuckets && profile && existingBuckets[profile] && existingBuckets[profile][selectedRegion]) {
+            recent = existingBuckets[profile][selectedRegion]
             baseItems.push({
-                label: cloud9Bucket,
-                detail: localize('AWS.samcli.deploy.bucket.cloud9name', 'Default AWS Cloud9 Bucket'),
+                label: recent,
+                description: localize('AWS.profile.recentlyUsed', 'recently used'),
             })
         }
+    } catch (e) {
+        getLogger().error('Recent bucket JSON not parseable.', e)
+    }
 
-        try {
-            const s3Client = ext.toolkitClientBuilder.createS3Client(selectedRegion)
+    if (isCloud9() && recent !== cloud9Bucket) {
+        baseItems.push({
+            label: cloud9Bucket,
+            detail: localize('AWS.samcli.deploy.bucket.cloud9name', 'Default AWS Cloud9 Bucket'),
+        })
+    }
 
-            quickPick.items = [...baseItems]
+    try {
+        const s3Client = ext.toolkitClientBuilder.createS3Client(selectedRegion)
 
-            const buckets = (await s3Client.listBuckets()).buckets
+        quickPick.items = [...baseItems]
 
-            if (buckets.length === 0) {
-                quickPick.items = [
-                    ...baseItems,
-                    { label: CREATE_NEW_BUCKET },
-                    { label: ENTER_BUCKET },
-                    {
-                        label: messages.noBuckets,
-                        description: goBack,
-                    },
-                ]
-            } else {
-                const bucketItems = buckets
-                    .filter(bucket => bucket.name !== recent && !(isCloud9() && bucket.name === cloud9Bucket))
-                    .map(bucket => {
-                        return {
-                            label: bucket.name,
-                        }
-                    })
+        const buckets = (await s3Client.listBuckets()).buckets
 
-                quickPick.items = [...baseItems, ...bucketItems]
-            }
-        } catch (e) {
-            const err = e as Error
+        if (buckets.length === 0) {
             quickPick.items = [
                 ...baseItems,
-                { label: CREATE_NEW_BUCKET },
-                { label: ENTER_BUCKET },
+                { label: CREATE_NEW_BUCKET, data: NEW_BUCKET_OPTION },
+                { label: ENTER_BUCKET, data: ENTER_BUCKET_OPTION },
                 {
-                    label: messages.bucketError,
+                    label: messages.noBuckets,
+                    data: WIZARD_GOBACK,
                     description: goBack,
-                    detail: err.message,
                 },
             ]
-        } finally {
-            quickPick.busy = false
-            resolve()
+        } else {
+            const bucketItems = buckets
+                .filter(bucket => bucket.name !== recent && !(isCloud9() && bucket.name === cloud9Bucket))
+                .map(bucket => {
+                    return {
+                        label: bucket.name,
+                    }
+                })
+
+            quickPick.items = [...baseItems, ...bucketItems]
         }
-    })
+    } catch (e) {
+        const err = e as Error
+        quickPick.items = [
+            ...baseItems,
+            { label: CREATE_NEW_BUCKET, data: NEW_BUCKET_OPTION },
+            { label: ENTER_BUCKET, data: ENTER_BUCKET_OPTION },
+            {
+                label: messages.bucketError,
+                description: goBack,
+                data: WIZARD_GOBACK,
+                detail: err.message,
+            },
+        ]
+    } finally {
+        quickPick.busy = false
+    }
 }

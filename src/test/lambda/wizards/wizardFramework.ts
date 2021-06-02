@@ -15,7 +15,7 @@ import * as vscode from 'vscode'
 import { Wizard, WizardSchema } from '../../../shared/wizards/wizard'
 import { waitUntil } from '../../../shared/utilities/timeoutUtils'
 import * as assert from 'assert'
-import { Prompter } from '../../../shared/ui/prompter'
+import { DataQuickPickItem, Prompter } from '../../../shared/ui/prompter'
 
 // Only button that we can support is the 'back' button currently
 // TODO: stub out 'onDidTriggerButton' with our own event emitter
@@ -189,5 +189,20 @@ export class WizardTester<TState extends WizardSchema<TState>, TResult> {
 
         await this.waitForTermination()
         return await result
+    }
+}
+
+export class MockPrompter<T> extends Prompter<T> {
+    constructor(private output: T | undefined) {
+        super(vscode.window.createInputBox())
+    }
+    public async prompt(): Promise<symbol | T | undefined> {
+        return this.output
+    }
+    public setLastPicked(picked?: T | DataQuickPickItem<T> | DataQuickPickItem<T>[]): void {
+        return
+    }
+    public getLastPicked(): undefined {
+        return undefined
     }
 }

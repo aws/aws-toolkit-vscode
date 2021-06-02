@@ -12,7 +12,6 @@ import * as vscode from 'vscode'
 import { readFileAsString } from '../../shared/filesystemUtilities'
 import { getLogger, Logger } from '../../shared/logger'
 import CreateStateMachineWizard, {
-    StateMachineTemplateQuickPickItem,
     TemplateFormats,
 } from '../wizards/createStateMachineWizard'
 
@@ -23,14 +22,14 @@ export async function createStateMachineFromTemplate(context: vscode.ExtensionCo
 
     const wizardResponse = await new CreateStateMachineWizard().run()
 
-    if (wizardResponse && wizardResponse.template && wizardResponse.templateFormat) {
+    if (wizardResponse && wizardResponse.templateFile && wizardResponse.templateFormat) {
         try {
             logger.debug(
-                `User selected the ${wizardResponse.template.label} template of ${wizardResponse.templateFormat} format`
+                `User selected the ${wizardResponse.templateFile} template of ${wizardResponse.templateFormat} format`
             )
 
             const textDocumentFromSelection = await getTextDocumentForSelectedItem(
-                wizardResponse.template,
+                wizardResponse.templateFile,
                 context.extensionPath,
                 wizardResponse.templateFormat
             )
@@ -49,11 +48,11 @@ export async function createStateMachineFromTemplate(context: vscode.ExtensionCo
 }
 
 async function getTextDocumentForSelectedItem(
-    item: StateMachineTemplateQuickPickItem,
+    fileName: string,
     extensionPath: string,
     format: string
 ): Promise<vscode.TextDocument> {
-    let content = await readFileAsString(path.join(extensionPath, 'templates', item.fileName))
+    let content = await readFileAsString(path.join(extensionPath, 'templates', fileName))
 
     if (format === TemplateFormats.YAML) {
         // Convert JSON string to YAML string

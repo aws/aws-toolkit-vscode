@@ -67,6 +67,12 @@ export function createPrompter<T>(
     return new QuickPickPrompter(asyncPicker, arg2?.buttonBinds)
 }
 
+// TODO
+export interface PrompterButton {
+    readonly button: vscode.QuickInputButton, 
+    readonly callback: (resolve: any, reject: any) => void
+}
+
 export abstract class Prompter<T> {
     protected readonly buttonBinds: ButtonBinds = new Map()
 
