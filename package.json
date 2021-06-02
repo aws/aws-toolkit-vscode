@@ -574,7 +574,12 @@
                 {
                     "id": "aws-explorer",
                     "title": "%AWS.title%",
-                    "icon": "media/aws-logo.svg"
+                    "icon": "media/aws-logo.svg",
+                    "cloud9": {
+                        "cn": {
+                            "title": "%AWS.title.cn%"
+                        }
+                    }
                 }
             ]
         },
@@ -1283,6 +1288,11 @@
                 "icon": {
                     "dark": "third-party/resources/from-vscode-icons/dark/refresh.svg",
                     "light": "third-party/resources/from-vscode-icons/light/refresh.svg"
+                },
+                "cloud9": {
+                    "cn": {
+                        "title": "%AWS.command.refreshAwsExplorer.cn%"
+                    }
                 }
             },
             {
