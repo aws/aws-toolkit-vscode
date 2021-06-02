@@ -7,7 +7,6 @@ import com.intellij.openapi.components.PersistentStateComponent
 import com.intellij.openapi.components.State
 import com.intellij.openapi.components.Storage
 import com.intellij.openapi.project.Project
-import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.launch
 import software.aws.toolkits.core.utils.tryOrNull
 import software.aws.toolkits.jetbrains.core.credentials.profiles.DEFAULT_PROFILE_ID
@@ -22,10 +21,11 @@ data class ConnectionSettingsState(
 )
 
 @State(name = "accountSettings", storages = [Storage("aws.xml")])
-class DefaultAwsConnectionManager(private val project: Project) :
+class DefaultAwsConnectionManager(project: Project) :
     AwsConnectionManager(project),
-    CoroutineScope by ApplicationThreadPoolScope("DefaultAwsConnectionManager"),
     PersistentStateComponent<ConnectionSettingsState> {
+    private val coroutineScope = ApplicationThreadPoolScope("DefaultAwsConnectionManager", this)
+
     override fun getState(): ConnectionSettingsState = ConnectionSettingsState(
         activeProfile = selectedCredentialIdentifier?.id,
         activeRegion = selectedRegion?.id,
@@ -49,7 +49,7 @@ class DefaultAwsConnectionManager(private val project: Project) :
             .forEach { recentlyUsedProfiles.add(it) }
 
         // Load all the initial state on BG thread, so we don't block the UI or loading of other components
-        launch {
+        coroutineScope.launch {
             val credentialId = state.activeProfile ?: DEFAULT_PROFILE_ID
             val credentials = tryOrNull {
                 CredentialManager.getInstance().getCredentialIdentifierById(credentialId)

@@ -6,7 +6,9 @@ package software.aws.toolkits.jetbrains.core.credentials
 import com.intellij.openapi.Disposable
 import com.intellij.openapi.actionSystem.ActionManager
 import com.intellij.openapi.actionSystem.AnAction
+import com.intellij.openapi.application.AppUIExecutor
 import com.intellij.openapi.application.ApplicationManager
+import com.intellij.openapi.application.ModalityState
 import com.intellij.openapi.components.ServiceManager
 import com.intellij.openapi.project.Project
 import com.intellij.openapi.util.SimpleModificationTracker
@@ -41,7 +43,7 @@ abstract class AwsConnectionManager(private val project: Project) : SimpleModifi
             field = value
             incModificationCount()
 
-            if (!project.isDisposed) {
+            AppUIExecutor.onWriteThread(ModalityState.any()).expireWith(this).execute {
                 project.messageBus.syncPublisher(CONNECTION_SETTINGS_STATE_CHANGED).settingsStateChanged(value)
             }
         }
