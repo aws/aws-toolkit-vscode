@@ -299,7 +299,7 @@ export async function createNewSamApplication(
                         'AWS.samcli.initWizard.launchConfigFail',
                         'Created SAM application "{0}" but failed to generate launch configurations. You can generate these via {1} in the template or handler file.',
                         config.name,
-                        (await getIdeProperties()).codelens
+                        getIdeProperties().codelens
                     ),
                     helpText
                 )
