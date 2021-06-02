@@ -39,7 +39,7 @@ export async function activate(extensionContext: vscode.ExtensionContext): Promi
             localize(
                 'AWS.codelens.failToInitialize',
                 'Failed to activate template registry. {0}} will not appear on SAM template files.',
-                getIdeProperties().codelenses
+                (await getIdeProperties()).codelenses
             )
         )
         getLogger().error('Failed to activate template registry', e)

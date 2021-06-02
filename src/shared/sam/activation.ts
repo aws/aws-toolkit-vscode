@@ -308,7 +308,7 @@ async function promptInstallYamlPlugin(fileName: string, disposables: vscode.Dis
         const permanentlySuppress = localize('AWS.message.info.yaml.suppressPrompt', "Dismiss, and don't show again")
 
         const response = await vscode.window.showInformationMessage(
-            localize('AWS.message.info.yaml.prompt', 'Install YAML extension for additional AWS features.'),
+            localize('AWS.message.info.yaml.prompt', 'Install YAML extension for additional {0} features.', getIdeProperties().company),
             goToMarketplace,
             dismiss,
             permanentlySuppress

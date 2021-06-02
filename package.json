@@ -128,12 +128,22 @@
                         "Errors, Warnings, Info, and Verbose",
                         "Errors, Warnings, Info, Verbose, and Debug"
                     ],
-                    "markdownDescription": "%AWS.configuration.description.logLevel%"
+                    "markdownDescription": "%AWS.configuration.description.logLevel%",
+                    "cloud9": {
+                        "cn": {
+                            "markdownDescription": "%AWS.configuration.description.logLevel.cn%"
+                        }
+                    }
                 },
                 "aws.telemetry": {
                     "type": "boolean",
                     "default": true,
-                    "markdownDescription": "%AWS.configuration.description.telemetry%"
+                    "markdownDescription": "%AWS.configuration.description.telemetry%",
+                    "cloud9": {
+                        "cn": {
+                            "markdownDescription": "%AWS.configuration.description.telemetry.cn%"
+                        }
+                    }
                 },
                 "aws.stepfunctions.asl.format.enable": {
                     "type": "boolean",
@@ -154,7 +164,7 @@
                 "aws.cloudwatchLogs.limit": {
                     "type": "number",
                     "default": 10000,
-                    "description": "%aws.cloudWatchLogs.limit.desc%",
+                    "description": "%AWS.cloudWatchLogs.limit.desc%",
                     "maximum": 10000
                 },
                 "aws.manuallySelectedBuckets": {
@@ -185,7 +195,12 @@
                                 "properties": {
                                     "credentials": {
                                         "description": "%AWS.configuration.description.awssam.debug.credentials%",
-                                        "type": "string"
+                                        "type": "string",
+                                        "cloud9": {
+                                            "cn": {
+                                                "description": "%AWS.configuration.description.awssam.debug.credentials.cn%"
+                                            }
+                                        }
                                     },
                                     "region": {
                                         "description": "%AWS.configuration.description.awssam.debug.region%",
@@ -491,6 +506,12 @@
                                     "json": {}
                                 }
                             }
+                        },
+                        "cloud9": {
+                            "cn": {
+                                "label": "%AWS.configuration.description.awssam.debug.snippets.lambdaCode.label.cn%",
+                                "description": "%AWS.configuration.description.awssam.debug.snippets.lambdaCode.description.cn%"
+                            }
                         }
                     },
                     {
@@ -509,6 +530,12 @@
                                 "payload": {
                                     "json": {}
                                 }
+                            }
+                        },
+                        "cloud9": {
+                            "cn": {
+                                "label": "%AWS.configuration.description.awssam.debug.snippets.lambdaTemplate.label.cn%",
+                                "description": "%AWS.configuration.description.awssam.debug.snippets.lambdaTemplate.description.cn%"
                             }
                         }
                     },
@@ -530,6 +557,12 @@
                                 "payload": {
                                     "json": {}
                                 }
+                            }
+                        },
+                        "cloud9": {
+                            "cn": {
+                                "label": "%AWS.configuration.description.awssam.debug.snippets.api.label.cn%",
+                                "description": "%AWS.configuration.description.awssam.debug.snippets.api.description.cn%"
                             }
                         }
                     }
@@ -1074,7 +1107,12 @@
             {
                 "command": "aws.apig.invokeRemoteRestApi",
                 "title": "%AWS.command.apig.invokeRemoteRestApi%",
-                "category": "AWS"
+                "category": "AWS",
+                "cloud9": {
+                    "cn": {
+                        "title": "%AWS.command.apig.invokeRemoteRestApi.cn%"
+                    }
+                }
             },
             {
                 "command": "aws.lambda.createNewSamApp",
@@ -1084,7 +1122,12 @@
             {
                 "command": "aws.login",
                 "title": "%AWS.command.login%",
-                "category": "AWS"
+                "category": "AWS",
+                "cloud9": {
+                    "cn": {
+                        "title": "%AWS.command.login.cn%"
+                    }
+                }
             },
             {
                 "command": "aws.credential.profile.create",
@@ -1195,7 +1238,12 @@
             {
                 "command": "aws.invokeLambda",
                 "title": "%AWS.command.invokeLambda%",
-                "category": "AWS"
+                "category": "AWS",
+                "cloud9": {
+                    "cn": {
+                        "title": "%AWS.command.invokeLambda.cn%"
+                    }
+                }
             },
             {
                 "command": "aws.importLambda",
@@ -1295,7 +1343,12 @@
             {
                 "command": "aws.viewLogs",
                 "title": "%AWS.command.viewLogs%",
-                "category": "AWS"
+                "category": "AWS",
+                "cloud9": {
+                    "cn": {
+                        "title": "%AWS.command.viewLogs.cn%"
+                    }
+                }
             },
             {
                 "command": "aws.help",
@@ -1343,7 +1396,12 @@
             {
                 "command": "aws.aboutToolkit",
                 "title": "%AWS.command.aboutToolkit%",
-                "category": "AWS"
+                "category": "AWS",
+                "cloud9": {
+                    "cn": {
+                        "title": "%AWS.command.aboutToolkit.cn%"
+                    }
+                }
             },
             {
                 "command": "aws.cloudWatchLogs.viewLogStream",

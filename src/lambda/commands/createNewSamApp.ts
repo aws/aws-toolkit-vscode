@@ -99,7 +99,7 @@ export async function resumeCreateNewSamApp(
         createResult = 'Failed'
         reason = 'error'
 
-        const checkLogsMessage = makeCheckLogsMessage()
+        const checkLogsMessage = await makeCheckLogsMessage()
 
         ext.outputChannel.show(true)
         getLogger('channel').error(
@@ -299,7 +299,7 @@ export async function createNewSamApplication(
                         'AWS.samcli.initWizard.launchConfigFail',
                         'Created SAM application "{0}" but failed to generate launch configurations. You can generate these via {1} in the template or handler file.',
                         config.name,
-                        getIdeProperties().codelens
+                        (await getIdeProperties()).codelens
                     ),
                     helpText
                 )
@@ -319,7 +319,7 @@ export async function createNewSamApplication(
         createResult = 'Failed'
         reason = 'error'
 
-        const checkLogsMessage = makeCheckLogsMessage()
+        const checkLogsMessage = await makeCheckLogsMessage()
 
         ext.outputChannel.show(true)
         getLogger('channel').error(

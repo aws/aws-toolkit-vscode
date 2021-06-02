@@ -5,6 +5,7 @@
 
 import * as vscode from 'vscode'
 import { AwsContext } from '../shared/awsContext'
+import { getIdeProperties } from '../shared/extensionUtilities'
 import { getLogger, Logger } from '../shared/logger'
 import { RegionProvider } from '../shared/regions/regionProvider'
 import { getRegionsForActiveCredentials } from '../shared/regions/regionUtilities'
@@ -26,10 +27,10 @@ const ROOT_NODE_SIGN_IN = new AWSCommandTreeNode(
 
 const ROOT_NODE_ADD_REGION = new AWSCommandTreeNode(
     undefined,
-    localize('AWS.explorerNode.addRegion', 'Add a region to AWS Explorer...'),
+    localize('AWS.explorerNode.addRegion', 'Add a region to {0} Explorer...', getIdeProperties().company),
     'aws.showRegion',
     undefined,
-    localize('AWS.explorerNode.addRegion.tooltip', 'Click here to add a region to AWS Explorer.')
+    localize('AWS.explorerNode.addRegion.tooltip', 'Click here to add a region to {0} Explorer.', getIdeProperties().company)
 )
 
 export class AwsExplorer implements vscode.TreeDataProvider<AWSTreeNodeBase>, RefreshableAwsTreeProvider {
@@ -50,10 +51,11 @@ export class AwsExplorer implements vscode.TreeDataProvider<AWSTreeNodeBase>, Re
         this.extContext.subscriptions.push(
             this.awsContext.onDidChangeContext(e => {
                 if (!e.accountId) {
-                    ROOT_NODE_SIGN_IN.label = localize('AWS.explorerNode.signIn', 'Connect to AWS...')
+                    ROOT_NODE_SIGN_IN.label = localize('AWS.explorerNode.signIn', 'Connect to {0}...', getIdeProperties().company)
                     ROOT_NODE_SIGN_IN.tooltip = localize(
                         'AWS.explorerNode.signIn.tooltip',
-                        'Click here to select credentials for the AWS Toolkit'
+                        'Click here to select credentials for the {0} Toolkit',
+                        getIdeProperties().company
                     )
                 }
             })

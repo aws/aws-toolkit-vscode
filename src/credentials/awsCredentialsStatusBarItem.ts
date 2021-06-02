@@ -8,6 +8,7 @@ const localize = nls.loadMessageBundle()
 
 import * as vscode from 'vscode'
 import { AwsContext, ContextChangeEventsArgs } from '../shared/awsContext'
+import { getIdeProperties } from '../shared/extensionUtilities'
 
 const STATUSBAR_PRIORITY = 100
 const STATUSBAR_TEXT_NO_CREDENTIALS = localize('AWS.credentials.statusbar.no.credentials', '(not connected)')
@@ -25,7 +26,8 @@ export async function initializeAwsCredentialsStatusBarItem(
     statusBarItem.command = 'aws.login'
     statusBarItem.tooltip = localize(
         'AWS.credentials.statusbar.tooltip',
-        'The current credentials used by the AWS Toolkit.\n\nClick this status bar item to use different credentials.'
+        'The current credentials used by the {0} Toolkit.\n\nClick this status bar item to use different credentials.',
+        getIdeProperties().company
     )
     statusBarItem.show()
     updateCredentialsStatusBarItem(statusBarItem)
@@ -47,7 +49,7 @@ export async function updateCredentialsStatusBarItem(statusBarItem: vscode.Statu
     let delay = 0
     if (credentialsId) {
         delay = STATUSBAR_CONNECTED_DELAY
-        statusBarItem.text = localize('AWS.credentials.statusbar.text', 'AWS: {0}', STATUSBAR_TEXT_CONNECTED)
+        statusBarItem.text = localize('AWS.credentials.statusbar.text', '{0}: {1}', getIdeProperties().company, STATUSBAR_TEXT_CONNECTED)
     }
 
     return new Promise<void>(
@@ -55,7 +57,8 @@ export async function updateCredentialsStatusBarItem(statusBarItem: vscode.Statu
             (timeoutID = setTimeout(() => {
                 statusBarItem.text = localize(
                     'AWS.credentials.statusbar.text',
-                    'AWS: {0}',
+                    '{0}: {1}',
+                    getIdeProperties().company,
                     credentialsId ?? STATUSBAR_TEXT_NO_CREDENTIALS
                 )
                 resolve()

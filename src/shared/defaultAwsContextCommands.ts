@@ -29,14 +29,17 @@ import { RegionProvider } from './regions/regionProvider'
 import { getRegionsForActiveCredentials } from './regions/regionUtilities'
 import { createQuickPick, promptUser } from './ui/picker'
 import { SharedCredentialsProvider } from '../credentials/providers/sharedCredentialsProvider'
+import { getIdeProperties } from './extensionUtilities'
 
 const TITLE_HIDE_REGION = localize(
     'AWS.message.prompt.region.hide.title',
-    'Select a region to hide from the AWS Explorer'
+    'Select a region to hide from the {0} Explorer',
+    getIdeProperties().company
 )
 const TITLE_SHOW_REGION = localize(
     'AWS.message.prompt.region.show.title',
-    'Select a region to show in the AWS Explorer'
+    'Select a region to show in the {0} Explorer',
+    getIdeProperties().company
 )
 
 export class DefaultAWSContextCommands {
@@ -153,7 +156,8 @@ export class DefaultAWSContextCommands {
             const response = await window.showWarningMessage(
                 localize(
                     'AWS.message.prompt.credentials.definition.tryAgain',
-                    'The credentials do not appear to be valid. Check the AWS Toolkit Logs for details. Would you like to try again?'
+                    'The credentials do not appear to be valid. Check the {0} Toolkit Logs for details. Would you like to try again?',
+                    getIdeProperties().company
                 ),
                 localizedText.yes,
                 localizedText.no
@@ -180,7 +184,8 @@ export class DefaultAWSContextCommands {
             const userResponse = await window.showInformationMessage(
                 localize(
                     'AWS.message.prompt.credentials.create',
-                    'You do not appear to have any AWS Credentials defined. Would you like to set one up now?'
+                    'You do not appear to have any {0} Credentials defined. Would you like to set one up now?',
+                    getIdeProperties().company
                 ),
                 localizedText.yes,
                 localizedText.no
@@ -201,7 +206,8 @@ export class DefaultAWSContextCommands {
                 const userResponse = await window.showInformationMessage(
                     localize(
                         'AWS.message.prompt.credentials.create',
-                        'You do not appear to have any AWS Credentials defined. Would you like to set one up now?'
+                        'You do not appear to have any {0} Credentials defined. Would you like to set one up now?',
+                        getIdeProperties().company
                     ),
                     localizedText.yes,
                     localizedText.no
@@ -307,7 +313,7 @@ export class DefaultAWSContextCommands {
 
         const picker = createQuickPick({
             options: {
-                placeHolder: localize('AWS.message.selectRegion', 'Select an AWS region'),
+                placeHolder: localize('AWS.message.selectRegion', 'Select an {0} region', getIdeProperties().company),
                 title: title,
                 matchOnDetail: true,
                 step: params?.step,

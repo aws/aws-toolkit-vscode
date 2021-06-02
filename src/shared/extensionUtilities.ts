@@ -3,6 +3,7 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
+import { MetadataService } from 'aws-sdk'
 import * as _ from 'lodash'
 import * as os from 'os'
 import * as path from 'path'
@@ -20,7 +21,9 @@ const localize = nls.loadMessageBundle()
 
 const VSCODE_APPNAME = 'Visual Studio Code'
 const CLOUD9_APPNAME = 'AWS Cloud9'
+const CLOUD9_CN_APPNAME = 'Amazon Cloud9'
 const TEST_VERSION = 'testPluginVersion'
+const NOT_INITIALIZED = 'notInitialized'
 
 export const mostRecentVersionKey: string = 'awsToolkitMostRecentVersion'
 // This is a hack to get around webpack messing everything up in unit test mode, it's also a very obvious
@@ -38,8 +41,10 @@ export enum IDE {
     unknown,
 }
 
+let computeRegion: string | undefined = NOT_INITIALIZED
+
 export function getIdeType(): IDE {
-    if (vscode.env.appName === CLOUD9_APPNAME) {
+    if (vscode.env.appName === CLOUD9_APPNAME || vscode.env.appName === CLOUD9_CN_APPNAME) {
         return IDE.cloud9
     }
 
@@ -58,6 +63,7 @@ interface IdeProperties {
     commandPalette: string
     codelens: string
     codelenses: string
+    company: string
 }
 
 export function getIdeProperties(): IdeProperties {
@@ -68,17 +74,28 @@ export function getIdeProperties(): IdeProperties {
         commandPalette: 'Command Palette',
         codelens: 'CodeLens',
         codelenses: 'CodeLenses',
+        company: 'AWS'
+    }
+
+    const cloud9Vals: IdeProperties = {
+        shortName: 'Cloud9',
+        longName: 'AWS Cloud9',
+        commandPalette: 'Go to Anything Panel',
+        codelens: 'Inline Action',
+        codelenses: 'Inline Actions',
+        company: 'AWS'
     }
 
     switch (getIdeType()) {
         case IDE.cloud9:
-            return {
-                shortName: 'Cloud9',
-                longName: 'AWS Cloud9',
-                commandPalette: 'Go to Anything Panel',
-                codelens: 'Inline Action',
-                codelenses: 'Inline Actions',
+            if (isCn()) {
+                return {
+                    ...cloud9Vals,
+                    longName: 'Amazon Cloud9',
+                    company: 'Amazon'
+                }
             }
+            return cloud9Vals
         // default is IDE.vscode
         default:
             return vscodeVals
@@ -92,6 +109,10 @@ export function isCloud9(): boolean {
     const settings = new DefaultSettingsConfiguration('aws')
 
     return getIdeType() === IDE.cloud9 || !!settings.readSetting<boolean>('forceCloud9', false)
+}
+
+export function isCn(): boolean {
+    return getComputeRegion()?.startsWith('cn') ?? false
 }
 
 export class ExtensionUtilities {
@@ -188,7 +209,7 @@ export async function createQuickStartWebview(
     // create hidden webview, leave it up to the caller to show
     const view = vscode.window.createWebviewPanel(
         'html',
-        localize('AWS.command.quickStart.title', 'AWS Toolkit - Quick Start'),
+        localize('AWS.command.quickStart.title', '{0} Toolkit - Quick Start', getIdeProperties().company),
         { viewColumn: vscode.ViewColumn.Active, preserveFocus: true },
         { enableScripts: true }
     )
@@ -272,7 +293,8 @@ async function showOrPromptQuickstart(): Promise<void> {
         const prompt = await vscode.window.showInformationMessage(
             localize(
                 'AWS.message.prompt.quickStart.toastMessage',
-                'You are now using AWS Toolkit version {0}',
+                'You are now using {0} Toolkit version {1}',
+                getIdeProperties().company,
                 pluginVersion
             ),
             view
@@ -299,7 +321,8 @@ export function showWelcomeMessage(context: vscode.ExtensionContext): void {
         vscode.window.showWarningMessage(
             localize(
                 'AWS.startup.toastIfAlpha',
-                'AWS Toolkit PREVIEW. (To get the latest STABLE version, uninstall this version.)'
+                '{0} Toolkit PREVIEW. (To get the latest STABLE version, uninstall this version.)',
+                getIdeProperties().company
             )
         )
         return
@@ -324,7 +347,7 @@ export function showWelcomeMessage(context: vscode.ExtensionContext): void {
  * @param toolkitOutputChannel VS Code Output Channel
  */
 export async function aboutToolkit(): Promise<void> {
-    const toolkitEnvDetails = getToolkitEnvironmentDetails()
+    const toolkitEnvDetails = await getToolkitEnvironmentDetails()
     const copyButtonLabel = localize('AWS.message.prompt.copyButtonLabel', 'Copy')
     const result = await vscode.window.showInformationMessage(toolkitEnvDetails, { modal: true }, copyButtonLabel)
     if (result === copyButtonLabel) {
@@ -336,21 +359,59 @@ export async function aboutToolkit(): Promise<void> {
  * Returns a string that includes the OS, AWS Toolkit,
  * and VS Code versions.
  */
-export function getToolkitEnvironmentDetails(): string {
+export async function getToolkitEnvironmentDetails(): Promise<string> {
     const osType = os.type()
     const osArch = os.arch()
     const osRelease = os.release()
     const vsCodeVersion = vscode.version
     const envDetails = localize(
         'AWS.message.toolkitInfo',
-        'OS:  {0} {1} {2}\n{3} Extension Host Version:  {4}\nAWS Toolkit Version:  {5}\n',
+        'OS:  {0} {1} {2}\n{3} Extension Host Version:  {4}\{5} Toolkit Version:  {6}\n',
         osType,
         osArch,
         osRelease,
         getIdeProperties().longName,
         vsCodeVersion,
+        getIdeProperties().company,
         pluginVersion
     )
 
     return envDetails
+}
+
+/**
+ * Returns the Cloud9 compute region or 'unknown' if we can't pull a region, or `undefined` if this is not Cloud9.
+ */
+ export async function initializeComputeRegion(
+    metadataService: MetadataService = new MetadataService(),
+    isC9: boolean = isCloud9()
+): Promise<void> {
+    if (isC9) {
+        try {
+            const identity: { [key: string]: string; region: string } = await new Promise((resolve, reject) => {
+                // MetadataService.request() doesn't support .promise()...
+                metadataService.request('/latest/dynamic/instance-identity/document', (err, data) => {
+                    if (err) {
+                        reject(err)
+                    }
+                    resolve(JSON.parse(data))
+                })
+            })
+
+            computeRegion = identity.region || 'unknown'
+        } catch (e) {
+            computeRegion = 'unknown'
+        }
+    } else {
+        // not cloud9, region has no meaning
+        computeRegion = undefined
+    }
+}
+
+export function getComputeRegion(): string | undefined {
+    if (computeRegion === NOT_INITIALIZED) {
+        throw new Error('Attempted to get compute region without initializing.')
+    }
+
+    return computeRegion
 }

@@ -7,6 +7,7 @@ import * as vscode from 'vscode'
 import * as nls from 'vscode-nls'
 
 import { samAboutInstallUrl, vscodeMarketplaceUrl } from '../../constants'
+import { getIdeProperties } from '../../extensionUtilities'
 import {
     InvalidSamCliError,
     InvalidSamCliVersionError,
@@ -22,7 +23,8 @@ const localize = nls.loadMessageBundle()
 // Messages
 const RECOMMENDATION_UPDATE_TOOLKIT: string = localize(
     'AWS.samcli.recommend.update.toolkit',
-    'Check the Marketplace for an updated AWS Toolkit.'
+    'Check the Marketplace for an updated {0} Toolkit.',
+    getIdeProperties().company
 )
 
 const RECOMMENDATION_UPDATE_SAM_CLI: string = localize('AWS.samcli.recommend.update.samcli', 'Update your SAM CLI.')
