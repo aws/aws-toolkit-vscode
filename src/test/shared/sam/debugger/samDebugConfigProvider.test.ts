@@ -713,7 +713,7 @@ describe('SamDebugConfigurationProvider', async function () {
                 expected.templatePath,
                 `Resources:
   src:
-    Type: 'AWS::Serverless::Function'
+    Type: AWS::Serverless::Function
     Properties:
       Handler: app.handler
       CodeUri: >-
