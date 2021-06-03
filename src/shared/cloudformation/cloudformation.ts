@@ -13,11 +13,11 @@ import { SystemUtilities } from '../systemUtilities'
 import { getLogger } from '../logger'
 import { extensionSettingsPrefix, LAMBDA_PACKAGE_TYPE_IMAGE } from '../constants'
 import { normalizeSeparator } from '../utilities/pathUtils'
-import { getWorkspaceRelativePath } from '../utilities/workspaceUtils'
 import { HttpResourceFetcher } from '../resourcefetcher/httpResourceFetcher'
 import { ResourceFetcher } from '../resourcefetcher/resourcefetcher'
 import { FileResourceFetcher } from '../resourcefetcher/fileResourceFetcher'
 import { CompositeResourceFetcher } from '../resourcefetcher/compositeResourceFetcher'
+import { WorkspaceConfiguration } from '../vscode/workspace'
 
 export namespace CloudFormation {
     export const SERVERLESS_API_TYPE = 'AWS::Serverless::Api'
@@ -760,8 +760,8 @@ export namespace CloudFormation {
     }
 }
 
-export let CFN_SCHEMA_PATH = ''
-export let SAM_SCHEMA_PATH = ''
+let CFN_SCHEMA_PATH = ''
+let SAM_SCHEMA_PATH = ''
 const MANIFEST_URL = 'https://api.github.com/repos/awslabs/goformation/releases/latest'
 
 export async function refreshSchemas(extensionContext: vscode.ExtensionContext) {
@@ -784,7 +784,7 @@ export async function refreshSchemas(extensionContext: vscode.ExtensionContext) 
     }
 
     try {
-        const details = await getManifestDetails(manifest)
+        const details = getManifestDetails(manifest)
 
         await getRemoteOrCachedFile({
             filepath: CFN_SCHEMA_PATH,
@@ -810,13 +810,17 @@ export async function refreshSchemas(extensionContext: vscode.ExtensionContext) 
  * @param path Template file path
  * @param type Template type to use for filepath
  */
-export async function updateYamlSchemasArray(path: string, type: 'cfn' | 'sam'): Promise<void> {
-    const config = vscode.workspace.getConfiguration('yaml')
-    const relPath = normalizeSeparator(getWorkspaceRelativePath(path) ?? path)
-    const schemas: { [key: string]: string | string[] } | undefined = config.get('schemas')
-    const writeTo = type === 'cfn' ? CFN_SCHEMA_PATH : SAM_SCHEMA_PATH
-    const deleteFrom = type === 'sam' ? CFN_SCHEMA_PATH : SAM_SCHEMA_PATH
-    let newWriteArr: string[] = []
+export async function updateYamlSchemasArray(
+    path: string,
+    type: 'cfn' | 'sam',
+    config: WorkspaceConfiguration = vscode.workspace.getConfiguration('yaml'),
+    paths: { cfnSchema: string; samSchema: string } = { cfnSchema: CFN_SCHEMA_PATH, samSchema: SAM_SCHEMA_PATH }
+): Promise<void> {
+    const relPath = normalizeSeparator(path)
+    const schemas: { [key: string]: string | string[] | undefined } | undefined = config.get('schemas')
+    const writeTo = type === 'cfn' ? paths.cfnSchema : paths.samSchema
+    const deleteFrom = type === 'sam' ? paths.cfnSchema : paths.samSchema
+    let newWriteArr: string[] = [path]
     let newDeleteArr: string[] = []
 
     if (schemas) {
@@ -836,7 +840,7 @@ export async function updateYamlSchemasArray(path: string, type: 'cfn' | 'sam'):
         }
     }
 
-    config.update(
+    await config.update(
         'schemas',
         {
             ...(schemas ? schemas : {}),
@@ -847,7 +851,7 @@ export async function updateYamlSchemasArray(path: string, type: 'cfn' | 'sam'):
     )
 }
 
-async function getManifestDetails(manifest: string): Promise<{ samUrl: string; cfnUrl: string; version: string }> {
+export function getManifestDetails(manifest: string): { samUrl: string; cfnUrl: string; version: string } {
     const json = JSON.parse(manifest)
     if (json.tag_name) {
         return {

@@ -37,10 +37,10 @@ export class CloudFormationTemplateRegistry extends WatchedFiles<CloudFormation.
         if (template.AWSTemplateFormatVersion || template.Resources) {
             if (template.Transform && template.Transform.toString().startsWith('AWS::Serverless')) {
                 // apply serverless schema
-                updateYamlSchemasArray(path, 'sam')
+                await updateYamlSchemasArray(path, 'sam')
             } else {
                 // apply cfn schema
-                updateYamlSchemasArray(path, 'cfn')
+                await updateYamlSchemasArray(path, 'cfn')
             }
 
             return template
