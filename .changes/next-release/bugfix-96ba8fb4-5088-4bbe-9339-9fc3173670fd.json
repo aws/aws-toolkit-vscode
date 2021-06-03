@@ -1,0 +1,4 @@
+{
+  "type" : "bugfix",
+  "description" : "Fix missing text in the View S3 bucket with prefix dialog"
+}
