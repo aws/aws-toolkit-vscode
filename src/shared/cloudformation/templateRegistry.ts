@@ -4,7 +4,7 @@
  */
 
 import { readFileSync } from 'fs'
-import { CloudFormation } from './cloudformation'
+import { CloudFormation, updateYamlSchemasArray } from './cloudformation'
 import * as pathutils from '../utilities/pathUtils'
 import * as path from 'path'
 import { isInDirectory } from '../filesystemUtilities'
@@ -13,7 +13,6 @@ import { getLambdaDetails } from '../../lambda/utils'
 import { ext } from '../extensionGlobals'
 import { WatchedFiles, WatchedItem } from '../watchedFiles'
 import { getLogger } from '../logger'
-import { updateYamlSchemasArray } from './utils'
 
 export interface TemplateDatum {
     path: string
