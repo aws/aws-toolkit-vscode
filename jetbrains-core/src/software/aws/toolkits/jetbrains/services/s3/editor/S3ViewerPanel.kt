@@ -7,7 +7,6 @@ import com.intellij.ide.DataManager
 import com.intellij.openapi.Disposable
 import com.intellij.openapi.actionSystem.ActionGroup
 import com.intellij.openapi.actionSystem.ActionManager
-import com.intellij.openapi.actionSystem.ActionPlaces
 import com.intellij.openapi.actionSystem.ActionToolbar
 import com.intellij.openapi.project.Project
 import com.intellij.ui.IdeBorderFactory
@@ -51,7 +50,7 @@ class S3ViewerPanel(private val disposable: Disposable, private val project: Pro
         filterComponent.onEnter(handler)
         filterComponent.onEmpty {
             // only refresh if view is currently filtered
-            if (!virtualBucket.prefix.isNullOrBlank()) {
+            if (virtualBucket.prefix.isNotBlank()) {
                 handler()
             }
         }
@@ -123,7 +122,7 @@ class S3ViewerPanel(private val disposable: Disposable, private val project: Pro
     private fun createToolbar(s3TreeTable: S3TreeTable): ActionToolbar {
         val actionManager = ActionManager.getInstance()
         val group = actionManager.getAction("aws.toolkit.s3viewer.toolbar") as ActionGroup
-        val toolbar = actionManager.createActionToolbar(ActionPlaces.UNKNOWN, group, true)
+        val toolbar = actionManager.createActionToolbar(ACTION_PLACE, group, true)
         toolbar.setTargetComponent(s3TreeTable)
         return toolbar
     }
@@ -135,7 +134,11 @@ class S3ViewerPanel(private val disposable: Disposable, private val project: Pro
         PopupHandler.installPopupHandler(
             treeTable,
             group,
-            ActionPlaces.UNKNOWN,
+            ACTION_PLACE,
         )
+    }
+
+    private companion object {
+        const val ACTION_PLACE = "S3ViewerPanel"
     }
 }
