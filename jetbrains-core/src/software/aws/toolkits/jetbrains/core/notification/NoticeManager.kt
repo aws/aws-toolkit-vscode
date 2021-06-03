@@ -65,7 +65,7 @@ class DefaultNoticeManager :
         )
 
         notification.addAction(
-            object : DumbAwareAction(message("notice.suppress")) {
+            object : DumbAwareAction(message("general.notification.action.hide_forever")) {
                 override fun actionPerformed(e: AnActionEvent) {
                     suppressNotification(notice)
                     notification.hideBalloon()

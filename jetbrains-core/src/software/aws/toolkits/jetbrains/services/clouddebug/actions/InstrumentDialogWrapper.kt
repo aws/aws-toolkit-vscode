@@ -29,9 +29,9 @@ class InstrumentDialogWrapper(val project: Project, clusterArn: String, private 
         centerRelativeToParent()
     }
 
-    override fun createCenterPanel(): JComponent? = view.content
+    override fun createCenterPanel(): JComponent = view.content
 
-    override fun getHelpId(): String? = HelpIds.CLOUD_DEBUG_ENABLE.id
+    override fun getHelpId(): String = HelpIds.CLOUD_DEBUG_ENABLE.id
 
     override fun doOKAction() {
         if (!settings.showEnableDebugWarning || ConfirmNonProductionDialogWrapper(project, serviceArn.substringAfterLast("service/")).showAndGet()) {
@@ -42,7 +42,7 @@ class InstrumentDialogWrapper(val project: Project, clusterArn: String, private 
 
 class ConfirmNonProductionDialogWrapper(private val project: Project, serviceName: String) : DialogWrapper(project) {
     private val view = ConfirmNonProductionDialog(serviceName)
-    private val doNotShowAgain = JCheckBox(message("notice.suppress"))
+    private val doNotShowAgain = JCheckBox(message("general.notification.action.hide_forever"))
     private val settings = CloudDebugSettings.getInstance()
 
     init {
@@ -53,7 +53,7 @@ class ConfirmNonProductionDialogWrapper(private val project: Project, serviceNam
         view.confirmProceed.addActionListener { isOKActionEnabled = view.confirmProceed.isSelected }
     }
 
-    override fun createCenterPanel(): JComponent? = view.content
+    override fun createCenterPanel(): JComponent = view.content
 
     override fun createSouthAdditionalPanel() = JPanel(GridBagLayout()).apply { add(doNotShowAgain) }
 
