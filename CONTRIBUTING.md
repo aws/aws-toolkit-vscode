@@ -87,15 +87,12 @@ See [CODE_GUIDELINES.md](./docs/CODE_GUIDELINES.md) for coding conventions.
 - How to debug unresolved promise rejections:
     1. Declare a global unhandledRejection handler.
        ```
-       getLogger('channel').error(
-            localize(
-                'AWS.channel.aws.toolkit.activation.error',
-                'Error Activating {0} Toolkit: {1}',
-                getIdeProperties().company,
-                (error as Error).message
-            )
-        )
-        throw error
+       process.on('unhandledRejection', (e) => {
+           channelLogger.error('AWS.channel.aws.toolkit.activation.error', 'Error Activating AWS Toolkit', e as Error)
+           if (e !== undefined) {
+               throw e
+           }
+       });
        ```
     2. Put a breakpoint on it.
     3. Run all tests.

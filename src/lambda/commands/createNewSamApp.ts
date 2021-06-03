@@ -99,7 +99,7 @@ export async function resumeCreateNewSamApp(
         createResult = 'Failed'
         reason = 'error'
 
-        const checkLogsMessage = await makeCheckLogsMessage()
+        const checkLogsMessage = makeCheckLogsMessage()
 
         ext.outputChannel.show(true)
         getLogger('channel').error(
@@ -319,7 +319,7 @@ export async function createNewSamApplication(
         createResult = 'Failed'
         reason = 'error'
 
-        const checkLogsMessage = await makeCheckLogsMessage()
+        const checkLogsMessage = makeCheckLogsMessage()
 
         ext.outputChannel.show(true)
         getLogger('channel').error(

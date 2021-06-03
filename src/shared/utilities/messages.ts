@@ -17,7 +17,7 @@ function commandName(): string {
     return isCn() ? localize('AWS.command.viewLogs.cn', 'View Amazon Toolkit Logs') :  localize('AWS.command.viewLogs', 'View AWS Toolkit Logs')
 }
 
-export async function makeCheckLogsMessage(): Promise<string> {
+export function makeCheckLogsMessage(): string {
     const message = localize(
         'AWS.error.check.logs',
         'Check the logs for more information by running the "{0}" command from the {1}.',
