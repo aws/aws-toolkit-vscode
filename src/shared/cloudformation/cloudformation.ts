@@ -4,12 +4,20 @@
  */
 
 import * as schema from 'cloudformation-schema-js-yaml'
-import { writeFile } from 'fs-extra'
+import * as path from 'path'
+import * as vscode from 'vscode'
+import { mkdirSync, writeFile } from 'fs-extra'
 import * as yaml from 'js-yaml'
 import * as filesystemUtilities from '../filesystemUtilities'
 import { SystemUtilities } from '../systemUtilities'
 import { getLogger } from '../logger'
-import { LAMBDA_PACKAGE_TYPE_IMAGE } from '../constants'
+import { extensionSettingsPrefix, LAMBDA_PACKAGE_TYPE_IMAGE } from '../constants'
+import { normalizeSeparator } from '../utilities/pathUtils'
+import { getWorkspaceRelativePath } from '../utilities/workspaceUtils'
+import { HttpResourceFetcher } from '../resourcefetcher/httpResourceFetcher'
+import { ResourceFetcher } from '../resourcefetcher/resourcefetcher'
+import { FileResourceFetcher } from '../resourcefetcher/fileResourceFetcher'
+import { CompositeResourceFetcher } from '../resourcefetcher/compositeResourceFetcher'
 
 export namespace CloudFormation {
     export const SERVERLESS_API_TYPE = 'AWS::Serverless::Api'
@@ -750,4 +758,134 @@ export namespace CloudFormation {
     export function makeResourceId(s: string) {
         return s.replace(/[^A-Za-z0-9]/g, '')
     }
+}
+
+export let CFN_SCHEMA_PATH = ''
+export let SAM_SCHEMA_PATH = ''
+const MANIFEST_URL = 'https://api.github.com/repos/awslabs/goformation/releases/latest'
+
+export async function refreshSchemas(extensionContext: vscode.ExtensionContext) {
+    CFN_SCHEMA_PATH = path.join(extensionContext.globalStoragePath, 'cloudformation.schema.json')
+    SAM_SCHEMA_PATH = path.join(extensionContext.globalStoragePath, 'sam.schema.json')
+    let manifest: string | undefined
+    try {
+        const manifestFetcher = new HttpResourceFetcher(MANIFEST_URL, { showUrl: true })
+        manifest = await manifestFetcher.get()
+    } catch (e) {
+        getLogger().error(`Failed getting manifest at ${MANIFEST_URL}:`, e)
+
+        return
+    }
+
+    if (!manifest) {
+        getLogger().error(`Schema manifest at ${MANIFEST_URL} was undefined`)
+
+        return
+    }
+
+    try {
+        const details = await getManifestDetails(manifest)
+
+        await getRemoteOrCachedFile({
+            filepath: CFN_SCHEMA_PATH,
+            version: details.version,
+            url: details.cfnUrl,
+            cacheKey: 'cfnSchemaVersion',
+        })
+        await getRemoteOrCachedFile({
+            filepath: SAM_SCHEMA_PATH,
+            version: details.version,
+            url: details.samUrl,
+            cacheKey: 'samSchemaVersion',
+        })
+    } catch (e) {
+        getLogger().error('Could not get details from manifest:', (e as Error).message)
+    }
+}
+
+/**
+ * Maps a template file to a CFN or SAM schema.
+ * If present, removes association with the other type of schema.
+ * Does not modify other schemas not managed by AWS.
+ * @param path Template file path
+ * @param type Template type to use for filepath
+ */
+export async function updateYamlSchemasArray(path: string, type: 'cfn' | 'sam'): Promise<void> {
+    const config = vscode.workspace.getConfiguration('yaml')
+    const relPath = normalizeSeparator(getWorkspaceRelativePath(path) ?? path)
+    const schemas: { [key: string]: string | string[] } | undefined = config.get('schemas')
+    const writeTo = type === 'cfn' ? CFN_SCHEMA_PATH : SAM_SCHEMA_PATH
+    const deleteFrom = type === 'sam' ? CFN_SCHEMA_PATH : SAM_SCHEMA_PATH
+    let newWriteArr: string[] = []
+    let newDeleteArr: string[] = []
+
+    if (schemas) {
+        if (schemas[writeTo]) {
+            newWriteArr = Array.isArray(schemas[writeTo])
+                ? (schemas[writeTo] as string[])
+                : [schemas[writeTo] as string]
+            if (!newWriteArr.includes(relPath)) {
+                newWriteArr.push(relPath)
+            }
+        }
+        if (schemas[deleteFrom]) {
+            const temp = Array.isArray(schemas[deleteFrom])
+                ? (schemas[deleteFrom] as string[])
+                : [schemas[deleteFrom] as string]
+            newDeleteArr = temp.filter(val => val !== relPath)
+        }
+    }
+
+    config.update(
+        'schemas',
+        {
+            ...(schemas ? schemas : {}),
+            [writeTo]: newWriteArr,
+            [deleteFrom]: newDeleteArr,
+        },
+        vscode.ConfigurationTarget.Global
+    )
+}
+
+async function getManifestDetails(manifest: string): Promise<{ samUrl: string; cfnUrl: string; version: string }> {
+    const json = JSON.parse(manifest)
+    if (json.tag_name) {
+        return {
+            samUrl: `https://raw.githubusercontent.com/awslabs/goformation/${json.tag_name}/schema/sam.schema.json`,
+            cfnUrl: `https://raw.githubusercontent.com/awslabs/goformation/${json.tag_name}/schema/cloudformation.schema.json`,
+            version: json.tag_name,
+        }
+    } else {
+        throw new Error('Manifest did not include a tag_name')
+    }
+}
+
+export async function getRemoteOrCachedFile(params: {
+    filepath: string
+    version: string
+    url: string
+    cacheKey: string
+}): Promise<string | undefined> {
+    const dir = path.parse(params.filepath).dir
+    if (!(await filesystemUtilities.fileExists(dir))) {
+        mkdirSync(dir, { recursive: true })
+    }
+    const cachedVersion = vscode.workspace.getConfiguration(extensionSettingsPrefix).get<string>(params.cacheKey)
+
+    const fetchers: ResourceFetcher[] = []
+    if (params.version !== cachedVersion && params.url) {
+        fetchers.push(
+            new HttpResourceFetcher(params.url, {
+                showUrl: true,
+                pipeLocation: params.filepath,
+                // updates curr version
+                onSuccess: () =>
+                    vscode.workspace.getConfiguration(extensionSettingsPrefix).update(params.cacheKey, params.version),
+            })
+        )
+    }
+    fetchers.push(new FileResourceFetcher(params.filepath))
+    const fetcher = new CompositeResourceFetcher(...fetchers)
+
+    return fetcher.get()
 }
