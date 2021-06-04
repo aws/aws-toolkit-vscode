@@ -23,11 +23,13 @@ import com.intellij.openapi.ui.DialogWrapper
 import com.intellij.openapi.ui.TextBrowseFolderListener
 import com.intellij.openapi.vfs.VirtualFile
 import com.intellij.ui.CollectionComboBoxModel
+import com.intellij.ui.ComboboxSpeedSearch
 import com.intellij.ui.SimpleListCellRenderer
 import com.intellij.ui.components.JBRadioButton
 import com.intellij.ui.components.fields.ExtendableTextComponent
 import com.intellij.ui.components.fields.ExtendableTextField
 import com.intellij.ui.layout.GrowPolicy
+import com.intellij.ui.layout.applyToComponent
 import com.intellij.ui.layout.buttonGroup
 import com.intellij.ui.layout.listCellRenderer
 import com.intellij.ui.layout.panel
@@ -224,6 +226,7 @@ internal class PushToEcrDialog(
                     text = value.tag ?: value.imageId.take(15)
                 }
             )
+                .applyToComponent { ComboboxSpeedSearch(this) }
                 .growPolicy(GrowPolicy.MEDIUM_TEXT)
                 .withErrorOnApplyIf(message("ecr.image.not_selected")) { it.selected() == null }
         }
@@ -234,7 +237,7 @@ internal class PushToEcrDialog(
             cell {
                 val model = CollectionComboBoxModel<DockerRunConfiguration>()
                 rebuildRunConfigurationComboBoxModel(model)
-                val box = comboBox(
+                comboBox(
                     model,
                     { runConfiguration },
                     { ::runConfiguration.set(it) },
@@ -243,25 +246,24 @@ internal class PushToEcrDialog(
                         text = value.name
                     }
                 )
+                    .applyToComponent {
+                        // TODO: how do we render both the Docker icon and action items correctly?
+                        isEditable = true
+                        editor = object : BasicComboBoxEditor.UIResource() {
+                            override fun createEditorComponent(): JTextField {
+                                val textField = ExtendableTextField()
+                                textField.isEditable = false
+
+                                buildDockerfileActions(model, textField)
+                                textField.border = null
+
+                                return textField
+                            }
+                        }
+                    }
                     .growPolicy(GrowPolicy.MEDIUM_TEXT)
                     .withErrorOnApplyIf(message("ecr.dockerfile.configuration.invalid")) { it.selected() == null }
                     .withErrorOnApplyIf(message("ecr.dockerfile.configuration.invalid_server")) { it.selected()?.serverName == null }
-
-                // TODO: how do we render both the Docker icon and action items correctly?
-                box.component.apply {
-                    isEditable = true
-                    editor = object : BasicComboBoxEditor.UIResource() {
-                        override fun createEditorComponent(): JTextField {
-                            val textField = ExtendableTextField()
-                            textField.isEditable = false
-
-                            buildDockerfileActions(model, textField)
-                            textField.border = null
-
-                            return textField
-                        }
-                    }
-                }
             }
         }
     }
@@ -271,7 +273,7 @@ internal class PushToEcrDialog(
             AllIcons.General.Inline_edit, AllIcons.General.Inline_edit_hovered,
             message("ecr.dockerfile.configuration.edit")
         ) {
-            runConfiguration?.let {
+            runConfigModel.selected?.let {
                 RunManager.getInstance(project).findSettings(it)?.let { settings ->
                     RunDialog.editConfiguration(
                         project, settings,
