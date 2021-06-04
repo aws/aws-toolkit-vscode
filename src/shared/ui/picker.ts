@@ -9,6 +9,7 @@ const localize = nls.loadMessageBundle()
 
 import { getLogger } from '../logger'
 import { IteratorTransformer } from '../utilities/collectionUtils'
+import { DataQuickPick, DataQuickPickItem } from './prompter'
 
 /**
  * Options to configure the behavior of the quick pick UI.
@@ -24,8 +25,6 @@ export interface AdditionalQuickPickOptions<T=any> {
     customUserInputLabel?: string
     /** Maps QuickInputButtons to a corresponding function */
     buttonBinds?: Map<vscode.QuickInputButton, (resolve: any, reject: any) => void>
-
-    transformUserInput?(input: string): T
 }
 
 export type ExtendedQuickPickOptions = vscode.QuickPickOptions & AdditionalQuickPickOptions
@@ -48,16 +47,16 @@ function applySettings<T1, T2 extends T1>(obj: T2, settings: T1): void {
  *  buttons - set of buttons to initialize the picker with
  * @return A new QuickPick.
  */
-export function createQuickPick<T extends vscode.QuickPickItem & { data?: any }>({
+export function createQuickPick<T>({
     options,
     items,
     buttons,
 }: {
     options?: ExtendedQuickPickOptions
-    items?: T[]
+    items?: DataQuickPickItem<T>[]
     buttons?: vscode.QuickInputButton[]
-}): vscode.QuickPick<T> {
-    const picker = vscode.window.createQuickPick<T>()
+}): DataQuickPick<T> {
+    const picker = vscode.window.createQuickPick<DataQuickPickItem<T>>()
 
     function update(value?: string) {
         if (value) {
@@ -67,7 +66,7 @@ export function createQuickPick<T extends vscode.QuickPickItem & { data?: any }>
                     description: value,
                     alwaysShow: true,
                     data: CUSTOM_USER_INPUT,
-                } as T,
+                } as DataQuickPickItem<T>,
                 ...(items ?? []),
             ]
         } else {

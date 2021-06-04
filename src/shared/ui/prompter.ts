@@ -29,6 +29,28 @@ const PROMPTER_DEFAULT_OPTIONS: input.ExtendedInputBoxOptions & picker.ExtendedQ
     ignoreFocusOut: true,
 }
 
+function createAsyncPrompter<T>(items: Promise<DataQuickPickItem<T>[] | undefined>, options?: picker.ExtendedQuickPickOptions): Prompter<T> {
+    const asyncPicker = picker.createQuickPick<T>({ options: {...PROMPTER_DEFAULT_OPTIONS, ...options } })
+    asyncPicker.busy = true
+    asyncPicker.enabled = false
+
+    items.then(items => {
+        if (items === undefined) {
+            vscode.commands.executeCommand('workbench.action.quickInputBack') // make hide instead?
+        } else {
+            asyncPicker.items = items
+            asyncPicker.busy = false
+            asyncPicker.enabled = true
+        }
+    }).catch(err => {
+        // TODO: this is an unhandled exception so we should log it appropriately
+        asyncPicker.hide()
+    })
+
+    return new QuickPickPrompter<T>(asyncPicker, options?.buttonBinds)
+}
+
+// Builder pattern instead of this?
 export function createPrompter(options: input.ExtendedInputBoxOptions): Prompter<string>
 export function createPrompter<T>(items: DataQuickPickItem<T>[], options?: picker.ExtendedQuickPickOptions): Prompter<T>
 export function createPrompter<T>(items: Promise<DataQuickPickItem<T>[] | undefined>, options?: picker.ExtendedQuickPickOptions): Prompter<T>
@@ -50,24 +72,7 @@ export function createPrompter<T>(
         )
     } 
 
-    const asyncPicker = picker.createQuickPick({ options: {...PROMPTER_DEFAULT_OPTIONS, ...arg2 } })
-    asyncPicker.busy = true
-    asyncPicker.enabled = false
-
-    arg1.then(items => {
-        if (items === undefined) {
-            vscode.commands.executeCommand('workbench.action.quickInputBack')
-        } else {
-            asyncPicker.items = items
-            asyncPicker.busy = false
-            asyncPicker.enabled = true
-        }
-    }).catch(err => {
-        // TODO: this is an unhandled exception so we should log it appropriately
-        asyncPicker.hide()
-    })
-
-    return new QuickPickPrompter(asyncPicker, arg2?.buttonBinds)
+    return createAsyncPrompter(arg1, arg2)
 }
 
 // TODO
