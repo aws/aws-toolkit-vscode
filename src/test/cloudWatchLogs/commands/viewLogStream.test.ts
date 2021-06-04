@@ -16,23 +16,26 @@ import {
 import { LogGroupNode } from '../../../cloudWatchLogs/explorer/logGroupNode'
 import { FakeParentNode } from '../../cdk/explorer/constructNode.test'
 import { LOCALIZED_DATE_FORMAT } from '../../../shared/constants'
+import { Prompter } from '../../../shared/ui/prompter'
+import { MockPrompter } from '../../../test/lambda/wizards/wizardFramework'
+import { WIZARD_GOBACK } from '../../../shared/wizards/wizard'
 
 class MockSelectLogStreamWizardContext implements SelectLogStreamWizardContext {
     public constructor(private readonly pickLogStreamResponses: (string | undefined)[] = []) {
         this.pickLogStreamResponses = pickLogStreamResponses.reverse()
     }
 
-    public async pickLogStream(): Promise<string | undefined> {
+    public createLogStreamPrompter(): Prompter<string> {
         if (this.pickLogStreamResponses.length <= 0) {
             throw new Error('pickLogStream was called more times than expected')
         }
 
         const response = this.pickLogStreamResponses.pop()
         if (!response) {
-            return undefined
+            return new MockPrompter<string>(WIZARD_GOBACK)
         }
 
-        return response
+        return new MockPrompter(response)
     }
 }
 

@@ -14,7 +14,7 @@ import { IteratorTransformer } from '../utilities/collectionUtils'
  * Options to configure the behavior of the quick pick UI.
  * Generally used to accommodate features not provided through vscode.QuickPickOptions
  */
-export interface AdditionalQuickPickOptions {
+export interface AdditionalQuickPickOptions<T=any> {
     title?: string
     value?: string
     step?: number
@@ -24,6 +24,8 @@ export interface AdditionalQuickPickOptions {
     customUserInputLabel?: string
     /** Maps QuickInputButtons to a corresponding function */
     buttonBinds?: Map<vscode.QuickInputButton, (resolve: any, reject: any) => void>
+
+    transformUserInput?(input: string): T
 }
 
 export type ExtendedQuickPickOptions = vscode.QuickPickOptions & AdditionalQuickPickOptions

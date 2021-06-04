@@ -89,7 +89,7 @@ export async function deploySamApplication(
             parameterOverrides: deployWizardResponse.parameterOverrides,
             environmentVariables: asEnvironmentVariables(credentials),
             region: deployWizardResponse.region,
-            sourceTemplatePath: deployWizardResponse.template.fsPath,
+            sourceTemplatePath: deployWizardResponse.template.uri.fsPath,
         }
 
         const deployApplicationPromise = deploy({

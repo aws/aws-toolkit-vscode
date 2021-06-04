@@ -11,37 +11,26 @@ import * as paramUtils from '../../../lambda/utilities/parameterUtils'
 import * as input from '../../../shared/ui/input'
 import * as picker from '../../../shared/ui/picker'
 import {
-    ParameterPromptResult,
+    CONFIGURE_PARAMETERS,
     SamDeployWizard,
     SamDeployWizardContext,
     DefaultSamDeployWizardContext,
+    validateStackName,
 } from '../../../lambda/wizards/samDeployWizard'
 import { EcrRepository } from '../../../shared/clients/ecrClient'
 import { FakeExtensionContext } from '../../fakeExtensionContext'
 import { ExtContext } from '../../../shared/extensions'
+import { CloudFormation } from '../../../shared/cloudformation/cloudformation'
+import { DataQuickPickItem, Prompter } from '../../../shared/ui/prompter'
+import { MockPrompter } from './wizardFramework'
+import { WIZARD_GOBACK } from '../../../shared/wizards/wizard'
+import * as config from '../../../lambda/config/configureParameterOverrides'
 
-interface QuickPickUriResponseItem extends vscode.QuickPickItem {
-    uri: vscode.Uri
+const imageTemplate: CloudFormation.Template = { 
+    Resources: { 
+        key1: { Type: 'AWS::Serverless::Function', Properties: { PackageType: 'Image' } } 
+    } 
 }
-
-function createQuickPickUriResponseItem(uri: vscode.Uri): QuickPickUriResponseItem {
-    return {
-        label: '',
-        uri: uri,
-    }
-}
-
-interface QuickPickRegionResponseItem extends vscode.QuickPickItem {
-    detail: string
-}
-
-function createQuickPickRegionResponseItem(detail: string): QuickPickRegionResponseItem {
-    return {
-        label: '',
-        detail: detail,
-    }
-}
-
 class MockSamDeployWizardContext implements SamDeployWizardContext {
     public get workspaceFolders(): vscode.Uri[] | undefined {
         if (this.workspaceFoldersResponses.length <= 0) {
@@ -54,13 +43,13 @@ class MockSamDeployWizardContext implements SamDeployWizardContext {
     public constructor(
         readonly extContext: ExtContext,
         private readonly workspaceFoldersResponses: (vscode.Uri[] | undefined)[] = [],
-        private readonly promptForSamTemplateResponses: (QuickPickUriResponseItem | undefined)[] = [],
-        private readonly promptForRegionResponses: (QuickPickRegionResponseItem | undefined)[] = [],
+        private readonly promptForSamTemplateResponses: (vscode.Uri| undefined)[] = [],
+        private readonly promptForRegionResponses: (string | undefined)[] = [],
         private readonly promptForS3BucketResponses: (string | undefined)[] = [],
         private readonly promptForNewS3BucketResponses: (string | undefined)[] = [],
         private readonly promptForEcrRepoResponses: (EcrRepository | undefined)[] = [],
         private readonly promptForStackNameResponses: (string | undefined)[] = [],
-        private readonly hasImages: boolean = false
+        private readonly isImage: boolean[] = []
     ) {
         this.workspaceFoldersResponses = workspaceFoldersResponses.reverse()
         this.promptForSamTemplateResponses = promptForSamTemplateResponses.reverse()
@@ -69,114 +58,77 @@ class MockSamDeployWizardContext implements SamDeployWizardContext {
         this.promptForNewS3BucketResponses = promptForNewS3BucketResponses.reverse()
         this.promptForEcrRepoResponses = promptForEcrRepoResponses.reverse()
         this.promptForStackNameResponses = promptForStackNameResponses.reverse()
+        this.isImage = isImage.reverse()
     }
 
-    additionalSteps: number = 0
-
-    public readonly getOverriddenParameters: typeof paramUtils.getOverriddenParameters = async () => undefined
-
-    public readonly getParameters: typeof paramUtils.getParameters = async () => new Map()
-
-    public readonly promptUserForParametersIfApplicable: (options: {
-        templateUri: vscode.Uri
-        missingParameters?: Set<string>
-    }) => Promise<ParameterPromptResult> = async () => ParameterPromptResult.Continue
-
-    public async determineIfTemplateHasImages(templatePath: vscode.Uri): Promise<boolean> {
-        return this.hasImages
-    }
-
-    public async promptUserForSamTemplate(): Promise<vscode.Uri | undefined> {
+    public createSamTemplatePrompter(): Prompter<CloudFormation.Template & { uri: vscode.Uri }> {
         if (this.promptForSamTemplateResponses.length <= 0) {
             throw new Error('promptUserForSamTemplate was called more times than expected')
         }
 
         const response = this.promptForSamTemplateResponses.pop()
         if (!response) {
-            return undefined
+            return new MockPrompter<CloudFormation.Template & { uri: vscode.Uri }>(WIZARD_GOBACK)
         }
 
-        return response.uri
+        const isImage = this.isImage.pop() ?? false
+
+        return new MockPrompter<CloudFormation.Template & { uri: vscode.Uri }>({ ...(isImage ? imageTemplate : {}), uri: response })
     }
 
-    public async promptUserForS3Bucket(stepNumber: number, initialValue?: string): Promise<string | undefined> {
-        if (this.promptForS3BucketResponses.length <= 0) {
-            throw new Error('promptUserForS3Bucket was called more times than expected')
-        }
-
-        return this.promptForS3BucketResponses.pop()
+    public createParametersPrompter(templateUri: vscode.Uri, missingParameters?: Set<string>): Prompter<Map<string, string>> {
+        return new MockPrompter(new Map<string, string>())
     }
-
-    public async promptUserForS3BucketName(
-        step: number,
-        bucketProps: {
-            title: string
-            prompt?: string | undefined
-            placeholder?: string | undefined
-            value?: string | undefined
-            buttons?: vscode.QuickInputButton[] | undefined
-            buttonHandler?:
-                | ((
-                      button: vscode.QuickInputButton,
-                      inputBox: vscode.InputBox,
-                      resolve: (value: string | PromiseLike<string | undefined> | undefined) => void,
-                      reject: (value: string | PromiseLike<string | undefined> | undefined) => void
-                  ) => void)
-                | undefined
-        }
-    ): Promise<string | undefined> {
-        if (this.promptForNewS3BucketResponses.length <= 0) {
-            throw new Error('promptUserForS3BucketName was called more times than expected')
-        }
-
-        return this.promptForNewS3BucketResponses.pop()
-    }
-
-    public async promptUserForEcrRepo(
-        step: number,
-        selectedRegion?: string,
-        initialValue?: EcrRepository
-    ): Promise<EcrRepository | undefined> {
-        if (this.promptForEcrRepoResponses.length <= 0) {
-            throw new Error('promptUserForS3Bucket was called more times than expected')
-        }
-
-        return this.promptForEcrRepoResponses.pop()
-    }
-
-    public async promptUserForRegion(step: number, initialValue?: string): Promise<string | undefined> {
+    public createRegionPrompter(): Prompter<string> {
         if (this.promptForRegionResponses.length <= 0) {
             throw new Error('promptUserForRegion was called more times than expected')
         }
 
         const response = this.promptForRegionResponses.pop()
         if (!response) {
-            return undefined
+            return new MockPrompter<string>(WIZARD_GOBACK)
         }
 
-        return response.detail
+        return new MockPrompter(response)
     }
+    public createS3BucketNamePrompter(title: string): Prompter<string> {
+        if (this.promptForNewS3BucketResponses.length <= 0) {
+            throw new Error('promptUserForS3BucketName was called more times than expected')
+        }
 
-    public async promptUserForStackName({
-        validateInput,
-    }: {
-        validateInput(value: string): string | undefined
-    }): Promise<string | undefined> {
+        return new MockPrompter(this.promptForNewS3BucketResponses.pop())
+    }
+    public createStackNamePrompter(): Prompter<string> {
         if (this.promptForStackNameResponses.length <= 0) {
             throw new Error('promptUserForStackName was called more times than expected')
         }
 
         const response = this.promptForStackNameResponses.pop()
 
-        if (response && validateInput) {
-            const validationResult = validateInput(response)
-            if (validationResult) {
-                throw new Error(`Validation error: ${validationResult}`)
-            }
+        if (response !== undefined && validateStackName(response) !== undefined) {
+            throw new Error('Invalid stack name')
         }
 
-        return response
+        return new MockPrompter(response)
     }
+    public createS3BucketPrompter(region: string, profile?: string, accountId?: string): Prompter<string> {
+        if (this.promptForS3BucketResponses.length <= 0) {
+            throw new Error('promptUserForS3Bucket was called more times than expected')
+        }
+
+        return new MockPrompter(this.promptForS3BucketResponses.pop())
+    }
+    public createEcrRepoPrompter(region: string): Prompter<EcrRepository> {
+        if (this.promptForEcrRepoResponses.length <= 0) {
+            throw new Error('promptUserForS3Bucket was called more times than expected')
+        }
+
+        return new MockPrompter(this.promptForEcrRepoResponses.pop())
+    }
+
+    public readonly getOverriddenParameters: typeof paramUtils.getOverriddenParameters = async () => undefined
+
+    public readonly getParameters: typeof paramUtils.getParameters = async () => new Map()
 }
 
 function normalizePath(...paths: string[]): string {
@@ -216,8 +168,8 @@ describe('SamDeployWizard', async function () {
                 new MockSamDeployWizardContext(
                     extContext,
                     [[vscode.Uri.file(workspaceFolderPath)]],
-                    [createQuickPickUriResponseItem(vscode.Uri.file(templatePath))],
-                    [createQuickPickRegionResponseItem('asdf')],
+                    [vscode.Uri.file(templatePath)],
+                    ['asdf'],
                     ['mys3bucketname'],
                     [],
                     [],
@@ -227,15 +179,17 @@ describe('SamDeployWizard', async function () {
             const result = await wizard.run()
 
             assert.ok(result)
-            assert.strictEqual(result!.template.fsPath, templatePath)
+            assert.strictEqual(result!.template.uri.fsPath, templatePath)
         })
     })
 
     describe('PARAMETER_OVERRIDES', async function () {
+        sinon.stub(config, 'configureParameterOverrides')
+
         async function makeFakeContext({
             getParameters,
             getOverriddenParameters,
-            promptUserForParametersIfApplicable,
+            createParametersPrompter,
             templatePath = path.join('my', 'template'),
             region = 'us-east-1',
             s3Bucket = 'mys3bucket',
@@ -243,7 +197,7 @@ describe('SamDeployWizard', async function () {
             hasImages = false,
         }: Pick<
             SamDeployWizardContext,
-            'getParameters' | 'getOverriddenParameters' | 'promptUserForParametersIfApplicable'
+            'getParameters' | 'getOverriddenParameters' | 'createParametersPrompter'
         > & {
             templatePath?: string
             region?: string
@@ -253,20 +207,18 @@ describe('SamDeployWizard', async function () {
         }): Promise<SamDeployWizardContext> {
             return {
                 extContext: await FakeExtensionContext.getFakeExtContext(),
-                // It's fine to return an empty list if promptUserForSamTemplate is overridden.
-                additionalSteps: 0,
                 workspaceFolders: [],
 
                 getParameters,
                 getOverriddenParameters,
-                promptUserForParametersIfApplicable,
-                promptUserForSamTemplate: async () => vscode.Uri.file(templatePath),
-                promptUserForRegion: async () => region,
-                promptUserForS3Bucket: async () => s3Bucket,
-                promptUserForS3BucketName: async () => undefined,
-                promptUserForEcrRepo: async () => undefined,
-                promptUserForStackName: async () => stackName,
-                determineIfTemplateHasImages: async () => hasImages,
+                createParametersPrompter,
+                createSamTemplatePrompter: () => 
+                    new MockPrompter({ ...(hasImages ? imageTemplate : {}), uri: vscode.Uri.file(templatePath) }),
+                createRegionPrompter: () => new MockPrompter(region),
+                createS3BucketPrompter: () => new MockPrompter(s3Bucket),
+                createS3BucketNamePrompter: () => new MockPrompter<string>(WIZARD_GOBACK),
+                createEcrRepoPrompter: () => new MockPrompter<EcrRepository>(WIZARD_GOBACK),
+                createStackNamePrompter: () => new MockPrompter(stackName),
             }
         }
 
@@ -277,7 +229,7 @@ describe('SamDeployWizard', async function () {
                     getOverriddenParameters: async () => {
                         throw new Error('Should skip loading overrides')
                     },
-                    promptUserForParametersIfApplicable: async () => {
+                    createParametersPrompter: () => {
                         throw new Error('Should skip configuring overrides')
                     },
                 })
@@ -296,7 +248,7 @@ describe('SamDeployWizard', async function () {
                     getParameters: async () =>
                         new Map<string, { required: boolean }>([['myParam', { required: false }]]),
                     getOverriddenParameters: async () => new Map<string, string>(),
-                    promptUserForParametersIfApplicable: async () => {
+                    createParametersPrompter: () => {
                         throw new Error('Should skip configuring overrides')
                     },
                 })
@@ -313,7 +265,7 @@ describe('SamDeployWizard', async function () {
                     getParameters: async () =>
                         new Map<string, { required: boolean }>([['myParam', { required: false }]]),
                     getOverriddenParameters: async () => undefined,
-                    promptUserForParametersIfApplicable: async () => ParameterPromptResult.Continue,
+                    createParametersPrompter: () => new MockPrompter(new Map<string, string>())
                 })
 
                 const wizard = new SamDeployWizard(context)
@@ -333,10 +285,10 @@ describe('SamDeployWizard', async function () {
                     getParameters: async () =>
                         new Map<string, { required: boolean }>([['myParam', { required: false }]]),
                     getOverriddenParameters: async () => undefined,
-                    async promptUserForParametersIfApplicable(options): Promise<ParameterPromptResult> {
-                        configureParameterOverridesArgs.push(options)
+                    createParametersPrompter(uri, missing?): MockPrompter<Map<string, string>> {
+                        configureParameterOverridesArgs.push({ templateUri: uri, missingParameters: missing })
 
-                        return ParameterPromptResult.Cancel
+                        return new MockPrompter(CONFIGURE_PARAMETERS)
                     },
                 })
 
@@ -360,10 +312,10 @@ describe('SamDeployWizard', async function () {
                     getParameters: async () =>
                         new Map<string, { required: boolean }>([['myParam', { required: true }]]),
                     getOverriddenParameters: async () => undefined,
-                    async promptUserForParametersIfApplicable(options): Promise<ParameterPromptResult> {
-                        configureParameterOverridesArgs.push(options)
+                    createParametersPrompter(uri, missing?): MockPrompter<Map<string, string>> {
+                        configureParameterOverridesArgs.push({ templateUri: uri, missingParameters: missing })
 
-                        return ParameterPromptResult.Cancel
+                        return new MockPrompter(CONFIGURE_PARAMETERS)
                     },
                 })
 
@@ -386,10 +338,10 @@ describe('SamDeployWizard', async function () {
                     getParameters: async () =>
                         new Map<string, { required: boolean }>([['myParam', { required: true }]]),
                     getOverriddenParameters: async () => new Map<string, string>(),
-                    async promptUserForParametersIfApplicable(options): Promise<ParameterPromptResult> {
-                        configureParameterOverridesArgs.push(options)
+                    createParametersPrompter(uri, missing?): MockPrompter<Map<string, string>> {
+                        configureParameterOverridesArgs.push({ templateUri: uri, missingParameters: missing })
 
-                        return ParameterPromptResult.Cancel
+                        return new MockPrompter(CONFIGURE_PARAMETERS)
                     },
                 })
 
@@ -412,10 +364,10 @@ describe('SamDeployWizard', async function () {
                     getParameters: async () =>
                         new Map<string, { required: boolean }>([['myParam', { required: true }]]),
                     getOverriddenParameters: async () => new Map<string, string>([['myParam', 'myValue']]),
-                    async promptUserForParametersIfApplicable(options): Promise<ParameterPromptResult> {
-                        configureParameterOverridesArgs.push(options)
+                    createParametersPrompter(uri, missing?): MockPrompter<Map<string, string>> {
+                        configureParameterOverridesArgs.push({ templateUri: uri, missingParameters: missing })
 
-                        return ParameterPromptResult.Cancel
+                        return new MockPrompter(new Map<string, string>())
                     },
                 })
 
@@ -441,8 +393,8 @@ describe('SamDeployWizard', async function () {
                 new MockSamDeployWizardContext(
                     extContext,
                     [[vscode.Uri.file(workspaceFolderPath)]],
-                    [createQuickPickUriResponseItem(vscode.Uri.file(templatePath))],
-                    [createQuickPickRegionResponseItem(region)],
+                    [vscode.Uri.file(templatePath)],
+                    [region],
                     ['mys3bucketname'],
                     [],
                     [],
@@ -466,24 +418,21 @@ describe('SamDeployWizard', async function () {
                 new MockSamDeployWizardContext(
                     extContext,
                     [[vscode.Uri.file(workspaceFolderPath1)], [vscode.Uri.file(workspaceFolderPath2)]],
-                    [
-                        createQuickPickUriResponseItem(vscode.Uri.file(templatePath1)),
-                        createQuickPickUriResponseItem(vscode.Uri.file(templatePath2)),
-                    ],
+                    [vscode.Uri.file(templatePath1), vscode.Uri.file(templatePath2)],
                     [
                         undefined, // First time we ask about the S3 Bucket, cancel back to the template step
-                        createQuickPickRegionResponseItem(region),
+                        region,
                     ],
                     ['mys3bucketname'],
                     [],
                     [],
-                    ['myStackName']
+                    ['myStackName'],
                 )
             )
             const result = await wizard.run()
 
             assert.ok(result)
-            assert.strictEqual(result!.template.fsPath, templatePath2)
+            assert.strictEqual(result!.template.uri.fsPath, templatePath2)
         })
     })
 
@@ -501,10 +450,10 @@ describe('SamDeployWizard', async function () {
                     extContext,
                     [[vscode.Uri.file(workspaceFolderPath1)], [vscode.Uri.file(workspaceFolderPath2)]],
                     [
-                        createQuickPickUriResponseItem(vscode.Uri.file(templatePath1)),
-                        createQuickPickUriResponseItem(vscode.Uri.file(templatePath2)),
+                        vscode.Uri.file(templatePath1),
+                        vscode.Uri.file(templatePath2),
                     ],
-                    [createQuickPickRegionResponseItem(region1), createQuickPickRegionResponseItem(region2)],
+                    [region1, region2],
                     [
                         undefined, // First time we ask about the S3 Bucket, cancel back to the region step
                         'mys3bucketname',
@@ -517,7 +466,7 @@ describe('SamDeployWizard', async function () {
             const result = await wizard.run()
 
             assert.ok(result)
-            assert.strictEqual(result!.template.fsPath, templatePath1)
+            assert.strictEqual(result!.template.uri.fsPath, templatePath1)
             assert.strictEqual(result!.region, region2)
         })
 
@@ -528,8 +477,8 @@ describe('SamDeployWizard', async function () {
                 new MockSamDeployWizardContext(
                     extContext,
                     [[vscode.Uri.file(workspaceFolderPath)]],
-                    [createQuickPickUriResponseItem(vscode.Uri.file(templatePath))],
-                    [createQuickPickRegionResponseItem('asdf')],
+                    [vscode.Uri.file(templatePath)],
+                    ['asdf'],
                     ['mys3bucketname'],
                     [],
                     [],
@@ -552,14 +501,14 @@ describe('SamDeployWizard', async function () {
                 new MockSamDeployWizardContext(
                     extContext,
                     [[vscode.Uri.file(workspaceFolderPath)]],
-                    [createQuickPickUriResponseItem(vscode.Uri.file(templatePath))],
-                    [createQuickPickRegionResponseItem('asdf')],
+                    [vscode.Uri.file(templatePath)],
+                    ['asdf'],
                     ['mys3bucketname', 'mys3bucketname'],
                     [],
                     // go back the first time
                     [undefined, { repositoryUri: 'uri', repositoryName: 'name', repositoryArn: 'arn' }],
                     ['myStackName'],
-                    true
+                    [true],
                 )
             )
             const result = await wizard.run()
@@ -575,13 +524,13 @@ describe('SamDeployWizard', async function () {
                 new MockSamDeployWizardContext(
                     extContext,
                     [[vscode.Uri.file(workspaceFolderPath)]],
-                    [createQuickPickUriResponseItem(vscode.Uri.file(templatePath))],
-                    [createQuickPickRegionResponseItem('asdf')],
+                    [vscode.Uri.file(templatePath)],
+                    ['asdf'],
                     ['mys3bucketname'],
                     [],
                     [{ repositoryUri: 'uri', repositoryName: 'name', repositoryArn: 'arn' }],
                     ['myStackName'],
-                    true
+                    [true],
                 )
             )
             const result = await wizard.run()
@@ -599,8 +548,8 @@ describe('SamDeployWizard', async function () {
                 new MockSamDeployWizardContext(
                     extContext,
                     [[vscode.Uri.file(workspaceFolderPath)]],
-                    [createQuickPickUriResponseItem(vscode.Uri.file(templatePath))],
-                    [createQuickPickRegionResponseItem('asdf')],
+                    [vscode.Uri.file(templatePath)],
+                    ['asdf'],
                     ['mys3bucketname1', 'mys3bucketname2'],
                     [],
                     [],
@@ -620,8 +569,8 @@ describe('SamDeployWizard', async function () {
                 new MockSamDeployWizardContext(
                     extContext,
                     [[vscode.Uri.file(workspaceFolderPath)]],
-                    [createQuickPickUriResponseItem(vscode.Uri.file(templatePath))],
-                    [createQuickPickRegionResponseItem('asdf')],
+                    [vscode.Uri.file(templatePath)],
+                    ['asdf'],
                     ['mys3bucketname'],
                     [],
                     [],
@@ -644,8 +593,8 @@ describe('SamDeployWizard', async function () {
                         new MockSamDeployWizardContext(
                             extContext,
                             [[vscode.Uri.file(workspaceFolderPath)]],
-                            [createQuickPickUriResponseItem(vscode.Uri.file(templatePath))],
-                            [createQuickPickRegionResponseItem('asdf')],
+                            [vscode.Uri.file(templatePath)],
+                            ['asdf'],
                             ['myBucketName'],
                             [],
                             [],
@@ -702,13 +651,13 @@ describe('DefaultSamDeployWizardContext', async function () {
                 .stub(picker, 'promptUser')
                 .onFirstCall()
                 .returns(Promise.resolve([{ label: bucketName }]))
-            const output = await context.promptUserForS3Bucket(1, 'us-weast-1', 'accountId')
+            const output = await context.createS3BucketPrompter('us-weast-1', 'accountId').prompt()
             assert.strictEqual(output, bucketName)
         })
 
-        it('returns undefined on receiving undefined from the picker (back button)', async function () {
+        it('returns go back on receiving undefined from the picker (back button)', async function () {
             sandbox.stub(picker, 'promptUser').onFirstCall().returns(Promise.resolve(undefined))
-            const output = await context.promptUserForS3Bucket(1, 'us-weast-1', 'accountId')
+            const output = await context.createS3BucketPrompter('us-weast-1', 'accountId').prompt()
             assert.strictEqual(output, undefined)
         })
 
@@ -720,28 +669,24 @@ describe('DefaultSamDeployWizardContext', async function () {
             sandbox
                 .stub(picker, 'promptUser')
                 .onFirstCall()
-                .returns(Promise.resolve([{ label: messages.noBuckets }]))
+                .returns(Promise.resolve([{ label: messages.noBuckets, data: WIZARD_GOBACK }]))
                 .onSecondCall()
-                .returns(Promise.resolve([{ label: messages.bucketError }]))
-            const firstOutput = await context.promptUserForS3Bucket(
-                1,
+                .returns(Promise.resolve([{ label: messages.bucketError, data: WIZARD_GOBACK }]))
+            const firstOutput = await context.createS3BucketPrompter(
                 'us-weast-1',
                 'profile',
                 'accountId',
-                undefined,
                 messages
-            )
-            assert.strictEqual(firstOutput, undefined)
+            ).prompt()
+            assert.strictEqual(firstOutput, WIZARD_GOBACK)
 
-            const secondOutput = await context.promptUserForS3Bucket(
-                1,
+            const secondOutput = await context.createS3BucketPrompter(
                 'us-weast-1',
                 'profile',
                 'accountId',
-                undefined,
                 messages
-            )
-            assert.strictEqual(secondOutput, undefined)
+            ).prompt()
+            assert.strictEqual(secondOutput, WIZARD_GOBACK)
         })
     })
 
@@ -752,13 +697,13 @@ describe('DefaultSamDeployWizardContext', async function () {
                 .stub(picker, 'promptUser')
                 .onFirstCall()
                 .returns(Promise.resolve([{ label: repoName, repository: { repositoryUri: 'uri' } }]))
-            const output = await context.promptUserForEcrRepo(1, 'us-weast-1')
+            const output = await context.createEcrRepoPrompter('us-weast-1').prompt()
             assert.notStrictEqual(output, { repositoryUri: 'uri' })
         })
 
         it('returns undefined on receiving undefined from the picker (back button)', async function () {
             sandbox.stub(picker, 'promptUser').onFirstCall().returns(Promise.resolve(undefined))
-            const output = await context.promptUserForEcrRepo(1, 'us-weast-1')
+            const output = await context.createEcrRepoPrompter('us-weast-1').prompt()
             assert.strictEqual(output, undefined)
         })
     })
@@ -767,7 +712,7 @@ describe('DefaultSamDeployWizardContext', async function () {
         it('returns an S3 bucket name', async function () {
             const bucketName = 'shinyNewBucket'
             sandbox.stub(input, 'promptUser').onFirstCall().returns(Promise.resolve(bucketName))
-            const output = await context.promptUserForS3BucketName(1, { title: 'asdf' })
+            const output = await context.createS3BucketNamePrompter('asdf').prompt()
             assert.strictEqual(output, bucketName)
         })
 
@@ -776,7 +721,7 @@ describe('DefaultSamDeployWizardContext', async function () {
                 .stub(input, 'promptUser')
                 .onFirstCall()
                 .returns(Promise.resolve(undefined))
-            const output = await context.promptUserForS3BucketName(1, { title: 'asdf' })
+            const output = await context.createS3BucketNamePrompter('asdf').prompt()
             assert.strictEqual(output, undefined) 
         })  
     })

@@ -31,8 +31,9 @@ import { isCloud9 } from '../../shared/extensionUtilities'
 import { SettingsConfiguration } from '../../shared/settingsConfiguration'
 import { ButtonBinds, createPrompter, DataQuickPick, DataQuickPickItem, Prompter } from '../../shared/ui/prompter'
 import { CloudFormation } from '../../shared/cloudformation/cloudformation'
-import { Wizard, WIZARD_GOBACK } from '../../shared/wizards/wizard'
+import { isWizardControl, makeWizardChain, Wizard, WIZARD_EXIT, WIZARD_GOBACK, WIZARD_RETRY } from '../../shared/wizards/wizard'
 import { initializeInterface } from '../../shared/transformers'
+import { configureParameterOverrides } from '../config/configureParameterOverrides'
 
 const CREATE_NEW_BUCKET = localize('AWS.command.s3.createBucket', 'Create Bucket...')
 const ENTER_BUCKET = localize('AWS.samcli.deploy.bucket.existingLabel', 'Enter Existing Bucket Name...')
@@ -42,18 +43,16 @@ export interface SavedBuckets {
     [profile: string]: { [region: string]: string }
 }
 
+type CFNTemplate = CloudFormation.Template & { uri: vscode.Uri }
+export const CONFIGURE_PARAMETERS = new Map<string, string>()
 export interface SamDeployWizardResponse {
+    missingParameters?: Set<string>
     parameterOverrides: Map<string, string>
     region: string
-    template: CloudFormation.Template,
+    template: CFNTemplate,
     s3Bucket: string
     ecrRepo?: EcrRepository
     stackName: string
-}
-
-export const enum ParameterPromptResult {
-    Cancel,
-    Continue,
 }
 
 export interface SamDeployWizardContext {
@@ -83,7 +82,7 @@ export interface SamDeployWizardContext {
      *
      * @returns vscode.Uri of a Sam Template. undefined represents cancel.
      */
-    createSamTemplatePrompter(): Prompter<CloudFormation.Template> 
+    createSamTemplatePrompter(): Prompter<CFNTemplate> 
     /**
      * Prompts the user to configure parameter overrides, then either pre-fills and opens
      * `templates.json`, or returns true.
@@ -94,7 +93,7 @@ export interface SamDeployWizardContext {
      *          non-empty, or if it was empty and the user opted to configure overrides instead of continuing.
      */
 
-    createParametersPrompter(templateUri: vscode.Uri, missingParameters?: Set<string>): Prompter<ParameterPromptResult>
+    createParametersPrompter(templateUri: vscode.Uri, missingParameters?: Set<string>): Prompter<Map<string, string>>
 
     createRegionPrompter(): Prompter<string>
 
@@ -106,8 +105,9 @@ export interface SamDeployWizardContext {
      * @returns S3 Bucket name. Undefined represents cancel.
      */
 
-    createS3BucketPrompter(region: string, profile?: string, accountId?: string): Prompter<string>
-
+    createS3BucketNamePrompter(title: string): Prompter<string>
+    createStackNamePrompter(): Prompter<string> 
+    createS3BucketPrompter(region: string, profile?: string, accountId?: string): Prompter<string> 
     /**
      * Prompts user to enter a bucket name
      *
@@ -121,6 +121,7 @@ export interface SamDeployWizardContext {
      *
      * @returns ECR Repo URI. Undefined represents cancel.
      */
+    createEcrRepoPrompter(region: string): Prompter<EcrRepository>
 
     /**
      * Retrieves a Stack Name to deploy to from the user.
@@ -184,7 +185,7 @@ export class DefaultSamDeployWizardContext implements SamDeployWizardContext {
 
     public constructor(readonly extContext: ExtContext) {}
 
-    public createSamTemplatePrompter(): Prompter<CloudFormation.Template> {
+    public createSamTemplatePrompter(): Prompter<CFNTemplate> {
         return createPrompter(getTemplateChoices(...(this.workspaceFolders || [])), {
             title: localize(
                 'AWS.samcli.deploy.template.prompt',
@@ -192,10 +193,11 @@ export class DefaultSamDeployWizardContext implements SamDeployWizardContext {
             ),
         })
     }
+
     public createParametersPrompter(
         templateUri: vscode.Uri, 
         missingParameters: Set<string> = new Set<string>()
-    ): Prompter<ParameterPromptResult> {
+    ): Prompter<Map<string, string>> {
         if (missingParameters.size < 1) {
             const title = localize(
                 'AWS.samcli.deploy.parameters.optionalPrompt.message',
@@ -204,17 +206,10 @@ export class DefaultSamDeployWizardContext implements SamDeployWizardContext {
                 templateUri.fsPath
             )
 
-            const items: DataQuickPickItem<ParameterPromptResult>[] = [
-                { label: localizedText.yes, data: ParameterPromptResult.Cancel }, // always cancel if override
-                { label: localizedText.no, data: ParameterPromptResult.Continue }
+            const items: DataQuickPickItem<Map<string, string>>[] = [
+                { label: localizedText.yes, data: CONFIGURE_PARAMETERS },
+                { label: localizedText.no, data: new Map<string, string>() }
             ]
-
-            /*
-            await configureParameterOverrides({
-                templateUri,
-                requiredParameterNames: missingParameters.keys(),
-            })
-            */
 
             return createPrompter(items, { title })
         } else {
@@ -230,19 +225,10 @@ export class DefaultSamDeployWizardContext implements SamDeployWizardContext {
             )
             const responseCancel = localizedText.cancel
 
-            const items: DataQuickPickItem<ParameterPromptResult>[] = [
-                { label: responseConfigure, data: ParameterPromptResult.Cancel }, // fix this
-                { label: responseCancel, data: ParameterPromptResult.Continue }
+            const items: DataQuickPickItem<Map<string, string>>[] = [
+                { label: responseConfigure, data: CONFIGURE_PARAMETERS }, 
+                { label: responseCancel, data: WIZARD_EXIT }
             ]
-
-            /*
-            if (response === responseConfigure) {
-                await configureParameterOverrides({
-                    templateUri,
-                    requiredParameterNames: missingParameters.keys(),
-                })
-            }
-            */
 
             return createPrompter(items, { title })
         }
@@ -265,8 +251,8 @@ export class DefaultSamDeployWizardContext implements SamDeployWizardContext {
         })
     }
 
-    public createS3BucketPrompter(region: string, profile?: string, accountId?: string): Prompter<string> {
-        const messages = {
+    public createS3BucketPrompter(region: string, profile?: string, accountId?: string, messages?: { noBuckets: string, bucketError: string}): Prompter<string> {
+        messages = messages ?? {
             noBuckets: localize('AWS.samcli.deploy.s3bucket.picker.noBuckets', 'No buckets found.'),
             bucketError: localize('AWS.samcli.deploy.s3bucket.picker.error', 'There was an error loading S3 buckets.'),
         }
@@ -286,8 +272,8 @@ export class DefaultSamDeployWizardContext implements SamDeployWizardContext {
         }
 
         const bucketButtons = new Map(this.buttonBinds)
-        bucketButtons.set(createBucket, resolve => resolve(NEW_BUCKET_OPTION))
-        bucketButtons.set(enterBucket, resolve => resolve(ENTER_BUCKET_OPTION))
+        bucketButtons.set(createBucket, resolve => resolve([{ data: makeWizardChain(NEW_BUCKET_OPTION) }]))
+        bucketButtons.set(enterBucket, resolve => resolve([{ data: makeWizardChain(ENTER_BUCKET_OPTION) }]))
         const prompter = createPrompter<string>([], {
             title: localize('AWS.samcli.deploy.s3Bucket.prompt', 'Select an AWS S3 Bucket to deploy code to'),
             matchOnDetail: true,
@@ -346,13 +332,19 @@ export class DefaultSamDeployWizardContext implements SamDeployWizardContext {
         })
     }
 }
-
 export class SamDeployWizard extends Wizard<SamDeployWizardResponse> {    
-    public constructor(private readonly context: SamDeployWizardContext, private readonly regionNode?: { regionCode: string }) {
+    public constructor(private readonly context: SamDeployWizardContext, regionNode?: { regionCode: string }) {
         super(initializeInterface<SamDeployWizardResponse>(), { region: regionNode?.regionCode })
-        this.form.template.bindPrompter(() => context.createSamTemplatePrompter(), {
-            after: async form => {
-                const template = form.template!
+        const profile = this.context.extContext.awsContext.getCredentialProfileName()
+        const accountId = this.context.extContext.awsContext.getCredentialAccountId()
+
+        let missingParameters: any
+        let overrides: any
+
+        this.form.template.bindPrompter(form => context.createSamTemplatePrompter().after(async template => {
+                if (template === undefined || isWizardControl(template) || Array.isArray(template) || typeof template === 'string') {
+                    return WIZARD_EXIT
+                }
 
                 if (isImage(template)) {
                     // TODO: remove check when min version is high enough
@@ -367,217 +359,77 @@ export class SamDeployWizard extends Wizard<SamDeployWizardResponse> {
                         return WIZARD_GOBACK
                     }
                 }
-        
-                const parameters = await this.context.getParameters(template)
-                if (parameters.size < 1) {
-                    form.parameterOverrides = new Map<string, string>()
-                    return form
+
+                const parameters = await this.context.getParameters(template.uri)
+                if (parameters === undefined || parameters.size < 1) {
+                    overrides = new Map()
+                    return template
                 }
-        
+            
                 const requiredParameterNames = new Set<string>(
                     filter(parameters.keys(), name => parameters.get(name)!.required)
                 )
-                const overriddenParameters = await this.context.getOverriddenParameters(template)
-                if (!overriddenParameters) {
-                    // In there are no missing required parameters case, it isn't mandatory to override any parameters,
-                    // but we still want to inform users of the option to override. Once we have prompted (i.e., if the
-                    // parameter overrides section is empty instead of undefined), don't prompt again unless required.
-                    this.context.additionalSteps++
-        
-                    const options = {
-                        templateUri: this.response.template,
-                        missingParameters: requiredParameterNames.size > 0 ? requiredParameterNames : undefined,
+                const overriddenParameters = await this.context.getOverriddenParameters(template.uri)
+                if (overriddenParameters === undefined) {        
+                    missingParameters = requiredParameterNames.size > 0 ? requiredParameterNames : undefined
+                } else {
+                    missingParameters = difference(requiredParameterNames, overriddenParameters.keys())
+                    
+                    if (missingParameters.size === 0) {
+                        overrides = overriddenParameters
                     }
-        
-                    this.response.parameterOverrides = new Map<string, string>()
-        
-                    return getNextStep(await this.context.promptUserForParametersIfApplicable(options))
                 }
-        
-                const missingParameters = difference(requiredParameterNames, overriddenParameters.keys())
-                if (missingParameters.size > 0) {
-                    this.context.additionalSteps++
-        
-                    return getNextStep(
-                        await this.context.promptUserForParametersIfApplicable({
-                            templateUri: this.response.template,
-                            missingParameters,
-                        })
-                    )
+            }
+        ))
+
+        this.form.parameterOverrides.bindPrompter(form => 
+            context.createParametersPrompter(form.template!.uri, missingParameters).after(async response => {
+                if (response === CONFIGURE_PARAMETERS) {
+                    await configureParameterOverrides({
+                        templateUri: form.template!.uri,
+                        requiredParameterNames: form.missingParameters !== undefined ? form.missingParameters!.keys() : undefined,
+                    })
+                    return WIZARD_EXIT
                 }
-        
-                this.response.parameterOverrides = overriddenParameters
-        
-                return wizardContinue(this.skipOrPromptRegion(this.S3_BUCKET))
             }
-        })
-        // TODO: support 'after' option that is asynchronous. Happens after user enters a valid input. Can modify state.
-    }
+        ), { 
+            showWhen: form => form.template?.uri !== undefined && overrides === undefined, setDefault: () => overrides ?? new Map() })
 
-    private readonly TEMPLATE: WizardStep = async () => {
-        // set steps back to 0 since the next step determines if additional steps are needed
-        this.context.additionalSteps = 0
-        this.response.template = await this.context.promptUserForSamTemplate(this.response.template)
+        this.form.region.bindPrompter(() => context.createRegionPrompter())
+        this.form.s3Bucket.bindPrompter(form => context.createS3BucketPrompter(form.region!, profile, accountId))
+            .chainPrompter((form, response) => {
+                if (response === ENTER_BUCKET_OPTION) {
+                    return context.createS3BucketNamePrompter(localize('AWS.s3.createBucket.prompt', 'Enter a new bucket name')).after(async response => {
+                        if (typeof response !== 'string') {
+                            return WIZARD_GOBACK
+                        }
 
-        if (!this.response.template) {
-            return WIZARD_TERMINATE
-        }
-
-        // also ask user to setup CFN parameters if they haven't already done so
-        const getNextStep = (result: ParameterPromptResult) => {
-            switch (result) {
-                case ParameterPromptResult.Cancel:
-                    return WIZARD_TERMINATE
-                case ParameterPromptResult.Continue:
-                    return wizardContinue(this.skipOrPromptRegion(this.S3_BUCKET))
-            }
-        }
-
-        if (this.hasImages) {
-            // TODO: remove check when min version is high enough
-            const samCliVersion = await getSamCliVersion(this.context.extContext.samCliContext())
-            if (semver.lt(samCliVersion, MINIMUM_SAM_CLI_VERSION_INCLUSIVE_FOR_IMAGE_SUPPORT)) {
-                vscode.window.showErrorMessage(
-                    localize(
-                        'AWS.output.sam.no.image.support',
-                        'Support for Image-based Lambdas requires a minimum SAM CLI version of 1.13.0.'
-                    )
-                )
-                return WIZARD_TERMINATE
-            }
-
-            this.context.additionalSteps++
-        }
-
-        const parameters = await this.context.getParameters(this.response.template)
-        if (parameters.size < 1) {
-            this.response.parameterOverrides = new Map<string, string>()
-
-            return wizardContinue(this.skipOrPromptRegion(this.S3_BUCKET))
-        }
-
-        const requiredParameterNames = new Set<string>(
-            filter(parameters.keys(), name => parameters.get(name)!.required)
-        )
-        const overriddenParameters = await this.context.getOverriddenParameters(this.response.template)
-        if (!overriddenParameters) {
-            // In there are no missing required parameters case, it isn't mandatory to override any parameters,
-            // but we still want to inform users of the option to override. Once we have prompted (i.e., if the
-            // parameter overrides section is empty instead of undefined), don't prompt again unless required.
-            this.context.additionalSteps++
-
-            const options = {
-                templateUri: this.response.template,
-                missingParameters: requiredParameterNames.size > 0 ? requiredParameterNames : undefined,
-            }
-
-            this.response.parameterOverrides = new Map<string, string>()
-
-            return getNextStep(await this.context.promptUserForParametersIfApplicable(options))
-        }
-
-        const missingParameters = difference(requiredParameterNames, overriddenParameters.keys())
-        if (missingParameters.size > 0) {
-            this.context.additionalSteps++
-
-            return getNextStep(
-                await this.context.promptUserForParametersIfApplicable({
-                    templateUri: this.response.template,
-                    missingParameters,
-                })
-            )
-        }
-
-        this.response.parameterOverrides = overriddenParameters
-
-        return wizardContinue(this.skipOrPromptRegion(this.S3_BUCKET))
-    }
-
-    private readonly REGION: WizardStep = async step => {
-        this.response.region = await this.context.promptUserForRegion(step, this.response.region)
-
-        return this.response.region ? wizardContinue(this.S3_BUCKET) : WIZARD_GOBACK
-    }
-
-    private readonly S3_BUCKET: WizardStep = async step => {
-        const profile = this.context.extContext.awsContext.getCredentialProfileName() || ''
-        const accountId = this.context.extContext.awsContext.getCredentialAccountId() || ''
-        const response = await this.context.promptUserForS3Bucket(
-            step,
-            this.response.region!,
-            profile,
-            accountId,
-            this.response.s3Bucket
-        )
-
-        if (!response) {
-            return WIZARD_GOBACK
-        }
-
-        if (response === CREATE_NEW_BUCKET) {
-            const newBucketRequest = await this.context.promptUserForS3BucketName(step, {
-                title: localize('AWS.s3.createBucket.prompt', 'Enter a new bucket name'),
+                        try {
+                            const s3Client = ext.toolkitClientBuilder.createS3Client(form.region!)
+                            const newBucketName = (await s3Client.createBucket({ bucketName: response })).bucket.name
+                            getLogger().info('Created bucket: %O', newBucketName)
+                            vscode.window.showInformationMessage(
+                                localize('AWS.s3.createBucket.success', 'Created bucket: {0}', newBucketName)
+                            )
+                            telemetry.recordS3CreateBucket({ result: 'Succeeded' })
+                        } catch (e) {
+                            showErrorWithLogs(
+                                localize('AWS.s3.createBucket.error.general', 'Failed to create bucket: {0}', response),
+                                vscode.window
+                            )
+                            telemetry.recordS3CreateBucket({ result: 'Failed' })
+                            return WIZARD_RETRY
+                        }
+                    })
+                } else {
+                    return context.createS3BucketNamePrompter(localize('AWS.samcli.deploy.bucket.existingTitle', 'Enter Existing Bucket Name'))
+                }
             })
-            if (!newBucketRequest) {
-                return WIZARD_RETRY
-            }
-
-            try {
-                const s3Client = ext.toolkitClientBuilder.createS3Client(this.response.region!)
-                const newBucketName = (await s3Client.createBucket({ bucketName: newBucketRequest })).bucket.name
-                this.response.s3Bucket = newBucketName
-                getLogger().info('Created bucket: %O', newBucketName)
-                vscode.window.showInformationMessage(
-                    localize('AWS.s3.createBucket.success', 'Created bucket: {0}', newBucketName)
-                )
-                telemetry.recordS3CreateBucket({ result: 'Succeeded' })
-            } catch (e) {
-                showErrorWithLogs(
-                    localize('AWS.s3.createBucket.error.general', 'Failed to create bucket: {0}', newBucketRequest),
-                    vscode.window
-                )
-                telemetry.recordS3CreateBucket({ result: 'Failed' })
-                return WIZARD_RETRY
-            }
-        } else if (response === ENTER_BUCKET) {
-            const bucket = await this.context.promptUserForS3BucketName(step, {
-                title: localize('AWS.samcli.deploy.bucket.existingTitle', 'Enter Existing Bucket Name'),
-                value: this.response.s3Bucket,
-            })
-
-            if (!bucket) {
-                return WIZARD_RETRY
-            }
-
-            this.response.s3Bucket = bucket
-        } else {
-            this.response.s3Bucket = response
-        }
-
-        return this.hasImages ? wizardContinue(this.ECR_REPO) : wizardContinue(this.STACK_NAME)
-    }
-
-    private readonly ECR_REPO: WizardStep = async step => {
-        const response = await this.context.promptUserForEcrRepo(step, this.response.region, this.response.ecrRepo)
-
-        this.response.ecrRepo = response
-
-        return response ? wizardContinue(this.STACK_NAME) : WIZARD_GOBACK
-    }
-
-    private readonly STACK_NAME: WizardStep = async () => {
-        this.response.stackName = await this.context.promptUserForStackName({
-            initialValue: this.response.stackName,
-            validateInput: validateStackName,
+                
+        this.form.ecrRepo.bindPrompter(form => context.createEcrRepoPrompter(form.region!), { 
+            showWhen: form => form.s3Bucket !== undefined && isImage(form.template) 
         })
-
-        return this.response.stackName ? WIZARD_TERMINATE : WIZARD_GOBACK
-    }
-
-    private skipOrPromptRegion(skipToStep: WizardStep): WizardStep {
-        return this.regionNode && Object.prototype.hasOwnProperty.call(this.regionNode, 'regionCode')
-            ? skipToStep
-            : this.REGION
+        this.form.stackName.bindPrompter(() => context.createStackNamePrompter())
     }
 }
 
@@ -592,7 +444,7 @@ function isImage(template?: CloudFormation.Template): boolean {
 }
 
 
-class SamTemplateQuickPickItem implements DataQuickPickItem<CloudFormation.Template> {
+class SamTemplateQuickPickItem implements DataQuickPickItem<CFNTemplate> {
     public readonly label: string
 
     public description?: string
@@ -613,7 +465,7 @@ class SamTemplateQuickPickItem implements DataQuickPickItem<CloudFormation.Templ
         }
     }
 
-    public get data() { return this.template }
+    public get data() { return { ...this.template, uri: this.uri } }
 
     public compareTo(rhs: SamTemplateQuickPickItem): number {
         const labelComp = this.label.localeCompare(rhs.label)
@@ -649,7 +501,7 @@ class SamTemplateQuickPickItem implements DataQuickPickItem<CloudFormation.Templ
 // https://docs.aws.amazon.com/AWSCloudFormation/latest/APIReference/API_CreateStack.html
 // A stack name can contain only alphanumeric characters (case sensitive) and hyphens.
 // It must start with an alphabetic character and cannot be longer than 128 characters.
-function validateStackName(value: string): string | undefined {
+export function validateStackName(value: string): string | undefined {
     if (!/^[a-zA-Z\d\-]+$/.test(value)) {
         return localize(
             'AWS.samcli.deploy.stackName.error.invalidCharacters',
@@ -699,8 +551,8 @@ function getTemplateChoices(...workspaceFolders: vscode.Uri[]): SamTemplateQuick
     return templateItems
 }
 
-const NEW_BUCKET_OPTION = Symbol()
-const ENTER_BUCKET_OPTION = Symbol()
+const NEW_BUCKET_OPTION = 'NEW BUCKET OPTION'
+const ENTER_BUCKET_OPTION = 'ENTER BUCKET OPTION'
 
 /**
  * Loads S3 buckets into a quick pick.

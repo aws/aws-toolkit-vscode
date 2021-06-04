@@ -4,19 +4,22 @@
  */
 
 import * as vscode from 'vscode'
+import { isWizardControl, WizardControl } from '../wizards/wizard'
 import * as input from './input'
 import * as picker from './picker'
 
+type QuickPickDataType<T> = T | WizardControl
 
-type QuickPickData<T> = T | symbol | (() => Promise<T | symbol>)
-type QuickInputResult<T> = T | T[] | symbol | string | undefined
+type QuickPickResult<T> = T | T[] | WizardControl | undefined
+type InputBoxResult = string | WizardControl | undefined
+type QuickInputResult<T> = QuickPickResult<T> | InputBoxResult
+
+type QuickPickData<T> = QuickPickDataType<T> | (() => Promise<QuickPickDataType<T>>)
 export type DataQuickPickItem<T> = vscode.QuickPickItem & 
     (T extends string ? { data?: QuickPickData<string> } : { data: QuickPickData<T> })
 export type DataQuickPick<T> = vscode.QuickPick<DataQuickPickItem<T>>
 
 export type ButtonBinds = Map<vscode.QuickInputButton, (resolve: any, reject: any) => void>
-
-//type Prompter<T extends vscode.QuickPickItem> = vscode.InputBox | vscode.QuickPick<DataQuickPickItem<T>> 
 
 function isInputBoxOptions(arg1: any, arg2: any): arg1 is input.ExtendedInputBoxOptions {
     return arg2 === undefined && !(arg1 instanceof Promise)
@@ -73,8 +76,10 @@ export interface PrompterButton {
     readonly callback: (resolve: any, reject: any) => void
 }
 
+type AfterPrompt<T> = (result: QuickInputResult<T>) => Promise<QuickInputResult<T> | void>
 export abstract class Prompter<T> {
     protected readonly buttonBinds: ButtonBinds = new Map()
+    protected readonly afterCallbacks: AfterPrompt<T>[] = []
 
     constructor(private readonly input: vscode.InputBox | vscode.QuickPick<DataQuickPickItem<T>>) {}
 
@@ -100,6 +105,21 @@ export abstract class Prompter<T> {
         })
     } 
 
+    public after(callback: AfterPrompt<T>): Prompter<T> {
+        this.afterCallbacks.push(callback)
+        return this
+    }
+
+    protected async applyAfterCallbacks(result: QuickInputResult<T>): Promise<QuickInputResult<T>> {
+        for (const cb of this.afterCallbacks) {
+            const transform = await cb(result)
+            if (transform !== undefined) {
+                result = transform
+            }
+        }
+        return result
+    }
+
     public abstract prompt(): Promise<QuickInputResult<T>>  
     public abstract setLastPicked(picked?: T | DataQuickPickItem<T> | DataQuickPickItem<T>[]): void
     public abstract getLastPicked(): T | DataQuickPickItem<T> | DataQuickPickItem<T>[] | undefined
@@ -108,13 +128,35 @@ export abstract class Prompter<T> {
 export class QuickPickPrompter<T> extends Prompter<T> {
     private lastPicked?: DataQuickPickItem<T> | DataQuickPickItem<T>[]
 
-    constructor(private readonly quickPick: vscode.QuickPick<DataQuickPickItem<T>>, buttonBinds?: ButtonBinds) {
+    constructor(private readonly quickPick: vscode.QuickPick<DataQuickPickItem<T>>, buttonBinds?: ButtonBinds, private readonly transformUserInput?: (v?: string) => T) {
         super(quickPick)
         this.addButtonBinds(buttonBinds ?? new Map())
     }
     
-    private isUserInput(picked: DataQuickPickItem<T> | DataQuickPickItem<T>[]): picked is DataQuickPickItem<T> {
+    private isUserInput(picked: any): picked is DataQuickPickItem<T> {
         return picked !== undefined && !Array.isArray(picked) && picked.data === picker.CUSTOM_USER_INPUT
+    }
+
+    private async processChoices(choices: DataQuickPickItem<T>[] | undefined): Promise<QuickInputResult<T>> {
+        const result = choices !== undefined 
+            ? this.quickPick.canSelectMany !== true
+                ? choices[0].data ?? choices[0].label : choices.map(choices => choices.data ?? choices.label)
+            : undefined
+
+        if (this.isUserInput(result)) {
+            return this.transformUserInput ? this.transformUserInput(result.description) : undefined
+        } else if (Array.isArray(result)) {
+            result.forEach(element => {
+                if (isWizardControl(element)) {
+                    return element
+                }
+            })
+            return await Promise.all(result.map(async f => f instanceof Function ? await f() : f)) as T[]
+        } else if (result instanceof Function) {
+            return await result()
+        } else {
+            return result
+        }
     }
 
     public async prompt(): Promise<QuickInputResult<T>> {
@@ -131,23 +173,7 @@ export class QuickPickPrompter<T> extends Prompter<T> {
             this.lastPicked = choices
         }
 
-        const result = choices !== undefined 
-            ? this.quickPick.canSelectMany !== true
-                ? choices[0].data ?? choices[0].label : choices.map(choices => choices.data ?? choices.label)
-            : undefined
-
-        if (Array.isArray(result)) {
-            result.forEach(element => {
-                if (typeof element === 'symbol') {
-                    return element
-                }
-            })
-            return await Promise.all(result.map(async f => f instanceof Function ? await f() : f)) as T[]
-        } else if (result instanceof Function) {
-            return await result()
-        } else {
-            return result
-        }
+        return super.applyAfterCallbacks(await this.processChoices(choices))
     }
 
     public setLastPicked(picked: DataQuickPickItem<T> | DataQuickPickItem<T>[] | undefined = this.lastPicked): void {
@@ -184,8 +210,8 @@ export class InputBoxPrompter extends Prompter<string> {
         this.addButtonBinds(buttonBinds ?? new Map())
     }
 
-    public async prompt(): Promise<string | symbol | undefined> {
-        return await input.promptUser({
+    public async prompt(): Promise<QuickInputResult<string>> {
+        const result = await input.promptUser({
             inputBox: this.inputBox,
             onDidTriggerButton: (button, resolve, reject) => {
                 if (this.buttonBinds !== undefined && this.buttonBinds.has(button)) {
@@ -193,6 +219,8 @@ export class InputBoxPrompter extends Prompter<string> {
                 }
             },
         })
+
+        return this.applyAfterCallbacks(result)
     }
 
     public setLastPicked(picked: string): void {

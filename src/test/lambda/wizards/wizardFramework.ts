@@ -12,7 +12,7 @@
  */
 
 import * as vscode from 'vscode'
-import { Wizard, WizardSchema } from '../../../shared/wizards/wizard'
+import { Wizard, WizardControl, WizardSchema } from '../../../shared/wizards/wizard'
 import { waitUntil } from '../../../shared/utilities/timeoutUtils'
 import * as assert from 'assert'
 import { DataQuickPickItem, Prompter } from '../../../shared/ui/prompter'
@@ -193,11 +193,11 @@ export class WizardTester<TState extends WizardSchema<TState>, TResult> {
 }
 
 export class MockPrompter<T> extends Prompter<T> {
-    constructor(private output: T | undefined) {
+    constructor(private output: T | WizardControl | undefined) {
         super(vscode.window.createInputBox())
     }
-    public async prompt(): Promise<symbol | T | undefined> {
-        return this.output
+    public async prompt(): Promise<WizardControl | T | undefined> {
+        return super.applyAfterCallbacks(this.output) as unknown as any // fix this type
     }
     public setLastPicked(picked?: T | DataQuickPickItem<T> | DataQuickPickItem<T>[]): void {
         return

@@ -23,8 +23,9 @@ import { waitUntil } from '../../shared/utilities/timeoutUtils'
 import { localize } from '../../shared/utilities/vsCodeUtils'
 import { addFolderToWorkspace } from '../../shared/utilities/workspaceUtils'
 import { Window } from '../../shared/vscode/window'
-import { promptUserForLocation, WizardContext } from '../../shared/wizards/multiStepWizard'
 import { getLambdaDetails } from '../utils'
+import { createLocationPrompt } from '../../shared/ui/prompts'
+import { isWizardControl } from '../../shared/wizards/wizard'
 
 export async function importLambdaCommand(functionNode: LambdaFunctionNode) {
     const result = await runImportLambda(functionNode)
@@ -45,8 +46,10 @@ async function runImportLambda(functionNode: LambdaFunctionNode, window = Window
         )
         return 'Cancelled'
     }
-    const selectedUri = await promptUserForLocation(new WizardContext(), { step: 1, totalSteps: 1 })
-    if (!selectedUri) {
+    const selectedUri = await createLocationPrompt().prompt()
+
+    // TODO: handle string case
+    if (!selectedUri || Array.isArray(selectedUri) || isWizardControl(selectedUri) || typeof selectedUri === 'string') {
         return 'Cancelled'
     }
 
