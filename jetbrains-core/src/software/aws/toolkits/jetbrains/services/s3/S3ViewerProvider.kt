@@ -43,8 +43,10 @@ class S3ViewerEditorProvider : FileEditorProvider, PossiblyDumbAware {
     }
 }
 
-class S3ViewerEditor(project: Project, bucket: S3VirtualBucket) : UserDataHolderBase(), FileEditor {
+class S3ViewerEditor(project: Project, private val bucket: S3VirtualBucket) : UserDataHolderBase(), FileEditor {
     private val s3Panel: S3ViewerPanel = S3ViewerPanel(this, project, bucket)
+
+    override fun getFile(): VirtualFile = bucket
 
     override fun getComponent(): JComponent = s3Panel.component
 
