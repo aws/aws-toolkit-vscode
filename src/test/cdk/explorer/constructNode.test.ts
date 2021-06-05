@@ -11,8 +11,8 @@ import { PropertyNode } from '../../../cdk/explorer/nodes/propertyNode'
 import { ConstructTreeEntity } from '../../../cdk/explorer/tree/types'
 import { cdk } from '../../../cdk/globals'
 import { AWSTreeNodeBase } from '../../../shared/treeview/nodes/awsTreeNodeBase'
-import { clearTestIconPaths, IconPath, setupTestIconPaths } from '../utilities/iconPathUtils'
-import * as treeUtils from '../utilities/treeTestUtils'
+import { clearTestIconPaths, IconPath, setupTestIconPaths } from '../iconPathUtils'
+import * as treeUtils from '../treeTestUtils'
 
 describe('ConstructNode', function () {
     before(async function () {

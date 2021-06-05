@@ -4,7 +4,7 @@
  */
 
 import * as vscode from 'vscode'
-import { cdk } from '../../../cdk/globals'
+import { cdk } from '../../cdk/globals'
 
 export interface IconPath {
     light: vscode.Uri
