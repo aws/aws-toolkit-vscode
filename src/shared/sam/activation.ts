@@ -97,11 +97,15 @@ async function registerServerlessCommands(ctx: ExtContext): Promise<void> {
         }),
         vscode.commands.registerCommand('aws.addSamDebugConfiguration', addSamDebugConfiguration),
         vscode.commands.registerCommand('aws.pickAddSamDebugConfiguration', codelensUtils.pickAddSamDebugConfiguration),
-        vscode.commands.registerCommand('aws.deploySamApplication', async regionNode => {
+        vscode.commands.registerCommand('aws.deploySamApplication', async arg => {
+            // `arg` is one of :
+            //  - undefined
+            //  - regionNode (selected from AWS Explorer)
+            //  -  Uri to template.yaml (selected from File Explorer)
+
             const samDeployWizardContext = new DefaultSamDeployWizardContext(ctx)
             const samDeployWizard = async (): Promise<SamDeployWizardResponse | undefined> => {
-                const wizard = new SamDeployWizard(samDeployWizardContext, regionNode)
-
+                const wizard = new SamDeployWizard(samDeployWizardContext, arg)
                 return wizard.run()
             }
 
