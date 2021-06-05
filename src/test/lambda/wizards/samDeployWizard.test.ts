@@ -209,6 +209,26 @@ describe('SamDeployWizard', async function () {
             assert.ok(!result)
         })
 
+        it('skips template picker if passed as argument', async function () {
+            const workspaceFolderPath = normalizePath('my', 'workspace', 'folder')
+            const arg = vscode.Uri.file('/path/to/template.yaml')
+            const wizard = new SamDeployWizard(
+                new MockSamDeployWizardContext(
+                    extContext,
+                    [[vscode.Uri.file(workspaceFolderPath)]],
+                    [createQuickPickUriResponseItem(vscode.Uri.file('/wrong/template.yaml'))],
+                    [createQuickPickRegionResponseItem('asdf')],
+                    ['mys3bucketname'],
+                    [],
+                    [],
+                    ['myStackName']
+                ),
+                arg
+            )
+            const result = await wizard.run()
+            assert.deepStrictEqual(result?.template, arg)
+        })
+
         it('uses user response as template', async function () {
             const workspaceFolderPath = normalizePath('my', 'workspace', 'folder')
             const templatePath = normalizePath(workspaceFolderPath, 'template.yaml')
