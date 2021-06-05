@@ -842,6 +842,13 @@
                     "group": "z_externalLinks@1"
                 }
             ],
+            "explorer/context": [
+                {
+                    "command": "aws.deploySamApplication",
+                    "when": "isFileSystemResource == true && resourceFilename =~ /^template\\.(json|yml|yaml)$/",
+                    "group": "z_aws@1"
+                }
+            ],
             "view/item/context": [
                 {
                     "command": "aws.apig.invokeRemoteRestApi",
