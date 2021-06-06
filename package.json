@@ -1564,7 +1564,7 @@
         "circular-dependency-plugin": "^5.2.0",
         "decache": "^4.4.0",
         "esbuild-loader": "2.10.0",
-        "eslint": "^7.26.0",
+        "eslint": "^7.28.0",
         "eslint-config-prettier": "8.3",
         "eslint-plugin-header": "^3.1.1",
         "eslint-plugin-no-null": "^1.0.2",
@@ -1591,7 +1591,7 @@
         "vscode-test": "^1.4.0",
         "vue-loader": "^15.9.6",
         "vue-template-compiler": "^2.6.12",
-        "webpack": "^5.36.2",
+        "webpack": "^5.38.1",
         "webpack-cli": "^3.3.10"
     },
     "dependencies": {
