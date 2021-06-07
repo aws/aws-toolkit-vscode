@@ -37,7 +37,7 @@ export async function createVueWebview<TRequest, TResponse>(params: WebviewParam
     const libsPath: string = path.join(params.context.extensionPath, 'media', 'libs')
     const jsPath: string = path.join(params.context.extensionPath, 'media', 'js')
     const cssPath: string = path.join(params.context.extensionPath, 'media', 'css')
-    const webviewPath: string = path.join(params.context.extensionPath, 'dist', 'compiledWebviews')
+    const webviewPath: string = path.join(params.context.extensionPath, 'dist')
 
     const view = vscode.window.createWebviewPanel(
         params.id,
