@@ -7,7 +7,7 @@ import * as assert from 'assert'
 import * as path from 'path'
 import * as sinon from 'sinon'
 import * as vscode from 'vscode'
-import * as paramUtils from '../../../lambda/utilities/parameterUtils'
+import * as paramUtils from '../../../lambda/config/parameterUtils'
 import * as input from '../../../shared/ui/input'
 import * as picker from '../../../shared/ui/picker'
 import {
