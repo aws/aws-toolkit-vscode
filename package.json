@@ -1591,7 +1591,7 @@
         "vscode-test": "^1.4.0",
         "vue-loader": "^15.9.6",
         "vue-template-compiler": "^2.6.12",
-        "webpack": "^5.36.2",
+        "webpack": "^5.38.1",
         "webpack-cli": "^3.3.10"
     },
     "dependencies": {
