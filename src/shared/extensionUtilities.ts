@@ -44,7 +44,8 @@ export enum IDE {
 let computeRegion: string | undefined = NOT_INITIALIZED
 
 export function getIdeType(): IDE {
-    if (vscode.env.appName === CLOUD9_APPNAME || vscode.env.appName === CLOUD9_CN_APPNAME) {
+    const settings = new DefaultSettingsConfiguration('aws')
+    if (vscode.env.appName === CLOUD9_APPNAME || vscode.env.appName === CLOUD9_CN_APPNAME || !!settings.readSetting<boolean>('forceCloud9', false)) {
         return IDE.cloud9
     }
 
@@ -106,9 +107,7 @@ export function getIdeProperties(): IdeProperties {
  * Returns whether or not this is Cloud9
  */
 export function isCloud9(): boolean {
-    const settings = new DefaultSettingsConfiguration('aws')
-
-    return getIdeType() === IDE.cloud9 || !!settings.readSetting<boolean>('forceCloud9', false)
+    return getIdeType() === IDE.cloud9
 }
 
 export function isCn(): boolean {

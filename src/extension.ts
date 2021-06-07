@@ -71,6 +71,7 @@ import * as extWindow from './shared/vscode/window'
 let localize: nls.LocalizeFunc
 
 export async function activate(context: vscode.ExtensionContext) {
+    await initializeComputeRegion()
     const activationStartedOn = Date.now()
     localize = nls.loadMessageBundle()
     ext.init(context, extWindow.Window.vscode())
@@ -92,7 +93,6 @@ export async function activate(context: vscode.ExtensionContext) {
 
         const endpointsProvider = makeEndpointsProvider()
 
-        await initializeComputeRegion()
         const awsContext = new DefaultAwsContext(context)
         const awsContextTrees = new AwsContextTreeCollection()
         const regionProvider = new DefaultRegionProvider(endpointsProvider)

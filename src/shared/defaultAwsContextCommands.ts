@@ -31,21 +31,21 @@ import { createQuickPick, promptUser } from './ui/picker'
 import { SharedCredentialsProvider } from '../credentials/providers/sharedCredentialsProvider'
 import { getIdeProperties } from './extensionUtilities'
 
-const TITLE_HIDE_REGION = localize(
-    'AWS.message.prompt.region.hide.title',
-    'Select a region to hide from the {0} Explorer',
-    getIdeProperties().company
-)
-const TITLE_SHOW_REGION = localize(
-    'AWS.message.prompt.region.show.title',
-    'Select a region to show in the {0} Explorer',
-    getIdeProperties().company
-)
-
 export class DefaultAWSContextCommands {
     private readonly _awsContext: AwsContext
     private readonly _awsContextTrees: AwsContextTreeCollection
     private readonly _regionProvider: RegionProvider
+
+    private readonly TITLE_HIDE_REGION = localize(
+        'AWS.message.prompt.region.hide.title',
+        'Select a region to hide from the {0} Explorer',
+        getIdeProperties().company
+    )
+    private readonly TITLE_SHOW_REGION = localize(
+        'AWS.message.prompt.region.show.title',
+        'Select a region to show in the {0} Explorer',
+        getIdeProperties().company
+    )
 
     public constructor(
         awsContext: AwsContext,
@@ -97,7 +97,7 @@ export class DefaultAWSContextCommands {
         const explorerRegions = new Set(await this._awsContext.getExplorerRegions())
         const newRegion = await this.promptForFilteredRegion(
             candidateRegion => !explorerRegions.has(candidateRegion.id),
-            TITLE_SHOW_REGION,
+            this.TITLE_SHOW_REGION,
             { step: 1, totalSteps: 1 }
         )
 
@@ -110,7 +110,7 @@ export class DefaultAWSContextCommands {
     public async onCommandHideRegion(regionCode?: string) {
         const region =
             regionCode ||
-            (await this.promptForRegion(await this._awsContext.getExplorerRegions(), TITLE_HIDE_REGION, {
+            (await this.promptForRegion(await this._awsContext.getExplorerRegions(), this.TITLE_HIDE_REGION, {
                 step: 1,
                 totalSteps: 1,
             }))

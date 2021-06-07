@@ -12,20 +12,26 @@ import { supportsEventBridgeTemplates } from '../../../src/eventSchemas/models/s
 import { RuntimePackageType } from './samLambdaRuntime'
 import { getIdeProperties } from '../../shared/extensionUtilities'
 
-export const helloWorldTemplate = localize('AWS.samcli.initWizard.template.helloWorld.name', '{0} SAM Hello World', getIdeProperties().company)
-export const eventBridgeHelloWorldTemplate = localize('AWS.samcli.initWizard.template.helloWorld.name', '{0} SAM EventBridge Hello World', getIdeProperties().company)
-export const eventBridgeStarterAppTemplate = localize('AWS.samcli.initWizard.template.helloWorld.name', '{0} SAM EventBridge App from Scratch', getIdeProperties().company)
-export const stepFunctionsSampleApp = localize('AWS.samcli.initWizard.template.helloWorld.name', '{0} Step Functions Sample App', getIdeProperties().company)
+export let helloWorldTemplate = 'helloWorldUninitialized'
+export let eventBridgeHelloWorldTemplate = 'eventBridgeHelloWorldUninitialized'
+export let eventBridgeStarterAppTemplate = 'eventBridgeStarterAppUnintialized'
+export let stepFunctionsSampleApp = 'stepFunctionsSampleAppUnintialized'
 export const repromptUserForTemplate = 'REQUIRES_AWS_CREDENTIALS_REPROMPT_USER_FOR_TEMPLATE'
 
 export const CLI_VERSION_STEP_FUNCTIONS_TEMPLATE = '0.52.0'
 
-export type SamTemplate =
-    | typeof helloWorldTemplate
-    | typeof eventBridgeHelloWorldTemplate
-    | typeof eventBridgeStarterAppTemplate
-    | typeof stepFunctionsSampleApp
-    | 'REQUIRES_AWS_CREDENTIALS_REPROMPT_USER_FOR_TEMPLATE'
+export type SamTemplate = string
+
+/**
+ * Lazy load strings for SAM template quick picks
+ * Need to be lazyloaded as `getIdeProperties` requires IDE activation for Cloud9
+ */
+export function lazyLoadSamTemplateStrings(): void{
+    helloWorldTemplate = localize('AWS.samcli.initWizard.template.helloWorld.name', '{0} SAM Hello World', getIdeProperties().company)
+    eventBridgeHelloWorldTemplate = localize('AWS.samcli.initWizard.template.helloWorld.name', '{0} SAM EventBridge Hello World', getIdeProperties().company)
+    eventBridgeStarterAppTemplate = localize('AWS.samcli.initWizard.template.helloWorld.name', '{0} SAM EventBridge App from Scratch', getIdeProperties().company)
+    stepFunctionsSampleApp = localize('AWS.samcli.initWizard.template.helloWorld.name', '{0} Step Functions Sample App', getIdeProperties().company)
+}
 
 export function getSamTemplateWizardOption(
     runtime: Runtime,

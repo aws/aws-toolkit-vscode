@@ -34,6 +34,7 @@ import { CodelensRootRegistry } from './codelensRootRegistry'
 import { AWS_SAM_DEBUG_TYPE } from './debugger/awsSamDebugConfiguration'
 import { SamDebugConfigProvider } from './debugger/awsSamDebugger'
 import { addSamDebugConfiguration } from './debugger/commands/addSamDebugConfiguration'
+import { lazyLoadSamTemplateStrings } from '../../lambda/models/samTemplates'
 const localize = nls.loadMessageBundle()
 
 const STATE_NAME_SUPPRESS_YAML_PROMPT = 'aws.sam.suppressYamlPrompt'
@@ -83,6 +84,7 @@ export async function activate(ctx: ExtContext): Promise<void> {
 }
 
 async function registerServerlessCommands(ctx: ExtContext): Promise<void> {
+    lazyLoadSamTemplateStrings()
     ctx.extensionContext.subscriptions.push(
         vscode.commands.registerCommand(
             'aws.samcli.detect',

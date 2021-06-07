@@ -19,12 +19,6 @@ const LEGACY_SETTINGS_TELEMETRY_VALUE_DISABLE = 'Disable'
 const LEGACY_SETTINGS_TELEMETRY_VALUE_ENABLE = 'Enable'
 const TELEMETRY_SETTING_DEFAULT = true
 
-const telemetryNoticeText: string = localize(
-    'AWS.telemetry.notificationMessage',
-    'The {0} Toolkit collects usage metrics by default. These metrics help drive toolkit improvements. This setting can be changed from the IDE settings.',
-    getIdeProperties().company
-)
-
 export const noticeResponseViewSettings = localize('AWS.telemetry.notificationViewSettings', 'View Settings')
 export const noticeResponseOk = localize('AWS.telemetry.notificationOk', 'OK')
 
@@ -152,6 +146,12 @@ export async function setHasUserSeenTelemetryNotice(extensionContext: vscode.Ext
  */
 function showTelemetryNotice(extensionContext: vscode.ExtensionContext) {
     getLogger().verbose('Showing telemetry notice')
+
+    const telemetryNoticeText: string = localize(
+        'AWS.telemetry.notificationMessage',
+        'The {0} Toolkit collects usage metrics by default. These metrics help drive toolkit improvements. This setting can be changed from the IDE settings.',
+        getIdeProperties().company
+    )
 
     // Don't wait for a response
     vscode.window
