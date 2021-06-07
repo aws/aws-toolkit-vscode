@@ -12,8 +12,8 @@ import * as appNode from '../../../cdk/explorer/nodes/appNode'
 import { ConstructNode } from '../../../cdk/explorer/nodes/constructNode'
 import { cdk } from '../../../cdk/globals'
 import { PlaceholderNode } from '../../../shared/treeview/nodes/placeholderNode'
-import { clearTestIconPaths, IconPath, setupTestIconPaths } from '../utilities/iconPathUtils'
-import * as treeUtils from '../utilities/treeTestUtils'
+import { clearTestIconPaths, IconPath, setupTestIconPaths } from '../iconPathUtils'
+import * as treeUtils from '../treeTestUtils'
 
 let sandbox: sinon.SinonSandbox
 describe('AppNode', function () {

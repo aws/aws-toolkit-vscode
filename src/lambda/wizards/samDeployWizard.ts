@@ -28,7 +28,7 @@ import {
     WIZARD_RETRY,
 } from '../../shared/wizards/multiStepWizard'
 import { configureParameterOverrides } from '../config/configureParameterOverrides'
-import { getOverriddenParameters, getParameters } from '../utilities/parameterUtils'
+import { getOverriddenParameters, getParameters } from '../config/parameterUtils'
 import { ext } from '../../shared/extensionGlobals'
 import { EcrRepository } from '../../shared/clients/ecrClient'
 import { getSamCliVersion } from '../../shared/sam/cli/samCliContext'
