@@ -10,8 +10,8 @@ import { Set as ImmutableSet } from 'immutable'
 import * as vscode from 'vscode'
 
 import { eventBridgeSchemasDocUrl } from '../../shared/constants'
-import { createHelpButton } from '../../shared/ui/buttons'
-import { ButtonBinds, createPrompter, Prompter } from '../../shared/ui/prompter'
+import { createBackButton, createHelpButton } from '../../shared/ui/buttons'
+import { Prompter, PrompterButtons } from '../../shared/ui/prompter'
 
 import * as codeLang from '../models/schemaCodeLangs'
 
@@ -19,6 +19,7 @@ import { SchemaItemNode } from '../explorer/schemaItemNode'
 import { createLocationPrompt } from '../../shared/ui/prompts'
 import { Wizard } from '../../shared/wizards/wizard'
 import { initializeInterface } from '../../shared/transformers'
+import { createLabelQuickPick, QuickPickPrompter } from '../../shared/ui/picker'
 
 export interface SchemaCodeDownloadWizardContext {
     readonly schemaLangs: ImmutableSet<codeLang.SchemaCodeLangs>
@@ -31,11 +32,8 @@ export interface SchemaCodeDownloadWizardContext {
 
 export class DefaultSchemaCodeDownloadWizardContext implements SchemaCodeDownloadWizardContext {
     public readonly schemaLangs = codeLang.schemaCodeLangs
-    private readonly helpButton = createHelpButton(localize('AWS.command.help', 'View Toolkit Documentation'))
-    private readonly buttons: ButtonBinds = new Map([
-        [vscode.QuickInputButtons.Back, resolve => resolve(undefined)],
-        [this.helpButton, () => vscode.env.openExternal(vscode.Uri.parse(eventBridgeSchemasDocUrl))],
-    ])
+    private readonly helpButton = createHelpButton(eventBridgeSchemasDocUrl)
+    private readonly buttons: PrompterButtons = [createBackButton(), this.helpButton]
 
     constructor(
         private readonly node: SchemaItemNode,
@@ -44,30 +42,30 @@ export class DefaultSchemaCodeDownloadWizardContext implements SchemaCodeDownloa
         this.node = node
     }
 
-    public createLanguagePrompter(): Prompter<codeLang.SchemaCodeLangs> {
-        return createPrompter(this.schemaLangs.toArray().map(language => ({ label: language })), {
+    public createLanguagePrompter(): QuickPickPrompter<codeLang.SchemaCodeLangs> {
+        return createLabelQuickPick<codeLang.SchemaCodeLangs>(this.schemaLangs.toArray().map(language => ({ label: language })), {
             title: localize(
                 'AWS.schemas.downloadCodeBindings.initWizard.language.prompt',
                 'Select a code binding language'
             ),
-            buttonBinds: this.buttons,
+            buttons: this.buttons,
         })
     }
 
-    public createVersionPrompter(): Prompter<string> {
+    public createVersionPrompter(): QuickPickPrompter<string> {
         const items = this.node.listSchemaVersions().then(versions => versions.map(v => ({ label: v.SchemaVersion! })))
 
-        return createPrompter(items, {
+        return createLabelQuickPick(items, {
             title: localize(
                 'AWS.schemas.downloadCodeBindings.initWizard.version.prompt',
                 'Select a version for schema {0} :',
                 this.node.schemaName
             ),
-            buttonBinds: this.buttons,
+            buttons: this.buttons
         })
     }
 
-    public createLocationPrompter(): Prompter<vscode.Uri> {
+    public createLocationPrompter(): QuickPickPrompter<vscode.Uri> {
         return createLocationPrompt(this.workspaceFolders, this.buttons, {
             detail: localize(
                 'AWS.schemas.downloadCodeBindings.initWizard.location.select.folder.detail',

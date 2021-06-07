@@ -11,7 +11,7 @@ import * as fsUtilities from '../../../shared/filesystemUtilities'
 
 import * as YAML from 'yaml'
 import { FakeExtensionContext } from '../../fakeExtensionContext'
-import { MockPrompter } from '../../lambda/wizards/wizardFramework'
+import { MockPrompter } from '../../shared/wizards/wizardFramework'
 import { Prompter } from '../../../shared/ui/prompter'
 
 describe('createDocumentFromTemplate', async function () {

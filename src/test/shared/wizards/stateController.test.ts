@@ -5,11 +5,74 @@
 
 import * as assert from 'assert'
 import * as sinon from 'sinon'
-import { StateMachineController, WIZARD_GOBACK, WIZARD_RETRY } from '../../../shared/wizards/stateController'
+import { StateMachineController, StateMachineControl, StateMachineStepResult, StateBranch } from '../../../shared/wizards/stateController'
 
-function assertSteps<T>(controller: StateMachineController<T>, current: number, total: number, state?: T): { nextState?: T } {
+function assertStepsPassthrough<T>(
+    controller: StateMachineController<T>, 
+    current: number, 
+    total: number, 
+    result?: StateMachineStepResult<T>
+): StateMachineStepResult<T> | undefined {
     assert.strictEqual(controller.currentStep, current)
     assert.strictEqual(controller.totalSteps, total)
+    return result
+}
+
+interface PrimeGenerator {
+    primes: number[]
+    stopAt: number
+    current: {
+        value: number
+        counter?: number
+        isPrime?: boolean
+    }
+}
+
+/** Finds all primes up to 'stopAt' starting at 'current.value' */
+async function primeGen(state: PrimeGenerator): Promise<StateMachineStepResult<PrimeGenerator>> {
+    const nextSteps: StateBranch<PrimeGenerator> = []
+
+    state.current.value += 1
+    nextSteps.push(checkPrime, addIfPrime)
+
+    if (state.current.value < state.stopAt) {
+        nextSteps.push(primeGen)
+    }
+
+    return { nextState: state, nextSteps }
+}
+
+// 6k + 1 primality test
+async function checkPrime(state: PrimeGenerator): Promise<StateMachineStepResult<PrimeGenerator>> {
+    state.current.counter = state.current.counter ?? 5
+    const val = state.current.value
+    state.current.isPrime = val !== 0
+
+    if (val % 2 === 0 || val % 3 === 0) {
+        state.current.isPrime = false
+    } else {
+        const counter = state.current.counter
+        if (counter * counter <= val) {
+            if (val % counter === 0 || val % (counter + 2) === 0) {
+                state.current.isPrime = false
+                state.current.counter = undefined
+            } else {
+                state.current.counter += 6
+                return { nextState: state, nextSteps: [checkPrime] }
+            }
+        } else {
+            state.current.counter = undefined
+        }
+    }
+
+    return { nextState: state }
+}
+
+async function addIfPrime(state: PrimeGenerator): Promise<StateMachineStepResult<PrimeGenerator>> {
+    if (state.current.isPrime) {
+        state.primes.push(state.current.value!)
+    }
+
     return { nextState: state }
 }
 
@@ -25,20 +88,20 @@ describe('StateMachineController', function () {
         await assert.doesNotReject(controller.run())
     })
 
-    it('can be reset', async function() {
+    it('can exit mid-run', async function() {
         const controller = new StateMachineController<number>()
         const step1 = sinon.stub()
         const step2 = sinon.stub()
-        step1.onFirstCall().returns(1)
-        step2.onFirstCall().returns(2)
-        step1.onSecondCall().returns(3)
-        step2.onSecondCall().returns(4)
+        const step3 = sinon.stub()
+        step1.returns(0)
+        step2.returns({ controlSignal: StateMachineControl.Exit })
+        step3.returns(1)
         controller.addStep(step1)
         controller.addStep(step2)
+        controller.addStep(step3)
 
-        assert.strictEqual(await controller.run(), 2)
-        controller.reset()
-        assert.strictEqual(await controller.run(), 4)
+        assert.strictEqual(await controller.run(), undefined, 'State machine did not exit with an undefined state')
+        assert.strictEqual(step3.called, false, 'The third step should not be called')
     })
 
     it('detects cycle', async function() {
@@ -46,7 +109,7 @@ describe('StateMachineController', function () {
         const step1 = sinon.stub()
         const step2 = sinon.stub()
         step1.returns({})
-        step2.onFirstCall().returns(WIZARD_GOBACK)
+        step2.onFirstCall().returns(undefined)
         step2.onSecondCall().returns({ nextState: {}, nextSteps: [step1] })
         controller.addStep(step1)
         controller.addStep(step2)
@@ -54,11 +117,23 @@ describe('StateMachineController', function () {
         await assert.rejects(controller.run(), /Cycle/)
     })
 
+    it('can add the same function as a step multiple times', async function() {
+        const controller = new StateMachineController<number>()
+        const step1 = sinon.stub()
+        step1.onFirstCall().returns(0)
+        step1.onSecondCall().returns(1)
+        controller.addStep(step1)
+        controller.addStep(step1)
+
+        assert.strictEqual(await controller.run(), 1)
+    })
+
+
     describe('retry', function () {
         it('repeats current step', async function () {
             const controller = new StateMachineController()
             const stub = sinon.stub()
-            stub.onFirstCall().returns(WIZARD_RETRY)
+            stub.onFirstCall().returns({ controlSignal: StateMachineControl.Retry })
             stub.onSecondCall().returns({})
             controller.addStep(stub)
 
@@ -70,7 +145,7 @@ describe('StateMachineController', function () {
         it('does not remember state on retry', async function () {
             const controller = new StateMachineController<{ answer: boolean }>()
             const stub = sinon.stub()
-            stub.onFirstCall().returns({ nextState: { answer: true }, repeatStep: true })
+            stub.onFirstCall().returns({ nextState: { answer: true }, controlSignal: StateMachineControl.Retry })
             stub.onSecondCall().returns({ answer: false })
             controller.addStep(stub)
 
@@ -86,7 +161,7 @@ describe('StateMachineController', function () {
             const branchStep1 = sinon.stub()
             const branchStep2 = sinon.stub()
             step1.returns({ nextState: {}, nextSteps: [branchStep1, branchStep2] })
-            branchStep1.callsFake(state => assertSteps(controller, 2, 3, state))
+            branchStep1.callsFake(state => assertStepsPassthrough(controller, 2, 3, { nextState: state }))
             branchStep2.returns({})
             controller.addStep(step1)
 
@@ -101,9 +176,9 @@ describe('StateMachineController', function () {
             const branch2 = sinon.stub()
             const step5 = sinon.stub()
             step1.returns({ nextState: {}, nextSteps: [branch1Step1, branch1Step2] })
-            branch1Step1.callsFake(state => assertSteps(controller, 2, 4, state))
+            branch1Step1.callsFake(state => assertStepsPassthrough(controller, 2, 4, state))
             branch1Step2.returns({ nextState: {}, nextSteps: [branch2] })
-            branch2.callsFake(state => assertSteps(controller, 4, 5, state))
+            branch2.callsFake(state => assertStepsPassthrough(controller, 4, 5, state))
             step5.returns({})
             controller.addStep(step1)
             controller.addStep(step5)
@@ -118,7 +193,7 @@ describe('StateMachineController', function () {
             const step1 = sinon.stub()
             const step2 = sinon.stub()
             step1.returns({})
-            step2.onFirstCall().returns(WIZARD_GOBACK)
+            step2.onFirstCall().returns(undefined)
             step2.onSecondCall().returns({})
             controller.addStep(step1)
             controller.addStep(step2)
@@ -134,8 +209,8 @@ describe('StateMachineController', function () {
             const step1 = sinon.stub()
             const step2 = sinon.stub()
             step1.onFirstCall().returns({})
-            step2.onFirstCall().returns(WIZARD_GOBACK)
-            step1.onSecondCall().returns(WIZARD_GOBACK)
+            step2.onFirstCall().returns(undefined)
+            step1.onSecondCall().returns(undefined)
             controller.addStep(step1)
             controller.addStep(step2)
 
@@ -149,10 +224,10 @@ describe('StateMachineController', function () {
             const step1 = sinon.stub()
             const step2 = sinon.stub()
             step1.onFirstCall().returns({ answer: false })
-            step2.onFirstCall().returns(WIZARD_GOBACK)
+            step2.onFirstCall().returns(undefined)
             step1.onSecondCall().callsFake(state => {
                 assert.strictEqual(state.answer, undefined)
-                return assertSteps(controller, 1, 2, { answer: true })
+                return assertStepsPassthrough(controller, 1, 2, { nextState: { answer: true } })
             })
             step2.onSecondCall().callsFake(state => state)
             controller.addStep(step1)
@@ -169,15 +244,14 @@ describe('StateMachineController', function () {
             const step3 = sinon.stub()
             // step1 -> branch1 -> step1 -> branch2 -> step3 -> branch2 -> step3 -> terminate
             step1.onFirstCall().returns({ nextState: { branch2: 'no' }, nextSteps: [branch1] })
-            step1.onSecondCall().callsFake(() => {
-                assertSteps(controller, 1, 2)
-                return { nextState: { branch1: 'no' }, nextSteps: [branch2] }
-            })
-            branch1.returns(WIZARD_GOBACK)
-            branch2.callsFake(state =>
-                assertSteps(controller, 2, 3, { branch2: 'yes', branch1: state.branch1 })
+            step1.onSecondCall().callsFake(() => 
+                assertStepsPassthrough(controller, 1, 2, { nextState: { branch1: 'no', branch2: 'no' }, nextSteps: [branch2] } )
             )
-            step3.onFirstCall().returns(WIZARD_GOBACK)
+            branch1.returns(undefined)
+            branch2.callsFake(state =>
+                assertStepsPassthrough(controller, 2, 3, { nextState: { branch2: 'yes', branch1: state.branch1 } })
+            )
+            step3.onFirstCall().returns(undefined)
             step3.onSecondCall().callsFake(state => state)
             controller.addStep(step1)
             controller.addStep(step3)
@@ -187,6 +261,16 @@ describe('StateMachineController', function () {
             assert.strictEqual(finalState.branch1, 'no')
             assert.strictEqual(finalState.branch2, 'yes')
             sinon.assert.callOrder(step1, branch1, step1, branch2, step3, branch2, step3)
+        })
+    })
+
+    describe('can run complex state machines', async function () {
+        it('generate all primes from 0 to 100', async function () {
+            const controller = new StateMachineController<PrimeGenerator>({ stopAt: 100, primes: [], current: { value: 0 } })
+            controller.addStep(primeGen)
+            const result = await controller.run()
+            assert.deepStrictEqual(result?.primes, 
+                [1, 5, 7, 11, 13, 17, 19, 23, 29, 31, 37, 41, 43, 47, 53, 59, 61, 67, 71, 73, 79, 83, 89, 97])
         })
     })
 })

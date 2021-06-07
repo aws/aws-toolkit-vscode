@@ -13,6 +13,7 @@ import { AwsContext } from '../../shared/awsContext'
 import { getLogger, Logger } from '../../shared/logger'
 import * as telemetry from '../../shared/telemetry/telemetry'
 import * as picker from '../../shared/ui/picker'
+import { isValidResponse } from '../../shared/ui/prompter'
 
 export async function openDocumentItem(node: DocumentItemNode, awsContext: AwsContext, format?: string) {
     const logger: Logger = getLogger()
@@ -76,24 +77,14 @@ async function promptUserforDocumentVersion(versions: SSM.Types.DocumentVersionI
     })
 
     if (quickPickItems.length > 1) {
-        const versionPick = picker.createQuickPick({
-            options: {
-                ignoreFocusOut: true,
-                title: localize(
-                    'AWS.message.prompt.selectSsmDocumentVersion.placeholder',
-                    'Select a document version to download'
-                ),
-            },
-            items: quickPickItems,
-        })
-
-        const versionChoices = await picker.promptUser({
-            picker: versionPick,
-        })
-
-        const versionSelection = picker.verifySinglePickerOutput(versionChoices)
+        const versionSelection = await picker.createLabelQuickPick(quickPickItems, {
+            title: localize(
+                'AWS.message.prompt.selectSsmDocumentVersion.placeholder',
+                'Select a document version to download'
+            ),
+        }).prompt()
 
         // User pressed escape and didn't select a template
-        return versionSelection?.label
+        return isValidResponse(versionSelection) ? versionSelection as string : undefined
     }
 }

@@ -13,7 +13,7 @@ import {
     SchemaCodeDownloadWizard,
     SchemaCodeDownloadWizardContext,
 } from '../../../eventSchemas/wizards/schemaCodeDownloadWizard'
-import { MockPrompter } from '../../lambda/wizards/wizardFramework'
+import { MockPrompter } from '../../shared/wizards/wizardFramework'
 
 function isMultiDimensionalArray(array: any[] | any[][] | undefined): boolean {
     if (!array) {

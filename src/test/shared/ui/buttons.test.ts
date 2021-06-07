@@ -6,9 +6,14 @@
 import * as assert from 'assert'
 import { ext } from '../../../shared/extensionGlobals'
 import * as buttons from '../../../shared/ui/buttons'
+import { env } from 'vscode'
+import * as sinon from 'sinon'
 import { clearTestIconPaths, IconPath, setupTestIconPaths } from '../utilities/iconPathUtils'
+import { WIZARD_BACK } from '../../../shared/wizards/wizard'
 
 describe('UI buttons', function () {
+    const sandbox = sinon.createSandbox()
+
     before(function () {
         setupTestIconPaths()
     })
@@ -17,19 +22,37 @@ describe('UI buttons', function () {
         clearTestIconPaths()
     })
 
-    it('creates a help button without a tooltip', function () {
-        const help = buttons.createHelpButton()
+    afterEach(function () {
+        sandbox.restore()
+    })
 
-        assert.strictEqual(help.tooltip, undefined)
+    it('creates a help button with a link', function () {
+        const help = buttons.createHelpButton('a link')
+        const stub = sandbox.stub(env, 'openExternal')
+        help.onClick(sinon.stub(), sinon.stub())
+
+        assert.ok(stub.calledOnce)
+        assertIconPath(help.iconPath as IconPath)
+    })
+
+    it('creates a help button with a default tooltip', function () {
+        const help = buttons.createHelpButton('')
+
+        assert.notStrictEqual(help.tooltip, undefined)
         assertIconPath(help.iconPath as IconPath)
     })
 
     it('creates a help button with a tooltip', function () {
         const tooltip = 'you must be truly desperate to come to me for help'
-        const help = buttons.createHelpButton(tooltip)
+        const help = buttons.createHelpButton('', tooltip)
 
         assert.strictEqual(help.tooltip, tooltip)
         assertIconPath(help.iconPath as IconPath)
+    })
+
+    it('creates a back button', function () {
+        const back = buttons.createBackButton()
+        back.onClick(sinon.stub().callsFake(arg => assert.strictEqual(arg, WIZARD_BACK)), sinon.stub())
     })
 
     function assertIconPath(iconPath: IconPath) {

@@ -8,7 +8,6 @@ import { Env } from '../../shared/vscode/env'
 import { localize } from '../../shared/utilities/vsCodeUtils'
 import { RestApiNode } from '../explorer/apiNodes'
 import * as picker from '../../shared/ui/picker'
-import * as vscode from 'vscode'
 import { ProgressLocation } from 'vscode'
 import { ext } from '../../shared/extensionGlobals'
 import { Stage } from 'aws-sdk/clients/apigateway'
@@ -19,11 +18,8 @@ import { COPY_TO_CLIPBOARD_INFO_TIMEOUT_MS } from '../../shared/constants'
 import { getLogger } from '../../shared/logger'
 import { recordApigatewayCopyUrl } from '../../shared/telemetry/telemetry'
 import { addCodiconToString } from '../../shared/utilities/textUtilities'
-
-interface StageInvokeUrlQuickPick extends vscode.QuickPickItem {
-    // override declaration so this can't be undefined
-    detail: string
-}
+import { createBackButton } from '../../shared/ui/buttons'
+import { isValidResponse } from '../../shared/ui/prompter'
 
 export async function copyUrlCommand(
     node: RestApiNode,
@@ -55,8 +51,9 @@ export async function copyUrlCommand(
         return
     }
 
-    const quickPickItems = stages.map<StageInvokeUrlQuickPick>(stage => ({
+    const quickPickItems = stages.map<picker.DataQuickPickItem<string> & { detail: string }>(stage => ({
         label: stage.stageName!,
+        data: stage.stageName!,
         detail: buildDefaultApiInvokeUrl(node.id, region, dnsSuffix, stage.stageName!),
     }))
 
@@ -72,31 +69,18 @@ export async function copyUrlCommand(
         return
     }
 
-    const quickPick = picker.createQuickPick({
-        options: {
-            ignoreFocusOut: true,
+    const pickerResponse = await picker.createQuickPick(quickPickItems, {
             title: localize('AWS.apig.selectStage', 'Select an API stage'),
-        },
-        items: quickPickItems,
-    })
+            buttons: [createBackButton()]
+        }
+    ).prompt()
 
-    const choices = await picker.promptUser({
-        picker: quickPick,
-        onDidTriggerButton: (button, resolve, reject) => {
-            if (button === vscode.QuickInputButtons.Back) {
-                resolve(undefined)
-            }
-        },
-    })
-    const pickerResponse = picker.verifySinglePickerOutput<StageInvokeUrlQuickPick>(choices)
-
-    if (!pickerResponse) {
+    if (!isValidResponse(pickerResponse)) {
         recordApigatewayCopyUrl({ result: 'Cancelled' })
         return
     }
 
-    const url = pickerResponse.detail
-    await copyUrl(window, env, url)
+    await copyUrl(window, env, pickerResponse)
 }
 
 export function buildDefaultApiInvokeUrl(apiId: string, region: string, dnsSuffix: string, stage: string): string {

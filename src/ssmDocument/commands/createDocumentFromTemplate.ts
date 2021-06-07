@@ -15,7 +15,10 @@ import { readFileAsString } from '../../shared/filesystemUtilities'
 import { SSM } from 'aws-sdk'
 import { Wizard } from '../../shared/wizards/wizard'
 import { initializeInterface } from '../../shared/transformers'
-import { ButtonBinds, createPrompter, DataQuickPickItem, Prompter } from '../../shared/ui/prompter'
+import { Prompter, PrompterButtons } from '../../shared/ui/prompter'
+import { createBackButton } from '../../shared/ui/buttons'
+import { createQuickPick, DataQuickPickItem, QuickPickPrompter } from '../../shared/ui/picker'
+import { createLabelQuickPick } from '../../shared/ui/picker'
 
 export interface SsmDocumentTemplateQuickPickItem {
     label: string
@@ -71,21 +74,21 @@ export interface CreateSSMDocumentFromTemplateContext {
 }
 
 class DefaultCreateSSMDocumentFromTemplateContext implements CreateSSMDocumentFromTemplateContext {
-    private readonly buttons: ButtonBinds = new Map([[vscode.QuickInputButtons.Back, resolve => resolve(undefined)]])
-    public createDocumentFormatPrompter(formats: SSM.DocumentFormat[]): Prompter<SSM.DocumentFormat> {
-        return createPrompter(formats.map(format => ({
+    private readonly buttons: PrompterButtons = [createBackButton()]
+    public createDocumentFormatPrompter(formats: SSM.DocumentFormat[]): QuickPickPrompter<SSM.DocumentFormat> {
+        return createLabelQuickPick(formats.map(format => ({
             label: format,
             description: `Download document as ${format}`,
         })), {
             title: localize('AWS.message.prompt.selectSsmDocumentFormat.placeholder', 'Select a document format'),
-            buttonBinds: this.buttons,
+            buttons: this.buttons
         })
     }
 
-    public createDocumentTemplatePrompter(): Prompter<SSMDocument> {
-        return createPrompter(SSMDOCUMENT_TEMPLATES, {
+    public createDocumentTemplatePrompter(): QuickPickPrompter<SSMDocument> {
+        return createQuickPick(SSMDOCUMENT_TEMPLATES, {
             title: localize('AWS.message.prompt.selectSsmDocumentTemplate.placeholder', 'Select a document template'),
-            buttonBinds: this.buttons,
+            buttons: this.buttons
         })
     }
 }

@@ -1,9 +1,15 @@
 /*!
- * Copyright 2018 Amazon.com, Inc. or its affiliates. All Rights Reserved.
+ * Copyright 2021 Amazon.com, Inc. or its affiliates. All Rights Reserved.
  * SPDX-License-Identifier: Apache-2.0
  */
 
 import * as vscode from 'vscode'
+import { WizardControl } from '../wizards/wizard'
+import { QuickInputButton } from './buttons'
+import { Prompter, PrompterButtons, PromptResult } from './prompter'
+
+type InputBoxButton = QuickInputButton<string | WizardControl>
+type InputBoxButtons = PrompterButtons<string>
 
 /**
  * Options to configure the behavior of the input box UI.
@@ -14,11 +20,12 @@ export interface AdditionalInputBoxOptions {
     step?: number
     placeholder?: string
     totalSteps?: number
-    buttonBinds?: Map<vscode.QuickInputButton, (resolve: any, reject: any) => void>
-    validateInput?(value: string): string | undefined
+    buttons?: InputBoxButtons
+    validateInput?(value: string): string | undefined | Promise<string | undefined>
 }
 
-export type ExtendedInputBoxOptions = vscode.InputBoxOptions & AdditionalInputBoxOptions
+export type ExtendedInputBoxOptions = Omit<vscode.InputBoxOptions, 'buttons' | 'validateInput'> & AdditionalInputBoxOptions
+export type DataInputBox = Omit<vscode.InputBox, 'buttons'> & { buttons: InputBoxButtons }
 
 function applySettings<T1, T2 extends T1>(obj: T2, settings: T1): void {
     Object.assign(obj, settings)
@@ -35,14 +42,9 @@ function applySettings<T1, T2 extends T1>(obj: T2, settings: T1): void {
  *  buttons - set of buttons to initialize the InputBox with
  * @return A new InputBox.
  */
-export function createInputBox({
-    options,
-    buttons,
-}: {
-    options?: ExtendedInputBoxOptions
-    buttons?: vscode.QuickInputButton[]
-}): vscode.InputBox {
-    const inputBox = vscode.window.createInputBox()
+export function createInputBox(options?: ExtendedInputBoxOptions): InputBoxPrompter {
+    const inputBox = vscode.window.createInputBox() as DataInputBox
+
     applySettings(inputBox, options)
 
     if (options?.validateInput !== undefined) {
@@ -54,11 +56,34 @@ export function createInputBox({
         )
     }
 
-    if (buttons !== undefined) {
-        inputBox.buttons = buttons
+    return new InputBoxPrompter(inputBox)
+}
+
+export class InputBoxPrompter extends Prompter<string> {
+    
+    constructor(public readonly inputBox: DataInputBox) {
+        super(inputBox)
     }
 
-    return inputBox
+    public async prompt(): Promise<PromptResult<string>> {
+        const promptPromise = promptUser({
+            inputBox: this.inputBox,
+            onDidTriggerButton: (button, resolve, reject) => {
+                button.onClick(arg => resolve(arg), reject)
+            },
+        })
+        this.show()
+
+        return this.applyAfterCallbacks(await promptPromise)
+    }
+
+    public setLastResponse(picked: string): void {
+        this.inputBox.value = picked
+    }
+
+    public getLastResponse(): string | undefined {
+        return ''
+    }
 }
 
 /**
@@ -78,18 +103,18 @@ export async function promptUser({
     onValidateInput,
     onDidTriggerButton,
 }: {
-    inputBox: vscode.InputBox
+    inputBox: DataInputBox
     onValidateInput?(value: string): string | undefined
     onDidTriggerButton?(
-        button: vscode.QuickInputButton,
-        resolve: (value: string | PromiseLike<string | undefined> | undefined) => void,
+        button: InputBoxButton,
+        resolve: (value: PromptResult<string>) => void,
         reject: (reason?: any) => void
     ): void
-}): Promise<string | undefined> {
+}): Promise<PromptResult<string>> {
     const disposables: vscode.Disposable[] = []
 
     try {
-        const response = await new Promise<string | undefined>((resolve, reject) => {
+        const response = await new Promise<PromptResult<string>>((resolve, reject) => {
             inputBox.onDidAccept(
                 () => {
                     if (!inputBox.validationMessage) {
@@ -120,13 +145,11 @@ export async function promptUser({
 
             if (onDidTriggerButton) {
                 inputBox.onDidTriggerButton(
-                    (btn: vscode.QuickInputButton) => onDidTriggerButton(btn, resolve, reject),
+                    (btn: vscode.QuickInputButton) => onDidTriggerButton(btn as InputBoxButton, resolve, reject),
                     inputBox,
                     disposables
                 )
             }
-
-            inputBox.show()
         })
 
         return response

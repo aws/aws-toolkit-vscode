@@ -6,7 +6,6 @@
 import * as assert from 'assert'
 import * as sinon from 'sinon'
 import * as vscode from 'vscode'
-import * as path from 'path'
 import * as codeLensUtils from '../../../shared/codelens/codeLensUtils'
 import * as Picker from '../../../shared/ui/picker'
 import {
@@ -15,6 +14,7 @@ import {
     TEMPLATE_TARGET_TYPE,
 } from '../../../shared/sam/debugger/awsSamDebugConfiguration'
 import * as AddSamDebugConfiguration from '../../../shared/sam/debugger/commands/addSamDebugConfiguration'
+import { WIZARD_BACK } from '../../../shared/wizards/wizard'
 
 describe('codeLensUtils', async function () {
     let sandbox: sinon.SinonSandbox
@@ -43,7 +43,7 @@ describe('codeLensUtils', async function () {
         }
 
         it('filters out launch configs leading to the invoker UI', async function () {
-            sandbox.stub(Picker, 'promptUser').resolves(undefined)
+            sandbox.stub(Picker.QuickPickPrompter.prototype, 'prompt').resolves(undefined)
             const spy = sandbox.spy(Picker, 'createQuickPick')
             await codeLensUtils.invokeCodeLensCommandPalette(doc, [
                 {
@@ -66,13 +66,12 @@ describe('codeLensUtils', async function () {
                 },
             ])
             assert.ok(spy.calledOnce, 'Spy called more than once')
-            assert.strictEqual(spy.args[0][0].items?.length, 1, 'createQuickPick called with multiple items')
             assert.deepStrictEqual(
-                spy.args[0][0].items![0],
-                {
+                spy.args[0][0],
+                [{
                     label: 'two',
                     detail: 'Function on line 2',
-                    lens: {
+                    data: {
                         command: {
                             title: 'noUI',
                             arguments: ['foo', 'bar', false],
@@ -81,31 +80,31 @@ describe('codeLensUtils', async function () {
                         range: range2,
                         isResolved: true,
                     },
-                },
+                }],
                 'createQuickPick called with incorrect item'
             )
         })
 
         it('provides a single quick pick item with no codelens if no codelenses are provided', async function () {
-            sandbox.stub(Picker, 'promptUser').resolves(undefined)
+            sandbox.stub(Picker.QuickPickPrompter.prototype, 'prompt').resolves(undefined)
             const spy = sandbox.spy(Picker, 'createQuickPick')
             await codeLensUtils.invokeCodeLensCommandPalette(doc, [])
             assert.ok(spy.calledOnce, 'Spy called more than once')
-            assert.strictEqual(spy.args[0][0].items?.length, 1, 'createQuickPick called with multiple items')
             assert.deepStrictEqual(
-                spy.args[0][0].items![0],
-                {
+                spy.args[0][0],
+                [{
                     label: 'No handlers found in current file',
                     detail: 'Ensure your language extension is working',
                     description: 'Click here to go back',
-                },
+                    data: WIZARD_BACK,
+                }],
                 'createQuickPick called with incorrect item'
             )
         })
 
         it('returns undefined if no value or an invalid value is chosen', async function () {
             sandbox
-                .stub(Picker, 'promptUser')
+                .stub(Picker.QuickPickPrompter.prototype, 'prompt')
                 .onFirstCall()
                 .resolves(undefined)
                 .onSecondCall()
@@ -113,6 +112,7 @@ describe('codeLensUtils', async function () {
                     {
                         label: 'noLens',
                         detail: 'noLens',
+                        data: 'noLens',
                     },
                 ])
                 .onThirdCall()
@@ -120,6 +120,7 @@ describe('codeLensUtils', async function () {
                     {
                         label: 'noCommand',
                         detail: 'noCommand',
+                        data: 'noCommand',
                     },
                 ])
             const createSpy = sandbox.spy(Picker, 'createQuickPick')
@@ -160,7 +161,7 @@ describe('codeLensUtils', async function () {
             const target = {
                 label: 'two',
                 detail: 'Function on line 2',
-                lens: {
+                data: {
                     command: {
                         title: 'noUI',
                         arguments: [arg0, arg1, arg2],
@@ -171,9 +172,9 @@ describe('codeLensUtils', async function () {
                 },
             }
             sandbox
-                .stub(Picker, 'promptUser')
+                .stub(Picker.QuickPickPrompter.prototype, 'prompt')
                 .onFirstCall()
-                .resolves([target as any])
+                .resolves(target.data)
             const finalStub = sandbox
                 .stub(codeLensUtils, 'pickAddSamDebugConfiguration')
                 .onFirstCall()
@@ -207,8 +208,7 @@ describe('codeLensUtils', async function () {
         })
 
         it('should use CODE_TARGET_TYPE when no template option is chosen', async function () {
-            sandbox.stub(Picker, 'promptUser').resolves(undefined)
-            sandbox.stub(Picker, 'verifySinglePickerOutput').returns({ label: 'No Template' })
+            sandbox.stub(Picker.QuickPickPrompter.prototype, 'prompt').resolves({ resourceName: '' })
             const addSamStub = sandbox.stub(AddSamDebugConfiguration, 'addSamDebugConfiguration').resolves()
             const codeConfig: AddSamDebugConfiguration.AddSamDebugConfigurationInput = {
                 resourceName: 'codeResource',
@@ -224,10 +224,6 @@ describe('codeLensUtils', async function () {
         })
 
         it('should use API_TARGET_TYPE when API template option is chosen', async function () {
-            sandbox.stub(Picker, 'promptUser').resolves(undefined)
-            sandbox
-                .stub(Picker, 'verifySinglePickerOutput')
-                .returns({ label: `${path.sep}path:templateWithApi (API Event: eventName)` })
             const addSamStub = sandbox.stub(AddSamDebugConfiguration, 'addSamDebugConfiguration').resolves()
             const codeConfig: AddSamDebugConfiguration.AddSamDebugConfigurationInput = {
                 resourceName: 'codeResource',
@@ -240,6 +236,8 @@ describe('codeLensUtils', async function () {
                     apiEvent: { name: 'eventName', event: { Type: 'Api' } },
                 },
             ]
+            sandbox.stub(Picker.QuickPickPrompter.prototype, 'prompt').resolves(templateConfigs[0])
+
 
             await codeLensUtils.pickAddSamDebugConfiguration(codeConfig, templateConfigs, false)
 
@@ -247,8 +245,6 @@ describe('codeLensUtils', async function () {
         })
 
         it('should use TEMPLATE_TARGET_TYPE when non API template option is chosen', async function () {
-            sandbox.stub(Picker, 'promptUser').resolves(undefined)
-            sandbox.stub(Picker, 'verifySinglePickerOutput').returns({ label: `${path.sep}path:templateNoApi` })
             const addSamStub = sandbox.stub(AddSamDebugConfiguration, 'addSamDebugConfiguration').resolves()
             const codeConfig: AddSamDebugConfiguration.AddSamDebugConfigurationInput = {
                 resourceName: 'codeResource',
@@ -257,6 +253,7 @@ describe('codeLensUtils', async function () {
             const templateConfigs: AddSamDebugConfiguration.AddSamDebugConfigurationInput[] = [
                 { resourceName: 'templateNoApi', rootUri: vscode.Uri.file('path') },
             ]
+            sandbox.stub(Picker.QuickPickPrompter.prototype, 'prompt').resolves(templateConfigs[0])
 
             await codeLensUtils.pickAddSamDebugConfiguration(codeConfig, templateConfigs, false)
 

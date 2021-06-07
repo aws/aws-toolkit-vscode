@@ -3,7 +3,6 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
-import * as vscode from 'vscode'
 import * as nls from 'vscode-nls'
 import { IamClient } from '../../shared/clients/iamClient'
 import { StepFunctionsClient } from '../../shared/clients/stepFunctionsClient'
@@ -14,12 +13,15 @@ import {
     sfnUpdateStateMachineUrl,
 } from '../../shared/constants'
 import { ext } from '../../shared/extensionGlobals'
-import { createHelpButton } from '../../shared/ui/buttons'
+import { createBackButton, createHelpButton } from '../../shared/ui/buttons'
 import { toArrayAsync } from '../../shared/utilities/collectionUtils'
-import { ButtonBinds, createPrompter, DataQuickPickItem, Prompter } from '../../shared/ui/prompter'
+import { Prompter, PrompterButtons } from '../../shared/ui/prompter'
 import { isStepFunctionsRole } from '../utils'
 import { initializeInterface } from '../../shared/transformers'
 import { Wizard } from '../../shared/wizards/wizard'
+import { DataQuickPickItem, QuickPickPrompter } from '../../shared/ui/picker'
+import { createQuickPick } from '../../shared/ui/picker'
+import { InputBoxPrompter, createInputBox } from '../../shared/ui/input'
 const localize = nls.loadMessageBundle()
 
 export interface PublishStateMachineWizardContext {
@@ -58,8 +60,7 @@ type PublishStateMachineWizardForm = {
 }
 
 export class DefaultPublishStateMachineWizardContext implements PublishStateMachineWizardContext {
-    private readonly helpButton = createHelpButton(localize('AWS.command.help', 'View Toolkit Documentation'))
-    private readonly buttons: ButtonBinds = new Map([[vscode.QuickInputButtons.Back, resolve => resolve(undefined)]])
+    private readonly buttons: PrompterButtons = [createBackButton()]
     private readonly iamClient: IamClient
     private readonly stepFunctionsClient: StepFunctionsClient
 
@@ -68,7 +69,7 @@ export class DefaultPublishStateMachineWizardContext implements PublishStateMach
         this.iamClient = ext.toolkitClientBuilder.createIamClient(this.defaultRegion)
     }
 
-    public createPublishActionPrompter(): Prompter<PublishStateMachineAction> {
+    public createPublishActionPrompter(): QuickPickPrompter<PublishStateMachineAction> {
         const publishItems: DataQuickPickItem<PublishStateMachineAction>[] = [
             {
                 label: localize('AWS.stepFunctions.publishWizard.publishAction.quickCreate.label', 'Quick Create'),
@@ -88,23 +89,19 @@ export class DefaultPublishStateMachineWizardContext implements PublishStateMach
             },
         ]
 
-        const prompter = createPrompter(publishItems, {
+        const prompter = createQuickPick(publishItems, {
             title: localize(
                 'AWS.stepFunctions.publishWizard.publishAction.title',
                 'Publish to AWS Step Functions ({0})',
                 this.defaultRegion
             ),
-            buttonBinds: this.buttons,
+            buttons: this.buttons.concat(createHelpButton(sfnDeveloperGuideUrl))
         })
-
-        prompter.addButtonBinds(new Map([
-            [this.helpButton, () => vscode.env.openExternal(vscode.Uri.parse(sfnDeveloperGuideUrl))]
-        ]))
 
         return prompter
     }
 
-    public createNamePrompter(): Prompter<string> {
+    public createNamePrompter(): InputBoxPrompter {
         function validate(value: string): string | undefined {
             if (!value) {
                 return localize(
@@ -116,20 +113,16 @@ export class DefaultPublishStateMachineWizardContext implements PublishStateMach
             return undefined
         }
 
-        const prompter = createPrompter({
+        const prompter = createInputBox({
             title: localize('AWS.stepFunctions.publishWizard.stateMachineName.title', 'Name your state machine'),
             validateInput: validate,
-            buttonBinds: this.buttons,
+            buttons: this.buttons.concat(createHelpButton(sfnCreateStateMachineNameParamUrl))
         })
-
-        prompter.addButtonBinds(new Map([
-            [this.helpButton, () => vscode.env.openExternal(vscode.Uri.parse(sfnCreateStateMachineNameParamUrl))]
-        ]))
 
         return prompter
     }
 
-    public createRolePrompter(): Prompter<string> {
+    public createRolePrompter(): QuickPickPrompter<string> {
         const roles = this.iamClient.listRoles().then(roles => 
             roles.Roles.filter(isStepFunctionsRole)).then(roles => {
                 if (!roles || roles.length === 0) {
@@ -152,23 +145,19 @@ export class DefaultPublishStateMachineWizardContext implements PublishStateMach
                 }
             })
 
-        const prompter = createPrompter<string>(roles, {
+        const prompter = createQuickPick(roles, {
             title: localize(
                 'AWS.stepFunctions.publishWizard.iamRole.title',
                 'Select execution role ({0})',
                 this.defaultRegion
             ),
-            buttonBinds: this.buttons,
+            buttons: this.buttons.concat(createHelpButton(sfnCreateIamRoleUrl))
         })
-
-        prompter.addButtonBinds(new Map([
-            [this.helpButton, () => vscode.env.openExternal(vscode.Uri.parse(sfnCreateIamRoleUrl))]
-        ]))
 
         return prompter
     }
 
-    public createUpdateStateMachinePrompter(): Prompter<string> {
+    public createUpdateStateMachinePrompter(): QuickPickPrompter<string> {
         const stateMachines = 
             toArrayAsync(this.stepFunctionsClient.listStateMachines()).then(machines => {
                 if (!machines || machines.length === 0) {
@@ -195,18 +184,14 @@ export class DefaultPublishStateMachineWizardContext implements PublishStateMach
                 }
             })
 
-        const prompter = createPrompter<string>(stateMachines, {
+        const prompter = createQuickPick(stateMachines, {
             title: localize(
                 'AWS.stepFunctions.publishWizard.stateMachineNameToUpdate.title',
                 'Select state machine to update ({0})',
                 this.defaultRegion
             ),
-            buttonBinds: this.buttons,
+            buttons: this.buttons.concat(createHelpButton(sfnUpdateStateMachineUrl))
         })
-
-        prompter.addButtonBinds(new Map([
-            [this.helpButton, () => vscode.env.openExternal(vscode.Uri.parse(sfnUpdateStateMachineUrl))]
-        ]))
 
         return prompter
     }

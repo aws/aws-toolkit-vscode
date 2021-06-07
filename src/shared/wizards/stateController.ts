@@ -4,10 +4,16 @@
  */
 import * as _ from 'lodash'
 
+/** Extra control instructions separate from the normal linear traversal of states */
+export enum StateMachineControl {
+    Retry,
+    Exit,
+}
+
 export interface StateMachineStepResult<TState> {
     nextState?: TState
     nextSteps?: StateStepFunction<TState>[]
-    repeatStep?: boolean
+    controlSignal?: StateMachineControl
 }
 
 type RecursiveReadonly<T> = {
@@ -16,9 +22,6 @@ type RecursiveReadonly<T> = {
 
 export type StateStepFunction<TState> = (state: TState) => Promise<StateMachineStepResult<TState> | TState>
 export type StateBranch<TState> = StateStepFunction<TState>[]
-
-export const WIZARD_GOBACK = undefined
-export const WIZARD_RETRY = { repeatStep: true }
 
 /**
  * State machine with backtracking and dynamic branching functionality.
@@ -32,26 +35,16 @@ export class StateMachineController<TState> {
     private internalStep: number = 0
     private state!: TState
 
-    public constructor(private readonly initState?: TState) {
+    public constructor(private readonly initState: TState = {} as TState) {
         this.setState(this.initState)
     }
 
-    public setState(state?: TState) {
-        this.reset()
-        this.state = state ?? {} as TState
+    public setState(state: TState) {
+        this.state = state
     }
 
     public getState(): RecursiveReadonly<TState> {
        return this.state
-    }
-
-    /**
-     * Reset state so the controller can be resused.
-     */
-    public reset() {
-        while (this.internalStep > 0) {
-            this.rollbackState()
-        }
     }
 
     /** Adds a single step to the state machine. */
@@ -86,16 +79,16 @@ export class StateMachineController<TState> {
         this.internalStep += 1
     }
 
+    protected detectCycle(step: StateStepFunction<TState>): TState | undefined {
+        return this.previousStates.find((pastState, index) => index !== this.internalStep && 
+            (this.steps[index] === step && _.isEqual(this.state, pastState)))
+    }
+
     /**
      * Add new steps dynamically at runtime. Only used internally.
      */
     protected dynamicBranch(nextSteps: StateBranch<TState> | undefined): void {
         if (nextSteps !== undefined && nextSteps.length > 0) {
-            // This cycle detect logic could be improved. Returning to
-            // a previous step is not a cycle unless the states are equivalent.
-            if (nextSteps.filter(step => this.containsStep(step)).length !== 0) {
-                throw Error('Cycle detected in state machine conroller')
-            }
             this.steps.splice(this.internalStep, 0, ...nextSteps)
             this.extraSteps.set(this.internalStep, nextSteps)
         }
@@ -105,8 +98,8 @@ export class StateMachineController<TState> {
         const result = await this.steps[this.internalStep](this.state)
 
         function isMachineResult(result: any): result is StateMachineStepResult<TState> {
-            return result !== undefined && 
-                (result.nextState !== undefined || result.nextSteps !== undefined || result.repeatStep !== undefined)
+            return (result !== undefined && 
+                (result.nextState !== undefined || result.nextSteps !== undefined || result.controlSignal !== undefined))
         }
 
         if (isMachineResult(result)) {
@@ -123,18 +116,26 @@ export class StateMachineController<TState> {
         this.previousStates.push(_.cloneDeep(this.state))
 
         while (this.internalStep < this.steps.length) {
-            const { nextState, nextSteps, repeatStep } = await this.processNextStep()
+            const cycle = this.detectCycle(this.steps[this.internalStep]) 
+            if (cycle !== undefined) {
+                throw Error(`Cycle detected in state machine controller at step: ${this.previousStates.indexOf(cycle)}`)
+            }
 
-            if (repeatStep === true) {
+            const { nextState, nextSteps, controlSignal } = await this.processNextStep()
+
+            if (controlSignal === StateMachineControl.Exit) {
+                return undefined
+            } if (controlSignal === StateMachineControl.Retry) {
+                this.state = this.previousStates[this.internalStep - 1]
                 continue
-            } if (nextState === undefined) {
+            } else if (nextState === undefined) {
                 if (this.internalStep === 0) {
                     return undefined
                 }
 
                 this.rollbackState()
             } else {
-                this.advanceState(nextState as TState)
+                this.advanceState(nextState)
                 this.dynamicBranch(nextSteps)
             }
         }

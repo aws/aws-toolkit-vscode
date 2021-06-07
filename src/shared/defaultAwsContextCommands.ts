@@ -7,7 +7,7 @@ import * as nls from 'vscode-nls'
 const localize = nls.loadMessageBundle()
 
 import { Credentials } from 'aws-sdk'
-import { env, QuickPickItem, Uri, ViewColumn, window } from 'vscode'
+import { env, Uri, ViewColumn, window } from 'vscode'
 import { LoginManager } from '../credentials/loginManager'
 import { CredentialsProviderId, fromString } from '../credentials/providers/credentialsProviderId'
 import { CredentialsProviderManager } from '../credentials/providers/credentialsProviderManager'
@@ -27,8 +27,9 @@ import * as localizedText from './localizedText'
 import { Region } from './regions/endpoints'
 import { RegionProvider } from './regions/regionProvider'
 import { getRegionsForActiveCredentials } from './regions/regionUtilities'
-import { createQuickPick, promptUser } from './ui/picker'
+import { createQuickPick } from './ui/picker'
 import { SharedCredentialsProvider } from '../credentials/providers/sharedCredentialsProvider'
+import { isValidResponse } from './ui/prompter'
 
 const TITLE_HIDE_REGION = localize(
     'AWS.message.prompt.region.hide.title',
@@ -303,27 +304,17 @@ export class DefaultAWSContextCommands {
             .map(r => ({
                 label: r.name,
                 detail: r.id,
+                data: r.id,
             }))
 
-        const picker = createQuickPick({
-            options: {
-                placeholder: localize('AWS.message.selectRegion', 'Select an AWS region'),
-                title: title,
-                matchOnDetail: true,
-                step: params?.step,
-                totalSteps: params?.totalSteps,
-            },
-            items: regionsToShow,
-        })
+        const response = await createQuickPick(regionsToShow, {
+            placeholder: localize('AWS.message.selectRegion', 'Select an AWS region'),
+            title: title,
+            matchOnDetail: true,
+            step: params?.step,
+            totalSteps: params?.totalSteps,
+        }).prompt()
 
-        const response = await promptUser<QuickPickItem>({
-            picker: picker,
-        })
-
-        if (response?.length === 1) {
-            return response[0].detail
-        }
-
-        return undefined
+        return isValidResponse(response) ? response as string : undefined
     }
 }

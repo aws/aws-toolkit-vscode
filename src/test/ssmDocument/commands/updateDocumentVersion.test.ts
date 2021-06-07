@@ -54,8 +54,7 @@ describe('openDocumentItem', async function () {
     }
 
     it('updateDocumentVersion with correct name and version', async function () {
-        sandbox.stub(picker, 'promptUser').onFirstCall().returns(Promise.resolve(undefined))
-        sandbox.stub(picker, 'verifySinglePickerOutput').onFirstCall().returns(fakeVersionSelectionResult)
+        sandbox.stub(picker.QuickPickPrompter.prototype, 'prompt').onFirstCall().resolves(fakeVersionSelectionResult.label)
         sandbox.stub(fakeAwsContext, 'getCredentialAccountId').returns('Amazon')
         const ssmClient: SsmDocumentClient = new MockSsmDocumentClient()
         const documentNode = new DocumentItemNodeWriteable(fakeDoc, ssmClient, fakeRegion, mock())

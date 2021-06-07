@@ -6,10 +6,11 @@
 import * as nls from 'vscode-nls'
 const localize = nls.loadMessageBundle()
 
-import * as vscode from 'vscode'
-import { Prompter, ButtonBinds, createPrompter, DataQuickPickItem } from '../../shared/ui/prompter'
+import { Prompter, PrompterButtons } from '../../shared/ui/prompter'
 import { Wizard } from '../../shared/wizards/wizard'
 import { initializeInterface } from '../../shared/transformers'
+import { createBackButton } from '../../shared/ui/buttons'
+import { createLabelQuickPick, createQuickPick, DataQuickPickItem } from '../../shared/ui/picker'
 
 export const STARTER_TEMPLATES: DataQuickPickItem<string>[] = [
     {
@@ -87,22 +88,22 @@ export interface CreateStateMachineWizardPrompters {
     templateFormat: () => Prompter<TemplateFormats>
 }
 
-const BUTTONS: ButtonBinds = new Map([[vscode.QuickInputButtons.Back, resolve => resolve(undefined)]])
+const BUTTONS: PrompterButtons = [createBackButton()]
 
 const DEFAULT_PROMPTERS: CreateStateMachineWizardPrompters = {
-    templateFile: () => createPrompter(STARTER_TEMPLATES, {
+    templateFile: () => createQuickPick(STARTER_TEMPLATES, {
         title: localize(
             'AWS.message.prompt.selectStateMachineTemplate.placeholder',
             'Select a starter template'
         ),
-        buttonBinds: BUTTONS,
+        buttons: BUTTONS,
     }),
-    templateFormat: () => createPrompter(TEMPLATE_FORMATS, {
+    templateFormat: () => createLabelQuickPick(TEMPLATE_FORMATS, {
         title: localize(
             'AWS.message.prompt.selectStateMachineTemplateFormat.placeholder',
             'Select template format'
         ),
-        buttonBinds: BUTTONS,
+        buttons: BUTTONS,
     })
 }
 

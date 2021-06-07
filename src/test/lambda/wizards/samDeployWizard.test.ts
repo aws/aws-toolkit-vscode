@@ -9,7 +9,7 @@ import * as sinon from 'sinon'
 import * as vscode from 'vscode'
 import * as paramUtils from '../../../lambda/utilities/parameterUtils'
 import * as input from '../../../shared/ui/input'
-import * as picker from '../../../shared/ui/picker'
+import { QuickPickPrompter} from '../../../shared/ui/picker'
 import {
     CONFIGURE_PARAMETERS,
     SamDeployWizard,
@@ -21,9 +21,9 @@ import { EcrRepository } from '../../../shared/clients/ecrClient'
 import { FakeExtensionContext } from '../../fakeExtensionContext'
 import { ExtContext } from '../../../shared/extensions'
 import { CloudFormation } from '../../../shared/cloudformation/cloudformation'
-import { DataQuickPickItem, Prompter } from '../../../shared/ui/prompter'
-import { MockPrompter } from './wizardFramework'
-import { WIZARD_GOBACK } from '../../../shared/wizards/wizard'
+import { isValidResponse, Prompter } from '../../../shared/ui/prompter'
+import { MockPrompter } from '../../shared/wizards/wizardFramework'
+import { WIZARD_BACK } from '../../../shared/wizards/wizard'
 import * as config from '../../../lambda/config/configureParameterOverrides'
 
 const imageTemplate: CloudFormation.Template = { 
@@ -68,7 +68,7 @@ class MockSamDeployWizardContext implements SamDeployWizardContext {
 
         const response = this.promptForSamTemplateResponses.pop()
         if (!response) {
-            return new MockPrompter<CloudFormation.Template & { uri: vscode.Uri }>(WIZARD_GOBACK)
+            return new MockPrompter<CloudFormation.Template & { uri: vscode.Uri }>(WIZARD_BACK)
         }
 
         const isImage = this.isImage.pop() ?? false
@@ -86,7 +86,7 @@ class MockSamDeployWizardContext implements SamDeployWizardContext {
 
         const response = this.promptForRegionResponses.pop()
         if (!response) {
-            return new MockPrompter<string>(WIZARD_GOBACK)
+            return new MockPrompter<string>(WIZARD_BACK)
         }
 
         return new MockPrompter(response)
@@ -216,8 +216,8 @@ describe('SamDeployWizard', async function () {
                     new MockPrompter({ ...(hasImages ? imageTemplate : {}), uri: vscode.Uri.file(templatePath) }),
                 createRegionPrompter: () => new MockPrompter(region),
                 createS3BucketPrompter: () => new MockPrompter(s3Bucket),
-                createS3BucketNamePrompter: () => new MockPrompter<string>(WIZARD_GOBACK),
-                createEcrRepoPrompter: () => new MockPrompter<EcrRepository>(WIZARD_GOBACK),
+                createS3BucketNamePrompter: () => new MockPrompter<string>(WIZARD_BACK),
+                createEcrRepoPrompter: () => new MockPrompter<EcrRepository>(WIZARD_BACK),
                 createStackNamePrompter: () => new MockPrompter(stackName),
             }
         }
@@ -648,17 +648,17 @@ describe('DefaultSamDeployWizardContext', async function () {
         it('returns an s3 bucket name', async function () {
             const bucketName = 'strictlyForBuckets'
             sandbox
-                .stub(picker, 'promptUser')
+                .stub(QuickPickPrompter.prototype, 'prompt')
                 .onFirstCall()
-                .returns(Promise.resolve([{ label: bucketName }]))
+                .resolves(bucketName)
             const output = await context.createS3BucketPrompter('us-weast-1', 'accountId').prompt()
             assert.strictEqual(output, bucketName)
         })
 
         it('returns go back on receiving undefined from the picker (back button)', async function () {
-            sandbox.stub(picker, 'promptUser').onFirstCall().returns(Promise.resolve(undefined))
+            sandbox.stub(QuickPickPrompter.prototype, 'prompt').onFirstCall().resolves(WIZARD_BACK)
             const output = await context.createS3BucketPrompter('us-weast-1', 'accountId').prompt()
-            assert.strictEqual(output, undefined)
+            assert.strictEqual(output, WIZARD_BACK)
         })
 
         it('returns undefined if the user selects a no items/error message', async function () {
@@ -667,18 +667,18 @@ describe('DefaultSamDeployWizardContext', async function () {
                 bucketError: 'One box of one dozen, starving, crazed weasels',
             }
             sandbox
-                .stub(picker, 'promptUser')
+                .stub(QuickPickPrompter.prototype, 'prompt')
                 .onFirstCall()
-                .returns(Promise.resolve([{ label: messages.noBuckets, data: WIZARD_GOBACK }]))
+                .resolves(WIZARD_BACK)
                 .onSecondCall()
-                .returns(Promise.resolve([{ label: messages.bucketError, data: WIZARD_GOBACK }]))
+                .resolves(WIZARD_BACK)
             const firstOutput = await context.createS3BucketPrompter(
                 'us-weast-1',
                 'profile',
                 'accountId',
                 messages
             ).prompt()
-            assert.strictEqual(firstOutput, WIZARD_GOBACK)
+            assert.strictEqual(firstOutput, WIZARD_BACK)
 
             const secondOutput = await context.createS3BucketPrompter(
                 'us-weast-1',
@@ -686,43 +686,41 @@ describe('DefaultSamDeployWizardContext', async function () {
                 'accountId',
                 messages
             ).prompt()
-            assert.strictEqual(secondOutput, WIZARD_GOBACK)
+            assert.strictEqual(secondOutput, WIZARD_BACK)
         })
     })
 
     describe('promptUserForEcrRepo', async function () {
         it('returns an ECR Repo', async function () {
-            const repoName = 'repo'
             sandbox
-                .stub(picker, 'promptUser')
+                .stub(QuickPickPrompter.prototype, 'prompt')
                 .onFirstCall()
-                .returns(Promise.resolve([{ label: repoName, repository: { repositoryUri: 'uri' } }]))
+                .resolves({ repositoryUri: 'uri' })
             const output = await context.createEcrRepoPrompter('us-weast-1').prompt()
-            assert.notStrictEqual(output, { repositoryUri: 'uri' })
+            assert.ok(isValidResponse(output))
+            assert.strictEqual(output.repositoryUri, 'uri')
         })
 
         it('returns undefined on receiving undefined from the picker (back button)', async function () {
-            sandbox.stub(picker, 'promptUser').onFirstCall().returns(Promise.resolve(undefined))
+            sandbox.stub(QuickPickPrompter.prototype, 'prompt')
+                .onFirstCall().resolves(WIZARD_BACK)
             const output = await context.createEcrRepoPrompter('us-weast-1').prompt()
-            assert.strictEqual(output, undefined)
+            assert.strictEqual(output, WIZARD_BACK)
         })
     })
 
     describe('promptUserForNewS3Bucket', async function () {
         it('returns an S3 bucket name', async function () {
             const bucketName = 'shinyNewBucket'
-            sandbox.stub(input, 'promptUser').onFirstCall().returns(Promise.resolve(bucketName))
+            sandbox.stub(input.InputBoxPrompter.prototype, 'prompt').onFirstCall().resolves(bucketName)
             const output = await context.createS3BucketNamePrompter('asdf').prompt()
             assert.strictEqual(output, bucketName)
         })
 
         it('returns undefined if nothing is entered', async function() {
-            sandbox
-                .stub(input, 'promptUser')
-                .onFirstCall()
-                .returns(Promise.resolve(undefined))
+            sandbox.stub(input.InputBoxPrompter.prototype, 'prompt').onFirstCall().resolves(WIZARD_BACK)
             const output = await context.createS3BucketNamePrompter('asdf').prompt()
-            assert.strictEqual(output, undefined) 
+            assert.strictEqual(output, WIZARD_BACK) 
         })  
     })
 })

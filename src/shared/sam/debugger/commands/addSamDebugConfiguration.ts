@@ -5,10 +5,8 @@
 
 import * as path from 'path'
 import * as vscode from 'vscode'
-import { Runtime } from 'aws-sdk/clients/lambda'
 import { getExistingConfiguration } from '../../../../lambda/config/templates'
 import { createRuntimeQuickPick, getDefaultRuntime, RuntimeFamily } from '../../../../lambda/models/samLambdaRuntime'
-import * as picker from '../../../ui/picker'
 import { localize } from '../../../utilities/vsCodeUtils'
 import {
     API_TARGET_TYPE,
@@ -22,6 +20,7 @@ import {
 import { CloudFormation } from '../../../cloudformation/cloudformation'
 import { ext } from '../../../extensionGlobals'
 import { LaunchConfiguration } from '../../../debug/launchConfiguration'
+import { isValidResponse } from '../../../../shared/ui/prompter'
 
 /**
  * Holds information required to create a launch config
@@ -99,25 +98,16 @@ export async function addSamDebugConfiguration(
                         }
                     }
                 } else if (CloudFormation.isImageLambdaResource(resource.Properties)) {
-                    const quickPick = createRuntimeQuickPick({
+                    const userRuntime = await createRuntimeQuickPick({
                         showImageRuntimes: false,
                         runtimeFamily,
-                    })
+                    }).prompt()
 
-                    const choices = await picker.promptUser({
-                        picker: quickPick,
-                        onDidTriggerButton: (button, resolve, reject) => {
-                            if (button === vscode.QuickInputButtons.Back) {
-                                resolve(undefined)
-                            }
-                        },
-                    })
-                    const userRuntime = picker.verifySinglePickerOutput(choices)
-                    if (!userRuntime || typeof userRuntime.data === 'symbol' || userRuntime.data instanceof Function) {
+                    if (!isValidResponse(userRuntime)) {
                         // User selected "Cancel". Abandon config creation
                         return
                     }
-                    runtimeName = userRuntime.data.runtime
+                    runtimeName = userRuntime.runtime
                     addRuntimeNameToConfig = true
                 }
             }
@@ -149,30 +139,20 @@ export async function addSamDebugConfiguration(
             )
         }
     } else if (type === CODE_TARGET_TYPE) {
-        const quickPick = createRuntimeQuickPick({
+        const userRuntime = await createRuntimeQuickPick({
             showImageRuntimes: false,
             runtimeFamily,
             step: step?.step,
             totalSteps: step?.totalSteps,
-        })
+        }).prompt()
 
-        const choices = await picker.promptUser({
-            picker: quickPick,
-            onDidTriggerButton: (button, resolve, reject) => {
-                if (button === vscode.QuickInputButtons.Back) {
-                    resolve(undefined)
-                }
-            },
-        })
-        const val = picker.verifySinglePickerOutput(choices)
-
-        if (val) {
+        if (isValidResponse(userRuntime)) {
             // strip the manifest's URI to the manifest's dir here. More reliable to do this here than converting back and forth between URI/string up the chain.
             samDebugConfig = createCodeAwsSamDebugConfig(
                 workspaceFolder,
                 resourceName,
                 path.dirname(rootUri.fsPath),
-                val.label as Runtime
+                userRuntime.runtime,
             )
         } else {
             // User backed out of runtime selection. Abandon config creation.

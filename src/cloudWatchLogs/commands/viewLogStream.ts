@@ -8,7 +8,6 @@ const localize = nls.loadMessageBundle()
 
 import * as vscode from 'vscode'
 import * as moment from 'moment'
-import * as picker from '../../shared/ui/picker'
 import { LogGroupNode } from '../explorer/logGroupNode'
 import { CloudWatchLogs } from 'aws-sdk'
 import { ext } from '../../shared/extensionGlobals'
@@ -18,9 +17,11 @@ import { LOCALIZED_DATE_FORMAT } from '../../shared/constants'
 import { getPaginatedAwsCallIter, IteratorTransformer } from '../../shared/utilities/collectionUtils'
 import { LogStreamRegistry } from '../registry/logStreamRegistry'
 import { convertLogGroupInfoToUri } from '../cloudWatchLogsUtils'
-import { createPrompter, DataQuickPickItem, Prompter } from '../../shared/ui/prompter'
+import { Prompter } from '../../shared/ui/prompter'
 import { initializeInterface } from '../../shared/transformers'
-import { Wizard, WIZARD_GOBACK, WIZARD_RETRY } from '../../shared/wizards/wizard'
+import { Wizard, WIZARD_BACK, WIZARD_RETRY } from '../../shared/wizards/wizard'
+import { IteratingQuickPickController } from '../../shared/ui/iteratingPicker'
+import { QuickPickPrompter, DataQuickPick, createLabelQuickPick, LabelQuickPickItem} from '../../shared/ui/picker'
 
 export interface SelectLogStreamResponse {
     region: string
@@ -55,7 +56,7 @@ export interface SelectLogStreamWizardContext {
 export class DefaultSelectLogStreamWizardContext implements SelectLogStreamWizardContext {
     public constructor(private readonly regionCode: string, private readonly logGroupName: string) {}
 
-    public createLogStreamPrompter(): Prompter<string> {
+    public createLogStreamPrompter(): QuickPickPrompter<string> {
         let telemetryResult: telemetry.Result = 'Succeeded'
 
         const client: CloudWatchLogsClient = ext.toolkitClientBuilder.createCloudWatchLogsClient(this.regionCode)
@@ -77,19 +78,19 @@ export class DefaultSelectLogStreamWizardContext implements SelectLogStreamWizar
             response => convertDescribeLogStreamsToQuickPickItems(response)
         )
 
-        const prompter = createPrompter<string>([], 
+        const prompter = createLabelQuickPick<string>([], 
             { title: localize('aws.cloudWatchLogs.viewLogStream.workflow.prompt', 'Select a log stream')}
         )
 
-        const controller = new picker.IteratingQuickPickController(prompter.quickInput as vscode.QuickPick<DataQuickPickItem<string>>, populator)
+        const controller = new IteratingQuickPickController(prompter.quickInput as DataQuickPick<string>, populator)
         controller.startRequests()
 
-        return prompter.after(async result => {
+        prompter.after(async result => {
             try {
-                if (result ===  picker.IteratingQuickPickController.NO_ITEMS_ITEM.label) {
+                if (result ===  IteratingQuickPickController.NO_ITEMS_ITEM.label) {
                     telemetryResult = 'Cancelled'
-                    return WIZARD_GOBACK
-                } else if (result === picker.IteratingQuickPickController.ERROR_ITEM.label) {
+                    return WIZARD_BACK
+                } else if (result === IteratingQuickPickController.ERROR_ITEM.label) {
                     telemetryResult = 'Failed'
                     return WIZARD_RETRY
                 }
@@ -97,13 +98,15 @@ export class DefaultSelectLogStreamWizardContext implements SelectLogStreamWizar
                 telemetry.recordCloudwatchlogsOpenGroup({ result: telemetryResult })
             }
         })
+
+        return prompter
     }
 }
 
 export function convertDescribeLogStreamsToQuickPickItems(
     response: CloudWatchLogs.DescribeLogStreamsResponse
-): DataQuickPickItem<string>[] {
-    return (response.logStreams ?? []).map<DataQuickPickItem<string>>(stream => ({
+): LabelQuickPickItem<string>[] {
+    return (response.logStreams ?? []).map<LabelQuickPickItem<string>>(stream => ({
         label: stream.logStreamName!,
         detail: stream.lastEventTimestamp
             ? moment(stream.lastEventTimestamp).format(LOCALIZED_DATE_FORMAT)

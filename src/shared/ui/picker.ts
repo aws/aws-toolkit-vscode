@@ -4,35 +4,46 @@
  */
 
 import * as vscode from 'vscode'
-import * as nls from 'vscode-nls'
-const localize = nls.loadMessageBundle()
 
-import { getLogger } from '../logger'
-import { IteratorTransformer } from '../utilities/collectionUtils'
-import { DataQuickPick, DataQuickPickItem } from './prompter'
+import { isWizardControl, WizardControl, WIZARD_BACK } from '../wizards/wizard'
+import { QuickInputButton } from './buttons'
+import { Prompter, PrompterButtons, PromptResult } from './prompter'
+
+export type QuickPickButton<T> = QuickInputButton<T | WizardControl>
+type QuickPickButtons<T> = PrompterButtons<T>
 
 /**
  * Options to configure the behavior of the quick pick UI.
  * Generally used to accommodate features not provided through vscode.QuickPickOptions
  */
-export interface AdditionalQuickPickOptions<T=any> {
+export interface AdditionalQuickPickOptions<T=never> {
     title?: string
     value?: string
     step?: number
     placeholder?: string
     totalSteps?: number
-    /** Allows the user to make their own QuickPick item. The label sets the 'name' of this custom item. */
-    customUserInputLabel?: string
-    /** Maps QuickInputButtons to a corresponding function */
-    buttonBinds?: Map<vscode.QuickInputButton, (resolve: any, reject: any) => void>
+    buttons?: QuickPickButtons<T>
 }
 
-export type ExtendedQuickPickOptions = vscode.QuickPickOptions & AdditionalQuickPickOptions
-export const CUSTOM_USER_INPUT = Symbol()
+export type ExtendedQuickPickOptions<T> = Omit<vscode.QuickPickOptions, 'buttons' | 'canPickMany'> & AdditionalQuickPickOptions<T>
+
+export const DEFAULT_QUICKPICK_OPTIONS: vscode.QuickPickOptions = {
+    ignoreFocusOut: true,
+}
 
 function applySettings<T1, T2 extends T1>(obj: T2, settings: T1): void {
     Object.assign(obj, settings)
 }
+
+export type QuickPickResult<T> = T | WizardControl | undefined
+
+export type DataQuickPick<T> = Omit<vscode.QuickPick<DataQuickPickItem<T>>, 'buttons'> & { buttons: QuickPickButtons<T> }
+export type DataQuickPickItem<T> = vscode.QuickPickItem & { data: QuickPickData<T> }
+export type LabelQuickPickItem<T extends string> = vscode.QuickPickItem & { label: T, data?: QuickPickData<T> }
+
+
+const CUSTOM_USER_INPUT = Symbol()
+type QuickPickData<T> = QuickPickResult<T> | (() => Promise<QuickPickResult<T>>)
 
 /**
  * Creates a QuickPick to let the user pick an item from a list
@@ -47,49 +58,223 @@ function applySettings<T1, T2 extends T1>(obj: T2, settings: T1): void {
  *  buttons - set of buttons to initialize the picker with
  * @return A new QuickPick.
  */
-export function createQuickPick<T>({
-    options,
-    items,
-    buttons,
-}: {
-    options?: ExtendedQuickPickOptions
-    items?: DataQuickPickItem<T>[]
-    buttons?: vscode.QuickInputButton[]
-}): DataQuickPick<T> {
-    const picker = vscode.window.createQuickPick<DataQuickPickItem<T>>()
+export function createQuickPick<T>(
+    items: DataQuickPickItem<T>[] | Promise<DataQuickPickItem<T>[] | undefined>,
+    options?: ExtendedQuickPickOptions<T>
+): QuickPickPrompter<T> {
+    const picker = vscode.window.createQuickPick<DataQuickPickItem<T>>() as DataQuickPick<T>
+    options = { ...DEFAULT_QUICKPICK_OPTIONS, ...options }
+    applySettings(picker, { ...DEFAULT_QUICKPICK_OPTIONS, ...options })
 
-    function update(value?: string) {
-        if (value) {
-            picker.items = [
-                {
-                    label: options!.customUserInputLabel,
+    const prompter = new QuickPickPrompter<T>(picker)
+
+    if (items instanceof Promise) { 
+        makeQuickPickPrompterAsync(prompter, items)
+    } else {
+        picker.items = items
+    }
+
+    return prompter
+}
+
+/**
+ * Creates QuickPick just to select from a label
+ */
+export function createLabelQuickPick<T extends string>(
+    items: LabelQuickPickItem<T>[] | Promise<LabelQuickPickItem<T>[] | undefined>,
+    options?: ExtendedQuickPickOptions<T>
+): QuickPickPrompter<T> {
+    if (items instanceof Promise) {
+        return createQuickPick(items.then(items =>
+            items !== undefined 
+                ? items.map(item => ({ ...item, data: item.label }) as DataQuickPickItem<T>)
+                : undefined
+        ), options)
+    }
+    return createQuickPick(items.map(item => ({ ...item, data: item.label }) as DataQuickPickItem<T>), options)
+}
+
+/*
+export function createMultiQuickPick<T>(
+    items: DataQuickPickItem<T>[] | Promise<DataQuickPickItem<T>[] | undefined>, 
+    options?: ExtendedQuickPickOptions<T>
+): MultiQuickPickPrompter<T> {
+    const picker = { ...vscode.window.createQuickPick<DataQuickPickItem<T>>(), buttons: [] }
+
+    if (options) {
+        applySettings(picker, options as vscode.QuickPickOptions)
+    }
+
+    const prompter = new MultiQuickPickPrompter<T>(picker)
+
+    if (items instanceof Promise) { 
+        makeQuickPickPrompterAsync(prompter, items)
+    }
+
+    return prompter
+}
+*/
+
+/**
+ * Quick helper function for asynchronous quick pick items
+ */
+function makeQuickPickPrompterAsync<T>(
+    prompter: QuickPickPrompter<T>, // | MultiQuickPickPrompter<T>, 
+    items: Promise<DataQuickPickItem<T>[] | undefined>
+): void {
+    const picker = prompter.quickInput as DataQuickPick<T>
+    prompter.busy = true
+    prompter.enabled = false
+
+    items.then(items => {
+        if (items === undefined) {
+            picker.hide()
+        } else {
+            picker.items = items
+            prompter.busy = false
+            prompter.enabled = true
+        }
+    }).catch(err => {
+        // TODO: this is an unhandled exception so we should log it appropriately
+        picker.hide()
+    })
+}
+
+export class QuickPickPrompter<T> extends Prompter<T, QuickPickResult<T>> {
+    private lastPicked?: DataQuickPickItem<T>
+
+    constructor(public readonly quickPick: DataQuickPick<T>) {
+        super(quickPick)
+    }
+    
+    private isUserInput(picked: any): picked is DataQuickPickItem<symbol> {
+        return picked !== undefined && picked.data === CUSTOM_USER_INPUT
+    }
+
+    public async prompt(): Promise<QuickPickResult<T>> {
+        const promptPromise = promptUser({
+            picker: this.quickPick,
+            onDidTriggerButton: (button, resolve, reject) => {
+                //button.onClick = button.onClick ?? (resolve => resolve(WIZARD_BACK))
+                button.onClick(arg => resolve([{ label: '', data: arg }]), reject)
+            },
+        })
+        this.show()
+        const choices = await promptPromise
+
+        if (choices === undefined) {
+            return choices
+        }
+        
+        this.lastPicked = choices[0]
+        const result = choices[0].data
+
+        return super.applyAfterCallbacks(((result instanceof Function) ? await result() : result) )
+    }
+
+    public setLastResponse(picked: DataQuickPickItem<T> | undefined = this.lastPicked): void {
+        if (picked === undefined) {
+            return
+        }
+
+        this.quickPick.value = (this.isUserInput(picked) ? picked.description : undefined) ?? ''
+
+        if (!this.isUserInput(picked)) {
+            this.quickPick.activeItems = this.quickPick.items.filter(item => item.label === picked.label)
+        }
+
+        if (this.quickPick.activeItems.length === 0) {
+            this.quickPick.activeItems = [this.quickPick.items[0]]
+        }
+    }
+
+    public setCustomInput(transform: (v?: string) => T | WizardControl, label: string = ''): QuickPickPrompter<T> {
+        const picker = this.quickInput as DataQuickPick<T | symbol>
+        const items = picker.items 
+        let lastUserInput: string | undefined
+
+        function update(value?: string) {
+            lastUserInput = value
+            if (value !== undefined) {
+                const customUserInputItem = {
+                    label,
                     description: value,
                     alwaysShow: true,
                     data: CUSTOM_USER_INPUT,
-                } as DataQuickPickItem<T>,
-                ...(items ?? []),
-            ]
-        } else {
-            picker.items = items ?? []
+                } as DataQuickPickItem<T | symbol>
+    
+                picker.items = [customUserInputItem, ...(items ?? [])]
+            } else {
+                picker.items = items ?? []
+            }
         }
+
+        picker.onDidChangeValue(update)
+
+        return this.after(async selection => {
+            if ((selection as (T | typeof CUSTOM_USER_INPUT)) === CUSTOM_USER_INPUT) {
+                return transform(lastUserInput)
+            } 
+            return selection
+        }) as QuickPickPrompter<T>
     }
 
-    if (options) {
-        applySettings(picker, options)
-
-        if (options.customUserInputLabel) {
-            picker.onDidChangeValue(update)
-        }
+    public getLastResponse(): T | DataQuickPickItem<T> | DataQuickPickItem<T>[] | undefined {
+        return this.lastPicked
     }
-
-    update(picker.value)
-
-    if (buttons !== undefined) {
-        picker.buttons = buttons
-    }
-
-    return picker
 }
+
+/*
+export class MultiQuickPickPrompter<T, U extends Array<T> = Array<T>> extends Prompter<U> {
+    private lastPicked?: DataQuickPickItem<T>[]
+
+    constructor(private readonly quickPick: DataQuickPick<T>) {
+        super(quickPick)
+    }
+
+    public setLastResponse(picked: DataQuickPickItem<T>[] | undefined = this.lastPicked): void {
+        if (picked === undefined) {
+            return
+        }
+
+        this.quickPick.activeItems = this.quickPick.items.filter(item => picked.map(it => it.label).includes(item.label))
+
+        if (this.quickPick.activeItems.length === 0) {
+            this.quickPick.activeItems = []
+        }
+    }
+
+    public async prompt(): Promise<PromptResult<U>> {
+        const choices = await promptUser({
+            picker: this.quickPick,
+            onDidTriggerButton: (button, resolve, reject) => {
+                button.onClick(arg => resolve([{ label: '', data: arg }]), reject)
+            },
+        })
+
+        if (choices === undefined) {
+            return choices
+        }
+
+        this.lastPicked = choices
+
+        const result = choices.map(choices => choices.data)
+
+        // Any control signal in the choices will be collapsed down into a single return value
+        result.forEach(element => {
+            if (isWizardControl(element)) {
+                return element
+            }
+        })
+
+        return await Promise.all(result.map(async f => f instanceof Function ? await f() : f)) as U
+    }
+
+    public getLastResponse(): DataQuickPickItem<T>[] | undefined {
+        return this.lastPicked
+    }
+}
+*/
 
 /**
  * Convenience method to allow the QuickPick to be treated more like a dialog.
@@ -103,21 +288,21 @@ export function createQuickPick<T>({
  *
  * @returns If the picker was cancelled, undefined is returned. Otherwise, an array of the selected items is returned.
  */
-export async function promptUser<T extends vscode.QuickPickItem>({
+export async function promptUser<T>({
     picker,
     onDidTriggerButton,
 }: {
-    picker: vscode.QuickPick<T>
+    picker: DataQuickPick<T>
     onDidTriggerButton?(
-        button: vscode.QuickInputButton,
-        resolve: (value: T[] | PromiseLike<T[] | undefined> | undefined) => void,
+        button: QuickPickButton<T>,
+        resolve: (value: DataQuickPickItem<T>[]) => void,
         reject: (reason?: any) => void
     ): void
-}): Promise<T[] | undefined> {
+}): Promise<DataQuickPickItem<T>[] | undefined> {
     const disposables: vscode.Disposable[] = []
 
     try {
-        const response = await new Promise<T[] | undefined>((resolve, reject) => {
+        const response = await new Promise<DataQuickPickItem<T>[] | undefined>((resolve, reject) => {
             picker.onDidAccept(
                 () => {
                     resolve(Array.from(picker.selectedItems))
@@ -128,7 +313,7 @@ export async function promptUser<T extends vscode.QuickPickItem>({
 
             picker.onDidHide(
                 () => {
-                    resolve(undefined)
+                    resolve(undefined) // change to WIZARD_EXIT
                 },
                 picker,
                 disposables
@@ -136,13 +321,11 @@ export async function promptUser<T extends vscode.QuickPickItem>({
 
             if (onDidTriggerButton) {
                 picker.onDidTriggerButton(
-                    (btn: vscode.QuickInputButton) => onDidTriggerButton(btn, resolve, reject),
+                    (btn: vscode.QuickInputButton) => onDidTriggerButton(btn as QuickPickButton<T>, resolve, reject),
                     picker,
                     disposables
                 )
             }
-
-            picker.show()
         })
 
         return response
@@ -150,230 +333,4 @@ export async function promptUser<T extends vscode.QuickPickItem>({
         disposables.forEach(d => d.dispose() as void)
         picker.hide()
     }
-}
-
-export function verifySinglePickerOutput<T extends vscode.QuickPickItem>(choices: T[] | undefined): T | undefined {
-    const logger = getLogger()
-    if (!choices || choices.length === 0) {
-        return undefined
-    }
-    if (choices.length > 1) {
-        logger.warn(
-            `Received ${choices.length} responses from user, expected 1.` +
-                ' Cancelling to prevent deployment of unexpected template.'
-        )
-
-        return undefined
-    }
-
-    return choices[0]
-}
-
-// TODO: Cache these results? Should we have a separate store? Can we also use a store with values from the explorer tree?
-// If we move this to a cache, we should remove the awsCallLogic and instead listen/send events to/from the cache.
-// (this should also be retooled to not use the request/response objects directly)
-// TODO: Add manual pagination?
-/**
- * Grants a `vscode.QuickPick` iteration capabilities:
- * * Pause/unpause loading
- * * Refresh capabilities
- * * No item/error nodes
- *
- * External control is still done via `picker.promptUser` as if it were a normal QuickPick.
- */
-export class IteratingQuickPickController<TResponse> {
-    private state: IteratingQuickPickControllerState
-
-    // Default constructs are public static so they can be validated aganist by other functions.
-    public static readonly REFRESH_BUTTON: vscode.QuickInputButton = {
-        iconPath: new vscode.ThemeIcon('refresh'),
-        tooltip: localize('AWS.generic.refresh', 'Refresh'),
-    }
-    public static readonly NO_ITEMS_ITEM: vscode.QuickPickItem = {
-        label: localize('AWS.picker.dynamic.noItemsFound.label', '[No items found]'),
-        detail: localize('AWS.picker.dynamic.noItemsFound.detail', 'Click here to go back'),
-        alwaysShow: true,
-    }
-    public static readonly ERROR_ITEM: vscode.QuickPickItem = {
-        label: localize('AWS.picker.dynamic.errorNode.label', 'There was an error retrieving more items.'),
-        alwaysShow: true,
-    }
-
-    /**
-     * @param quickPick A `vscode.QuickPick` to grant iterating capabilities
-     * @param populator An IteratingQuickPickPopulator which can call an iterator and return QuickPickItems.
-     */
-    public constructor(
-        private readonly quickPick: vscode.QuickPick<vscode.QuickPickItem>,
-        private readonly populator: IteratorTransformer<TResponse, vscode.QuickPickItem>,
-        private readonly onDidTriggerButton?: (
-            button: vscode.QuickInputButton,
-            resolve: (
-                value: vscode.QuickPickItem[] | PromiseLike<vscode.QuickPickItem[] | undefined> | undefined
-            ) => void,
-            reject: (reason?: any) => void
-        ) => Promise<vscode.QuickPickItem[] | undefined>
-    ) {
-        // append buttons specific to iterating quickPick
-        this.quickPick.buttons = [...this.quickPick.buttons, IteratingQuickPickController.REFRESH_BUTTON]
-        this.quickPick.onDidHide(() => {
-            // on selection, not "done" but we do want to stop background loading.
-            // the caller should own the quick pick lifecycle, so we can either restart the picker from where it left off or dispose at that level.
-            getLogger().debug('IteratingQuickPickController item selected. Pausing additional loading.')
-            this.state.isRunning = false
-        })
-
-        this.state = new IteratingQuickPickControllerState(this.populator.createPickIterator())
-    }
-
-    /**
-     * Pauses any existing item loading.
-     * Call upon selecting an item in order to pause additional background loading.
-     */
-    public pauseRequests(): void {
-        getLogger().debug('Pausing IteratingQuickPickController')
-        this.state.isRunning = false
-    }
-
-    /**
-     * Starts item loading. Restarts from existing state if paused.
-     * Useful for manual pagination, losing quick pick focus (e.g. via external link), throttling, etc.
-     */
-    public startRequests(): void {
-        getLogger().debug('Starting IteratingQuickPickController iteration')
-        if (this.state.isRunning) {
-            getLogger().debug('IteratingQuickPickController already iterating')
-            return
-        }
-        if (this.state.isDone) {
-            getLogger().debug('IteratingQuickPickController is already done iterating. Call reset() and start again')
-            return
-        }
-        this.loadItems()
-    }
-
-    /**
-     * Resets quick pick's state to default and stops any current execution
-     */
-    public async reset(): Promise<void> {
-        // Promise is necessary to ensure that cancelExecutionFn() is called to completion before reset() completes.
-        // Open to suggestions if you know a better way to do this.
-        await new Promise<void>(resolve => {
-            getLogger().debug('Resetting IteratingQuickPickController and cancelling any current execution')
-
-            if (this.state.cancelExecutionFn) {
-                this.state.cancelExecutionFn()
-            }
-
-            this.quickPick.items = []
-
-            this.state = new IteratingQuickPickControllerState(this.populator.createPickIterator())
-
-            resolve()
-        })
-    }
-
-    /**
-     * Shim function for picker.promptUser calls on pickers that use iteratingQuickPickControllers.
-     * Wraps refresh functionality for this controller and otherwise passes through to a user-provided onDidTriggerButton function (from constructor)
-     * @param button Provided by promptUser
-     * @param resolve Provided by promptUser
-     * @param reject Provided by promptUser
-     */
-    public async iteratingOnDidTriggerButton(
-        button: vscode.QuickInputButton,
-        resolve: (value: vscode.QuickPickItem[] | PromiseLike<vscode.QuickPickItem[] | undefined> | undefined) => void,
-        reject: (reason?: any) => void
-    ): Promise<vscode.QuickPickItem[] | undefined> {
-        switch (button) {
-            case IteratingQuickPickController.REFRESH_BUTTON:
-                await this.reset()
-                this.startRequests()
-                return undefined
-            default:
-                return this.onDidTriggerButton ? this.onDidTriggerButton(button, resolve, reject) : undefined
-        }
-    }
-
-    private async loadItems(): Promise<void> {
-        // unpause the loader (if it was paused previously by a selection)
-        this.state.isRunning = true
-
-        // use a while loop so we have greater control over the iterator.
-        // breaking out of a for..of loop for an iterator will automatically set the iterator to `done`
-        // manual iteration means that we can use the same iterator no matter how many times we call loadItems()
-        while (!this.state.isDone && this.state.isRunning) {
-            this.quickPick.busy = true
-
-            try {
-                const loadedItems = await Promise.race([
-                    // promise representing AWS call logic
-                    new Promise<IteratorResult<vscode.QuickPickItem[], any>>((resolve, reject) => {
-                        this.state.iterator
-                            .next()
-                            .then(newItems => {
-                                getLogger().debug(`Returning a payload of size: ${newItems.value.length}`)
-                                resolve(newItems)
-                            })
-                            .catch(e => {
-                                // append error node
-                                // give quickpick item an error message
-                                // we should not blow away the existing items, they should still be viable
-                                const err = e as Error
-                                getLogger().error('Error while loading items for IteratingQuickPickController:', err)
-                                resolve({
-                                    value: [
-                                        {
-                                            ...IteratingQuickPickController.ERROR_ITEM,
-                                            detail: err.message,
-                                        },
-                                    ],
-                                    done: true,
-                                })
-                            })
-                    }),
-                    // externally-rejectable promise for cancelling an execution
-                    new Promise<IteratorResult<vscode.QuickPickItem[], any>>((resolve, reject) => {
-                        this.state.cancelExecutionFn = () => {
-                            getLogger().debug('Cancelling execution...')
-                            reject()
-                        }
-                    }),
-                ])
-                if (!loadedItems) {
-                    this.state.isDone = true
-                    break
-                }
-                // TODO: Is there a way to append to this ReadOnlyArray so it doesn't constantly pop focus back to the top?
-                this.quickPick.items = this.quickPick.items.concat(loadedItems.value)
-                if (loadedItems.done) {
-                    // no items in response
-                    if (this.quickPick.items.length === 0) {
-                        this.quickPick.items = [IteratingQuickPickController.NO_ITEMS_ITEM]
-                    }
-
-                    this.state.isDone = true
-                    break
-                }
-            } catch (rejectedCallback) {
-                getLogger().debug('Cancelled loop execution')
-                break
-            } finally {
-                // reset cancellation function
-                if (this.state.cancelExecutionFn) {
-                    this.state.cancelExecutionFn = undefined
-                }
-            }
-        }
-
-        // disable loading bar
-        this.quickPick.busy = false
-    }
-}
-
-class IteratingQuickPickControllerState {
-    public cancelExecutionFn: undefined | (() => void) = undefined
-    public isDone?: boolean
-    public isRunning?: boolean
-    public constructor(public iterator: AsyncIterator<vscode.QuickPickItem[]>) {}
 }

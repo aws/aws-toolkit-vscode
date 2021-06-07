@@ -23,10 +23,10 @@ import {
 import { DependencyManager, RuntimePackageType } from '../../../lambda/models/samLambdaRuntime'
 import { makeTemporaryToolkitFolder } from '../../../shared/filesystemUtilities'
 import { assertEqualPaths } from '../../testUtil'
-import { Prompter, ButtonBinds } from '../../../shared/ui/prompter'
+import { Prompter } from '../../../shared/ui/prompter'
 import { Credentials } from 'aws-sdk'
 import { Region } from '../../../shared/regions/endpoints'
-import { MockPrompter } from './wizardFramework'
+import { MockPrompter } from '../../shared/wizards/wizardFramework'
 
 
 function isMultiDimensionalArray(array: any[] | any[][] | undefined): boolean {
@@ -139,8 +139,8 @@ class MockCreateNewSamAppWizardContext implements CreateNewSamAppWizardContext {
         // keeps things in line with the set reverse above
         this._dependencyManagers = this._dependencyManagers.reverse()
     }
-    public samButtons: ButtonBinds = new Map()
-    public schemaButtons: ButtonBinds = new Map()
+    public samButtons = []
+    public schemaButtons = []
     public currentCredentials: Credentials | undefined
     public schemasRegions: Region[] = []
     public samCliVersion: string = ''

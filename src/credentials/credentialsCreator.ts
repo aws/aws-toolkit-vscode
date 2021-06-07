@@ -3,10 +3,11 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
+import { isValidResponse } from '../shared/ui/prompter'
 import * as nls from 'vscode-nls'
 const localize = nls.loadMessageBundle()
 
-import { createInputBox, promptUser } from '../shared/ui/input'
+import { createInputBox } from '../shared/ui/input'
 
 const ERROR_MESSAGE_USER_CANCELLED = localize(
     'AWS.error.mfa.userCancelled',
@@ -29,19 +30,14 @@ export async function getMfaTokenFromUser(
     callback: (err?: Error, token?: string) => void
 ): Promise<void> {
     try {
-        const inputBox = createInputBox({
-            options: {
-                ignoreFocusOut: true,
-                placeholder: localize('AWS.prompt.mfa.enterCode.placeholder', 'Enter Authentication Code Here'),
-                title: localize('AWS.prompt.mfa.enterCode.title', 'MFA Challenge for {0}', profileName),
-                prompt: localize('AWS.prompt.mfa.enterCode.prompt', 'Enter code for MFA device {0}', mfaSerial),
-            },
-        })
-
-        const token = await promptUser({ inputBox: inputBox })
+        const token = await createInputBox({
+            placeholder: localize('AWS.prompt.mfa.enterCode.placeholder', 'Enter Authentication Code Here'),
+            title: localize('AWS.prompt.mfa.enterCode.title', 'MFA Challenge for {0}', profileName),
+            prompt: localize('AWS.prompt.mfa.enterCode.prompt', 'Enter code for MFA device {0}', mfaSerial),
+        }).prompt()
 
         // Distinguish user cancel vs code entry issues with the error message
-        if (!token) {
+        if (!isValidResponse(token)) {
             throw new Error(ERROR_MESSAGE_USER_CANCELLED)
         }
 

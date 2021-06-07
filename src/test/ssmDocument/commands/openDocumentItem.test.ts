@@ -49,13 +49,6 @@ describe('openDocumentItem', async function () {
 
     const fakeRegion = 'us-east-1'
 
-    const fakeFormatSelection = [
-        {
-            label: 'JSON',
-            description: 'Open document in JSON format',
-        },
-    ]
-
     const fakeFormatSelectionResult = {
         label: 'JSON',
         description: 'Open document with format JSON',
@@ -63,8 +56,7 @@ describe('openDocumentItem', async function () {
 
     it('create DocumentItemNode and openDocumentItem functionality', async function () {
         sandbox.stub(vscode.window, 'showSaveDialog').returns(Promise.resolve(vscode.Uri.file('test')))
-        sandbox.stub(picker, 'promptUser').onFirstCall().returns(Promise.resolve(fakeFormatSelection))
-        sandbox.stub(picker, 'verifySinglePickerOutput').onFirstCall().returns(fakeFormatSelectionResult)
+        sandbox.stub(picker.QuickPickPrompter.prototype, 'prompt').onFirstCall().resolves(fakeFormatSelectionResult.label)
 
         const documentNode = generateDocumentItemNode()
         const openTextDocumentStub = sandbox.stub(vscode.workspace, 'openTextDocument')

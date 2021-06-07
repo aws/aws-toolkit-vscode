@@ -17,8 +17,8 @@ import { LogGroupNode } from '../../../cloudWatchLogs/explorer/logGroupNode'
 import { FakeParentNode } from '../../cdk/explorer/constructNode.test'
 import { LOCALIZED_DATE_FORMAT } from '../../../shared/constants'
 import { Prompter } from '../../../shared/ui/prompter'
-import { MockPrompter } from '../../../test/lambda/wizards/wizardFramework'
-import { WIZARD_GOBACK } from '../../../shared/wizards/wizard'
+import { MockPrompter } from '../../shared/wizards/wizardFramework'
+import { WIZARD_BACK } from '../../../shared/wizards/wizard'
 
 class MockSelectLogStreamWizardContext implements SelectLogStreamWizardContext {
     public constructor(private readonly pickLogStreamResponses: (string | undefined)[] = []) {
@@ -32,7 +32,7 @@ class MockSelectLogStreamWizardContext implements SelectLogStreamWizardContext {
 
         const response = this.pickLogStreamResponses.pop()
         if (!response) {
-            return new MockPrompter<string>(WIZARD_GOBACK)
+            return new MockPrompter<string>(WIZARD_BACK)
         }
 
         return new MockPrompter(response)

@@ -4,7 +4,7 @@
  */
 import * as assert from 'assert'
 import { Prompter } from '../../../shared/ui/prompter'
-import { MockPrompter } from '../../lambda/wizards/wizardFramework'
+import { MockPrompter } from '../../shared/wizards/wizardFramework'
 import {
     PublishStateMachineAction,
     PublishStateMachineWizard,

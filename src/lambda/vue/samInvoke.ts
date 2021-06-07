@@ -35,6 +35,7 @@ import { getSampleLambdaPayloads } from '../utils'
 import { isCloud9 } from '../../shared/extensionUtilities'
 import { SamDebugConfigProvider } from '../../shared/sam/debugger/awsSamDebugger'
 import { samLambdaCreatableRuntimes } from '../models/samLambdaRuntime'
+import { isValidResponse } from '../../shared/ui/prompter'
 
 const localize = nls.loadMessageBundle()
 
@@ -183,36 +184,27 @@ async function loadSamLaunchConfig(
     const pickerItems = getLaunchConfigQuickPickItems(launchConfig, uri)
     if (pickerItems.length === 0) {
         pickerItems.push({
-            index: -1,
+            data: { index: -1 },
             label: localize('AWS.lambda.form.noDebugConfigs', 'No aws-sam debug configurations found.'),
             detail: localize('AWS.picker.dynamic.noItemsFound.detail', 'Click here to go back'),
         })
     }
-    const qp = picker.createQuickPick({
-        items: pickerItems,
-        options: {
-            title: localize('AWS.lambda.form.selectDebugConfig', 'Select Debug Configuration'),
-        },
-    })
+    const pickerResponse = await picker.createQuickPick(pickerItems, {
+        title: localize('AWS.lambda.form.selectDebugConfig', 'Select Debug Configuration')
+    }).prompt()
 
-    const choices = await picker.promptUser({
-        picker: qp,
-    })
-    const pickerResponse = picker.verifySinglePickerOutput<LaunchConfigPickItem>(choices)
-
-    if (!pickerResponse || pickerResponse.index === -1) {
-        return
+    if (isValidResponse(pickerResponse) && pickerResponse.index !== -1) {
+        postMessageFn({
+            command: 'loadSamLaunchConfig',
+            data: {
+                launchConfig: pickerResponse.config!,
+            },
+        })
     }
-    postMessageFn({
-        command: 'loadSamLaunchConfig',
-        data: {
-            launchConfig: pickerResponse.config!,
-        },
-    })
 }
 
 interface SampleQuickPickItem extends vscode.QuickPickItem {
-    filename: string
+    data: string
 }
 
 /**
@@ -225,25 +217,18 @@ async function getSamplePayload(
 ): Promise<void> {
     try {
         const inputs: SampleQuickPickItem[] = (await getSampleLambdaPayloads()).map(entry => {
-            return { label: entry.name ?? '', filename: entry.filename ?? '' }
+            return { label: entry.name ?? '', data: entry.filename ?? '' }
         })
 
-        const qp = picker.createQuickPick({
-            items: inputs,
-            options: {
-                title: localize('AWS.lambda.form.pickSampleInput', 'Choose Sample Input'),
-            },
-        })
+        const pickerResponse = await picker.createQuickPick(inputs, {
+            title: localize('AWS.lambda.form.pickSampleInput', 'Choose Sample Input'),
+        }).prompt()
 
-        const choices = await picker.promptUser({
-            picker: qp,
-        })
-        const pickerResponse = picker.verifySinglePickerOutput<SampleQuickPickItem>(choices)
 
         if (!pickerResponse) {
             return
         }
-        const sampleUrl = `${sampleRequestPath}${pickerResponse.filename}`
+        const sampleUrl = `${sampleRequestPath}${pickerResponse}`
         const sample = (await new HttpResourceFetcher(sampleUrl, { showUrl: true }).get()) ?? ''
 
         postMessageFn({
@@ -257,13 +242,18 @@ async function getSamplePayload(
     }
 }
 
+
+interface TemplateData {
+    id: string,
+    path: string,
+}
 /**
  * Get all templates in the registry.
  * Call back into the webview with the registry contents.
  * @param postMessageFn
  */
 async function getTemplate(postMessageFn: (response: GetTemplateResponse) => Thenable<boolean>): Promise<void> {
-    const items: (vscode.QuickPickItem & { templatePath: string })[] = []
+    const items: (vscode.QuickPickItem & { data: TemplateData })[] = []
     const NO_TEMPLATE = 'NOTEMPLATEFOUND'
     for (const template of ext.templateRegistry.registeredItems) {
         const resources = template.item.Resources
@@ -277,7 +267,7 @@ async function getTemplate(postMessageFn: (response: GetTemplateResponse) => The
                     items.push({
                         label: resource,
                         detail: localize('AWS.lambda.form.selectResource.detail', 'Template: {0}', template.path),
-                        templatePath: template.path,
+                        data: { id: resource, path: template.path },
                     })
                 }
             }
@@ -291,39 +281,32 @@ async function getTemplate(postMessageFn: (response: GetTemplateResponse) => The
                 'No templates with valid SAM functions found.'
             ),
             detail: localize('AWS.picker.dynamic.noItemsFound.detail', 'Click here to go back'),
-            templatePath: NO_TEMPLATE,
+            data: { id: '', path: NO_TEMPLATE },
         })
     }
 
-    const qp = picker.createQuickPick({
-        items,
-        options: {
-            title: localize('AWS.lambda.form.selectResource', 'Select Resource'),
-        },
-    })
+    const selectedTemplate = await picker.createQuickPick(items, {
+        title: localize('AWS.lambda.form.selectResource', 'Select Resource'),
+    }).prompt()
 
-    const choices = await picker.promptUser({
-        picker: qp,
-    })
-    const selectedTemplate = picker.verifySinglePickerOutput(choices)
 
-    if (!selectedTemplate || selectedTemplate.templatePath === NO_TEMPLATE) {
-        return
+    if (isValidResponse(selectedTemplate) && selectedTemplate.path !== NO_TEMPLATE) {
+        postMessageFn({
+            command: 'getTemplate',
+            data: {
+                logicalId: selectedTemplate.id,
+                template: selectedTemplate.path,
+            },
+        })
     }
-
-    postMessageFn({
-        command: 'getTemplate',
-        data: {
-            logicalId: selectedTemplate.label,
-            template: selectedTemplate.templatePath,
-        },
-    })
 }
 
-interface LaunchConfigPickItem extends vscode.QuickPickItem {
+interface LaunchConfigData {
     index: number
     config?: AwsSamDebuggerConfiguration
 }
+
+type LaunchConfigPickItem = picker.DataQuickPickItem<LaunchConfigData>
 
 /**
  * Open a quick pick containing the names of launch configs in the `launch.json` array, plus a "Create New Entry" entry.
@@ -339,48 +322,39 @@ async function saveLaunchConfig(config: AwsSamDebuggerConfiguration): Promise<vo
         return
     }
     const launchConfig = new LaunchConfiguration(uri)
-    const pickerItems = [
+    const pickerItems: LaunchConfigPickItem[] = [
         {
             label: addCodiconToString(
                 'add',
                 localize('AWS.command.addSamDebugConfiguration', 'Add Debug Configuration')
             ),
-            index: -1,
+            data: { index: -1 },
             alwaysShow: true,
         },
         ...getLaunchConfigQuickPickItems(launchConfig, uri),
     ]
 
-    const qp = picker.createQuickPick({
-        items: pickerItems,
-        options: {
+    const pickerResponse = await picker.createQuickPick(pickerItems, {
             title: localize('AWS.lambda.form.selectDebugConfig', 'Select Debug Configuration'),
-        },
-    })
+        }
+    ).prompt()
 
-    const choices = await picker.promptUser({
-        picker: qp,
-    })
-    const pickerResponse = picker.verifySinglePickerOutput<LaunchConfigPickItem>(choices)
-
-    if (!pickerResponse) {
+    if (!isValidResponse(pickerResponse)) {
         return
     }
 
     if (pickerResponse.index === -1) {
-        const ib = input.createInputBox({
-            options: {
-                prompt: localize('AWS.lambda.form.debugConfigName', 'Input Name For Debug Configuration'),
-            },
-        })
-        const response = await input.promptUser({ inputBox: ib })
-        if (response) {
+        const response = await input.createInputBox({
+            prompt: localize('AWS.lambda.form.debugConfigName', 'Input Name For Debug Configuration'),
+        }).prompt()
+
+        if (isValidResponse(response)) {
             launchConfig.addDebugConfiguration(finalizeConfig(config, response))
             await openLaunchJsonFile()
         }
     } else {
         // use existing label
-        launchConfig.editDebugConfiguration(finalizeConfig(config, pickerResponse.label), pickerResponse.index)
+        launchConfig.editDebugConfiguration(finalizeConfig(config, pickerResponse.config!.name), pickerResponse.index)
         await openLaunchJsonFile()
     }
 }
@@ -445,9 +419,11 @@ function getLaunchConfigQuickPickItems(launchConfig: LaunchConfiguration, uri: v
         .filter(o => samValidator.validate((o.config as any) as AwsSamDebuggerConfiguration, true)?.isValid)
         .map(val => {
             return {
-                index: val.index,
                 label: val.config.name,
-                config: val.config as AwsSamDebuggerConfiguration,
+                data: {
+                    index: val.index,
+                    config: val.config as AwsSamDebuggerConfiguration,
+                }
             }
         })
 }

@@ -17,7 +17,7 @@ import {
 import * as javaDebug from '../sam/debugger/javaSamDebug'
 import * as pythonDebug from '../sam/debugger/pythonSamDebug'
 import { SettingsConfiguration } from '../settingsConfiguration'
-import { createQuickPick, promptUser, verifySinglePickerOutput } from '../ui/picker'
+import { createQuickPick, DataQuickPickItem } from '../ui/picker'
 import { localize } from '../utilities/vsCodeUtils'
 import { getWorkspaceRelativePath } from '../utilities/workspaceUtils'
 import * as csharpCodelens from './csharpCodeLensProvider'
@@ -25,6 +25,8 @@ import * as javaCodelens from './javaCodeLensProvider'
 import * as pythonCodelens from './pythonCodeLensProvider'
 import * as tsCodelens from './typescriptCodeLensProvider'
 import * as goCodelens from './goCodeLensProvider'
+import { WIZARD_BACK } from '../wizards/wizard'
+import { isValidResponse } from '../ui/prompter'
 
 export type Language = 'python' | 'javascript' | 'csharp' | 'go' | 'java'
 
@@ -144,7 +146,7 @@ export async function invokeCodeLensCommandPalette(
     ) => Promise<void> = pickAddSamDebugConfiguration
 ): Promise<void> {
     const labelRenderRange = 200
-    const handlers: (vscode.QuickPickItem & { lens?: vscode.CodeLens })[] = lenses
+    const handlers: DataQuickPickItem<vscode.CodeLens>[] = lenses
         .filter(lens => {
             // remove codelenses that go to the invoker UI
             // maybe move this into the workflow at some point (drop down to one)
@@ -170,7 +172,7 @@ export async function invokeCodeLensCommandPalette(
                     'Function on line {0}',
                     (lens.range.start.line + 1).toString()
                 ),
-                lens,
+                data: lens,
             }
         })
     if (handlers.length === 0) {
@@ -178,30 +180,24 @@ export async function invokeCodeLensCommandPalette(
             label: localize('AWS.pickDebugHandler.noItems', 'No handlers found in current file'),
             detail: localize('AWS.pickDebugHandler.noItems.detail', 'Ensure your language extension is working'),
             description: localize('AWS.picker.dynamic.noItemsFound.detail', 'Click here to go back'),
+            data: WIZARD_BACK,
         })
     }
 
-    const picker = createQuickPick<vscode.QuickPickItem & { lens?: vscode.CodeLens }>({
-        options: {
-            canPickMany: false,
-            ignoreFocusOut: false,
-            matchOnDetail: true,
-            title: localize('AWS.pickDebugHandler.prompt', 'Create a Debug Configuration from a valid handler'),
-            step: 1,
-            totalSteps: 2,
-        },
-        items: handlers,
-    })
+    const val = await createQuickPick(handlers, {
+        ignoreFocusOut: false,
+        matchOnDetail: true,
+        title: localize('AWS.pickDebugHandler.prompt', 'Create a Debug Configuration from a valid handler'),
+        step: 1,
+        totalSteps: 2,
+    }).prompt()
 
-    const choices = await promptUser({ picker })
-    const val = verifySinglePickerOutput(choices)
-
-    if (!val || !val.lens || !val.lens.command) {
+    if (!isValidResponse(val) || !val.command) {
         return undefined
     }
 
     // note: val.lens.command.arguments[2] should always be false (aka no invoke UI) based on the filter statement
-    await nextStep(val.lens.command.arguments![0], val.lens.command.arguments![1], val.lens.command.arguments![2], true)
+    await nextStep(val.command.arguments![0], val.command.arguments![1], val.command.arguments![2], true)
 }
 
 /**
@@ -223,8 +219,7 @@ export async function pickAddSamDebugConfiguration(
         return
     }
 
-    const templateItemsMap = new Map<string, AddSamDebugConfigurationInput>()
-    const templateItems: vscode.QuickPickItem[] = []
+    const templateItems: DataQuickPickItem<AddSamDebugConfigurationInput>[] = []
     templateConfigs.forEach(templateConfig => {
         const label = `${getWorkspaceRelativePath(templateConfig.rootUri.fsPath) ?? templateConfig.rootUri.fsPath}:${
             templateConfig.resourceName
@@ -235,55 +230,42 @@ export async function pickAddSamDebugConfiguration(
             const eventDetail = `${templateConfig.apiEvent.event.Properties?.Method?.toUpperCase()} ${
                 templateConfig.apiEvent.event.Properties?.Path
             }`
-            templateItems.push({ label: apiLabel, detail: eventDetail })
-            templateItemsMap.set(apiLabel, templateConfig)
+            templateItems.push({ label: apiLabel, detail: eventDetail, data: templateConfig })
         } else {
-            templateItems.push({ label: label })
-            templateItemsMap.set(label, templateConfig)
+            templateItems.push({ label: label, data: templateConfig })
         }
     })
 
     const noTemplate = localize('AWS.pickDebugConfig.noTemplate', 'No Template')
-    const picker = createQuickPick<vscode.QuickPickItem>({
-        options: {
-            canPickMany: false,
-            ignoreFocusOut: false,
-            matchOnDetail: true,
-            title: localize(
-                'AWS.pickDebugConfig.prompt',
-                'Create a Debug Configuration from a CloudFormation Template'
-            ),
-            step: continuationStep ? 2 : 1,
-            totalSteps: continuationStep ? 2 : 1,
-        },
-        items: [
-            ...templateItems,
-            {
-                label: noTemplate,
-                detail: localize(
-                    'AWS.pickDebugConfig.noTemplate.detail',
-                    'Launch config will execute function in isolation, without referencing a CloudFormation template'
-                ),
-            },
-        ],
-    })
+    templateItems.push({
+        label: noTemplate,
+        detail: localize(
+            'AWS.pickDebugConfig.noTemplate.detail',
+            'Launch config will execute function in isolation, without referencing a CloudFormation template'
+        ),
+        data: { resourceName: '', rootUri: vscode.Uri.file('') },
+    },)
 
-    const choices = await promptUser({ picker })
-    const val = verifySinglePickerOutput(choices)
+    const templateItem = await createQuickPick(templateItems, {
+        ignoreFocusOut: false,
+        matchOnDetail: true,
+        title: localize(
+            'AWS.pickDebugConfig.prompt',
+            'Create a Debug Configuration from a CloudFormation Template'
+        ),
+        step: continuationStep ? 2 : 1,
+        totalSteps: continuationStep ? 2 : 1,
+    }).prompt()
 
-    if (!val) {
+    if (!isValidResponse(templateItem)) {
         return undefined
     }
-    if (val.label === noTemplate) {
+    if (templateItem.resourceName === '') {
         await addSamDebugConfiguration(codeConfig, CODE_TARGET_TYPE, openWebview, {
             step: continuationStep ? 3 : 2,
             totalSteps: continuationStep ? 3 : 2,
         })
     } else {
-        const templateItem = templateItemsMap.get(val.label)
-        if (!templateItem) {
-            return undefined
-        }
         if (templateItem.apiEvent) {
             await addSamDebugConfiguration(templateItem, API_TARGET_TYPE, openWebview)
         } else {

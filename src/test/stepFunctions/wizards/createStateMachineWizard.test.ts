@@ -3,7 +3,7 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 import * as assert from 'assert'
-import { MockPrompter } from '../../lambda/wizards/wizardFramework'
+import { MockPrompter } from '../../shared/wizards/wizardFramework'
 import CreateStateMachineWizard, {
     CreateStateMachineWizardPrompters,
     STARTER_TEMPLATES,

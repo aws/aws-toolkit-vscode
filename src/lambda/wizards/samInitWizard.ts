@@ -13,7 +13,7 @@ import { SchemaClient } from '../../shared/clients/schemaClient'
 import { eventBridgeSchemasDocUrl, samInitDocUrl } from '../../shared/constants'
 import { ext } from '../../shared/extensionGlobals'
 import { Region } from '../../shared/regions/endpoints'
-import { createHelpButton } from '../../shared/ui/buttons'
+import { createBackButton, createHelpButton } from '../../shared/ui/buttons'
 import {
     createRuntimeQuickPick,
     DependencyManager,
@@ -32,7 +32,10 @@ import * as fsutil from '../../shared/filesystemUtilities'
 import { Wizard } from '../../shared/wizards/wizard'
 import { createLocationPrompt } from '../../shared/ui/prompts'
 import { initializeInterface } from '../../shared/transformers'
-import { ButtonBinds, createPrompter, Prompter, QuickPickPrompter } from '../../shared/ui/prompter'
+import { Prompter, PrompterButtons } from '../../shared/ui/prompter'
+import { createInputBox, InputBoxPrompter } from '../../shared/ui/input'
+import { createLabelQuickPick, createQuickPick } from '../../shared/ui/picker'
+import { QuickPickPrompter } from '../../shared/ui/picker'
 
 const localize = nls.loadMessageBundle()
 export interface CreateNewSamAppWizardResponse {
@@ -62,9 +65,14 @@ export interface CreateNewSamAppWizardForm {
     name: string
 }
 
+export interface RuntimePlusPackage {
+    packageType: RuntimePackageType
+    runtime: Runtime
+}
+
 export interface CreateNewSamAppWizardContext {
-    readonly samButtons: ButtonBinds
-    readonly schemaButtons: ButtonBinds
+    readonly samButtons: PrompterButtons
+    readonly schemaButtons: PrompterButtons
     readonly currentCredentials: Credentials | undefined, 
     readonly schemasRegions: Region[], 
     readonly samCliVersion: string
@@ -74,22 +82,17 @@ export interface CreateNewSamAppWizardContext {
     createRegistryPrompter(currRegion: string): Prompter<string>
     createSchemaPrompter(currRegion: string, currRegistry: string): Prompter<string>
     createNamePrompter(defaultValue: string): Prompter<string> 
-    createRuntimePrompter(): Prompter<{ packageType: RuntimePackageType, runtime: Runtime }> 
+    createRuntimePrompter(): Prompter<RuntimePlusPackage> 
     createLocationPrompter(): Prompter<vscode.Uri>
 }
 
 
 export class DefaultCreateNewSamAppWizardContext implements CreateNewSamAppWizardContext {
-    private readonly helpButton = createHelpButton(localize('AWS.command.help', 'View Toolkit Documentation'))
+    private readonly samHelpButton = createHelpButton(samInitDocUrl)
+    private readonly schemaHelpButton = createHelpButton(eventBridgeSchemasDocUrl)
 
-    public readonly samButtons: ButtonBinds = new Map([
-        [vscode.QuickInputButtons.Back, resolve => resolve(undefined)],
-        [this.helpButton, () => vscode.env.openExternal(vscode.Uri.parse(samInitDocUrl))]
-    ])
-    public readonly schemaButtons: ButtonBinds = new Map([
-        [vscode.QuickInputButtons.Back, resolve => resolve(undefined)],
-        [this.helpButton, () => vscode.env.openExternal(vscode.Uri.parse(eventBridgeSchemasDocUrl))]
-    ])
+    public readonly samButtons: PrompterButtons = [createBackButton(), this.samHelpButton]
+    public readonly schemaButtons: PrompterButtons = [createBackButton(), this.schemaHelpButton]
 
     constructor(
         public readonly currentCredentials: Credentials | undefined, 
@@ -97,19 +100,17 @@ export class DefaultCreateNewSamAppWizardContext implements CreateNewSamAppWizar
         public readonly samCliVersion: string
     ) {}
 
-    public createRuntimePrompter(): Prompter<{
-        packageType: RuntimePackageType
-        runtime: Runtime
-    }> {
-        return new QuickPickPrompter(createRuntimeQuickPick(
-            { showImageRuntimes: semver.gte(this.samCliVersion, MINIMUM_SAM_CLI_VERSION_INCLUSIVE_FOR_IMAGE_SUPPORT) },
-        ), this.samButtons)
+    public createRuntimePrompter(): QuickPickPrompter<RuntimePlusPackage> {
+        return createRuntimeQuickPick({ 
+            showImageRuntimes: semver.gte(this.samCliVersion, MINIMUM_SAM_CLI_VERSION_INCLUSIVE_FOR_IMAGE_SUPPORT),
+            buttons: this.samButtons
+        })
     }
 
     public createTemplatePrompter(
         currRuntime: Runtime,
         packageType: RuntimePackageType,
-    ): Prompter<SamTemplate> {
+    ): QuickPickPrompter<SamTemplate> {
         const templates = getSamTemplateWizardOption(currRuntime, packageType, this.samCliVersion)
         const items = templates.toArray().map(template => ({
             label: template,
@@ -117,36 +118,36 @@ export class DefaultCreateNewSamAppWizardContext implements CreateNewSamAppWizar
             detail: getTemplateDescription(template),
         }))
     
-        return createPrompter(items, { 
+        return createQuickPick(items, { 
             title: localize('AWS.samcli.initWizard.template.prompt', 'Select a SAM Application Template'),
-            buttonBinds: this.samButtons,
+            buttons: this.samButtons,
         })
     }
     
-    public createRegionPrompter(): Prompter<string> {
+    public createRegionPrompter(): QuickPickPrompter<string> {
         const items = this.schemasRegions.map(region => ({
             label: region.name,
             detail: region.id,
             data: region.id,
         }))
     
-        return createPrompter(items, { 
+        return createQuickPick(items, { 
             title: localize('AWS.samcli.initWizard.schemas.region.prompt', 'Select an EventBridge Schemas Region'),
-            buttonBinds: this.samButtons,
+            buttons: this.samButtons,
         })
     }
     
-    public createDependencyPrompter(currRuntime: Runtime): Prompter<DependencyManager> {
+    public createDependencyPrompter(currRuntime: Runtime): QuickPickPrompter<DependencyManager> {
         const dependencyManagers = getDependencyManager(currRuntime)
         const items = dependencyManagers.map(dependencyManager => ({ label: dependencyManager }))
     
-        return createPrompter(items, {
+        return createLabelQuickPick(items, {
             title: localize('AWS.samcli.initWizard.dependencyManager.prompt', 'Select a Dependency Manager'),
-            buttonBinds: this.samButtons,
+            buttons: this.samButtons,
         })
     }
     
-    public createRegistryPrompter(currRegion: string): Prompter<string> {
+    public createRegistryPrompter(currRegion: string): QuickPickPrompter<string> {
         const client: SchemaClient = ext.toolkitClientBuilder.createSchemaClient(currRegion)
         const items = SchemasDataProvider.getInstance().getRegistries(
             currRegion,
@@ -165,16 +166,16 @@ export class DefaultCreateNewSamAppWizardContext implements CreateNewSamAppWizar
             }))
         })
     
-        return createPrompter(items, { 
+        return createLabelQuickPick(items, { 
             title: localize('AWS.samcli.initWizard.schemas.registry.prompt', 'Select a Registry'),
-            buttonBinds: this.schemaButtons,
+            buttons: this.schemaButtons,
         })
     }
     
     public createSchemaPrompter(
         currRegion: string,
         currRegistry: string,
-    ): Prompter<string> {
+    ): QuickPickPrompter<string> {
         const client: SchemaClient = ext.toolkitClientBuilder.createSchemaClient(currRegion)
         const items = SchemasDataProvider.getInstance()
             .getSchemas(currRegion, currRegistry, client, this.currentCredentials!)
@@ -202,13 +203,13 @@ export class DefaultCreateNewSamAppWizardContext implements CreateNewSamAppWizar
                 }))
             })
     
-        return createPrompter(items, { 
+        return createLabelQuickPick(items, { 
             title: localize('AWS.samcli.initWizard.schemas.schema.prompt', 'Select a Schema'),
-            buttonBinds: this.schemaButtons,
+            buttons: this.schemaButtons,
         })
     }
     
-    public createNamePrompter(defaultValue: string): Prompter<string> {
+    public createNamePrompter(defaultValue: string): InputBoxPrompter {
         function validateName(value: string): string | undefined {
             if (!value) {
                 return localize('AWS.samcli.initWizard.name.error.empty', 'Application name cannot be empty')
@@ -225,10 +226,10 @@ export class DefaultCreateNewSamAppWizardContext implements CreateNewSamAppWizar
             return undefined
         }
 
-        return createPrompter({
+        return createInputBox({
             value: defaultValue,
             title: localize('AWS.samcli.initWizard.name.prompt', 'Enter a name for your new application'),
-            buttonBinds: this.samButtons,
+            buttons: this.samButtons,
             validateInput: validateName,
         })
     }

@@ -14,8 +14,7 @@ import { samDeployDocUrl } from '../../shared/constants'
 import * as localizedText from '../../shared/localizedText'
 import { getLogger } from '../../shared/logger'
 import { getRegionsForActiveCredentials } from '../../shared/regions/regionUtilities'
-import { createHelpButton } from '../../shared/ui/buttons'
-import * as picker from '../../shared/ui/picker'
+import { createBackButton, createHelpButton } from '../../shared/ui/buttons'
 import * as telemetry from '../../shared/telemetry/telemetry'
 import { difference, filter, IteratorTransformer } from '../../shared/utilities/collectionUtils'
 import { getOverriddenParameters, getParameters } from '../utilities/parameterUtils'
@@ -29,11 +28,14 @@ import { validateBucketName } from '../../s3/util'
 import { showErrorWithLogs } from '../../shared/utilities/messages'
 import { isCloud9 } from '../../shared/extensionUtilities'
 import { SettingsConfiguration } from '../../shared/settingsConfiguration'
-import { ButtonBinds, createPrompter, DataQuickPick, DataQuickPickItem, Prompter } from '../../shared/ui/prompter'
+import { Prompter, PrompterButtons } from '../../shared/ui/prompter'
 import { CloudFormation } from '../../shared/cloudformation/cloudformation'
-import { isWizardControl, makeWizardChain, Wizard, WIZARD_EXIT, WIZARD_GOBACK, WIZARD_RETRY } from '../../shared/wizards/wizard'
+import { isWizardControl, makeWizardChain, Wizard, WIZARD_EXIT, WIZARD_BACK, WIZARD_RETRY } from '../../shared/wizards/wizard'
 import { initializeInterface } from '../../shared/transformers'
 import { configureParameterOverrides } from '../config/configureParameterOverrides'
+import { createInputBox, InputBoxPrompter } from '../../shared/ui/input'
+import { createQuickPick, DataQuickPick, DataQuickPickItem, QuickPickButton, QuickPickPrompter } from '../../shared/ui/picker'
+import { IteratingQuickPickController } from '../../shared/ui/iteratingPicker'
 
 const CREATE_NEW_BUCKET = localize('AWS.command.s3.createBucket', 'Create Bucket...')
 const ENTER_BUCKET = localize('AWS.samcli.deploy.bucket.existingLabel', 'Enter Existing Bucket Name...')
@@ -106,7 +108,7 @@ export interface SamDeployWizardContext {
      */
 
     createS3BucketNamePrompter(title: string): Prompter<string>
-    createStackNamePrompter(): Prompter<string> 
+    createStackNamePrompter(): Prompter<string>
     createS3BucketPrompter(region: string, profile?: string, accountId?: string): Prompter<string> 
     /**
      * Prompts user to enter a bucket name
@@ -176,17 +178,14 @@ export function writeSavedBucket(
 export class DefaultSamDeployWizardContext implements SamDeployWizardContext {
     public readonly getParameters = getParameters
     public readonly getOverriddenParameters = getOverriddenParameters
-    private readonly helpButton = createHelpButton(localize('AWS.command.help', 'View Toolkit Documentation'))
-    private readonly buttonBinds: ButtonBinds = new Map([
-        [vscode.QuickInputButtons.Back, resolve => resolve(undefined)],
-        [this.helpButton, () => vscode.env.openExternal(vscode.Uri.parse(samDeployDocUrl))]
-    ])
+    private readonly helpButton = createHelpButton(samDeployDocUrl, localize('AWS.command.help', 'View Toolkit Documentation'))
+    private readonly buttons: PrompterButtons = [createBackButton(), this.helpButton]
     public newBucketCalled = false
 
     public constructor(readonly extContext: ExtContext) {}
 
-    public createSamTemplatePrompter(): Prompter<CFNTemplate> {
-        return createPrompter(getTemplateChoices(...(this.workspaceFolders || [])), {
+    public createSamTemplatePrompter(): QuickPickPrompter<CFNTemplate> {
+        return createQuickPick(getTemplateChoices(...(this.workspaceFolders || [])), {
             title: localize(
                 'AWS.samcli.deploy.template.prompt',
                 'Which SAM Template would you like to deploy to AWS?'
@@ -197,7 +196,7 @@ export class DefaultSamDeployWizardContext implements SamDeployWizardContext {
     public createParametersPrompter(
         templateUri: vscode.Uri, 
         missingParameters: Set<string> = new Set<string>()
-    ): Prompter<Map<string, string>> {
+    ): QuickPickPrompter<Map<string, string>> {
         if (missingParameters.size < 1) {
             const title = localize(
                 'AWS.samcli.deploy.parameters.optionalPrompt.message',
@@ -211,7 +210,7 @@ export class DefaultSamDeployWizardContext implements SamDeployWizardContext {
                 { label: localizedText.no, data: new Map<string, string>() }
             ]
 
-            return createPrompter(items, { title })
+            return createQuickPick(items, { title, buttons: this.buttons })
         } else {
             const title = localize(
                 'AWS.samcli.deploy.parameters.mandatoryPrompt.message',
@@ -230,10 +229,10 @@ export class DefaultSamDeployWizardContext implements SamDeployWizardContext {
                 { label: responseCancel, data: WIZARD_EXIT }
             ]
 
-            return createPrompter(items, { title })
+            return createQuickPick(items, { title, buttons: this.buttons })
         }
     }
-    public createRegionPrompter(): Prompter<string> {
+    public createRegionPrompter(): QuickPickPrompter<string> {
         const partitionRegions = getRegionsForActiveCredentials(
             this.extContext.awsContext,
             this.extContext.regionProvider
@@ -245,39 +244,38 @@ export class DefaultSamDeployWizardContext implements SamDeployWizardContext {
             data: region.id,
         }))
 
-        return createPrompter(items, {
+        return createQuickPick(items, {
             title: localize('AWS.samcli.deploy.region.prompt', 'Which AWS Region would you like to deploy to?'),
             matchOnDetail: true,
         })
     }
 
-    public createS3BucketPrompter(region: string, profile?: string, accountId?: string, messages?: { noBuckets: string, bucketError: string}): Prompter<string> {
+    public createS3BucketPrompter(region: string, profile?: string, accountId?: string, messages?: { noBuckets: string, bucketError: string}): QuickPickPrompter<string> {
         messages = messages ?? {
             noBuckets: localize('AWS.samcli.deploy.s3bucket.picker.noBuckets', 'No buckets found.'),
             bucketError: localize('AWS.samcli.deploy.s3bucket.picker.error', 'There was an error loading S3 buckets.'),
         }
-        const createBucket = {
+        const createBucket: QuickPickButton<string> = {
             iconPath: {
                 light: vscode.Uri.file(ext.iconPaths.light.plus),
                 dark: vscode.Uri.file(ext.iconPaths.dark.plus),
             },
             tooltip: CREATE_NEW_BUCKET,
+            onClick: resolve => resolve(makeWizardChain(NEW_BUCKET_OPTION)),
         }
-        const enterBucket = {
+        const enterBucket: QuickPickButton<string> = {
             iconPath: {
                 light: vscode.Uri.file(ext.iconPaths.light.edit),
                 dark: vscode.Uri.file(ext.iconPaths.dark.edit),
             },
             tooltip: ENTER_BUCKET,
+            onClick: resolve => resolve(makeWizardChain(ENTER_BUCKET_OPTION)),
         }
 
-        const bucketButtons = new Map(this.buttonBinds)
-        bucketButtons.set(createBucket, resolve => resolve([{ data: makeWizardChain(NEW_BUCKET_OPTION) }]))
-        bucketButtons.set(enterBucket, resolve => resolve([{ data: makeWizardChain(ENTER_BUCKET_OPTION) }]))
-        const prompter = createPrompter<string>([], {
+        const prompter = createQuickPick<string>([], {
             title: localize('AWS.samcli.deploy.s3Bucket.prompt', 'Select an AWS S3 Bucket to deploy code to'),
             matchOnDetail: true,
-            buttonBinds: bucketButtons,
+            buttons: ([createBucket, enterBucket] as PrompterButtons<string>).concat(this.buttons)
         })
         const quickPick = prompter.quickInput as any
 
@@ -296,12 +294,12 @@ export class DefaultSamDeployWizardContext implements SamDeployWizardContext {
         return (vscode.workspace.workspaceFolders || []).map(f => f.uri)
     }
 
-    public createS3BucketNamePrompter(title: string): Prompter<string> {
-        return createPrompter({ title, buttonBinds: this.buttonBinds, validateInput: validateBucketName })
+    public createS3BucketNamePrompter(title: string): InputBoxPrompter {
+        return createInputBox({ title, buttons: this.buttons, validateInput: validateBucketName })
     }
 
-    public createEcrRepoPrompter(region: string): Prompter<EcrRepository> {
-        const prompter = createPrompter<EcrRepository>([], {
+    public createEcrRepoPrompter(region: string): QuickPickPrompter<EcrRepository> {
+        const prompter = createQuickPick<EcrRepository>([], {
             title: localize('AWS.samcli.deploy.ecrRepo.prompt', 'Select a ECR repo to deploy images to'),
             matchOnDetail: true,
         })
@@ -309,8 +307,8 @@ export class DefaultSamDeployWizardContext implements SamDeployWizardContext {
             () => ext.toolkitClientBuilder.createEcrClient(region).describeRepositories(),
             response => (response === undefined ? [] : [{ label: response.repositoryName, data: response }])
         )
-        const controller = new picker.IteratingQuickPickController(
-            prompter.quickInput as vscode.QuickPick<DataQuickPickItem<EcrRepository>>, populator)
+        const controller = new IteratingQuickPickController(
+            prompter.quickPick as DataQuickPick<EcrRepository>, populator)
         controller.startRequests()
         return prompter
     }
@@ -324,11 +322,11 @@ export class DefaultSamDeployWizardContext implements SamDeployWizardContext {
      * @returns Stack name. Undefined represents cancel.
      */
 
-    public createStackNamePrompter(): Prompter<string> {
-        return createPrompter({
+    public createStackNamePrompter(): InputBoxPrompter {
+        return createInputBox({
             title: localize('AWS.samcli.deploy.stackName.prompt', 'Enter the name to use for the deployed stack'),
             validateInput: validateStackName,
-            buttonBinds: this.buttonBinds,
+            buttons: this.buttons,
         })
     }
 }
@@ -356,7 +354,7 @@ export class SamDeployWizard extends Wizard<SamDeployWizardResponse> {
                                 'Support for Image-based Lambdas requires a minimum SAM CLI version of 1.13.0.'
                             )
                         )
-                        return WIZARD_GOBACK
+                        return WIZARD_BACK
                     }
                 }
 
@@ -392,16 +390,17 @@ export class SamDeployWizard extends Wizard<SamDeployWizardResponse> {
                     return WIZARD_EXIT
                 }
             }
-        ), { 
-            showWhen: form => form.template?.uri !== undefined && overrides === undefined, setDefault: () => overrides ?? new Map() })
+        ), { showWhen: form => form.template?.uri !== undefined && overrides === undefined, setDefault: () => overrides ?? new Map() }
+        )
 
         this.form.region.bindPrompter(() => context.createRegionPrompter())
         this.form.s3Bucket.bindPrompter(form => context.createS3BucketPrompter(form.region!, profile, accountId))
+            // PROMPTERS CAN RETURN OTHER PROMPTERS??????????
             .chainPrompter((form, response) => {
                 if (response === ENTER_BUCKET_OPTION) {
                     return context.createS3BucketNamePrompter(localize('AWS.s3.createBucket.prompt', 'Enter a new bucket name')).after(async response => {
                         if (typeof response !== 'string') {
-                            return WIZARD_GOBACK
+                            return WIZARD_BACK
                         }
 
                         try {
@@ -582,6 +581,7 @@ async function populateS3QuickPick(
             recent = existingBuckets[profile][selectedRegion]
             baseItems.push({
                 label: recent,
+                data: recent,
                 description: localize('AWS.profile.recentlyUsed', 'recently used'),
             })
         }
@@ -592,6 +592,7 @@ async function populateS3QuickPick(
     if (isCloud9() && recent !== cloud9Bucket) {
         baseItems.push({
             label: cloud9Bucket,
+            data: cloud9Bucket,
             detail: localize('AWS.samcli.deploy.bucket.cloud9name', 'Default AWS Cloud9 Bucket'),
         })
     }
@@ -610,7 +611,7 @@ async function populateS3QuickPick(
                 { label: ENTER_BUCKET, data: ENTER_BUCKET_OPTION },
                 {
                     label: messages.noBuckets,
-                    data: WIZARD_GOBACK,
+                    data: WIZARD_BACK,
                     description: goBack,
                 },
             ]
@@ -620,6 +621,7 @@ async function populateS3QuickPick(
                 .map(bucket => {
                     return {
                         label: bucket.name,
+                        data: bucket.name,
                     }
                 })
 
@@ -634,7 +636,7 @@ async function populateS3QuickPick(
             {
                 label: messages.bucketError,
                 description: goBack,
-                data: WIZARD_GOBACK,
+                data: WIZARD_BACK,
                 detail: err.message,
             },
         ]

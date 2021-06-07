@@ -13,9 +13,9 @@
 
 import * as vscode from 'vscode'
 import { Wizard, WizardControl, WizardSchema } from '../../../shared/wizards/wizard'
-import { waitUntil } from '../../../shared/utilities/timeoutUtils'
 import * as assert from 'assert'
-import { DataQuickPickItem, Prompter } from '../../../shared/ui/prompter'
+import { Prompter, PrompterButtons } from '../../../shared/ui/prompter'
+import { DataQuickPickItem } from '../../../shared/ui/picker'
 
 // Only button that we can support is the 'back' button currently
 // TODO: stub out 'onDidTriggerButton' with our own event emitter
@@ -46,12 +46,16 @@ function isQuickPick(prompter: any): prompter is vscode.QuickPick<any> {
     return prompter !== undefined && prompter.items !== undefined
 }
 
+function isInputBox(prompter: any): prompter is vscode.InputBox {
+    return prompter !== undefined && prompter.password !== undefined
+}
+
 function isQuickPickItem(item: any): item is vscode.QuickPickItem {
     return item !== undefined && item.label !== undefined
 }
 
-function isInputBox(prompter: any): prompter is vscode.InputBox {
-    return prompter !== undefined && prompter.password !== undefined
+function isQuickInputButton(item: any): item is vscode.QuickInputButton {
+    return item !== undefined && item.label !== undefined
 }
 
 /**
@@ -83,10 +87,15 @@ function selectQuickPickItem<T extends vscode.QuickPickItem>(
 }
 
 
-async function execute(prompter: vscode.QuickInput, [command, data]: WizardCommand): Promise<void> {
+async function execute(prompter: vscode.QuickInput & { buttons: PrompterButtons<any> }, [command, data]: WizardCommand): Promise<void> {
     switch (command) {
         case WizardCommandType.BUTTON: {
-            throw new Error('NOT IMPLEMENTED')
+            assert.ok(isQuickInputButton(data), 'Button command must provide a QuickInputButton')
+            prompter.buttons.forEach(button => {
+                if (button.iconPath === data.iconPath) {
+                    // TODO
+                }
+            })
             break
         }
         case WizardCommandType.QUICKPICK: {
@@ -134,6 +143,8 @@ async function execute(prompter: vscode.QuickInput, [command, data]: WizardComma
 }
 
 export class WizardTester<TState extends WizardSchema<TState>, TResult> {
+    private failedTestEmitter = new vscode.EventEmitter<Error>()
+
     // ideally we would reuse QuickInput objects for wizards (thus no need to test the wizard directly)
     // but since the prompts are being dynamically generated we need to poll for a new one after each
     // command
@@ -143,66 +154,36 @@ export class WizardTester<TState extends WizardSchema<TState>, TResult> {
     ) {
     }
 
-    private async waitForPrompter(): Promise<Prompter<any>> {
-        const prompter = await waitUntil(
-            async () => this.wizard.getCurrentPrompter(), 
-            { interval: 1, timeout: 1000, truthy: false }
-        )
-
-        assert.ok(prompter !== undefined, 'Timeout while waiting for next prompt')
-
-        const isReady = await waitUntil(
-            async () => this.wizard.getCurrentPrompter() !== undefined &&
-                this.wizard.getCurrentPrompter()!.busy === false && 
-                this.wizard.getCurrentPrompter()!.enabled === true, 
-            { interval: 1, timeout: 1000, truthy: true }
-        )
-
-        assert.ok(isReady, 'Prompt was not ready for input')
-
-        return this.wizard.getCurrentPrompter()!
-    }
-
-    private async waitForTermination(): Promise<void> {
-        const noPrompter = await waitUntil(
-            async () => this.wizard.getCurrentPrompter() === undefined, 
-            { interval: 1, timeout: 1000, truthy: true }
-        )
-
-        assert.ok(noPrompter, 'Wizard did not terminate')
-    }
-
-    public async step(): Promise<void> {
-        const prompter = await this.waitForPrompter()
+    public async step(prompter: Prompter<any>): Promise<void> {
         const command = this.commandSequence.shift()
-
         assert.ok(command !== undefined, 'Cannot execute an undefined wizard command')
-        await execute(prompter.quickInput, command)
+        prompter.onReadyForInput(() => 
+            execute(prompter.quickInput, command).catch(e => 
+                this.failedTestEmitter.fire(new Error(`Wizard command "${command}" failed: ${e.message}`))
+            )
+        )
     }
 
     public async run(): Promise<TState | TResult | undefined> {
+        this.wizard.onNextPrompt(prompter => this.step(prompter))
         const result = this.wizard.run()
+        const failedPromise: Promise<any> = new Promise((_, reject) => this.failedTestEmitter.event(reject))
 
-        while (this.commandSequence.length > 0) {
-            await this.step()
-        }
-
-        await this.waitForTermination()
-        return await result
+        return Promise.race([result, failedPromise])
     }
 }
 
 export class MockPrompter<T> extends Prompter<T> {
     constructor(private output: T | WizardControl | undefined) {
-        super(vscode.window.createInputBox())
+        super(vscode.window.createInputBox() as any)
     }
     public async prompt(): Promise<WizardControl | T | undefined> {
         return super.applyAfterCallbacks(this.output) as unknown as any // fix this type
     }
-    public setLastPicked(picked?: T | DataQuickPickItem<T> | DataQuickPickItem<T>[]): void {
+    public setLastResponse(picked?: T | DataQuickPickItem<T> | DataQuickPickItem<T>[]): void {
         return
     }
-    public getLastPicked(): undefined {
+    public getLastResponse(): undefined {
         return undefined
     }
 }

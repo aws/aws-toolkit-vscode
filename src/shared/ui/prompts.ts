@@ -6,9 +6,10 @@
 import * as vscode from 'vscode'
 import * as os from 'os'
 import { addCodiconToString } from '../utilities/textUtilities'
-import { DataQuickPickItem, createPrompter, Prompter, ButtonBinds } from './prompter'
+import { PrompterButtons } from './prompter'
 import * as nls from 'vscode-nls'
-import { WIZARD_RETRY } from '../wizards/wizard'
+import { WizardControl, WIZARD_RETRY } from '../wizards/wizard'
+import { createQuickPick, DataQuickPickItem, QuickPickPrompter } from './picker'
 
 const localize = nls.loadMessageBundle()
 
@@ -38,7 +39,7 @@ export class BrowseFolderQuickPickItem implements DataQuickPickItem<vscode.Uri> 
         private readonly defaultUri: vscode.Uri = vscode.Uri.file(os.homedir())
     ) {}
 
-    public get data(): () => Promise<vscode.Uri | symbol> {
+    public get data(): () => Promise<vscode.Uri | WizardControl> {
         return async () => {
             const result = await vscode.window.showOpenDialog({
                 defaultUri: this.defaultUri,
@@ -59,12 +60,12 @@ export class BrowseFolderQuickPickItem implements DataQuickPickItem<vscode.Uri> 
 
  export function createLocationPrompt(
     folders: Folder[] | readonly vscode.WorkspaceFolder[] = [],
-    buttonBinds?: ButtonBinds,
+    buttons?: PrompterButtons<vscode.Uri>,
     overrideText?: {
         detail?: string,
         title?: string,
     }
-): Prompter<vscode.Uri> {
+): QuickPickPrompter<vscode.Uri> {
     const browseLabel = 
         (folders.length > 0) ?
         addCodiconToString(
@@ -89,9 +90,9 @@ export class BrowseFolderQuickPickItem implements DataQuickPickItem<vscode.Uri> 
             )
     )
 
-    return createPrompter(items, { 
+    return createQuickPick(items, { 
         ignoreFocusOut: true, 
         title: overrideText?.title ?? localize('AWS.wizard.location.prompt', 'Select a workspace folder for your new project'),
-        buttonBinds: buttonBinds,
+        buttons: buttons,
     })
 }

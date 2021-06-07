@@ -20,8 +20,8 @@ import {
     PublishSSMDocumentAction,
 } from '../../../ssmDocument/wizards/publishDocumentWizard'
 import { MockSsmDocumentClient } from '../../shared/clients/mockClients'
-import * as picker from '../../../shared/ui/picker'
 import { FakeAwsContext, FakeRegionProvider } from '../../utilities/fakeAwsContext'
+import { QuickPickPrompter } from '../../../shared/ui/picker'
 
 let sandbox: sinon.SinonSandbox
 
@@ -68,14 +68,10 @@ describe('publishSSMDocument', async function () {
     const fakeRegions = [
         {
             label: 'us-east-1',
+            data: 'us-east-1',
             description: 'us-east-1',
         },
     ]
-
-    const fakeRegion = {
-        label: 'us-east-1',
-        description: 'us-east-1',
-    }
 
     let textDocument: vscode.TextDocument
     let apiCalled: string
@@ -87,8 +83,7 @@ describe('publishSSMDocument', async function () {
         sandbox.stub(vscode.window, 'activeTextEditor').value({
             document: textDocument,
         })
-        sandbox.stub(picker, 'promptUser').onFirstCall().returns(Promise.resolve(fakeRegions))
-        sandbox.stub(picker, 'verifySinglePickerOutput').onFirstCall().returns(fakeRegion)
+        sandbox.stub(QuickPickPrompter.prototype, 'prompt').onFirstCall().returns(Promise.resolve(fakeRegions))
         initializeClientBuilders()
     })
 

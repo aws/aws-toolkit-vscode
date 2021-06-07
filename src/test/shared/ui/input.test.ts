@@ -4,11 +4,12 @@
  */
 
 import * as assert from 'assert'
+import { createBackButton } from '../../../shared/ui/buttons'
 import * as vscode from 'vscode'
 import * as input from '../../../shared/ui/input'
 
 describe('createInputBox', async function () {
-    let testInput: vscode.InputBox | undefined
+    let testInput: input.DataInputBox | undefined
 
     afterEach(function () {
         if (testInput) {
@@ -18,11 +19,9 @@ describe('createInputBox', async function () {
     })
 
     it('Sets buttons', async function () {
-        const buttons: vscode.QuickInputButton[] = [vscode.QuickInputButtons.Back]
+        const buttons = [createBackButton()]
 
-        testInput = input.createInputBox({
-            buttons: buttons,
-        })
+        testInput = input.createInputBox({ buttons }).inputBox
 
         assert.deepStrictEqual(testInput.buttons, buttons)
     })
@@ -34,9 +33,7 @@ describe('createInputBox', async function () {
             ignoreFocusOut: true,
         }
 
-        testInput = input.createInputBox({
-            options: options,
-        })
+        testInput = input.createInputBox(options).inputBox
 
         assertInputBoxOptions(testInput, options)
     })
@@ -46,25 +43,13 @@ describe('createInputBox', async function () {
             ignoreFocusOut: false,
         }
 
-        testInput = input.createInputBox({
-            options: options,
-        })
-
-        assertInputBoxOptions(testInput, options)
-    })
-
-    it('Sets Options to undefined values', async function () {
-        const options = {}
-
-        testInput = input.createInputBox({
-            options: options,
-        })
+        testInput = input.createInputBox(options).inputBox
 
         assertInputBoxOptions(testInput, options)
     })
 
     it('Does not set Options', async function () {
-        testInput = input.createInputBox({})
+        testInput = input.createInputBox({}).inputBox
 
         assertInputBoxOptions(testInput, {})
     })

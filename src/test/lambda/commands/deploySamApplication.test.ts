@@ -122,7 +122,7 @@ describe('deploySamApplication', async function () {
     }
     let settings: SettingsConfiguration
 
-    let samDeployWizardResponse: SamDeployWizardResponse | undefined
+    let samDeployWizardResponse: SamDeployWizardResponse
     const samDeployWizard = async (): Promise<SamDeployWizardResponse | undefined> => {
         return samDeployWizardResponse
     }
@@ -148,7 +148,7 @@ describe('deploySamApplication', async function () {
             region: 'region',
             s3Bucket: 'bucket',
             stackName: 'stack',
-            template: vscode.Uri.file(templatePath),
+            template: { uri: vscode.Uri.file(templatePath) },
         }
 
         runningDeployProcess = undefined
@@ -249,11 +249,9 @@ describe('deploySamApplication', async function () {
 
     it('saves one bucket max to multiple regions', async () => {
         samDeployWizardResponse = {
-            parameterOverrides: new Map<string, string>(),
+            ...samDeployWizardResponse,
             region: 'region0',
             s3Bucket: 'bucket0',
-            stackName: 'stack',
-            template: vscode.Uri.file(templatePath),
         }
 
         await deploySamApplication(
@@ -270,12 +268,11 @@ describe('deploySamApplication', async function () {
 
         await waitForDeployToComplete()
         samDeployWizardResponse = {
-            parameterOverrides: new Map<string, string>(),
+            ...samDeployWizardResponse,
             region: 'region1',
             s3Bucket: 'bucket1',
-            stackName: 'stack',
-            template: vscode.Uri.file(templatePath),
         }
+
         await deploySamApplication(
             {
                 samCliContext: goodSamCliContext(),
@@ -290,12 +287,11 @@ describe('deploySamApplication', async function () {
 
         await waitForDeployToComplete()
         samDeployWizardResponse = {
-            parameterOverrides: new Map<string, string>(),
+            ...samDeployWizardResponse,
             region: 'region2',
             s3Bucket: 'bucket2',
-            stackName: 'stack',
-            template: vscode.Uri.file(templatePath),
         }
+
         await deploySamApplication(
             {
                 samCliContext: goodSamCliContext(),
@@ -310,12 +306,11 @@ describe('deploySamApplication', async function () {
 
         await waitForDeployToComplete()
         samDeployWizardResponse = {
-            parameterOverrides: new Map<string, string>(),
+            ...samDeployWizardResponse,
             region: 'region0',
             s3Bucket: 'bucket3',
-            stackName: 'stack',
-            template: vscode.Uri.file(templatePath),
         }
+
         await deploySamApplication(
             {
                 samCliContext: goodSamCliContext(),
@@ -342,11 +337,9 @@ describe('deploySamApplication', async function () {
     it('saves one bucket per region per profile', async () => {
         profile = 'testAcct0'
         samDeployWizardResponse = {
-            parameterOverrides: new Map<string, string>(),
+            ...samDeployWizardResponse,
             region: 'region0',
             s3Bucket: 'bucket0',
-            stackName: 'stack',
-            template: vscode.Uri.file(templatePath),
         }
 
         await deploySamApplication(
@@ -364,11 +357,9 @@ describe('deploySamApplication', async function () {
         await waitForDeployToComplete()
         profile = 'testAcct1'
         samDeployWizardResponse = {
-            parameterOverrides: new Map<string, string>(),
+            ...samDeployWizardResponse,
             region: 'region0',
             s3Bucket: 'bucket1',
-            stackName: 'stack',
-            template: vscode.Uri.file(templatePath),
         }
         await deploySamApplication(
             {
@@ -429,12 +420,10 @@ describe('deploySamApplication', async function () {
     })
 
     it('exits if the wizard is cancelled', async function () {
-        samDeployWizardResponse = undefined
-
         await deploySamApplication(
             {
                 samCliContext: goodSamCliContext(),
-                samDeployWizard,
+                samDeployWizard: () => Promise.resolve(undefined),
             },
             {
                 awsContext,

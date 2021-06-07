@@ -26,8 +26,6 @@ interface PropertyOptions<TState, TProp> {
      * the step is added to the wizard, decreasing the total number of steps.
      */
     //autoSelect?: boolean (not implemented)
-
-    before?: (state: WizardSchema<TState>) => Promise<WizardControl | undefined>
 }
 
 export type WizardQuickPickItem<T> =  T extends string 
@@ -35,7 +33,7 @@ export type WizardQuickPickItem<T> =  T extends string
     : vscode.QuickPickItem & { metadata: T | symbol | (() => Promise<T | symbol>) }
 
 /** Returning this causes the wizard to retry the current step */
-//export type WizardControl = typeof WIZARD_RETRY | typeof WIZARD_CHAIN | typeof WIZARD_GOBACK | typeof WIZARD_EXIT
+//export type WizardControl = typeof WIZARD_RETRY | typeof WIZARD_CHAIN | typeof WIZARD_BACK | typeof WIZARD_EXIT
 
 // We use a symbol to safe-guard against collisions
 const WIZARD_CONTROL = Symbol()
@@ -52,7 +50,7 @@ export function makeWizardChain<T>(data: T): WizardControl<T> {
 }
 
 export const WIZARD_RETRY: WizardControl = { id: WIZARD_CONTROL, type: WizardControlType.Retry }
-export const WIZARD_GOBACK: WizardControl = { id: WIZARD_CONTROL, type: WizardControlType.Back }
+export const WIZARD_BACK: WizardControl = { id: WIZARD_CONTROL, type: WizardControlType.Back }
 export const WIZARD_EXIT: WizardControl = { id: WIZARD_CONTROL, type: WizardControlType.Exit }
 
 export interface WizardControl<T=any> {
@@ -89,10 +87,9 @@ type PrompterBind<TProp, TState> = (getPrompter: (state: WizardSchema<TState> & 
     Prompter<TProp>, options?: PropertyOptions<TState, TProp>) => WizardChainElement<TProp, TState>
 
 type ChainPrompterBind<TProp, TState> = (getPrompter: (state: WizardSchema<TState> & { stepCache: StepCache }, response: TProp) => 
-    Prompter<TProp>, options?: PropertyOptions<TState, TProp>) => WizardChainElement<TProp, TState>
+    Prompter<TProp>) => WizardChainElement<TProp, TState>
 interface WizardFormElement<TProp, TState> {
     /**
-     * TODO: change this so Prompters are not regenerated upon every call (i.e. add update functionality to prompter)
      * Binds a Prompter provider to the specified property. The provider is called whenever the property is ready for 
      * input, and should return a Prompter object.
      */
@@ -108,7 +105,7 @@ interface WizardChainElement<TProp, TState> {
  */
 type WizardForm<T, TState=T> = {
     [Property in keyof T]-?: T[Property] extends Record<string, unknown> 
-        ? WizardForm<T[Property], TState> & WizardFormElement<T[Property], TState>
+        ? (WizardForm<T[Property], TState> & WizardFormElement<T[Property], TState>)
         : WizardFormElement<T[Property], TState>
 }
 
@@ -137,6 +134,7 @@ type StepCache = { [key: string]: any }
 
 type StepWithOptions<TState, TProp> = PropertyOptions<TState, TProp> & { boundStep?: StateStepFunction<TState> }
 
+// TODO: make wizard not extend from this class. testing would be easier if we can just inject data into the wizard?
 /**
  * A generic wizard that consumes data from a series of 'prompts'. Wizards will modify a single property of
  * their internal state with each prompt. Classes that extend this base class can assign Prompters to individual
@@ -144,10 +142,11 @@ type StepWithOptions<TState, TProp> = PropertyOptions<TState, TProp> & { boundSt
  */
 export abstract class Wizard<TState extends WizardSchema<TState>, TResult=TState> {
     private readonly formData = new Map<string, { options: StepWithOptions<TState, any>[], step: number }>()
-    private currentPromper?: Prompter<any>
     protected readonly form!: WizardForm<TState> 
     private readonly stateController!: StateMachineController<TState>
     private lastResponse: any
+    private nextPromptEventEmitter = new vscode.EventEmitter<Prompter<any>>()
+    public onNextPrompt: vscode.Event<Prompter<any>> = this.nextPromptEventEmitter.event
 
     public constructor(private readonly schema: WizardSchema<TState>, initState?: Partial<TState>) {
         this.form = this.createWizardForm(schema)
@@ -167,6 +166,34 @@ export abstract class Wizard<TState extends WizardSchema<TState>, TResult=TState
         return state
     }
 
+    private createDefaultPrototype(state: TState): TState {
+        const proto = Object.assign({}, state)
+
+        this.formData.forEach((options, targetProp) => {
+            if (_.get(state, targetProp) !== undefined) {
+                return
+            }
+
+            const pathParts = targetProp.split('.')
+            const opt = options.options[0] // We only care about the base option
+            let obj = proto
+            while (pathParts.length > 1) {
+                const key = pathParts.shift()!
+                obj = Object.assign({}, _.get(obj, key))
+            }
+            const prop = pathParts.pop()!
+
+            Object.defineProperty(obj, prop, {
+                get: () => _.get(state, targetProp, opt.setDefault !== undefined ? opt.setDefault(state) : undefined),
+                set: v => _.set(state, targetProp, v), // this line can be commented out to make the state read-only
+                enumerable: true,
+                configurable: true,
+            })
+        })
+
+        return proto
+    }
+
     public async run(): Promise<TState | TResult | undefined> {
         this.resolveNextSteps(this.schema as any).forEach(step => this.stateController.addStep(step))
         try {
@@ -175,16 +202,12 @@ export abstract class Wizard<TState extends WizardSchema<TState>, TResult=TState
             if (outputState !== undefined) {
                 delete (outputState as any)['stepCache']
             }
-            return outputState ? this.applyDefaults(outputState) : undefined
+            return outputState !== undefined ? this.createDefaultPrototype(outputState) : undefined
         } catch (e) {
             if (e.message !== 'exit') {
                 throw e
             }
         }
-    }
-
-    public getCurrentPrompter(): Prompter<any> | undefined {
-        return this.currentPromper
     }
 
     private createBindPrompterMethod<TProp>(propPath: string[], isChain = false): PrompterBind<TProp, TState> {
@@ -195,16 +218,14 @@ export abstract class Wizard<TState extends WizardSchema<TState>, TResult=TState
             const prop = propPath.join('.')
 
             if (this.formData.get(prop) !== undefined && !isChain) {
-                throw new Error('Can only bind one prompt per property')
+                throw new Error('Can only bind one prompt-provider per property')
             }
 
             const stepCache: StepCache = {}
             const boundStep = async (state: TState) => {
                 // TODO: move this code somewhere else
-                const stateWithCache = Object.assign(state, { stepCache: stepCache })
-                if (options.before !== undefined) {
-                    await options.before(stateWithCache)
-                }
+                const stateWithCache = Object.defineProperty(state, 'stepCache', { value: stepCache, enumerable: false, configurable: true })
+                //const defaultProto = this.createDefaultPrototype(stateWithCache) as TState & { stepCache: StepCache }
 
                 const response = await this.promptUser(stateWithCache, 
                     prompterProvider(stateWithCache, isChain ? this.lastResponse.data : undefined))
@@ -213,14 +234,18 @@ export abstract class Wizard<TState extends WizardSchema<TState>, TResult=TState
                     _.set(state, prop, response)
                 }
 
+                const step = this.formData.get(prop)!.step
+
                 if (isWizardChain(response)) {
+                    if (step === this.formData.get(prop)!.options.length) {
+                        throw new Error('Unexpected wizard chain. There is no prompter-provider to chain with.')
+                    }
                     this.formData.get(prop)!.step += 1
                     this.lastResponse = response
                 } else if (isWizardBack(response) || response === undefined) {
-                    const step = this.formData.get(prop)!.step
                     this.formData.get(prop)!.step = Math.max(0, step - 1)
                 } else if (isWizardExit(response)) {
-                    throw new Error('exit') // wow what a good way to exit
+                    throw new Error('exit') // TODO: add exit signal to state machine
                 }
                 
                 return { 
@@ -230,11 +255,10 @@ export abstract class Wizard<TState extends WizardSchema<TState>, TResult=TState
                 }
             }
     
-            const last = this.formData.get(propPath.join('.')) ?? { options: [], step: 0 }
+            const last = this.formData.get(prop) ?? { options: [], step: 0 }
             last.options.push({ ...options, boundStep })
-            this.formData.set(propPath.join('.'), last)
+            this.formData.set(prop, last)
 
-            // chains
             return { chainPrompter: this.createBindPrompterMethod<TProp>(propPath, true) as ChainPrompterBind<TProp, TState> }
         }
     }
@@ -276,20 +300,18 @@ export abstract class Wizard<TState extends WizardSchema<TState>, TResult=TState
         state: TState & { stepCache: StepCache }, 
         prompter: Prompter<TProp>,
     ): Promise<QuickInputTypes<TProp>> {
-        this.currentPromper = prompter
         prompter.setSteps(this.stateController.currentStep, this.stateController.totalSteps)
 
         if (state.stepCache.picked !== undefined) {
-            prompter.setLastPicked(state.stepCache.picked)
+            prompter.setLastResponse(state.stepCache.picked)
         }
 
+        this.nextPromptEventEmitter.fire(prompter)
         const answer = await prompter.prompt()
 
         if (answer !== undefined) {
-            state.stepCache.picked = prompter.getLastPicked()
+            state.stepCache.picked = prompter.getLastResponse()
         }
-
-        this.currentPromper = undefined
 
         return answer
     }

@@ -20,11 +20,13 @@ import { SamCliBuildInvocation } from '../../shared/sam/cli/samCliBuild'
 import { getSamCliContext } from '../../shared/sam/cli/samCliContext'
 import * as telemetry from '../../shared/telemetry/telemetry'
 import { SamTemplateGenerator } from '../../shared/templates/sam/samTemplateGenerator'
-import { createQuickPick, promptUser, verifySinglePickerOutput } from '../../shared/ui/picker'
+import { createLabelQuickPick } from '../../shared/ui/picker'
 import { Window } from '../../shared/vscode/window'
 import { LambdaFunctionNode } from '../explorer/lambdaFunctionNode'
 import { addCodiconToString } from '../../shared/utilities/textUtilities'
 import { getLambdaDetails } from '../utils'
+import { createBackButton } from '../../shared/ui/buttons'
+import { isValidResponse } from '../../shared/ui/prompter'
 
 /**
  * Executes the "Upload Lambda..." command.
@@ -54,33 +56,18 @@ async function selectUploadTypeAndRunUpload(functionNode: LambdaFunctionNode): P
     }
 
     // TODO: Add help button? Consult with doc writers.
-    const picker = createQuickPick({
-        options: {
-            canPickMany: false,
-            ignoreFocusOut: true,
-            title: localize('AWS.lambda.upload.title', 'Select Upload Type'),
-            step: 1,
-            totalSteps: 1,
-        },
-        items: [uploadZipItem, uploadDirItem],
-        buttons: [vscode.QuickInputButtons.Back],
-    })
-    const response = verifySinglePickerOutput(
-        await promptUser({
-            picker: picker,
-            onDidTriggerButton: (button, resolve, reject) => {
-                if (button === vscode.QuickInputButtons.Back) {
-                    resolve(undefined)
-                }
-            },
-        })
-    )
+    const response = await createLabelQuickPick([uploadZipItem, uploadDirItem], {
+        title: localize('AWS.lambda.upload.title', 'Select Upload Type'),
+        step: 1,
+        totalSteps: 1,
+        buttons: [createBackButton()]
+    }).prompt()
 
-    if (!response) {
+    if (!isValidResponse(response)) {
         return 'Cancelled'
     }
 
-    if (response === uploadZipItem) {
+    if (response === uploadZipItem.label) {
         return await runUploadLambdaZipFile(functionNode)
     } else {
         return await runUploadDirectory(functionNode)
@@ -118,27 +105,12 @@ async function runUploadDirectory(
     }
 
     // TODO: Add help button? Consult with doc writers.
-    const picker = createQuickPick({
-        options: {
-            canPickMany: false,
-            ignoreFocusOut: true,
+    const response = await createLabelQuickPick([zipDirItem, buildDirItem], {
             title: localize('AWS.lambda.upload.buildDirectory.title', 'Build directory?'),
             step: 2,
             totalSteps: 2,
-        },
-        items: [zipDirItem, buildDirItem],
-        buttons: [vscode.QuickInputButtons.Back],
-    })
-    const response = verifySinglePickerOutput(
-        await promptUser({
-            picker: picker,
-            onDidTriggerButton: (button, resolve, reject) => {
-                if (button === vscode.QuickInputButtons.Back) {
-                    resolve(undefined)
-                }
-            },
-        })
-    )
+            buttons: [createBackButton()],
+    }).prompt()
 
     if (!response) {
         return await selectUploadTypeAndRunUpload(functionNode)
@@ -148,7 +120,7 @@ async function runUploadDirectory(
         return 'Cancelled'
     }
 
-    if (response === zipDirItem) {
+    if (response === zipDirItem.label) {
         return await window.withProgress(
             {
                 location: vscode.ProgressLocation.Notification,
