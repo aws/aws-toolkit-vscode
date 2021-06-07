@@ -5,12 +5,11 @@
 
 import * as assert from 'assert'
 import * as sinon from 'sinon'
-import { StateMachineController, WIZARD_GOBACK, WIZARD_RETRY } from '../../../shared/wizards/stateController'
+import { StateMachineController, StateMachineControl } from '../../../shared/wizards/stateController'
 
-function assertSteps<T>(controller: StateMachineController<T>, current: number, total: number, state?: T): { nextState?: T } {
+function assertSteps<T>(controller: StateMachineController<T>, current: number, total: number): void {
     assert.strictEqual(controller.currentStep, current)
     assert.strictEqual(controller.totalSteps, total)
-    return { nextState: state }
 }
 
 describe('StateMachineController', function () {
@@ -25,20 +24,20 @@ describe('StateMachineController', function () {
         await assert.doesNotReject(controller.run())
     })
 
-    it('can be reset', async function() {
+    it('can exit mid-run', async function() {
         const controller = new StateMachineController<number>()
         const step1 = sinon.stub()
         const step2 = sinon.stub()
-        step1.onFirstCall().returns(1)
-        step2.onFirstCall().returns(2)
-        step1.onSecondCall().returns(3)
-        step2.onSecondCall().returns(4)
+        const step3 = sinon.stub()
+        step1.returns(0)
+        step2.returns({ controlSignal: StateMachineControl.Exit })
+        step3.returns(1)
         controller.addStep(step1)
         controller.addStep(step2)
+        controller.addStep(step3)
 
-        assert.strictEqual(await controller.run(), 2)
-        controller.reset()
-        assert.strictEqual(await controller.run(), 4)
+        assert.strictEqual(await controller.run(), undefined, 'State machine did not exit with an undefined state')
+        assert.strictEqual(step3.called, false, 'The third step should not be called')
     })
 
     it('detects cycle', async function() {
@@ -46,7 +45,7 @@ describe('StateMachineController', function () {
         const step1 = sinon.stub()
         const step2 = sinon.stub()
         step1.returns({})
-        step2.onFirstCall().returns(WIZARD_GOBACK)
+        step2.onFirstCall().returns(undefined)
         step2.onSecondCall().returns({ nextState: {}, nextSteps: [step1] })
         controller.addStep(step1)
         controller.addStep(step2)
@@ -54,11 +53,23 @@ describe('StateMachineController', function () {
         await assert.rejects(controller.run(), /Cycle/)
     })
 
+    it('can add the same function as a step multiple times', async function() {
+        const controller = new StateMachineController<number>()
+        const step1 = sinon.stub()
+        step1.onFirstCall().returns(0)
+        step1.onSecondCall().returns(1)
+        controller.addStep(step1)
+        controller.addStep(step1)
+
+        assert.strictEqual(await controller.run(), 1)
+    })
+
+
     describe('retry', function () {
         it('repeats current step', async function () {
             const controller = new StateMachineController()
             const stub = sinon.stub()
-            stub.onFirstCall().returns(WIZARD_RETRY)
+            stub.onFirstCall().returns({ controlSignal: StateMachineControl.Retry })
             stub.onSecondCall().returns({})
             controller.addStep(stub)
 
@@ -70,7 +81,7 @@ describe('StateMachineController', function () {
         it('does not remember state on retry', async function () {
             const controller = new StateMachineController<{ answer: boolean }>()
             const stub = sinon.stub()
-            stub.onFirstCall().returns({ nextState: { answer: true }, repeatStep: true })
+            stub.onFirstCall().returns({ nextState: { answer: true }, controlSignal: StateMachineControl.Retry })
             stub.onSecondCall().returns({ answer: false })
             controller.addStep(stub)
 
@@ -86,7 +97,10 @@ describe('StateMachineController', function () {
             const branchStep1 = sinon.stub()
             const branchStep2 = sinon.stub()
             step1.returns({ nextState: {}, nextSteps: [branchStep1, branchStep2] })
-            branchStep1.callsFake(state => assertSteps(controller, 2, 3, state))
+            branchStep1.callsFake(state => { 
+                assertSteps(controller, 2, 3)
+                return state
+            })
             branchStep2.returns({})
             controller.addStep(step1)
 
@@ -101,9 +115,15 @@ describe('StateMachineController', function () {
             const branch2 = sinon.stub()
             const step5 = sinon.stub()
             step1.returns({ nextState: {}, nextSteps: [branch1Step1, branch1Step2] })
-            branch1Step1.callsFake(state => assertSteps(controller, 2, 4, state))
+            branch1Step1.callsFake(state => {
+                assertSteps(controller, 2, 4)
+                return state
+            })
             branch1Step2.returns({ nextState: {}, nextSteps: [branch2] })
-            branch2.callsFake(state => assertSteps(controller, 4, 5, state))
+            branch2.callsFake(state => {
+                assertSteps(controller, 4, 5)
+                return state
+            })
             step5.returns({})
             controller.addStep(step1)
             controller.addStep(step5)
@@ -118,7 +138,7 @@ describe('StateMachineController', function () {
             const step1 = sinon.stub()
             const step2 = sinon.stub()
             step1.returns({})
-            step2.onFirstCall().returns(WIZARD_GOBACK)
+            step2.onFirstCall().returns(undefined)
             step2.onSecondCall().returns({})
             controller.addStep(step1)
             controller.addStep(step2)
@@ -134,8 +154,8 @@ describe('StateMachineController', function () {
             const step1 = sinon.stub()
             const step2 = sinon.stub()
             step1.onFirstCall().returns({})
-            step2.onFirstCall().returns(WIZARD_GOBACK)
-            step1.onSecondCall().returns(WIZARD_GOBACK)
+            step2.onFirstCall().returns(undefined)
+            step1.onSecondCall().returns(undefined)
             controller.addStep(step1)
             controller.addStep(step2)
 
@@ -149,10 +169,11 @@ describe('StateMachineController', function () {
             const step1 = sinon.stub()
             const step2 = sinon.stub()
             step1.onFirstCall().returns({ answer: false })
-            step2.onFirstCall().returns(WIZARD_GOBACK)
+            step2.onFirstCall().returns(undefined)
             step1.onSecondCall().callsFake(state => {
                 assert.strictEqual(state.answer, undefined)
-                return assertSteps(controller, 1, 2, { answer: true })
+                assertSteps(controller, 1, 2)
+                return { nextState: { answer: true } }
             })
             step2.onSecondCall().callsFake(state => state)
             controller.addStep(step1)
@@ -171,13 +192,14 @@ describe('StateMachineController', function () {
             step1.onFirstCall().returns({ nextState: { branch2: 'no' }, nextSteps: [branch1] })
             step1.onSecondCall().callsFake(() => {
                 assertSteps(controller, 1, 2)
-                return { nextState: { branch1: 'no' }, nextSteps: [branch2] }
+                return { nextState: { branch1: 'no', branch2: 'no' }, nextSteps: [branch2] } 
             })
-            branch1.returns(WIZARD_GOBACK)
-            branch2.callsFake(state =>
-                assertSteps(controller, 2, 3, { branch2: 'yes', branch1: state.branch1 })
-            )
-            step3.onFirstCall().returns(WIZARD_GOBACK)
+            branch1.returns(undefined)
+            branch2.callsFake(state => {
+                assertSteps(controller, 2, 3)
+                return { nextState: { branch2: 'yes', branch1: state.branch1 } }
+            })
+            step3.onFirstCall().returns(undefined)
             step3.onSecondCall().callsFake(state => state)
             controller.addStep(step1)
             controller.addStep(step3)
