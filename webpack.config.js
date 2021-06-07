@@ -10,7 +10,6 @@
 const path = require('path')
 const webpack = require('webpack')
 const { ESBuildMinifyPlugin } = require('esbuild-loader')
-const { VueLoaderPlugin } = require('vue-loader')
 const fs = require('fs')
 const { NLSBundlePlugin } = require('vscode-nls-dev/lib/webpack-bundler')
 const CircularDependencyPlugin = require('circular-dependency-plugin')
@@ -25,6 +24,7 @@ const baseConfig = {
     entry: {
         extension: './src/extension.ts',
         'src/stepFunctions/asl/aslServer': './src/stepFunctions/asl/aslServer.ts',
+        samInvokeVue: path.resolve(__dirname, 'src', 'lambda', 'vue', 'samInvokeVue.ts'),
     },
     output: {
         path: path.resolve(__dirname, 'dist'),
@@ -40,6 +40,7 @@ const baseConfig = {
         extensions: ['.ts', '.js'],
         alias: {
             handlebars: 'handlebars/dist/handlebars.min.js',
+            vue$: require.resolve('vue/dist/vue.esm.js'),
         },
     },
     node: {
@@ -94,45 +95,4 @@ const baseConfig = {
     },
 }
 
-/**@type {import('webpack').Configuration}*/
-const webviewConfig = {
-    name: 'vueLoader',
-    entry: {
-        samInvokeVue: path.resolve(__dirname, 'src', 'lambda', 'vue', 'samInvokeVue.ts'),
-    },
-    output: {
-        path: path.resolve(__dirname, 'dist', 'compiledWebviews'),
-        filename: '[name].js',
-    },
-
-    // Enable sourcemaps for debugging webpack's output.
-    devtool: 'source-map',
-
-    resolve: {
-        // Add '.ts' and '.tsx' as resolvable extensions.
-        extensions: ['.ts', '.tsx', '.js', '.json'],
-        alias: {
-            vue$: require.resolve('vue/dist/vue.esm.js'),
-        },
-    },
-    module: {
-        rules: [
-            {
-                test: /\.tsx?$/,
-                loader: 'esbuild-loader',
-                options: {
-                    loader: 'tsx',
-                    target: 'es2018',
-                },
-                exclude: /node_modules/,
-            },
-            {
-                test: /\.vue$/,
-                loader: 'vue-loader',
-            },
-        ],
-    },
-    plugins: [new VueLoaderPlugin()],
-}
-
-module.exports = [baseConfig, webviewConfig]
+module.exports = [baseConfig]

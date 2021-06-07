@@ -1517,8 +1517,7 @@
         "copyNonCodeFiles": "node ./build-scripts/copyNonCodeFiles.js",
         "copyExtensionMain": "node ./build-scripts/copyExtensionMain.js",
         "copyDistFiles": "ts-node ./build-scripts/copyDistFiles.ts",
-        "buildScripts": "npm run bundleDeps && npm run copyExtensionMain && npm run copyDistFiles && npm run copyNonCodeFiles && npm run generateNonCodeFiles && npm run buildVue",
-        "buildVue": "webpack --config-name vueLoader",
+        "buildScripts": "npm run bundleDeps && npm run copyExtensionMain && npm run copyDistFiles && npm run copyNonCodeFiles && npm run generateNonCodeFiles",
         "compile": "webpack --mode development && npm run buildScripts",
         "recompile": "npm run clean && npm run compile",
         "watch": "npm run buildScripts && tsc -watch -p ./",
@@ -1589,8 +1588,6 @@
         "vsce": "^1.88.0",
         "vscode-nls-dev": "^3.3.1",
         "vscode-test": "^1.5.2",
-        "vue-loader": "^15.9.6",
-        "vue-template-compiler": "^2.6.12",
         "webpack": "^5.38.1",
         "webpack-cli": "^3.3.10"
     },
