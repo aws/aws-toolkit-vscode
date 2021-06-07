@@ -6,7 +6,7 @@
 import * as assert from 'assert'
 import * as treeInspector from '../../../cdk/explorer/tree/treeInspector'
 import { CfnResourceKeys, ConstructProps, ConstructTreeEntity } from '../../../cdk/explorer/tree/types'
-import * as treeUtils from '../utilities/treeTestUtils'
+import * as treeUtils from '../treeTestUtils'
 
 describe('TreeInspector', function () {
     const testLabel = 'my label'
