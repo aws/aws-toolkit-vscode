@@ -666,11 +666,31 @@ export class SamDeployWizard extends MultiStepWizard<SamDeployWizardResponse> {
      */
     private hasImages: boolean = false
 
-    public constructor(private readonly context: SamDeployWizardContext, private readonly regionNode?: any) {
+    /**
+     * Initial treenode passed as a command arg to the "Deploy" command
+     * (typically, when invoked from the File Explorer context-menu).
+     */
+    private regionNode: any | undefined
+    /**
+     * Initial template.yaml path passed as a command arg to the "Deploy"
+     * command (typically, when invoked from the File Explorer context-menu).
+     */
+    private samTemplateFile: vscode.Uri | undefined
+
+    /**
+     *
+     * @param context
+     * @param commandArg Argument given by VSCode when the "Deploy" command was invoked from a context-menu.
+     */
+    public constructor(private readonly context: SamDeployWizardContext, commandArg?: any) {
         super()
-        // All nodes in the explorer should have a regionCode property, but let's make sure.
-        if (regionNode && Object.prototype.hasOwnProperty.call(regionNode, 'regionCode')) {
-            this.response.region = regionNode.regionCode
+        if (commandArg && commandArg.path) {
+            // "Deploy" command was invoked on a template.yaml file.
+            // The promptUserForSamTemplate() call will be skipped.
+            this.samTemplateFile = commandArg as vscode.Uri
+        } else if (commandArg && commandArg.regionCode) {
+            this.regionNode = commandArg
+            this.response.region = this.regionNode.regionCode
         }
     }
 
@@ -702,7 +722,17 @@ export class SamDeployWizard extends MultiStepWizard<SamDeployWizardResponse> {
     private readonly TEMPLATE: WizardStep = async () => {
         // set steps back to 0 since the next step determines if additional steps are needed
         this.context.additionalSteps = 0
-        this.response.template = await this.context.promptUserForSamTemplate(this.response.template)
+        if (this.samTemplateFile && this.response.template) {
+            // This state means:
+            //   1. wizard was started from a context-menu (`this.samTemplateFile` was set)
+            //   2. user canceled the REGION step.
+            // => User wants to exit the wizard.
+            return WIZARD_TERMINATE
+        } else if (this.samTemplateFile) {
+            this.response.template = this.samTemplateFile
+        } else {
+            this.response.template = await this.context.promptUserForSamTemplate(this.response.template)
+        }
 
         if (!this.response.template) {
             return WIZARD_TERMINATE
