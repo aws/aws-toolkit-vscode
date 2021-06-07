@@ -1587,8 +1587,8 @@
         "umd-compat-loader": "^2.1.2",
         "vsce": "^1.88.0",
         "vscode-nls-dev": "^3.3.1",
-        "vscode-test": "^1.4.0",
-        "webpack": "^5.36.2",
+        "vscode-test": "^1.5.2",
+        "webpack": "^5.38.1",
         "webpack-cli": "^3.3.10"
     },
     "dependencies": {
