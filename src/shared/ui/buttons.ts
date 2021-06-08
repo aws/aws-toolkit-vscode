@@ -11,9 +11,21 @@ import { WizardControl, WIZARD_BACK } from '../wizards/wizard'
 const localize = nls.loadMessageBundle()
 const HELP_TOOLTIP = localize('AWS.command.help', 'View Toolkit Documentation')
 
-// Light wrapper around QuickInputButtons
-export interface QuickInputButton<T> extends vscode.QuickInputButton {
-    onClick: (resolve: (result: T) => void, reject: any) => void
+export class QuickInputButton<T> implements vscode.QuickInputButton {
+    private readonly clickEmitter = new vscode.EventEmitter<T>()
+    public readonly onClick = this.clickEmitter.event
+    
+    constructor(private readonly button: vscode.QuickInputButton, private readonly clickCallback: () => T) {}
+
+    public get iconPath() { return this.button.iconPath }
+    public get tooltip() { return this.button.tooltip }
+    
+    public activate(): void {
+        const ret = this.clickCallback()
+        if (ret !== undefined) {
+            this.clickEmitter.fire(ret)
+        }
+    }
 }
 
 /**
@@ -25,14 +37,14 @@ export interface QuickInputButton<T> extends vscode.QuickInputButton {
  * @param tooltip Optional tooltip for button
  */
 export function createHelpButton(uri: string | vscode.Uri, tooltip: string = HELP_TOOLTIP): QuickInputButton<void> {
-    return {
+    return new QuickInputButton<void>({
         iconPath: {
             light: vscode.Uri.file(ext.iconPaths.light.help),
             dark: vscode.Uri.file(ext.iconPaths.dark.help),
         },
         tooltip,
-        onClick: () => vscode.env.openExternal(typeof uri === 'string' ? vscode.Uri.parse(uri) : uri)
-    }
+    }, 
+    () => vscode.env.openExternal(typeof uri === 'string' ? vscode.Uri.parse(uri) : uri))
 }
 
 const BACK_FUNCTION = (resolve: (result: WizardControl) => void) => resolve(WIZARD_BACK)

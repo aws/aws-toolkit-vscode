@@ -30,8 +30,28 @@ export abstract class Prompter<T, U extends PromptResult<T> = PromptResult<T>> {
     private onReadyForInputEventEmitter = new vscode.EventEmitter<void>()
     public onReadyForInput: vscode.Event<void> = this.onReadyForInputEventEmitter.event
     protected readonly afterCallbacks: Transform<U>[] = []
+    private backButton: WizardButton<T> | undefined
 
-    constructor(private readonly input: DataQuickInput<T>) { }
+    constructor(private readonly input: DataQuickInput<T>) {
+        // Swap out our fake back button for a real one
+        this.backButton = input.buttons.find(b => b.iconPath === vscode.QuickInputButtons.Back)
+        if (this.backButton !== undefined) {
+            const index = input.buttons.indexOf(this.backButton)
+            input.buttons = [
+                ...input.buttons.slice(0, index), 
+                vscode.QuickInputButtons.Back as QuickInputButton<void>,
+                ...input.buttons.slice(index + 1)
+            ]
+        }
+    }
+
+    public activateButton(button: vscode.QuickInputButton): void {
+        if (button.iconPath === vscode.QuickInputButtons.Back.iconPath && this.backButton !== undefined) {
+            this.backButton.activate()
+        } else [
+            (button as QuickInputButton<U>).activate()
+        ]
+    }
 
     private fireIfReady(): void {
         if (this.input.enabled && !this.input.busy) {

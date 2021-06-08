@@ -5,9 +5,9 @@
 
 import * as vscode from 'vscode'
 
-import { isWizardControl, WizardControl, WIZARD_BACK } from '../wizards/wizard'
+import { WizardControl } from '../wizards/wizard'
 import { QuickInputButton } from './buttons'
-import { Prompter, PrompterButtons, PromptResult } from './prompter'
+import { Prompter, PrompterButtons } from './prompter'
 
 export type QuickPickButton<T> = QuickInputButton<T | WizardControl>
 type QuickPickButtons<T> = PrompterButtons<T>
@@ -155,9 +155,9 @@ export class QuickPickPrompter<T> extends Prompter<T, QuickPickResult<T>> {
         const promptPromise = promptUser({
             picker: this.quickPick,
             onDidTriggerButton: (button, resolve, reject) => {
-                //button.onClick = button.onClick ?? (resolve => resolve(WIZARD_BACK))
                 button.onClick(arg => resolve([{ label: '', data: arg }]), reject)
             },
+            prompter: this,
         })
         this.show()
         const choices = await promptPromise
@@ -291,13 +291,15 @@ export class MultiQuickPickPrompter<T, U extends Array<T> = Array<T>> extends Pr
 export async function promptUser<T>({
     picker,
     onDidTriggerButton,
+    prompter
 }: {
     picker: DataQuickPick<T>
     onDidTriggerButton?(
         button: QuickPickButton<T>,
         resolve: (value: DataQuickPickItem<T>[]) => void,
         reject: (reason?: any) => void
-    ): void
+    ): void,
+    prompter?: Prompter<T>
 }): Promise<DataQuickPickItem<T>[] | undefined> {
     const disposables: vscode.Disposable[] = []
 
@@ -321,7 +323,8 @@ export async function promptUser<T>({
 
             if (onDidTriggerButton) {
                 picker.onDidTriggerButton(
-                    (btn: vscode.QuickInputButton) => onDidTriggerButton(btn as QuickPickButton<T>, resolve, reject),
+                    //(btn: vscode.QuickInputButton) => onDidTriggerButton(btn as QuickPickButton<T>, resolve, reject),
+                    (btn: vscode.QuickInputButton) => prompter!.activateButton(btn),
                     picker,
                     disposables
                 )

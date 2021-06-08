@@ -116,8 +116,8 @@ export function convertDescribeLogStreamsToQuickPickItems(
 
 export class SelectLogStreamWizard extends Wizard<Partial<SelectLogStreamResponse>> {
     public constructor(
-        private readonly node: LogGroupNode,
-        private readonly context: SelectLogStreamWizardContext = new DefaultSelectLogStreamWizardContext(
+        node: LogGroupNode,
+        context: SelectLogStreamWizardContext = new DefaultSelectLogStreamWizardContext(
             node.regionCode,
             node.logGroup.logGroupName!
         )

@@ -15,11 +15,9 @@ import { AwsContext } from './awsContext'
 import { AwsContextTreeCollection } from './awsContextTreeCollection'
 import * as extensionConstants from './constants'
 import { getAccountId } from './credentials/accountId'
-import { CredentialSelectionState } from './credentials/credentialSelectionState'
 import {
-    credentialProfileSelector,
+    CredentialsWizard,
     DefaultCredentialSelectionDataProvider,
-    promptToDefineCredentialsProfile,
 } from './credentials/defaultCredentialSelectionDataProvider'
 import { UserCredentialsUtils } from './credentials/userCredentialsUtils'
 import { ext } from './extensionGlobals'
@@ -131,9 +129,9 @@ export class DefaultAWSContextCommands {
     private async promptAndCreateNewCredentialsFile(): Promise<string | undefined> {
         while (true) {
             const dataProvider = new DefaultCredentialSelectionDataProvider([], ext.context)
-            const state: CredentialSelectionState = await promptToDefineCredentialsProfile(dataProvider)
+            const state = await new CredentialsWizard(dataProvider).run()
 
-            if (!state.profileName || !state.accesskey || !state.secretKey) {
+            if (state === undefined) {
                 return undefined
             }
 
@@ -219,12 +217,9 @@ export class DefaultAWSContextCommands {
 
             // If we get here, there are credentials for the user to choose from
             const dataProvider = new DefaultCredentialSelectionDataProvider(profileNames, ext.context)
-            const state = await credentialProfileSelector(dataProvider)
-            if (state && state.credentialProfile) {
-                return state.credentialProfile.label
-            }
+            const state = await new CredentialsWizard(dataProvider).run()
 
-            return undefined
+            return state?.credentialProfile
         }
     }
 

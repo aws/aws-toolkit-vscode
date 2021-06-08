@@ -86,6 +86,7 @@ export class InputBoxPrompter extends Prompter<string> {
     }
 }
 
+// TODO: rewrite the comment and remove the export
 /**
  * Convenience method to allow the InputBox to be treated more like a dialog.
  *

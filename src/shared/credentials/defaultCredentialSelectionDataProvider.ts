@@ -17,14 +17,33 @@ const localize = nls.loadMessageBundle()
 import { ExtensionContext, QuickPickItem } from 'vscode'
 import { asString } from '../../credentials/providers/credentialsProviderId'
 import { SharedCredentialsProvider } from '../../credentials/providers/sharedCredentialsProvider'
-import { MultiStepInputFlowController } from '../multiStepInputFlowController'
-import { CredentialSelectionDataProvider } from './credentialSelectionDataProvider'
-import { CredentialSelectionState } from './credentialSelectionState'
 import { CredentialsProfileMru } from './credentialsProfileMru'
+import { createLabelQuickPick } from '../ui/picker'
+import { Prompter } from '../ui/prompter'
+import { createInputBox } from '../ui/input'
+import { Wizard } from '../wizards/wizard'
+import { initializeInterface } from '../transformers'
 
 interface ProfileEntry {
     profileName: string
     isRecentlyUsed: boolean
+}
+
+export interface CredentialSelectionDataProvider {
+    existingProfileNames: string[]
+
+    createCredentialProfilePrompter(): Prompter<string>
+    createProfileNamePrompter(): Prompter<string>
+    createAccessKeyPrompter(): Prompter<string> 
+    createSecretKeyPrompter(): Prompter<string>
+}
+
+export interface CredentialSelectionState {
+    title: string
+    credentialProfile: string
+    accesskey: string
+    secretKey: string
+    profileName: string
 }
 
 export class DefaultCredentialSelectionDataProvider implements CredentialSelectionDataProvider {
@@ -39,65 +58,34 @@ export class DefaultCredentialSelectionDataProvider implements CredentialSelecti
         this._credentialsMru = new CredentialsProfileMru(context)
     }
 
-    public async pickCredentialProfile(
-        input: MultiStepInputFlowController,
-        state: Partial<CredentialSelectionState>
-    ): Promise<QuickPickItem> {
-        return await input.showQuickPick({
+    public createCredentialProfilePrompter(): Prompter<string> {
+        return createLabelQuickPick(this.getProfileSelectionList(), {
             title: localize('AWS.title.selectCredentialProfile', 'Select an AWS credential profile'),
-            step: 1,
-            totalSteps: 1,
             placeholder: localize('AWS.placeholder.selectProfile', 'Select a credential profile'),
-            items: this.getProfileSelectionList(),
-            activeItem: state.credentialProfile,
-            shouldResume: this.shouldResume.bind(this),
         })
     }
 
-    public async inputProfileName(
-        input: MultiStepInputFlowController,
-        state: Partial<CredentialSelectionState>
-    ): Promise<string | undefined> {
-        return await input.showInputBox({
+    public createProfileNamePrompter(): Prompter<string> {
+        return createInputBox({
             title: localize('AWS.title.createCredentialProfile', 'Create a new AWS credential profile'),
-            step: 1,
-            totalSteps: 3,
-            value: '',
             prompt: localize('AWS.placeholder.newProfileName', 'Choose a unique name for the new profile'),
-            validate: this.validateNameIsUnique.bind(this),
-            shouldResume: this.shouldResume.bind(this),
+            validateInput: this.validateNameIsUnique.bind(this),
         })
     }
 
-    public async inputAccessKey(
-        input: MultiStepInputFlowController,
-        state: Partial<CredentialSelectionState>
-    ): Promise<string | undefined> {
-        return await input.showInputBox({
+    public createAccessKeyPrompter(): Prompter<string> {
+        return createInputBox({
             title: localize('AWS.title.createCredentialProfile', 'Create a new AWS credential profile'),
-            step: 2,
-            totalSteps: 3,
-            value: '',
             prompt: localize('AWS.placeholder.inputAccessKey', 'Input the AWS Access Key'),
-            validate: this.validateAccessKey.bind(this),
-            ignoreFocusOut: true,
-            shouldResume: this.shouldResume.bind(this),
+            validateInput: this.validateAccessKey.bind(this),
         })
     }
 
-    public async inputSecretKey(
-        input: MultiStepInputFlowController,
-        state: Partial<CredentialSelectionState>
-    ): Promise<string | undefined> {
-        return await input.showInputBox({
+    public createSecretKeyPrompter(): Prompter<string> {
+        return createInputBox({
             title: localize('AWS.title.createCredentialProfile', 'Create a new AWS credential profile'),
-            step: 3,
-            totalSteps: 3,
-            value: '',
             prompt: localize('AWS.placeholder.inputSecretKey', 'Input the AWS Secret Key'),
-            validate: this.validateSecretKey.bind(this),
-            ignoreFocusOut: true,
-            shouldResume: this.shouldResume.bind(this),
+            validateInput: this.validateSecretKey.bind(this),
         })
     }
 
@@ -185,57 +173,16 @@ export class DefaultCredentialSelectionDataProvider implements CredentialSelecti
     }
 }
 
-export async function credentialProfileSelector(
-    dataProvider: CredentialSelectionDataProvider
-): Promise<CredentialSelectionState | undefined> {
-    async function pickCredentialProfile(
-        input: MultiStepInputFlowController,
-        state: Partial<CredentialSelectionState>
-    ) {
-        state.credentialProfile = await dataProvider.pickCredentialProfile(input, state)
+export class CredentialsWizard extends Wizard<CredentialSelectionState> {
+    constructor(dataProvider: CredentialSelectionDataProvider) {
+        super(initializeInterface<CredentialSelectionState>())
+
+        if (dataProvider.existingProfileNames.length !== 0) {
+            this.form.credentialProfile.bindPrompter(() => dataProvider.createCredentialProfilePrompter())
+        } else {
+            this.form.profileName.bindPrompter(() => dataProvider.createProfileNamePrompter())
+            this.form.accesskey.bindPrompter(() => dataProvider.createAccessKeyPrompter())
+            this.form.secretKey.bindPrompter(() => dataProvider.createSecretKeyPrompter())
+        }
     }
-
-    async function collectInputs() {
-        const state: Partial<CredentialSelectionState> = {}
-        await MultiStepInputFlowController.run(async input => await pickCredentialProfile(input, state))
-
-        return state as CredentialSelectionState
-    }
-
-    return await collectInputs()
-}
-
-export async function promptToDefineCredentialsProfile(
-    dataProvider: CredentialSelectionDataProvider
-): Promise<CredentialSelectionState> {
-    async function inputProfileName(input: MultiStepInputFlowController, state: Partial<CredentialSelectionState>) {
-        state.profileName = await dataProvider.inputProfileName(input, state)
-
-        /* tslint:disable promise-function-async */
-        return (inputController: MultiStepInputFlowController) => inputAccessKey(inputController, state)
-        /* tslint:enable promise-function-async */
-    }
-
-    async function inputAccessKey(input: MultiStepInputFlowController, state: Partial<CredentialSelectionState>) {
-        state.accesskey = await dataProvider.inputAccessKey(input, state)
-
-        /* tslint:disable promise-function-async */
-        return (inputController: MultiStepInputFlowController) => inputSecretKey(inputController, state)
-        /* tslint:enable promise-function-async */
-    }
-
-    async function inputSecretKey(input: MultiStepInputFlowController, state: Partial<CredentialSelectionState>) {
-        state.secretKey = await dataProvider.inputSecretKey(input, state)
-    }
-
-    async function collectInputs(): Promise<CredentialSelectionState> {
-        const state: Partial<CredentialSelectionState> = {}
-        /* tslint:disable promise-function-async */
-        await MultiStepInputFlowController.run(input => inputProfileName(input, state))
-        /* tslint:enable promise-function-async */
-
-        return state as CredentialSelectionState
-    }
-
-    return await collectInputs()
 }
