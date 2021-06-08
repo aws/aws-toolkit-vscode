@@ -259,6 +259,9 @@ with what features/services are supported.
     </extensions>
 
     <actions>
+        <action internal="true" id="aws.toolkit.open.telemetry.viewer"
+                class="software.aws.toolkits.jetbrains.services.telemetry.viewer.OpenTelemetryAction"/>
+
         <group id="aws.toolkit.explorer.ecr" popup="true" compact="false">
             <action id="ecr.repository.create" class="software.aws.toolkits.jetbrains.services.ecr.actions.CreateRepositoryAction"/>
         </group>
