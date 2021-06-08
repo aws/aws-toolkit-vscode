@@ -7,22 +7,20 @@ import com.intellij.openapi.ui.ComboBox
 import com.intellij.ui.CollectionComboBoxModel
 import com.intellij.ui.ComboboxSpeedSearch
 import com.intellij.ui.SimpleListCellRenderer
+import com.intellij.ui.layout.Cell
+import com.intellij.ui.layout.CellBuilder
+import com.intellij.ui.layout.applyToComponent
 import software.aws.toolkits.core.region.AwsRegion
+import software.aws.toolkits.jetbrains.core.region.AwsRegionProvider
 import software.aws.toolkits.jetbrains.utils.ui.selected
+import kotlin.reflect.KMutableProperty0
 
 /**
  * Combo box used to select a region
  * TODO: Determine the UX for the box, do we want to categorize?
  */
 class RegionSelector : ComboBox<AwsRegion>() {
-    private val comboBoxModel = object : CollectionComboBoxModel<AwsRegion>() {
-        fun setItems(newItems: List<AwsRegion>) {
-            internalList.apply {
-                clear()
-                addAll(newItems)
-            }
-        }
-    }
+    private val comboBoxModel = CollectionComboBoxModel<AwsRegion>()
 
     init {
         model = comboBoxModel
@@ -31,7 +29,7 @@ class RegionSelector : ComboBox<AwsRegion>() {
     }
 
     fun setRegions(regions: List<AwsRegion>) {
-        comboBoxModel.items = regions
+        comboBoxModel.replaceAll(regions)
     }
 
     var selectedRegion: AwsRegion?
@@ -44,9 +42,24 @@ class RegionSelector : ComboBox<AwsRegion>() {
             }
         }
 
-    private companion object {
-        val RENDERER = SimpleListCellRenderer.create<AwsRegion>("") {
+    companion object {
+        private val RENDERER = SimpleListCellRenderer.create<AwsRegion>("") {
             it.displayName
+        }
+
+        /**
+         * @param serviceId If specified, will filter the list of regions down to only the regions that support the specified service
+         */
+        fun Cell.regionSelector(prop: KMutableProperty0<AwsRegion>, serviceId: String? = null): CellBuilder<ComboBox<AwsRegion>> {
+            val regionProvider = AwsRegionProvider.getInstance()
+            val regions = when {
+                serviceId != null -> regionProvider.allRegionsForService(serviceId).values.toMutableList()
+                else -> regionProvider.allRegions().values.toMutableList()
+            }
+            val model = CollectionComboBoxModel(regions)
+            return comboBox(model, prop, RENDERER).applyToComponent {
+                ComboboxSpeedSearch(this)
+            }
         }
     }
 }
