@@ -204,7 +204,14 @@ export async function createQuickStartWebview(
     context: vscode.ExtensionContext,
     page?: string
 ): Promise<vscode.WebviewPanel> {
-    const actualPage = page ? page : isCloud9() ? 'quickStartCloud9.html' : 'quickStartVscode.html'
+    let actualPage: string
+    if (page) {
+        actualPage = page
+    } else if (isCloud9()) {
+        actualPage = `quickStartCloud9${ isCn() ? '-cn' : '' }.html`
+    } else {
+        actualPage = 'quickStartVscode.html'
+    }
     // create hidden webview, leave it up to the caller to show
     const view = vscode.window.createWebviewPanel(
         'html',
