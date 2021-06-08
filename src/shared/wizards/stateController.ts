@@ -2,24 +2,29 @@
  * Copyright 2021 Amazon.com, Inc. or its affiliates. All Rights Reserved.
  * SPDX-License-Identifier: Apache-2.0
  */
+
 import * as _ from 'lodash'
 
-/** Extra control instructions separate from the normal linear traversal of states */
 export enum StateMachineControl {
     Retry,
     Exit,
+    Back,
 }
 
 export interface StateMachineStepResult<TState> {
+    /** A mutated form of the present state. This will be passed along to the next step */
     nextState?: TState
+    /** An array of step functions to be added immediately after the most recent step */
     nextSteps?: StateStepFunction<TState>[]
+    /** Extra control instructions separate from the normal linear traversal of states */
     controlSignal?: StateMachineControl
 }
 
-type RecursiveReadonly<T> = {
-    readonly [Property in keyof T]: RecursiveReadonly<T[Property]> 
-}
-
+/**
+ * State machine transition function. Transforms the present state into a new one, which may also
+ * include additional steps or control signals. The function can return the state directly if nothing
+ * extra is needed.
+ */
 export type StateStepFunction<TState> = (state: TState) => Promise<StateMachineStepResult<TState> | TState>
 export type StateBranch<TState> = StateStepFunction<TState>[]
 
@@ -41,10 +46,6 @@ export class StateMachineController<TState> {
 
     public setState(state: TState) {
         this.state = state
-    }
-
-    public getState(): RecursiveReadonly<TState> {
-       return this.state
     }
 
     /** Adds a single step to the state machine. */
@@ -118,7 +119,8 @@ export class StateMachineController<TState> {
         while (this.internalStep < this.steps.length) {
             const cycle = this.detectCycle(this.steps[this.internalStep]) 
             if (cycle !== undefined) {
-                throw Error(`Cycle detected in state machine controller at step: ${this.previousStates.indexOf(cycle)}`)
+                throw Error('Cycle detected in state machine controller: '
+                    + `Step ${this.currentStep} -> Step ${this.previousStates.indexOf(cycle)+1}`)
             }
 
             const { nextState, nextSteps, controlSignal } = await this.processNextStep()
@@ -128,7 +130,7 @@ export class StateMachineController<TState> {
             } if (controlSignal === StateMachineControl.Retry) {
                 this.state = this.previousStates[this.internalStep - 1]
                 continue
-            } else if (nextState === undefined) {
+            } else if (nextState === undefined || controlSignal === StateMachineControl.Back) {
                 if (this.internalStep === 0) {
                     return undefined
                 }

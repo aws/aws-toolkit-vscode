@@ -30,7 +30,7 @@ import { isCloud9 } from '../../shared/extensionUtilities'
 import { SettingsConfiguration } from '../../shared/settingsConfiguration'
 import { Prompter, PrompterButtons } from '../../shared/ui/prompter'
 import { CloudFormation } from '../../shared/cloudformation/cloudformation'
-import { isWizardControl, makeWizardChain, Wizard, WIZARD_EXIT, WIZARD_BACK, WIZARD_RETRY } from '../../shared/wizards/wizard'
+import { isWizardControl, Wizard, WIZARD_EXIT, WIZARD_BACK, WIZARD_RETRY } from '../../shared/wizards/wizard'
 import { initializeInterface } from '../../shared/transformers'
 import { configureParameterOverrides } from '../config/configureParameterOverrides'
 import { createInputBox, InputBoxPrompter } from '../../shared/ui/input'
@@ -47,15 +47,19 @@ export interface SavedBuckets {
 
 type CFNTemplate = CloudFormation.Template & { uri: vscode.Uri }
 export const CONFIGURE_PARAMETERS = new Map<string, string>()
-export interface SamDeployWizardResponse {
+
+interface SamDeployWizardForm {
     missingParameters?: Set<string>
     parameterOverrides: Map<string, string>
     region: string
     template: CFNTemplate,
+    s3Optional: string
     s3Bucket: string
     ecrRepo?: EcrRepository
     stackName: string
 }
+
+export type SamDeployWizardResponse = Omit<SamDeployWizardForm, 's3Optional'>
 
 export interface SamDeployWizardContext {
     readonly extContext: ExtContext
@@ -261,7 +265,7 @@ export class DefaultSamDeployWizardContext implements SamDeployWizardContext {
                 dark: vscode.Uri.file(ext.iconPaths.dark.plus),
             },
             tooltip: CREATE_NEW_BUCKET,
-            onClick: resolve => resolve(makeWizardChain(NEW_BUCKET_OPTION)),
+            onClick: resolve => resolve(NEW_BUCKET_OPTION),
         }
         const enterBucket: QuickPickButton<string> = {
             iconPath: {
@@ -269,7 +273,7 @@ export class DefaultSamDeployWizardContext implements SamDeployWizardContext {
                 dark: vscode.Uri.file(ext.iconPaths.dark.edit),
             },
             tooltip: ENTER_BUCKET,
-            onClick: resolve => resolve(makeWizardChain(ENTER_BUCKET_OPTION)),
+            onClick: resolve => resolve(ENTER_BUCKET_OPTION),
         }
 
         const prompter = createQuickPick<string>([], {
@@ -330,9 +334,35 @@ export class DefaultSamDeployWizardContext implements SamDeployWizardContext {
         })
     }
 }
-export class SamDeployWizard extends Wizard<SamDeployWizardResponse> {    
+
+function makeNewBucketPrompter(context: SamDeployWizardContext, region: string): Prompter<string> {
+    return context.createS3BucketNamePrompter(localize('AWS.s3.createBucket.prompt', 'Enter a new bucket name')).after(async response => {
+        if (typeof response !== 'string') {
+            return WIZARD_BACK
+        }
+
+        try {
+            const s3Client = ext.toolkitClientBuilder.createS3Client(region!)
+            const newBucketName = (await s3Client.createBucket({ bucketName: response })).bucket.name
+            getLogger().info('Created bucket: %O', newBucketName)
+            vscode.window.showInformationMessage(
+                localize('AWS.s3.createBucket.success', 'Created bucket: {0}', newBucketName)
+            )
+            telemetry.recordS3CreateBucket({ result: 'Succeeded' })
+        } catch (e) {
+            showErrorWithLogs(
+                localize('AWS.s3.createBucket.error.general', 'Failed to create bucket: {0}', response),
+                vscode.window
+            )
+            telemetry.recordS3CreateBucket({ result: 'Failed' })
+            return WIZARD_RETRY
+        }
+    })
+}
+
+export class SamDeployWizard extends Wizard<SamDeployWizardForm, SamDeployWizardResponse> {    
     public constructor(private readonly context: SamDeployWizardContext, regionNode?: { regionCode: string }) {
-        super(initializeInterface<SamDeployWizardResponse>(), { region: regionNode?.regionCode })
+        super(initializeInterface<SamDeployWizardForm>(), { region: regionNode?.regionCode })
         const profile = this.context.extContext.awsContext.getCredentialProfileName()
         const accountId = this.context.extContext.awsContext.getCredentialAccountId()
 
@@ -394,39 +424,20 @@ export class SamDeployWizard extends Wizard<SamDeployWizardResponse> {
         )
 
         this.form.region.bindPrompter(() => context.createRegionPrompter())
-        this.form.s3Bucket.bindPrompter(form => context.createS3BucketPrompter(form.region!, profile, accountId))
-            // PROMPTERS CAN RETURN OTHER PROMPTERS??????????
-            .chainPrompter((form, response) => {
-                if (response === ENTER_BUCKET_OPTION) {
-                    return context.createS3BucketNamePrompter(localize('AWS.s3.createBucket.prompt', 'Enter a new bucket name')).after(async response => {
-                        if (typeof response !== 'string') {
-                            return WIZARD_BACK
-                        }
-
-                        try {
-                            const s3Client = ext.toolkitClientBuilder.createS3Client(form.region!)
-                            const newBucketName = (await s3Client.createBucket({ bucketName: response })).bucket.name
-                            getLogger().info('Created bucket: %O', newBucketName)
-                            vscode.window.showInformationMessage(
-                                localize('AWS.s3.createBucket.success', 'Created bucket: {0}', newBucketName)
-                            )
-                            telemetry.recordS3CreateBucket({ result: 'Succeeded' })
-                        } catch (e) {
-                            showErrorWithLogs(
-                                localize('AWS.s3.createBucket.error.general', 'Failed to create bucket: {0}', response),
-                                vscode.window
-                            )
-                            telemetry.recordS3CreateBucket({ result: 'Failed' })
-                            return WIZARD_RETRY
-                        }
-                    })
-                } else {
-                    return context.createS3BucketNamePrompter(localize('AWS.samcli.deploy.bucket.existingTitle', 'Enter Existing Bucket Name'))
-                }
-            })
+        this.form.s3Optional.bindPrompter(form => context.createS3BucketPrompter(form.region!, profile, accountId))
+        this.form.s3Bucket.bindPrompter(form => {
+            if (form.s3Optional === NEW_BUCKET_OPTION) {
+                return makeNewBucketPrompter(context, form.region!)
+            } else {
+                return context.createS3BucketNamePrompter(localize('AWS.samcli.deploy.bucket.existingTitle', 'Enter Existing Bucket Name'))
+            }
+        }, {
+            showWhen: form => form.s3Optional === NEW_BUCKET_OPTION || form.s3Optional === ENTER_BUCKET_OPTION,
+            setDefault: form => form.s3Optional!
+        })
                 
         this.form.ecrRepo.bindPrompter(form => context.createEcrRepoPrompter(form.region!), { 
-            showWhen: form => form.s3Bucket !== undefined && isImage(form.template) 
+            showWhen: form => (form.s3Optional !== undefined || form.s3Bucket !== undefined) && isImage(form.template) 
         })
         this.form.stackName.bindPrompter(() => context.createStackNamePrompter())
     }
