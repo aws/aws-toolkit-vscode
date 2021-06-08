@@ -24,7 +24,7 @@ function translateReadmeToHtml(root: string, inputFile: string, outputFile: stri
     const relativePathRegex = /]\(\.\//g
     let transformedText = fileText.replace(relativePathRegex, '](!!EXTENSIONROOT!!/')
     if (cn) {
-        transformedText = transformedText.replace('AWS', 'Amazon').replace('.png', '-cn.png')
+        transformedText = transformedText.replace(/AWS/g, 'Amazon').replace(/.png/g, '-cn.png')
     }
 
     marked(transformedText, (err, result) => {
