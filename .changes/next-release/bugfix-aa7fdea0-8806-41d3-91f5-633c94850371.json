@@ -1,0 +1,4 @@
+{
+  "type" : "bugfix",
+  "description" : "Fix using message bus after project has been closed (Fixes #2615)"
+}

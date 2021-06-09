@@ -19,8 +19,10 @@ import javax.swing.Icon
  * @see ExplorerNodeAction
  * @see SingleExplorerNodeAction
  */
-abstract class SingleResourceNodeAction<in T : AwsExplorerResourceNode<*>>(text: String, description: String? = null, icon: Icon? = null) :
-    SingleExplorerNodeAction<T>(text, description, icon)
+abstract class SingleResourceNodeAction<in T : AwsExplorerResourceNode<*>> : SingleExplorerNodeAction<T> {
+    constructor() : super()
+    constructor(text: String, description: String? = null, icon: Icon? = null) : super(text, description, icon)
+}
 
 /**
  * An action from a [AwsExplorerNode] that only operates on a single resource.
@@ -29,8 +31,9 @@ abstract class SingleResourceNodeAction<in T : AwsExplorerResourceNode<*>>(text:
  *
  * @see ExplorerNodeAction
  */
-abstract class SingleExplorerNodeAction<in T : AwsExplorerNode<*>>(text: String, description: String? = null, icon: Icon? = null) :
-    ExplorerNodeAction<T>(text, description, icon) {
+abstract class SingleExplorerNodeAction<in T : AwsExplorerNode<*>> : ExplorerNodeAction<T> {
+    constructor() : super()
+    constructor(text: String, description: String? = null, icon: Icon? = null) : super(text, description, icon)
 
     /**
      * If only a single item is selected [update] will be invoked with that selection periodically.
@@ -61,8 +64,9 @@ abstract class SingleExplorerNodeAction<in T : AwsExplorerNode<*>>(text: String,
 /**
  * Converts generic [ExplorerNodeAction] list into [T] typed nodes
  */
-abstract class ExplorerNodeAction<in T : AwsExplorerNode<*>>(text: String, description: String? = null, icon: Icon? = null) :
-    AnAction(text, description, icon) {
+abstract class ExplorerNodeAction<in T : AwsExplorerNode<*>> : AnAction {
+    constructor() : super()
+    constructor(text: String, description: String? = null, icon: Icon? = null) : super(text, description, icon)
 
     /**
      * Invoked periodically with the selected items of type [T].

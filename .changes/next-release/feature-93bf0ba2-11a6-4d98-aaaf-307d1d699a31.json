@@ -1,4 +1,0 @@
-{
-  "type" : "feature",
-  "description" : "Add support for AppRunner. Create/delete/pause/resume/deploy and view logs for your AppRunner services."
-}

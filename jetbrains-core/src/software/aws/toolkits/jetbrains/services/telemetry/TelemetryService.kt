@@ -27,8 +27,13 @@ data class MetricEventMetadata(
     val awsRegion: String = METADATA_NA
 )
 
+interface TelemetryListener {
+    fun onTelemetryEvent(event: MetricEvent)
+}
+
 abstract class TelemetryService(private val publisher: TelemetryPublisher, private val batcher: TelemetryBatcher) : Disposable {
     private val isDisposing = AtomicBoolean(false)
+    private val listeners = mutableSetOf<TelemetryListener>()
 
     init {
         setTelemetryEnabled(AwsSettings.getInstance().isTelemetryEnabled)
@@ -61,10 +66,20 @@ abstract class TelemetryService(private val publisher: TelemetryPublisher, priva
         batcher.onTelemetryEnabledChanged(isEnabled and TELEMETRY_ENABLED)
     }
 
+    fun addListener(listener: TelemetryListener) {
+        listeners.add(listener)
+    }
+
+    fun removeListener(listener: TelemetryListener) {
+        listeners.remove(listener)
+    }
+
     override fun dispose() {
         if (!isDisposing.compareAndSet(false, true)) {
             return
         }
+
+        listeners.clear()
 
         batcher.shutdown()
     }
@@ -76,7 +91,13 @@ abstract class TelemetryService(private val publisher: TelemetryPublisher, priva
 
         buildEvent(builder)
 
-        batcher.enqueue(builder.build())
+        val event = builder.build()
+
+        runCatching {
+            listeners.forEach { it.onTelemetryEvent(event) }
+        }
+
+        batcher.enqueue(event)
     }
 
     suspend fun sendFeedback(sentiment: Sentiment, comment: String) {

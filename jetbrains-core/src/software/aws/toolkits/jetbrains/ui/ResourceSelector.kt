@@ -9,6 +9,7 @@ import com.intellij.openapi.project.Project
 import com.intellij.openapi.ui.ComboBox
 import com.intellij.openapi.ui.ComponentValidator
 import com.intellij.openapi.ui.ValidationInfo
+import com.intellij.ui.ComboboxSpeedSearch
 import com.intellij.ui.MutableCollectionComboBoxModel
 import com.intellij.util.ExceptionUtil
 import org.jetbrains.annotations.TestOnly
@@ -53,6 +54,8 @@ class ResourceSelector<T> private constructor(
         customRenderer?.let {
             setRenderer(customRenderer)
         }
+
+        ComboboxSpeedSearch(this)
 
         if (loadOnCreate) {
             reload()

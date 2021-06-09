@@ -16,18 +16,20 @@ import com.intellij.openapi.actionSystem.LangDataKeys
 import com.intellij.openapi.application.ModalityState
 import com.intellij.openapi.application.runInEdt
 import com.intellij.openapi.fileChooser.FileChooserDescriptorFactory
-import com.intellij.openapi.project.DumbAwareAction
+import com.intellij.openapi.project.DumbAware
 import com.intellij.openapi.project.Project
 import com.intellij.openapi.project.guessProjectDir
 import com.intellij.openapi.ui.DialogWrapper
 import com.intellij.openapi.ui.TextBrowseFolderListener
 import com.intellij.openapi.vfs.VirtualFile
 import com.intellij.ui.CollectionComboBoxModel
+import com.intellij.ui.ComboboxSpeedSearch
 import com.intellij.ui.SimpleListCellRenderer
 import com.intellij.ui.components.JBRadioButton
 import com.intellij.ui.components.fields.ExtendableTextComponent
 import com.intellij.ui.components.fields.ExtendableTextField
 import com.intellij.ui.layout.GrowPolicy
+import com.intellij.ui.layout.applyToComponent
 import com.intellij.ui.layout.buttonGroup
 import com.intellij.ui.layout.listCellRenderer
 import com.intellij.ui.layout.panel
@@ -45,7 +47,7 @@ import software.amazon.awssdk.services.ecr.EcrClient
 import software.aws.toolkits.core.utils.error
 import software.aws.toolkits.core.utils.getLogger
 import software.aws.toolkits.jetbrains.core.awsClient
-import software.aws.toolkits.jetbrains.core.explorer.ExplorerDataKeys
+import software.aws.toolkits.jetbrains.core.explorer.actions.SingleExplorerNodeAction
 import software.aws.toolkits.jetbrains.services.ecr.DockerRunConfiguration
 import software.aws.toolkits.jetbrains.services.ecr.DockerfileEcrPushRequest
 import software.aws.toolkits.jetbrains.services.ecr.EcrPushRequest
@@ -70,25 +72,18 @@ import javax.swing.JTextField
 import javax.swing.plaf.basic.BasicComboBoxEditor
 
 class PushToRepositoryAction :
-    DumbAwareAction(),
+    SingleExplorerNodeAction<EcrRepositoryNode>(),
+    DumbAware,
     CoroutineScope by ApplicationThreadPoolScope("PushRepositoryAction") {
     private val dockerServerRuntime: Deferred<DockerServerRuntimeInstance> =
         async(start = CoroutineStart.LAZY) { EcrUtils.getDockerServerRuntimeInstance().runtimeInstance }
 
-    override fun actionPerformed(e: AnActionEvent) {
+    override fun actionPerformed(selected: EcrRepositoryNode, e: AnActionEvent) {
         val project = e.getRequiredData(LangDataKeys.PROJECT)
         val client: EcrClient = project.awsClient()
 
-        val selectedRepository = e.getData(ExplorerDataKeys.SELECTED_NODES)
-            ?.takeIf { it.size == 1 }
-            ?.mapNotNull { it as? EcrRepositoryNode }
-            ?.first()
-            ?.repository
-
-        val dialog = PushToEcrDialog(project, selectedRepository, dockerServerRuntime)
-        val result = dialog.showAndGet()
-
-        if (!result) {
+        val dialog = PushToEcrDialog(project, selected.repository, dockerServerRuntime)
+        if (!dialog.showAndGet()) {
             // user cancelled; noop
             EcrTelemetry.deployImage(project, Result.Cancelled)
             return
@@ -141,7 +136,7 @@ internal data class LocalImage(
 
 internal class PushToEcrDialog(
     private val project: Project,
-    selectedRepository: Repository?,
+    selectedRepository: Repository,
     private val dockerServerRuntime: Deferred<DockerServerRuntimeInstance>
 ) : DialogWrapper(project, null, false, IdeModalityType.PROJECT),
     CoroutineScope by ApplicationThreadPoolScope("PushRepositoryDialog") {
@@ -160,7 +155,7 @@ internal class PushToEcrDialog(
         .build()
 
     init {
-        selectedRepository?.let { repo -> remoteRepos.selectedItem { it == repo } }
+        remoteRepos.selectedItem { it == selectedRepository }
 
         title = message("ecr.push.title")
         setOKButtonText(message("ecr.push.confirm"))
@@ -231,6 +226,7 @@ internal class PushToEcrDialog(
                     text = value.tag ?: value.imageId.take(15)
                 }
             )
+                .applyToComponent { ComboboxSpeedSearch(this) }
                 .growPolicy(GrowPolicy.MEDIUM_TEXT)
                 .withErrorOnApplyIf(message("ecr.image.not_selected")) { it.selected() == null }
         }
@@ -241,7 +237,7 @@ internal class PushToEcrDialog(
             cell {
                 val model = CollectionComboBoxModel<DockerRunConfiguration>()
                 rebuildRunConfigurationComboBoxModel(model)
-                val box = comboBox(
+                comboBox(
                     model,
                     { runConfiguration },
                     { ::runConfiguration.set(it) },
@@ -250,25 +246,24 @@ internal class PushToEcrDialog(
                         text = value.name
                     }
                 )
+                    .applyToComponent {
+                        // TODO: how do we render both the Docker icon and action items correctly?
+                        isEditable = true
+                        editor = object : BasicComboBoxEditor.UIResource() {
+                            override fun createEditorComponent(): JTextField {
+                                val textField = ExtendableTextField()
+                                textField.isEditable = false
+
+                                buildDockerfileActions(model, textField)
+                                textField.border = null
+
+                                return textField
+                            }
+                        }
+                    }
                     .growPolicy(GrowPolicy.MEDIUM_TEXT)
                     .withErrorOnApplyIf(message("ecr.dockerfile.configuration.invalid")) { it.selected() == null }
                     .withErrorOnApplyIf(message("ecr.dockerfile.configuration.invalid_server")) { it.selected()?.serverName == null }
-
-                // TODO: how do we render both the Docker icon and action items correctly?
-                box.component.apply {
-                    isEditable = true
-                    editor = object : BasicComboBoxEditor.UIResource() {
-                        override fun createEditorComponent(): JTextField {
-                            val textField = ExtendableTextField()
-                            textField.isEditable = false
-
-                            buildDockerfileActions(model, textField)
-                            textField.border = null
-
-                            return textField
-                        }
-                    }
-                }
             }
         }
     }
@@ -278,7 +273,7 @@ internal class PushToEcrDialog(
             AllIcons.General.Inline_edit, AllIcons.General.Inline_edit_hovered,
             message("ecr.dockerfile.configuration.edit")
         ) {
-            runConfiguration?.let {
+            runConfigModel.selected?.let {
                 RunManager.getInstance(project).findSettings(it)?.let { settings ->
                     RunDialog.editConfiguration(
                         project, settings,

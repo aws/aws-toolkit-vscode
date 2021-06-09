@@ -189,6 +189,8 @@ with what features/services are supported.
         <projectService serviceImplementation="software.aws.toolkits.jetbrains.services.cloudwatch.logs.CloudWatchLogWindow" />
         <projectService serviceImplementation="software.aws.toolkits.jetbrains.services.sqs.toolwindow.SqsWindow" />
 
+        <editorNotificationProvider implementation="software.aws.toolkits.jetbrains.core.credentials.CredentialsFileHelpNotificationProvider"/>
+
         <toolWindow id="aws.explorer" anchor="left" secondary="true"
                     factoryClass="software.aws.toolkits.jetbrains.core.explorer.AwsExplorerFactory"
                     icon="AwsIcons.Logos.AWS"/>
@@ -251,7 +253,7 @@ with what features/services are supported.
         <explorer.serviceNode implementation="software.aws.toolkits.jetbrains.core.explorer.nodes.AppRunnerExplorerRootNode"/>
         <explorer.serviceNode implementation="software.aws.toolkits.jetbrains.core.explorer.nodes.CloudFormationExplorerRootNode"/>
         <explorer.serviceNode implementation="software.aws.toolkits.jetbrains.core.explorer.nodes.CloudWatchRootNode"/>
-        <explorer.serviceNode implementation="software.aws.toolkits.jetbrains.core.explorer.nodes.DynamoDbExplorerRootNode"/>
+        <!-- <explorer.serviceNode implementation="software.aws.toolkits.jetbrains.core.explorer.nodes.DynamoDbExplorerRootNode"/> -->
         <explorer.serviceNode implementation="software.aws.toolkits.jetbrains.core.explorer.nodes.LambdaExplorerRootNode"/>
         <explorer.serviceNode implementation="software.aws.toolkits.jetbrains.core.explorer.nodes.S3ExplorerRootNode"/>
         <explorer.serviceNode implementation="software.aws.toolkits.jetbrains.core.explorer.nodes.EcrExplorerRootNode"/>
@@ -262,21 +264,22 @@ with what features/services are supported.
     </extensions>
 
     <actions>
-        <group id="ecr.repository.push.group"/>
+        <action internal="true" id="aws.toolkit.open.telemetry.viewer"
+                class="software.aws.toolkits.jetbrains.services.telemetry.viewer.OpenTelemetryAction"/>
 
         <group id="aws.toolkit.explorer.ecr" popup="true" compact="false">
             <action id="ecr.repository.create" class="software.aws.toolkits.jetbrains.services.ecr.actions.CreateRepositoryAction"/>
-            <reference id="ecr.repository.push.group"/>
         </group>
 
         <group id="aws.toolkit.explorer.ecr.repository" popup="true" compact="false">
-            <reference id="ecr.repository.push.group"/>
+            <group id="ecr.repository.push.group"/>
             <action id="ecr.repository.copyUri" class="software.aws.toolkits.jetbrains.services.ecr.actions.CopyRepositoryUriAction"/>
             <separator/>
             <action id="ecr.repository.delete" class="software.aws.toolkits.jetbrains.services.ecr.actions.DeleteRepositoryAction"/>
         </group>
 
         <group id="aws.toolkit.explorer.ecr.tag" popup="true" compact="false">
+            <action id="ecr.image.createAppRunnerService" class="software.aws.toolkits.jetbrains.services.ecr.actions.CreateAppRunnerServiceAction"/>
             <action id="ecr.image.copyUri" class="software.aws.toolkits.jetbrains.services.ecr.actions.CopyTagUriAction"/>
             <separator/>
             <action id="ecr.image.delete" class="software.aws.toolkits.jetbrains.services.ecr.actions.DeleteTagAction"/>
@@ -366,9 +369,9 @@ with what features/services are supported.
         </group>
 
         <group id="aws.toolkit.explorer.s3.bucket" popup="true" compact="false">
-            <action id="s3.open.bucket.viewer"
+            <action id="aws.toolkit.s3.open.bucket.viewer"
                     class="software.aws.toolkits.jetbrains.services.s3.bucketActions.OpenBucketViewerAction"/>
-            <action id="s3.open.bucket.viewer.prefixed"
+            <action id="aws.toolkit.s3.open.bucket.viewer.prefixed"
                     class="software.aws.toolkits.jetbrains.services.s3.bucketActions.OpenPrefixedBucketViewerAction"/>
             <separator/>
             <action id="s3.copy.bucketname.check"
