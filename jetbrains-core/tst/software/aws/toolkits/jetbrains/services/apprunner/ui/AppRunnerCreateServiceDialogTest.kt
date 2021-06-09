@@ -17,6 +17,7 @@ import software.amazon.awssdk.services.apprunner.model.Runtime
 import software.amazon.awssdk.services.apprunner.model.SourceCodeVersionType
 import software.amazon.awssdk.services.iam.model.Role
 import software.aws.toolkits.core.utils.RuleUtils
+import software.aws.toolkits.core.utils.test.aString
 import software.aws.toolkits.jetbrains.core.MockResourceCacheRule
 import software.aws.toolkits.jetbrains.services.apprunner.resources.AppRunnerResources
 import software.aws.toolkits.jetbrains.services.iam.IamResources
@@ -135,5 +136,12 @@ class AppRunnerCreateServiceDialogTest {
         assertThat(panel.startCommand).isNull()
         panel.repository = " https://abc/ "
         assertThat(panel.repository).isEqualTo("https://abc")
+    }
+
+    @Test
+    fun `EcrTag URI can be passed through`() {
+        val uri = aString()
+        val dialog = runInEdtAndGet { CreationDialog(projectRule.project, uri) }
+        assertThat(dialog.panel.containerUri).isEqualTo(uri)
     }
 }
