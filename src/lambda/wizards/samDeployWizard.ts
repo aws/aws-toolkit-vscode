@@ -14,7 +14,7 @@ import { samDeployDocUrl } from '../../shared/constants'
 import * as localizedText from '../../shared/localizedText'
 import { getLogger } from '../../shared/logger'
 import { getRegionsForActiveCredentials } from '../../shared/regions/regionUtilities'
-import { createBackButton, createHelpButton } from '../../shared/ui/buttons'
+import { createBackButton, createHelpButton, QuickInputButton } from '../../shared/ui/buttons'
 import * as telemetry from '../../shared/telemetry/telemetry'
 import { difference, filter, IteratorTransformer } from '../../shared/utilities/collectionUtils'
 import { getOverriddenParameters, getParameters } from '../utilities/parameterUtils'
@@ -34,7 +34,7 @@ import { isWizardControl, Wizard, WIZARD_EXIT, WIZARD_BACK, WIZARD_RETRY } from 
 import { initializeInterface } from '../../shared/transformers'
 import { configureParameterOverrides } from '../config/configureParameterOverrides'
 import { createInputBox, InputBoxPrompter } from '../../shared/ui/input'
-import { createQuickPick, DataQuickPick, DataQuickPickItem, QuickPickButton, QuickPickPrompter } from '../../shared/ui/picker'
+import { createQuickPick, DataQuickPick, DataQuickPickItem, QuickPickPrompter } from '../../shared/ui/picker'
 import { IteratingQuickPickController } from '../../shared/ui/iteratingPicker'
 
 const CREATE_NEW_BUCKET = localize('AWS.command.s3.createBucket', 'Create Bucket...')
@@ -259,23 +259,24 @@ export class DefaultSamDeployWizardContext implements SamDeployWizardContext {
             noBuckets: localize('AWS.samcli.deploy.s3bucket.picker.noBuckets', 'No buckets found.'),
             bucketError: localize('AWS.samcli.deploy.s3bucket.picker.error', 'There was an error loading S3 buckets.'),
         }
-        const createBucket: QuickPickButton<string> = {
-            iconPath: {
-                light: vscode.Uri.file(ext.iconPaths.light.plus),
-                dark: vscode.Uri.file(ext.iconPaths.dark.plus),
-            },
-            tooltip: CREATE_NEW_BUCKET,
-            onClick: resolve => resolve(NEW_BUCKET_OPTION),
-        }
-        const enterBucket: QuickPickButton<string> = {
+        const createBucket = new QuickInputButton({
             iconPath: {
                 light: vscode.Uri.file(ext.iconPaths.light.edit),
                 dark: vscode.Uri.file(ext.iconPaths.dark.edit),
             },
             tooltip: ENTER_BUCKET,
-            onClick: resolve => resolve(ENTER_BUCKET_OPTION),
-        }
+            }, () => NEW_BUCKET_OPTION
+        )
 
+        const enterBucket = new QuickInputButton({
+            iconPath: {
+                light: vscode.Uri.file(ext.iconPaths.light.edit),
+                dark: vscode.Uri.file(ext.iconPaths.dark.edit),
+            },
+            tooltip: ENTER_BUCKET,
+            }, () => ENTER_BUCKET_OPTION
+        )
+        
         const prompter = createQuickPick<string>([], {
             title: localize('AWS.samcli.deploy.s3Bucket.prompt', 'Select an AWS S3 Bucket to deploy code to'),
             matchOnDetail: true,

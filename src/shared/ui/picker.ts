@@ -5,7 +5,7 @@
 
 import * as vscode from 'vscode'
 
-import { WizardControl } from '../wizards/wizard'
+import { WizardControl, WIZARD_BACK } from '../wizards/wizard'
 import { QuickInputButton } from './buttons'
 import { Prompter, PrompterButtons } from './prompter'
 
@@ -140,6 +140,26 @@ function makeQuickPickPrompterAsync<T>(
     })
 }
 
+function addPickerHooks<T>(picker: DataQuickPick<T>): Promise<DataQuickPickItem<T>[] | undefined> {
+    return new Promise<DataQuickPickItem<T>[] | undefined>(resolve => {
+        picker.onDidAccept(() => resolve(Array.from(picker.selectedItems)))
+        picker.onDidHide(() => resolve(undefined)) // change to exit
+        picker.onDidTriggerButton(button => {
+            if (button === vscode.QuickInputButtons.Back) {
+                resolve([{ label: '', data: WIZARD_BACK }])
+            } else {
+                (button as QuickInputButton<T>).activate()
+            }
+        })
+        picker.buttons.map(button => button as QuickInputButton<T>).forEach(button => {
+            if (button.onClick !== undefined) {
+                button.onClick(ret => resolve([{ label: '', data: ret }]))
+            }
+        })
+    })
+
+}
+
 export class QuickPickPrompter<T> extends Prompter<T, QuickPickResult<T>> {
     private lastPicked?: DataQuickPickItem<T>
 
@@ -152,13 +172,7 @@ export class QuickPickPrompter<T> extends Prompter<T, QuickPickResult<T>> {
     }
 
     public async prompt(): Promise<QuickPickResult<T>> {
-        const promptPromise = promptUser({
-            picker: this.quickPick,
-            onDidTriggerButton: (button, resolve, reject) => {
-                button.onClick(arg => resolve([{ label: '', data: arg }]), reject)
-            },
-            prompter: this,
-        })
+        const promptPromise = addPickerHooks(this.quickPick)
         this.show()
         const choices = await promptPromise
 
@@ -275,65 +289,3 @@ export class MultiQuickPickPrompter<T, U extends Array<T> = Array<T>> extends Pr
     }
 }
 */
-
-/**
- * Convenience method to allow the QuickPick to be treated more like a dialog.
- *
- * This method shows the picker, and returns after the picker is either accepted or cancelled.
- * (Accepted = the user accepted selected values, Cancelled = hide() is called or Esc is pressed)
- *
- * @param picker The picker to prompt the user with
- * @param onDidTriggerButton Optional event to trigger when the picker encounters a "Button Pressed" event.
- *  Buttons do not automatically cancel/accept the picker, caller must explicitly do this if intended.
- *
- * @returns If the picker was cancelled, undefined is returned. Otherwise, an array of the selected items is returned.
- */
-export async function promptUser<T>({
-    picker,
-    onDidTriggerButton,
-    prompter
-}: {
-    picker: DataQuickPick<T>
-    onDidTriggerButton?(
-        button: QuickPickButton<T>,
-        resolve: (value: DataQuickPickItem<T>[]) => void,
-        reject: (reason?: any) => void
-    ): void,
-    prompter?: Prompter<T>
-}): Promise<DataQuickPickItem<T>[] | undefined> {
-    const disposables: vscode.Disposable[] = []
-
-    try {
-        const response = await new Promise<DataQuickPickItem<T>[] | undefined>((resolve, reject) => {
-            picker.onDidAccept(
-                () => {
-                    resolve(Array.from(picker.selectedItems))
-                },
-                picker,
-                disposables
-            )
-
-            picker.onDidHide(
-                () => {
-                    resolve(undefined) // change to WIZARD_EXIT
-                },
-                picker,
-                disposables
-            )
-
-            if (onDidTriggerButton) {
-                picker.onDidTriggerButton(
-                    //(btn: vscode.QuickInputButton) => onDidTriggerButton(btn as QuickPickButton<T>, resolve, reject),
-                    (btn: vscode.QuickInputButton) => prompter!.activateButton(btn),
-                    picker,
-                    disposables
-                )
-            }
-        })
-
-        return response
-    } finally {
-        disposables.forEach(d => d.dispose() as void)
-        picker.hide()
-    }
-}

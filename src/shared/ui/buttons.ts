@@ -47,15 +47,9 @@ export function createHelpButton(uri: string | vscode.Uri, tooltip: string = HEL
     () => vscode.env.openExternal(typeof uri === 'string' ? vscode.Uri.parse(uri) : uri))
 }
 
-const BACK_FUNCTION = (resolve: (result: WizardControl) => void) => resolve(WIZARD_BACK)
-
-// Extensions might actually share the back button. If so, this should not be done.
+// Currently VS Code uses a static back button for every QuickInput, so we can't redefine any of its
+// properties without potentially affecting other extensions. Creating a wrapper is possible, but it
+// would still need to be swapped out for the real Back button when adding it to the QuickInput.
 export function createBackButton(): QuickInputButton<WizardControl> {
-    const descriptor = Object.getOwnPropertyDescriptor(vscode.QuickInputButtons.Back, 'onClick')
-    if (descriptor === undefined) {
-        Object.defineProperty(vscode.QuickInputButtons.Back, 'onClick', { value: BACK_FUNCTION, configurable: false })
-    } else if (descriptor.value !== BACK_FUNCTION) {
-        throw new Error('The property "onClick" has already been defined for the Back button')
-    }
     return vscode.QuickInputButtons.Back as QuickInputButton<WizardControl>
 }

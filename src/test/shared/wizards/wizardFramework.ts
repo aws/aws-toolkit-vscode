@@ -12,7 +12,7 @@
  */
 
 import * as vscode from 'vscode'
-import { Wizard, WizardControl, WizardSchema } from '../../../shared/wizards/wizard'
+import { Wizard, WizardControl } from '../../../shared/wizards/wizard'
 import * as assert from 'assert'
 import { Prompter, PrompterButtons } from '../../../shared/ui/prompter'
 import { DataQuickPickItem } from '../../../shared/ui/picker'
@@ -142,7 +142,7 @@ async function execute(prompter: vscode.QuickInput & { buttons: PrompterButtons<
     }
 }
 
-export class WizardTester<TState extends WizardSchema<TState>, TResult> {
+export class WizardTester<TState, TResult> {
     private failedTestEmitter = new vscode.EventEmitter<Error>()
 
     // ideally we would reuse QuickInput objects for wizards (thus no need to test the wizard directly)
@@ -178,7 +178,7 @@ export class MockPrompter<T> extends Prompter<T> {
         super(vscode.window.createInputBox() as any)
     }
     public async prompt(): Promise<WizardControl | T | undefined> {
-        return super.applyAfterCallbacks(this.output) as unknown as any // fix this type
+        return super.applyAfterCallbacks(this.output)
     }
     public setLastResponse(picked?: T | DataQuickPickItem<T> | DataQuickPickItem<T>[]): void {
         return

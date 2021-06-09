@@ -61,10 +61,6 @@ export class StateMachineController<TState> {
     public get totalSteps(): number { return this.steps.length }
 
     protected rollbackState(): void {
-        if (this.internalStep === 0) {
-            return
-        }
-
         if (this.extraSteps.has(this.internalStep)) {
             this.steps.splice(this.internalStep, this.extraSteps.get(this.internalStep)!.length)
             this.extraSteps.delete(this.internalStep)
@@ -128,7 +124,7 @@ export class StateMachineController<TState> {
             if (controlSignal === StateMachineControl.Exit) {
                 return undefined
             } if (controlSignal === StateMachineControl.Retry) {
-                this.state = this.previousStates[this.internalStep - 1]
+                this.state = this.previousStates[this.internalStep]
                 continue
             } else if (nextState === undefined || controlSignal === StateMachineControl.Back) {
                 if (this.internalStep === 0) {

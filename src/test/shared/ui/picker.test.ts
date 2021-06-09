@@ -150,6 +150,7 @@ describe('QuickPickPrompter', async function () {
         assert.strictEqual(result, undefined, `Expected calling hide() on prompt to return undefined, got ${result}`)
     })
 
+    /*
     it('Button can cancel and return undefined', async function () {
         const buttonOfInterest = createBackButton()
         samplePicker.buttons = [buttonOfInterest]
@@ -201,6 +202,7 @@ describe('QuickPickPrompter', async function () {
         samplePicker.hide()
         await promptPromise
     })
+    */
 
     it('Allows custom input as the first quick pick option', async function () {
         const userInput = '99'
