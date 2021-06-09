@@ -31,7 +31,7 @@ import software.aws.toolkits.jetbrains.utils.ui.visibleIf
 import software.aws.toolkits.resources.message
 import javax.swing.DefaultComboBoxModel
 
-class CreationPanel(private val project: Project) {
+class CreationPanel(private val project: Project, ecrUri: String? = null) {
     internal companion object {
         // These are not in the model so we unfortunately have to keep our own list
         val memoryValues = listOf("2 GB", "3 GB", "4 GB")
@@ -51,7 +51,7 @@ class CreationPanel(private val project: Project) {
         private set
     var port: Int = 80
         private set
-    var containerUri: String = ""
+    var containerUri: String = ecrUri ?: ""
         private set
     var startCommand: String? = null
         internal set(value) {

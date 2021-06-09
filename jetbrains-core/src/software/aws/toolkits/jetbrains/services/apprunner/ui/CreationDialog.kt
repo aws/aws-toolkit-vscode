@@ -29,8 +29,10 @@ import software.aws.toolkits.telemetry.ApprunnerTelemetry
 import software.aws.toolkits.telemetry.Result
 import javax.swing.JComponent
 
-class CreationDialog(private val project: Project) : DialogWrapper(project), CoroutineScope by ApplicationThreadPoolScope("ApprunnerCreationPanel") {
-    val panel = CreationPanel(project)
+class CreationDialog(private val project: Project, ecrUri: String? = null) :
+    DialogWrapper(project),
+    CoroutineScope by ApplicationThreadPoolScope("ApprunnerCreationPanel") {
+    val panel = CreationPanel(project, ecrUri)
 
     init {
         super.init()

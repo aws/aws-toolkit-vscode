@@ -274,6 +274,7 @@ with what features/services are supported.
         </group>
 
         <group id="aws.toolkit.explorer.ecr.tag" popup="true" compact="false">
+            <action id="ecr.image.createAppRunnerService" class="software.aws.toolkits.jetbrains.services.ecr.actions.CreateAppRunnerServiceAction"/>
             <action id="ecr.image.copyUri" class="software.aws.toolkits.jetbrains.services.ecr.actions.CopyTagUriAction"/>
             <separator/>
             <action id="ecr.image.delete" class="software.aws.toolkits.jetbrains.services.ecr.actions.DeleteTagAction"/>
