@@ -1585,7 +1585,7 @@
         "ts-mockito": "^2.5.0",
         "ts-node": "^9.1.1",
         "umd-compat-loader": "^2.1.2",
-        "vsce": "^1.88.0",
+        "vsce": "^1.93.0",
         "vscode-nls-dev": "^3.3.1",
         "vscode-test": "^1.5.2",
         "webpack": "^5.38.1",
