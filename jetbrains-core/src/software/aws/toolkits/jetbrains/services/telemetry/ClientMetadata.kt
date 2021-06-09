@@ -15,7 +15,7 @@ data class ClientMetadata(
     val productVersion: String = AwsToolkit.PLUGIN_VERSION,
     val clientId: String = AwsSettings.getInstance().clientId.toString(),
     val parentProduct: String = ApplicationNamesInfo.getInstance().fullProductNameWithEdition,
-    val parentProductVersion: String = ApplicationInfo.getInstance().fullVersion,
+    val parentProductVersion: String = ApplicationInfo.getInstance().build.baselineVersion.toString(),
     val os: String = SystemInfo.OS_NAME,
     val osVersion: String = SystemInfo.OS_VERSION
 ) {
