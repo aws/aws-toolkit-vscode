@@ -7,6 +7,7 @@ import kotlinx.coroutines.runBlocking
 import org.junit.Ignore
 import org.junit.Test
 import software.amazon.awssdk.awscore.exception.AwsServiceException
+import software.amazon.awssdk.regions.Region
 import software.amazon.awssdk.services.cloudformation.CloudFormationClient
 import software.aws.toolkits.core.utils.outputStream
 import software.aws.toolkits.jetbrains.services.dynamic.DynamicResourcesProvider
@@ -22,7 +23,9 @@ class CloudApiTester {
     fun whatBlowsUp() {
         val results = Paths.get("./cloudApiBlowUp.csv")
         results.outputStream().bufferedWriter().use {
-            val cfnClient = CloudFormationClient.create()
+            val cfnClient = CloudFormationClient.builder()
+                .region(Region.US_WEST_2)
+                .build()
             val provider = DynamicResourcesProvider(cfnClient)
             val listSupportedTypes = runBlocking {
                 provider.listSupportedTypes()
@@ -38,7 +41,7 @@ class CloudApiTester {
 
                         while (true) {
                             try {
-                                if (provider.listResources(type).isEmpty()) {
+                                if (provider.listResources(type.fullName).isEmpty()) {
                                     add("Worked - empty")
                                 } else {
                                     add("Worked - resources")

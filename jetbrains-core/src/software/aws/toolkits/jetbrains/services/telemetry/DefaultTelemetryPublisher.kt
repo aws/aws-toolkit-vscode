@@ -94,14 +94,14 @@ class DefaultTelemetryPublisher(
                 sdkClient.sharedSdkClient(),
                 Region.US_EAST_1,
                 AWSCognitoCredentialsProvider(
-                    "us-east-1:820fd6d1-95c0-4ca4-bffb-3f01d32da842",
+                    "us-east-1:a4c5f960-2eff-4478-aed8-c70f6a2bb5d5",
                     CognitoIdentityClient.builder()
                         .credentialsProvider(AnonymousCredentialsProvider.create())
                         .region(Region.US_EAST_1)
                         .httpClient(sdkClient.sharedSdkClient())
                         .build()
                 ),
-                endpointOverride = "https://client-telemetry.us-east-1.amazonaws.com"
+                endpointOverride = "https://cjlp7jicpe.execute-api.us-east-1.amazonaws.com/Dev"
             )
         }
     }
