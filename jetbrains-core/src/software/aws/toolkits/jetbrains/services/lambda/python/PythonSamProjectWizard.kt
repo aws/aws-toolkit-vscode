@@ -21,11 +21,11 @@ import software.aws.toolkits.jetbrains.services.lambda.wizard.SdkSelector
 import software.aws.toolkits.jetbrains.services.lambda.wizard.TemplateParameters
 import software.aws.toolkits.resources.message
 
-private val pythonTemplateRuntimes = setOf(LambdaRuntime.PYTHON2_7, LambdaRuntime.PYTHON3_6, LambdaRuntime.PYTHON3_7, LambdaRuntime.PYTHON3_8)
+private val pythonTemplateRuntimes = setOf(LambdaRuntime.PYTHON3_6, LambdaRuntime.PYTHON3_7, LambdaRuntime.PYTHON3_8)
 private val eventBridgeTemplateRuntimes = setOf(LambdaRuntime.PYTHON3_6, LambdaRuntime.PYTHON3_7, LambdaRuntime.PYTHON3_8)
 
 class PythonSamProjectWizard : SamProjectWizard {
-    override fun createSdkSelectionPanel(projectLocation: TextFieldWithBrowseButton?): SdkSelector? = when {
+    override fun createSdkSelectionPanel(projectLocation: TextFieldWithBrowseButton?): SdkSelector = when {
         PlatformUtils.isIntelliJ() -> IntelliJSdkSelectionPanel(BuiltInRuntimeGroups.Python)
         else -> PyCharmSdkSelectionPanel(projectLocation)
     }
