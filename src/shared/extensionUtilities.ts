@@ -68,38 +68,37 @@ interface IdeProperties {
 }
 
 export function getIdeProperties(): IdeProperties {
+    const company = localize('AWS.title', 'AWS')
     // in a separate const so other IDEs can take from this selectively.
     const vscodeVals: IdeProperties = {
-        shortName: 'VS Code',
-        longName: 'Visual Studio Code',
-        commandPalette: 'Command Palette',
-        codelens: 'CodeLens',
-        codelenses: 'CodeLenses',
-        company: 'AWS'
-    }
-
-    const cloud9Vals: IdeProperties = {
-        shortName: 'Cloud9',
-        longName: 'AWS Cloud9',
-        commandPalette: 'Go to Anything Panel',
-        codelens: 'Inline Action',
-        codelenses: 'Inline Actions',
-        company: 'AWS'
+        shortName: localize('AWS.vscode.shortName', 'VS Code'),
+        longName: localize('AWS.vscode.longName', 'Visual Studio Code'),
+        commandPalette: localize('AWS.vscode.commandPalette', 'Command Palette'),
+        codelens: localize('AWS.vscode.codelens', 'CodeLens'),
+        codelenses: localize('AWS.vscode.codelenses', 'CodeLenses'),
+        company
     }
 
     switch (getIdeType()) {
         case IDE.cloud9:
             if (isCn()) {
-                return {
-                    ...cloud9Vals,
-                    longName: 'Amazon Cloud9',
-                    company: 'Amazon'
-                }
+                return createCloud9Properties(localize('AWS.title.cn', 'Amazon'))
             }
-            return cloud9Vals
+            return createCloud9Properties(company)
         // default is IDE.vscode
         default:
             return vscodeVals
+    }
+}
+
+function createCloud9Properties(company: string): IdeProperties {
+    return {
+        shortName: localize('AWS.cloud9.shortName', 'Cloud9'),
+        longName: localize('AWS.cloud9.longName', '{0} Cloud9', company),
+        commandPalette: localize('AWS.cloud9.commandPalette', 'Go to Anything Panel'),
+        codelens: localize('AWS.cloud9.codelens', 'Inline Action'),
+        codelenses: localize('AWS.cloud9.codelenses', 'Inline Actions'),
+        company
     }
 }
 
