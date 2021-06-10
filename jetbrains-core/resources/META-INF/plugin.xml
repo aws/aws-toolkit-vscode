@@ -350,6 +350,8 @@ with what features/services are supported.
         </group>
 
         <group id="aws.toolkit.explorer.dynamic" popup="true" compact="false">
+            <action id="dynamic.open"
+                    class="software.aws.toolkits.jetbrains.services.dynamic.explorer.actions.DynamicResourceOpenAction"/>
             <action id="dynamic.copy.arn"
                     class="software.aws.toolkits.jetbrains.services.dynamic.explorer.actions.DynamicResourceCopyIdentifierAction"/>
         </group>

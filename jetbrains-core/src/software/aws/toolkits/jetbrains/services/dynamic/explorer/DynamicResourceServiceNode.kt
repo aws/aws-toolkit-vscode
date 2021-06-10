@@ -54,8 +54,9 @@ class DynamicResourceNode(project: Project, val resource: DynamicResource) :
     override fun isAlwaysShowPlus(): Boolean = false
     override fun isAlwaysLeaf(): Boolean = true
     override fun getChildren(): List<AwsExplorerNode<*>> = emptyList()
+    override fun onDoubleClick() = openResourceModelInEditor()
 
-    override fun onDoubleClick() {
+    fun openResourceModelInEditor() {
         object : Task.Backgroundable(nodeProject, message("dynamic_resources.fetch.indicator_title", resource.identifier), true) {
             override fun run(indicator: ProgressIndicator) {
                 indicator.text = message("dynamic_resources.fetch.fetch")
