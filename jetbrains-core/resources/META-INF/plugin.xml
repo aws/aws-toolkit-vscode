@@ -308,6 +308,7 @@ with what features/services are supported.
             <action id="apprunner.service.pause" class="software.aws.toolkits.jetbrains.services.apprunner.actions.PauseServiceAction"/>
             <action id="apprunner.service.resume" class="software.aws.toolkits.jetbrains.services.apprunner.actions.ResumeServiceAction"/>
             <separator/>
+            <action id="apprunner.service.openServiceUri" class="software.aws.toolkits.jetbrains.services.apprunner.actions.OpenServiceUrlAction"/>
             <action id="apprunner.service.copyServiceUri" class="software.aws.toolkits.jetbrains.services.apprunner.actions.CopyServiceUrlAction"/>
             <separator/>
             <action id="apprunner.service.showSystemLogs" class="software.aws.toolkits.jetbrains.services.apprunner.actions.ViewSystemLogsAction"/>
