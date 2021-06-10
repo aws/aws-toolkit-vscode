@@ -25,7 +25,7 @@ import { addFolderToWorkspace } from '../../shared/utilities/workspaceUtils'
 import { Window } from '../../shared/vscode/window'
 import { getLambdaDetails } from '../utils'
 import { createLocationPrompt } from '../../shared/ui/prompts'
-import { isWizardControl } from '../../shared/wizards/wizard'
+import { isValidResponse } from '../../shared/ui/prompter'
 
 export async function importLambdaCommand(functionNode: LambdaFunctionNode) {
     const result = await runImportLambda(functionNode)
@@ -48,8 +48,7 @@ async function runImportLambda(functionNode: LambdaFunctionNode, window = Window
     }
     const selectedUri = await createLocationPrompt().prompt()
 
-    // TODO: handle string case
-    if (!selectedUri || Array.isArray(selectedUri) || isWizardControl(selectedUri) || typeof selectedUri === 'string') {
+    if (!isValidResponse(selectedUri)) {
         return 'Cancelled'
     }
 
