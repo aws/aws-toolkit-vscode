@@ -11,8 +11,9 @@ import { WizardControl } from '../wizards/wizard'
 const localize = nls.loadMessageBundle()
 const HELP_TOOLTIP = localize('AWS.command.help', 'View Toolkit Documentation')
 
+/** Light wrapper around VS Code's buttons, adding a `onClick` callback. */
 export interface QuickInputButton<T> extends vscode.QuickInputButton {
-    onClick: (resolve: (arg: T) => void, reject: (reason: any) => void) => void
+    onClick: (resolve: (arg: T) => void) => void
 }
 
 /**

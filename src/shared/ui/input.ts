@@ -4,15 +4,13 @@
  */
 
 import * as vscode from 'vscode'
+import { applySettings } from '../utilities/collectionUtils'
 import { WIZARD_BACK } from '../wizards/wizard'
 import { QuickInputButton } from './buttons'
 import { Prompter, PrompterButtons, PromptResult } from './prompter'
 
-/**
- * Options to configure the behavior of the input box UI.
- * Generally used to accommodate features not provided through vscode.InputBoxOptions
- */
-export interface AdditionalInputBoxOptions {
+/** Additional options to configure the `InputBox` beyond the standard API */
+interface AdditionalInputBoxOptions {
     title?: string
     step?: number
     placeholder?: string
@@ -21,29 +19,19 @@ export interface AdditionalInputBoxOptions {
     validateInput?(value: string): string | undefined
 }
 
-export type ExtendedInputBoxOptions = Omit<vscode.InputBoxOptions, 'buttons' | 'validateInput'> & AdditionalInputBoxOptions
+export type ExtendedInputBoxOptions = 
+    Omit<vscode.InputBoxOptions, 'buttons' | 'validateInput'> & AdditionalInputBoxOptions
 export type DataInputBox = Omit<vscode.InputBox, 'buttons'> & { buttons: PrompterButtons<string> }
 
-// TODO: move to utilities?
-function applySettings<T1, T2 extends T1>(obj: T2, settings: T1): void { 
-    Object.assign(obj, settings)
-}
-
 /**
- * Creates an InputBox to get a text response from the user.
- *
- * Used to wrap createInputBox and accommodate
- * a common set of features for the Toolkit.
- *
- * Parameters:
- *  options - initial InputBox configuration
- *  buttons - set of buttons to initialize the InputBox with
- * @return A new InputBox.
+ * Creates a new InputBox.
+ * 
+ * @param options Customizes the InputBox and InputBoxPrompter.
+ * @returns An InputBoxPrompter. This can be used directly with the `prompt` method or can be fed into a Wizard.
  */
 export function createInputBox(options?: ExtendedInputBoxOptions): InputBoxPrompter {
     const inputBox = vscode.window.createInputBox() as DataInputBox
-
-    applySettings(inputBox, options)
+    applySettings(inputBox, { ...options })
 
     if (options?.validateInput !== undefined) {
         inputBox.onDidChangeValue(
@@ -60,8 +48,8 @@ export class InputBoxPrompter extends Prompter<string> {
         super(inputBox)
     }
 
-    public async prompt(): Promise<PromptResult<string>> {
-        const promptPromise = new Promise<PromptResult<string>>((resolve, reject) => {
+    protected async promptUser(): Promise<PromptResult<string>> {
+        const promptPromise = new Promise<PromptResult<string>>(resolve => {
             this.inputBox.onDidAccept(() => {
                 if (!this.inputBox.validationMessage) {
                     resolve(this.inputBox.value)
@@ -72,13 +60,13 @@ export class InputBoxPrompter extends Prompter<string> {
                 if (button === vscode.QuickInputButtons.Back) {
                     resolve(WIZARD_BACK)
                 } else {
-                    (button as QuickInputButton<string>).onClick(resolve, reject)
+                    (button as QuickInputButton<string>).onClick(resolve)
                 }
             })
             this.inputBox.show()
         })
 
-        return this.applyAfterCallbacks(await promptPromise)
+        return await promptPromise
     }
 
     public setLastResponse(picked: string): void {

@@ -5,7 +5,7 @@
 
 import * as assert from 'assert'
 import * as vscode from 'vscode'
-import { AdditionalQuickPickOptions, createQuickPick, DataQuickPick, DataQuickPickItem, QuickPickPrompter } from '../../../shared/ui/picker'
+import * as picker from '../../../shared/ui/picker'
 import { createBackButton, QuickInputButton } from '../../../shared/ui/buttons'
 import { isValidResponse, PrompterButtons, PromptResult } from '../../../shared/ui/prompter'
 import { WIZARD_BACK } from '../../../shared/wizards/wizard'
@@ -22,7 +22,7 @@ describe('createQuickPick', async function () {
 
     it('Sets buttons', async function () {
         const buttons = [createBackButton()]
-        testPicker = createQuickPick([], { buttons }).quickPick
+        testPicker = picker.createQuickPick([], { buttons }).quickPick
 
         assert.deepStrictEqual(testPicker.buttons, buttons)
     })
@@ -36,7 +36,7 @@ describe('createQuickPick', async function () {
             ignoreFocusOut: true,
             value: 'test value',
         }
-        testPicker = createQuickPick([], options).quickPick
+        testPicker = picker.createQuickPick([], options).quickPick
 
         assertPickerOptions(testPicker, options)
     })
@@ -47,26 +47,26 @@ describe('createQuickPick', async function () {
             matchOnDetail: false,
             ignoreFocusOut: false,
         }
-        testPicker = createQuickPick([], options).quickPick
+        testPicker = picker.createQuickPick([], options).quickPick
 
         assertPickerOptions(testPicker, options)
     })
 
     it('Sets Options to undefined values', async function () {
         const options = {}
-        testPicker = createQuickPick([], options).quickPick
+        testPicker = picker.createQuickPick([], options).quickPick
 
         assertPickerOptions(testPicker, options)
     })
 
     it('Does not set Options', async function () {
-        testPicker = createQuickPick([], {}).quickPick
+        testPicker = picker.createQuickPick([], {}).quickPick
         assertPickerOptions(testPicker, {})
     })
 
     function assertPickerOptions(
         actualPicker: vscode.QuickPick<vscode.QuickPickItem>,
-        expectedOptions: vscode.QuickPickOptions & AdditionalQuickPickOptions
+        expectedOptions: picker.ExtendedQuickPickOptions<any>
     ) {
         assert.strictEqual(
             actualPicker.title,
@@ -120,11 +120,11 @@ describe('createQuickPick', async function () {
 
 describe('QuickPickPrompter', async function () {
     let samplePicker: TestQuickPick<number>
-    let samplePrompter: QuickPickPrompter<number>
+    let samplePrompter: picker.QuickPickPrompter<number>
 
     beforeEach(async function () {
         samplePicker = createSamplePicker()
-        samplePrompter = new QuickPickPrompter(samplePicker)
+        samplePrompter = new picker.QuickPickPrompter(samplePicker)
     })
 
     afterEach(async function () {
@@ -205,7 +205,7 @@ describe('QuickPickPrompter', async function () {
     it('Allows custom input as the first quick pick option', async function () {
         const userInput = '99'
         const inputLabel = 'Enter a number'
-        samplePrompter.allowUserInput(inputLabel, v => Number(v))
+        samplePrompter.allowCustomUserInput(inputLabel, v => Number(v))
         const promptPromise = samplePrompter.prompt()
         samplePicker.value = userInput
         assert.strictEqual(samplePicker.items[0].label, inputLabel)
@@ -228,18 +228,18 @@ describe('QuickPickPrompter', async function () {
         const inputTransform = (v?: string) => v !== undefined ? v.length * v.length : 0
         const userInput = 'Hello, world!'
         const inputLabel = 'Enter a string'
-        samplePrompter.allowUserInput(inputLabel, inputTransform)
+        samplePrompter.allowCustomUserInput(inputLabel, inputTransform)
         const promptPromise = samplePrompter.prompt()
         samplePicker.value = userInput
         samplePicker.accept()
         const result = await promptPromise
-        const lastPicked = samplePrompter.getLastResponse() as DataQuickPickItem<number>
+        const lastPicked = samplePrompter.getLastResponse() as picker.DataQuickPickItem<number>
         assert.strictEqual(typeof lastPicked, 'object')
         assert.strictEqual(result, inputTransform(userInput))
 
         const newPicker = createSamplePicker()
-        const newPrompter = new QuickPickPrompter(newPicker)
-        newPrompter.allowUserInput(inputLabel, inputTransform)
+        const newPrompter = new picker.QuickPickPrompter(newPicker)
+        newPrompter.allowCustomUserInput(inputLabel, inputTransform)
         newPrompter.setLastResponse(lastPicked)
         const newPrompterPromise = newPrompter.prompt()
         assert.strictEqual(newPicker.activeItems[0].data, lastPicked.data, 'Custom response was not the first option')
@@ -257,7 +257,8 @@ describe('QuickPickPrompter', async function () {
         assert.strictEqual(actualResult, expectedResult, `Expected ${expectedResult}, got ${actualResult}`)
     }
 
-    class TestQuickPick<T, U extends DataQuickPickItem<T> = DataQuickPickItem<T>> implements DataQuickPick<T> {
+    type PickerItem<T> = picker.DataQuickPickItem<T>
+    class TestQuickPick<T, U extends PickerItem<T> = PickerItem<T>> implements picker.DataQuickPick<T> {
         private _value: string = ''
         public placeholder: string | undefined
         public readonly onDidChangeValue: vscode.Event<string>

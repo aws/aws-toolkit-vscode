@@ -5,14 +5,14 @@
 
 import * as assert from 'assert'
 import * as sinon from 'sinon'
-import { StateMachineController, StateMachineControl, StateMachineStepResult, StateBranch } from '../../../shared/wizards/stateController'
+import { StateMachineController, ControlSignal, StepResult, Branch } from '../../../shared/wizards/stateController'
 
 function assertStepsPassthrough<T>(
     controller: StateMachineController<T>, 
     current: number, 
     total: number, 
-    result?: StateMachineStepResult<T>
-): StateMachineStepResult<T> | undefined {
+    result?: StepResult<T>
+): StepResult<T> | undefined {
     assert.strictEqual(controller.currentStep, current)
     assert.strictEqual(controller.totalSteps, total)
     return result
@@ -29,8 +29,8 @@ interface PrimeGenerator {
 }
 
 /** Finds all primes up to 'stopAt' starting at 'current.value' */
-async function primeGen(state: PrimeGenerator): Promise<StateMachineStepResult<PrimeGenerator>> {
-    const nextSteps: StateBranch<PrimeGenerator> = []
+async function primeGen(state: PrimeGenerator): Promise<StepResult<PrimeGenerator>> {
+    const nextSteps: Branch<PrimeGenerator> = []
 
     state.current.value += 1
     nextSteps.push(checkPrime, addIfPrime)
@@ -43,7 +43,7 @@ async function primeGen(state: PrimeGenerator): Promise<StateMachineStepResult<P
 }
 
 // 6k + 1 primality test
-async function checkPrime(state: PrimeGenerator): Promise<StateMachineStepResult<PrimeGenerator>> {
+async function checkPrime(state: PrimeGenerator): Promise<StepResult<PrimeGenerator>> {
     state.current.counter = state.current.counter ?? 5
     const val = state.current.value
     state.current.isPrime = val !== 0
@@ -68,7 +68,7 @@ async function checkPrime(state: PrimeGenerator): Promise<StateMachineStepResult
     return { nextState: state }
 }
 
-async function addIfPrime(state: PrimeGenerator): Promise<StateMachineStepResult<PrimeGenerator>> {
+async function addIfPrime(state: PrimeGenerator): Promise<StepResult<PrimeGenerator>> {
     if (state.current.isPrime) {
         state.primes.push(state.current.value!)
     }
@@ -94,7 +94,7 @@ describe('StateMachineController', function () {
         const step2 = sinon.stub()
         const step3 = sinon.stub()
         step1.returns(0)
-        step2.returns({ controlSignal: StateMachineControl.Exit })
+        step2.returns({ controlSignal: ControlSignal.Exit })
         step3.returns(1)
         controller.addStep(step1)
         controller.addStep(step2)
@@ -133,7 +133,7 @@ describe('StateMachineController', function () {
         it('repeats current step', async function () {
             const controller = new StateMachineController()
             const stub = sinon.stub()
-            stub.onFirstCall().returns({ controlSignal: StateMachineControl.Retry })
+            stub.onFirstCall().returns({ controlSignal: ControlSignal.Retry })
             stub.onSecondCall().returns({})
             controller.addStep(stub)
 
@@ -145,7 +145,7 @@ describe('StateMachineController', function () {
         it('does not remember state on retry', async function () {
             const controller = new StateMachineController<{ answer: boolean }>()
             const stub = sinon.stub()
-            stub.onFirstCall().returns({ nextState: { answer: true }, controlSignal: StateMachineControl.Retry })
+            stub.onFirstCall().returns({ nextState: { answer: true }, controlSignal: ControlSignal.Retry })
             stub.onSecondCall().returns({ answer: false })
             controller.addStep(stub)
 

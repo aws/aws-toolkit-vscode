@@ -28,7 +28,7 @@ describe('UI buttons', function () {
     it('creates a help button with a link', function () {
         const help = buttons.createHelpButton('a link')
         const stub = sandbox.stub(env, 'openExternal')
-        help.onClick(sinon.stub(), sinon.stub())
+        help.onClick(sinon.stub())
 
         assert.ok(stub.calledOnce)
         assertIconPath(help.iconPath as IconPath)

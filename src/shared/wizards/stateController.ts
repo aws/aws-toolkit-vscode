@@ -5,19 +5,19 @@
 
 import * as _ from 'lodash'
 
-export enum StateMachineControl {
+export enum ControlSignal {
     Retry,
     Exit,
     Back,
 }
 
-export interface StateMachineStepResult<TState> {
+export interface StepResult<TState> {
     /** A mutated form of the present state. This will be passed along to the next step */
     nextState?: TState
     /** An array of step functions to be added immediately after the most recent step */
-    nextSteps?: StateStepFunction<TState>[]
+    nextSteps?: StepFunction<TState>[]
     /** Extra control instructions separate from the normal linear traversal of states */
-    controlSignal?: StateMachineControl
+    controlSignal?: ControlSignal
 }
 
 /**
@@ -25,18 +25,18 @@ export interface StateMachineStepResult<TState> {
  * include additional steps or control signals. The function can return the state directly if nothing
  * extra is needed.
  */
-export type StateStepFunction<TState> = (state: TState) => Promise<StateMachineStepResult<TState> | TState>
-export type StateBranch<TState> = StateStepFunction<TState>[]
+export type StepFunction<TState> = (state: TState) => Promise<StepResult<TState> | TState>
+export type Branch<TState> = StepFunction<TState>[]
 
 /**
  * State machine with backtracking and dynamic branching functionality.
- * Transitions are abstracted away as a 'step' function, which return both the
- * new state and any extra steps that the machine should use.
+ * Transitions are abstracted away as a 'step' function, which return both the new state and any extra 
+ * steps that the machine should use.
  */
 export class StateMachineController<TState> {
     private previousStates: TState[] = []
-    private extraSteps = new Map<number, StateBranch<TState>>()
-    private steps: StateBranch<TState> = []
+    private extraSteps = new Map<number, Branch<TState>>()
+    private steps: Branch<TState> = []
     private internalStep: number = 0
     private state!: TState
 
@@ -48,12 +48,11 @@ export class StateMachineController<TState> {
         this.state = state
     }
 
-    /** Adds a single step to the state machine. */
-    public addStep(step: StateStepFunction<TState>): void {
+    public addStep(step: StepFunction<TState>): void {
         this.steps.push(step)
     }
 
-    public containsStep(step: StateStepFunction<TState> | undefined): boolean {
+    public containsStep(step: StepFunction<TState> | undefined): boolean {
         return step !== undefined && this.steps.indexOf(step) > -1
     }
 
@@ -76,25 +75,23 @@ export class StateMachineController<TState> {
         this.internalStep += 1
     }
 
-    protected detectCycle(step: StateStepFunction<TState>): TState | undefined {
+    protected detectCycle(step: StepFunction<TState>): TState | undefined {
         return this.previousStates.find((pastState, index) => index !== this.internalStep && 
             (this.steps[index] === step && _.isEqual(this.state, pastState)))
     }
 
-    /**
-     * Add new steps dynamically at runtime. Only used internally.
-     */
-    protected dynamicBranch(nextSteps: StateBranch<TState> | undefined): void {
+    /** Add new steps dynamically at runtime. Only used internally. */
+    protected dynamicBranch(nextSteps: Branch<TState> | undefined): void {
         if (nextSteps !== undefined && nextSteps.length > 0) {
             this.steps.splice(this.internalStep, 0, ...nextSteps)
             this.extraSteps.set(this.internalStep, nextSteps)
         }
     }
 
-    protected async processNextStep(): Promise<StateMachineStepResult<TState>> {
+    protected async processNextStep(): Promise<StepResult<TState>> {
         const result = await this.steps[this.internalStep](this.state)
 
-        function isMachineResult(result: any): result is StateMachineStepResult<TState> {
+        function isMachineResult(result: any): result is StepResult<TState> {
             return (result !== undefined && 
                 (result.nextState !== undefined || result.nextSteps !== undefined || result.controlSignal !== undefined))
         }
@@ -107,7 +104,8 @@ export class StateMachineController<TState> {
     }
 
     /**
-     * Runs the added steps until termination or failure
+     * Runs the added steps until termination or failure.
+     * @returns The final state or `undefined` if the machine exited.
      */
     public async run(): Promise<TState | undefined> {
         this.previousStates.push(_.cloneDeep(this.state))
@@ -121,12 +119,12 @@ export class StateMachineController<TState> {
 
             const { nextState, nextSteps, controlSignal } = await this.processNextStep()
 
-            if (controlSignal === StateMachineControl.Exit) {
+            if (controlSignal === ControlSignal.Exit) {
                 return undefined
-            } if (controlSignal === StateMachineControl.Retry) {
+            } if (controlSignal === ControlSignal.Retry) {
                 this.state = this.previousStates[this.internalStep]
                 continue
-            } else if (nextState === undefined || controlSignal === StateMachineControl.Back) {
+            } else if (nextState === undefined || controlSignal === ControlSignal.Back) {
                 if (this.internalStep === 0) {
                     return undefined
                 }

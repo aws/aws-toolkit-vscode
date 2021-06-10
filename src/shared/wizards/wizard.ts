@@ -3,7 +3,7 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
-import { StateBranch, StateMachineControl, StateMachineController, StateMachineStepResult, StateStepFunction } from './stateController'
+import { Branch, ControlSignal, StateMachineController, StepResult, StepFunction } from './stateController'
 import * as _ from 'lodash'
 import { Prompter, PromptResult } from '../../shared/ui/prompter'
 
@@ -15,16 +15,16 @@ interface ContextOptions<TState, TProp> {
      * in a single resolution step then they will be added in the order in which they were
      * bound.
      */
-    showWhen?: (state: WizardSchema<TState>) => boolean
+    showWhen?: (state: WizardState<TState>) => boolean
     /**
      * Sets a default value to the target property. This default is applied to the current state
      * as long as the property has not been set.
      */
-    setDefault?: (state: WizardSchema<TState>) => TProp | undefined
+    setDefault?: (state: WizardState<TState>) => TProp | undefined
     /**
-     * If set to true the wizard will ignore prompting for already assigned properties
+     * If set to true the wizard will ignore prompts for already assigned properties (default: true)
      */
-    implicit?: boolean // unimplemented
+    implicit?: boolean // not actually implemented
 }
 
 type ObjectKeys<T> = {
@@ -36,12 +36,12 @@ type NonObjectKeys<T> = {
 }[keyof T]
 
 /**
- * Any property with sub-properties becomes a required element, while everything else
- * becomes optional. This is applied recursively.
+ * `WizardState` must have all Object-like properties be initialized to an empty object.
+ * All other properties may be left uninitialized.
  */
-export type WizardSchema<T> = {
+export type WizardState<T> = {
     [Property in ObjectKeys<T>]-?: T[Property] extends Record<string, unknown> ? 
-        WizardSchema<T[Property]> : never
+        WizardState<T[Property]> : never
 } & {
     [Property in NonObjectKeys<T>]+?: T[Property] extends Record<string, unknown> ? 
         never : T[Property]
@@ -50,9 +50,9 @@ export type WizardSchema<T> = {
 // We use a symbol to safe-guard against collisions
 const WIZARD_CONTROL = Symbol()
 
-export const WIZARD_RETRY = { id: WIZARD_CONTROL, type: StateMachineControl.Retry }
-export const WIZARD_BACK = { id: WIZARD_CONTROL, type: StateMachineControl.Back }
-export const WIZARD_EXIT = { id: WIZARD_CONTROL, type: StateMachineControl.Exit }
+export const WIZARD_RETRY = { id: WIZARD_CONTROL, type: ControlSignal.Retry }
+export const WIZARD_BACK = { id: WIZARD_CONTROL, type: ControlSignal.Back }
+export const WIZARD_EXIT = { id: WIZARD_CONTROL, type: ControlSignal.Exit }
 
 /** Control signals allow for alterations of the normal wizard flow */
 export type WizardControl = typeof WIZARD_RETRY | typeof WIZARD_BACK | typeof WIZARD_EXIT
@@ -61,34 +61,34 @@ export function isWizardControl(obj: any): obj is WizardControl {
     return obj !== undefined && obj.id === WIZARD_CONTROL
 }
 
+function isAssigned<TProp>(obj: TProp): boolean {
+    return obj !== undefined || _.isEmpty(obj) === false 
+}
+
 type PrompterBind<TProp, TState> = (getPrompter: (state: StateWithCache<TState>) => 
     Prompter<TProp>, options?: ContextOptions<TState, TProp>) => void
 
 interface WizardFormElement<TProp, TState> {
     /**
-     * Binds a Prompter provider to the specified property. The provider is called whenever the property is ready for 
-     * input, and should return a Prompter object.
+     * Binds a Prompter-provider to the specified property. The provider is called with the current Wizard
+     * state whenever the property is ready for input, and should return a Prompter object.
      */
     readonly bindPrompter: PrompterBind<NonNullable<TProp>, TState>
 }
 
-/**
- * Transforms an interface into a collection of WizardFormElements
- */
+/** Transforms an interface into a collection of WizardFormElements */
 type WizardForm<T, TState=T> = {
     [Property in keyof T]-?: T[Property] extends Record<string, unknown> 
         ? (WizardForm<T[Property], TState> & WizardFormElement<T[Property], TState>)
         : WizardFormElement<T[Property], TState>
 }
 
-type RecursivePartial<T> = { [Property in keyof T]+?: RecursivePartial<T[Property]> }
-
 // Persistent storage that exists on a per-property basis
 // Potentially useful for remembering resources when the user backs out of a step
 type StepCache = { picked?: any } & { [key: string]: any }
 type StateWithCache<TState> = TState & { stepCache: StepCache }
 
-type StepWithContext<TState, TProp> = ContextOptions<TState, TProp> & { boundStep: StateStepFunction<TState> }
+type StepWithContext<TState, TProp> = ContextOptions<TState, TProp> & { boundStep: StepFunction<TState> }
 
 /**
  * A generic wizard that consumes data from a series of 'prompts'. Wizards will modify a single property of
@@ -100,17 +100,17 @@ export abstract class Wizard<TState extends Partial<Record<keyof TState, unknown
     public readonly form!: WizardForm<TState> 
     private readonly stateController!: StateMachineController<TState>
 
-    public constructor(private readonly schema: WizardSchema<TState>, initState?: RecursivePartial<TState>) {
-        this.form = this.createWizardForm(schema)
-        this.stateController = new StateMachineController({ ...schema, ...initState } as TState)
+    public constructor(private readonly initState: WizardState<TState>) {
+        this.form = this.createWizardForm(initState)
+        this.stateController = new StateMachineController(initState as TState)
     }
 
     private applyDefaults(state: TState): TState {
         this.formData.forEach((opt, targetProp) => {
             const current = _.get(state, targetProp)
 
-            if (_.isEmpty(current) && opt.setDefault !== undefined) {
-                _.set(state, targetProp, opt.setDefault(state as WizardSchema<TState>))
+            if (!isAssigned(current) && opt.setDefault !== undefined) {
+                _.set(state, targetProp, opt.setDefault(state as WizardState<TState>))
             }
         })
 
@@ -118,8 +118,10 @@ export abstract class Wizard<TState extends Partial<Record<keyof TState, unknown
     }
 
     public async run(): Promise<TState | TResult | undefined> {
-        this.resolveNextSteps(this.schema as TState, this.applyDefaults(Object.assign({}, this.schema as TState)))
-            .forEach(step => this.stateController.addStep(step))
+        this.resolveNextSteps(
+                this.initState as TState, 
+                this.applyDefaults(Object.assign({}, this.initState as TState))
+            ).forEach(step => this.stateController.addStep(step))
         const outputState = await this.stateController.run()
 
         return outputState !== undefined ? this.applyDefaults(outputState) : undefined       
@@ -130,8 +132,8 @@ export abstract class Wizard<TState extends Partial<Record<keyof TState, unknown
             prompterProvider: (form: StateWithCache<TState>) => Prompter<TProp>, 
             options: ContextOptions<TState, TProp> = {}
         ): void => {
-            const stepCache: StepCache = {}
-            const boundStep = async (state: TState): Promise<StateMachineStepResult<TState>> => {
+            const stepCache: StepCache = {} // Cache will be scoped into the step function, persisting it
+            const boundStep = async (state: TState): Promise<StepResult<TState>> => {
                 const stateWithCache = Object.assign({ stepCache: stepCache }, state) as StateWithCache<TState>
                 this.applyDefaults(stateWithCache)
                 const response = await this.promptUser(stateWithCache, prompterProvider(stateWithCache))
@@ -148,10 +150,9 @@ export abstract class Wizard<TState extends Partial<Record<keyof TState, unknown
         }
     }
 
-    // A tiny bit of metaprogramming. Types do not exist after compilation, so we
-    // need a way to generate something that looks like our type. The alternative
-    // is to create a TypeScript plugin to traverse the AST and initialize typed 
-    // data structures through a dummy function.
+    // A tiny bit of metaprogramming. Types do not exist after compilation, so we need a way to generate 
+    // something that looks like our type. The alternative is to create a TypeScript plugin to traverse 
+    // the AST and initialize typed data structures through a dummy function.
     private createWizardForm(schema: any, path: string[] = []): WizardForm<TState> { 
         return new Proxy({}, {
             get: (__, prop) => {
@@ -165,13 +166,13 @@ export abstract class Wizard<TState extends Partial<Record<keyof TState, unknown
 
     // We need to separate the original state from the state with applied defaults. 
     // Otherwise we cannot be certain that the prompt has not occured.
-    private resolveNextSteps(originalState: TState, defaultState: TState): StateBranch<TState> {
-        const nextSteps: StateBranch<TState> = []
+    private resolveNextSteps(originalState: TState, defaultState: TState): Branch<TState> {
+        const nextSteps: Branch<TState> = []
         this.formData.forEach((opt, targetProp) => {
             const current = _.get(originalState, targetProp)
 
-            if (_.isEmpty(current) && !this.stateController.containsStep(opt.boundStep)) {
-                if (opt.showWhen === undefined || opt.showWhen(defaultState as WizardSchema<TState>) === true) {
+            if (!isAssigned(current) && !this.stateController.containsStep(opt.boundStep)) {
+                if (opt.showWhen === undefined || opt.showWhen(defaultState as WizardState<TState>) === true) {
                     nextSteps.push(opt.boundStep)
                 }
             }

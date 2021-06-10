@@ -21,7 +21,7 @@ import { Prompter } from '../../shared/ui/prompter'
 import { initializeInterface } from '../../shared/transformers'
 import { Wizard, WIZARD_BACK, WIZARD_RETRY } from '../../shared/wizards/wizard'
 import { IteratingQuickPickController } from '../../shared/ui/iteratingPicker'
-import { QuickPickPrompter, createLabelQuickPick, LabelQuickPickItem} from '../../shared/ui/picker'
+import { QuickPickPrompter, createLabelQuickPick } from '../../shared/ui/picker'
 
 export interface SelectLogStreamResponse {
     region: string
@@ -105,8 +105,8 @@ export class DefaultSelectLogStreamWizardContext implements SelectLogStreamWizar
 
 export function convertDescribeLogStreamsToQuickPickItems(
     response: CloudWatchLogs.DescribeLogStreamsResponse
-): LabelQuickPickItem<string>[] {
-    return (response.logStreams ?? []).map<LabelQuickPickItem<string>>(stream => ({
+): vscode.QuickPickItem[] {
+    return (response.logStreams ?? []).map<vscode.QuickPickItem>(stream => ({
         label: stream.logStreamName!,
         detail: stream.lastEventTimestamp
             ? moment(stream.lastEventTimestamp).format(LOCALIZED_DATE_FORMAT)

@@ -6,7 +6,7 @@
 
 import { Wizard, WIZARD_EXIT } from "../../../shared/wizards/wizard"
 import * as assert from 'assert'
-import { initializeInterface } from '../../../shared/transformers'
+//import { initializeInterface } from '../../../shared/transformers'
 import { MockPrompter } from "./wizardFramework"
 
 interface TestWizardForm {
@@ -21,7 +21,7 @@ interface TestWizardForm {
 
 class TestWizard extends Wizard<TestWizardForm> {
     constructor() {
-        super(initializeInterface<TestWizardForm>())
+        super({ nestedProp: {} })
     }
 }
 

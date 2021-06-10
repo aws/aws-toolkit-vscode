@@ -58,7 +58,7 @@ describe('createInputBox', async function () {
 
     function assertInputBoxOptions(
         actualInput: vscode.InputBox,
-        expectedOptions: vscode.InputBoxOptions & input.AdditionalInputBoxOptions
+        expectedOptions: input.ExtendedInputBoxOptions
     ) {
         assert.strictEqual(
             actualInput.title,

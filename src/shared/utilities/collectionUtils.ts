@@ -248,3 +248,11 @@ export function pushIf<T>(arr: T[], condition: boolean, ...elements: T[]) {
         arr.push(...elements)
     }
 }
+
+/** 
+ * Applies `settings` to a base object. The shared properties between the settings and the object must have the
+ * same types, enforced by the TypeScript compiler.
+ */
+export function applySettings<T1 extends Record<string, unknown>, T2 extends T1>(obj: T2, settings: T1): void {
+    Object.assign(obj, settings)
+}
