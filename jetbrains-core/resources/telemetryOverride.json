@@ -1,4 +1,9 @@
 {
     "types": [],
-    "metrics": []
+    "metrics": [
+        {
+            "name": "apprunner_openServiceUrl",
+            "description": "Open the service URL in a browser"
+        }
+    ]
 }
