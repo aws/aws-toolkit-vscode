@@ -10,16 +10,20 @@ import { EcsClient } from './ecsClient'
 export class DefaultEcsClient implements EcsClient {
     public constructor(public readonly regionCode: string) {}
 
-    public async *listClusters(): AsyncIterableIterator<string> {
+    // public async *listClusters(): AsyncIterableIterator<string> {
+    //     const sdkClient = await this.createSdkClient()
+    //     const request: ECS.ListClustersRequest = {}
+    //     do {
+    //         const response = await this.invokeListClusters(request, sdkClient)
+    //         if (response.clusterArns) {
+    //             yield* response.clusterArns
+    //         }
+    //         request.nextToken = response.nextToken
+    //     } while (request.nextToken)
+    // }
+    public async listClusters(): Promise<ECS.ListClustersResponse> {
         const sdkClient = await this.createSdkClient()
-        const request: ECS.ListClustersRequest = {}
-        do {
-            const response = await this.invokeListClusters(request, sdkClient)
-            if (response.clusterArns) {
-                yield* response.clusterArns
-            }
-            request.nextToken = response.nextToken
-        } while (request.nextToken)
+        return sdkClient.listClusters().promise()
     }
 
     public async *listServices(cluster: string): AsyncIterableIterator<string> {

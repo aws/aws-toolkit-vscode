@@ -11,6 +11,7 @@ import { CloudWatchLogsNode } from '../cloudWatchLogs/explorer/cloudWatchLogsNod
 import { LambdaNode } from '../lambda/explorer/lambdaNodes'
 import { S3Node } from '../s3/explorer/s3Nodes'
 import { EcrNode } from '../ecr/explorer/ecrNode'
+import { EcsNode } from '../ecs/explorer/ecsNode'
 import { isCloud9 } from '../shared/extensionUtilities'
 import { ext } from '../shared/extensionGlobals'
 import { Region } from '../shared/regions/endpoints'
@@ -60,6 +61,8 @@ export class RegionNode extends AWSTreeNodeBase {
             {
                 serviceId: 's3',
                 createFn: () => new S3Node(ext.toolkitClientBuilder.createS3Client(this.regionCode)),
+            },
+            { serviceId: 'ecs', createFn: () => new EcsNode(ext.toolkitClientBuilder.createEcsClient(this.regionCode))
             },
             ...(isCloud9() ? [] : [{ serviceId: 'schemas', createFn: () => new SchemasNode(this.regionCode) }]),
             ...(isCloud9() ? [] : [{ serviceId: 'states', createFn: () => new StepFunctionsNode(this.regionCode) }]),

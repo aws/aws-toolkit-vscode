@@ -3,10 +3,12 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
+import { ECS } from "aws-sdk";
+
 export interface EcsClient {
     readonly regionCode: string
 
-    listClusters(): AsyncIterableIterator<string>
+    listClusters(): Promise<ECS.ListClustersResponse>
 
     listServices(cluster: string): AsyncIterableIterator<string>
 
