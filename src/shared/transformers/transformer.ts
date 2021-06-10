@@ -87,13 +87,11 @@ function visitNode(node: ts.Node, program: ts.Program): ts.Node | undefined {
         const props: ts.ObjectLiteralElementLike[] = []
         Object.keys(keys).forEach(key => {
             const subProp = conv(keys[key])
-            if (subProp === undefined) {
-                props.push(ts.factory.createPropertyAssignment(key, ts.factory.createVoidZero()))
-            } else {
+            if (subProp !== undefined) {
                 props.push(ts.factory.createPropertyAssignment(key, subProp))
             }
         })
-        if (props.length === 0) {
+        if (props.length === 0 && Object.keys(keys).length === 0) {
             return undefined
         }
         return ts.factory.createObjectLiteralExpression(props)

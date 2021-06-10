@@ -5,7 +5,7 @@
 
 import * as assert from 'assert'
 import * as vscode from 'vscode'
-import { AdditionalQuickPickOptions, createQuickPick, DataQuickPick, DataQuickPickItem, QuickPickButton, QuickPickPrompter } from '../../../shared/ui/picker'
+import { AdditionalQuickPickOptions, createQuickPick, DataQuickPick, DataQuickPickItem, QuickPickPrompter } from '../../../shared/ui/picker'
 import { createBackButton, QuickInputButton } from '../../../shared/ui/buttons'
 import { isValidResponse, PrompterButtons, PromptResult } from '../../../shared/ui/prompter'
 import { WIZARD_BACK } from '../../../shared/wizards/wizard'
@@ -150,7 +150,6 @@ describe('QuickPickPrompter', async function () {
         assert.strictEqual(result, undefined, `Expected calling hide() on prompt to return undefined, got ${result}`)
     })
 
-    /*
     it('Button can cancel and return undefined', async function () {
         const buttonOfInterest = createBackButton()
         samplePicker.buttons = [buttonOfInterest]
@@ -169,7 +168,7 @@ describe('QuickPickPrompter', async function () {
 
     it('Button can return a value', async function () {
         const buttonOutput = 5
-        const buttonOfInterest: QuickPickButton<number> = {
+        const buttonOfInterest: QuickInputButton<number> = {
             iconPath: '',
             onClick: resolve => resolve(buttonOutput)
         }
@@ -202,12 +201,11 @@ describe('QuickPickPrompter', async function () {
         samplePicker.hide()
         await promptPromise
     })
-    */
 
     it('Allows custom input as the first quick pick option', async function () {
         const userInput = '99'
         const inputLabel = 'Enter a number'
-        samplePrompter.setCustomInput(v => Number(v), inputLabel)
+        samplePrompter.allowUserInput(inputLabel, v => Number(v))
         const promptPromise = samplePrompter.prompt()
         samplePicker.value = userInput
         assert.strictEqual(samplePicker.items[0].label, inputLabel)
@@ -230,7 +228,7 @@ describe('QuickPickPrompter', async function () {
         const inputTransform = (v?: string) => v !== undefined ? v.length * v.length : 0
         const userInput = 'Hello, world!'
         const inputLabel = 'Enter a string'
-        samplePrompter.setCustomInput(inputTransform, inputLabel)
+        samplePrompter.allowUserInput(inputLabel, inputTransform)
         const promptPromise = samplePrompter.prompt()
         samplePicker.value = userInput
         samplePicker.accept()
@@ -241,7 +239,7 @@ describe('QuickPickPrompter', async function () {
 
         const newPicker = createSamplePicker()
         const newPrompter = new QuickPickPrompter(newPicker)
-        newPrompter.setCustomInput(inputTransform, inputLabel)
+        newPrompter.allowUserInput(inputLabel, inputTransform)
         newPrompter.setLastResponse(lastPicked)
         const newPrompterPromise = newPrompter.prompt()
         assert.strictEqual(newPicker.activeItems[0].data, lastPicked.data, 'Custom response was not the first option')

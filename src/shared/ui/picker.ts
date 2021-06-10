@@ -7,10 +7,7 @@ import * as vscode from 'vscode'
 
 import { WizardControl, WIZARD_BACK } from '../wizards/wizard'
 import { QuickInputButton } from './buttons'
-import { Prompter, PrompterButtons } from './prompter'
-
-export type QuickPickButton<T> = QuickInputButton<T | WizardControl>
-type QuickPickButtons<T> = PrompterButtons<T>
+import { Prompter, PrompterButtons, PromptResult } from './prompter'
 
 /**
  * Options to configure the behavior of the quick pick UI.
@@ -22,7 +19,7 @@ export interface AdditionalQuickPickOptions<T=never> {
     step?: number
     placeholder?: string
     totalSteps?: number
-    buttons?: QuickPickButtons<T>
+    buttons?: PrompterButtons<T>
 }
 
 export type ExtendedQuickPickOptions<T> = Omit<vscode.QuickPickOptions, 'buttons' | 'canPickMany'> & AdditionalQuickPickOptions<T>
@@ -37,14 +34,12 @@ function applySettings<T1, T2 extends T1>(obj: T2, settings: T1): void {
 
 export type QuickPickResult<T> = T | WizardControl | undefined
 
-export type DataQuickPick<T> = Omit<vscode.QuickPick<DataQuickPickItem<T>>, 'buttons'> & { buttons: QuickPickButtons<T> }
+export type DataQuickPick<T> = Omit<vscode.QuickPick<DataQuickPickItem<T>>, 'buttons'> & { buttons: PrompterButtons<T> }
 export type DataQuickPickItem<T> = vscode.QuickPickItem & { data: QuickPickData<T> }
 export type LabelQuickPickItem<T extends string> = vscode.QuickPickItem & { label: T, data?: QuickPickData<T> }
 
-
 const CUSTOM_USER_INPUT = Symbol()
 type QuickPickData<T> = QuickPickResult<T> | (() => Promise<QuickPickResult<T>>)
-
 /**
  * Creates a QuickPick to let the user pick an item from a list
  * of items of type T.
@@ -69,7 +64,7 @@ export function createQuickPick<T>(
     const prompter = new QuickPickPrompter<T>(picker)
 
     if (items instanceof Promise) { 
-        makeQuickPickPrompterAsync(prompter, items)
+        makeQuickPickPrompterAsync(picker, items)
     } else {
         picker.items = items
     }
@@ -119,20 +114,19 @@ export function createMultiQuickPick<T>(
  * Quick helper function for asynchronous quick pick items
  */
 function makeQuickPickPrompterAsync<T>(
-    prompter: QuickPickPrompter<T>, // | MultiQuickPickPrompter<T>, 
+    picker: DataQuickPick<T>, // | MultiQuickPickPrompter<T>, 
     items: Promise<DataQuickPickItem<T>[] | undefined>
 ): void {
-    const picker = prompter.quickInput as DataQuickPick<T>
-    prompter.busy = true
-    prompter.enabled = false
+    picker.busy = true
+    picker.enabled = false
 
     items.then(items => {
         if (items === undefined) {
             picker.hide()
         } else {
             picker.items = items
-            prompter.busy = false
-            prompter.enabled = true
+            picker.busy = false
+            picker.enabled = true
         }
     }).catch(err => {
         // TODO: this is an unhandled exception so we should log it appropriately
@@ -140,27 +134,23 @@ function makeQuickPickPrompterAsync<T>(
     })
 }
 
-function addPickerHooks<T>(picker: DataQuickPick<T>): Promise<DataQuickPickItem<T>[] | undefined> {
-    return new Promise<DataQuickPickItem<T>[] | undefined>(resolve => {
+function promptUser<T>(picker: DataQuickPick<T>): Promise<DataQuickPickItem<T>[] | undefined> {
+    return new Promise<DataQuickPickItem<T>[] | undefined>((resolve, reject) => {
         picker.onDidAccept(() => resolve(Array.from(picker.selectedItems)))
         picker.onDidHide(() => resolve(undefined)) // change to exit
         picker.onDidTriggerButton(button => {
             if (button === vscode.QuickInputButtons.Back) {
                 resolve([{ label: '', data: WIZARD_BACK }])
             } else {
-                (button as QuickInputButton<T>).activate()
+                (button as QuickInputButton<T>).onClick(arg => resolve([{ label: '', data: arg }]), reject)
             }
         })
-        picker.buttons.map(button => button as QuickInputButton<T>).forEach(button => {
-            if (button.onClick !== undefined) {
-                button.onClick(ret => resolve([{ label: '', data: ret }]))
-            }
-        })
+        picker.show()
     })
 
 }
 
-export class QuickPickPrompter<T> extends Prompter<T, QuickPickResult<T>> {
+export class QuickPickPrompter<T> extends Prompter<T> {
     private lastPicked?: DataQuickPickItem<T>
 
     constructor(public readonly quickPick: DataQuickPick<T>) {
@@ -172,9 +162,7 @@ export class QuickPickPrompter<T> extends Prompter<T, QuickPickResult<T>> {
     }
 
     public async prompt(): Promise<QuickPickResult<T>> {
-        const promptPromise = addPickerHooks(this.quickPick)
-        this.show()
-        const choices = await promptPromise
+        const choices = await promptUser(this.quickPick)
 
         if (choices === undefined) {
             return choices
@@ -202,8 +190,8 @@ export class QuickPickPrompter<T> extends Prompter<T, QuickPickResult<T>> {
         }
     }
 
-    public setCustomInput(transform: (v?: string) => T | WizardControl, label: string = ''): QuickPickPrompter<T> {
-        const picker = this.quickInput as DataQuickPick<T | symbol>
+    public allowUserInput(label: string, transform: (v?: string) => PromptResult<T>): void {
+        const picker = this.quickPick as DataQuickPick<T | symbol>
         const items = picker.items 
         let lastUserInput: string | undefined
 
@@ -225,12 +213,12 @@ export class QuickPickPrompter<T> extends Prompter<T, QuickPickResult<T>> {
 
         picker.onDidChangeValue(update)
 
-        return this.after(async selection => {
+        this.after(async selection => {
             if ((selection as (T | typeof CUSTOM_USER_INPUT)) === CUSTOM_USER_INPUT) {
-                return transform(lastUserInput)
+                return transform !== undefined ? transform(lastUserInput) : selection
             } 
             return selection
-        }) as QuickPickPrompter<T>
+        })
     }
 
     public getLastResponse(): T | DataQuickPickItem<T> | DataQuickPickItem<T>[] | undefined {

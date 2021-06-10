@@ -4,19 +4,21 @@
  */
 
 import { StateBranch, StateMachineControl, StateMachineController, StateMachineStepResult, StateStepFunction } from './stateController'
-import * as vscode from 'vscode'
 import * as _ from 'lodash'
 import { Prompter, PromptResult } from '../../shared/ui/prompter'
 
 interface ContextOptions<TState, TProp> {
     /**
-     * Applies a conditional function that is evaluated after every user-input if the property
-     * is undefined or if the property is not queued up to be prompted. Upon returning true, the 
-     * bound property will be added to the prompt queue.
+     * Applies a conditional function that is evaluated after every user-input but only if the 
+     * property is either not set or not currently in the state machine. Upon evaluating true, 
+     * the bound prompter will be added as a new step. If multiple prompters resolve to true
+     * in a single resolution step then they will be added in the order in which they were
+     * bound.
      */
     showWhen?: (state: WizardSchema<TState>) => boolean
     /**
-     * Sets a default value for the response form if it is undefined after the wizard terminates.
+     * Sets a default value to the target property. This default is applied to the current state
+     * as long as the property has not been set.
      */
     setDefault?: (state: WizardSchema<TState>) => TProp | undefined
     /**
@@ -45,10 +47,6 @@ export type WizardSchema<T> = {
         never : T[Property]
 }
 
-export type WizardQuickPickItem<T> =  T extends string 
-    ? vscode.QuickPickItem & { metadata?: string | symbol | (() => Promise<string | symbol>) }
-    : vscode.QuickPickItem & { metadata: T | symbol | (() => Promise<T | symbol>) }
-
 // We use a symbol to safe-guard against collisions
 const WIZARD_CONTROL = Symbol()
 
@@ -56,14 +54,11 @@ export const WIZARD_RETRY = { id: WIZARD_CONTROL, type: StateMachineControl.Retr
 export const WIZARD_BACK = { id: WIZARD_CONTROL, type: StateMachineControl.Back }
 export const WIZARD_EXIT = { id: WIZARD_CONTROL, type: StateMachineControl.Exit }
 
+/** Control signals allow for alterations of the normal wizard flow */
 export type WizardControl = typeof WIZARD_RETRY | typeof WIZARD_BACK | typeof WIZARD_EXIT
 
 export function isWizardControl(obj: any): obj is WizardControl {
     return obj !== undefined && obj.id === WIZARD_CONTROL
-}
-
-function nullChildren(obj: any): boolean {
-    return typeof obj === 'object' && Object.keys(obj).every(key => obj[key] === undefined)
 }
 
 type PrompterBind<TProp, TState> = (getPrompter: (state: StateWithCache<TState>) => 
@@ -89,23 +84,21 @@ type WizardForm<T, TState=T> = {
 type RecursivePartial<T> = { [Property in keyof T]+?: RecursivePartial<T[Property]> }
 
 // Persistent storage that exists on a per-property basis
+// Potentially useful for remembering resources when the user backs out of a step
 type StepCache = { picked?: any } & { [key: string]: any }
 type StateWithCache<TState> = TState & { stepCache: StepCache }
 
 type StepWithContext<TState, TProp> = ContextOptions<TState, TProp> & { boundStep: StateStepFunction<TState> }
 
-// TODO: make wizard not extend from this class. testing would be easier if we can just inject data into the wizard?
 /**
  * A generic wizard that consumes data from a series of 'prompts'. Wizards will modify a single property of
- * their internal state with each prompt. Classes that extend this base class can assign Prompters to individual
- * properties by using the internal 'form' object. 
+ * their internal state with each prompt. The 'form' public property exposes functionality to add prompters
+ * with optional context.
  */
 export abstract class Wizard<TState extends Partial<Record<keyof TState, unknown>>, TResult=TState> {
     private readonly formData = new Map<string, StepWithContext<TState, any>>()
-    protected readonly form!: WizardForm<TState> 
+    public readonly form!: WizardForm<TState> 
     private readonly stateController!: StateMachineController<TState>
-    private nextPromptEventEmitter = new vscode.EventEmitter<Prompter<any>>()
-    public onNextPrompt: vscode.Event<Prompter<any>> = this.nextPromptEventEmitter.event
 
     public constructor(private readonly schema: WizardSchema<TState>, initState?: RecursivePartial<TState>) {
         this.form = this.createWizardForm(schema)
@@ -116,7 +109,7 @@ export abstract class Wizard<TState extends Partial<Record<keyof TState, unknown
         this.formData.forEach((opt, targetProp) => {
             const current = _.get(state, targetProp)
 
-            if ((current === undefined || nullChildren(current)) && opt.setDefault !== undefined) {
+            if (_.isEmpty(current) && opt.setDefault !== undefined) {
                 _.set(state, targetProp, opt.setDefault(state as WizardSchema<TState>))
             }
         })
@@ -155,6 +148,10 @@ export abstract class Wizard<TState extends Partial<Record<keyof TState, unknown
         }
     }
 
+    // A tiny bit of metaprogramming. Types do not exist after compilation, so we
+    // need a way to generate something that looks like our type. The alternative
+    // is to create a TypeScript plugin to traverse the AST and initialize typed 
+    // data structures through a dummy function.
     private createWizardForm(schema: any, path: string[] = []): WizardForm<TState> { 
         return new Proxy({}, {
             get: (__, prop) => {
@@ -173,9 +170,7 @@ export abstract class Wizard<TState extends Partial<Record<keyof TState, unknown
         this.formData.forEach((opt, targetProp) => {
             const current = _.get(originalState, targetProp)
 
-            if ((current === undefined || nullChildren(current)) &&
-                !this.stateController.containsStep(opt.boundStep)
-            ) {
+            if (_.isEmpty(current) && !this.stateController.containsStep(opt.boundStep)) {
                 if (opt.showWhen === undefined || opt.showWhen(defaultState as WizardSchema<TState>) === true) {
                     nextSteps.push(opt.boundStep)
                 }
@@ -194,7 +189,6 @@ export abstract class Wizard<TState extends Partial<Record<keyof TState, unknown
             prompter.setLastResponse(state.stepCache.picked)
         }
 
-        this.nextPromptEventEmitter.fire(prompter)
         const answer = await prompter.prompt()
 
         if (!isWizardControl(answer) && answer !== undefined) {

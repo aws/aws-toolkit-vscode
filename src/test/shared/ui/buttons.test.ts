@@ -9,7 +9,6 @@ import * as buttons from '../../../shared/ui/buttons'
 import { env } from 'vscode'
 import * as sinon from 'sinon'
 import { clearTestIconPaths, IconPath, setupTestIconPaths } from '../utilities/iconPathUtils'
-import { WIZARD_BACK } from '../../../shared/wizards/wizard'
 
 describe('UI buttons', function () {
     const sandbox = sinon.createSandbox()
@@ -48,11 +47,6 @@ describe('UI buttons', function () {
 
         assert.strictEqual(help.tooltip, tooltip)
         assertIconPath(help.iconPath as IconPath)
-    })
-
-    it('creates a back button', function () {
-        const back = buttons.createBackButton()
-        back.onClick(sinon.stub().callsFake(arg => assert.strictEqual(arg, WIZARD_BACK)), sinon.stub())
     })
 
     function assertIconPath(iconPath: IconPath) {

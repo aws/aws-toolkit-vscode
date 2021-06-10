@@ -89,23 +89,23 @@ export class DefaultCredentialSelectionDataProvider implements CredentialSelecti
         })
     }
 
-    public async validateNameIsUnique(name: string): Promise<string | undefined> {
+    public validateNameIsUnique(name: string): string | undefined {
         const duplicate = this.existingProfileNames.find(k => k === name)
 
         return duplicate ? 'Name not unique' : undefined
     }
 
-    public async validateAccessKey(accessKey: string): Promise<string | undefined> {
+    public validateAccessKey(accessKey: string): string | undefined {
         // TODO: is there a regex pattern we could use?
         return undefined
     }
 
-    public async validateSecretKey(accessKey: string): Promise<string | undefined> {
+    public validateSecretKey(accessKey: string): string | undefined {
         // TODO: don't believe there is a regex but at this point we could try a 'safe' call
         return undefined
     }
 
-    public async shouldResume(): Promise<boolean> {
+    public shouldResume(): boolean {
         // Could show a notification with the option to resume.
         return false
     }

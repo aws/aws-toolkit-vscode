@@ -4,9 +4,11 @@
  */
 
 import * as assert from 'assert'
-import { createBackButton } from '../../../shared/ui/buttons'
+import { createBackButton, QuickInputButton } from '../../../shared/ui/buttons'
 import * as vscode from 'vscode'
 import * as input from '../../../shared/ui/input'
+import { PrompterButtons } from '../../../shared/ui/prompter'
+import { WIZARD_BACK } from '../../../shared/wizards/wizard'
 
 describe('createInputBox', async function () {
     let testInput: input.DataInputBox | undefined
@@ -86,9 +88,11 @@ describe('createInputBox', async function () {
 
 describe('promptUser', async function () {
     let sampleInput: TestInputBox
+    let samplePrompter: input.InputBoxPrompter
 
     beforeEach(async function () {
         sampleInput = new TestInputBox()
+        samplePrompter = new input.InputBoxPrompter(sampleInput)
     })
 
     afterEach(async function () {
@@ -96,22 +100,18 @@ describe('promptUser', async function () {
     })
 
     it('Accepted value is returned', async function () {
-        const promptPromise = input.promptUser({
-            inputBox: sampleInput,
-        })
+        const promptPromise = samplePrompter.prompt()
 
         sampleInput.accept('hello world')
 
-        const promptResult: string | undefined = await promptPromise
+        const promptResult = await promptPromise
 
         assert.ok(promptResult, 'Expected a non-undefined response')
         assert.strictEqual(promptResult, 'hello world', 'InputBox accepted value was not expected value')
     })
 
-    it('Hide returns undefined', async function () {
-        const promptPromise = input.promptUser({
-            inputBox: sampleInput,
-        })
+    it('Hide returns back', async function () {
+        const promptPromise = samplePrompter.prompt()
 
         sampleInput.hide()
 
@@ -121,54 +121,31 @@ describe('promptUser', async function () {
     })
 
     it('Button can cancel and return undefined', async function () {
-        const buttonOfInterest = vscode.QuickInputButtons.Back
+        const buttonOfInterest = createBackButton()
         sampleInput.buttons = [buttonOfInterest]
-
-        const promptPromise = input.promptUser({
-            inputBox: sampleInput,
-            onDidTriggerButton: (button, resolve, reject) => {
-                assert.strictEqual(
-                    button,
-                    buttonOfInterest,
-                    `Expected button ${JSON.stringify(buttonOfInterest)} ` +
-                        `but got button ${JSON.stringify(buttonOfInterest)}`
-                )
-
-                sampleInput.hide()
-            },
-        })
+        const promptPromise = samplePrompter.prompt()
 
         sampleInput.pressButton(sampleInput.buttons[0])
 
         const result = await promptPromise
         assert.strictEqual(
             result,
-            undefined,
-            `Expected button calling hide() on prompt to return undefined, got ${result} `
+            WIZARD_BACK,
+            `Expected button to go back, got ${result} `
         )
     })
 
     it('Button can return a value', async function () {
-        const buttonOfInterest = vscode.QuickInputButtons.Back
         const expectedValue = 'hello world'
+        const buttonOfInterest: QuickInputButton<string> = { 
+            iconPath: '', 
+            onClick: resolve => resolve(expectedValue),
+        }
+
         sampleInput.buttons = [buttonOfInterest]
 
-        const promptPromise = input.promptUser({
-            inputBox: sampleInput,
-            onDidTriggerButton: (button, resolve, reject) => {
-                assert.strictEqual(
-                    button,
-                    buttonOfInterest,
-                    `Expected button ${JSON.stringify(buttonOfInterest)} ` +
-                        `but got button ${JSON.stringify(buttonOfInterest)}`
-                )
-
-                sampleInput.accept(expectedValue)
-            },
-        })
-
+        const promptPromise = samplePrompter.prompt()
         sampleInput.pressButton(sampleInput.buttons[0])
-
         const promptResult = await promptPromise
 
         assert.ok(promptResult, 'Expected a non-undefined response')
@@ -176,24 +153,15 @@ describe('promptUser', async function () {
     })
 
     it('Button can do something and leave input box open', async function () {
-        const buttonOfInterest = vscode.QuickInputButtons.Back
-        sampleInput.buttons = [buttonOfInterest]
         let handledButtonPress: boolean = false
+        const buttonOfInterest: QuickInputButton<string> = { 
+            iconPath: '', 
+            onClick: () => handledButtonPress = true
+        }
 
-        const promptUserPromise = input.promptUser({
-            inputBox: sampleInput,
-            onDidTriggerButton: (button, resolve, reject) => {
-                assert.strictEqual(
-                    button,
-                    buttonOfInterest,
-                    `Expected button ${JSON.stringify(buttonOfInterest)} ` +
-                        `but got button ${JSON.stringify(buttonOfInterest)}`
-                )
+        sampleInput.buttons = [buttonOfInterest]
 
-                // do something that is not accept/cancel
-                handledButtonPress = true
-            },
-        })
+        const promptUserPromise = samplePrompter.prompt()
 
         sampleInput.pressButton(buttonOfInterest)
 
@@ -205,14 +173,14 @@ describe('promptUser', async function () {
         await promptUserPromise
     })
 
-    class TestInputBox implements vscode.InputBox {
+    class TestInputBox implements input.DataInputBox {
         public value: string = ''
         public placeholder: string | undefined
         public password: boolean = false
         public readonly onDidChangeValue: vscode.Event<string>
         public readonly onDidAccept: vscode.Event<void>
         public readonly onDidHide: vscode.Event<void>
-        public buttons: readonly vscode.QuickInputButton[] = []
+        public buttons: PrompterButtons<string> = []
         public readonly onDidTriggerButton: vscode.Event<vscode.QuickInputButton>
         public prompt: string | undefined
         public validationMessage: string | undefined

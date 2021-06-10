@@ -4,7 +4,7 @@
  */
 
 import * as assert from 'assert'
-import { Prompter, PromptResult } from '../../../shared/ui/prompter'
+import { Prompter } from '../../../shared/ui/prompter'
 import {
     CredentialSelectionDataProvider,
     CredentialsWizard,
@@ -19,16 +19,16 @@ describe('defaultCredentialSelectionDataProvider', function () {
             class MockCredentialSelectionDataProvider implements CredentialSelectionDataProvider {
                 public constructor(public readonly existingProfileNames: string[]) {}
 
-                public createCredentialProfilePrompter(): Prompter<string, PromptResult<string>> {
+                public createCredentialProfilePrompter(): Prompter<string> {
                     return new MockPrompter(this.existingProfileNames[1])
                 }
-                public createProfileNamePrompter(): Prompter<string, PromptResult<string>> {
+                public createProfileNamePrompter(): Prompter<string> {
                     return new MockPrompter('shouldNeverGetHere')
                 }
-                public createAccessKeyPrompter(): Prompter<string, PromptResult<string>> {
+                public createAccessKeyPrompter(): Prompter<string> {
                     return new MockPrompter<string>(WIZARD_BACK)
                 }
-                public createSecretKeyPrompter(): Prompter<string, PromptResult<string>> {
+                public createSecretKeyPrompter(): Prompter<string> {
                     return new MockPrompter<string>(WIZARD_BACK)
                 }
             }
@@ -55,16 +55,16 @@ describe('defaultCredentialSelectionDataProvider', function () {
             class MockCredentialSelectionDataProvider implements CredentialSelectionDataProvider {
                 public constructor(public readonly existingProfileNames: string[]) {}
 
-                public createCredentialProfilePrompter(): Prompter<string, PromptResult<string>> {
+                public createCredentialProfilePrompter(): Prompter<string> {
                     throw new Error('Should never get here')
                 }
-                public createProfileNamePrompter(): Prompter<string, PromptResult<string>> {
+                public createProfileNamePrompter(): Prompter<string> {
                     return new MockPrompter(sampleProfileName)
                 }
-                public createAccessKeyPrompter(): Prompter<string, PromptResult<string>> {
+                public createAccessKeyPrompter(): Prompter<string> {
                     return new MockPrompter(sampleAccessKey)
                 }
-                public createSecretKeyPrompter(): Prompter<string, PromptResult<string>> {
+                public createSecretKeyPrompter(): Prompter<string> {
                     return new MockPrompter(sampleSecretKey)
                 }
             }

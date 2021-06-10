@@ -259,38 +259,37 @@ export class DefaultSamDeployWizardContext implements SamDeployWizardContext {
             noBuckets: localize('AWS.samcli.deploy.s3bucket.picker.noBuckets', 'No buckets found.'),
             bucketError: localize('AWS.samcli.deploy.s3bucket.picker.error', 'There was an error loading S3 buckets.'),
         }
-        const createBucket = new QuickInputButton({
+        const createBucket: QuickInputButton<string> = {
             iconPath: {
                 light: vscode.Uri.file(ext.iconPaths.light.edit),
                 dark: vscode.Uri.file(ext.iconPaths.dark.edit),
             },
             tooltip: ENTER_BUCKET,
-            }, () => NEW_BUCKET_OPTION
-        )
+            onClick: resolve => resolve(NEW_BUCKET_OPTION)
+        }
 
-        const enterBucket = new QuickInputButton({
+        const enterBucket: QuickInputButton<string> = {
             iconPath: {
                 light: vscode.Uri.file(ext.iconPaths.light.edit),
                 dark: vscode.Uri.file(ext.iconPaths.dark.edit),
             },
             tooltip: ENTER_BUCKET,
-            }, () => ENTER_BUCKET_OPTION
-        )
+            onClick: resolve => resolve(ENTER_BUCKET_OPTION)
+        }
         
         const prompter = createQuickPick<string>([], {
             title: localize('AWS.samcli.deploy.s3Bucket.prompt', 'Select an AWS S3 Bucket to deploy code to'),
             matchOnDetail: true,
             buttons: ([createBucket, enterBucket] as PrompterButtons<string>).concat(this.buttons)
         })
-        const quickPick = prompter.quickInput as any
 
-        quickPick.busy = true
+        prompter.quickPick.busy = true
 
         // NOTE: Do not await this promise.
         // This will background load the S3 buckets and load them all (in one chunk) when the operation completes.
         // Not awaiting lets us display a "loading" quick pick for immediate feedback.
         // Does not use an IteratingQuickPick because listing S3 buckets by region is not a paginated operation.
-        populateS3QuickPick(quickPick, region, this.extContext.settings, messages, profile, accountId)
+        populateS3QuickPick(prompter.quickPick, region, this.extContext.settings, messages, profile, accountId)
     
         return prompter
     }

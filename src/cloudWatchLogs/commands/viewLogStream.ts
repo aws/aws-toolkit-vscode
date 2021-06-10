@@ -21,7 +21,7 @@ import { Prompter } from '../../shared/ui/prompter'
 import { initializeInterface } from '../../shared/transformers'
 import { Wizard, WIZARD_BACK, WIZARD_RETRY } from '../../shared/wizards/wizard'
 import { IteratingQuickPickController } from '../../shared/ui/iteratingPicker'
-import { QuickPickPrompter, DataQuickPick, createLabelQuickPick, LabelQuickPickItem} from '../../shared/ui/picker'
+import { QuickPickPrompter, createLabelQuickPick, LabelQuickPickItem} from '../../shared/ui/picker'
 
 export interface SelectLogStreamResponse {
     region: string
@@ -82,7 +82,7 @@ export class DefaultSelectLogStreamWizardContext implements SelectLogStreamWizar
             { title: localize('aws.cloudWatchLogs.viewLogStream.workflow.prompt', 'Select a log stream')}
         )
 
-        const controller = new IteratingQuickPickController(prompter.quickInput as DataQuickPick<string>, populator)
+        const controller = new IteratingQuickPickController(prompter.quickPick, populator)
         controller.startRequests()
 
         prompter.after(async result => {

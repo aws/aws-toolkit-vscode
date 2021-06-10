@@ -6,26 +6,13 @@
 import * as vscode from 'vscode'
 import * as nls from 'vscode-nls'
 import { ext } from '../extensionGlobals'
-import { WizardControl, WIZARD_BACK } from '../wizards/wizard'
+import { WizardControl } from '../wizards/wizard'
 
 const localize = nls.loadMessageBundle()
 const HELP_TOOLTIP = localize('AWS.command.help', 'View Toolkit Documentation')
 
-export class QuickInputButton<T> implements vscode.QuickInputButton {
-    private readonly clickEmitter = new vscode.EventEmitter<T>()
-    public readonly onClick = this.clickEmitter.event
-    
-    constructor(private readonly button: vscode.QuickInputButton, private readonly clickCallback: () => T) {}
-
-    public get iconPath() { return this.button.iconPath }
-    public get tooltip() { return this.button.tooltip }
-    
-    public activate(): void {
-        const ret = this.clickCallback()
-        if (ret !== undefined) {
-            this.clickEmitter.fire(ret)
-        }
-    }
+export interface QuickInputButton<T> extends vscode.QuickInputButton {
+    onClick: (resolve: (arg: T) => void, reject: (reason: any) => void) => void
 }
 
 /**
@@ -37,14 +24,16 @@ export class QuickInputButton<T> implements vscode.QuickInputButton {
  * @param tooltip Optional tooltip for button
  */
 export function createHelpButton(uri: string | vscode.Uri, tooltip: string = HELP_TOOLTIP): QuickInputButton<void> {
-    return new QuickInputButton<void>({
+    const button: vscode.QuickInputButton = {
         iconPath: {
             light: vscode.Uri.file(ext.iconPaths.light.help),
             dark: vscode.Uri.file(ext.iconPaths.dark.help),
         },
         tooltip,
-    }, 
-    () => vscode.env.openExternal(typeof uri === 'string' ? vscode.Uri.parse(uri) : uri))
+    }
+    const openUri = () => vscode.env.openExternal(typeof uri === 'string' ? vscode.Uri.parse(uri) : uri)
+
+    return { ...button, onClick: openUri }
 }
 
 // Currently VS Code uses a static back button for every QuickInput, so we can't redefine any of its

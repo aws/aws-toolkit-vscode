@@ -4,12 +4,9 @@
  */
 
 import * as vscode from 'vscode'
-import { WizardControl } from '../wizards/wizard'
+import { WIZARD_BACK } from '../wizards/wizard'
 import { QuickInputButton } from './buttons'
 import { Prompter, PrompterButtons, PromptResult } from './prompter'
-
-type InputBoxButton = QuickInputButton<string | WizardControl>
-type InputBoxButtons = PrompterButtons<string>
 
 /**
  * Options to configure the behavior of the input box UI.
@@ -20,14 +17,15 @@ export interface AdditionalInputBoxOptions {
     step?: number
     placeholder?: string
     totalSteps?: number
-    buttons?: InputBoxButtons
-    validateInput?(value: string): string | undefined | Promise<string | undefined>
+    buttons?: PrompterButtons<string>
+    validateInput?(value: string): string | undefined
 }
 
 export type ExtendedInputBoxOptions = Omit<vscode.InputBoxOptions, 'buttons' | 'validateInput'> & AdditionalInputBoxOptions
-export type DataInputBox = Omit<vscode.InputBox, 'buttons'> & { buttons: InputBoxButtons }
+export type DataInputBox = Omit<vscode.InputBox, 'buttons'> & { buttons: PrompterButtons<string> }
 
-function applySettings<T1, T2 extends T1>(obj: T2, settings: T1): void {
+// TODO: move to utilities?
+function applySettings<T1, T2 extends T1>(obj: T2, settings: T1): void { 
     Object.assign(obj, settings)
 }
 
@@ -49,10 +47,7 @@ export function createInputBox(options?: ExtendedInputBoxOptions): InputBoxPromp
 
     if (options?.validateInput !== undefined) {
         inputBox.onDidChangeValue(
-            value => {
-                inputBox.validationMessage = options.validateInput!(value) as any
-            },
-            inputBox
+            value => inputBox.validationMessage = options.validateInput!(value)
         )
     }
 
@@ -66,13 +61,22 @@ export class InputBoxPrompter extends Prompter<string> {
     }
 
     public async prompt(): Promise<PromptResult<string>> {
-        const promptPromise = promptUser({
-            inputBox: this.inputBox,
-            onDidTriggerButton: (button, resolve, reject) => {
-                button.onClick(arg => resolve(arg), reject)
-            },
+        const promptPromise = new Promise<PromptResult<string>>((resolve, reject) => {
+            this.inputBox.onDidAccept(() => {
+                if (!this.inputBox.validationMessage) {
+                    resolve(this.inputBox.value)
+                }
+            })
+            this.inputBox.onDidHide(() => resolve(undefined)) // TODO: change to wizard exit
+            this.inputBox.onDidTriggerButton(button => {
+                if (button === vscode.QuickInputButtons.Back) {
+                    resolve(WIZARD_BACK)
+                } else {
+                    (button as QuickInputButton<string>).onClick(resolve, reject)
+                }
+            })
+            this.inputBox.show()
         })
-        this.show()
 
         return this.applyAfterCallbacks(await promptPromise)
     }
@@ -83,79 +87,5 @@ export class InputBoxPrompter extends Prompter<string> {
 
     public getLastResponse(): string | undefined {
         return ''
-    }
-}
-
-// TODO: rewrite the comment and remove the export
-/**
- * Convenience method to allow the InputBox to be treated more like a dialog.
- *
- * This method shows the input box, and returns after the user enters a value, or cancels.
- * (Accepted = the user typed in a value and hit Enter, Cancelled = hide() is called or Esc is pressed)
- *
- * @param inputBox The InputBox to prompt the user with
- * @param onDidTriggerButton Optional event to trigger when the input box encounters a "Button Pressed" event.
- *  Buttons do not automatically cancel/accept the input box, caller must explicitly do this if intended.
- *
- * @returns If the InputBox was cancelled, undefined is returned. Otherwise, the string entered is returned.
- */
-export async function promptUser({
-    inputBox,
-    onValidateInput,
-    onDidTriggerButton,
-}: {
-    inputBox: DataInputBox
-    onValidateInput?(value: string): string | undefined
-    onDidTriggerButton?(
-        button: InputBoxButton,
-        resolve: (value: PromptResult<string>) => void,
-        reject: (reason?: any) => void
-    ): void
-}): Promise<PromptResult<string>> {
-    const disposables: vscode.Disposable[] = []
-
-    try {
-        const response = await new Promise<PromptResult<string>>((resolve, reject) => {
-            inputBox.onDidAccept(
-                () => {
-                    if (!inputBox.validationMessage) {
-                        resolve(inputBox.value)
-                    }
-                },
-                inputBox,
-                disposables
-            )
-
-            inputBox.onDidHide(
-                () => {
-                    resolve(undefined)
-                },
-                inputBox,
-                disposables
-            )
-
-            if (onValidateInput) {
-                inputBox.onDidChangeValue(
-                    value => {
-                        inputBox.validationMessage = onValidateInput(value)
-                    },
-                    inputBox,
-                    disposables
-                )
-            }
-
-            if (onDidTriggerButton) {
-                inputBox.onDidTriggerButton(
-                    (btn: vscode.QuickInputButton) => onDidTriggerButton(btn as InputBoxButton, resolve, reject),
-                    inputBox,
-                    disposables
-                )
-            }
-        })
-
-        return response
-    } finally {
-        disposables.forEach(d => d.dispose() as void)
-        inputBox.hide()
     }
 }
