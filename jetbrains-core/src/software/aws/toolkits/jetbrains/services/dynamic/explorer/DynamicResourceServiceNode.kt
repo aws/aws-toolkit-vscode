@@ -15,6 +15,8 @@ import com.intellij.psi.util.PsiUtilCore
 import com.intellij.testFramework.LightVirtualFile
 import software.amazon.awssdk.arns.Arn
 import software.amazon.awssdk.services.cloudformation.CloudFormationClient
+import software.aws.toolkits.core.utils.error
+import software.aws.toolkits.core.utils.getLogger
 import software.aws.toolkits.jetbrains.core.awsClient
 import software.aws.toolkits.jetbrains.core.explorer.nodes.AwsExplorerNode
 import software.aws.toolkits.jetbrains.core.explorer.nodes.ResourceActionNode
@@ -22,6 +24,7 @@ import software.aws.toolkits.jetbrains.core.explorer.nodes.ResourceParentNode
 import software.aws.toolkits.jetbrains.core.getResourceNow
 import software.aws.toolkits.jetbrains.services.dynamic.DynamicResource
 import software.aws.toolkits.jetbrains.services.dynamic.DynamicResources
+import software.aws.toolkits.jetbrains.utils.notifyError
 import software.aws.toolkits.resources.message
 
 class DynamicResourceResourceTypeNode(project: Project, private val resourceType: String) :
@@ -60,13 +63,24 @@ class DynamicResourceNode(project: Project, val resource: DynamicResource) :
         object : Task.Backgroundable(nodeProject, message("dynamic_resources.fetch.indicator_title", resource.identifier), true) {
             override fun run(indicator: ProgressIndicator) {
                 indicator.text = message("dynamic_resources.fetch.fetch")
-                val model = nodeProject.awsClient<CloudFormationClient>()
-                    .getResource {
-                        it.typeName(resource.type.fullName)
-                        it.identifier(resource.identifier)
-                    }
-                    .resourceDescription()
-                    .resourceModel()
+                val model = try {
+                    nodeProject.awsClient<CloudFormationClient>()
+                        .getResource {
+                            it.typeName(resource.type.fullName)
+                            it.identifier(resource.identifier)
+                        }
+                        .resourceDescription()
+                        .resourceModel()
+                } catch (e: Exception) {
+                    LOG.error(e) { "Failed to retrieve resource model" }
+                    notifyError(
+                        project = nodeProject,
+                        title = message("dynamic_resources.fetch.fail.title"),
+                        content = message("dynamic_resources.fetch.fail.content", resource.identifier)
+                    )
+
+                    null
+                } ?: return
 
                 val file = LightVirtualFile(
                     displayName(),
@@ -86,5 +100,9 @@ class DynamicResourceNode(project: Project, val resource: DynamicResource) :
                 }
             }
         }.queue()
+    }
+
+    private companion object {
+        val LOG = getLogger<DynamicResourceNode>()
     }
 }
