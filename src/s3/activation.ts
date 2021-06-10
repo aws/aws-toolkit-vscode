@@ -10,7 +10,7 @@ import { createFolderCommand } from './commands/createFolder'
 import { deleteBucketCommand } from './commands/deleteBucket'
 import { deleteFileCommand } from './commands/deleteFile'
 import { downloadFileAsCommand } from './commands/downloadFileAs'
-import { uploadFileCommand } from './commands/uploadFile'
+import { uploadFileCommand, uploadFilePaletteCommand } from './commands/uploadFile'
 import { uploadFileToParentCommand } from './commands/uploadFileToParent'
 import { S3BucketNode } from './explorer/s3BucketNode'
 import { S3FolderNode } from './explorer/s3FolderNode'
@@ -30,6 +30,9 @@ export async function activate(extensionContext: vscode.ExtensionContext): Promi
         }),
         vscode.commands.registerCommand('aws.s3.uploadFile', async (node: S3BucketNode | S3FolderNode) => {
             await uploadFileCommand(node)
+        }),
+        vscode.commands.registerCommand('aws.s3.uploadFilePalette', async (parameter) => {
+            await uploadFilePaletteCommand(parameter)
         }),
         vscode.commands.registerCommand('aws.s3.uploadFileToParent', async (node: S3FileNode) => {
             await uploadFileToParentCommand(node)

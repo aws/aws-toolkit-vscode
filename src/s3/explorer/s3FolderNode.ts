@@ -36,7 +36,7 @@ export class S3FolderNode extends AWSTreeNodeBase implements AWSResourceNode, Lo
     public constructor(
         public readonly bucket: Bucket,
         public readonly folder: Folder,
-        private readonly s3: S3Client,
+        public readonly s3: S3Client,
         private readonly workspace = Workspace.vscode()
     ) {
         super(folder.name, vscode.TreeItemCollapsibleState.Collapsed)

@@ -75,7 +75,8 @@
         "onLanguage:yaml",
         "onCommand:aws.launchConfigForm",
         "onCommand:aws.toggleSamCodeLenses",
-        "onCommand:aws.addSamDebugConfig"
+        "onCommand:aws.addSamDebugConfig",
+        "onCommand:aws.s3.uploadFilePalette"
     ],
     "main": "./extensionMain",
     "contributes": {
@@ -99,6 +100,11 @@
                     "minimum": 3,
                     "maximum": 1000,
                     "markdownDescription": "%AWS.configuration.description.s3.maxItemsPerPage%"
+                },
+                "aws.s3.defaultRegion": {
+                    "type": "string",
+                    "default": "us-east-1",
+                    "markdownDescription": "%AWS.configuration.description.s3.defaultRegion%"
                 },
                 "aws.samcli.location": {
                     "type": "string",
@@ -713,6 +719,10 @@
                     "when": "false"
                 },
                 {
+                    "command": "aws.s3.uploadFilePalette",
+                    "when": "true"
+                },
+                {
                     "command": "aws.s3.uploadFileToParent",
                     "when": "false"
                 },
@@ -1159,6 +1169,12 @@
             {
                 "command": "aws.s3.uploadFile",
                 "title": "%AWS.command.s3.uploadFile%",
+                "category": "AWS",
+                "icon": "$(cloud-upload)"
+            },
+            {
+                "command": "aws.s3.uploadFilePalette",
+                "title": "%AWS.command.s3.uploadFilePalette%",
                 "category": "AWS",
                 "icon": "$(cloud-upload)"
             },
