@@ -1427,12 +1427,6 @@
                 "icon": {
                     "dark": "third-party/resources/from-vscode-icons/dark/refresh.svg",
                     "light": "third-party/resources/from-vscode-icons/light/refresh.svg"
-                },
-                "cloud9": {
-                    "cn": {
-                        "title": "%AWS.command.refreshAwsExplorer.cn%",
-                        "category": "%AWS.title.cn%"
-                    }
                 }
             },
             {
@@ -1548,13 +1542,7 @@
             {
                 "command": "aws.viewLogs",
                 "title": "%AWS.command.viewLogs%",
-                "category": "%AWS.title%",
-                "cloud9": {
-                    "cn": {
-                        "title": "%AWS.command.viewLogs.cn%",
-                        "category": "%AWS.title.cn%"
-                    }
-                }
+                "category": "%AWS.title%"
             },
             {
                 "command": "aws.help",
@@ -1637,13 +1625,7 @@
             {
                 "command": "aws.aboutToolkit",
                 "title": "%AWS.command.aboutToolkit%",
-                "category": "%AWS.title%",
-                "cloud9": {
-                    "cn": {
-                        "title": "%AWS.command.aboutToolkit.cn%",
-                        "category": "%AWS.title.cn%"
-                    }
-                }
+                "category": "%AWS.title%"
             },
             {
                 "command": "aws.cloudWatchLogs.viewLogStream",
