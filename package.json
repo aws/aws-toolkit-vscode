@@ -1535,6 +1535,9 @@
         "newChange": "ts-node ./build-scripts/newChange.ts",
         "createRelease": "ts-node ./build-scripts/createRelease.ts"
     },
+    "extensionDependencies": [
+        "ms-vscode-remote.remote-ssh"
+    ],
     "devDependencies": {
         "@aws-toolkits/telemetry": "0.0.94",
         "@sinonjs/fake-timers": "^7.0.5",
