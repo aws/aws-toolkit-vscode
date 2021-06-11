@@ -122,27 +122,11 @@ val generateModels = tasks.register<RdGenTask>("generateModels") {
     systemProperty("csAwsProjectGeneratedOutput", csAwsProjectGeneratedOutput.absolutePath)
 }
 
-val cleanGenerateModels = tasks.register("cleanGenerateModels") {
+val cleanGenerateModels = tasks.register<Delete>("cleanGenerateModels") {
     group = protocolGroup
     description = "Clean up generated protocol models"
 
-    doLast {
-        println("Deleting generated Kotlin files...")
-        riderGeneratedSources.listFiles().orEmpty().forEach { it.deleteRecursively() }
-
-        println("Deleting generated CSharp files...")
-        val csGeneratedRoots = listOf(
-            csDaemonGeneratedOutput,
-            csPsiGeneratedOutput,
-            csAwsSettingsGeneratedOutput,
-            csAwsProjectGeneratedOutput
-        )
-
-        csGeneratedRoots.forEach { protocolDirectory: File ->
-            if (!protocolDirectory.exists()) return@forEach
-            protocolDirectory.listFiles().orEmpty().forEach { file -> file.deleteRecursively() }
-        }
-    }
+    delete(generateModels)
 }
 
 // Backend
