@@ -1,8 +1,9 @@
 {
     "name": "aws-toolkit-vscode",
     "displayName": "AWS Toolkit",
-    "description": "An extension for working with Amazon Web Services",
+    "description": "Amazon Web Services toolkit for browsing and updating cloud resources",
     "version": "1.26.0-SNAPSHOT",
+    "extensionKind": [ "workspace" ],
     "publisher": "amazonwebservices",
     "license": "Apache-2.0",
     "repository": {
