@@ -3,11 +3,13 @@
 
 package software.aws.toolkits.jetbrains.services.lambda.wizard
 
+import com.intellij.openapi.application.runInEdt
 import com.intellij.openapi.extensions.ExtensionPointName
 import com.intellij.openapi.progress.ProgressIndicator
 import com.intellij.openapi.project.Project
 import com.intellij.openapi.roots.ModifiableRootModel
 import com.intellij.openapi.ui.TextFieldWithBrowseButton
+import com.intellij.openapi.vfs.LocalFileSystem
 import com.intellij.openapi.vfs.VfsUtilCore
 import com.intellij.openapi.vfs.VirtualFile
 import software.amazon.awssdk.services.lambda.model.PackageType
@@ -15,6 +17,7 @@ import software.aws.toolkits.core.lambda.LambdaRuntime
 import software.aws.toolkits.jetbrains.services.lambda.RuntimeGroup
 import software.aws.toolkits.jetbrains.services.lambda.RuntimeGroupExtensionPointObject
 import software.aws.toolkits.jetbrains.services.lambda.sam.SamCommon
+import software.aws.toolkits.jetbrains.services.lambda.sam.SamTemplateUtils
 import java.nio.file.Paths
 
 /**
@@ -68,10 +71,22 @@ abstract class SamProjectTemplate {
 
     protected fun addSourceRoots(project: Project, modifiableModel: ModifiableRootModel, projectRoot: VirtualFile) {
         val template = SamCommon.getTemplateFromDirectory(projectRoot) ?: return
-        val codeUris = SamCommon.getCodeUrisFromTemplate(project, template)
-        modifiableModel.contentEntries.forEach { contentEntry ->
-            if (contentEntry.file == projectRoot) {
-                codeUris.forEach { contentEntry.addSourceFolder(it, false) }
+        val templatePath = Paths.get(template.parent.path)
+        runInEdt {
+            val functions = SamTemplateUtils.findFunctionsFromTemplate(project, template)
+            val functionLocations = functions.map {
+                val codeLocation = SamTemplateUtils.getCodeLocation(template.toNioPath().toAbsolutePath(), it.logicalName)
+                templatePath.parent.resolve(codeLocation)
+            }
+
+            val localFileSystem = LocalFileSystem.getInstance()
+            val function = functionLocations.mapNotNull { localFileSystem.refreshAndFindFileByIoFile(it.toFile()) }
+                .filter { it.isDirectory }
+
+            modifiableModel.contentEntries.forEach { contentEntry ->
+                if (contentEntry.file == projectRoot) {
+                    function.forEach { contentEntry.addSourceFolder(it, false) }
+                }
             }
         }
     }
