@@ -411,7 +411,7 @@ export class DefaultS3Client implements S3Client {
     /**
      * Looks up the region for the given bucket
      *
-     * Utilizing the getBucketLocation API to avoid cross region lookups.
+     * Use the getBucketLocation API to avoid cross region lookups.
      */
     private async lookupRegion(bucketName: string, s3: S3): Promise<string | undefined> {
         getLogger().debug('LookupRegion called for bucketName: %s', bucketName)
