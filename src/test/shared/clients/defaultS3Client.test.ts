@@ -339,11 +339,11 @@ describe('DefaultS3Client', function () {
             when(mockS3.listBuckets()).thenReturn(
                 success({ Buckets: [{ Name: bucketName }, { Name: outOfRegionBucketName }] })
             )
-            when(mockS3.headBucket(deepEqual({ Bucket: bucketName }))).thenReturn(
-                success({ $response: { httpResponse: { headers: { 'x-amz-bucket-region': region } } } })
+            when(mockS3.getBucketLocation(deepEqual({ Bucket: bucketName }))).thenReturn(
+                success({ LocationConstraint: region })
             )
-            when(mockS3.headBucket(deepEqual({ Bucket: outOfRegionBucketName }))).thenReturn(
-                success({ $response: { httpResponse: { headers: { 'x-amz-bucket-region': 'outOfRegion' } } } })
+            when(mockS3.getBucketLocation(deepEqual({ Bucket: outOfRegionBucketName }))).thenReturn(
+                success({ LocationConstraint: 'outOfRegion' })
             )
 
             const response = await createClient().listBuckets()
@@ -362,8 +362,8 @@ describe('DefaultS3Client', function () {
             when(mockS3.listBuckets()).thenReturn(
                 success({ Buckets: [{ Name: undefined }, { Name: outOfRegionBucketName }] })
             )
-            when(mockS3.headBucket(deepEqual({ Bucket: bucketName }))).thenReturn(
-                success({ $response: { httpResponse: { headers: { 'x-amz-bucket-region': region } } } })
+            when(mockS3.getBucketLocation(deepEqual({ Bucket: bucketName }))).thenReturn(
+                success({ LocationConstraint: region })
             )
 
             const response = await createClient().listBuckets()
@@ -377,7 +377,7 @@ describe('DefaultS3Client', function () {
             when(mockS3.listBuckets()).thenReturn(success({ Buckets: [{ Name: bucketName }] }))
             // eslint-disable-next-line @typescript-eslint/unbound-method
             when(mockResponse.promise).thenReject((undefined as any) as Error)
-            when(mockS3.headBucket(anything())).thenReturn(mockResponse)
+            when(mockS3.getBucketLocation(anything())).thenReturn(mockResponse)
 
             const response = await createClient().listBuckets()
             assert.deepStrictEqual(response, {
@@ -390,12 +390,12 @@ describe('DefaultS3Client', function () {
 
             await assert.rejects(createClient().listBuckets(), error)
 
-            verify(mockS3.headBucket(anything())).never()
+            verify(mockS3.getBucketLocation(anything())).never()
         })
 
-        it('returns region from exception on headBucket failure', async function () {
+        it('returns region from exception on getBucketLocation failure', async function () {
             when(mockS3.listBuckets()).thenReturn(success({ Buckets: [{ Name: bucketName }] }))
-            when(mockS3.headBucket(anything())).thenReturn(failure())
+            when(mockS3.getBucketLocation(anything())).thenReturn(failure())
 
             const response = await createClient().listBuckets()
             assert.deepStrictEqual(response, {
@@ -403,6 +403,26 @@ describe('DefaultS3Client', function () {
                     new DefaultBucket({
                         partitionId: partition,
                         region,
+                        name: bucketName,
+                    }),
+                ],
+            })
+        })
+
+        it('maps empty string getBucketLocation response to us-east-1', async function () {
+            when(mockS3.listBuckets()).thenReturn(
+                success({ Buckets: [{ Name: bucketName }, { Name: outOfRegionBucketName }] })
+            )
+            when(mockS3.getBucketLocation(deepEqual({ Bucket: bucketName }))).thenReturn(
+                success({ LocationConstraint: '' })
+            )
+
+            const response = await createClient({ regionCode: 'us-east-1' }).listBuckets()
+            assert.deepStrictEqual(response, {
+                buckets: [
+                    new DefaultBucket({
+                        partitionId: partition,
+                        region: 'us-east-1',
                         name: bucketName,
                     }),
                 ],

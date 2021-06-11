@@ -21,7 +21,7 @@ export interface S3Client {
      * Lists buckets in the region of the client.
      *
      * Note that S3 returns all buckets in all regions,
-     * so this incurs the cost of additional S3#HeadBucket requests for each bucket
+     * so this incurs the cost of additional S3#getBucketLocation requests for each bucket
      * to filter out buckets residing outside of the client's region.
      *
      * @throws Error if there is an error calling S3.
