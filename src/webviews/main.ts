@@ -26,13 +26,6 @@ interface WebviewParams<TRequest, TResponse> {
     onDidDisposeFunction?(): void
 }
 
-// TODO: add types for the state functions
-export interface VsCode<TRequest, State> {
-    postMessage(output: TRequest): void
-    setState(state: State): void
-    getState(): State | undefined
-}
-
 export async function createVueWebview<TRequest, TResponse>(params: WebviewParams<TRequest, TResponse>) {
     const libsPath: string = path.join(params.context.extensionPath, 'media', 'libs')
     const jsPath: string = path.join(params.context.extensionPath, 'media', 'js')
