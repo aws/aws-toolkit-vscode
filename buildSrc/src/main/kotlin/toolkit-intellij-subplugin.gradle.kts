@@ -5,7 +5,7 @@ import org.gradle.testing.jacoco.plugins.JacocoTaskExtension.Output
 import org.jetbrains.intellij.Utils
 import org.jetbrains.intellij.tasks.DownloadRobotServerPluginTask
 import org.jetbrains.intellij.tasks.RunIdeForUiTestTask
-import software.aws.toolkits.gradle.IdeVersions
+import software.aws.toolkits.gradle.intellij.IdeVersions
 import software.aws.toolkits.gradle.ciOnly
 import software.aws.toolkits.gradle.findFolders
 import software.aws.toolkits.gradle.intellij

@@ -1,8 +1,8 @@
 // Copyright 2019 Amazon.com, Inc. or its affiliates. All Rights Reserved.
 // SPDX-License-Identifier: Apache-2.0
 
-import software.aws.toolkits.gradle.IdeVersions
 import software.aws.toolkits.gradle.changelog.tasks.GenerateGithubChangeLog
+import software.aws.toolkits.gradle.intellij.IdeVersions
 
 val ideProfile = IdeVersions.ideProfile(project)
 val toolkitVersion: String by project

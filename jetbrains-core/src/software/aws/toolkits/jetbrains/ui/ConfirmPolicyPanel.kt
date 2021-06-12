@@ -1,6 +1,7 @@
-// Copyright 2020 Amazon.com, Inc. or its affiliates. All Rights Reserved.
+// Copyright 2021 Amazon.com, Inc. or its affiliates. All Rights Reserved.
 // SPDX-License-Identifier: Apache-2.0
-package software.aws.toolkits.jetbrains.services.sqs
+
+package software.aws.toolkits.jetbrains.ui
 
 import com.intellij.json.JsonLanguage
 import com.intellij.openapi.project.Project

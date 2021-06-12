@@ -7,7 +7,6 @@
     <ID>AbsentOrWrongFileLicense:BuildSettingsPanel.kt$software.aws.toolkits.jetbrains.services.lambda.upload.BuildSettingsPanel.kt</ID>
     <ID>AbsentOrWrongFileLicense:CodeStoragePanel.kt$software.aws.toolkits.jetbrains.services.lambda.upload.CodeStoragePanel.kt</ID>
     <ID>AbsentOrWrongFileLicense:ConfigureLambdaPanel.kt$software.aws.toolkits.jetbrains.services.sqs.ConfigureLambdaPanel.kt</ID>
-    <ID>AbsentOrWrongFileLicense:ConfirmPolicyPanel.kt$software.aws.toolkits.jetbrains.services.sqs.ConfirmPolicyPanel.kt</ID>
     <ID>AbsentOrWrongFileLicense:CopyBucketNameAction.kt$software.aws.toolkits.jetbrains.services.s3.bucketActions.CopyBucketNameAction.kt</ID>
     <ID>AbsentOrWrongFileLicense:CreateBucketAction.kt$software.aws.toolkits.jetbrains.services.s3.bucketActions.CreateBucketAction.kt</ID>
     <ID>AbsentOrWrongFileLicense:CreateFunctionPanel.kt$software.aws.toolkits.jetbrains.services.lambda.upload.CreateFunctionPanel.kt</ID>

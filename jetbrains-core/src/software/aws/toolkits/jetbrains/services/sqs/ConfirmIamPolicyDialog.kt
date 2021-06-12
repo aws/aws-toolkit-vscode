@@ -15,6 +15,7 @@ import software.amazon.awssdk.services.lambda.LambdaClient
 import software.aws.toolkits.core.utils.getLogger
 import software.aws.toolkits.core.utils.warn
 import software.aws.toolkits.jetbrains.services.lambda.upload.createSqsPollerPolicy
+import software.aws.toolkits.jetbrains.ui.ConfirmPolicyPanel
 import software.aws.toolkits.jetbrains.utils.ApplicationThreadPoolScope
 import software.aws.toolkits.jetbrains.utils.ui.formatAndSet
 import software.aws.toolkits.resources.message
