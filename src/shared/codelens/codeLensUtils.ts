@@ -14,17 +14,16 @@ import {
     addSamDebugConfiguration,
     AddSamDebugConfigurationInput,
 } from '../sam/debugger/commands/addSamDebugConfiguration'
-import * as javaDebug from '../sam/debugger/javaSamDebug'
-import * as pythonDebug from '../sam/debugger/pythonSamDebug'
 import { SettingsConfiguration } from '../settingsConfiguration'
 import { createQuickPick, promptUser, verifySinglePickerOutput } from '../ui/picker'
-import { localize } from '../utilities/vsCodeUtils'
+import { activateExtension, localize } from '../utilities/vsCodeUtils'
 import { getWorkspaceRelativePath } from '../utilities/workspaceUtils'
 import * as csharpCodelens from './csharpCodeLensProvider'
 import * as javaCodelens from './javaCodeLensProvider'
 import * as pythonCodelens from './pythonCodeLensProvider'
 import * as tsCodelens from './typescriptCodeLensProvider'
 import * as goCodelens from './goCodeLensProvider'
+import { VSCODE_EXTENSION_ID } from '../extensions'
 
 export type Language = 'python' | 'javascript' | 'csharp' | 'go' | 'java'
 
@@ -314,7 +313,7 @@ export async function makePythonCodeLensProvider(
                 return []
             }
             // Try to activate the Python Extension before requesting symbols from a python file
-            await pythonDebug.activatePythonExtensionIfInstalled()
+            activateExtension(VSCODE_EXTENSION_ID.python)
             if (token.isCancellationRequested) {
                 return []
             }
@@ -410,7 +409,7 @@ export async function makeJavaCodeLensProvider(
                 return []
             }
             // Try to activate the Java Extension before requesting symbols from a java file
-            await javaDebug.activateJavaExtensionIfInstalled()
+            await activateExtension(VSCODE_EXTENSION_ID.java)
             if (token.isCancellationRequested) {
                 return []
             }
