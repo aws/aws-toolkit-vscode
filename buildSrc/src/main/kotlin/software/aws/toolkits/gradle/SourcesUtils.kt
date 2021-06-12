@@ -4,6 +4,7 @@
 package software.aws.toolkits.gradle
 
 import org.gradle.api.Project
+import software.aws.toolkits.gradle.intellij.Profile
 import java.io.File
 import java.io.FileFilter
 

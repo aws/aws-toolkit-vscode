@@ -4,14 +4,14 @@
 import com.jetbrains.rd.generator.gradle.RdGenExtension
 import com.jetbrains.rd.generator.gradle.RdGenTask
 import org.jetbrains.intellij.tasks.PrepareSandboxTask
-import software.aws.toolkits.gradle.IdeVersions
+import software.aws.toolkits.gradle.intellij.IdeVersions
 import software.aws.toolkits.gradle.intellij.ToolkitIntelliJExtension.IdeFlavor
 import java.nio.file.Path
 
 buildscript {
     // Cannot be removed or else it will fail to compile
     @Suppress("RemoveRedundantQualifierName")
-    val rdversion = software.aws.toolkits.gradle.IdeVersions.ideProfile(project).rider.rdGenVersion
+    val rdversion = software.aws.toolkits.gradle.intellij.IdeVersions.ideProfile(project).rider.rdGenVersion
 
     println("Using rd-gen: $rdversion")
 
