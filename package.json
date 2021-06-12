@@ -634,10 +634,6 @@
                     "when": "false"
                 },
                 {
-                    "command": "aws.showErrorDetails",
-                    "when": "false"
-                },
-                {
                     "command": "aws.ssmDocument.openLocalDocument",
                     "when": "false"
                 },
@@ -1288,11 +1284,6 @@
             {
                 "command": "aws.downloadSchemaItemCode",
                 "title": "%AWS.command.downloadSchemaItemCode%",
-                "category": "AWS"
-            },
-            {
-                "command": "aws.showErrorDetails",
-                "title": "%AWS.command.showErrorDetails%",
                 "category": "AWS"
             },
             {
