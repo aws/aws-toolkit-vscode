@@ -16,6 +16,7 @@ import { anything, mock, instance, when, capture, verify } from '../../utilities
 
 describe('uploadFileCommand', function () {
     const bucketName = 'bucket-name'
+    const region = 'region'
     const key = 'file.jpg'
     const sizeBytes = 16
     const fileLocation = vscode.Uri.file('/file.jpg')
@@ -27,8 +28,8 @@ describe('uploadFileCommand', function () {
     beforeEach(function () {
         s3 = mock()
         node = new S3BucketNode(
-            { name: bucketName, region: 'region', arn: 'arn' },
-            new S3Node(instance(s3)),
+            { name: bucketName, region, arn: 'arn' },
+            new S3Node(instance(s3), region),
             instance(s3)
         )
     })

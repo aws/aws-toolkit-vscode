@@ -968,9 +968,14 @@
                     "group": "0@2"
                 },
                 {
-                    "command": "aws.s3.createBucket",
+                    "command": "aws.s3.addBucket",
                     "when": "view == aws.explorer && viewItem == awsS3Node",
                     "group": "0@1"
+                },
+                {
+                    "command": "aws.s3.createBucket",
+                    "when": "view == aws.explorer && viewItem == awsS3Node",
+                    "group": "0@2"
                 },
                 {
                     "command": "aws.s3.downloadFileAs",
@@ -1171,6 +1176,11 @@
                 "title": "%AWS.command.s3.createFolder%",
                 "category": "AWS",
                 "icon": "$(new-folder)"
+            },
+            {
+                "command": "aws.s3.addBucket",
+                "title": "%AWS.command.s3.addBucket%",
+                "category": "AWS"
             },
             {
                 "command": "aws.s3.createBucket",

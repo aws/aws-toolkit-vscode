@@ -17,8 +17,9 @@ import { FakeWorkspace } from '../../shared/vscode/fakeWorkspace'
 
 describe('S3BucketNode', function () {
     const name = 'bucket-name'
+    const region = 'region'
     const continuationToken = 'continuationToken'
-    const bucket: Bucket = { name, region: 'region', arn: 'arn' }
+    const bucket: Bucket = { name, region, arn: 'arn' }
     const file: File = { name: 'name', key: 'key', arn: 'arn' }
     const folder: Folder = { name: 'folder', path: 'path', arn: 'arn' }
     const maxResults = 200
@@ -62,7 +63,7 @@ describe('S3BucketNode', function () {
                 section: 'aws',
                 configuration: { key: 's3.maxItemsPerPage', value: maxResults },
             })
-            const node = new S3BucketNode(bucket, new S3Node(instance(s3)), instance(s3), workspace)
+            const node = new S3BucketNode(bucket, new S3Node(instance(s3), region), instance(s3), workspace)
             const [folderNode, fileNode, ...otherNodes] = await node.getChildren()
 
             assertFolderNode(folderNode, folder)
@@ -81,7 +82,7 @@ describe('S3BucketNode', function () {
                 section: 'aws',
                 configuration: { key: 's3.maxItemsPerPage', value: maxResults },
             })
-            const node = new S3BucketNode(bucket, new S3Node(instance(s3)), instance(s3), workspace)
+            const node = new S3BucketNode(bucket, new S3Node(instance(s3), region), instance(s3), workspace)
             const [folderNode, fileNode, moreResultsNode, ...otherNodes] = await node.getChildren()
 
             assertFolderNode(folderNode, folder)
