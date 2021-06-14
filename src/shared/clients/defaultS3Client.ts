@@ -228,7 +228,7 @@ export class DefaultS3Client implements S3Client {
         getLogger().debug('ListBuckets called')
         const s3 = await this.createS3()
 
-        let s3Buckets: S3.Bucket[] = await this.listAllBuckets()
+        const s3Buckets: S3.Bucket[] = await this.listAllBuckets()
 
         // S3#ListBuckets returns buckets across all regions
         const allBucketPromises: Promise<Bucket | undefined>[] = s3Buckets.map(async s3Bucket => {
