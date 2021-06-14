@@ -46,22 +46,24 @@ fun executeRunConfiguration(runConfiguration: RunConfiguration, executorId: Stri
     val executionFuture = CompletableFuture<Output>()
     // In the real world create and execute runs on EDT
     runInEdt {
-        val executionEnvironment = ExecutionEnvironmentBuilder.create(executor, runConfiguration).build {
-            it.processHandler?.addProcessListener(
+        try {
+            val executionEnvironment = ExecutionEnvironmentBuilder.create(executor, runConfiguration).build()
+            // Bypass ProgramRunner since AsyncProgramRunner has no ability for us to wait
+            val execute = executionEnvironment.state!!.execute(executionEnvironment.executor, executionEnvironment.runner)!!
+            execute.processHandler.addProcessListener(
                 object : OutputListener() {
                     override fun processTerminated(event: ProcessEvent) {
                         super.processTerminated(event)
                         // if using the default step executor as the process handle, need to pull text from it or it will be empty
                         // otherwise, pull the output from the process itself
-                        val output = (it.processHandler as? StepExecutor.StepExecutorProcessHandler)?.getFinalOutput() ?: this.output
+                        val output = (execute.processHandler as? StepExecutor.StepExecutorProcessHandler)?.getFinalOutput() ?: this.output
                         executionFuture.complete(output)
                     }
                 }
             )
-        }
-
-        try {
-            executionEnvironment.runner.execute(executionEnvironment)
+            if (!execute.processHandler.isStartNotified) {
+                execute.processHandler.startNotify()
+            }
         } catch (e: Exception) {
             executionFuture.completeExceptionally(e)
         }

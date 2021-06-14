@@ -41,7 +41,7 @@ class RemoteLambdaState(
         consoleBuilder = TextConsoleBuilderFactory.getInstance().createBuilder(project, searchScope)
     }
 
-    override fun execute(executor: Executor, runner: ProgramRunner<*>): ExecutionResult? {
+    override fun execute(executor: Executor, runner: ProgramRunner<*>): ExecutionResult {
         val lambdaProcess = LambdaProcess()
         val console = consoleBuilder.console
         console.attachToProcess(lambdaProcess)
