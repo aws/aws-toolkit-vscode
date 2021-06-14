@@ -62,6 +62,7 @@ class NodeJsLocalTypeScriptLambdaRunConfigurationIntegrationTest(private val run
     private val input = RuleUtils.randomName()
     private val mockId = "MockCredsId"
     private val mockCreds = AwsBasicCredentials.create("Access", "ItsASecret")
+
     private val fileContents =
         // language=TS
         """
@@ -169,7 +170,7 @@ class NodeJsLocalTypeScriptLambdaRunConfigurationIntegrationTest(private val run
     }
 
     @Test
-    fun samIsExecutedWithDebugger_sameFileNames() {
+    fun samIsExecutedWithDebuggersameFileNames() {
         projectRule.fixture.addTypeScriptPackageJsonFile()
 
         val psiFile = projectRule.fixture.addFileToProject("hello_world/subfolder/app.ts", fileContents)

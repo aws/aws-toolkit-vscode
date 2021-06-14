@@ -46,6 +46,7 @@ class NodeJsLocalLambdaRunConfigurationIntegrationTest(private val runtime: Runt
     val credentialsManager = MockCredentialManagerRule()
 
     private val input = RuleUtils.randomName()
+
     private val fileContents =
         // language=JS
         """
@@ -184,7 +185,7 @@ class NodeJsLocalLambdaRunConfigurationIntegrationTest(private val runtime: Runt
     }
 
     @Test
-    fun samIsExecutedWithDebugger_sameFileNames() {
+    fun samIsExecutedWithDebuggersameFileNames() {
         projectRule.fixture.addPackageJsonFile()
 
         val psiFile = projectRule.fixture.addFileToProject("hello_world/subfolder/app.js", fileContents)

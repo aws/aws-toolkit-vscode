@@ -19,7 +19,7 @@ class GoHelperTest {
     val projectRule = GoCodeInsightTestFixtureRule()
 
     @Test
-    fun inferSourceRoot_noGoModReturnsNull() {
+    fun `Infer source root - no Go Mod returns null`() {
         val element = projectRule.fixture.addGoLambdaHandler(
             subPath = "foo/bar"
         )
@@ -31,7 +31,7 @@ class GoHelperTest {
     }
 
     @Test
-    fun inferSourceRoot_goModInSubFolder() {
+    fun `Infer source root - Go Mod is in sub-folder`() {
         val element = projectRule.fixture.addGoLambdaHandler(
             subPath = "foo/bar"
         )
@@ -48,7 +48,7 @@ class GoHelperTest {
     }
 
     @Test
-    fun inferSourceRoot_goModInRootFolder() {
+    fun `Infer source root - Go Mod is in root folder`() {
         val element = projectRule.fixture.addGoLambdaHandler(
             subPath = "foo/bar"
         )

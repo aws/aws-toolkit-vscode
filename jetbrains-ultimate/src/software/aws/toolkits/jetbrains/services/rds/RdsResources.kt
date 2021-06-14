@@ -4,12 +4,12 @@
 package software.aws.toolkits.jetbrains.services.rds
 
 // These are the member engine in DBInstance, but it is a string
-const val mysqlEngineType = "mysql"
-const val postgresEngineType = "postgres"
+const val MYSQL_ENGINE_TYPE = "mysql"
+const val POSTGRES_ENGINE_TYPE = "postgres"
 
-const val jdbcMysql = "mysql"
-const val jdbcMysqlAurora = "mysql:aurora"
-const val jdbcPostgres = "postgresql"
+const val JDBC_MYSQL = "mysql"
+const val JDBC_MYSQL_AURORA = "mysql:aurora"
+const val JDBC_POSTGRES = "postgresql"
 
 object RdsResources {
     private val RDS_REGION_REGEX = """.*\.(.+).rds\.""".toRegex()

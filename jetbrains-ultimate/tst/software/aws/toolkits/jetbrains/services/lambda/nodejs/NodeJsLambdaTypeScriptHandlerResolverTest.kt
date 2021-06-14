@@ -23,7 +23,7 @@ class NodeJsLambdaTypeScriptHandlerResolverTest {
     }
 
     @Test
-    fun determineHandler_function() {
+    fun determineHandlerFunction() {
         projectRule.fixture.addPackageJsonFile()
         val handlerElement = projectRule.fixture.addTypeScriptLambdaHandler(
             fileContent = """
@@ -37,7 +37,7 @@ class NodeJsLambdaTypeScriptHandlerResolverTest {
     }
 
     @Test
-    fun determineHandler_noExportsReturnsNull() {
+    fun determineHandlerNoExportsReturnsNull() {
         projectRule.fixture.addPackageJsonFile()
         val handlerElement = projectRule.fixture.addTypeScriptLambdaHandler(
             fileContent = """
@@ -51,7 +51,7 @@ class NodeJsLambdaTypeScriptHandlerResolverTest {
     }
 
     @Test
-    fun determineHandler_function_noExportsReturnsNull() {
+    fun determineHandlerFunctionNoExportsReturnsNull() {
         projectRule.fixture.addPackageJsonFile()
         val handlerElement = projectRule.fixture.addTypeScriptLambdaHandler(
             fileContent = """
@@ -65,7 +65,7 @@ class NodeJsLambdaTypeScriptHandlerResolverTest {
     }
 
     @Test
-    fun determineHandler_oneParameter() {
+    fun determineHandlerOneParameter() {
         projectRule.fixture.addPackageJsonFile()
         val handlerElement = projectRule.fixture.addTypeScriptLambdaHandler(
             fileContent = """
@@ -79,7 +79,7 @@ class NodeJsLambdaTypeScriptHandlerResolverTest {
     }
 
     @Test
-    fun determineHandler_TooManyParametersReturnsNull() {
+    fun determineHandlerTooManyParametersReturnsNull() {
         projectRule.fixture.addPackageJsonFile()
         val handlerElement = projectRule.fixture.addTypeScriptLambdaHandler(
             fileContent = """
@@ -93,7 +93,7 @@ class NodeJsLambdaTypeScriptHandlerResolverTest {
     }
 
     @Test
-    fun determineHandler_oneParameterForAsync() {
+    fun determineHandlerOneParameterForAsync() {
         projectRule.fixture.addPackageJsonFile()
         val handlerElement = projectRule.fixture.addTypeScriptLambdaHandler(
             fileContent = """
@@ -107,7 +107,7 @@ class NodeJsLambdaTypeScriptHandlerResolverTest {
     }
 
     @Test
-    fun determineHandler_ThreeParametersForAsyncReturnsNull() {
+    fun determineHandlerThreeParametersForAsyncReturnsNull() {
         projectRule.fixture.addPackageJsonFile()
         val handlerElement = projectRule.fixture.addTypeScriptLambdaHandler(
             fileContent = """
@@ -121,7 +121,7 @@ class NodeJsLambdaTypeScriptHandlerResolverTest {
     }
 
     @Test
-    fun determineHandler_inSubFolder() {
+    fun determineHandlerInSubFolder() {
         projectRule.fixture.addPackageJsonFile()
         val handlerElement = projectRule.fixture.addTypeScriptLambdaHandler(
             subPath = "foo/bar",
@@ -136,7 +136,7 @@ class NodeJsLambdaTypeScriptHandlerResolverTest {
     }
 
     @Test
-    fun determineHandler_packageJsonFolderAsSourceRoot() {
+    fun determineHandlerPackageJsonFolderAsSourceRoot() {
         projectRule.fixture.addPackageJsonFile("foo")
         val handlerElement = projectRule.fixture.addTypeScriptLambdaHandler(
             subPath = "foo/bar",
@@ -151,7 +151,7 @@ class NodeJsLambdaTypeScriptHandlerResolverTest {
     }
 
     @Test
-    fun determineHandler_notAFunction() {
+    fun determineHandlerNotAFunction() {
         projectRule.fixture.addPackageJsonFile()
         val handlerElement = projectRule.fixture.addTypeScriptLambdaHandler(
             subPath = "foo/bar",
@@ -164,7 +164,7 @@ class NodeJsLambdaTypeScriptHandlerResolverTest {
     }
 
     @Test
-    fun determineHandler_exportsFunctionSingleParam() {
+    fun determineHandlerExportsFunctionSingleParam() {
         projectRule.fixture.addPackageJsonFile()
         val handlerElement = projectRule.fixture.addTypeScriptLambdaHandler(
             fileContent = """
@@ -178,7 +178,7 @@ class NodeJsLambdaTypeScriptHandlerResolverTest {
     }
 
     @Test
-    fun determineHandler_exportsFunctionTwoParam() {
+    fun determineHandlerExportsFunctionTwoParam() {
         projectRule.fixture.addPackageJsonFile()
         val handlerElement = projectRule.fixture.addTypeScriptLambdaHandler(
             fileContent = """
@@ -192,7 +192,7 @@ class NodeJsLambdaTypeScriptHandlerResolverTest {
     }
 
     @Test
-    fun determineHandler_exportsFunctionThreeParam() {
+    fun determineHandlerExportsFunctionThreeParam() {
         projectRule.fixture.addPackageJsonFile()
         val handlerElement = projectRule.fixture.addTypeScriptLambdaHandler(
             fileContent = """
@@ -206,7 +206,7 @@ class NodeJsLambdaTypeScriptHandlerResolverTest {
     }
 
     @Test
-    fun determineHandler_exportsAsyncFunctionSingleParam() {
+    fun determineHandlerExportsAsyncFunctionSingleParam() {
         projectRule.fixture.addPackageJsonFile()
         val handlerElement = projectRule.fixture.addTypeScriptLambdaHandler(
             fileContent = """
@@ -220,7 +220,7 @@ class NodeJsLambdaTypeScriptHandlerResolverTest {
     }
 
     @Test
-    fun determineHandler_exportsAsyncFunctionTwoParam() {
+    fun determineHandlerExportsAsyncFunctionTwoParam() {
         projectRule.fixture.addPackageJsonFile()
         val handlerElement = projectRule.fixture.addTypeScriptLambdaHandler(
             fileContent = """
@@ -234,7 +234,7 @@ class NodeJsLambdaTypeScriptHandlerResolverTest {
     }
 
     @Test
-    fun determineHandler_exportsAsyncFunctionThreeParam() {
+    fun determineHandlerExportsAsyncFunctionThreeParam() {
         projectRule.fixture.addPackageJsonFile()
         val handlerElement = projectRule.fixture.addTypeScriptLambdaHandler(
             fileContent = """
@@ -248,7 +248,7 @@ class NodeJsLambdaTypeScriptHandlerResolverTest {
     }
 
     @Test
-    fun findPsiElement_exportsAsync1Parameter() {
+    fun findPsiElementExportsAsync1Parameter() {
         val fileContent =
             """
                 export const lambdaHandler = async (event: APIGatewayProxyEvent): Promise<APIGatewayProxyResult> => {
@@ -262,7 +262,7 @@ class NodeJsLambdaTypeScriptHandlerResolverTest {
     }
 
     @Test
-    fun findPsiElement_exportsAsync2Parameters() {
+    fun findPsiElementExportsAsync2Parameters() {
         val fileContent =
             """
                 export const lambdaHandler = async (event: APIGatewayProxyEvent, context: Context): Promise<APIGatewayProxyResult> => {
@@ -276,7 +276,7 @@ class NodeJsLambdaTypeScriptHandlerResolverTest {
     }
 
     @Test
-    fun findPsiElement_exportsAsync3Parameters() {
+    fun findPsiElementExportsAsync3Parameters() {
         val fileContent =
             """
                 export const lambdaHandler = async (event: APIGatewayProxyEvent, context: Context, callback: Callback<APIGatewayProxyResult>): Promise<APIGatewayProxyResult> => {
@@ -290,7 +290,7 @@ class NodeJsLambdaTypeScriptHandlerResolverTest {
     }
 
     @Test
-    fun findPsiElement_noExports() {
+    fun findPsiElementNoExports() {
         val fileContent =
             """
                 const lambdaHandler = async (event: APIGatewayProxyEvent, context: Context): Promise<APIGatewayProxyResult> => {
@@ -304,7 +304,7 @@ class NodeJsLambdaTypeScriptHandlerResolverTest {
     }
 
     @Test
-    fun findPsiElement_notAnAssignment() {
+    fun findPsiElementNotAnAssignment() {
         val fileContent =
             """
                 async function lambdaHandler(event: APIGatewayProxyEvent, context: Context): Promise<APIGatewayProxyResult> => {
@@ -318,7 +318,7 @@ class NodeJsLambdaTypeScriptHandlerResolverTest {
     }
 
     @Test
-    fun findPsiElement_inSubFolderWithNoPackageJson() {
+    fun findPsiElementInSubFolderWithNoPackageJson() {
         val fileContent =
             """
                 export const lambdaHandler = async (event: APIGatewayProxyEvent, context: Context): Promise<APIGatewayProxyResult> => {
@@ -331,7 +331,7 @@ class NodeJsLambdaTypeScriptHandlerResolverTest {
     }
 
     @Test
-    fun findPsiElement_inSubFolderWithPackageJson() {
+    fun findPsiElementInSubFolderWithPackageJson() {
         val fileContent =
             """
                 export const lambdaHandler = async (event: APIGatewayProxyEvent, context: Context): Promise<APIGatewayProxyResult> => {
@@ -346,7 +346,7 @@ class NodeJsLambdaTypeScriptHandlerResolverTest {
     }
 
     @Test
-    fun findPsiElement_inSubFolderButHandlerIsNotFullPath() {
+    fun findPsiElementInSubFolderButHandlerIsNotFullPath() {
         val fileContent =
             """
                 export const lambdaHandler = async (event: APIGatewayProxyEvent, context: Context): Promise<APIGatewayProxyResult> => {

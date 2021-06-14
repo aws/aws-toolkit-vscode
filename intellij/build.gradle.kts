@@ -1,11 +1,13 @@
 // Copyright 2021 Amazon.com, Inc. or its affiliates. All Rights Reserved.
 // SPDX-License-Identifier: Apache-2.0
+
 import software.aws.toolkits.gradle.intellij
 import software.aws.toolkits.gradle.intellij.IdeVersions
 
 plugins {
     id("org.jetbrains.intellij")
     id("toolkit-testing") // Needed so the coverage configurations are present
+    id("toolkit-detekt")
 }
 
 val ideProfile = IdeVersions.ideProfile(project)
@@ -25,8 +27,7 @@ intellij {
     version = ideProfile.community.sdkVersion
     pluginName = "aws-toolkit-jetbrains"
     updateSinceUntilBuild = false
-
-    instrumentCode =  false
+    instrumentCode = false
 }
 
 tasks.prepareSandbox {

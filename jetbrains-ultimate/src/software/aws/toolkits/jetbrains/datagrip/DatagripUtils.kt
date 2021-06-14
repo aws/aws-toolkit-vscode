@@ -13,13 +13,13 @@ import software.aws.toolkits.jetbrains.core.credentials.CredentialManager
 import software.aws.toolkits.jetbrains.core.region.AwsRegionProvider
 import software.aws.toolkits.jetbrains.services.rds.AuroraMySql
 import software.aws.toolkits.jetbrains.services.rds.AuroraPostgres
+import software.aws.toolkits.jetbrains.services.rds.JDBC_MYSQL
+import software.aws.toolkits.jetbrains.services.rds.JDBC_MYSQL_AURORA
+import software.aws.toolkits.jetbrains.services.rds.JDBC_POSTGRES
 import software.aws.toolkits.jetbrains.services.rds.MySql
 import software.aws.toolkits.jetbrains.services.rds.Postgres
-import software.aws.toolkits.jetbrains.services.rds.jdbcMysql
-import software.aws.toolkits.jetbrains.services.rds.jdbcMysqlAurora
-import software.aws.toolkits.jetbrains.services.rds.jdbcPostgres
-import software.aws.toolkits.jetbrains.services.redshift.RedshiftResources.jdbcRedshift
-import software.aws.toolkits.jetbrains.services.redshift.RedshiftResources.redshiftEngineType
+import software.aws.toolkits.jetbrains.services.redshift.RedshiftResources.JDBC_REDSHIFT
+import software.aws.toolkits.jetbrains.services.redshift.RedshiftResources.REDSHIFT_ENGINE_TYPE
 import software.aws.toolkits.resources.message
 
 const val CREDENTIAL_ID_PROPERTY = "AWS.CredentialId"
@@ -44,11 +44,11 @@ fun ProtoConnection.getAwsConnectionSettings(): ConnectionSettings {
 }
 
 fun jdbcAdapterFromRuntime(runtime: String?): String? = when (runtime) {
-    in Postgres.engines -> jdbcPostgres
-    in MySql.engines -> jdbcMysql
-    in AuroraMySql.engines -> jdbcMysqlAurora
-    in AuroraPostgres.engines -> jdbcPostgres
-    redshiftEngineType -> jdbcRedshift
+    in Postgres.engines -> JDBC_POSTGRES
+    in MySql.engines -> JDBC_MYSQL
+    in AuroraMySql.engines -> JDBC_MYSQL_AURORA
+    in AuroraPostgres.engines -> JDBC_POSTGRES
+    REDSHIFT_ENGINE_TYPE -> JDBC_REDSHIFT
     else -> null
 }
 
