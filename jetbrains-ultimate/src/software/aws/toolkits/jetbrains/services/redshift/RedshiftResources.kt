@@ -13,6 +13,6 @@ object RedshiftResources {
         describeClustersPaginator().clusters().toList()
     }
 
-    const val jdbcRedshift = "redshift"
-    const val redshiftEngineType = "redshift"
+    const val JDBC_REDSHIFT = "redshift"
+    const val REDSHIFT_ENGINE_TYPE = "redshift"
 }

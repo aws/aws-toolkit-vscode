@@ -15,7 +15,7 @@ import software.aws.toolkits.jetbrains.core.explorer.nodes.AwsExplorerNode
 import software.aws.toolkits.jetbrains.datagrip.auth.SecretsManagerDbSecret
 import software.aws.toolkits.jetbrains.services.rds.RdsNode
 import software.aws.toolkits.jetbrains.services.redshift.RedshiftExplorerNode
-import software.aws.toolkits.jetbrains.services.redshift.RedshiftResources.redshiftEngineType
+import software.aws.toolkits.jetbrains.services.redshift.RedshiftResources.REDSHIFT_ENGINE_TYPE
 import software.aws.toolkits.jetbrains.utils.notifyError
 import software.aws.toolkits.resources.message
 
@@ -56,7 +56,7 @@ object DatabaseSecret {
                 )
             }
             is RedshiftExplorerNode -> {
-                if (dbSecret.engine != redshiftEngineType) return ValidationInfo(
+                if (dbSecret.engine != REDSHIFT_ENGINE_TYPE) return ValidationInfo(
                     message(
                         "datagrip.secretsmanager.validation.different_engine",
                         secretName,

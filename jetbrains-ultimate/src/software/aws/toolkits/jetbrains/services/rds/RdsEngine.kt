@@ -42,7 +42,7 @@ abstract class MySqlBase(engine: Set<String>, additionalInfo: String? = null) : 
 }
 
 abstract class PostgresBase(engine: Set<String>, additionalInfo: String? = null) : RdsEngine(engine, AwsIcons.Resources.Rds.POSTGRES, additionalInfo) {
-    override fun connectionStringUrl(endpoint: String) = "jdbc:$jdbcPostgres://$endpoint/"
+    override fun connectionStringUrl(endpoint: String) = "jdbc:$JDBC_POSTGRES://$endpoint/"
 
     /**
      * In postgres this is case sensitive as lower case. If you add a db user for
@@ -52,14 +52,14 @@ abstract class PostgresBase(engine: Set<String>, additionalInfo: String? = null)
 }
 
 object MySql : MySqlBase(setOf("mysql")) {
-    override fun connectionStringUrl(endpoint: String) = "jdbc:$jdbcMysql://$endpoint/"
+    override fun connectionStringUrl(endpoint: String) = "jdbc:$JDBC_MYSQL://$endpoint/"
 }
 
 // aurora == 5.6, aurora-mysql == 5.7
 object AuroraMySql : MySqlBase(setOf("aurora", "aurora-mysql"), additionalInfo = message("rds.aurora")) {
     // The docs recommend using MariaDB instead of MySQL to connect to MySQL Aurora DBs:
     // https://docs.aws.amazon.com/AmazonRDS/latest/AuroraUserGuide/Aurora.Connecting.html#Aurora.Connecting.AuroraMySQL
-    override fun connectionStringUrl(endpoint: String) = "jdbc:$jdbcMysqlAurora://$endpoint/"
+    override fun connectionStringUrl(endpoint: String) = "jdbc:$JDBC_MYSQL_AURORA://$endpoint/"
 }
 
 object Postgres : PostgresBase(setOf("postgres"))

@@ -25,7 +25,7 @@ import software.aws.toolkits.jetbrains.services.rds.Endpoint
 import software.aws.toolkits.jetbrains.services.rds.RdsDatabase
 import software.aws.toolkits.jetbrains.services.rds.RdsNode
 import software.aws.toolkits.jetbrains.services.redshift.RedshiftExplorerNode
-import software.aws.toolkits.jetbrains.services.redshift.RedshiftResources.redshiftEngineType
+import software.aws.toolkits.jetbrains.services.redshift.RedshiftResources.REDSHIFT_ENGINE_TYPE
 
 class DatabaseSecretTest {
     @Rule
@@ -134,7 +134,7 @@ class DatabaseSecretTest {
 
     @Test
     fun `Validate secret Redshift node`() {
-        assertThat(DatabaseSecret.validateSecret(buildMockRedshiftNode(), buildSecretsManagerDbSecret(engine = redshiftEngineType), "")).isNull()
+        assertThat(DatabaseSecret.validateSecret(buildMockRedshiftNode(), buildSecretsManagerDbSecret(engine = REDSHIFT_ENGINE_TYPE), "")).isNull()
     }
 
     @Test
@@ -142,7 +142,7 @@ class DatabaseSecretTest {
         assertThat(
             DatabaseSecret.validateSecret(
                 buildMockRedshiftNode(validEndpoint = false),
-                buildSecretsManagerDbSecret(engine = redshiftEngineType),
+                buildSecretsManagerDbSecret(engine = REDSHIFT_ENGINE_TYPE),
                 ""
             )
         ).isNotNull
