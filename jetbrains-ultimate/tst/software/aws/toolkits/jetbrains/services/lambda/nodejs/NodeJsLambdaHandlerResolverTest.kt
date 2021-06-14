@@ -23,7 +23,7 @@ class NodeJsLambdaHandlerResolverTest {
     }
 
     @Test
-    fun determineHandler_noExportsReturnsNull() {
+    fun determineHandlernoExportsReturnsNull() {
         projectRule.fixture.addPackageJsonFile()
         val handlerElement = projectRule.fixture.addLambdaHandler(
             fileContent = """
@@ -37,7 +37,7 @@ class NodeJsLambdaHandlerResolverTest {
     }
 
     @Test
-    fun determineHandler_oneParameter() {
+    fun determineHandleroneParameter() {
         projectRule.fixture.addPackageJsonFile()
         val handlerElement = projectRule.fixture.addLambdaHandler(
             fileContent = """
@@ -51,7 +51,7 @@ class NodeJsLambdaHandlerResolverTest {
     }
 
     @Test
-    fun determineHandler_TooManyParametersReturnsNull() {
+    fun determineHandlerTooManyParametersReturnsNull() {
         projectRule.fixture.addPackageJsonFile()
         val handlerElement = projectRule.fixture.addLambdaHandler(
             fileContent = """
@@ -65,7 +65,7 @@ class NodeJsLambdaHandlerResolverTest {
     }
 
     @Test
-    fun determineHandler_oneParameterForAsync() {
+    fun determineHandleroneParameterForAsync() {
         projectRule.fixture.addPackageJsonFile()
         val handlerElement = projectRule.fixture.addLambdaHandler(
             fileContent = """
@@ -79,7 +79,7 @@ class NodeJsLambdaHandlerResolverTest {
     }
 
     @Test
-    fun determineHandler_ThreeParametersForAsyncReturnsNull() {
+    fun determineHandlerThreeParametersForAsyncReturnsNull() {
         projectRule.fixture.addPackageJsonFile()
         val handlerElement = projectRule.fixture.addLambdaHandler(
             fileContent = """
@@ -93,7 +93,7 @@ class NodeJsLambdaHandlerResolverTest {
     }
 
     @Test
-    fun determineHandler_es5Code() {
+    fun determineHandleres5Code() {
         projectRule.fixture.addPackageJsonFile()
         val handlerElement = projectRule.fixture.addLambdaHandler(
             fileContent = """
@@ -107,7 +107,7 @@ class NodeJsLambdaHandlerResolverTest {
     }
 
     @Test
-    fun determineHandler_inSubFolder() {
+    fun determineHandlerinSubFolder() {
         projectRule.fixture.addPackageJsonFile()
         val handlerElement = projectRule.fixture.addLambdaHandler(
             subPath = "foo/bar",
@@ -122,7 +122,7 @@ class NodeJsLambdaHandlerResolverTest {
     }
 
     @Test
-    fun determineHandler_packageJsonFolderAsSourceRoot() {
+    fun determineHandlerpackageJsonFolderAsSourceRoot() {
         projectRule.fixture.addPackageJsonFile("foo")
         val handlerElement = projectRule.fixture.addLambdaHandler(
             subPath = "foo/bar",
@@ -137,7 +137,7 @@ class NodeJsLambdaHandlerResolverTest {
     }
 
     @Test
-    fun determineHandler_notAFunction() {
+    fun determineHandlernotAFunction() {
         projectRule.fixture.addPackageJsonFile()
         val handlerElement = projectRule.fixture.addLambdaHandler(
             subPath = "foo/bar",
@@ -150,7 +150,7 @@ class NodeJsLambdaHandlerResolverTest {
     }
 
     @Test
-    fun findPsiElement_exportsAsync1Parameter() {
+    fun findPsiElementexportsAsync1Parameter() {
         val fileContent =
             """
             exports.lambdaHandler = async (event) => {
@@ -164,7 +164,7 @@ class NodeJsLambdaHandlerResolverTest {
     }
 
     @Test
-    fun findPsiElement_exportsAsync2Parameters() {
+    fun findPsiElementexportsAsync2Parameters() {
         val fileContent =
             """
             exports.lambdaHandler = async (event, context) => {
@@ -178,7 +178,7 @@ class NodeJsLambdaHandlerResolverTest {
     }
 
     @Test
-    fun findPsiElement_exportsAsync3Parameters() {
+    fun findPsiElementexportsAsync3Parameters() {
         val fileContent = """
             exports.lambdaHandler = async (event, context, callback) => {
                 return "Hello World";
@@ -191,7 +191,7 @@ class NodeJsLambdaHandlerResolverTest {
     }
 
     @Test
-    fun findPsiElement_noExports() {
+    fun findPsiElementnoExports() {
         val fileContent =
             """
             var lambdaHandler = async (event, context) => {
@@ -205,7 +205,7 @@ class NodeJsLambdaHandlerResolverTest {
     }
 
     @Test
-    fun findPsiElement_notAnAssignment() {
+    fun findPsiElementnotAnAssignment() {
         val fileContent =
             """
             async function lambdaHandler(event, context) {
@@ -219,7 +219,7 @@ class NodeJsLambdaHandlerResolverTest {
     }
 
     @Test
-    fun findPsiElement_inSubFolderWithNoPackageJson() {
+    fun findPsiElementinSubFolderWithNoPackageJson() {
         val fileContent =
             """
             exports.lambdaHandler = async (event, context) => {
@@ -232,7 +232,7 @@ class NodeJsLambdaHandlerResolverTest {
     }
 
     @Test
-    fun findPsiElement_inSubFolderWithPackageJson() {
+    fun findPsiElementinSubFolderWithPackageJson() {
         val fileContent =
             """
             exports.lambdaHandler = async (event, context) => {
@@ -247,7 +247,7 @@ class NodeJsLambdaHandlerResolverTest {
     }
 
     @Test
-    fun findPsiElement_inSubFolderButHandlerIsNotFullPath() {
+    fun findPsiElementinSubFolderButHandlerIsNotFullPath() {
         val fileContent =
             """
             exports.lambdaHandler = async (event, context) => {

@@ -20,15 +20,15 @@ import software.aws.toolkits.jetbrains.core.credentials.MockCredentialManagerRul
 import software.aws.toolkits.jetbrains.core.region.getDefaultRegion
 import software.aws.toolkits.jetbrains.datagrip.CREDENTIAL_ID_PROPERTY
 import software.aws.toolkits.jetbrains.datagrip.REGION_ID_PROPERTY
+import software.aws.toolkits.jetbrains.services.rds.JDBC_MYSQL
+import software.aws.toolkits.jetbrains.services.rds.JDBC_MYSQL_AURORA
+import software.aws.toolkits.jetbrains.services.rds.JDBC_POSTGRES
+import software.aws.toolkits.jetbrains.services.rds.MYSQL_ENGINE_TYPE
+import software.aws.toolkits.jetbrains.services.rds.POSTGRES_ENGINE_TYPE
 import software.aws.toolkits.jetbrains.services.rds.RdsDatabase
 import software.aws.toolkits.jetbrains.services.rds.RdsDatasourceConfiguration
 import software.aws.toolkits.jetbrains.services.rds.RdsNode
 import software.aws.toolkits.jetbrains.services.rds.auth.IamAuth
-import software.aws.toolkits.jetbrains.services.rds.jdbcMysql
-import software.aws.toolkits.jetbrains.services.rds.jdbcMysqlAurora
-import software.aws.toolkits.jetbrains.services.rds.jdbcPostgres
-import software.aws.toolkits.jetbrains.services.rds.mysqlEngineType
-import software.aws.toolkits.jetbrains.services.rds.postgresEngineType
 import software.aws.toolkits.jetbrains.services.sts.StsResources
 import java.util.concurrent.CompletableFuture
 
@@ -117,7 +117,7 @@ class CreateConfigurationActionTest {
 
     @Test
     fun `Add postgres data source`() {
-        val database = createDbInstance(port = port, address = address, engineType = postgresEngineType)
+        val database = createDbInstance(port = port, address = address, engineType = POSTGRES_ENGINE_TYPE)
         val registry = DataSourceRegistry(projectRule.project)
         registry.createRdsDatasource(
             RdsDatasourceConfiguration(
@@ -130,7 +130,7 @@ class CreateConfigurationActionTest {
         assertThat(registry.newDataSources).hasOnlyOneElementSatisfying {
             assertThat(it.username).isLowerCase().isEqualTo(username.toLowerCase())
             assertThat(it.driverClass).contains("postgres")
-            assertThat(it.url).contains(jdbcPostgres)
+            assertThat(it.url).contains(JDBC_POSTGRES)
         }
     }
 
@@ -149,13 +149,13 @@ class CreateConfigurationActionTest {
         assertThat(registry.newDataSources).hasOnlyOneElementSatisfying {
             assertThat(it.username).isLowerCase().isEqualTo(username.toLowerCase())
             assertThat(it.driverClass).contains("postgres")
-            assertThat(it.url).contains(jdbcPostgres)
+            assertThat(it.url).contains(JDBC_POSTGRES)
         }
     }
 
     @Test
     fun `Add mysql data source`() {
-        val database = createDbInstance(address = address, port = port, engineType = mysqlEngineType)
+        val database = createDbInstance(address = address, port = port, engineType = MYSQL_ENGINE_TYPE)
         val registry = DataSourceRegistry(projectRule.project)
         registry.createRdsDatasource(
             RdsDatasourceConfiguration(
@@ -168,7 +168,7 @@ class CreateConfigurationActionTest {
         assertThat(registry.newDataSources).hasOnlyOneElementSatisfying {
             assertThat(it.username).isEqualTo(username)
             assertThat(it.driverClass).contains("mysql")
-            assertThat(it.url).contains(jdbcMysql)
+            assertThat(it.url).contains(JDBC_MYSQL)
             assertThat(it.sslCfg).isNotNull
         }
     }
@@ -188,7 +188,7 @@ class CreateConfigurationActionTest {
         assertThat(registry.newDataSources).hasOnlyOneElementSatisfying {
             assertThat(it.username).isEqualTo(username)
             assertThat(it.driverClass).contains("mariadb")
-            assertThat(it.url).contains(jdbcMysqlAurora)
+            assertThat(it.url).contains(JDBC_MYSQL_AURORA)
             assertThat(it.sslCfg?.myMode).isEqualTo(JdbcSettings.SslMode.REQUIRE)
         }
     }
@@ -208,7 +208,7 @@ class CreateConfigurationActionTest {
         assertThat(registry.newDataSources).hasOnlyOneElementSatisfying {
             assertThat(it.username).isEqualTo(username)
             assertThat(it.driverClass).contains("mariadb")
-            assertThat(it.url).contains(jdbcMysqlAurora)
+            assertThat(it.url).contains(JDBC_MYSQL_AURORA)
             assertThat(it.sslCfg?.myMode).isEqualTo(JdbcSettings.SslMode.REQUIRE)
         }
     }
@@ -232,7 +232,7 @@ class CreateConfigurationActionTest {
         port: Int = RuleUtils.randomNumber(),
         dbName: String = RuleUtils.randomName(),
         iamAuthEnabled: Boolean = true,
-        engineType: String = mysqlEngineType
+        engineType: String = MYSQL_ENGINE_TYPE
     ): RdsNode = mock {
         on { nodeProject } doAnswer { projectRule.project }
         on { database } doAnswer {
@@ -245,7 +245,7 @@ class CreateConfigurationActionTest {
         port: Int = RuleUtils.randomNumber(),
         dbName: String = RuleUtils.randomName(),
         iamAuthEnabled: Boolean = true,
-        engineType: String = postgresEngineType
+        engineType: String = POSTGRES_ENGINE_TYPE
     ): RdsDatabase = RdsDatabase(
         identifier = dbName,
         engine = engineType,

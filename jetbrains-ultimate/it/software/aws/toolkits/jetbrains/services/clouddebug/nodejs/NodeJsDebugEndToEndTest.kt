@@ -34,7 +34,6 @@ class NodeJsDebugEndToEndTest : CloudDebugTestCase("CloudDebugTestECSClusterTask
     val projectRule = HeavyNodeJsCodeInsightTestFixtureRule()
 
     private var previousRegistryValue: Boolean = true
-    private val WEB_CONSOLE_JB_REGISTRY_KEY = "js.debugger.webconsole"
 
     private val fileContents =
         """
@@ -123,4 +122,8 @@ class NodeJsDebugEndToEndTest : CloudDebugTestCase("CloudDebugTestECSClusterTask
     }
 
     override fun getProject() = projectRule.project
+
+    private companion object {
+        private const val WEB_CONSOLE_JB_REGISTRY_KEY = "js.debugger.webconsole"
+    }
 }

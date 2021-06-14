@@ -23,9 +23,6 @@ class NodeJsDebuggerSupport : DebuggerSupport() {
     override val platform = CloudDebuggingPlatform.NODE
     override val debuggerPath = null
 
-    private val NODE_EXECUTABLES = setOf("node", "nodejs")
-    private val NODE_DEBUG = "--inspect-brk"
-
     override fun attachDebugger(
         context: Context,
         containerName: String,
@@ -86,4 +83,9 @@ class NodeJsDebuggerSupport : DebuggerSupport() {
                 it
             }
         }
+
+    private companion object {
+        private val NODE_EXECUTABLES = setOf("node", "nodejs")
+        private val NODE_DEBUG = "--inspect-brk"
+    }
 }
