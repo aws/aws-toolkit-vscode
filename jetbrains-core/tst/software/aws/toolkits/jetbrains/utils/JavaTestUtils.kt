@@ -3,8 +3,8 @@
 
 package software.aws.toolkits.jetbrains.utils
 
-import com.intellij.openapi.Disposable
 import com.intellij.openapi.application.runWriteAction
+import com.intellij.openapi.application.runWriteActionAndWait
 import com.intellij.openapi.components.ServiceManager
 import com.intellij.openapi.externalSystem.importing.ImportSpecBuilder
 import com.intellij.openapi.externalSystem.model.DataNode
@@ -17,6 +17,7 @@ import com.intellij.openapi.externalSystem.util.ExternalSystemApiUtil
 import com.intellij.openapi.externalSystem.util.ExternalSystemUtil
 import com.intellij.openapi.projectRoots.JavaSdk
 import com.intellij.openapi.projectRoots.ProjectJdkTable
+import com.intellij.openapi.projectRoots.impl.JavaAwareProjectJdkTableImpl
 import com.intellij.openapi.projectRoots.impl.SdkConfigurationUtil
 import com.intellij.openapi.roots.ModuleRootModificationUtil
 import com.intellij.openapi.util.Disposer
@@ -27,9 +28,11 @@ import com.intellij.openapi.vfs.newvfs.impl.VfsRootAccess
 import com.intellij.psi.PsiClass
 import com.intellij.psi.PsiJavaFile
 import com.intellij.testFramework.IdeaTestUtil
+import com.intellij.testFramework.RunAll
 import com.intellij.testFramework.runInEdtAndWait
 import com.intellij.util.io.isDirectory
 import com.intellij.xdebugger.XDebuggerUtil
+import org.jetbrains.idea.maven.model.MavenExplicitProfiles
 import org.jetbrains.idea.maven.project.MavenProjectsManager
 import org.jetbrains.idea.maven.server.MavenServerManager
 import org.jetbrains.plugins.gradle.settings.GradleProjectSettings
@@ -249,17 +252,23 @@ internal fun HeavyJavaCodeInsightTestFixtureRule.setUpMavenProject(): PsiClass {
         """.trimIndent()
     )
 
-    Disposer.register(
-        this.fixture.testRootDisposable,
-        Disposable { MavenServerManager.getInstance().shutdown(true) }
-    )
+    Disposer.register(this.fixture.testRootDisposable) {
+        RunAll.runAll(
+            { runWriteActionAndWait { JavaAwareProjectJdkTableImpl.removeInternalJdkInTests() } },
+            { MavenServerManager.getInstance().shutdown(true) }
+        )
+    }
 
     val projectsManager = MavenProjectsManager.getInstance(project)
-    projectsManager.addManagedFilesOrUnignore(listOf(pomFile))
+    projectsManager.initForTests()
+
+    val poms = listOf(pomFile)
+    projectsManager.resetManagedFilesAndProfilesInTests(poms, MavenExplicitProfiles(emptyList()))
 
     runInEdtAndWait {
+        projectsManager.waitForReadingCompletion()
         projectsManager.waitForResolvingCompletion()
-        projectsManager.performScheduledImportInTests()
+        projectsManager.scheduleImportInTests(poms)
         projectsManager.importProjects()
     }
 
