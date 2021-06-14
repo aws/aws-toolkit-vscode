@@ -55,9 +55,6 @@ describe('addBucketCommand', function () {
         await addBucketCommand(node, window, commands)
 
         assert.ok(window.message.error?.includes('Failed to add bucket'))
-
-        assert.strictEqual(commands.command, 'aws.refreshAwsExplorerNode')
-        assert.deepStrictEqual(commands.args, [node])
     })
 
     it('warns when bucket name is invalid', async function () {
