@@ -42,8 +42,8 @@ export class FeedbackTemplates {
     <% Scripts.forEach(function(scr) { %>
         <script src="<%= scr %>"></script>
     <% }); %>
-    <% Stylesheets.forEach(function(scr) { %>
-        <link rel="stylesheet" type="text/css" href="<%= scr %>">
+    <% Stylesheets.forEach(function(s) { %>
+        <link rel="stylesheet" type="text/css" href="<%= s %>">
     <% }); %>
     `
 }

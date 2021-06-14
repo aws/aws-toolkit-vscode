@@ -6,20 +6,37 @@ input[type='submit'] {
     cursor: pointer;
 }
 
+select {
+    background-color: var(--vscode-settings-selection-background);
+    color: var(--vscode-settings-textInputForeground);
+    width: 80%;
+}
+
 input[type='submit']:hover {
     background-color: var(--vscode-button-hoverBackground);
+    color: var(--vscode-settings-textInputForeground);
 }
 
 input[type='submit']:disabled {
+    color: var(--vscode-settings-textInputForeground);
     cursor: default;
     opacity: 0.5;
 }
 
+input[type='text'] {
+    font-family: Menlo, Consolas, monospace;
+    background-color: var(--vscode-settings-textInputBackground);
+    color: var(--vscode-settings-textInputForeground);
+    width: 80%;
+}
+
 textarea {
+    font-family: Menlo, Consolas, monospace;
     background-color: var(--vscode-settings-textInputBackground);
     color: var(--vscode-settings-textInputForeground);
     border: 1px solid var(--vscode-settings-textInputBorder);
-    resize: none;
+    resize: vertical;
+    width: 80%;
 }
 
 body.vscode-dark textarea {
