@@ -1,8 +1,9 @@
 {
     "name": "aws-toolkit-vscode",
     "displayName": "AWS Toolkit",
-    "description": "An extension for working with Amazon Web Services",
+    "description": "Amazon Web Services toolkit for browsing and updating cloud resources",
     "version": "1.26.0-SNAPSHOT",
+    "extensionKind": [ "workspace" ],
     "publisher": "amazonwebservices",
     "license": "Apache-2.0",
     "repository": {
@@ -633,10 +634,6 @@
                     "when": "false"
                 },
                 {
-                    "command": "aws.showErrorDetails",
-                    "when": "false"
-                },
-                {
                     "command": "aws.ssmDocument.openLocalDocument",
                     "when": "false"
                 },
@@ -1031,11 +1028,6 @@
                     "group": "1@1"
                 },
                 {
-                    "command": "aws.showErrorDetails",
-                    "when": "view == aws.explorer && viewItem == awsErrorNode",
-                    "group": "0@5"
-                },
-                {
                     "command": "aws.hideRegion",
                     "group": "0@1",
                     "when": "view == aws.explorer && viewItem == awsRegionNode"
@@ -1295,11 +1287,6 @@
                 "category": "AWS"
             },
             {
-                "command": "aws.showErrorDetails",
-                "title": "%AWS.command.showErrorDetails%",
-                "category": "AWS"
-            },
-            {
                 "command": "aws.viewLogs",
                 "title": "%AWS.command.viewLogs%",
                 "category": "AWS"
@@ -1509,6 +1496,7 @@
         ]
     },
     "scripts": {
+        "prepare": "husky install",
         "vscode:prepublish": "npm run clean && npm run lint && webpack --mode production && npm run buildScripts",
         "bundleDeps": "node ./build-scripts/bundleDeps.js",
         "clean": "node ./build-scripts/clean.js dist",
@@ -1517,8 +1505,7 @@
         "copyNonCodeFiles": "node ./build-scripts/copyNonCodeFiles.js",
         "copyExtensionMain": "node ./build-scripts/copyExtensionMain.js",
         "copyDistFiles": "ts-node ./build-scripts/copyDistFiles.ts",
-        "buildScripts": "npm run bundleDeps && npm run copyExtensionMain && npm run copyDistFiles && npm run copyNonCodeFiles && npm run generateNonCodeFiles && npm run buildVue",
-        "buildVue": "webpack --config-name vueLoader",
+        "buildScripts": "npm run bundleDeps && npm run copyExtensionMain && npm run copyDistFiles && npm run copyNonCodeFiles && npm run generateNonCodeFiles",
         "compile": "webpack --mode development && npm run buildScripts",
         "recompile": "npm run clean && npm run compile",
         "watch": "npm run buildScripts && tsc -watch -p ./",
@@ -1558,6 +1545,7 @@
         "@types/tcp-port-used": "^1.0.0",
         "@types/uuid": "^8.3.0",
         "@types/vscode": "1.42.0",
+        "@types/vscode-webview": "^1.57.0",
         "@types/xml2js": "^0.4.8",
         "@typescript-eslint/eslint-plugin": "^4.24.0",
         "@typescript-eslint/parser": "^4.24.0",
@@ -1581,16 +1569,14 @@
         "pretty-quick": "^3.1.0",
         "readline-sync": "^1.4.9",
         "remap-istanbul": "^0.12.0",
-        "sinon": "^10.0.0",
+        "sinon": "^11.1.1",
         "source-map-support": "^0.5.19",
         "ts-mockito": "^2.5.0",
         "ts-node": "^9.1.1",
         "umd-compat-loader": "^2.1.2",
-        "vsce": "^1.88.0",
+        "vsce": "^1.93.0",
         "vscode-nls-dev": "^3.3.1",
         "vscode-test": "^1.5.2",
-        "vue-loader": "^15.9.6",
-        "vue-template-compiler": "^2.6.12",
         "webpack": "^5.38.1",
         "webpack-cli": "^3.3.10"
     },
