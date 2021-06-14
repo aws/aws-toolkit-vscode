@@ -37,7 +37,6 @@ import {
 } from './s3Client'
 
 const DEFAULT_CONTENT_TYPE = 'application/octet-stream'
-const BUCKET_REGION_HEADER = 'x-amz-bucket-region'
 
 export class DefaultS3Client implements S3Client {
     public constructor(
@@ -412,15 +411,15 @@ export class DefaultS3Client implements S3Client {
     /**
      * Looks up the region for the given bucket
      *
-     * Note that although there is an S3#GetBucketLocation API,
-     * this is the suggested method of obtaining the region.
+     * Use the getBucketLocation API to avoid cross region lookups.
      */
     private async lookupRegion(bucketName: string, s3: S3): Promise<string | undefined> {
         getLogger().debug('LookupRegion called for bucketName: %s', bucketName)
 
         try {
-            const response = await s3.headBucket({ Bucket: bucketName }).promise()
-            const region = response.$response.httpResponse.headers[BUCKET_REGION_HEADER]
+            const response = await s3.getBucketLocation({ Bucket: bucketName }).promise()
+            // getBucketLocation returns an explicit empty string location contraint for us-east-1
+            const region = response.LocationConstraint === '' ? 'us-east-1' : response.LocationConstraint
             getLogger().debug('LookupRegion returned region: %s', region)
             return region
         } catch (e) {
