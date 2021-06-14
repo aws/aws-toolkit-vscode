@@ -6,6 +6,7 @@
 import * as vscode from 'vscode'
 import * as nls from 'vscode-nls'
 import { ext } from '../../shared/extensionGlobals'
+import { getLogger } from '../logger/logger'
 import { waitUntil } from './timeoutUtils'
 
 // TODO: Consider NLS initialization/configuration here & have packages to import localize from here
@@ -71,4 +72,60 @@ export async function closeAllEditors() {
             }" was still open after executing "closeAllEditors"`
         )
     }
+}
+
+/**
+ * Checks if the given extension is installed and active.
+ */
+export function isExtensionActive(extId: string): boolean {
+    const extension = vscode.extensions.getExtension(extId)
+    return !!extension && extension.isActive
+}
+
+/**
+ * Activates the given extension, or does nothing if the extension is not
+ * installed.
+ *
+ * @param extId  Extension id
+ * @param silent  Return undefined on failure, instead of throwing
+ * @returns Extension object, or undefined on failure if `silent`
+ */
+export async function activateExtension(extId: string, silent: boolean = true): Promise<vscode.Extension<void> | undefined> {
+    let loggerInitialized: boolean
+    try {
+        getLogger()
+        loggerInitialized = true
+    } catch {
+        loggerInitialized = false
+    }
+    function log(s: string, ...rest: any[]): void {
+        if (loggerInitialized) {
+            getLogger().debug(s, ...rest)
+        } else {
+            console.log(s, ...rest)
+        }
+    }
+
+    const extension = vscode.extensions.getExtension(extId)
+    if (!extension) {
+        if (silent) {
+            return undefined
+        }
+        throw new Error(`Extension not found: ${extId}`)
+    }
+
+    if (!extension.isActive) {
+        try {
+            await extension.activate()
+            log('Extension activated: %s', extId)
+        } catch (err) {
+            log('Extension failed to activate: %s: %O', extId, err as Error)
+            if (!silent) {
+                throw err
+            }
+            return undefined
+        }
+    }
+
+    return extension
 }

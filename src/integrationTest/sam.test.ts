@@ -8,6 +8,7 @@ import { Runtime } from 'aws-sdk/clients/lambda'
 import { mkdirpSync, mkdtemp, removeSync } from 'fs-extra'
 import * as path from 'path'
 import * as vscode from 'vscode'
+import * as vscodeUtils from '../../src/shared/utilities/vsCodeUtils'
 import { DependencyManager } from '../../src/lambda/models/samLambdaRuntime'
 import { helloWorldTemplate } from '../../src/lambda/models/samTemplates'
 import { getSamCliContext } from '../../src/shared/sam/cli/samCliContext'
@@ -355,10 +356,10 @@ async function stopDebugger(logMsg: string | undefined): Promise<void> {
 
 async function activateExtensions(): Promise<void> {
     console.log('Activating extensions...')
-    await testUtils.activateExtension(VSCODE_EXTENSION_ID.python)
-    await testUtils.activateExtension(VSCODE_EXTENSION_ID.go)
-    await testUtils.activateExtension(VSCODE_EXTENSION_ID.java)
-    await testUtils.activateExtension(VSCODE_EXTENSION_ID.javadebug)
+    await vscodeUtils.activateExtension(VSCODE_EXTENSION_ID.python, false)
+    await vscodeUtils.activateExtension(VSCODE_EXTENSION_ID.go, false)
+    await vscodeUtils.activateExtension(VSCODE_EXTENSION_ID.java, false)
+    await vscodeUtils.activateExtension(VSCODE_EXTENSION_ID.javadebug, false)
     console.log('Extensions activated')
 }
 
