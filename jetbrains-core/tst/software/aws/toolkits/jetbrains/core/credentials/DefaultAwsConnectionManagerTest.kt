@@ -28,6 +28,9 @@ import software.aws.toolkits.jetbrains.utils.rules.HeavyJavaCodeInsightTestFixtu
 import software.aws.toolkits.jetbrains.utils.toElement
 import java.nio.file.Files
 import java.util.concurrent.CompletableFuture
+import java.util.concurrent.CountDownLatch
+import java.util.concurrent.TimeUnit
+import java.util.concurrent.atomic.AtomicBoolean
 
 class DefaultAwsConnectionManagerTest {
     @Rule
@@ -160,44 +163,48 @@ class DefaultAwsConnectionManagerTest {
     fun `Activating a region fires a state change notification`() {
         val project = projectRule.project
 
-        var gotNotification = false
+        val gotNotification = AtomicBoolean(false)
+        val latch = CountDownLatch(1)
 
         val busConnection = project.messageBus.connect()
         busConnection.subscribe(
             AwsConnectionManager.CONNECTION_SETTINGS_STATE_CHANGED,
             object : ConnectionSettingsStateChangeNotifier {
                 override fun settingsStateChanged(newState: ConnectionState) {
-                    gotNotification = true
+                    gotNotification.set(true)
+                    latch.countDown()
                 }
             }
         )
 
         changeRegion(AwsRegionProvider.getInstance().defaultRegion())
 
-        assertThat(gotNotification).isTrue()
+        assertThat(latch.await(2, TimeUnit.SECONDS)).isTrue
+        assertThat(gotNotification).isTrue
     }
 
     @Test
     fun `Activating a credential fires a state change notification`() {
         val project = projectRule.project
 
-        var gotNotification = false
+        val gotNotification = AtomicBoolean(false)
+        val latch = CountDownLatch(1)
 
         val busConnection = project.messageBus.connect()
         busConnection.subscribe(
             AwsConnectionManager.CONNECTION_SETTINGS_STATE_CHANGED,
             object : ConnectionSettingsStateChangeNotifier {
                 override fun settingsStateChanged(newState: ConnectionState) {
-                    gotNotification = true
+                    gotNotification.set(true)
+                    latch.countDown()
                 }
             }
         )
 
-        changeCredentialProvider(
-            mockCredentialManager.addCredentials("Mock")
-        )
+        changeCredentialProvider(mockCredentialManager.addCredentials("Mock"))
 
-        assertThat(gotNotification).isTrue()
+        assertThat(latch.await(2, TimeUnit.SECONDS)).isTrue
+        assertThat(gotNotification).isTrue
     }
 
     @Test
