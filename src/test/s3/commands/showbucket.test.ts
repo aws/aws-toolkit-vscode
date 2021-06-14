@@ -4,14 +4,14 @@
  */
 
 import * as assert from 'assert'
-import { addBucketCommand } from '../../../s3/commands/addBucket'
+import { showBucketCommand } from '../../../s3/commands/showBucket'
 import { S3Node } from '../../../s3/explorer/s3Nodes'
 import { S3Client } from '../../../shared/clients/s3Client'
 import { FakeCommands } from '../../shared/vscode/fakeCommands'
 import { FakeWindow } from '../../shared/vscode/fakeWindow'
 import { anything, mock, instance, when, deepEqual, verify } from '../../utilities/mockito'
 
-describe('addBucketCommand', function () {
+describe('showBucketCommand', function () {
     const bucketName = 'buc.ket-n4.m3'
     const region = 'region'
     let s3: S3Client
@@ -22,7 +22,7 @@ describe('addBucketCommand', function () {
         node = new S3Node(instance(s3), region)
     })
 
-    it('prompts for bucket name, creates bucket, shows success, and refreshes node', async function () {
+    it('prompts for bucket name, adds bucket, shows success, and refreshes node', async function () {
         when(s3.listFiles(deepEqual({ bucketName }))).thenResolve({
             files: [],
             folders: [],
@@ -30,7 +30,7 @@ describe('addBucketCommand', function () {
 
         const window = new FakeWindow({ inputBox: { input: bucketName } })
         const commands = new FakeCommands()
-        await addBucketCommand(node, window, commands)
+        await showBucketCommand(node, window, commands)
 
         assert.strictEqual(window.inputBox.options?.prompt, 'Enter an existing bucket name')
         assert.strictEqual(window.inputBox.options?.placeHolder, 'Bucket Name')
@@ -42,7 +42,7 @@ describe('addBucketCommand', function () {
     })
 
     it('does nothing when prompt is cancelled', async function () {
-        await addBucketCommand(node, new FakeWindow(), new FakeCommands())
+        await showBucketCommand(node, new FakeWindow(), new FakeCommands())
 
         verify(s3.createFolder(anything())).never()
     })
@@ -52,7 +52,7 @@ describe('addBucketCommand', function () {
 
         const window = new FakeWindow({ inputBox: { input: bucketName } })
         const commands = new FakeCommands()
-        await addBucketCommand(node, window, commands)
+        await showBucketCommand(node, window, commands)
 
         assert.ok(window.message.error?.includes('Failed to add bucket'))
     })
@@ -60,7 +60,7 @@ describe('addBucketCommand', function () {
     it('warns when bucket name is invalid', async function () {
         const window = new FakeWindow({ inputBox: { input: 'gg' } })
         const commands = new FakeCommands()
-        await addBucketCommand(node, window, commands)
+        await showBucketCommand(node, window, commands)
 
         assert.strictEqual(window.inputBox.errorMessage, 'Bucket name must be between 3 and 63 characters long')
     })

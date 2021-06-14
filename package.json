@@ -968,7 +968,7 @@
                     "group": "0@2"
                 },
                 {
-                    "command": "aws.s3.addBucket",
+                    "command": "aws.s3.showBucket",
                     "when": "view == aws.explorer && viewItem == awsS3Node",
                     "group": "0@1"
                 },
@@ -1178,8 +1178,8 @@
                 "icon": "$(new-folder)"
             },
             {
-                "command": "aws.s3.addBucket",
-                "title": "%AWS.command.s3.addBucket%",
+                "command": "aws.s3.showBucket",
+                "title": "%AWS.command.s3.showBucket%",
                 "category": "AWS"
             },
             {

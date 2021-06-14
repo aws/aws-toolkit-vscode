@@ -46,8 +46,8 @@ export class S3Node extends AWSTreeNodeBase {
         } catch (err) {
             if (err.code === 'AccessDenied') {
                 if (this.addedBuckets.length === 0) {
-                    const localizedText = localize('AWS.explorerNode.s3.addBucket', 'Click to add existing bucket')
-                    return [new AWSCommandTreeNode(this, localizedText, 'aws.s3.addBucket', [this])]
+                    const localizedText = localize('AWS.explorerNode.s3.showBucket', 'Click to show existing bucket')
+                    return [new AWSCommandTreeNode(this, localizedText, 'aws.s3.showBucket', [this])]
                 } 
 
                 return this.addedBuckets
@@ -57,7 +57,7 @@ export class S3Node extends AWSTreeNodeBase {
         }
     }
 
-    public async addBucket(bucketName: string): Promise<void> {
+    public async showBucket(bucketName: string): Promise<void> {
         await this.s3.listFiles({ bucketName })
         // For now, there isn't a good way to get a bucket's region + ARN from its name.
         const bucket = { name: bucketName, region: this.regionCode, arn: `arn:aws:s3:::${bucketName}` }

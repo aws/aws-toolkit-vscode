@@ -11,7 +11,12 @@ import { S3Node } from '../explorer/s3Nodes'
 import { showErrorWithLogs } from '../../shared/utilities/messages'
 import { validateBucketName } from '../util'
 
-export async function addBucketCommand(
+/**
+ * Shows an explicitly-specified bucket in the AWS treeview.
+ * 
+ * To create a new bucket resource, see `createBucketCommand()`.
+ */
+export async function showBucketCommand(
     node: S3Node,
     window = Window.vscode(),
     commands = Commands.vscode()
@@ -19,8 +24,8 @@ export async function addBucketCommand(
     getLogger().debug('[s3]: addBucket called for: %O', node)
 
     const bucketName = await window.showInputBox({
-        prompt: localize('AWS.s3.addBucket.prompt', 'Enter an existing bucket name'),
-        placeHolder: localize('AWS.s3.addBucket.placeHolder', 'Bucket Name'),
+        prompt: localize('AWS.s3.showBucket.prompt', 'Enter an existing bucket name'),
+        placeHolder: localize('AWS.s3.showBucket.placeHolder', 'Bucket Name'),
         validateInput: validateBucketName,
     })
 
@@ -31,15 +36,15 @@ export async function addBucketCommand(
 
     getLogger().info(`Adding bucket: ${bucketName}`)
     try {
-        const bucket = await node.addBucket(bucketName)
+        const bucket = await node.showBucket(bucketName)
 
         getLogger().info('Added bucket: %O', bucket)
-        window.showInformationMessage(localize('AWS.s3.addBucket.success', 'Added bucket: {0}', bucketName))
+        window.showInformationMessage(localize('AWS.s3.showBucket.success', 'Added bucket: {0}', bucketName))
         await refreshNode(node, commands)
     } catch (e) {
         getLogger().error(`Failed to add bucket ${bucketName}: %O`, e)
         showErrorWithLogs(
-            localize('AWS.s3.addBucket.error.general', 'Failed to add bucket: {0}', bucketName),
+            localize('AWS.s3.showBucket.error.general', 'Failed to add bucket: {0}', bucketName),
             window
         )
     }
