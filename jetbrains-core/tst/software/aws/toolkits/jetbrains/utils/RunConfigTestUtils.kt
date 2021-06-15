@@ -15,6 +15,7 @@ import com.intellij.execution.runners.ExecutionEnvironmentBuilder
 import com.intellij.execution.runners.ProgramRunner
 import com.intellij.openapi.application.runInEdt
 import com.intellij.openapi.project.Project
+import com.intellij.openapi.util.Disposer
 import com.intellij.openapi.util.Ref
 import com.intellij.openapi.vfs.VirtualFile
 import com.intellij.testFramework.runInEdtAndWait
@@ -48,6 +49,8 @@ fun executeRunConfiguration(runConfiguration: RunConfiguration, executorId: Stri
     runInEdt {
         try {
             val executionEnvironment = ExecutionEnvironmentBuilder.create(executor, runConfiguration).build()
+            // Hack: Normally this is handled through the ProgramRunner and RunContentDescriptor, but since we bypass ProgramRunner we need to do it ourselves
+            Disposer.register(executionEnvironment.project, executionEnvironment)
             // Bypass ProgramRunner since AsyncProgramRunner has no ability for us to wait
             val execute = executionEnvironment.state!!.execute(executionEnvironment.executor, executionEnvironment.runner)!!
             execute.processHandler.addProcessListener(
