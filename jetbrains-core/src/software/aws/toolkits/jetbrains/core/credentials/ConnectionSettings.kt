@@ -7,3 +7,5 @@ import software.aws.toolkits.core.credentials.ToolkitCredentialsProvider
 import software.aws.toolkits.core.region.AwsRegion
 
 data class ConnectionSettings(val credentials: ToolkitCredentialsProvider, val region: AwsRegion)
+
+val ConnectionSettings.shortName get() = "${credentials.shortName}@${region.id}"

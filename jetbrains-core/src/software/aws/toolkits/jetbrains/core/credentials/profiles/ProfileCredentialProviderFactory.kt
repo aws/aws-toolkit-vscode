@@ -57,7 +57,7 @@ const val DEFAULT_PROFILE_ID = "profile:default"
 
 private const val PROFILE_FACTORY_ID = "ProfileCredentialProviderFactory"
 
-private open class ProfileCredentialsIdentifier(val profileName: String, override val defaultRegionId: String?, credentialType: CredentialType?) :
+open class ProfileCredentialsIdentifier internal constructor(val profileName: String, override val defaultRegionId: String?, credentialType: CredentialType?) :
     CredentialIdentifierBase(credentialType) {
     override val id = "profile:$profileName"
     override val displayName = message("credentials.profile.name", profileName)

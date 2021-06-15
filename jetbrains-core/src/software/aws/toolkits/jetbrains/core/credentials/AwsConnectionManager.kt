@@ -289,6 +289,7 @@ sealed class ConnectionState(val displayMessage: String, val isTerminal: Boolean
     class ValidConnection(internal val credentials: ToolkitCredentialsProvider, internal val region: AwsRegion) :
         ConnectionState("${credentials.displayName}@${region.displayName}", isTerminal = true) {
         override val shortMessage: String = "${credentials.shortName}@${region.id}"
+        val connection by lazy { ConnectionSettings(credentials, region) }
     }
 
     class IncompleteConfiguration(credentials: CredentialIdentifier?, region: AwsRegion?) : ConnectionState(

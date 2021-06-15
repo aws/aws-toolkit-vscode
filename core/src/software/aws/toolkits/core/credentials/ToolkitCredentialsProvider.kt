@@ -77,7 +77,7 @@ abstract class CredentialIdentifierBase(override val credentialType: CredentialT
     final override fun toString(): String = "${this::class.simpleName}(id='$id')"
 }
 
-class ToolkitCredentialsProvider(private val identifier: CredentialIdentifier, delegate: AwsCredentialsProvider) : AwsCredentialsProvider by delegate {
+class ToolkitCredentialsProvider(val identifier: CredentialIdentifier, delegate: AwsCredentialsProvider) : AwsCredentialsProvider by delegate {
     val id: String = identifier.id
     val displayName = identifier.displayName
     val shortName = identifier.shortName

@@ -1,0 +1,4 @@
+{
+  "type" : "feature",
+  "description" : "(Experimental) Adding ability to create a local terminal using the currently selected AWS connection (experiment ID `aws.feature.connectedLocalTerminal`, see [Enabling Experiments](https://github.com/aws/aws-toolkit-jetbrains/blob/master/README.md#experimental-features)) #2151"
+}

@@ -136,6 +136,9 @@ afterEvaluate {
 
         systemProperty("aws.telemetry.skip_prompt", "true")
         systemProperty("aws.suppress_deprecation_prompt", true)
+
+        // These are experiments to enable for UI tests
+        systemProperty("aws.feature.connectedLocalTerminal", true)
         ciOnly() {
             systemProperty("aws.sharedCredentialsFile", "/tmp/.aws/credentials")
         }

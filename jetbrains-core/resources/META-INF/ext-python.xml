@@ -3,7 +3,13 @@
 
 <idea-plugin>
     <extensions defaultExtensionNs="com.intellij">
+        <registryKey key="aws.feature.pythonRunConfigurationExtension"
+                     defaultValue="false"
+                     description="(Experimental) Allow injection of AWS Credentials into some Python Run Configurations via the AWS Connection tab."/>
         <codeInsight.lineMarkerProvider language="Python" implementationClass="software.aws.toolkits.jetbrains.services.lambda.upload.LambdaLineMarker"/>
+    </extensions>
+    <extensions defaultExtensionNs="Pythonid">
+        <runConfigurationExtension implementation="software.aws.toolkits.jetbrains.core.execution.PythonAwsConnectionExtension"/>
     </extensions>
 
     <extensions defaultExtensionNs="aws.toolkit.lambda">

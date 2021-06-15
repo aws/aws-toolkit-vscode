@@ -1,0 +1,17 @@
+<!-- Copyright 2020 Amazon.com, Inc. or its affiliates. All Rights Reserved. -->
+<!-- SPDX-License-Identifier: Apache-2.0 -->
+
+<idea-plugin>
+    <extensions defaultExtensionNs="com.intellij">
+        <registryKey key="aws.feature.connectedLocalTerminal"
+                     defaultValue="false"
+                     description="(Experimental) Create a local Terminal instance injecting the current AWS Connection (credentials/region) as Environment Variables"/>
+    </extensions>
+    <actions>
+        <group id="aws.toolkit.explorer.titleBar.terminal">
+            <add-to-group group-id="aws.toolkit.explorer.titleBar" anchor="after" relative-to-action="aws.settings.refresh"/>
+            <separator/>
+            <action class="software.aws.toolkits.jetbrains.core.terminal.OpenAwsLocalTerminal"/>
+        </group>
+    </actions>
+</idea-plugin>

@@ -67,7 +67,7 @@ with what features/services are supported.
 
     <depends optional="true">org.jetbrains.idea.maven</depends>
     <depends optional="true">org.jetbrains.plugins.gradle</depends>
-    <depends optional="true">org.jetbrains.plugins.terminal</depends>
+    <depends optional="true" config-file="ext-terminal.xml">org.jetbrains.plugins.terminal</depends>
     <depends optional="true">com.intellij.modules.externalSystem</depends>
     <depends optional="true" config-file="ext-docker.xml">Docker</depends>
     <depends optional="true" config-file="ext-java.xml">com.intellij.modules.java</depends>
@@ -266,7 +266,13 @@ with what features/services are supported.
     <actions>
         <action internal="true" id="aws.toolkit.open.telemetry.viewer"
                 class="software.aws.toolkits.jetbrains.services.telemetry.viewer.OpenTelemetryAction"/>
-
+        <action id="aws.settings.refresh"  class="software.aws.toolkits.jetbrains.core.credentials.RefreshConnectionAction"/>
+        <action id="aws.toolkit.showFeedback" class="software.aws.toolkits.jetbrains.ui.feedback.ShowFeedbackDialogAction"/>
+        <group id="aws.toolkit.explorer.titleBar" popup="false" compact="true">
+            <reference id="aws.settings.refresh"/>
+            <separator/>
+            <reference id="aws.toolkit.showFeedback"/>
+        </group>
         <group id="aws.toolkit.explorer.ecr" popup="true" compact="false">
             <action id="ecr.repository.create" class="software.aws.toolkits.jetbrains.services.ecr.actions.CreateRepositoryAction"/>
         </group>
@@ -421,7 +427,6 @@ with what features/services are supported.
         </group>
 
         <action class="software.aws.toolkits.jetbrains.core.credentials.SettingsSelectorAction" id="aws.settings.selector" icon="AwsIcons.Logos.AWS"/>
-        <action class="software.aws.toolkits.jetbrains.core.credentials.RefreshConnectionAction" id="aws.settings.refresh" icon="AllIcons.Actions.Refresh"/>
         <action class="software.aws.toolkits.jetbrains.core.credentials.CreateOrUpdateCredentialProfilesAction" id="aws.settings.upsertCredentials" icon="AwsIcons.Logos.AWS"/>
         <action class="software.aws.toolkits.jetbrains.services.lambda.actions.DeployServerlessApplicationAction" id="serverless.application.deploy" />
         <action class="software.aws.toolkits.jetbrains.settings.ShowSettingsAction" id="aws.settings.show" icon="AllIcons.General.Settings"/>
