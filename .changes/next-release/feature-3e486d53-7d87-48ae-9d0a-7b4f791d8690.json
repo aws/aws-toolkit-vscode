@@ -1,0 +1,4 @@
+{
+  "type" : "feature",
+  "description" : "Adding the ability to inject credentials/region into existing IntelliJ IDEA and PyCharm Run Configurations (e.g Application, JUnit, Python, PyTest). This requires experiments `aws.feature.javaRunConfigurationExtension` / `aws.feature.pythonRunConfigurationExtension`, see [Enabling Experiments](https://github.com/aws/aws-toolkit-jetbrains/blob/master/README.md#experimental-features)"
+}

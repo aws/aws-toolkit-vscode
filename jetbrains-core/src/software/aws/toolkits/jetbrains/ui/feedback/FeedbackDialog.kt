@@ -4,6 +4,7 @@
 package software.aws.toolkits.jetbrains.ui.feedback
 
 import com.intellij.openapi.actionSystem.AnActionEvent
+import com.intellij.openapi.actionSystem.LangDataKeys
 import com.intellij.openapi.application.ModalityState
 import com.intellij.openapi.project.DumbAwareAction
 import com.intellij.openapi.project.Project
@@ -28,7 +29,7 @@ class FeedbackDialog(private val project: Project) : DialogWrapper(project), Cor
     val panel = SubmitFeedbackPanel()
 
     init {
-        title = feedbackTitle
+        title = message("feedback.title")
         setOKButtonText(message("feedback.submit_button"))
         init()
     }
@@ -85,15 +86,10 @@ class FeedbackDialog(private val project: Project) : DialogWrapper(project), Cor
 
     @TestOnly
     internal fun getViewForTesting(): SubmitFeedbackPanel = panel
+}
 
-    companion object {
-        private val feedbackTitle = message("feedback.title")
-
-        fun getAction(project: Project) =
-            object : DumbAwareAction(feedbackTitle, message("feedback.description"), AwsIcons.Misc.SMILE_GREY) {
-                override fun actionPerformed(e: AnActionEvent) {
-                    FeedbackDialog(project).showAndGet()
-                }
-            }
+class ShowFeedbackDialogAction : DumbAwareAction(message("feedback.title"), message("feedback.description"), AwsIcons.Misc.SMILE_GREY) {
+    override fun actionPerformed(e: AnActionEvent) {
+        FeedbackDialog(e.getRequiredData(LangDataKeys.PROJECT)).showAndGet()
     }
 }

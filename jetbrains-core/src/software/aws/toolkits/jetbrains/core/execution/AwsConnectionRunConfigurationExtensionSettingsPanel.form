@@ -1,0 +1,85 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<form xmlns="http://www.intellij.com/uidesigner/form/" version="1" bind-to-class="software.aws.toolkits.jetbrains.core.execution.AwsConnectionExtensionSettingsPanel">
+  <grid id="27dc6" binding="panel" layout-manager="GridLayoutManager" row-count="6" column-count="2" same-size-horizontally="false" same-size-vertically="false" hgap="-1" vgap="-1">
+    <margin top="0" left="0" bottom="0" right="0"/>
+    <constraints>
+      <xy x="20" y="20" width="538" height="400"/>
+    </constraints>
+    <properties/>
+    <border type="none"/>
+    <children>
+      <vspacer id="72de0">
+        <constraints>
+          <grid row="5" column="0" row-span="1" col-span="2" vsize-policy="6" hsize-policy="1" anchor="0" fill="2" indent="0" use-parent-layout="false"/>
+        </constraints>
+      </vspacer>
+      <component id="30323" class="javax.swing.JRadioButton" binding="useCurrentConnection">
+        <constraints>
+          <grid row="1" column="0" row-span="1" col-span="2" vsize-policy="0" hsize-policy="3" anchor="8" fill="0" indent="0" use-parent-layout="false"/>
+        </constraints>
+        <properties>
+          <selected value="false"/>
+          <text resource-bundle="software/aws/toolkits/resources/MessagesBundle" key="run_configuration_extension.currently_selected"/>
+        </properties>
+      </component>
+      <component id="66b4d" class="javax.swing.JRadioButton" binding="manuallyConfiguredConnection">
+        <constraints>
+          <grid row="2" column="0" row-span="1" col-span="2" vsize-policy="0" hsize-policy="3" anchor="8" fill="0" indent="0" use-parent-layout="false"/>
+        </constraints>
+        <properties>
+          <text resource-bundle="software/aws/toolkits/resources/MessagesBundle" key="run_configuration_extension.manual"/>
+        </properties>
+      </component>
+      <component id="87241" class="javax.swing.JLabel">
+        <constraints>
+          <grid row="3" column="0" row-span="1" col-span="1" vsize-policy="0" hsize-policy="0" anchor="8" fill="0" indent="0" use-parent-layout="false"/>
+        </constraints>
+        <properties>
+          <enabled value="true"/>
+          <text resource-bundle="software/aws/toolkits/resources/MessagesBundle" key="aws_connection.credentials.label"/>
+        </properties>
+      </component>
+      <component id="51370" class="software.aws.toolkits.jetbrains.ui.CredentialProviderSelector" binding="credentialProvider">
+        <constraints>
+          <grid row="3" column="1" row-span="1" col-span="1" vsize-policy="3" hsize-policy="3" anchor="0" fill="1" indent="0" use-parent-layout="false"/>
+        </constraints>
+        <properties>
+          <enabled value="false"/>
+        </properties>
+      </component>
+      <component id="5fe2c" class="javax.swing.JLabel">
+        <constraints>
+          <grid row="4" column="0" row-span="1" col-span="1" vsize-policy="0" hsize-policy="0" anchor="8" fill="0" indent="0" use-parent-layout="false"/>
+        </constraints>
+        <properties>
+          <enabled value="true"/>
+          <text resource-bundle="software/aws/toolkits/resources/MessagesBundle" key="aws_connection.region.label"/>
+        </properties>
+      </component>
+      <component id="8f7c6" class="software.aws.toolkits.jetbrains.ui.RegionSelector" binding="region">
+        <constraints>
+          <grid row="4" column="1" row-span="1" col-span="1" vsize-policy="3" hsize-policy="3" anchor="0" fill="1" indent="0" use-parent-layout="false"/>
+        </constraints>
+        <properties>
+          <enabled value="false"/>
+        </properties>
+      </component>
+      <component id="e448d" class="javax.swing.JRadioButton" binding="none">
+        <constraints>
+          <grid row="0" column="0" row-span="1" col-span="2" vsize-policy="0" hsize-policy="3" anchor="8" fill="0" indent="0" use-parent-layout="false"/>
+        </constraints>
+        <properties>
+          <selected value="true"/>
+          <text resource-bundle="software/aws/toolkits/resources/MessagesBundle" key="run_configuration_extension.none"/>
+        </properties>
+      </component>
+    </children>
+  </grid>
+  <buttonGroups>
+    <group name="selectionGroup">
+      <member id="e448d"/>
+      <member id="30323"/>
+      <member id="66b4d"/>
+    </group>
+  </buttonGroups>
+</form>

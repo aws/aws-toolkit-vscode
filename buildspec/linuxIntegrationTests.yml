@@ -44,6 +44,7 @@ phases:
   build:
     commands:
       - export SAM_CLI_EXEC=`which sam`
+      - export PYTHON_PATH=`which python`
       - echo "SAM CLI location $SAM_CLI_EXEC"
       - $SAM_CLI_EXEC --version
 
