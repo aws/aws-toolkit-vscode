@@ -56,7 +56,7 @@ async function makePythonDebugManifest(params: {
         return debugManifestPath
     }
 
-    // TODO: If another module name includes the string "ptvsd", this will be skipped...
+    // TODO: If another module name includes the string "debugpy", this will be skipped...
     if (!params.useIkpdb && !manifestText.includes('debugpy')) {
         manifestText += `${os.EOL}debugpy>=1.0,<2`
         await writeFile(debugManifestPath, manifestText)
