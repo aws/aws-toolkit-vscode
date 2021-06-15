@@ -24,7 +24,7 @@ import { createQuickPick, promptUser, verifySinglePickerOutput } from '../../sha
 import { addCodiconToString } from '../../shared/utilities/textUtilities'
 import { S3Client } from '../../shared/clients/s3Client'
 import { createBucketCommand } from './createBucket'
-
+import { recordAwsRefreshExplorer } from '../../shared/telemetry/telemetry'
 
 
 
@@ -336,8 +336,8 @@ export async function uploadFileToS3Command(
         await uploadWithProgress(request)
         showOutputMessage(`Successfully uploaded file ${destinationPath} to ${bucket.Name!}`, outputChannel)
         telemetry.recordS3UploadObject({ result: 'Succeeded' })
-
-        
+        recordAwsRefreshExplorer()
+        vscode.commands.executeCommand('aws.refreshAwsExplorer')
 
     } catch (e) {
         getLogger().error(`Failed to upload file from ${fileLocation} to ${destinationPath}: %O`, e)

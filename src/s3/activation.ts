@@ -38,7 +38,6 @@ export async function activate(extensionContext: vscode.ExtensionContext): Promi
         }),
         vscode.commands.registerCommand('aws.s3.uploadFileToS3', async () => {
             while (true) {
-                //TODO: fix arguments
                 const editor = vscode.window.activeTextEditor
                 const document = editor?.document.uri
                 const file = await getFileToUpload(document)

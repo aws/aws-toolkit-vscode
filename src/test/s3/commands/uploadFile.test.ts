@@ -100,7 +100,7 @@ describe('getFileToUpload', function () {
     })
     
 
-    //How do I test this?
+    
     it("directly asks user for file if no active editor", async function () {
         const selection: any = {label: "Browse for more files..." }
         const prompt: <T extends vscode.QuickPickItem>(opts: {
@@ -334,7 +334,7 @@ describe('promptUserForBucket',async function () {
 })
 
 describe('uploadFileToS3Command', function () {
-    console.log("uploadFileToS3Command Testing initiated ----------------------------------------------------------------")
+   
     const bucketName = 'bucket-name'
     const key = 'file.jpg'
     const sizeBytes = 16
@@ -358,7 +358,6 @@ describe('uploadFileToS3Command', function () {
         const outputChannel = new MockOutputChannel()
         await uploadFileToS3Command(fileLocation, bucket, instance(s3), statFile, window, outputChannel)
 
-        //How does this work?
         // eslint-disable-next-line @typescript-eslint/unbound-method
         const [uploadFileRequest] = capture(s3.uploadFile).last()
 
@@ -379,7 +378,6 @@ describe('uploadFileToS3Command', function () {
     })
 
     it("cancels the upload in a failed state when an error with the call to s3Client happens", async function () {
-        //Error is not being triggered
         when(s3.uploadFile(anything())).thenReject(new Error('Expected failure'))
 
         const window = new FakeWindow({ dialog: { openSelections: [fileLocation] } })
@@ -388,6 +386,5 @@ describe('uploadFileToS3Command', function () {
 
         assert.ok(window.message.error?.includes('Failed to upload file'))
     })
-    
     
 })
