@@ -1,5 +1,14 @@
 {
     "types": [],
     "metrics": [
+        {
+            "name": "aws_openLocalTerminal",
+            "description": "Open local terminal with aws connection injected",
+            "metadata": [
+                {
+                    "type": "result"
+                }
+            ]
+        }
     ]
 }
