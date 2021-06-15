@@ -20,7 +20,7 @@ import { AWSCommandTreeNode } from '../../shared/treeview/nodes/awsCommandTreeNo
  * Contains buckets for a specific region as child nodes.
  */
 export class S3Node extends AWSTreeNodeBase {
-    private readonly addedBuckets: S3BucketNode[] = []
+    private readonly addedBuckets: Map<string, S3BucketNode> = new Map()
 
     public constructor(private readonly s3: S3Client, private readonly regionCode: string) {
         super('S3', vscode.TreeItemCollapsibleState.Collapsed)
@@ -45,12 +45,12 @@ export class S3Node extends AWSTreeNodeBase {
             return response.buckets.map(bucket => new S3BucketNode(bucket, this, this.s3))
         } catch (err) {
             if (err.code === 'AccessDenied') {
-                if (this.addedBuckets.length === 0) {
+                if (this.addedBuckets.size === 0) {
                     const localizedText = localize('AWS.explorerNode.s3.showBucket', 'Click to show existing bucket')
                     return [new AWSCommandTreeNode(this, localizedText, 'aws.s3.showBucket', [this])]
                 } 
 
-                return this.addedBuckets
+                return [...this.addedBuckets.values()]
             } else {
                 throw err
             }
@@ -61,7 +61,7 @@ export class S3Node extends AWSTreeNodeBase {
         await this.s3.listFiles({ bucketName })
         // For now, there isn't a good way to get a bucket's region + ARN from its name.
         const bucket = { name: bucketName, region: this.regionCode, arn: `arn:aws:s3:::${bucketName}` }
-        this.addedBuckets.push(new S3BucketNode(bucket, this, this.s3))
+        this.addedBuckets.set(bucketName, new S3BucketNode(bucket, this, this.s3))
     }
 
     /**
