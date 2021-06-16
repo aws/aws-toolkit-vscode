@@ -46,7 +46,7 @@ export interface PythonDebugConfiguration extends SamLaunchRequestArgs {
     /** Passed to "sam build --manifest …" */
     readonly manifestPath: string | undefined
 
-    // Fields expected by the VSCode ptvsd adapter.
+    // Fields expected by the VSCode debugpy adapter.
     readonly host: string
     readonly port: number
     readonly pathMappings: PythonPathMapping[]

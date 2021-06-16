@@ -1,8 +1,9 @@
 {
     "name": "aws-toolkit-vscode",
     "displayName": "AWS Toolkit",
-    "description": "An extension for working with Amazon Web Services",
+    "description": "Amazon Web Services toolkit for browsing and updating cloud resources",
     "version": "1.26.0-SNAPSHOT",
+    "extensionKind": [ "workspace" ],
     "publisher": "amazonwebservices",
     "license": "Apache-2.0",
     "repository": {
@@ -672,10 +673,6 @@
                     "when": "false"
                 },
                 {
-                    "command": "aws.showErrorDetails",
-                    "when": "false"
-                },
-                {
                     "command": "aws.ssmDocument.openLocalDocument",
                     "when": "false"
                 },
@@ -881,6 +878,13 @@
                     "group": "z_externalLinks@1"
                 }
             ],
+            "explorer/context": [
+                {
+                    "command": "aws.deploySamApplication",
+                    "when": "isFileSystemResource == true && resourceFilename =~ /^template\\.(json|yml|yaml)$/",
+                    "group": "z_aws@1"
+                }
+            ],
             "view/item/context": [
                 {
                     "command": "aws.apig.invokeRemoteRestApi",
@@ -1061,11 +1065,6 @@
                     "command": "aws.downloadSchemaItemCode",
                     "when": "view == aws.explorer && viewItem == awsSchemaItemNode && !isCloud9",
                     "group": "1@1"
-                },
-                {
-                    "command": "aws.showErrorDetails",
-                    "when": "view == aws.explorer && viewItem == awsErrorNode",
-                    "group": "0@5"
                 },
                 {
                     "command": "aws.hideRegion",
@@ -1530,16 +1529,6 @@
                 }
             },
             {
-                "command": "aws.showErrorDetails",
-                "title": "%AWS.command.showErrorDetails%",
-                "category": "%AWS.title%",
-                "cloud9": {
-                    "cn": {
-                        "category": "%AWS.title.cn%"
-                    }
-                }
-            },
-            {
                 "command": "aws.viewLogs",
                 "title": "%AWS.command.viewLogs%",
                 "category": "%AWS.title%"
@@ -1844,6 +1833,7 @@
         ]
     },
     "scripts": {
+        "prepare": "husky install",
         "vscode:prepublish": "npm run clean && npm run lint && webpack --mode production && npm run buildScripts",
         "bundleDeps": "node ./build-scripts/bundleDeps.js",
         "clean": "node ./build-scripts/clean.js dist",
@@ -1852,8 +1842,7 @@
         "copyNonCodeFiles": "node ./build-scripts/copyNonCodeFiles.js",
         "copyExtensionMain": "node ./build-scripts/copyExtensionMain.js",
         "copyDistFiles": "ts-node ./build-scripts/copyDistFiles.ts",
-        "buildScripts": "npm run bundleDeps && npm run copyExtensionMain && npm run copyDistFiles && npm run copyNonCodeFiles && npm run generateNonCodeFiles && npm run buildVue",
-        "buildVue": "webpack --config-name vueLoader",
+        "buildScripts": "npm run bundleDeps && npm run copyExtensionMain && npm run copyDistFiles && npm run copyNonCodeFiles && npm run generateNonCodeFiles",
         "compile": "webpack --mode development && npm run buildScripts",
         "recompile": "npm run clean && npm run compile",
         "watch": "npm run buildScripts && tsc -watch -p ./",
@@ -1893,13 +1882,14 @@
         "@types/tcp-port-used": "^1.0.0",
         "@types/uuid": "^8.3.0",
         "@types/vscode": "1.42.0",
+        "@types/vscode-webview": "^1.57.0",
         "@types/xml2js": "^0.4.8",
         "@typescript-eslint/eslint-plugin": "^4.24.0",
         "@typescript-eslint/parser": "^4.24.0",
         "circular-dependency-plugin": "^5.2.0",
         "decache": "^4.4.0",
         "esbuild-loader": "2.10.0",
-        "eslint": "^7.26.0",
+        "eslint": "^7.28.0",
         "eslint-config-prettier": "8.3",
         "eslint-plugin-header": "^3.1.1",
         "eslint-plugin-no-null": "^1.0.2",
@@ -1907,7 +1897,7 @@
         "husky": "^6.0.0",
         "istanbul": "^0.4.5",
         "json-schema-to-typescript": "^8.2.0",
-        "marked": "^2.0.3",
+        "marked": "^2.0.7",
         "mocha": "^7.1.1",
         "mocha-junit-reporter": "^2.0.0",
         "mocha-multi-reporters": "^1.1.7",
@@ -1916,17 +1906,15 @@
         "pretty-quick": "^3.1.0",
         "readline-sync": "^1.4.9",
         "remap-istanbul": "^0.12.0",
-        "sinon": "^10.0.0",
+        "sinon": "^11.1.1",
         "source-map-support": "^0.5.19",
         "ts-mockito": "^2.5.0",
         "ts-node": "^9.1.1",
         "umd-compat-loader": "^2.1.2",
-        "vsce": "^1.88.0",
+        "vsce": "^1.93.0",
         "vscode-nls-dev": "^3.3.1",
-        "vscode-test": "^1.4.0",
-        "vue-loader": "^15.9.6",
-        "vue-template-compiler": "^2.6.12",
-        "webpack": "^5.36.2",
+        "vscode-test": "^1.5.2",
+        "webpack": "^5.38.1",
         "webpack-cli": "^3.3.10"
     },
     "dependencies": {
@@ -1936,12 +1924,11 @@
         "aws-sdk": "^2.882.0",
         "aws-ssm-document-language-service": "^1.0.0",
         "bytes": "^3.1.0",
-        "cloudformation-schema-js-yaml": "^1.0.1",
         "cross-spawn": "^7.0.3",
         "fs-extra": "^9.0.1",
         "handlebars": "^4.7.7",
         "immutable": "^4.0.0-rc.12",
-        "js-yaml": "^3.13.1",
+        "js-yaml": "^4.1.0",
         "jsonc-parser": "^2.0.2",
         "lodash": "^4.17.21",
         "mime-types": "^2.1.27",
@@ -1962,7 +1949,8 @@
         "winston": "^3.2.1",
         "winston-transport": "^4.3.0",
         "xml2js": "^0.4.19",
-        "yaml": "^1.9.2"
+        "yaml": "^1.9.2",
+        "yaml-cfn": "^0.3.0"
     },
     "prettier": {
         "printWidth": 120,

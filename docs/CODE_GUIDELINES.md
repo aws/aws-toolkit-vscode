@@ -15,6 +15,9 @@ that is a net cost.
 > The precision of naming takes away from the uniqueness of seeing.
 ― Pierre Bonnard
 
+- Do not use "AWS" in command names. The "AWS" brand is [not used China](https://github.com/aws/aws-toolkit-vscode/pull/1786).
+  It's very confusing (for documentation, community guidance, etc.) to have
+  different command names (in the _same_ language) for different regions.
 - Use consistent patterns for similar concepts.
     - Example: `getLambdaFileName` vs `parseLambdaDetailsFromConfiguration`
         - Using "get" as a verb is useful because it has parallel form with other
@@ -37,6 +40,14 @@ that is a net cost.
       needs to change (it doesn't matter that `getLambdaFileName` is "parsing"
       its input--unless parsing is a central requirement of the function, and
       differentiates it from other similar functions).
+- _Most_ code related to topic "Foo" should live in `foo.ts`.
+    - "Utility" functions:
+        - Code related to "Foo" but (1) not strongly dependent on its types,
+          and (2) broadly usable by other modules, may live in
+          `src/utilities/foo.ts`.
+        - Code related to "Foo" that _is strongly dependent_ on its types, may
+          live in `src/foo/util.ts`.
+        - `src/foo/utilities/` is never (in a project <1M LoC) needed.
 
 ## Project guidelines
 

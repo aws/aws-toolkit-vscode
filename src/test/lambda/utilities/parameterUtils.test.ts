@@ -12,7 +12,7 @@ import {
     getParameterNames,
     getParameters,
     GetParametersContext,
-} from '../../../lambda/utilities/parameterUtils'
+} from '../../../lambda/config/parameterUtils'
 import { getNormalizedRelativePath } from '../../../shared/utilities/pathUtils'
 
 describe('parameterUtils', async function () {
