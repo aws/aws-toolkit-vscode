@@ -22,7 +22,7 @@ See [Get help](#get-help) for support.
 
 The **AWS Explorer** provides access to the AWS services that you can work with when using the Toolkit. To see the **AWS Explorer**, choose the **AWS** icon in the **Activity bar**.
 
-## ![Overview, AWS Explorer](./resources/marketplace/cloud9/overview-aws-explorer.png)
+## ![Overview, AWS Explorer](./resources/marketplace/cloud9/overview-aws-explorer-en.png)
 
 ## <a id="sam-and-lambda"></a> AWS Serverless Applications
 
@@ -45,7 +45,7 @@ Alternatively, you can run and debug just the AWS Lambda function and exclude ot
 
 When you run a debug session, the status and results are shown in the **AWS Toolkit** output channel. If the toolkit does not have an open **AWS Toolkit** output channel, one can be created with the New Tab button.
 
-![Configure and Run 2](./resources/marketplace/cloud9/sam-configure-and-run-still-2.png)
+![Configure and Run 2](./resources/marketplace/cloud9/sam-configure-and-run-still-2-en.png)
 
 ###### After a local run is complete, the output appears in the **OUTPUT** tab.
 
@@ -73,7 +73,7 @@ The Toolkit provides commands (prefixed with `AWS:`) to the AWS Cloud9 _Go to An
 | Windows | `CTRL-.` |
 | macOS   | `CMD-.`  |
 
-![Go to Anything panel](./resources/marketplace/cloud9/open-commands.png)
+![Go to Anything panel](./resources/marketplace/cloud9/open-commands-en.png)
 
 | AWS Command                             | Description                                                                                                                                                                                                                                |
 | :-------------------------------------- | :----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
