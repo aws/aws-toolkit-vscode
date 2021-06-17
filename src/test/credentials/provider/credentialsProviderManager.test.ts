@@ -4,6 +4,7 @@
  */
 
 import * as assert from 'assert'
+import { CredentialSourceId } from '../../../shared/telemetry/telemetry.gen'
 import { CredentialsProvider } from '../../../credentials/providers/credentialsProvider'
 import { CredentialsProviderFactory } from '../../../credentials/providers/credentialsProviderFactory'
 import { CredentialsProviderId, isEqual } from '../../../credentials/providers/credentialsProviderId'
@@ -15,7 +16,7 @@ import { CredentialsProviderManager } from '../../../credentials/providers/crede
 class TestCredentialsProviderFactory implements CredentialsProviderFactory {
     private readonly providers: CredentialsProvider[] = []
 
-    public constructor(public readonly credentialType: string, providerSubIds: string[]) {
+    public constructor(public readonly credentialType: CredentialSourceId, providerSubIds: string[]) {
         this.providers.push(
             ...providerSubIds.map<CredentialsProvider>(subId => {
                 return ({
@@ -28,7 +29,7 @@ class TestCredentialsProviderFactory implements CredentialsProviderFactory {
         )
     }
 
-    public getCredentialType(): string {
+    public getCredentialType(): CredentialSourceId {
         return this.credentialType
     }
 
@@ -57,22 +58,22 @@ describe('CredentialsProviderManager', async function () {
     })
 
     it('getCredentialProviderNames()', async function () {
-        const factoryA = new TestCredentialsProviderFactory('credentialTypeA', ['one'])
-        const factoryB = new TestCredentialsProviderFactory('credentialTypeB', ['two', 'three'])
+        const factoryA = new TestCredentialsProviderFactory('sharedCredentials', ['one'])
+        const factoryB = new TestCredentialsProviderFactory('envVars', ['two', 'three'])
         sut.addProviderFactory(factoryA)
         sut.addProviderFactory(factoryB)
 
         const expectedCredentials = {
-            'credentialTypeA:one': {
-                credentialType: 'credentialTypeA',
+            'sharedCredentials:one': {
+                credentialType: 'sharedCredentials',
                 credentialTypeId: 'one',
             },
-            'credentialTypeB:three': {
-                credentialType: 'credentialTypeB',
+            'envVars:three': {
+                credentialType: 'envVars',
                 credentialTypeId: 'three',
             },
-            'credentialTypeB:two': {
-                credentialType: 'credentialTypeB',
+            'envVars:two': {
+                credentialType: 'envVars',
                 credentialTypeId: 'two',
             },
         }
@@ -81,8 +82,8 @@ describe('CredentialsProviderManager', async function () {
 
     describe('getAllCredentialsProviders', async function () {
         it('returns all providers', async function () {
-            const factoryA = new TestCredentialsProviderFactory('credentialTypeA', ['one'])
-            const factoryB = new TestCredentialsProviderFactory('credentialTypeB', ['two', 'three'])
+            const factoryA = new TestCredentialsProviderFactory('sharedCredentials', ['one'])
+            const factoryB = new TestCredentialsProviderFactory('envVars', ['two', 'three'])
 
             sut.addProviderFactory(factoryA)
             sut.addProviderFactory(factoryB)
@@ -93,7 +94,7 @@ describe('CredentialsProviderManager', async function () {
             assert.ok(
                 providers.some(x =>
                     isEqual(x.getCredentialsProviderId(), {
-                        credentialType: 'credentialTypeA',
+                        credentialType: 'sharedCredentials',
                         credentialTypeId: 'one',
                     })
                 ),
@@ -102,7 +103,7 @@ describe('CredentialsProviderManager', async function () {
             assert.ok(
                 providers.some(x =>
                     isEqual(x.getCredentialsProviderId(), {
-                        credentialType: 'credentialTypeB',
+                        credentialType: 'envVars',
                         credentialTypeId: 'two',
                     })
                 ),
@@ -111,7 +112,7 @@ describe('CredentialsProviderManager', async function () {
             assert.ok(
                 providers.some(x =>
                     isEqual(x.getCredentialsProviderId(), {
-                        credentialType: 'credentialTypeB',
+                        credentialType: 'envVars',
                         credentialTypeId: 'three',
                     })
                 ),
@@ -122,9 +123,9 @@ describe('CredentialsProviderManager', async function () {
 
     describe('getCredentialsProvider', async function () {
         it('returns a provider', async function () {
-            const factoryA = new TestCredentialsProviderFactory('profile', ['default'])
+            const factoryA = new TestCredentialsProviderFactory('sharedCredentials', ['default'])
             const expectedCredentialsProviderId: CredentialsProviderId = {
-                credentialType: 'profile',
+                credentialType: 'sharedCredentials',
                 credentialTypeId: 'default',
             }
 
@@ -141,12 +142,12 @@ describe('CredentialsProviderManager', async function () {
         })
 
         it('returns undefined when there is a factory but the factory does not contain a provider', async function () {
-            const factoryA = new TestCredentialsProviderFactory('profile', ['default2'])
+            const factoryA = new TestCredentialsProviderFactory('sharedCredentials', ['default2'])
 
             sut.addProviderFactory(factoryA)
 
             const provider = await sut.getCredentialsProvider({
-                credentialType: 'profile',
+                credentialType: 'sharedCredentials',
                 credentialTypeId: 'default',
             })
 
@@ -159,7 +160,7 @@ describe('CredentialsProviderManager', async function () {
             sut.addProviderFactory(factoryA)
 
             const provider = await sut.getCredentialsProvider({
-                credentialType: 'profile',
+                credentialType: 'sharedCredentials',
                 credentialTypeId: 'default',
             })
 
