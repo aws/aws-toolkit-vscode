@@ -52,7 +52,7 @@ export async function activate(extensionContext: vscode.ExtensionContext): Promi
                 const file = await getFileToUpload(document)
                 if (file) {
                     try{
-                        const regionCode = Workspace.vscode().getConfiguration(extensionSettingsPrefix).get<string>('s3.defaultRegion')?? "us-east-1"
+                        const regionCode = Workspace.vscode().getConfiguration(extensionSettingsPrefix).get<string>('s3.defaultRegion')?? 'us-east-1'
                         const s3Client = ext.toolkitClientBuilder.createS3Client(regionCode) 
                         
                         const bucketResponse = await promptUserForBucket(s3Client)
