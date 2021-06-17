@@ -10,7 +10,6 @@ object AwsToolkit {
     private const val PLUGIN_ID = "aws.toolkit"
 
     val PLUGIN_VERSION: String by lazy {
-        // PluginManagerCore.getPlugin Requires MIN 193.2252. However we cannot set our IDE min to that because not all JB IDEs use the same build numbers
         PluginManagerCore.getPlugin(PluginId.getId(PLUGIN_ID))?.version ?: "Unknown"
     }
 }
