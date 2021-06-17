@@ -18,20 +18,13 @@ const remapIstanbul = require('remap-istanbul')
  * @param initTests List of relative paths to test files to run before all discovered tests.
  */
 export function runTestsInFolder(testFolder: string, initTests: string[] = []): Promise<void> {
-    const outputFile = path.resolve(process.env['TEST_REPORT_DIR'] || '.test-reports', 'report.xml')
     const colorOutput = !process.env['AWS_TOOLKIT_TEST_NO_COLOR']
 
     // Create the mocha test
     const mocha = new Mocha({
         ui: 'bdd',
         color: colorOutput,
-        reporter: 'mocha-multi-reporters',
-        reporterOptions: {
-            reporterEnabled: 'mocha-junit-reporter, spec',
-            mochaJunitReporterReporterOptions: {
-                mochaFile: outputFile,
-            },
-        },
+        reporter: 'spec',
         timeout: 0,
     })
 

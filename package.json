@@ -3,7 +3,9 @@
     "displayName": "AWS Toolkit",
     "description": "Amazon Web Services toolkit for browsing and updating cloud resources",
     "version": "1.26.0-SNAPSHOT",
-    "extensionKind": [ "workspace" ],
+    "extensionKind": [
+        "workspace"
+    ],
     "publisher": "amazonwebservices",
     "license": "Apache-2.0",
     "repository": {
@@ -1562,8 +1564,6 @@
         "json-schema-to-typescript": "^8.2.0",
         "marked": "^2.0.3",
         "mocha": "^7.1.1",
-        "mocha-junit-reporter": "^2.0.0",
-        "mocha-multi-reporters": "^1.1.7",
         "prettier": "^2.2.1",
         "prettier-plugin-sh": "^0.6.1",
         "pretty-quick": "^3.1.0",
