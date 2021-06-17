@@ -4,8 +4,9 @@
 package software.aws.toolkits.jetbrains.services.lambda.wizard
 
 import com.intellij.testFramework.ProjectRule
+import com.intellij.testFramework.runInEdtAndGet
+import com.intellij.testFramework.runInEdtAndWait
 import org.assertj.core.api.Assertions.assertThat
-import org.junit.Before
 import org.junit.Rule
 import org.junit.Test
 import software.amazon.awssdk.services.schemas.model.DescribeSchemaResponse
@@ -17,7 +18,6 @@ import software.aws.toolkits.jetbrains.services.schemas.SchemaTemplateParameters
 import software.aws.toolkits.jetbrains.services.schemas.resources.SchemasResources
 import software.aws.toolkits.jetbrains.services.schemas.resources.SchemasResources.LIST_REGISTRIES_AND_SCHEMAS
 import software.aws.toolkits.jetbrains.utils.waitToLoad
-import java.io.File
 
 class SchemaSelectionPanelTest {
 
@@ -32,41 +32,6 @@ class SchemaSelectionPanelTest {
     @JvmField
     @Rule
     val connectionManager = ProjectAccountSettingsManagerRule(projectRule)
-
-    private val AWSToolkitUserAgent = "AWSToolkit"
-
-    private val REGISTRY_NAME = "Registry"
-    private val REGISTRY_ITEM = SchemaSelectionItem.RegistryItem(REGISTRY_NAME)
-
-    private val SCHEMA_VERSION = "1"
-
-    private val AWS_SCHEMA_NAME = "aws.ec2@EC2InstanceStateChangeNotification"
-    private val AWS_SCHEMA_EXPECTED_PACKAGE_NAME = "schema.aws.ec2.ec2instancestatechangenotification"
-    private val AWS_SCHEMA_ITEM = SchemaSelectionItem.SchemaItem(AWS_SCHEMA_NAME, REGISTRY_NAME)
-    private val AWS_SCHEMA = File(javaClass.getResource("/awsEventSchema.json.txt").toURI()).readText(Charsets.UTF_8)
-
-    private val PARTNER_SCHEMA_NAME = "aws.partner-mongodb.com/1234567-tickets@Ticket.Created"
-    private val PARTNER_SCHEMA_EXPECTED_PACKAGE_NAME = "schema.aws.partner.mongodb_com_1234567_tickets.ticket_created"
-    private val PARTNER_SCHEMA_ITEM = SchemaSelectionItem.SchemaItem(PARTNER_SCHEMA_NAME, REGISTRY_NAME)
-    private val PARTNER_SCHEMA = File(javaClass.getResource("/partnerEventSchema.json.txt").toURI()).readText(Charsets.UTF_8)
-
-    private val CUSTOMER_UPLOADED_SCHEMA_NAME = "someCustomer.SomeAwesomeSchema"
-    private val CUSTOMER_UPLOADED_SCHEMA_EXPECTED_PACKAGE_NAME = "schema.somecustomer_someawesomeschema"
-    private val CUSTOMER_UPLOADED_SCHEMA_ITEM = SchemaSelectionItem.SchemaItem(CUSTOMER_UPLOADED_SCHEMA_NAME, REGISTRY_NAME)
-    private val CUSTOMER_UPLOADED_SCHEMA = File(javaClass.getResource("/customerUploadedEventSchema.json.txt").toURI()).readText(Charsets.UTF_8)
-
-    private val CUSTOMER_UPLOADED_SCHEMA_MULTIPLE_TYPES_NAME = "someCustomer.multipleTypes@SomeOtherAwesomeSchema"
-    private val CUSTOMER_UPLOADED_SCHEMA_MULTIPLE_TYPES_EXPECTED_PACKAGE_NAME = "schema.somecustomer_multipletypes.someotherawesomeschema"
-    private val CUSTOMER_UPLOADED_SCHEMA_MULTIPLE_TYPES_ITEM = SchemaSelectionItem.SchemaItem(CUSTOMER_UPLOADED_SCHEMA_MULTIPLE_TYPES_NAME, REGISTRY_NAME)
-    private val CUSTOMER_UPLOADED_SCHEMA_MULTIPLE_TYPES =
-        File(javaClass.getResource("/customerUploadedEventSchemaMultipleTypes.json.txt").toURI()).readText(Charsets.UTF_8)
-
-    private lateinit var schemaSelectionPanel: SchemaResourceSelector
-
-    @Before
-    fun setUp() {
-        schemaSelectionPanel = SchemaResourceSelector()
-    }
 
     private fun initMockResourceCache() {
         resourceCache.addEntry(
@@ -114,37 +79,37 @@ class SchemaSelectionPanelTest {
 
     @Test
     fun schemaTemplateParametersNullWithoutSelection() {
-        val schemaTemplateParameters = schemaSelectionPanel.buildSchemaTemplateParameters()
+        val schemaTemplateParameters = SchemaResourceSelector().buildSchemaTemplateParameters()
 
         assertThat(schemaTemplateParameters).isNull()
     }
 
     @Test
     fun schemaTemplateParametersFirstIfRegistrySelected() {
-        load()
-        schemaSelectionPanel.schemasSelector.selectedItem = REGISTRY_ITEM
+        val schemaSelectionSelector = createSelector()
+        schemaSelectionSelector.schemasSelector.selectedItem = REGISTRY_ITEM
 
-        val schemaTemplateParameters = schemaSelectionPanel.buildSchemaTemplateParameters()
+        val schemaTemplateParameters = schemaSelectionSelector.buildSchemaTemplateParameters()
 
         assertThat(schemaTemplateParameters?.schema?.name).isEqualTo(AWS_SCHEMA_NAME)
     }
 
     @Test
     fun schemaTemplateParametersBuiltAfterSelectionAwsSchema() {
-        load()
-        schemaSelectionPanel.schemasSelector.selectedItem = AWS_SCHEMA_ITEM
+        val schemaSelectionSelector = createSelector()
+        schemaSelectionSelector.schemasSelector.selectedItem = AWS_SCHEMA_ITEM
 
-        val schemaTemplateParameters = schemaSelectionPanel.buildSchemaTemplateParameters()
+        val schemaTemplateParameters = schemaSelectionSelector.buildSchemaTemplateParameters()
 
         assertAwsSchemaParameters(schemaTemplateParameters)
     }
 
     @Test
     fun schemaTemplateParametersBuiltAfterSelectionPartnerSchema() {
-        load()
-        schemaSelectionPanel.schemasSelector.selectedItem = PARTNER_SCHEMA_ITEM
+        val schemaSelectionSelector = createSelector()
+        schemaSelectionSelector.schemasSelector.selectedItem = PARTNER_SCHEMA_ITEM
 
-        val schemaTemplateParameters = schemaSelectionPanel.buildSchemaTemplateParameters()
+        val schemaTemplateParameters = schemaSelectionSelector.buildSchemaTemplateParameters()
 
         assertThat(schemaTemplateParameters).isNotNull
         assertThat(schemaTemplateParameters?.schema?.registryName).isEqualTo(REGISTRY_NAME)
@@ -158,15 +123,15 @@ class SchemaSelectionPanelTest {
         assertThat(schemaTemplateParameters?.templateExtraContext?.schemaPackageHierarchy).isEqualTo(PARTNER_SCHEMA_EXPECTED_PACKAGE_NAME)
         assertThat(schemaTemplateParameters?.templateExtraContext?.source).isEqualTo("aws.partner-mongodb.com")
         assertThat(schemaTemplateParameters?.templateExtraContext?.detailType).isEqualTo("MongoDB Trigger for my_store.reviews")
-        assertThat(schemaTemplateParameters?.templateExtraContext?.userAgent).isEqualTo(AWSToolkitUserAgent)
+        assertThat(schemaTemplateParameters?.templateExtraContext?.userAgent).isEqualTo(AWS_TOOLKIT_USER_AGENT)
     }
 
     @Test
     fun schemaTemplateParametersBuiltAfterSelectionCustomerUploadedSchema() {
-        load()
-        schemaSelectionPanel.schemasSelector.selectedItem = CUSTOMER_UPLOADED_SCHEMA_ITEM
+        val schemaSelectionSelector = createSelector()
+        schemaSelectionSelector.schemasSelector.selectedItem = CUSTOMER_UPLOADED_SCHEMA_ITEM
 
-        val schemaTemplateParameters = schemaSelectionPanel.buildSchemaTemplateParameters()
+        val schemaTemplateParameters = schemaSelectionSelector.buildSchemaTemplateParameters()
         assertCustomerUploadedSchemaParameters(
             CUSTOMER_UPLOADED_SCHEMA_NAME,
             "Some_Awesome_Schema",
@@ -177,16 +142,18 @@ class SchemaSelectionPanelTest {
 
     @Test
     fun schemaTemplateParametersBuiltAfterSelectionCustomerUploadedSchemaMultipleTypes() {
-        load()
-        schemaSelectionPanel.schemasSelector.selectedItem = CUSTOMER_UPLOADED_SCHEMA_MULTIPLE_TYPES_ITEM
+        val schemaSelectionSelector = createSelector()
+        runInEdtAndWait {
+            schemaSelectionSelector.schemasSelector.selectedItem = CUSTOMER_UPLOADED_SCHEMA_MULTIPLE_TYPES_ITEM
 
-        val schemaTemplateParameters = schemaSelectionPanel.buildSchemaTemplateParameters()
-        assertCustomerUploadedSchemaParameters(
-            CUSTOMER_UPLOADED_SCHEMA_MULTIPLE_TYPES_NAME,
-            "Some_Awesome_Schema_Object_1",
-            CUSTOMER_UPLOADED_SCHEMA_MULTIPLE_TYPES_EXPECTED_PACKAGE_NAME,
-            schemaTemplateParameters
-        )
+            val schemaTemplateParameters = schemaSelectionSelector.buildSchemaTemplateParameters()
+            assertCustomerUploadedSchemaParameters(
+                CUSTOMER_UPLOADED_SCHEMA_MULTIPLE_TYPES_NAME,
+                "Some_Awesome_Schema_Object_1",
+                CUSTOMER_UPLOADED_SCHEMA_MULTIPLE_TYPES_EXPECTED_PACKAGE_NAME,
+                schemaTemplateParameters
+            )
+        }
     }
 
     private fun assertAwsSchemaParameters(schemaTemplateParameters: SchemaTemplateParameters?) {
@@ -202,7 +169,7 @@ class SchemaSelectionPanelTest {
         assertThat(schemaTemplateParameters?.templateExtraContext?.schemaPackageHierarchy).isEqualTo(AWS_SCHEMA_EXPECTED_PACKAGE_NAME)
         assertThat(schemaTemplateParameters?.templateExtraContext?.source).isEqualTo("aws.ec2")
         assertThat(schemaTemplateParameters?.templateExtraContext?.detailType).isEqualTo("EC2 Instance State-change Notification")
-        assertThat(schemaTemplateParameters?.templateExtraContext?.userAgent).isEqualTo(AWSToolkitUserAgent)
+        assertThat(schemaTemplateParameters?.templateExtraContext?.userAgent).isEqualTo(AWS_TOOLKIT_USER_AGENT)
     }
 
     private fun assertCustomerUploadedSchemaParameters(
@@ -223,13 +190,53 @@ class SchemaSelectionPanelTest {
         assertThat(schemaTemplateParameters?.templateExtraContext?.schemaPackageHierarchy).isEqualTo(schemaPackageHierarchy)
         assertThat(schemaTemplateParameters?.templateExtraContext?.source).isEqualTo(DEFAULT_EVENT_SOURCE)
         assertThat(schemaTemplateParameters?.templateExtraContext?.detailType).isEqualTo(DEFAULT_EVENT_DETAIL_TYPE)
-        assertThat(schemaTemplateParameters?.templateExtraContext?.userAgent).isEqualTo(AWSToolkitUserAgent)
+        assertThat(schemaTemplateParameters?.templateExtraContext?.userAgent).isEqualTo(AWS_TOOLKIT_USER_AGENT)
     }
 
-    private fun load() {
-        initMockResourceCache()
-        schemaSelectionPanel.awsConnection = connectionManager.settingsManager.connectionSettings()
-        schemaSelectionPanel.reload()
-        schemaSelectionPanel.schemasSelector.waitToLoad()
+    private fun createSelector(): SchemaResourceSelector {
+        val selector = runInEdtAndGet {
+            initMockResourceCache()
+
+            val schemaSelectionSelector = SchemaResourceSelector()
+            schemaSelectionSelector.awsConnection = connectionManager.settingsManager.connectionSettings()
+            schemaSelectionSelector.reload()
+
+            schemaSelectionSelector
+        }
+
+        selector.schemasSelector.waitToLoad()
+
+        return selector
+    }
+
+    private companion object {
+        private const val AWS_TOOLKIT_USER_AGENT = "AWSToolkit"
+
+        private const val REGISTRY_NAME = "Registry"
+        private val REGISTRY_ITEM = SchemaSelectionItem.RegistryItem(REGISTRY_NAME)
+
+        private const val SCHEMA_VERSION = "1"
+
+        private const val AWS_SCHEMA_NAME = "aws.ec2@EC2InstanceStateChangeNotification"
+        private const val AWS_SCHEMA_EXPECTED_PACKAGE_NAME = "schema.aws.ec2.ec2instancestatechangenotification"
+        private val AWS_SCHEMA_ITEM = SchemaSelectionItem.SchemaItem(AWS_SCHEMA_NAME, REGISTRY_NAME)
+        private val AWS_SCHEMA = SchemaSelectionPanelTest::class.java.getResourceAsStream("/awsEventSchema.json.txt")!!.bufferedReader().readText()
+
+        private const val PARTNER_SCHEMA_NAME = "aws.partner-mongodb.com/1234567-tickets@Ticket.Created"
+        private const val PARTNER_SCHEMA_EXPECTED_PACKAGE_NAME = "schema.aws.partner.mongodb_com_1234567_tickets.ticket_created"
+        private val PARTNER_SCHEMA_ITEM = SchemaSelectionItem.SchemaItem(PARTNER_SCHEMA_NAME, REGISTRY_NAME)
+        private val PARTNER_SCHEMA = SchemaSelectionPanelTest::class.java.getResourceAsStream("/partnerEventSchema.json.txt")!!.bufferedReader().readText()
+
+        private const val CUSTOMER_UPLOADED_SCHEMA_NAME = "someCustomer.SomeAwesomeSchema"
+        private const val CUSTOMER_UPLOADED_SCHEMA_EXPECTED_PACKAGE_NAME = "schema.somecustomer_someawesomeschema"
+        private val CUSTOMER_UPLOADED_SCHEMA_ITEM = SchemaSelectionItem.SchemaItem(CUSTOMER_UPLOADED_SCHEMA_NAME, REGISTRY_NAME)
+        private val CUSTOMER_UPLOADED_SCHEMA =
+            SchemaSelectionPanelTest::class.java.getResourceAsStream("/customerUploadedEventSchema.json.txt")!!.bufferedReader().readText()
+
+        private const val CUSTOMER_UPLOADED_SCHEMA_MULTIPLE_TYPES_NAME = "someCustomer.multipleTypes@SomeOtherAwesomeSchema"
+        private const val CUSTOMER_UPLOADED_SCHEMA_MULTIPLE_TYPES_EXPECTED_PACKAGE_NAME = "schema.somecustomer_multipletypes.someotherawesomeschema"
+        private val CUSTOMER_UPLOADED_SCHEMA_MULTIPLE_TYPES_ITEM = SchemaSelectionItem.SchemaItem(CUSTOMER_UPLOADED_SCHEMA_MULTIPLE_TYPES_NAME, REGISTRY_NAME)
+        private val CUSTOMER_UPLOADED_SCHEMA_MULTIPLE_TYPES =
+            SchemaSelectionPanelTest::class.java.getResourceAsStream("/customerUploadedEventSchemaMultipleTypes.json.txt")!!.bufferedReader().readText()
     }
 }
