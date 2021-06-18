@@ -5,6 +5,7 @@ package software.aws.toolkits.jetbrains
 
 import com.intellij.ide.plugins.PluginManagerCore
 import com.intellij.openapi.extensions.PluginId
+import com.intellij.openapi.util.registry.Registry
 
 object AwsToolkit {
     private const val PLUGIN_ID = "aws.toolkit"
@@ -12,4 +13,6 @@ object AwsToolkit {
     val PLUGIN_VERSION: String by lazy {
         PluginManagerCore.getPlugin(PluginId.getId(PLUGIN_ID))?.version ?: "Unknown"
     }
+
+    fun isCloudDebugEnabled() = Registry.`is`("aws.feature.ecsCloudDebug")
 }

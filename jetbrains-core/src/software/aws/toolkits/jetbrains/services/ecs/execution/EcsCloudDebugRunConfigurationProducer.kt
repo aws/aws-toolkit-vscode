@@ -8,6 +8,7 @@ import com.intellij.execution.actions.LazyRunConfigurationProducer
 import com.intellij.execution.configurations.ConfigurationFactory
 import com.intellij.openapi.util.Ref
 import com.intellij.psi.PsiElement
+import software.aws.toolkits.jetbrains.AwsToolkit
 import software.aws.toolkits.jetbrains.core.credentials.activeCredentialProvider
 import software.aws.toolkits.jetbrains.core.credentials.activeRegion
 import software.aws.toolkits.jetbrains.services.ecs.EcsUtils
@@ -17,6 +18,10 @@ class EcsCloudDebugRunConfigurationProducer : LazyRunConfigurationProducer<EcsCl
         configuration: EcsCloudDebugRunConfiguration,
         context: ConfigurationContext
     ): Boolean {
+        if (!AwsToolkit.isCloudDebugEnabled()) {
+            return false
+        }
+
         val location = context.location as? EcsCloudDebugLocation ?: return false
         val service = location.service
         val project = context.project
@@ -32,6 +37,10 @@ class EcsCloudDebugRunConfigurationProducer : LazyRunConfigurationProducer<EcsCl
         context: ConfigurationContext,
         sourceElement: Ref<PsiElement>
     ): Boolean {
+        if (!AwsToolkit.isCloudDebugEnabled()) {
+            return false
+        }
+
         val location = context.location as? EcsCloudDebugLocation ?: return false
         val service = location.service
         val project = context.project
