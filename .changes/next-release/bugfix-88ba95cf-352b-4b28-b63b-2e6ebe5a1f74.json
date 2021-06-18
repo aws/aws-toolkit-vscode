@@ -1,0 +1,4 @@
+{
+  "type" : "bugfix",
+  "description" : "Fix being unable to create Python 3.8 Image-based Lambdas in New Project wizard"
+}

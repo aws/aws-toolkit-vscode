@@ -28,7 +28,7 @@ import software.aws.toolkits.jetbrains.services.lambda.wizard.SdkSelector
 import software.aws.toolkits.resources.message
 
 class JavaSamProjectWizard : SamProjectWizard {
-    override fun createSdkSelectionPanel(projectLocation: TextFieldWithBrowseButton?): SdkSelector? = IntelliJSdkSelectionPanel(BuiltInRuntimeGroups.Java)
+    override fun createSdkSelectionPanel(projectLocation: TextFieldWithBrowseButton?): SdkSelector = IntelliJSdkSelectionPanel(BuiltInRuntimeGroups.Java)
 
     override fun listTemplates(): Collection<SamProjectTemplate> = listOf(
         SamHelloWorldGradle(),
@@ -127,6 +127,8 @@ class SamEventBridgeStarterAppGradle : JavaGradleSamProjectTemplate() {
 
     override fun description() = message("sam.init.template.event_bridge_starter_app.description")
 
+    override fun supportedImageRuntimes() = emptySet<LambdaRuntime>()
+
     override val appTemplateName: String = "eventBridge-schema-app"
 
     override fun supportsDynamicSchemas(): Boolean = true
@@ -136,6 +138,8 @@ class SamEventBridgeStarterAppMaven : JavaMavenSamProjectTemplate() {
     override fun displayName() = message("sam.init.template.event_bridge_starter_app_maven.name")
 
     override fun description() = message("sam.init.template.event_bridge_starter_app.description")
+
+    override fun supportedImageRuntimes() = emptySet<LambdaRuntime>()
 
     override val appTemplateName: String = "eventBridge-schema-app"
 
@@ -147,6 +151,8 @@ class SamEventBridgeHelloWorldGradle : JavaGradleSamProjectTemplate() {
 
     override fun description() = message("sam.init.template.event_bridge_hello_world.description")
 
+    override fun supportedImageRuntimes() = emptySet<LambdaRuntime>()
+
     override val appTemplateName: String = "eventBridge-hello-world"
 }
 
@@ -154,6 +160,8 @@ class SamEventBridgeHelloWorldMaven : JavaMavenSamProjectTemplate() {
     override fun displayName() = message("sam.init.template.event_bridge_hello_world_maven.name")
 
     override fun description() = message("sam.init.template.event_bridge_hello_world.description")
+
+    override fun supportedImageRuntimes() = emptySet<LambdaRuntime>()
 
     override val appTemplateName: String = "eventBridge-hello-world"
 }

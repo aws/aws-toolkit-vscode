@@ -389,7 +389,8 @@ class SamExecutableTest {
             parameters = AppBasedImageTemplate(
                 name = "Hello",
                 baseImage = "amazon/runtime-base",
-                dependencyManager = "maven"
+                appTemplate = "HelloWorld",
+                dependencyManager = "maven",
             ),
             extraContext = emptyMap()
         )
@@ -408,7 +409,9 @@ class SamExecutableTest {
                 "--base-image",
                 "amazon/runtime-base",
                 "--dependency-manager",
-                "maven"
+                "maven",
+                "--app-template",
+                "HelloWorld"
             ).joinToString(separator = " ")
         )
     }
