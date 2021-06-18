@@ -8,12 +8,14 @@ import * as vscode from 'vscode'
 import { S3 } from 'aws-sdk'
 import { FileSizeBytes, getFileToUpload, promptUserForBucket, uploadFileCommand } from '../../../s3/commands/uploadFile'
 import { S3Node } from '../../../s3/explorer/s3Nodes'
+import { S3BucketNode } from '../../../s3/explorer/s3BucketNode'
 import { S3Client } from '../../../shared/clients/s3Client'
 import { MockOutputChannel } from '../../mockOutputChannel'
 import { FakeWindow } from '../../shared/vscode/fakeWindow'
 import { anything, mock, instance, when, capture } from '../../utilities/mockito'
 import { Commands } from '../../../shared/vscode/commands'
 import { Window } from '../../../shared/vscode/window'
+
 
 describe('uploadFileCommand', function () {
    
@@ -22,23 +24,158 @@ describe('uploadFileCommand', function () {
     const sizeBytes = 16
     const fileLocation = vscode.Uri.file('/file.jpg')
     const statFile: FileSizeBytes = _file => sizeBytes
-
+    let outputChannel: MockOutputChannel
     let s3: S3Client
-    let bucket: S3.Bucket
-
+    let bucketNode: S3BucketNode
+    let window: FakeWindow
+    let getBucket: (s3client:S3Client, window?: Window) => Promise<S3.Bucket | string >
+    let getFile: (document?: vscode.Uri, window?: Window) => Promise<vscode.Uri | undefined >
+    
     beforeEach(function () {
         s3 = mock()
-        bucket = {
-            Name: bucketName
-        }
+        bucketNode = new S3BucketNode(
+            { name: bucketName, region: 'region', arn: 'arn' },
+            new S3Node(instance(s3)),
+            instance(s3)
+        )
+        window = new FakeWindow({ dialog: { openSelections: [fileLocation] } })
+        outputChannel = new MockOutputChannel()
     })
+
+    describe('when it gets the node parameter', async function() {
+        this.beforeEach(function () {
+            outputChannel = new MockOutputChannel()
+            s3 = mock()
+            bucketNode = new S3BucketNode(
+                { name: bucketName, region: 'region', arn: 'arn' },
+                new S3Node(instance(s3)),
+                instance(s3)
+            )
+            window = new FakeWindow({ dialog: { openSelections: [fileLocation] } })
+        })
+       
+        it("asks for the file location, then uploads, display success message if aplicable", async function() {
+            when(s3.uploadFile(anything())).thenResolve()
+            
+            window = new FakeWindow({ dialog: { openSelections: [fileLocation] } })
+            
+            
+            getFile = (document, window) => {
+                return new Promise((resolve, reject) => {
+                    resolve(fileLocation)
+                })
+            }
+            
+            
+            await uploadFileCommand(instance(s3), bucketNode, fileLocation, statFile, undefined, getFile, window, outputChannel)
+            
+            // eslint-disable-next-line @typescript-eslint/unbound-method
+            const [uploadFileRequest] = capture(s3.uploadFile).last()
+    
+            assert.strictEqual(uploadFileRequest.bucketName, bucketName)
+            assert.strictEqual(uploadFileRequest.key, key)
+            assert.strictEqual(uploadFileRequest.fileLocation, fileLocation)
+    
+            uploadFileRequest.progressListener!(4) // +25% (+4/16)
+    
+            assert.deepStrictEqual(window.progress.reported, [{ increment: 25 }])
+            assert.strictEqual(window.progress.options?.location, vscode.ProgressLocation.Notification)
+            assert.strictEqual(window.progress.options?.title, 'Uploading file.jpg...')
+            
+            assert.deepStrictEqual(outputChannel.lines, [
+                `Uploading file from ${fileLocation} to s3://bucket-name/file.jpg`,
+                `Successfully uploaded file s3://bucket-name/file.jpg to bucket-name`,
+            ])
+        })
+        
+        it("if user don't select a file in the prompt, it cancels and displays cancelled message", async function() {
+            window = new FakeWindow({ dialog: { openSelections: undefined } })
+            
+            getFile = (document, window) => {
+                return new Promise((resolve, reject) => {
+                    resolve(undefined)
+                })
+            } 
+            
+            await uploadFileCommand(instance(s3), bucketNode, fileLocation, statFile, undefined, getFile, window, outputChannel)
+            assert.deepStrictEqual(outputChannel.lines, [
+                'No file selected, cancelling upload',
+            ])
+        })
+    })
+    
+    describe('when it doesn\'t get the node parameter', async function () {
+        
+
+        this.beforeEach(function (){
+            outputChannel = new MockOutputChannel()
+            s3 = mock()
+            window = new FakeWindow({ dialog: { openSelections: [fileLocation] } })
+            getFile = (document, window) => {
+                return new Promise((resolve, reject) => {
+                    resolve(fileLocation)
+                })
+            }
+    
+            getBucket = (s3Client) => {
+                return new Promise((resolve, reject) => {
+                    resolve({ Name: bucketName })
+                })
+            }
+        })
+
+        it('prompts the user for file, then for bucket, if both aren\'t undefined, uploads', async function () {
+            when(s3.uploadFile(anything())).thenResolve()
+
+            await uploadFileCommand(instance(s3), undefined, undefined, statFile, getBucket, getFile, window, outputChannel)
+            assert.deepStrictEqual(outputChannel.lines, [
+                `Uploading file from ${fileLocation} to s3://bucket-name/file.jpg`,
+                `Successfully uploaded file s3://bucket-name/file.jpg to bucket-name`,
+            ])
+        })
+
+        it('prompts the user for file, then for bucket, if bucket is not selected, it cancels the upload', async function () {
+            getBucket = (s3Client) => {
+                return new Promise((resolve, reject) => {
+                    resolve('cancel')
+                })
+            }
+
+            await uploadFileCommand(instance(s3), undefined, undefined, statFile, getBucket, getFile, window, outputChannel)
+            assert.deepStrictEqual(outputChannel.lines, ['No bucket selected, cancelling upload'] )
+        })
+
+        it('prompts the user for file, if file not selected, it cancels the upload', async function () {
+            getFile = (document, window) => {
+                return new Promise((resolve, reject) => {
+                    resolve(undefined)
+                })
+            }
+
+            await uploadFileCommand(instance(s3), undefined, undefined, statFile, getBucket, getFile, window, outputChannel)
+            assert.deepStrictEqual(outputChannel.lines, ['No file selected, cancelling upload'] )
+        })
+        
+    })
+
+    getFile = (document, window) => {
+        return new Promise((resolve, reject) => {
+            resolve(fileLocation)
+        })
+    }
+
+    getBucket = (s3Client) => {
+        return new Promise((resolve, reject) => {
+            resolve({ Name: bucketName })
+        })
+    }
 
     it("succesfully upload file", async function () {
         when(s3.uploadFile(anything())).thenResolve()
 
-        const window = new FakeWindow({ dialog: { openSelections: [fileLocation] } })
-        const outputChannel = new MockOutputChannel()
-        await uploadFileCommand(fileLocation, key, bucket, instance(s3), statFile, window, outputChannel)
+        window = new FakeWindow({ dialog: { openSelections: [fileLocation] } })
+        
+        await uploadFileCommand(instance(s3), undefined, fileLocation, statFile, getBucket, getFile, window, outputChannel)
 
         // eslint-disable-next-line @typescript-eslint/unbound-method
         const [uploadFileRequest] = capture(s3.uploadFile).last()
@@ -62,12 +199,14 @@ describe('uploadFileCommand', function () {
     it("cancels the upload in a failed state when an error with the call to s3Client happens", async function () {
         when(s3.uploadFile(anything())).thenReject(new Error('Expected failure'))
 
+        
         const window = new FakeWindow({ dialog: { openSelections: [fileLocation] } })
         const outputChannel = new MockOutputChannel()
-        await uploadFileCommand(fileLocation,key, bucket, instance(s3), statFile, window, outputChannel)
-
+        await uploadFileCommand(instance(s3), undefined, fileLocation, statFile, getBucket, getFile, window, outputChannel)
+         
         assert.ok(window.message.error?.includes('Failed to upload file'))
     })
+    
     
 })
 
@@ -90,13 +229,10 @@ describe('getFileToUpload', function () {
     }
 
     beforeEach(function () {
-        window = new FakeWindow({ dialog: { openSelections: [fileLocation] } })
-
+        window = new FakeWindow({ dialog: { openSelections: [fileLocation] } })       
     })
     
-    
     it("directly asks user for file if no active editor", async function () {
-        window = new FakeWindow({ dialog: { openSelections: [fileLocation] } })
         
         const response = await getFileToUpload(undefined, window, prompt)
         assert.strictEqual(response, fileLocation)
@@ -132,7 +268,6 @@ describe('getFileToUpload', function () {
         assert.strictEqual(response, undefined)
     })
     
-
 })
 
 describe('promptUserForBucket',async function () {

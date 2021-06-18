@@ -23,6 +23,10 @@ import { addCodiconToString } from '../../shared/utilities/textUtilities'
 import { S3Client } from '../../shared/clients/s3Client'
 import { createBucketCommand } from './createBucket'
 import { recordAwsRefreshExplorer } from '../../shared/telemetry/telemetry'
+import { S3BucketNode } from '../explorer/s3BucketNode'
+import { S3FolderNode } from '../explorer/s3FolderNode'
+
+
 
 
 
@@ -34,35 +38,84 @@ export interface FileSizeBytes {
 }
 
 /**
- * Uploads given file to given bucket, folder path is already in the key
- * Refreshes explorer to show file uploaded 
- * TODOD:: add documentation
- * @param fileLocation - file to upload
- * @param key - key to be used to upload
- * @param bucket - bucket to upload to
- * @param s3Client - owner of the bucket
+ * Wizard to upload a file.
+ * If the S3BucketNode | S3FolderNode is given, it asks for the file then uploads to node
+ * If the node is not give, it asks for the file and also for a bucket, then uploads
+ * 
+ * @param s3Client - account to upload the file to
+ * @param node - bucket or folder to upload the file to
+ * @param document - open document (to use as default), if any
  * 
  */
  export async function uploadFileCommand(
-    fileLocation: vscode.Uri,
-    key: string,
-    bucket: S3.Bucket,
     s3Client: S3Client,
+    node?: S3BucketNode | S3FolderNode,
+    document?: vscode.Uri,
     fileSizeBytes: FileSizeBytes = statFile,
+    getBucket = promptUserForBucket,
+    getFile = getFileToUpload,
     window = Window.vscode(),
     outputChannel = ext.outputChannel,
 ): Promise<void>{
+    let key: string
+    let bucket: S3.Bucket
+    let file: vscode.Uri | undefined
     
-    const fileName = path.basename(fileLocation.fsPath)
+    if (node) {
+        file = await getFile(undefined, window)
+            if (!file) {
+                showOutputMessage('No file selected, cancelling upload', outputChannel)
+                getLogger().info('UploadFile cancelled')
+                telemetry.recordS3UploadObject({ result: 'Cancelled' })
+                return
+            }
+        key = node.path + path.basename(file.fsPath)
+        bucket = { Name: node.bucket.name }
+    } else {
+        while (true) {
+            file = await getFile(document, window)
+            if (file) {
+                try{
+                    const bucketResponse = await getBucket(s3Client)
+                    if (bucketResponse === 'back'){
+                        continue
+                    }
+                    if(bucketResponse == 'cancel'){
+                        showOutputMessage('No bucket selected, cancelling upload', outputChannel)
+                        getLogger().info('No bucket selected, cancelling upload')
+                        telemetry.recordS3UploadObject({ result: 'Cancelled' })
+                        return
+                    }
+                    
+                    bucket = bucketResponse as S3.Bucket
+                    key = path.basename(file.fsPath)
+                    break
+                } catch (e) {
+                    telemetry.recordS3UploadObject({ result: 'Failed' })
+                    getLogger().error('promptUserForBucket failed', e)
+                    return
+                }
+            } else {
+                //if file is undefined, means the back button was pressed(there is no step before) or no file was selected
+                //thus break the loop of the 'wizard'
+                showOutputMessage('No file selected, cancelling upload', outputChannel)
+                getLogger().info('UploadFile cancelled')
+                telemetry.recordS3UploadObject({ result: 'Cancelled' })
+                return
+            }
+        }
+    }
+    const fileName = path.basename(file.fsPath)
     const destinationPath = readablePath({ bucket: {name: bucket.Name!}, path: key })
     
+
     try {
-        showOutputMessage(`Uploading file from ${fileLocation} to ${destinationPath}`, outputChannel)
+        showOutputMessage(`Uploading file from ${file} to ${destinationPath}`, outputChannel)
         const request = {
             bucketName: bucket.Name!,
             key: key,
-            fileLocation: fileLocation,
-            fileSizeBytes: fileSizeBytes(fileLocation),
+            fileLocation: file,
+            fileSizeBytes: 16,
             s3Client,
             window: window
         }
@@ -75,7 +128,7 @@ export interface FileSizeBytes {
         return
 
     } catch (e) {
-        getLogger().error(`Failed to upload file from ${fileLocation} to ${destinationPath}: %O`, e)
+        getLogger().error(`Failed to upload file from ${file} to ${destinationPath}: %O`, e)
         showErrorWithLogs(localize('AWS.s3.uploadFile.error.general', 'Failed to upload file {0}', fileName), window)
         telemetry.recordS3UploadObject({ result: 'Failed' })
         return
@@ -136,6 +189,7 @@ interface BucketQuickPickItem extends vscode.QuickPickItem {
     bucket: S3.Bucket | undefined
 }
 
+//TOOD:: extract and reuse logic from 
 /**
  * Will display a quick pick with the list of all buckets owned by the user.
  * @param s3client - client to get the list of buckets
