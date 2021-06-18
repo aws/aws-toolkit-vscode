@@ -123,12 +123,14 @@ abstract class SamProjectTemplate {
 abstract class SamAppTemplateBased : SamProjectTemplate() {
     abstract val dependencyManager: String
     abstract val appTemplateName: String
+    open val appTemplateNameImage: String = "hello-world-lambda-image"
 
     override fun templateParameters(projectName: String, runtime: LambdaRuntime, packagingType: PackageType): TemplateParameters = when (packagingType) {
         PackageType.IMAGE -> AppBasedImageTemplate(
             name = projectName,
             baseImage = "amazon/$runtime-base",
-            dependencyManager = dependencyManager
+            dependencyManager = dependencyManager,
+            appTemplate = appTemplateNameImage
         )
         PackageType.ZIP -> AppBasedZipTemplate(
             name = projectName,

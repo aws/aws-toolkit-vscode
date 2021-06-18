@@ -69,7 +69,7 @@ class SamDynamoDBCookieCutter : SamProjectTemplate() {
     override fun description() = message("sam.init.template.dynamodb_cookiecutter.description")
 
     override fun supportedZipRuntimes() = pythonTemplateRuntimes
-    override fun supportedImageRuntimes() = pythonTemplateRuntimes
+    override fun supportedImageRuntimes() = emptySet<LambdaRuntime>()
 
     override fun postCreationAction(
         settings: SamNewProjectSettings,
@@ -88,7 +88,7 @@ class SamDynamoDBCookieCutter : SamProjectTemplate() {
 
 class SamEventBridgeHelloWorld : PythonSamProjectTemplate() {
     override fun supportedZipRuntimes() = eventBridgeTemplateRuntimes
-    override fun supportedImageRuntimes() = eventBridgeTemplateRuntimes
+    override fun supportedImageRuntimes() = emptySet<LambdaRuntime>()
 
     override fun displayName() = message("sam.init.template.event_bridge_hello_world.name")
 
@@ -99,7 +99,7 @@ class SamEventBridgeHelloWorld : PythonSamProjectTemplate() {
 
 class SamEventBridgeStarterApp : PythonSamProjectTemplate() {
     override fun supportedZipRuntimes() = eventBridgeTemplateRuntimes
-    override fun supportedImageRuntimes() = eventBridgeTemplateRuntimes
+    override fun supportedImageRuntimes() = emptySet<LambdaRuntime>()
 
     override fun displayName() = message("sam.init.template.event_bridge_starter_app.name")
 

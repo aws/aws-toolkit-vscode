@@ -1,0 +1,4 @@
+{
+  "type" : "bugfix",
+  "description" : "Fixed showing templates that were not for Image-based Lambdas when Image is selected in New Project wizard"
+}
