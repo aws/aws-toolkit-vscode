@@ -136,7 +136,7 @@ export interface FileSizeBytes {
     }
     
 }
-
+ 
 async function promptForFileLocation(window: Window): Promise<vscode.Uri | undefined> {
     const fileLocations = await window.showOpenDialog({
         openLabel: localize('AWS.s3.uploadFile.openButton', 'Upload'),
