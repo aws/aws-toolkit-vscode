@@ -190,7 +190,7 @@ interface BucketQuickPickItem extends vscode.QuickPickItem {
     bucket: S3.Bucket | undefined
 }
 
-//TOOD:: extract and reuse logic from 
+// TODO:: extract and reuse logic from 
 /**
  * Will display a quick pick with the list of all buckets owned by the user.
  * @param s3client - client to get the list of buckets
