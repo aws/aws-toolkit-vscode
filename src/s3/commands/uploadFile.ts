@@ -93,7 +93,7 @@ export interface FileSizeBytes {
                     break
                 } catch (e) {
                     telemetry.recordS3UploadObject({ result: 'Failed' })
-                    getLogger().error('promptUserForBucket failed', e)
+                    getLogger().error('getBucket failed', e)
                     return
                 }
             } else {
