@@ -88,12 +88,15 @@ export interface FileSizeBytes {
                         return
                     }
                     
+                    if (!(bucketResponse as any).Name) {
+                      throw Error(`bucketResponse is not a S3.Bucket`)
+                    }
                     bucket = bucketResponse as S3.Bucket
                     key = path.basename(file.fsPath)
                     break
                 } catch (e) {
                     telemetry.recordS3UploadObject({ result: 'Failed' })
-                    getLogger().error('promptUserForBucket failed', e)
+                    getLogger().error('getBucket failed', e)
                     return
                 }
             } else {
