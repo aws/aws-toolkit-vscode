@@ -56,6 +56,7 @@ export interface FileSizeBytes {
     getFile = getFileToUpload,
     window = Window.vscode(),
     outputChannel = ext.outputChannel,
+    commands = Commands.vscode()
 ): Promise<void>{
     let key: string
     let bucket: S3.Bucket
@@ -124,7 +125,7 @@ export interface FileSizeBytes {
         showOutputMessage(`Successfully uploaded file ${destinationPath} to ${bucket.Name!}`, outputChannel)
         telemetry.recordS3UploadObject({ result: 'Succeeded' })
         recordAwsRefreshExplorer()
-        vscode.commands.executeCommand('aws.refreshAwsExplorer')
+        commands.execute('aws.refreshAwsExplorer')
         return
 
     } catch (e) {

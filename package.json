@@ -3,7 +3,9 @@
     "displayName": "AWS Toolkit",
     "description": "Amazon Web Services toolkit for browsing and updating cloud resources",
     "version": "1.26.0-SNAPSHOT",
-    "extensionKind": [ "workspace" ],
+    "extensionKind": [
+        "workspace"
+    ],
     "publisher": "amazonwebservices",
     "license": "Apache-2.0",
     "repository": {
