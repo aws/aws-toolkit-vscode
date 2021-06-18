@@ -228,6 +228,8 @@ fun GeneralCommandLine.samInitCommand(
             addParameter(parameters.baseImage)
             addParameter("--dependency-manager")
             addParameter(parameters.dependencyManager)
+            addParameter("--app-template")
+            addParameter(parameters.appTemplate)
         }
         is LocationBasedTemplate -> {
             addParameter("--location")
