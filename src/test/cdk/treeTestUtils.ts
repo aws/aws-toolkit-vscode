@@ -4,7 +4,7 @@
  */
 
 import { writeFile } from 'fs-extra'
-import { ConstructTree, ConstructTreeEntity } from '../../../cdk/explorer/tree/types'
+import { ConstructTree, ConstructTreeEntity } from '../../cdk/explorer/tree/types'
 
 export async function saveCdkJson(cdkJsonPath: string) {
     const cdkJsonContent = '{ "app": "npx ts-node bin/demo-nov7.ts"}'

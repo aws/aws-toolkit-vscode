@@ -97,11 +97,15 @@ async function registerServerlessCommands(ctx: ExtContext): Promise<void> {
         }),
         vscode.commands.registerCommand('aws.addSamDebugConfiguration', addSamDebugConfiguration),
         vscode.commands.registerCommand('aws.pickAddSamDebugConfiguration', codelensUtils.pickAddSamDebugConfiguration),
-        vscode.commands.registerCommand('aws.deploySamApplication', async regionNode => {
+        vscode.commands.registerCommand('aws.deploySamApplication', async arg => {
+            // `arg` is one of :
+            //  - undefined
+            //  - regionNode (selected from AWS Explorer)
+            //  -  Uri to template.yaml (selected from File Explorer)
+
             const samDeployWizardContext = new DefaultSamDeployWizardContext(ctx)
             const samDeployWizard = async (): Promise<SamDeployWizardResponse | undefined> => {
-                const wizard = new SamDeployWizard(samDeployWizardContext, regionNode)
-
+                const wizard = new SamDeployWizard(samDeployWizardContext, arg)
                 return wizard.run()
             }
 
@@ -246,9 +250,11 @@ async function activateCodeLensProviders(
 function createYamlExtensionPrompt(): void {
     const neverPromptAgain = ext.context.globalState.get<boolean>(STATE_NAME_SUPPRESS_YAML_PROMPT)
 
-    // only pop this up in VS Code and Insiders since other VS Code-like IDEs (e.g. Theia) may not have a marketplace or contain the YAML plugin
+    // Show this only in VSCode since other VSCode-like IDEs (e.g. Theia) may
+    // not have a marketplace or contain the YAML plugin.
     if (!neverPromptAgain && getIdeType() === IDE.vscode && !vscode.extensions.getExtension(VSCODE_EXTENSION_ID.yaml)) {
-        // these will all be disposed immediately after showing one so the user isn't prompted more than once per session
+        // Disposed immediately after showing one, so the user isn't prompted
+        // more than once per session.
         const yamlPromptDisposables: vscode.Disposable[] = []
 
         // user opens a template file
