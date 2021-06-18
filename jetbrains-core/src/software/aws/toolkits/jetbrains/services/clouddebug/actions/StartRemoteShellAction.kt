@@ -17,6 +17,7 @@ import org.jetbrains.plugins.terminal.TerminalTabState
 import org.jetbrains.plugins.terminal.TerminalView
 import org.jetbrains.plugins.terminal.cloud.CloudTerminalProcess
 import org.jetbrains.plugins.terminal.cloud.CloudTerminalRunner
+import software.aws.toolkits.jetbrains.AwsToolkit
 import software.aws.toolkits.jetbrains.core.credentials.AwsConnectionManager
 import software.aws.toolkits.jetbrains.core.credentials.activeCredentialProvider
 import software.aws.toolkits.jetbrains.core.credentials.activeRegion
@@ -54,10 +55,9 @@ class StartRemoteShellAction(private val project: Project, private val container
     }
 
     override fun update(e: AnActionEvent) {
-        if (disabled) {
+        if (!AwsToolkit.isCloudDebugEnabled() || disabled) {
             e.presentation.isEnabled = false
             e.presentation.isVisible = false
-            return
         }
     }
 

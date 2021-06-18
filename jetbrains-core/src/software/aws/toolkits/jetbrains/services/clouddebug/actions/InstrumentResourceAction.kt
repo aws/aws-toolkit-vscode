@@ -8,6 +8,7 @@ import com.intellij.openapi.actionSystem.AnAction
 import com.intellij.openapi.actionSystem.AnActionEvent
 import com.intellij.openapi.actionSystem.PlatformDataKeys
 import com.intellij.openapi.project.Project
+import software.aws.toolkits.jetbrains.AwsToolkit
 import software.aws.toolkits.jetbrains.core.credentials.activeRegion
 import software.aws.toolkits.jetbrains.core.explorer.actions.SingleResourceNodeAction
 import software.aws.toolkits.jetbrains.services.clouddebug.DebuggerSupport
@@ -36,7 +37,7 @@ class InstrumentResourceFromExplorerAction :
     override fun update(selected: EcsServiceNode, e: AnActionEvent) {
         val activeRegion = e.getRequiredData(PlatformDataKeys.PROJECT).activeRegion()
         // If there are no supported debuggers, showing this will just be confusing
-        e.presentation.isVisible = if (DebuggerSupport.debuggers().isEmpty()) {
+        e.presentation.isVisible = if (!AwsToolkit.isCloudDebugEnabled() || DebuggerSupport.debuggers().isEmpty()) {
             false
         } else {
             !EcsUtils.isInstrumented(selected.resourceArn()) && cloudDebugIsAvailable(activeRegion)
@@ -66,6 +67,10 @@ class InstrumentResourceAction(
             val role = dialog.view.iamRole.selected() ?: throw IllegalStateException("Dialog failed to validate that a role was selected.")
             performAction(project, clusterArn, serviceArn, role.arn, selected)
         }
+    }
+
+    override fun update(e: AnActionEvent) {
+        e.presentation.isVisible = AwsToolkit.isCloudDebugEnabled()
     }
 
     companion object {
