@@ -5,7 +5,6 @@
 
 import * as assert from 'assert'
 import * as vscode from 'vscode'
-import * as sinon from 'sinon'
 import { S3 } from 'aws-sdk'
 import { FileSizeBytes, getFileToUpload, promptUserForBucket, uploadFileCommand } from '../../../s3/commands/uploadFile'
 import { S3Node } from '../../../s3/explorer/s3Nodes'
