@@ -42,7 +42,7 @@ export interface FileSizeBytes {
  * If the S3BucketNode | S3FolderNode is given, it asks for the file then uploads to node
  * If the node is not give, it asks for the file and also for a bucket, then uploads
  * 
- * @param s3Client - account to upload the file to
+ * @param s3Client  account to upload the file to
  * @param node - bucket or folder to upload the file to
  * @param document - open document (to use as default), if any
  * 
