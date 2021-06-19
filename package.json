@@ -1539,7 +1539,7 @@
         "@types/node": "^10.14.22",
         "@types/readline-sync": "^1.4.3",
         "@types/request": "^2.47.1",
-        "@types/semver": "^5.5.0",
+        "@types/semver": "^7.3.6",
         "@types/sinon": "^10.0.0",
         "@types/sinonjs__fake-timers": "^6.0.2",
         "@types/tcp-port-used": "^1.0.0",
