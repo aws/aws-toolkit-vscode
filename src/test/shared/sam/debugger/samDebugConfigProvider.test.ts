@@ -43,10 +43,10 @@ import { CredentialsStore } from '../../../../credentials/credentialsStore'
 import { CredentialsProviderManager } from '../../../../credentials/providers/credentialsProviderManager'
 import { Credentials } from 'aws-sdk'
 import { ExtContext } from '../../../../shared/extensions'
-import { CredentialsProvider } from '../../../../credentials/providers/credentialsProvider'
 import { mkdir, remove } from 'fs-extra'
 import { ext } from '../../../../shared/extensionGlobals'
 import { getLogger } from '../../../../shared/logger/logger'
+import { CredentialsProvider } from '../../../../credentials/providers/credentials'
 
 /**
  * Asserts the contents of a "launch config" (the result of `makeConfig()` or
@@ -301,7 +301,7 @@ describe('SamDebugConfigurationProvider', async function () {
                 getCredentials: sandbox.stub().resolves(({} as any) as AWS.Credentials),
                 getProviderType: sandbox.stub().resolves('profile'),
                 getTelemetryType: sandbox.stub().resolves('staticProfile'),
-                getCredentialsProviderId: sandbox.stub().returns({
+                getCredentialsId: sandbox.stub().returns({
                     credentialSource: 'sharedCredentials',
                     credentialTypeId: 'someId',
                 }),
@@ -3267,7 +3267,7 @@ Resources:
                 getCredentials: sandbox.stub().resolves(({} as any) as AWS.Credentials),
                 getProviderType: sandbox.stub().resolves('profile'),
                 getTelemetryType: sandbox.stub().resolves('staticProfile'),
-                getCredentialsProviderId: sandbox.stub().returns({
+                getCredentialsId: sandbox.stub().returns({
                     credentialSource: 'profile',
                     credentialTypeId: 'someId',
                 }),

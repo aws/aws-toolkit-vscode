@@ -12,8 +12,7 @@ import { hasProfileProperty, resolveProviderWithCancel } from '../credentialsUti
 import { SSO_PROFILE_PROPERTIES, validateSsoProfile } from '../sso/sso'
 import { DiskCache } from '../sso/diskCache'
 import { SsoAccessTokenProvider } from '../sso/ssoAccessTokenProvider'
-import { CredentialsProvider, CredentialsProviderType } from './credentialsProvider'
-import { CredentialsProviderId } from './credentialsProviderId'
+import { CredentialsProvider, CredentialsProviderType ,CredentialsId } from './credentials'
 import { SsoCredentialProvider } from './ssoCredentialProvider'
 import { CredentialType } from '../../shared/telemetry/telemetry.gen'
 
@@ -51,7 +50,7 @@ export class SharedCredentialsProvider implements CredentialsProvider {
         this.profile = profile
     }
 
-    public getCredentialsProviderId(): CredentialsProviderId {
+    public getCredentialsId(): CredentialsId {
         return {
             credentialSource: this.getProviderType(),
             credentialTypeId: this.profileName,

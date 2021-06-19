@@ -4,9 +4,8 @@
  */
 
 import * as assert from 'assert'
-import { CredentialsProvider, CredentialsProviderType } from '../../../credentials/providers/credentialsProvider'
 import { BaseCredentialsProviderFactory } from '../../../credentials/providers/credentialsProviderFactory'
-import { CredentialsProviderId } from '../../../credentials/providers/credentialsProviderId'
+import { CredentialsProvider, CredentialsProviderType ,CredentialsId } from '../../../credentials/providers/credentials'
 
 describe('BaseCredentialsProviderFactory', async function () {
     /**
@@ -77,7 +76,7 @@ describe('BaseCredentialsProviderFactory', async function () {
         const provider = makeSampleCredentialsProvider('provider1')
         sut.getProviders().push(provider)
 
-        const retrievedProvider = sut.getProvider(makeSampleCredentialsProviderId('provider1'))
+        const retrievedProvider = sut.getProvider(makeSampleCredentialsId('provider1'))
         assert.notStrictEqual(retrievedProvider, undefined)
     })
 
@@ -85,11 +84,11 @@ describe('BaseCredentialsProviderFactory', async function () {
         const provider = makeSampleCredentialsProvider('provider1')
         sut.getProviders().push(provider)
 
-        const retrievedProvider = sut.getProvider(makeSampleCredentialsProviderId('provider2'))
+        const retrievedProvider = sut.getProvider(makeSampleCredentialsId('provider2'))
         assert.strictEqual(retrievedProvider, undefined)
     })
 
-    function makeSampleCredentialsProviderId(testProviderId: string): CredentialsProviderId {
+    function makeSampleCredentialsId(testProviderId: string): CredentialsId {
         return {
             credentialSource: 'profile',
             credentialTypeId: testProviderId,
@@ -98,7 +97,7 @@ describe('BaseCredentialsProviderFactory', async function () {
 
     function makeSampleCredentialsProvider(testProviderId: string): CredentialsProvider {
         return ({
-            getCredentialsProviderId: () => makeSampleCredentialsProviderId(testProviderId),
+            getCredentialsId: () => makeSampleCredentialsId(testProviderId),
         } as any) as CredentialsProvider
     }
 })

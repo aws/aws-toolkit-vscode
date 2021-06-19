@@ -3,9 +3,57 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
-import { CredentialType } from '../../shared/telemetry/telemetry.gen'
-import { CredentialsProviderId } from './credentialsProviderId'
 import * as telemetry from '../../shared/telemetry/telemetry.gen'
+
+const CREDENTIALS_PROVIDER_ID_SEPARATOR = ':'
+
+/**
+ * "Fully-qualified" credentials structure (source + name).
+ */
+export interface CredentialsId {
+    /** Credentials source id, e.g. "sharedCredentials". */
+    readonly credentialSource: CredentialsProviderType
+    /** User-defined profile name, e.g. "default". */
+    readonly credentialTypeId: string
+}
+
+/**
+ * Gets the string form of the given `CredentialsProvider`.
+ *
+ * For use in e.g. the statusbar, menus, etc.  Includes:
+ * - credentials source kind
+ * - instance-identifying information (typically the "profile name")
+ *
+ * @param credentials  Value to be formatted.
+ */
+export function asString(credentials: CredentialsId): string {
+    return [credentials.credentialSource, credentials.credentialTypeId].join(
+        CREDENTIALS_PROVIDER_ID_SEPARATOR
+    )
+}
+
+export function fromString(credentials: string): CredentialsId {
+    const separatorPos = credentials.indexOf(CREDENTIALS_PROVIDER_ID_SEPARATOR)
+
+    if (separatorPos === -1) {
+        throw new Error(`Unexpected credentialsId format: ${credentials}`)
+    }
+
+    const credSource = credentials.substring(0, separatorPos)
+    if (!credentialsProviderType.includes(credSource as any)) {
+        throw new Error(`unexpected credential source: ${credSource}`)
+    }
+
+    return {
+        credentialSource: credSource as CredentialsProviderType,
+        credentialTypeId: credentials.substring(separatorPos + 1),
+    }
+}
+
+export function isEqual(idA: CredentialsId, idB: CredentialsId): boolean {
+    return idA.credentialSource === idB.credentialSource && idA.credentialTypeId === idB.credentialTypeId
+}
+
 
 /**
  * Credentials source type, broadly describes the kind of thing that supplied the credentials.
@@ -40,11 +88,9 @@ export function credentialsProviderToTelemetryType(o: CredentialsProviderType): 
             return 'other'
     }
 }
-    
-export type CredentialSourceId = 'sharedCredentials' | 'sdkStore' | 'ec2' | 'envVars' | 'other'
 
 export interface CredentialsProvider {
-    getCredentialsProviderId(): CredentialsProviderId
+    getCredentialsId(): CredentialsId
     /**
      * Gets the credential provider type, a coarser form of
      * telemetry.CredentialSourceId for use in config files and UIs. #1725
@@ -59,7 +105,7 @@ export interface CredentialsProvider {
      *
      * Compare getCredentialsProviderType() which is type of the _provider_.
      */
-    getTelemetryType(): CredentialType
+    getTelemetryType(): telemetry.CredentialType
     getDefaultRegion(): string | undefined
     getHashCode(): string
     getCredentials(): Promise<AWS.Credentials>

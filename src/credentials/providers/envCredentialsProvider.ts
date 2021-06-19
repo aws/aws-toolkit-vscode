@@ -6,8 +6,7 @@
 import * as AWS from 'aws-sdk'
 import { CredentialType } from '../../shared/telemetry/telemetry.gen'
 import { getStringHash } from '../../shared/utilities/textUtilities'
-import { CredentialsProvider, CredentialsProviderType } from './credentialsProvider'
-import { CredentialsProviderId } from './credentialsProviderId'
+import { CredentialsProvider, CredentialsProviderType ,CredentialsId } from './credentials'
 
 
 /**
@@ -19,7 +18,7 @@ export class EnvCredentialsProvider implements CredentialsProvider {
     public constructor(private token: string) {
     }
 
-    public getCredentialsProviderId(): CredentialsProviderId {
+    public getCredentialsId(): CredentialsId {
         return {
             credentialSource: this.getProviderType(),
             credentialTypeId: 'default',

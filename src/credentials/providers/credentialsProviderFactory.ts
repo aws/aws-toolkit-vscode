@@ -3,8 +3,7 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
-import { CredentialsProvider, CredentialsProviderType } from './credentialsProvider'
-import { CredentialsProviderId, isEqual } from './credentialsProviderId'
+import {  CredentialsProvider, CredentialsProviderType , CredentialsId, isEqual } from './credentials'
 
 /**
  * Responsible for producing CredentialsProvider objects for a Credential Type
@@ -15,7 +14,7 @@ export interface CredentialsProviderFactory {
      */
     getProviderType(): CredentialsProviderType | undefined
     listProviders(): CredentialsProvider[]
-    getProvider(credentialsProviderId: CredentialsProviderId): CredentialsProvider | undefined
+    getProvider(credentials: CredentialsId): CredentialsProvider | undefined
     refresh(): Promise<void>
 }
 
@@ -35,9 +34,9 @@ export abstract class BaseCredentialsProviderFactory<T extends CredentialsProvid
         return [...this.providers]
     }
 
-    public getProvider(credentialsProviderId: CredentialsProviderId): CredentialsProvider | undefined {
+    public getProvider(credentials: CredentialsId): CredentialsProvider | undefined {
         for (const provider of this.providers) {
-            if (isEqual(provider.getCredentialsProviderId(), credentialsProviderId)) {
+            if (isEqual(provider.getCredentialsId(), credentials)) {
                 return provider
             }
         }
