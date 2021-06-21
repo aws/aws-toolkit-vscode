@@ -6,6 +6,7 @@
 import * as vscode from 'vscode'
 import { AWSTreeNodeBase } from './awsTreeNodeBase'
 import { localize } from '../../../shared/utilities/vsCodeUtils'
+import { isCn } from '../../extensionUtilities'
 
 // Used as a child node when an exception occurs while querying AWS resources
 export class ErrorNode extends AWSTreeNodeBase {
@@ -28,7 +29,7 @@ export class ErrorNode extends AWSTreeNodeBase {
             vscode.TreeItemCollapsibleState.None
         )
         // Node commands don't actually use the title or tooltip since they are not apart of the command palette
-        const commandName: string = localize('AWS.command.viewLogs', 'View AWS Toolkit Logs')
+        const commandName: string = isCn() ? localize('AWS.command.viewLogs.cn', 'View Amazon Toolkit Logs') :  localize('AWS.command.viewLogs', 'View AWS Toolkit Logs')
         const tooltip: string = `${error.name}: ${error.message}`
 
         // Theme color for icons were introduced in the 1.51.0 October 2020 update of vscode

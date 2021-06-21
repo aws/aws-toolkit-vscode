@@ -21,6 +21,7 @@ import { MultiStepInputFlowController } from '../multiStepInputFlowController'
 import { CredentialSelectionDataProvider } from './credentialSelectionDataProvider'
 import { CredentialSelectionState } from './credentialSelectionState'
 import { CredentialsProfileMru } from './credentialsProfileMru'
+import { getIdeProperties } from '../extensionUtilities'
 
 interface ProfileEntry {
     profileName: string
@@ -44,7 +45,7 @@ export class DefaultCredentialSelectionDataProvider implements CredentialSelecti
         state: Partial<CredentialSelectionState>
     ): Promise<QuickPickItem> {
         return await input.showQuickPick({
-            title: localize('AWS.title.selectCredentialProfile', 'Select an AWS credential profile'),
+            title: localize('AWS.title.selectCredentialProfile', 'Select an {0} credential profile', getIdeProperties().company),
             step: 1,
             totalSteps: 1,
             placeholder: localize('AWS.placeHolder.selectProfile', 'Select a credential profile'),
@@ -59,7 +60,7 @@ export class DefaultCredentialSelectionDataProvider implements CredentialSelecti
         state: Partial<CredentialSelectionState>
     ): Promise<string | undefined> {
         return await input.showInputBox({
-            title: localize('AWS.title.createCredentialProfile', 'Create a new AWS credential profile'),
+            title: localize('AWS.title.createCredentialProfile', 'Create a new {0} credential profile', getIdeProperties().company),
             step: 1,
             totalSteps: 3,
             value: '',
@@ -74,11 +75,11 @@ export class DefaultCredentialSelectionDataProvider implements CredentialSelecti
         state: Partial<CredentialSelectionState>
     ): Promise<string | undefined> {
         return await input.showInputBox({
-            title: localize('AWS.title.createCredentialProfile', 'Create a new AWS credential profile'),
+            title: localize('AWS.title.createCredentialProfile', 'Create a new {0} credential profile', getIdeProperties().company),
             step: 2,
             totalSteps: 3,
             value: '',
-            prompt: localize('AWS.placeHolder.inputAccessKey', 'Input the AWS Access Key'),
+            prompt: localize('AWS.placeHolder.inputAccessKey', 'Input the {0} Access Key', getIdeProperties().company),
             validate: this.validateAccessKey.bind(this),
             ignoreFocusOut: true,
             shouldResume: this.shouldResume.bind(this),
@@ -90,11 +91,11 @@ export class DefaultCredentialSelectionDataProvider implements CredentialSelecti
         state: Partial<CredentialSelectionState>
     ): Promise<string | undefined> {
         return await input.showInputBox({
-            title: localize('AWS.title.createCredentialProfile', 'Create a new AWS credential profile'),
+            title: localize('AWS.title.createCredentialProfile', 'Create a new {0} credential profile', getIdeProperties().company),
             step: 3,
             totalSteps: 3,
             value: '',
-            prompt: localize('AWS.placeHolder.inputSecretKey', 'Input the AWS Secret Key'),
+            prompt: localize('AWS.placeHolder.inputSecretKey', 'Input the {0} Secret Key', getIdeProperties().company),
             validate: this.validateSecretKey.bind(this),
             ignoreFocusOut: true,
             shouldResume: this.shouldResume.bind(this),

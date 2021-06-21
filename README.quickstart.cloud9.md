@@ -22,7 +22,7 @@ See [Get help](#get-help) for support.
 
 The **AWS Explorer** provides access to the AWS services that you can work with when using the Toolkit. To see the **AWS Explorer**, choose the **AWS** icon in the **Activity bar**.
 
-## ![Overview, AWS Explorer](./resources/marketplace/cloud9/overview-aws-explorer.png)
+## ![Overview, AWS Explorer](./resources/marketplace/cloud9/overview-aws-explorer-en.png)
 
 ## <a id="sam-and-lambda"></a> AWS Serverless Applications
 
@@ -45,7 +45,7 @@ Alternatively, you can run and debug just the AWS Lambda function and exclude ot
 
 When you run a debug session, the status and results are shown in the **AWS Toolkit** output channel. If the toolkit does not have an open **AWS Toolkit** output channel, one can be created with the New Tab button.
 
-![Configure and Run 2](./resources/marketplace/cloud9/sam-configure-and-run-still-2.png)
+![Configure and Run 2](./resources/marketplace/cloud9/sam-configure-and-run-still-2-en.png)
 
 ###### After a local run is complete, the output appears in the **OUTPUT** tab.
 
@@ -73,11 +73,11 @@ The Toolkit provides commands (prefixed with `AWS:`) to the AWS Cloud9 _Go to An
 | Windows | `CTRL-.` |
 | macOS   | `CMD-.`  |
 
-![Go to Anything panel](./resources/marketplace/cloud9/open-commands.png)
+![Go to Anything panel](./resources/marketplace/cloud9/open-commands-en.png)
 
 | AWS Command                             | Description                                                                                                                                                                                                                                |
 | :-------------------------------------- | :----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `AWS: About AWS Toolkit`                | Displays information about the AWS Toolkit.                                                                                                                                                                                                |
+| `AWS: About Toolkit`                | Displays information about the AWS Toolkit.                                                                                                                                                                                                |
 | `AWS: Add SAM Debug Configuration`      | Creates an `aws-sam` Debug Configuration from a function in the given source file                                                                                                                                                          |
 | `AWS: Connect to AWS`                   | Connects the Toolkit to an AWS account.                                                                                                                                                                                                    |
 | `AWS: Create a new Issue on Github`     | Opens the AWS Toolkit's [New Issue page on Github](https://github.com/aws/aws-toolkit-vscode/issues/new/choose).                                                                                                                           |
@@ -90,7 +90,7 @@ The Toolkit provides commands (prefixed with `AWS:`) to the AWS Cloud9 _Go to An
 | `AWS: Sign out`                         | Disconnects the Toolkit from the currently-connected AWS account.                                                                                                                                                                          |
 | `AWS: Submit Quick Feedback...`         | Submit a private, one-way message and sentiment to the AWS Toolkit dev team. For larger issues that warrant conversations or bugfixes, please submit an issue in Github with the **AWS: Create a New Issue on Github** command.            |
 | `AWS: Toggle SAM hints in source files` | Toggles AWS SAM-related Inline Actions in source files                                                                                                                                                                                     |
-| `AWS: View AWS Toolkit Logs`            | Displays log files that contain general Toolkit diagnostic information.                                                                                                                                                                    |
+| `AWS: View Toolkit Logs`            | Displays log files that contain general Toolkit diagnostic information.                                                                                                                                                                    |
 | `AWS: View Quick Start`                 | Open this quick-start guide.                                                                                                                                                                                                               |
 | `AWS: View Toolkit Documentation`       | Opens the [user guide](https://docs.aws.amazon.com/cloud9/latest/user-guide/toolkit-welcome.html) for the Toolkit.                                                                                                                         |
 | `AWS: View Source on GitHub`            | Opens the [GitHub repository](https://github.com/aws/aws-toolkit-vscode) for the Toolkit.                                                                                                                                                  |
