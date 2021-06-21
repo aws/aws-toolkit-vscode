@@ -38,7 +38,7 @@ export class LogStreamCodeLensProvider implements vscode.CodeLensProvider {
                 command: isBusy
                     ? busyCommand
                     : {
-                          title: localize('aws.cloudWatchLogs.codeLens.loadOlder', 'Load older events...'),
+                          title: localize('AWS.cloudWatchLogs.codeLens.loadOlder', 'Load older events...'),
                           command: 'aws.addLogEvents',
                           arguments: [document, this.registry, 'head', this._onDidChangeCodeLenses],
                       },
@@ -53,7 +53,7 @@ export class LogStreamCodeLensProvider implements vscode.CodeLensProvider {
                 command: isBusy
                     ? busyCommand
                     : {
-                          title: localize('aws.cloudWatchLogs.codeLens.loadNewer', 'Load newer events...'),
+                          title: localize('AWS.cloudWatchLogs.codeLens.loadNewer', 'Load newer events...'),
                           command: 'aws.addLogEvents',
                           arguments: [document, this.registry, 'tail', this._onDidChangeCodeLenses],
                       },
