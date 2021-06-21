@@ -15,6 +15,7 @@ import { recordCloudformationDelete, Result } from '../../shared/telemetry/telem
 import { CloudFormationStackNode } from '../explorer/cloudFormationNodes'
 import { showConfirmationMessage } from '../../shared/utilities/messages'
 import { Window } from '../../shared/vscode/window'
+import { getIdeProperties } from '../../shared/extensionUtilities'
 
 export async function deleteCloudFormation(refresh: () => void, node?: CloudFormationStackNode) {
     const logger: Logger = getLogger()
@@ -64,8 +65,9 @@ export async function deleteCloudFormation(refresh: () => void, node?: CloudForm
         vscode.window.showInformationMessage(
             localize(
                 'AWS.message.error.cloudFormation.delete',
-                'An error occurred while deleting {0}. Please check the stack events on the AWS Console',
-                stackName
+                'An error occurred while deleting {0}. Please check the stack events on the {1} Console',
+                stackName,
+                getIdeProperties().company
             )
         )
     } finally {

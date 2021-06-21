@@ -5,6 +5,7 @@
 
 import * as vscode from 'vscode'
 import { AwsContext } from '../shared/awsContext'
+import { getIdeProperties } from '../shared/extensionUtilities'
 import { getLogger, Logger } from '../shared/logger'
 import { RegionProvider } from '../shared/regions/regionProvider'
 import { getRegionsForActiveCredentials } from '../shared/regions/regionUtilities'
@@ -16,28 +17,28 @@ import { intersection, toMap, updateInPlace } from '../shared/utilities/collecti
 import { localize } from '../shared/utilities/vsCodeUtils'
 import { RegionNode } from './regionNode'
 
-const ROOT_NODE_SIGN_IN = new AWSCommandTreeNode(
-    undefined,
-    localize('AWS.explorerNode.connecting.label', 'Connecting...'),
-    'aws.login',
-    undefined,
-    localize('AWS.explorerNode.connecting.tooltip', 'Connecting...')
-)
-
-const ROOT_NODE_ADD_REGION = new AWSCommandTreeNode(
-    undefined,
-    localize('AWS.explorerNode.addRegion', 'Add a region to AWS Explorer...'),
-    'aws.showRegion',
-    undefined,
-    localize('AWS.explorerNode.addRegion.tooltip', 'Click here to add a region to AWS Explorer.')
-)
-
 export class AwsExplorer implements vscode.TreeDataProvider<AWSTreeNodeBase>, RefreshableAwsTreeProvider {
     public viewProviderId: string = 'aws.explorer'
     public readonly onDidChangeTreeData: vscode.Event<AWSTreeNodeBase | undefined>
     private readonly logger: Logger = getLogger()
     private readonly _onDidChangeTreeData: vscode.EventEmitter<AWSTreeNodeBase | undefined>
     private readonly regionNodes: Map<string, RegionNode>
+
+    private readonly ROOT_NODE_SIGN_IN = new AWSCommandTreeNode(
+        undefined,
+        localize('AWS.explorerNode.connecting.label', 'Connecting...'),
+        'aws.login',
+        undefined,
+        localize('AWS.explorerNode.connecting.tooltip', 'Connecting...')
+    )
+
+    private readonly ROOT_NODE_ADD_REGION = new AWSCommandTreeNode(
+        undefined,
+        localize('AWS.explorerNode.addRegion', 'Add a region to {0} Explorer...', getIdeProperties().company),
+        'aws.showRegion',
+        undefined,
+        localize('AWS.explorerNode.addRegion.tooltip', 'Click here to add a region to {0} Explorer.', getIdeProperties().company)
+    )
 
     public constructor(
         private readonly extContext: vscode.ExtensionContext,
@@ -50,10 +51,11 @@ export class AwsExplorer implements vscode.TreeDataProvider<AWSTreeNodeBase>, Re
         this.extContext.subscriptions.push(
             this.awsContext.onDidChangeContext(e => {
                 if (!e.accountId) {
-                    ROOT_NODE_SIGN_IN.label = localize('AWS.explorerNode.signIn', 'Connect to AWS...')
-                    ROOT_NODE_SIGN_IN.tooltip = localize(
+                    this.ROOT_NODE_SIGN_IN.label = localize('AWS.explorerNode.signIn', 'Connect to {0}...', getIdeProperties().company)
+                    this.ROOT_NODE_SIGN_IN.tooltip = localize(
                         'AWS.explorerNode.signIn.tooltip',
-                        'Click here to select credentials for the AWS Toolkit'
+                        'Click here to select credentials for the {0} Toolkit',
+                        getIdeProperties().company
                     )
                 }
             })
@@ -109,7 +111,7 @@ export class AwsExplorer implements vscode.TreeDataProvider<AWSTreeNodeBase>, Re
 
     private async getRootNodes(): Promise<AWSTreeNodeBase[]> {
         if (!(await this.awsContext.getCredentials())) {
-            return [ROOT_NODE_SIGN_IN]
+            return [this.ROOT_NODE_SIGN_IN]
         }
 
         const partitionRegions = getRegionsForActiveCredentials(this.awsContext, this.regionProvider)
@@ -132,7 +134,7 @@ export class AwsExplorer implements vscode.TreeDataProvider<AWSTreeNodeBase>, Re
                 // Let the calling function handle the error
                 throw error
             },
-            getNoChildrenPlaceholderNode: async () => ROOT_NODE_ADD_REGION,
+            getNoChildrenPlaceholderNode: async () => this.ROOT_NODE_ADD_REGION,
             sort: (nodeA: RegionNode, nodeB: RegionNode) => nodeA.regionName.localeCompare(nodeB.regionName),
         })
     }
