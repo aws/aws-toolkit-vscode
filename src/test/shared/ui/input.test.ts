@@ -7,6 +7,64 @@ import * as assert from 'assert'
 import * as vscode from 'vscode'
 import * as input from '../../../shared/ui/input'
 
+export class TestInputBox implements vscode.InputBox {
+    private _value: string = ''
+    public placeholder: string | undefined
+    public password: boolean = false
+    public readonly onDidChangeValue: vscode.Event<string>
+    public readonly onDidAccept: vscode.Event<void>
+    public readonly onDidHide: vscode.Event<void>
+    public buttons: readonly vscode.QuickInputButton[] = []
+    public readonly onDidTriggerButton: vscode.Event<vscode.QuickInputButton>
+    public prompt: string | undefined
+    public validationMessage: string | undefined
+    public title: string | undefined
+    public step: number | undefined
+    public totalSteps: number | undefined
+    public enabled: boolean = true
+    public busy: boolean = false
+    public ignoreFocusOut: boolean = false
+
+    public isShowing: boolean = false
+
+    private readonly onDidHideEmitter: vscode.EventEmitter<void> = new vscode.EventEmitter()
+    private readonly onDidAcceptEmitter: vscode.EventEmitter<void> = new vscode.EventEmitter()
+    private readonly onDidChangeValueEmitter: vscode.EventEmitter<string> = new vscode.EventEmitter()
+    private readonly onDidTriggerButtonEmitter: vscode.EventEmitter<
+        vscode.QuickInputButton
+    > = new vscode.EventEmitter()
+
+    public constructor() {
+        this.onDidHide = this.onDidHideEmitter.event
+        this.onDidAccept = this.onDidAcceptEmitter.event
+        this.onDidChangeValue = this.onDidChangeValueEmitter.event
+        this.onDidTriggerButton = this.onDidTriggerButtonEmitter.event
+    }
+
+    public show(): void {
+        this.isShowing = true
+    }
+    public hide(): void {
+        this.onDidHideEmitter.fire()
+        this.isShowing = false
+    }
+    public accept(value: string = this._value) {
+        this._value = value
+        this.onDidAcceptEmitter.fire()
+    }
+    public dispose(): void {}
+
+    public pressButton(button: vscode.QuickInputButton) {
+        this.onDidTriggerButtonEmitter.fire(button)
+    }
+
+    public get value(): string { return this._value }
+    public set value(value: string) {
+        this.onDidChangeValueEmitter.fire(value)
+        this._value = value
+    }
+}
+
 describe('createInputBox', async function () {
     let testInput: vscode.InputBox | undefined
 
@@ -219,57 +277,4 @@ describe('promptUser', async function () {
         sampleInput.hide()
         await promptUserPromise
     })
-
-    class TestInputBox implements vscode.InputBox {
-        public value: string = ''
-        public placeholder: string | undefined
-        public password: boolean = false
-        public readonly onDidChangeValue: vscode.Event<string>
-        public readonly onDidAccept: vscode.Event<void>
-        public readonly onDidHide: vscode.Event<void>
-        public buttons: readonly vscode.QuickInputButton[] = []
-        public readonly onDidTriggerButton: vscode.Event<vscode.QuickInputButton>
-        public prompt: string | undefined
-        public validationMessage: string | undefined
-        public title: string | undefined
-        public step: number | undefined
-        public totalSteps: number | undefined
-        public enabled: boolean = true
-        public busy: boolean = false
-        public ignoreFocusOut: boolean = false
-
-        public isShowing: boolean = false
-
-        private readonly onDidHideEmitter: vscode.EventEmitter<void> = new vscode.EventEmitter()
-        private readonly onDidAcceptEmitter: vscode.EventEmitter<void> = new vscode.EventEmitter()
-        private readonly onDidChangeValueEmitter: vscode.EventEmitter<string> = new vscode.EventEmitter()
-        private readonly onDidTriggerButtonEmitter: vscode.EventEmitter<
-            vscode.QuickInputButton
-        > = new vscode.EventEmitter()
-
-        public constructor() {
-            this.onDidHide = this.onDidHideEmitter.event
-            this.onDidAccept = this.onDidAcceptEmitter.event
-            this.onDidChangeValue = this.onDidChangeValueEmitter.event
-            this.onDidTriggerButton = this.onDidTriggerButtonEmitter.event
-        }
-
-        public show(): void {
-            this.isShowing = true
-        }
-        public hide(): void {
-            this.onDidHideEmitter.fire()
-            this.isShowing = false
-        }
-        public accept(value: string) {
-            this.value = value
-            this.onDidAcceptEmitter.fire()
-            this.isShowing = false
-        }
-        public dispose(): void {}
-
-        public pressButton(button: vscode.QuickInputButton) {
-            this.onDidTriggerButtonEmitter.fire(button)
-        }
-    }
 })
