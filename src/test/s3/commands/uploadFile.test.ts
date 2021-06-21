@@ -45,7 +45,7 @@ describe('uploadFileCommand', function () {
         
     })
 
-    describe('when it gets the node parameter', async function() {
+    describe('with node parameter', async function() {
         this.beforeEach(function () {
             s3 = mock()
             commands = new FakeCommands()
@@ -58,7 +58,7 @@ describe('uploadFileCommand', function () {
             outputChannel = new MockOutputChannel()
         })
        
-        it("asks for the file location, then uploads, display success message if aplicable", async function() {
+        it('uploads successfully', async function() {
             when(s3.uploadFile(anything())).thenResolve()
             
             window = new FakeWindow({ dialog: { openSelections: [fileLocation] } })
@@ -92,7 +92,7 @@ describe('uploadFileCommand', function () {
             ])
         })
         
-        it("if user don't select a file in the prompt, it cancels and displays cancelled message", async function() {
+        it('cancels and displays a message if a user does not select a file', async function() {
             window = new FakeWindow({ dialog: { openSelections: undefined } })
             
             getFile = (document, window) => {
@@ -108,7 +108,7 @@ describe('uploadFileCommand', function () {
         })
     })
     
-    describe('when it doesn\'t get the node parameter', async function () {
+    describe('without node parameter', async function () {
         
 
         this.beforeEach(function (){
@@ -129,7 +129,7 @@ describe('uploadFileCommand', function () {
             }
         })
 
-        it('prompts the user for file, then for bucket, if both aren\'t undefined, uploads', async function () {
+        it('uploads if user provides file and bucket', async function () {
             when(s3.uploadFile(anything())).thenResolve()
 
             await uploadFileCommand(instance(s3), undefined, statFile, getBucket, getFile, window, outputChannel, commands)
@@ -139,7 +139,7 @@ describe('uploadFileCommand', function () {
             ])
         })
 
-        it('prompts the user for file, then for bucket, if bucket is not selected, it cancels the upload', async function () {
+        it('cancels if user does not provide bucket', async function () {
             getBucket = (s3Client) => {
                 return new Promise((resolve, reject) => {
                     resolve('cancel')
@@ -150,7 +150,7 @@ describe('uploadFileCommand', function () {
             assert.deepStrictEqual(outputChannel.lines, ['No bucket selected, cancelling upload'] )
         })
 
-        it('prompts the user for file, if file not selected, it cancels the upload', async function () {
+        it('cancels if user does not select file', async function () {
             getFile = (document, window) => {
                 return new Promise((resolve, reject) => {
                     resolve(undefined)
@@ -175,7 +175,7 @@ describe('uploadFileCommand', function () {
         })
     }
 
-    it("succesfully upload file", async function () {
+    it('succesfully upload file', async function () {
         when(s3.uploadFile(anything())).thenResolve()
 
         window = new FakeWindow({ dialog: { openSelections: [fileLocation] } })
@@ -201,7 +201,7 @@ describe('uploadFileCommand', function () {
         ])
     })
 
-    it("cancels the upload in a failed state when an error with the call to s3Client happens", async function () {
+    it('errors when s3 call fails', async function () {
         when(s3.uploadFile(anything())).thenReject(new Error('Expected failure'))
 
         
@@ -219,7 +219,7 @@ describe('getFileToUpload', function () {
     const fileLocation = vscode.Uri.file('/file.jpg')    
     let window: FakeWindow
 
-    const selection: any = {label: "Browse for more files..." }
+    const selection: any = {label: 'Browse for more files...' }
     const prompt: <T extends vscode.QuickPickItem>(opts: {
         picker: vscode.QuickPick<T>
         onDidTriggerButton?(
@@ -237,36 +237,37 @@ describe('getFileToUpload', function () {
         window = new FakeWindow({ dialog: { openSelections: [fileLocation] } })       
     })
     
-    it("directly asks user for file if no active editor", async function () {
+    it('directly asks user for file if no active editor', async function () {
         
         const response = await getFileToUpload(undefined, window, prompt)
         assert.strictEqual(response, fileLocation)
     })
 
-    it("Returns undefined if no file is selected on first prompt", async function () {
+    it('Returns undefined if no file is selected on first prompt', async function () {
         window = new FakeWindow({ dialog: { openSelections: undefined } })
         
         const response = await getFileToUpload(undefined, window, prompt)
         assert.strictEqual(response, undefined)
     })
 
-    it("prompts quick pick with open file option, and browse for more files, returns open file if that option is selected", async function(){
-        selection.label = fileLocation.fsPath
+    it('opens the current file if a user selects it from the prompt', async function(){
+        const alreadyOpenedUri = vscode.Uri.file('/alreadyOpened.txt')
+        selection.label = alreadyOpenedUri.fsPath
         const response = await getFileToUpload(fileLocation, window, prompt)
+        assert.strictEqual(response, alreadyOpenedUri)
 
-        assert.strictEqual(response, fileLocation)
     })
 
-    it("prompts quick pick with open file option, and browse for more files, prompts user for other file if that option is selected", async function (){
-        selection.label = "Browse for more files..."
+    it('opens the file prompt if a user selects to browse for more files', async function (){
+        selection.label = 'Browse for more files...'
         
         const response = await getFileToUpload(fileLocation, window, prompt)
         assert.strictEqual(response, fileLocation)
 
     })
 
-    it("returns undefined on second prompt if no file is selected", async function () {
-        selection.label = "Browse for more files..." 
+    it('returns undefined if the user does not select a file through the file browser', async function () {
+        selection.label = 'Browse for more files...'
         window = new FakeWindow({ dialog: { openSelections: undefined } })
         
         const response = await getFileToUpload(fileLocation, window, prompt)
@@ -298,7 +299,7 @@ describe('promptUserForBucket',async function () {
         label: 'bucket selected',
         bucket: { Name: 'bucket 1' }
     }
-    const promptSelec: <T extends vscode.QuickPickItem>(opts: {
+    const promptSelect: <T extends vscode.QuickPickItem>(opts: {
         picker: vscode.QuickPick<T>
         onDidTriggerButton?(
             button: vscode.QuickInputButton,
@@ -318,25 +319,25 @@ describe('promptUserForBucket',async function () {
     })
 
     
-    it("Returns selected bucket", async function () {
+    it('Returns selected bucket', async function () {
         when(s3.listAllBuckets()).thenResolve(buckets)
 
-        const response = await promptUserForBucket(instance(s3), window, promptSelec)
+        const response = await promptUserForBucket(instance(s3), window, promptSelect)
         assert.deepStrictEqual(response, buckets[0])
 
     })
 
-    it("Returns back when selected", async function()  {
+    it('Returns "back" when selected', async function()  {
         when(s3.listAllBuckets()).thenResolve(buckets)
 
         selection.label = 'back'
         selection.bucket = undefined
         
-        const response = await promptUserForBucket(instance(s3), window, promptSelec)
+        const response = await promptUserForBucket(instance(s3), window, promptSelect)
         assert.strictEqual(response, 'back')
     })
 
-    it("Lets the user create a new bucket", async function () {
+    it('Lets the user create a new bucket', async function () {
         when(s3.listAllBuckets()).thenResolve(buckets)
 
         selection.label = 'Create new bucket'
@@ -348,30 +349,29 @@ describe('promptUserForBucket',async function () {
             })
         }
         try {
-            await promptUserForBucket(instance(s3), window, promptSelec, createBucket)
+            await promptUserForBucket(instance(s3), window, promptSelect, createBucket)
         } catch (e) {
 
         }
     })
 
-    it("Returns cancel when user doesn't select a bucket", async function () {
+    it('Returns "cancel" when user doesn\'t select a bucket', async function () {
         when(s3.listAllBuckets()).thenResolve(buckets)
         
         const response = await promptUserForBucket(instance(s3), window, promptUndef)
         assert.strictEqual(response, 'cancel')
     })
 
-    it("Throws error when it is not possible to list buckets from client", async function () {
+    it('Throws error when it is not possible to list buckets from client', async function () {
         when(s3.listAllBuckets()).thenReject(new Error('Expected failure'))
         
         const window = new FakeWindow({ dialog: { openSelections: [fileLocation] } })
         try{
             await promptUserForBucket(instance(s3), window)
+            assert.fail() // fails if promptUserForBucket does not throw
         } catch (e) {
-            
+            assert.ok(window.message.error?.includes('Failed to list buckets from client'))
         }
-        
-        assert.ok(window.message.error?.includes('Failed to list buckets from client'))
     })
 
     

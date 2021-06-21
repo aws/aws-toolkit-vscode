@@ -62,8 +62,8 @@ export interface FileSizeBytes {
     let document: vscode.Uri | undefined
 
     if (nodeOrDocument){
-        const isNode = !!((nodeOrDocument as any).getChildren)
-        if (isNode) {
+        
+        if ((nodeOrDocument as any).getChildren) {
             node = nodeOrDocument as S3BucketNode | S3FolderNode
             document = undefined
         } else {
@@ -334,7 +334,7 @@ export async function getFileToUpload(
             label: addCodiconToString('file', fileNameToDisplay) 
         }
         const selectMore: vscode.QuickPickItem = {
-            label: 'Browse for more files...'
+            label: localize('AWS.message.browseMoreFiles', 'Browse for more files...')
         }
 
         const picker = createQuickPick({
@@ -363,11 +363,10 @@ export async function getFileToUpload(
             return
         }
 
-        if (response?.label === 'Browse for more files...') {
-            fileLocation = await promptForFileLocation(window)
+        if (response === selectMore) {
+            return promptForFileLocation(window)
         }
 
     }
-    
     return fileLocation
 }

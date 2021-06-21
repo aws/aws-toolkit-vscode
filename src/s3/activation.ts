@@ -38,8 +38,7 @@ export async function activate(extensionContext: vscode.ExtensionContext): Promi
                 const editor = vscode.window.activeTextEditor
                 const document = editor?.document.uri  
                 await uploadFileCommand(s3Client, document)
-            }
-            else{
+            } else {
                 await uploadFileCommand(s3Client, node)
             }
             
