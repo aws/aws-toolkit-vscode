@@ -39,12 +39,10 @@ export interface FileSizeBytes {
 
 /**
  * Wizard to upload a file.
- * If the S3BucketNode | S3FolderNode is given, it asks for the file then uploads to node
- * If the node is not give, it asks for the file and also for a bucket, then uploads
+ * Either a node or the document has to be given, will follow different path depending on what is given
  * 
- * @param s3Client  account to upload the file to
- * @param node - bucket or folder to upload the file to
- * @param document - open document (to use as default), if any
+ * @param s3Client account to upload the file to
+ * @param nodeOrDocument node to upload to or file currently open
  * 
  */
  export async function uploadFileCommand(
@@ -69,12 +67,13 @@ export interface FileSizeBytes {
             node = nodeOrDocument as S3BucketNode | S3FolderNode
             document = undefined
         } else {
-            document = nodeOrDocument as vscode.Uri
             node = undefined
+            document = nodeOrDocument as vscode.Uri
         }
     } else {
-        document = undefined
         node = undefined
+        document = undefined
+        
     }
 
     if (node) {
@@ -216,6 +215,7 @@ interface BucketQuickPickItem extends vscode.QuickPickItem {
 /**
  * Will display a quick pick with the list of all buckets owned by the user.
  * @param s3client client to get the list of buckets
+ * 
  * @returns Bucket selected by the user, 'back' or 'cancel'
  * 
  * @throws Error if there is an error calling s3
@@ -230,7 +230,7 @@ export async function promptUserForBucket(
     try{
         allBuckets = await s3client.listAllBuckets()
     } catch (e) {
-        getLogger().error('Failed to list buckets from client321', e)
+        getLogger().error('Failed to list buckets from client', e)
         window
         .showErrorMessage(
             localize(
@@ -245,7 +245,7 @@ export async function promptUserForBucket(
             } 
         })
         telemetry.recordS3UploadObject({ result: 'Failed' })
-        throw new Error('Failed to list buckets from client456')
+        throw new Error('Failed to list buckets from client')
     }
     
     const s3Buckets = allBuckets.filter(bucket => {
@@ -280,7 +280,7 @@ export async function promptUserForBucket(
         onDidTriggerButton: (button, resolve, reject) => {
             if (button === vscode.QuickInputButtons.Back) {
                 resolve([{
-                    label: "back",
+                    label: 'back',
                     bucket: undefined
                 }])
             }
@@ -311,7 +311,7 @@ export async function promptUserForBucket(
  * Gets the open file in the current editor
  * Asks the user to browse for more files
  * If no file is open it prompts the user to select file
- * @param document - document to use as currently open
+ * @param document document to use as currently open
  * 
  * @returns file selected by the user
  */
@@ -334,7 +334,7 @@ export async function getFileToUpload(
             label: addCodiconToString('file', fileNameToDisplay) 
         }
         const selectMore: vscode.QuickPickItem = {
-            label: "Browse for more files..."
+            label: 'Browse for more files...'
         }
 
         const picker = createQuickPick({
