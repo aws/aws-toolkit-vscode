@@ -1,3 +1,17 @@
+## 1.25.0 2021-05-10
+
+- **Bug Fix** Credentials: cannot access 'canAutoConnect' of undefined
+- **Feature** UX: Add progress notification when connecting to AWS
+- **Feature** SAM run/debug: fail early so that build/invoke errors are more obvious #1689
+- **Feature** CDK: search for CDK projects up to 2 levels deep (previously 1)
+- **Feature** CDK: menu includes standard items if AWS view is hidden
+- **Feature** Skip auto-connect until AWS Explorer is shown #1433
+- **Feature** Toggle CodeLenses via "AWS: Toggle SAM hints in source files" command
+- **Feature** SAM run/debug: Add support for Go 1.x
+- **Feature** UX: write logs to extension's 'globalStoragePath' for all operating systems #1692
+- **Feature** Create aws-sam debug configurations via Command Palette using the `AWS: Add SAM Debug Configuration` command
+- **Removal** Settings: remove "Enable CDK Explorer" option (VSCode has built-in support for showing/hiding panels already)
+
 ## 1.24.0 2021-04-22
 
 - **Bug Fix** SAM Python debugging: restore retry to ensure successful attach #1666

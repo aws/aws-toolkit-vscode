@@ -14,17 +14,16 @@ import {
     addSamDebugConfiguration,
     AddSamDebugConfigurationInput,
 } from '../sam/debugger/commands/addSamDebugConfiguration'
-import * as javaDebug from '../sam/debugger/javaSamDebug'
-import * as pythonDebug from '../sam/debugger/pythonSamDebug'
 import { SettingsConfiguration } from '../settingsConfiguration'
 import { createQuickPick, promptUser, verifySinglePickerOutput } from '../ui/picker'
-import { localize } from '../utilities/vsCodeUtils'
+import { activateExtension, localize } from '../utilities/vsCodeUtils'
 import { getWorkspaceRelativePath } from '../utilities/workspaceUtils'
 import * as csharpCodelens from './csharpCodeLensProvider'
 import * as javaCodelens from './javaCodeLensProvider'
 import * as pythonCodelens from './pythonCodeLensProvider'
 import * as tsCodelens from './typescriptCodeLensProvider'
 import * as goCodelens from './goCodeLensProvider'
+import { VSCODE_EXTENSION_ID } from '../extensions'
 
 export type Language = 'python' | 'javascript' | 'csharp' | 'go' | 'java'
 
@@ -135,7 +134,13 @@ function makeAddCodeSamDebugCodeLens(
  */
 export async function invokeCodeLensCommandPalette(
     document: Pick<vscode.TextDocument, 'getText'>,
-    lenses: vscode.CodeLens[]
+    lenses: vscode.CodeLens[],
+    nextStep: (
+        codeConfig: AddSamDebugConfigurationInput,
+        templateConfigs: AddSamDebugConfigurationInput[],
+        openWebview: boolean,
+        continuationStep?: boolean
+    ) => Promise<void> = pickAddSamDebugConfiguration
 ): Promise<void> {
     const labelRenderRange = 200
     const handlers: (vscode.QuickPickItem & { lens?: vscode.CodeLens })[] = lenses
@@ -195,13 +200,7 @@ export async function invokeCodeLensCommandPalette(
     }
 
     // note: val.lens.command.arguments[2] should always be false (aka no invoke UI) based on the filter statement
-    // HACK: `exports.` is for the sake of sinon stubbing; you can't stub a function in the same file
-    await exports.pickAddSamDebugConfiguration(
-        val.lens.command.arguments![0],
-        val.lens.command.arguments![1],
-        val.lens.command.arguments![2],
-        true
-    )
+    await nextStep(val.lens.command.arguments![0], val.lens.command.arguments![1], val.lens.command.arguments![2], true)
 }
 
 /**
@@ -314,7 +313,7 @@ export async function makePythonCodeLensProvider(
                 return []
             }
             // Try to activate the Python Extension before requesting symbols from a python file
-            await pythonDebug.activatePythonExtensionIfInstalled()
+            activateExtension(VSCODE_EXTENSION_ID.python)
             if (token.isCancellationRequested) {
                 return []
             }
@@ -410,7 +409,7 @@ export async function makeJavaCodeLensProvider(
                 return []
             }
             // Try to activate the Java Extension before requesting symbols from a java file
-            await javaDebug.activateJavaExtensionIfInstalled()
+            await activateExtension(VSCODE_EXTENSION_ID.java)
             if (token.isCancellationRequested) {
                 return []
             }

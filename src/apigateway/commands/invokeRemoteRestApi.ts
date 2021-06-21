@@ -163,10 +163,10 @@ export function createMessageReceivedFunc({
                     pathWithQueryString
                 )
 
-                outputChannel.appendLine(response.log!!)
+                outputChannel.appendLine(response.log!)
                 outputChannel.appendLine('')
                 outputChannel.appendLine(`Request returned status: ${response.status}:`)
-                outputChannel.appendLine(response.body!!)
+                outputChannel.appendLine(response.body!)
             } catch (e) {
                 const error = e as Error
                 result = 'Failed'

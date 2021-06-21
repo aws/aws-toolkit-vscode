@@ -88,8 +88,8 @@ export class DefaultTelemetryClient implements TelemetryClient {
 
         return new DefaultTelemetryClient(
             clientId,
-            await ext.sdkClientBuilder.createAndConfigureServiceClient(
-                opts => new Service(opts),
+            (await ext.sdkClientBuilder.createAwsService(
+                Service,
                 {
                     // @ts-ignore: apiConfig is internal and not in the TS declaration file
                     apiConfig: apiConfig,
@@ -98,9 +98,8 @@ export class DefaultTelemetryClient implements TelemetryClient {
                     correctClockSkew: true,
                     endpoint: DefaultTelemetryClient.DEFAULT_TELEMETRY_ENDPOINT,
                 },
-                undefined,
                 false
-            )
+            )) as ClientTelemetry
         )
     }
 }

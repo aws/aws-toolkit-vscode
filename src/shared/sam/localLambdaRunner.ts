@@ -78,7 +78,7 @@ function makeResourceName(config: SamLaunchRequestArgs): string {
 }
 
 const SAM_LOCAL_PORT_CHECK_RETRY_INTERVAL_MILLIS: number = 125
-const SAM_LOCAL_PORT_CHECK_RETRY_TIMEOUT_MILLIS_DEFAULT: number = 30000
+const SAM_LOCAL_TIMEOUT_DEFAULT_MILLIS: number = 90000
 const ATTACH_DEBUGGER_RETRY_DELAY_MILLIS: number = 1000
 
 /** "sam local start-api" wrapper from the current debug-session. */
@@ -228,7 +228,7 @@ async function invokeLambdaHandler(
             debugPort: debugPort,
             debuggerPath: config.debuggerPath,
             debugArgs: config.debugArgs,
-            skipPullImage: config.sam?.skipNewImageCheck,
+            skipPullImage: true, // We already built the image, but `sam local start-api` will try to build it again
             parameterOverrides: config.parameterOverrides,
             containerEnvFile: config.containerEnvFile,
             extraArgs: config.sam?.localArguments,
@@ -297,7 +297,7 @@ async function invokeLambdaHandler(
             debugArgs: config.debugArgs,
             containerEnvFile: config.containerEnvFile,
             extraArgs: config.sam?.localArguments,
-            skipPullImage: config.sam?.skipNewImageCheck,
+            skipPullImage: true, // We already built the image, but `sam local invoke` will try to build it again
             parameterOverrides: config.parameterOverrides,
             name: config.name,
         }
@@ -348,6 +348,11 @@ export async function runLambdaFunction(
     config: SamLaunchRequestArgs,
     onAfterBuild: () => Promise<void>
 ): Promise<SamLaunchRequestArgs> {
+    // Verify if Docker is running
+    const dockerResponse = await new ChildProcess(true, 'docker', undefined, 'ps').run()
+    if (dockerResponse.exitCode !==0 || dockerResponse.stdout.includes('error during connect')) {
+        throw new Error('Running AWS SAM projects locally requires Docker. Is it installed and running?')
+    }
     // Switch over to the output channel so the user has feedback that we're getting things ready
     ctx.outputChannel.show(true)
     if (!config.noDebug) {
@@ -366,14 +371,15 @@ export async function runLambdaFunction(
         ...(config.aws?.region ? { AWS_DEFAULT_REGION: config.aws.region } : {}),
     }
 
-    const timer = createInvokeTimer(ctx.settings)
+    const timer = createLambdaTimer(ctx.settings)
 
     if (!(await buildLambdaHandler(timer, envVars, config))) {
         return config
     }
 
     await onAfterBuild()
-
+    timer.refresh()
+    
     if (!(await invokeLambdaHandler(timer, envVars, config))) {
         return config
     }
@@ -640,10 +646,10 @@ export function shouldAppendRelativePathToFunctionHandler(runtime: string): bool
     }
 }
 
-function createInvokeTimer(configuration: SettingsConfiguration): Timeout {
+function createLambdaTimer(configuration: SettingsConfiguration): Timeout {
     const timelimit = configuration.readSetting<number>(
-        'samcli.debug.attach.timeout.millis',
-        SAM_LOCAL_PORT_CHECK_RETRY_TIMEOUT_MILLIS_DEFAULT
+        'samcli.lambda.timeout',
+        SAM_LOCAL_TIMEOUT_DEFAULT_MILLIS
     )
 
     return new Timeout(timelimit)

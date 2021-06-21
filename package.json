@@ -1,8 +1,9 @@
 {
     "name": "aws-toolkit-vscode",
     "displayName": "AWS Toolkit",
-    "description": "An extension for working with Amazon Web Services",
-    "version": "1.25.0-SNAPSHOT",
+    "description": "Amazon Web Services toolkit for browsing and updating cloud resources",
+    "version": "1.26.0-SNAPSHOT",
+    "extensionKind": [ "workspace" ],
     "publisher": "amazonwebservices",
     "license": "Apache-2.0",
     "repository": {
@@ -106,10 +107,10 @@
                     "default": "",
                     "markdownDescription": "%AWS.configuration.description.samcli.location%"
                 },
-                "aws.samcli.debug.attach.timeout.millis": {
+                "aws.samcli.lambda.timeout": {
                     "type": "number",
-                    "default": 30000,
-                    "markdownDescription": "%AWS.configuration.description.samcli.debug.attach.timeout%"
+                    "default": 90000,
+                    "markdownDescription": "%AWS.configuration.description.samcli.lambda.timeout%"
                 },
                 "aws.logLevel": {
                     "type": "string",
@@ -165,7 +166,7 @@
                 "aws.sam.enableCodeLenses": {
                     "type": "boolean",
                     "description": "%AWS.configuration.enableCodeLenses%",
-                    "default": "true"
+                    "default": true
                 }
             }
         },
@@ -633,10 +634,6 @@
                     "when": "false"
                 },
                 {
-                    "command": "aws.showErrorDetails",
-                    "when": "false"
-                },
-                {
                     "command": "aws.ssmDocument.openLocalDocument",
                     "when": "false"
                 },
@@ -739,10 +736,6 @@
                 {
                     "command": "aws.cdk.help",
                     "when": "!isCloud9"
-                },
-                {
-                    "command": "aws.addSamDebugConfig",
-                    "when": "editorLangId in samSupportedLanguages"
                 }
             ],
             "editor/title": [
@@ -844,6 +837,13 @@
                     "command": "aws.cdk.help",
                     "when": "view == aws.cdk.explorer",
                     "group": "z_externalLinks@1"
+                }
+            ],
+            "explorer/context": [
+                {
+                    "command": "aws.deploySamApplication",
+                    "when": "isFileSystemResource == true && resourceFilename =~ /^template\\.(json|yml|yaml)$/",
+                    "group": "z_aws@1"
                 }
             ],
             "view/item/context": [
@@ -1026,11 +1026,6 @@
                     "command": "aws.downloadSchemaItemCode",
                     "when": "view == aws.explorer && viewItem == awsSchemaItemNode && !isCloud9",
                     "group": "1@1"
-                },
-                {
-                    "command": "aws.showErrorDetails",
-                    "when": "view == aws.explorer && viewItem == awsErrorNode",
-                    "group": "0@5"
                 },
                 {
                     "command": "aws.hideRegion",
@@ -1292,11 +1287,6 @@
                 "category": "AWS"
             },
             {
-                "command": "aws.showErrorDetails",
-                "title": "%AWS.command.showErrorDetails%",
-                "category": "AWS"
-            },
-            {
                 "command": "aws.viewLogs",
                 "title": "%AWS.command.viewLogs%",
                 "category": "AWS"
@@ -1506,6 +1496,7 @@
         ]
     },
     "scripts": {
+        "prepare": "husky install",
         "vscode:prepublish": "npm run clean && npm run lint && webpack --mode production && npm run buildScripts",
         "bundleDeps": "node ./build-scripts/bundleDeps.js",
         "clean": "node ./build-scripts/clean.js dist",
@@ -1514,8 +1505,7 @@
         "copyNonCodeFiles": "node ./build-scripts/copyNonCodeFiles.js",
         "copyExtensionMain": "node ./build-scripts/copyExtensionMain.js",
         "copyDistFiles": "ts-node ./build-scripts/copyDistFiles.ts",
-        "buildScripts": "npm run bundleDeps && npm run copyExtensionMain && npm run copyDistFiles && npm run copyNonCodeFiles && npm run generateNonCodeFiles && npm run buildVue",
-        "buildVue": "webpack --config-name vueLoader",
+        "buildScripts": "npm run bundleDeps && npm run copyExtensionMain && npm run copyDistFiles && npm run copyNonCodeFiles && npm run generateNonCodeFiles",
         "compile": "webpack --mode development && npm run buildScripts",
         "recompile": "npm run clean && npm run compile",
         "watch": "npm run buildScripts && tsc -watch -p ./",
@@ -1533,7 +1523,7 @@
         "createRelease": "ts-node ./build-scripts/createRelease.ts"
     },
     "devDependencies": {
-        "@aws-toolkits/telemetry": "0.0.100",
+        "@aws-toolkits/telemetry": "0.0.94",
         "@sinonjs/fake-timers": "^7.0.5",
         "@types/adm-zip": "^0.4.32",
         "@types/async-lock": "^1.1.0",
@@ -1541,7 +1531,7 @@
         "@types/cross-spawn": "^6.0.0",
         "@types/fs-extra": "^8.0.1",
         "@types/glob": "^7.1.1",
-        "@types/js-yaml": "^3.12.0",
+        "@types/js-yaml": "^4.0.1",
         "@types/lodash": "^4.14.136",
         "@types/marked": "^0.6.5",
         "@types/mime-types": "^2.1.0",
@@ -1549,65 +1539,61 @@
         "@types/node": "^10.14.22",
         "@types/readline-sync": "^1.4.3",
         "@types/request": "^2.47.1",
-        "@types/semver": "^5.5.0",
+        "@types/semver": "^7.3.6",
         "@types/sinon": "^10.0.0",
         "@types/sinonjs__fake-timers": "^6.0.2",
         "@types/tcp-port-used": "^1.0.0",
         "@types/uuid": "^8.3.0",
         "@types/vscode": "1.42.0",
+        "@types/vscode-webview": "^1.57.0",
         "@types/xml2js": "^0.4.8",
-        "@typescript-eslint/eslint-plugin": "^2.27.0",
-        "@typescript-eslint/eslint-plugin-tslint": "^2.27.0",
-        "@typescript-eslint/parser": "^2.27.0",
+        "@typescript-eslint/eslint-plugin": "^4.24.0",
+        "@typescript-eslint/parser": "^4.24.0",
         "circular-dependency-plugin": "^5.2.0",
         "decache": "^4.4.0",
         "esbuild-loader": "2.10.0",
-        "eslint": "^6.8.0",
-        "eslint-config-prettier": "^6.10.1",
-        "eslint-plugin-header": "^3.0.0",
+        "eslint": "^7.28.0",
+        "eslint-config-prettier": "8.3",
+        "eslint-plugin-header": "^3.1.1",
         "eslint-plugin-no-null": "^1.0.2",
         "glob": "^7.1.4",
-        "husky": "^2.3.0",
+        "husky": "^6.0.0",
         "istanbul": "^0.4.5",
         "json-schema-to-typescript": "^8.2.0",
-        "marked": "^0.7.0",
+        "marked": "^2.0.7",
         "mocha": "^7.1.1",
         "mocha-junit-reporter": "^2.0.0",
-        "mocha-multi-reporters": "^1.1.7",
-        "prettier": "^2.2.1",
+        "mocha-multi-reporters": "^1.5.1",
+        "prettier": "^2.3.1",
         "prettier-plugin-sh": "^0.6.1",
         "pretty-quick": "^3.1.0",
         "readline-sync": "^1.4.9",
         "remap-istanbul": "^0.12.0",
-        "sinon": "^10.0.0",
+        "sinon": "^11.1.1",
         "source-map-support": "^0.5.19",
         "ts-mockito": "^2.5.0",
         "ts-node": "^9.1.1",
-        "tslint": "^6.1.3",
         "umd-compat-loader": "^2.1.2",
-        "vsce": "^1.88.0",
+        "vsce": "^1.93.0",
         "vscode-nls-dev": "^3.3.1",
-        "vscode-test": "^1.4.0",
-        "vue-loader": "^15.9.6",
-        "vue-template-compiler": "^2.6.12",
-        "webpack": "^5.36.2",
-        "webpack-cli": "^3.3.10"
+        "vscode-test": "^1.5.2",
+        "webpack": "^5.38.1",
+        "webpack-cli": "^4.7.2"
     },
     "dependencies": {
         "adm-zip": "^0.4.13",
         "amazon-states-language-service": "^1.6.4",
-        "async-lock": "^1.1.3",
+        "async-lock": "^1.3.0",
         "aws-sdk": "^2.882.0",
         "aws-ssm-document-language-service": "^1.0.0",
         "bytes": "^3.1.0",
-        "cloudformation-schema-js-yaml": "^1.0.1",
-        "cross-spawn": "^6.0.5",
+        "cross-spawn": "^7.0.3",
         "fs-extra": "^9.0.1",
-        "handlebars": "^4.7.6",
+        "handlebars": "^4.7.7",
         "immutable": "^4.0.0-rc.12",
-        "js-yaml": "^3.13.1",
+        "js-yaml": "^4.1.0",
         "jsonc-parser": "^2.0.2",
-        "lodash": "^4.17.19",
+        "lodash": "^4.17.21",
         "mime-types": "^2.1.27",
         "moment": "^2.29.1",
         "portfinder": "^1.0.25",
@@ -1616,9 +1602,9 @@
         "sleep-promise": "^9.1.0",
         "strip-ansi": "^5.2.0",
         "tcp-port-used": "^1.0.1",
-        "typescript": "^3.7.2",
+        "typescript": "^4.3.4",
         "uuid": "^8.3.2",
-        "vscode-languageclient": "^6.1.1",
+        "vscode-languageclient": "^6.1.4",
         "vscode-languageserver": "^6.1.1",
         "vscode-languageserver-textdocument": "^1.0.1",
         "vscode-nls": "^4.1.1",
@@ -1626,7 +1612,8 @@
         "winston": "^3.2.1",
         "winston-transport": "^4.3.0",
         "xml2js": "^0.4.19",
-        "yaml": "^1.9.2"
+        "yaml": "^1.9.2",
+        "yaml-cfn": "^0.3.0"
     },
     "prettier": {
         "printWidth": 120,

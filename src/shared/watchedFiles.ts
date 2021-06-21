@@ -210,7 +210,7 @@ export abstract class WatchedFiles<T> implements vscode.Disposable {
                 await this.addItemToRegistry(uri)
             }),
             watcher.onDidDelete(async uri => {
-                getLogger().verbose(`${this.name}: ,anager detected a deleted file: ${uri.fsPath}`)
+                getLogger().verbose(`${this.name}: manager detected a deleted file: ${uri.fsPath}`)
                 this.remove(uri)
             })
         )

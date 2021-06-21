@@ -4,11 +4,11 @@
  */
 
 import Vue, { VNode } from 'vue'
-import { VsCode } from '../../webviews/main'
 import { AwsSamDebuggerConfiguration } from '../../shared/sam/debugger/awsSamDebugConfiguration'
-import { AwsSamDebuggerConfigurationLoose, SamInvokerRequest, SamInvokerResponse, SamInvokeVueState } from './samInvoke'
+import { AwsSamDebuggerConfigurationLoose, SamInvokerResponse, SamInvokeVueState } from './samInvoke'
+import { WebviewApi } from 'vscode-webview'
 
-declare const vscode: VsCode<SamInvokerRequest, SamInvokeVueState>
+declare const vscode: WebviewApi<SamInvokeVueState>
 
 interface VueDataLaunchPropertyObject {
     value: string
@@ -98,6 +98,9 @@ export const Component = Vue.extend({
         window.addEventListener('message', ev => {
             const event = ev.data as SamInvokerResponse
             switch (event.command) {
+                case 'getRuntimes':
+                    this.runtimes = event.data.runtimes
+                    break
                 case 'getSamplePayload':
                     this.payload.value = JSON.stringify(JSON.parse(event.data.payload), undefined, 4)
                     break
@@ -152,17 +155,7 @@ export const Component = Vue.extend({
             ],
             containerBuildStr: '',
             skipNewImageCheckStr: '',
-            runtimes: [
-                'nodejs10.x',
-                'nodejs12.x',
-                'nodejs14.x',
-                'python2.7',
-                'python3.6',
-                'python3.7',
-                'python3.8',
-                'dotnetcore2.1',
-                'dotnetcore3.1',
-            ],
+            runtimes: [],
             httpMethods: ['GET', 'POST', 'PUT', 'DELETE', 'HEAD', 'OPTIONS', 'PATCH'],
             launchConfig: newLaunchConfig(),
             payload: { value: '', errorMsg: '' },
@@ -395,6 +388,16 @@ export const Component = Vue.extend({
                         v-model="launchConfig.invokeTarget.logicalId"
                     /><span class="data-view"> Logical Id from data: {{ launchConfig.invokeTarget.logicalId }}</span>
                 </div>
+                <div class="config-item">
+                    <label for="runtime-selector">Runtime</label>
+                    <select name="runtimeType" v-model="launchConfig.lambda.runtime">
+                        <option disabled>Choose a runtime...</option>
+                        <option v-for="(runtime, index) in runtimes" v-bind:value="runtime" :key="index">
+                            {{ runtime }}
+                        </option>
+                    </select>
+                    <span class="data-view">runtime in data: {{ launchConfig.lambda.runtime }}</span>
+                </div>
             </div>
             <div class="target-apigw" v-else-if="launchConfig.invokeTarget.target === 'api'">
                 <button v-on:click.prevent="loadResource">Load Resource</button><br />
@@ -416,6 +419,16 @@ export const Component = Vue.extend({
                         placeholder="Enter a resource"
                         v-model="launchConfig.invokeTarget.logicalId"
                     />
+                </div>
+                <div class="config-item">
+                    <label for="runtime-selector">Runtime</label>
+                    <select name="runtimeType" v-model="launchConfig.lambda.runtime">
+                        <option disabled>Choose a runtime...</option>
+                        <option v-for="(runtime, index) in runtimes" v-bind:value="runtime" :key="index">
+                            {{ runtime }}
+                        </option>
+                    </select>
+                    <span class="data-view">runtime in data: {{ launchConfig.lambda.runtime }}</span>
                 </div>
                 <div class="config-item">
                     <label for="path">Path</label>

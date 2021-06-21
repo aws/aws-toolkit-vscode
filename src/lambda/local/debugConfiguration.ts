@@ -46,7 +46,7 @@ export interface PythonDebugConfiguration extends SamLaunchRequestArgs {
     /** Passed to "sam build --manifest …" */
     readonly manifestPath: string | undefined
 
-    // Fields expected by the VSCode ptvsd adapter.
+    // Fields expected by the VSCode debugpy adapter.
     readonly host: string
     readonly port: number
     readonly pathMappings: PythonPathMapping[]
@@ -77,13 +77,12 @@ export interface DotNetCoreDebugConfiguration extends SamLaunchRequestArgs {
         [key: string]: string
     }
 }
+
 export interface GoDebugConfiguration extends SamLaunchRequestArgs {
     readonly runtimeFamily: RuntimeFamily.Go
     readonly preLaunchTask?: string
     readonly host: 'localhost'
     readonly port: number
-    readonly localRoot: string
-    readonly remoteRoot: string
 }
 
 export interface PipeTransport {
@@ -162,7 +161,7 @@ export function getHandlerName(
             }
 
             const propertyValue = CloudFormation.resolvePropertyWithOverrides(
-                templateResource?.Properties?.Handler!!,
+                templateResource?.Properties?.Handler,
                 template,
                 config.sam?.template?.parameters
             )
@@ -215,7 +214,7 @@ export function getTemplateResource(
     if (!cfnTemplate?.Resources) {
         throw Error(`no Resources in template: ${templateInvoke.templatePath}`)
     }
-    const templateResource: CloudFormation.Resource | undefined = cfnTemplate?.Resources![templateInvoke.logicalId!!]
+    const templateResource: CloudFormation.Resource | undefined = cfnTemplate?.Resources![templateInvoke.logicalId!]
     if (!templateResource) {
         throw Error(
             `template Resources object does not contain key '${templateInvoke.logicalId}':` +

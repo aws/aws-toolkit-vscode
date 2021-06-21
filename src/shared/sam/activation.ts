@@ -97,11 +97,15 @@ async function registerServerlessCommands(ctx: ExtContext): Promise<void> {
         }),
         vscode.commands.registerCommand('aws.addSamDebugConfiguration', addSamDebugConfiguration),
         vscode.commands.registerCommand('aws.pickAddSamDebugConfiguration', codelensUtils.pickAddSamDebugConfiguration),
-        vscode.commands.registerCommand('aws.deploySamApplication', async regionNode => {
+        vscode.commands.registerCommand('aws.deploySamApplication', async arg => {
+            // `arg` is one of :
+            //  - undefined
+            //  - regionNode (selected from AWS Explorer)
+            //  -  Uri to template.yaml (selected from File Explorer)
+
             const samDeployWizardContext = new DefaultSamDeployWizardContext(ctx)
             const samDeployWizard = async (): Promise<SamDeployWizardResponse | undefined> => {
-                const wizard = new SamDeployWizard(samDeployWizardContext, regionNode)
-
+                const wizard = new SamDeployWizard(samDeployWizardContext, arg)
                 return wizard.run()
             }
 
@@ -144,8 +148,6 @@ async function activateCodeLensProviders(
         supportedLanguages[goLensProvider.GO_LANGUAGE] = goCodeLensProvider
     }
 
-    await vscode.commands.executeCommand('setContext', 'samSupportedLanguages', supportedLanguages)
-
     disposables.push(
         vscode.languages.registerCodeLensProvider(
             [
@@ -167,25 +169,15 @@ async function activateCodeLensProviders(
 
     disposables.push(
         vscode.commands.registerCommand('aws.toggleSamCodeLenses', () => {
-            configuration.readSetting<boolean>(codelensUtils.STATE_NAME_ENABLE_CODELENSES)
-                ? configuration.writeSetting(
-                      codelensUtils.STATE_NAME_ENABLE_CODELENSES,
-                      false,
-                      vscode.ConfigurationTarget.Global
-                  )
-                : configuration.writeSetting(
-                      codelensUtils.STATE_NAME_ENABLE_CODELENSES,
-                      true,
-                      vscode.ConfigurationTarget.Global
-                  )
+            const toggled = !configuration.readSetting<boolean>(codelensUtils.STATE_NAME_ENABLE_CODELENSES)
+            configuration.writeSetting(
+                codelensUtils.STATE_NAME_ENABLE_CODELENSES,
+                toggled,
+                vscode.ConfigurationTarget.Global
+            )
         })
     )
 
-    /**
-     * This should only be callable when the current editor is a language supported by our SAM implementation
-     * (see package.json's when clause for aws.addSamDebugConfig).
-     * Error blocks should never be triggered, but messages will be provided regardless (I guess a user could tie this to a keyboard shortcut...)
-     */
     disposables.push(
         vscode.commands.registerCommand('aws.addSamDebugConfig', async () => {
             const activeEditor = vscode.window.activeTextEditor
@@ -258,9 +250,11 @@ async function activateCodeLensProviders(
 function createYamlExtensionPrompt(): void {
     const neverPromptAgain = ext.context.globalState.get<boolean>(STATE_NAME_SUPPRESS_YAML_PROMPT)
 
-    // only pop this up in VS Code and Insiders since other VS Code-like IDEs (e.g. Theia) may not have a marketplace or contain the YAML plugin
+    // Show this only in VSCode since other VSCode-like IDEs (e.g. Theia) may
+    // not have a marketplace or contain the YAML plugin.
     if (!neverPromptAgain && getIdeType() === IDE.vscode && !vscode.extensions.getExtension(VSCODE_EXTENSION_ID.yaml)) {
-        // these will all be disposed immediately after showing one so the user isn't prompted more than once per session
+        // Disposed immediately after showing one, so the user isn't prompted
+        // more than once per session.
         const yamlPromptDisposables: vscode.Disposable[] = []
 
         // user opens a template file

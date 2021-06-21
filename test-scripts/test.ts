@@ -9,9 +9,16 @@ import { VSCODE_EXTENSION_ID } from '../src/shared/extensions'
 import { installVSCodeExtension, setupVSCodeTestInstance } from './launchTestUtilities'
 import { env } from 'process'
 
+/**
+ * Amount of time to wait before executing tests.
+ * This gives time for extensions to initialize, otherwise the first CodeLens test will fail.
+ */
+const START_UP_DELAY = 20000
+
 async function setupVSCode(): Promise<string> {
     const vsCodeExecutablePath = await setupVSCodeTestInstance()
     await installVSCodeExtension(vsCodeExecutablePath, VSCODE_EXTENSION_ID.yaml)
+    await new Promise(r => setTimeout(r, START_UP_DELAY))
     return vsCodeExecutablePath
 }
 

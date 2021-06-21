@@ -68,10 +68,6 @@ export class DefaultStepFunctionsClient implements StepFunctionsClient {
     }
 
     private async createSdkClient(): Promise<StepFunctions> {
-        return await ext.sdkClientBuilder.createAndConfigureServiceClient(
-            options => new StepFunctions(options),
-            undefined,
-            this.regionCode
-        )
+        return await ext.sdkClientBuilder.createAwsService(StepFunctions, undefined, this.regionCode)
     }
 }

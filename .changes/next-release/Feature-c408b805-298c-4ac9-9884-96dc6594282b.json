@@ -1,4 +1,0 @@
-{
-	"type": "Feature",
-	"description": "UX: write logs to extension's 'globalStoragePath' for all operating systems #1692"
-}

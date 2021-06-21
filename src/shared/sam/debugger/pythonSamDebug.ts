@@ -3,29 +3,25 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
+import { Runtime } from 'aws-sdk/clients/lambda'
 import { writeFile } from 'fs-extra'
 import * as os from 'os'
 import * as path from 'path'
-import * as vscode from 'vscode'
 import {
-    isImageLambdaConfig,
-    PythonDebugConfiguration,
-    PythonCloud9DebugConfiguration,
-    PythonPathMapping,
+    isImageLambdaConfig, PythonCloud9DebugConfiguration, PythonDebugConfiguration, PythonPathMapping
 } from '../../../lambda/local/debugConfiguration'
 import { RuntimeFamily } from '../../../lambda/models/samLambdaRuntime'
-import { ExtContext, VSCODE_EXTENSION_ID } from '../../extensions'
+import { ext } from '../../extensionGlobals'
+import { ExtContext } from '../../extensions'
 import { fileExists, readFileAsString } from '../../filesystemUtilities'
 import { getLogger } from '../../logger'
 import * as pathutil from '../../utilities/pathUtils'
 import { getLocalRootVariants } from '../../utilities/pathUtils'
 import { Timeout } from '../../utilities/timeoutUtils'
-import { DefaultSamLocalInvokeCommand, WAIT_FOR_DEBUGGER_MESSAGES } from '../cli/samCliLocalInvoke'
-import { runLambdaFunction, makeInputTemplate } from '../localLambdaRunner'
-import { SamLaunchRequestArgs } from './awsSamDebugger'
-import { ext } from '../../extensionGlobals'
-import { Runtime } from 'aws-sdk/clients/lambda'
 import { getWorkspaceRelativePath } from '../../utilities/workspaceUtils'
+import { DefaultSamLocalInvokeCommand, WAIT_FOR_DEBUGGER_MESSAGES } from '../cli/samCliLocalInvoke'
+import { makeInputTemplate, runLambdaFunction } from '../localLambdaRunner'
+import { SamLaunchRequestArgs } from './awsSamDebugger'
 
 /** SAM will mount the --debugger-path to /tmp/lambci_debug_files */
 const DEBUGPY_WRAPPER_PATH = '/tmp/lambci_debug_files/py_debug_wrapper.py'
@@ -60,7 +56,7 @@ async function makePythonDebugManifest(params: {
         return debugManifestPath
     }
 
-    // TODO: If another module name includes the string "ptvsd", this will be skipped...
+    // TODO: If another module name includes the string "debugpy", this will be skipped...
     if (!params.useIkpdb && !manifestText.includes('debugpy')) {
         manifestText += `${os.EOL}debugpy>=1.0,<2`
         await writeFile(debugManifestPath, manifestText)
@@ -85,7 +81,7 @@ export async function makePythonDebugConfig(
     if (!config.codeRoot) {
         // Last-resort attempt to discover the project root (when there is no
         // `launch.json` nor `template.yaml`).
-        config.codeRoot = await getSamProjectDirPathForFile(config?.templatePath ?? config.documentUri!!.fsPath)
+        config.codeRoot = await getSamProjectDirPathForFile(config?.templatePath ?? config.documentUri!.fsPath)
         if (!config.codeRoot) {
             // TODO: return error and show it at the caller.
             throw Error('missing launch.json, template.yaml, and failed to discover project root')
@@ -243,16 +239,6 @@ async function waitForIkpdb(debugPort: number, timeout: Timeout) {
     await new Promise<void>(resolve => {
         setTimeout(resolve, 2000)
     })
-}
-
-export async function activatePythonExtensionIfInstalled() {
-    const extension = vscode.extensions.getExtension(VSCODE_EXTENSION_ID.python)
-
-    // If the extension is not installed, it is not a failure. There may be reduced functionality.
-    if (extension && !extension.isActive) {
-        getLogger().info('Python CodeLens Provider is activating the python extension')
-        await extension.activate()
-    }
 }
 
 function getPythonExeAndBootstrap(runtime: Runtime) {

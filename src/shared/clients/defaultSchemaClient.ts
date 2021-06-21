@@ -160,10 +160,6 @@ export class DefaultSchemaClient implements SchemaClient {
     }
 
     private async createSdkClient(): Promise<Schemas> {
-        return await ext.sdkClientBuilder.createAndConfigureServiceClient(
-            options => new Schemas(options),
-            undefined,
-            this.regionCode
-        )
+        return await ext.sdkClientBuilder.createAwsService(Schemas, undefined, this.regionCode)
     }
 }

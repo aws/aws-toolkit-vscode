@@ -3,10 +3,10 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
-import * as schema from 'cloudformation-schema-js-yaml'
 import * as path from 'path'
 import * as vscode from 'vscode'
 import { mkdirSync, writeFile } from 'fs-extra'
+import { schema } from 'yaml-cfn'
 import * as yaml from 'js-yaml'
 import * as filesystemUtilities from '../filesystemUtilities'
 import { SystemUtilities } from '../systemUtilities'
@@ -274,7 +274,7 @@ export namespace CloudFormation {
         'EventInvokeConfig',
     ])
     type FunctionGlobals = {
-        [key in FunctionKeys]?: string | number | object | undefined
+        [key in FunctionKeys]?: string | number | Record<string, unknown> | undefined
     }
 
     type ApiKeys =
@@ -315,7 +315,7 @@ export namespace CloudFormation {
         'Domain',
     ])
     type ApiGlobals = {
-        [key in ApiKeys]?: string | number | object | undefined
+        [key in ApiKeys]?: string | number | Record<string, unknown> | undefined
     }
 
     type HttpApiKeys =
@@ -336,13 +336,13 @@ export namespace CloudFormation {
         'Domain',
     ])
     type HttpApiGlobals = {
-        [key in HttpApiKeys]?: string | number | object | undefined
+        [key in HttpApiKeys]?: string | number | Record<string, unknown> | undefined
     }
 
     type SimpleTableKeys = 'SSESpecification'
     const simpleTableKeysSet: Set<string> = new Set(['SSESpecification'])
     type SimpleTableGlobals = {
-        [key in SimpleTableKeys]?: string | number | object | undefined
+        [key in SimpleTableKeys]?: string | number | Record<string, unknown> | undefined
     }
 
     function globalPropForKey(key: string): keyof TemplateGlobals | undefined {
@@ -369,8 +369,8 @@ export namespace CloudFormation {
         }
 
         const templateAsYaml: string = await filesystemUtilities.readFileAsString(filename)
-        const template = yaml.safeLoad(templateAsYaml, {
-            schema: schema as yaml.SchemaDefinition,
+        const template = yaml.load(templateAsYaml, {
+            schema: new yaml.Schema(schema),
         }) as Template
         validateTemplate(template)
 
@@ -378,7 +378,7 @@ export namespace CloudFormation {
     }
 
     export async function save(template: Template, filename: string): Promise<void> {
-        const templateAsYaml: string = yaml.safeDump(template)
+        const templateAsYaml: string = yaml.dump(template)
 
         await writeFile(filename, templateAsYaml, 'utf8')
     }
@@ -514,9 +514,9 @@ export namespace CloudFormation {
      * Validates whether or not a property is a valid ref.
      * @param property Property to validate
      */
-    function isRef(property: string | number | object | undefined): boolean {
+    function isRef(property: unknown): boolean {
         return (
-            typeof property === 'object' && Object.keys(property).length === 1 && Object.keys(property).includes('Ref')
+            typeof property === 'object' && Object.keys(property!).length === 1 && Object.keys(property!).includes('Ref')
         )
     }
 
@@ -530,7 +530,7 @@ export namespace CloudFormation {
      * @param template Full template object. Required for `Ref` and `Globals` lookup.
      */
     export function getStringForProperty(
-        targetObj: { [key: string]: string | number | object | undefined } | undefined,
+        targetObj: { [key: string]: string | number | Record<string, unknown> | undefined } | undefined,
         key: string,
         template: Template
     ): string | undefined {
@@ -547,7 +547,7 @@ export namespace CloudFormation {
      * @param template Full template object. Required for `Ref` and `Globals` lookup.
      */
     export function getNumberForProperty(
-        targetObj: { [key: string]: string | number | object | undefined } | undefined,
+        targetObj: { [key: string]: string | number | Record<string, unknown> | undefined } | undefined,
         key: string,
         template: Template
     ): number | undefined {
@@ -568,7 +568,7 @@ export namespace CloudFormation {
      * @param globalLookup Whether or not this is currently looking at `Globals` fields. Internal for recursion prevention.
      */
     function getThingForProperty(
-        targetObj: { [key: string]: string | number | object | undefined } | undefined,
+        targetObj: { [key: string]: string | number | Record<string, unknown> | undefined } | undefined,
         key: string,
         template: Template,
         type: 'string' | 'number',
@@ -577,10 +577,10 @@ export namespace CloudFormation {
         if (!targetObj) {
             return undefined
         }
-        const property: string | number | object | undefined = targetObj[key]
+        const property: unknown = targetObj[key]
         if (validatePropertyType(targetObj, key, template, type)) {
             if (typeof property !== 'object' && typeof property === type) {
-                return property
+                return property as 'string' | 'number'
             } else if (isRef(property)) {
                 try {
                     const forcedProperty = property as Ref
@@ -614,7 +614,7 @@ export namespace CloudFormation {
      * @param globalLookup Whether or not this is currently looking at `Globals` fields. Internal for recursion prevention.
      */
     function validatePropertyType(
-        targetObj: { [key: string]: string | number | object | undefined } | undefined,
+        targetObj: { [key: string]: string | number | Record<string, unknown> | undefined } | undefined,
         key: string,
         template: Template,
         type: 'string' | 'number',
@@ -623,7 +623,7 @@ export namespace CloudFormation {
         if (!targetObj) {
             return false
         }
-        const property: string | number | object | undefined = targetObj[key]
+        const property: unknown = targetObj[key]
         if (typeof property === type) {
             return true
         } else if (isRef(property)) {
@@ -671,7 +671,7 @@ export namespace CloudFormation {
             }
 
             // returns undefined if no default value is present
-            return param.Default
+            return param.Default as 'number' | 'string'
         }
 
         throw new Error(`Parameter ${ref.Ref} is not a ${thingType}`)
@@ -706,14 +706,14 @@ export namespace CloudFormation {
      * @param overrides Object containing override values
      */
     export function resolvePropertyWithOverrides(
-        property: string | number | object | undefined,
+        property: unknown,
         template: Template,
         overrides: {
             [k: string]: string | number
         } = {}
     ): string | number | undefined {
         if (typeof property !== 'object') {
-            return property
+            return property as string | number | undefined 
         }
         if (isRef(property)) {
             try {

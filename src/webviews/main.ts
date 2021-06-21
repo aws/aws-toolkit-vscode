@@ -26,18 +26,11 @@ interface WebviewParams<TRequest, TResponse> {
     onDidDisposeFunction?(): void
 }
 
-// TODO: add types for the state functions
-export interface VsCode<TRequest, State> {
-    postMessage(output: TRequest): void
-    setState(state: State): void
-    getState(): State | undefined
-}
-
 export async function createVueWebview<TRequest, TResponse>(params: WebviewParams<TRequest, TResponse>) {
     const libsPath: string = path.join(params.context.extensionPath, 'media', 'libs')
     const jsPath: string = path.join(params.context.extensionPath, 'media', 'js')
     const cssPath: string = path.join(params.context.extensionPath, 'media', 'css')
-    const webviewPath: string = path.join(params.context.extensionPath, 'dist', 'compiledWebviews')
+    const webviewPath: string = path.join(params.context.extensionPath, 'dist')
 
     const view = vscode.window.createWebviewPanel(
         params.id,
@@ -112,6 +105,10 @@ export async function createVueWebview<TRequest, TResponse>(params: WebviewParam
 </html>`
 
     if (params.initialCalls) {
+        // TODO: workaround for cloud9 webviews, remove after cloud9 issue is fixed.
+        if (isCloud9()) {
+            await new Promise(resolve => setTimeout(resolve, 500))
+        }
         for (const call of params.initialCalls) view.webview.postMessage(call)
     }
 
