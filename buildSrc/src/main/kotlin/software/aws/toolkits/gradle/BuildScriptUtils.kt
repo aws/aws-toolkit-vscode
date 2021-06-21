@@ -5,18 +5,7 @@ package software.aws.toolkits.gradle
 
 import org.gradle.api.GradleException
 import org.gradle.api.Project
-import org.gradle.api.Task
-import org.gradle.api.UnknownDomainObjectException
-import org.gradle.api.tasks.SourceSet
-import org.gradle.api.tasks.SourceSetContainer
 import org.jetbrains.intellij.IntelliJPluginExtension
-
-inline fun <reified T : Task> Project.removeTask() {
-    // For some reason in buildSrc, we can't use the <> version
-    tasks.withType(T::class.java) {
-        enabled = false
-    }
-}
 
 /* When we dynamically apply(plugin = "org.jetbrains.intellij"), we do not get the nice extension functions
  * pulled into scope. This function hides that fact, and gives a better error message when it fails.
@@ -30,19 +19,11 @@ fun Project.intellij(block: IntelliJPluginExtension.() -> Unit) {
     intellij.block()
 }
 
-fun SourceSetContainer.getOrCreate(sourceSet: String, block: SourceSet.() -> Unit) {
-    try {
-        getByName(sourceSet).block()
-    } catch (e: UnknownDomainObjectException) {
-        create(sourceSet).block()
-    }
-}
-
 /**
  * Only run the given block if this build is running within a CI system (e.g. GitHub actions, CodeBuild etc)
  */
-fun ciOnly(block: () -> Unit) {
-    if (System.getenv("CI") != null) {
+fun Project.ciOnly(block: () -> Unit) {
+    if (providers.environmentVariable("CI").forUseAtConfigurationTime().isPresent) {
         block()
     }
 }
