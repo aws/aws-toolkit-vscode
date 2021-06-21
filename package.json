@@ -79,7 +79,7 @@
         "onCommand:aws.launchConfigForm",
         "onCommand:aws.toggleSamCodeLenses",
         "onCommand:aws.addSamDebugConfig",
-        "onCommand:aws.s3.uploadFileToS3"
+        "onCommand:aws.s3.uploadFile"
     ],
     "main": "./extensionMain",
     "contributes": {
@@ -710,7 +710,7 @@
                 },
                 {
                     "command": "aws.s3.uploadFile",
-                    "when": "false"
+                    "when": "true"
                 },
                 {
                     "command": "aws.s3.uploadFileToParent",
@@ -1164,12 +1164,7 @@
                 "category": "AWS",
                 "icon": "$(cloud-upload)"
             },
-            {
-                "command": "aws.s3.uploadFileToS3",
-                "title": "%AWS.command.s3.uploadFileToS3%",
-                "category": "AWS",
-                "icon": "$(cloud-upload)"
-            },
+            
             {
                 "command": "aws.s3.uploadFileToParent",
                 "title": "%AWS.command.s3.uploadFileToParent%",

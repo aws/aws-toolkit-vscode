@@ -71,7 +71,7 @@ describe('uploadFileCommand', function () {
             }
             
             
-            await uploadFileCommand(instance(s3), bucketNode, fileLocation, statFile, undefined, getFile, window, outputChannel, commands)
+            await uploadFileCommand(instance(s3), bucketNode, statFile, undefined, getFile, window, outputChannel, commands)
             
             // eslint-disable-next-line @typescript-eslint/unbound-method
             const [uploadFileRequest] = capture(s3.uploadFile).last()
@@ -101,7 +101,7 @@ describe('uploadFileCommand', function () {
                 })
             } 
             
-            await uploadFileCommand(instance(s3), bucketNode, fileLocation, statFile, undefined, getFile, window, outputChannel, commands)
+            await uploadFileCommand(instance(s3), bucketNode, statFile, undefined, getFile, window, outputChannel, commands)
             assert.deepStrictEqual(outputChannel.lines, [
                 'No file selected, cancelling upload',
             ])
@@ -132,7 +132,7 @@ describe('uploadFileCommand', function () {
         it('prompts the user for file, then for bucket, if both aren\'t undefined, uploads', async function () {
             when(s3.uploadFile(anything())).thenResolve()
 
-            await uploadFileCommand(instance(s3), undefined, undefined, statFile, getBucket, getFile, window, outputChannel, commands)
+            await uploadFileCommand(instance(s3), undefined, statFile, getBucket, getFile, window, outputChannel, commands)
             assert.deepStrictEqual(outputChannel.lines, [
                 `Uploading file from ${fileLocation} to s3://bucket-name/file.jpg`,
                 `Successfully uploaded file s3://bucket-name/file.jpg to bucket-name`,
@@ -146,7 +146,7 @@ describe('uploadFileCommand', function () {
                 })
             }
 
-            await uploadFileCommand(instance(s3), undefined, undefined, statFile, getBucket, getFile, window, outputChannel, commands)
+            await uploadFileCommand(instance(s3), undefined, statFile, getBucket, getFile, window, outputChannel, commands)
             assert.deepStrictEqual(outputChannel.lines, ['No bucket selected, cancelling upload'] )
         })
 
@@ -157,7 +157,7 @@ describe('uploadFileCommand', function () {
                 })
             }
 
-            await uploadFileCommand(instance(s3), undefined, undefined, statFile, getBucket, getFile, window, outputChannel, commands)
+            await uploadFileCommand(instance(s3), undefined, statFile, getBucket, getFile, window, outputChannel, commands)
             assert.deepStrictEqual(outputChannel.lines, ['No file selected, cancelling upload'] )
         })
         
@@ -180,7 +180,7 @@ describe('uploadFileCommand', function () {
 
         window = new FakeWindow({ dialog: { openSelections: [fileLocation] } })
         
-        await uploadFileCommand(instance(s3), undefined, fileLocation, statFile, getBucket, getFile, window, outputChannel, commands)
+        await uploadFileCommand(instance(s3), fileLocation, statFile, getBucket, getFile, window, outputChannel, commands)
 
         // eslint-disable-next-line @typescript-eslint/unbound-method
         const [uploadFileRequest] = capture(s3.uploadFile).last()
@@ -207,7 +207,7 @@ describe('uploadFileCommand', function () {
         
         window = new FakeWindow({ dialog: { openSelections: [fileLocation] } })
         outputChannel = new MockOutputChannel()
-        await uploadFileCommand(instance(s3), undefined, fileLocation, statFile, getBucket, getFile, window, outputChannel, commands)
+        await uploadFileCommand(instance(s3), fileLocation, statFile, getBucket, getFile, window, outputChannel, commands)
          
         assert.ok(window.message.error?.includes('Failed to upload file'))
     })

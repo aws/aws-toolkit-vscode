@@ -49,8 +49,7 @@ export interface FileSizeBytes {
  */
  export async function uploadFileCommand(
     s3Client: S3Client,
-    node?: S3BucketNode | S3FolderNode,
-    document?: vscode.Uri,
+    nodeOrDocument: S3BucketNode | S3FolderNode | vscode.Uri | undefined,
     fileSizeBytes: FileSizeBytes = statFile,
     getBucket = promptUserForBucket,
     getFile = getFileToUpload,
@@ -61,7 +60,23 @@ export interface FileSizeBytes {
     let key: string
     let bucket: S3.Bucket
     let file: vscode.Uri | undefined
-    
+    let node: S3BucketNode | S3FolderNode | undefined
+    let document: vscode.Uri | undefined
+
+    if (nodeOrDocument){
+        const isNode = !!((nodeOrDocument as any).getChildren)
+        if (isNode) {
+            node = nodeOrDocument as S3BucketNode | S3FolderNode
+            document = undefined
+        } else {
+            document = nodeOrDocument as vscode.Uri
+            node = undefined
+        }
+    } else {
+        document = undefined
+        node = undefined
+    }
+
     if (node) {
         file = await getFile(undefined, window)
             if (!file) {
@@ -76,29 +91,34 @@ export interface FileSizeBytes {
         while (true) {
             file = await getFile(document, window)
             if (file) {
+                let bucketResponse: S3.Bucket | string
                 try{
-                    const bucketResponse = await getBucket(s3Client)
-                    if (bucketResponse === 'back'){
-                        continue
-                    }
-                    if(bucketResponse == 'cancel'){
-                        showOutputMessage('No bucket selected, cancelling upload', outputChannel)
-                        getLogger().info('No bucket selected, cancelling upload')
-                        telemetry.recordS3UploadObject({ result: 'Cancelled' })
-                        return
-                    }
-                    
-                    if (!(bucketResponse as any).Name) {
-                      throw Error(`bucketResponse is not a S3.Bucket`)
-                    }
-                    bucket = bucketResponse as S3.Bucket
-                    key = path.basename(file.fsPath)
-                    break
+                    bucketResponse = await getBucket(s3Client)
                 } catch (e) {
                     telemetry.recordS3UploadObject({ result: 'Failed' })
                     getLogger().error('getBucket failed', e)
                     return
                 }
+
+
+                if (bucketResponse === 'back'){
+                    
+                    continue
+                }
+                if(bucketResponse == 'cancel'){
+                    showOutputMessage('No bucket selected, cancelling upload', outputChannel)
+                    getLogger().info('No bucket selected, cancelling upload')
+                    telemetry.recordS3UploadObject({ result: 'Cancelled' })
+                    return
+                }
+                
+                if (!(bucketResponse as any).Name) {
+                    throw Error(`bucketResponse is not a S3.Bucket`)
+                }
+                bucket = bucketResponse as S3.Bucket
+                key = path.basename(file.fsPath)
+                break
+
             } else {
                 //if file is undefined, means the back button was pressed(there is no step before) or no file was selected
                 //thus break the loop of the 'wizard'
@@ -112,14 +132,13 @@ export interface FileSizeBytes {
     const fileName = path.basename(file.fsPath)
     const destinationPath = readablePath({ bucket: {name: bucket.Name!}, path: key })
     
-
     try {
         showOutputMessage(`Uploading file from ${file} to ${destinationPath}`, outputChannel)
         const request = {
             bucketName: bucket.Name!,
             key: key,
             fileLocation: file,
-            fileSizeBytes: 16,
+            fileSizeBytes: fileSizeBytes(file),
             s3Client,
             window: window
         }
@@ -193,11 +212,11 @@ interface BucketQuickPickItem extends vscode.QuickPickItem {
     bucket: S3.Bucket | undefined
 }
 
-// TODO:: extract and reuse logic from 
+// TODO:: extract and reuse logic from sam deploy wizard (bucket selection)
 /**
  * Will display a quick pick with the list of all buckets owned by the user.
- * @param s3client - client to get the list of buckets
- * @returns Bucket selected by the user, undefined if no bucket was selected or the quick pick was cancelled.
+ * @param s3client client to get the list of buckets
+ * @returns Bucket selected by the user, 'back' or 'cancel'
  * 
  * @throws Error if there is an error calling s3
  */
