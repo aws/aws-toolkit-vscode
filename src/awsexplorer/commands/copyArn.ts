@@ -14,6 +14,7 @@ import { Window } from '../../shared/vscode/window'
 import { Commands } from '../../shared/vscode/commands'
 import { COPY_TO_CLIPBOARD_INFO_TIMEOUT_MS } from '../../shared/constants'
 import { addCodiconToString } from '../../shared/utilities/textUtilities'
+import { getIdeProperties } from '../../shared/extensionUtilities'
 
 /**
  * Copies the arn of the resource represented by the given node.
@@ -41,7 +42,7 @@ export async function copyArnCommand(
         const logsItem = localize('AWS.generic.message.viewLogs', 'View Logs...')
         window
             .showErrorMessage(
-                localize('AWS.explorerNode.noArnFound', 'Could not find an ARN for selected AWS Explorer node'),
+                localize('AWS.explorerNode.noArnFound', 'Could not find an ARN for selected {0} Explorer node', getIdeProperties().company),
                 logsItem
             )
             .then(selection => {

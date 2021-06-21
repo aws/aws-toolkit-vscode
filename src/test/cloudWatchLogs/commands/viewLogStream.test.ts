@@ -82,7 +82,7 @@ describe('convertDescribeLogStreamsToQuickPickItems', function () {
         assert.strictEqual(results.length, 2)
         assert.deepStrictEqual(results[0], {
             label: 'streamWithoutTimestamp',
-            detail: localize('aws.cloudWatchLogs.viewLogStream.workflow.noStreams', '[No Log Events found]'),
+            detail: localize('AWS.cloudWatchLogs.viewLogStream.workflow.noStreams', '[No Log Events found]'),
         })
         assert.deepStrictEqual(results[1], {
             label: 'streamWithTimestamp',

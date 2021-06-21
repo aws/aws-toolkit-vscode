@@ -80,6 +80,8 @@ that is a net cost.
     a natural way, but surround them with quotes:
     - `'creating "{0}" in directory: {1}'`
   - Localize UI messages. Do _not_ localize log and exception messages.
+  - Use `extensionUtilities.getIdeProperties()` to automatically match IDE
+    terminology (e.g. VS Code : CodeLens :: AWS Cloud9 : Inline Action)
 - Bubble-up error conditions, do not sink them to random hidden places (such as
   logs only), expecting callers to figure out the failure mode. If a caller
   spawns a process that fails, the caller should get an exception, callback, or

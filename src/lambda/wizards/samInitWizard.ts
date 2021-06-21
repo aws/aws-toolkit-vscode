@@ -44,6 +44,7 @@ import {
 import * as semver from 'semver'
 import { MINIMUM_SAM_CLI_VERSION_INCLUSIVE_FOR_IMAGE_SUPPORT } from '../../shared/sam/cli/samCliValidator'
 import * as fsutil from '../../shared/filesystemUtilities'
+import { getIdeProperties } from '../../shared/extensionUtilities'
 
 const localize = nls.loadMessageBundle()
 
@@ -213,8 +214,9 @@ export class DefaultCreateNewSamAppWizardContext extends WizardContext implement
             if (!this.currentCredentials) {
                 vscode.window.showInformationMessage(
                     localize(
-                        'AWS.message.info.schemas.downloadCodeBindings.generate',
-                        'You need to be connected to AWS to select {0}.',
+                        'AWS.samcli.initWizard.schemas.aws_credentials_missing',
+                        'You need to be connected to {0} to select {1}.',
+                        getIdeProperties().company,
                         val.label
                     )
                 )

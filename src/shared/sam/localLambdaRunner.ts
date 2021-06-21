@@ -34,6 +34,7 @@ import { extensionSettingsPrefix } from '../constants'
 import { DefaultSamCliLocationProvider } from './cli/samCliLocator'
 import { getSamCliContext, getSamCliVersion } from './cli/samCliContext'
 import { CloudFormation } from '../cloudformation/cloudformation'
+import { getIdeProperties } from '../extensionUtilities'
 
 const localize = nls.loadMessageBundle()
 
@@ -596,7 +597,8 @@ export async function attachDebugger({
         getLogger('channel').error(
             localize(
                 'AWS.output.sam.local.attach.failure',
-                'Unable to attach Debugger. Check AWS Toolkit logs. If it took longer than expected to start, you can still attach.'
+                'Unable to attach Debugger. Check {0} Toolkit logs. If it took longer than expected to start, you can still attach.',
+                getIdeProperties().company
             )
         )
     }

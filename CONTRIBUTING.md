@@ -88,7 +88,14 @@ See [CODE_GUIDELINES.md](./docs/CODE_GUIDELINES.md) for coding conventions.
     1. Declare a global unhandledRejection handler.
        ```
        process.on('unhandledRejection', (e) => {
-           channelLogger.error('AWS.channel.aws.toolkit.activation.error', 'Error Activating AWS Toolkit', e as Error)
+           getLogger('channel').error(
+               localize(
+                   'AWS.channel.aws.toolkit.activation.error',
+                   'Error Activating {0} Toolkit: {1}',
+                   getIdeProperties().company,
+                   (e as Error).message
+               )
+           )
            if (e !== undefined) {
                throw e
            }
