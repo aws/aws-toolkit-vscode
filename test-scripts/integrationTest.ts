@@ -8,6 +8,8 @@ import { runTests } from 'vscode-test'
 import { VSCODE_EXTENSION_ID } from '../src/shared/extensions'
 import { installVSCodeExtension, setupVSCodeTestInstance, getCliArgsToDisableExtensions } from './launchTestUtilities'
 
+const DISABLE_WORKSPACE_TRUST = '--disable-workspace-trust'
+
 async function setupVSCode(): Promise<string> {
     console.log('Setting up VS Code Test instance...')
     const vsCodeExecutablePath = await setupVSCodeTestInstance()
@@ -45,7 +47,7 @@ async function setupVSCode(): Promise<string> {
             vscodeExecutablePath: vsCodeExecutablePath,
             extensionDevelopmentPath: cwd,
             extensionTestsPath: testEntrypoint,
-            launchArgs: [...disableExtensions, workspacePath],
+            launchArgs: [...disableExtensions, workspacePath, DISABLE_WORKSPACE_TRUST],
         }
         console.log(`runTests() args:\n${JSON.stringify(args, undefined, 2)}`)
         const result = await runTests(args)
