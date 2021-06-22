@@ -5,15 +5,18 @@ package software.aws.toolkits.jetbrains.services.cloudwatch.logs.editor
 
 import com.intellij.ui.SimpleColoredComponent
 import com.intellij.ui.speedSearch.SpeedSearchUtil
+import com.intellij.util.text.DateFormatUtil
+import com.intellij.util.text.SyncDateFormat
 import com.intellij.util.ui.ColumnInfo
 import com.intellij.util.ui.ListTableModel
 import software.amazon.awssdk.services.cloudwatchlogs.model.LogStream
 import software.aws.toolkits.jetbrains.services.cloudwatch.logs.LogStreamEntry
-import software.aws.toolkits.jetbrains.utils.ui.ResizingDateColumnRenderer
+import software.aws.toolkits.jetbrains.utils.ui.ResizingTextColumnRenderer
 import software.aws.toolkits.jetbrains.utils.ui.WrappingCellRenderer
 import software.aws.toolkits.jetbrains.utils.ui.setSelectionHighlighting
 import software.aws.toolkits.resources.message
 import java.awt.Component
+import java.text.SimpleDateFormat
 import javax.swing.JTable
 import javax.swing.SortOrder
 import javax.swing.table.TableCellRenderer
@@ -42,8 +45,8 @@ class LogStreamsStreamColumnRenderer() : TableCellRenderer {
 }
 
 class LogStreamsDateColumn : ColumnInfo<LogStream, String>(message("cloudwatch.logs.last_event_time")) {
-    private val renderer = ResizingDateColumnRenderer(showSeconds = false)
-    override fun valueOf(item: LogStream?): String? = item?.lastEventTimestamp()?.toString()
+    private val renderer = ResizingTextColumnRenderer()
+    override fun valueOf(item: LogStream?): String? = TimeFormatConversion.convertEpochTimeToStringDateTime(item?.lastEventTimestamp(), showSeconds = false)
 
     override fun isCellEditable(item: LogStream?): Boolean = false
     override fun getRenderer(item: LogStream?): TableCellRenderer? = renderer
@@ -66,8 +69,8 @@ class LogGroupFilterTableSorter(model: ListTableModel<LogStream>) : TableRowSort
 }
 
 class LogStreamDateColumn : ColumnInfo<LogStreamEntry, String>(message("general.time")) {
-    private val renderer = ResizingDateColumnRenderer(showSeconds = true)
-    override fun valueOf(item: LogStreamEntry?): String? = item?.timestamp?.toString()
+    private val renderer = ResizingTextColumnRenderer()
+    override fun valueOf(item: LogStreamEntry?): String? = TimeFormatConversion.convertEpochTimeToStringDateTime(item?.timestamp, showSeconds = true)
 
     override fun isCellEditable(item: LogStreamEntry?): Boolean = false
     override fun getRenderer(item: LogStreamEntry?): TableCellRenderer? = renderer
@@ -86,4 +89,15 @@ class LogStreamMessageColumn : ColumnInfo<LogStreamEntry, String>(message("gener
     override fun valueOf(item: LogStreamEntry?): String? = item?.message
     override fun isCellEditable(item: LogStreamEntry?): Boolean = false
     override fun getRenderer(item: LogStreamEntry?): TableCellRenderer? = renderer
+}
+
+object TimeFormatConversion {
+    fun convertEpochTimeToStringDateTime(epochTime: Long?, showSeconds: Boolean): String? {
+        val formatter: SyncDateFormat = if (showSeconds) {
+            SyncDateFormat(SimpleDateFormat("yyyy-MM-dd HH:mm:ss.SSS"))
+        } else {
+            DateFormatUtil.getDateTimeFormat()
+        }
+        return epochTime?.let { formatter.format(it) }
+    }
 }

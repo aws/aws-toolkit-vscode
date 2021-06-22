@@ -1,0 +1,4 @@
+{
+  "type" : "bugfix",
+  "description" : "Fix copying action in CloudWatch Logs Stream and Event Time providing epoch time instead of displayed value"
+}
