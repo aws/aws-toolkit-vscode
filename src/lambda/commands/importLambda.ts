@@ -41,7 +41,7 @@ async function runImportLambda(functionNode: LambdaFunctionNode, window = Window
 
     if (workspaceFolders.length === 0) {
         window.showErrorMessage(
-            localize('AWS.lambda.import.noWorkspaceFolders', 'Open a workspace before importing a Lambda function.')
+            localize('AWS.lambda.download.noWorkspaceFolders', 'Open a workspace before importing a Lambda function.')
         )
         return 'Cancelled'
     }
@@ -57,12 +57,12 @@ async function runImportLambda(functionNode: LambdaFunctionNode, window = Window
         const isConfirmed = await showConfirmationMessage(
             {
                 prompt: localize(
-                    'AWS.lambda.import.prompt',
+                    'AWS.lambda.download.prompt',
                     'Importing {0} into: {1}\nExisting directory will be overwritten: {0}\nProceed with import?',
                     functionName,
                     importLocationName
                 ),
-                confirm: localize('AWS.lambda.import.import', 'Import'),
+                confirm: localize('AWS.lambda.download.download', 'Import'),
                 cancel: localizedText.cancel,
             },
             window
@@ -79,7 +79,7 @@ async function runImportLambda(functionNode: LambdaFunctionNode, window = Window
             location: vscode.ProgressLocation.Notification,
             cancellable: false,
             title: localize(
-                'AWS.lambda.import.status',
+                'AWS.lambda.download.status',
                 'Importing Lambda function {0} into {1}...',
                 functionName,
                 importLocationName
@@ -98,7 +98,7 @@ async function runImportLambda(functionNode: LambdaFunctionNode, window = Window
                 getLogger().error(err)
                 window.showErrorMessage(
                     localize(
-                        'AWS.lambda.import.importError',
+                        'AWS.lambda.download.downloadError',
                         'Error importing Lambda function {0}: {1}',
                         functionNode.configuration.FunctionArn!,
                         err.message
@@ -198,7 +198,7 @@ async function downloadAndUnzipLambda(
 export async function openLambdaFile(lambdaLocation: string, window = Window.vscode()): Promise<void> {
     if (!(await fileExists(lambdaLocation))) {
         const warning = localize(
-            'AWS.lambda.import.fileNotFound',
+            'AWS.lambda.download.fileNotFound',
             'Handler file {0} not found in imported function.',
             lambdaLocation
         )

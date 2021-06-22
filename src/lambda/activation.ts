@@ -50,7 +50,7 @@ export async function activate(context: ExtContext): Promise<void> {
             }
         }),
         vscode.commands.registerCommand(
-            'aws.importLambda',
+            'aws.downloadLambda',
             async (node: LambdaFunctionNode) => await importLambdaCommand(node)
         ),
         vscode.commands.registerCommand('aws.uploadLambda', async (node: LambdaFunctionNode) => {

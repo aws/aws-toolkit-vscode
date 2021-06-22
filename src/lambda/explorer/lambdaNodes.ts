@@ -20,7 +20,7 @@ import { LambdaFunctionNode } from './lambdaFunctionNode'
 import { samLambdaImportableRuntimes } from '../models/samLambdaRuntime'
 
 export const CONTEXT_VALUE_LAMBDA_FUNCTION = 'awsRegionFunctionNode'
-export const CONTEXT_VALUE_LAMBDA_FUNCTION_IMPORTABLE = 'awsRegionFunctionNodeImportable'
+export const CONTEXT_VALUE_LAMBDA_FUNCTION_IMPORTABLE = 'awsRegionFunctionNodeDownloadable'
 
 /**
  * An AWS Explorer node representing the Lambda Service.
