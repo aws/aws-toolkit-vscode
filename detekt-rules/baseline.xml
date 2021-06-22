@@ -233,19 +233,7 @@
     <ID>FunctionNaming:SamVersionCacheTest.kt$SamVersionCacheTest$@Test fun successExecution_EmptyOutput()</ID>
     <ID>TopLevelPropertyNaming:EventsFetcherTest.kt$private const val nonEmptyMessage = "Second call on the same page must not return anything"</ID>
     <ID>TopLevelPropertyNaming:EventsFetcherTest.kt$private const val wrongPageMessage = "Wrong list of available pages"</ID>
-    <ID>TopLevelPropertyNaming:RdsResources.kt$// These are the member engine in DBInstance, but it is a string const val mysqlEngineType = "mysql"</ID>
-    <ID>TopLevelPropertyNaming:RdsResources.kt$const val jdbcMysql = "mysql"</ID>
-    <ID>TopLevelPropertyNaming:RdsResources.kt$const val jdbcMysqlAurora = "mysql:aurora"</ID>
-    <ID>TopLevelPropertyNaming:RdsResources.kt$const val jdbcPostgres = "postgresql"</ID>
-    <ID>TopLevelPropertyNaming:RdsResources.kt$const val postgresEngineType = "postgres"</ID>
     <ID>TopLevelPropertyNaming:SqsUtils.kt$const val sqsPolicyStatementArray = "Statement"</ID>
-    <ID>VariableNaming:DownloadCodeForSchemaDialogTest.kt$DownloadCodeForSchemaDialogTest$private val LANGUAGE = SchemaCodeLangs.JAVA8</ID>
-    <ID>VariableNaming:DownloadCodeForSchemaDialogTest.kt$DownloadCodeForSchemaDialogTest$private val LATEST = "5"</ID>
-    <ID>VariableNaming:DownloadCodeForSchemaDialogTest.kt$DownloadCodeForSchemaDialogTest$private val REGISTRY = "registry"</ID>
-    <ID>VariableNaming:DownloadCodeForSchemaDialogTest.kt$DownloadCodeForSchemaDialogTest$private val SCHEMA = Schema(SCHEMA_NAME, REGISTRY, null)</ID>
-    <ID>VariableNaming:DownloadCodeForSchemaDialogTest.kt$DownloadCodeForSchemaDialogTest$private val SCHEMA_NAME = "schema"</ID>
-    <ID>VariableNaming:DownloadCodeForSchemaDialogTest.kt$DownloadCodeForSchemaDialogTest$private val VERSION = "4"</ID>
-    <ID>VariableNaming:DownloadCodeForSchemaDialogTest.kt$DownloadCodeForSchemaDialogTest$private val VERSIONS = listOf("3", VERSION, LATEST)</ID>
     <ID>VariableNaming:InsightsQueryTest.kt$InsightsQueryTest$/** * We can't reach into jetbrains-core by design, so copy the default string out of * QueryEditorUtils.kt . If the string changes it needs to change in both places */ private val DEFAULT_INSIGHTS_QUERY_STRING = """fields @timestamp, @message | sort @timestamp desc | limit 20 """</ID>
     <ID>VariableNaming:NodeJsDebugEndToEndTest.kt$NodeJsDebugEndToEndTest$private val WEB_CONSOLE_JB_REGISTRY_KEY = "js.debugger.webconsole"</ID>
     <ID>VariableNaming:NodeJsDebuggerSupport.kt$NodeJsDebuggerSupport$private val NODE_DEBUG = "--inspect-brk"</ID>

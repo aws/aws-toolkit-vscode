@@ -4,6 +4,7 @@
 package software.aws.toolkits.jetbrains.core.credentials
 
 import com.intellij.notification.Notification
+import com.intellij.testFramework.DisposableRule
 import com.intellij.testFramework.ProjectRule
 import com.intellij.testFramework.TestDataProvider
 import com.intellij.testFramework.runInEdtAndWait
@@ -32,7 +33,11 @@ class CredentialsRegionHandlerTest {
 
     @Rule
     @JvmField
-    val notificationListener = NotificationListenerRule(projectRule)
+    val disposableRule = DisposableRule()
+
+    @Rule
+    @JvmField
+    val notificationListener = NotificationListenerRule(projectRule, disposableRule.disposable)
 
     private lateinit var sut: DefaultCredentialsRegionHandler
 
