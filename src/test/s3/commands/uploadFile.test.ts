@@ -253,7 +253,8 @@ describe('getFileToUpload', function () {
     it('opens the current file if a user selects it from the prompt', async function(){
         const alreadyOpenedUri = vscode.Uri.file('/alreadyOpened.txt')
         selection.label = alreadyOpenedUri.fsPath
-        const response = await getFileToUpload(fileLocation, window, prompt)
+
+        const response = await getFileToUpload(alreadyOpenedUri, window, prompt)
         assert.strictEqual(response, alreadyOpenedUri)
 
     })
@@ -271,6 +272,7 @@ describe('getFileToUpload', function () {
         window = new FakeWindow({ dialog: { openSelections: undefined } })
         
         const response = await getFileToUpload(fileLocation, window, prompt)
+
         assert.strictEqual(response, undefined)
     })
     

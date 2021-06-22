@@ -363,10 +363,13 @@ export async function getFileToUpload(
             return
         }
 
-        if (response === selectMore) {
+        if (response.label === selectMore.label) {
+            
             return promptForFileLocation(window)
+
         }
 
     }
+
     return fileLocation
 }
