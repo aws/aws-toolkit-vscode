@@ -45,8 +45,8 @@ tasks.test {
 }
 
 tasks.register<Test>("uiTestCore") {
-    // we don't want to cache the results of this.
-    outputs.upToDateWhen { false }
+    dependsOn(":jetbrains-core:buildPlugin")
+    inputs.files(":jetbrains-core:buildPlugin")
 
     systemProperty("robot-server.port", remoteRobotPort)
     systemProperty("junit.jupiter.extensions.autodetection.enabled", true)
