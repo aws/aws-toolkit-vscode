@@ -1,0 +1,4 @@
+{
+	"type": "Bug Fix",
+	"description": "CloudWatch Logs: timestamps were incorrectly shown in 12 hour notation instead of 24 hour notation"
+}
