@@ -25,7 +25,7 @@ import * as tsCodelens from './typescriptCodeLensProvider'
 import * as goCodelens from './goCodeLensProvider'
 import { VSCODE_EXTENSION_ID } from '../extensions'
 
-export type Language = 'python' | 'javascript' | 'csharp' | 'go' | 'java'
+export type Language = 'python' | 'javascript' | 'csharp' | 'go' | 'java' | 'typescript'
 
 export const STATE_NAME_ENABLE_CODELENSES = 'sam.enableCodeLenses'
 
