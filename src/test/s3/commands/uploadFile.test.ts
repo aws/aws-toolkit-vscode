@@ -16,7 +16,7 @@ import { anything, mock, instance, when, capture } from '../../utilities/mockito
 import { Commands } from '../../../shared/vscode/commands'
 import { Window } from '../../../shared/vscode/window'
 import { FakeCommands } from '../../shared/vscode/fakeCommands'
-import { showOutputMessage } from '../../../shared/utilities/messages'
+
 
 describe('uploadFileCommand', function () {
     const bucketName = 'bucket-name'
