@@ -709,10 +709,6 @@
                     "when": "false"
                 },
                 {
-                    "command": "aws.s3.uploadFile",
-                    "when": "true"
-                },
-                {
                     "command": "aws.s3.uploadFileToParent",
                     "when": "false"
                 },

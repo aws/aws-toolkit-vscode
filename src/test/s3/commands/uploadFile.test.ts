@@ -16,7 +16,7 @@ import { anything, mock, instance, when, capture } from '../../utilities/mockito
 import { Commands } from '../../../shared/vscode/commands'
 import { Window } from '../../../shared/vscode/window'
 import { FakeCommands } from '../../shared/vscode/fakeCommands'
-
+import { showOutputMessage } from '../../../shared/utilities/messages'
 
 describe('uploadFileCommand', function () {
     const bucketName = 'bucket-name'
@@ -343,15 +343,16 @@ describe('promptUserForBucket',async function () {
         selection.label = 'Create new bucket'
         selection.bucket = undefined
 
+
         const createBucket: (node?: S3Node, window?: Window, commands?: Commands) => Promise<void> = () => {
-            return new Promise((resolve, reject) => {
-                reject()
-            })
+            window.showErrorMessage('Error expected')
+            throw new Error('Error expected')
         }
         try {
             await promptUserForBucket(instance(s3), window, promptSelect, createBucket)
+            assert.fail()
         } catch (e) {
-
+            assert.ok(window.message.error?.includes('Error expected'))
         }
     })
 
