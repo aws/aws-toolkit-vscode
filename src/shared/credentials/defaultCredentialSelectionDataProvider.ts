@@ -15,7 +15,7 @@ import * as nls from 'vscode-nls'
 const localize = nls.loadMessageBundle()
 
 import { ExtensionContext, QuickPickItem } from 'vscode'
-import { asString } from '../../credentials/providers/credentialsProviderId'
+import { asString } from '../../credentials/providers/credentials'
 import { SharedCredentialsProvider } from '../../credentials/providers/sharedCredentialsProvider'
 import { MultiStepInputFlowController } from '../multiStepInputFlowController'
 import { CredentialSelectionDataProvider } from './credentialSelectionDataProvider'
@@ -30,7 +30,7 @@ interface ProfileEntry {
 
 export class DefaultCredentialSelectionDataProvider implements CredentialSelectionDataProvider {
     private static readonly defaultCredentialsProfileName = asString({
-        credentialType: SharedCredentialsProvider.getCredentialsType(),
+        credentialSource: SharedCredentialsProvider.getProviderType(),
         credentialTypeId: 'default',
     })
 

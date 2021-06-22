@@ -4,9 +4,8 @@
  */
 
 import * as assert from 'assert'
-import { CredentialsProvider } from '../../../credentials/providers/credentialsProvider'
 import { CredentialsProviderFactory } from '../../../credentials/providers/credentialsProviderFactory'
-import { CredentialsProviderId, isEqual } from '../../../credentials/providers/credentialsProviderId'
+import { CredentialsProvider, CredentialsProviderType ,CredentialsId, isEqual } from '../../../credentials/providers/credentials'
 import { CredentialsProviderManager } from '../../../credentials/providers/credentialsProviderManager'
 
 /**
@@ -15,12 +14,12 @@ import { CredentialsProviderManager } from '../../../credentials/providers/crede
 class TestCredentialsProviderFactory implements CredentialsProviderFactory {
     private readonly providers: CredentialsProvider[] = []
 
-    public constructor(public readonly credentialType: string, providerSubIds: string[]) {
+    public constructor(public readonly credentialSource: CredentialsProviderType, providerSubIds: string[]) {
         this.providers.push(
             ...providerSubIds.map<CredentialsProvider>(subId => {
                 return ({
-                    getCredentialsProviderId: () => ({
-                        credentialType: this.credentialType,
+                    getCredentialsId: () => ({
+                        credentialSource: this.credentialSource,
                         credentialTypeId: subId,
                     }),
                 } as any) as CredentialsProvider
@@ -28,16 +27,16 @@ class TestCredentialsProviderFactory implements CredentialsProviderFactory {
         )
     }
 
-    public getCredentialType(): string {
-        return this.credentialType
+    public getProviderType(): CredentialsProviderType {
+        return this.credentialSource
     }
 
     public listProviders(): CredentialsProvider[] {
         return this.providers
     }
 
-    public getProvider(credentialsProviderId: CredentialsProviderId): CredentialsProvider | undefined {
-        const providers = this.providers.filter(p => isEqual(p.getCredentialsProviderId(), credentialsProviderId))
+    public getProvider(credentialsProviderId: CredentialsId): CredentialsProvider | undefined {
+        const providers = this.providers.filter(p => isEqual(p.getCredentialsId(), credentialsProviderId))
 
         if (providers.length === 0) {
             return undefined
@@ -57,22 +56,22 @@ describe('CredentialsProviderManager', async function () {
     })
 
     it('getCredentialProviderNames()', async function () {
-        const factoryA = new TestCredentialsProviderFactory('credentialTypeA', ['one'])
-        const factoryB = new TestCredentialsProviderFactory('credentialTypeB', ['two', 'three'])
+        const factoryA = new TestCredentialsProviderFactory('profile', ['one'])
+        const factoryB = new TestCredentialsProviderFactory('env', ['two', 'three'])
         sut.addProviderFactory(factoryA)
         sut.addProviderFactory(factoryB)
 
         const expectedCredentials = {
-            'credentialTypeA:one': {
-                credentialType: 'credentialTypeA',
+            'profile:one': {
+                credentialSource: 'profile',
                 credentialTypeId: 'one',
             },
-            'credentialTypeB:three': {
-                credentialType: 'credentialTypeB',
+            'env:three': {
+                credentialSource: 'env',
                 credentialTypeId: 'three',
             },
-            'credentialTypeB:two': {
-                credentialType: 'credentialTypeB',
+            'env:two': {
+                credentialSource: 'env',
                 credentialTypeId: 'two',
             },
         }
@@ -81,8 +80,8 @@ describe('CredentialsProviderManager', async function () {
 
     describe('getAllCredentialsProviders', async function () {
         it('returns all providers', async function () {
-            const factoryA = new TestCredentialsProviderFactory('credentialTypeA', ['one'])
-            const factoryB = new TestCredentialsProviderFactory('credentialTypeB', ['two', 'three'])
+            const factoryA = new TestCredentialsProviderFactory('profile', ['one'])
+            const factoryB = new TestCredentialsProviderFactory('env', ['two', 'three'])
 
             sut.addProviderFactory(factoryA)
             sut.addProviderFactory(factoryB)
@@ -92,8 +91,8 @@ describe('CredentialsProviderManager', async function () {
             assert.strictEqual(providers.length, 3, 'Manager did not return the expected number of providers')
             assert.ok(
                 providers.some(x =>
-                    isEqual(x.getCredentialsProviderId(), {
-                        credentialType: 'credentialTypeA',
+                    isEqual(x.getCredentialsId(), {
+                        credentialSource: 'profile',
                         credentialTypeId: 'one',
                     })
                 ),
@@ -101,8 +100,8 @@ describe('CredentialsProviderManager', async function () {
             )
             assert.ok(
                 providers.some(x =>
-                    isEqual(x.getCredentialsProviderId(), {
-                        credentialType: 'credentialTypeB',
+                    isEqual(x.getCredentialsId(), {
+                        credentialSource: 'env',
                         credentialTypeId: 'two',
                     })
                 ),
@@ -110,8 +109,8 @@ describe('CredentialsProviderManager', async function () {
             )
             assert.ok(
                 providers.some(x =>
-                    isEqual(x.getCredentialsProviderId(), {
-                        credentialType: 'credentialTypeB',
+                    isEqual(x.getCredentialsId(), {
+                        credentialSource: 'env',
                         credentialTypeId: 'three',
                     })
                 ),
@@ -123,19 +122,19 @@ describe('CredentialsProviderManager', async function () {
     describe('getCredentialsProvider', async function () {
         it('returns a provider', async function () {
             const factoryA = new TestCredentialsProviderFactory('profile', ['default'])
-            const expectedCredentialsProviderId: CredentialsProviderId = {
-                credentialType: 'profile',
+            const expectedCredentialsId: CredentialsId = {
+                credentialSource: 'profile',
                 credentialTypeId: 'default',
             }
 
             sut.addProviderFactory(factoryA)
 
-            const provider = await sut.getCredentialsProvider(expectedCredentialsProviderId)
+            const provider = await sut.getCredentialsProvider(expectedCredentialsId)
 
             assert.notStrictEqual(provider, undefined, 'Manager did not return a provider')
             assert.deepStrictEqual(
-                provider?.getCredentialsProviderId(),
-                expectedCredentialsProviderId,
+                provider?.getCredentialsId(),
+                expectedCredentialsId,
                 'Manager did not return the expected provider'
             )
         })
@@ -146,7 +145,7 @@ describe('CredentialsProviderManager', async function () {
             sut.addProviderFactory(factoryA)
 
             const provider = await sut.getCredentialsProvider({
-                credentialType: 'profile',
+                credentialSource: 'profile',
                 credentialTypeId: 'default',
             })
 
@@ -159,7 +158,7 @@ describe('CredentialsProviderManager', async function () {
             sut.addProviderFactory(factoryA)
 
             const provider = await sut.getCredentialsProvider({
-                credentialType: 'profile',
+                credentialSource: 'profile',
                 credentialTypeId: 'default',
             })
 
