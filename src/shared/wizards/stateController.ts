@@ -50,7 +50,7 @@ export class StateMachineController<TState> {
     public get currentStep(): number { return this.internalStep + 1 }
     public get totalSteps(): number { return this.steps.length }
 
-    protected rollbackState(): void { // TODO: refactor this to separate protected vs public
+    protected rollbackState(): void {
         if (this.internalStep === 0) {
             return
         }
