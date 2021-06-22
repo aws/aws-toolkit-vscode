@@ -3,10 +3,9 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
-import { CredentialsProvider } from './credentialsProvider'
-import { CredentialsProviderFactory } from './credentialsProviderFactory'
 import { recordAwsLoadCredentials } from '../../shared/telemetry/telemetry'
-import { asString, CredentialsProviderId } from './credentialsProviderId'
+import { asString, CredentialsProvider, CredentialsId, credentialsProviderToTelemetryType, CredentialsProviderType } from './credentials'
+import { CredentialsProviderFactory } from './credentialsProviderFactory'
 
 /**
  * Responsible for providing the Toolkit with all available CredentialsProviders.
@@ -20,9 +19,13 @@ export class CredentialsProviderManager {
 
         for (const factory of this.providerFactories) {
             await factory.refresh()
-
             const refreshed = factory.listProviders()
-            recordAwsLoadCredentials({ credentialSourceId: factory.getCredentialType(), value: refreshed.length })
+            const providerType = factory.getProviderType()
+            if (!providerType) {
+                continue
+            }
+            const telemType = credentialsProviderToTelemetryType(providerType)
+            recordAwsLoadCredentials({ credentialSourceId: telemType, value: refreshed.length })
             providers = providers.concat(refreshed)
         }
 
@@ -33,23 +36,23 @@ export class CredentialsProviderManager {
      * Returns a map of `CredentialsProviderId` string-forms to object-forms,
      * from all credential sources.
      */
-    public async getCredentialProviderNames(): Promise<{ [key: string]: CredentialsProviderId }> {
-        const m: { [key: string]: CredentialsProviderId } = {}
+    public async getCredentialProviderNames(): Promise<{ [key: string]: CredentialsId }> {
+        const m: { [key: string]: CredentialsId } = {}
         for (const o of await this.getAllCredentialsProviders()) {
-            m[asString(o.getCredentialsProviderId())] = o.getCredentialsProviderId()
+            m[asString(o.getCredentialsId())] = o.getCredentialsId()
         }
 
         return m
     }
 
     public async getCredentialsProvider(
-        credentialsProviderId: CredentialsProviderId
+        credentials: CredentialsId
     ): Promise<CredentialsProvider | undefined> {
-        const factories = this.getFactories(credentialsProviderId.credentialType)
+        const factories = this.getFactories(credentials.credentialSource)
         for (const factory of factories) {
             await factory.refresh()
 
-            const provider = factory.getProvider(credentialsProviderId)
+            const provider = factory.getProvider(credentials)
             if (provider) {
                 return provider
             }
@@ -62,8 +65,8 @@ export class CredentialsProviderManager {
         this.providerFactories.push(factory)
     }
 
-    private getFactories(credentialsType: string): CredentialsProviderFactory[] {
-        return this.providerFactories.filter(f => f.getCredentialType() === credentialsType)
+    private getFactories(credentialsType: CredentialsProviderType): CredentialsProviderFactory[] {
+        return this.providerFactories.filter(f => f.getProviderType() === credentialsType)
     }
 
     public static getInstance(): CredentialsProviderManager {

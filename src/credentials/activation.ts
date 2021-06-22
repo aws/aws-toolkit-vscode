@@ -9,7 +9,7 @@ import { profileSettingKey } from '../shared/constants'
 import { CredentialsProfileMru } from '../shared/credentials/credentialsProfileMru'
 import { SettingsConfiguration } from '../shared/settingsConfiguration'
 import { LoginManager } from './loginManager'
-import { asString, CredentialsProviderId, fromString } from './providers/credentialsProviderId'
+import { asString, CredentialsId, fromString } from './providers/credentials'
 import { CredentialsProviderManager } from './providers/credentialsProviderManager'
 import { SharedCredentialsProvider } from './providers/sharedCredentialsProvider'
 
@@ -42,7 +42,7 @@ export async function loginWithMostRecentCredentials(
     const profileNames = Object.keys(providerMap)
     const previousCredentialsId = toolkitSettings.readSetting<string>(profileSettingKey, '')
 
-    async function tryConnect(creds: CredentialsProviderId, popup: boolean): Promise<boolean> {
+    async function tryConnect(creds: CredentialsId, popup: boolean): Promise<boolean> {
         const provider = await manager.getCredentialsProvider(creds)
         // 'provider' may be undefined if the last-used credentials no longer exists.
         if (!provider) {
@@ -70,10 +70,9 @@ export async function loginWithMostRecentCredentials(
     }
 
     if (previousCredentialsId) {
-        // Migrate from older Toolkits - If the last providerId isn't in the new CredentialProviderId format,
-        // treat it like a Shared Crdentials Provider.
+        // Migrate from old Toolkits: default to "shared" provider type.
         const loginCredentialsId = tryMakeCredentialsProviderId(previousCredentialsId) ?? {
-            credentialType: SharedCredentialsProvider.getCredentialsType(),
+            credentialSource: SharedCredentialsProvider.getProviderType(),
             credentialTypeId: previousCredentialsId,
         }
         if (await tryConnect(loginCredentialsId, false)) {
@@ -123,9 +122,9 @@ function updateConfigurationWhenAwsContextChanges(
     )
 }
 
-function tryMakeCredentialsProviderId(credentialsProviderId: string): CredentialsProviderId | undefined {
+function tryMakeCredentialsProviderId(credentials: string): CredentialsId | undefined {
     try {
-        return fromString(credentialsProviderId)
+        return fromString(credentials)
     } catch (err) {
         return undefined
     }

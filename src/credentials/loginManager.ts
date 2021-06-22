@@ -9,8 +9,7 @@ import { getLogger } from '../shared/logger'
 import { recordAwsSetCredentials } from '../shared/telemetry/telemetry'
 import { CredentialsStore } from './credentialsStore'
 import { notifyUserInvalidCredentials } from './credentialsUtilities'
-import { CredentialsProvider } from './providers/credentialsProvider'
-import { asString, CredentialsProviderId } from './providers/credentialsProviderId'
+import { asString, CredentialsProvider, CredentialsId } from './providers/credentials'
 import { CredentialsProviderManager } from './providers/credentialsProviderManager'
 
 export class LoginManager {
@@ -30,7 +29,8 @@ export class LoginManager {
      * @param provider  Credentials provider id
      * @returns True if the toolkit could connect with the providerId
      */
-    public async login(args: { passive: boolean; providerId: CredentialsProviderId }): Promise<boolean> {
+
+    public async login(args: { passive: boolean; providerId: CredentialsId }): Promise<boolean> {
         let provider: CredentialsProvider | undefined
         try {
             provider = await CredentialsProviderManager.getInstance().getCredentialsProvider(args.providerId)
@@ -75,12 +75,11 @@ export class LoginManager {
             this.store.invalidateCredentials(args.providerId)
             return false
         } finally {
-            const credType = provider?.getCredentialsType2()
-            if (!args.passive) {
-                this.recordAwsSetCredentialsFn({
-                    credentialType: credType,
-                })
-            }
+            const credType = provider?.getTelemetryType()
+            this.recordAwsSetCredentialsFn({
+                passive: args.passive,
+                credentialType: credType,
+            })
         }
     }
 
