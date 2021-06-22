@@ -7,6 +7,7 @@ import * as vscode from 'vscode'
 import * as nls from 'vscode-nls'
 
 import { samAboutInstallUrl, vscodeMarketplaceUrl } from '../../constants'
+import { getIdeProperties } from '../../extensionUtilities'
 import {
     InvalidSamCliError,
     InvalidSamCliVersionError,
@@ -18,14 +19,6 @@ import {
 } from './samCliValidator'
 
 const localize = nls.loadMessageBundle()
-
-// Messages
-const RECOMMENDATION_UPDATE_TOOLKIT: string = localize(
-    'AWS.samcli.recommend.update.toolkit',
-    'Check the Marketplace for an updated AWS Toolkit.'
-)
-
-const RECOMMENDATION_UPDATE_SAM_CLI: string = localize('AWS.samcli.recommend.update.samcli', 'Update your SAM CLI.')
 
 // Notification Actions
 export interface SamCliValidationNotificationAction {
@@ -119,6 +112,14 @@ export function makeSamCliValidationNotification(
 }
 
 function makeVersionValidationNotificationMessage(validationResult: SamCliVersionValidatorResult): string {
+    const RECOMMENDATION_UPDATE_TOOLKIT: string = localize(
+        'AWS.samcli.recommend.update.toolkit',
+        'Check the Marketplace for an updated {0} Toolkit.',
+        getIdeProperties().company
+    )
+
+    const RECOMMENDATION_UPDATE_SAM_CLI: string = localize('AWS.samcli.recommend.update.samcli', 'Update your SAM CLI.')
+
     const recommendation: string =
         validationResult.validation === SamCliVersionValidation.VersionTooHigh
             ? RECOMMENDATION_UPDATE_TOOLKIT

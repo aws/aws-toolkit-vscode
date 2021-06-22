@@ -103,7 +103,7 @@ describe('localLambdaRunner', async function () {
                 onWillRetry,
             })
 
-            // match string 'AWS.output.sam.local.attach.failure'
+            // match start of string 'AWS.output.sam.local.attach.failure'
             assertLogsContain('Unable to attach Debugger', false, 'error')
         })
 
