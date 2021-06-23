@@ -111,8 +111,8 @@ export async function deploySamApplication(
         )
 
         await deployApplicationPromise
-        // no need to await, doesn't need to block further execution
-        vscode.commands.executeCommand('aws.refreshAwsExplorerNode')
+        // no need to await, doesn't need to block further execution (false -> no telemetry)
+        vscode.commands.executeCommand('aws.refreshAwsExplorer', false)
 
         // successful deploy: retain S3 bucket for quick future access
         const profile = awsContext.getCredentialProfileName()
