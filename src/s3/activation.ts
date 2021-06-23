@@ -32,17 +32,15 @@ export async function activate(extensionContext: vscode.ExtensionContext): Promi
         }),
         vscode.commands.registerCommand('aws.s3.uploadFile', async (node: S3BucketNode | S3FolderNode) => {
             const regionCode = DEFAULT_REGION
-            const s3Client = ext.toolkitClientBuilder.createS3Client(regionCode) 
-            
-            if(!node) {
+            const s3Client = ext.toolkitClientBuilder.createS3Client(regionCode)
+
+            if (!node) {
                 const editor = vscode.window.activeTextEditor
-                const document = editor?.document.uri  
+                const document = editor?.document.uri
                 await uploadFileCommand(s3Client, document)
             } else {
                 await uploadFileCommand(s3Client, node)
             }
-            
-
         }),
         vscode.commands.registerCommand('aws.s3.uploadFileToParent', async (node: S3FileNode) => {
             await uploadFileToParentCommand(node)

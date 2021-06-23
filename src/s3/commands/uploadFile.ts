@@ -3,7 +3,6 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
-
 import { S3 } from 'aws-sdk'
 import * as path from 'path'
 import { statSync } from 'fs'
@@ -26,10 +25,6 @@ import { recordAwsRefreshExplorer } from '../../shared/telemetry/telemetry'
 import { S3BucketNode } from '../explorer/s3BucketNode'
 import { S3FolderNode } from '../explorer/s3FolderNode'
 
-
-
-
-
 export interface FileSizeBytes {
     /**
      * Returns the file size in bytes.
@@ -40,12 +35,12 @@ export interface FileSizeBytes {
 /**
  * Wizard to upload a file.
  * Either a node or the document has to be given, will follow different path depending on what is given
- * 
+ *
  * @param s3Client account to upload the file to
  * @param nodeOrDocument node to upload to or file currently open
- * 
+ *
  */
- export async function uploadFileCommand(
+export async function uploadFileCommand(
     s3Client: S3Client,
     nodeOrDocument: S3BucketNode | S3FolderNode | vscode.Uri | undefined,
     fileSizeBytes: FileSizeBytes = statFile,
@@ -54,15 +49,14 @@ export interface FileSizeBytes {
     window = Window.vscode(),
     outputChannel = ext.outputChannel,
     commands = Commands.vscode()
-): Promise<void>{
+): Promise<void> {
     let key: string
     let bucket: S3.Bucket
     let file: vscode.Uri | undefined
     let node: S3BucketNode | S3FolderNode | undefined
     let document: vscode.Uri | undefined
 
-    if (nodeOrDocument){
-        
+    if (nodeOrDocument) {
         if ((nodeOrDocument as any).getChildren) {
             node = nodeOrDocument as S3BucketNode | S3FolderNode
             document = undefined
@@ -73,17 +67,16 @@ export interface FileSizeBytes {
     } else {
         node = undefined
         document = undefined
-        
     }
 
     if (node) {
         file = await getFile(undefined, window)
-            if (!file) {
-                showOutputMessage('No file selected, cancelling upload', outputChannel)
-                getLogger().info('UploadFile cancelled')
-                telemetry.recordS3UploadObject({ result: 'Cancelled' })
-                return
-            }
+        if (!file) {
+            showOutputMessage('No file selected, cancelling upload', outputChannel)
+            getLogger().info('UploadFile cancelled')
+            telemetry.recordS3UploadObject({ result: 'Cancelled' })
+            return
+        }
         key = node.path + path.basename(file.fsPath)
         bucket = { Name: node.bucket.name }
     } else {
@@ -91,7 +84,7 @@ export interface FileSizeBytes {
             file = await getFile(document, window)
             if (file) {
                 let bucketResponse: S3.Bucket | string
-                try{
+                try {
                     bucketResponse = await getBucket(s3Client)
                 } catch (e) {
                     telemetry.recordS3UploadObject({ result: 'Failed' })
@@ -99,25 +92,22 @@ export interface FileSizeBytes {
                     return
                 }
 
-
-                if (bucketResponse === 'back'){
-                    
+                if (bucketResponse === 'back') {
                     continue
                 }
-                if(bucketResponse == 'cancel'){
+                if (bucketResponse == 'cancel') {
                     showOutputMessage('No bucket selected, cancelling upload', outputChannel)
                     getLogger().info('No bucket selected, cancelling upload')
                     telemetry.recordS3UploadObject({ result: 'Cancelled' })
                     return
                 }
-                
+
                 if (!(bucketResponse as any).Name) {
                     throw Error(`bucketResponse is not a S3.Bucket`)
                 }
                 bucket = bucketResponse as S3.Bucket
                 key = path.basename(file.fsPath)
                 break
-
             } else {
                 //if file is undefined, means the back button was pressed(there is no step before) or no file was selected
                 //thus break the loop of the 'wizard'
@@ -129,8 +119,8 @@ export interface FileSizeBytes {
         }
     }
     const fileName = path.basename(file.fsPath)
-    const destinationPath = readablePath({ bucket: {name: bucket.Name!}, path: key })
-    
+    const destinationPath = readablePath({ bucket: { name: bucket.Name! }, path: key })
+
     try {
         showOutputMessage(`Uploading file from ${file} to ${destinationPath}`, outputChannel)
         const request = {
@@ -139,7 +129,7 @@ export interface FileSizeBytes {
             fileLocation: file,
             fileSizeBytes: fileSizeBytes(file),
             s3Client,
-            window: window
+            window: window,
         }
 
         await uploadWithProgress(request)
@@ -148,16 +138,14 @@ export interface FileSizeBytes {
         recordAwsRefreshExplorer()
         commands.execute('aws.refreshAwsExplorer')
         return
-
     } catch (e) {
         getLogger().error(`Failed to upload file from ${file} to ${destinationPath}: %O`, e)
         showErrorWithLogs(localize('AWS.s3.uploadFile.error.general', 'Failed to upload file {0}', fileName), window)
         telemetry.recordS3UploadObject({ result: 'Failed' })
         return
     }
-    
 }
- 
+
 async function promptForFileLocation(window: Window): Promise<vscode.Uri | undefined> {
     const fileLocations = await window.showOpenDialog({
         openLabel: localize('AWS.s3.uploadFile.openButton', 'Upload'),
@@ -174,23 +162,21 @@ function statFile(file: vscode.Uri) {
     return statSync(file.fsPath).size
 }
 
-
 async function uploadWithProgress({
     bucketName,
     key,
     fileLocation,
     fileSizeBytes,
     s3Client,
-    window
-}:
-    {
-    bucketName: string,
-    key: string,
-    fileLocation: vscode.Uri,
-    fileSizeBytes: number,
-    s3Client: S3Client,
+    window,
+}: {
+    bucketName: string
+    key: string
+    fileLocation: vscode.Uri
+    fileSizeBytes: number
+    s3Client: S3Client
     window: Window
-}): Promise<void>{
+}): Promise<void> {
     return window.withProgress(
         {
             location: vscode.ProgressLocation.Notification,
@@ -215,52 +201,51 @@ interface BucketQuickPickItem extends vscode.QuickPickItem {
 /**
  * Will display a quick pick with the list of all buckets owned by the user.
  * @param s3client client to get the list of buckets
- * 
+ *
  * @returns Bucket selected by the user, 'back' or 'cancel'
- * 
+ *
  * @throws Error if there is an error calling s3
  */
 export async function promptUserForBucket(
     s3client: S3Client,
     window = Window.vscode(),
     promptUserFunction = promptUser,
-    createBucket = createBucketCommand,
+    createBucket = createBucketCommand
 ): Promise<S3.Bucket | string> {
     let allBuckets: S3.Bucket[]
-    try{
+    try {
         allBuckets = await s3client.listAllBuckets()
     } catch (e) {
         getLogger().error('Failed to list buckets from client', e)
         window
-        .showErrorMessage(
-            localize(
-                'AWS.message.error.promptUserForBucket.listBuckets',
-                'Failed to list buckets from client, please try changing your region then try again',
-            ),
-            localize('AWS.message.prompt.changeS3RegionButton','Change default S3 region')
-        )
-        .then((selection: string | undefined) => {
-            if (selection === 'Change default S3 region') {
-                vscode.commands.executeCommand('workbench.action.openSettings', 'aws.s3.defaultRegion')
-            } 
-        })
+            .showErrorMessage(
+                localize(
+                    'AWS.message.error.promptUserForBucket.listBuckets',
+                    'Failed to list buckets from client, please try changing your region then try again'
+                ),
+                localize('AWS.message.prompt.changeS3RegionButton', 'Change default S3 region')
+            )
+            .then((selection: string | undefined) => {
+                if (selection === 'Change default S3 region') {
+                    vscode.commands.executeCommand('workbench.action.openSettings', 'aws.s3.defaultRegion')
+                }
+            })
         telemetry.recordS3UploadObject({ result: 'Failed' })
         throw new Error('Failed to list buckets from client')
     }
-    
+
     const s3Buckets = allBuckets.filter(bucket => {
         return bucket && bucket.Name
     }) as S3.Bucket[]
 
-    
     const createNewBucket: BucketQuickPickItem = {
-        label: localize('AWS.command.s3.createBucket',"Create new bucket"),
-        bucket: undefined
+        label: localize('AWS.command.s3.createBucket', 'Create new bucket'),
+        bucket: undefined,
     }
     const bucketItems: BucketQuickPickItem[] = s3Buckets.map(bucket => {
-        return { 
+        return {
             label: bucket.Name!,
-            bucket
+            bucket,
         }
     })
 
@@ -268,25 +253,28 @@ export async function promptUserForBucket(
         options: {
             canPickMany: false,
             ignoreFocusOut: true,
-            title: localize('AWS.message.selectBucket','Select an S3 bucket to upload to'),
+            title: localize('AWS.message.selectBucket', 'Select an S3 bucket to upload to'),
             step: 2,
             totalSteps: 2,
         },
         items: [...bucketItems, createNewBucket],
-        buttons: [vscode.QuickInputButtons.Back]
+        buttons: [vscode.QuickInputButtons.Back],
     })
-    const response = verifySinglePickerOutput(await promptUserFunction({
-        picker: picker,
-        onDidTriggerButton: (button, resolve, reject) => {
-            if (button === vscode.QuickInputButtons.Back) {
-                resolve([{
-                    label: 'back',
-                    bucket: undefined
-                }])
-            }
-
-        },
-    })) 
+    const response = verifySinglePickerOutput(
+        await promptUserFunction({
+            picker: picker,
+            onDidTriggerButton: (button, resolve, reject) => {
+                if (button === vscode.QuickInputButtons.Back) {
+                    resolve([
+                        {
+                            label: 'back',
+                            bucket: undefined,
+                        },
+                    ])
+                }
+            },
+        })
+    )
 
     if (!response) {
         return 'cancel'
@@ -312,63 +300,59 @@ export async function promptUserForBucket(
  * Asks the user to browse for more files
  * If no file is open it prompts the user to select file
  * @param document document to use as currently open
- * 
+ *
  * @returns file selected by the user
  */
 export async function getFileToUpload(
     document?: vscode.Uri,
     window = Window.vscode(),
     promptUserFunction = promptUser
-): Promise<vscode.Uri| undefined> {
-    
+): Promise<vscode.Uri | undefined> {
     let fileLocation: vscode.Uri | undefined
 
     if (!document) {
         fileLocation = await promptForFileLocation(window)
-    } 
-    else {
+    } else {
         fileLocation = document
         const fileNameToDisplay = path.basename(fileLocation.fsPath)
 
-        const fileOption : vscode.QuickPickItem = { 
-            label: addCodiconToString('file', fileNameToDisplay) 
+        const fileOption: vscode.QuickPickItem = {
+            label: addCodiconToString('file', fileNameToDisplay),
         }
         const selectMore: vscode.QuickPickItem = {
-            label: localize('AWS.message.browseMoreFiles', 'Browse for more files...')
+            label: localize('AWS.message.browseMoreFiles', 'Browse for more files...'),
         }
 
         const picker = createQuickPick({
             options: {
                 canPickMany: false,
                 ignoreFocusOut: true,
-                title: localize('AWS.message.selectFileUpload', 'Select a file to upload'), 
+                title: localize('AWS.message.selectFileUpload', 'Select a file to upload'),
                 step: 1,
                 totalSteps: 2,
             },
             items: [fileOption, selectMore],
-            buttons: [vscode.QuickInputButtons.Back]
+            buttons: [vscode.QuickInputButtons.Back],
         })
 
-        
-        const response = verifySinglePickerOutput(await promptUserFunction({
-            picker: picker,
-            onDidTriggerButton: (button, resolve, reject) => {
-                if (button === vscode.QuickInputButtons.Back) {
-                    resolve(undefined)
-                }
-            },
-        }))
+        const response = verifySinglePickerOutput(
+            await promptUserFunction({
+                picker: picker,
+                onDidTriggerButton: (button, resolve, reject) => {
+                    if (button === vscode.QuickInputButtons.Back) {
+                        resolve(undefined)
+                    }
+                },
+            })
+        )
 
-        if(!response){
+        if (!response) {
             return
         }
 
         if (response.label === selectMore.label) {
-            
             return promptForFileLocation(window)
-
         }
-
     }
 
     return fileLocation

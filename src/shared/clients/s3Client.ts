@@ -17,7 +17,6 @@ export interface S3Client {
      */
     createBucket(request: CreateBucketRequest): Promise<CreateBucketResponse>
 
-
     /**
      * Lists all buckets owned by the client.
      *

@@ -202,11 +202,11 @@ export class DefaultS3Client implements S3Client {
         }
         getLogger().debug('UploadFile succeeded')
     }
-    
+
     /**
      * @inheritDoc
      */
-    public async listAllBuckets(): Promise<S3.Bucket[]>{
+    public async listAllBuckets(): Promise<S3.Bucket[]> {
         const s3 = await this.createS3()
 
         let s3Buckets: S3.Bucket[]

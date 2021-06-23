@@ -1296,7 +1296,6 @@
                     }
                 }
             },
-            
             {
                 "command": "aws.s3.uploadFileToParent",
                 "title": "%AWS.command.s3.uploadFileToParent%",

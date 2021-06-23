@@ -494,7 +494,7 @@ export class MockS3Client implements S3Client {
     public constructor({
         regionCode = '',
         createBucket = async (request: CreateBucketRequest) => ({ bucket: { name: '', region: '', arn: '' } }),
-        listAllBuckets = async () => ([]),
+        listAllBuckets = async () => [],
         listBuckets = async () => ({ buckets: [] }),
         listFiles = async (request: ListFilesRequest) => ({ files: [], folders: [] }),
         createFolder = async (request: CreateFolderRequest) => ({ folder: { name: '', path: '', arn: '' } }),
