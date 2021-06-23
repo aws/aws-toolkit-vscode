@@ -225,11 +225,11 @@ export async function activate(context: vscode.ExtensionContext) {
         await activateS3(context)
 
         await activateEcr(context)
+        
+        await activateCloudWatchLogs(context, toolkitSettings)
 
         // Features which aren't currently functional in Cloud9
         if (!isCloud9()) {
-            await activateCloudWatchLogs(context, toolkitSettings)
-
             await activateSchemas({
                 context: extContext.extensionContext,
                 outputChannel: toolkitOutputChannel,
