@@ -34,10 +34,9 @@ export interface FileSizeBytes {
 
 /**
  * Wizard to upload a file.
- * Either a node or the document has to be given, will follow different path depending on what is given
  *
  * @param s3Client account to upload the file to
- * @param nodeOrDocument node to upload to or file currently open
+ * @param nodeOrDocument node to upload to or file currently open, if undefined then there was no active editor
  *
  */
 export async function uploadFileCommand(
@@ -72,7 +71,7 @@ export async function uploadFileCommand(
     if (node) {
         file = await getFile(undefined, window)
         if (!file) {
-            showOutputMessage('No file selected, cancelling upload', outputChannel)
+            showOutputMessage(localize('AWS.message.error.uploadFileCommand.noFileSelected', 'No file selected, cancelling upload'), outputChannel)
             getLogger().info('UploadFile cancelled')
             telemetry.recordS3UploadObject({ result: 'Cancelled' })
             return
@@ -96,7 +95,7 @@ export async function uploadFileCommand(
                     continue
                 }
                 if (bucketResponse == 'cancel') {
-                    showOutputMessage('No bucket selected, cancelling upload', outputChannel)
+                    showOutputMessage(localize('AWS.message.error.uploadFileCommand.noBucketSelected', 'No bucket selected, cancelling upload'), outputChannel)
                     getLogger().info('No bucket selected, cancelling upload')
                     telemetry.recordS3UploadObject({ result: 'Cancelled' })
                     return
@@ -111,7 +110,7 @@ export async function uploadFileCommand(
             } else {
                 //if file is undefined, means the back button was pressed(there is no step before) or no file was selected
                 //thus break the loop of the 'wizard'
-                showOutputMessage('No file selected, cancelling upload', outputChannel)
+                showOutputMessage(localize('AWS.message.error.uploadFileCommand.noFileSelected', 'No file selected, cancelling upload'), outputChannel)
                 getLogger().info('UploadFile cancelled')
                 telemetry.recordS3UploadObject({ result: 'Cancelled' })
                 return
@@ -122,7 +121,13 @@ export async function uploadFileCommand(
     const destinationPath = readablePath({ bucket: { name: bucket.Name! }, path: key })
 
     try {
-        showOutputMessage(`Uploading file from ${file} to ${destinationPath}`, outputChannel)
+        showOutputMessage(localize(
+            'AWS.s3.uploadFile.startUpload', 
+            'Uploading file {0} to {1}', 
+            fileName, 
+            destinationPath), 
+        outputChannel)
+
         const request = {
             bucketName: bucket.Name!,
             key: key,
@@ -133,7 +138,13 @@ export async function uploadFileCommand(
         }
 
         await uploadWithProgress(request)
-        showOutputMessage(`Successfully uploaded file ${destinationPath} to ${bucket.Name!}`, outputChannel)
+
+        showOutputMessage(localize(
+            'AWS.s3.uploadFile.success', 
+            'Successfully uploaded file {0} to {1}', 
+            fileName, 
+            bucket.Name), 
+        outputChannel)
         telemetry.recordS3UploadObject({ result: 'Succeeded' })
         recordAwsRefreshExplorer()
         commands.execute('aws.refreshAwsExplorer')
@@ -221,15 +232,9 @@ export async function promptUserForBucket(
             .showErrorMessage(
                 localize(
                     'AWS.message.error.promptUserForBucket.listBuckets',
-                    'Failed to list buckets from client, please try changing your region then try again'
+                    'Failed to list buckets from client'
                 ),
-                localize('AWS.message.prompt.changeS3RegionButton', 'Change default S3 region')
             )
-            .then((selection: string | undefined) => {
-                if (selection === 'Change default S3 region') {
-                    vscode.commands.executeCommand('workbench.action.openSettings', 'aws.s3.defaultRegion')
-                }
-            })
         telemetry.recordS3UploadObject({ result: 'Failed' })
         throw new Error('Failed to list buckets from client')
     }
