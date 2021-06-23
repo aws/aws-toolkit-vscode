@@ -9,7 +9,7 @@ import software.amazon.awssdk.services.dynamodb.DynamoDbClient
 /**
  * Light virtual file to represent a dynamo table, used to open the custom editor
  */
-class DynamoDbVirtualFile(private val tableArn: String, val dynamoDbClient: DynamoDbClient) : LightVirtualFile(tableArn) {
+class DynamoDbVirtualFile(val tableArn: String, val dynamoDbClient: DynamoDbClient) : LightVirtualFile(tableArn) {
     val tableName = tableArn.substringAfterLast('/')
 
     /**

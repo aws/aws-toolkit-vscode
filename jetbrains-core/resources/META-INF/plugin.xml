@@ -220,10 +220,8 @@ with what features/services are supported.
         <fileIconProvider order="first" implementation="software.aws.toolkits.jetbrains.services.s3.editor.S3FileIconProvider"/>
 
         <!-- DynamoDB -->
-        <!--
         <fileEditorProvider implementation="software.aws.toolkits.jetbrains.services.dynamodb.editor.DynamoDbTableEditorProvider"/>
         <fileIconProvider order="first" implementation="software.aws.toolkits.jetbrains.services.dynamodb.editor.DynamoDbFileIconProvider"/>
-        -->
 
         <registryKey key="aws.credentialProcess.timeout" description="AWS Credential Process timeout (ms)" restartRequired="false" defaultValue="30000"/>
         <registryKey key="aws.debuggerAttach.timeout" description="Time allowed for debuggers to attach before timing out (ms)" restartRequired="false" defaultValue="60000"/>
@@ -269,6 +267,12 @@ with what features/services are supported.
             <separator/>
             <reference id="aws.toolkit.showFeedback"/>
         </group>
+
+        <group id="aws.toolkit.explorer.dynamodb.table" popup="true" compact="false">
+            <action id="aws.toolkit.dynamodb.delete_table" class="software.aws.toolkits.jetbrains.services.dynamodb.actions.DeleteTableAction"
+                    icon="AllIcons.Actions.Cancel"/>
+        </group>
+
         <group id="aws.toolkit.explorer.ecr" popup="true" compact="false">
             <action id="ecr.repository.create" class="software.aws.toolkits.jetbrains.services.ecr.actions.CreateRepositoryAction"/>
         </group>
