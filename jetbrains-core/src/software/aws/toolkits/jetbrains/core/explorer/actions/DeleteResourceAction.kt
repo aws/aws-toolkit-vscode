@@ -15,8 +15,11 @@ import software.aws.toolkits.resources.message
 import software.aws.toolkits.telemetry.AwsTelemetry
 import software.aws.toolkits.telemetry.Result
 
-abstract class DeleteResourceAction<in T : AwsExplorerResourceNode<*>>(text: String) :
-    SingleResourceNodeAction<T>(text, icon = AllIcons.Actions.Cancel), DumbAware {
+abstract class DeleteResourceAction<in T : AwsExplorerResourceNode<*>> : SingleResourceNodeAction<T>, DumbAware {
+
+    constructor() : super()
+    constructor(text: String) : super(text, icon = AllIcons.Actions.Cancel)
+
     final override fun actionPerformed(selected: T, e: AnActionEvent) {
         val resourceType = selected.resourceType()
         val resourceName = selected.displayName()

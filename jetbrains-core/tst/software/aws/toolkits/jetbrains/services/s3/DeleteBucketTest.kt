@@ -2,10 +2,9 @@
 // SPDX-License-Identifier: Apache-2.0
 package software.aws.toolkits.jetbrains.services.s3
 
-import com.intellij.openapi.application.runWriteAction
 import com.intellij.openapi.fileEditor.FileEditorManager
 import com.intellij.openapi.fileTypes.FileTypes
-import com.intellij.openapi.fileTypes.ex.FileTypeManagerEx
+import com.intellij.testFramework.DisposableRule
 import com.intellij.testFramework.ProjectRule
 import com.intellij.testFramework.runInEdtAndWait
 import org.assertj.core.api.Assertions.assertThat
@@ -28,6 +27,7 @@ import software.aws.toolkits.core.s3.deleteBucketAndContents
 import software.aws.toolkits.jetbrains.core.MockClientManagerRule
 import software.aws.toolkits.jetbrains.services.s3.bucketActions.DeleteBucketAction
 import software.aws.toolkits.jetbrains.services.s3.editor.S3VirtualBucket
+import software.aws.toolkits.jetbrains.utils.associateFilePattern
 import java.util.function.Consumer
 
 class DeleteBucketTest {
@@ -35,6 +35,10 @@ class DeleteBucketTest {
     @Rule
     @JvmField
     val projectRule = ProjectRule()
+
+    @JvmField
+    @Rule
+    val disposableRule = DisposableRule()
 
     @JvmField
     @Rule
@@ -116,12 +120,7 @@ class DeleteBucketTest {
 
         runInEdtAndWait {
             // Silly hack because test file editor impl has a bunch of asserts about the document/psi that don't exist in the real impl
-            runWriteAction {
-                FileTypeManagerEx.getInstanceEx().associatePattern(
-                    FileTypes.PLAIN_TEXT,
-                    bucket.name()
-                )
-            }
+            associateFilePattern(FileTypes.PLAIN_TEXT, bucket.name(), disposableRule.disposable)
 
             assertThat(openEditor(projectRule.project, bucket)).isNotNull
         }
