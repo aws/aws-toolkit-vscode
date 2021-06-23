@@ -169,7 +169,7 @@ async function registerAwsExplorerCommands(
     )
 
     context.subscriptions.push(
-        vscode.commands.registerCommand('aws.refreshAwsExplorerNode', async (element: AWSTreeNodeBase) => {
+        vscode.commands.registerCommand('aws.refreshAwsExplorerNode', async (element: AWSTreeNodeBase | undefined) => {
             awsExplorer.refresh(element)
         })
     )
