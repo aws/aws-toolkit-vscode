@@ -9,7 +9,7 @@ import { deleteLambda } from './commands/deleteLambda'
 import { invokeLambda } from './commands/invokeLambda'
 import { uploadLambdaCommand } from './commands/uploadLambda'
 import { LambdaFunctionNode } from './explorer/lambdaFunctionNode'
-import { importLambdaCommand } from './commands/importLambda'
+import { downloadLambdaCommand } from './commands/downloadLambda'
 import { tryRemoveFolder } from '../shared/filesystemUtilities'
 import { registerSamInvokeVueCommand } from './vue/samInvoke'
 import { ExtContext } from '../shared/extensions'
@@ -50,8 +50,8 @@ export async function activate(context: ExtContext): Promise<void> {
             }
         }),
         vscode.commands.registerCommand(
-            'aws.importLambda',
-            async (node: LambdaFunctionNode) => await importLambdaCommand(node)
+            'aws.downloadLambda',
+            async (node: LambdaFunctionNode) => await downloadLambdaCommand(node)
         ),
         vscode.commands.registerCommand('aws.uploadLambda', async (node: LambdaFunctionNode) => {
             await uploadLambdaCommand(node)
