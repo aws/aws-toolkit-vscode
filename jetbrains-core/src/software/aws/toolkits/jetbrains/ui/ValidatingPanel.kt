@@ -51,8 +51,7 @@ class ValidatingPanel internal constructor(
     private fun createButtonActions(buttons: Map<JButton, (event: ActionEvent) -> Unit>): List<ValidatingAction> = buildList(buttons.size) {
         buttons.forEach { (button, action) ->
             add(
-                ValidatingAction(action).also {
-                    button.hideActionText = true // Text is already configured on the button
+                ValidatingAction(button.text, action).also {
                     button.action = it
                 }
             )
@@ -108,20 +107,27 @@ class ValidatingPanel internal constructor(
         validationAlarm.addRequest(validateRequest, VALIDATION_INTERVAL_MS, ModalityState.stateForComponent(this))
     }
 
-    private inner class ValidatingAction(private val listener: (ActionEvent) -> Unit) : AbstractAction() {
-        override fun actionPerformed(e: ActionEvent) {
-            val errorList = performValidation()
-            if (errorList.isNotEmpty()) {
-                // Give the first error focus
-                val info = errorList.first()
-                info.component?.let {
-                    IdeFocusManager.getInstance(null).requestFocus(it, true)
-                }
+    fun runValidation(): Boolean {
+        val errorList = performValidation()
+        return if (errorList.isNotEmpty()) {
+            // Give the first error focus
+            val info = errorList.first()
+            info.component?.let {
+                IdeFocusManager.getInstance(null).requestFocus(it, true)
+            }
 
-                updateErrorInfo(errorList)
-                startTrackingValidation()
-            } else {
-                contentPanel.apply()
+            updateErrorInfo(errorList)
+            startTrackingValidation()
+            false
+        } else {
+            contentPanel.apply()
+            true
+        }
+    }
+
+    private inner class ValidatingAction(text: String, private val listener: (ActionEvent) -> Unit) : AbstractAction(text) {
+        override fun actionPerformed(e: ActionEvent) {
+            if (runValidation()) {
                 listener.invoke(e)
             }
         }
@@ -160,6 +166,12 @@ class ValidatingPanel internal constructor(
             action()
         } else {
             application.invokeLater(action, ModalityState.stateForComponent(this)) { isDisposed() }
+        }
+    }
+
+    fun apply() {
+        if (runValidation()) {
+            contentPanel.apply()
         }
     }
 
