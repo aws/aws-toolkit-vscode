@@ -49,7 +49,7 @@ import {
 import { makeJsonFiles } from '../localLambdaRunner'
 import { SamLocalInvokeCommand } from '../cli/samCliLocalInvoke'
 import { getCredentialsFromStore } from '../../../credentials/credentialsStore'
-import { fromString } from '../../../credentials/providers/credentialsProviderId'
+import { fromString } from '../../../credentials/providers/credentials'
 import { notifyUserInvalidCredentials } from '../../../credentials/credentialsUtilities'
 import { Credentials } from 'aws-sdk/lib/credentials'
 import { CloudFormation } from '../../cloudformation/cloudformation'
@@ -470,12 +470,12 @@ export class SamDebugConfigProvider implements vscode.DebugConfigurationProvider
         }
 
         if (config.aws?.credentials) {
-            const credentialsProviderId = fromString(config.aws.credentials)
+            const credentials = fromString(config.aws.credentials)
             try {
-                awsCredentials = await getCredentialsFromStore(credentialsProviderId, this.ctx.credentialsStore)
+                awsCredentials = await getCredentialsFromStore(credentials, this.ctx.credentialsStore)
             } catch (err) {
                 getLogger().error(err as Error)
-                notifyUserInvalidCredentials(credentialsProviderId)
+                notifyUserInvalidCredentials(credentials)
                 return undefined
             }
         }

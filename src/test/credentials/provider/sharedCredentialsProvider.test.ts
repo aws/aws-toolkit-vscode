@@ -47,8 +47,8 @@ describe('SharedCredentialsProvider', async function () {
             new Map<string, Profile>([['default', { aws_access_key_id: 'x', aws_secret_access_key: 'y' }]])
         )
 
-        assert.deepStrictEqual(sut.getCredentialsProviderId(), {
-            credentialType: 'profile',
+        assert.deepStrictEqual(sut.getCredentialsId(), {
+            credentialSource: 'profile',
             credentialTypeId: 'default',
         })
     })

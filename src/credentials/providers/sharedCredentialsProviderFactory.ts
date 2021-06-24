@@ -20,10 +20,6 @@ export class SharedCredentialsProviderFactory extends BaseCredentialsProviderFac
     private loadedCredentialsModificationMillis?: number
     private loadedConfigModificationMillis?: number
 
-    public getCredentialType(): string {
-        return SharedCredentialsProvider.getCredentialsType()
-    }
-
     public async refresh(): Promise<void> {
         if (await this.needsRefresh()) {
             await this.loadSharedCredentialsProviders()
