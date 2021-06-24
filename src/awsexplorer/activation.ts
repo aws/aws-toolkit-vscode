@@ -124,10 +124,10 @@ async function registerAwsExplorerCommands(
     )
 
     context.subscriptions.push(
-        vscode.commands.registerCommand('aws.refreshAwsExplorer', async (emitTelemetry: boolean = true) => {
+        vscode.commands.registerCommand('aws.refreshAwsExplorer', async (passive: boolean = false) => {
             awsExplorer.refresh()
 
-            if (emitTelemetry === true) {
+            if (!passive) {
                 recordAwsRefreshExplorer()
             }
         })
