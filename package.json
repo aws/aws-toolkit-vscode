@@ -3,7 +3,9 @@
     "displayName": "AWS Toolkit",
     "description": "Amazon Web Services toolkit for browsing and updating cloud resources",
     "version": "1.26.0-SNAPSHOT",
-    "extensionKind": [ "workspace" ],
+    "extensionKind": [
+        "workspace"
+    ],
     "publisher": "amazonwebservices",
     "license": "Apache-2.0",
     "repository": {
@@ -1961,10 +1963,5 @@
         "bracketSpacing": true,
         "arrowParens": "avoid",
         "endOfLine": "lf"
-    },
-    "husky": {
-        "hooks": {
-            "pre-commit": "(git secrets --register-aws || (echo 'Please install git-secrets https://github.com/awslabs/git-secrets to check for accidentally commited secrets!' && exit 1)) && git secrets --pre_commit_hook -- \"$@\" && pretty-quick --staged"
-        }
     }
 }
