@@ -37,7 +37,7 @@ import { MINIMUM_SAM_CLI_VERSION_INCLUSIVE_FOR_IMAGE_SUPPORT } from '../../share
 import { ExtContext } from '../../shared/extensions'
 import { validateBucketName } from '../../s3/util'
 import { showErrorWithLogs } from '../../shared/utilities/messages'
-import { isCloud9 } from '../../shared/extensionUtilities'
+import { getIdeProperties, isCloud9 } from '../../shared/extensionUtilities'
 import { SettingsConfiguration } from '../../shared/settingsConfiguration'
 
 const CREATE_NEW_BUCKET = localize('AWS.command.s3.createBucket', 'Create Bucket...')
@@ -276,7 +276,8 @@ export class DefaultSamDeployWizardContext implements SamDeployWizardContext {
                 ignoreFocusOut: true,
                 title: localize(
                     'AWS.samcli.deploy.template.prompt',
-                    'Which SAM Template would you like to deploy to AWS?'
+                    'Which SAM Template would you like to deploy to {0}?',
+                    getIdeProperties().company
                 ),
                 step: 1,
                 totalSteps: this.totalSteps,
@@ -399,7 +400,7 @@ export class DefaultSamDeployWizardContext implements SamDeployWizardContext {
 
         const quickPick = picker.createQuickPick<vscode.QuickPickItem>({
             options: {
-                title: localize('AWS.samcli.deploy.region.prompt', 'Which AWS Region would you like to deploy to?'),
+                title: localize('AWS.samcli.deploy.region.prompt', 'Which {0} Region would you like to deploy to?', getIdeProperties().company),
                 value: initialRegionCode,
                 matchOnDetail: true,
                 ignoreFocusOut: true,
@@ -475,7 +476,7 @@ export class DefaultSamDeployWizardContext implements SamDeployWizardContext {
         const quickPick = picker.createQuickPick<vscode.QuickPickItem>({
             buttons: [enterBucket, createBucket, this.helpButton, vscode.QuickInputButtons.Back],
             options: {
-                title: localize('AWS.samcli.deploy.s3Bucket.prompt', 'Select an AWS S3 Bucket to deploy code to'),
+                title: localize('AWS.samcli.deploy.s3Bucket.prompt', 'Select an {0} S3 Bucket to deploy code to', getIdeProperties().company),
                 value: initialValue,
                 matchOnDetail: true,
                 ignoreFocusOut: true,
@@ -1033,7 +1034,7 @@ async function populateS3QuickPick(
         if (isCloud9() && recent !== cloud9Bucket) {
             baseItems.push({
                 label: cloud9Bucket,
-                detail: localize('AWS.samcli.deploy.bucket.cloud9name', 'Default AWS Cloud9 Bucket'),
+                detail: localize('AWS.samcli.deploy.bucket.cloud9name', 'Default {0} Cloud9 Bucket', getIdeProperties().company),
             })
         }
 

@@ -34,6 +34,7 @@ import { CodelensRootRegistry } from './codelensRootRegistry'
 import { AWS_SAM_DEBUG_TYPE } from './debugger/awsSamDebugConfiguration'
 import { SamDebugConfigProvider } from './debugger/awsSamDebugger'
 import { addSamDebugConfiguration } from './debugger/commands/addSamDebugConfiguration'
+import { lazyLoadSamTemplateStrings } from '../../lambda/models/samTemplates'
 const localize = nls.loadMessageBundle()
 
 const STATE_NAME_SUPPRESS_YAML_PROMPT = 'aws.sam.suppressYamlPrompt'
@@ -83,6 +84,7 @@ export async function activate(ctx: ExtContext): Promise<void> {
 }
 
 async function registerServerlessCommands(ctx: ExtContext): Promise<void> {
+    lazyLoadSamTemplateStrings()
     ctx.extensionContext.subscriptions.push(
         vscode.commands.registerCommand(
             'aws.samcli.detect',
@@ -250,9 +252,11 @@ async function activateCodeLensProviders(
 function createYamlExtensionPrompt(): void {
     const neverPromptAgain = ext.context.globalState.get<boolean>(STATE_NAME_SUPPRESS_YAML_PROMPT)
 
-    // only pop this up in VS Code and Insiders since other VS Code-like IDEs (e.g. Theia) may not have a marketplace or contain the YAML plugin
+    // Show this only in VSCode since other VSCode-like IDEs (e.g. Theia) may
+    // not have a marketplace or contain the YAML plugin.
     if (!neverPromptAgain && getIdeType() === IDE.vscode && !vscode.extensions.getExtension(VSCODE_EXTENSION_ID.yaml)) {
-        // these will all be disposed immediately after showing one so the user isn't prompted more than once per session
+        // Disposed immediately after showing one, so the user isn't prompted
+        // more than once per session.
         const yamlPromptDisposables: vscode.Disposable[] = []
 
         // user opens a template file
@@ -312,7 +316,7 @@ async function promptInstallYamlPlugin(fileName: string, disposables: vscode.Dis
         const permanentlySuppress = localize('AWS.message.info.yaml.suppressPrompt', "Dismiss, and don't show again")
 
         const response = await vscode.window.showInformationMessage(
-            localize('AWS.message.info.yaml.prompt', 'Install YAML extension for additional AWS features.'),
+            localize('AWS.message.info.yaml.prompt', 'Install YAML extension for additional {0} features.', getIdeProperties().company),
             goToMarketplace,
             dismiss,
             permanentlySuppress

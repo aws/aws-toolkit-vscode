@@ -166,4 +166,12 @@ describe('LogStreamRegistry', async function () {
             assert.strictEqual(registry.hasLog(missingRegisteredUri), false)
         })
     })
+
+    describe('Timestamp', function () {
+        it('matches CloudWatch insights timestamps', function() {
+            const time = 1624201162222 // 2021-06-20 14:59:22.222 GMT+0
+            const timestamp = moment.utc(time).format(INSIGHTS_TIMESTAMP_FORMAT)
+            assert.strictEqual(timestamp, '2021-06-20T14:59:22.222+00:00')
+        })
+    })
 })

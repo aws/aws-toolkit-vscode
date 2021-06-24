@@ -49,7 +49,7 @@ import {
 import { makeJsonFiles } from '../localLambdaRunner'
 import { SamLocalInvokeCommand } from '../cli/samCliLocalInvoke'
 import { getCredentialsFromStore } from '../../../credentials/credentialsStore'
-import { fromString } from '../../../credentials/providers/credentialsProviderId'
+import { fromString } from '../../../credentials/providers/credentials'
 import { notifyUserInvalidCredentials } from '../../../credentials/credentialsUtilities'
 import { Credentials } from 'aws-sdk/lib/credentials'
 import { CloudFormation } from '../../cloudformation/cloudformation'
@@ -60,7 +60,7 @@ import {
     MINIMUM_SAM_CLI_VERSION_INCLUSIVE_FOR_IMAGE_SUPPORT,
     MINIMUM_SAM_CLI_VERSION_INCLUSIVE_FOR_GO_SUPPORT,
 } from '../cli/samCliValidator'
-import { isCloud9 } from '../../extensionUtilities'
+import { getIdeProperties, isCloud9 } from '../../extensionUtilities'
 
 const localize = nls.loadMessageBundle()
 
@@ -332,7 +332,7 @@ export class SamDebugConfigProvider implements vscode.DebugConfigurationProvider
         if (!folder) {
             getLogger().error(`SAM debug: no workspace folder`)
             vscode.window.showErrorMessage(
-                localize('AWS.sam.debugger.noWorkspace', 'AWS SAM debug: choose a workspace, then try again')
+                localize('AWS.sam.debugger.noWorkspace', '{0} SAM debug: choose a workspace, then try again', getIdeProperties().company)
             )
             return undefined
         }
@@ -347,7 +347,8 @@ export class SamDebugConfigProvider implements vscode.DebugConfigurationProvider
                 .showErrorMessage(
                     localize(
                         'AWS.sam.debugger.noLaunchJson',
-                        'AWS SAM: To debug a Lambda locally, create a launch.json from the Run panel, then select a configuration.'
+                        '{0} SAM: To debug a Lambda locally, create a launch.json from the Run panel, then select a configuration.',
+                        getIdeProperties().company
                     ),
                     localize('AWS.gotoRunPanel', 'Run panel')
                 )
@@ -469,12 +470,12 @@ export class SamDebugConfigProvider implements vscode.DebugConfigurationProvider
         }
 
         if (config.aws?.credentials) {
-            const credentialsProviderId = fromString(config.aws.credentials)
+            const credentials = fromString(config.aws.credentials)
             try {
-                awsCredentials = await getCredentialsFromStore(credentialsProviderId, this.ctx.credentialsStore)
+                awsCredentials = await getCredentialsFromStore(credentials, this.ctx.credentialsStore)
             } catch (err) {
                 getLogger().error(err as Error)
-                notifyUserInvalidCredentials(credentialsProviderId)
+                notifyUserInvalidCredentials(credentials)
                 return undefined
             }
         }
@@ -561,7 +562,7 @@ export class SamDebugConfigProvider implements vscode.DebugConfigurationProvider
             default: {
                 getLogger().error(`SAM debug: unknown runtime: ${runtime})`)
                 vscode.window.showErrorMessage(
-                    localize('AWS.sam.debugger.invalidRuntime', 'AWS SAM debug: unknown runtime: {0}', runtime)
+                    localize('AWS.sam.debugger.invalidRuntime', '{0} SAM debug: unknown runtime: {1}', getIdeProperties().company, runtime)
                 )
                 return undefined
             }
