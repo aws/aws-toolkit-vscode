@@ -124,9 +124,12 @@ async function registerAwsExplorerCommands(
     )
 
     context.subscriptions.push(
-        vscode.commands.registerCommand('aws.refreshAwsExplorer', async () => {
-            recordAwsRefreshExplorer()
+        vscode.commands.registerCommand('aws.refreshAwsExplorer', async (passive: boolean = false) => {
             awsExplorer.refresh()
+
+            if (!passive) {
+                recordAwsRefreshExplorer()
+            }
         })
     )
 
@@ -169,12 +172,8 @@ async function registerAwsExplorerCommands(
     )
 
     context.subscriptions.push(
-        vscode.commands.registerCommand('aws.refreshAwsExplorerNode', async (element: AWSTreeNodeBase) => {
-            try {
-                awsExplorer.refresh(element)
-            } finally {
-                recordAwsRefreshExplorer()
-            }
+        vscode.commands.registerCommand('aws.refreshAwsExplorerNode', async (element: AWSTreeNodeBase | undefined) => {
+            awsExplorer.refresh(element)
         })
     )
 
