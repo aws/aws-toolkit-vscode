@@ -17,7 +17,7 @@ import * as extensionConstants from './constants'
 import { getAccountId } from './credentials/accountId'
 import { CredentialSelectionState } from './credentials/credentialSelectionState'
 import {
-    credentialProfileSelector,
+    credentialSourceSelector,
     DefaultCredentialSelectionDataProvider,
     promptToDefineCredentialsProfile,
 } from './credentials/defaultCredentialSelectionDataProvider'
@@ -59,13 +59,13 @@ export class DefaultAWSContextCommands {
     }
 
     public async onCommandLogin() {
-        const profileName = await this.getProfileNameFromUser()
-        if (!profileName) {
+        const credentialSource = await this.getCredentialSourceFromUser()
+        if (!credentialSource) {
             // user clicked away from quick pick or entered nothing
             return
         }
 
-        await this.loginManager.login({ passive: false, providerId: fromString(profileName) })
+        await this.loginManager.login({ passive: false, providerId: fromString(credentialSource) })
     }
 
     public async onCommandCreateCredentialsProfile(): Promise<void> {
@@ -170,17 +170,26 @@ export class DefaultAWSContextCommands {
     }
 
     /**
-     * @description Responsible for getting a profile from the user,
-     * working with them to define one if necessary.
+     * @description Responsible for getting a credential source from the user,
+     * working with them to create one if necessary.
      *
-     * @returns User's selected Profile name, or undefined if none was selected.
+     * @returns User's selected credential source, or undefined if none was selected.
      * undefined is also returned if we leave the user in a state where they are
      * editing their credentials file.
      */
-    private async getProfileNameFromUser(): Promise<string | undefined> {
+    private async getCredentialSourceFromUser(): Promise<string | undefined> {
         const credentialsFiles: string[] = await UserCredentialsUtils.findExistingCredentialsFilenames()
+        const providerMap = await CredentialsProviderManager.getInstance().getCredentialProviderNames()
+        const profileNames = Object.keys(providerMap)
 
-        if (credentialsFiles.length === 0) {
+        if (profileNames.length > 0) {
+            // There are credentials for the user to choose from
+            const dataProvider = new DefaultCredentialSelectionDataProvider(profileNames, ext.context)
+            const state = await credentialSourceSelector(dataProvider)
+            if (state && state.credentialProfile) {
+                return state.credentialProfile.label
+            }
+        } else if (credentialsFiles.length === 0) {
             const userResponse = await window.showInformationMessage(
                 localize(
                     'AWS.message.prompt.credentials.create',
@@ -197,9 +206,6 @@ export class DefaultAWSContextCommands {
 
             return await this.promptAndCreateNewCredentialsFile()
         } else {
-            const providerMap = await CredentialsProviderManager.getInstance().getCredentialProviderNames()
-            const profileNames = Object.keys(providerMap)
-
             // If no credentials were found, the user should be
             // encouraged to define some.
             if (profileNames.length === 0) {
@@ -218,17 +224,7 @@ export class DefaultAWSContextCommands {
                     // after they have made their edits.
                     await this.editCredentials()
                 }
-
-                return undefined
             }
-
-            // If we get here, there are credentials for the user to choose from
-            const dataProvider = new DefaultCredentialSelectionDataProvider(profileNames, ext.context)
-            const state = await credentialProfileSelector(dataProvider)
-            if (state && state.credentialProfile) {
-                return state.credentialProfile.label
-            }
-
             return undefined
         }
     }

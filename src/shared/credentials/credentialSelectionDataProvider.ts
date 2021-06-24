@@ -10,7 +10,7 @@ import { CredentialSelectionState } from './credentialSelectionState'
 export interface CredentialSelectionDataProvider {
     existingProfileNames: string[]
 
-    pickCredentialProfile(
+    pickCredentialSource(
         input: MultiStepInputFlowController,
         state: Partial<CredentialSelectionState>
     ): Promise<QuickPickItem>

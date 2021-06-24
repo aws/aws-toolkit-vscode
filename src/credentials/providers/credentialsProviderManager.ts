@@ -65,6 +65,10 @@ export class CredentialsProviderManager {
         this.providerFactories.push(factory)
     }
 
+    public addProviderFactories(...factory: CredentialsProviderFactory[]) {
+        this.providerFactories.push(...factory)
+    }
+
     private getFactories(credentialsType: CredentialsProviderType): CredentialsProviderFactory[] {
         return this.providerFactories.filter(f => f.getProviderType() === credentialsType)
     }

@@ -40,15 +40,15 @@ export class DefaultCredentialSelectionDataProvider implements CredentialSelecti
         this._credentialsMru = new CredentialsProfileMru(context)
     }
 
-    public async pickCredentialProfile(
+    public async pickCredentialSource(
         input: MultiStepInputFlowController,
         state: Partial<CredentialSelectionState>
     ): Promise<QuickPickItem> {
         return await input.showQuickPick({
-            title: localize('AWS.title.selectCredentialProfile', 'Select an {0} credential profile', getIdeProperties().company),
+            title: localize('AWS.title.selectCredentialSource', 'Select a {0} credential source', getIdeProperties().company),
             step: 1,
             totalSteps: 1,
-            placeholder: localize('AWS.placeHolder.selectProfile', 'Select a credential profile'),
+            placeholder: localize('AWS.placeHolder.selectSource', 'Select a credential source'),
             items: this.getProfileSelectionList(),
             activeItem: state.credentialProfile,
             shouldResume: this.shouldResume.bind(this),
@@ -186,19 +186,19 @@ export class DefaultCredentialSelectionDataProvider implements CredentialSelecti
     }
 }
 
-export async function credentialProfileSelector(
+export async function credentialSourceSelector(
     dataProvider: CredentialSelectionDataProvider
 ): Promise<CredentialSelectionState | undefined> {
-    async function pickCredentialProfile(
+    async function pickCredentialSource(
         input: MultiStepInputFlowController,
         state: Partial<CredentialSelectionState>
     ) {
-        state.credentialProfile = await dataProvider.pickCredentialProfile(input, state)
+        state.credentialProfile = await dataProvider.pickCredentialSource(input, state)
     }
 
     async function collectInputs() {
         const state: Partial<CredentialSelectionState> = {}
-        await MultiStepInputFlowController.run(async input => await pickCredentialProfile(input, state))
+        await MultiStepInputFlowController.run(async input => await pickCredentialSource(input, state))
 
         return state as CredentialSelectionState
     }

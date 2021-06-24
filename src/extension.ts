@@ -14,6 +14,7 @@ import { initialize as initializeCredentials } from './credentials/activation'
 import { initializeAwsCredentialsStatusBarItem } from './credentials/awsCredentialsStatusBarItem'
 import { LoginManager } from './credentials/loginManager'
 import { CredentialsProviderManager } from './credentials/providers/credentialsProviderManager'
+import { EnvironmentCredentialsProviderFactory } from './credentials/providers/environmentCredentialsProviderFactory'
 import { SharedCredentialsProviderFactory } from './credentials/providers/sharedCredentialsProviderFactory'
 import { activate as activateSchemas } from './eventSchemas/activation'
 import { activate as activateLambda } from './lambda/activation'
@@ -325,7 +326,11 @@ function initializeManifestPaths(extensionContext: vscode.ExtensionContext) {
 }
 
 function initializeCredentialsProviderManager() {
-    CredentialsProviderManager.getInstance().addProviderFactory(new SharedCredentialsProviderFactory())
+    CredentialsProviderManager.getInstance()
+        .addProviderFactories(
+            new SharedCredentialsProviderFactory(),
+            new EnvironmentCredentialsProviderFactory()
+        )
 }
 
 function makeEndpointsProvider(): EndpointsProvider {

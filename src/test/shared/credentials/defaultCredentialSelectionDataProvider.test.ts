@@ -8,7 +8,7 @@ import { QuickPickItem } from 'vscode'
 import { CredentialSelectionDataProvider } from '../../../shared/credentials/credentialSelectionDataProvider'
 import { CredentialSelectionState } from '../../../shared/credentials/credentialSelectionState'
 import {
-    credentialProfileSelector,
+    credentialSourceSelector,
     promptToDefineCredentialsProfile,
 } from '../../../shared/credentials/defaultCredentialSelectionDataProvider'
 import { MultiStepInputFlowController } from '../../../shared/multiStepInputFlowController'
@@ -20,7 +20,7 @@ describe('defaultCredentialSelectionDataProvider', function () {
             class MockCredentialSelectionDataProvider implements CredentialSelectionDataProvider {
                 public constructor(public readonly existingProfileNames: string[]) {}
 
-                public async pickCredentialProfile(
+                public async pickCredentialSource(
                     input: MultiStepInputFlowController,
                     partialState: Partial<CredentialSelectionState>
                 ): Promise<QuickPickItem> {
@@ -54,7 +54,7 @@ describe('defaultCredentialSelectionDataProvider', function () {
             const profileNames: string[] = ['profile1', 'profile2', 'profile3']
 
             const dataProvider = new MockCredentialSelectionDataProvider(profileNames)
-            const state: CredentialSelectionState | undefined = await credentialProfileSelector(dataProvider)
+            const state: CredentialSelectionState | undefined = await credentialSourceSelector(dataProvider)
 
             assert(state)
             assert(state!.credentialProfile)
@@ -73,7 +73,7 @@ describe('defaultCredentialSelectionDataProvider', function () {
             class MockCredentialSelectionDataProvider implements CredentialSelectionDataProvider {
                 public constructor(public readonly existingProfileNames: string[]) {}
 
-                public async pickCredentialProfile(
+                public async pickCredentialSource(
                     input: MultiStepInputFlowController,
                     partialState: Partial<CredentialSelectionState>
                 ): Promise<QuickPickItem> {
