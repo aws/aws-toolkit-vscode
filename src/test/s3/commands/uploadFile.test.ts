@@ -5,6 +5,7 @@
 
 import * as assert from 'assert'
 import * as vscode from 'vscode'
+import * as path from 'path'
 import { S3 } from 'aws-sdk'
 import { FileSizeBytes, getFileToUpload, promptUserForBucket, uploadFileCommand } from '../../../s3/commands/uploadFile'
 import { S3Node } from '../../../s3/explorer/s3Nodes'
@@ -22,6 +23,7 @@ describe('uploadFileCommand', function () {
     const key = 'file.jpg'
     const sizeBytes = 16
     const fileLocation = vscode.Uri.file('/file.jpg')
+    const fileName = path.basename(fileLocation.fsPath)
     const statFile: FileSizeBytes = _file => sizeBytes
     let outputChannel: MockOutputChannel
     let s3: S3Client
@@ -92,8 +94,8 @@ describe('uploadFileCommand', function () {
             assert.strictEqual(window.progress.options?.title, 'Uploading file.jpg...')
 
             assert.deepStrictEqual(outputChannel.lines, [
-                `Uploading file from ${fileLocation} to s3://bucket-name/file.jpg`,
-                `Successfully uploaded file s3://bucket-name/file.jpg to bucket-name`,
+                `Uploading file ${fileName} to s3://bucket-name/file.jpg`,
+                `Successfully uploaded file ${fileName} to bucket-name`,
             ])
         })
 
@@ -153,8 +155,8 @@ describe('uploadFileCommand', function () {
                 commands
             )
             assert.deepStrictEqual(outputChannel.lines, [
-                `Uploading file from ${fileLocation} to s3://bucket-name/file.jpg`,
-                `Successfully uploaded file s3://bucket-name/file.jpg to bucket-name`,
+                `Uploading file ${fileName} to s3://bucket-name/file.jpg`,
+                `Successfully uploaded file ${fileName} to bucket-name`,
             ])
         })
 
@@ -211,7 +213,7 @@ describe('uploadFileCommand', function () {
         })
     }
 
-    it('succesfully upload file', async function () {
+    it('successfully upload file', async function () {
         when(s3.uploadFile(anything())).thenResolve()
 
         window = new FakeWindow({ dialog: { openSelections: [fileLocation] } })
@@ -239,10 +241,10 @@ describe('uploadFileCommand', function () {
         assert.deepStrictEqual(window.progress.reported, [{ increment: 25 }])
         assert.strictEqual(window.progress.options?.location, vscode.ProgressLocation.Notification)
         assert.strictEqual(window.progress.options?.title, 'Uploading file.jpg...')
-
+        
         assert.deepStrictEqual(outputChannel.lines, [
-            `Uploading file from ${fileLocation} to s3://bucket-name/file.jpg`,
-            `Successfully uploaded file s3://bucket-name/file.jpg to bucket-name`,
+            `Uploading file ${fileName} to s3://bucket-name/file.jpg`,
+            `Successfully uploaded file ${fileName} to bucket-name`,
         ])
     })
 
