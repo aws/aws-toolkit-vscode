@@ -261,6 +261,11 @@ tasks.compileKotlin {
     dependsOn(generateModels)
 }
 
+tasks.detekt {
+    // Make sure kotlin code is generated before we execute detekt
+    dependsOn(generateModels)
+}
+
 tasks.test {
     useTestNG()
     environment("LOCAL_ENV_RUN", true)
