@@ -97,13 +97,13 @@ describe('viewSchemaItem', async function () {
     })
 
     function stubTextEditInsert() {
-        const textEdit = ({
+        const textEdit = {
             insert: () => {},
-        } as any) as vscode.TextEditorEdit
+        } as any as vscode.TextEditorEdit
 
-        const textEditor = ({
+        const textEditor = {
             edit: () => {},
-        } as any) as vscode.TextEditor
+        } as any as vscode.TextEditor
 
         sinon.stub(textEditor, 'edit').callsFake(async editBuilder => {
             editBuilder(textEdit)

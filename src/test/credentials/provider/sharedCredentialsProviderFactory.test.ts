@@ -37,9 +37,9 @@ describe('SharedCredentialsProviderFactory', async function () {
 
         sharedCredentialsLastModifiedMillis = 1
         sandbox.stub(fs, 'stat').callsFake(async () => {
-            return ({
+            return {
                 mtimeMs: sharedCredentialsLastModifiedMillis,
-            } as any) as fs.Stats
+            } as any as fs.Stats
         })
 
         sharedCredentialProfiles = new Map<string, Profile>()

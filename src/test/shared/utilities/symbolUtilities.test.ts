@@ -23,7 +23,7 @@ describe('symbolUtilities', async function () {
         it('returns symbols if available', async function () {
             const context: LoadSymbolsContext = {
                 async executeCommand<T>(command: string, ...args: any[]): Promise<T | undefined> {
-                    return ([makeSymbol('MyName')] as unknown) as T
+                    return [makeSymbol('MyName')] as unknown as T
                 },
             }
 

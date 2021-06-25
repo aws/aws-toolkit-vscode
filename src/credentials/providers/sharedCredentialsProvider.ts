@@ -12,7 +12,7 @@ import { hasProfileProperty, resolveProviderWithCancel } from '../credentialsUti
 import { SSO_PROFILE_PROPERTIES, validateSsoProfile } from '../sso/sso'
 import { DiskCache } from '../sso/diskCache'
 import { SsoAccessTokenProvider } from '../sso/ssoAccessTokenProvider'
-import { CredentialsProvider, CredentialsProviderType ,CredentialsId } from './credentials'
+import { CredentialsProvider, CredentialsProviderType, CredentialsId } from './credentials'
 import { SsoCredentialProvider } from './ssoCredentialProvider'
 import { CredentialType } from '../../shared/telemetry/telemetry.gen'
 

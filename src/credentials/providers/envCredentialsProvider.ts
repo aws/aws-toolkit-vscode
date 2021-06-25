@@ -6,8 +6,7 @@
 import * as AWS from 'aws-sdk'
 import { CredentialType } from '../../shared/telemetry/telemetry.gen'
 import { getStringHash } from '../../shared/utilities/textUtilities'
-import { CredentialsProvider, CredentialsProviderType ,CredentialsId } from './credentials'
-
+import { CredentialsProvider, CredentialsProviderType, CredentialsId } from './credentials'
 
 /**
  * Credentials given by environment variables.
@@ -15,8 +14,7 @@ import { CredentialsProvider, CredentialsProviderType ,CredentialsId } from './c
  * @see CredentialsProviderType
  */
 export class EnvCredentialsProvider implements CredentialsProvider {
-    public constructor(private token: string) {
-    }
+    public constructor(private token: string) {}
 
     public getCredentialsId(): CredentialsId {
         return {
@@ -34,7 +32,7 @@ export class EnvCredentialsProvider implements CredentialsProvider {
     }
 
     public getTelemetryType(): CredentialType {
-        return 'other'  // TODO: what goes here?
+        return 'other' // TODO: what goes here?
     }
 
     public getHashCode(): string {
@@ -42,7 +40,7 @@ export class EnvCredentialsProvider implements CredentialsProvider {
     }
 
     public getDefaultRegion(): string | undefined {
-        return 'us-east-1'  // TODO: AWS_REGION ?
+        return 'us-east-1' // TODO: AWS_REGION ?
     }
 
     public canAutoConnect(): boolean {

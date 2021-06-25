@@ -176,9 +176,9 @@ describe('Search Schemas', function () {
             postMessageSpy = sandbox.spy(onPostMessage)
         })
 
-        const mockTelemetryService = ({
+        const mockTelemetryService = {
             record: () => {},
-        } as any) as TelemetryService
+        } as any as TelemetryService
 
         const outputChannel = new MockOutputChannel()
         const singleRegistryName = [TEST_REGISTRY]

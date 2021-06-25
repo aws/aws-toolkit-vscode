@@ -155,7 +155,7 @@ describe('DefaultAwsContext', function () {
 
     function makeSampleAwsContextCredentials(): AwsContextCredentials {
         return {
-            credentials: ({} as any) as AWS.Credentials,
+            credentials: {} as any as AWS.Credentials,
             credentialsId: 'qwerty',
             accountId: testAccountIdValue,
         }

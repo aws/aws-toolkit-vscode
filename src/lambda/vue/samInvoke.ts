@@ -442,7 +442,7 @@ function getLaunchConfigQuickPickItems(launchConfig: LaunchConfiguration, uri: v
                 index,
             }
         })
-        .filter(o => samValidator.validate((o.config as any) as AwsSamDebuggerConfiguration, true)?.isValid)
+        .filter(o => samValidator.validate(o.config as any as AwsSamDebuggerConfiguration, true)?.isValid)
         .map(val => {
             return {
                 index: val.index,

@@ -44,14 +44,14 @@ describe('getRegionsForActiveCredentials', async function () {
         fnGetRegions = sandbox.stub()
         fnGetRegions.returns(samplePartitionRegions)
 
-        awsContext = ({
+        awsContext = {
             getCredentialDefaultRegion: fnGetCredentialDefaultRegion,
-        } as any) as AwsContext
+        } as any as AwsContext
 
-        regionProvider = ({
+        regionProvider = {
             getPartitionId: fnGetPartitionId,
             getRegions: fnGetRegions,
-        } as any) as RegionProvider
+        } as any as RegionProvider
     })
 
     afterEach(function () {

@@ -89,9 +89,9 @@ describe('ExtensionDisposableFiles', async function () {
     let extensionContext: vscode.ExtensionContext
 
     beforeEach(function () {
-        extensionContext = ({
+        extensionContext = {
             subscriptions: [],
-        } as any) as vscode.ExtensionContext
+        } as any as vscode.ExtensionContext
         TestExtensionDisposableFiles.clearInstance()
     })
 

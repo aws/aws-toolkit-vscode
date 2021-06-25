@@ -15,12 +15,12 @@ import { CredentialsStore } from '../../../credentials/credentialsStore'
 describe('LoginManager', async function () {
     let sandbox: sinon.SinonSandbox
 
-    const awsContext = ({
+    const awsContext = {
         setCredentials: () => {
             throw new Error('This test was not initialized')
         },
-    } as any) as AwsContext
-    const sampleCredentials = ({} as any) as AWS.Credentials
+    } as any as AwsContext
+    const sampleCredentials = {} as any as AWS.Credentials
     const sampleCredentialsId: CredentialsId = {
         credentialSource: 'profile',
         credentialTypeId: 'someId',

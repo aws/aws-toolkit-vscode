@@ -24,7 +24,7 @@ describe('RegionNode', function () {
             createS3Client: sandbox.stub().returns({}),
             createEcrClient: sandbox.stub().returns({}),
         }
-        ext.toolkitClientBuilder = (clientBuilder as any) as ToolkitClientBuilder
+        ext.toolkitClientBuilder = clientBuilder as any as ToolkitClientBuilder
 
         testNode = new RegionNode({ id: regionCode, name: regionName }, new FakeRegionProvider())
     })

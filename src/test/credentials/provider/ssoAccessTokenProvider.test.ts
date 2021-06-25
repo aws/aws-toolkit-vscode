@@ -90,9 +90,9 @@ describe('SsoAccessTokenProvider', function () {
             setUpStubCache(validRegistation)
             const stubAuthorizeClient = sandbox.stub(sut, 'authorizeClient').resolves(validAuthorization)
 
-            sandbox.stub(ssoOidcClient, 'createToken').returns(({
+            sandbox.stub(ssoOidcClient, 'createToken').returns({
                 promise: sandbox.stub().resolves(fakeCreateTokenResponse),
-            } as any) as SDK.Request<CreateTokenResponse, SDK.AWSError>)
+            } as any as SDK.Request<CreateTokenResponse, SDK.AWSError>)
 
             const stubSaveAccessToken = sandbox.stub(cache, 'saveAccessToken').returns()
 
@@ -111,9 +111,9 @@ describe('SsoAccessTokenProvider', function () {
             const stubRegisterClient = sandbox.stub(sut, 'registerClient').resolves(validRegistation)
             const stubAuthorizeClient = sandbox.stub(sut, 'authorizeClient').resolves(validAuthorization)
 
-            const stubCreateToken = sandbox.stub(ssoOidcClient, 'createToken').returns(({
+            const stubCreateToken = sandbox.stub(ssoOidcClient, 'createToken').returns({
                 promise: sandbox.stub().resolves(fakeCreateTokenResponse),
-            } as any) as SDK.Request<CreateTokenResponse, SDK.AWSError>)
+            } as any as SDK.Request<CreateTokenResponse, SDK.AWSError>)
 
             const stubSaveAccessToken = sandbox.stub(cache, 'saveAccessToken').returns()
 
@@ -135,13 +135,13 @@ describe('SsoAccessTokenProvider', function () {
             sandbox.stub(sut, 'authorizeClient').resolves(validAuthorization)
 
             const stubCreateToken = sandbox.stub(ssoOidcClient, 'createToken')
-            stubCreateToken.onFirstCall().returns(({
+            stubCreateToken.onFirstCall().returns({
                 promise: sandbox.stub().throws({ code: 'AuthorizationPendingException' }),
-            } as any) as SDK.Request<CreateTokenResponse, SDK.AWSError>)
+            } as any as SDK.Request<CreateTokenResponse, SDK.AWSError>)
 
-            stubCreateToken.onSecondCall().returns(({
+            stubCreateToken.onSecondCall().returns({
                 promise: sandbox.stub().resolves(fakeCreateTokenResponse),
-            } as any) as SDK.Request<CreateTokenResponse, SDK.AWSError>)
+            } as any as SDK.Request<CreateTokenResponse, SDK.AWSError>)
 
             const stubSaveAccessToken = sandbox.stub(cache, 'saveAccessToken').returns()
 
@@ -169,9 +169,9 @@ describe('SsoAccessTokenProvider', function () {
             const errToThrow = new Error() as SDK.AWSError
 
             const stubCreateToken = sandbox.stub(ssoOidcClient, 'createToken')
-            stubCreateToken.returns(({
+            stubCreateToken.returns({
                 promise: sandbox.stub().throws(errToThrow),
-            } as any) as SDK.Request<CreateTokenResponse, SDK.AWSError>)
+            } as any as SDK.Request<CreateTokenResponse, SDK.AWSError>)
 
             const stubSaveAccessToken = sandbox.stub(cache, 'saveAccessToken').returns()
 
@@ -186,13 +186,13 @@ describe('SsoAccessTokenProvider', function () {
             sandbox.stub(sut, 'authorizeClient').resolves(validAuthorization)
 
             const stubCreateToken = sandbox.stub(ssoOidcClient, 'createToken')
-            stubCreateToken.onFirstCall().returns(({
+            stubCreateToken.onFirstCall().returns({
                 promise: sandbox.stub().throws({ code: 'SlowDownException' }),
-            } as any) as SDK.Request<CreateTokenResponse, SDK.AWSError>)
+            } as any as SDK.Request<CreateTokenResponse, SDK.AWSError>)
 
-            stubCreateToken.onSecondCall().returns(({
+            stubCreateToken.onSecondCall().returns({
                 promise: sandbox.stub().resolves(fakeCreateTokenResponse),
-            } as any) as SDK.Request<CreateTokenResponse, SDK.AWSError>)
+            } as any as SDK.Request<CreateTokenResponse, SDK.AWSError>)
 
             const stubSaveAccessToken = sandbox.stub(cache, 'saveAccessToken').returns()
 
@@ -220,9 +220,9 @@ describe('SsoAccessTokenProvider', function () {
             errToThrow.code = 'InvalidClientException'
 
             const stubSsoOidcClient = sandbox.stub(ssoOidcClient, 'startDeviceAuthorization')
-            stubSsoOidcClient.returns(({
+            stubSsoOidcClient.returns({
                 promise: sandbox.stub().throws(errToThrow),
-            } as any) as SDK.Request<CreateTokenResponse, SDK.AWSError>)
+            } as any as SDK.Request<CreateTokenResponse, SDK.AWSError>)
 
             const stubInvalidateCache = sandbox.stub(cache, 'invalidateClientRegistration').returns()
 

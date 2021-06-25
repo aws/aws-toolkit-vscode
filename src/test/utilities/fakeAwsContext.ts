@@ -60,9 +60,8 @@ export interface FakeAwsContextParams {
 }
 
 export class FakeAwsContext implements AwsContext {
-    public onDidChangeContext: vscode.Event<ContextChangeEventsArgs> = new vscode.EventEmitter<
-        ContextChangeEventsArgs
-    >().event
+    public onDidChangeContext: vscode.Event<ContextChangeEventsArgs> =
+        new vscode.EventEmitter<ContextChangeEventsArgs>().event
     private awsContextCredentials: AwsContextCredentials | undefined
 
     public constructor(params?: FakeAwsContextParams) {

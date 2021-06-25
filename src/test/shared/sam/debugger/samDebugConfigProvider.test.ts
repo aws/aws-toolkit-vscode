@@ -298,7 +298,7 @@ describe('SamDebugConfigurationProvider', async function () {
             const mockCredentialsStore: CredentialsStore = new CredentialsStore()
 
             const credentialsProvider: CredentialsProvider = {
-                getCredentials: sandbox.stub().resolves(({} as any) as AWS.Credentials),
+                getCredentials: sandbox.stub().resolves({} as any as AWS.Credentials),
                 getProviderType: sandbox.stub().resolves('profile'),
                 getTelemetryType: sandbox.stub().resolves('staticProfile'),
                 getCredentialsId: sandbox.stub().returns({
@@ -3264,7 +3264,7 @@ Resources:
             const mockCredentialsStore: CredentialsStore = new CredentialsStore()
 
             const credentialsProvider: CredentialsProvider = {
-                getCredentials: sandbox.stub().resolves(({} as any) as AWS.Credentials),
+                getCredentials: sandbox.stub().resolves({} as any as AWS.Credentials),
                 getProviderType: sandbox.stub().resolves('profile'),
                 getTelemetryType: sandbox.stub().resolves('staticProfile'),
                 getCredentialsId: sandbox.stub().returns({

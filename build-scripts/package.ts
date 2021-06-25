@@ -46,7 +46,7 @@ function parseArgs() {
  * a prerelease/nightly/edge/preview build.
  */
 function isRelease(): boolean {
-    return (child_process.execSync('git tag -l --contains HEAD').toString() !== '')
+    return child_process.execSync('git tag -l --contains HEAD').toString() !== ''
 }
 
 /**

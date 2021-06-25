@@ -229,7 +229,7 @@ class TestEcsClient extends DefaultEcsClient {
     }
 
     protected async createSdkClient(): Promise<ECS> {
-        return ({} as any) as ECS
+        return {} as any as ECS
     }
 
     private getResponseDatum<T>(responses: T[] | AWSError, nextToken?: string): T | AWSError {

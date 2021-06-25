@@ -40,9 +40,7 @@ export class S3FileNode extends AWSTreeNodeBase implements AWSResourceNode {
             const readableSize = formatBytes(file.sizeBytes)
 
             // Prevent clock skew showing future date
-            const readableDate = moment(file.lastModified)
-                .subtract(5, 'second')
-                .from(now)
+            const readableDate = moment(file.lastModified).subtract(5, 'second').from(now)
 
             this.tooltip = localize(
                 'AWS.explorerNode.s3.fileTooltip',

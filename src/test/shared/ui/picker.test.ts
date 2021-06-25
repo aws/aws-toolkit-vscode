@@ -330,9 +330,8 @@ describe('promptUser', async function () {
         private readonly onDidChangeValueEmitter: vscode.EventEmitter<string> = new vscode.EventEmitter()
         private readonly onDidChangeActiveEmitter: vscode.EventEmitter<T[]> = new vscode.EventEmitter()
         private readonly onDidChangeSelectionEmitter: vscode.EventEmitter<T[]> = new vscode.EventEmitter()
-        private readonly onDidTriggerButtonEmitter: vscode.EventEmitter<
-            vscode.QuickInputButton
-        > = new vscode.EventEmitter()
+        private readonly onDidTriggerButtonEmitter: vscode.EventEmitter<vscode.QuickInputButton> =
+            new vscode.EventEmitter()
 
         public constructor() {
             this.onDidHide = this.onDidHideEmitter.event

@@ -36,7 +36,7 @@ describe('SamCliConfiguration', function () {
 
         const samCliConfig: SamCliConfiguration = new DefaultSamCliConfiguration(
             settingsConfiguration,
-            ({} as any) as SamCliLocationProvider
+            {} as any as SamCliLocationProvider
         )
 
         await samCliConfig.initialize()

@@ -112,6 +112,6 @@ describe('StepFunctionsNode', function () {
             createStepFunctionsClient: sandbox.stub().returns(stepFunctionsClient),
         }
 
-        ext.toolkitClientBuilder = (clientBuilder as any) as ToolkitClientBuilder
+        ext.toolkitClientBuilder = clientBuilder as any as ToolkitClientBuilder
     }
 })

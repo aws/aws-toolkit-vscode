@@ -40,8 +40,7 @@ export class StepFunctionsNode extends AWSTreeNodeBase {
 
                 return [...this.stateMachineNodes.values()]
             },
-            getErrorNode: async (error: Error, logID: number) =>
-                new ErrorNode(this, error, logID),
+            getErrorNode: async (error: Error, logID: number) => new ErrorNode(this, error, logID),
             getNoChildrenPlaceholderNode: async () =>
                 new PlaceholderNode(
                     this,

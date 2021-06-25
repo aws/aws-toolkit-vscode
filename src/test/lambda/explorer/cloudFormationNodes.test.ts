@@ -157,7 +157,7 @@ describe('CloudFormationStackNode', function () {
             createLambdaClient: sandbox.stub().returns(lambdaClient),
         }
 
-        ext.toolkitClientBuilder = (clientBuilder as any) as ToolkitClientBuilder
+        ext.toolkitClientBuilder = clientBuilder as any as ToolkitClientBuilder
 
         const childNodes = await testNode.getChildren()
         assertNodeListOnlyContainsErrorNode(childNodes)
@@ -200,7 +200,7 @@ describe('CloudFormationStackNode', function () {
             createLambdaClient: sandbox.stub().returns(lambdaClient),
         }
 
-        ext.toolkitClientBuilder = (clientBuilder as any) as ToolkitClientBuilder
+        ext.toolkitClientBuilder = clientBuilder as any as ToolkitClientBuilder
     }
 })
 
@@ -223,7 +223,7 @@ describe('CloudFormationNode', function () {
             createCloudFormationClient: sandbox.stub().returns(cloudFormationClient),
         }
 
-        ext.toolkitClientBuilder = (clientBuilder as any) as ToolkitClientBuilder
+        ext.toolkitClientBuilder = clientBuilder as any as ToolkitClientBuilder
 
         const cloudFormationNode = new CloudFormationNode(FAKE_REGION_CODE)
 
@@ -244,7 +244,7 @@ describe('CloudFormationNode', function () {
             createCloudFormationClient: sandbox.stub().returns(cloudFormationClient),
         }
 
-        ext.toolkitClientBuilder = (clientBuilder as any) as ToolkitClientBuilder
+        ext.toolkitClientBuilder = clientBuilder as any as ToolkitClientBuilder
 
         const cloudFormationNode = new CloudFormationNode(FAKE_REGION_CODE)
 
@@ -262,7 +262,7 @@ describe('CloudFormationNode', function () {
             createCloudFormationClient: sandbox.stub().returns(cloudFormationClient),
         }
 
-        ext.toolkitClientBuilder = (clientBuilder as any) as ToolkitClientBuilder
+        ext.toolkitClientBuilder = clientBuilder as any as ToolkitClientBuilder
 
         const cloudFormationNode = new CloudFormationNode(FAKE_REGION_CODE)
 

@@ -4,7 +4,13 @@
  */
 
 import { recordAwsLoadCredentials } from '../../shared/telemetry/telemetry'
-import { asString, CredentialsProvider, CredentialsId, credentialsProviderToTelemetryType, CredentialsProviderType } from './credentials'
+import {
+    asString,
+    CredentialsProvider,
+    CredentialsId,
+    credentialsProviderToTelemetryType,
+    CredentialsProviderType,
+} from './credentials'
 import { CredentialsProviderFactory } from './credentialsProviderFactory'
 
 /**
@@ -45,9 +51,7 @@ export class CredentialsProviderManager {
         return m
     }
 
-    public async getCredentialsProvider(
-        credentials: CredentialsId
-    ): Promise<CredentialsProvider | undefined> {
+    public async getCredentialsProvider(credentials: CredentialsId): Promise<CredentialsProvider | undefined> {
         const factories = this.getFactories(credentials.credentialSource)
         for (const factory of factories) {
             await factory.refresh()

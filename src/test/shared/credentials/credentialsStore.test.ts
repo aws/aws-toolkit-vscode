@@ -11,12 +11,12 @@ import { CredentialsProvider, CredentialsId } from '../../../credentials/provide
 describe('CredentialsStore', async function () {
     let sandbox: sinon.SinonSandbox
     let sut: CredentialsStore
-    const sampleCredentials = ({} as any) as AWS.Credentials
+    const sampleCredentials = {} as any as AWS.Credentials
     const sampleCredentialsId: CredentialsId = {
         credentialSource: 'profile',
         credentialTypeId: 'someId',
     }
-    const sampleExpiredCredentials = ({ expired: true } as any) as AWS.Credentials
+    const sampleExpiredCredentials = { expired: true } as any as AWS.Credentials
 
     beforeEach(async function () {
         sandbox = sinon.createSandbox()
@@ -31,10 +31,10 @@ describe('CredentialsStore', async function () {
         credentialsHashCode: number = 0,
         testCredentials: AWS.Credentials
     ): CredentialsProvider {
-        return ({
+        return {
             getCredentials: () => testCredentials,
             getHashCode: () => credentialsHashCode,
-        } as any) as CredentialsProvider
+        } as any as CredentialsProvider
     }
 
     it('getCredentials returns undefined when credentials are not loaded', async function () {

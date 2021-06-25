@@ -10,7 +10,12 @@ import { writeFile, remove } from 'fs-extra'
 import * as path from 'path'
 import * as sinon from 'sinon'
 import * as vscode from 'vscode'
-import { getComputeRegion, initializeComputeRegion, mostRecentVersionKey, pluginVersion } from '../../shared/extensionUtilities'
+import {
+    getComputeRegion,
+    initializeComputeRegion,
+    mostRecentVersionKey,
+    pluginVersion,
+} from '../../shared/extensionUtilities'
 import {
     createQuickStartWebview,
     isDifferentVersion,

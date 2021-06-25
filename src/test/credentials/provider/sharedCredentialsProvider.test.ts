@@ -168,10 +168,7 @@ describe('SharedCredentialsProvider', async function () {
     })
 
     it('validates a valid profile with role_arn', async function () {
-        const sut = new SharedCredentialsProvider(
-            'default',
-            new Map<string, Profile>([['default', { role_arn: 'x' }]])
-        )
+        const sut = new SharedCredentialsProvider('default', new Map<string, Profile>([['default', { role_arn: 'x' }]]))
 
         assert.strictEqual(sut.validate(), undefined)
     })

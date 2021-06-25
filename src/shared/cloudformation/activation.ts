@@ -45,7 +45,7 @@ export async function activate(extensionContext: vscode.ExtensionContext): Promi
         getLogger().error('Failed to activate template registry', e)
         // This prevents us from breaking for any reason later if it fails to load. Since
         // Noop watcher is always empty, we will get back empty arrays with no issues.
-        ext.templateRegistry = (new NoopWatcher() as unknown) as CloudFormationTemplateRegistry
+        ext.templateRegistry = new NoopWatcher() as unknown as CloudFormationTemplateRegistry
     }
     // If setting it up worked, add it to subscriptions so it is cleaned up at exit
     extensionContext.subscriptions.push(ext.templateRegistry)

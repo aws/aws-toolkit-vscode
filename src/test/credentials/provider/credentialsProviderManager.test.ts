@@ -5,7 +5,12 @@
 
 import * as assert from 'assert'
 import { CredentialsProviderFactory } from '../../../credentials/providers/credentialsProviderFactory'
-import { CredentialsProvider, CredentialsProviderType ,CredentialsId, isEqual } from '../../../credentials/providers/credentials'
+import {
+    CredentialsProvider,
+    CredentialsProviderType,
+    CredentialsId,
+    isEqual,
+} from '../../../credentials/providers/credentials'
 import { CredentialsProviderManager } from '../../../credentials/providers/credentialsProviderManager'
 
 /**
@@ -17,12 +22,12 @@ class TestCredentialsProviderFactory implements CredentialsProviderFactory {
     public constructor(public readonly credentialSource: CredentialsProviderType, providerSubIds: string[]) {
         this.providers.push(
             ...providerSubIds.map<CredentialsProvider>(subId => {
-                return ({
+                return {
                     getCredentialsId: () => ({
                         credentialSource: this.credentialSource,
                         credentialTypeId: subId,
                     }),
-                } as any) as CredentialsProvider
+                } as any as CredentialsProvider
             })
         )
     }

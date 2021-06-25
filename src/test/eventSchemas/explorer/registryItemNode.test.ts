@@ -59,13 +59,13 @@ describe('RegistryItemNode', function () {
     })
 
     it('returns placeholder node if no children are present', async function () {
-        const schemaClient = ({
+        const schemaClient = {
             regionCode: 'code',
 
             async *listSchemas(registryName: string, version: string): AsyncIterableIterator<Schemas.SchemaSummary> {
                 yield* []
             },
-        } as any) as SchemaClient
+        } as any as SchemaClient
 
         ext.toolkitClientBuilder = new SchemaMockToolkitClientBuilder(schemaClient)
         const testNode = generateTestNode()

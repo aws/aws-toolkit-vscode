@@ -6,8 +6,7 @@
 import * as AWS from 'aws-sdk'
 import { CredentialType } from '../../shared/telemetry/telemetry.gen'
 import { getStringHash } from '../../shared/utilities/textUtilities'
-import { CredentialsProvider, CredentialsProviderType ,CredentialsId } from './credentials'
-
+import { CredentialsProvider, CredentialsProviderType, CredentialsId } from './credentials'
 
 /**
  * Credentials received from EC2 metadata service.
@@ -15,8 +14,7 @@ import { CredentialsProvider, CredentialsProviderType ,CredentialsId } from './c
  * @see CredentialsProviderType
  */
 export class Ec2CredentialsProvider implements CredentialsProvider {
-    public constructor(private token: string) {
-    }
+    public constructor(private token: string) {}
 
     public getCredentialsId(): CredentialsId {
         return {
@@ -42,7 +40,7 @@ export class Ec2CredentialsProvider implements CredentialsProvider {
     }
 
     public getDefaultRegion(): string | undefined {
-        return 'us-east-1'  // TODO: get region from metadata service
+        return 'us-east-1' // TODO: get region from metadata service
     }
 
     public canAutoConnect(): boolean {

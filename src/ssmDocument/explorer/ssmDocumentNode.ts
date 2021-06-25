@@ -31,8 +31,7 @@ export class SsmDocumentNode extends AWSTreeNodeBase {
 
                 return [...this.documentTypeNodes.values()]
             },
-            getErrorNode: async (error: Error, logID: number) =>
-                new ErrorNode(this, error, logID),
+            getErrorNode: async (error: Error, logID: number) => new ErrorNode(this, error, logID),
             getNoChildrenPlaceholderNode: async () =>
                 new PlaceholderNode(
                     this,
