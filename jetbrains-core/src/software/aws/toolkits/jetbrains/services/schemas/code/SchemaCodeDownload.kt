@@ -5,13 +5,14 @@ package software.aws.toolkits.jetbrains.services.schemas.code
 
 import software.aws.toolkits.jetbrains.services.schemas.SchemaCodeLangs
 import software.aws.toolkits.jetbrains.services.schemas.SchemaSummary
+import java.io.File
 import java.nio.ByteBuffer
 
 data class SchemaCodeDownloadRequestDetails(
     val schema: SchemaSummary,
     val version: String,
     val language: SchemaCodeLangs,
-    val destinationDirectory: String
+    val destinationDirectory: File
 ) {
     // TODO: This is far from reliable, and won't work if the schema has special characters,
     //  and should either be generated using SchemaCodeGenUtils or provided from the server via metadata in DescribeCodeBindings

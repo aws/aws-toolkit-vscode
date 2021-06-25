@@ -26,8 +26,6 @@ import software.amazon.awssdk.services.schemas.model.SchemaVersionSummary
 import software.aws.toolkits.core.utils.failedFuture
 import software.aws.toolkits.jetbrains.core.MockClientManagerRule
 import software.aws.toolkits.jetbrains.core.MockResourceCacheRule
-import software.aws.toolkits.jetbrains.core.credentials.AwsConnectionManager
-import software.aws.toolkits.jetbrains.core.credentials.MockAwsConnectionManager
 import software.aws.toolkits.jetbrains.services.schemas.Schema
 import software.aws.toolkits.jetbrains.services.schemas.SchemaCodeLangs
 import software.aws.toolkits.jetbrains.services.schemas.SchemaSummary
@@ -67,14 +65,12 @@ class DownloadCodeForSchemaDialogTest {
     val notificationListener = NotificationListenerRule(projectRule, disposableRule.disposable)
 
     private lateinit var fileEditorManager: FileEditorManager
-    private lateinit var mockSettingsManager: MockAwsConnectionManager
 
     private val schemaCodeDownloader = mock<SchemaCodeDownloader>()
 
     @Before
     fun setup() {
         fileEditorManager = FileEditorManager.getInstance(projectRule.project)
-        mockSettingsManager = AwsConnectionManager.getInstance(projectRule.project) as MockAwsConnectionManager
 
         mockSchemaVersions()
     }
@@ -148,12 +144,10 @@ class DownloadCodeForSchemaDialogTest {
         initJavaSdk()
 
         val newFolder = tempFolder.newFolder()
-        val testFile = File(newFolder.path + File.separator + "test123")
+        val testFile = File(newFolder, "test123")
         testFile.createNewFile()
         testFile.writeText("test123")
         val fileName = testFile.name
-
-        val path = newFolder.absolutePath
 
         schemaCodeDownloader.stub {
             on { downloadCode(any(), any()) }.thenReturn(completedFuture(testFile))
@@ -161,12 +155,12 @@ class DownloadCodeForSchemaDialogTest {
 
         runInEdtAndWait {
             val dialog = DownloadCodeForSchemaDialog(projectRule.project, SCHEMA)
-            selectDialogDefaults(dialog, path)
+            selectDialogDefaults(dialog, newFolder.absolutePath)
 
             dialog.downloadSchemaCode(schemaCodeDownloader)
         }
 
-        val request = SchemaCodeDownloadRequestDetails(SchemaSummary(SCHEMA_NAME, REGISTRY), VERSION, LANGUAGE, path)
+        val request = SchemaCodeDownloadRequestDetails(SchemaSummary(SCHEMA_NAME, REGISTRY), VERSION, LANGUAGE, newFolder)
         verify(schemaCodeDownloader).downloadCode(eq(request), any())
         assertThat(fileEditorManager.openFiles).hasOnlyOneElementSatisfying { assertThat(it.name).isEqualTo(fileName) }
 
