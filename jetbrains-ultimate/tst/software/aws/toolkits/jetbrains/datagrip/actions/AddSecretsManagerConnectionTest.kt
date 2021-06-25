@@ -37,7 +37,7 @@ class AddSecretsManagerConnectionTest {
             secretArn,
             "adapter"
         )
-        assertThat(registry.newDataSources).hasOnlyOneElementSatisfying {
+        assertThat(registry.newDataSources).singleElement().satisfies {
             assertThat(it.isTemporary).isFalse()
             assertThat(it.sslCfg?.myEnabled).isTrue()
             assertThat(it.url).isEqualTo("jdbc:adapter://$address:$port")

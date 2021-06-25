@@ -12,29 +12,25 @@ class BannedImportsRuleTest {
     @Test
     fun `Importing Assert fails`() {
         assertThat(rule.lint("import org.assertj.core.api.Assertions"))
-            .hasOnlyOneElementSatisfying {
-                it.id == "BannedImports" && it.message == "Import the assertion you want to use directly instead of importing the top level Assertions"
-            }
+            .singleElement()
+            .matches { it.id == "BannedImports" && it.message == "Import the assertion you want to use directly instead of importing the top level Assertions" }
     }
 
     @Test
     fun `Importing Hamcrest fails`() {
         assertThat(rule.lint("import org.hamcrest.AnyClass"))
-            .hasOnlyOneElementSatisfying {
-                it.id == "BannedImports" && it.message == "Use AssertJ instead of Hamcrest assertions"
-            }
+            .singleElement()
+            .matches { it.id == "BannedImports" && it.message == "Use AssertJ instead of Hamcrest assertions" }
     }
 
     @Test
     fun `Importing Kotlin test assert fails`() {
         assertThat(rule.lint("import kotlin.test.assertTrue"))
-            .hasOnlyOneElementSatisfying {
-                it.id == "BannedImports" && it.message == "Use AssertJ instead of Kotlin test assertions"
-            }
+            .singleElement()
+            .matches { it.id == "BannedImports" && it.message == "Use AssertJ instead of Kotlin test assertions" }
         assertThat(rule.lint("import kotlin.test.assertFalse"))
-            .hasOnlyOneElementSatisfying {
-                it.id == "BannedImports" && it.message == "Use AssertJ instead of Kotlin test assertions"
-            }
+            .singleElement()
+            .matches { it.id == "BannedImports" && it.message == "Use AssertJ instead of Kotlin test assertions" }
     }
 
     @Test

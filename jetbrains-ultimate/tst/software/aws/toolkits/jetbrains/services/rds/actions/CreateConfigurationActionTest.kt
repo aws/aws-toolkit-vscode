@@ -68,7 +68,7 @@ class CreateConfigurationActionTest {
         val node = createNode()
         val registry = DataSourceRegistry(projectRule.project)
         CreateIamDataSourceAction().createDatasource(node, registry)
-        assertThat(registry.newDataSources).hasOnlyOneElementSatisfying {
+        assertThat(registry.newDataSources).singleElement().satisfies {
             assertThat(it.isTemporary).isFalse()
             assertThat(it.username).isEqualTo(username)
         }
@@ -86,7 +86,7 @@ class CreateConfigurationActionTest {
         val node = createNode()
         val registry = DataSourceRegistry(projectRule.project)
         CreateIamDataSourceAction().createDatasource(node, registry)
-        assertThat(registry.newDataSources).hasOnlyOneElementSatisfying {
+        assertThat(registry.newDataSources).singleElement().satisfies {
             assertThat(it.isTemporary).isFalse()
             assertThat(it.username).isEqualTo(masterUsername)
         }
@@ -105,7 +105,7 @@ class CreateConfigurationActionTest {
                 database = database
             )
         )
-        assertThat(registry.newDataSources).hasOnlyOneElementSatisfying {
+        assertThat(registry.newDataSources).singleElement().satisfies {
             assertThat(it.isTemporary).isFalse()
             assertThat(it.url).contains(port.toString())
             assertThat(it.url).contains(address)
@@ -127,7 +127,7 @@ class CreateConfigurationActionTest {
                 database = database
             )
         )
-        assertThat(registry.newDataSources).hasOnlyOneElementSatisfying {
+        assertThat(registry.newDataSources).singleElement().satisfies {
             assertThat(it.username).isLowerCase().isEqualTo(username.toLowerCase())
             assertThat(it.driverClass).contains("postgres")
             assertThat(it.url).contains(JDBC_POSTGRES)
@@ -146,7 +146,7 @@ class CreateConfigurationActionTest {
                 database = database
             )
         )
-        assertThat(registry.newDataSources).hasOnlyOneElementSatisfying {
+        assertThat(registry.newDataSources).singleElement().satisfies {
             assertThat(it.username).isLowerCase().isEqualTo(username.toLowerCase())
             assertThat(it.driverClass).contains("postgres")
             assertThat(it.url).contains(JDBC_POSTGRES)
@@ -165,7 +165,7 @@ class CreateConfigurationActionTest {
                 database = database
             )
         )
-        assertThat(registry.newDataSources).hasOnlyOneElementSatisfying {
+        assertThat(registry.newDataSources).singleElement().satisfies {
             assertThat(it.username).isEqualTo(username)
             assertThat(it.driverClass).contains("mysql")
             assertThat(it.url).contains(JDBC_MYSQL)
@@ -185,7 +185,7 @@ class CreateConfigurationActionTest {
                 database = database
             )
         )
-        assertThat(registry.newDataSources).hasOnlyOneElementSatisfying {
+        assertThat(registry.newDataSources).singleElement().satisfies {
             assertThat(it.username).isEqualTo(username)
             assertThat(it.driverClass).contains("mariadb")
             assertThat(it.url).contains(JDBC_MYSQL_AURORA)
@@ -205,7 +205,7 @@ class CreateConfigurationActionTest {
                 database = database
             )
         )
-        assertThat(registry.newDataSources).hasOnlyOneElementSatisfying {
+        assertThat(registry.newDataSources).singleElement().satisfies {
             assertThat(it.username).isEqualTo(username)
             assertThat(it.driverClass).contains("mariadb")
             assertThat(it.url).contains(JDBC_MYSQL_AURORA)

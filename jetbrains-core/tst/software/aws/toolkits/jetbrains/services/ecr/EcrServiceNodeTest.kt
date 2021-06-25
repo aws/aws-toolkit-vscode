@@ -47,14 +47,14 @@ class EcrServiceNodeTest {
     fun `No repositories listed`() {
         resourceCache.addEntry(projectRule.project, EcrResources.LIST_REPOS, listOf())
         val children = EcrServiceNode(projectRule.project, ECR_EXPLORER_NODE).children
-        assertThat(children).hasOnlyOneElementSatisfying { it is AwsExplorerEmptyNode }
+        assertThat(children).singleElement().isInstanceOf(AwsExplorerEmptyNode::class.java)
     }
 
     @Test
     fun `Error loading repositories`() {
         resourceCache.addEntry(projectRule.project, EcrResources.LIST_REPOS, CompletableFutureUtils.failedFuture(RuntimeException("network broke")))
         val children = EcrServiceNode(projectRule.project, ECR_EXPLORER_NODE).children
-        assertThat(children).hasOnlyOneElementSatisfying { it is AwsExplorerErrorNode }
+        assertThat(children).singleElement().isInstanceOf(AwsExplorerErrorNode::class.java)
     }
 
     @Test
@@ -74,7 +74,7 @@ class EcrServiceNodeTest {
         val node = EcrRepositoryNode(projectRule.project, repo)
         resourceCache.addEntry(projectRule.project, EcrResources.listTags(repo.repositoryName), listOf())
         val children = node.children
-        assertThat(children).hasOnlyOneElementSatisfying { it is AwsExplorerEmptyNode }
+        assertThat(children).singleElement().isInstanceOf(AwsExplorerEmptyNode::class.java)
     }
 
     @Test
@@ -86,7 +86,7 @@ class EcrServiceNodeTest {
             CompletableFutureUtils.failedFuture(RuntimeException("network broke"))
         )
         val children = node.children
-        assertThat(children).hasOnlyOneElementSatisfying { it is AwsExplorerErrorNode }
+        assertThat(children).singleElement().isInstanceOf(AwsExplorerErrorNode::class.java)
     }
 
     private companion object {
