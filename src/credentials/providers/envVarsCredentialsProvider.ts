@@ -3,18 +3,18 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
-import { Credentials, EnvironmentCredentials } from "aws-sdk";
-import { EnvironmentVariables } from "../../shared/environmentVariables";
-import { CredentialType } from "../../shared/telemetry/telemetry.gen";
-import { CredentialsId, CredentialsProviderType } from './credentials';
-import { EnvironmentCredentialsProvider } from "./environmentCredentialsProvider";
+import { Credentials, EnvironmentCredentials } from 'aws-sdk'
+import { EnvironmentVariables } from '../../shared/environmentVariables'
+import { CredentialType } from '../../shared/telemetry/telemetry.gen'
+import { getStringHash } from '../../shared/utilities/textUtilities'
+import { CredentialsId, CredentialsProvider, CredentialsProviderType } from './credentials'
 
 /**
  * Credentials given by environment variables.
  *
  * @see CredentialsProviderType
  */
-export class EnvVarsCredentialsProvider implements EnvironmentCredentialsProvider {
+export class EnvVarsCredentialsProvider implements CredentialsProvider {
     public static readonly AWS_ENV_VAR_PREFIX: string = 'AWS'
 
     private credentials: EnvironmentCredentials | undefined
@@ -40,11 +40,11 @@ export class EnvVarsCredentialsProvider implements EnvironmentCredentialsProvide
     }
 
     public getTelemetryType(): CredentialType {
-        return 'other' // TODO: backfill 'envVars' back into telemetry type
+        return 'other'
     }
 
     public getHashCode(): string {
-        return JSON.stringify(this.credentials)
+        return getStringHash(JSON.stringify(this.credentials))
     }
 
     public getDefaultRegion(): string | undefined {

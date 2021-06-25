@@ -14,7 +14,6 @@ import { initialize as initializeCredentials } from './credentials/activation'
 import { initializeAwsCredentialsStatusBarItem } from './credentials/awsCredentialsStatusBarItem'
 import { LoginManager } from './credentials/loginManager'
 import { CredentialsProviderManager } from './credentials/providers/credentialsProviderManager'
-import { EnvironmentCredentialsProviderFactory } from './credentials/providers/environmentCredentialsProviderFactory'
 import { SharedCredentialsProviderFactory } from './credentials/providers/sharedCredentialsProviderFactory'
 import { activate as activateSchemas } from './eventSchemas/activation'
 import { activate as activateLambda } from './lambda/activation'
@@ -68,6 +67,8 @@ import { activate as activateSsmDocument } from './ssmDocument/activation'
 import { CredentialsStore } from './credentials/credentialsStore'
 import { getSamCliContext } from './shared/sam/cli/samCliContext'
 import * as extWindow from './shared/vscode/window'
+import { Ec2CredentialsProvider } from './credentials/providers/ec2CredentialsProvider'
+import { EnvVarsCredentialsProvider } from './credentials/providers/envVarsCredentialsProvider'
 
 let localize: nls.LocalizeFunc
 
@@ -77,7 +78,9 @@ export async function activate(context: vscode.ExtensionContext) {
     localize = nls.loadMessageBundle()
     ext.init(context, extWindow.Window.vscode())
 
-    const toolkitOutputChannel = vscode.window.createOutputChannel(localize('AWS.channel.aws.toolkit', '{0} Toolkit', getIdeProperties().company))
+    const toolkitOutputChannel = vscode.window.createOutputChannel(
+        localize('AWS.channel.aws.toolkit', '{0} Toolkit', getIdeProperties().company)
+    )
     await activateLogger(context, toolkitOutputChannel)
     const remoteInvokeOutputChannel = vscode.window.createOutputChannel(
         localize('AWS.channel.aws.remoteInvoke', '{0} Remote Invocations', getIdeProperties().company)
@@ -326,11 +329,9 @@ function initializeManifestPaths(extensionContext: vscode.ExtensionContext) {
 }
 
 function initializeCredentialsProviderManager() {
-    CredentialsProviderManager.getInstance()
-        .addProviderFactories(
-            new SharedCredentialsProviderFactory(),
-            new EnvironmentCredentialsProviderFactory()
-        )
+    const manager = CredentialsProviderManager.getInstance()
+    manager.addProviderFactory(new SharedCredentialsProviderFactory())
+    manager.addProviders(new Ec2CredentialsProvider(), new EnvVarsCredentialsProvider())
 }
 
 function makeEndpointsProvider(): EndpointsProvider {
@@ -343,7 +344,11 @@ function makeEndpointsProvider(): EndpointsProvider {
         getLogger().error('Failure while loading Endpoints Manifest: %O', err)
 
         vscode.window.showErrorMessage(
-            `${localize('AWS.error.endpoint.load.failure', 'The {0} Toolkit was unable to load endpoints data.', getIdeProperties().company)} ${
+            `${localize(
+                'AWS.error.endpoint.load.failure',
+                'The {0} Toolkit was unable to load endpoints data.',
+                getIdeProperties().company
+            )} ${
                 isCloud9()
                     ? localize(
                           'AWS.error.impactedFunctionalityReset.cloud9',

@@ -17,7 +17,7 @@ import * as extensionConstants from './constants'
 import { getAccountId } from './credentials/accountId'
 import { CredentialSelectionState } from './credentials/credentialSelectionState'
 import {
-    credentialSourceSelector,
+    credentialProfileSelector,
     DefaultCredentialSelectionDataProvider,
     promptToDefineCredentialsProfile,
 } from './credentials/defaultCredentialSelectionDataProvider'
@@ -59,13 +59,13 @@ export class DefaultAWSContextCommands {
     }
 
     public async onCommandLogin() {
-        const credentialSource = await this.getCredentialSourceFromUser()
-        if (!credentialSource) {
+        const profileName = await this.getProfileNameFromUser()
+        if (!profileName) {
             // user clicked away from quick pick or entered nothing
             return
         }
 
-        await this.loginManager.login({ passive: false, providerId: fromString(credentialSource) })
+        await this.loginManager.login({ passive: false, providerId: fromString(profileName) })
     }
 
     public async onCommandCreateCredentialsProfile(): Promise<void> {
@@ -170,14 +170,14 @@ export class DefaultAWSContextCommands {
     }
 
     /**
-     * @description Responsible for getting a credential source from the user,
-     * working with them to create one if necessary.
+     * @description Responsible for getting a profile from the user,
+     * working with them to define one if necessary.
      *
-     * @returns User's selected credential source, or undefined if none was selected.
+     * @returns User's selected Profile name, or undefined if none was selected.
      * undefined is also returned if we leave the user in a state where they are
      * editing their credentials file.
      */
-    private async getCredentialSourceFromUser(): Promise<string | undefined> {
+    private async getProfileNameFromUser(): Promise<string | undefined> {
         const credentialsFiles: string[] = await UserCredentialsUtils.findExistingCredentialsFilenames()
         const providerMap = await CredentialsProviderManager.getInstance().getCredentialProviderNames()
         const profileNames = Object.keys(providerMap)
@@ -185,7 +185,7 @@ export class DefaultAWSContextCommands {
         if (profileNames.length > 0) {
             // There are credentials for the user to choose from
             const dataProvider = new DefaultCredentialSelectionDataProvider(profileNames, ext.context)
-            const state = await credentialSourceSelector(dataProvider)
+            const state = await credentialProfileSelector(dataProvider)
             if (state && state.credentialProfile) {
                 return state.credentialProfile.label
             }
@@ -208,23 +208,23 @@ export class DefaultAWSContextCommands {
         } else {
             // If no credentials were found, the user should be
             // encouraged to define some.
-            if (profileNames.length === 0) {
-                const userResponse = await window.showInformationMessage(
-                    localize(
-                        'AWS.message.prompt.credentials.create',
-                        'You do not appear to have any {0} Credentials defined. Would you like to set one up now?',
-                        getIdeProperties().company
-                    ),
-                    localizedText.yes,
-                    localizedText.no
-                )
+            const userResponse = await window.showInformationMessage(
+                localize(
+                    'AWS.message.prompt.credentials.create',
+                    'You do not appear to have any {0} Credentials defined. Would you like to set one up now?',
+                    getIdeProperties().company
+                ),
+                localizedText.yes,
+                localizedText.no
+            )
 
-                if (userResponse === localizedText.yes) {
-                    // Start edit, the user will have to try connecting again
-                    // after they have made their edits.
-                    await this.editCredentials()
-                }
+            if (userResponse === localizedText.yes) {
+                // Start edit, the user will have to try connecting again
+                // after they have made their edits.
+                await this.editCredentials()
             }
+
+            // If we get here, there are credentials for the user to choose from
             return undefined
         }
     }

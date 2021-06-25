@@ -98,6 +98,15 @@ export class SharedCredentialsProvider implements CredentialsProvider {
         return !hasProfileProperty(this.profile, SHARED_CREDENTIAL_PROPERTIES.MFA_SERIAL) && !this.isSsoProfile()
     }
 
+    public async isAvailable(): Promise<boolean> {
+        const validationMessage = this.validate()
+        if (validationMessage) {
+            getLogger().error(`Profile ${this.profileName} is not a valid Credential Profile: ${validationMessage}`)
+            return false
+        }
+        return true
+    }
+
     /**
      * Returns undefined if the Profile is valid, else a string indicating what is invalid
      */
@@ -105,8 +114,7 @@ export class SharedCredentialsProvider implements CredentialsProvider {
         const expectedProperties: string[] = []
 
         if (hasProfileProperty(this.profile, SHARED_CREDENTIAL_PROPERTIES.CREDENTIAL_SOURCE)) {
-            // Additional properties are not required
-            return undefined
+            return this.validateSourcedCredentials()
         } else if (hasProfileProperty(this.profile, SHARED_CREDENTIAL_PROPERTIES.ROLE_ARN)) {
             return this.validateSourceProfileChain()
         } else if (hasProfileProperty(this.profile, SHARED_CREDENTIAL_PROPERTIES.CREDENTIAL_PROCESS)) {
@@ -141,10 +149,6 @@ export class SharedCredentialsProvider implements CredentialsProvider {
         const originalStsConfiguration = AWS.config.sts
 
         try {
-            const validationMessage = this.validate()
-            if (validationMessage) {
-                throw new Error(`Profile ${this.profileName} is not a valid Credential Profile: ${validationMessage}`)
-            }
             // Profiles with references involving non-aws partitions need help getting the right STS endpoint
             this.applyProfileRegionToGlobalStsConfig()
             //  SSO entry point
@@ -194,6 +198,17 @@ export class SharedCredentialsProvider implements CredentialsProvider {
             }
 
             profile = this.allSharedCredentialProfiles.get(profileName)!
+        }
+    }
+
+    private validateSourcedCredentials(): string | undefined {
+        if (hasProfileProperty(this.profile, SHARED_CREDENTIAL_PROPERTIES.SOURCE_PROFILE)) {
+            return `credential_source and source_profile cannot both be set`
+        }
+
+        const source = this.profile[SHARED_CREDENTIAL_PROPERTIES.CREDENTIAL_SOURCE]!
+        if (!Object.values(CREDENTIAL_SOURCES).includes(source)) {
+            return `Credential source ${this.profile[SHARED_CREDENTIAL_PROPERTIES.CREDENTIAL_SOURCE]} is not supported`
         }
     }
 
