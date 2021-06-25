@@ -3,9 +3,8 @@
 
 package software.aws.toolkits.jetbrains.services.schemas
 
-import com.intellij.notification.Notification
-import com.intellij.notification.Notifications
 import com.intellij.openapi.fileEditor.FileEditorManager
+import com.intellij.testFramework.DisposableRule
 import com.intellij.testFramework.ProjectRule
 import com.intellij.testFramework.runInEdtAndGet
 import com.intellij.testFramework.runInEdtAndWait
@@ -17,12 +16,12 @@ import org.junit.Test
 import org.mockito.kotlin.mock
 import org.mockito.kotlin.verify
 import software.amazon.awssdk.services.schemas.model.DescribeSchemaResponse
-import software.aws.toolkits.jetbrains.core.MockClientManagerRule
 import software.aws.toolkits.jetbrains.core.MockResourceCacheRule
-import software.aws.toolkits.jetbrains.core.credentials.AwsConnectionManager
-import software.aws.toolkits.jetbrains.core.credentials.MockAwsConnectionManager
+import software.aws.toolkits.jetbrains.core.credentials.ConnectionSettings
+import software.aws.toolkits.jetbrains.core.credentials.MockCredentialManagerRule
+import software.aws.toolkits.jetbrains.core.region.MockRegionProviderRule
 import software.aws.toolkits.jetbrains.services.schemas.resources.SchemasResources
-import java.io.File
+import software.aws.toolkits.jetbrains.utils.rules.NotificationListenerRule
 import java.util.concurrent.CompletableFuture.completedFuture
 
 class SchemasViewerTest {
@@ -33,33 +32,29 @@ class SchemasViewerTest {
 
     @JvmField
     @Rule
-    val mockClientManager = MockClientManagerRule()
-
-    @JvmField
-    @Rule
     val resourceCache = MockResourceCacheRule()
 
-    private var errorNotification: Notification? = null
+    @Rule
+    @JvmField
+    val mockCredentialManager = MockCredentialManagerRule()
 
-    private val fileEditorManager = FileEditorManager.getInstance(projectRule.project)
+    @Rule
+    @JvmField
+    val mockRegionProvider = MockRegionProviderRule()
 
-    private val CREDENTIAL_IDENTIFIER = MockAwsConnectionManager.getInstance(projectRule.project).activeCredentialProvider.displayName
-    private val REGION = MockAwsConnectionManager.getInstance(projectRule.project).activeRegion.id
-    private val REGISTRY = "registry"
-    private val SCHEMA = "schema"
-    private val SCHEMA_SUPER_LONG_NAME =
-        "schema12345678901234567890123456789012345678901234567890123456789012345678901234567890123456789012345678901234567890123456789012345678901234567890" +
-            "12345678901234567890123456789012345678901234567890123456789012345678901234567890"
-    private val SCHEMA_SPECIAL_CHARACTER = "schema:awesome"
-    private val SCHEMA_SPECIAL_CHARACTER_SANITIZED = "schema_awesome"
-    private val VERSION = "2"
+    @Rule
+    @JvmField
+    val disposableRule = DisposableRule()
 
-    private val AWS_EVENT_SCHEMA_RAW = File(javaClass.getResource("/awsEventSchemaRaw.json.txt").toURI()).readText(Charsets.UTF_8)
-    private val AWS_EVENT_SCHEMA_PRETTY = File(javaClass.getResource("/awsEventSchemaPretty.json.txt").toURI()).readText(Charsets.UTF_8)
+    @Rule
+    @JvmField
+    val notificationListener = NotificationListenerRule(projectRule, disposableRule.disposable)
+
+    private lateinit var fileEditorManager: FileEditorManager
 
     @Before
-    fun setUp() {
-        subscribeToNotifications()
+    fun setup() {
+        fileEditorManager = FileEditorManager.getInstance(projectRule.project)
     }
 
     @After
@@ -67,7 +62,6 @@ class SchemasViewerTest {
         runInEdtAndWait {
             fileEditorManager.openFiles.forEach { fileEditorManager.closeFile(it) }
         }
-        errorNotification = null
     }
 
     @Test
@@ -76,12 +70,13 @@ class SchemasViewerTest {
             .content(AWS_EVENT_SCHEMA_RAW)
             .build()
 
-        mockSchemaCache(REGISTRY, SCHEMA, schemaResponse)
+        val connectionSettings = ConnectionSettings(mockCredentialManager.createCredentialProvider(), mockRegionProvider.createAwsRegion())
+        mockSchemaCache(connectionSettings, schemaResponse)
 
         val actualResponse = SchemaDownloader().getSchemaContent(
             REGISTRY,
             SCHEMA,
-            connectionSettings = AwsConnectionManager.getInstance(projectRule.project).connectionSettings()!!
+            connectionSettings = connectionSettings
         ).toCompletableFuture().get()
 
         assertThat(actualResponse).isEqualTo(schemaResponse)
@@ -96,92 +91,123 @@ class SchemasViewerTest {
 
     @Test
     fun canOpenFileDialog() {
+        val connectionSettings = ConnectionSettings(mockCredentialManager.createCredentialProvider(), mockRegionProvider.createAwsRegion())
+
         runInEdtAndGet {
-            SchemaPreviewer().openFileInEditor(REGISTRY, SCHEMA, AWS_EVENT_SCHEMA_PRETTY, VERSION, projectRule.project).toCompletableFuture()
+            SchemaPreviewer().openFileInEditor(REGISTRY, SCHEMA, AWS_EVENT_SCHEMA_PRETTY, VERSION, projectRule.project, connectionSettings)
+                .toCompletableFuture()
         }.get()
 
-        assertThat(fileEditorManager.openFiles).hasOnlyOneElementSatisfying { assertThat(it.name).isEqualTo(getSchemaFileName(SCHEMA)) }
+        assertThat(fileEditorManager.openFiles).hasOnlyOneElementSatisfying { assertThat(it.name).isEqualTo(getSchemaFileName(connectionSettings, SCHEMA)) }
     }
 
     @Test
     fun canOpenFileDialogLongSchemaName() {
+        val connectionSettings = ConnectionSettings(mockCredentialManager.createCredentialProvider(), mockRegionProvider.createAwsRegion())
+
         runInEdtAndGet {
-            SchemaPreviewer().openFileInEditor(REGISTRY, SCHEMA_SUPER_LONG_NAME, AWS_EVENT_SCHEMA_PRETTY, VERSION, projectRule.project).toCompletableFuture()
+            SchemaPreviewer().openFileInEditor(REGISTRY, SCHEMA_SUPER_LONG_NAME, AWS_EVENT_SCHEMA_PRETTY, VERSION, projectRule.project, connectionSettings)
+                .toCompletableFuture()
         }.get()
 
-        val trimmedSchemaFileName = getSchemaFileName(SCHEMA_SUPER_LONG_NAME).substring(0, SchemaPreviewer.MAX_FILE_LENGTH) +
+        val trimmedSchemaFileName = getSchemaFileName(connectionSettings, SCHEMA_SUPER_LONG_NAME).substring(0, SchemaPreviewer.MAX_FILE_LENGTH) +
             SchemaPreviewer.SCHEMA_EXTENSION
         assertThat(fileEditorManager.openFiles).hasOnlyOneElementSatisfying { assertThat(it.name).isEqualTo(trimmedSchemaFileName) }
     }
 
     @Test
     fun canOpenFileDialogSchemaNameWithSpecialCharacters() {
+        val connectionSettings = ConnectionSettings(mockCredentialManager.createCredentialProvider(), mockRegionProvider.createAwsRegion())
+
         runInEdtAndGet {
-            SchemaPreviewer().openFileInEditor(REGISTRY, SCHEMA_SPECIAL_CHARACTER, AWS_EVENT_SCHEMA_PRETTY, VERSION, projectRule.project).toCompletableFuture()
+            SchemaPreviewer().openFileInEditor(REGISTRY, SCHEMA_SPECIAL_CHARACTER, AWS_EVENT_SCHEMA_PRETTY, VERSION, projectRule.project, connectionSettings)
+                .toCompletableFuture()
         }.get()
 
         assertThat(fileEditorManager.openFiles).hasOnlyOneElementSatisfying {
-            assertThat(it.name).isEqualTo(getSchemaFileName(SCHEMA_SPECIAL_CHARACTER_SANITIZED))
+            assertThat(it.name).isEqualTo(getSchemaFileName(connectionSettings, SCHEMA_SPECIAL_CHARACTER_SANITIZED))
         }
     }
 
     @Test
     fun canDownloadAndViewSchema() {
-        val schema = DescribeSchemaResponse.builder()
+        val schemaResponse = DescribeSchemaResponse.builder()
             .content(AWS_EVENT_SCHEMA_RAW)
             .schemaName(SCHEMA)
             .schemaVersion(VERSION)
             .build()
 
-        mockSchemaCache(REGISTRY, SCHEMA, schema)
+        val connectionSettings = ConnectionSettings(
+            mockCredentialManager.createCredentialProvider(),
+            mockRegionProvider.createAwsRegion()
+        )
+        mockSchemaCache(connectionSettings, schemaResponse)
 
         val mockSchemaDownloader = mock<SchemaDownloader> {
             on {
                 getSchemaContent(
                     REGISTRY,
                     SCHEMA,
-                    connectionSettings = AwsConnectionManager.getInstance(projectRule.project).connectionSettings()!!
+                    connectionSettings = connectionSettings
                 )
-            }.thenReturn(completedFuture(schema))
+            }.thenReturn(completedFuture(schemaResponse))
         }
         val mockSchemaFormatter = mock<SchemaFormatter> {
             on { prettySchemaContent(AWS_EVENT_SCHEMA_RAW) }.thenReturn(completedFuture(AWS_EVENT_SCHEMA_PRETTY))
         }
         val mockSchemaPreviewer = mock<SchemaPreviewer> {
-            on { openFileInEditor(REGISTRY, SCHEMA, AWS_EVENT_SCHEMA_PRETTY, VERSION, projectRule.project) }.thenReturn(completedFuture(null))
+            on {
+                openFileInEditor(
+                    REGISTRY,
+                    SCHEMA,
+                    AWS_EVENT_SCHEMA_PRETTY,
+                    VERSION,
+                    projectRule.project,
+                    connectionSettings
+                )
+            }.thenReturn(completedFuture(null))
         }
 
         runInEdtAndGet {
-            SchemaViewer(projectRule.project, mockSchemaDownloader, mockSchemaFormatter, mockSchemaPreviewer).downloadAndViewSchema(SCHEMA, REGISTRY)
-                .toCompletableFuture()
+            SchemaViewer(projectRule.project, mockSchemaDownloader, mockSchemaFormatter, mockSchemaPreviewer).downloadAndViewSchema(
+                SCHEMA,
+                REGISTRY,
+                connectionSettings
+            ).toCompletableFuture()
         }.get()
 
         // Assert no error notifications
-        assertThat(errorNotification?.dropDownText).isNull()
+        assertThat(notificationListener.notifications).isEmpty()
 
         verify(mockSchemaDownloader).getSchemaContent(
             REGISTRY,
             SCHEMA,
-            connectionSettings = AwsConnectionManager.getInstance(projectRule.project).connectionSettings()!!
+            connectionSettings = connectionSettings
         )
         verify(mockSchemaFormatter).prettySchemaContent(AWS_EVENT_SCHEMA_RAW)
-        verify(mockSchemaPreviewer).openFileInEditor(REGISTRY, SCHEMA, AWS_EVENT_SCHEMA_PRETTY, VERSION, projectRule.project)
+        verify(mockSchemaPreviewer).openFileInEditor(REGISTRY, SCHEMA, AWS_EVENT_SCHEMA_PRETTY, VERSION, projectRule.project, connectionSettings)
     }
 
-    private fun mockSchemaCache(registryName: String, schemaName: String, schema: DescribeSchemaResponse) {
-        resourceCache.addEntry(projectRule.project, SchemasResources.getSchema(registryName, schemaName), completedFuture(schema))
+    private fun mockSchemaCache(connectionSettings: ConnectionSettings, schema: DescribeSchemaResponse) {
+        resourceCache.addEntry(connectionSettings, SchemasResources.getSchema(REGISTRY, SCHEMA), completedFuture(schema))
     }
 
-    private fun subscribeToNotifications() {
-        val project = projectRule.project
+    private fun getSchemaFileName(connectionSettings: ConnectionSettings, schemaName: String) =
+        "${connectionSettings.credentials.id}_${connectionSettings.region.id}_${REGISTRY}_${schemaName}_$VERSION.json"
 
-        val messageBus = project.messageBus.connect()
+    private companion object {
+        private const val REGISTRY = "registry"
+        private const val SCHEMA = "schema"
+        private const val SCHEMA_SUPER_LONG_NAME =
+            "schema12345678901234567890123456789012345678901234567890123456789012345678901234567890123456789" +
+                "012345678901234567890123456789012345678901234567890" +
+                "1234567890123456789012345678901234567890123456789012" +
+                "3456789012345678901234567890"
+        private const val SCHEMA_SPECIAL_CHARACTER = "schema:awesome"
+        private const val SCHEMA_SPECIAL_CHARACTER_SANITIZED = "schema_awesome"
+        private const val VERSION = "2"
 
-        messageBus.setDefaultHandler { _, params ->
-            errorNotification = params[0] as Notification
-        }
-        messageBus.subscribe(Notifications.TOPIC)
+        private val AWS_EVENT_SCHEMA_RAW = SchemasViewerTest::class.java.getResourceAsStream("/awsEventSchemaRaw.json.txt")!!.bufferedReader().readText()
+        private val AWS_EVENT_SCHEMA_PRETTY = SchemasViewerTest::class.java.getResourceAsStream("/awsEventSchemaPretty.json.txt")!!.bufferedReader().readText()
     }
-
-    private fun getSchemaFileName(schemaName: String) = "${CREDENTIAL_IDENTIFIER}_${REGION}_${REGISTRY}_${schemaName}_$VERSION.json"
 }

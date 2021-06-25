@@ -118,6 +118,10 @@ class MockResourceCacheRule : ApplicationRule() {
         cache.addEntry(resource, connectionManager.selectedRegion!!.id, connectionManager.selectedCredentialIdentifier!!.id, value)
     }
 
+    fun <T> addEntry(connectionSettings: ConnectionSettings, resource: Resource.Cached<T>, value: CompletableFuture<T>) {
+        cache.addEntry(resource, connectionSettings.region.id, connectionSettings.credentials.id, value)
+    }
+
     fun <T> addEntry(resource: Resource.Cached<T>, regionId: String, credentialsId: String, value: T) {
         cache.addEntry(resource, regionId, credentialsId, value)
     }

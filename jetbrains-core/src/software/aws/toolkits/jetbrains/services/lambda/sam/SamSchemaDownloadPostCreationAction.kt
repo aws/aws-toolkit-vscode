@@ -25,7 +25,7 @@ class SamSchemaDownloadPostCreationAction {
                 schemaTemplateParameters.schema,
                 schemaTemplateParameters.schemaVersion,
                 language,
-                schemaSourceRoot.toString()
+                schemaSourceRoot.toFile()
             ),
             indicator
         ).toCompletableFuture().get()

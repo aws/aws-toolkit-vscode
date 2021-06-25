@@ -239,36 +239,5 @@
     <ID>VariableNaming:NodeJsDebuggerSupport.kt$NodeJsDebuggerSupport$private val NODE_DEBUG = "--inspect-brk"</ID>
     <ID>VariableNaming:NodeJsDebuggerSupport.kt$NodeJsDebuggerSupport$private val NODE_EXECUTABLES = setOf("node", "nodejs")</ID>
     <ID>VariableNaming:S3BrowserTest.kt$S3BrowserTest$private val S3 = "S3"</ID>
-    <ID>VariableNaming:SchemaCodeDownloaderTest.kt$SchemaCodeDownloaderTest$private lateinit var DESTINATION_FOLDER: String</ID>
-    <ID>VariableNaming:SchemaCodeDownloaderTest.kt$SchemaCodeDownloaderTest$private lateinit var DESTINATION_FOLDER_FILE: File</ID>
-    <ID>VariableNaming:SchemaCodeDownloaderTest.kt$SchemaCodeDownloaderTest$private lateinit var SOURCE_FOLDER: String</ID>
-    <ID>VariableNaming:SchemaCodeDownloaderTest.kt$SchemaCodeDownloaderTest$private lateinit var SOURCE_FOLDER_FILE: File</ID>
-    <ID>VariableNaming:SchemaCodeDownloaderTest.kt$SchemaCodeDownloaderTest$private lateinit var ZIP_FILE: File</ID>
-    <ID>VariableNaming:SchemaCodeDownloaderTest.kt$SchemaCodeDownloaderTest$private lateinit var ZIP_FILE_PATH: String</ID>
-    <ID>VariableNaming:SchemaCodeDownloaderTest.kt$SchemaCodeDownloaderTest$private val FAKE_DESTINATION = "/some/destination/anything/really"</ID>
-    <ID>VariableNaming:SchemaCodeDownloaderTest.kt$SchemaCodeDownloaderTest$private val LANGUAGE = SchemaCodeLangs.JAVA8</ID>
-    <ID>VariableNaming:SchemaCodeDownloaderTest.kt$SchemaCodeDownloaderTest$private val REGISTRY = "registry"</ID>
-    <ID>VariableNaming:SchemaCodeDownloaderTest.kt$SchemaCodeDownloaderTest$private val REQUEST = SchemaCodeDownloadRequestDetails(SCHEMA_SUMMARY, VERSION, LANGUAGE, FAKE_DESTINATION)</ID>
-    <ID>VariableNaming:SchemaCodeDownloaderTest.kt$SchemaCodeDownloaderTest$private val SCHEMA = "schema"</ID>
-    <ID>VariableNaming:SchemaCodeDownloaderTest.kt$SchemaCodeDownloaderTest$private val SCHEMA_SUMMARY = SchemaSummary(SCHEMA, REGISTRY)</ID>
-    <ID>VariableNaming:SchemaCodeDownloaderTest.kt$SchemaCodeDownloaderTest$private val SOME_TEXT = "someText"</ID>
-    <ID>VariableNaming:SchemaCodeDownloaderTest.kt$SchemaCodeDownloaderTest$private val VERSION = "2"</ID>
-    <ID>VariableNaming:SchemaCodeDownloaderTest.kt$SchemaCodeDownloaderTest$private val ZIP_FILE_1 = "File1.java"</ID>
-    <ID>VariableNaming:SchemaCodeDownloaderTest.kt$SchemaCodeDownloaderTest$private val ZIP_FILE_2 = "File2.java"</ID>
-    <ID>VariableNaming:SchemaCodeDownloaderTest.kt$SchemaCodeDownloaderTest$private val ZIP_FILE_SCHEMA_CORE_CODE_FILE_NAME = REQUEST.schemaCoreCodeFileName()</ID>
-    <ID>VariableNaming:SchemaCodeDownloaderTest.kt$SchemaCodeDownloaderTest$private val ZIP_FOLDER_HIERARCHY = "srcDir/comDir/fooBarDir/"</ID>
-    <ID>VariableNaming:SchemasSearchDialogBase.kt$SchemasSearchDialogBase$private val DEFAULT_PADDING = 10</ID>
-    <ID>VariableNaming:SchemasSearchDialogBase.kt$SchemasSearchDialogBase$private val HIGHLIGHT_COLOR = Color.YELLOW</ID>
-    <ID>VariableNaming:SchemasSearchDialogBase.kt$SchemasSearchDialogBase$private val SEARCH_DELAY_MS = 300L</ID>
-    <ID>VariableNaming:SchemasViewerTest.kt$SchemasViewerTest$private val AWS_EVENT_SCHEMA_PRETTY = File(javaClass.getResource("/awsEventSchemaPretty.json.txt").toURI()).readText(Charsets.UTF_8)</ID>
-    <ID>VariableNaming:SchemasViewerTest.kt$SchemasViewerTest$private val AWS_EVENT_SCHEMA_RAW = File(javaClass.getResource("/awsEventSchemaRaw.json.txt").toURI()).readText(Charsets.UTF_8)</ID>
-    <ID>VariableNaming:SchemasViewerTest.kt$SchemasViewerTest$private val CREDENTIAL_IDENTIFIER = MockAwsConnectionManager.getInstance(projectRule.project).activeCredentialProvider.displayName</ID>
-    <ID>VariableNaming:SchemasViewerTest.kt$SchemasViewerTest$private val REGION = MockAwsConnectionManager.getInstance(projectRule.project).activeRegion.id</ID>
-    <ID>VariableNaming:SchemasViewerTest.kt$SchemasViewerTest$private val REGISTRY = "registry"</ID>
-    <ID>VariableNaming:SchemasViewerTest.kt$SchemasViewerTest$private val SCHEMA = "schema"</ID>
-    <ID>VariableNaming:SchemasViewerTest.kt$SchemasViewerTest$private val SCHEMA_SPECIAL_CHARACTER = "schema:awesome"</ID>
-    <ID>VariableNaming:SchemasViewerTest.kt$SchemasViewerTest$private val SCHEMA_SPECIAL_CHARACTER_SANITIZED = "schema_awesome"</ID>
-    <ID>VariableNaming:SchemasViewerTest.kt$SchemasViewerTest$private val SCHEMA_SUPER_LONG_NAME = "schema12345678901234567890123456789012345678901234567890123456789012345678901234567890123456789012345678901234567890123456789012345678901234567890" + "12345678901234567890123456789012345678901234567890123456789012345678901234567890"</ID>
-    <ID>VariableNaming:SchemasViewerTest.kt$SchemasViewerTest$private val VERSION = "2"</ID>
   </CurrentIssues>
 </SmellBaseline>
