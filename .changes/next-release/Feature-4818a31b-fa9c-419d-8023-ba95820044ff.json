@@ -1,4 +1,4 @@
 {
 	"type": "Feature",
-	"description": "Upload current file to S3"
+	"description": "New command: `AWS: Upload current file to S3`"
 }
