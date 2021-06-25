@@ -114,8 +114,14 @@ function makeAddCodeSamDebugCodeLens(
     openWebview: boolean
 ): vscode.CodeLens {
     const title = openWebview
-        ? `${getIdeProperties().company}: ${localize('AWS.codelens.lambda.configEditor', 'Edit Debug Configuration (Beta)')}`
-        : `${getIdeProperties().company}: ${localize('AWS.command.addSamDebugConfiguration', 'Add Debug Configuration')}`
+        ? `${getIdeProperties().company}: ${localize(
+              'AWS.codelens.lambda.configEditor',
+              'Edit Debug Configuration (Beta)'
+          )}`
+        : `${getIdeProperties().company}: ${localize(
+              'AWS.command.addSamDebugConfiguration',
+              'Add Debug Configuration'
+          )}`
     const command: vscode.Command = {
         title,
         command: 'aws.pickAddSamDebugConfiguration',
