@@ -56,7 +56,7 @@ export async function uploadFileCommand(
     let document: vscode.Uri | undefined
 
     if (nodeOrDocument) {
-        if ((nodeOrDocument as any).getChildren) {
+        if (nodeOrDocument instanceof S3BucketNode || nodeOrDocument instanceof S3FolderNode) {
             node = nodeOrDocument as S3BucketNode | S3FolderNode
             document = undefined
         } else {
