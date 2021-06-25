@@ -299,6 +299,22 @@ class GoLambdaHandlerResolverTest {
         assertFindPsiElements("handler", false)
     }
 
+    @Test
+    fun `Finds no results in tests`() {
+        projectRule.fixture.addGoLambdaHandler(
+            handlerName = "handler",
+            fileName = "a_test",
+            fileContent = """
+            package main
+            
+            func handler(a context.Context, abc int) { 
+            }
+            """.trimIndent()
+        )
+
+        assertFindPsiElements("handler", false)
+    }
+
     private fun assertDetermineHandler(handlerElement: PsiElement, expectedHandlerFullName: String?) {
         val resolver = LambdaHandlerResolver.getInstance(RuntimeGroup.getById(BuiltInRuntimeGroups.Go))
 
