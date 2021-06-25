@@ -10,8 +10,8 @@
     "author": "AWS",
     "main": "lib/index.js",
     "scripts": {
-        "build": "tsc *.ts",
-        "test": "mocha tests --recursive"
+        "build": "tsc",
+        "test": "mocha dist/tests --recursive"
     },
     "dependencies": {
         "requireindex": "~1.1.0"

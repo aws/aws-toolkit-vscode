@@ -144,7 +144,7 @@ describe('CredentialsProviderManager', async function () {
             )
         })
 
-        it('returns undefined when there is a factory but the factory does not contain a provider', async () => {
+        it('returns undefined when there is a factory but the factory does not contain a provider', async function () {
             const factoryA = new TestCredentialsProviderFactory('profile', ['default2'])
 
             sut.addProviderFactory(factoryA)

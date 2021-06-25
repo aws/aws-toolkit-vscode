@@ -5,6 +5,7 @@
 
 import { Rule } from 'eslint'
 import MochaArrow from './lib/rules/no-mocha-arrows'
+import NoLocalizeAWS from './lib/rules/no-localize-aws'
 
 type Rules = {
     [key: string]: Rule.RuleModule
@@ -12,6 +13,7 @@ type Rules = {
 
 const rules: Rules = {
     'no-mocha-arrows': MochaArrow,
+    'no-localize-aws': NoLocalizeAWS,
 }
 
 export { rules }

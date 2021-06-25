@@ -78,6 +78,7 @@ module.exports = {
         'no-constant-condition': ['error', { checkLoops: false }],
         'no-empty': 'off',
         'aws/no-mocha-arrows': 'error',
+        'aws/no-localize-aws': 'error',
         'header/header': [
             'error',
             'block',
