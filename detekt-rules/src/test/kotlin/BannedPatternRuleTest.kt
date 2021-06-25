@@ -20,8 +20,10 @@ class BannedPatternRuleTest {
                 """.trimIndent()
             )
         )
-            .hasOnlyOneElementSatisfying {
-                it.id == "BannedPattern" && it.message == "Use of method blah() is banned." &&
+            .singleElement()
+            .matches {
+                it.id == "BannedPattern" &&
+                    it.message == "Use of method blah() is banned." &&
                     it.location.source.line == 2 &&
                     it.location.source.column == 5
             }

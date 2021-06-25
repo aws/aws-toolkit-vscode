@@ -38,9 +38,10 @@ fun foo() {
 }
                 """.trimIndent()
             )
-        ).hasOnlyOneElementSatisfying {
-            it.id == "LazyLog" && it.message == "Use the Lambda version of LOG.debug instead"
-        }
+        ).singleElement()
+            .matches {
+                it.id == "LazyLog" && it.message == "Use the Lambda version of LOG.debug instead"
+            }
     }
 
     @Test

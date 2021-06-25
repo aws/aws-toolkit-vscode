@@ -17,9 +17,10 @@ class ExpressionBodyRuleTest {
                 return "hello"
             }
         """.trimIndent()
-        assertThat(rule.lint(code)).hasOnlyOneElementSatisfying {
-            it.id == "ExpressionBody" && it.message == "Use expression body instead of one line return"
-        }
+        assertThat(rule.lint(code)).singleElement()
+            .matches {
+                it.id == "ExpressionBody" && it.message == "Use expression body instead of one line return"
+            }
     }
 
     @Test
@@ -29,9 +30,10 @@ class ExpressionBodyRuleTest {
                 return blah().map { it.displayName() }
             }
         """.trimIndent()
-        assertThat(rule.lint(code)).hasOnlyOneElementSatisfying {
-            it.id == "ExpressionBody" && it.message == "Use expression body instead of one line return"
-        }
+        assertThat(rule.lint(code)).singleElement()
+            .matches {
+                it.id == "ExpressionBody" && it.message == "Use expression body instead of one line return"
+            }
     }
 
     @Test
@@ -97,9 +99,8 @@ class ExpressionBodyRuleTest {
             }
         """.trimIndent()
         assertThat(rule.lint(code))
-            .hasOnlyOneElementSatisfying {
-                it.id == "ExpressionBody" && it.message == "Use expression body instead of one line return"
-            }
+            .singleElement()
+            .matches { it.id == "ExpressionBody" && it.message == "Use expression body instead of one line return" }
     }
 
     @Test

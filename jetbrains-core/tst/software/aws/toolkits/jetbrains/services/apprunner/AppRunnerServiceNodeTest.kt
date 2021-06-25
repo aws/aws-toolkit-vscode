@@ -47,14 +47,14 @@ class AppRunnerServiceNodeTest {
     fun `No services listed`() {
         resourceCache.addEntry(projectRule.project, AppRunnerResources.LIST_SERVICES, listOf())
         val children = AppRunnerNode(projectRule.project, APPRUNNER_EXPLORER_NODE).children
-        assertThat(children).hasOnlyOneElementSatisfying { it is AwsExplorerEmptyNode }
+        assertThat(children).singleElement().isInstanceOf(AwsExplorerEmptyNode::class.java)
     }
 
     @Test
     fun `Error loading repositories`() {
         resourceCache.addEntry(projectRule.project, AppRunnerResources.LIST_SERVICES, CompletableFutureUtils.failedFuture(RuntimeException("network broke")))
         val children = AppRunnerNode(projectRule.project, APPRUNNER_EXPLORER_NODE).children
-        assertThat(children).hasOnlyOneElementSatisfying { it is AwsExplorerErrorNode }
+        assertThat(children).singleElement().isInstanceOf(AwsExplorerErrorNode::class.java)
     }
 
     private companion object {
