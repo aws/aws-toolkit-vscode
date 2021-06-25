@@ -45,6 +45,7 @@ module.exports = {
         'no-useless-escape': 'off',
         // TODO rennable this rule (by removing this off)
         '@typescript-eslint/require-await': 'off',
+        '@typescript-eslint/no-floating-promises': 'error',
         // TODO rennable this rule (by removing this off)
         '@typescript-eslint/no-non-null-assertion': 'off',
         // TODO rennable this rule (by removing this off)
