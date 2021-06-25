@@ -78,7 +78,8 @@
         "onLanguage:yaml",
         "onCommand:aws.launchConfigForm",
         "onCommand:aws.toggleSamCodeLenses",
-        "onCommand:aws.addSamDebugConfig"
+        "onCommand:aws.addSamDebugConfig",
+        "onCommand:aws.s3.uploadFile"
     ],
     "main": "./extensionMain",
     "contributes": {
@@ -744,10 +745,6 @@
                 },
                 {
                     "command": "aws.s3.downloadFileAs",
-                    "when": "false"
-                },
-                {
-                    "command": "aws.s3.uploadFile",
                     "when": "false"
                 },
                 {

@@ -18,6 +18,14 @@ export interface S3Client {
     createBucket(request: CreateBucketRequest): Promise<CreateBucketResponse>
 
     /**
+     * Lists all buckets owned by the client.
+     *
+     *
+     * @throws Error if there is an error calling S3.
+     */
+    listAllBuckets(): Promise<S3.Bucket[]>
+
+    /**
      * Lists buckets in the region of the client.
      *
      * Note that S3 returns all buckets in all regions,

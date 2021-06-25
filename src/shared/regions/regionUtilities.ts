@@ -7,7 +7,7 @@ import { AwsContext } from '../awsContext'
 import { Region } from './endpoints'
 import { RegionProvider } from './regionProvider'
 
-const DEFAULT_REGION = 'us-east-1'
+export const DEFAULT_REGION = 'us-east-1'
 export const DEFAULT_PARTITION = 'aws'
 export const DEFAULT_DNS_SUFFIX = 'amazonaws.com'
 
