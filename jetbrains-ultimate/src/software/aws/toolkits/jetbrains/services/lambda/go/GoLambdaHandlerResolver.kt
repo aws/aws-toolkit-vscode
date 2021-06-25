@@ -3,6 +3,7 @@
 
 package software.aws.toolkits.jetbrains.services.lambda.go
 
+import com.goide.execution.testing.GoTestFinder
 import com.goide.psi.GoFunctionDeclaration
 import com.goide.psi.GoTokenType
 import com.goide.psi.GoType
@@ -53,6 +54,11 @@ class GoLambdaHandlerResolver : LambdaHandlerResolver {
 
     // see https://docs.aws.amazon.com/lambda/latest/dg/golang-handler.html for what is valid
     private fun GoFunctionDeclaration.isValidHandlerIdentifier(): Boolean {
+        // disable on test files
+        if (GoTestFinder.isTestFile(this.containingFile)) {
+            return false
+        }
+
         // make sure it's a top level function
         if (!GoPsiUtil.isTopLevelDeclaration(this)) {
             return false

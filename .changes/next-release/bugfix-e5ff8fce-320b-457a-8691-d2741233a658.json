@@ -1,0 +1,4 @@
+{
+  "type" : "bugfix",
+  "description" : "Don't show Lambda run configuration suggestions on Go test code"
+}
