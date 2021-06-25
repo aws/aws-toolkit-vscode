@@ -1,0 +1,27 @@
+{
+    "name": "eslint-plugin-aws",
+    "version": "0.0.1",
+    "description": "Custom rules for the AWS Toolkit",
+    "keywords": [
+        "eslint",
+        "eslintplugin",
+        "eslint-plugin"
+    ],
+    "author": "AWS",
+    "main": "lib/index.js",
+    "scripts": {
+        "build": "tsc *.ts",
+        "test": "mocha tests --recursive"
+    },
+    "dependencies": {
+        "requireindex": "~1.1.0"
+    },
+    "devDependencies": {
+        "eslint": "^7.1.0",
+        "mocha": "^7.2.0"
+    },
+    "engines": {
+        "node": ">=0.10.0"
+    },
+    "license": "Apache-2.0"
+}
