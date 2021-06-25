@@ -42,6 +42,7 @@ import java.time.Instant
 import java.util.concurrent.CompletableFuture
 import java.util.concurrent.CountDownLatch
 import java.util.concurrent.Executors
+import java.util.concurrent.TimeUnit
 import java.util.concurrent.TimeoutException
 import java.util.concurrent.atomic.AtomicInteger
 
@@ -50,8 +51,7 @@ class AwsResourceCacheTest {
     private val credentialsManager = MockCredentialManagerRule()
     private val regionProvider = MockRegionProviderRule()
 
-    // If we don't control the order manually, regionProvider can run its before
-    // before projectRule which causes a NPE
+    // If we don't control the order manually, regionProvider can run before projectRule which causes a NPE
     @Rule
     @JvmField
     val ruleChain = RuleChain(
@@ -322,7 +322,7 @@ class AwsResourceCacheTest {
                 future
             }.toTypedArray()
             latch.countDown()
-            CompletableFuture.allOf(*futures).value
+            CompletableFuture.allOf(*futures).get(10, TimeUnit.SECONDS)
         } finally {
             executor.shutdown()
         }
