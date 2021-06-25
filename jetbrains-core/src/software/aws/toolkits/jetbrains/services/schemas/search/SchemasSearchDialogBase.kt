@@ -16,6 +16,9 @@ import com.intellij.ui.components.JBLabel
 import com.intellij.ui.components.JBList
 import com.intellij.ui.components.JBScrollPane
 import com.intellij.util.Alarm
+import software.aws.toolkits.jetbrains.core.credentials.ConnectionSettings
+import software.aws.toolkits.jetbrains.core.credentials.activeCredentialProvider
+import software.aws.toolkits.jetbrains.core.credentials.activeRegion
 import software.aws.toolkits.jetbrains.core.help.HelpIds
 import software.aws.toolkits.jetbrains.services.schemas.SchemaViewer
 import software.aws.toolkits.jetbrains.services.schemas.code.DownloadCodeForSchemaDialog
@@ -51,20 +54,15 @@ abstract class SchemasSearchDialogBase(
     private val headerText: String,
     private val onCancelCallback: (SchemaSearchDialogState) -> Unit
 ) : SchemaSearchDialog, DialogWrapper(project) {
-
-    private val DEFAULT_PADDING = 10
-    private val SEARCH_DELAY_MS = 300L
-    private val HIGHLIGHT_COLOR = Color.YELLOW
-
     val searchTextField = JTextField()
     private val searchTextAlarm = Alarm(Alarm.ThreadToUse.SWING_THREAD, this.disposable)
 
     val resultsModel = DefaultListModel<SchemaSearchResultWithRegistry>()
-    val resultsList = JBList<SchemaSearchResultWithRegistry>(resultsModel)
+    val resultsList = JBList(resultsModel)
     private val resultsLock = ReentrantLock()
 
     val versionsModel: DefaultComboBoxModel<String> = DefaultComboBoxModel()
-    val versionsCombo = ComboBox<String>(versionsModel)
+    val versionsCombo = ComboBox(versionsModel)
 
     val previewText = JTextArea()
 
@@ -317,7 +315,7 @@ abstract class SchemasSearchDialogBase(
     abstract fun createResultRenderer(): (SchemaSearchResultWithRegistry) -> JComponent
 
     private fun downloadSchemaContent(schema: SchemaSearchResultWithRegistry, version: String): CompletionStage<String> =
-        schemaViewer.downloadPrettySchema(schema.name, schema.registry, version)
+        schemaViewer.downloadPrettySchema(schema.name, schema.registry, version, ConnectionSettings(project.activeCredentialProvider(), project.activeRegion()))
 
     abstract fun searchSchemas(
         searchText: String,
@@ -371,5 +369,11 @@ abstract class SchemasSearchDialogBase(
         override fun doAction(e: ActionEvent) {
             doCancelAction()
         }
+    }
+
+    private companion object {
+        private const val DEFAULT_PADDING = 10
+        private const val SEARCH_DELAY_MS = 300L
+        private val HIGHLIGHT_COLOR = Color.YELLOW
     }
 }

@@ -33,7 +33,6 @@ import software.aws.toolkits.telemetry.SchemaLanguage
 import software.aws.toolkits.telemetry.SchemasTelemetry
 import java.awt.event.ActionEvent
 import java.io.File
-import java.util.ArrayList
 import java.util.concurrent.CompletableFuture
 import java.util.concurrent.CompletionStage
 import javax.swing.Action
@@ -172,9 +171,7 @@ class DownloadCodeForSchemaDialog(
     }
 
     private fun refreshDownloadCodeDirectory(schemaCodeDownloadDetails: SchemaCodeDownloadRequestDetails) {
-        val file = File(schemaCodeDownloadDetails.destinationDirectory)
-
-        LocalFileSystem.getInstance().findFileByIoFile(file)?.let {
+        LocalFileSystem.getInstance().findFileByIoFile(schemaCodeDownloadDetails.destinationDirectory)?.let {
             VfsUtil.markDirtyAndRefresh(false, true, true, it)
         }
     }
@@ -227,7 +224,7 @@ class DownloadCodeForSchemaDialog(
         schema = SchemaSummary(this.schemaName, this.registryName),
         version = getSelectedVersion(),
         language = view.language.selected()!!,
-        destinationDirectory = view.location.text
+        destinationDirectory = File(view.location.text)
     )
 
     private fun getSelectedVersion(): String {

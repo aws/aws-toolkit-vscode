@@ -211,8 +211,7 @@ class CodeExtractor {
                 fileChannel.write(zipContents)
             }
 
-            val destinationDirectory = File(request.destinationDirectory)
-            validateNoFileCollisions(codeZipFile, destinationDirectory)
+            validateNoFileCollisions(codeZipFile, request.destinationDirectory)
 
             val decompressor = Decompressor.Zip(codeZipFile)
                 .overwrite(false)
@@ -221,7 +220,7 @@ class CodeExtractor {
                         schemaCoreCodeFile = file
                     }
                 }
-            decompressor.extract(destinationDirectory)
+            decompressor.extract(request.destinationDirectory)
 
             future.complete(schemaCoreCodeFile)
         } catch (e: Exception) {
