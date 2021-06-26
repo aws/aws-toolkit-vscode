@@ -7,42 +7,50 @@ import * as eslint from 'eslint'
 
 const MOCHA_EXPRESSIONS = new Set(['after', 'before', 'it', 'describe', 'afterEach', 'beforeEach'])
 
-function isMochaExpression(node: eslint.Rule.Node, context: eslint.Rule.RuleContext): boolean {
-    // add check for .test file somewhere
+function getArrow(node: eslint.Rule.Node): eslint.Rule.Node | undefined {
     if (node.type !== 'CallExpression') {
-        return false
+        return undefined
     }
 
     if (node.callee.type === 'Identifier' && MOCHA_EXPRESSIONS.has(node.callee.name)) {
-        node.arguments.forEach(arg => {
-            if (arg.type === 'ArrowFunctionExpression') {
-                const line = arg.loc!.start.line
-                const bodyLoc = arg.body.loc!
+        return <any>node.arguments.find(arg => arg.type === 'ArrowFunctionExpression')
+    }
+}
 
-                context.report({
-                    node: arg,
-                    message: arg.type,
-                    loc: {
-                        start: { line, column: arg.loc!.start.column },
-                        end: { line, column: bodyLoc.start.column },
-                    },
-                })
-            }
-        })
+function fixArrow(node: eslint.Rule.Node, fixer: eslint.Rule.RuleFixer): eslint.Rule.Fix[] {
+    if (node.type !== 'ArrowFunctionExpression') {
+        return []
     }
 
-    return false
+    const bodyStart = node.body.range![0]
+    const paramsStart = node.params.length > 0 ? node.params[0].range![0] : 0
+    const paramsEnd = node.params.length > 0 ? node.params[0].range![1] : 1
+    const fixes: eslint.Rule.Fix[] = []
+
+    fixes.push(fixer.removeRange([paramsEnd + 1, bodyStart - 1]))
+    fixes.push(fixer.replaceTextRange([0, paramsStart - 1], `${node.async ? 'async' : ''} function `))
+
+    return fixes
 }
 
 // https://eslint.org/docs/developer-guide/working-with-rules
 const newRule = function (context: eslint.Rule.RuleContext) {
     return {
         CallExpression: function (node: eslint.Rule.Node) {
-            if (isMochaExpression(node, context)) {
+            const arrow = getArrow(node)
+
+            if (arrow !== undefined && arrow.type === 'ArrowFunctionExpression') {
+                const line = arrow.loc!.start.line
+                const bodyLoc = arrow.body.loc!
+
                 context.report({
-                    node: node,
-                    message: 'No arrow functions allowed!',
-                    loc: node.loc as any,
+                    node: arrow,
+                    loc: {
+                        start: { line, column: arrow.loc!.start.column },
+                        end: { line, column: bodyLoc.start.column },
+                    },
+                    message: 'Arrow functions are not allowed',
+                    fix: fixer => fixArrow(arrow, fixer),
                 })
             }
         },

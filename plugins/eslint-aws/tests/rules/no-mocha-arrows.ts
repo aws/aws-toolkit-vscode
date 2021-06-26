@@ -9,7 +9,7 @@ import { rules } from '../../'
 const ruleTester = new RuleTester({
     parserOptions: { ecmaVersion: 2017 },
 })
-const expectedErrorMessage = 'No arrow functions allowed!'
+const expectedErrorMessage = 'Arrow functions are not allowed'
 const errors = [{ message: expectedErrorMessage, column: 1, line: 1 }]
 
 ruleTester.run('no-mocha-arrows', rules['no-mocha-arrows'], {
