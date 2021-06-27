@@ -1892,7 +1892,7 @@
         "eslint-config-prettier": "8.3",
         "eslint-plugin-header": "^3.1.1",
         "eslint-plugin-no-null": "^1.0.2",
-        "glob": "^7.1.4",
+        "glob": "^7.1.7",
         "husky": "^6.0.0",
         "istanbul": "^0.4.5",
         "json-schema-to-typescript": "^8.2.0",
