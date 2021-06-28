@@ -12,12 +12,12 @@ import * as filesystemUtilities from '../filesystemUtilities'
 import { SystemUtilities } from '../systemUtilities'
 import { getLogger } from '../logger'
 import { extensionSettingsPrefix, LAMBDA_PACKAGE_TYPE_IMAGE } from '../constants'
-import { normalizeSeparator } from '../utilities/pathUtils'
 import { HttpResourceFetcher } from '../resourcefetcher/httpResourceFetcher'
 import { ResourceFetcher } from '../resourcefetcher/resourcefetcher'
 import { FileResourceFetcher } from '../resourcefetcher/fileResourceFetcher'
 import { CompositeResourceFetcher } from '../resourcefetcher/compositeResourceFetcher'
 import { WorkspaceConfiguration } from '../vscode/workspace'
+import { assignSchema } from '../extensions/redhat-yaml/redhat-yaml'
 
 export namespace CloudFormation {
     export const SERVERLESS_API_TYPE = 'AWS::Serverless::Api'
@@ -810,45 +810,16 @@ export async function refreshSchemas(extensionContext: vscode.ExtensionContext) 
  * @param path Template file path
  * @param type Template type to use for filepath
  */
+
 export async function updateYamlSchemasArray(
     path: string,
     type: 'cfn' | 'sam',
     config: WorkspaceConfiguration = vscode.workspace.getConfiguration('yaml'),
     paths: { cfnSchema: string; samSchema: string } = { cfnSchema: CFN_SCHEMA_PATH, samSchema: SAM_SCHEMA_PATH }
 ): Promise<void> {
-    const relPath = normalizeSeparator(path)
-    const schemas: { [key: string]: string | string[] | undefined } | undefined = config.get('schemas')
-    const writeTo = type === 'cfn' ? paths.cfnSchema : paths.samSchema
-    const deleteFrom = type === 'sam' ? paths.cfnSchema : paths.samSchema
-    let newWriteArr: string[] = [path]
-    let newDeleteArr: string[] = []
-
-    if (schemas) {
-        if (schemas[writeTo]) {
-            newWriteArr = Array.isArray(schemas[writeTo])
-                ? (schemas[writeTo] as string[])
-                : [schemas[writeTo] as string]
-            if (!newWriteArr.includes(relPath)) {
-                newWriteArr.push(relPath)
-            }
-        }
-        if (schemas[deleteFrom]) {
-            const temp = Array.isArray(schemas[deleteFrom])
-                ? (schemas[deleteFrom] as string[])
-                : [schemas[deleteFrom] as string]
-            newDeleteArr = temp.filter(val => val !== relPath)
-        }
-    }
-
-    await config.update(
-        'schemas',
-        {
-            ...(schemas ? schemas : {}),
-            [writeTo]: newWriteArr,
-            [deleteFrom]: newDeleteArr,
-        },
-        vscode.ConfigurationTarget.Global
-    )
+    const schema = type === 'cfn' ? paths.cfnSchema : paths.samSchema
+    
+    assignSchema(vscode.Uri.file(path), vscode.Uri.file(schema))
 }
 
 export function getManifestDetails(manifest: string): { samUrl: string; cfnUrl: string; version: string } {
