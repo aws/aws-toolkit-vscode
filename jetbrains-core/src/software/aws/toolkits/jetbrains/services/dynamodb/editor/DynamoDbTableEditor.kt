@@ -12,9 +12,6 @@ import com.intellij.openapi.util.UserDataHolderBase
 import com.intellij.ui.SimpleTextAttributes
 import com.intellij.ui.components.JBLoadingPanel
 import com.intellij.ui.components.JBPanelWithEmptyText
-import kotlinx.coroutines.CoroutineName
-import kotlinx.coroutines.CoroutineScope
-import kotlinx.coroutines.SupervisorJob
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 import software.amazon.awssdk.services.dynamodb.model.ExecuteStatementRequest
@@ -25,6 +22,7 @@ import software.aws.toolkits.core.utils.info
 import software.aws.toolkits.jetbrains.services.dynamodb.DynamoDbUtils.executeStatementPaginator
 import software.aws.toolkits.jetbrains.services.dynamodb.Index
 import software.aws.toolkits.jetbrains.services.dynamodb.toAttribute
+import software.aws.toolkits.jetbrains.utils.ApplicationThreadPoolScope
 import software.aws.toolkits.jetbrains.utils.getCoroutineBgContext
 import software.aws.toolkits.jetbrains.utils.getCoroutineUiContext
 import software.aws.toolkits.resources.message
@@ -35,9 +33,9 @@ import javax.swing.JComponent
 class DynamoDbTableEditor(private val dynamoTable: DynamoDbVirtualFile) : UserDataHolderBase(), FileEditor {
     data class EditorState(var maxResults: Int = DEFAULT_MAX_RESULTS)
 
-    private val coroutineScope = CoroutineScope(CoroutineName("DynamoDbTableEditor") + SupervisorJob())
-    private val bg = getCoroutineBgContext(disposable = this)
-    private val edt = getCoroutineUiContext(disposable = this)
+    private val coroutineScope = ApplicationThreadPoolScope("DynamoDbTableEditor", this)
+    private val bg = getCoroutineBgContext()
+    private val edt = getCoroutineUiContext()
 
     val editorState = EditorState()
 
@@ -50,7 +48,7 @@ class DynamoDbTableEditor(private val dynamoTable: DynamoDbVirtualFile) : UserDa
         // Async load in the editor so we can get the table info
         loadingPanel.startLoading()
 
-        coroutineScope.launch(bg) {
+        coroutineScope.launch {
             val tableInfo = try {
                 getTableInfo(dynamoTable.tableName)
             } catch (e: Exception) {
@@ -116,7 +114,7 @@ class DynamoDbTableEditor(private val dynamoTable: DynamoDbVirtualFile) : UserDa
             searchResults.setBusy(true)
             val (index, partiqlStatement) = searchPanel.getSearchQuery()
 
-            launch(bg) {
+            withContext(bg) {
                 LOG.info { "Querying Dynamo with '$partiqlStatement'" }
 
                 val request = ExecuteStatementRequest.builder().statement(partiqlStatement).build()

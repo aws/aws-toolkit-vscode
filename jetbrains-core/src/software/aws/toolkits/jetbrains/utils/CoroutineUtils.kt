@@ -3,26 +3,14 @@
 
 package software.aws.toolkits.jetbrains.utils
 
-import com.intellij.openapi.Disposable
 import com.intellij.openapi.application.AppUIExecutor
-import com.intellij.openapi.application.ExpirableExecutor
 import com.intellij.openapi.application.ModalityState
 import com.intellij.openapi.application.impl.coroutineDispatchingContext
 import com.intellij.util.concurrency.AppExecutorUtil
+import kotlinx.coroutines.asCoroutineDispatcher
+import kotlin.coroutines.CoroutineContext
 
-fun getCoroutineUiContext(
-    modalityState: ModalityState = ModalityState.defaultModalityState(),
-    disposable: Disposable? = null
-) = AppUIExecutor.onUiThread(modalityState).also { exec ->
-    disposable?.let {
-        exec.expireWith(disposable)
-    }
-}.coroutineDispatchingContext()
+fun getCoroutineUiContext(modalityState: ModalityState = ModalityState.defaultModalityState()): CoroutineContext =
+    AppUIExecutor.onUiThread(modalityState).coroutineDispatchingContext()
 
-fun getCoroutineBgContext(
-    disposable: Disposable? = null
-) = ExpirableExecutor.on(AppExecutorUtil.getAppExecutorService()).also { exec ->
-    disposable?.let {
-        exec.expireWith(disposable)
-    }
-}.coroutineDispatchingContext()
+fun getCoroutineBgContext(): CoroutineContext = AppExecutorUtil.getAppExecutorService().asCoroutineDispatcher()

@@ -49,7 +49,7 @@ class CloudWatchLogStream(
     private lateinit var tablePanel: SimpleToolWindowPanel
     private lateinit var searchField: SearchTextField
 
-    private val edtContext = getCoroutineUiContext(disposable = this)
+    private val edtContext = getCoroutineUiContext()
 
     private val client: CloudWatchLogsClient = project.awsClient()
     private val logStreamTable: LogStreamTable = LogStreamTable(project, client, logGroup, logStream, LogStreamTable.TableType.LIST).also {
