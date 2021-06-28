@@ -115,4 +115,47 @@ describe('TreeInspector', function () {
 
         assert.strictEqual(props, undefined)
     })
+
+
+    it('returns true when tree node is a resource and a state machine', async function () {
+        const construct: ConstructTreeEntity = {
+            id: 'Resource',
+            path: 'attributes',
+            attributes: {[CfnResourceKeys.TYPE]:'AWS::StepFunctions::StateMachine'},
+        }
+
+        assert.ok(treeInspector.isStateMachine(construct))
+    })
+
+    it('returns false when tree node is a resource and not state machine', async function () {
+        const construct: ConstructTreeEntity = {
+            id: 'Resource',
+            path: 'attributes',
+            attributes: {[CfnResourceKeys.TYPE]:'AWS::StepFunctions::LambdaFunction'},
+        }
+
+        assert.strictEqual(treeInspector.isStateMachine(construct),false)
+    })
+
+    
+    it('returns false when tree node is not a resource and is a state machine', async function () {
+        const construct: ConstructTreeEntity = {
+            id: 'no',
+            path: 'attributes',
+            attributes: {[CfnResourceKeys.TYPE]:'AWS::StepFunctions::StateMachine'},
+        }
+
+        assert.strictEqual(treeInspector.isStateMachine(construct),false)
+    })
+
+
+    it('returns false when tree node is not a resource and not a state machine', async function () {
+        const construct: ConstructTreeEntity = {
+            id: 'no',
+            path: 'attributes',
+            attributes: {[CfnResourceKeys.TYPE]:'AWS::StepFunctions::LambdaFunction'},
+        }
+
+        assert.strictEqual(treeInspector.isStateMachine(construct),false)
+    })
 })

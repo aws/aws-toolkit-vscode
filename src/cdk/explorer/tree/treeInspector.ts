@@ -63,3 +63,19 @@ export function getDisplayLabel(construct: ConstructTreeEntity): string {
 
     return construct.id
 }
+
+
+/** 
+* (for CDK Visualization) Determines if a construct is a Resource and a state machine
+*
+* @param construct CDK construct
+*/
+export function isStateMachine(construct: ConstructTreeEntity): boolean{
+    const type: string = getTypeAttributeOrDefault(construct, '')
+
+    if (construct.id === 'Resource' && type==='AWS::StepFunctions::StateMachine') {
+        return true
+    }
+    
+    return false
+}
