@@ -7,7 +7,9 @@ import * as eslint from 'eslint'
 
 const MOCHA_EXPRESSIONS = new Set(['after', 'before', 'it', 'describe', 'afterEach', 'beforeEach'])
 
-function getArrow(node: eslint.Rule.Node): eslint.Rule.Node | undefined {
+type ArrowNode = eslint.Rule.Node & { type: 'ArrowFunctionExpression' }
+
+function getArrow(node: eslint.Rule.Node): ArrowNode | undefined {
     if (node.type !== 'CallExpression') {
         return undefined
     }
@@ -17,18 +19,15 @@ function getArrow(node: eslint.Rule.Node): eslint.Rule.Node | undefined {
     }
 }
 
-function fixArrow(node: eslint.Rule.Node, fixer: eslint.Rule.RuleFixer): eslint.Rule.Fix[] {
-    if (node.type !== 'ArrowFunctionExpression') {
-        return []
-    }
-
+function fixArrow(node: ArrowNode, fixer: eslint.Rule.RuleFixer): eslint.Rule.Fix[] {
     const bodyStart = node.body.range![0]
+    const offset = node.loc!.start.column - node.parent.loc!.start.column
     const paramsStart = node.params.length > 0 ? node.params[0].range![0] : 0
-    const paramsEnd = node.params.length > 0 ? node.params[0].range![1] : 1
+    const paramsEnd = node.params.length > 0 ? node.params[node.params.length - 1].range![1] : 2
     const fixes: eslint.Rule.Fix[] = []
 
-    fixes.push(fixer.removeRange([paramsEnd + 1, bodyStart - 1]))
-    fixes.push(fixer.replaceTextRange([0, paramsStart - 1], `${node.async ? 'async' : ''} function `))
+    fixes.push(fixer.removeRange([offset + paramsEnd, bodyStart - 1]))
+    fixes.push(fixer.replaceTextRange([offset, paramsStart - 1], `${node.async ? 'async ' : ''}function `))
 
     return fixes
 }

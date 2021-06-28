@@ -84,7 +84,7 @@ module.exports = {
             'block',
             {
                 pattern:
-                    'Copyright ([0-9]{4}[-,]{0,1}[ ]{0,1}){1,} Amazon.com, Inc. or its affiliates. All Rights Reserved.\\r?\\n \\* SPDX-License-Identifier: Apache-2.0',
+                    'Copyright Amazon.com, Inc. or its affiliates. All Rights Reserved.\\r?\\n \\* SPDX-License-Identifier: Apache-2.0',
             },
             { lineEndings: 'unix' },
         ],

@@ -29,7 +29,7 @@ export async function copyNameCommand(
             'clippy',
             localize(
                 'AWS.explorerNode.copiedToClipboard',
-                'Copied {0} AWS to clipboard',
+                'Copied {0} to clipboard',
                 localize('AWS.generic.name', 'name')
             )
         ),

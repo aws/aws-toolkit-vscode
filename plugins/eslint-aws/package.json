@@ -11,10 +11,10 @@
     "main": "lib/index.js",
     "scripts": {
         "build": "tsc",
-        "test": "mocha dist/tests --recursive"
+        "test": "npm run build && mocha dist/tests --recursive"
     },
     "devDependencies": {
-        "eslint": "^7.1.0",
+        "eslint": "^7.29.0",
         "mocha": "^9.0.1"
     },
     "engines": {
