@@ -34,7 +34,7 @@ class CloudWatchLogGroup(
     lateinit var content: JPanel
         private set
 
-    private val edtContext = getCoroutineUiContext(disposable = this)
+    private val edtContext = getCoroutineUiContext()
 
     private lateinit var tablePanel: SimpleToolWindowPanel
     private lateinit var locationInformation: LocationBreadcrumbs

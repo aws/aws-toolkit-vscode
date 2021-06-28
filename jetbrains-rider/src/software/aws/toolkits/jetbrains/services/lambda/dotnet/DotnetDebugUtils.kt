@@ -8,11 +8,8 @@ import com.intellij.execution.filters.TextConsoleBuilderFactory
 import com.intellij.execution.process.OSProcessHandler
 import com.intellij.execution.process.ProcessHandlerFactory
 import com.intellij.execution.runners.ExecutionEnvironment
-import com.intellij.openapi.application.ExpirableExecutor
 import com.intellij.openapi.application.ModalityState
-import com.intellij.openapi.application.impl.coroutineDispatchingContext
 import com.intellij.openapi.rd.defineNestedLifetime
-import com.intellij.util.concurrency.AppExecutorUtil
 import com.intellij.xdebugger.XDebugProcessStarter
 import com.jetbrains.rd.framework.IdKind
 import com.jetbrains.rd.framework.Identities
@@ -43,6 +40,7 @@ import software.aws.toolkits.jetbrains.services.lambda.execution.sam.SamDebugSup
 import software.aws.toolkits.jetbrains.utils.ApplicationThreadPoolScope
 import software.aws.toolkits.jetbrains.utils.DotNetDebuggerUtils
 import software.aws.toolkits.jetbrains.utils.execution.steps.Context
+import software.aws.toolkits.jetbrains.utils.getCoroutineBgContext
 import software.aws.toolkits.jetbrains.utils.getCoroutineUiContext
 import software.aws.toolkits.resources.message
 import java.net.InetAddress
@@ -66,8 +64,8 @@ object DotnetDebugUtils {
         val frontendPort = debugPorts[0]
         val backendPort = debugPorts[1]
         val promise = AsyncPromise<XDebugProcessStarter>()
-        val edtContext = getCoroutineUiContext(ModalityState.any(), environment)
-        val bgContext = ExpirableExecutor.on(AppExecutorUtil.getAppExecutorService()).expireWith(environment).coroutineDispatchingContext()
+        val edtContext = getCoroutineUiContext(ModalityState.any())
+        val bgContext = getCoroutineBgContext()
 
         // Define a debugger lifetime to be able to dispose the debugger process and all nested component on termination
         // Using the environment as the disposable root seems to make 2nd usage of debug to fail since the lifetime is already terminated
@@ -91,7 +89,7 @@ object DotnetDebugUtils {
             RiderDebuggerWorkerModelManager.createDebuggerModel(debuggerLifetime, protocol)
         }
 
-        ApplicationThreadPoolScope(environment.runProfile.name).launch(bgContext) {
+        ApplicationThreadPoolScope(environment.runProfile.name, environment).launch(bgContext) {
             try {
                 val dockerContainer = context.getRequiredAttribute(DOCKER_CONTAINER)
                 val pid = context.getRequiredAttribute(DOTNET_PID)
