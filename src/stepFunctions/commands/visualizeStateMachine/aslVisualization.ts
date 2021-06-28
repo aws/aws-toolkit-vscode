@@ -178,7 +178,7 @@ export class AslVisualization {
                     case 'viewDocument':
                         try {
                             const document = await vscode.workspace.openTextDocument(documentUri)
-                            vscode.window.showTextDocument(document, vscode.ViewColumn.One)
+                            vscode.window.showTextDocument(document, vscode.ViewColumn.Beside)
                         } catch (e) {
                             logger.error(e as Error)
                         }
