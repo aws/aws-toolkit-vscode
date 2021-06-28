@@ -12,6 +12,7 @@ import software.aws.toolkits.core.utils.RuleUtils
 import software.aws.toolkits.jetbrains.core.MockResourceCacheRule
 import software.aws.toolkits.jetbrains.core.explorer.nodes.AwsExplorerEmptyNode
 import software.aws.toolkits.jetbrains.core.explorer.nodes.AwsExplorerErrorNode
+import software.aws.toolkits.jetbrains.core.explorer.nodes.AwsExplorerNode
 import software.aws.toolkits.jetbrains.core.explorer.nodes.RedshiftExplorerRootNode
 import java.util.concurrent.CompletableFuture
 
@@ -34,7 +35,7 @@ class RedshiftExplorerNodeTest {
         )
         val serviceRootNode = sut.buildServiceRootNode(projectRule.project)
         assertThat(serviceRootNode.children).singleElement().matches {
-            it.displayName() == name
+            it is AwsExplorerNode && it.displayName() == name
         }
     }
 

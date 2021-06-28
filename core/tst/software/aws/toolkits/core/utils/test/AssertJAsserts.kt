@@ -3,7 +3,7 @@
 
 package software.aws.toolkits.core.utils.test
 
-import org.assertj.core.api.ListAssert
+import org.assertj.core.api.IterableAssert
 import org.assertj.core.api.ObjectAssert
 
 @Suppress("UNCHECKED_CAST")
@@ -11,5 +11,5 @@ val <T : Any> ObjectAssert<T?>.notNull: ObjectAssert<T>
     get() = this.isNotNull as ObjectAssert<T>
 
 @Suppress("UNCHECKED_CAST")
-inline fun <reified SubType : Any> ListAssert<*>.hasOnlyElementsOfType(): ListAssert<SubType> =
-    hasOnlyElementsOfType(SubType::class.java) as ListAssert<SubType>
+inline fun <reified SubType : Any> IterableAssert<*>.hasOnlyElementsOfType(): IterableAssert<SubType> =
+    hasOnlyElementsOfType(SubType::class.java) as IterableAssert<SubType>

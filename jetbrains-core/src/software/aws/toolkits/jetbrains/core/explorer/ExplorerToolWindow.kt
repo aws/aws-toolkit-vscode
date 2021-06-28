@@ -21,6 +21,7 @@ import com.intellij.openapi.actionSystem.DefaultActionGroup
 import com.intellij.openapi.actionSystem.Separator
 import com.intellij.openapi.actionSystem.ex.ActionManagerEx
 import com.intellij.openapi.application.runInEdt
+import com.intellij.openapi.application.runReadAction
 import com.intellij.openapi.components.ServiceManager
 import com.intellij.openapi.project.Project
 import com.intellij.openapi.ui.SimpleToolWindowPanel
@@ -39,6 +40,8 @@ import com.intellij.util.concurrency.Invoker
 import com.intellij.util.ui.GridBag
 import com.intellij.util.ui.JBUI
 import com.intellij.util.ui.UIUtil
+import com.intellij.util.ui.tree.TreeUtil
+import org.jetbrains.concurrency.CancellablePromise
 import software.aws.toolkits.jetbrains.core.credentials.AwsConnectionManager
 import software.aws.toolkits.jetbrains.core.credentials.ChangeAccountSettingsMode
 import software.aws.toolkits.jetbrains.core.credentials.ConnectionSettingsStateChangeNotifier
@@ -54,6 +57,7 @@ import software.aws.toolkits.jetbrains.core.explorer.nodes.AwsExplorerResourceNo
 import software.aws.toolkits.jetbrains.core.explorer.nodes.AwsExplorerServiceRootNode
 import software.aws.toolkits.jetbrains.core.explorer.nodes.ResourceActionNode
 import software.aws.toolkits.jetbrains.core.explorer.nodes.ResourceLocationNode
+import software.aws.toolkits.jetbrains.services.dynamic.explorer.DynamicResourceResourceTypeNode
 import java.awt.Component
 import java.awt.GridBagConstraints
 import java.awt.GridBagLayout
@@ -66,6 +70,7 @@ import javax.swing.text.SimpleAttributeSet
 import javax.swing.text.StyleConstants
 import javax.swing.tree.DefaultMutableTreeNode
 import javax.swing.tree.TreeModel
+import kotlin.reflect.KClass
 
 class ExplorerToolWindow(project: Project) : SimpleToolWindowPanel(true, true), ConnectionSettingsStateChangeNotifier, Disposable {
     private val actionManager = ActionManagerEx.getInstanceEx()
@@ -177,9 +182,25 @@ class ExplorerToolWindow(project: Project) : SimpleToolWindowPanel(true, true), 
         }
     }
 
+    fun <T : AbstractTreeNode<*>> findNode(nodeType: KClass<T>): CancellablePromise<AbstractTreeNode<*>?> =
+        runReadAction {
+            structureTreeModel.invoker.computeLater {
+                structureTreeModel.root.children().asSequence()
+                    .filterIsInstance<DefaultMutableTreeNode>()
+                    .firstOrNull { nodeType.isInstance(it.userObject) }
+                    ?.userObject as AbstractTreeNode<*>?
+            }
+        }
+
     // Save the state and reapply it after we invalidate (which is the point where the state is wiped).
     // Items are expanded again if their user object is unchanged (.equals()).
     private fun withSavedState(tree: Tree, block: () -> Unit) {
+        // TODO: do we actually need this? re-evaluate limits at later time
+        // never re-expand dynamic resource nodes because api throttles aggressively
+        TreeUtil.collectExpandedPaths(tree).filter { TreeUtil.getLastUserObject(it) is DynamicResourceResourceTypeNode }.forEach {
+            tree.collapsePath(it)
+        }
+
         val state = TreeState.createOn(tree)
         block()
         state.applyTo(tree)

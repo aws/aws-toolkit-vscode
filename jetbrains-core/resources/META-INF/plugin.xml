@@ -145,6 +145,9 @@ with what features/services are supported.
 
         <applicationService serviceImplementation="software.aws.toolkits.jetbrains.settings.CloudDebugSettings"/>
 
+        <applicationService serviceImplementation="software.aws.toolkits.jetbrains.settings.DynamicResourcesSettings"/>
+        <applicationConfigurable parentId="aws" key="aws.settings.dynamic_resources_configurable.title" instance="software.aws.toolkits.jetbrains.settings.DynamicResourcesConfigurable"/>
+
         <projectService serviceImplementation="software.aws.toolkits.jetbrains.settings.LambdaSettings"/>
 
         <moduleService serviceImplementation="software.aws.toolkits.jetbrains.settings.DeploySettings"/>
@@ -241,6 +244,7 @@ with what features/services are supported.
 
         <explorer.nodeProcessor implementation="software.aws.toolkits.jetbrains.services.clouddebug.CloudDebuggingExplorerProcessor" />
         <explorer.treeStructure implementation="software.aws.toolkits.jetbrains.services.clouddebug.CloudDebuggingExplorerTreeStructureProvider"/>
+        <explorer.treeStructure implementation="software.aws.toolkits.jetbrains.services.dynamic.explorer.DynamicResourceTreeStructureProvider"/>
 
         <notice implementation="software.aws.toolkits.jetbrains.core.notification.JetBrainsMinimumVersionChange"/>
 
@@ -255,6 +259,7 @@ with what features/services are supported.
         <explorer.serviceNode implementation="software.aws.toolkits.jetbrains.core.explorer.nodes.EcsExplorerRootNode"/>
         <explorer.serviceNode implementation="software.aws.toolkits.jetbrains.core.explorer.nodes.SchemasExplorerRootNode"/>
         <explorer.serviceNode implementation="software.aws.toolkits.jetbrains.core.explorer.nodes.SqsExplorerRootNode"/>
+        <explorer.serviceNode implementation="software.aws.toolkits.jetbrains.core.explorer.nodes.OtherResourcesRootNode"/>
     </extensions>
 
     <actions>
@@ -353,6 +358,13 @@ with what features/services are supported.
             <separator/>
             <action id="cloudformation.stack.delete"
                     class="software.aws.toolkits.jetbrains.services.cloudformation.actions.DeleteStackAction"/>
+        </group>
+
+        <group id="aws.toolkit.explorer.dynamic" popup="true" compact="false">
+            <action id="dynamic.open"
+                    class="software.aws.toolkits.jetbrains.services.dynamic.explorer.actions.DynamicResourceOpenAction"/>
+            <action id="dynamic.copy.arn"
+                    class="software.aws.toolkits.jetbrains.services.dynamic.explorer.actions.DynamicResourceCopyIdentifierAction"/>
         </group>
 
         <group id="aws.toolkit.explorer.logs.group" popup="true" compact="false">
