@@ -31,11 +31,11 @@ export const TEMPLATE_FILE_EXCLUDE_PATTERN = /.*[/\\]\.aws-sam([/\\].*|$)/
  * @param extensionContext VS Code extension context
  */
 export async function activate(extensionContext: vscode.ExtensionContext): Promise<void> {
+    refreshSchemas(extensionContext)
     // Note: redhat.vscode-yaml no longer works on vscode 1.42
     if (await activateExtension(VSCODE_EXTENSION_ID.yaml)) {
         addCustomTags()
     }
-    refreshSchemas(extensionContext)
 
     try {
         const registry = new CloudFormationTemplateRegistry()
