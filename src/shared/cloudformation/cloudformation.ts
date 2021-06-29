@@ -18,6 +18,7 @@ import { ResourceFetcher } from '../resourcefetcher/resourcefetcher'
 import { FileResourceFetcher } from '../resourcefetcher/fileResourceFetcher'
 import { CompositeResourceFetcher } from '../resourcefetcher/compositeResourceFetcher'
 import { WorkspaceConfiguration } from '../vscode/workspace'
+import { getWorkspaceRelativePath } from '../utilities/workspaceUtils'
 
 export namespace CloudFormation {
     export const SERVERLESS_API_TYPE = 'AWS::Serverless::Api'
@@ -764,9 +765,16 @@ let CFN_SCHEMA_PATH = ''
 let SAM_SCHEMA_PATH = ''
 const MANIFEST_URL = 'https://api.github.com/repos/awslabs/goformation/releases/latest'
 
-export async function refreshSchemas(extensionContext: vscode.ExtensionContext) {
-    CFN_SCHEMA_PATH = path.join(extensionContext.globalStoragePath, 'cloudformation.schema.json')
-    SAM_SCHEMA_PATH = path.join(extensionContext.globalStoragePath, 'sam.schema.json')
+/**
+ * Loads JSON schemas for CFN and SAM templates.
+ * Checks manifest and downloads new schemas if the manifest version has been bumped.
+ * Uses local, predownloaded version if up-to-date or network call fails
+ * If the user has not previously used the toolkit and cannot pull the manifest, does not provide template autocomplete.
+ * @param extensionContext 
+ */
+export async function refreshSchemas(extensionContext: vscode.ExtensionContext): Promise<void> {
+    CFN_SCHEMA_PATH = normalizeSeparator(path.join(extensionContext.globalStoragePath, 'cloudformation.schema.json'))
+    SAM_SCHEMA_PATH = normalizeSeparator(path.join(extensionContext.globalStoragePath, 'sam.schema.json'))
     let manifest: string | undefined
     try {
         const manifestFetcher = new HttpResourceFetcher(MANIFEST_URL, { showUrl: true })
@@ -816,11 +824,11 @@ export async function updateYamlSchemasArray(
     config: WorkspaceConfiguration = vscode.workspace.getConfiguration('yaml'),
     paths: { cfnSchema: string; samSchema: string } = { cfnSchema: CFN_SCHEMA_PATH, samSchema: SAM_SCHEMA_PATH }
 ): Promise<void> {
-    const relPath = normalizeSeparator(path)
+    const relPath = normalizeSeparator(getWorkspaceRelativePath(path) ?? path)
     const schemas: { [key: string]: string | string[] | undefined } | undefined = config.get('schemas')
     const writeTo = type === 'cfn' ? paths.cfnSchema : paths.samSchema
     const deleteFrom = type === 'sam' ? paths.cfnSchema : paths.samSchema
-    let newWriteArr: string[] = [path]
+    let newWriteArr: string[] = [relPath]
     let newDeleteArr: string[] = []
 
     if (schemas) {
@@ -846,11 +854,14 @@ export async function updateYamlSchemasArray(
             ...(schemas ? schemas : {}),
             [writeTo]: newWriteArr,
             [deleteFrom]: newDeleteArr,
-        },
-        vscode.ConfigurationTarget.Global
+        }
     )
 }
 
+/**
+ * Parses Goformation manifest and generates object containing latest version and schema URLs 
+ * @param manifest Manifest JSON from Github
+ */
 export function getManifestDetails(manifest: string): { samUrl: string; cfnUrl: string; version: string } {
     const json = JSON.parse(manifest)
     if (json.tag_name) {
@@ -864,6 +875,14 @@ export function getManifestDetails(manifest: string): { samUrl: string; cfnUrl: 
     }
 }
 
+/**
+ * Pulls a remote version of file if the local version doesn't match the manifest version (does not check semver increases) or doesn't exist
+ * Pulls local version of file if it does. Uses remote as baskup in case local doesn't exist
+ * @param params.filepath Path to local file
+ * @param params.version Remote version
+ * @param params.url Url to fetch from
+ * @param params.cacheKey Cache key to check version against
+ */
 export async function getRemoteOrCachedFile(params: {
     filepath: string
     version: string
