@@ -9,7 +9,7 @@ const localize = nls.loadMessageBundle()
 import { Credentials } from 'aws-sdk'
 import { env, QuickPickItem, Uri, ViewColumn, window } from 'vscode'
 import { LoginManager } from '../credentials/loginManager'
-import { CredentialsProviderId, fromString } from '../credentials/providers/credentialsProviderId'
+import { CredentialsId, fromString } from '../credentials/providers/credentials'
 import { CredentialsProviderManager } from '../credentials/providers/credentialsProviderManager'
 import { AwsContext } from './awsContext'
 import { AwsContextTreeCollection } from './awsContextTreeCollection'
@@ -77,8 +77,8 @@ export class DefaultAWSContextCommands {
 
             if (profileName) {
                 // TODO: change this once we figure out what profile types we should have
-                const sharedProviderId: CredentialsProviderId = {
-                    credentialType: SharedCredentialsProvider.getCredentialsType(),
+                const sharedProviderId: CredentialsId = {
+                    credentialSource: SharedCredentialsProvider.getProviderType(),
                     credentialTypeId: profileName,
                 }
 
@@ -179,8 +179,17 @@ export class DefaultAWSContextCommands {
      */
     private async getProfileNameFromUser(): Promise<string | undefined> {
         const credentialsFiles: string[] = await UserCredentialsUtils.findExistingCredentialsFilenames()
+        const providerMap = await CredentialsProviderManager.getInstance().getCredentialProviderNames()
+        const profileNames = Object.keys(providerMap)
 
-        if (credentialsFiles.length === 0) {
+        if (profileNames.length > 0) {
+            // There are credentials for the user to choose from
+            const dataProvider = new DefaultCredentialSelectionDataProvider(profileNames, ext.context)
+            const state = await credentialProfileSelector(dataProvider)
+            if (state && state.credentialProfile) {
+                return state.credentialProfile.label
+            }
+        } else if (credentialsFiles.length === 0) {
             const userResponse = await window.showInformationMessage(
                 localize(
                     'AWS.message.prompt.credentials.create',
@@ -197,38 +206,25 @@ export class DefaultAWSContextCommands {
 
             return await this.promptAndCreateNewCredentialsFile()
         } else {
-            const providerMap = await CredentialsProviderManager.getInstance().getCredentialProviderNames()
-            const profileNames = Object.keys(providerMap)
-
             // If no credentials were found, the user should be
             // encouraged to define some.
-            if (profileNames.length === 0) {
-                const userResponse = await window.showInformationMessage(
-                    localize(
-                        'AWS.message.prompt.credentials.create',
-                        'You do not appear to have any {0} Credentials defined. Would you like to set one up now?',
-                        getIdeProperties().company
-                    ),
-                    localizedText.yes,
-                    localizedText.no
-                )
+            const userResponse = await window.showInformationMessage(
+                localize(
+                    'AWS.message.prompt.credentials.create',
+                    'You do not appear to have any {0} Credentials defined. Would you like to set one up now?',
+                    getIdeProperties().company
+                ),
+                localizedText.yes,
+                localizedText.no
+            )
 
-                if (userResponse === localizedText.yes) {
-                    // Start edit, the user will have to try connecting again
-                    // after they have made their edits.
-                    await this.editCredentials()
-                }
-
-                return undefined
+            if (userResponse === localizedText.yes) {
+                // Start edit, the user will have to try connecting again
+                // after they have made their edits.
+                await this.editCredentials()
             }
 
             // If we get here, there are credentials for the user to choose from
-            const dataProvider = new DefaultCredentialSelectionDataProvider(profileNames, ext.context)
-            const state = await credentialProfileSelector(dataProvider)
-            if (state && state.credentialProfile) {
-                return state.credentialProfile.label
-            }
-
             return undefined
         }
     }

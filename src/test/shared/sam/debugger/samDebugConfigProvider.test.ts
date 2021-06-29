@@ -43,10 +43,10 @@ import { CredentialsStore } from '../../../../credentials/credentialsStore'
 import { CredentialsProviderManager } from '../../../../credentials/providers/credentialsProviderManager'
 import { Credentials } from 'aws-sdk'
 import { ExtContext } from '../../../../shared/extensions'
-import { CredentialsProvider } from '../../../../credentials/providers/credentialsProvider'
 import { mkdir, remove } from 'fs-extra'
 import { ext } from '../../../../shared/extensionGlobals'
 import { getLogger } from '../../../../shared/logger/logger'
+import { CredentialsProvider } from '../../../../credentials/providers/credentials'
 
 /**
  * Asserts the contents of a "launch config" (the result of `makeConfig()` or
@@ -299,14 +299,16 @@ describe('SamDebugConfigurationProvider', async function () {
 
             const credentialsProvider: CredentialsProvider = {
                 getCredentials: sandbox.stub().resolves(({} as any) as AWS.Credentials),
-                getCredentialsType2: sandbox.stub().resolves('staticProfile'),
-                getCredentialsProviderId: sandbox.stub().returns({
-                    credentialType: 'test',
+                getProviderType: sandbox.stub().resolves('profile'),
+                getTelemetryType: sandbox.stub().resolves('staticProfile'),
+                getCredentialsId: sandbox.stub().returns({
+                    credentialSource: 'sharedCredentials',
                     credentialTypeId: 'someId',
                 }),
                 getDefaultRegion: sandbox.stub().returns('someRegion'),
                 getHashCode: sandbox.stub().returns('1234'),
                 canAutoConnect: sandbox.stub().returns(true),
+                isAvailable: sandbox.stub().returns(Promise.resolve(true))
             }
             const getCredentialsProviderStub = sandbox.stub(
                 CredentialsProviderManager.getInstance(),
@@ -3264,14 +3266,16 @@ Resources:
 
             const credentialsProvider: CredentialsProvider = {
                 getCredentials: sandbox.stub().resolves(({} as any) as AWS.Credentials),
-                getCredentialsType2: sandbox.stub().resolves('staticProfile'),
-                getCredentialsProviderId: sandbox.stub().returns({
-                    credentialType: 'test',
+                getProviderType: sandbox.stub().resolves('profile'),
+                getTelemetryType: sandbox.stub().resolves('staticProfile'),
+                getCredentialsId: sandbox.stub().returns({
+                    credentialSource: 'profile',
                     credentialTypeId: 'someId',
                 }),
                 getDefaultRegion: sandbox.stub().returns('someRegion'),
                 getHashCode: sandbox.stub().returns('1234'),
                 canAutoConnect: sandbox.stub().returns(true),
+                isAvailable: sandbox.stub().returns(Promise.resolve(true))
             }
             const getCredentialsProviderStub = sandbox.stub(
                 CredentialsProviderManager.getInstance(),

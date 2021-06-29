@@ -6,7 +6,7 @@
 import * as assert from 'assert'
 import * as fs from 'fs-extra'
 import * as sinon from 'sinon'
-import { isEqual } from '../../../credentials/providers/credentialsProviderId'
+import { isEqual } from '../../../credentials/providers/credentials'
 import { SharedCredentialsProviderFactory } from '../../../credentials/providers/sharedCredentialsProviderFactory'
 import * as sharedCredentials from '../../../credentials/sharedCredentials'
 import { Profile } from '../../../shared/credentials/credentialsFile'
@@ -65,8 +65,8 @@ describe('SharedCredentialsProviderFactory', async function () {
         assert.strictEqual(providers.length, 2, 'Expected two providers to be created')
         assert.ok(
             providers.find(p =>
-                isEqual(p.getCredentialsProviderId(), {
-                    credentialType: 'profile',
+                isEqual(p.getCredentialsId(), {
+                    credentialSource: 'profile',
                     credentialTypeId: validProfileName1,
                 })
             ),
@@ -74,8 +74,8 @@ describe('SharedCredentialsProviderFactory', async function () {
         )
         assert.ok(
             providers.find(p =>
-                isEqual(p.getCredentialsProviderId(), {
-                    credentialType: 'profile',
+                isEqual(p.getCredentialsId(), {
+                    credentialSource: 'profile',
                     credentialTypeId: validProfileName2,
                 })
             ),
@@ -96,7 +96,7 @@ describe('SharedCredentialsProviderFactory', async function () {
         assert.strictEqual(providers.length, 2, 'Expected two providers to be created') // the valid ones
         assert.strictEqual(
             sut.getProvider({
-                credentialType: 'default',
+                credentialSource: 'profile',
                 credentialTypeId: invalidProfileName,
             }),
             undefined
