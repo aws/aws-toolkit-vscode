@@ -7,6 +7,7 @@ import * as AWS from 'aws-sdk'
 import * as vscode from 'vscode'
 import { AwsContext, AwsContextCredentials, ContextChangeEventsArgs } from './awsContext'
 import { regionSettingKey } from './constants'
+import { DEFAULT_REGION } from './regions/regionUtilities'
 
 /**
  * Wraps an AWS context in terms of credential profile and zero or more regions. The
@@ -56,8 +57,8 @@ export class DefaultAwsContext implements AwsContext {
         return this.currentCredentials?.accountId
     }
 
-    public getCredentialDefaultRegion(): string | undefined {
-        return this.currentCredentials?.defaultRegion
+    public getCredentialDefaultRegion(): string {
+        return this.currentCredentials?.defaultRegion ?? DEFAULT_REGION
     }
 
     // async so that we could *potentially* support other ways of obtaining
