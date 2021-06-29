@@ -3,6 +3,8 @@
 
 package software.aws.toolkits.jetbrains.services.sqs.toolwindow
 
+import com.intellij.testFramework.DisposableRule
+import com.intellij.testFramework.ProjectRule
 import kotlinx.coroutines.runBlocking
 import org.assertj.core.api.Assertions.assertThat
 import org.junit.Before
@@ -19,17 +21,28 @@ import software.aws.toolkits.jetbrains.core.MockClientManagerRule
 import software.aws.toolkits.jetbrains.core.region.MockRegionProviderRule
 import software.aws.toolkits.jetbrains.services.sqs.MAX_LENGTH_OF_FIFO_ID
 import software.aws.toolkits.jetbrains.services.sqs.Queue
-import software.aws.toolkits.jetbrains.utils.BaseCoroutineTest
 import software.aws.toolkits.jetbrains.utils.waitForTrue
 import software.aws.toolkits.resources.message
 
-class SendMessagePaneTest : BaseCoroutineTest() {
-    @JvmField
+class SendMessagePaneTest {
     @Rule
+    @JvmField
+    val projectRule = ProjectRule()
+
+    @Rule
+    @JvmField
+    val mockClientManagerRule = MockClientManagerRule()
+
+    @Rule
+    @JvmField
+    val disposableRule = DisposableRule()
+
+    @Rule
+    @JvmField
     val mockClientManager = MockClientManagerRule()
 
-    @JvmField
     @Rule
+    @JvmField
     val regionProvider = MockRegionProviderRule()
 
     private lateinit var client: SqsClient
@@ -45,8 +58,8 @@ class SendMessagePaneTest : BaseCoroutineTest() {
         region = regionProvider.defaultRegion()
         standardQueue = Queue("https://sqs.us-east-1.amazonaws.com/123456789012/standard", region)
         fifoQueue = Queue("https://sqs.us-east-1.amazonaws.com/123456789012/fifo.fifo", region)
-        standardPane = SendMessagePane(projectRule.project, client, standardQueue)
-        fifoPane = SendMessagePane(projectRule.project, client, fifoQueue)
+        standardPane = SendMessagePane(projectRule.project, client, standardQueue, disposableRule.disposable)
+        fifoPane = SendMessagePane(projectRule.project, client, fifoQueue, disposableRule.disposable)
     }
 
     @Test

@@ -3,76 +3,75 @@
 
 package software.aws.toolkits.jetbrains.services.sqs.toolwindow
 
+import com.intellij.openapi.application.ApplicationManager
 import com.intellij.openapi.components.service
 import com.intellij.openapi.project.Project
-import icons.AwsIcons
-import kotlinx.coroutines.CoroutineScope
-import kotlinx.coroutines.launch
-import kotlinx.coroutines.runBlocking
-import kotlinx.coroutines.withContext
+import com.intellij.ui.content.Content
+import com.intellij.ui.content.ContentManager
 import software.amazon.awssdk.services.sqs.SqsClient
-import software.aws.toolkits.core.utils.error
-import software.aws.toolkits.core.utils.getLogger
 import software.aws.toolkits.jetbrains.core.awsClient
-import software.aws.toolkits.jetbrains.core.toolwindow.ToolkitToolWindowManager
-import software.aws.toolkits.jetbrains.core.toolwindow.ToolkitToolWindowType
 import software.aws.toolkits.jetbrains.services.sqs.Queue
 import software.aws.toolkits.jetbrains.services.sqs.telemetryType
-import software.aws.toolkits.jetbrains.utils.ApplicationThreadPoolScope
-import software.aws.toolkits.jetbrains.utils.getCoroutineUiContext
-import software.aws.toolkits.resources.message
 import software.aws.toolkits.telemetry.SqsTelemetry
 
-class SqsWindow(private val project: Project) : CoroutineScope by ApplicationThreadPoolScope("SqsWindow") {
-    private val toolWindow = ToolkitToolWindowManager.getInstance(project, SQS_TOOL_WINDOW)
-    private val edtContext = getCoroutineUiContext()
+class SqsWindow(private val project: Project) {
     private val client: SqsClient = project.awsClient()
 
     fun pollMessage(queue: Queue) {
-        showQueue(queue, SqsWindowUi(project, client, queue).apply { pollMessage() })
+        showQueue(queue).pollMessage()
     }
 
     fun sendMessage(queue: Queue) {
-        showQueue(queue, SqsWindowUi(project, client, queue).apply { sendMessage() })
+        showQueue(queue).sendMessage()
     }
 
-    private fun showQueue(queue: Queue, component: SqsWindowUi) = launch {
-        SqsTelemetry.openQueue(project, queue.telemetryType())
-        try {
-            val existingWindow = toolWindow.find(queue.queueUrl)
-            if (existingWindow != null) {
-                withContext(edtContext) {
-                    // We dispose the existing one so we can switch tabs, currently we have no other way to do this
-                    // TODO fix this to switch tabs instead of disposing when we can get the original component out of
-                    // toolwindow
-                    existingWindow.dispose()
-                }
-            }
+    private fun showQueue(queue: Queue): SqsWindowUi {
+        ApplicationManager.getApplication().assertIsDispatchThread()
 
-            withContext(edtContext) {
-                toolWindow.addTab(queue.queueName, component.mainPanel, activate = true, id = queue.queueUrl)
-            }
-        } catch (e: Exception) {
-            LOG.error(e) { "Exception thrown while trying to open queue '${queue.queueName}'" }
-            throw e
+        SqsTelemetry.openQueue(project, queue.telemetryType())
+
+        val toolWindow = SqsWindowFactory.getToolWindow(project)
+        val contentManager = toolWindow.contentManager
+
+        val sqsViewContent = findQueue(queue.queueUrl) ?: createSqsView(contentManager, queue)
+
+        toolWindow.show()
+        contentManager.setSelectedContent(sqsViewContent, true)
+
+        return sqsViewContent.component as SqsWindowUi
+    }
+
+    fun findQueue(queueUrl: String): Content? {
+        ApplicationManager.getApplication().assertIsDispatchThread()
+
+        val toolWindow = SqsWindowFactory.getToolWindow(project)
+        val contentManager = toolWindow.contentManager
+
+        return contentManager.contents.find {
+            val component = it.component
+            component is SqsWindowUi && component.queue.queueUrl == queueUrl
         }
     }
 
-    fun closeQueue(queueUrl: String) = runBlocking {
-        withContext(edtContext) {
-            toolWindow.find(queueUrl)?.dispose()
+    private fun createSqsView(contentManager: ContentManager, queue: Queue): Content {
+        val sqsView = SqsWindowUi(project, client, queue)
+        val sqsViewContent = contentManager.factory.createContent(sqsView.component, queue.queueName, false)
+        sqsViewContent.isCloseable = true
+        sqsViewContent.isPinnable = true
+        contentManager.addContent(sqsViewContent)
+
+        return sqsViewContent
+    }
+
+    fun closeQueue(queueUrl: String) {
+        ApplicationManager.getApplication().assertIsDispatchThread()
+
+        findQueue(queueUrl)?.let {
+            SqsWindowFactory.getToolWindow(project).contentManager.removeContent(it, true)
         }
     }
 
     companion object {
-        internal val SQS_TOOL_WINDOW = ToolkitToolWindowType(
-            "AWS.Sqs",
-            message("sqs.toolwindow"),
-            AwsIcons.Resources.Sqs.SQS_TOOL_WINDOW
-        )
-
         fun getInstance(project: Project): SqsWindow = project.service()
-
-        private val LOG = getLogger<SqsWindow>()
     }
 }

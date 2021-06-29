@@ -3,6 +3,7 @@
 
 package software.aws.toolkits.jetbrains.services.sqs.actions
 
+import com.intellij.openapi.application.ApplicationManager
 import software.amazon.awssdk.services.sqs.SqsClient
 import software.aws.toolkits.jetbrains.core.awsClient
 import software.aws.toolkits.jetbrains.core.explorer.actions.DeleteResourceAction
@@ -16,7 +17,9 @@ class DeleteQueueAction : DeleteResourceAction<SqsQueueNode>(message("sqs.delete
     override fun performDelete(selected: SqsQueueNode) {
         val project = selected.nodeProject
         val client = project.awsClient<SqsClient>()
-        SqsWindow.getInstance(project).closeQueue(selected.queueUrl)
+        ApplicationManager.getApplication().invokeAndWait {
+            SqsWindow.getInstance(project).closeQueue(selected.queueUrl)
+        }
         client.deleteQueue { it.queueUrl(selected.queueUrl) }
         project.refreshAwsTree(SqsResources.LIST_QUEUE_URLS)
     }
