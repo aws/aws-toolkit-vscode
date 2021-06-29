@@ -4,7 +4,7 @@
  */
 
 import { Credentials, EC2MetadataCredentials } from 'aws-sdk'
-import { DefaultEc2MetadataClient } from '../../shared/clients/defaultEc2MetadataClient'
+import { DefaultEc2MetadataClient } from '../../shared/clients/ec2MetadataClient'
 import { Ec2MetadataClient } from '../../shared/clients/ec2MetadataClient'
 import { getLogger } from '../../shared/logger'
 import { CredentialType } from '../../shared/telemetry/telemetry.gen'
