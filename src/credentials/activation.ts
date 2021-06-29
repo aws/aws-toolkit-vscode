@@ -12,6 +12,7 @@ import { LoginManager } from './loginManager'
 import { asString, CredentialsId, fromString } from './providers/credentials'
 import { CredentialsProviderManager } from './providers/credentialsProviderManager'
 import { SharedCredentialsProvider } from './providers/sharedCredentialsProvider'
+import { getIdeProperties } from '../shared/extensionUtilities'
 
 import * as nls from 'vscode-nls'
 import { isCloud9 } from '../shared/extensionUtilities'
@@ -38,8 +39,6 @@ export async function loginWithMostRecentCredentials(
     loginManager: LoginManager
 ): Promise<void> {
     const manager = CredentialsProviderManager.getInstance()
-    const providerMap = await manager.getCredentialProviderNames()
-    const profileNames = Object.keys(providerMap)
     const previousCredentialsId = toolkitSettings.readSetting<string>(profileSettingKey, '')
 
     async function tryConnect(creds: CredentialsId, popup: boolean): Promise<boolean> {
@@ -55,18 +54,17 @@ export async function loginWithMostRecentCredentials(
             getLogger().info('autoconnect: connected: %O', asString(creds))
             if (popup) {
                 vscode.window.showInformationMessage(
-                    localize('AWS.message.credentials.connected', 'Connected to AWS as {0}', asString(creds))
+                    localize(
+                        'AWS.message.credentials.connected',
+                        'Connected to {0} with {1}',
+                        getIdeProperties().company,
+                        asString(creds)
+                    )
                 )
             }
             return true
         }
         return false
-    }
-
-    if (!previousCredentialsId && !(providerMap && profileNames.length === 1)) {
-        await loginManager.logout()
-        getLogger().info('autoconnect: skipped')
-        return
     }
 
     if (previousCredentialsId) {
@@ -78,6 +76,15 @@ export async function loginWithMostRecentCredentials(
         if (await tryConnect(loginCredentialsId, false)) {
             return
         }
+    }
+
+    const providerMap = await manager.getCredentialProviderNames()
+    const profileNames = Object.keys(providerMap)
+
+    if (!previousCredentialsId && !(providerMap && profileNames.length === 1)) {
+        await loginManager.logout()
+        getLogger().info('autoconnect: skipped')
+        return
     }
 
     if (providerMap && profileNames.length === 1) {
