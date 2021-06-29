@@ -17,7 +17,6 @@ import { S3FolderNode } from './explorer/s3FolderNode'
 import { S3Node } from './explorer/s3Nodes'
 import { S3FileNode } from './explorer/s3FileNode'
 import { ext } from '../shared/extensionGlobals'
-import { DEFAULT_REGION } from '../shared/regions/regionUtilities'
 import { DefaultAwsContext } from '../shared/defaultAwsContext'
 
 /**
@@ -34,7 +33,7 @@ export async function activate(extensionContext: vscode.ExtensionContext): Promi
         vscode.commands.registerCommand('aws.s3.uploadFile', async (node: S3BucketNode | S3FolderNode) => {
             if (!node) {
                 const awsContext = new DefaultAwsContext(ext.context)
-                const regionCode = awsContext.getCredentialDefaultRegion() ?? DEFAULT_REGION
+                const regionCode = awsContext.getCredentialDefaultRegion()
                 const s3Client = ext.toolkitClientBuilder.createS3Client(regionCode)
                 const document = vscode.window.activeTextEditor?.document.uri
                 await uploadFileCommand(s3Client, document)
