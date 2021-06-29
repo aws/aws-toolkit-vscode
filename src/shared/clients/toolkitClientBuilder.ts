@@ -1,44 +1,75 @@
 /*!
- * Copyright 2018-2019 Amazon.com, Inc. or its affiliates. All Rights Reserved.
+ * Copyright 2019 Amazon.com, Inc. or its affiliates. All Rights Reserved.
  * SPDX-License-Identifier: Apache-2.0
  */
 
 import { ServiceConfigurationOptions } from 'aws-sdk/lib/service'
-import { ApiGatewayClient } from './apiGatewayClient'
-import { CloudFormationClient } from './cloudFormationClient'
-import { CloudWatchLogsClient } from './cloudWatchLogsClient'
-import { EcrClient } from './ecrClient'
-import { EcsClient } from './ecsClient'
-import { IamClient } from './iamClient'
-import { LambdaClient } from './lambdaClient'
-import { SchemaClient } from './schemaClient'
-import { StepFunctionsClient } from './stepFunctionsClient'
-import { StsClient } from './stsClient'
-import { S3Client } from './s3Client'
-import { SsmDocumentClient } from './ssmDocumentClient'
+import { ApiGatewayClient, DefaultApiGatewayClient } from './apiGatewayClient'
+import { CloudFormationClient, DefaultCloudFormationClient } from './cloudFormationClient'
+import { CloudWatchLogsClient, DefaultCloudWatchLogsClient } from './cloudWatchLogsClient'
+import { DefaultEcrClient, EcrClient } from './ecrClient'
+import { DefaultEcsClient, EcsClient } from './ecsClient'
+import { DefaultIamClient, IamClient } from './iamClient'
+import { DefaultLambdaClient, LambdaClient } from './lambdaClient'
+import { DefaultSchemaClient, SchemaClient } from './schemaClient'
+import { DefaultStepFunctionsClient, StepFunctionsClient } from './stepFunctionsClient'
+import { DefaultStsClient, StsClient } from './stsClient'
+import { DefaultSsmDocumentClient, SsmDocumentClient } from './ssmDocumentClient'
+import { DefaultS3Client, S3Client } from './s3Client'
+import { RegionProvider } from '../regions/regionProvider'
+import { DEFAULT_PARTITION } from '../regions/regionUtilities'
+import { ClassToInterface } from '../utilities/tsUtils'
 
-export interface ToolkitClientBuilder {
-    createApiGatewayClient(regionCode: string): ApiGatewayClient
+export type ToolkitClientBuilder = ClassToInterface<DefaultToolkitClientBuilder>
 
-    createCloudFormationClient(regionCode: string): CloudFormationClient
+export class DefaultToolkitClientBuilder {
+    public constructor(private readonly regionProvider: RegionProvider) {}
 
-    createCloudWatchLogsClient(regionCode: string): CloudWatchLogsClient
+    public createApiGatewayClient(regionCode: string): ApiGatewayClient {
+        return new DefaultApiGatewayClient(regionCode)
+    }
 
-    createEcrClient(regionCode: string): EcrClient
+    public createCloudFormationClient(regionCode: string): CloudFormationClient {
+        return new DefaultCloudFormationClient(regionCode)
+    }
 
-    createEcsClient(regionCode: string): EcsClient
+    public createCloudWatchLogsClient(regionCode: string): CloudWatchLogsClient {
+        return new DefaultCloudWatchLogsClient(regionCode)
+    }
 
-    createLambdaClient(regionCode: string): LambdaClient
+    public createEcrClient(regionCode: string): EcrClient {
+        return new DefaultEcrClient(regionCode)
+    }
 
-    createSchemaClient(regionCode: string): SchemaClient
+    public createEcsClient(regionCode: string): EcsClient {
+        return new DefaultEcsClient(regionCode)
+    }
 
-    createStepFunctionsClient(regionCode: string): StepFunctionsClient
+    public createIamClient(regionCode: string): IamClient {
+        return new DefaultIamClient(regionCode)
+    }
 
-    createStsClient(regionCode: string, credentials?: ServiceConfigurationOptions): StsClient
+    public createLambdaClient(regionCode: string): LambdaClient {
+        return new DefaultLambdaClient(regionCode)
+    }
 
-    createIamClient(regionCode: string): IamClient
+    public createSchemaClient(regionCode: string): SchemaClient {
+        return new DefaultSchemaClient(regionCode)
+    }
 
-    createS3Client(regionCode: string): S3Client
+    public createStepFunctionsClient(regionCode: string): StepFunctionsClient {
+        return new DefaultStepFunctionsClient(regionCode)
+    }
 
-    createSsmClient(regionCode: string): SsmDocumentClient
+    public createStsClient(regionCode: string, credentials?: ServiceConfigurationOptions): StsClient {
+        return new DefaultStsClient(regionCode, credentials)
+    }
+
+    public createS3Client(regionCode: string): S3Client {
+        return new DefaultS3Client(this.regionProvider.getPartitionId(regionCode) ?? DEFAULT_PARTITION, regionCode)
+    }
+
+    public createSsmClient(regionCode: string): SsmDocumentClient {
+        return new DefaultSsmDocumentClient(regionCode)
+    }
 }

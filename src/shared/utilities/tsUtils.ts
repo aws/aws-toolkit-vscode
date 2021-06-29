@@ -4,7 +4,13 @@
  */
 
 export const getPropAs = <T>(obj: any, key: string) => {
-    return ((obj as any) as {
-        [key: string]: T
-    })[key]
+    return (
+        obj as any as {
+            [key: string]: T
+        }
+    )[key]
 }
+
+type NoSymbols<T> = { [Property in keyof T]: Property extends symbol ? never : Property }[keyof T]
+export type InterfaceNoSymbol<T> = Pick<T, NoSymbols<T>>
+export type ClassToInterface<T> = Pick<T, keyof T>

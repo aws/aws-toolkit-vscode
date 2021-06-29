@@ -4,17 +4,72 @@
  */
 
 import { StepFunctions } from 'aws-sdk'
+import { ext } from '../extensionGlobals'
+import '../utilities/asyncIteratorShim'
+import { ClassToInterface } from '../utilities/tsUtils'
 
-export interface StepFunctionsClient {
-    readonly regionCode: string
+export type StepFunctionsClient = ClassToInterface<DefaultStepFunctionsClient>
 
-    listStateMachines(): AsyncIterableIterator<StepFunctions.StateMachineListItem>
+export class DefaultStepFunctionsClient {
+    public constructor(public readonly regionCode: string) {}
 
-    getStateMachineDetails(arn: string): Promise<StepFunctions.DescribeStateMachineOutput>
+    public async *listStateMachines(): AsyncIterableIterator<StepFunctions.StateMachineListItem> {
+        const client = await this.createSdkClient()
 
-    executeStateMachine(arn: string, input?: string): Promise<StepFunctions.StartExecutionOutput>
+        const request: StepFunctions.ListStateMachinesInput = {}
+        do {
+            const response: StepFunctions.ListStateMachinesOutput = await client.listStateMachines(request).promise()
 
-    createStateMachine(params: StepFunctions.CreateStateMachineInput): Promise<StepFunctions.CreateStateMachineOutput>
+            if (response.stateMachines) {
+                yield* response.stateMachines
+            }
 
-    updateStateMachine(params: StepFunctions.UpdateStateMachineInput): Promise<StepFunctions.UpdateStateMachineOutput>
+            request.nextToken = response.nextToken
+        } while (request.nextToken)
+    }
+
+    public async getStateMachineDetails(arn: string): Promise<StepFunctions.DescribeStateMachineOutput> {
+        const client = await this.createSdkClient()
+
+        const request: StepFunctions.DescribeStateMachineInput = {
+            stateMachineArn: arn,
+        }
+
+        const response: StepFunctions.DescribeStateMachineOutput = await client.describeStateMachine(request).promise()
+
+        return response
+    }
+
+    public async executeStateMachine(arn: string, input?: string): Promise<StepFunctions.StartExecutionOutput> {
+        const client = await this.createSdkClient()
+
+        const request: StepFunctions.StartExecutionInput = {
+            stateMachineArn: arn,
+            input: input,
+        }
+
+        const response: StepFunctions.StartExecutionOutput = await client.startExecution(request).promise()
+
+        return response
+    }
+
+    public async createStateMachine(
+        params: StepFunctions.CreateStateMachineInput
+    ): Promise<StepFunctions.CreateStateMachineOutput> {
+        const client = await this.createSdkClient()
+
+        return client.createStateMachine(params).promise()
+    }
+
+    public async updateStateMachine(
+        params: StepFunctions.UpdateStateMachineInput
+    ): Promise<StepFunctions.UpdateStateMachineOutput> {
+        const client = await this.createSdkClient()
+
+        return client.updateStateMachine(params).promise()
+    }
+
+    private async createSdkClient(): Promise<StepFunctions> {
+        return await ext.sdkClientBuilder.createAwsService(StepFunctions, undefined, this.regionCode)
+    }
 }

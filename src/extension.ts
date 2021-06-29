@@ -19,7 +19,7 @@ import { activate as activateSchemas } from './eventSchemas/activation'
 import { activate as activateLambda } from './lambda/activation'
 import { DefaultAWSClientBuilder } from './shared/awsClientBuilder'
 import { AwsContextTreeCollection } from './shared/awsContextTreeCollection'
-import { DefaultToolkitClientBuilder } from './shared/clients/defaultToolkitClientBuilder'
+import { DefaultToolkitClientBuilder } from './shared/clients/toolkitClientBuilder'
 import { activate as activateCloudFormationTemplateRegistry } from './shared/cloudformation/activation'
 import {
     documentationUrl,
@@ -76,7 +76,9 @@ export async function activate(context: vscode.ExtensionContext) {
     localize = nls.loadMessageBundle()
     ext.init(context, extWindow.Window.vscode())
 
-    const toolkitOutputChannel = vscode.window.createOutputChannel(localize('AWS.channel.aws.toolkit', '{0} Toolkit', getIdeProperties().company))
+    const toolkitOutputChannel = vscode.window.createOutputChannel(
+        localize('AWS.channel.aws.toolkit', '{0} Toolkit', getIdeProperties().company)
+    )
     await activateLogger(context, toolkitOutputChannel)
     const remoteInvokeOutputChannel = vscode.window.createOutputChannel(
         localize('AWS.channel.aws.remoteInvoke', '{0} Remote Invocations', getIdeProperties().company)
@@ -338,7 +340,11 @@ function makeEndpointsProvider(): EndpointsProvider {
         getLogger().error('Failure while loading Endpoints Manifest: %O', err)
 
         vscode.window.showErrorMessage(
-            `${localize('AWS.error.endpoint.load.failure', 'The {0} Toolkit was unable to load endpoints data.', getIdeProperties().company)} ${
+            `${localize(
+                'AWS.error.endpoint.load.failure',
+                'The {0} Toolkit was unable to load endpoints data.',
+                getIdeProperties().company
+            )} ${
                 isCloud9()
                     ? localize(
                           'AWS.error.impactedFunctionalityReset.cloud9',
