@@ -4,10 +4,7 @@
 package software.aws.toolkits.jetbrains.services.ecr
 
 import com.fasterxml.jackson.module.kotlin.jacksonObjectMapper
-import com.intellij.docker.DockerCloudConfiguration
 import com.intellij.docker.remote.run.runtime.DockerAgentBuildImageConfig
-import com.intellij.docker.remote.run.runtime.RemoteDockerApplicationRuntime
-import com.intellij.docker.remote.run.runtime.RemoteDockerRuntime
 import com.intellij.testFramework.ProjectRule
 import kotlinx.coroutines.runBlocking
 import org.assertj.core.api.Assertions.assertThat
@@ -48,7 +45,7 @@ class EcrPushIntegrationTest {
     }
 
     @Test
-    fun testPushFromImage() {
+    fun testPush() {
         val remoteTag = UUID.randomUUID().toString()
 
         val dockerfile = folder.newFile()
@@ -64,20 +61,14 @@ class EcrPushIntegrationTest {
         runBlocking {
             val serverInstance = EcrUtils.getDockerServerRuntimeInstance().runtimeInstance
             val ecrLogin = ecrClient.authorizationToken.authorizationData().first().getDockerLogin()
-            val runtime = RemoteDockerApplicationRuntime.createWithPullImage(
-                RemoteDockerRuntime.create(DockerCloudConfiguration.createDefault(), project),
+            val runtime = DelegatedRemoteDockerApplicationRuntime(
+                project,
                 DockerAgentBuildImageConfig(System.currentTimeMillis().toString(), dockerfile, false)
             )
             // gross transform because we only have the short SHA right now
             val localImageId = runtime.agent.getImages(null).first { it.imageId.startsWith("sha256:${runtime.agentApplication.imageId}") }.imageId
-            val pushRequest = ImageEcrPushRequest(
-                dockerServerRuntime = serverInstance,
-                localImageId = localImageId,
-                remoteRepo = remoteRepo,
-                remoteTag = remoteTag
-            )
-
-            EcrUtils.pushImage(projectRule.project, ecrLogin, pushRequest)
+            val config = EcrUtils.buildDockerRepositoryModel(ecrLogin, remoteRepo, remoteTag)
+            EcrUtils.pushImage(projectRule.project, localImageId, serverInstance, config)
 
             assertThat(
                 ecrClient.batchGetImage {
