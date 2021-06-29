@@ -47,6 +47,7 @@ describe('LoginManager', async function () {
             getDefaultRegion: sandbox.stub().returns('someRegion'),
             getHashCode: sandbox.stub().returns('1234'),
             canAutoConnect: sandbox.stub().returns(true),
+            isAvailable: sandbox.stub().returns(Promise.resolve(true))
         }
 
         getAccountIdStub = sandbox.stub(accountId, 'getAccountId')

@@ -3,7 +3,6 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
-import { MetadataService } from 'aws-sdk'
 import * as _ from 'lodash'
 import * as os from 'os'
 import * as path from 'path'
@@ -16,6 +15,8 @@ import { getLogger } from './logger'
 import { VSCODE_EXTENSION_ID, EXTENSION_ALPHA_VERSION } from './extensions'
 import { DefaultSettingsConfiguration } from './settingsConfiguration'
 import { BaseTemplates } from './templates/baseTemplates'
+import { Ec2MetadataClient } from './clients/ec2MetadataClient'
+import { DefaultEc2MetadataClient } from './clients/defaultEc2MetadataClient'
 
 const localize = nls.loadMessageBundle()
 
@@ -45,7 +46,11 @@ let computeRegion: string | undefined = NOT_INITIALIZED
 
 export function getIdeType(): IDE {
     const settings = new DefaultSettingsConfiguration('aws')
-    if (vscode.env.appName === CLOUD9_APPNAME || vscode.env.appName === CLOUD9_CN_APPNAME || !!settings.readSetting<boolean>('forceCloud9', false)) {
+    if (
+        vscode.env.appName === CLOUD9_APPNAME ||
+        vscode.env.appName === CLOUD9_CN_APPNAME ||
+        !!settings.readSetting<boolean>('forceCloud9', false)
+    ) {
         return IDE.cloud9
     }
 
@@ -76,7 +81,7 @@ export function getIdeProperties(): IdeProperties {
         commandPalette: localize('AWS.vscode.commandPalette', 'Command Palette'),
         codelens: localize('AWS.vscode.codelens', 'CodeLens'),
         codelenses: localize('AWS.vscode.codelenses', 'CodeLenses'),
-        company
+        company,
     }
 
     switch (getIdeType()) {
@@ -98,7 +103,7 @@ function createCloud9Properties(company: string): IdeProperties {
         commandPalette: localize('AWS.cloud9.commandPalette', 'Go to Anything Panel'),
         codelens: localize('AWS.cloud9.codelens', 'Inline Action'),
         codelenses: localize('AWS.cloud9.codelenses', 'Inline Actions'),
-        company
+        company,
     }
 }
 
@@ -207,7 +212,7 @@ export async function createQuickStartWebview(
     if (page) {
         actualPage = page
     } else if (isCloud9()) {
-        actualPage = `quickStartCloud9${ isCn() ? '-cn' : '' }.html`
+        actualPage = `quickStartCloud9${isCn() ? '-cn' : ''}.html`
     } else {
         actualPage = 'quickStartVscode.html'
     }
@@ -371,7 +376,7 @@ export function getToolkitEnvironmentDetails(): string {
     const vsCodeVersion = vscode.version
     const envDetails = localize(
         'AWS.message.toolkitInfo',
-        'OS:  {0} {1} {2}\n{3} Extension Host Version:  {4}\{5} Toolkit Version:  {6}\n',
+        'OS:  {0} {1} {2}\n{3} Extension Host Version:  {4}{5} Toolkit Version:  {6}\n',
         osType,
         osArch,
         osRelease,
@@ -387,22 +392,13 @@ export function getToolkitEnvironmentDetails(): string {
 /**
  * Returns the Cloud9 compute region or 'unknown' if we can't pull a region, or `undefined` if this is not Cloud9.
  */
- export async function initializeComputeRegion(
-    metadataService: MetadataService = new MetadataService(),
+export async function initializeComputeRegion(
+    metadata: Ec2MetadataClient = new DefaultEc2MetadataClient(),
     isC9: boolean = isCloud9()
 ): Promise<void> {
     if (isC9) {
         try {
-            const identity: { [key: string]: string; region: string } = await new Promise((resolve, reject) => {
-                // MetadataService.request() doesn't support .promise()...
-                metadataService.request('/latest/dynamic/instance-identity/document', (err, data) => {
-                    if (err) {
-                        reject(err)
-                    }
-                    resolve(JSON.parse(data))
-                })
-            })
-
+            const identity = await metadata.getInstanceIdentity()
             computeRegion = identity.region || 'unknown'
         } catch (e) {
             computeRegion = 'unknown'

@@ -5,12 +5,18 @@
 
 import * as assert from 'assert'
 
-import { AWSError, MetadataService } from 'aws-sdk'
+import { AWSError } from 'aws-sdk'
 import { writeFile, remove } from 'fs-extra'
 import * as path from 'path'
 import * as sinon from 'sinon'
+import { DefaultEc2MetadataClient } from '../../shared/clients/defaultEc2MetadataClient'
 import * as vscode from 'vscode'
-import { getComputeRegion, initializeComputeRegion, mostRecentVersionKey, pluginVersion } from '../../shared/extensionUtilities'
+import {
+    getComputeRegion,
+    initializeComputeRegion,
+    mostRecentVersionKey,
+    pluginVersion,
+} from '../../shared/extensionUtilities'
 import {
     createQuickStartWebview,
     isDifferentVersion,
@@ -19,6 +25,7 @@ import {
 } from '../../shared/extensionUtilities'
 import * as filesystemUtilities from '../../shared/filesystemUtilities'
 import { FakeExtensionContext } from '../fakeExtensionContext'
+import { InstanceIdentity } from '../../shared/clients/ec2MetadataClient'
 
 describe('extensionUtilities', function () {
     describe('safeGet', function () {
@@ -128,7 +135,7 @@ describe('extensionUtilities', function () {
 })
 
 describe('initializeComputeRegion & getComputeRegion', async function () {
-    const metadataService = new MetadataService()
+    const metadataService = new DefaultEc2MetadataClient()
 
     let sandbox: sinon.SinonSandbox
 
@@ -143,35 +150,35 @@ describe('initializeComputeRegion & getComputeRegion', async function () {
     it('throws if the region has not been set', async function () {
         // not quite a pure test: we call activate during the test load so this value will always be set
         // manually hack in the notInitialized value to trigger the error
-        sandbox.stub(metadataService, 'request').callsArgWith(1, undefined, '{"region": "notInitialized"}')
+        sandbox.stub(metadataService, 'getInstanceIdentity').resolves({ region: 'notInitialized' })
 
         await initializeComputeRegion(metadataService, true)
         assert.throws(getComputeRegion)
     })
 
     it('returns a compute region', async function () {
-        sandbox.stub(metadataService, 'request').callsArgWith(1, undefined, '{"region": "us-weast-1"}')
+        sandbox.stub(metadataService, 'getInstanceIdentity').resolves({ region: 'us-weast-1' })
 
         await initializeComputeRegion(metadataService, true)
         assert.strictEqual(getComputeRegion(), 'us-weast-1')
     })
 
     it('returns "unknown" if cloud9 and the MetadataService request fails', async function () {
-        sandbox.stub(metadataService, 'request').callsArgWith(1, {} as AWSError, 'lol')
+        sandbox.stub(metadataService, 'getInstanceIdentity').rejects({} as AWSError)
 
         await initializeComputeRegion(metadataService, true)
         assert.strictEqual(getComputeRegion(), 'unknown')
     })
 
     it('returns "unknown" if cloud9 and can not find a region', async function () {
-        sandbox.stub(metadataService, 'request').callsArgWith(1, undefined, '{"legion": "d\'honneur"}')
+        sandbox.stub(metadataService, 'getInstanceIdentity').resolves({} as InstanceIdentity)
 
         await initializeComputeRegion(metadataService, true)
         assert.strictEqual(getComputeRegion(), 'unknown')
     })
 
     it('returns undefined if not cloud9', async function () {
-        sandbox.stub(metadataService, 'request').callsArgWith(1, undefined, 'lol')
+        sandbox.stub(metadataService, 'getInstanceIdentity').callsArgWith(1, undefined, 'lol')
 
         await initializeComputeRegion(metadataService, false)
         assert.strictEqual(getComputeRegion(), undefined)
