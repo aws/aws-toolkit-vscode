@@ -10,7 +10,7 @@ import { ManagedUpload } from 'aws-sdk/lib/s3/managed_upload'
 import { FileStreams } from '../../../shared/utilities/streamUtilities'
 import { anyFunction, anything, capture, deepEqual, instance, mock, verify, when } from '../../utilities/mockito'
 import * as vscode from 'vscode'
-import { DefaultBucket, DefaultFile, DefaultFolder, DefaultS3Client } from '../../../shared/clients/S3Client'
+import { DefaultBucket, DefaultFile, DefaultFolder, DefaultS3Client } from '../../../shared/clients/s3Client'
 import { DEFAULT_DELIMITER, DEFAULT_MAX_KEYS } from '../../../shared/clients/s3Client'
 import { FakeFileStreams } from './fakeFileStreams'
 
