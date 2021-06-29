@@ -5,6 +5,10 @@
     <resource-bundle>software.aws.toolkits.resources.MessagesBundle</resource-bundle>
 
     <actions>
+        <action id="aws.toolkit.ecr.repository.pull" class="software.aws.toolkits.jetbrains.services.ecr.actions.PullFromRepositoryAction">
+            <add-to-group group-id="ecr.repository.push.group"/>
+        </action>
+
         <action id="aws.toolkit.ecr.repository.push" class="software.aws.toolkits.jetbrains.services.ecr.actions.PushToRepositoryAction">
             <add-to-group group-id="ecr.repository.push.group"/>
         </action>
