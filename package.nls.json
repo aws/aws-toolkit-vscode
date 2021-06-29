@@ -529,6 +529,7 @@
     "AWS.samcli.initWizard.template.eventBridge_helloWorld.description": "Invokes a Lambda for every EC2 instance state change in your account",
     "AWS.samcli.initWizard.template.eventBridge_starterApp.description": "Invokes a Lambda based on a dynamic event trigger for an EventBridge Schema of your choice",
     "AWS.samcli.initWizard.template.stepFunctionsSampleApp.description": "Orchestrates multiple Lambdas to execute a stock trading workflow on an hourly schedule",
+    "AWS.samcli.initWizard.template.typeScriptBackendTemplate.description": "A sample TypeScript backend app with Lambda and DynamoDB",
     "AWS.samcli.initWizard.schemas.region.prompt": "Select an EventBridge Schemas Region",
     "AWS.samcli.initWizard.schemas.registry.prompt": "Select a Registry",
     "AWS.samcli.initWizard.schemas.registry.failed_to_load_resources": "Error loading registries.",
