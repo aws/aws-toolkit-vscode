@@ -848,14 +848,19 @@ export async function updateYamlSchemasArray(
         }
     }
 
-    await config.update(
-        'schemas',
-        {
-            ...(schemas ? schemas : {}),
-            [writeTo]: newWriteArr,
-            [deleteFrom]: newDeleteArr,
-        }
-    )
+    try {
+        await config.update(
+            'schemas',
+            {
+                ...(schemas ? schemas : {}),
+                [writeTo]: newWriteArr,
+                [deleteFrom]: newDeleteArr,
+            }
+        )
+    } catch (e) {
+        getLogger().error('Could not write YAML schemas to configuration')
+    }
+    
 }
 
 /**
