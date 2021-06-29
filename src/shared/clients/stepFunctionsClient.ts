@@ -9,7 +9,6 @@ import '../utilities/asyncIteratorShim'
 import { ClassToInterface } from '../utilities/tsUtils'
 
 export type StepFunctionsClient = ClassToInterface<DefaultStepFunctionsClient>
-
 export class DefaultStepFunctionsClient {
     public constructor(public readonly regionCode: string) {}
 

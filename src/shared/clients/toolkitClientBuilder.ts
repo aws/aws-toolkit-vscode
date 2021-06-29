@@ -21,7 +21,6 @@ import { DEFAULT_PARTITION } from '../regions/regionUtilities'
 import { ClassToInterface } from '../utilities/tsUtils'
 
 export type ToolkitClientBuilder = ClassToInterface<DefaultToolkitClientBuilder>
-
 export class DefaultToolkitClientBuilder {
     public constructor(private readonly regionProvider: RegionProvider) {}
 
