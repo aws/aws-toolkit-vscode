@@ -64,7 +64,7 @@ tasks.register<JacocoReport>("coverageReport") {
     executionData(coverageDataPath.incoming.artifactView { lenient(true) }.files.filter { it.exists() })
 
     reports {
-        html.isEnabled = true
-        xml.isEnabled = true
+        html.required.set(true)
+        xml.required.set(true)
     }
 }
