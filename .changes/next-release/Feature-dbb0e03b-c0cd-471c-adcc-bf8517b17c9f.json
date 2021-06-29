@@ -1,0 +1,4 @@
+{
+	"type": "Feature",
+	"description": "credentials: support for credentials provided by EC2 instance metadata and environment variables"
+}
