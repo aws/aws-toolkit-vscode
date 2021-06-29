@@ -134,7 +134,7 @@ describe('TreeInspector', function () {
             attributes: {[CfnResourceKeys.TYPE]:'AWS::StepFunctions::LambdaFunction'},
         }
 
-        assert.strictEqual(treeInspector.isStateMachine(construct),false)
+        assert.strictEqual(treeInspector.isStateMachine(construct), false)
     })
 
     
@@ -142,10 +142,12 @@ describe('TreeInspector', function () {
         const construct: ConstructTreeEntity = {
             id: 'no',
             path: 'attributes',
-            attributes: {[CfnResourceKeys.TYPE]:'AWS::StepFunctions::StateMachine'},
+            attributes: {
+                [CfnResourceKeys.TYPE]:'AWS::StepFunctions::StateMachine'
+            },
         }
 
-        assert.strictEqual(treeInspector.isStateMachine(construct),false)
+        assert.strictEqual(treeInspector.isStateMachine(construct), false)
     })
 
 
@@ -156,6 +158,6 @@ describe('TreeInspector', function () {
             attributes: {[CfnResourceKeys.TYPE]:'AWS::StepFunctions::LambdaFunction'},
         }
 
-        assert.strictEqual(treeInspector.isStateMachine(construct),false)
+        assert.strictEqual(treeInspector.isStateMachine(construct), false)
     })
 })

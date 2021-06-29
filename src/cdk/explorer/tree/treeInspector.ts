@@ -73,9 +73,5 @@ export function getDisplayLabel(construct: ConstructTreeEntity): string {
 export function isStateMachine(construct: ConstructTreeEntity): boolean{
     const type: string = getTypeAttributeOrDefault(construct, '')
 
-    if (construct.id === 'Resource' && type==='AWS::StepFunctions::StateMachine') {
-        return true
-    }
-    
-    return false
+    return construct.id === 'Resource' && type === 'AWS::StepFunctions::StateMachine'
 }

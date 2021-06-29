@@ -66,8 +66,7 @@ export class ConstructNode extends AWSTreeNodeBase {
                 entities.push(
                     new ConstructNode(
                         this,
-                        //treeInspector.getDisplayLabel(child),
-                        treeInspector.isStateMachine(child)?treeInspector.getDisplayLabel(child)+` Visualize!` :treeInspector.getDisplayLabel(child),
+                        treeInspector.getDisplayLabel(child),
                         child.children || child.attributes
                             ? vscode.TreeItemCollapsibleState.Collapsed
                             : vscode.TreeItemCollapsibleState.None,
