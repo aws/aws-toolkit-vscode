@@ -42,4 +42,64 @@ class ExecutableCommonTest {
         assertThatThrownBy { ExecutableCommon.checkSemVerVersion(curr, min, max, name) }
             .isInstanceOf(RuntimeException::class.java).hasMessageContaining(name)
     }
+
+    @Test
+    fun checkSemVerVersionForParallelValidVersionsThrowsIfUnder() {
+        val curr = SemVer("1.0.0", 1, 0, 0)
+        val min1 = SemVer("1.0.1", 1, 0, 1)
+        val max1 = SemVer("3.0.0", 3, 0, 0)
+        val min2 = SemVer("4.0.1", 4, 0, 1)
+        val max2 = SemVer("9.9.9", 9, 9, 9)
+        val name = "Lower than minimum"
+        assertThatThrownBy {
+            ExecutableCommon.checkSemVerVersionForParallelValidVersions(
+                curr,
+                listOf(
+                    ExecutableVersionRange(min1, max1),
+                    ExecutableVersionRange(min2, max2)
+                ),
+                name
+            )
+        }.isInstanceOf(RuntimeException::class.java)
+    }
+
+    @Test
+    fun checkSemVerVersionForParallelValidVersionsThrowsIfOver() {
+        val curr = SemVer("9.0.0", 9, 0, 0)
+        val min1 = SemVer("1.0.1", 1, 0, 1)
+        val max1 = SemVer("3.0.0", 3, 0, 0)
+        val min2 = SemVer("4.0.1", 4, 0, 1)
+        val max2 = SemVer("8.8.8", 8, 8, 8)
+        val name = "Higher than maximum"
+        assertThatThrownBy {
+            ExecutableCommon.checkSemVerVersionForParallelValidVersions(
+                curr,
+                listOf(
+                    ExecutableVersionRange(min1, max1),
+                    ExecutableVersionRange(min2, max2)
+                ),
+                name
+            )
+        }.isInstanceOf(RuntimeException::class.java)
+    }
+
+    @Test
+    fun checkSemVerVersionForParallelValidVersionsThrowsIfBetweenTwoValidRanges() {
+        val curr = SemVer("4.0.0", 4, 0, 0)
+        val min1 = SemVer("1.0.1", 1, 0, 1)
+        val max1 = SemVer("3.0.0", 3, 0, 0)
+        val min2 = SemVer("4.0.1", 4, 0, 1)
+        val max2 = SemVer("8.8.8", 8, 8, 8)
+        val name = "Between two ranges"
+        assertThatThrownBy {
+            ExecutableCommon.checkSemVerVersionForParallelValidVersions(
+                curr,
+                listOf(
+                    ExecutableVersionRange(min1, max1),
+                    ExecutableVersionRange(min2, max2)
+                ),
+                name
+            )
+        }.isInstanceOf(RuntimeException::class.java)
+    }
 }

@@ -23,6 +23,7 @@ import software.aws.toolkits.core.region.AwsRegion
 import software.aws.toolkits.core.utils.getLogger
 import software.aws.toolkits.core.utils.warn
 import software.aws.toolkits.jetbrains.core.credentials.AwsConnectionManager
+import software.aws.toolkits.jetbrains.core.credentials.AwsConnectionManager.Companion.getConnectionSettings
 import software.aws.toolkits.jetbrains.core.credentials.ConnectionSettings
 import software.aws.toolkits.jetbrains.core.credentials.CredentialManager
 import software.aws.toolkits.jetbrains.core.credentials.toEnvironmentVariables
@@ -180,9 +181,6 @@ fun Project.clearResourceForCurrentConnection(resource: Resource<*>) =
  */
 fun Project.clearResourceForCurrentConnection() =
     AwsResourceCache.getInstance().clear(this.getConnectionSettings())
-
-private fun Project.getConnectionSettings(): ConnectionSettings = AwsConnectionManager.getInstance(this).connectionSettings()
-    ?: throw IllegalStateException("Bug: ResourceCache was accessed with invalid ConnectionSettings")
 
 sealed class Resource<T> {
 
