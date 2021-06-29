@@ -3,7 +3,12 @@
 
 package software.aws.toolkits.jetbrains.services.sqs
 
+import com.intellij.openapi.wm.ToolWindowManager
+import com.intellij.openapi.wm.impl.ToolWindowHeadlessManagerImpl
+import com.intellij.testFramework.DisposableRule
 import com.intellij.testFramework.ProjectRule
+import com.intellij.testFramework.replaceService
+import com.intellij.testFramework.runInEdtAndWait
 import org.assertj.core.api.Assertions.assertThat
 import org.assertj.core.api.Assertions.assertThatThrownBy
 import org.junit.Before
@@ -11,32 +16,42 @@ import org.junit.Rule
 import org.junit.Test
 import org.mockito.Mockito
 import org.mockito.kotlin.any
+import org.mockito.kotlin.doReturn
+import org.mockito.kotlin.mock
 import org.mockito.kotlin.verify
 import org.mockito.kotlin.whenever
 import software.amazon.awssdk.services.sqs.SqsClient
 import software.amazon.awssdk.services.sqs.model.DeleteQueueRequest
-import software.aws.toolkits.core.utils.test.retryableAssert
+import software.aws.toolkits.core.region.anAwsRegion
 import software.aws.toolkits.jetbrains.core.MockClientManagerRule
-import software.aws.toolkits.jetbrains.core.toolwindow.ToolkitToolWindowManager
 import software.aws.toolkits.jetbrains.services.sqs.actions.DeleteQueueAction
 import software.aws.toolkits.jetbrains.services.sqs.toolwindow.SqsWindow
 import java.util.function.Consumer
-import javax.swing.JPanel
 
 class DeleteQueueActionTest {
-    lateinit var client: SqsClient
-
     @Rule
     @JvmField
     val projectRule = ProjectRule()
 
-    @JvmField
     @Rule
+    @JvmField
     val mockClientManagerRule = MockClientManagerRule()
+
+    @Rule
+    @JvmField
+    val disposableRule = DisposableRule()
+
+    private lateinit var client: SqsClient
 
     @Before
     fun setup() {
         client = mockClientManagerRule.create()
+
+        val mockToolWindow = ToolWindowHeadlessManagerImpl.MockToolWindow(projectRule.project)
+        val mockToolWindowManager = mock<ToolWindowManager> {
+            on { getToolWindow(any()) } doReturn mockToolWindow
+        }
+        projectRule.project.replaceService(ToolWindowManager::class.java, mockToolWindowManager, disposableRule.disposable)
     }
 
     @Test
@@ -49,12 +64,12 @@ class DeleteQueueActionTest {
     @Test
     fun `Delete queue closes tool window`() {
         val mockNode = SqsQueueNode(projectRule.project, QUEUE_URL)
-        val toolWindowManager = ToolkitToolWindowManager.getInstance(projectRule.project, SqsWindow.SQS_TOOL_WINDOW).apply {
-            addTab("test1", JPanel(), activate = true, id = QUEUE_URL)
+        runInEdtAndWait {
+            SqsWindow.getInstance(projectRule.project).pollMessage(Queue(QUEUE_URL, anAwsRegion()))
         }
         DeleteQueueAction().performDelete(mockNode)
-        retryableAssert {
-            assertThat(toolWindowManager.find(QUEUE_URL)).isNull()
+        runInEdtAndWait {
+            assertThat(SqsWindow.getInstance(projectRule.project).findQueue(QUEUE_URL)).isNull()
         }
     }
 

@@ -5,6 +5,7 @@ package software.aws.toolkits.jetbrains.services.sqs.toolwindow
 
 import com.intellij.icons.AllIcons
 import com.intellij.ide.HelpTooltip
+import com.intellij.openapi.Disposable
 import com.intellij.openapi.actionSystem.ActionManager
 import com.intellij.openapi.actionSystem.ActionPlaces
 import com.intellij.openapi.actionSystem.CommonShortcuts
@@ -13,8 +14,6 @@ import com.intellij.openapi.actionSystem.Separator
 import com.intellij.openapi.project.Project
 import com.intellij.openapi.ui.SimpleToolWindowPanel
 import com.intellij.ui.PopupHandler
-import kotlinx.coroutines.CoroutineScope
-import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 import software.amazon.awssdk.services.sqs.SqsClient
@@ -26,6 +25,7 @@ import software.aws.toolkits.jetbrains.services.sqs.actions.CopyMessageAction
 import software.aws.toolkits.jetbrains.services.sqs.actions.PurgeQueueAction
 import software.aws.toolkits.jetbrains.services.sqs.approximateNumberOfMessages
 import software.aws.toolkits.jetbrains.utils.ApplicationThreadPoolScope
+import software.aws.toolkits.jetbrains.utils.getCoroutineBgContext
 import software.aws.toolkits.resources.message
 import javax.swing.JButton
 import javax.swing.JLabel
@@ -34,8 +34,12 @@ import javax.swing.JPanel
 class PollMessagePane(
     private val project: Project,
     private val client: SqsClient,
-    private val queue: Queue
-) : CoroutineScope by ApplicationThreadPoolScope("PollMessagesPane") {
+    private val queue: Queue,
+    disposable: Disposable
+) {
+    private val coroutineScope = ApplicationThreadPoolScope("PollMessagesPane", disposable)
+    private val bgContext = getCoroutineBgContext()
+
     lateinit var component: JPanel
         private set
     lateinit var messagesAvailableLabel: JLabel
@@ -63,7 +67,7 @@ class PollMessagePane(
             setDescription(message("sqs.poll.warning.text"))
             installOn(pollHelpLabel)
         }
-        launch {
+        coroutineScope.launch {
             getAvailableMessages()
         }
         addActionsToTable()
@@ -71,7 +75,7 @@ class PollMessagePane(
 
     suspend fun requestMessages() {
         try {
-            withContext(Dispatchers.IO) {
+            withContext(bgContext) {
                 val polledMessages: List<Message> = client.receiveMessage {
                     it.queueUrl(queue.queueUrl)
                     it.attributeNames(QueueAttributeName.ALL)
@@ -96,7 +100,7 @@ class PollMessagePane(
 
     suspend fun getAvailableMessages() {
         try {
-            withContext(Dispatchers.IO) {
+            withContext(bgContext) {
                 val numMessages = client.approximateNumberOfMessages(queue.queueUrl)
                 messagesAvailableLabel.text = message("sqs.messages.available.text", numMessages ?: 0)
             }
@@ -119,7 +123,7 @@ class PollMessagePane(
         )
     }
 
-    private fun poll() = launch {
+    private fun poll() = coroutineScope.launch {
         // TODO: Add debounce
         messagesTable.setBusy(busy = true)
         messagesTable.reset()
