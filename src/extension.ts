@@ -67,6 +67,8 @@ import { activate as activateSsmDocument } from './ssmDocument/activation'
 import { CredentialsStore } from './credentials/credentialsStore'
 import { getSamCliContext } from './shared/sam/cli/samCliContext'
 import * as extWindow from './shared/vscode/window'
+import { Ec2CredentialsProvider } from './credentials/providers/ec2CredentialsProvider'
+import { EnvVarsCredentialsProvider } from './credentials/providers/envVarsCredentialsProvider'
 
 let localize: nls.LocalizeFunc
 
@@ -227,11 +229,11 @@ export async function activate(context: vscode.ExtensionContext) {
         await activateS3(context)
 
         await activateEcr(context)
+        
+        await activateCloudWatchLogs(context, toolkitSettings)
 
         // Features which aren't currently functional in Cloud9
         if (!isCloud9()) {
-            await activateCloudWatchLogs(context, toolkitSettings)
-
             await activateSchemas({
                 context: extContext.extensionContext,
                 outputChannel: toolkitOutputChannel,
@@ -327,7 +329,9 @@ function initializeManifestPaths(extensionContext: vscode.ExtensionContext) {
 }
 
 function initializeCredentialsProviderManager() {
-    CredentialsProviderManager.getInstance().addProviderFactory(new SharedCredentialsProviderFactory())
+    const manager = CredentialsProviderManager.getInstance()
+    manager.addProviderFactory(new SharedCredentialsProviderFactory())
+    manager.addProviders(new Ec2CredentialsProvider(), new EnvVarsCredentialsProvider())
 }
 
 function makeEndpointsProvider(): EndpointsProvider {

@@ -165,7 +165,7 @@
                     "default": 5000,
                     "description": "%AWS.ssmDocument.ssm.maxItemsComputed.desc%"
                 },
-                "aws.cloudwatchLogs.limit": {
+                "aws.cloudWatchLogs.limit": {
                     "type": "number",
                     "default": 10000,
                     "description": "%AWS.cloudWatchLogs.limit.desc%",
@@ -697,11 +697,11 @@
                 },
                 {
                     "command": "aws.copyLogStreamName",
-                    "when": "resourceScheme == awsCloudWatchLogs && !isCloud9"
+                    "when": "resourceScheme == awsCloudWatchLogs"
                 },
                 {
                     "command": "aws.saveCurrentLogStreamContent",
-                    "when": "resourceScheme == awsCloudWatchLogs && !isCloud9"
+                    "when": "resourceScheme == awsCloudWatchLogs"
                 },
                 {
                     "command": "aws.cloudWatchLogs.viewLogStream",
@@ -784,7 +784,7 @@
                 },
                 {
                     "command": "aws.saveCurrentLogStreamContent",
-                    "when": "resourceScheme == awsCloudWatchLogs && !isCloud9",
+                    "when": "resourceScheme == awsCloudWatchLogs",
                     "group": "navigation"
                 },
                 {
@@ -796,7 +796,7 @@
             "editor/title/context": [
                 {
                     "command": "aws.copyLogStreamName",
-                    "when": "resourceScheme == awsCloudWatchLogs && !isCloud9",
+                    "when": "resourceScheme == awsCloudWatchLogs",
                     "group": "1_cutcopypaste@1"
                 }
             ],
@@ -1073,7 +1073,7 @@
                 {
                     "command": "aws.cloudWatchLogs.viewLogStream",
                     "group": "0@1",
-                    "when": "view == aws.explorer && viewItem == awsCloudWatchLogNode && !isCloud9"
+                    "when": "view == aws.explorer && viewItem == awsCloudWatchLogNode"
                 },
                 {
                     "command": "aws.ssmDocument.openLocalDocumentYaml",
