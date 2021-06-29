@@ -82,6 +82,7 @@ dependencies {
     api("software.amazon.awssdk:sns:$awsSdkVersion")
     api("software.amazon.awssdk:sqs:$awsSdkVersion")
     api("software.amazon.awssdk:apprunner:$awsSdkVersion")
+    api("software.amazon.awssdk:ec2:$awsSdkVersion")
     implementation("com.fasterxml.jackson.dataformat:jackson-dataformat-yaml:$jacksonVersion")
 
     testImplementation(project(path = ":core", configuration = "testArtifacts"))

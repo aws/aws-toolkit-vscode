@@ -179,6 +179,11 @@ private fun JTextArea.speedSearchHighlighter(speedSearchEnabledComponent: JCompo
     }
 }
 
+fun CellBuilder<JComponent>.visible(visibility: Boolean): CellBuilder<JComponent> {
+    component.isVisible = visibility
+    return this
+}
+
 class WrappingCellRenderer(
     private val wrapOnSelection: Boolean = false,
     private val wrapOnToggle: Boolean = false,
