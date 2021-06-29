@@ -1,0 +1,4 @@
+{
+	"type": "Feature",
+	"description": "Apply JSON schemas to Cloudformation and SAM templates (must be named `template.yaml`)"
+}
