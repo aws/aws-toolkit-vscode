@@ -53,7 +53,7 @@ import { execSync } from 'child_process'
 
 type CreateReason = 'unknown' | 'userCancelled' | 'fileNotFound' | 'complete' | 'error'
 
-export const SAM_INIT_TEMPLATE_FILE: string = 'template.yaml'
+export const SAM_INIT_TEMPLATE_FILES: string[] = ['template.yaml', 'template.yml']
 export const SAM_INIT_README_FILE: string = 'README.md'
 
 export async function resumeCreateNewSamApp(
@@ -202,8 +202,8 @@ export async function createNewSamApplication(
 
         await runSamCliInit(initArguments, samCliContext)
 
-        const templateUri = await getProjectUri(config, SAM_INIT_TEMPLATE_FILE)
-        const readmeUri = await getProjectUri(config, SAM_INIT_README_FILE)
+        const templateUri = await getProjectUri(config, SAM_INIT_TEMPLATE_FILES)
+        const readmeUri = await getProjectUri(config, [SAM_INIT_README_FILE])
         if (!templateUri || !readmeUri) {
             reason = 'fileNotFound'
 
@@ -352,21 +352,28 @@ async function validateSamCli(samCliValidator: SamCliValidator): Promise<void> {
 
 export async function getProjectUri(
     config: Pick<CreateNewSamAppWizardResponse, 'location' | 'name'>,
-    file: string
+    files: string[]
 ): Promise<vscode.Uri | undefined> {
-    const cfnTemplatePath = path.resolve(config.location.fsPath, config.name, file)
-    if (await fileExists(cfnTemplatePath)) {
-        return vscode.Uri.file(cfnTemplatePath)
-    } else {
-        vscode.window.showWarningMessage(
-            localize(
-                'AWS.samcli.initWizard.source.error.notFound',
-                'Project created successfully, but {0} file not found: {1}',
-                file,
-                cfnTemplatePath
-            )
-        )
+    if (files.length === 0) {
+        throw Error('expected "files" parameter to have at least one item')
     }
+    let file: string
+    let cfnTemplatePath: string
+    for (const f of files) {
+         file = f
+         cfnTemplatePath = path.resolve(config.location.fsPath, config.name, file)
+        if (await fileExists(cfnTemplatePath)) {
+            return vscode.Uri.file(cfnTemplatePath)
+        }
+    }
+    vscode.window.showWarningMessage(
+        localize(
+            'AWS.samcli.initWizard.source.error.notFound',
+            'Project created successfully, but {0} file not found: {1}',
+            file!,
+            cfnTemplatePath!
+        )
+    )
 }
 
 /**
