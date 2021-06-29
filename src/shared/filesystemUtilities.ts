@@ -8,6 +8,7 @@ import * as crypto from 'crypto'
 import * as fs from 'fs'
 import * as os from 'os'
 import * as path from 'path'
+import * as vscode from 'vscode'
 import { getLogger } from './logger'
 import * as pathutils from './utilities/pathUtils'
 
@@ -146,4 +147,17 @@ export function getNonexistentFilename(dir: string, name: string, suffix: string
             return filename
         }
     }
+}
+
+/**
+ * Searches for existence of at least one file with the passed suffix
+ * @param dir Directory to search
+ * @param suffix Suffix to look for (ex.".ts")
+ * @param exclude Pattern to ignore
+ * @returns True if at least one file is found with given suffix
+ */
+ export async function hasFileWithSuffix(dir: string, suffix: string, exclude?: vscode.GlobPattern): Promise<boolean> {
+     const searchFolder = `${dir}**/*${suffix}`
+     const matchedFiles = await vscode.workspace.findFiles(searchFolder, exclude, 1)
+     return (matchedFiles.length > 0)
 }
