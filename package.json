@@ -3,7 +3,9 @@
     "displayName": "AWS Toolkit",
     "description": "Amazon Web Services toolkit for browsing and updating cloud resources",
     "version": "1.26.0-SNAPSHOT",
-    "extensionKind": [ "workspace" ],
+    "extensionKind": [
+        "workspace"
+    ],
     "publisher": "amazonwebservices",
     "license": "Apache-2.0",
     "repository": {
@@ -76,7 +78,8 @@
         "onLanguage:yaml",
         "onCommand:aws.launchConfigForm",
         "onCommand:aws.toggleSamCodeLenses",
-        "onCommand:aws.addSamDebugConfig"
+        "onCommand:aws.addSamDebugConfig",
+        "onCommand:aws.s3.uploadFile"
     ],
     "main": "./extensionMain",
     "contributes": {
@@ -641,7 +644,7 @@
                     "when": "false"
                 },
                 {
-                    "command": "aws.importLambda",
+                    "command": "aws.downloadLambda",
                     "when": "false"
                 },
                 {
@@ -742,10 +745,6 @@
                 },
                 {
                     "command": "aws.s3.downloadFileAs",
-                    "when": "false"
-                },
-                {
-                    "command": "aws.s3.uploadFile",
                     "when": "false"
                 },
                 {
@@ -958,22 +957,22 @@
                 },
                 {
                     "command": "aws.invokeLambda",
-                    "when": "view == aws.explorer && viewItem =~ /^(awsRegionFunctionNode|awsRegionFunctionNodeImportable|awsCloudFormationFunctionNode)$/",
+                    "when": "view == aws.explorer && viewItem =~ /^(awsRegionFunctionNode|awsRegionFunctionNodeDownloadable|awsCloudFormationFunctionNode)$/",
                     "group": "0@1"
                 },
                 {
-                    "command": "aws.importLambda",
-                    "when": "view == aws.explorer && viewItem =~ /^(awsRegionFunctionNode|awsRegionFunctionNodeImportable)$/",
+                    "command": "aws.downloadLambda",
+                    "when": "view == aws.explorer && viewItem =~ /^(awsRegionFunctionNode|awsRegionFunctionNodeDownloadable)$/",
                     "group": "0@2"
                 },
                 {
                     "command": "aws.uploadLambda",
-                    "when": "view == aws.explorer && viewItem =~ /^(awsRegionFunctionNode|awsRegionFunctionNodeImportable)$/",
+                    "when": "view == aws.explorer && viewItem =~ /^(awsRegionFunctionNode|awsRegionFunctionNodeDownloadable)$/",
                     "group": "1@1"
                 },
                 {
                     "command": "aws.deleteLambda",
-                    "when": "view == aws.explorer && viewItem =~ /^(awsRegionFunctionNode|awsRegionFunctionNodeImportable)$/",
+                    "when": "view == aws.explorer && viewItem =~ /^(awsRegionFunctionNode|awsRegionFunctionNodeDownloadable)$/",
                     "group": "4@1"
                 },
                 {
@@ -1033,12 +1032,12 @@
                 },
                 {
                     "command": "aws.copyName",
-                    "when": "view == aws.explorer && viewItem =~ /^(awsRegionFunctionNode|awsRegionFunctionNodeImportable|awsCloudFormationFunctionNode|awsStateMachineNode|awsCloudFormationNode|awsS3BucketNode|awsS3FolderNode|awsS3FileNode|awsApiGatewayNode)$/",
+                    "when": "view == aws.explorer && viewItem =~ /^(awsRegionFunctionNode|awsRegionFunctionNodeDownloadable|awsCloudFormationFunctionNode|awsStateMachineNode|awsCloudFormationNode|awsS3BucketNode|awsS3FolderNode|awsS3FileNode|awsApiGatewayNode)$/",
                     "group": "2@1"
                 },
                 {
                     "command": "aws.copyArn",
-                    "when": "view == aws.explorer && viewItem =~ /^(awsRegionFunctionNode|awsRegionFunctionNodeImportable|awsCloudFormationFunctionNode|awsStateMachineNode|awsCloudFormationNode|awsCloudWatchLogNode|awsS3BucketNode|awsS3FolderNode|awsS3FileNode|awsApiGatewayNode|awsEcrRepositoryNode)$/",
+                    "when": "view == aws.explorer && viewItem =~ /^(awsRegionFunctionNode|awsRegionFunctionNodeDownloadable|awsCloudFormationFunctionNode|awsStateMachineNode|awsCloudFormationNode|awsCloudWatchLogNode|awsS3BucketNode|awsS3FolderNode|awsS3FileNode|awsApiGatewayNode|awsEcrRepositoryNode)$/",
                     "group": "2@2"
                 },
                 {
@@ -1364,10 +1363,10 @@
                 }
             },
             {
-                "command": "aws.importLambda",
-                "title": "%AWS.command.importLambda%",
+                "command": "aws.downloadLambda",
+                "title": "%AWS.command.downloadLambda%",
                 "category": "%AWS.title%",
-                "enablement": "viewItem == awsRegionFunctionNodeImportable",
+                "enablement": "viewItem == awsRegionFunctionNodeDownloadable",
                 "cloud9": {
                     "cn": {
                         "category": "%AWS.title.cn%"
@@ -1378,7 +1377,7 @@
                 "command": "aws.uploadLambda",
                 "title": "%AWS.command.uploadLambda%",
                 "category": "%AWS.title%",
-                "enablement": "viewItem =~ /^(awsRegionFunctionNode|awsRegionFunctionNodeImportable)$/",
+                "enablement": "viewItem =~ /^(awsRegionFunctionNode|awsRegionFunctionNodeDownloadable)$/",
                 "cloud9": {
                     "cn": {
                         "category": "%AWS.title.cn%"
@@ -1860,7 +1859,7 @@
         "createRelease": "ts-node ./build-scripts/createRelease.ts"
     },
     "devDependencies": {
-        "@aws-toolkits/telemetry": "0.0.94",
+        "@aws-toolkits/telemetry": "1.0.6",
         "@sinonjs/fake-timers": "^7.0.5",
         "@types/adm-zip": "^0.4.32",
         "@types/async-lock": "^1.1.0",
@@ -1961,10 +1960,5 @@
         "bracketSpacing": true,
         "arrowParens": "avoid",
         "endOfLine": "lf"
-    },
-    "husky": {
-        "hooks": {
-            "pre-commit": "(git secrets --register-aws || (echo 'Please install git-secrets https://github.com/awslabs/git-secrets to check for accidentally commited secrets!' && exit 1)) && git secrets --pre_commit_hook -- \"$@\" && pretty-quick --staged"
-        }
     }
 }

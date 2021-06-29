@@ -3,10 +3,10 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
-import { openLambdaFile } from '../../../lambda/commands/importLambda'
+import { openLambdaFile } from '../../../lambda/commands/downloadLambda'
 import * as assert from 'assert'
 
-describe('importLambda', async function () {
+describe('downloadLambda', async function () {
     describe('openLambdaFile', async function () {
         it('throws if a file does not exist', async function () {
             await assert.rejects(openLambdaFile('/asdfasdfasfdasdfasdf.js'))
