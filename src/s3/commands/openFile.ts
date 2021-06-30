@@ -5,7 +5,7 @@
 //import * as vscode from 'vscode'
 import { Window } from '../../shared/vscode/window'
 //import { localize } from '../../shared/utilities/vsCodeUtils'
-import { showErrorWithLogs, showOutputMessage } from '../../shared/utilities/messages'
+import { showErrorWithLogs } from '../../shared/utilities/messages'
 import { S3FileNode } from '../explorer/s3FileNode'
 import { FileViewerManager, SingletonManager } from '../util/FileViewerManager'
 
