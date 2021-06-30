@@ -212,6 +212,8 @@
     "AWS.explorerNode.ecr.error": "Error loading ECR resources",
     "AWS.explorerNode.ecr.noRepositories": "[No repositories found]",
     "AWS.explorerNode.ecr.noTags": "[No tags found]",
+    "AWS.explorerNode.ecs.noClusters": "[No Clusters found]",
+    "AWS.explorerNode.ecs.noServices": "[No Services found]",
     "AWS.explorerNode.lambda.error": "Error loading Lambda resources",
     "AWS.explorerNode.loadMoreChildren": "Load More...",
     "AWS.explorerNode.loadMoreChildren.error": "Error loading more resources",

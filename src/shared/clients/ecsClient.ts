@@ -8,9 +8,7 @@ import { ECS } from "aws-sdk";
 export interface EcsClient {
     readonly regionCode: string
 
-    listClusters(): Promise<ECS.ListClustersResponse>
+    listClusters(): Promise<ECS.Cluster[]>
 
-    listServices(cluster: string): AsyncIterableIterator<string>
-
-    listTaskDefinitionFamilies(): AsyncIterableIterator<string>
+    listServices(cluster: string): Promise<ECS.Service[]>
 }

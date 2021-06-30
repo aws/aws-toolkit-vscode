@@ -16,48 +16,28 @@ import { localize } from '../../shared/utilities/vsCodeUtils'
 
 
 export class EcsNode extends AWSTreeNodeBase {
-    // private readonly clustersNode: EcsClustersNode
-    //private readonly taskDefinitionsNode: EcsTaskDefinitionsNode
 
     public constructor(private readonly ecs: EcsClient
     ) {
         super('ECS', vscode.TreeItemCollapsibleState.Collapsed)
-        // this.clustersNode = new DefaultEcsClustersNode(this, this.getExtensionAbsolutePath)
-        // this.taskDefinitionsNode = new DefaultEcsTaskDefinitionsNode(this, this.getExtensionAbsolutePath)
-        // this.update()
+        this.update()
     }
 
     public async getChildren(): Promise<AWSTreeNodeBase[]> {
         return await makeChildrenNodes({
             getChildNodes: async () => {
-                const response = await this.ecs.listClusters()
-
-                if (response.clusterArns) {
-                    return response.clusterArns.map(cluster => new EcsClusterNode(cluster, this))
-                } else {
-                    const noCluster =  new EcsClusterNode('NO CLUSTERS', this)
-                    return [noCluster]
-                }
+                const clusters = await this.ecs.listClusters()
+                
+                return clusters.map(cluster => new EcsClusterNode(cluster, this, this.ecs))
             },
             getErrorNode: async (error: Error, logID: number) =>
                 new ErrorNode(this, error, logID),
             getNoChildrenPlaceholderNode: async () =>
-                new PlaceholderNode(this, localize('AWS.explorerNode.s3.noBuckets', '[No Buckets found]')),
+                new PlaceholderNode(this, localize('AWS.explorerNode.ecs.noClusters', '[No Clusters found]')),
         })
     }
 
-    // public get regionCode(): string {
-    //     return this.parent.regionCode
-    // }
-
-    // public async getChildren(): Promise<AWSTreeErrorHandlerNode[]> {
-    //     return [
-    //         this.clustersNode,
-    //         this.taskDefinitionsNode
-    //     ]
-    // }
-
-    // public update(): void {
-    //     this.tooltip = this.label
-    // }
+    public update(): void {
+        this.tooltip = this.label
+    }
 }
