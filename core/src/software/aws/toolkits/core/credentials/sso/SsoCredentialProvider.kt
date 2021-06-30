@@ -1,6 +1,8 @@
 // Copyright 2020 Amazon.com, Inc. or its affiliates. All Rights Reserved.
 // SPDX-License-Identifier: Apache-2.0
 
+@file:Suppress("BannedImports")
+
 package software.aws.toolkits.core.credentials.sso
 
 import kotlinx.coroutines.Dispatchers

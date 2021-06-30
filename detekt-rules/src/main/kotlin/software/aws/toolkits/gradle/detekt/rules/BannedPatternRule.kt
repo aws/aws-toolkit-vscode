@@ -16,7 +16,7 @@ class BannedPatternRule(private val patterns: List<BannedPattern>) : Rule() {
 
     override fun visitKtFile(file: KtFile) {
         var offset = 0
-        file.text.split("\n").forEachIndexed { line, text ->
+        file.text.split("\n").forEachIndexed { _, text ->
             patterns.forEach { pattern ->
                 val match = pattern.regex.find(text) ?: return@forEach
                 report(

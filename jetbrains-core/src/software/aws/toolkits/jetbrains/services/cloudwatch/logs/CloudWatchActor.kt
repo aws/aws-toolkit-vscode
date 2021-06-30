@@ -9,7 +9,6 @@ import com.intellij.ui.TableUtil
 import com.intellij.ui.table.TableView
 import com.intellij.util.ExceptionUtil
 import kotlinx.coroutines.CoroutineExceptionHandler
-import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.channels.Channel
 import kotlinx.coroutines.launch
@@ -30,6 +29,7 @@ import software.aws.toolkits.jetbrains.services.cloudwatch.logs.insights.LogResu
 import software.aws.toolkits.jetbrains.services.cloudwatch.logs.insights.identifier
 import software.aws.toolkits.jetbrains.services.cloudwatch.logs.insights.toLogResult
 import software.aws.toolkits.jetbrains.utils.ApplicationThreadPoolScope
+import software.aws.toolkits.jetbrains.utils.getCoroutineBgContext
 import software.aws.toolkits.jetbrains.utils.getCoroutineUiContext
 import software.aws.toolkits.jetbrains.utils.notifyError
 import software.aws.toolkits.resources.message
@@ -467,7 +467,7 @@ class InsightsQueryResultsActor(
     }
 
     // run on a separate context so we don't lock up the message listener
-    private fun startLoading() = coroutineScope.launch(Dispatchers.Default) {
+    private fun startLoading() = coroutineScope.launch(getCoroutineBgContext()) {
         tableLoading()
         val loadedQueryResults = mutableSetOf<String>()
         var response: GetQueryResultsResponse

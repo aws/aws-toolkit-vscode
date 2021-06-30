@@ -12,7 +12,6 @@ import com.intellij.openapi.project.Project
 import com.intellij.openapi.ui.DialogWrapper
 import com.intellij.ui.SimpleListCellRenderer
 import com.intellij.ui.layout.panel
-import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 import software.amazon.awssdk.services.ecr.EcrClient
@@ -26,6 +25,7 @@ import software.aws.toolkits.jetbrains.services.ecr.resources.EcrResources
 import software.aws.toolkits.jetbrains.services.ecr.resources.Repository
 import software.aws.toolkits.jetbrains.ui.ResourceSelector
 import software.aws.toolkits.jetbrains.utils.ApplicationThreadPoolScope
+import software.aws.toolkits.jetbrains.utils.getCoroutineBgContext
 import software.aws.toolkits.resources.message
 
 class PullFromRepositoryAction : EcrDockerAction() {
@@ -43,7 +43,7 @@ class PullFromRepositoryAction : EcrDockerAction() {
         val client: EcrClient = project.awsClient()
         coroutineScope.launch {
             val runtime = dockerServerRuntime.await()
-            val authData = withContext(Dispatchers.IO) {
+            val authData = withContext(getCoroutineBgContext()) {
                 client.authorizationToken.authorizationData().first()
             }
             PullFromEcrTask(project, authData.getDockerLogin(), repo, image, runtime).queue()

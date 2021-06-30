@@ -35,7 +35,6 @@ import com.intellij.ui.layout.panel
 import com.intellij.ui.layout.selected
 import com.intellij.util.text.nullize
 import kotlinx.coroutines.Deferred
-import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 import software.amazon.awssdk.core.exception.SdkException
@@ -55,6 +54,7 @@ import software.aws.toolkits.jetbrains.services.ecr.resources.Repository
 import software.aws.toolkits.jetbrains.services.ecr.toLocalImageList
 import software.aws.toolkits.jetbrains.ui.ResourceSelector
 import software.aws.toolkits.jetbrains.utils.ApplicationThreadPoolScope
+import software.aws.toolkits.jetbrains.utils.getCoroutineBgContext
 import software.aws.toolkits.jetbrains.utils.notifyError
 import software.aws.toolkits.jetbrains.utils.ui.installOnParent
 import software.aws.toolkits.jetbrains.utils.ui.selected
@@ -84,7 +84,7 @@ class PushToRepositoryAction : EcrDockerAction() {
             val pushRequest = dialog.getPushRequest()
             var result = Result.Failed
             try {
-                val authData = withContext(Dispatchers.IO) {
+                val authData = withContext(getCoroutineBgContext()) {
                     client.authorizationToken.authorizationData().first()
                 }
 

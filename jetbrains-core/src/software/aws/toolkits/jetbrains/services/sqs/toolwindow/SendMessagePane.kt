@@ -10,7 +10,6 @@ import com.intellij.openapi.ui.ComponentValidator
 import com.intellij.openapi.ui.ValidationInfo
 import com.intellij.ui.IdeBorderFactory
 import com.intellij.ui.components.JBTextArea
-import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.runBlocking
 import kotlinx.coroutines.withContext
@@ -18,6 +17,7 @@ import software.amazon.awssdk.services.sqs.SqsClient
 import software.aws.toolkits.jetbrains.services.sqs.Queue
 import software.aws.toolkits.jetbrains.services.sqs.telemetryType
 import software.aws.toolkits.jetbrains.utils.ApplicationThreadPoolScope
+import software.aws.toolkits.jetbrains.utils.getCoroutineBgContext
 import software.aws.toolkits.jetbrains.utils.getCoroutineUiContext
 import software.aws.toolkits.resources.message
 import software.aws.toolkits.telemetry.Result
@@ -88,7 +88,7 @@ class SendMessagePane(
             return
         }
         try {
-            withContext(Dispatchers.IO) {
+            withContext(getCoroutineBgContext()) {
                 val messageId = client.sendMessage {
                     it.queueUrl(queue.queueUrl)
                     it.messageBody(inputText.text)
