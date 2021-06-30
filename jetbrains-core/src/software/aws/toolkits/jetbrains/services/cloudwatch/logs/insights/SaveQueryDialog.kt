@@ -7,7 +7,6 @@ import com.intellij.openapi.project.Project
 import com.intellij.openapi.ui.DialogWrapper
 import com.intellij.openapi.ui.ValidationInfo
 import kotlinx.coroutines.CoroutineScope
-import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 import software.amazon.awssdk.services.cloudwatchlogs.CloudWatchLogsClient
@@ -18,6 +17,7 @@ import software.aws.toolkits.jetbrains.core.AwsResourceCache
 import software.aws.toolkits.jetbrains.core.credentials.ConnectionSettings
 import software.aws.toolkits.jetbrains.services.cloudwatch.logs.resources.CloudWatchResources
 import software.aws.toolkits.jetbrains.utils.ApplicationThreadPoolScope
+import software.aws.toolkits.jetbrains.utils.getCoroutineBgContext
 import software.aws.toolkits.jetbrains.utils.notifyError
 import software.aws.toolkits.jetbrains.utils.notifyInfo
 import software.aws.toolkits.resources.message
@@ -63,12 +63,12 @@ class SaveQueryDialog(
         super.doCancelAction()
     }
 
-    override fun createCenterPanel(): JComponent? = view.saveQueryPanel
+    override fun createCenterPanel(): JComponent = view.saveQueryPanel
     override fun doValidate(): ValidationInfo? = validateQueryName(view)
     override fun getOKAction(): Action = action
 
     private suspend fun getExistingQueryId(queryName: String): String? {
-        val definitions = withContext(Dispatchers.Default) {
+        val definitions = withContext(getCoroutineBgContext()) {
             resourceCache.getResourceNow(
                 CloudWatchResources.DESCRIBE_QUERY_DEFINITIONS,
                 region = connectionSettings.region,

@@ -7,12 +7,12 @@ import com.intellij.execution.configurations.GeneralCommandLine
 import com.intellij.execution.process.CapturingProcessHandler
 import com.intellij.openapi.application.runInEdt
 import com.intellij.openapi.project.Project
-import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.runBlocking
 import software.aws.toolkits.jetbrains.services.ecs.exec.SessionManagerPluginWarning
+import software.aws.toolkits.jetbrains.utils.getCoroutineBgContext
 
 object SessionManagerPluginInstallationVerification {
-    private fun checkInstallation(): Boolean = runBlocking(Dispatchers.IO) {
+    private fun checkInstallation(): Boolean = runBlocking(getCoroutineBgContext()) {
         try {
             val process = CapturingProcessHandler(GeneralCommandLine("session-manager-plugin")).runProcess()
             process.exitCode == 0

@@ -48,6 +48,16 @@ class BannedImportsRule : Rule() {
                     )
                 )
             }
+
+            if (element.importedFqName?.asString()?.contains("kotlinx.coroutines.Dispatchers") == true) {
+                report(
+                    CodeSmell(
+                        issue,
+                        Entity.from(element),
+                        message = "Use contexts from CoroutineUtils.kt instead of Dispatchers"
+                    )
+                )
+            }
         }
     }
 }

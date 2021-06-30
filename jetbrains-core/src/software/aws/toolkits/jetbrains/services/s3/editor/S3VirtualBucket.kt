@@ -9,7 +9,6 @@ import com.intellij.openapi.vfs.VirtualFile
 import com.intellij.openapi.vfs.VirtualFileManager
 import com.intellij.testFramework.LightVirtualFile
 import kotlinx.coroutines.CoroutineScope
-import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.future.await
 import kotlinx.coroutines.runBlocking
 import kotlinx.coroutines.withContext
@@ -24,6 +23,7 @@ import software.aws.toolkits.jetbrains.services.s3.download
 import software.aws.toolkits.jetbrains.services.s3.resources.S3Resources
 import software.aws.toolkits.jetbrains.services.s3.upload
 import software.aws.toolkits.jetbrains.utils.ApplicationThreadPoolScope
+import software.aws.toolkits.jetbrains.utils.getCoroutineBgContext
 import software.aws.toolkits.jetbrains.utils.getCoroutineUiContext
 import software.aws.toolkits.jetbrains.utils.notifyError
 import software.aws.toolkits.resources.message
@@ -60,45 +60,47 @@ class S3VirtualBucket(val s3Bucket: Bucket, prefix: String, val client: S3Client
     override fun hashCode(): Int = s3Bucket.name().hashCode() + prefix.hashCode()
 
     suspend fun newFolder(name: String) {
-        withContext(Dispatchers.IO) {
+        withContext(getCoroutineBgContext()) {
             client.putObject({ it.bucket(s3Bucket.name()).key(name.trimEnd('/') + "/") }, RequestBody.empty())
         }
     }
 
-    suspend fun listObjects(prefix: String, continuationToken: String?): ListObjectsV2Response = withContext(Dispatchers.IO) {
-        client.listObjectsV2 {
-            it.bucket(s3Bucket.name()).delimiter("/").prefix(prefix).maxKeys(MAX_ITEMS_TO_LOAD).continuationToken(continuationToken)
+    suspend fun listObjects(prefix: String, continuationToken: String?): ListObjectsV2Response =
+        withContext(getCoroutineBgContext()) {
+            client.listObjectsV2 {
+                it.bucket(s3Bucket.name()).delimiter("/").prefix(prefix).maxKeys(MAX_ITEMS_TO_LOAD).continuationToken(continuationToken)
+            }
         }
-    }
 
-    suspend fun listObjectVersions(key: String, keyMarker: String?, versionIdMarker: String?): ListObjectVersionsResponse? = withContext(Dispatchers.IO) {
-        client.listObjectVersions {
-            it.bucket(s3Bucket.name()).prefix(key).delimiter("/").maxKeys(MAX_ITEMS_TO_LOAD).keyMarker(keyMarker).versionIdMarker(versionIdMarker)
+    suspend fun listObjectVersions(key: String, keyMarker: String?, versionIdMarker: String?): ListObjectVersionsResponse? =
+        withContext(getCoroutineBgContext()) {
+            client.listObjectVersions {
+                it.bucket(s3Bucket.name()).prefix(key).delimiter("/").maxKeys(MAX_ITEMS_TO_LOAD).keyMarker(keyMarker).versionIdMarker(versionIdMarker)
+            }
         }
-    }
 
     suspend fun deleteObjects(keys: List<String>) {
-        withContext(Dispatchers.IO) {
+        withContext(getCoroutineBgContext()) {
             val keysToDelete = keys.map { ObjectIdentifier.builder().key(it).build() }
             client.deleteObjects { it.bucket(s3Bucket.name()).delete { del -> del.objects(keysToDelete) } }
         }
     }
 
     suspend fun renameObject(fromKey: String, toKey: String) {
-        withContext(Dispatchers.IO) {
+        withContext(getCoroutineBgContext()) {
             client.copyObject { it.copySource("${s3Bucket.name()}/$fromKey").destinationBucket(s3Bucket.name()).destinationKey(toKey) }
             client.deleteObject { it.bucket(s3Bucket.name()).key(fromKey) }
         }
     }
 
     suspend fun upload(project: Project, source: InputStream, length: Long, key: String) {
-        withContext(Dispatchers.IO) {
+        withContext(getCoroutineBgContext()) {
             client.upload(project, source, length, s3Bucket.name(), key).await()
         }
     }
 
     suspend fun download(project: Project, key: String, versionId: String? = null, output: OutputStream) {
-        withContext(Dispatchers.IO) {
+        withContext(getCoroutineBgContext()) {
             client.download(project, s3Bucket.name(), key, versionId, output).await()
         }
     }
