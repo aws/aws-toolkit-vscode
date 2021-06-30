@@ -27,11 +27,11 @@ open class SchemaRegistryNode(
     project: Project,
     val registry: RegistrySummary
 ) : AwsExplorerResourceNode<RegistrySummary>(
-        project,
-        SchemasClient.SERVICE_NAME,
-        registry,
-        AwsIcons.Resources.SCHEMA_REGISTRY
-    ),
+    project,
+    SchemasClient.SERVICE_NAME,
+    registry,
+    AwsIcons.Resources.SCHEMA_REGISTRY
+),
     ResourceParentNode {
     override fun resourceType() = "registry"
 
