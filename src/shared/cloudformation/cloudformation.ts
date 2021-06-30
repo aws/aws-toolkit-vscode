@@ -358,7 +358,7 @@ export namespace CloudFormation {
 
         const templateAsYaml: string = await filesystemUtilities.readFileAsString(filename)
         const template = yaml.load(templateAsYaml, {
-            schema: new yaml.Schema(schema),
+            schema: schema as any,
         }) as Template
         validateTemplate(template)
 
@@ -504,7 +504,9 @@ export namespace CloudFormation {
      */
     function isRef(property: unknown): boolean {
         return (
-            typeof property === 'object' && Object.keys(property!).length === 1 && Object.keys(property!).includes('Ref')
+            typeof property === 'object' &&
+            Object.keys(property!).length === 1 &&
+            Object.keys(property!).includes('Ref')
         )
     }
 
@@ -701,7 +703,7 @@ export namespace CloudFormation {
         } = {}
     ): string | number | undefined {
         if (typeof property !== 'object') {
-            return property as string | number | undefined 
+            return property as string | number | undefined
         }
         if (isRef(property)) {
             try {
