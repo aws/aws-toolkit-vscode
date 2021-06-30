@@ -16,6 +16,7 @@ export let helloWorldTemplate = 'helloWorldUninitialized'
 export let eventBridgeHelloWorldTemplate = 'eventBridgeHelloWorldUninitialized'
 export let eventBridgeStarterAppTemplate = 'eventBridgeStarterAppUnintialized'
 export let stepFunctionsSampleApp = 'stepFunctionsSampleAppUnintialized'
+export const typeScriptBackendTemplate = 'App Backend using TypeScript'
 export const repromptUserForTemplate = 'REQUIRES_AWS_CREDENTIALS_REPROMPT_USER_FOR_TEMPLATE'
 
 export const CLI_VERSION_STEP_FUNCTIONS_TEMPLATE = '0.52.0'
@@ -53,6 +54,10 @@ export function getSamTemplateWizardOption(
         templateOptions.push(stepFunctionsSampleApp)
     }
 
+    if (supportsTypeScriptBackendTemplate(runtime)) {
+        templateOptions.push(typeScriptBackendTemplate)
+    }
+
     return ImmutableSet<SamTemplate>(templateOptions)
 }
 
@@ -66,6 +71,8 @@ export function getSamCliTemplateParameter(templateSelected: SamTemplate): strin
             return 'eventBridge-schema-app'
         case stepFunctionsSampleApp:
             return 'step-functions-sample-app'
+        case typeScriptBackendTemplate:
+            return 'quick-start-typescript-app'
         default:
             throw new Error(`${templateSelected} is not valid sam template`)
     }
@@ -90,6 +97,11 @@ export function getTemplateDescription(template: SamTemplate): string {
                 'AWS.samcli.initWizard.template.stepFunctionsSampleApp.description',
                 'Orchestrates multiple Lambdas to execute a stock trading workflow on an hourly schedule'
             )
+        case typeScriptBackendTemplate:
+            return localize(
+                'AWS.samcli.initWizard.template.typeScriptBackendTemplate.description',
+                'A sample TypeScript backend app with Lambda and DynamoDB'
+            )
         default:
             throw new Error(`No description found for template ${template}`)
     }
@@ -100,4 +112,8 @@ export function supportsStepFuntionsTemplate(samCliVersion: string): boolean {
         return false
     }
     return semver.gte(samCliVersion, CLI_VERSION_STEP_FUNCTIONS_TEMPLATE)
+}
+
+export function supportsTypeScriptBackendTemplate(runtime: Runtime): boolean {
+    return runtime === 'nodejs12.x'
 }

@@ -1,13 +1,15 @@
 /*!
- * Copyright 2020 Amazon.com, Inc. or its affiliates. All Rights Reserved.
+ * Copyright 2021 Amazon.com, Inc. or its affiliates. All Rights Reserved.
  * SPDX-License-Identifier: Apache-2.0
  */
 
-import * as AWS from 'aws-sdk'
+import { Credentials, EC2MetadataCredentials } from 'aws-sdk'
+import { DefaultEc2MetadataClient } from '../../shared/clients/defaultEc2MetadataClient'
+import { Ec2MetadataClient } from '../../shared/clients/ec2MetadataClient'
+import { getLogger } from '../../shared/logger'
 import { CredentialType } from '../../shared/telemetry/telemetry.gen'
 import { getStringHash } from '../../shared/utilities/textUtilities'
-import { CredentialsProvider, CredentialsProviderType ,CredentialsId } from './credentials'
-
+import { CredentialsId, CredentialsProvider, CredentialsProviderType } from './credentials'
 
 /**
  * Credentials received from EC2 metadata service.
@@ -15,13 +17,39 @@ import { CredentialsProvider, CredentialsProviderType ,CredentialsId } from './c
  * @see CredentialsProviderType
  */
 export class Ec2CredentialsProvider implements CredentialsProvider {
-    public constructor(private token: string) {
+    private credentials: EC2MetadataCredentials | undefined
+    private region: string | undefined
+    private available: boolean | undefined
+
+    public constructor(private metadata: Ec2MetadataClient = new DefaultEc2MetadataClient()) {}
+
+    public async isAvailable(): Promise<boolean> {
+        // this check is only performed once per activation
+        if (this.available !== undefined) {
+            return Promise.resolve(this.available)
+        }
+
+        const start = Date.now()
+        try {
+            const identity = await this.metadata.getInstanceIdentity()
+            if (identity.region) {
+                this.region = identity.region
+                getLogger().verbose(`credentials: EC2 metadata region: ${this.region}`)
+            }
+            return true
+        } catch (err) {
+            getLogger().verbose(`credentials: EC2 metadata service unavailable: ${err}`)
+            return false
+        } finally {
+            const elapsed = Date.now() - start
+            getLogger().verbose(`credentials: EC2 metadata service call took ${elapsed}ms`)
+        }
     }
 
     public getCredentialsId(): CredentialsId {
         return {
             credentialSource: this.getProviderType(),
-            credentialTypeId: 'default',
+            credentialTypeId: 'instance',
         }
     }
 
@@ -37,20 +65,22 @@ export class Ec2CredentialsProvider implements CredentialsProvider {
         return 'ec2Metadata'
     }
 
-    public getHashCode(): string {
-        return getStringHash(JSON.stringify(this.token))
+    public getDefaultRegion(): string | undefined {
+        return this.region
     }
 
-    public getDefaultRegion(): string | undefined {
-        return 'us-east-1'  // TODO: get region from metadata service
+    public getHashCode(): string {
+        return getStringHash(JSON.stringify(this.credentials))
     }
 
     public canAutoConnect(): boolean {
         return true
     }
 
-    public async getCredentials(): Promise<AWS.Credentials> {
-        // TODO
-        throw Error('not implemented')
+    public async getCredentials(): Promise<Credentials> {
+        if (!this.credentials) {
+            this.credentials = new EC2MetadataCredentials()
+        }
+        return this.credentials
     }
 }

@@ -5,6 +5,7 @@
 
 import * as path from 'path'
 import * as vscode from 'vscode'
+import { readdir, writeFileSync } from 'fs-extra'
 import { isImageLambdaConfig, NodejsDebugConfiguration } from '../../../lambda/local/debugConfiguration'
 import { RuntimeFamily } from '../../../lambda/models/samLambdaRuntime'
 import * as pathutil from '../../../shared/utilities/pathUtils'
@@ -14,6 +15,8 @@ import { DefaultSamLocalInvokeCommand, WAIT_FOR_DEBUGGER_MESSAGES } from '../cli
 import { runLambdaFunction, makeInputTemplate, waitForPort } from '../localLambdaRunner'
 import { SamLaunchRequestArgs } from './awsSamDebugger'
 import { getLogger } from '../../logger'
+import { ChildProcess } from '../../../shared/utilities/childProcess'
+import { hasFileWithSuffix } from '../../../shared/filesystemUtilities'
 
 /**
  * Launches and attaches debugger to a SAM Node project.
@@ -25,7 +28,9 @@ export async function invokeTypescriptLambda(
     config.samLocalInvokeCommand = new DefaultSamLocalInvokeCommand([WAIT_FOR_DEBUGGER_MESSAGES.NODEJS])
     // eslint-disable-next-line @typescript-eslint/unbound-method
     config.onWillAttachDebugger = waitForPort
-    const c = (await runLambdaFunction(ctx, config, async () => {})) as NodejsDebugConfiguration
+
+    const onAfterBuild = () => compileTypeScript(config)
+    const c = (await runLambdaFunction(ctx, config, onAfterBuild)) as NodejsDebugConfiguration
     return c
 }
 
@@ -105,4 +110,44 @@ export async function makeTypescriptConfig(config: SamLaunchRequestArgs): Promis
     }
 
     return nodejsLaunchConfig
+}
+
+/**
+ * For non-template debug configs (target = code), compile the project
+ * using a temporary default tsconfig.json file.
+ */
+async function compileTypeScript(config: NodejsDebugConfiguration): Promise<void> {
+    if (config.invokeTarget.target === 'code') {
+        const tscResponse = await new ChildProcess(true, 'tsc', undefined, '-v').run()
+        if (tscResponse.exitCode !== 0 || !tscResponse.stdout.startsWith('Version')) {
+            throw new Error('TypeScript compiler "tsc" not found.')
+        }
+        const samBuildOutputAppRoot = path.join(config.baseBuildDir!, 'output', path.parse(config.invokeTarget.projectRoot).name)
+        const tsconfigPath = path.join(samBuildOutputAppRoot, 'tsconfig.json')
+        if ((await readdir(config.codeRoot)).includes('tsconfig.json') || (await hasFileWithSuffix(config.codeRoot, '.ts', '**/node_modules/**'))) {
+        //  This default config is a modified version from the AWS Toolkit for JetBrain's tsconfig file. https://github.com/aws/aws-toolkit-jetbrains/blob/911c54252d6a4271ee6cacf0ea1023506c4b504a/jetbrains-ultimate/src/software/aws/toolkits/jetbrains/services/lambda/nodejs/NodeJsLambdaBuilder.kt#L60
+            const defaultTsconfig = {
+                "compilerOptions": {
+                    "target": "es6",
+                    "module": "commonjs",
+                    "typeRoots": [
+                    "node_modules/@types"
+                    ],                       
+                    "types": [
+                    "node"
+                    ],
+                    "rootDir": ".",
+                    "inlineSourceMap": true,
+                }
+            }
+            try {
+                writeFileSync(tsconfigPath, JSON.stringify(defaultTsconfig, undefined, 4))
+                getLogger('channel').info('Compiling TypeScript')
+                await new ChildProcess(true, 'tsc', undefined, '--project', samBuildOutputAppRoot).run()    
+            } catch (error) {
+                getLogger('channel').error(`Compile Error: ${error}`)
+                throw Error('Failed to compile typescript Lambda')
+            }
+        }
+    }
 }

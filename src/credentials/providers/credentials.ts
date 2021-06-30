@@ -57,7 +57,7 @@ export function isEqual(idA: CredentialsId, idB: CredentialsId): boolean {
 
 /**
  * Credentials source type, broadly describes the kind of thing that supplied the credentials.
- * 
+ *
  * - "profile" is the most common, this is understood as a profile defined in
  *   `~/.aws/credentials` or something like it, which may be authenticated via
  *   static values, SSO, MFA, etc.
@@ -101,7 +101,7 @@ export interface CredentialsProvider {
      */
     getProviderType(): CredentialsProviderType
     /**
-     * Gets the credential type, for use in telemetry.  This is more granular than 
+     * Gets the credential type, for use in telemetry.  This is more granular than
      *
      * Compare getCredentialsProviderType() which is type of the _provider_.
      */
@@ -115,4 +115,8 @@ export interface CredentialsProvider {
      * should _not_ attempt to auto-connect).
      */
     canAutoConnect(): boolean
+    /**
+     * Determines if the provider is currently capable of producing credentials.
+     */
+    isAvailable(): Promise<boolean>
 }
