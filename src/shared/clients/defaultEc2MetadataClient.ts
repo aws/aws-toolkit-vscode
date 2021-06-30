@@ -3,7 +3,7 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
-import { Ec2MetadataClient, InstanceIdentity } from './ec2MetadataClient'
+import { Ec2MetadataClient, IamInfo, InstanceIdentity } from './ec2MetadataClient'
 import { MetadataService } from 'aws-sdk'
 
 export class DefaultEc2MetadataClient implements Ec2MetadataClient {
@@ -19,6 +19,18 @@ export class DefaultEc2MetadataClient implements Ec2MetadataClient {
                 }
                 const document: InstanceIdentity = JSON.parse(response)
                 resolve(document)
+            })
+        })
+    }
+
+    getIamInfo(): Promise<IamInfo> {
+        return new Promise((resolve, reject) => {
+            this.metadata.request('/latest/meta-data/iam/info', (err, response) => {
+                if (err) {
+                    reject(err)
+                }
+                const iamInfo: IamInfo = JSON.parse(response)
+                resolve(iamInfo)
             })
         })
     }

@@ -30,6 +30,7 @@ import { getRegionsForActiveCredentials } from './regions/regionUtilities'
 import { createQuickPick, promptUser } from './ui/picker'
 import { SharedCredentialsProvider } from '../credentials/providers/sharedCredentialsProvider'
 import { getIdeProperties } from './extensionUtilities'
+import * as vscode from 'vscode'
 
 export class DefaultAWSContextCommands {
     private readonly _awsContext: AwsContext
@@ -66,6 +67,7 @@ export class DefaultAWSContextCommands {
         }
 
         await this.loginManager.login({ passive: false, providerId: fromString(profileName) })
+        await vscode.commands.executeCommand('setContext', 'loggedIn', true)
     }
 
     public async onCommandCreateCredentialsProfile(): Promise<void> {
@@ -91,6 +93,7 @@ export class DefaultAWSContextCommands {
 
     public async onCommandLogout() {
         await this.loginManager.logout()
+        await vscode.commands.executeCommand('setContext', 'loggedIn', false)
     }
 
     public async onCommandShowRegion() {

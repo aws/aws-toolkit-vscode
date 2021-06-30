@@ -31,8 +31,13 @@ export class Ec2CredentialsProvider implements CredentialsProvider {
 
         const start = Date.now()
         try {
+            const iamInfo = await this.metadata.getIamInfo()
+            if (!iamInfo || iamInfo.Code !== 'Success') {
+                getLogger().warn(`credentials: missing or invalid instance role: ${iamInfo.Code}`)
+                return false
+            }
             const identity = await this.metadata.getInstanceIdentity()
-            if (identity.region) {
+            if (identity && identity.region) {
                 this.region = identity.region
                 getLogger().verbose(`credentials: EC2 metadata region: ${this.region}`)
             }
