@@ -13,7 +13,7 @@ import software.aws.toolkits.jetbrains.services.s3.editor.S3TreeObjectNode
 import java.time.Instant
 
 class ViewObjectVersionActionTest : ObjectActionTestBase() {
-    private val sut = ViewObjectVersionAction()
+    override val sut = ViewObjectVersionAction()
 
     @Test
     fun `show history is disabled on empty selection`() {

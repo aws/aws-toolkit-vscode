@@ -16,7 +16,7 @@ import software.aws.toolkits.jetbrains.services.s3.editor.S3TreeObjectVersionNod
 import java.time.Instant
 
 class RefreshTreeActionTest : ObjectActionTestBase() {
-    private val sut = RefreshTreeAction()
+    override val sut = RefreshTreeAction()
 
     @Test
     fun `refresh tree action is enabled on empty selection`() {

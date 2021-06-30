@@ -23,7 +23,7 @@ import software.aws.toolkits.jetbrains.ui.TestDialogService
 import java.time.Instant
 
 class NewFolderActionTest : ObjectActionTestBase() {
-    private val sut = NewFolderAction()
+    override val sut = NewFolderAction()
 
     @After
     fun tearDown() {
