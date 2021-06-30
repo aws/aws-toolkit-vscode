@@ -92,7 +92,7 @@ To test your changes locally, you can run the project from IntelliJ or gradle.
   ```
   - This is needed to run PyCharm and WebStorm.
   - Notice that the top-level `:runIde` target is always used with `ALTERNATIVE_IDE`.
-  - See also `alternativeIdePath` in the Gradle IntelliJ Plugin [documentation](https://github.com/JetBrains/gradle-intellij-plugin).
+  - See also `ideDirectory` option in the `runIde` and `buildSearchableOptions` tasks provided by the Gradle IntelliJ Plugin [documentation](https://github.com/JetBrains/gradle-intellij-plugin).
 - To run **integration tests**:
   ```
   ./gradlew integrationTest

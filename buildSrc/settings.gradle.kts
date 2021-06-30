@@ -1,16 +1,18 @@
 // Copyright 2021 Amazon.com, Inc. or its affiliates. All Rights Reserved.
 // SPDX-License-Identifier: Apache-2.0
 
+val codeArtifactUrl: Provider<String> = providers.environmentVariable("CODEARTIFACT_URL").forUseAtConfigurationTime()
+val codeArtifactToken: Provider<String> = providers.environmentVariable("CODEARTIFACT_AUTH_TOKEN").forUseAtConfigurationTime()
+
 dependencyResolutionManagement {
     repositories {
-        mavenLocal()
-        System.getenv("CODEARTIFACT_URL")?.let {
-            println("Using CodeArtifact proxy: $it")
+        if (codeArtifactUrl.isPresent && codeArtifactToken.isPresent) {
+            println("Using CodeArtifact proxy: ${codeArtifactUrl.get()}")
             maven {
-                url = uri(it)
+                url = uri(codeArtifactUrl.get())
                 credentials {
                     username = "aws"
-                    password = System.getenv("CODEARTIFACT_AUTH_TOKEN")
+                    password = codeArtifactToken.get()
                 }
             }
         }
