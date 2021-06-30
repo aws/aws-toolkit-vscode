@@ -347,7 +347,7 @@ export class TemplatesConfigPopulator {
         allowedTypes: jsonParser.NodeType[] = ['object', 'null']
     ) {
         const root = jsonParser.parseTree(this.json)
-        const node = jsonParser.findNodeAtLocation(root, jsonPath)
+        const node = jsonParser.findNodeAtLocation(root!, jsonPath)
         const allowedTypesSet = new Set(allowedTypes)
 
         if (node && !allowedTypesSet.has(node.type)) {
