@@ -1865,7 +1865,7 @@
         "@types/async-lock": "^1.1.0",
         "@types/bytes": "^3.1.0",
         "@types/cross-spawn": "^6.0.0",
-        "@types/fs-extra": "^8.0.1",
+        "@types/fs-extra": "^9.0.11",
         "@types/glob": "^7.1.1",
         "@types/js-yaml": "^4.0.1",
         "@types/lodash": "^4.14.136",
