@@ -23,7 +23,7 @@ import software.aws.toolkits.jetbrains.ui.TestDialogService
 import java.time.Instant
 
 class DeleteObjectActionTest : ObjectActionTestBase() {
-    private val sut = DeleteObjectAction()
+    override val sut = DeleteObjectAction()
 
     @After
     fun tearDown() {

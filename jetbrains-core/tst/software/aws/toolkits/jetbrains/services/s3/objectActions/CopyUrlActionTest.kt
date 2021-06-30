@@ -31,7 +31,7 @@ class CopyUrlActionTest : ObjectActionTestBase() {
     @JvmField
     val disposableRule = DisposableRule()
 
-    private val sut = CopyUrlAction()
+    override val sut = CopyUrlAction()
 
     @Before
     fun setUpMock() {

@@ -43,7 +43,7 @@ class UploadObjectActionTest : ObjectActionTestBase() {
     @JvmField
     val disposableRule = DisposableRule()
 
-    private val sut = UploadObjectAction()
+    override val sut = UploadObjectAction()
 
     @Test
     fun `upload object action is enabled on empty selection`() {

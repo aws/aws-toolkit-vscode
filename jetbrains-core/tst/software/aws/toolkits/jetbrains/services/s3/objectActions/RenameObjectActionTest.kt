@@ -23,7 +23,7 @@ import software.aws.toolkits.jetbrains.ui.TestDialogService
 import java.time.Instant
 
 class RenameObjectActionTest : ObjectActionTestBase() {
-    private val sut = RenameObjectAction()
+    override val sut = RenameObjectAction()
 
     @After
     fun tearDown() {

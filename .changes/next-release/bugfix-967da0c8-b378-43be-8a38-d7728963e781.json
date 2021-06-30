@@ -1,0 +1,4 @@
+{
+  "type" : "bugfix",
+  "description" : "Fix S3 bucket viewer actions being triggered by short cuts even if it is not focused"
+}
