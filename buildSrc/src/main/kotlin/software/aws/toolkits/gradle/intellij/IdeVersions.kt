@@ -4,11 +4,14 @@
 package software.aws.toolkits.gradle.intellij
 
 import org.gradle.api.Project
+import org.gradle.api.provider.Provider
+import org.gradle.api.provider.ProviderFactory
 
 object IdeVersions {
-    fun ideProfile(project: Project): Profile {
-        val profileName = resolveIdeProfileName(project)
-        return ideProfiles[profileName] ?: throw IllegalStateException("Can't find profile for $profileName")
+    fun ideProfile(project: Project): Profile = ideProfile(project.providers).get()
+
+    fun ideProfile(providers: ProviderFactory): Provider<Profile> = resolveIdeProfileName(providers).map {
+        ideProfiles[it] ?: throw IllegalStateException("Can't find profile for $it")
     }
 
     private val ideProfiles = listOf(
@@ -86,11 +89,10 @@ object IdeVersions {
         )
     ).associateBy { it.name }
 
-    private fun resolveIdeProfileName(project: Project): String = if (System.getenv()["ALTERNATIVE_IDE_PROFILE_NAME"] != null) {
-        System.getenv("ALTERNATIVE_IDE_PROFILE_NAME")
-    } else {
-        project.properties["ideProfileName"]?.toString() ?: throw IllegalStateException("No ideProfileName property set")
-    }
+    private fun resolveIdeProfileName(providers: ProviderFactory): Provider<String> =
+        providers.environmentVariable("ALTERNATIVE_IDE_PROFILE_NAME").forUseAtConfigurationTime().orElse(
+            providers.gradleProperty("ideProfileName").forUseAtConfigurationTime()
+        )
 }
 
 open class ProductProfile(
