@@ -1,4 +1,0 @@
-{
-	"type": "Bug Fix",
-	"description": "S3: improved performance in private VPC (via getBucketLocation)"
-}

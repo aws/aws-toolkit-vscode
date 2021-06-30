@@ -1,3 +1,15 @@
+## 1.26.0 2021-06-30
+
+- **Bug Fix** S3: improved performance in private VPC (via getBucketLocation)
+- **Bug Fix** Add new setting `aws.samcli.lambda.timeout` and remove `aws.samcli.debug.attach.timeout.millis` setting. The new setting sets the maximum time to wait for a local Lambda to start.
+- **Bug Fix** CloudWatch Logs: timestamps were incorrectly shown in 12 hour notation instead of 24 hour notation
+- **Bug Fix** Settings: write 'recently used buckets' setting as JSON object
+- **Feature** Renamed "Import Lambda" -> "Download Lambda" for clarity
+- **Feature** New command: `AWS: Upload current file to S3`
+- **Feature** File Explorer: "Deploy SAM Application" is available from the context-menu for template.yaml files #263
+- **Feature** SAM run/debug: support TypeScript SAM Lambda projects #1845
+- **Feature** credentials: support for credentials provided by EC2 instance metadata and environment variables
+
 ## 1.25.0 2021-05-10
 
 - **Bug Fix** Credentials: cannot access 'canAutoConnect' of undefined
