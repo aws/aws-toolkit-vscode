@@ -3,26 +3,42 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
-import { MetadataService } from 'aws-sdk'
 import { ClassToInterface } from '../utilities/tsUtils'
+import { MetadataService } from 'aws-sdk'
+
+export interface IamInfo {
+    Code: string
+    LastUpdated: string
+    InstanceProfileArn: string
+    InstanceProfileId: string
+}
+
 export interface InstanceIdentity {
     region: string
 }
 
 export type Ec2MetadataClient = ClassToInterface<DefaultEc2MetadataClient>
-export class DefaultEc2MetadataClient implements Ec2MetadataClient {
+export class DefaultEc2MetadataClient {
     private static readonly METADATA_SERVICE_TIMEOUT: number = 500
 
     public constructor(private metadata: MetadataService = DefaultEc2MetadataClient.getMetadataService()) {}
 
     getInstanceIdentity(): Promise<InstanceIdentity> {
+        return this.invoke<InstanceIdentity>('/latest/dynamic/instance-identity/document')
+    }
+
+    getIamInfo(): Promise<IamInfo> {
+        return this.invoke<IamInfo>('/latest/meta-data/iam/info')
+    }
+
+    private invoke<T>(path: string): Promise<T> {
         return new Promise((resolve, reject) => {
-            this.metadata.request('/latest/dynamic/instance-identity/document', (err, response) => {
+            this.metadata.request(path, (err, response) => {
                 if (err) {
                     reject(err)
                 }
-                const document: InstanceIdentity = JSON.parse(response)
-                resolve(document)
+                const jsonResponse: T = JSON.parse(response)
+                resolve(jsonResponse)
             })
         })
     }

@@ -1,4 +1,0 @@
-{
-	"type": "Bug Fix",
-	"description": "Settings: write 'recently used buckets' setting as JSON object"
-}
