@@ -50,6 +50,8 @@ configurations {
     runtimeClasspath {
         // Exclude dependencies that ship with iDE
         exclude(group = "org.slf4j")
+        exclude(group = "org.jetbrains.kotlin")
+        exclude(group = "org.jetbrains.kotlinx")
 
         // Exclude dependencies we don't use to make plugin smaller
         exclude(group = "software.amazon.awssdk", module = "netty-nio-client")
