@@ -33,7 +33,7 @@ export class Ec2CredentialsProvider implements CredentialsProvider {
         try {
             const iamInfo = await this.metadata.getIamInfo()
             if (!iamInfo || iamInfo.Code !== 'Success') {
-                getLogger().warn(`credentials: missing or invalid instance role: ${iamInfo.Code}`)
+                getLogger().warn(`credentials: no role (or invalid) attached to EC2 instance. metadata service /iam/info response: ${iamInfo.Code}`)
                 return false
             }
             const identity = await this.metadata.getInstanceIdentity()
