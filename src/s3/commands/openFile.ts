@@ -1,5 +1,7 @@
-/* eslint-disable header/header */
-//TODOD:: what is the header?
+/*!
+ * Copyright 2020 Amazon.com, Inc. or its affiliates. All Rights Reserved.
+ * SPDX-License-Identifier: Apache-2.0
+ */
 //TODOD:: change feature icon on package.json
 
 //import * as vscode from 'vscode'
@@ -7,7 +9,7 @@ import { Window } from '../../shared/vscode/window'
 //import { localize } from '../../shared/utilities/vsCodeUtils'
 //import { showErrorWithLogs } from '../../shared/utilities/messages'
 import { S3FileNode } from '../explorer/s3FileNode'
-import { FileViewerManager, SingletonManager } from '../util/FileViewerManager'
+import { FileViewerManager, SingletonManager } from '../util/fileViewerManager'
 
 let manager: FileViewerManager
 

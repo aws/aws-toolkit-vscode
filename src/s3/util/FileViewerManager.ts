@@ -1,9 +1,12 @@
-/* eslint-disable header/header */
+/*!
+ * Copyright 2020 Amazon.com, Inc. or its affiliates. All Rights Reserved.
+ * SPDX-License-Identifier: Apache-2.0
+ */
+
 import { ext } from '../../shared/extensionGlobals'
 import { S3FileNode } from '../explorer/s3FileNode'
 import { Window } from '../../shared/vscode/window'
 import { showOutputMessage } from '../../shared/utilities/messages'
-
 export class FileViewerManager {
     //private cache: Set<S3FileNode>
     //private activeTabs: Set<S3Tab>
