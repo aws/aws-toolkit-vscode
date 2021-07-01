@@ -900,12 +900,12 @@
                     "group": "inline@1"
                 },
                 {
-                    "command": "aws.s3.downloadFileAs",
+                    "command": "aws.s3.openFile",
                     "when": "view == aws.explorer && viewItem == awsS3FileNode",
                     "group": "inline@1"
                 },
                 {
-                    "command": "aws.s3.openFile",
+                    "command": "aws.s3.downloadFileAs",
                     "when": "view == aws.explorer && viewItem == awsS3FileNode",
                     "group": "inline@2"
                 },
@@ -1303,7 +1303,7 @@
                 "command": "aws.s3.openFile",
                 "title": "%AWS.command.s3.openFile%",
                 "category": "%AWS.title%",
-                "icon": "$(cloud-download)",
+                "icon": "$(open-preview)",
                 "cloud9": {
                     "cn": {
                         "category": "%AWS.title.cn%"
