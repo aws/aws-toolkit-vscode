@@ -10,7 +10,7 @@ describe('FileViewerManager', function () {
     //TODOD:: Not big enought to test yet
 })
 
-describe.only('SingletonManager.getInstance()', function () {
+describe('SingletonManager.getInstance()', function () {
     it('creates a new instance the first time it is used', function () {
         assert.strictEqual(SingletonManager.fileManager, undefined)
         const firstTime = SingletonManager.getInstance()
