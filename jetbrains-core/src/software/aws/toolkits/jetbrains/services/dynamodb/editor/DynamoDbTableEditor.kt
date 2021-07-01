@@ -17,8 +17,8 @@ import kotlinx.coroutines.withContext
 import software.amazon.awssdk.services.dynamodb.model.ExecuteStatementRequest
 import software.amazon.awssdk.services.dynamodb.model.KeySchemaElement
 import software.amazon.awssdk.services.dynamodb.model.KeyType
+import software.aws.toolkits.core.utils.debug
 import software.aws.toolkits.core.utils.getLogger
-import software.aws.toolkits.core.utils.info
 import software.aws.toolkits.jetbrains.services.dynamodb.DynamoDbUtils.executeStatementPaginator
 import software.aws.toolkits.jetbrains.services.dynamodb.Index
 import software.aws.toolkits.jetbrains.services.dynamodb.toAttribute
@@ -115,7 +115,7 @@ class DynamoDbTableEditor(private val dynamoTable: DynamoDbVirtualFile) : UserDa
             val (index, partiqlStatement) = searchPanel.getSearchQuery()
 
             withContext(bg) {
-                LOG.info { "Querying Dynamo with '$partiqlStatement'" }
+                LOG.debug { "Querying Dynamo with '$partiqlStatement'" }
 
                 val request = ExecuteStatementRequest.builder().statement(partiqlStatement).build()
                 try {
