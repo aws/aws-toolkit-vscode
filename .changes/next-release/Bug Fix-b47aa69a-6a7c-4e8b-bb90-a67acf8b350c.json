@@ -1,0 +1,4 @@
+{
+	"type": "Bug Fix",
+	"description": "Credentials: Validate attached IAM role when deciding if EC2 instance credentials are available"
+}
