@@ -25,6 +25,8 @@ import { DefaultAwsContext } from '../shared/defaultAwsContext'
  * Activates S3 components.
  */
 export async function activate(extensionContext: vscode.ExtensionContext): Promise<void> {
+    ext.fileViewerManager = new FileViewerManager()
+    await ext.fileViewerManager.createTemp()
     extensionContext.subscriptions.push(
         vscode.commands.registerCommand('aws.s3.copyPath', async (node: S3FolderNode | S3FileNode) => {
             await copyPathCommand(node)
