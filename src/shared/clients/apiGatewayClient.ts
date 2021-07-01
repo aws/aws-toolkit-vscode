@@ -7,9 +7,9 @@ import { APIGateway } from 'aws-sdk'
 import { ext } from '../extensionGlobals'
 import '../utilities/asyncIteratorShim'
 import { RestApi, Stages } from 'aws-sdk/clients/apigateway'
-import { ClassToInterface } from '../utilities/tsUtils'
+import { ClassToInterfaceType } from '../utilities/tsUtils'
 
-export type ApiGatewayClient = ClassToInterface<DefaultApiGatewayClient>
+export type ApiGatewayClient = ClassToInterfaceType<DefaultApiGatewayClient>
 export class DefaultApiGatewayClient {
     public constructor(public readonly regionCode: string) {}
 

@@ -6,9 +6,9 @@
 import { CloudFormation } from 'aws-sdk'
 import { ext } from '../extensionGlobals'
 import '../utilities/asyncIteratorShim'
-import { ClassToInterface } from '../utilities/tsUtils'
+import { ClassToInterfaceType } from '../utilities/tsUtils'
 
-export type CloudFormationClient = ClassToInterface<DefaultCloudFormationClient>
+export type CloudFormationClient = ClassToInterfaceType<DefaultCloudFormationClient>
 export class DefaultCloudFormationClient {
     public constructor(public readonly regionCode: string) {}
 

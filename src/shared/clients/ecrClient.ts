@@ -5,14 +5,14 @@
 
 import { ECR } from 'aws-sdk'
 import { ext } from '../extensionGlobals'
-import { ClassToInterface } from '../utilities/tsUtils'
+import { ClassToInterfaceType } from '../utilities/tsUtils'
 export interface EcrRepository {
     repositoryName: string
     repositoryArn: string
     repositoryUri: string
 }
 
-export type EcrClient = ClassToInterface<DefaultEcrClient>
+export type EcrClient = ClassToInterfaceType<DefaultEcrClient>
 export class DefaultEcrClient {
     public constructor(public readonly regionCode: string) {}
 

@@ -5,9 +5,9 @@
 
 import { ECS } from 'aws-sdk'
 import { ext } from '../extensionGlobals'
-import { ClassToInterface } from '../utilities/tsUtils'
+import { ClassToInterfaceType } from '../utilities/tsUtils'
 
-export type EcsClient = ClassToInterface<DefaultEcsClient>
+export type EcsClient = ClassToInterfaceType<DefaultEcsClient>
 export class DefaultEcsClient {
     public constructor(public readonly regionCode: string) {}
 

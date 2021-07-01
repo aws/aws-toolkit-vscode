@@ -6,9 +6,9 @@
 import { StepFunctions } from 'aws-sdk'
 import { ext } from '../extensionGlobals'
 import '../utilities/asyncIteratorShim'
-import { ClassToInterface } from '../utilities/tsUtils'
+import { ClassToInterfaceType } from '../utilities/tsUtils'
 
-export type StepFunctionsClient = ClassToInterface<DefaultStepFunctionsClient>
+export type StepFunctionsClient = ClassToInterfaceType<DefaultStepFunctionsClient>
 export class DefaultStepFunctionsClient {
     public constructor(public readonly regionCode: string) {}
 

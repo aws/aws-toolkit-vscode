@@ -5,9 +5,9 @@
 
 import { IAM } from 'aws-sdk'
 import { ext } from '../extensionGlobals'
-import { ClassToInterface } from '../utilities/tsUtils'
+import { ClassToInterfaceType } from '../utilities/tsUtils'
 
-export type IamClient = ClassToInterface<DefaultIamClient>
+export type IamClient = ClassToInterfaceType<DefaultIamClient>
 export class DefaultIamClient {
     public constructor(public readonly regionCode: string) {}
 

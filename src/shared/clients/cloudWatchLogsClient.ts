@@ -5,9 +5,9 @@
 
 import { CloudWatchLogs } from 'aws-sdk'
 import { ext } from '../extensionGlobals'
-import { ClassToInterface } from '../utilities/tsUtils'
+import { ClassToInterfaceType } from '../utilities/tsUtils'
 
-export type CloudWatchLogsClient = ClassToInterface<DefaultCloudWatchLogsClient>
+export type CloudWatchLogsClient = ClassToInterfaceType<DefaultCloudWatchLogsClient>
 export class DefaultCloudWatchLogsClient {
     public constructor(public readonly regionCode: string) {}
 

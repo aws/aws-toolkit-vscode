@@ -18,9 +18,9 @@ import { DefaultSsmDocumentClient, SsmDocumentClient } from './ssmDocumentClient
 import { DefaultS3Client, S3Client } from './s3Client'
 import { RegionProvider } from '../regions/regionProvider'
 import { DEFAULT_PARTITION } from '../regions/regionUtilities'
-import { ClassToInterface } from '../utilities/tsUtils'
+import { ClassToInterfaceType } from '../utilities/tsUtils'
 
-export type ToolkitClientBuilder = ClassToInterface<DefaultToolkitClientBuilder>
+export type ToolkitClientBuilder = ClassToInterfaceType<DefaultToolkitClientBuilder>
 export class DefaultToolkitClientBuilder {
     public constructor(private readonly regionProvider: RegionProvider) {}
 

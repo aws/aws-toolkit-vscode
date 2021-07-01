@@ -6,9 +6,9 @@
 import { STS } from 'aws-sdk'
 import { ServiceConfigurationOptions } from 'aws-sdk/lib/service'
 import { ext } from '../extensionGlobals'
-import { ClassToInterface } from '../utilities/tsUtils'
+import { ClassToInterfaceType } from '../utilities/tsUtils'
 
-export type StsClient = ClassToInterface<DefaultStsClient>
+export type StsClient = ClassToInterfaceType<DefaultStsClient>
 export class DefaultStsClient {
     public constructor(
         public readonly regionCode: string,

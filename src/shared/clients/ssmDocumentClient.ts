@@ -7,9 +7,9 @@ import { SSM } from 'aws-sdk'
 
 import { ext } from '../extensionGlobals'
 import '../utilities/asyncIteratorShim'
-import { ClassToInterface } from '../utilities/tsUtils'
+import { ClassToInterfaceType } from '../utilities/tsUtils'
 
-export type SsmDocumentClient = ClassToInterface<DefaultSsmDocumentClient>
+export type SsmDocumentClient = ClassToInterfaceType<DefaultSsmDocumentClient>
 export class DefaultSsmDocumentClient {
     public constructor(public readonly regionCode: string) {}
 

@@ -3,7 +3,7 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
-import { ClassToInterface } from '../utilities/tsUtils'
+import { ClassToInterfaceType } from '../utilities/tsUtils'
 import { MetadataService } from 'aws-sdk'
 
 export interface IamInfo {
@@ -17,7 +17,7 @@ export interface InstanceIdentity {
     region: string
 }
 
-export type Ec2MetadataClient = ClassToInterface<DefaultEc2MetadataClient>
+export type Ec2MetadataClient = ClassToInterfaceType<DefaultEc2MetadataClient>
 export class DefaultEc2MetadataClient {
     private static readonly METADATA_SERVICE_TIMEOUT: number = 500
 

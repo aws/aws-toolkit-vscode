@@ -7,9 +7,9 @@ import { Schemas } from 'aws-sdk'
 
 import { ext } from '../extensionGlobals'
 import '../utilities/asyncIteratorShim'
-import { ClassToInterface } from '../utilities/tsUtils'
+import { ClassToInterfaceType } from '../utilities/tsUtils'
 
-export type SchemaClient = ClassToInterface<DefaultSchemaClient>
+export type SchemaClient = ClassToInterfaceType<DefaultSchemaClient>
 export class DefaultSchemaClient {
     public constructor(public readonly regionCode: string) {}
 
