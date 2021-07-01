@@ -1,4 +1,0 @@
-{
-	"type": "Bug Fix",
-	"description": "SAM: fixed issue with downloading deployed lambdas"
-}

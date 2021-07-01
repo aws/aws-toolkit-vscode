@@ -1,0 +1,14 @@
+{
+	"date": "2021-07-01",
+	"version": "1.27.0",
+	"entries": [
+		{
+			"type": "Bug Fix",
+			"description": "SAM: fixed issue with downloading deployed lambdas"
+		},
+		{
+			"type": "Bug Fix",
+			"description": "Credentials: Validate attached IAM role when deciding if EC2 instance credentials are available"
+		}
+	]
+}
