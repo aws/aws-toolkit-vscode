@@ -12,25 +12,21 @@ export class DefaultEc2MetadataClient implements Ec2MetadataClient {
     public constructor(private metadata: MetadataService = DefaultEc2MetadataClient.getMetadataService()) {}
 
     getInstanceIdentity(): Promise<InstanceIdentity> {
-        return new Promise((resolve, reject) => {
-            this.metadata.request('/latest/dynamic/instance-identity/document', (err, response) => {
-                if (err) {
-                    reject(err)
-                }
-                const document: InstanceIdentity = JSON.parse(response)
-                resolve(document)
-            })
-        })
+        return this.invoke<InstanceIdentity>('/latest/dynamic/instance-identity/document')
     }
 
     getIamInfo(): Promise<IamInfo> {
+        return this.invoke<IamInfo>('/latest/meta-data/iam/info')
+    }
+
+    private invoke<T>(path: string): Promise<T> {
         return new Promise((resolve, reject) => {
-            this.metadata.request('/latest/meta-data/iam/info', (err, response) => {
+            this.metadata.request(path, (err, response) => {
                 if (err) {
                     reject(err)
                 }
-                const iamInfo: IamInfo = JSON.parse(response)
-                resolve(iamInfo)
+                const jsonResponse: T = JSON.parse(response)
+                resolve(jsonResponse)
             })
         })
     }

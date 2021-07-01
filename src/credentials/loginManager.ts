@@ -11,7 +11,6 @@ import { CredentialsStore } from './credentialsStore'
 import { notifyUserInvalidCredentials } from './credentialsUtilities'
 import { asString, CredentialsProvider, CredentialsId } from './providers/credentials'
 import { CredentialsProviderManager } from './providers/credentialsProviderManager'
-import * as vscode from 'vscode'
 
 export class LoginManager {
     private readonly defaultCredentialsRegion = 'us-east-1'
@@ -56,7 +55,6 @@ export class LoginManager {
                 accountId: accountId,
                 defaultRegion: provider.getDefaultRegion(),
             })
-            await vscode.commands.executeCommand('setContext', 'aws.loggedIn', true)
 
             return true
         } catch (err) {
@@ -90,6 +88,5 @@ export class LoginManager {
      */
     public async logout(): Promise<void> {
         await this.awsContext.setCredentials(undefined)
-        await vscode.commands.executeCommand('setContext', 'aws.loggedIn', false)
     }
 }
