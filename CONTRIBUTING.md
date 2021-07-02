@@ -1,5 +1,3 @@
-<!-- markdownlint-disable MD040 MD046 -->
-
 # Contributing Guidelines
 
 Thank you for your interest in contributing to our project. We greatly value
@@ -145,15 +143,15 @@ To run a single test in VSCode, do any one of:
 
     -   Unix/macOS/POSIX shell:
 
-            ```
-            NO_COVERAGE=true TEST_FILE=src/test/foo.test npm run test
-            ```
+        ```
+        NO_COVERAGE=true TEST_FILE=src/test/foo.test npm run test
+        ```
 
     -   Powershell:
 
-            ```
-            $Env:NO_COVERAGE = "true"; $Env:TEST_FILE = "src/test/foo.test"; npm run test
-            ```
+        ```
+        $Env:NO_COVERAGE = "true"; $Env:TEST_FILE = "src/test/foo.test"; npm run test
+        ```
 
 -   To run all tests in a particular subdirectory, you can edit
     `src/test/index.ts:rootTestsPath` to point to a subdirectory:

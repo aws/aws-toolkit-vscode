@@ -1,0 +1,8 @@
+{
+    "ul-indent": false,
+    "list-marker-space": false,
+    "line-length": false,
+    "fenced-code-language": false,
+    "code-block-style": false,
+    "no-inline-html": false
+}
