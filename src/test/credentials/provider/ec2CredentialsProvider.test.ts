@@ -5,14 +5,14 @@
 
 import * as assert from 'assert'
 import { EC2MetadataCredentials } from 'aws-sdk'
-import { Ec2MetadataClient, InstanceIdentity } from '../../../shared/clients/ec2MetadataClient'
+import { Ec2MetadataClient, IamInfo, InstanceIdentity } from '../../../shared/clients/ec2MetadataClient'
 import { Ec2CredentialsProvider } from '../../../credentials/providers/ec2CredentialsProvider'
-import { instance, mock, when } from '../../utilities/mockito'
+import { instance, mock, verify, when } from '../../utilities/mockito'
 
 describe('Ec2CredentialsProvider', function () {
     const dummyRegion = 'dummmyRegion'
 
-    const mockResponse = {
+    const mockIdentity = {
         region: dummyRegion,
     } as InstanceIdentity
 
@@ -24,11 +24,19 @@ describe('Ec2CredentialsProvider', function () {
         credentialsProvider = new Ec2CredentialsProvider(instance(mockMetadata))
     })
 
-    it('should be valid if EC2 metadata service resolves', async function () {
+    it('should be valid if EC2 metadata service resolves valid IAM status', async function () {
         mockClient({
-            response: mockResponse,
+            identity: {} as InstanceIdentity,
+            validIam: true,
         })
         assert.strictEqual(await credentialsProvider.isAvailable(), true)
+    })
+
+    it('should be invalid if EC2 metadata resolves invalid IAM status', async function () {
+        mockClient({
+            validIam: false,
+        })
+        assert.strictEqual(await credentialsProvider.isAvailable(), false)
     })
 
     it('should be invalid if EC2 metadata service fails to resolve', async function () {
@@ -38,19 +46,22 @@ describe('Ec2CredentialsProvider', function () {
         assert.strictEqual(await credentialsProvider.isAvailable(), false)
     })
 
-    it('should throw exception for valid check when uninitialized', async function () {
+    it('should only validate once per instance', async function () {
         mockClient({
-            response: mockResponse,
+            identity: mockIdentity,
+            validIam: true,
         })
         try {
-            credentialsProvider.isAvailable()
-            assert.fail('expected exception')
+            await credentialsProvider.isAvailable()
+            await credentialsProvider.isAvailable()
+            verify(mockMetadata.getIamInfo()).once()
         } catch (err) {}
     })
 
-    it('should return EC2 retrieved region', async function () {
+    it('should return EC2 retrieved region if available', async function () {
         mockClient({
-            response: mockResponse,
+            identity: mockIdentity,
+            validIam: true,
         })
 
         await credentialsProvider.isAvailable()
@@ -59,7 +70,8 @@ describe('Ec2CredentialsProvider', function () {
 
     it('should return undefined region when not available', async function () {
         mockClient({
-            response: {} as InstanceIdentity,
+            identity: {} as InstanceIdentity,
+            validIam: true,
         })
 
         await credentialsProvider.isAvailable()
@@ -71,11 +83,16 @@ describe('Ec2CredentialsProvider', function () {
         assert(credentials instanceof EC2MetadataCredentials)
     })
 
-    function mockClient(opts: { fail?: boolean; response?: InstanceIdentity }) {
+    function mockClient(opts: { fail?: boolean; identity?: InstanceIdentity; validIam?: boolean }) {
         if (opts.fail) {
             when(mockMetadata.getInstanceIdentity()).thenReject(new Error('foo'))
-        } else if (opts.response) {
-            when(mockMetadata.getInstanceIdentity()).thenResolve(opts.response)
+        } else if (opts.identity) {
+            when(mockMetadata.getInstanceIdentity()).thenResolve(opts.identity)
         }
+
+        const mockIamInfo = {
+            Code: opts.validIam ? 'Success' : 'Failure',
+        } as IamInfo
+        when(mockMetadata.getIamInfo()).thenResolve(mockIamInfo)
     }
 })

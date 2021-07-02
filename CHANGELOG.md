@@ -1,3 +1,8 @@
+## 1.27.0 2021-07-01
+
+- **Bug Fix** SAM: fixed issue with downloading deployed lambdas
+- **Bug Fix** Credentials: Validate attached IAM role when deciding if EC2 instance credentials are available
+
 ## 1.26.0 2021-06-30
 
 - **Bug Fix** S3: improved performance in private VPC (via getBucketLocation)
