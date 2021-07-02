@@ -265,7 +265,7 @@ requests just from the model/types.
 
     ...
 
-    const c = await ext.sdkClientBuilder.createAndConfigureServiceClient(
+    const c = await ext.sdkClientBuilder.createAwsService(
         opts => new Service(opts),
         {
             apiConfig: apiConfig,
