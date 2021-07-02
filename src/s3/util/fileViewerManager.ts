@@ -15,7 +15,7 @@ const fs = require('fs')
 
 const SIZE_LIMIT = 4 * Math.pow(10, 4)
 
-export class FileViewerManager {
+export class S3FileViewerManager {
     private cache: Set<S3FileNode>
     //private activeTabs: Set<S3Tab>
     private window: Window
@@ -27,6 +27,7 @@ export class FileViewerManager {
         //this.activeTabs = new Set<S3Tab>()
         this.window = window
         this.outputChannel = outputChannel
+        //this.createTemp()
         showOutputMessage('initializing manager', outputChannel)
     }
 
@@ -91,13 +92,13 @@ export class FileViewerManager {
 }
 
 export class SingletonManager {
-    static fileManager: FileViewerManager | undefined
+    static fileManager: S3FileViewerManager | undefined
 
     private constructor() {}
 
-    public static async getInstance(): Promise<FileViewerManager> {
+    public static async getInstance(): Promise<S3FileViewerManager> {
         if (!SingletonManager.fileManager) {
-            SingletonManager.fileManager = new FileViewerManager()
+            SingletonManager.fileManager = new S3FileViewerManager()
             await SingletonManager.fileManager.createTemp()
         }
         return SingletonManager.fileManager

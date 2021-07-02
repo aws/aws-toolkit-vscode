@@ -360,8 +360,8 @@ export async function getProjectUri(
     let file: string
     let cfnTemplatePath: string
     for (const f of files) {
-         file = f
-         cfnTemplatePath = path.resolve(config.location.fsPath, config.name, file)
+        file = f
+        cfnTemplatePath = path.resolve(config.location.fsPath, config.name, file)
         if (await fileExists(cfnTemplatePath)) {
             return vscode.Uri.file(cfnTemplatePath)
         }

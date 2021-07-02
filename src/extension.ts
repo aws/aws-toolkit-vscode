@@ -19,7 +19,7 @@ import { activate as activateSchemas } from './eventSchemas/activation'
 import { activate as activateLambda } from './lambda/activation'
 import { DefaultAWSClientBuilder } from './shared/awsClientBuilder'
 import { AwsContextTreeCollection } from './shared/awsContextTreeCollection'
-import { DefaultToolkitClientBuilder } from './shared/clients/defaultToolkitClientBuilder'
+import { DefaultToolkitClientBuilder } from './shared/clients/toolkitClientBuilder'
 import { activate as activateCloudFormationTemplateRegistry } from './shared/cloudformation/activation'
 import {
     documentationUrl,
@@ -226,10 +226,10 @@ export async function activate(context: vscode.ExtensionContext) {
 
         await activateSam(extContext)
 
-        await activateS3(context)
+        await activateS3(extContext)
 
         await activateEcr(context)
-        
+
         await activateCloudWatchLogs(context, toolkitSettings)
 
         // Features which aren't currently functional in Cloud9

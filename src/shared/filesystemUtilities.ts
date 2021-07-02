@@ -139,9 +139,8 @@ export function getNonexistentFilename(dir: string, name: string, suffix: string
         throw new Error(`directory does not exist: ${dir}`)
     }
     for (let i = 0; true; i++) {
-        const filename = i == 0
-            ? `${name}${suffix}`
-            : `${name}-${i < max ? i : crypto.randomBytes(4).toString('hex')}${suffix}`
+        const filename =
+            i == 0 ? `${name}${suffix}` : `${name}-${i < max ? i : crypto.randomBytes(4).toString('hex')}${suffix}`
         const fullpath = path.join(dir, filename)
         if (!fs.existsSync(fullpath) || i >= max + 99) {
             return filename
@@ -156,8 +155,8 @@ export function getNonexistentFilename(dir: string, name: string, suffix: string
  * @param exclude Pattern to ignore
  * @returns True if at least one file is found with given suffix
  */
- export async function hasFileWithSuffix(dir: string, suffix: string, exclude?: vscode.GlobPattern): Promise<boolean> {
-     const searchFolder = `${dir}**/*${suffix}`
-     const matchedFiles = await vscode.workspace.findFiles(searchFolder, exclude, 1)
-     return (matchedFiles.length > 0)
+export async function hasFileWithSuffix(dir: string, suffix: string, exclude?: vscode.GlobPattern): Promise<boolean> {
+    const searchFolder = `${dir}**/*${suffix}`
+    const matchedFiles = await vscode.workspace.findFiles(searchFolder, exclude, 1)
+    return matchedFiles.length > 0
 }
