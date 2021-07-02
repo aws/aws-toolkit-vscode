@@ -13,7 +13,7 @@ import { FakeExtensionContext } from '../../fakeExtensionContext'
 import {
     addInitialLaunchConfiguration,
     getProjectUri,
-    SAM_INIT_TEMPLATE_FILES
+    SAM_INIT_TEMPLATE_FILES,
 } from '../../../lambda/commands/createNewSamApp'
 import { LaunchConfiguration } from '../../../shared/debug/launchConfiguration'
 import { anything, capture, instance, mock, when } from 'ts-mockito'

@@ -122,28 +122,31 @@ async function compileTypeScript(config: NodejsDebugConfiguration): Promise<void
         if (tscResponse.exitCode !== 0 || !tscResponse.stdout.startsWith('Version')) {
             throw new Error('TypeScript compiler "tsc" not found.')
         }
-        const samBuildOutputAppRoot = path.join(config.baseBuildDir!, 'output', path.parse(config.invokeTarget.projectRoot).name)
+        const samBuildOutputAppRoot = path.join(
+            config.baseBuildDir!,
+            'output',
+            path.parse(config.invokeTarget.projectRoot).name
+        )
         const tsconfigPath = path.join(samBuildOutputAppRoot, 'tsconfig.json')
-        if ((await readdir(config.codeRoot)).includes('tsconfig.json') || (await hasFileWithSuffix(config.codeRoot, '.ts', '**/node_modules/**'))) {
-        //  This default config is a modified version from the AWS Toolkit for JetBrain's tsconfig file. https://github.com/aws/aws-toolkit-jetbrains/blob/911c54252d6a4271ee6cacf0ea1023506c4b504a/jetbrains-ultimate/src/software/aws/toolkits/jetbrains/services/lambda/nodejs/NodeJsLambdaBuilder.kt#L60
+        if (
+            (await readdir(config.codeRoot)).includes('tsconfig.json') ||
+            (await hasFileWithSuffix(config.codeRoot, '.ts', '**/node_modules/**'))
+        ) {
+            //  This default config is a modified version from the AWS Toolkit for JetBrain's tsconfig file. https://github.com/aws/aws-toolkit-jetbrains/blob/911c54252d6a4271ee6cacf0ea1023506c4b504a/jetbrains-ultimate/src/software/aws/toolkits/jetbrains/services/lambda/nodejs/NodeJsLambdaBuilder.kt#L60
             const defaultTsconfig = {
-                "compilerOptions": {
-                    "target": "es6",
-                    "module": "commonjs",
-                    "typeRoots": [
-                    "node_modules/@types"
-                    ],                       
-                    "types": [
-                    "node"
-                    ],
-                    "rootDir": ".",
-                    "inlineSourceMap": true,
-                }
+                compilerOptions: {
+                    target: 'es6',
+                    module: 'commonjs',
+                    typeRoots: ['node_modules/@types'],
+                    types: ['node'],
+                    rootDir: '.',
+                    inlineSourceMap: true,
+                },
             }
             try {
                 writeFileSync(tsconfigPath, JSON.stringify(defaultTsconfig, undefined, 4))
                 getLogger('channel').info('Compiling TypeScript')
-                await new ChildProcess(true, 'tsc', undefined, '--project', samBuildOutputAppRoot).run()    
+                await new ChildProcess(true, 'tsc', undefined, '--project', samBuildOutputAppRoot).run()
             } catch (error) {
                 getLogger('channel').error(`Compile Error: ${error}`)
                 throw Error('Failed to compile typescript Lambda')
