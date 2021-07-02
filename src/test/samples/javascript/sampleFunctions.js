@@ -1,5 +1,5 @@
 /*!
- * Copyright 2018 Amazon.com, Inc. or its affiliates. All Rights Reserved.
+ * Copyright Amazon.com, Inc. or its affiliates. All Rights Reserved.
  * SPDX-License-Identifier: Apache-2.0
  */
 
@@ -29,10 +29,10 @@ module.exports.directExportsArrowFunction = name => {
 module.exports.directExportsArrowFunctionAsync = async name => {
     console.log(name)
 }
-module.exports.directExportsFunction = function(name) {
+module.exports.directExportsFunction = function (name) {
     console.log(name)
 }
-module.exports.directExportsFunctionAsync = async function(name) {
+module.exports.directExportsFunctionAsync = async function (name) {
     console.log(name)
 }
 

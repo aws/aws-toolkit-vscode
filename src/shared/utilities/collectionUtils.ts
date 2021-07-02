@@ -1,5 +1,5 @@
 /*!
- * Copyright 2018 Amazon.com, Inc. or its affiliates. All Rights Reserved.
+ * Copyright Amazon.com, Inc. or its affiliates. All Rights Reserved.
  * SPDX-License-Identifier: Apache-2.0
  */
 
@@ -186,7 +186,7 @@ export async function* getPaginatedAwsCallIter<TRequest, TResponse>(
             [params.nextTokenNames.request]: nextToken,
         })
         if (response[params.nextTokenNames.response]) {
-            nextToken = (response[params.nextTokenNames.response] as any) as string
+            nextToken = response[params.nextTokenNames.response] as any as string
         } else {
             // done; returns last response with { done: true }
             return response

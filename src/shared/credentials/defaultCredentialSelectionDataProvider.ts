@@ -1,5 +1,5 @@
 /*!
- * Copyright 2018 Amazon.com, Inc. or its affiliates. All Rights Reserved.
+ * Copyright Amazon.com, Inc. or its affiliates. All Rights Reserved.
  * SPDX-License-Identifier: Apache-2.0
  */
 
@@ -45,7 +45,11 @@ export class DefaultCredentialSelectionDataProvider implements CredentialSelecti
         state: Partial<CredentialSelectionState>
     ): Promise<QuickPickItem> {
         return await input.showQuickPick({
-            title: localize('AWS.title.selectCredentialProfile', 'Select an {0} credential profile', getIdeProperties().company),
+            title: localize(
+                'AWS.title.selectCredentialProfile',
+                'Select an {0} credential profile',
+                getIdeProperties().company
+            ),
             step: 1,
             totalSteps: 1,
             placeholder: localize('AWS.placeHolder.selectProfile', 'Select a credential profile'),
@@ -60,7 +64,11 @@ export class DefaultCredentialSelectionDataProvider implements CredentialSelecti
         state: Partial<CredentialSelectionState>
     ): Promise<string | undefined> {
         return await input.showInputBox({
-            title: localize('AWS.title.createCredentialProfile', 'Create a new {0} credential profile', getIdeProperties().company),
+            title: localize(
+                'AWS.title.createCredentialProfile',
+                'Create a new {0} credential profile',
+                getIdeProperties().company
+            ),
             step: 1,
             totalSteps: 3,
             value: '',
@@ -75,7 +83,11 @@ export class DefaultCredentialSelectionDataProvider implements CredentialSelecti
         state: Partial<CredentialSelectionState>
     ): Promise<string | undefined> {
         return await input.showInputBox({
-            title: localize('AWS.title.createCredentialProfile', 'Create a new {0} credential profile', getIdeProperties().company),
+            title: localize(
+                'AWS.title.createCredentialProfile',
+                'Create a new {0} credential profile',
+                getIdeProperties().company
+            ),
             step: 2,
             totalSteps: 3,
             value: '',
@@ -91,7 +103,11 @@ export class DefaultCredentialSelectionDataProvider implements CredentialSelecti
         state: Partial<CredentialSelectionState>
     ): Promise<string | undefined> {
         return await input.showInputBox({
-            title: localize('AWS.title.createCredentialProfile', 'Create a new {0} credential profile', getIdeProperties().company),
+            title: localize(
+                'AWS.title.createCredentialProfile',
+                'Create a new {0} credential profile',
+                getIdeProperties().company
+            ),
             step: 3,
             totalSteps: 3,
             value: '',

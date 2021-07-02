@@ -1,5 +1,5 @@
 /*!
- * Copyright 2018 Amazon.com, Inc. or its affiliates. All Rights Reserved.
+ * Copyright Amazon.com, Inc. or its affiliates. All Rights Reserved.
  * SPDX-License-Identifier: Apache-2.0
  */
 
@@ -55,9 +55,7 @@ export async function* listLambdaFunctions(client: LambdaClient): AsyncIterableI
  * Only works for supported languages (Python/JS)
  * @param configuration Lambda configuration object from getFunction
  */
-export function getLambdaDetails(
-    configuration: Lambda.FunctionConfiguration
-): {
+export function getLambdaDetails(configuration: Lambda.FunctionConfiguration): {
     fileName: string
     functionName: string
 } {

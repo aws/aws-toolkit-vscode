@@ -1,5 +1,5 @@
 /*!
- * Copyright 2018-2019 Amazon.com, Inc. or its affiliates. All Rights Reserved.
+ * Copyright Amazon.com, Inc. or its affiliates. All Rights Reserved.
  * SPDX-License-Identifier: Apache-2.0
  */
 
@@ -60,9 +60,8 @@ export interface FakeAwsContextParams {
 }
 
 export class FakeAwsContext implements AwsContext {
-    public onDidChangeContext: vscode.Event<ContextChangeEventsArgs> = new vscode.EventEmitter<
-        ContextChangeEventsArgs
-    >().event
+    public onDidChangeContext: vscode.Event<ContextChangeEventsArgs> =
+        new vscode.EventEmitter<ContextChangeEventsArgs>().event
     private awsContextCredentials: AwsContextCredentials | undefined
 
     public constructor(params?: FakeAwsContextParams) {

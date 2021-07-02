@@ -1,5 +1,5 @@
 /*!
- * Copyright 2019 Amazon.com, Inc. or its affiliates. All Rights Reserved.
+ * Copyright Amazon.com, Inc. or its affiliates. All Rights Reserved.
  * SPDX-License-Identifier: Apache-2.0
  */
 
@@ -14,7 +14,9 @@ import { Timeout } from './timeoutUtils'
 // function instead of constant to prevent isCn() from running prior to compute region being determined
 // two localized strings instead of a single one with a parameter since this is also used as a command name
 function commandName(): string {
-    return isCn() ? localize('AWS.command.viewLogs.cn', 'View Amazon Toolkit Logs') :  localize('AWS.command.viewLogs', 'View AWS Toolkit Logs')
+    return isCn()
+        ? localize('AWS.command.viewLogs.cn', 'View Amazon Toolkit Logs')
+        : localize('AWS.command.viewLogs', 'View AWS Toolkit Logs')
 }
 
 export function makeCheckLogsMessage(): string {

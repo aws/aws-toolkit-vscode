@@ -1,5 +1,5 @@
 /*!
- * Copyright 2020 Amazon.com, Inc. or its affiliates. All Rights Reserved.
+ * Copyright Amazon.com, Inc. or its affiliates. All Rights Reserved.
  * SPDX-License-Identifier: Apache-2.0
  */
 
@@ -376,7 +376,7 @@ describe('DefaultS3Client', function () {
             const mockResponse: Request<any, AWSError> = mock()
             when(mockS3.listBuckets()).thenReturn(success({ Buckets: [{ Name: bucketName }] }))
             // eslint-disable-next-line @typescript-eslint/unbound-method
-            when(mockResponse.promise).thenReject((undefined as any) as Error)
+            when(mockResponse.promise).thenReject(undefined as any as Error)
             when(mockS3.getBucketLocation(anything())).thenReturn(mockResponse)
 
             const response = await createClient().listBuckets()
@@ -481,12 +481,8 @@ describe('DefaultS3Client', function () {
     })
 
     describe('listObjectVersions', function () {
-        const {
-            firstPageRequest,
-            secondPageRequest,
-            firstPageResponse,
-            secondPageResponse,
-        } = new ListObjectVersionsFixtures()
+        const { firstPageRequest, secondPageRequest, firstPageResponse, secondPageResponse } =
+            new ListObjectVersionsFixtures()
 
         it('lists objects and their versions with a continuation token for the next page of results', async function () {
             when(mockS3.listObjectVersions(deepEqual(firstPageRequest))).thenReturn(success(firstPageResponse))

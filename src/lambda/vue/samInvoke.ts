@@ -1,5 +1,5 @@
 /*!
- * Copyright 2021 Amazon.com, Inc. or its affiliates. All Rights Reserved.
+ * Copyright Amazon.com, Inc. or its affiliates. All Rights Reserved.
  * SPDX-License-Identifier: Apache-2.0
  */
 
@@ -442,7 +442,7 @@ function getLaunchConfigQuickPickItems(launchConfig: LaunchConfiguration, uri: v
                 index,
             }
         })
-        .filter(o => samValidator.validate((o.config as any) as AwsSamDebuggerConfiguration, true)?.isValid)
+        .filter(o => samValidator.validate(o.config as any as AwsSamDebuggerConfiguration, true)?.isValid)
         .map(val => {
             return {
                 index: val.index,

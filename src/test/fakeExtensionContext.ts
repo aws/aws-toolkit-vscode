@@ -1,5 +1,5 @@
 /*!
- * Copyright 2018 Amazon.com, Inc. or its affiliates. All Rights Reserved.
+ * Copyright Amazon.com, Inc. or its affiliates. All Rights Reserved.
  * SPDX-License-Identifier: Apache-2.0
  */
 
@@ -93,11 +93,9 @@ export class FakeExtensionContext implements vscode.ExtensionContext {
         const awsContext = new FakeAwsContext()
         const samCliContext = () => {
             return {
-                invoker: new TestSamCliProcessInvoker(
-                    (spawnOptions, args: any[]): ChildProcessResult => {
-                        return new FakeChildProcessResult({})
-                    }
-                ),
+                invoker: new TestSamCliProcessInvoker((spawnOptions, args: any[]): ChildProcessResult => {
+                    return new FakeChildProcessResult({})
+                }),
                 validator: new FakeSamCliValidator(MINIMUM_SAM_CLI_VERSION_INCLUSIVE_FOR_GO_SUPPORT),
             } as SamCliContext
         }

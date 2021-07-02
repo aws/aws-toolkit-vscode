@@ -1,5 +1,5 @@
 /*!
- * Copyright 2020 Amazon.com, Inc. or its affiliates. All Rights Reserved.
+ * Copyright Amazon.com, Inc. or its affiliates. All Rights Reserved.
  * SPDX-License-Identifier: Apache-2.0
  */
 
@@ -35,8 +35,7 @@ export class ApiGatewayNode extends AWSTreeNodeBase {
 
                 return [...this.apiNodes.values()]
             },
-            getErrorNode: async (error: Error, logID: number) => 
-                new ErrorNode(this, error, logID),
+            getErrorNode: async (error: Error, logID: number) => new ErrorNode(this, error, logID),
             getNoChildrenPlaceholderNode: async () =>
                 new PlaceholderNode(
                     this,

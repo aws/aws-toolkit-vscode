@@ -1,5 +1,5 @@
 /*!
- * Copyright 2020 Amazon.com, Inc. or its affiliates. All Rights Reserved.
+ * Copyright Amazon.com, Inc. or its affiliates. All Rights Reserved.
  * SPDX-License-Identifier: Apache-2.0
  */
 
@@ -51,8 +51,8 @@ describe('schemasDataProvider', function () {
     const schemaSummary = { SchemaName: TEST_SCHEMA }
     const schemaSummary2 = { SchemaName: TEST_SCHEMA2 }
     const schemaClient = new MockSchemaClient(TEST_REGION)
-    const testCredentials = ({} as any) as AWS.Credentials
-    const testCredentials2 = ({} as any) as AWS.Credentials
+    const testCredentials = {} as any as AWS.Credentials
+    const testCredentials2 = {} as any as AWS.Credentials
 
     describe('getRegistries', function () {
         it('should return registries for given region', async function () {

@@ -1,5 +1,5 @@
 /*!
- * Copyright 2018 Amazon.com, Inc. or its affiliates. All Rights Reserved.
+ * Copyright Amazon.com, Inc. or its affiliates. All Rights Reserved.
  * SPDX-License-Identifier: Apache-2.0
  */
 
@@ -90,7 +90,10 @@ export function isExtensionActive(extId: string): boolean {
  * @param silent  Return undefined on failure, instead of throwing
  * @returns Extension object, or undefined on failure if `silent`
  */
-export async function activateExtension(extId: string, silent: boolean = true): Promise<vscode.Extension<void> | undefined> {
+export async function activateExtension(
+    extId: string,
+    silent: boolean = true
+): Promise<vscode.Extension<void> | undefined> {
     let loggerInitialized: boolean
     try {
         getLogger()

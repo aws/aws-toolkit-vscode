@@ -1,5 +1,5 @@
 /*!
- * Copyright 2020 Amazon.com, Inc. or its affiliates. All Rights Reserved.
+ * Copyright Amazon.com, Inc. or its affiliates. All Rights Reserved.
  * SPDX-License-Identifier: Apache-2.0
  */
 
@@ -44,14 +44,14 @@ describe('getRegionsForActiveCredentials', async function () {
         fnGetRegions = sandbox.stub()
         fnGetRegions.returns(samplePartitionRegions)
 
-        awsContext = ({
+        awsContext = {
             getCredentialDefaultRegion: fnGetCredentialDefaultRegion,
-        } as any) as AwsContext
+        } as any as AwsContext
 
-        regionProvider = ({
+        regionProvider = {
             getPartitionId: fnGetPartitionId,
             getRegions: fnGetRegions,
-        } as any) as RegionProvider
+        } as any as RegionProvider
     })
 
     afterEach(function () {

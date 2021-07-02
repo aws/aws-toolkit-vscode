@@ -1,5 +1,5 @@
 /*!
- * Copyright 2018 Amazon.com, Inc. or its affiliates. All Rights Reserved.
+ * Copyright Amazon.com, Inc. or its affiliates. All Rights Reserved.
  * SPDX-License-Identifier: Apache-2.0
  */
 
@@ -40,8 +40,7 @@ export class StepFunctionsNode extends AWSTreeNodeBase {
 
                 return [...this.stateMachineNodes.values()]
             },
-            getErrorNode: async (error: Error, logID: number) =>
-                new ErrorNode(this, error, logID),
+            getErrorNode: async (error: Error, logID: number) => new ErrorNode(this, error, logID),
             getNoChildrenPlaceholderNode: async () =>
                 new PlaceholderNode(
                     this,

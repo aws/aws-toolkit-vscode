@@ -1,5 +1,5 @@
 /*!
- * Copyright 2019 Amazon.com, Inc. or its affiliates. All Rights Reserved.
+ * Copyright Amazon.com, Inc. or its affiliates. All Rights Reserved.
  * SPDX-License-Identifier: Apache-2.0
  */
 import * as assert from 'assert'
@@ -229,7 +229,7 @@ class TestEcsClient extends DefaultEcsClient {
     }
 
     protected async createSdkClient(): Promise<ECS> {
-        return ({} as any) as ECS
+        return {} as any as ECS
     }
 
     private getResponseDatum<T>(responses: T[] | AWSError, nextToken?: string): T | AWSError {
