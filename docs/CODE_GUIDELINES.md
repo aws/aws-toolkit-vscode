@@ -69,6 +69,9 @@ that is a net cost.
 - Do not habitually define concepts one-per-file. Related classes, interfaces,
   and symbols should live in the same module unless there is an explicit,
   conscious motivation for separating them.
+- Use the `ClassToInterfaceType` type alias when an interface that directly
+  corresponds to a class is needed. This keeps things organized and reduces
+  the number of changes required when the implementation is modified.
 - What is a "unit test"? https://www.youtube.com/watch?v=EZ05e7EMOLM
   - Unit is not "a single class", it's a piece of the software with a clear
     boundary. It might be a whole microservice, or a chunk of a monolith that

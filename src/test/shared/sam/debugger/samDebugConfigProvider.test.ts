@@ -298,7 +298,7 @@ describe('SamDebugConfigurationProvider', async function () {
             const mockCredentialsStore: CredentialsStore = new CredentialsStore()
 
             const credentialsProvider: CredentialsProvider = {
-                getCredentials: sandbox.stub().resolves(({} as any) as AWS.Credentials),
+                getCredentials: sandbox.stub().resolves({} as any as AWS.Credentials),
                 getProviderType: sandbox.stub().resolves('profile'),
                 getTelemetryType: sandbox.stub().resolves('staticProfile'),
                 getCredentialsId: sandbox.stub().returns({
@@ -308,7 +308,7 @@ describe('SamDebugConfigurationProvider', async function () {
                 getDefaultRegion: sandbox.stub().returns('someRegion'),
                 getHashCode: sandbox.stub().returns('1234'),
                 canAutoConnect: sandbox.stub().returns(true),
-                isAvailable: sandbox.stub().returns(Promise.resolve(true))
+                isAvailable: sandbox.stub().returns(Promise.resolve(true)),
             }
             const getCredentialsProviderStub = sandbox.stub(
                 CredentialsProviderManager.getInstance(),
@@ -3415,7 +3415,7 @@ Resources:
             const mockCredentialsStore: CredentialsStore = new CredentialsStore()
 
             const credentialsProvider: CredentialsProvider = {
-                getCredentials: sandbox.stub().resolves(({} as any) as AWS.Credentials),
+                getCredentials: sandbox.stub().resolves({} as any as AWS.Credentials),
                 getProviderType: sandbox.stub().resolves('profile'),
                 getTelemetryType: sandbox.stub().resolves('staticProfile'),
                 getCredentialsId: sandbox.stub().returns({
@@ -3425,7 +3425,7 @@ Resources:
                 getDefaultRegion: sandbox.stub().returns('someRegion'),
                 getHashCode: sandbox.stub().returns('1234'),
                 canAutoConnect: sandbox.stub().returns(true),
-                isAvailable: sandbox.stub().returns(Promise.resolve(true))
+                isAvailable: sandbox.stub().returns(Promise.resolve(true)),
             }
             const getCredentialsProviderStub = sandbox.stub(
                 CredentialsProviderManager.getInstance(),

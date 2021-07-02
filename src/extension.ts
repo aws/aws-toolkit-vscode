@@ -19,7 +19,7 @@ import { activate as activateSchemas } from './eventSchemas/activation'
 import { activate as activateLambda } from './lambda/activation'
 import { DefaultAWSClientBuilder } from './shared/awsClientBuilder'
 import { AwsContextTreeCollection } from './shared/awsContextTreeCollection'
-import { DefaultToolkitClientBuilder } from './shared/clients/defaultToolkitClientBuilder'
+import { DefaultToolkitClientBuilder } from './shared/clients/toolkitClientBuilder'
 import { activate as activateCloudFormationTemplateRegistry } from './shared/cloudformation/activation'
 import {
     documentationUrl,
