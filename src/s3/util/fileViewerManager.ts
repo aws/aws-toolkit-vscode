@@ -8,7 +8,7 @@ import { S3FileNode } from '../explorer/s3FileNode'
 import { Window } from '../../shared/vscode/window'
 import { showOutputMessage } from '../../shared/utilities/messages'
 import { OutputChannel } from 'vscode'
-export class FileViewerManager {
+export class S3FileViewerManager {
     //private cache: Set<S3FileNode>
     //private activeTabs: Set<S3Tab>
     //private window: Window
