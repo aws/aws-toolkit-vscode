@@ -90,7 +90,7 @@ describe('LogStreamRegistry', async function () {
     })
 
     describe('registerLog', async function () {
-        it("registers logs and doesn't overwrite existing logs", async () => {
+        it("registers logs and doesn't overwrite existing logs", async function () {
             await registry.registerLog(missingRegisteredUri, getLogEventsFromUriComponentsFn)
             const blankPostRegister = registry.getLogContent(missingRegisteredUri)
             assert.strictEqual(blankPostRegister, newText)
@@ -139,7 +139,7 @@ describe('LogStreamRegistry', async function () {
     })
 
     describe('updateLog', async function () {
-        it("adds content to existing streams at both head and tail ends and doesn't do anything if the log isn't registered", async () => {
+        it("adds content to existing streams at both head and tail ends and doesn't do anything if the log isn't registered", async function () {
             await registry.updateLog(shorterRegisteredUri, 'tail', config, getLogEventsFromUriComponentsFn)
             const initialWithTail = registry.getLogContent(shorterRegisteredUri)
             assert.strictEqual(initialWithTail, `${simplerStream.data[0].message}${newText}`)

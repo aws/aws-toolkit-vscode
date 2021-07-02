@@ -137,7 +137,7 @@ describe('Telemetry on activation', function () {
 
     describe('isTelemetryEnabled', function () {
         scenarios.forEach(scenario => {
-            it(scenario.desc, async () => {
+            it(scenario.desc, async function () {
                 await settings.update('telemetry', scenario.initialSettingValue, vscode.ConfigurationTarget.Global)
 
                 const isEnabled = isTelemetryEnabled(toolkitSettings)
@@ -148,7 +148,7 @@ describe('Telemetry on activation', function () {
 
     describe('sanitizeTelemetrySetting', function () {
         scenarios.forEach(scenario => {
-            it(scenario.desc, async () => {
+            it(scenario.desc, async function () {
                 await settings.update('telemetry', scenario.initialSettingValue, vscode.ConfigurationTarget.Global)
 
                 await sanitizeTelemetrySetting(toolkitSettings)
@@ -189,7 +189,7 @@ describe('hasUserSeenTelemetryNotice', async function () {
     ]
 
     scenarios.forEach(scenario => {
-        it(scenario.desc, async () => {
+        it(scenario.desc, async function () {
             await extensionContext.globalState.update(TELEMETRY_NOTICE_VERSION_ACKNOWLEDGED, scenario.currentState)
             assert.strictEqual(hasUserSeenTelemetryNotice(extensionContext), scenario.expectedHasSeen)
         })

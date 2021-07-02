@@ -137,7 +137,7 @@ describe('DefaultAwsSamDebugConfigurationValidator', function () {
         assert.strictEqual(result.isValid, false)
     })
 
-    it("returns invalid when resolving template debug configurations with a template that isn't in the registry", () => {
+    it("returns invalid when resolving template debug configurations with a template that isn't in the registry", function () {
         const mockEmptyRegistry: CloudFormationTemplateRegistry = mock()
         when(mockEmptyRegistry.getRegisteredItem('/')).thenReturn(undefined)
 
@@ -147,7 +147,7 @@ describe('DefaultAwsSamDebugConfigurationValidator', function () {
         assert.strictEqual(result.isValid, false)
     })
 
-    it("returns invalid when resolving template debug configurations with a template that doesn't have the set resource", () => {
+    it("returns invalid when resolving template debug configurations with a template that doesn't have the set resource", function () {
         const target = templateConfig.invokeTarget as TemplateTargetProperties
         target.logicalId = 'wrong'
 
@@ -155,7 +155,7 @@ describe('DefaultAwsSamDebugConfigurationValidator', function () {
         assert.strictEqual(result.isValid, false)
     })
 
-    it("returns invalid when resolving template debug configurations with a template that isn't serverless", () => {
+    it("returns invalid when resolving template debug configurations with a template that isn't serverless", function () {
         const target = templateConfig.invokeTarget as TemplateTargetProperties
         target.logicalId = 'OtherResource'
 
@@ -171,7 +171,7 @@ describe('DefaultAwsSamDebugConfigurationValidator', function () {
         assert.strictEqual(result.isValid, false)
     })
 
-    it("API config returns invalid when resolving with a template that isn't serverless", () => {
+    it("API config returns invalid when resolving with a template that isn't serverless", function () {
         const target = templateConfig.invokeTarget as TemplateTargetProperties
         target.logicalId = 'OtherResource'
 
@@ -187,7 +187,7 @@ describe('DefaultAwsSamDebugConfigurationValidator', function () {
         assert.strictEqual(result.isValid, false)
     })
 
-    it("API config is invalid when its path does not start with a '/'", () => {
+    it("API config is invalid when its path does not start with a '/'", function () {
         const config = createApiConfig()
 
         config.api!.path = 'noleadingslash'

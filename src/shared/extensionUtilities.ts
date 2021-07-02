@@ -73,6 +73,7 @@ interface IdeProperties {
 }
 
 export function getIdeProperties(): IdeProperties {
+    // eslint-disable-next-line aws/no-localize-aws
     const company = localize('AWS.title', 'AWS')
     // in a separate const so other IDEs can take from this selectively.
     const vscodeVals: IdeProperties = {

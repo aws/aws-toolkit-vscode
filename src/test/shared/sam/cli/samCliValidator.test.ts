@@ -67,7 +67,7 @@ describe('DefaultSamCliValidator', async function () {
 
     describe('detectValidSamCli', async function () {
         samCliVersionTestScenarios.forEach(test => {
-            it(`handles case where SAM CLI exists and ${test.situation}`, async () => {
+            it(`handles case where SAM CLI exists and ${test.situation}`, async function () {
                 const validatorContext = new TestSamCliValidatorContext(test.version)
                 validatorContext.mockSamLocation = 'somesamclipath'
                 const samCliValidator = new DefaultSamCliValidator(validatorContext)
@@ -100,7 +100,7 @@ describe('DefaultSamCliValidator', async function () {
 
     describe('getVersionValidatorResult', async function () {
         samCliVersionTestScenarios.forEach(test => {
-            it(`Validates SAM CLI binary for the case: ${test.situation}`, async () => {
+            it(`Validates SAM CLI binary for the case: ${test.situation}`, async function () {
                 const validatorContext = new TestSamCliValidatorContext(test.version)
                 const samCliValidator = new DefaultSamCliValidator(validatorContext)
 
@@ -142,7 +142,7 @@ describe('DefaultSamCliValidator', async function () {
 
     describe('validateSamCliVersion', async function () {
         samCliVersionTestScenarios.forEach(test => {
-            it(`validates when ${test.situation}`, async () => {
+            it(`validates when ${test.situation}`, async function () {
                 const validation: SamCliVersionValidation = DefaultSamCliValidator.validateSamCliVersion(test.version)
 
                 assert.strictEqual(validation, test.expectedVersionValidation, 'Unexpected version validation')

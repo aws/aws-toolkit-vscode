@@ -224,7 +224,7 @@ describe('SchemaCodeDownloadWizard', async function () {
             assert.strictEqual(args!.location.fsPath, `${path.sep}${locationPath}`)
         })
 
-        it("contains a 'browse' option", async () => {
+        it("contains a 'browse' option", async function () {
             const name = 'myInputBoxResult'
             const locationPath = path.join('my', 'quick', 'pick', 'result')
 

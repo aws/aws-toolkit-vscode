@@ -53,7 +53,7 @@ describe('FeatureToggle', async function () {
 
         // Generated tests which ensure current list of enums are working
         for (const featureFlag of Object.keys(ActiveFeatureKeys)) {
-            it(`returns true for currently-active feature: ${featureFlag}`, async () => {
+            it(`returns true for currently-active feature: ${featureFlag}`, async function () {
                 // simulate settings.json
                 const config = new TestSettingsConfiguration()
                 await config.writeSetting('experimentalFeatureFlags', [featureFlag])

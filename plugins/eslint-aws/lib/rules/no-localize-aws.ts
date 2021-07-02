@@ -119,10 +119,10 @@ export default {
         type: 'problem',
         fixable: 'code',
         docs: {
-            description: 'no arrows',
+            description: 'no AWS in localize',
             category: 'Stylistic Issues',
             recommended: true,
-            url: 'https://eslint.org/docs/rules/array-bracket-spacing',
+            url: 'https://github.com/aws/aws-toolkit-vscode/pull/1786',
         },
     },
     create: rule,

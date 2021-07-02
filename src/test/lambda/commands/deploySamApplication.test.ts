@@ -178,7 +178,7 @@ describe('deploySamApplication', async function () {
         } as SavedBuckets)
     })
 
-    it('handles previously stored stringified buckets', async () => {
+    it('handles previously stored stringified buckets', async function () {
         const testSavedBuckets = {
             profile1: {
                 region1: 'mybucket1',
@@ -208,7 +208,7 @@ describe('deploySamApplication', async function () {
         assert.deepStrictEqual(readSavedBuckets(settings), { ...testSavedBuckets, [profile]: { region: 'bucket' } })
     })
 
-    it('handles malformed stored buckets', async () => {
+    it('handles malformed stored buckets', async function () {
         settings.writeSetting(CHOSEN_BUCKET_KEY, 'ilovebuckets', vscode.ConfigurationTarget.Global)
 
         await deploySamApplication(
@@ -227,7 +227,7 @@ describe('deploySamApplication', async function () {
         assert.deepStrictEqual(readSavedBuckets(settings), { [profile]: { region: 'bucket' } })
     })
 
-    it('overwrites recently selected bucket', async () => {
+    it('overwrites recently selected bucket', async function () {
         writeSavedBucket(settings, profile, 'region', 'oldBucket')
 
         await deploySamApplication(
@@ -247,7 +247,7 @@ describe('deploySamApplication', async function () {
         assert.deepStrictEqual(readSavedBuckets(settings), { [profile]: { region: 'bucket' } } as SavedBuckets)
     })
 
-    it('saves one bucket max to multiple regions', async () => {
+    it('saves one bucket max to multiple regions', async function () {
         samDeployWizardResponse = {
             parameterOverrides: new Map<string, string>(),
             region: 'region0',
@@ -339,7 +339,7 @@ describe('deploySamApplication', async function () {
         } as SavedBuckets)
     })
 
-    it('saves one bucket per region per profile', async () => {
+    it('saves one bucket per region per profile', async function () {
         profile = 'testAcct0'
         samDeployWizardResponse = {
             parameterOverrides: new Map<string, string>(),

@@ -88,7 +88,7 @@ describe('findParentProjectFile', async function () {
     })
 
     testScenarios.forEach(test => {
-        it(test.scenario, async () => {
+        it(test.scenario, async function () {
             filesToDelete = test.filesToUse
             for (const file of test.filesToUse) {
                 await writeFile(file.fsPath, '')

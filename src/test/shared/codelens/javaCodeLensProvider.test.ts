@@ -20,16 +20,16 @@ import * as SampleJavaSamProgram from './sampleJavaSamProgram'
 
 const fakeRange = new vscode.Range(0, 0, 0, 0)
 
-describe('javaCodeLensProvider', () => {
-    describe('getLambdaHandlerComponents', () => {
+describe('javaCodeLensProvider', function () {
+    describe('getLambdaHandlerComponents', function () {
         let tempFolder: string
 
-        beforeEach(async () => {
+        beforeEach(async function () {
             // Make a temp folder for all these tests
             tempFolder = await makeTemporaryToolkitFolder()
         })
 
-        afterEach(async () => {
+        afterEach(async function () {
             await fs.remove(tempFolder)
         })
 
@@ -51,7 +51,7 @@ describe('javaCodeLensProvider', () => {
         })
     })
 
-    describe('isValidClassSymbol', () => {
+    describe('isValidClassSymbol', function () {
         const sampleClassSymbol: vscode.DocumentSymbol = new vscode.DocumentSymbol(
             'HelloWorld.Function',
             '',
@@ -113,7 +113,7 @@ describe('javaCodeLensProvider', () => {
         })
     })
 
-    describe('isValidMethodSignature/isValidLambdaHandler', () => {
+    describe('isValidMethodSignature/isValidLambdaHandler', function () {
         const validPublicMethodTests = [
             {
                 scenario: 'signature all on one line',
@@ -363,7 +363,7 @@ describe('javaCodeLensProvider', () => {
         })
     })
 
-    describe('generateJavaLambdaHandler', () => {
+    describe('generateJavaLambdaHandler', function () {
         it('produces a handler name', async function () {
             const components: JavaLambdaHandlerComponents = {
                 package: 'package',

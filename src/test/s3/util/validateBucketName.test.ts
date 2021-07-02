@@ -27,9 +27,9 @@ describe('validateBucketName', function () {
     })
 
     invalidErrors.forEach(invalid => {
-        describe(invalid.error, () => {
+        describe(invalid.error, function () {
             invalid.bucketNames.forEach(bucketName => {
-                it(bucketName, () => {
+                it(bucketName, function () {
                     assert.strictEqual(validateBucketName(bucketName), invalid.error)
                 })
             })

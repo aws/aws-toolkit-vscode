@@ -143,7 +143,7 @@ describe('WinstonToolkitLogger', function () {
         })
 
         happyLogScenarios.forEach(scenario => {
-            it(scenario.name, async () => {
+            it(scenario.name, async function () {
                 const message = `message for ${scenario.name}`
                 testLogger = new WinstonToolkitLogger('debug')
                 testLogger.logToFile(tempLogPath)
@@ -231,7 +231,7 @@ describe('WinstonToolkitLogger', function () {
         })
 
         happyLogScenarios.forEach(scenario => {
-            it(scenario.name, async () => {
+            it(scenario.name, async function () {
                 const message = `message for ${scenario.name}`
                 testLogger = new WinstonToolkitLogger('debug')
                 testLogger.logToOutputChannel(outputChannel, false)

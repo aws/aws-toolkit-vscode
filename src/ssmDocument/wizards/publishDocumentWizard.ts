@@ -9,6 +9,7 @@ import * as nls from 'vscode-nls'
 import { AwsContext } from '../../shared/awsContext'
 
 import { ext } from '../../shared/extensionGlobals'
+import { getIdeProperties } from '../../shared/extensionUtilities'
 import { RegionProvider } from '../../shared/regions/regionProvider'
 import { getRegionsForActiveCredentials } from '../../shared/regions/regionUtilities'
 import * as input from '../../shared/ui/input'
@@ -183,7 +184,8 @@ export class DefaultPublishSSMDocumentWizardContext extends WizardContext implem
             options: {
                 title: localize(
                     'AWS.message.prompt.ssmDocument.publishDocument.region',
-                    'Which AWS Region would you like to publish to?'
+                    'Which {0} Region would you like to publish to?',
+                    getIdeProperties().company
                 ),
                 value: initialRegionCode,
                 matchOnDetail: true,
@@ -378,7 +380,8 @@ export class DefaultPublishSSMDocumentWizardContext extends WizardContext implem
                 ignoreFocusOut: true,
                 title: localize(
                     'AWS.ssmDocument.publishWizard.publishAction.title',
-                    'Publish to AWS Systems Manager Document ({0})',
+                    'Publish to {0} Systems Manager Document ({1})',
+                    getIdeProperties().company,
                     region
                 ),
                 step: 2,

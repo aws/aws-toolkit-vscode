@@ -31,7 +31,8 @@ export class ErrorNode extends AWSTreeNodeBase {
         // Node commands don't actually use the title or tooltip since they are not apart of the command palette
         const commandName: string = isCn()
             ? localize('AWS.command.viewLogs.cn', 'View Amazon Toolkit Logs')
-            : localize('AWS.command.viewLogs', 'View AWS Toolkit Logs')
+            : // eslint-disable-next-line aws/no-localize-aws
+              localize('AWS.command.viewLogs', 'View AWS Toolkit Logs')
         const tooltip: string = `${error.name}: ${error.message}`
 
         // Theme color for icons were introduced in the 1.51.0 October 2020 update of vscode

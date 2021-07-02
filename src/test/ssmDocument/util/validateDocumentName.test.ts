@@ -27,9 +27,9 @@ describe('validateDocumenttName', function () {
     })
 
     invalidErrors.forEach(invalid => {
-        describe(invalid.error, () => {
+        describe(invalid.error, function () {
             invalid.documentNames.forEach(documentName => {
-                it(documentName, () => {
+                it(documentName, function () {
                     assert.strictEqual(validateDocumentName(documentName), invalid.error)
                 })
             })

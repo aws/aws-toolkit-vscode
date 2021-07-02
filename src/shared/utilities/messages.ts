@@ -16,7 +16,8 @@ import { Timeout } from './timeoutUtils'
 function commandName(): string {
     return isCn()
         ? localize('AWS.command.viewLogs.cn', 'View Amazon Toolkit Logs')
-        : localize('AWS.command.viewLogs', 'View AWS Toolkit Logs')
+        : // eslint-disable-next-line aws/no-localize-aws
+          localize('AWS.command.viewLogs', 'View AWS Toolkit Logs')
 }
 
 export function makeCheckLogsMessage(): string {

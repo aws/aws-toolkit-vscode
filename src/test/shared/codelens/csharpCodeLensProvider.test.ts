@@ -154,7 +154,7 @@ describe('isPublicMethodSymbol', async function () {
             fakeRange,
             fakeRange
         )
-        it(`returns true for a public method symbol when ${test.scenario}`, async () => {
+        it(`returns true for a public method symbol when ${test.scenario}`, async function () {
             const doc = {
                 getText: (range?: vscode.Range): string =>
                     generateFunctionDeclaration(

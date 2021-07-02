@@ -72,7 +72,7 @@ describe('createFolderCommand', function () {
     })
 
     invalidFolderNames.forEach(invalid => {
-        it(`warns '${invalid.error}' when folder name is '${invalid.folderName}'`, async () => {
+        it(`warns '${invalid.error}' when folder name is '${invalid.folderName}'`, async function () {
             const window = new FakeWindow({ inputBox: { input: invalid.folderName } })
             const commands = new FakeCommands()
             await createFolderCommand(node, window, commands)

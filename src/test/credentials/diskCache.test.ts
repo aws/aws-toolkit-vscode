@@ -12,7 +12,7 @@ import { DiskCache } from '../../credentials/sso/diskCache'
 import { SsoClientRegistration } from '../../credentials/sso/ssoClientRegistration'
 import { SsoAccessToken } from '../../credentials/sso/sso'
 
-describe('SSO diskCache', () => {
+describe('SSO diskCache', function () {
     let tempFolder: string
     const ssoRegion = 'dummyRegion'
     const startUrl = 'https://123456.awsapps.com/start'
@@ -35,7 +35,7 @@ describe('SSO diskCache', () => {
         expiresAt: new Date(Date.now() + HOUR_IN_MS).toISOString(),
     }
 
-    beforeEach(async () => {
+    beforeEach(async function () {
         // Make a temp folder for all these tests
         tempFolder = await makeTemporaryToolkitFolder()
         registrationFilename = path.join(tempFolder, `aws-toolkit-vscode-client-id-${ssoRegion}.json`)
@@ -43,12 +43,12 @@ describe('SSO diskCache', () => {
         sut = new DiskCache(tempFolder)
     })
 
-    afterEach(async () => {
+    afterEach(async function () {
         await tryRemoveFolder(tempFolder)
     })
 
-    describe('loadClientRegistration', () => {
-        it('returns a valid registration', () => {
+    describe('loadClientRegistration', function () {
+        it('returns a valid registration', function () {
             writeFileSync(registrationFilename, JSON.stringify(validRegistration))
 
             const returnedRegistration = sut.loadClientRegistration(ssoRegion)
@@ -56,12 +56,12 @@ describe('SSO diskCache', () => {
             assert.deepStrictEqual(returnedRegistration, validRegistration)
         })
 
-        it('returns undefined if no registration exists', () => {
+        it('returns undefined if no registration exists', function () {
             const returnedRegistration = sut.loadClientRegistration(ssoRegion)
             assert.strictEqual(returnedRegistration, undefined)
         })
 
-        it('returns undefined for expired registration', () => {
+        it('returns undefined for expired registration', function () {
             const expiredRegistration: SsoClientRegistration = {
                 clientId: 'dummyId',
                 clientSecret: 'dummySecret',
@@ -74,7 +74,7 @@ describe('SSO diskCache', () => {
             assert.strictEqual(returnedRegistration, undefined)
         })
 
-        it('returns undefined if within 15 minutes from expiration', () => {
+        it('returns undefined if within 15 minutes from expiration', function () {
             const expiredSoonRegistration: SsoClientRegistration = {
                 clientId: 'dummyId',
                 clientSecret: 'dummySecret',
@@ -87,9 +87,9 @@ describe('SSO diskCache', () => {
             assert.strictEqual(returnedRegistration, undefined)
         })
     })
-    describe('saveClientRegistration', () => {
+    describe('saveClientRegistration', function () {
         if (process.platform !== 'win32') {
-            it('should save the client registration correctly with mode 0600', () => {
+            it('should save the client registration correctly with mode 0600', function () {
                 sut.saveClientRegistration(ssoRegion, validRegistration)
 
                 const fileDescriptor = fs.openSync(registrationFilename, 'r')
@@ -98,14 +98,14 @@ describe('SSO diskCache', () => {
                 assert.strictEqual(fileStats.mode, 33152)
             })
         }
-        it('should save the client registration', async () => {
+        it('should save the client registration', async function () {
             sut.saveClientRegistration(ssoRegion, validRegistration)
             assert.strictEqual(await fileExists(registrationFilename), true)
         })
     })
 
-    describe('invalidateClientRegistration', () => {
-        it('should delete client registration file', () => {
+    describe('invalidateClientRegistration', function () {
+        it('should delete client registration file', function () {
             writeFileSync(registrationFilename, JSON.stringify(validRegistration))
             assert.notStrictEqual(sut.loadClientRegistration(ssoRegion), undefined)
 
@@ -114,8 +114,8 @@ describe('SSO diskCache', () => {
         })
     })
 
-    describe('loadAccessToken', () => {
-        it('should return a valid access token', () => {
+    describe('loadAccessToken', function () {
+        it('should return a valid access token', function () {
             writeFileSync(accessTokenFileName, JSON.stringify(validAccessToken))
 
             const returnedAccessToken = sut.loadAccessToken(startUrl)
@@ -123,12 +123,12 @@ describe('SSO diskCache', () => {
             assert.deepStrictEqual(returnedAccessToken, validAccessToken)
         })
 
-        it('should return undefined if no access token exists', () => {
+        it('should return undefined if no access token exists', function () {
             const returnedAccessToken = sut.loadAccessToken(startUrl)
             assert.strictEqual(returnedAccessToken, undefined)
         })
 
-        it('should return undefined if expired', () => {
+        it('should return undefined if expired', function () {
             const expiredAccessToken: SsoAccessToken = {
                 startUrl: startUrl,
                 region: ssoRegion,
@@ -142,7 +142,7 @@ describe('SSO diskCache', () => {
             assert.strictEqual(returnedAccessToken, undefined)
         })
 
-        it('should return undefined if expires within 15 minutes from expiration', () => {
+        it('should return undefined if expires within 15 minutes from expiration', function () {
             const expiredAccessToken: SsoAccessToken = {
                 startUrl: startUrl,
                 region: ssoRegion,
@@ -157,9 +157,9 @@ describe('SSO diskCache', () => {
         })
     })
 
-    describe('saveAccessToken', () => {
+    describe('saveAccessToken', function () {
         if (process.platform !== 'win32') {
-            it('should save the access token correctly with mode 0600', () => {
+            it('should save the access token correctly with mode 0600', function () {
                 sut.saveAccessToken(startUrl, validAccessToken)
 
                 const fileDescriptor = fs.openSync(accessTokenFileName, 'r')
@@ -168,14 +168,14 @@ describe('SSO diskCache', () => {
                 assert.strictEqual(fileStats.mode, 33152)
             })
         }
-        it('should save the access token', async () => {
+        it('should save the access token', async function () {
             sut.saveAccessToken(startUrl, validAccessToken)
             assert.strictEqual(await fileExists(accessTokenFileName), true)
         })
     })
 
-    describe('invalidateAccessToken', () => {
-        it('should delete the access token file', () => {
+    describe('invalidateAccessToken', function () {
+        it('should delete the access token file', function () {
             writeFileSync(accessTokenFileName, JSON.stringify(validAccessToken))
             assert.notStrictEqual(sut.loadAccessToken(startUrl), undefined)
 

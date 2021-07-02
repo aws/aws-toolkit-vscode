@@ -190,7 +190,7 @@ describe('isStepFunctionsRole', function () {
         assert.ok(!isStepFunctionsRole(baseIamRole))
     })
 
-    it("returns false if the AssumeRolePolicyDocument does not contain Step Functions' service principal", () => {
+    it("returns false if the AssumeRolePolicyDocument does not contain Step Functions' service principal", function () {
         const role: IAM.Role = {
             ...baseIamRole,
             AssumeRolePolicyDocument: JSON.stringify({

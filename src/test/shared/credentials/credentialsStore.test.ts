@@ -83,7 +83,7 @@ describe('CredentialsStore', async function () {
         assert.strictEqual(loadedCredentials, undefined)
     })
 
-    it('getCredentials returns undefined when credentials are expired', async () => {
+    it('getCredentials returns undefined when credentials are expired', async function () {
         const provider = makeSampleCredentialsProvider(0, sampleExpiredCredentials)
 
         await sut.upsertCredentials(sampleCredentialsId, provider)

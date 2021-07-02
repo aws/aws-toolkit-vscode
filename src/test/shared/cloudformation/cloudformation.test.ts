@@ -253,7 +253,7 @@ describe('CloudFormation', function () {
 
     describe('getResourceFromTemplate', async function () {
         for (const scenario of templateWithExistingHandlerScenarios) {
-            it(`should retrieve resource for ${scenario.title}`, async () => {
+            it(`should retrieve resource for ${scenario.title}`, async function () {
                 const templatePath = makeTemplatePath(scenario.templateFileName)
 
                 const resource = await CloudFormation.getResourceFromTemplate({
@@ -274,7 +274,7 @@ describe('CloudFormation', function () {
         }
 
         for (const scenario of templateWithNonExistingHandlerScenarios) {
-            it(`should throw for ${scenario.title}`, async () => {
+            it(`should throw for ${scenario.title}`, async function () {
                 const templatePath = makeTemplatePath(scenario.templateFileName)
 
                 await assert.rejects(
@@ -289,7 +289,7 @@ describe('CloudFormation', function () {
 
     describe('getResourceFromTemplateResources', async function () {
         for (const scenario of templateWithExistingHandlerScenarios) {
-            it(`should retrieve resource for ${scenario.title}`, async () => {
+            it(`should retrieve resource for ${scenario.title}`, async function () {
                 const templatePath = makeTemplatePath(scenario.templateFileName)
                 const template = await CloudFormation.load(templatePath)
 
@@ -311,7 +311,7 @@ describe('CloudFormation', function () {
         }
 
         for (const scenario of templateWithNonExistingHandlerScenarios) {
-            it(`should throw for ${scenario.title}`, async () => {
+            it(`should throw for ${scenario.title}`, async function () {
                 const templatePath = makeTemplatePath(scenario.templateFileName)
                 const template = await CloudFormation.load(templatePath)
 

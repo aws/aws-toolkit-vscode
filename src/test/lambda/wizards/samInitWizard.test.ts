@@ -517,7 +517,7 @@ describe('CreateNewSamAppWizard', async function () {
             assertEqualPaths(args!.location.fsPath, dir)
         })
 
-        it("contains a 'browse' option", async () => {
+        it("contains a 'browse' option", async function () {
             const name = 'myInputBoxResult'
             const context: CreateNewSamAppWizardContext = new MockCreateNewSamAppWizardContext(
                 [],

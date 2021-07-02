@@ -7,9 +7,9 @@ import * as assert from 'assert'
 import { finalizeConfig } from '../../../lambda/vue/samInvoke'
 import { AwsSamDebuggerConfiguration } from '../../../shared/sam/debugger/awsSamDebugConfiguration'
 
-describe('Sam Invoke Vue Backend', () => {
-    describe('finalizeConfig', () => {
-        it('prunes configs correctly', () => {
+describe('Sam Invoke Vue Backend', function () {
+    describe('finalizeConfig', function () {
+        it('prunes configs correctly', function () {
             const configs: { input: AwsSamDebuggerConfiguration; output: AwsSamDebuggerConfiguration }[] = [
                 {
                     input: {
