@@ -36,7 +36,7 @@ export class S3FolderNode extends AWSTreeNodeBase implements AWSResourceNode, Lo
     public constructor(
         public readonly bucket: Bucket,
         public readonly folder: Folder,
-        private readonly s3: S3Client,
+        public readonly s3: S3Client,
         private readonly workspace = Workspace.vscode()
     ) {
         super(folder.name, vscode.TreeItemCollapsibleState.Collapsed)
@@ -49,8 +49,7 @@ export class S3FolderNode extends AWSTreeNodeBase implements AWSResourceNode, Lo
     public async getChildren(): Promise<AWSTreeNodeBase[]> {
         return await makeChildrenNodes({
             getChildNodes: async () => this.childLoader.getChildren(),
-            getErrorNode: async (error: Error, logID: number) =>
-                new ErrorNode(this, error, logID),
+            getErrorNode: async (error: Error, logID: number) => new ErrorNode(this, error, logID),
             getNoChildrenPlaceholderNode: async () =>
                 new PlaceholderNode(this, localize('AWS.explorerNode.s3.noObjects', '[No Objects found]')),
         })
