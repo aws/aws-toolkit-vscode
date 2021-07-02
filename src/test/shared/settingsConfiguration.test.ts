@@ -1,5 +1,5 @@
 /*!
- * Copyright 2020 Amazon.com, Inc. or its affiliates. All Rights Reserved.
+ * Copyright Amazon.com, Inc. or its affiliates. All Rights Reserved.
  * SPDX-License-Identifier: Apache-2.0
  */
 
@@ -53,7 +53,7 @@ describe('DefaultSettingsConfiguration', function () {
         })
 
         scenarios.forEach(scenario => {
-            it(scenario.desc, async () => {
+            it(scenario.desc, async function () {
                 await settings.update(SETTING_KEY, scenario.testValue, vscode.ConfigurationTarget.Global)
 
                 const actualValue = sut.readSetting(SETTING_KEY)
@@ -64,7 +64,7 @@ describe('DefaultSettingsConfiguration', function () {
 
     describe('writeSetting', async function () {
         scenarios.forEach(scenario => {
-            it(scenario.desc, async () => {
+            it(scenario.desc, async function () {
                 await sut.writeSetting(SETTING_KEY, scenario.testValue, vscode.ConfigurationTarget.Global)
 
                 // Write tests need to retrieve vscode.WorkspaceConfiguration after writing the value

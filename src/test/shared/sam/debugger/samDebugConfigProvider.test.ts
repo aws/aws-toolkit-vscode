@@ -1,5 +1,5 @@
 /*!
- * Copyright 2020 Amazon.com, Inc. or its affiliates. All Rights Reserved.
+ * Copyright Amazon.com, Inc. or its affiliates. All Rights Reserved.
  * SPDX-License-Identifier: Apache-2.0
  */
 
@@ -396,12 +396,12 @@ describe('SamDebugConfigurationProvider', async function () {
             assert.strictEqual(resolved, undefined)
         })
 
-        it("returns undefined when resolving template debug configurations with a template that isn't in the registry", async () => {
+        it("returns undefined when resolving template debug configurations with a template that isn't in the registry", async function () {
             const resolved = await debugConfigProvider.makeConfig(undefined, createFakeConfig({}))
             assert.strictEqual(resolved, undefined)
         })
 
-        it("returns undefined when resolving template debug configurations with a template that doesn't have the set resource", async () => {
+        it("returns undefined when resolving template debug configurations with a template that doesn't have the set resource", async function () {
             await createAndRegisterYaml({}, tempFile, ext.templateRegistry)
             const resolved = await debugConfigProvider.makeConfig(
                 undefined,

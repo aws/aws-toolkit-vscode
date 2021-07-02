@@ -25,5 +25,5 @@
         // "noUnusedParameters": true,  /* Report errors on unused parameters. */
         "skipLibCheck": true /* Skip type checking of *.d.ts files */
     },
-    "exclude": ["node_modules", ".vscode-test", "src/testFixtures"]
+    "exclude": ["node_modules", ".vscode-test", "src/testFixtures", "plugins"]
 }

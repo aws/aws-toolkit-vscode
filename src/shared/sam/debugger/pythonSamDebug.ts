@@ -1,5 +1,5 @@
 /*!
- * Copyright 2018-2019 Amazon.com, Inc. or its affiliates. All Rights Reserved.
+ * Copyright Amazon.com, Inc. or its affiliates. All Rights Reserved.
  * SPDX-License-Identifier: Apache-2.0
  */
 
@@ -8,7 +8,10 @@ import { writeFile } from 'fs-extra'
 import * as os from 'os'
 import * as path from 'path'
 import {
-    isImageLambdaConfig, PythonCloud9DebugConfiguration, PythonDebugConfiguration, PythonPathMapping
+    isImageLambdaConfig,
+    PythonCloud9DebugConfiguration,
+    PythonDebugConfiguration,
+    PythonPathMapping,
 } from '../../../lambda/local/debugConfiguration'
 import { RuntimeFamily } from '../../../lambda/models/samLambdaRuntime'
 import { ext } from '../../extensionGlobals'

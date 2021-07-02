@@ -1,5 +1,5 @@
 /*!
- * Copyright 2018 Amazon.com, Inc. or its affiliates. All Rights Reserved.
+ * Copyright Amazon.com, Inc. or its affiliates. All Rights Reserved.
  * SPDX-License-Identifier: Apache-2.0
  */
 
@@ -788,7 +788,7 @@ describe('getExistingConfiguration', async function () {
         ext.templateRegistry.reset()
     })
 
-    it("returns undefined if the legacy config file doesn't exist", async () => {
+    it("returns undefined if the legacy config file doesn't exist", async function () {
         const val = await getExistingConfiguration(fakeWorkspaceFolder, 'handlerDoesNotMatter', tempTemplateFile)
         assert.strictEqual(val, undefined)
     })

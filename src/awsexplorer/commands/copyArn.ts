@@ -1,5 +1,5 @@
 /*!
- * Copyright 2020 Amazon.com, Inc. or its affiliates. All Rights Reserved.
+ * Copyright Amazon.com, Inc. or its affiliates. All Rights Reserved.
  * SPDX-License-Identifier: Apache-2.0
  */
 
@@ -42,7 +42,11 @@ export async function copyArnCommand(
         const logsItem = localize('AWS.generic.message.viewLogs', 'View Logs...')
         window
             .showErrorMessage(
-                localize('AWS.explorerNode.noArnFound', 'Could not find an ARN for selected {0} Explorer node', getIdeProperties().company),
+                localize(
+                    'AWS.explorerNode.noArnFound',
+                    'Could not find an ARN for selected {0} Explorer node',
+                    getIdeProperties().company
+                ),
                 logsItem
             )
             .then(selection => {

@@ -1,5 +1,5 @@
 /*!
- * Copyright 2018 Amazon.com, Inc. or its affiliates. All Rights Reserved.
+ * Copyright Amazon.com, Inc. or its affiliates. All Rights Reserved.
  * SPDX-License-Identifier: Apache-2.0
  */
 
@@ -24,7 +24,7 @@ describe('RegionNode', function () {
             createS3Client: sandbox.stub().returns({}),
             createEcrClient: sandbox.stub().returns({}),
         }
-        ext.toolkitClientBuilder = (clientBuilder as any) as ToolkitClientBuilder
+        ext.toolkitClientBuilder = clientBuilder as any as ToolkitClientBuilder
 
         testNode = new RegionNode({ id: regionCode, name: regionName }, new FakeRegionProvider())
     })

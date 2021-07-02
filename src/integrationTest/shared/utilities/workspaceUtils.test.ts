@@ -1,5 +1,5 @@
 /*!
- * Copyright 2020 Amazon.com, Inc. or its affiliates. All Rights Reserved.
+ * Copyright Amazon.com, Inc. or its affiliates. All Rights Reserved.
  * SPDX-License-Identifier: Apache-2.0
  */
 
@@ -88,7 +88,7 @@ describe('findParentProjectFile', async function () {
     })
 
     testScenarios.forEach(test => {
-        it(test.scenario, async () => {
+        it(test.scenario, async function () {
             filesToDelete = test.filesToUse
             for (const file of test.filesToUse) {
                 await writeFile(file.fsPath, '')

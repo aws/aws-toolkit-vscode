@@ -1,5 +1,5 @@
 /*!
- * Copyright 2019 Amazon.com, Inc. or its affiliates. All Rights Reserved.
+ * Copyright Amazon.com, Inc. or its affiliates. All Rights Reserved.
  * SPDX-License-Identifier: Apache-2.0
  */
 
@@ -13,7 +13,7 @@ import { ext } from '../../../shared/extensionGlobals'
 describe('getAccountId', function () {
     let sandbox: sinon.SinonSandbox
 
-    const credentials: AWS.Credentials = ({} as any) as AWS.Credentials
+    const credentials: AWS.Credentials = {} as any as AWS.Credentials
 
     const stsClient: StsClient = {
         regionCode: 'abc',
@@ -34,7 +34,7 @@ describe('getAccountId', function () {
 
         createStsClientStub = sandbox.stub(clientBuilder, 'createStsClient').returns(stsClient)
 
-        ext.toolkitClientBuilder = (clientBuilder as any) as ToolkitClientBuilder
+        ext.toolkitClientBuilder = clientBuilder as any as ToolkitClientBuilder
     })
 
     afterEach(async function () {

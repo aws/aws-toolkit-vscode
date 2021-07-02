@@ -1,5 +1,5 @@
 /*!
- * Copyright 2018-2019 Amazon.com, Inc. or its affiliates. All Rights Reserved.
+ * Copyright Amazon.com, Inc. or its affiliates. All Rights Reserved.
  * SPDX-License-Identifier: Apache-2.0
  */
 
@@ -517,7 +517,7 @@ describe('CreateNewSamAppWizard', async function () {
             assertEqualPaths(args!.location.fsPath, dir)
         })
 
-        it("contains a 'browse' option", async () => {
+        it("contains a 'browse' option", async function () {
             const name = 'myInputBoxResult'
             const context: CreateNewSamAppWizardContext = new MockCreateNewSamAppWizardContext(
                 [],

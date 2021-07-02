@@ -1,5 +1,5 @@
 /*!
- * Copyright 2019 Amazon.com, Inc. or its affiliates. All Rights Reserved.
+ * Copyright Amazon.com, Inc. or its affiliates. All Rights Reserved.
  * SPDX-License-Identifier: Apache-2.0
  */
 
@@ -28,11 +28,11 @@ describe('compareSamLambdaRuntime', async function () {
     ]
 
     scenarios.forEach(scenario => {
-        it(`${scenario.lowerRuntime} < ${scenario.higherRuntime}`, () => {
+        it(`${scenario.lowerRuntime} < ${scenario.higherRuntime}`, function () {
             assert.ok(compareSamLambdaRuntime(scenario.lowerRuntime, scenario.higherRuntime) < 0)
         })
 
-        it(`${scenario.higherRuntime} > ${scenario.lowerRuntime}`, () => {
+        it(`${scenario.higherRuntime} > ${scenario.lowerRuntime}`, function () {
             assert.ok(compareSamLambdaRuntime(scenario.higherRuntime, scenario.lowerRuntime) > 0)
         })
     })

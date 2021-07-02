@@ -1,5 +1,5 @@
 /*!
- * Copyright 2019 Amazon.com, Inc. or its affiliates. All Rights Reserved.
+ * Copyright Amazon.com, Inc. or its affiliates. All Rights Reserved.
  * SPDX-License-Identifier: Apache-2.0
  */
 
@@ -46,7 +46,7 @@ function parseArgs() {
  * a prerelease/nightly/edge/preview build.
  */
 function isRelease(): boolean {
-    return (child_process.execSync('git tag -l --contains HEAD').toString() !== '')
+    return child_process.execSync('git tag -l --contains HEAD').toString() !== ''
 }
 
 /**

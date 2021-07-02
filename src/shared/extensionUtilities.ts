@@ -1,5 +1,5 @@
 /*!
- * Copyright 2018 Amazon.com, Inc. or its affiliates. All Rights Reserved.
+ * Copyright Amazon.com, Inc. or its affiliates. All Rights Reserved.
  * SPDX-License-Identifier: Apache-2.0
  */
 
@@ -73,6 +73,7 @@ interface IdeProperties {
 }
 
 export function getIdeProperties(): IdeProperties {
+    // eslint-disable-next-line aws/no-localize-aws
     const company = localize('AWS.title', 'AWS')
     // in a separate const so other IDEs can take from this selectively.
     const vscodeVals: IdeProperties = {

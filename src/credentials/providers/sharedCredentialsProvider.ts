@@ -1,5 +1,5 @@
 /*!
- * Copyright 2020 Amazon.com, Inc. or its affiliates. All Rights Reserved.
+ * Copyright Amazon.com, Inc. or its affiliates. All Rights Reserved.
  * SPDX-License-Identifier: Apache-2.0
  */
 
@@ -12,7 +12,7 @@ import { hasProfileProperty, resolveProviderWithCancel } from '../credentialsUti
 import { SSO_PROFILE_PROPERTIES, validateSsoProfile } from '../sso/sso'
 import { DiskCache } from '../sso/diskCache'
 import { SsoAccessTokenProvider } from '../sso/ssoAccessTokenProvider'
-import { CredentialsProvider, CredentialsProviderType ,CredentialsId } from './credentials'
+import { CredentialsProvider, CredentialsProviderType, CredentialsId } from './credentials'
 import { SsoCredentialProvider } from './ssoCredentialProvider'
 import { CredentialType } from '../../shared/telemetry/telemetry.gen'
 import { EnvVarsCredentialsProvider } from './envVarsCredentialsProvider'
@@ -36,7 +36,7 @@ const SHARED_CREDENTIAL_PROPERTIES = {
 const CREDENTIAL_SOURCES = {
     ECS_CONTAINER: 'EcsContainer',
     EC2_INSTANCE_METADATA: 'Ec2InstanceMetadata',
-    ENVIRONMENT: 'Environment'
+    ENVIRONMENT: 'Environment',
 }
 
 /**
@@ -276,7 +276,9 @@ export class SharedCredentialsProvider implements CredentialsProvider {
             } else if (this.isCredentialSource(CREDENTIAL_SOURCES.ENVIRONMENT)) {
                 return new AWS.EnvironmentCredentials(EnvVarsCredentialsProvider.AWS_ENV_VAR_PREFIX)
             }
-            throw new Error(`Credential source ${this.profile[SHARED_CREDENTIAL_PROPERTIES.CREDENTIAL_SOURCE]} is not supported`)
+            throw new Error(
+                `Credential source ${this.profile[SHARED_CREDENTIAL_PROPERTIES.CREDENTIAL_SOURCE]} is not supported`
+            )
         }
     }
 
@@ -318,5 +320,4 @@ export class SharedCredentialsProvider implements CredentialsProvider {
         }
         return false
     }
-
 }

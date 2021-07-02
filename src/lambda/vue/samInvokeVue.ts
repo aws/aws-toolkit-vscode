@@ -1,5 +1,5 @@
 /*!
- * Copyright 2021 Amazon.com, Inc. or its affiliates. All Rights Reserved.
+ * Copyright Amazon.com, Inc. or its affiliates. All Rights Reserved.
  * SPDX-License-Identifier: Apache-2.0
  */
 
@@ -316,7 +316,7 @@ export const Component = Vue.extend({
     },
     // `createElement` is inferred, but `render` needs return type
     template: `<!--
-    * Copyright 2021 Amazon.com, Inc. or its affiliates. All Rights Reserved.
+    * Copyright Amazon.com, Inc. or its affiliates. All Rights Reserved.
     * SPDX-License-Identifier: Apache-2.0
     -->
 

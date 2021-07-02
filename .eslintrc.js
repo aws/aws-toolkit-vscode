@@ -9,7 +9,7 @@ module.exports = {
         node: true,
         mocha: true,
     },
-    plugins: ['@typescript-eslint', 'header', 'no-null'],
+    plugins: ['@typescript-eslint', 'header', 'no-null', 'aws'],
     extends: [
         'eslint:recommended',
         'plugin:@typescript-eslint/eslint-recommended',
@@ -73,16 +73,18 @@ module.exports = {
         '@typescript-eslint/restrict-template-expressions': 'off', // 294 errors, forces template literals to be a certain type
         '@typescript-eslint/no-floating-promises': 'off', // 274 errors, promises should catch errors or be awaited
         '@typescript-eslint/ban-ts-comment': 'off', // 27 errors, bans compiler error exceptions
-        '@typescript-eslint/explicit-module-boundary-types': 'off', // Remove this once 'explicit-function-return-type' is on 
+        '@typescript-eslint/explicit-module-boundary-types': 'off', // Remove this once 'explicit-function-return-type' is on
         // Do not check loops so while(true) works. Potentially reevalute this.
         'no-constant-condition': ['error', { checkLoops: false }],
         'no-empty': 'off',
+        'aws/no-mocha-arrows': 'error',
+        'aws/no-localize-aws': 'error',
         'header/header': [
             'error',
             'block',
             {
                 pattern:
-                    'Copyright ([0-9]{4}[-,]{0,1}[ ]{0,1}){1,} Amazon.com, Inc. or its affiliates. All Rights Reserved.\\r?\\n \\* SPDX-License-Identifier: Apache-2.0',
+                    'Copyright Amazon.com, Inc. or its affiliates. All Rights Reserved.\\r?\\n \\* SPDX-License-Identifier: Apache-2.0',
             },
             { lineEndings: 'unix' },
         ],

@@ -1,5 +1,5 @@
 /*!
- * Copyright 2020 Amazon.com, Inc. or its affiliates. All Rights Reserved.
+ * Copyright Amazon.com, Inc. or its affiliates. All Rights Reserved.
  * SPDX-License-Identifier: Apache-2.0
  */
 
@@ -37,7 +37,7 @@ describe('CloudFormation Template Registry', async function () {
         })
 
         describe('addItemToRegistry', async function () {
-            it("adds data from a template to the registry and can receive the template's data", async () => {
+            it("adds data from a template to the registry and can receive the template's data", async function () {
                 const filename = vscode.Uri.file(path.join(tempFolder, 'template.yaml'))
                 await strToYamlFile(goodYaml1, filename.fsPath)
                 await testRegistry.addItemToRegistry(filename)

@@ -1,5 +1,5 @@
 /*!
- * Copyright 2018 Amazon.com, Inc. or its affiliates. All Rights Reserved.
+ * Copyright Amazon.com, Inc. or its affiliates. All Rights Reserved.
  * SPDX-License-Identifier: Apache-2.0
  */
 
@@ -36,7 +36,7 @@ describe('SamCliConfiguration', function () {
 
         const samCliConfig: SamCliConfiguration = new DefaultSamCliConfiguration(
             settingsConfiguration,
-            ({} as any) as SamCliLocationProvider
+            {} as any as SamCliLocationProvider
         )
 
         await samCliConfig.initialize()

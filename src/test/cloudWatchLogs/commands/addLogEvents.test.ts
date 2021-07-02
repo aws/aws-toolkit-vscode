@@ -1,5 +1,5 @@
 /*!
- * Copyright 2020 Amazon.com, Inc. or its affiliates. All Rights Reserved.
+ * Copyright Amazon.com, Inc. or its affiliates. All Rights Reserved.
  * SPDX-License-Identifier: Apache-2.0
  */
 
@@ -56,14 +56,14 @@ describe('addLogEvents', async function () {
             ]
         >()
 
-        const document: vscode.TextDocument = ({
+        const document: vscode.TextDocument = {
             uri: uri,
-        } as any) as vscode.TextDocument
+        } as any as vscode.TextDocument
 
-        const fakeRegistry: LogStreamRegistry = ({
+        const fakeRegistry: LogStreamRegistry = {
             setBusyStatus: setBusyStatus,
             updateLog: updateLog,
-        } as any) as LogStreamRegistry
+        } as any as LogStreamRegistry
 
         const fakeEvent = sandbox.createStubInstance(vscode.EventEmitter)
 
@@ -112,14 +112,14 @@ describe('addLogEvents', async function () {
             clock.setTimeout(() => {}, 100)
         })
 
-        const document: vscode.TextDocument = ({
+        const document: vscode.TextDocument = {
             uri: uri,
-        } as any) as vscode.TextDocument
+        } as any as vscode.TextDocument
 
-        const fakeRegistry: LogStreamRegistry = ({
+        const fakeRegistry: LogStreamRegistry = {
             setBusyStatus: setBusyStatus,
             updateLog: updateLog,
-        } as any) as LogStreamRegistry
+        } as any as LogStreamRegistry
 
         const fakeEvent = sandbox.createStubInstance(vscode.EventEmitter)
 

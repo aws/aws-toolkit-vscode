@@ -1,5 +1,5 @@
 /*!
- * Copyright 2018-2019 Amazon.com, Inc. or its affiliates. All Rights Reserved.
+ * Copyright Amazon.com, Inc. or its affiliates. All Rights Reserved.
  * SPDX-License-Identifier: Apache-2.0
  */
 
@@ -155,7 +155,7 @@ describe('DefaultAwsContext', function () {
 
     function makeSampleAwsContextCredentials(): AwsContextCredentials {
         return {
-            credentials: ({} as any) as AWS.Credentials,
+            credentials: {} as any as AWS.Credentials,
             credentialsId: 'qwerty',
             accountId: testAccountIdValue,
         }

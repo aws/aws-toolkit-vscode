@@ -1,5 +1,5 @@
 /*!
- * Copyright 2018 Amazon.com, Inc. or its affiliates. All Rights Reserved.
+ * Copyright Amazon.com, Inc. or its affiliates. All Rights Reserved.
  * SPDX-License-Identifier: Apache-2.0
  */
 
@@ -154,7 +154,7 @@ describe('isPublicMethodSymbol', async function () {
             fakeRange,
             fakeRange
         )
-        it(`returns true for a public method symbol when ${test.scenario}`, async () => {
+        it(`returns true for a public method symbol when ${test.scenario}`, async function () {
             const doc = {
                 getText: (range?: vscode.Range): string =>
                     generateFunctionDeclaration(

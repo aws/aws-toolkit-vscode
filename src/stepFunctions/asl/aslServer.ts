@@ -1,5 +1,5 @@
 /*!
- * Copyright 2019 Amazon.com, Inc. or its affiliates. All Rights Reserved.
+ * Copyright Amazon.com, Inc. or its affiliates. All Rights Reserved.
  * SPDX-License-Identifier: Apache-2.0
  */
 
@@ -97,56 +97,54 @@ let resultLimit = Number.MAX_VALUE
 
 // After the server has started the client sends an initialize request. The server receives
 // in the passed params the rootPath of the workspace plus the client capabilities.
-connection.onInitialize(
-    (params: InitializeParams): InitializeResult => {
-        aslJsonLanguageService = getAslJsonLanguageService({
-            workspaceContext,
-            contributions: [],
-            clientCapabilities: params.capabilities,
-        })
+connection.onInitialize((params: InitializeParams): InitializeResult => {
+    aslJsonLanguageService = getAslJsonLanguageService({
+        workspaceContext,
+        contributions: [],
+        clientCapabilities: params.capabilities,
+    })
 
-        aslYamlLanguageService = getAslYamlLanguageService({
-            workspaceContext,
-            contributions: [],
-            clientCapabilities: params.capabilities,
-        })
+    aslYamlLanguageService = getAslYamlLanguageService({
+        workspaceContext,
+        contributions: [],
+        clientCapabilities: params.capabilities,
+    })
 
-        function getClientCapability<T>(name: string, def: T) {
-            const keys = name.split('.')
-            let c: any = params.capabilities
-            for (let i = 0; c && i < keys.length; i++) {
-                if (!Object.prototype.hasOwnProperty.call(c, keys[i])) {
-                    return def
-                }
-                c = c[keys[i]]
+    function getClientCapability<T>(name: string, def: T) {
+        const keys = name.split('.')
+        let c: any = params.capabilities
+        for (let i = 0; c && i < keys.length; i++) {
+            if (!Object.prototype.hasOwnProperty.call(c, keys[i])) {
+                return def
             }
-
-            return c
+            c = c[keys[i]]
         }
 
-        clientSnippetSupport = getClientCapability('textDocument.completion.completionItem.snippetSupport', false)
-        dynamicFormatterRegistration =
-            getClientCapability('textDocument.rangeFormatting.dynamicRegistration', false) &&
-            typeof params.initializationOptions.provideFormatter !== 'boolean'
-        foldingRangeLimitDefault = getClientCapability('textDocument.foldingRange.rangeLimit', Number.MAX_VALUE)
-        hierarchicalDocumentSymbolSupport = getClientCapability(
-            'textDocument.documentSymbol.hierarchicalDocumentSymbolSupport',
-            false
-        )
-        const capabilities: ServerCapabilities = {
-            textDocumentSync: TextDocumentSyncKind.Incremental,
-            completionProvider: clientSnippetSupport ? { resolveProvider: true, triggerCharacters: ['"'] } : undefined,
-            hoverProvider: true,
-            documentSymbolProvider: true,
-            documentRangeFormattingProvider: params.initializationOptions.provideFormatter === true,
-            colorProvider: {},
-            foldingRangeProvider: true,
-            selectionRangeProvider: true,
-        }
-
-        return { capabilities }
+        return c
     }
-)
+
+    clientSnippetSupport = getClientCapability('textDocument.completion.completionItem.snippetSupport', false)
+    dynamicFormatterRegistration =
+        getClientCapability('textDocument.rangeFormatting.dynamicRegistration', false) &&
+        typeof params.initializationOptions.provideFormatter !== 'boolean'
+    foldingRangeLimitDefault = getClientCapability('textDocument.foldingRange.rangeLimit', Number.MAX_VALUE)
+    hierarchicalDocumentSymbolSupport = getClientCapability(
+        'textDocument.documentSymbol.hierarchicalDocumentSymbolSupport',
+        false
+    )
+    const capabilities: ServerCapabilities = {
+        textDocumentSync: TextDocumentSyncKind.Incremental,
+        completionProvider: clientSnippetSupport ? { resolveProvider: true, triggerCharacters: ['"'] } : undefined,
+        hoverProvider: true,
+        documentSymbolProvider: true,
+        documentRangeFormattingProvider: params.initializationOptions.provideFormatter === true,
+        colorProvider: {},
+        foldingRangeProvider: true,
+        selectionRangeProvider: true,
+    }
+
+    return { capabilities }
+})
 
 // The settings interface describes the server relevant settings part
 interface Settings {

@@ -1,5 +1,5 @@
 /*!
- * Copyright 2020 Amazon.com, Inc. or its affiliates. All Rights Reserved.
+ * Copyright Amazon.com, Inc. or its affiliates. All Rights Reserved.
  * SPDX-License-Identifier: Apache-2.0
  */
 
@@ -57,7 +57,7 @@ describe('SchemaCodeGenUtils', async function () {
 
     describe('buildSchemaPackageName', async function () {
         testScenarios.forEach(test => {
-            it(test.scenario, async () => {
+            it(test.scenario, async function () {
                 const codeGen = new SchemaCodeGenUtils()
                 const result = codeGen.buildSchemaPackageName(test.input)
                 assert.strictEqual(result, test.expectedResult, 'Invalid package name returned')

@@ -1,5 +1,5 @@
 /*!
- * Copyright 2018 Amazon.com, Inc. or its affiliates. All Rights Reserved.
+ * Copyright Amazon.com, Inc. or its affiliates. All Rights Reserved.
  * SPDX-License-Identifier: Apache-2.0
  */
 
@@ -176,9 +176,9 @@ describe('Search Schemas', function () {
             postMessageSpy = sandbox.spy(onPostMessage)
         })
 
-        const mockTelemetryService = ({
+        const mockTelemetryService = {
             record: () => {},
-        } as any) as TelemetryService
+        } as any as TelemetryService
 
         const outputChannel = new MockOutputChannel()
         const singleRegistryName = [TEST_REGISTRY]

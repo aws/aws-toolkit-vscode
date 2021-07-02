@@ -1,5 +1,5 @@
 /*!
- * Copyright 2020 Amazon.com, Inc. or its affiliates. All Rights Reserved.
+ * Copyright Amazon.com, Inc. or its affiliates. All Rights Reserved.
  * SPDX-License-Identifier: Apache-2.0
  */
 
@@ -151,9 +151,7 @@ describe('SharedCredentialsProvider', async function () {
     it('validation identifies credential_source and source_profile both set', async function () {
         const sut = new SharedCredentialsProvider(
             'default',
-            new Map<string, Profile>([[
-                'default', { credential_source: 'EcsContainer', source_profile:'profile' }
-            ]])
+            new Map<string, Profile>([['default', { credential_source: 'EcsContainer', source_profile: 'profile' }]])
         )
 
         assert.notStrictEqual(sut.validate(), undefined)
@@ -190,10 +188,7 @@ describe('SharedCredentialsProvider', async function () {
     })
 
     it('validates a valid profile with role_arn', async function () {
-        const sut = new SharedCredentialsProvider(
-            'default',
-            new Map<string, Profile>([['default', { role_arn: 'x' }]])
-        )
+        const sut = new SharedCredentialsProvider('default', new Map<string, Profile>([['default', { role_arn: 'x' }]]))
 
         assert.strictEqual(sut.validate(), undefined)
     })
@@ -228,7 +223,7 @@ describe('SharedCredentialsProvider', async function () {
         assert.strictEqual(await sut.isAvailable(), false)
     })
 
-    it('getCredentials throws when unsupported credential source', async function() {
+    it('getCredentials throws when unsupported credential source', async function () {
         const sut = new SharedCredentialsProvider(
             'default',
             new Map<string, Profile>([['default', { credential_source: 'Invalid' }]])

@@ -1,5 +1,5 @@
 /*!
- * Copyright 2020 Amazon.com, Inc. or its affiliates. All Rights Reserved.
+ * Copyright Amazon.com, Inc. or its affiliates. All Rights Reserved.
  * SPDX-License-Identifier: Apache-2.0
  */
 
@@ -241,7 +241,7 @@ describe('uploadFileCommand', function () {
         assert.deepStrictEqual(window.progress.reported, [{ increment: 25 }])
         assert.strictEqual(window.progress.options?.location, vscode.ProgressLocation.Notification)
         assert.strictEqual(window.progress.options?.title, 'Uploading file.jpg...')
-        
+
         assert.deepStrictEqual(outputChannel.lines, [
             `Uploading file ${fileName} to s3://bucket-name/file.jpg`,
             `Successfully uploaded file ${fileName} to bucket-name`,

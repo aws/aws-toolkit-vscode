@@ -1,5 +1,5 @@
 /*!
- * Copyright 2018 Amazon.com, Inc. or its affiliates. All Rights Reserved.
+ * Copyright Amazon.com, Inc. or its affiliates. All Rights Reserved.
  * SPDX-License-Identifier: Apache-2.0
  */
 
@@ -21,9 +21,9 @@ export class MockSamCliProcessInvoker implements SamCliProcessInvoker {
 
         this.validateArgs(invokeSettings.arguments)
 
-        return ({
+        return {
             exitCode: 0,
-        } as any) as ChildProcessResult
+        } as any as ChildProcessResult
     }
 }
 

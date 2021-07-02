@@ -1,5 +1,5 @@
 /*!
- * Copyright 2020 Amazon.com, Inc. or its affiliates. All Rights Reserved.
+ * Copyright Amazon.com, Inc. or its affiliates. All Rights Reserved.
  * SPDX-License-Identifier: Apache-2.0
  */
 
@@ -27,9 +27,9 @@ describe('validateDocumenttName', function () {
     })
 
     invalidErrors.forEach(invalid => {
-        describe(invalid.error, () => {
+        describe(invalid.error, function () {
             invalid.documentNames.forEach(documentName => {
-                it(documentName, () => {
+                it(documentName, function () {
                     assert.strictEqual(validateDocumentName(documentName), invalid.error)
                 })
             })

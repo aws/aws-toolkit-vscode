@@ -1,5 +1,5 @@
 /*!
- * Copyright 2019 Amazon.com, Inc. or its affiliates. All Rights Reserved.
+ * Copyright Amazon.com, Inc. or its affiliates. All Rights Reserved.
  * SPDX-License-Identifier: Apache-2.0
  */
 
@@ -34,7 +34,7 @@ describe('ConstructNode', function () {
         assert.strictEqual(testNode.tooltip, constructTreePath)
     })
 
-    it("returns id that includes parent's id and it's own label", async () => {
+    it("returns id that includes parent's id and it's own label", async function () {
         const testNode = generateTestNode(label)
         assert.strictEqual(testNode.id, `${cdkJsonPath}/${label}`)
     })

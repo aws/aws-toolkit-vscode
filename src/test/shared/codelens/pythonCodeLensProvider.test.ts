@@ -1,5 +1,5 @@
 /*!
- * Copyright 2018 Amazon.com, Inc. or its affiliates. All Rights Reserved.
+ * Copyright Amazon.com, Inc. or its affiliates. All Rights Reserved.
  * SPDX-License-Identifier: Apache-2.0
  */
 
@@ -25,7 +25,7 @@ describe('pythonCodeLensProvider', async function () {
             ]
 
             testScenarios.forEach(test => {
-                it(`Returns cased-drive variants for windows platforms: ${test.situation}`, async () => {
+                it(`Returns cased-drive variants for windows platforms: ${test.situation}`, async function () {
                     const variants = getLocalRootVariants(test.inputText)
                     assert.ok(variants)
                     assert.strictEqual(variants.length, 2, 'Expected two variants')
@@ -64,7 +64,7 @@ describe('pythonCodeLensProvider', async function () {
             ]
 
             testScenarios.forEach(test => {
-                it(`Returns the same string for non-windows platforms: ${test.situation}`, async () => {
+                it(`Returns the same string for non-windows platforms: ${test.situation}`, async function () {
                     const variants = getLocalRootVariants(test.inputText)
                     assert.ok(variants)
                     assert.strictEqual(variants.length, 1, 'Only expected one variant')

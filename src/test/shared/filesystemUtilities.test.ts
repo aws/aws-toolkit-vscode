@@ -1,5 +1,5 @@
 /*!
- * Copyright 2018 Amazon.com, Inc. or its affiliates. All Rights Reserved.
+ * Copyright Amazon.com, Inc. or its affiliates. All Rights Reserved.
  * SPDX-License-Identifier: Apache-2.0
  */
 
@@ -65,7 +65,7 @@ describe('filesystemUtilities', function () {
     })
 
     describe('makeTemporaryToolkitFolder()', function () {
-        it(`makes temp dirs as children to filesystemUtilities.tempDirPath ('${tempDirPath}')`, async () => {
+        it(`makes temp dirs as children to filesystemUtilities.tempDirPath ('${tempDirPath}')`, async function () {
             const parentFolder = path.dirname(tempFolder)
 
             assert.strictEqual(

@@ -1,5 +1,5 @@
 /*!
- * Copyright 2019 Amazon.com, Inc. or its affiliates. All Rights Reserved.
+ * Copyright Amazon.com, Inc. or its affiliates. All Rights Reserved.
  * SPDX-License-Identifier: Apache-2.0
  */
 
@@ -28,9 +28,7 @@ const typescriptDetail = {
     extension: '.ts',
 }
 
-export function getLanguageDetails(
-    language: SchemaCodeLangs
-): {
+export function getLanguageDetails(language: SchemaCodeLangs): {
     apiValue: string
     extension: string
 } {

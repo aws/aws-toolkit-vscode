@@ -1,5 +1,5 @@
 /*!
- * Copyright 2018-2019 Amazon.com, Inc. or its affiliates. All Rights Reserved.
+ * Copyright Amazon.com, Inc. or its affiliates. All Rights Reserved.
  * SPDX-License-Identifier: Apache-2.0
  */
 
@@ -224,7 +224,7 @@ describe('SchemaCodeDownloadWizard', async function () {
             assert.strictEqual(args!.location.fsPath, `${path.sep}${locationPath}`)
         })
 
-        it("contains a 'browse' option", async () => {
+        it("contains a 'browse' option", async function () {
             const name = 'myInputBoxResult'
             const locationPath = path.join('my', 'quick', 'pick', 'result')
 

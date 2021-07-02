@@ -1,5 +1,5 @@
 /*!
- * Copyright 2019 Amazon.com, Inc. or its affiliates. All Rights Reserved.
+ * Copyright Amazon.com, Inc. or its affiliates. All Rights Reserved.
  * SPDX-License-Identifier: Apache-2.0
  */
 
@@ -22,9 +22,9 @@ describe('updateCredentialsStatusBarItem', async function () {
     })
 
     beforeEach(async function () {
-        statusBarItem = ({
+        statusBarItem = {
             text: '',
-        } as any) as vscode.StatusBarItem
+        } as any as vscode.StatusBarItem
     })
 
     it('updates text with credentials id', async function () {

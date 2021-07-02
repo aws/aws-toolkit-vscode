@@ -1,5 +1,5 @@
 /*!
- * Copyright 2018 Amazon.com, Inc. or its affiliates. All Rights Reserved.
+ * Copyright Amazon.com, Inc. or its affiliates. All Rights Reserved.
  * SPDX-License-Identifier: Apache-2.0
  */
 
@@ -330,9 +330,8 @@ describe('promptUser', async function () {
         private readonly onDidChangeValueEmitter: vscode.EventEmitter<string> = new vscode.EventEmitter()
         private readonly onDidChangeActiveEmitter: vscode.EventEmitter<T[]> = new vscode.EventEmitter()
         private readonly onDidChangeSelectionEmitter: vscode.EventEmitter<T[]> = new vscode.EventEmitter()
-        private readonly onDidTriggerButtonEmitter: vscode.EventEmitter<
-            vscode.QuickInputButton
-        > = new vscode.EventEmitter()
+        private readonly onDidTriggerButtonEmitter: vscode.EventEmitter<vscode.QuickInputButton> =
+            new vscode.EventEmitter()
 
         public constructor() {
             this.onDidHide = this.onDidHideEmitter.event

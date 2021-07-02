@@ -1,5 +1,5 @@
 /*!
- * Copyright 2019 Amazon.com, Inc. or its affiliates. All Rights Reserved.
+ * Copyright Amazon.com, Inc. or its affiliates. All Rights Reserved.
  * SPDX-License-Identifier: Apache-2.0
  */
 
@@ -247,7 +247,11 @@ export async function getSearchListForSingleRegistry(
     return results
 }
 
-export async function getSearchResults(schemaClient: SchemaClient, registries: string[], keyword: string): Promise<SchemaVersionedSummary[]> {
+export async function getSearchResults(
+    schemaClient: SchemaClient,
+    registries: string[],
+    keyword: string
+): Promise<SchemaVersionedSummary[]> {
     let results: SchemaVersionedSummary[] = []
 
     await Promise.all(

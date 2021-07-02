@@ -1,5 +1,5 @@
 /*!
- * Copyright 2018 Amazon.com, Inc. or its affiliates. All Rights Reserved.
+ * Copyright Amazon.com, Inc. or its affiliates. All Rights Reserved.
  * SPDX-License-Identifier: Apache-2.0
  */
 
@@ -23,7 +23,7 @@ describe('symbolUtilities', async function () {
         it('returns symbols if available', async function () {
             const context: LoadSymbolsContext = {
                 async executeCommand<T>(command: string, ...args: any[]): Promise<T | undefined> {
-                    return ([makeSymbol('MyName')] as unknown) as T
+                    return [makeSymbol('MyName')] as unknown as T
                 },
             }
 

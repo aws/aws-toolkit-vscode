@@ -1,5 +1,5 @@
 /*!
- * Copyright 2020 Amazon.com, Inc. or its affiliates. All Rights Reserved.
+ * Copyright Amazon.com, Inc. or its affiliates. All Rights Reserved.
  * SPDX-License-Identifier: Apache-2.0
  */
 
@@ -11,8 +11,8 @@ import { SsoAccessTokenProvider } from '../../../credentials/sso/ssoAccessTokenP
 import { DiskCache } from '../../../credentials/sso/diskCache'
 import { GetRoleCredentialsResponse } from 'aws-sdk/clients/sso'
 
-describe('SsoCredentialProvider', () => {
-    describe('refreshCredentials', () => {
+describe('SsoCredentialProvider', function () {
+    describe('refreshCredentials', function () {
         const sandbox = sinon.createSandbox()
 
         const ssoRegion = 'dummyRegion'
@@ -34,20 +34,20 @@ describe('SsoCredentialProvider', () => {
             expiresAt: new Date(Date.now() + HOUR_IN_MS).toISOString(),
         }
 
-        afterEach(() => {
+        afterEach(function () {
             sandbox.restore()
         })
 
-        it('invalidates cached access token if denied', async () => {
+        it('invalidates cached access token if denied', async function () {
             const stubAccessToken = sandbox.stub(ssoAccessTokenProvider, 'accessToken').resolves(validAccessToken)
             const stubSsoClient = sandbox.stub(ssoClient, 'getRoleCredentials')
 
             const errToThrow = new Error() as SDK.AWSError
             errToThrow.code = 'UnauthorizedException'
 
-            stubSsoClient.returns(({
+            stubSsoClient.returns({
                 promise: sandbox.stub().throws(errToThrow),
-            } as any) as SDK.Request<GetRoleCredentialsResponse, SDK.AWSError>)
+            } as any as SDK.Request<GetRoleCredentialsResponse, SDK.AWSError>)
 
             const stubInvalidate = sandbox.stub(ssoAccessTokenProvider, 'invalidate').returns()
 
@@ -58,7 +58,7 @@ describe('SsoCredentialProvider', () => {
             assert.strictEqual(stubInvalidate.callCount, 1, 'invalidate not called')
         })
 
-        it('returns valid credentials', async () => {
+        it('returns valid credentials', async function () {
             sandbox.stub(ssoAccessTokenProvider, 'accessToken').resolves(validAccessToken)
             const response: GetRoleCredentialsResponse = {
                 roleCredentials: {
@@ -68,9 +68,9 @@ describe('SsoCredentialProvider', () => {
                 },
             }
             const stubSsoClient = sandbox.stub(ssoClient, 'getRoleCredentials')
-            stubSsoClient.returns(({
+            stubSsoClient.returns({
                 promise: sandbox.stub().resolves(response),
-            } as any) as SDK.Request<GetRoleCredentialsResponse, SDK.AWSError>)
+            } as any as SDK.Request<GetRoleCredentialsResponse, SDK.AWSError>)
 
             const receivedCredentials = await sut.refreshCredentials()
 

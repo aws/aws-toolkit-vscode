@@ -1,5 +1,5 @@
 /*!
- * Copyright 2020 Amazon.com, Inc. or its affiliates. All Rights Reserved.
+ * Copyright Amazon.com, Inc. or its affiliates. All Rights Reserved.
  * SPDX-License-Identifier: Apache-2.0
  */
 
@@ -372,7 +372,7 @@ describe('DefaultS3Client', function () {
             })
         })
 
-        it(`Filters buckets when it can't get region`, async () => {
+        it(`Filters buckets when it can't get region`, async function () {
             const mockResponse: Request<any, AWSError> = mock()
             when(mockS3.listBuckets()).thenReturn(success({ Buckets: [{ Name: bucketName }] }))
             // eslint-disable-next-line @typescript-eslint/unbound-method

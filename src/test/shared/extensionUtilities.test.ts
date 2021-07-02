@@ -1,5 +1,5 @@
 /*!
- * Copyright 2018 Amazon.com, Inc. or its affiliates. All Rights Reserved.
+ * Copyright Amazon.com, Inc. or its affiliates. All Rights Reserved.
  * SPDX-License-Identifier: Apache-2.0
  */
 
@@ -68,7 +68,7 @@ describe('extensionUtilities', function () {
             }
         })
 
-        it("throws error if a quick start page doesn't exist", async () => {
+        it("throws error if a quick start page doesn't exist", async function () {
             await assert.rejects(createQuickStartWebview(context, 'irresponsibly-named-file'))
         })
 
@@ -108,13 +108,13 @@ describe('extensionUtilities', function () {
             assert.strictEqual(isDifferentVersion(extContext, goodVersion), false)
         })
 
-        it("returns true if a most recent version isn't set", () => {
+        it("returns true if a most recent version isn't set", function () {
             const extContext = new FakeExtensionContext()
 
             assert.ok(isDifferentVersion(extContext))
         })
 
-        it("returns true if a most recent version doesn't match the current version", () => {
+        it("returns true if a most recent version doesn't match the current version", function () {
             const oldVersion = '1.2.3'
             const newVersion = '4.5.6'
             const extContext = new FakeExtensionContext()

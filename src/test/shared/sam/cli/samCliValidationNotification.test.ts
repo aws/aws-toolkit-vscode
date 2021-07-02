@@ -1,5 +1,5 @@
 /*!
- * Copyright 2018 Amazon.com, Inc. or its affiliates. All Rights Reserved.
+ * Copyright Amazon.com, Inc. or its affiliates. All Rights Reserved.
  * SPDX-License-Identifier: Apache-2.0
  */
 
@@ -66,7 +66,7 @@ describe('makeSamCliValidationNotification', async function () {
     ]
 
     versionValidationTestScenarios.forEach(test => {
-        it(`handles InvalidSamCliVersionError - ${test.situation}`, async () => {
+        it(`handles InvalidSamCliVersionError - ${test.situation}`, async function () {
             const validatorResult: SamCliVersionValidatorResult = {
                 version: '1.2.3',
                 validation: test.versionValidation,

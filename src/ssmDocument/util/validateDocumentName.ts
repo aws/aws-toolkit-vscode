@@ -1,5 +1,5 @@
 /*!
- * Copyright 2020 Amazon.com, Inc. or its affiliates. All Rights Reserved.
+ * Copyright Amazon.com, Inc. or its affiliates. All Rights Reserved.
  * SPDX-License-Identifier: Apache-2.0
  */
 
@@ -17,6 +17,7 @@ export function validateDocumentName(name: string): string | undefined {
         if (name.startsWith('AWS-') || name.startsWith('Amazon')) {
             return localize(
                 'AWS.ssmDocument.publishWizard.ssmDocumentName.validation.reservedWord',
+                // eslint-disable-next-line aws/no-localize-aws
                 'Document name cannot start with Amazon or AWS-'
             )
         }
