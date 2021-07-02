@@ -59,7 +59,7 @@ const newRule = function (context: eslint.Rule.RuleContext) {
 export default {
     meta: {
         type: 'problem',
-        fixable: 'code',
+        //fixable: 'code',
         docs: {
             description: 'no arrows',
             category: 'Stylistic Issues',
