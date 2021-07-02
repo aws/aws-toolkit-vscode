@@ -319,6 +319,7 @@ export class MockEcsClient implements EcsClient {
 }
 
 export class MockIamClient implements IamClient {
+    public readonly regionCode = ''
     public readonly listRoles: () => Promise<IAM.ListRolesResponse>
 
     public constructor({ listRoles = async () => ({ Roles: [] }) }: { listRoles?(): Promise<IAM.ListRolesResponse> }) {
