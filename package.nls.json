@@ -421,7 +421,7 @@
     "AWS.s3.downloadFile.error.general": "Failed to download file {0}",
     "AWS.s3.uploadFile.progressTitle": "Uploading {0}...",
     "AWS.s3.uploadFile.openButton": "Upload",
-    "AWS.s3.uploadFile.startUpload" : "Uploading file from {0} to {1}",
+    "AWS.s3.uploadFile.startUpload": "Uploading file from {0} to {1}",
     "AWS.s3.uploadFile.success": "Successfully uploaded file {0} to {1}",
     "AWS.s3.uploadFile.error.general": "Failed to upload file {0}",
     "AWS.s3.validateBucketName.error.invalidCharacters": "Bucket name must only contain lowercase letters, numbers, hyphens, and periods",
