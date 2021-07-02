@@ -157,11 +157,9 @@ that is a net cost.
 -   Use small names for small scopes.
 
     -   PREFER:
-
         ```ts
         things.filter(o => o.isFoo)
         ```
-
     -   INSTEAD OF:
         ```ts
         things.filter(thing => thing.isFoo)

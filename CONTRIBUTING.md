@@ -50,29 +50,22 @@ When you launch the extension or run tests from Visual Studio Code, it will auto
 You can also use these NPM tasks (see `npm run` for the full list):
 
 -   To build once:
-
     ```
     npm run compile
     ```
-
 -   To build and watch for file changes:
-
     ```
     npm run watch
     ```
-
 -   To build a release artifact (VSIX):
-
     ```
     npm run package
     ```
-
     -   This uses webpack which may exhaust the default Node heap size on Linux.
         To fix this set `--max-old-space-size`:
         ```
         export NODE_OPTIONS=--max-old-space-size=8192
         ```
-
 -   To build a "debug" VSIX artifact (faster and does not minify):
     ```
     npm run package -- --debug
@@ -138,11 +131,9 @@ To run a single test in VSCode, do any one of:
 -   Run in your terminal:
 
     -   Unix/macOS/POSIX shell:
-
         ```
         NO_COVERAGE=true TEST_FILE=src/test/foo.test npm run test
         ```
-
     -   Powershell:
         ```
         $Env:NO_COVERAGE = "true"; $Env:TEST_FILE = "src/test/foo.test"; npm run test
@@ -237,7 +228,6 @@ a TypeScript `*.d.ts` file and pass that to the AWS JS SDK to create
 requests just from the model/types.
 
 1. Add an entry to the list in `generateServiceClient.ts`:
-
     ```diff
      diff --git a/build-scripts/generateServiceClient.ts b/build-scripts/generateServiceClient.ts
      index 8bb278972d29..6c6914ec8812 100644
@@ -254,25 +244,20 @@ requests just from the model/types.
                   serviceJsonPath: 'src/shared/telemetry/service-2.json',
                   serviceName: 'ClientTelemetry',
     ```
-
 2. Run the script:
-
     ```
     ./node_modules/.bin/ts-node ./build-scripts/generateServiceClient.ts
     ```
-
 3. The script produces a `*.d.ts` file (used only for IDE
    code-completion, not required to actually make requests):
-
     ```
     src/shared/foo.d.ts
     ```
-
 4. To make requests with the SDK, pass the `*.api.json` service model to
    `ext.sdkClientBuilder.createAndConfigureServiceClient` as a generic
    `Service` with `apiConfig=require('foo.api.json')`.
 
-    ```
+    ```ts
     // Import the `*.d.ts` file for code-completion convenience.
     import * as ClientFoo from '../shared/clientfoo'
     // The AWS JS SDK uses this to dynamically build service requests.
