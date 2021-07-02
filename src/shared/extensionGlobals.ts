@@ -4,7 +4,7 @@
  */
 
 import { ExtensionContext, OutputChannel, Uri } from 'vscode'
-import { FileViewerManager } from '../s3/util/fileViewerManager'
+import { S3FileViewerManager } from '../s3/util/fileViewerManager'
 import { AWSClientBuilder } from './awsClientBuilder'
 import { AWSContextCommands } from './awsContextCommands'
 import { ToolkitClientBuilder } from './clients/toolkitClientBuilder'
@@ -27,7 +27,7 @@ export namespace ext {
     export let telemetry: TelemetryService
     export let templateRegistry: CloudFormationTemplateRegistry
     export let codelensRootRegistry: CodelensRootRegistry
-    export let fileViewerManager: FileViewerManager
+    export let fileViewerManager: S3FileViewerManager
 
     let _didReload = false
 

@@ -31,13 +31,13 @@ export class S3FileViewerManager {
 }
 
 export class SingletonManager {
-    static fileManager: FileViewerManager | undefined
+    static fileManager: S3FileViewerManager | undefined
 
     private constructor() {}
 
-    public static getInstance(): FileViewerManager {
+    public static getInstance(): S3FileViewerManager {
         if (!SingletonManager.fileManager) {
-            SingletonManager.fileManager = new FileViewerManager()
+            SingletonManager.fileManager = new S3FileViewerManager()
         }
         return SingletonManager.fileManager
     }
