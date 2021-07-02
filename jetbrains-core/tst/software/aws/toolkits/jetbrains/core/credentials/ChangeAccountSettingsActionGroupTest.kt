@@ -68,9 +68,8 @@ class ChangeAccountSettingsActionGroupTest {
         val nonSelectedSubAction = partitionActions.filterIsInstance<ChangeRegionActionGroup>().first { it.templateText == otherPartitionRegion.partitionId }
             .getChildren(null).filterIsInstance<ChangeRegionAction>()
 
-        assertThat(topLevelRegionActions).hasOnlyOneElementSatisfying {
-            it.templateText == selectedRegion.displayName
-        }
+        assertThat(topLevelRegionActions).singleElement()
+            .matches { it.templateText == selectedRegion.displayName }
         assertThat(partitionActions).noneMatch { it.templateText == selectedRegion.partitionId }
 
         assertThat(nonSelectedSubAction).hasSize(2)

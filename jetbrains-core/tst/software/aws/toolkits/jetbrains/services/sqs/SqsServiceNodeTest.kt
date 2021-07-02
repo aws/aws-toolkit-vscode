@@ -52,14 +52,14 @@ class SqsServiceNodeTest {
     fun `No queues listed`() {
         resourceCache.addEntry(projectRule.project, SqsResources.LIST_QUEUE_URLS, listOf())
         val children = SqsServiceNode(projectRule.project, SQS_EXPLORER_NODE).children
-        assertThat(children).hasOnlyOneElementSatisfying { it is AwsExplorerEmptyNode }
+        assertThat(children).singleElement().isInstanceOf(AwsExplorerEmptyNode::class.java)
     }
 
     @Test
     fun `Error loading queues`() {
         resourceCache.addEntry(projectRule.project, SqsResources.LIST_QUEUE_URLS, CompletableFutureUtils.failedFuture(RuntimeException("Simulated error")))
         val children = SqsServiceNode(projectRule.project, SQS_EXPLORER_NODE).children
-        assertThat(children).hasOnlyOneElementSatisfying { it is AwsExplorerErrorNode }
+        assertThat(children).singleElement().isInstanceOf(AwsExplorerErrorNode::class.java)
     }
 
     private companion object {

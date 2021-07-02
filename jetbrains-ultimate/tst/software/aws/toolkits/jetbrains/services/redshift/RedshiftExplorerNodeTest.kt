@@ -34,7 +34,7 @@ class RedshiftExplorerNodeTest {
             listOf(Cluster.builder().clusterIdentifier(name).build())
         )
         val serviceRootNode = sut.buildServiceRootNode(projectRule.project)
-        assertThat(serviceRootNode.children).hasOnlyOneElementSatisfying {
+        assertThat(serviceRootNode.children).singleElement().matches {
             it is AwsExplorerNode && it.displayName() == name
         }
     }
@@ -43,18 +43,14 @@ class RedshiftExplorerNodeTest {
     fun `No resources makes empty node`() {
         resourceCache.addEntry(projectRule.project, RedshiftResources.LIST_CLUSTERS, listOf())
         val serviceRootNode = sut.buildServiceRootNode(projectRule.project)
-        assertThat(serviceRootNode.children).hasOnlyOneElementSatisfying {
-            it is AwsExplorerEmptyNode
-        }
+        assertThat(serviceRootNode.children).singleElement().isInstanceOf(AwsExplorerEmptyNode::class.java)
     }
 
     @Test
     fun `Exception thrown makes error node`() {
         resourceCache.addEntry(projectRule.project, RedshiftResources.LIST_CLUSTERS, CompletableFuture.failedFuture(RuntimeException("Simulated error")))
         val serviceRootNode = sut.buildServiceRootNode(projectRule.project)
-        assertThat(serviceRootNode.children).hasOnlyOneElementSatisfying {
-            it is AwsExplorerErrorNode
-        }
+        assertThat(serviceRootNode.children).singleElement().isInstanceOf(AwsExplorerErrorNode::class.java)
     }
 
     private companion object {

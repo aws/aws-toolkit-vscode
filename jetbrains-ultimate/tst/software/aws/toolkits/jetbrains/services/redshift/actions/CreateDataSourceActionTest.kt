@@ -39,7 +39,7 @@ class CreateDataSourceActionTest {
                 .dbName(dbName)
                 .build()
         )
-        assertThat(registry.newDataSources).hasOnlyOneElementSatisfying {
+        assertThat(registry.newDataSources).singleElement().satisfies {
             assertThat(it.isTemporary).isFalse()
             assertThat(it.sslCfg?.myEnabled).isTrue()
             assertThat(it.url).isEqualTo("jdbc:redshift://$address:$port/$dbName")

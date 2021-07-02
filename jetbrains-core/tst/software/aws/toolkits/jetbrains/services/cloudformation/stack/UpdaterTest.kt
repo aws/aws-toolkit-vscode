@@ -167,7 +167,7 @@ class UpdaterTest {
 
         val captor = argumentCaptor<List<StackResource>>()
         verify(treeView).fillResources(captor.capture())
-        assertThat(captor.firstValue).hasOnlyOneElementSatisfying {
+        assertThat(captor.firstValue).singleElement().satisfies {
             assertThat(it.logicalResourceId()).isEqualTo("L1")
         }
     }

@@ -18,8 +18,8 @@ class DialogModalityRuleTest {
               }
             }
         """
-        assertThat(rule.lint(code))
-            .hasOnlyOneElementSatisfying {
+        assertThat(rule.lint(code)).singleElement()
+            .matches {
                 it.id == "RunInEdtWithoutModalityInDialog" &&
                     it.message == "Call to runInEdt without ModalityState.any() within Dialog will not run until Dialog exits."
             }
@@ -47,9 +47,10 @@ class DialogModalityRuleTest {
             }
         """
 
-        assertThat(rule.lint(code)).hasOnlyOneElementSatisfying {
-            it.id == "RunInEdtWithoutModalityInDialog" &&
-                it.message == "Call to runInEdt without ModalityState.any() within Dialog will not run until Dialog exits."
-        }
+        assertThat(rule.lint(code)).singleElement()
+            .matches {
+                it.id == "RunInEdtWithoutModalityInDialog" &&
+                    it.message == "Call to runInEdt without ModalityState.any() within Dialog will not run until Dialog exits."
+            }
     }
 }
