@@ -69,13 +69,11 @@ You can also use these NPM tasks (see `npm run` for the full list):
 
     -   This uses webpack which may exhaust the default Node heap size on Linux.
         To fix this set `--max-old-space-size`:
-
         ```
         export NODE_OPTIONS=--max-old-space-size=8192
         ```
 
 -   To build a "debug" VSIX artifact (faster and does not minify):
-
     ```
     npm run package -- --debug
     ```
@@ -95,7 +93,6 @@ See [CODE_GUIDELINES.md](./docs/CODE_GUIDELINES.md) for coding conventions.
 -   How to debug unresolved promise rejections:
 
     1. Declare a global unhandledRejection handler.
-
         ```ts
         process.on('unhandledRejection', e => {
             getLogger('channel').error(
@@ -111,7 +108,6 @@ See [CODE_GUIDELINES.md](./docs/CODE_GUIDELINES.md) for coding conventions.
             }
         })
         ```
-
     2. Put a breakpoint on it.
     3. Run all tests.
 
@@ -148,14 +144,12 @@ To run a single test in VSCode, do any one of:
         ```
 
     -   Powershell:
-
         ```
         $Env:NO_COVERAGE = "true"; $Env:TEST_FILE = "src/test/foo.test"; npm run test
         ```
 
 -   To run all tests in a particular subdirectory, you can edit
     `src/test/index.ts:rootTestsPath` to point to a subdirectory:
-
     ```
     rootTestsPath: __dirname + '/shared/sam/debugger/'
     ```
@@ -199,7 +193,6 @@ Quick summary of commit message guidelines:
     change and contrast your implementation with previous behavior.
 
     -   Often you can save a _lot_ of words by using this simple template:
-
         ```
         Problem: …
         Solution: …

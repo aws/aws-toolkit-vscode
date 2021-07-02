@@ -119,7 +119,6 @@ that is a net cost.
         ```
 
     -   INSTEAD OF:
-
         ```ts
         let topicVar1 = 'foo'
         let topicVar2 = 'bar'
@@ -130,15 +129,12 @@ that is a net cost.
     related".
 
     -   PREFER:
-
         ```ts
         export interface AwsSamDebuggerConfigLoose extends AwsSamDebuggerConfig {
           ...
         }
         ```
-
     -   INSTEAD OF:
-
         ```ts
         export interface MorePermissiveAwsSamDebuggerConfig extends AwsSamDebuggerConfig {
           ...
@@ -148,14 +144,11 @@ that is a net cost.
 -   Use module-qualified names, to avoid aliasing members.
 
     -   PREFER:
-
         ```ts
         import * as foo from '../foo'
         const result = foo.Result
         ```
-
     -   INSTEAD OF:
-
         ```ts
         import { Result as FooResult } from '../foo'
         const result = FooResult
@@ -170,7 +163,6 @@ that is a net cost.
         ```
 
     -   INSTEAD OF:
-
         ```ts
         things.filter(thing => thing.isFoo)
         ```
