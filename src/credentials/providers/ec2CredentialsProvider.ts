@@ -4,7 +4,7 @@
  */
 
 import { Credentials, EC2MetadataCredentials } from 'aws-sdk'
-import { DefaultEc2MetadataClient } from '../../shared/clients/defaultEc2MetadataClient'
+import { DefaultEc2MetadataClient } from '../../shared/clients/ec2MetadataClient'
 import { Ec2MetadataClient } from '../../shared/clients/ec2MetadataClient'
 import { getLogger } from '../../shared/logger'
 import { CredentialType } from '../../shared/telemetry/telemetry.gen'
@@ -31,8 +31,15 @@ export class Ec2CredentialsProvider implements CredentialsProvider {
 
         const start = Date.now()
         try {
+            const iamInfo = await this.metadata.getIamInfo()
+            if (!iamInfo || iamInfo.Code !== 'Success') {
+                getLogger().warn(
+                    `credentials: no role (or invalid) attached to EC2 instance. metadata service /iam/info response: ${iamInfo.Code}`
+                )
+                return false
+            }
             const identity = await this.metadata.getInstanceIdentity()
-            if (identity.region) {
+            if (identity && identity.region) {
                 this.region = identity.region
                 getLogger().verbose(`credentials: EC2 metadata region: ${this.region}`)
             }

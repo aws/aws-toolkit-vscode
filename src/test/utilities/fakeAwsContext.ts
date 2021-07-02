@@ -59,10 +59,10 @@ export interface FakeAwsContextParams {
     contextCredentials?: AwsContextCredentials
 }
 
+const DEFAULT_REGION = 'us-east-1'
 export class FakeAwsContext implements AwsContext {
-    public onDidChangeContext: vscode.Event<ContextChangeEventsArgs> = new vscode.EventEmitter<
-        ContextChangeEventsArgs
-    >().event
+    public onDidChangeContext: vscode.Event<ContextChangeEventsArgs> =
+        new vscode.EventEmitter<ContextChangeEventsArgs>().event
     private awsContextCredentials: AwsContextCredentials | undefined
 
     public constructor(params?: FakeAwsContextParams) {
@@ -85,8 +85,8 @@ export class FakeAwsContext implements AwsContext {
         return this.awsContextCredentials?.accountId
     }
 
-    public getCredentialDefaultRegion(): string | undefined {
-        return this.awsContextCredentials?.defaultRegion
+    public getCredentialDefaultRegion(): string {
+        return this.awsContextCredentials?.defaultRegion ?? DEFAULT_REGION
     }
 
     public async getExplorerRegions(): Promise<string[]> {
