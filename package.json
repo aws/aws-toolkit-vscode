@@ -1832,6 +1832,7 @@
         ]
     },
     "scripts": {
+        "preinstall": "npm run buildLinterPlugin",
         "prepare": "husky install",
         "vscode:prepublish": "npm run clean && npm run lint && webpack --mode production && npm run buildScripts",
         "bundleDeps": "node ./build-scripts/bundleDeps.js",
@@ -1845,7 +1846,7 @@
         "compile": "webpack --mode development && npm run buildScripts",
         "recompile": "npm run clean && npm run compile",
         "watch": "npm run buildScripts && tsc -watch -p ./",
-        "postinstall": "ts-node ./build-scripts/generateServiceClient.ts && npm run generateTelemetry && npm run generateConfigurationAttributes && npm run buildLinterPlugin",
+        "postinstall": "ts-node ./build-scripts/generateServiceClient.ts && npm run generateTelemetry && npm run generateConfigurationAttributes",
         "testCompile": "tsc -p ./ && npm run buildScripts",
         "test": "npm run testCompile && ts-node ./test-scripts/test.ts",
         "integrationTest": "npm run testCompile && ts-node ./test-scripts/integrationTest.ts",
