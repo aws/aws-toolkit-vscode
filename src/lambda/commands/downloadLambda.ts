@@ -140,7 +140,7 @@ async function downloadAndUnzipLambda(
         increment?: number | undefined
     }>,
     functionNode: LambdaFunctionNode,
-    downloadLocation: string,
+    extractLocation: string,
     window = Window.vscode(),
     lambda = ext.toolkitClientBuilder.createLambdaClient(functionNode.regionCode)
 ): Promise<void> {
@@ -173,16 +173,9 @@ async function downloadAndUnzipLambda(
             async () => {
                 return await new Promise<boolean | undefined>(resolve => {
                     try {
-                        new AdmZip(downloadLocation).extractAllToAsync(downloadLocation, true, err => {
-                            if (err) {
-                                // err unzipping
-                                zipErr = err
-                                resolve(false)
-                            } else {
-                                progress.report({ increment: 10 })
-                                resolve(true)
-                            }
-                        })
+                        new AdmZip(downloadLocation).extractAllTo(extractLocation, true)
+                        progress.report({ increment: 10 })
+                        resolve(true)
                     } catch (err) {
                         // err loading zip into AdmZip, prior to attempting an unzip
                         zipErr = err
