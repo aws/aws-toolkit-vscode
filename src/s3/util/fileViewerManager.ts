@@ -19,6 +19,7 @@ export class FileViewerManager {
         //this.activeTabs = new Set<S3Tab>()
         //this.window = window
         this.outputChannel = outputChannel
+        //this.createTemp()
         showOutputMessage('initializing manager', outputChannel)
     }
 
