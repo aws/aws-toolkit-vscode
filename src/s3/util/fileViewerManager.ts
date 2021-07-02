@@ -13,7 +13,7 @@ import { downloadWithProgress } from '../commands/downloadFileAs'
 import { makeTemporaryToolkitFolder } from '../../shared/filesystemUtilities'
 const fs = require('fs')
 
-//const SIZE_LIMIT = 4*Math.pow(10,4)
+const SIZE_LIMIT = 4 * Math.pow(10, 4)
 
 export class FileViewerManager {
     private cache: Set<S3FileNode>
@@ -27,7 +27,6 @@ export class FileViewerManager {
         //this.activeTabs = new Set<S3Tab>()
         this.window = window
         this.outputChannel = outputChannel
-        this.createTemp()
         showOutputMessage('initializing manager', outputChannel)
     }
 
@@ -42,16 +41,15 @@ export class FileViewerManager {
         }
 
         //needs to be downloaded from S3
-
         //if file is +4MB, prompt user to confirm before proceeding
-        //TODOD:: how can I know the size of the file before downloading?
-        /*
-        const uri = vscode.Uri.file('')
-        if(fs.statSync(uri).size>SIZE_LIMIT){
+
+        //fs.statSync(uri).size
+        //const uri = vscode.Uri.file('')
+        //TODOD: when can sizeBytes be undefined?
+        if (fileNode.file.sizeBytes! > SIZE_LIMIT) {
             //TODOD:: prompt_user
             showOutputMessage(`size is >4MB, prompt user working`, this.outputChannel)
         }
-        */
 
         //good to continue with download
         const targetLocation = vscode.Uri.file(path.join(this.tempLocation, fileNode.file.key))
@@ -62,21 +60,30 @@ export class FileViewerManager {
         }
 
         this.cache.add(fileNode)
-
+        await this.listTempFolder()
         //await this.listTempFolder()
 
         //TODOD:: delegate this logic to S3Tab.ts
         //this will display the document at the end
         //vscode.window.showTextDocument(uri)
+
+        //showOutputMessage(`getFile()`, this.outputChannel)
     }
 
     public async listTempFolder(): Promise<void> {
+        showOutputMessage('here', this.outputChannel)
+
+        fs.readdirSync(this.tempLocation).forEach((file: any) => {
+            showOutputMessage(`${file}`, this.outputChannel)
+        })
+        /*
         try {
             const dir = await fs.opendir(this.tempLocation)
-            for await (const dirent of dir) console.log(dirent.name)
+            for await (const dirent of dir) showOutputMessage(`${dirent.name}`, this.outputChannel)
         } catch (err) {
             console.error(err)
         }
+        */
     }
 
     public async createTemp(): Promise<void> {
@@ -93,6 +100,7 @@ export class SingletonManager {
     public static async getInstance(): Promise<FileViewerManager> {
         if (!SingletonManager.fileManager) {
             SingletonManager.fileManager = new FileViewerManager()
+            await SingletonManager.fileManager.createTemp()
         }
         return SingletonManager.fileManager
     }
