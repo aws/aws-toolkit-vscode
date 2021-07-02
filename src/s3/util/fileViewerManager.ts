@@ -27,17 +27,23 @@ export class FileViewerManager {
         //this.activeTabs = new Set<S3Tab>()
         this.window = window
         this.outputChannel = outputChannel
+        //this.createTemp()
         showOutputMessage('initializing manager', outputChannel)
     }
 
     public async openTab(fileNode: S3FileNode): Promise<void> {
         showOutputMessage(`     manager initialized, file: ${fileNode.file.key}`, this.outputChannel)
-        await this.getFile(fileNode)
+        const fileLocation = await this.getFile(fileNode)
+        showOutputMessage(`file to be opened is: ${fileLocation}`, this.outputChannel)
+        vscode.window.showTextDocument(fileLocation)
     }
 
-    public async getFile(fileNode: S3FileNode): Promise<void> {
+    public async getFile(fileNode: S3FileNode): Promise<vscode.Uri> {
+        const targetLocation = vscode.Uri.file(path.join(this.tempLocation, fileNode.file.key))
         if (this.cache.has(fileNode)) {
-            //get it from temp, then return that
+            //get it from temp IF it hasn't been recently modified, then return that
+            showOutputMessage(`cache is working!, found ${fileNode.file.key}`, this.outputChannel)
+            return targetLocation
         }
 
         //needs to be downloaded from S3
@@ -52,7 +58,6 @@ export class FileViewerManager {
         }
 
         //good to continue with download
-        const targetLocation = vscode.Uri.file(path.join(this.tempLocation, fileNode.file.key))
         try {
             await downloadWithProgress(fileNode, targetLocation, this.window)
         } catch (err) {
@@ -61,29 +66,23 @@ export class FileViewerManager {
 
         this.cache.add(fileNode)
         await this.listTempFolder()
-        //await this.listTempFolder()
 
         //TODOD:: delegate this logic to S3Tab.ts
         //this will display the document at the end
         //vscode.window.showTextDocument(uri)
 
         //showOutputMessage(`getFile()`, this.outputChannel)
+        return targetLocation
     }
 
     public async listTempFolder(): Promise<void> {
-        showOutputMessage('here', this.outputChannel)
+        showOutputMessage('-------contents in temp:', this.outputChannel)
 
         fs.readdirSync(this.tempLocation).forEach((file: any) => {
-            showOutputMessage(`${file}`, this.outputChannel)
+            showOutputMessage(` ${file}`, this.outputChannel)
         })
-        /*
-        try {
-            const dir = await fs.opendir(this.tempLocation)
-            for await (const dirent of dir) showOutputMessage(`${dirent.name}`, this.outputChannel)
-        } catch (err) {
-            console.error(err)
-        }
-        */
+
+        showOutputMessage('-------------------------', this.outputChannel)
     }
 
     public async createTemp(): Promise<void> {
