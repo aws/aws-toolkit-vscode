@@ -20,11 +20,13 @@ import { S3FileNode } from './explorer/s3FileNode'
 import { ext } from '../shared/extensionGlobals'
 import { DEFAULT_REGION } from '../shared/regions/regionUtilities'
 import { DefaultAwsContext } from '../shared/defaultAwsContext'
+import { FileViewerManager } from './util/fileViewerManager'
 
 /**
  * Activates S3 components.
  */
 export async function activate(extensionContext: vscode.ExtensionContext): Promise<void> {
+    ext.fileViewerManager = new FileViewerManager()
     extensionContext.subscriptions.push(
         vscode.commands.registerCommand('aws.s3.copyPath', async (node: S3FolderNode | S3FileNode) => {
             await copyPathCommand(node)
