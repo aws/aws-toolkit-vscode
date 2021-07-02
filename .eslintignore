@@ -5,3 +5,4 @@ src/shared/telemetry/clienttelemetry.d.ts
 **/*.gen.ts
 plugins/**
 src/testFixtures/workspaceFolder/ts-plain-sam-app/
+.eslintrc.js

@@ -8,7 +8,7 @@
         "eslint-plugin"
     ],
     "author": "AWS",
-    "main": "dist/lib/index.js",
+    "main": "dist/index.js",
     "scripts": {
         "build": "tsc",
         "test": "npm run build && mocha dist/tests --recursive"
