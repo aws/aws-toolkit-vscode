@@ -16,7 +16,7 @@ import { VSCODE_EXTENSION_ID, EXTENSION_ALPHA_VERSION } from './extensions'
 import { DefaultSettingsConfiguration } from './settingsConfiguration'
 import { BaseTemplates } from './templates/baseTemplates'
 import { Ec2MetadataClient } from './clients/ec2MetadataClient'
-import { DefaultEc2MetadataClient } from './clients/defaultEc2MetadataClient'
+import { DefaultEc2MetadataClient } from './clients/ec2MetadataClient'
 
 const localize = nls.loadMessageBundle()
 
