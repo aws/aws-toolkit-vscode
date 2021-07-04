@@ -4,6 +4,8 @@
  */
 
 import { ExtensionContext, OutputChannel, Uri } from 'vscode'
+import { MdeClient } from './clients/mdeClient'
+import { AwsExplorer } from '../awsexplorer/awsExplorer'
 import { AWSClientBuilder } from './awsClientBuilder'
 import { AwsContext } from './awsContext'
 import { AWSContextCommands } from './awsContextCommands'
@@ -19,6 +21,7 @@ import { Window } from './vscode/window'
  * All variables here must be initialized in the activate() method of extension.ts
  */
 export namespace ext {
+    export let mde: MdeClient
     export let context: ExtensionContext
     export let window: Window
     export let outputChannel: OutputChannel

@@ -219,6 +219,8 @@
     "AWS.command.apprunner.copyServiceUrl": "Copy Service URL",
     "AWS.command.apprunner.open": "Open in Browser",
     "AWS.command.apprunner.startDeployment": "Start Deployment",
+    "AWS.command.mde.connect": "Connect",
+    "AWS.command.mde.create": "Create",
     "AWS.stepFunctions.graph.titlePrefix": "Graph: {0}",
     "AWS.credentials.statusbar.no.credentials": "(not connected)",
     "AWS.credentials.statusbar.connected": "(connected)",

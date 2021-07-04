@@ -207,6 +207,10 @@ ${fileContents}
             serviceJsonPath: 'src/shared/telemetry/service-2.json',
             serviceName: 'ClientTelemetry',
         },
+        {
+            serviceJsonPath: 'types/REMOVED.normal.json',
+            serviceName: 'ClientMde'
+        },
     ]
     await generateServiceClients(serviceClientDefinitions)
 })()

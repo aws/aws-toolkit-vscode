@@ -63,6 +63,8 @@ import {
 } from './shared/telemetry/telemetry'
 import { ExtensionDisposableFiles } from './shared/utilities/disposableFiles'
 import { ExtContext } from './shared/extensions'
+import { MdeClient } from './shared/clients/mdeClient'
+import * as mde from './mde/activation'
 import { activate as activateApiGateway } from './apigateway/activation'
 import { activate as activateStepFunctions } from './stepFunctions/activation'
 import { activate as activateSsmDocument } from './ssmDocument/activation'
@@ -255,6 +257,7 @@ export async function activate(context: vscode.ExtensionContext) {
         }
 
         caws.activate(extContext)
+        mde.activate(extContext)
 
         showWelcomeMessage(context)
 
