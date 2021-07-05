@@ -65,11 +65,6 @@ export function getDisplayLabel(construct: ConstructTreeEntity): string {
 }
 
 
-/** 
-* (for CDK Visualization) Determines if a construct is a Resource and a state machine
-*
-* @param construct CDK construct
-*/
 export function isStateMachine(construct: ConstructTreeEntity): boolean{
     const type: string = getTypeAttributeOrDefault(construct, '')
 
