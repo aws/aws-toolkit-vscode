@@ -135,10 +135,12 @@ export class S3FileViewerManager {
         await this.commands.execute('aws.refreshAwsExplorerNode', parent)
         await this.commands.execute('aws.loadMoreChildren', parent)
         const children = await parent.getChildren()
+        let ret = fileNode
         children.forEach(child => {
-            if (child instanceof S3FileNode && child.file.key == fileNode.file.key) return child
+            if (child instanceof S3FileNode && child.file.arn == fileNode.file.arn) ret = child
         })
-        return undefined
+
+        return ret
         //const newNode = children[children.indexOf(fileNode)]
         //return children[children.length - 1] as S3FileNode
         //return newNode as S3FileNode
