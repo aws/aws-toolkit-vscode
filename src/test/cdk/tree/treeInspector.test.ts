@@ -117,47 +117,76 @@ describe('TreeInspector', function () {
     })
 
 
-    it('returns true when tree node is a resource and a state machine', async function () {
+    it('returns true when tree node contains a node with id === "Resource" and type === "StateMachine"', async function () {
         const construct: ConstructTreeEntity = {
-            id: 'Resource',
-            path: 'attributes',
-            attributes: {[CfnResourceKeys.TYPE]:'AWS::StepFunctions::StateMachine'},
+            id: 'StateMachine',
+            path: 'aws-stepfunctions-integ/StateMachine',
+            children: { 'Resource' : {
+                            id: 'Resource',
+                            path: 'aws-stepfunctions-integ/StateMachine/Resource',
+                            attributes: {
+                                "aws:cdk:cloudformation:type": 'AWS::StepFunctions::StateMachine'
+                            }
+                        }
+                      }
+
         }
 
         assert.ok(treeInspector.isStateMachine(construct))
     })
 
-    it('returns false when tree node is a resource and not state machine', async function () {
+    it('returns true when tree node contains a node with id !== "Resource" and type === "StateMachine"', async function () {
         const construct: ConstructTreeEntity = {
-            id: 'Resource',
-            path: 'attributes',
-            attributes: {[CfnResourceKeys.TYPE]:'AWS::StepFunctions::LambdaFunction'},
+            id: 'StateMachine',
+            path: 'aws-stepfunctions-integ/StateMachine',
+            children: { 'Other' : {
+                            id: 'Other',
+                            path: 'aws-stepfunctions-integ/StateMachine/Resource',
+                            attributes: {
+                                "aws:cdk:cloudformation:type": 'AWS::StepFunctions::StateMachine'
+                            }
+                        }
+                      }
+
         }
 
-        assert.strictEqual(treeInspector.isStateMachine(construct), false)
+        assert.strictEqual(treeInspector.isStateMachine(construct),false)
     })
 
-    
-    it('returns false when tree node is not a resource and is a state machine', async function () {
-        const construct: ConstructTreeEntity = {
-            id: 'no',
-            path: 'attributes',
-            attributes: {
-                [CfnResourceKeys.TYPE]:'AWS::StepFunctions::StateMachine'
-            },
-        }
+    it('returns false when tree node contains a node with id !== "Resource" and type !== "StateMachine"', async function () {
 
-        assert.strictEqual(treeInspector.isStateMachine(construct), false)
+        const construct: ConstructTreeEntity = {
+            id: 'StateMachine',
+            path: 'aws-stepfunctions-integ/LambdaFunction',
+            children: { 'Other' : {
+                            id: 'Other',
+                            path: 'aws-stepfunctions-integ/LambdaFunction/Resource',
+                            attributes: {
+                                "aws:cdk:cloudformation:type": 'AWS::StepFunctions::LambdaFunction'
+                            }
+                        }
+                      }
+
+        }
+        assert.strictEqual(treeInspector.isStateMachine(construct),false)
     })
 
 
-    it('returns false when tree node is not a resource and not a state machine', async function () {
-        const construct: ConstructTreeEntity = {
-            id: 'no',
-            path: 'attributes',
-            attributes: {[CfnResourceKeys.TYPE]:'AWS::StepFunctions::LambdaFunction'},
-        }
+    it('returns false when tree node contains a node with id === "Resource" and type !== "StateMachine"', async function () {
 
-        assert.strictEqual(treeInspector.isStateMachine(construct), false)
+        const construct: ConstructTreeEntity = {
+            id: 'StateMachine',
+            path: 'aws-stepfunctions-integ/LambdaFunction',
+            children: { 'Resource' : {
+                            id: 'Resource',
+                            path: 'aws-stepfunctions-integ/LambdaFunction/Resource',
+                            attributes: {
+                                "aws:cdk:cloudformation:type": 'AWS::StepFunctions::LambdaFunction'
+                            }
+                        }
+                      }
+
+        }
+        assert.strictEqual(treeInspector.isStateMachine(construct),false)
     })
 })
