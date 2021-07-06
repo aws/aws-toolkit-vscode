@@ -29,16 +29,3 @@ export class S3FileViewerManager {
 
     public async getFile() {}
 }
-
-export class SingletonManager {
-    static fileManager: S3FileViewerManager | undefined
-
-    private constructor() {}
-
-    public static getInstance(): S3FileViewerManager {
-        if (!SingletonManager.fileManager) {
-            SingletonManager.fileManager = new S3FileViewerManager()
-        }
-        return SingletonManager.fileManager
-    }
-}
