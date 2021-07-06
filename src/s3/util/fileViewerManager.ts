@@ -12,6 +12,9 @@ import { OutputChannel } from 'vscode'
 import { Commands } from '../../shared/vscode/commands'
 import { downloadWithProgress } from '../commands/downloadFileAs'
 import { makeTemporaryToolkitFolder } from '../../shared/filesystemUtilities'
+import { runInThisContext } from 'vm'
+import { S3FolderNode } from '../explorer/s3FolderNode'
+import { S3BucketNode } from '../explorer/s3BucketNode'
 
 const fs = require('fs')
 
@@ -35,26 +38,31 @@ export class S3FileViewerManager {
         this.window = window
         this.outputChannel = outputChannel
         this.commands = commands
-        //this.createTemp()
+
         showOutputMessage('initializing manager', outputChannel)
     }
 
     public async openTab(fileNode: S3FileNode): Promise<void> {
         showOutputMessage(`     manager initialized, file: ${fileNode.file.key}`, this.outputChannel)
         const fileLocation = await this.getFile(fileNode)
+        if (!fileLocation) {
+            return
+        }
         showOutputMessage(`file to be opened is: ${fileLocation}`, this.outputChannel)
+        //TODOD:: delegate this logic to S3Tab.ts
+        //this will display the document at the end
         vscode.window.showTextDocument(fileLocation)
     }
 
-    public async getFile(fileNode: S3FileNode): Promise<vscode.Uri> {
+    public async getFile(fileNode: S3FileNode): Promise<vscode.Uri | undefined> {
         const targetPath = path.join(this.tempLocation, fileNode.file.key)
         const targetLocation = vscode.Uri.file(targetPath)
         if (this.cache.has(fileNode)) {
             //get it from temp IF it hasn't been recently modified, then return that
-            showOutputMessage(`cache is working!, found ${fileNode.file.key}`, this.outputChannel)
+            showOutputMessage(`cache is working!, found ${fileNode.file.key} in cache`, this.outputChannel)
             //explorer (or at least the S3Node) needs to be refreshed to get the last modified date from S3
-            await this.commands.execute('aws.refreshAwsExplorerNode', fileNode) //TODOD:: not being refreshed, why???
-            const lastModifiedInS3 = fileNode.file.lastModified
+            const lastModifiedInS3 = this.lastModified(fileNode)
+
             const { birthtime } = fs.statSync(targetLocation.fsPath)
             showOutputMessage(`${lastModifiedInS3}`, this.outputChannel)
             showOutputMessage(`${birthtime}`, this.outputChannel)
@@ -73,8 +81,19 @@ export class S3FileViewerManager {
         //const uri = vscode.Uri.file('')
         //TODOD: when can sizeBytes be undefined?
         if (fileNode.file.sizeBytes! > SIZE_LIMIT) {
-            //TODOD:: prompt_user
             showOutputMessage(`size is >4MB, prompt user working`, this.outputChannel)
+            const cancelButtonLabel = 'Cancel' //TODOD:: localize
+            const confirmButtonLabel = 'Continue with download'
+            //TODOD:: prompt_user
+            const result = await vscode.window.showInformationMessage(
+                'File size is greater than 4MB are you sure you want to continue with download?',
+                cancelButtonLabel,
+                confirmButtonLabel
+            )
+            if (result === cancelButtonLabel) {
+                return undefined
+            }
+            showOutputMessage(`user confirmed download, continuing`, this.outputChannel)
         }
 
         //good to continue with download
@@ -87,11 +106,20 @@ export class S3FileViewerManager {
         this.cache.add(fileNode)
         await this.listTempFolder()
 
-        //TODOD:: delegate this logic to S3Tab.ts
-        //this will display the document at the end
-        //vscode.window.showTextDocument(uri)
-
         return targetLocation
+    }
+
+    async lastModified(fileNode: S3FileNode) {
+        let parent = fileNode.parent
+        while (parent instanceof S3FolderNode) {
+            parent = fileNode.parent
+        }
+        parent as S3BucketNode
+        await this.commands.execute('aws.refreshAwsExplorerNode', parent)
+
+        await this.commands.execute('aws.loadMoreChildren', fileNode) //TODOD:: not being refreshed, why???
+        const lastModifiedInS3 = fileNode.file.lastModified
+        return lastModifiedInS3
     }
 
     public async listTempFolder(): Promise<void> {
