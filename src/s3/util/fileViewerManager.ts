@@ -60,7 +60,15 @@ export class S3FileViewerManager {
             //get it from temp IF it hasn't been recently modified, then return that
             showOutputMessage(`cache is working!, found ${fileNode.file.key} in cache`, this.outputChannel) //TODOD:: debug log remove
             //explorer (or at least the S3Node) needs to be refreshed to get the last modified date from S3
-            fileNode = await this.refreshNode(fileNode)
+            const newNode = await this.refreshNode(fileNode)
+            if (!newNode) {
+                showOutputMessage(
+                    `!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!! something happeneded`,
+                    this.outputChannel
+                ) //TODOD:: debug log, remove
+                return
+            }
+            fileNode = newNode
             const lastModifiedInS3 = fileNode!.file.lastModified
             const { birthtime } = fs.statSync(targetLocation.fsPath)
             showOutputMessage(`last modified in S3: ${lastModifiedInS3}`, this.outputChannel)
@@ -114,7 +122,7 @@ export class S3FileViewerManager {
         return targetLocation
     }
 
-    async refreshNode(fileNode: S3FileNode): Promise<S3FileNode> {
+    async refreshNode(fileNode: S3FileNode): Promise<S3FileNode | undefined> {
         const parent = fileNode.parent
         /*
         while (parent instanceof S3FolderNode) {
@@ -127,8 +135,12 @@ export class S3FileViewerManager {
         await this.commands.execute('aws.refreshAwsExplorerNode', parent)
         await this.commands.execute('aws.loadMoreChildren', parent)
         const children = await parent.getChildren()
-        const newNode = children[children.indexOf(fileNode)]
-        return children[children.length - 1] as S3FileNode
+        children.forEach(child => {
+            if (child instanceof S3FileNode && child.file.key == fileNode.file.key) return child
+        })
+        return undefined
+        //const newNode = children[children.indexOf(fileNode)]
+        //return children[children.length - 1] as S3FileNode
         //return newNode as S3FileNode
         //await this.commands.execute('aws.loadMoreChildren', newNode) //TODOD:: not being refreshed, why???
     }
