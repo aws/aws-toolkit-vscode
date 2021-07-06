@@ -69,6 +69,7 @@ import { getSamCliContext } from './shared/sam/cli/samCliContext'
 import * as extWindow from './shared/vscode/window'
 import { Ec2CredentialsProvider } from './credentials/providers/ec2CredentialsProvider'
 import { EnvVarsCredentialsProvider } from './credentials/providers/envVarsCredentialsProvider'
+import { S3FileViewerManager } from './s3/util/fileViewerManager'
 
 let localize: nls.LocalizeFunc
 
@@ -260,6 +261,8 @@ export async function activate(context: vscode.ExtensionContext) {
         )
         throw error
     }
+
+    ext.s3fileViewerManager = new S3FileViewerManager()
 }
 
 export async function deactivate() {

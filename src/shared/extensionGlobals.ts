@@ -27,7 +27,7 @@ export namespace ext {
     export let telemetry: TelemetryService
     export let templateRegistry: CloudFormationTemplateRegistry
     export let codelensRootRegistry: CodelensRootRegistry
-    export let fileViewerManager: S3FileViewerManager
+    export let s3fileViewerManager: S3FileViewerManager
 
     let _didReload = false
 

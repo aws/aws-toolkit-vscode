@@ -13,6 +13,6 @@ import { S3FileNode } from '../explorer/s3FileNode'
 //import { FileViewerManager, SingletonManager } from '../util/fileViewerManager'
 
 export async function openFileCommand(node: S3FileNode, window = Window.vscode()): Promise<void> {
-    const manager = ext.fileViewerManager
+    const manager = ext.s3fileViewerManager
     manager.openTab(node)
 }
