@@ -12,12 +12,13 @@ import { OutputChannel } from 'vscode'
 import { Commands } from '../../shared/vscode/commands'
 import { downloadWithProgress } from '../commands/downloadFileAs'
 import { makeTemporaryToolkitFolder } from '../../shared/filesystemUtilities'
+import { readablePath } from '../util'
 
 const fs = require('fs')
 const SIZE_LIMIT = 4 * Math.pow(10, 4)
 
 export class S3FileViewerManager {
-    private cacheKeys: Set<string>
+    private cacheArn: Set<string>
     //private activeTabs: Set<S3Tab>
     private window: Window
     private outputChannel: OutputChannel
@@ -29,7 +30,7 @@ export class S3FileViewerManager {
         outputChannel = ext.outputChannel,
         commands = Commands.vscode()
     ) {
-        this.cacheKeys = new Set<string>()
+        this.cacheArn = new Set<string>()
         //this.activeTabs = new Set<S3Tab>()
         this.window = window
         this.outputChannel = outputChannel
@@ -54,9 +55,11 @@ export class S3FileViewerManager {
     }
 
     public async getFile(fileNode: S3FileNode): Promise<vscode.Uri | undefined> {
-        const targetPath = path.join(this.tempLocation, 'S3:' + fileNode.bucket.name + ':' + fileNode.file.key)
+        const sourcePath = readablePath(fileNode)
+        const targetPath = path.join(this.tempLocation, fileNode.file.key)
         const targetLocation = vscode.Uri.file(targetPath)
-        if (this.cacheKeys.has(fileNode.file.key)) {
+
+        if (this.cacheArn.has(fileNode.file.arn)) {
             //get it from temp IF it hasn't been recently modified, then return that
             showOutputMessage(`cache is working!, found ${fileNode.file.key} in cache`, this.outputChannel) //TODOD:: debug log remove
             //explorer (or at least the S3Node) needs to be refreshed to get the last modified date from S3
@@ -68,6 +71,7 @@ export class S3FileViewerManager {
                 ) //TODOD:: debug log, remove
                 return
             }
+
             fileNode = newNode
             const lastModifiedInS3 = fileNode!.file.lastModified
             const { birthtime } = fs.statSync(targetLocation.fsPath)
@@ -79,7 +83,7 @@ export class S3FileViewerManager {
                 return targetLocation
             } else {
                 showOutputMessage(
-                    `last modified date is after creation date!!, removing file and continuing`,
+                    `last modified date is after creation date!!, removing file and redownloading`,
                     this.outputChannel
                 )
                 fs.unlinkSync(targetPath)
@@ -116,7 +120,7 @@ export class S3FileViewerManager {
             showOutputMessage(`error calling downloadWithProgress: ${err.toString()}`, this.outputChannel)
         }
 
-        this.cacheKeys.add(fileNode.file.key)
+        this.cacheArn.add(fileNode.file.arn)
         await this.listTempFolder()
 
         return targetLocation
@@ -141,10 +145,6 @@ export class S3FileViewerManager {
         })
 
         return ret
-        //const newNode = children[children.indexOf(fileNode)]
-        //return children[children.length - 1] as S3FileNode
-        //return newNode as S3FileNode
-        //await this.commands.execute('aws.loadMoreChildren', newNode) //TODOD:: not being refreshed, why???
     }
 
     public async listTempFolder(): Promise<void> {
