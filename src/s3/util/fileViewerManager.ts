@@ -54,7 +54,7 @@ export class S3FileViewerManager {
     }
 
     public async getFile(fileNode: S3FileNode): Promise<vscode.Uri | undefined> {
-        const targetPath = path.join(this.tempLocation, fileNode.file.key)
+        const targetPath = path.join(this.tempLocation, 'S3:' + fileNode.bucket.name + ':' + fileNode.file.key)
         const targetLocation = vscode.Uri.file(targetPath)
         if (this.cacheKeys.has(fileNode.file.key)) {
             //get it from temp IF it hasn't been recently modified, then return that
