@@ -12,11 +12,8 @@ import { OutputChannel } from 'vscode'
 import { Commands } from '../../shared/vscode/commands'
 import { downloadWithProgress } from '../commands/downloadFileAs'
 import { makeTemporaryToolkitFolder } from '../../shared/filesystemUtilities'
-import { S3FolderNode } from '../explorer/s3FolderNode'
-import { S3BucketNode } from '../explorer/s3BucketNode'
 
 const fs = require('fs')
-
 const SIZE_LIMIT = 4 * Math.pow(10, 4)
 
 export class S3FileViewerManager {
