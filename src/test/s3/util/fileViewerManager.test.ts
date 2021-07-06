@@ -3,8 +3,6 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
-import * as assert from 'assert'
-
 describe('FileViewerManager', function () {
     //TODOD:: Not big enought to test yet
 })
