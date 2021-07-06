@@ -160,17 +160,3 @@ export class S3FileViewerManager {
         showOutputMessage(`folder created with location: ${this.tempLocation}`, this.outputChannel)
     }
 }
-
-export class SingletonManager {
-    static fileManager: S3FileViewerManager | undefined
-
-    private constructor() {}
-
-    public static async getInstance(): Promise<S3FileViewerManager> {
-        if (!SingletonManager.fileManager) {
-            SingletonManager.fileManager = new S3FileViewerManager()
-            await SingletonManager.fileManager.createTemp()
-        }
-        return SingletonManager.fileManager
-    }
-}
