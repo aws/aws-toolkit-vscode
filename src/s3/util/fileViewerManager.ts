@@ -12,7 +12,6 @@ import { OutputChannel } from 'vscode'
 import { Commands } from '../../shared/vscode/commands'
 import { downloadWithProgress } from '../commands/downloadFileAs'
 import { makeTemporaryToolkitFolder } from '../../shared/filesystemUtilities'
-import { runInThisContext } from 'vm'
 import { S3FolderNode } from '../explorer/s3FolderNode'
 import { S3BucketNode } from '../explorer/s3BucketNode'
 
@@ -21,7 +20,7 @@ const fs = require('fs')
 const SIZE_LIMIT = 4 * Math.pow(10, 4)
 
 export class S3FileViewerManager {
-    private cache: Set<S3FileNode>
+    private cacheKeys: Set<string>
     //private activeTabs: Set<S3Tab>
     private window: Window
     private outputChannel: OutputChannel
@@ -33,7 +32,7 @@ export class S3FileViewerManager {
         outputChannel = ext.outputChannel,
         commands = Commands.vscode()
     ) {
-        this.cache = new Set<S3FileNode>()
+        this.cacheKeys = new Set<string>()
         //this.activeTabs = new Set<S3Tab>()
         this.window = window
         this.outputChannel = outputChannel
@@ -43,7 +42,10 @@ export class S3FileViewerManager {
     }
 
     public async openTab(fileNode: S3FileNode): Promise<void> {
-        showOutputMessage(`     manager initialized, file: ${fileNode.file.key}`, this.outputChannel)
+        showOutputMessage(
+            `++++++++++++++++++++++++++++++++manager was initialized, file: ${fileNode.file.key}`,
+            this.outputChannel
+        )
         const fileLocation = await this.getFile(fileNode)
         if (!fileLocation) {
             return
@@ -57,20 +59,26 @@ export class S3FileViewerManager {
     public async getFile(fileNode: S3FileNode): Promise<vscode.Uri | undefined> {
         const targetPath = path.join(this.tempLocation, fileNode.file.key)
         const targetLocation = vscode.Uri.file(targetPath)
-        if (this.cache.has(fileNode)) {
+        if (this.cacheKeys.has(fileNode.file.key)) {
             //get it from temp IF it hasn't been recently modified, then return that
-            showOutputMessage(`cache is working!, found ${fileNode.file.key} in cache`, this.outputChannel)
+            showOutputMessage(`cache is working!, found ${fileNode.file.key} in cache`, this.outputChannel) //TODOD:: debug log remove
             //explorer (or at least the S3Node) needs to be refreshed to get the last modified date from S3
-            const lastModifiedInS3 = this.lastModified(fileNode)
-
+            fileNode = await this.refreshNode(fileNode)
+            const lastModifiedInS3 = fileNode!.file.lastModified
             const { birthtime } = fs.statSync(targetLocation.fsPath)
-            showOutputMessage(`${lastModifiedInS3}`, this.outputChannel)
-            showOutputMessage(`${birthtime}`, this.outputChannel)
+            showOutputMessage(`last modified in S3: ${lastModifiedInS3}`, this.outputChannel)
+            showOutputMessage(`creation date: ${birthtime}`, this.outputChannel)
             if (lastModifiedInS3! <= birthtime) {
                 showOutputMessage(`good to retreive, last modified date is before creation`, this.outputChannel)
+                await this.listTempFolder()
                 return targetLocation
             } else {
-                showOutputMessage(`last modified date is after creation date!!`, this.outputChannel)
+                showOutputMessage(
+                    `last modified date is after creation date!!, removing file and continuing`,
+                    this.outputChannel
+                )
+                fs.unlinkSync(targetPath)
+                this.listTempFolder()
             }
         }
 
@@ -103,23 +111,29 @@ export class S3FileViewerManager {
             showOutputMessage(`error calling downloadWithProgress: ${err.toString()}`, this.outputChannel)
         }
 
-        this.cache.add(fileNode)
+        this.cacheKeys.add(fileNode.file.key)
         await this.listTempFolder()
 
         return targetLocation
     }
 
-    async lastModified(fileNode: S3FileNode) {
-        let parent = fileNode.parent
+    async refreshNode(fileNode: S3FileNode): Promise<S3FileNode> {
+        const parent = fileNode.parent
+        /*
         while (parent instanceof S3FolderNode) {
             parent = fileNode.parent
         }
         parent as S3BucketNode
+        */
+        parent.clearChildren()
+        await this.commands.execute('aws.refreshAwsExplorerNode', fileNode)
         await this.commands.execute('aws.refreshAwsExplorerNode', parent)
-
-        await this.commands.execute('aws.loadMoreChildren', fileNode) //TODOD:: not being refreshed, why???
-        const lastModifiedInS3 = fileNode.file.lastModified
-        return lastModifiedInS3
+        await this.commands.execute('aws.loadMoreChildren', parent)
+        const children = await parent.getChildren()
+        const newNode = children[children.indexOf(fileNode)]
+        return children[children.length - 1] as S3FileNode
+        //return newNode as S3FileNode
+        //await this.commands.execute('aws.loadMoreChildren', newNode) //TODOD:: not being refreshed, why???
     }
 
     public async listTempFolder(): Promise<void> {
