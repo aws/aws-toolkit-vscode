@@ -55,8 +55,7 @@ export class S3FileViewerManager {
     }
 
     public async getFile(fileNode: S3FileNode): Promise<vscode.Uri | undefined> {
-        const sourcePath = readablePath(fileNode)
-        const targetPath = path.join(this.tempLocation, fileNode.file.key)
+        const targetPath = await this.createTargetPath(fileNode)
         const targetLocation = vscode.Uri.file(targetPath)
 
         if (this.cacheArn.has(fileNode.file.arn)) {
@@ -75,17 +74,17 @@ export class S3FileViewerManager {
             fileNode = newNode
             const lastModifiedInS3 = fileNode!.file.lastModified
             const { birthtime } = fs.statSync(targetLocation.fsPath)
-            showOutputMessage(`last modified in S3: ${lastModifiedInS3}`, this.outputChannel)
-            showOutputMessage(`creation date: ${birthtime}`, this.outputChannel)
+            showOutputMessage(`last modified in S3: ${lastModifiedInS3}`, this.outputChannel) //TODOD: debug log, remove
+            showOutputMessage(`creation date: ${birthtime}`, this.outputChannel) //TODOD: debug log, remove
             if (lastModifiedInS3! <= birthtime) {
-                showOutputMessage(`good to retreive, last modified date is before creation`, this.outputChannel)
+                showOutputMessage(`good to retreive, last modified date is before creation`, this.outputChannel) //TODOD: debug log, remove
                 await this.listTempFolder()
                 return targetLocation
             } else {
                 showOutputMessage(
                     `last modified date is after creation date!!, removing file and redownloading`,
                     this.outputChannel
-                )
+                ) //TODOD: debug log, remove
                 fs.unlinkSync(targetPath)
                 this.listTempFolder()
             }
@@ -126,6 +125,14 @@ export class S3FileViewerManager {
         return targetLocation
     }
 
+    async createTargetPath(fileNode: S3FileNode): Promise<string> {
+        let completePath = readablePath(fileNode)
+        completePath = completePath.slice(4)
+        const splittedPath = completePath.split('/')
+        completePath = splittedPath.join(':')
+        return path.join(this.tempLocation, 'S3:' + completePath)
+    }
+
     async refreshNode(fileNode: S3FileNode): Promise<S3FileNode | undefined> {
         const parent = fileNode.parent
         /*
@@ -159,6 +166,7 @@ export class S3FileViewerManager {
 
     public async createTemp(): Promise<void> {
         this.tempLocation = await makeTemporaryToolkitFolder()
+
         showOutputMessage(`folder created with location: ${this.tempLocation}`, this.outputChannel)
     }
 }
