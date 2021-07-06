@@ -9,8 +9,10 @@ import { S3FileNode } from '../explorer/s3FileNode'
 import { Window } from '../../shared/vscode/window'
 import { showOutputMessage } from '../../shared/utilities/messages'
 import { OutputChannel } from 'vscode'
+import { Commands } from '../../shared/vscode/commands'
 import { downloadWithProgress } from '../commands/downloadFileAs'
 import { makeTemporaryToolkitFolder } from '../../shared/filesystemUtilities'
+
 const fs = require('fs')
 
 const SIZE_LIMIT = 4 * Math.pow(10, 4)
@@ -20,13 +22,19 @@ export class S3FileViewerManager {
     //private activeTabs: Set<S3Tab>
     private window: Window
     private outputChannel: OutputChannel
+    private commands: Commands
     private tempLocation!: string //TODOD: create temp
 
-    public constructor(window: Window = Window.vscode(), outputChannel = ext.outputChannel) {
+    public constructor(
+        window: Window = Window.vscode(),
+        outputChannel = ext.outputChannel,
+        commands = Commands.vscode()
+    ) {
         this.cache = new Set<S3FileNode>()
         //this.activeTabs = new Set<S3Tab>()
         this.window = window
         this.outputChannel = outputChannel
+        this.commands = commands
         //this.createTemp()
         showOutputMessage('initializing manager', outputChannel)
     }
@@ -39,11 +47,23 @@ export class S3FileViewerManager {
     }
 
     public async getFile(fileNode: S3FileNode): Promise<vscode.Uri> {
-        const targetLocation = vscode.Uri.file(path.join(this.tempLocation, fileNode.file.key))
+        const targetPath = path.join(this.tempLocation, fileNode.file.key)
+        const targetLocation = vscode.Uri.file(targetPath)
         if (this.cache.has(fileNode)) {
             //get it from temp IF it hasn't been recently modified, then return that
             showOutputMessage(`cache is working!, found ${fileNode.file.key}`, this.outputChannel)
-            return targetLocation
+            //explorer (or at least the S3Node) needs to be refreshed to get the last modified date from S3
+            await this.commands.execute('aws.refreshAwsExplorerNode', fileNode) //TODOD:: not being refreshed, why???
+            const lastModifiedInS3 = fileNode.file.lastModified
+            const { birthtime } = fs.statSync(targetLocation.fsPath)
+            showOutputMessage(`${lastModifiedInS3}`, this.outputChannel)
+            showOutputMessage(`${birthtime}`, this.outputChannel)
+            if (lastModifiedInS3! <= birthtime) {
+                showOutputMessage(`good to retreive, last modified date is before creation`, this.outputChannel)
+                return targetLocation
+            } else {
+                showOutputMessage(`last modified date is after creation date!!`, this.outputChannel)
+            }
         }
 
         //needs to be downloaded from S3
@@ -71,7 +91,6 @@ export class S3FileViewerManager {
         //this will display the document at the end
         //vscode.window.showTextDocument(uri)
 
-        //showOutputMessage(`getFile()`, this.outputChannel)
         return targetLocation
     }
 
