@@ -100,7 +100,7 @@ export class S3FileViewerManager {
             showOutputMessage(`size is >4MB, prompt user working`, this.outputChannel)
             const cancelButtonLabel = 'Cancel' //TODOD:: localize
             const confirmButtonLabel = 'Continue with download'
-            //TODOD:: prompt_user
+
             const result = await vscode.window.showInformationMessage(
                 'File size is greater than 4MB are you sure you want to continue with download?',
                 cancelButtonLabel,
@@ -127,31 +127,29 @@ export class S3FileViewerManager {
 
     async createTargetPath(fileNode: S3FileNode): Promise<string> {
         let completePath = readablePath(fileNode)
-        completePath = completePath.slice(4)
+        completePath = completePath.slice(4) //removes 's3://' from path
+
         const splittedPath = completePath.split('/')
         completePath = splittedPath.join(':')
+
         return path.join(this.tempLocation, 'S3:' + completePath)
     }
 
     async refreshNode(fileNode: S3FileNode): Promise<S3FileNode | undefined> {
         const parent = fileNode.parent
-        /*
-        while (parent instanceof S3FolderNode) {
-            parent = fileNode.parent
-        }
-        parent as S3BucketNode
-        */
         parent.clearChildren()
+
         await this.commands.execute('aws.refreshAwsExplorerNode', fileNode)
         await this.commands.execute('aws.refreshAwsExplorerNode', parent)
         await this.commands.execute('aws.loadMoreChildren', parent)
+
         const children = await parent.getChildren()
-        let ret = fileNode
+
         children.forEach(child => {
-            if (child instanceof S3FileNode && child.file.arn == fileNode.file.arn) ret = child
+            if (child instanceof S3FileNode && child.file.arn == fileNode.file.arn) return child
         })
 
-        return ret
+        return fileNode
     }
 
     public async listTempFolder(): Promise<void> {
