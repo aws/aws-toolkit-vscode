@@ -121,7 +121,7 @@ describe('TreeInspector', function () {
         const construct: ConstructTreeEntity = {
             id: 'StateMachine',
             path: 'aws-stepfunctions-integ/StateMachine',
-            children: { 'Resource' : {
+            children: { 'Resource': {
                             id: 'Resource',
                             path: 'aws-stepfunctions-integ/StateMachine/Resource',
                             attributes: {
@@ -139,7 +139,7 @@ describe('TreeInspector', function () {
         const construct: ConstructTreeEntity = {
             id: 'StateMachine',
             path: 'aws-stepfunctions-integ/StateMachine',
-            children: { 'Other' : {
+            children: { 'Other': {
                             id: 'Other',
                             path: 'aws-stepfunctions-integ/StateMachine/Resource',
                             attributes: {
@@ -158,7 +158,7 @@ describe('TreeInspector', function () {
         const construct: ConstructTreeEntity = {
             id: 'StateMachine',
             path: 'aws-stepfunctions-integ/LambdaFunction',
-            children: { 'Other' : {
+            children: { 'Other': {
                             id: 'Other',
                             path: 'aws-stepfunctions-integ/LambdaFunction/Resource',
                             attributes: {
@@ -177,7 +177,7 @@ describe('TreeInspector', function () {
         const construct: ConstructTreeEntity = {
             id: 'StateMachine',
             path: 'aws-stepfunctions-integ/LambdaFunction',
-            children: { 'Resource' : {
+            children: { 'Resource': {
                             id: 'Resource',
                             path: 'aws-stepfunctions-integ/LambdaFunction/Resource',
                             attributes: {
