@@ -263,6 +263,7 @@ export async function activate(context: vscode.ExtensionContext) {
     }
 
     ext.s3fileViewerManager = new S3FileViewerManager()
+    await ext.s3fileViewerManager.createTemp()
 }
 
 export async function deactivate() {

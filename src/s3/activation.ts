@@ -25,7 +25,6 @@ import { ExtContext } from '../shared/extensions'
  */
 
 export async function activate(ctx: ExtContext): Promise<void> {
-    await ext.s3fileViewerManager.createTemp()
     ctx.extensionContext.subscriptions.push(
         vscode.commands.registerCommand('aws.s3.copyPath', async (node: S3FolderNode | S3FileNode) => {
             await copyPathCommand(node)
