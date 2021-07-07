@@ -23,8 +23,11 @@ val resharperDlls = configurations.create("resharperDlls") {
 }
 
 intellij {
-    version.set(ideProfile.community.sdkVersion)
     pluginName.set("aws-toolkit-jetbrains")
+
+    version.set(ideProfile.community.version())
+    localPath.set(ideProfile.community.localPath())
+
     updateSinceUntilBuild.set(false)
     instrumentCode.set(false)
 }

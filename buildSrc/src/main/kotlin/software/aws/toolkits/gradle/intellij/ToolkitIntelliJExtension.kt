@@ -8,11 +8,17 @@ import org.gradle.api.provider.Provider
 import org.gradle.api.provider.ProviderFactory
 
 abstract class ToolkitIntelliJExtension(private val providers: ProviderFactory) {
-    enum class IdeFlavor { IC, IU, RD }
-
     abstract val ideFlavor: Property<IdeFlavor>
 
     fun ideProfile() = IdeVersions.ideProfile(providers)
+
+    fun version(): Provider<String?> = productProfile().flatMap { profile ->
+        providers.provider { profile.version() }
+    }
+
+    fun localPath(): Provider<String?> = productProfile().flatMap { profile ->
+        providers.provider { profile.localPath() }
+    }
 
     fun productProfile(): Provider<out ProductProfile> = ideFlavor.flatMap { flavor ->
         when (flavor) {
