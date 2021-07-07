@@ -35,7 +35,6 @@ export class S3FileViewerManager {
         this.window = window
         this.outputChannel = outputChannel
         this.commands = commands
-
         showOutputMessage('initializing manager', outputChannel)
     }
 
