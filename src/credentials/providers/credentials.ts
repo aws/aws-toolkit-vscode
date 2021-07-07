@@ -3,6 +3,7 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
+import * as AWS from '@aws-sdk/types'
 import * as telemetry from '../../shared/telemetry/telemetry.gen'
 
 const CREDENTIALS_PROVIDER_ID_SEPARATOR = ':'

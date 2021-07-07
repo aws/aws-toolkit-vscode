@@ -4,7 +4,6 @@
  */
 
 import * as assert from 'assert'
-import { EC2MetadataCredentials } from 'aws-sdk'
 import { Ec2MetadataClient, IamInfo, InstanceIdentity } from '../../../shared/clients/ec2MetadataClient'
 import { Ec2CredentialsProvider } from '../../../credentials/providers/ec2CredentialsProvider'
 import { instance, mock, verify, when } from '../../utilities/mockito'
@@ -76,11 +75,6 @@ describe('Ec2CredentialsProvider', function () {
 
         await credentialsProvider.isAvailable()
         assert.strictEqual(credentialsProvider.getDefaultRegion(), undefined)
-    })
-
-    it('returns credentials', async function () {
-        const credentials = await credentialsProvider.getCredentials()
-        assert(credentials instanceof EC2MetadataCredentials)
     })
 
     function mockClient(opts: { fail?: boolean; identity?: InstanceIdentity; validIam?: boolean }) {

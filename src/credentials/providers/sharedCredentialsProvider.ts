@@ -10,6 +10,8 @@ import { ParsedIniData, SharedConfigFiles } from '@aws-sdk/shared-ini-file-loade
 import { SSO } from '@aws-sdk/client-sso'
 import { SSOOIDC } from '@aws-sdk/client-sso-oidc'
 import { chain } from '@aws-sdk/property-provider'
+import { fromInstanceMetadata, fromContainerMetadata } from '@aws-sdk/credential-provider-imds'
+import { fromEnv } from '@aws-sdk/credential-provider-env'
 
 import { Profile } from '../../shared/credentials/credentialsFile'
 import { getLogger } from '../../shared/logger'
@@ -23,7 +25,6 @@ import { CredentialsProvider, CredentialsProviderType, CredentialsId } from './c
 import { SsoCredentialProvider } from './ssoCredentialProvider'
 import { CredentialType } from '../../shared/telemetry/telemetry.gen'
 import { ext } from '../../shared/extensionGlobals'
-import { EnvVarsCredentialsProvider } from './envVarsCredentialsProvider'
 
 const SHARED_CREDENTIAL_PROPERTIES = {
     AWS_ACCESS_KEY_ID: 'aws_access_key_id',
@@ -319,19 +320,17 @@ export class SharedCredentialsProvider implements CredentialsProvider {
         })
     }
 
-    private makeSourcedCredentialsProvider(): () => AWS.Credentials {
-        return () => {
-            if (this.isCredentialSource(CREDENTIAL_SOURCES.EC2_INSTANCE_METADATA)) {
-                return new AWS.EC2MetadataCredentials()
-            } else if (this.isCredentialSource(CREDENTIAL_SOURCES.ECS_CONTAINER)) {
-                return new AWS.ECSCredentials()
-            } else if (this.isCredentialSource(CREDENTIAL_SOURCES.ENVIRONMENT)) {
-                return new AWS.EnvironmentCredentials(EnvVarsCredentialsProvider.AWS_ENV_VAR_PREFIX)
-            }
-            throw new Error(
-                `Credential source ${this.profile[SHARED_CREDENTIAL_PROPERTIES.CREDENTIAL_SOURCE]} is not supported`
-            )
+    private makeSourcedCredentialsProvider(): AWS.CredentialProvider {
+        if (this.isCredentialSource(CREDENTIAL_SOURCES.EC2_INSTANCE_METADATA)) {
+            return fromInstanceMetadata()
+        } else if (this.isCredentialSource(CREDENTIAL_SOURCES.ECS_CONTAINER)) {
+            return fromContainerMetadata()
+        } else if (this.isCredentialSource(CREDENTIAL_SOURCES.ENVIRONMENT)) {
+            return fromEnv()
         }
+        throw new Error(
+            `Credential source ${this.profile[SHARED_CREDENTIAL_PROPERTIES.CREDENTIAL_SOURCE]} is not supported`
+        )
     }
 
     private makeSsoProvider() {

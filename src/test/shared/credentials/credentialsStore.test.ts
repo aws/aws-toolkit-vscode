@@ -35,7 +35,7 @@ describe('CredentialsStore', async function () {
         return {
             getCredentials: async () => testCredentials,
             getHashCode: () => credentialsHashCode,
-        } as any as CredentialsProvider
+        } as unknown as CredentialsProvider
     }
 
     it('getCredentials returns undefined when credentials are not loaded', async function () {

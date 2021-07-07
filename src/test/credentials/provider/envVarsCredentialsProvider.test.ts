@@ -59,7 +59,6 @@ describe('EnvVarsCredentialsProvider', function () {
 
         const credentials = await credentialsProvider.getCredentials()
 
-        assert(credentials instanceof EnvironmentCredentials)
         assert.strictEqual(credentials.accessKeyId, dummyAccessKey)
         assert.strictEqual(credentials.secretAccessKey, dummySecretKey)
         assert.strictEqual(credentials.sessionToken, dummySessionToken)
