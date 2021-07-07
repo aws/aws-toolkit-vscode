@@ -18,7 +18,8 @@ export function getCfnDefinitionForStateMachine(uniqueIdentifier: string, cdkOut
         return data
     }
     catch (e) {
-
+        console.error('Error when getting cloudformation definition for a state machine.')
+        console.error(e)
     }
 
 }
