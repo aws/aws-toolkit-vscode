@@ -4,14 +4,14 @@
  */
 import * as path from 'path'
 import * as vscode from 'vscode'
-import { ext } from '../../shared/extensionGlobals'
-import { S3FileNode } from '../explorer/s3FileNode'
-import { Window } from '../../shared/vscode/window'
-import { showOutputMessage } from '../../shared/utilities/messages'
 import { OutputChannel } from 'vscode'
-import { Commands } from '../../shared/vscode/commands'
-import { downloadWithProgress } from '../commands/downloadFileAs'
+import { ext } from '../../shared/extensionGlobals'
 import { makeTemporaryToolkitFolder } from '../../shared/filesystemUtilities'
+import { showOutputMessage } from '../../shared/utilities/messages'
+import { Commands } from '../../shared/vscode/commands'
+import { Window } from '../../shared/vscode/window'
+import { downloadWithProgress } from '../commands/downloadFileAs'
+import { S3FileNode } from '../explorer/s3FileNode'
 import { readablePath } from '../util'
 
 const fs = require('fs')
