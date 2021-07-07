@@ -66,7 +66,7 @@ export class AppNode extends AWSTreeNodeBase {
                 return [
                     new PlaceholderNode(
                         this,
-                        localize('Aws.cdk.explorerNode.app.noStacks', '[No stacks in this CDK App]')
+                        localize('AWS.cdk.explorerNode.app.noStacks', '[No stacks in this CDK App]')
                     ),
                 ]
             }
@@ -79,7 +79,7 @@ export class AppNode extends AWSTreeNodeBase {
                 new PlaceholderNode(
                     this,
                     localize(
-                        'Aws.cdk.explorerNode.app.noConstructTree',
+                        'AWS.cdk.explorerNode.app.noConstructTree',
                         '[Unable to load construct tree for this App. Run `cdk synth`]'
                     )
                 ),

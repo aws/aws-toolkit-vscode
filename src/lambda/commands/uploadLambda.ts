@@ -25,6 +25,7 @@ import { Window } from '../../shared/vscode/window'
 import { LambdaFunctionNode } from '../explorer/lambdaFunctionNode'
 import { addCodiconToString } from '../../shared/utilities/textUtilities'
 import { getLambdaDetails } from '../utils'
+import { getIdeProperties } from '../../shared/extensionUtilities'
 
 /**
  * Executes the "Upload Lambda..." command.
@@ -106,14 +107,16 @@ async function runUploadDirectory(
         label: addCodiconToString('exclude', localizedText.no),
         detail: localize(
             'AWS.lambda.upload.prebuiltDir.detail',
-            'AWS Toolkit will upload a ZIP of the selected directory.'
+            '{0} Toolkit will upload a ZIP of the selected directory.',
+            getIdeProperties().company
         ),
     }
     const buildDirItem: vscode.QuickPickItem = {
         label: addCodiconToString('gear', localizedText.yes),
         detail: localize(
             'AWS.lambda.upload.unbuiltDir.detail',
-            'AWS Toolkit will attempt to build the selected directory using the sam build command.'
+            '{0} Toolkit will attempt to build the selected directory using the sam build command.',
+            getIdeProperties().company
         ),
     }
 
@@ -209,7 +212,8 @@ async function runUploadLambdaWithSamBuild(
                 {
                     prompt: localize(
                         'AWS.lambda.upload.handlerNotFound',
-                        "AWS Toolkit can't find a file corresponding to handler: {0} at filepath {1}.\n\nThis directory likely will not work with this function.\n\nProceed with upload anyway?",
+                        "{0} Toolkit can't find a file corresponding to handler: {1} at filepath {2}.\n\nThis directory likely will not work with this function.\n\nProceed with upload anyway?",
+                        getIdeProperties().company,
                         functionNode.configuration.Handler,
                         handlerFile
                     ),

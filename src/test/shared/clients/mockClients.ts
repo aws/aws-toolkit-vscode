@@ -2,7 +2,7 @@
  * Copyright 2018-2019 Amazon.com, Inc. or its affiliates. All Rights Reserved.
  * SPDX-License-Identifier: Apache-2.0
  */
-
+import { S3 } from 'aws-sdk'
 import { APIGateway, CloudFormation, CloudWatchLogs, IAM, Lambda, Schemas, StepFunctions, STS, SSM } from 'aws-sdk'
 import { ApiGatewayClient } from '../../../shared/clients/apiGatewayClient'
 import { CloudFormationClient } from '../../../shared/clients/cloudFormationClient'
@@ -319,6 +319,7 @@ export class MockEcsClient implements EcsClient {
 }
 
 export class MockIamClient implements IamClient {
+    public readonly regionCode = ''
     public readonly listRoles: () => Promise<IAM.ListRolesResponse>
 
     public constructor({ listRoles = async () => ({ Roles: [] }) }: { listRoles?(): Promise<IAM.ListRolesResponse> }) {
@@ -477,6 +478,7 @@ export class MockS3Client implements S3Client {
     public readonly regionCode: string
 
     public readonly createBucket: (request: CreateBucketRequest) => Promise<CreateBucketResponse>
+    public readonly listAllBuckets: () => Promise<S3.Bucket[]>
     public readonly listBuckets: () => Promise<ListBucketsResponse>
     public readonly listFiles: (request: ListFilesRequest) => Promise<ListFilesResponse>
     public readonly createFolder: (request: CreateFolderRequest) => Promise<CreateFolderResponse>
@@ -493,6 +495,7 @@ export class MockS3Client implements S3Client {
     public constructor({
         regionCode = '',
         createBucket = async (request: CreateBucketRequest) => ({ bucket: { name: '', region: '', arn: '' } }),
+        listAllBuckets = async () => [],
         listBuckets = async () => ({ buckets: [] }),
         listFiles = async (request: ListFilesRequest) => ({ files: [], folders: [] }),
         createFolder = async (request: CreateFolderRequest) => ({ folder: { name: '', path: '', arn: '' } }),
@@ -506,6 +509,7 @@ export class MockS3Client implements S3Client {
     }: {
         regionCode?: string
         createBucket?(request: CreateBucketRequest): Promise<CreateBucketResponse>
+        listAllBuckets?(): Promise<S3.Bucket[]>
         listBuckets?(): Promise<ListBucketsResponse>
         listFiles?(request: ListFilesRequest): Promise<ListFilesResponse>
         createFolder?(request: CreateFolderRequest): Promise<CreateFolderResponse>
@@ -521,6 +525,7 @@ export class MockS3Client implements S3Client {
     }) {
         this.regionCode = regionCode
         this.createBucket = createBucket
+        this.listAllBuckets = listAllBuckets
         this.listBuckets = listBuckets
         this.listFiles = listFiles
         this.createFolder = createFolder

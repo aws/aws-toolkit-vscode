@@ -12,9 +12,15 @@ import { findParentProjectFile } from '../utilities/workspaceUtils'
 
 export const JAVASCRIPT_LANGUAGE = 'javascript'
 
-export const JAVASCRIPT_ALL_FILES: vscode.DocumentFilter[] = [
+export const TYPESCRIPT_LANGUAGE = 'typescript'
+
+export const TYPESCRIPT_ALL_FILES: vscode.DocumentFilter[] = [
     {
         language: JAVASCRIPT_LANGUAGE,
+        scheme: 'file',
+    },
+    {
+        language: TYPESCRIPT_LANGUAGE,
         scheme: 'file',
     },
 ]

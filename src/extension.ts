@@ -19,7 +19,7 @@ import { activate as activateSchemas } from './eventSchemas/activation'
 import { activate as activateLambda } from './lambda/activation'
 import { DefaultAWSClientBuilder } from './shared/awsClientBuilder'
 import { AwsContextTreeCollection } from './shared/awsContextTreeCollection'
-import { DefaultToolkitClientBuilder } from './shared/clients/defaultToolkitClientBuilder'
+import { DefaultToolkitClientBuilder } from './shared/clients/toolkitClientBuilder'
 import { activate as activateCloudFormationTemplateRegistry } from './shared/cloudformation/activation'
 import {
     documentationUrl,
@@ -33,7 +33,9 @@ import { DefaultAWSContextCommands } from './shared/defaultAwsContextCommands'
 import { ext } from './shared/extensionGlobals'
 import {
     aboutToolkit,
+    getIdeProperties,
     getToolkitEnvironmentDetails,
+    initializeComputeRegion,
     isCloud9,
     showQuickStartWebview,
     showWelcomeMessage,
@@ -65,18 +67,23 @@ import { activate as activateSsmDocument } from './ssmDocument/activation'
 import { CredentialsStore } from './credentials/credentialsStore'
 import { getSamCliContext } from './shared/sam/cli/samCliContext'
 import * as extWindow from './shared/vscode/window'
+import { Ec2CredentialsProvider } from './credentials/providers/ec2CredentialsProvider'
+import { EnvVarsCredentialsProvider } from './credentials/providers/envVarsCredentialsProvider'
 
 let localize: nls.LocalizeFunc
 
 export async function activate(context: vscode.ExtensionContext) {
+    await initializeComputeRegion()
     const activationStartedOn = Date.now()
     localize = nls.loadMessageBundle()
     ext.init(context, extWindow.Window.vscode())
 
-    const toolkitOutputChannel = vscode.window.createOutputChannel(localize('AWS.channel.aws.toolkit', 'AWS Toolkit'))
+    const toolkitOutputChannel = vscode.window.createOutputChannel(
+        localize('AWS.channel.aws.toolkit', '{0} Toolkit', getIdeProperties().company)
+    )
     await activateLogger(context, toolkitOutputChannel)
     const remoteInvokeOutputChannel = vscode.window.createOutputChannel(
-        localize('AWS.channel.aws.remoteInvoke', 'AWS Remote Invocations')
+        localize('AWS.channel.aws.remoteInvoke', '{0} Remote Invocations', getIdeProperties().company)
     )
     ext.outputChannel = toolkitOutputChannel
 
@@ -219,14 +226,14 @@ export async function activate(context: vscode.ExtensionContext) {
 
         await activateSam(extContext)
 
-        await activateS3(context)
+        await activateS3(extContext)
 
         await activateEcr(context)
 
+        await activateCloudWatchLogs(context, toolkitSettings)
+
         // Features which aren't currently functional in Cloud9
         if (!isCloud9()) {
-            await activateCloudWatchLogs(context, toolkitSettings)
-
             await activateSchemas({
                 context: extContext.extensionContext,
                 outputChannel: toolkitOutputChannel,
@@ -246,7 +253,8 @@ export async function activate(context: vscode.ExtensionContext) {
         getLogger('channel').error(
             localize(
                 'AWS.channel.aws.toolkit.activation.error',
-                'Error Activating AWS Toolkit: {0}',
+                'Error Activating {0} Toolkit: {1}',
+                getIdeProperties().company,
                 (error as Error).message
             )
         )
@@ -321,7 +329,9 @@ function initializeManifestPaths(extensionContext: vscode.ExtensionContext) {
 }
 
 function initializeCredentialsProviderManager() {
-    CredentialsProviderManager.getInstance().addProviderFactory(new SharedCredentialsProviderFactory())
+    const manager = CredentialsProviderManager.getInstance()
+    manager.addProviderFactory(new SharedCredentialsProviderFactory())
+    manager.addProviders(new Ec2CredentialsProvider(), new EnvVarsCredentialsProvider())
 }
 
 function makeEndpointsProvider(): EndpointsProvider {
@@ -334,7 +344,11 @@ function makeEndpointsProvider(): EndpointsProvider {
         getLogger().error('Failure while loading Endpoints Manifest: %O', err)
 
         vscode.window.showErrorMessage(
-            `${localize('AWS.error.endpoint.load.failure', 'The AWS Toolkit was unable to load endpoints data.')} ${
+            `${localize(
+                'AWS.error.endpoint.load.failure',
+                'The {0} Toolkit was unable to load endpoints data.',
+                getIdeProperties().company
+            )} ${
                 isCloud9()
                     ? localize(
                           'AWS.error.impactedFunctionalityReset.cloud9',
