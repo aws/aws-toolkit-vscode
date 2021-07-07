@@ -144,6 +144,7 @@ with what features/services are supported.
         <applicationService serviceImplementation="software.aws.toolkits.jetbrains.settings.SamSettings"/>
 
         <applicationService serviceImplementation="software.aws.toolkits.jetbrains.settings.CloudDebugSettings"/>
+        <applicationService serviceImplementation="software.aws.toolkits.jetbrains.settings.EcsExecCommandSettings"/>
 
         <applicationService serviceImplementation="software.aws.toolkits.jetbrains.settings.DynamicResourcesSettings"/>
         <applicationConfigurable parentId="aws" key="aws.settings.dynamic_resources_configurable.title" instance="software.aws.toolkits.jetbrains.settings.DynamicResourcesConfigurable"/>
@@ -195,6 +196,9 @@ with what features/services are supported.
                     factoryClass="software.aws.toolkits.jetbrains.core.explorer.AwsExplorerFactory"
                     icon="AwsIcons.Logos.AWS"/>
 
+        <toolWindow id="aws.sqs" anchor="bottom" doNotActivateOnStart="true" canCloseContents="true"
+                    factoryClass="software.aws.toolkits.jetbrains.services.sqs.toolwindow.SqsWindowFactory" icon="AwsIcons.Resources.Sqs.SQS_TOOL_WINDOW"/>
+
         <projectConfigurable id="aws" groupId="tools" key="aws.settings.title" instance="software.aws.toolkits.jetbrains.settings.AwsSettingsConfigurable"/>
 
         <programRunner implementation="software.aws.toolkits.jetbrains.services.lambda.execution.sam.SamInvokeRunner"/>
@@ -229,6 +233,7 @@ with what features/services are supported.
         <registryKey key="aws.credentialProcess.timeout" description="AWS Credential Process timeout (ms)" restartRequired="false" defaultValue="30000"/>
         <registryKey key="aws.debuggerAttach.timeout" description="Time allowed for debuggers to attach before timing out (ms)" restartRequired="false" defaultValue="60000"/>
         <registryKey key="aws.feature.ecsCloudDebug" description="Enables the Cloud Debug for ECS set of features" restartRequired="false" defaultValue="true"/>
+        <registryKey key="aws.feature.ecsExec" description="Enables the features and actions associated with ECS Execute Command" restartRequired="false" defaultValue="false"/>
     </extensions>
 
     <extensions defaultExtensionNs="JavaScript.JsonSchema">
@@ -241,6 +246,7 @@ with what features/services are supported.
         <!-- Executables -->
         <executable implementation="software.aws.toolkits.jetbrains.services.clouddebug.CloudDebugExecutable"/>
         <executable implementation="software.aws.toolkits.jetbrains.services.lambda.sam.SamExecutable"/>
+        <executable implementation="software.aws.toolkits.jetbrains.services.ecs.exec.AwsCliExecutable"/>
 
         <explorer.nodeProcessor implementation="software.aws.toolkits.jetbrains.services.clouddebug.CloudDebuggingExplorerProcessor" />
         <explorer.treeStructure implementation="software.aws.toolkits.jetbrains.services.clouddebug.CloudDebuggingExplorerTreeStructureProvider"/>
@@ -307,6 +313,9 @@ with what features/services are supported.
             <separator/>
             <action id="ecs.function.instrument" class="software.aws.toolkits.jetbrains.services.clouddebug.actions.InstrumentResourceFromExplorerAction"/>
             <action id="clouddebug.resource.deinstrument" class="software.aws.toolkits.jetbrains.services.clouddebug.actions.DeinstrumentResourceFromExplorerAction"/>
+            <separator/>
+            <action id="ecs.exec.enable" class="software.aws.toolkits.jetbrains.services.ecs.exec.EnableEcsExecuteCommand"/>
+            <action id="ecs.exec.disable" class="software.aws.toolkits.jetbrains.services.ecs.exec.DisableEcsExecuteCommand"/>
             <separator/>
         </group>
 

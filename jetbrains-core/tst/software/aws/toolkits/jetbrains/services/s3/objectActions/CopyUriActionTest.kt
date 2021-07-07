@@ -15,7 +15,7 @@ import java.awt.datatransfer.DataFlavor
 import java.time.Instant
 
 class CopyUriActionTest : ObjectActionTestBase() {
-    private val sut = CopyUriAction()
+    override val sut = CopyUriAction()
 
     @Test
     fun `copy uri disabled with no nodes`() {

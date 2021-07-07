@@ -1,7 +1,6 @@
 // Copyright 2021 Amazon.com, Inc. or its affiliates. All Rights Reserved.
 // SPDX-License-Identifier: Apache-2.0
 
-import software.aws.toolkits.gradle.intellij
 import software.aws.toolkits.gradle.intellij.IdeVersions
 
 plugins {
@@ -24,10 +23,13 @@ val resharperDlls = configurations.create("resharperDlls") {
 }
 
 intellij {
-    version = ideProfile.community.sdkVersion
-    pluginName = "aws-toolkit-jetbrains"
-    updateSinceUntilBuild = false
-    instrumentCode = false
+    pluginName.set("aws-toolkit-jetbrains")
+
+    version.set(ideProfile.community.version())
+    localPath.set(ideProfile.community.localPath())
+
+    updateSinceUntilBuild.set(false)
+    instrumentCode.set(false)
 }
 
 tasks.prepareSandbox {
@@ -37,8 +39,8 @@ tasks.prepareSandbox {
 }
 
 tasks.publishPlugin {
-    token(publishToken)
-    channels(publishChannel.split(",").map { it.trim() })
+    token.set(publishToken)
+    channels.set(publishChannel.split(",").map { it.trim() })
 }
 
 tasks.check {

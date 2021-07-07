@@ -3,15 +3,13 @@
 
 package software.aws.toolkits.jetbrains.services.sqs.toolwindow
 
-import com.intellij.ide.plugins.newui.UpdateButton
+import com.intellij.openapi.Disposable
 import com.intellij.openapi.application.ModalityState
 import com.intellij.openapi.project.Project
 import com.intellij.openapi.ui.ComponentValidator
 import com.intellij.openapi.ui.ValidationInfo
 import com.intellij.ui.IdeBorderFactory
 import com.intellij.ui.components.JBTextArea
-import kotlinx.coroutines.CoroutineScope
-import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.runBlocking
 import kotlinx.coroutines.withContext
@@ -19,6 +17,7 @@ import software.amazon.awssdk.services.sqs.SqsClient
 import software.aws.toolkits.jetbrains.services.sqs.Queue
 import software.aws.toolkits.jetbrains.services.sqs.telemetryType
 import software.aws.toolkits.jetbrains.utils.ApplicationThreadPoolScope
+import software.aws.toolkits.jetbrains.utils.getCoroutineBgContext
 import software.aws.toolkits.jetbrains.utils.getCoroutineUiContext
 import software.aws.toolkits.resources.message
 import software.aws.toolkits.telemetry.Result
@@ -31,13 +30,16 @@ import javax.swing.JScrollPane
 class SendMessagePane(
     private val project: Project,
     private val client: SqsClient,
-    private val queue: Queue
-) : CoroutineScope by ApplicationThreadPoolScope("SendMessagePane") {
+    private val queue: Queue,
+    disposable: Disposable
+) {
+    private val coroutineScope = ApplicationThreadPoolScope("SendMessagePane", disposable)
+
     lateinit var component: JPanel
         private set
     lateinit var inputText: JBTextArea
         private set
-    lateinit var sendButton: UpdateButton
+    lateinit var sendButton: JButton
         private set
     lateinit var clearButton: JButton
         private set
@@ -64,7 +66,7 @@ class SendMessagePane(
 
     private fun setButtons() {
         sendButton.addActionListener {
-            launch { sendMessage() }
+            coroutineScope.launch { sendMessage() }
         }
         clearButton.addActionListener {
             runBlocking { clear() }
@@ -86,7 +88,7 @@ class SendMessagePane(
             return
         }
         try {
-            withContext(Dispatchers.IO) {
+            withContext(getCoroutineBgContext()) {
                 val messageId = client.sendMessage {
                     it.queueUrl(queue.queueUrl)
                     it.messageBody(inputText.text)

@@ -18,6 +18,13 @@ abstract class S3ObjectAction(title: String, icon: Icon? = null) : DumbAwareActi
     protected abstract fun performAction(dataContext: DataContext, nodes: List<S3TreeNode>)
 
     final override fun update(e: AnActionEvent) {
+        val bucketViewer = e.dataContext.getData(S3EditorDataKeys.BUCKET_TABLE)
+        // Disable the action if the bucket viewer is not in our UI hierarchy
+        if (bucketViewer == null) {
+            e.presentation.isEnabledAndVisible = false
+            return
+        }
+
         val selected = selected(e.dataContext)
         e.presentation.isEnabled = selected.none { it is S3TreeContinuationNode<*> || it is S3TreeErrorNode } && enabled(selected)
     }

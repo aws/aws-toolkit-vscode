@@ -2,7 +2,7 @@
 // SPDX-License-Identifier: Apache-2.0
 
 import software.aws.toolkits.gradle.changelog.tasks.GeneratePluginChangeLog
-import software.aws.toolkits.gradle.intellij.ToolkitIntelliJExtension.IdeFlavor
+import software.aws.toolkits.gradle.intellij.IdeFlavor
 import software.aws.toolkits.telemetry.generator.gradle.GenerateTelemetry
 
 plugins {
@@ -82,6 +82,7 @@ dependencies {
     api("software.amazon.awssdk:sns:$awsSdkVersion")
     api("software.amazon.awssdk:sqs:$awsSdkVersion")
     api("software.amazon.awssdk:apprunner:$awsSdkVersion")
+    api("software.amazon.awssdk:ec2:$awsSdkVersion")
     implementation("com.fasterxml.jackson.dataformat:jackson-dataformat-yaml:$jacksonVersion")
 
     testImplementation(project(path = ":core", configuration = "testArtifacts"))

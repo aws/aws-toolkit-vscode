@@ -10,8 +10,10 @@ import com.intellij.openapi.actionSystem.Presentation
 import com.intellij.openapi.actionSystem.impl.SimpleDataContext
 import com.intellij.testFramework.ProjectRule
 import com.intellij.ui.treeStructure.treetable.TreeTableTree
+import org.assertj.core.api.Assertions.assertThat
 import org.junit.Before
 import org.junit.Rule
+import org.junit.Test
 import org.mockito.kotlin.mock
 import software.aws.toolkits.core.utils.test.aString
 import software.aws.toolkits.jetbrains.services.s3.editor.S3EditorDataKeys
@@ -21,10 +23,12 @@ import software.aws.toolkits.jetbrains.services.s3.editor.S3TreeTable
 import software.aws.toolkits.jetbrains.services.s3.editor.S3TreeTableModel
 import software.aws.toolkits.jetbrains.services.s3.editor.S3VirtualBucket
 
-open class ObjectActionTestBase {
+abstract class ObjectActionTestBase {
     @Rule
     @JvmField
     val projectRule = ProjectRule()
+
+    protected abstract val sut: S3ObjectAction
 
     protected val bucketName = aString()
     protected lateinit var treeTable: S3TreeTable
@@ -43,6 +47,22 @@ open class ObjectActionTestBase {
             on { rootNode }.thenReturn(S3TreeDirectoryNode(s3Bucket, null, ""))
             on { tree }.thenReturn(mockModel)
         }
+    }
+
+    @Test
+    fun `action is disabled when UI element is not present`() {
+        val projectContext = SimpleDataContext.getProjectContext(projectRule.project)
+        val dc = SimpleDataContext.getSimpleContext(
+            mapOf(
+                S3EditorDataKeys.BUCKET_TABLE.name to null
+            ),
+            projectContext
+        )
+        val actionEvent = AnActionEvent.createFromAnAction(sut, null, ActionPlaces.UNKNOWN, dc)
+
+        sut.update(actionEvent)
+
+        assertThat(actionEvent.presentation.isEnabled).isFalse
     }
 
     protected fun AnAction.executeAction(nodes: List<S3TreeNode>) {

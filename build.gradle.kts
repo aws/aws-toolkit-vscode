@@ -2,10 +2,6 @@
 // SPDX-License-Identifier: Apache-2.0
 
 import software.aws.toolkits.gradle.changelog.tasks.GenerateGithubChangeLog
-import software.aws.toolkits.gradle.intellij.IdeVersions
-
-val ideProfile = IdeVersions.ideProfile(project)
-val toolkitVersion: String by project
 
 plugins {
     id("base")
@@ -13,16 +9,18 @@ plugins {
     id("toolkit-jacoco-report")
 }
 
+val codeArtifactUrl: Provider<String> = providers.environmentVariable("CODEARTIFACT_URL").forUseAtConfigurationTime()
+val codeArtifactToken: Provider<String> = providers.environmentVariable("CODEARTIFACT_AUTH_TOKEN").forUseAtConfigurationTime()
+
 allprojects {
     repositories {
-        mavenLocal()
-        System.getenv("CODEARTIFACT_URL")?.let {
-            println("Using CodeArtifact proxy: $it")
+        if (codeArtifactUrl.isPresent && codeArtifactToken.isPresent) {
+            println("Using CodeArtifact proxy: ${codeArtifactUrl.get()}")
             maven {
-                url = uri(it)
+                url = uri(codeArtifactUrl.get())
                 credentials {
                     username = "aws"
-                    password = System.getenv("CODEARTIFACT_AUTH_TOKEN")
+                    password = codeArtifactToken.get()
                 }
             }
         }

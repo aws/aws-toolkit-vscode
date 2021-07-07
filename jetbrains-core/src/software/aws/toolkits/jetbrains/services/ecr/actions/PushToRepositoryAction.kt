@@ -16,7 +16,6 @@ import com.intellij.openapi.actionSystem.LangDataKeys
 import com.intellij.openapi.application.ModalityState
 import com.intellij.openapi.application.runInEdt
 import com.intellij.openapi.fileChooser.FileChooserDescriptorFactory
-import com.intellij.openapi.project.DumbAware
 import com.intellij.openapi.project.Project
 import com.intellij.openapi.project.guessProjectDir
 import com.intellij.openapi.ui.DialogWrapper
@@ -35,11 +34,7 @@ import com.intellij.ui.layout.listCellRenderer
 import com.intellij.ui.layout.panel
 import com.intellij.ui.layout.selected
 import com.intellij.util.text.nullize
-import kotlinx.coroutines.CoroutineScope
-import kotlinx.coroutines.CoroutineStart
 import kotlinx.coroutines.Deferred
-import kotlinx.coroutines.Dispatchers
-import kotlinx.coroutines.async
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 import software.amazon.awssdk.core.exception.SdkException
@@ -47,7 +42,6 @@ import software.amazon.awssdk.services.ecr.EcrClient
 import software.aws.toolkits.core.utils.error
 import software.aws.toolkits.core.utils.getLogger
 import software.aws.toolkits.jetbrains.core.awsClient
-import software.aws.toolkits.jetbrains.core.explorer.actions.SingleExplorerNodeAction
 import software.aws.toolkits.jetbrains.services.ecr.DockerRunConfiguration
 import software.aws.toolkits.jetbrains.services.ecr.DockerfileEcrPushRequest
 import software.aws.toolkits.jetbrains.services.ecr.EcrPushRequest
@@ -60,6 +54,7 @@ import software.aws.toolkits.jetbrains.services.ecr.resources.Repository
 import software.aws.toolkits.jetbrains.services.ecr.toLocalImageList
 import software.aws.toolkits.jetbrains.ui.ResourceSelector
 import software.aws.toolkits.jetbrains.utils.ApplicationThreadPoolScope
+import software.aws.toolkits.jetbrains.utils.getCoroutineBgContext
 import software.aws.toolkits.jetbrains.utils.notifyError
 import software.aws.toolkits.jetbrains.utils.ui.installOnParent
 import software.aws.toolkits.jetbrains.utils.ui.selected
@@ -71,12 +66,8 @@ import software.aws.toolkits.telemetry.Result
 import javax.swing.JTextField
 import javax.swing.plaf.basic.BasicComboBoxEditor
 
-class PushToRepositoryAction :
-    SingleExplorerNodeAction<EcrRepositoryNode>(),
-    DumbAware,
-    CoroutineScope by ApplicationThreadPoolScope("PushRepositoryAction") {
-    private val dockerServerRuntime: Deferred<DockerServerRuntimeInstance> =
-        async(start = CoroutineStart.LAZY) { EcrUtils.getDockerServerRuntimeInstance().runtimeInstance }
+class PushToRepositoryAction : EcrDockerAction() {
+    override val coroutineScope = ApplicationThreadPoolScope("PushRepositoryAction")
 
     override fun actionPerformed(selected: EcrRepositoryNode, e: AnActionEvent) {
         val project = e.getRequiredData(LangDataKeys.PROJECT)
@@ -89,11 +80,11 @@ class PushToRepositoryAction :
             return
         }
 
-        launch {
+        coroutineScope.launch {
             val pushRequest = dialog.getPushRequest()
             var result = Result.Failed
             try {
-                val authData = withContext(Dispatchers.IO) {
+                val authData = withContext(getCoroutineBgContext()) {
                     client.authorizationToken.authorizationData().first()
                 }
 
@@ -138,8 +129,8 @@ internal class PushToEcrDialog(
     private val project: Project,
     selectedRepository: Repository,
     private val dockerServerRuntime: Deferred<DockerServerRuntimeInstance>
-) : DialogWrapper(project, null, false, IdeModalityType.PROJECT),
-    CoroutineScope by ApplicationThreadPoolScope("PushRepositoryDialog") {
+) : DialogWrapper(project, null, false, IdeModalityType.PROJECT) {
+    private val coroutineScope = ApplicationThreadPoolScope("PushRepositoryDialog")
     private val defaultTag = "latest"
     private var type = BuildType.LocalImage
     private var remoteTag = ""
@@ -162,7 +153,7 @@ internal class PushToEcrDialog(
 
         init()
 
-        launch {
+        coroutineScope.launch {
             val serverRuntime = dockerServerRuntime.await()
             val images = serverRuntime.agent.getImages(null)
             localImageRepoTags.add(images.toLocalImageList())
@@ -202,6 +193,7 @@ internal class PushToEcrDialog(
         row(message("ecr.repo.label")) {
             component(remoteRepos)
                 .growPolicy(GrowPolicy.MEDIUM_TEXT)
+                .withErrorOnApplyIf(message("loading_resource.still_loading")) { it.isLoading }
                 .withErrorOnApplyIf(message("ecr.repo.not_selected")) { it.selected() == null }
         }
 

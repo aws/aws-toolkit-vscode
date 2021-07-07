@@ -3,7 +3,6 @@
 
 package software.aws.toolkits.jetbrains.services.telemetry
 
-import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
 import software.amazon.awssdk.auth.credentials.AnonymousCredentialsProvider
 import software.amazon.awssdk.regions.Region
@@ -16,6 +15,7 @@ import software.aws.toolkits.core.ToolkitClientManager
 import software.aws.toolkits.core.telemetry.MetricEvent
 import software.aws.toolkits.core.telemetry.TelemetryPublisher
 import software.aws.toolkits.jetbrains.core.AwsSdkClient
+import software.aws.toolkits.jetbrains.utils.getCoroutineBgContext
 import kotlin.streams.toList
 
 class DefaultTelemetryPublisher(
@@ -23,7 +23,7 @@ class DefaultTelemetryPublisher(
     private val client: ToolkitTelemetryClient = createDefaultTelemetryClient()
 ) : TelemetryPublisher {
     override suspend fun publish(metricEvents: Collection<MetricEvent>) {
-        withContext(Dispatchers.IO) {
+        withContext(getCoroutineBgContext()) {
             client.postMetrics {
                 it.awsProduct(clientMetadata.productName)
                 it.awsProductVersion(clientMetadata.productVersion)
@@ -38,7 +38,7 @@ class DefaultTelemetryPublisher(
     }
 
     override suspend fun sendFeedback(sentiment: Sentiment, comment: String) {
-        withContext(Dispatchers.IO) {
+        withContext(getCoroutineBgContext()) {
             client.postFeedback {
                 it.awsProduct(clientMetadata.productName)
                 it.awsProductVersion(clientMetadata.productVersion)

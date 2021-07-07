@@ -15,7 +15,7 @@ import java.awt.datatransfer.DataFlavor
 import java.time.Instant
 
 class CopyPathActionTest : ObjectActionTestBase() {
-    private val sut = CopyPathAction()
+    override val sut = CopyPathAction()
 
     @Test
     fun `copy path disabled with no nodes`() {

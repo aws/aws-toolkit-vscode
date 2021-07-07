@@ -44,7 +44,7 @@ class DownloadObjectActionTest : ObjectActionTestBase() {
     @JvmField
     val testDisposable = DisposableRule()
 
-    private val sut = DownloadObjectAction()
+    override val sut = DownloadObjectAction()
 
     @After
     fun tearDown() {
