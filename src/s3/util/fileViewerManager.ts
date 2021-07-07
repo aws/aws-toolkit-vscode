@@ -57,42 +57,14 @@ export class S3FileViewerManager {
         const targetPath = await this.createTargetPath(fileNode)
         const targetLocation = vscode.Uri.file(targetPath)
 
-        if (this.cacheArn.has(fileNode.file.arn)) {
-            //get it from temp IF it hasn't been recently modified, then return that
-            showOutputMessage(`cache is working!, found ${fileNode.file.key} in cache`, this.outputChannel) //TODOD:: debug log remove
-            //explorer (or at least the S3Node) needs to be refreshed to get the last modified date from S3
-            const newNode = await this.refreshNode(fileNode)
-            if (!newNode) {
-                showOutputMessage(
-                    `!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!! something happeneded`,
-                    this.outputChannel
-                ) //TODOD:: debug log, remove
-                return
-            }
-
-            fileNode = newNode
-            const lastModifiedInS3 = fileNode!.file.lastModified
-            const { birthtime } = fs.statSync(targetLocation.fsPath)
-            showOutputMessage(`last modified in S3: ${lastModifiedInS3}`, this.outputChannel) //TODOD: debug log, remove
-            showOutputMessage(`creation date: ${birthtime}`, this.outputChannel) //TODOD: debug log, remove
-            if (lastModifiedInS3! <= birthtime) {
-                showOutputMessage(`good to retreive, last modified date is before creation`, this.outputChannel) //TODOD: debug log, remove
-                await this.listTempFolder()
-                return targetLocation
-            } else {
-                showOutputMessage(
-                    `last modified date is after creation date!!, removing file and redownloading`,
-                    this.outputChannel
-                ) //TODOD: debug log, remove
-                fs.unlinkSync(targetPath)
-                this.listTempFolder()
-            }
+        const tempFile: vscode.Uri | undefined = await this.isInTemp(fileNode)
+        //if it was found in temp, return the Uri location
+        if (tempFile) {
+            return tempFile
         }
 
         //needs to be downloaded from S3
         //if file is +4MB, prompt user to confirm before proceeding
-
-        //fs.statSync(uri).size
         //const uri = vscode.Uri.file('')
         //TODOD: when can sizeBytes be undefined?
         if (fileNode.file.sizeBytes! > SIZE_LIMIT) {
@@ -122,6 +94,45 @@ export class S3FileViewerManager {
         await this.listTempFolder()
 
         return targetLocation
+    }
+
+    async isInTemp(fileNode: S3FileNode): Promise<vscode.Uri | undefined> {
+        const targetPath = await this.createTargetPath(fileNode)
+        const targetLocation = vscode.Uri.file(targetPath)
+
+        if (this.cacheArn.has(fileNode.file.arn)) {
+            //get it from temp IF it hasn't been recently modified, then return that
+            showOutputMessage(`cache is working!, found ${fileNode.file.key} in cache`, this.outputChannel) //TODOD:: debug log remove
+            //explorer (or at least the S3Node) needs to be refreshed to get the last modified date from S3
+            const newNode = await this.refreshNode(fileNode)
+            if (!newNode) {
+                showOutputMessage(
+                    `!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!! something happeneded`,
+                    this.outputChannel
+                ) //TODOD:: debug log, remove
+                return
+            }
+
+            fileNode = newNode
+            const lastModifiedInS3 = fileNode!.file.lastModified
+            const { birthtime } = fs.statSync(targetLocation.fsPath)
+            showOutputMessage(`last modified in S3: ${lastModifiedInS3}`, this.outputChannel) //TODOD: debug log, remove
+            showOutputMessage(`creation date: ${birthtime}`, this.outputChannel) //TODOD: debug log, remove
+            if (lastModifiedInS3! <= birthtime) {
+                showOutputMessage(`good to retreive, last modified date is before creation`, this.outputChannel) //TODOD: debug log, remove
+                await this.listTempFolder()
+                return targetLocation
+            } else {
+                showOutputMessage(
+                    `last modified date is after creation date!!, removing file and redownloading`,
+                    this.outputChannel
+                ) //TODOD: debug log, remove
+                fs.unlinkSync(targetPath)
+                this.listTempFolder()
+                return undefined
+            }
+        }
+        return undefined
     }
 
     async createTargetPath(fileNode: S3FileNode): Promise<string> {
@@ -163,7 +174,6 @@ export class S3FileViewerManager {
 
     public async createTemp(): Promise<void> {
         this.tempLocation = await makeTemporaryToolkitFolder()
-
         showOutputMessage(`folder created with location: ${this.tempLocation}`, this.outputChannel)
     }
 }
