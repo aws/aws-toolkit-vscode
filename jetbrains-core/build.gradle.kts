@@ -2,7 +2,7 @@
 // SPDX-License-Identifier: Apache-2.0
 
 import software.aws.toolkits.gradle.changelog.tasks.GeneratePluginChangeLog
-import software.aws.toolkits.gradle.intellij.ToolkitIntelliJExtension.IdeFlavor
+import software.aws.toolkits.gradle.intellij.IdeFlavor
 import software.aws.toolkits.telemetry.generator.gradle.GenerateTelemetry
 
 plugins {

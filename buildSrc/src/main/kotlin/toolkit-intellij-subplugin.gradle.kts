@@ -7,8 +7,8 @@ import org.jetbrains.intellij.tasks.RunIdeForUiTestTask
 import software.aws.toolkits.gradle.ciOnly
 import software.aws.toolkits.gradle.findFolders
 import software.aws.toolkits.gradle.intellij.IdeVersions
+import software.aws.toolkits.gradle.intellij.IdeFlavor
 import software.aws.toolkits.gradle.intellij.ToolkitIntelliJExtension
-import software.aws.toolkits.gradle.intellij.ToolkitIntelliJExtension.IdeFlavor
 import software.aws.toolkits.gradle.isCi
 
 val toolkitIntelliJ = project.extensions.create<ToolkitIntelliJExtension>("intellijToolkit")
@@ -66,7 +66,10 @@ tasks.processResources {
 // Run after the project has been evaluated so that the extension (intellijToolkit) has been configured
 intellij {
     pluginName.set("aws-toolkit-jetbrains")
-    version.set(toolkitIntelliJ.productProfile().map { it.sdkVersion })
+
+    localPath.set(toolkitIntelliJ.localPath())
+    version.set(toolkitIntelliJ.version())
+
     plugins.set(toolkitIntelliJ.productProfile().map { it.plugins.toMutableList() })
 
     downloadSources.set(toolkitIntelliJ.ideFlavor.map { it == IdeFlavor.IC && !project.isCi() })
