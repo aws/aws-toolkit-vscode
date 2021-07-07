@@ -8,7 +8,7 @@ import * as FakeTimers from '@sinonjs/fake-timers'
 import * as sinon from 'sinon'
 import { SharedCredentialsProvider } from '../../../credentials/providers/sharedCredentialsProvider'
 import { Profile } from '../../../shared/credentials/credentialsFile'
-import { stripUndefined, assertDeepCompare } from '../../../test/testUtil'
+import { stripUndefined } from '../../../test/testUtil'
 import * as process from '@aws-sdk/credential-provider-process'
 import { ParsedIniData } from '@aws-sdk/shared-ini-file-loader'
 
@@ -257,7 +257,7 @@ describe('SharedCredentialsProvider', async function () {
             const makeIni = sandbox.stub(sut as any, 'makeSharedIniFileCredentialsProvider').callsFake(profile => {
                 // The SDK does not care if fields are undefined, but we need to remove them to test
                 stripUndefined(profile)
-                assertDeepCompare(profile, resolvedProfile)
+                assert.deepStrictEqual(profile, resolvedProfile)
                 return () => Promise.resolve({})
             })
 

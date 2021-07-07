@@ -94,17 +94,3 @@ export function stripUndefined(obj: any): void {
         }
     })
 }
-
-export function assertDeepCompare(obj1: any, obj2: any): void {
-    assert.ok(typeof obj1 === typeof obj2)
-    assert.ok(Object.keys(obj1).length === Object.keys(obj2).length)
-    assert.ok(Object.keys(obj1).every(key => {
-        if (typeof obj1[key] === 'object' || typeof obj2[key] === 'object') {
-            assertDeepCompare(obj1[key], obj2[key])
-        } else {
-            assert.strictEqual(obj1[key], obj2[key])
-        }
-
-        return true
-    }))
-}
