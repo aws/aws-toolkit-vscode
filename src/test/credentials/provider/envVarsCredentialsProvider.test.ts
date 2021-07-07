@@ -4,7 +4,6 @@
  */
 
 import * as assert from 'assert'
-import { EnvironmentCredentials } from 'aws-sdk'
 import { EnvVarsCredentialsProvider } from '../../../credentials/providers/envVarsCredentialsProvider'
 import { EnvironmentVariables } from '../../../shared/environmentVariables'
 
