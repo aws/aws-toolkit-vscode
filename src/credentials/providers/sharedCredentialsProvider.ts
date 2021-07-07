@@ -179,12 +179,6 @@ export class SharedCredentialsProvider implements CredentialsProvider {
     }
 
     public async getCredentials(): Promise<AWS.Credentials> {
-        // TODO: determine if the below comment still holds true (SDK v3 does not have global configuration for clients)
-        // Profiles with references involving non-aws partitions need help getting the right STS endpoint
-        // when resolving SharedIniFileCredentials. We set the global sts configuration with a suitable region
-        // only to perform the resolve, then reset it.
-        // This hack can be removed when https://github.com/aws/aws-sdk-js/issues/3088 is addressed.
-
         const validationMessage = this.validate()
         if (validationMessage) {
             throw new Error(`Profile ${this.profileName} is not a valid Credential Profile: ${validationMessage}`)
