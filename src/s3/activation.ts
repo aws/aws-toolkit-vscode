@@ -10,6 +10,7 @@ import { createFolderCommand } from './commands/createFolder'
 import { deleteBucketCommand } from './commands/deleteBucket'
 import { deleteFileCommand } from './commands/deleteFile'
 import { downloadFileAsCommand } from './commands/downloadFileAs'
+import { openFileCommand } from './commands/openFile'
 import { uploadFileCommand } from './commands/uploadFile'
 import { uploadFileToParentCommand } from './commands/uploadFileToParent'
 import { S3BucketNode } from './explorer/s3BucketNode'
@@ -22,6 +23,7 @@ import { ExtContext } from '../shared/extensions'
 /**
  * Activates S3 components.
  */
+
 export async function activate(ctx: ExtContext): Promise<void> {
     ctx.extensionContext.subscriptions.push(
         vscode.commands.registerCommand('aws.s3.copyPath', async (node: S3FolderNode | S3FileNode) => {
@@ -29,6 +31,9 @@ export async function activate(ctx: ExtContext): Promise<void> {
         }),
         vscode.commands.registerCommand('aws.s3.downloadFileAs', async (node: S3FileNode) => {
             await downloadFileAsCommand(node)
+        }),
+        vscode.commands.registerCommand('aws.s3.openFile', async (node: S3FileNode) => {
+            await openFileCommand(node)
         }),
         vscode.commands.registerCommand('aws.s3.uploadFile', async (node: S3BucketNode | S3FolderNode) => {
             if (!node) {
