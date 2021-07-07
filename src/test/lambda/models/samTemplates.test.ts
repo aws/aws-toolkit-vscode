@@ -15,6 +15,7 @@ import {
     eventBridgeHelloWorldTemplate,
     eventBridgeStarterAppTemplate,
     stepFunctionsSampleApp,
+    typeScriptBackendTemplate,
 } from '../../../lambda/models/samTemplates'
 import { Set } from 'immutable'
 
@@ -25,6 +26,20 @@ const validTemplateOptions: Set<SamTemplate> = Set<SamTemplate>([
     eventBridgeHelloWorldTemplate,
     eventBridgeStarterAppTemplate,
     stepFunctionsSampleApp,
+    typeScriptBackendTemplate,
+])
+
+const validPythonTemplateOptions: Set<SamTemplate> = Set<SamTemplate>([
+    helloWorldTemplate,
+    eventBridgeHelloWorldTemplate,
+    eventBridgeStarterAppTemplate,
+    stepFunctionsSampleApp,
+])
+
+const validNode12TemplateOptions: Set<SamTemplate> = Set<SamTemplate>([
+    helloWorldTemplate,
+    stepFunctionsSampleApp,
+    typeScriptBackendTemplate,
 ])
 
 const defaultTemplateOptions: Set<SamTemplate> = Set<SamTemplate>([helloWorldTemplate, stepFunctionsSampleApp])
@@ -39,8 +54,15 @@ describe('getSamTemplateWizardOption', function () {
                 case 'python3.8':
                     assert.deepStrictEqual(
                         result,
-                        validTemplateOptions,
-                        'Event bridge app supports all valid template options'
+                        validPythonTemplateOptions,
+                        'Python 3.x supports additional template options'
+                    )
+                    break
+                case 'nodejs12.x':
+                    assert.deepStrictEqual(
+                        result,
+                        validNode12TemplateOptions,
+                        'Node12.x supports default and TS template options'
                     )
                     break
                 default:

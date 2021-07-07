@@ -24,9 +24,7 @@ import {
 } from '../shared/telemetry/telemetry'
 import { AWSResourceNode } from '../shared/treeview/nodes/awsResourceNode'
 import { AWSTreeNodeBase } from '../shared/treeview/nodes/awsTreeNodeBase'
-import { ErrorNode } from '../shared/treeview/nodes/errorNode'
 import { LoadMoreNode } from '../shared/treeview/nodes/loadMoreNode'
-import { showErrorDetails } from '../shared/treeview/webviews/showErrorDetails'
 import { downloadStateMachineDefinition } from '../stepFunctions/commands/downloadStateMachineDefinition'
 import { executeStateMachine } from '../stepFunctions/commands/executeStateMachine'
 import { StateMachineNode } from '../stepFunctions/explorer/stepFunctionsNodes'
@@ -126,9 +124,12 @@ async function registerAwsExplorerCommands(
     )
 
     context.subscriptions.push(
-        vscode.commands.registerCommand('aws.refreshAwsExplorer', async () => {
-            recordAwsRefreshExplorer()
+        vscode.commands.registerCommand('aws.refreshAwsExplorer', async (passive: boolean = false) => {
             awsExplorer.refresh()
+
+            if (!passive) {
+                recordAwsRefreshExplorer()
+            }
         })
     )
 
@@ -138,10 +139,6 @@ async function registerAwsExplorerCommands(
             async (node: CloudFormationStackNode) =>
                 await deleteCloudFormation(() => awsExplorer.refresh(node.parent), node)
         )
-    )
-
-    context.subscriptions.push(
-        vscode.commands.registerCommand('aws.showErrorDetails', async (node: ErrorNode) => await showErrorDetails(node))
     )
 
     context.subscriptions.push(
@@ -175,12 +172,8 @@ async function registerAwsExplorerCommands(
     )
 
     context.subscriptions.push(
-        vscode.commands.registerCommand('aws.refreshAwsExplorerNode', async (element: AWSTreeNodeBase) => {
-            try {
-                awsExplorer.refresh(element)
-            } finally {
-                recordAwsRefreshExplorer()
-            }
+        vscode.commands.registerCommand('aws.refreshAwsExplorerNode', async (element: AWSTreeNodeBase | undefined) => {
+            awsExplorer.refresh(element)
         })
     )
 

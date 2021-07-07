@@ -5,7 +5,7 @@
 
 import * as vscode from 'vscode'
 import * as nls from 'vscode-nls'
-import { safeLoad } from 'js-yaml'
+import { load } from 'js-yaml'
 const localize = nls.loadMessageBundle()
 import { AwsContext } from '../../shared/awsContext'
 import { StepFunctionsClient } from '../../shared/clients/stepFunctionsClient'
@@ -22,8 +22,6 @@ import {
 } from '../wizards/publishStateMachineWizard'
 
 import { VALID_SFN_PUBLISH_FORMATS, YAML_FORMATS } from '../constants/aslFormats'
-
-const DEFAULT_REGION: string = 'us-east-1'
 
 export async function publishStateMachine(awsContext: AwsContext, outputChannel: vscode.OutputChannel) {
     const logger: Logger = getLogger()
@@ -45,7 +43,7 @@ export async function publishStateMachine(awsContext: AwsContext, outputChannel:
 
     if (YAML_FORMATS.includes(textDocument.languageId)) {
         try {
-            text = JSON.stringify(safeLoad(text), undefined, '  ')
+            text = JSON.stringify(load(text), undefined, '  ')
         } catch (error) {
             const localizedMsg = localize(
                 'AWS.message.error.stepFunctions.publishStateMachine.invalidYAML',
@@ -58,13 +56,7 @@ export async function publishStateMachine(awsContext: AwsContext, outputChannel:
         }
     }
 
-    let region = awsContext.getCredentialDefaultRegion()
-    if (!region) {
-        region = DEFAULT_REGION
-        logger.info(
-            `Default region in credentials profile is not set. Falling back to ${DEFAULT_REGION} for publishing a state machine.`
-        )
-    }
+    const region = awsContext.getCredentialDefaultRegion()
 
     const client: StepFunctionsClient = ext.toolkitClientBuilder.createStepFunctionsClient(region)
 

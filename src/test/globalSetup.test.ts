@@ -20,6 +20,7 @@ import { FakeExtensionContext } from './fakeExtensionContext'
 import * as fakeTelemetry from './fake/fakeTelemetryService'
 import { TestLogger } from './testLogger'
 import { FakeAwsContext } from './utilities/fakeAwsContext'
+import { initializeComputeRegion } from '../shared/extensionUtilities'
 
 const testReportDir = join(__dirname, '../../../.test-reports')
 const testLogOutput = join(testReportDir, 'testLog.log')
@@ -40,6 +41,7 @@ before(async function () {
     const service = new DefaultTelemetryService(fakeContext, fakeAws, undefined, fakeTelemetryPublisher)
     ext.init(fakeContext, extWindow.Window.vscode())
     ext.telemetry = service
+    await initializeComputeRegion()
 })
 
 beforeEach(function () {

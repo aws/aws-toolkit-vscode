@@ -3,7 +3,7 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
-import * as schema from 'cloudformation-schema-js-yaml'
+import { schema } from 'yaml-cfn'
 import { writeFile } from 'fs-extra'
 import * as yaml from 'js-yaml'
 import * as filesystemUtilities from '../filesystemUtilities'
@@ -357,8 +357,8 @@ export namespace CloudFormation {
         }
 
         const templateAsYaml: string = await filesystemUtilities.readFileAsString(filename)
-        const template = yaml.safeLoad(templateAsYaml, {
-            schema: schema as yaml.SchemaDefinition,
+        const template = yaml.load(templateAsYaml, {
+            schema: schema as any,
         }) as Template
         validateTemplate(template)
 
@@ -366,7 +366,7 @@ export namespace CloudFormation {
     }
 
     export async function save(template: Template, filename: string): Promise<void> {
-        const templateAsYaml: string = yaml.safeDump(template)
+        const templateAsYaml: string = yaml.dump(template)
 
         await writeFile(filename, templateAsYaml, 'utf8')
     }
@@ -504,7 +504,9 @@ export namespace CloudFormation {
      */
     function isRef(property: unknown): boolean {
         return (
-            typeof property === 'object' && Object.keys(property!).length === 1 && Object.keys(property!).includes('Ref')
+            typeof property === 'object' &&
+            Object.keys(property!).length === 1 &&
+            Object.keys(property!).includes('Ref')
         )
     }
 
@@ -701,7 +703,7 @@ export namespace CloudFormation {
         } = {}
     ): string | number | undefined {
         if (typeof property !== 'object') {
-            return property as string | number | undefined 
+            return property as string | number | undefined
         }
         if (isRef(property)) {
             try {

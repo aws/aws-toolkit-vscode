@@ -3,6 +3,10 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
+//
+// TODO: DEPRECATED. Remove this after removing support for the legacy
+// "templates.json" support.
+//
 import * as vscode from 'vscode'
 import { CloudFormation } from '../../shared/cloudformation/cloudformation'
 import { getNormalizedRelativePath } from '../../shared/utilities/pathUtils'

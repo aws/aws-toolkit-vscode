@@ -26,8 +26,8 @@ import { Window } from '../../shared/vscode/window'
 import { promptUserForLocation, WizardContext } from '../../shared/wizards/multiStepWizard'
 import { getLambdaDetails } from '../utils'
 
-export async function importLambdaCommand(functionNode: LambdaFunctionNode) {
-    const result = await runImportLambda(functionNode)
+export async function downloadLambdaCommand(functionNode: LambdaFunctionNode) {
+    const result = await runDownloadLambda(functionNode)
 
     telemetry.recordLambdaImport({
         result,
@@ -35,13 +35,16 @@ export async function importLambdaCommand(functionNode: LambdaFunctionNode) {
     })
 }
 
-async function runImportLambda(functionNode: LambdaFunctionNode, window = Window.vscode()): Promise<telemetry.Result> {
+async function runDownloadLambda(
+    functionNode: LambdaFunctionNode,
+    window = Window.vscode()
+): Promise<telemetry.Result> {
     const workspaceFolders = vscode.workspace.workspaceFolders || []
     const functionName = functionNode.configuration.FunctionName!
 
     if (workspaceFolders.length === 0) {
         window.showErrorMessage(
-            localize('AWS.lambda.import.noWorkspaceFolders', 'Open a workspace before importing a Lambda function.')
+            localize('AWS.lambda.download.noWorkspaceFolders', 'Open a workspace before downloading a Lambda function.')
         )
         return 'Cancelled'
     }
@@ -50,26 +53,26 @@ async function runImportLambda(functionNode: LambdaFunctionNode, window = Window
         return 'Cancelled'
     }
 
-    const importLocation = path.join(selectedUri.fsPath, functionName, path.sep)
-    const importLocationName = vscode.workspace.asRelativePath(importLocation, true)
+    const downloadLocation = path.join(selectedUri.fsPath, functionName, path.sep)
+    const downloadLocationName = vscode.workspace.asRelativePath(downloadLocation, true)
 
-    if (await fs.pathExists(importLocation)) {
+    if (await fs.pathExists(downloadLocation)) {
         const isConfirmed = await showConfirmationMessage(
             {
                 prompt: localize(
-                    'AWS.lambda.import.prompt',
-                    'Importing {0} into: {1}\nExisting directory will be overwritten: {0}\nProceed with import?',
+                    'AWS.lambda.download.prompt',
+                    'Downloading {0} into: {1}\nExisting directory will be overwritten: {0}\nProceed with download?',
                     functionName,
-                    importLocationName
+                    downloadLocationName
                 ),
-                confirm: localize('AWS.lambda.import.import', 'Import'),
+                confirm: localize('AWS.lambda.download.download', 'Download'),
                 cancel: localizedText.cancel,
             },
             window
         )
 
         if (!isConfirmed) {
-            getLogger().info('ImportLambda cancelled')
+            getLogger().info('DownloadLambda cancelled')
             return 'Cancelled'
         }
     }
@@ -79,18 +82,18 @@ async function runImportLambda(functionNode: LambdaFunctionNode, window = Window
             location: vscode.ProgressLocation.Notification,
             cancellable: false,
             title: localize(
-                'AWS.lambda.import.status',
-                'Importing Lambda function {0} into {1}...',
+                'AWS.lambda.download.status',
+                'Downloading Lambda function {0} into {1}...',
                 functionName,
-                importLocationName
+                downloadLocationName
             ),
         },
         async progress => {
             let lambdaLocation: string
 
             try {
-                lambdaLocation = path.join(importLocation, getLambdaDetails(functionNode.configuration).fileName)
-                await downloadAndUnzipLambda(progress, functionNode, importLocation)
+                lambdaLocation = path.join(downloadLocation, getLambdaDetails(functionNode.configuration).fileName)
+                await downloadAndUnzipLambda(progress, functionNode, downloadLocation)
             } catch (e) {
                 // initial download failed or runtime is unsupported.
                 // show error and return a failure
@@ -98,8 +101,8 @@ async function runImportLambda(functionNode: LambdaFunctionNode, window = Window
                 getLogger().error(err)
                 window.showErrorMessage(
                     localize(
-                        'AWS.lambda.import.importError',
-                        'Error importing Lambda function {0}: {1}',
+                        'AWS.lambda.download.downloadError',
+                        'Error downloading Lambda function {0}: {1}',
                         functionNode.configuration.FunctionArn!,
                         err.message
                     )
@@ -117,7 +120,7 @@ async function runImportLambda(functionNode: LambdaFunctionNode, window = Window
                 ) {
                     await addFolderToWorkspace({ uri: selectedUri! }, true)
                 }
-                const workspaceFolder = vscode.workspace.getWorkspaceFolder(vscode.Uri.file(importLocation))!
+                const workspaceFolder = vscode.workspace.getWorkspaceFolder(vscode.Uri.file(downloadLocation))!
 
                 await addLaunchConfigEntry(lambdaLocation, functionNode, workspaceFolder)
 
@@ -137,7 +140,7 @@ async function downloadAndUnzipLambda(
         increment?: number | undefined
     }>,
     functionNode: LambdaFunctionNode,
-    importLocation: string,
+    extractLocation: string,
     window = Window.vscode(),
     lambda = ext.toolkitClientBuilder.createLambdaClient(functionNode.regionCode)
 ): Promise<void> {
@@ -166,26 +169,22 @@ async function downloadAndUnzipLambda(
         // Brings up issues in less performant systems.
         // keep attempting the unzip until the zip is fully built or fail after 5 seconds
         let zipErr: Error | undefined
-        const val = await waitUntil(async () => {
-            return await new Promise<boolean | undefined>(resolve => {
-                try {
-                    new AdmZip(downloadLocation).extractAllToAsync(importLocation, true, err => {
-                        if (err) {
-                            // err unzipping
-                            zipErr = err
-                            resolve(false)
-                        } else {
-                            progress.report({ increment: 10 })
-                            resolve(true)
-                        }
-                    })
-                } catch (err) {
-                    // err loading zip into AdmZip, prior to attempting an unzip
-                    zipErr = err
-                    resolve(false)
-                }
-            })
-        }, { timeout: 10000, interval: 1000, truthy: true })
+        const val = await waitUntil(
+            async () => {
+                return await new Promise<boolean | undefined>(resolve => {
+                    try {
+                        new AdmZip(downloadLocation).extractAllTo(extractLocation, true)
+                        progress.report({ increment: 10 })
+                        resolve(true)
+                    } catch (err) {
+                        // err loading zip into AdmZip, prior to attempting an unzip
+                        zipErr = err
+                        resolve(false)
+                    }
+                })
+            },
+            { timeout: 10000, interval: 1000, truthy: true }
+        )
 
         if (!val) {
             throw zipErr
@@ -198,8 +197,8 @@ async function downloadAndUnzipLambda(
 export async function openLambdaFile(lambdaLocation: string, window = Window.vscode()): Promise<void> {
     if (!(await fileExists(lambdaLocation))) {
         const warning = localize(
-            'AWS.lambda.import.fileNotFound',
-            'Handler file {0} not found in imported function.',
+            'AWS.lambda.download.fileNotFound',
+            'Handler file {0} not found in downloaded function.',
             lambdaLocation
         )
         getLogger().warn(warning)

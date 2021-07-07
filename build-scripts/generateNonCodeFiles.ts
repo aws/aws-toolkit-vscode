@@ -17,11 +17,15 @@ const REPO_ROOT = path.dirname(__dirname)
  * @param root Repository root
  * @param inputFile Input .md file to swap to HTML
  * @param outputFile Filepath to output HTML to
+ * @param cn Converts "AWS" to "Amazon" for CN-based compute.
  */
-function translateReadmeToHtml(root: string, inputFile: string, outputFile: string) {
+function translateReadmeToHtml(root: string, inputFile: string, outputFile: string, cn: boolean = false) {
     const fileText = fs.readFileSync(path.join(root, inputFile)).toString()
     const relativePathRegex = /]\(\.\//g
-    const transformedText = fileText.replace(relativePathRegex, '](!!EXTENSIONROOT!!/')
+    let transformedText = fileText.replace(relativePathRegex, '](!!EXTENSIONROOT!!/')
+    if (cn) {
+        transformedText = transformedText.replace(/AWS/g, 'Amazon').replace(/-en.png/g, '-cn.png')
+    }
 
     marked(transformedText, (err, result) => {
         fs.writeFileSync(path.join(root, outputFile), result)
@@ -42,4 +46,5 @@ function generateFileHash(root: string) {
 
 translateReadmeToHtml(REPO_ROOT, 'README.quickstart.vscode.md', 'quickStartVscode.html')
 translateReadmeToHtml(REPO_ROOT, 'README.quickstart.cloud9.md', 'quickStartCloud9.html')
+translateReadmeToHtml(REPO_ROOT, 'README.quickstart.cloud9.md', 'quickStartCloud9-cn.html', true)
 generateFileHash(REPO_ROOT)

@@ -4,11 +4,11 @@
  */
 
 import Vue, { VNode } from 'vue'
-import { VsCode } from '../../webviews/main'
 import { AwsSamDebuggerConfiguration } from '../../shared/sam/debugger/awsSamDebugConfiguration'
-import { AwsSamDebuggerConfigurationLoose, SamInvokerRequest, SamInvokerResponse, SamInvokeVueState } from './samInvoke'
+import { AwsSamDebuggerConfigurationLoose, SamInvokerResponse, SamInvokeVueState } from './samInvoke'
+import { WebviewApi } from 'vscode-webview'
 
-declare const vscode: VsCode<SamInvokerRequest, SamInvokeVueState>
+declare const vscode: WebviewApi<SamInvokeVueState>
 
 interface VueDataLaunchPropertyObject {
     value: string

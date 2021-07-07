@@ -11,7 +11,7 @@ import { Credentials } from '@aws-sdk/types'
 import { credentialHelpUrl } from '../shared/constants'
 import { Profile } from '../shared/credentials/credentialsFile'
 import { isCloud9 } from '../shared/extensionUtilities'
-import { CredentialsProviderId, asString } from './providers/credentialsProviderId'
+import { CredentialsId, asString } from './providers/credentials'
 import { waitTimeout, Timeout } from '../shared/utilities/timeoutUtils'
 import { showMessageWithCancel } from '../shared/utilities/messages'
 
@@ -31,7 +31,7 @@ export function asEnvironmentVariables(credentials: Credentials): NodeJS.Process
     return environmentVariables
 }
 
-export function notifyUserInvalidCredentials(credentialProviderId: CredentialsProviderId): void {
+export function notifyUserInvalidCredentials(credentialProviderId: CredentialsId): void {
     const getHelp = localize('AWS.generic.message.getHelp', 'Get Help...')
     const viewLogs = localize('AWS.generic.message.viewLogs', 'View Logs...')
     // TODO: getHelp link does not have a corresponding doc page in Cloud9 as of initial launch.
@@ -88,7 +88,7 @@ export async function resolveProviderWithCancel(
         }
     }, CREDENTIALS_PROGRESS_DELAY)
 
-    return await waitTimeout(provider, timeout, {
+    return (await waitTimeout(provider, timeout, {
         onCancel: () => {
             throw new Error(`Request to get credentials for "${profile}" cancelled`)
         },
@@ -96,5 +96,5 @@ export async function resolveProviderWithCancel(
             throw new Error(`Request to get credentials for "${profile}" expired`)
         },
         allowUndefined: false,
-    }) as Credentials
+    })) as Credentials
 }

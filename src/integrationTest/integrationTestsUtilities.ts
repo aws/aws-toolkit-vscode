@@ -10,24 +10,6 @@ import * as vscode from 'vscode'
 const SECOND = 1000
 export const TIMEOUT = 30 * SECOND
 
-export async function activateExtension(extensionId: string): Promise<vscode.Extension<void>> {
-    console.log(`PID=${process.pid} activateExtension request: ${extensionId}`)
-    const extension: vscode.Extension<void> | undefined = vscode.extensions.getExtension(extensionId)
-
-    if (!extension) {
-        throw new Error(`Extension not found: ${extensionId}`)
-    }
-
-    if (!extension.isActive) {
-        console.log(`PID=${process.pid} Activating extension: ${extensionId}`)
-        await extension.activate()
-    } else {
-        console.log(`PID=${process.pid} Extension is already active: ${extensionId}`)
-    }
-
-    return extension
-}
-
 export async function sleep(miliseconds: number): Promise<void> {
     return new Promise(resolve => setTimeout(resolve, miliseconds))
 }
@@ -51,7 +33,7 @@ export function getTestWorkspaceFolder(): string {
 export async function configureAwsToolkitExtension(): Promise<void> {
     const configAws = vscode.workspace.getConfiguration('aws')
     // Prevent the extension from preemptively cancelling a 'sam local' run
-    await configAws.update('samcli.debug.attach.timeout.millis', 90000, false)
+    await configAws.update('samcli.lambda.timeout', 90000, false)
 }
 
 export async function configurePythonExtension(): Promise<void> {

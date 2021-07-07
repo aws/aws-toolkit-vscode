@@ -28,7 +28,7 @@ import {
     WIZARD_RETRY,
 } from '../../shared/wizards/multiStepWizard'
 import { configureParameterOverrides } from '../config/configureParameterOverrides'
-import { getOverriddenParameters, getParameters } from '../utilities/parameterUtils'
+import { getOverriddenParameters, getParameters } from '../config/parameterUtils'
 import { ext } from '../../shared/extensionGlobals'
 import { EcrRepository } from '../../shared/clients/ecrClient'
 import { getSamCliVersion } from '../../shared/sam/cli/samCliContext'
@@ -37,7 +37,7 @@ import { MINIMUM_SAM_CLI_VERSION_INCLUSIVE_FOR_IMAGE_SUPPORT } from '../../share
 import { ExtContext } from '../../shared/extensions'
 import { validateBucketName } from '../../s3/util'
 import { showErrorWithLogs } from '../../shared/utilities/messages'
-import { isCloud9 } from '../../shared/extensionUtilities'
+import { getIdeProperties, isCloud9 } from '../../shared/extensionUtilities'
 import { SettingsConfiguration } from '../../shared/settingsConfiguration'
 
 const CREATE_NEW_BUCKET = localize('AWS.command.s3.createBucket', 'Create Bucket...')
@@ -276,7 +276,8 @@ export class DefaultSamDeployWizardContext implements SamDeployWizardContext {
                 ignoreFocusOut: true,
                 title: localize(
                     'AWS.samcli.deploy.template.prompt',
-                    'Which SAM Template would you like to deploy to AWS?'
+                    'Which SAM Template would you like to deploy to {0}?',
+                    getIdeProperties().company
                 ),
                 step: 1,
                 totalSteps: this.totalSteps,
@@ -399,7 +400,11 @@ export class DefaultSamDeployWizardContext implements SamDeployWizardContext {
 
         const quickPick = picker.createQuickPick<vscode.QuickPickItem>({
             options: {
-                title: localize('AWS.samcli.deploy.region.prompt', 'Which AWS Region would you like to deploy to?'),
+                title: localize(
+                    'AWS.samcli.deploy.region.prompt',
+                    'Which {0} Region would you like to deploy to?',
+                    getIdeProperties().company
+                ),
                 value: initialRegionCode,
                 matchOnDetail: true,
                 ignoreFocusOut: true,
@@ -475,7 +480,11 @@ export class DefaultSamDeployWizardContext implements SamDeployWizardContext {
         const quickPick = picker.createQuickPick<vscode.QuickPickItem>({
             buttons: [enterBucket, createBucket, this.helpButton, vscode.QuickInputButtons.Back],
             options: {
-                title: localize('AWS.samcli.deploy.s3Bucket.prompt', 'Select an AWS S3 Bucket to deploy code to'),
+                title: localize(
+                    'AWS.samcli.deploy.s3Bucket.prompt',
+                    'Select an {0} S3 Bucket to deploy code to',
+                    getIdeProperties().company
+                ),
                 value: initialValue,
                 matchOnDetail: true,
                 ignoreFocusOut: true,
@@ -666,11 +675,31 @@ export class SamDeployWizard extends MultiStepWizard<SamDeployWizardResponse> {
      */
     private hasImages: boolean = false
 
-    public constructor(private readonly context: SamDeployWizardContext, private readonly regionNode?: any) {
+    /**
+     * Initial treenode passed as a command arg to the "Deploy" command
+     * (typically, when invoked from the File Explorer context-menu).
+     */
+    private regionNode: any | undefined
+    /**
+     * Initial template.yaml path passed as a command arg to the "Deploy"
+     * command (typically, when invoked from the File Explorer context-menu).
+     */
+    private samTemplateFile: vscode.Uri | undefined
+
+    /**
+     *
+     * @param context
+     * @param commandArg Argument given by VSCode when the "Deploy" command was invoked from a context-menu.
+     */
+    public constructor(private readonly context: SamDeployWizardContext, commandArg?: any) {
         super()
-        // All nodes in the explorer should have a regionCode property, but let's make sure.
-        if (regionNode && Object.prototype.hasOwnProperty.call(regionNode, 'regionCode')) {
-            this.response.region = regionNode.regionCode
+        if (commandArg && commandArg.path) {
+            // "Deploy" command was invoked on a template.yaml file.
+            // The promptUserForSamTemplate() call will be skipped.
+            this.samTemplateFile = commandArg as vscode.Uri
+        } else if (commandArg && commandArg.regionCode) {
+            this.regionNode = commandArg
+            this.response.region = this.regionNode.regionCode
         }
     }
 
@@ -702,7 +731,17 @@ export class SamDeployWizard extends MultiStepWizard<SamDeployWizardResponse> {
     private readonly TEMPLATE: WizardStep = async () => {
         // set steps back to 0 since the next step determines if additional steps are needed
         this.context.additionalSteps = 0
-        this.response.template = await this.context.promptUserForSamTemplate(this.response.template)
+        if (this.samTemplateFile && this.response.template) {
+            // This state means:
+            //   1. wizard was started from a context-menu (`this.samTemplateFile` was set)
+            //   2. user canceled the REGION step.
+            // => User wants to exit the wizard.
+            return WIZARD_TERMINATE
+        } else if (this.samTemplateFile) {
+            this.response.template = this.samTemplateFile
+        } else {
+            this.response.template = await this.context.promptUserForSamTemplate(this.response.template)
+        }
 
         if (!this.response.template) {
             return WIZARD_TERMINATE
@@ -1003,7 +1042,11 @@ async function populateS3QuickPick(
         if (isCloud9() && recent !== cloud9Bucket) {
             baseItems.push({
                 label: cloud9Bucket,
-                detail: localize('AWS.samcli.deploy.bucket.cloud9name', 'Default AWS Cloud9 Bucket'),
+                detail: localize(
+                    'AWS.samcli.deploy.bucket.cloud9name',
+                    'Default {0} Cloud9 Bucket',
+                    getIdeProperties().company
+                ),
             })
         }
 

@@ -7,7 +7,7 @@ import * as assert from 'assert'
 import * as path from 'path'
 import * as sinon from 'sinon'
 import * as vscode from 'vscode'
-import * as paramUtils from '../../../lambda/utilities/parameterUtils'
+import * as paramUtils from '../../../lambda/config/parameterUtils'
 import * as input from '../../../shared/ui/input'
 import * as picker from '../../../shared/ui/picker'
 import {
@@ -207,6 +207,26 @@ describe('SamDeployWizard', async function () {
             const result = await wizard.run()
 
             assert.ok(!result)
+        })
+
+        it('skips template picker if passed as argument', async function () {
+            const workspaceFolderPath = normalizePath('my', 'workspace', 'folder')
+            const arg = vscode.Uri.file('/path/to/template.yaml')
+            const wizard = new SamDeployWizard(
+                new MockSamDeployWizardContext(
+                    extContext,
+                    [[vscode.Uri.file(workspaceFolderPath)]],
+                    [createQuickPickUriResponseItem(vscode.Uri.file('/wrong/template.yaml'))],
+                    [createQuickPickRegionResponseItem('asdf')],
+                    ['mys3bucketname'],
+                    [],
+                    [],
+                    ['myStackName']
+                ),
+                arg
+            )
+            const result = await wizard.run()
+            assert.deepStrictEqual(result?.template, arg)
         })
 
         it('uses user response as template', async function () {
@@ -771,13 +791,10 @@ describe('DefaultSamDeployWizardContext', async function () {
             assert.strictEqual(output, bucketName)
         })
 
-        it('returns undefined if nothing is entered', async function() {
-            sandbox
-                .stub(input, 'promptUser')
-                .onFirstCall()
-                .returns(Promise.resolve(undefined))
+        it('returns undefined if nothing is entered', async function () {
+            sandbox.stub(input, 'promptUser').onFirstCall().returns(Promise.resolve(undefined))
             const output = await context.promptUserForS3BucketName(1, { title: 'asdf' })
-            assert.strictEqual(output, undefined) 
-        })  
+            assert.strictEqual(output, undefined)
+        })
     })
 })
