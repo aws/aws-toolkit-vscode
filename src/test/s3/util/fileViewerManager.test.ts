@@ -29,7 +29,6 @@ describe('FileViewerManager', function () {
     let window: typeof vscode.window
     let testCache: Set<string>
     let tempPath: string
-    let tempUri: vscode.Uri
     let parent: S3BucketNode | S3FolderNode
     let commands: FakeCommands
     let tempFile: vscode.Uri
@@ -51,7 +50,6 @@ describe('FileViewerManager', function () {
         })
         testNode = new S3FileNode({} as any, file, instance(parent), instance(s3))
 
-        tempUri = vscode.Uri.file(tempPath)
         let completePath = readablePath(testNode).slice(4).split('/').join(':')
         completePath = path.join(tempPath, 'S3:' + completePath)
         tempFile = vscode.Uri.file(completePath)
