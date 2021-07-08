@@ -15,27 +15,28 @@ import { S3FileNode } from '../explorer/s3FileNode'
 import { readablePath } from '../util'
 
 const fs = require('fs')
-const SIZE_LIMIT = 4 * Math.pow(10, 4)
+const SIZE_LIMIT = 4 * Math.pow(10, 6)
 
 export class S3FileViewerManager {
     private cacheArn: Set<string>
     //private activeTabs: Set<S3Tab>
-    private window: Window
+    private window: typeof vscode.window
     private outputChannel: OutputChannel
     private commands: Commands
-    private tempLocation!: string //TODOD: create temp
+    private tempLocation: string | undefined //TODOD: create temp
 
     public constructor(
-        window: Window = Window.vscode(),
-        outputChannel = ext.outputChannel,
-        commands = Commands.vscode()
+        cacheArn: Set<string> = new Set<string>(),
+        window: typeof vscode.window = vscode.window,
+        commands = Commands.vscode(),
+        tempLocation?: string
     ) {
-        this.cacheArn = new Set<string>()
+        this.cacheArn = cacheArn
         //this.activeTabs = new Set<S3Tab>()
         this.window = window
-        this.outputChannel = outputChannel
+        this.outputChannel = ext.outputChannel
         this.commands = commands
-        showOutputMessage('initializing manager', outputChannel)
+        this.tempLocation = tempLocation
     }
 
     public async openTab(fileNode: S3FileNode): Promise<void> {
@@ -50,14 +51,17 @@ export class S3FileViewerManager {
         showOutputMessage(`file to be opened is: ${fileLocation}`, this.outputChannel)
         //TODOD:: delegate this logic to S3Tab.ts
         //this will display the document at the end
-        vscode.window.showTextDocument(fileLocation)
+        this.window.showTextDocument(fileLocation)
     }
 
     public async getFile(fileNode: S3FileNode): Promise<vscode.Uri | undefined> {
+        if (!this.tempLocation) {
+            await this.createTemp()
+        }
         const targetPath = await this.createTargetPath(fileNode)
         const targetLocation = vscode.Uri.file(targetPath)
 
-        const tempFile: vscode.Uri | undefined = await this.isInTemp(fileNode)
+        const tempFile: vscode.Uri | undefined = await this.getFromTemp(fileNode)
         //if it was found in temp, return the Uri location
         if (tempFile) {
             return tempFile
@@ -66,21 +70,34 @@ export class S3FileViewerManager {
         //needs to be downloaded from S3
         //if file is +4MB, prompt user to confirm before proceeding
         //const uri = vscode.Uri.file('')
-        //TODOD: when can sizeBytes be undefined?
-        if (fileNode.file.sizeBytes! > SIZE_LIMIT) {
-            showOutputMessage(`size is >4MB, prompt user working`, this.outputChannel)
-            const cancelButtonLabel = 'Cancel' //TODOD:: localize
-            const confirmButtonLabel = 'Continue with download'
 
-            const result = await vscode.window.showInformationMessage(
-                'File size is greater than 4MB are you sure you want to continue with download?',
+        if (fileNode.file.sizeBytes === undefined) {
+            //for some reason sizeBytes is undefined
+            const cancelButtonLabel = 'Cancel' //TODOD:: localize
+            const confirmButtonLabel = 'Continue with download' //TODOD:: localize
+
+            const result = await this.window.showInformationMessage(
+                "The size of this file couldn't be determined, do you want to continue with the download?", //TODOD:: localize?
                 cancelButtonLabel,
                 confirmButtonLabel
             )
             if (result === cancelButtonLabel) {
                 return undefined
             }
-            showOutputMessage(`user confirmed download, continuing`, this.outputChannel)
+        } else if (fileNode.file.sizeBytes > SIZE_LIMIT) {
+            showOutputMessage(`size is >4MB, prompt user working`, this.outputChannel)
+            const cancelButtonLabel = 'Cancel' //TODOD:: localize
+            const confirmButtonLabel = 'Continue with download'
+
+            const result = await this.window.showInformationMessage(
+                'File size is greater than 4MB, do you want to continue with download?', //TODOD:: localize?
+                cancelButtonLabel,
+                confirmButtonLabel
+            )
+            if (result === cancelButtonLabel) {
+                return undefined
+            }
+            showOutputMessage(`user confirmed download, continuing`, this.outputChannel) //TODOD:: debug log,
         }
 
         //good to continue with download
@@ -96,7 +113,7 @@ export class S3FileViewerManager {
         return targetLocation
     }
 
-    async isInTemp(fileNode: S3FileNode): Promise<vscode.Uri | undefined> {
+    async getFromTemp(fileNode: S3FileNode): Promise<vscode.Uri | undefined> {
         const targetPath = await this.createTargetPath(fileNode)
         const targetLocation = vscode.Uri.file(targetPath)
 
@@ -142,7 +159,7 @@ export class S3FileViewerManager {
         const splittedPath = completePath.split('/')
         completePath = splittedPath.join(':')
 
-        return path.join(this.tempLocation, 'S3:' + completePath)
+        return path.join(this.tempLocation!, 'S3:' + completePath)
     }
 
     async refreshNode(fileNode: S3FileNode): Promise<S3FileNode | undefined> {
@@ -162,6 +179,7 @@ export class S3FileViewerManager {
         return fileNode
     }
 
+    //TODOD:: remove helper method
     public async listTempFolder(): Promise<void> {
         showOutputMessage('-------contents in temp:', this.outputChannel)
 

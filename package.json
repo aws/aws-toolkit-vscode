@@ -902,11 +902,6 @@
                 {
                     "command": "aws.s3.openFile",
                     "when": "view == aws.explorer && viewItem == awsS3FileNode",
-                    "group": "inline@2"
-                },
-                {
-                    "command": "aws.s3.openFile",
-                    "when": "view == aws.explorer && viewItem == awsS3FileNode",
                     "group": "inline@1"
                 },
                 {
