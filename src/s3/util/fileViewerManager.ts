@@ -34,9 +34,9 @@ export class S3FileViewerManager {
         this.cacheArn = cacheArn
         //this.activeTabs = new Set<S3Tab>()
         this.window = window
-        this.outputChannel = ext.outputChannel
         this.commands = commands
         this.tempLocation = tempLocation
+        this.outputChannel = ext.outputChannel
     }
 
     public async openTab(fileNode: S3FileNode): Promise<void> {
@@ -108,7 +108,7 @@ export class S3FileViewerManager {
         }
 
         this.cacheArn.add(fileNode.file.arn)
-        await this.listTempFolder()
+        //await this.listTempFolder()
 
         return targetLocation
     }
@@ -137,7 +137,7 @@ export class S3FileViewerManager {
             showOutputMessage(`creation date: ${birthtime}`, this.outputChannel) //TODOD: debug log, remove
             if (lastModifiedInS3! <= birthtime) {
                 showOutputMessage(`good to retreive, last modified date is before creation`, this.outputChannel) //TODOD: debug log, remove
-                await this.listTempFolder()
+                //await this.listTempFolder()
                 return targetLocation
             } else {
                 showOutputMessage(
@@ -145,7 +145,7 @@ export class S3FileViewerManager {
                     this.outputChannel
                 ) //TODOD: debug log, remove
                 fs.unlinkSync(targetPath)
-                this.listTempFolder()
+                //this.listTempFolder()
                 return undefined
             }
         }
@@ -173,7 +173,7 @@ export class S3FileViewerManager {
         const children = await parent.getChildren()
 
         children.forEach(child => {
-            if (child instanceof S3FileNode && child.file.arn == fileNode.file.arn) return child
+            if ((child as any).name === fileNode.name) fileNode = child as S3FileNode
         })
 
         return fileNode
