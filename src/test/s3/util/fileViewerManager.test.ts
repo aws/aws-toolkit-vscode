@@ -3,26 +3,21 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
-import * as vscode from 'vscode'
 import * as assert from 'assert'
 import * as path from 'path'
-import * as testutil from '../../testUtil'
-import { mock, when, instance, anything, capture } from '../../utilities/mockito'
-import { S3FileViewerManager } from '../../../s3/util/fileViewerManager'
-import { readablePath } from '../../../s3/util'
-import { S3FileNode } from '../../../s3/explorer/s3FileNode'
+import * as vscode from 'vscode'
 import { S3BucketNode } from '../../../s3/explorer/s3BucketNode'
-import { S3Node } from '../../../s3/explorer/s3Nodes'
-import { Bucket, DefaultFile, S3Client } from '../../../shared/clients/s3Client'
-import { FakeWindow } from '../../shared/vscode/fakeWindow'
-import { FakeMessage } from '../../shared/vscode/fakeWindow'
-import { makeTemporaryToolkitFolder } from '../../../shared/filesystemUtilities'
+import { S3FileNode } from '../../../s3/explorer/s3FileNode'
 import { S3FolderNode } from '../../../s3/explorer/s3FolderNode'
+import { readablePath } from '../../../s3/util'
+import { S3FileViewerManager } from '../../../s3/util/fileViewerManager'
+import { DefaultFile, S3Client } from '../../../shared/clients/s3Client'
+import { makeTemporaryToolkitFolder } from '../../../shared/filesystemUtilities'
 import { FakeCommands } from '../../shared/vscode/fakeCommands'
+import * as testutil from '../../testUtil'
+import { anything, instance, mock, when } from '../../utilities/mockito'
 
-describe.only('FileViewerManager', function () {
-    const fileLocation = vscode.Uri.file('/file.jpg')
-    const fileName = path.basename(fileLocation.fsPath)
+describe('FileViewerManager', function () {
     const bucketName = 'bucket-name'
     const key = 'file.jpg'
     const sizeBytes = 16
