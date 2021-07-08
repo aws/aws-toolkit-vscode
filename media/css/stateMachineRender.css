@@ -121,6 +121,14 @@ body .status-info.start-error-asl {
     display: none;
 }
 
+.vscode-dark #forCDK {
+    border: none;
+}
+
+.vscode-high-contrast #forCDK {
+    border: none;
+}
+
 .vscode-dark .status-info {
     border: 1px solid #6c6c6c;
     color: #949494;
