@@ -33,13 +33,9 @@ export class CloudWatchLogsNode extends AWSTreeNodeBase {
 
                 return [...this.logGroupNodes.values()]
             },
-            getErrorNode: async (error: Error, logID: number) =>
-                new ErrorNode(this, error, logID),
+            getErrorNode: async (error: Error, logID: number) => new ErrorNode(this, error, logID),
             getNoChildrenPlaceholderNode: async () =>
-                new PlaceholderNode(
-                    this,
-                    localize('AWS.explorerNode.cloudWatchLogs.error', 'Error loading CloudWatch Logs resources')
-                ),
+                new PlaceholderNode(this, localize('AWS.explorerNode.cloudWatchLogs.placeholder', '[No Logs found]')),
             sort: (nodeA: LogGroupNode, nodeB: LogGroupNode) => nodeA.name.localeCompare(nodeB.name),
         })
     }
