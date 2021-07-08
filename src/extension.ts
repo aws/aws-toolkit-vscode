@@ -69,6 +69,7 @@ import { getSamCliContext } from './shared/sam/cli/samCliContext'
 import * as extWindow from './shared/vscode/window'
 import { Ec2CredentialsProvider } from './credentials/providers/ec2CredentialsProvider'
 import { EnvVarsCredentialsProvider } from './credentials/providers/envVarsCredentialsProvider'
+import { EcsCredentialsProvider } from './credentials/providers/ecsCredentialsProvider'
 
 let localize: nls.LocalizeFunc
 
@@ -331,7 +332,7 @@ function initializeManifestPaths(extensionContext: vscode.ExtensionContext) {
 function initializeCredentialsProviderManager() {
     const manager = CredentialsProviderManager.getInstance()
     manager.addProviderFactory(new SharedCredentialsProviderFactory())
-    manager.addProviders(new Ec2CredentialsProvider(), new EnvVarsCredentialsProvider())
+    manager.addProviders(new Ec2CredentialsProvider(), new EcsCredentialsProvider(), new EnvVarsCredentialsProvider())
 }
 
 function makeEndpointsProvider(): EndpointsProvider {
