@@ -5,7 +5,13 @@
 
 import { ECS } from 'aws-sdk'
 import { ext } from '../extensionGlobals'
+import { getLogger } from '../logger'
 import { ClassToInterfaceType } from '../utilities/tsUtils'
+
+export interface ListServicesResponse {
+    readonly services: ECS.Service[]
+    readonly continuationToken?: string
+}
 
 export type EcsClient = ClassToInterfaceType<DefaultEcsClient>
 export class DefaultEcsClient {
@@ -18,14 +24,21 @@ export class DefaultEcsClient {
         return clusterReponse.clusters ?? []
     }
 
-    public async listServices(cluster: string): Promise<ECS.Service[]> {
+    public async listServices(cluster: string): Promise<ListServicesResponse> {
         const sdkClient = await this.createSdkClient()
         const serviceArnList = await sdkClient.listServices({cluster: cluster}).promise()
-        if (!serviceArnList.serviceArns) {
-            return []
+        try {
+            const serviceResponse = await sdkClient.describeServices({services: serviceArnList.serviceArns!, cluster: cluster}).promise()
+            const response: ListServicesResponse = {
+                services: serviceResponse.services!,
+                continuationToken: serviceArnList.nextToken
+            }
+            return response
+        } catch (error) {
+            getLogger().error('Failed to list services for cluster %s: %O', cluster, error)
+            throw error
         }
-        const serviceResponse = await sdkClient.describeServices({services: serviceArnList.serviceArns, cluster: cluster}).promise()
-        return serviceResponse.services ?? []
+        
     }
 
     protected async createSdkClient(): Promise<ECS> {
