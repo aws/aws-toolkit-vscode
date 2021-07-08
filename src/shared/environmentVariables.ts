@@ -22,5 +22,9 @@ export interface EnvironmentVariables {
     AWS_SESSION_TOKEN?: string
     AWS_REGION?: string
 
+    AWS_CONTAINER_CREDENTIALS_RELATIVE_URI?: string
+    AWS_CONTAINER_CREDENTIALS_FULL_URI?: string
+    AWS_DEFAULT_REGION?: string
+
     [key: string]: string | boolean | undefined
 }

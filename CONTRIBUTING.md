@@ -61,12 +61,11 @@ You can also use these NPM tasks (see `npm run` for the full list):
     ```
     npm run package
     ```
-    - This uses webpack which may exhaust the default Node heap size on Linux.
-      To fix this set `--max-old-space-size`:
-
-      ```
-      export NODE_OPTIONS=--max-old-space-size=8192
-      ```
+    -   This uses webpack which may exhaust the default Node heap size on Linux.
+        To fix this set `--max-old-space-size`:
+        ```
+        export NODE_OPTIONS=--max-old-space-size=8192
+        ```
 -   To build a "debug" VSIX artifact (faster and does not minify):
     ```
     npm run package -- --debug
@@ -80,27 +79,28 @@ See [CODE_GUIDELINES.md](./docs/CODE_GUIDELINES.md) for coding conventions.
 
 ### Technical notes
 
-- VSCode extensions have a [100MB](https://github.com/Microsoft/vscode-vsce/issues/179) file size limit.
-- `src/testFixtures/` is excluded in `.vscode/settings.json`, to prevent VSCode
-  from treating its files as project files.
-- VSCode extension examples: https://github.com/microsoft/vscode-extension-samples
-- How to debug unresolved promise rejections:
+-   VSCode extensions have a [100MB](https://github.com/Microsoft/vscode-vsce/issues/179) file size limit.
+-   `src/testFixtures/` is excluded in `.vscode/settings.json`, to prevent VSCode
+    from treating its files as project files.
+-   VSCode extension examples: <https://github.com/microsoft/vscode-extension-samples>
+-   How to debug unresolved promise rejections:
+
     1. Declare a global unhandledRejection handler.
-       ```
-       process.on('unhandledRejection', (e) => {
-           getLogger('channel').error(
-               localize(
-                   'AWS.channel.aws.toolkit.activation.error',
-                   'Error Activating {0} Toolkit: {1}',
-                   getIdeProperties().company,
-                   (e as Error).message
-               )
-           )
-           if (e !== undefined) {
-               throw e
-           }
-       });
-       ```
+        ```ts
+        process.on('unhandledRejection', e => {
+            getLogger('channel').error(
+                localize(
+                    'AWS.channel.aws.toolkit.activation.error',
+                    'Error Activating {0} Toolkit: {1}',
+                    getIdeProperties().company,
+                    (e as Error).message
+                )
+            )
+            if (e !== undefined) {
+                throw e
+            }
+        })
+        ```
     2. Put a breakpoint on it.
     3. Run all tests.
 
@@ -129,6 +129,7 @@ To run a single test in VSCode, do any one of:
 -   Run the _Extension Tests (current file)_ launch-config.
 -   Use Mocha's [it.only()](https://mochajs.org/#exclusive-tests) or `describe.only()`.
 -   Run in your terminal:
+
     -   Unix/macOS/POSIX shell:
         ```
         NO_COVERAGE=true TEST_FILE=src/test/foo.test npm run test
@@ -137,6 +138,7 @@ To run a single test in VSCode, do any one of:
         ```
         $Env:NO_COVERAGE = "true"; $Env:TEST_FILE = "src/test/foo.test"; npm run test
         ```
+
 -   To run all tests in a particular subdirectory, you can edit
     `src/test/index.ts:rootTestsPath` to point to a subdirectory:
     ```
@@ -176,15 +178,16 @@ message, ask why. Source control (Git) is our source-of-truth, not GitHub.
 
 Quick summary of commit message guidelines:
 
-- Subject: single line up to 50-72 characters
-    - Imperative voice ("Fix bug", not "Fixed"/"Fixes"/"Fixing").
-- Body: for non-trivial or uncommon changes, explain your motivation for the
-  change and contrast your implementation with previous behavior.
-    - Often you can save a _lot_ of words by using this simple template:
-      ```
-      Problem: …
-      Solution: …
-      ```
+-   Subject: single line up to 50-72 characters
+    -   Imperative voice ("Fix bug", not "Fixed"/"Fixes"/"Fixing").
+-   Body: for non-trivial or uncommon changes, explain your motivation for the
+    change and contrast your implementation with previous behavior.
+
+    -   Often you can save a _lot_ of words by using this simple template:
+        ```
+        Problem: …
+        Solution: …
+        ```
 
 A [good commit message](https://git-scm.com/book/en/v2/Distributed-Git-Contributing-to-a-Project)
 has a short subject line and unlimited detail in the body.
@@ -225,72 +228,75 @@ a TypeScript `*.d.ts` file and pass that to the AWS JS SDK to create
 requests just from the model/types.
 
 1. Add an entry to the list in `generateServiceClient.ts`:
-   ```diff
-    diff --git a/build-scripts/generateServiceClient.ts b/build-scripts/generateServiceClient.ts
-    index 8bb278972d29..6c6914ec8812 100644
-    --- a/build-scripts/generateServiceClient.ts
-    +++ b/build-scripts/generateServiceClient.ts
-    @@ -199,6 +199,10 @@ ${fileContents}
-     ;(async () => {
-         const serviceClientDefinitions: ServiceClientDefinition[] = [
-    +        {
-    +            serviceJsonPath: 'src/shared/foo.api.json',
-    +            serviceName: 'ClientFoo'
-    +        },
-             {
-                 serviceJsonPath: 'src/shared/telemetry/service-2.json',
-                 serviceName: 'ClientTelemetry',
-   ```
+    ```diff
+     diff --git a/build-scripts/generateServiceClient.ts b/build-scripts/generateServiceClient.ts
+     index 8bb278972d29..6c6914ec8812 100644
+     --- a/build-scripts/generateServiceClient.ts
+     +++ b/build-scripts/generateServiceClient.ts
+     @@ -199,6 +199,10 @@ ${fileContents}
+      ;(async () => {
+          const serviceClientDefinitions: ServiceClientDefinition[] = [
+     +        {
+     +            serviceJsonPath: 'src/shared/foo.api.json',
+     +            serviceName: 'ClientFoo'
+     +        },
+              {
+                  serviceJsonPath: 'src/shared/telemetry/service-2.json',
+                  serviceName: 'ClientTelemetry',
+    ```
 2. Run the script:
-   ```
-   $ ./node_modules/.bin/ts-node ./build-scripts/generateServiceClient.ts
-   ```
+    ```
+    ./node_modules/.bin/ts-node ./build-scripts/generateServiceClient.ts
+    ```
 3. The script produces a `*.d.ts` file (used only for IDE
    code-completion, not required to actually make requests):
-   ```
-   src/shared/foo.d.ts
-   ```
+    ```
+    src/shared/foo.d.ts
+    ```
 4. To make requests with the SDK, pass the `*.api.json` service model to
    `ext.sdkClientBuilder.createAndConfigureServiceClient` as a generic
    `Service` with `apiConfig=require('foo.api.json')`.
-   ```
-   // Import the `*.d.ts` file for code-completion convenience.
-   import * as ClientFoo from '../shared/clientfoo'
-   // The AWS JS SDK uses this to dynamically build service requests.
-   import apiConfig = require('../shared/foo.api.json')
 
-   ...
+    ```ts
+    // Import the `*.d.ts` file for code-completion convenience.
+    import * as ClientFoo from '../shared/clientfoo'
+    // The AWS JS SDK uses this to dynamically build service requests.
+    import apiConfig = require('../shared/foo.api.json')
 
-   const c = await ext.sdkClientBuilder.createAndConfigureServiceClient(
-       opts => new Service(opts),
-       {
-           apiConfig: apiConfig,
-           region: 'us-west-2',
-           credentials: credentials,
-           correctClockSkew: true,
-           endpoint: 'foo-beta.aws.dev',
-       }) as ClientFoo
-   const req = c.getThing({ id: 'asdf' })
-   req.send(function (err, data) { ... });
-   ```
+    ...
+
+    const c = await ext.sdkClientBuilder.createAwsService(
+        opts => new Service(opts),
+        {
+            apiConfig: apiConfig,
+            region: 'us-west-2',
+            credentials: credentials,
+            correctClockSkew: true,
+            endpoint: 'foo-beta.aws.dev',
+        }) as ClientFoo
+    const req = c.getThing({ id: 'asdf' })
+    req.send(function (err, data) { ... });
+    ```
 
 ## Importing icons from other open source repos
 
 If you are contribuing visual assets from other open source repos, the source repo must have a compatible license (such as MIT), and we need to document the source of the images. Follow these steps:
 
-1.   Use a separate location in this repo for every repo where images are
-     sourced from, in the form `third-party/resources/from-<BRIEF_REPO_NAME>`.
-1.   Copy the source repo's licence into this destination location's LICENSE.txt file
-1.   Create a README.md in the destination location, and type in a copyright attribution:
-     ```text
-     The AWS Toolkit for VS Code includes the following third-party software/licensing:
+1. Use a separate location in this repo for every repo where images are
+   sourced from, in the form `third-party/resources/from-<BRIEF_REPO_NAME>`.
+1. Copy the source repo's licence into this destination location's LICENSE.txt file
+1. Create a README.md in the destination location, and type in a copyright attribution:
 
-     Icons contained in this folder and subfolders are from <SOURCE_REPO_NAME>: <SOURCE_REPO_URL>
+    ```text
+    The AWS Toolkit for VS Code includes the following third-party software/licensing:
 
-     <PASTE_SOURCE_LICENSE_HERE>
-     ```
-1.   Copy the SVG file(s) into a suitable place within the destination location, for example `.../dark/xyz.svg` and `.../light/xyz.svg`
-1.   Add an entry to `third-party/README.md` summarizing the new destination location, where the asserts were sourced from, and a brief rationale.
+    Icons contained in this folder and subfolders are from <SOURCE_REPO_NAME>: <SOURCE_REPO_URL>
+
+    <PASTE_SOURCE_LICENSE_HERE>
+    ```
+
+1. Copy the SVG file(s) into a suitable place within the destination location, for example `.../dark/xyz.svg` and `.../light/xyz.svg`
+1. Add an entry to `third-party/README.md` summarizing the new destination location, where the asserts were sourced from, and a brief rationale.
 
 [PR #227](https://github.com/aws/aws-toolkit-vscode/pull/227) shows an example.
 
