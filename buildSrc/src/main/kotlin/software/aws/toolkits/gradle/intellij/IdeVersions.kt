@@ -118,6 +118,42 @@ object IdeVersions {
                 nugetVersion = "2021.1.0"
             )
         ),
+        Profile(
+            name = "2021.2",
+            community = ProductProfile(
+                sdkFlavor = IdeFlavor.IC,
+                sdkVersion = "212.4638.7-EAP-SNAPSHOT",
+                plugins = commonPlugins + listOf(
+                    "java",
+                    "com.intellij.gradle",
+                    "org.jetbrains.idea.maven",
+                    "PythonCore:212.4638.10",
+                    "Docker:212.4638.7"
+                )
+            ),
+            ultimate = ProductProfile(
+                sdkFlavor = IdeFlavor.IU,
+                sdkVersion = "212.4638.7-EAP-SNAPSHOT",
+                plugins = commonPlugins + listOf(
+                    "JavaScript",
+                    // Transitive dependency needed for javascript
+                    // Can remove when https://github.com/JetBrains/gradle-intellij-plugin/issues/608 is fixed
+                    "com.intellij.css",
+                    "JavaScriptDebugger",
+                    "com.intellij.database",
+                    "Pythonid:212.4638.7",
+                    "org.jetbrains.plugins.go:212.4638.7"
+                )
+            ),
+            rider = RiderProfile(
+                sdkVersion = "2021.2-SNAPSHOT",
+                plugins = commonPlugins + listOf(
+                    "rider-plugins-appender" // Workaround for https://youtrack.jetbrains.com/issue/IDEA-179607
+                ),
+                rdGenVersion = "0.212.315",
+                nugetVersion = "2021.2.0-eap05"
+            )
+        ),
     ).associateBy { it.name }
 
     fun ideProfile(project: Project): Profile = ideProfile(project.providers).get()
