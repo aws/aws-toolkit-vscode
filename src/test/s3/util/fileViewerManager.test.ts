@@ -50,8 +50,8 @@ describe('FileViewerManager', function () {
         })
         testNode = new S3FileNode({} as any, file, instance(parent), instance(s3))
 
-        let completePath = readablePath(testNode).slice(4).split('/').join(':')
-        completePath = path.join(tempPath, 'S3:' + completePath)
+        let completePath = readablePath(testNode).slice(4).split('/').join('%')
+        completePath = path.join(tempPath, 'S3%' + completePath)
         tempFile = vscode.Uri.file(completePath)
         testutil.toFile('bogus', tempFile.fsPath)
     })
