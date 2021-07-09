@@ -74,7 +74,7 @@ object IdeVersions {
                 )
             ),
             rider = RiderProfile(
-                sdkVersion = "2020.3",
+                sdkVersion = "2020.3.2",
                 plugins = commonPlugins + listOf(
                     "rider-plugins-appender" // Workaround for https://youtrack.jetbrains.com/issue/IDEA-179607
                 ),
