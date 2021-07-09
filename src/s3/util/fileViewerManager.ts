@@ -75,7 +75,7 @@ export class S3FileViewerManager {
         //const uri = vscode.Uri.file('')
 
         if (fileNode.file.sizeBytes === undefined) {
-            const message = "The size of this file couldn't be determined, do you want to continue with the download?"
+            const message = "File size couldn't be determined. Continue with download?"
             if (!(await this.promptUserConfirm(message))) return undefined
         } else if (fileNode.file.sizeBytes > SIZE_LIMIT) {
             showOutputMessage(`size is >4MB, prompt user working`, this.outputChannel)
