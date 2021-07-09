@@ -1,7 +1,7 @@
 // Copyright 2019 Amazon.com, Inc. or its affiliates. All Rights Reserved.
 // SPDX-License-Identifier: Apache-2.0
 
-package software.aws.toolkits.jetbrains.services.ecs.execution
+package software.aws.toolkits.jetbrains.services.ecs.execution.docker
 
 import com.intellij.docker.dockerFile.DockerFileType
 import com.intellij.docker.dockerFile.DockerLanguage
@@ -16,6 +16,7 @@ import org.junit.Before
 import org.junit.Rule
 import org.junit.Test
 import software.aws.toolkits.jetbrains.utils.rules.CodeInsightTestFixtureRule
+import java.io.File
 
 class DockerfileParserTest {
 
@@ -158,7 +159,7 @@ class DockerfileParserTest {
                 COPY . .
             """.trimIndent()
         )
-        val directory = file.parent.path.normalizeDirectory(matchPlatform = true)
+        val directory = file.parent.path + File.separator
         runInEdtAndWait {
             assertThat(sut.parse(file)).isEqualTo(
                 DockerfileDetails(
