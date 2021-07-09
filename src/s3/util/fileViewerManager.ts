@@ -18,7 +18,7 @@ const fs = require('fs')
 const SIZE_LIMIT = 4 * Math.pow(10, 6)
 
 export class S3FileViewerManager {
-    private cacheArn: Set<string>
+    private cacheArns: Set<string>
     //private activeTabs: Set<S3Tab>
     private window: typeof vscode.window
     private outputChannel: OutputChannel
