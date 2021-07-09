@@ -13,6 +13,7 @@ import { readablePath } from '../../../s3/util'
 import { S3FileViewerManager } from '../../../s3/util/fileViewerManager'
 import { DefaultFile, S3Client } from '../../../shared/clients/s3Client'
 import { makeTemporaryToolkitFolder } from '../../../shared/filesystemUtilities'
+import { getStringHash } from '../../../shared/utilities/textUtilities'
 import { FakeCommands } from '../../shared/vscode/fakeCommands'
 import * as testutil from '../../testUtil'
 import { anything, instance, mock, when } from '../../utilities/mockito'
@@ -50,7 +51,8 @@ describe('FileViewerManager', function () {
         })
         testNode = new S3FileNode({} as any, file, instance(parent), instance(s3))
 
-        let completePath = readablePath(testNode).slice(4).split('/').join('%')
+        let completePath = getStringHash(readablePath(testNode))
+        //let completePath = readablePath(testNode).slice(4).split('/').join('%')
         completePath = path.join(tempPath, 'S3%' + completePath)
         tempFile = vscode.Uri.file(completePath)
         testutil.toFile('bogus', tempFile.fsPath)

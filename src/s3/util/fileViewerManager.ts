@@ -12,6 +12,7 @@ import { Commands } from '../../shared/vscode/commands'
 import { downloadWithProgress } from '../commands/downloadFileAs'
 import { S3FileNode } from '../explorer/s3FileNode'
 import { readablePath } from '../util'
+import { getStringHash } from '../../shared/utilities/textUtilities'
 
 const fs = require('fs')
 const SIZE_LIMIT = 4 * Math.pow(10, 6)
@@ -152,11 +153,11 @@ export class S3FileViewerManager {
     }
 
     async createTargetPath(fileNode: S3FileNode): Promise<string> {
-        let completePath = readablePath(fileNode)
-        completePath = completePath.slice(4) //removes 's3://' from path
+        const completePath = getStringHash(readablePath(fileNode)) //TODOD:: map hashes to real name
+        //completePath = completePath.slice(4) //removes 's3://' from path
 
-        const splittedPath = completePath.split('/')
-        completePath = splittedPath.join('%')
+        //const splittedPath = completePath.split('/')
+        //completePath = splittedPath.join('%')
 
         return path.join(this.tempLocation!, 'S3%' + completePath)
     }
