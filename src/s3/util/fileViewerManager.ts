@@ -80,7 +80,7 @@ export class S3FileViewerManager {
         } else if (fileNode.file.sizeBytes > SIZE_LIMIT) {
             showOutputMessage(`size is >4MB, prompt user working`, this.outputChannel)
 
-            const message = 'File size is greater than 4MB, do you want to continue with download?'
+            const message = 'File size is more than 4MB. Continue with download?'
             if (!(await this.promptUserConfirm(message))) return undefined
 
             showOutputMessage(`user confirmed download, continuing`, this.outputChannel) //TODOD:: debug log,
