@@ -19,12 +19,17 @@ import { S3Node } from './explorer/s3Nodes'
 import { S3FileNode } from './explorer/s3FileNode'
 import { ext } from '../shared/extensionGlobals'
 import { ExtContext } from '../shared/extensions'
+import { S3DocumentProvider } from './util/S3Tab'
 
 /**
  * Activates S3 components.
  */
 
 export async function activate(ctx: ExtContext): Promise<void> {
+    ctx.extensionContext.subscriptions.push(
+        vscode.workspace.registerTextDocumentContentProvider('s3', new S3DocumentProvider())
+    )
+
     ctx.extensionContext.subscriptions.push(
         vscode.commands.registerCommand('aws.s3.copyPath', async (node: S3FolderNode | S3FileNode) => {
             await copyPathCommand(node)

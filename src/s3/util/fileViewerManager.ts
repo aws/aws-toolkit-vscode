@@ -13,13 +13,14 @@ import { downloadWithProgress } from '../commands/downloadFileAs'
 import { S3FileNode } from '../explorer/s3FileNode'
 import { readablePath } from '../util'
 import { getStringHash } from '../../shared/utilities/textUtilities'
+import { S3Tab } from './S3Tab'
 
 const fs = require('fs')
 const SIZE_LIMIT = 4 * Math.pow(10, 6)
 
 export class S3FileViewerManager {
     private cacheArn: Set<string>
-    //private activeTabs: Set<S3Tab>
+    private activeTabs: Set<S3Tab>
     private window: typeof vscode.window
     private outputChannel: OutputChannel
     private commands: Commands
@@ -32,7 +33,7 @@ export class S3FileViewerManager {
         tempLocation?: string
     ) {
         this.cacheArn = cacheArn
-        //this.activeTabs = new Set<S3Tab>()
+        this.activeTabs = new Set<S3Tab>()
         this.window = window
         this.commands = commands
         this.tempLocation = tempLocation
@@ -51,7 +52,10 @@ export class S3FileViewerManager {
         showOutputMessage(`file to be opened is: ${fileLocation}`, this.outputChannel)
         //TODOD:: delegate this logic to S3Tab.ts
         //this will display the document at the end
-        this.window.showTextDocument(fileLocation)
+        await this.listTempFolder()
+        const newTab = new S3Tab(fileLocation)
+        await newTab.display()
+        this.activeTabs.add(newTab)
     }
 
     public async getFile(fileNode: S3FileNode): Promise<vscode.Uri | undefined> {
@@ -91,7 +95,7 @@ export class S3FileViewerManager {
         }
 
         this.cacheArn.add(fileNode.file.arn)
-        //await this.listTempFolder()
+        await this.listTempFolder()
 
         return targetLocation
     }
@@ -158,7 +162,7 @@ export class S3FileViewerManager {
         //const splittedPath = completePath.split('/')
         //completePath = splittedPath.join('%')
 
-        return path.join(this.tempLocation!, 'S3%' + completePath)
+        return path.join(this.tempLocation!, 'S3' + completePath)
     }
 
     async refreshNode(fileNode: S3FileNode): Promise<S3FileNode | undefined> {
