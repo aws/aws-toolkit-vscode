@@ -50,6 +50,10 @@ class TableResults : JBTable(TableModel(BidirectionalMap(), emptyList())) {
 }
 
 class TableRenderer : DefaultTableCellRenderer() {
+    init {
+        putClientProperty("html.disable", true)
+    }
+
     override fun getTableCellRendererComponent(table: JTable?, value: Any?, isSelected: Boolean, hasFocus: Boolean, row: Int, column: Int): Component {
         val component = super.getTableCellRendererComponent(table, value, isSelected, hasFocus, row, column)
         val attribute = value as? DynamoAttribute<*>
