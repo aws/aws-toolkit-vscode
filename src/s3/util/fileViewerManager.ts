@@ -156,9 +156,9 @@ export class S3FileViewerManager {
         completePath = completePath.slice(4) //removes 's3://' from path
 
         const splittedPath = completePath.split('/')
-        completePath = splittedPath.join(':')
+        completePath = splittedPath.join('%')
 
-        return path.join(this.tempLocation!, 'S3:' + completePath)
+        return path.join(this.tempLocation!, 'S3%' + completePath)
     }
 
     async refreshNode(fileNode: S3FileNode): Promise<S3FileNode | undefined> {
