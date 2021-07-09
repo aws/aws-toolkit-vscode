@@ -7,6 +7,7 @@ import * as _ from 'lodash'
 import * as vscode from 'vscode'
 import { TemplateFunctionResource, TemplateSymbolResolver } from '../cloudformation/templateSymbolResolver'
 import { getConfigsMappedToTemplates, LaunchConfiguration } from '../debug/launchConfiguration'
+import { getIdeProperties } from '../extensionUtilities'
 import { TEMPLATE_TARGET_TYPE, API_TARGET_TYPE } from '../sam/debugger/awsSamDebugConfiguration'
 import { AddSamDebugConfigurationInput } from '../sam/debugger/commands/addSamDebugConfiguration'
 import { localize } from '../utilities/vsCodeUtils'
@@ -59,8 +60,14 @@ export class SamTemplateCodeLensProvider implements vscode.CodeLensProvider {
         }
         const title =
             resource.kind === 'api'
-                ? localize('AWS.command.addSamApiDebugConfiguration', 'Add API Debug Configuration')
-                : localize('AWS.command.addSamDebugConfiguration', 'Add Debug Configuration')
+                ? `${getIdeProperties().company}: ${localize(
+                    'AWS.command.addSamApiDebugConfiguration',
+                    'Add API Debug Configuration'
+                  )}`
+                : `${getIdeProperties().company}: ${localize(
+                    'AWS.command.addSamDebugConfiguration',
+                    'Add Debug Configuration'
+                  )}`
         return new vscode.CodeLens(resource.range, {
             title: title,
             command: 'aws.addSamDebugConfiguration',

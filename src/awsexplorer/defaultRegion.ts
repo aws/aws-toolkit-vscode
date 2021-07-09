@@ -53,9 +53,6 @@ export async function checkExplorerForDefaultRegion(
     awsExplorer: AwsExplorer
 ): Promise<void> {
     const profileRegion = awsContext.getCredentialDefaultRegion()
-    if (!profileRegion) {
-        return
-    }
 
     const explorerRegions = new Set(await awsContext.getExplorerRegions())
     if (explorerRegions.has(profileRegion)) {

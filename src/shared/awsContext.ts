@@ -31,7 +31,7 @@ export interface AwsContext {
 
     getCredentialAccountId(): string | undefined
 
-    getCredentialDefaultRegion(): string | undefined
+    getCredentialDefaultRegion(): string
 
     getExplorerRegions(): Promise<string[]>
 

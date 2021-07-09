@@ -44,14 +44,14 @@ describe('getRegionsForActiveCredentials', async function () {
         fnGetRegions = sandbox.stub()
         fnGetRegions.returns(samplePartitionRegions)
 
-        awsContext = ({
+        awsContext = {
             getCredentialDefaultRegion: fnGetCredentialDefaultRegion,
-        } as any) as AwsContext
+        } as any as AwsContext
 
-        regionProvider = ({
+        regionProvider = {
             getPartitionId: fnGetPartitionId,
             getRegions: fnGetRegions,
-        } as any) as RegionProvider
+        } as any as RegionProvider
     })
 
     afterEach(function () {
@@ -66,7 +66,7 @@ describe('getRegionsForActiveCredentials', async function () {
     })
 
     it('defaults to the standard partition if no default region is found', async function () {
-        fnGetCredentialDefaultRegion.returns(undefined)
+        fnGetCredentialDefaultRegion.returns('us-east-1')
 
         getRegionsForActiveCredentials(awsContext, regionProvider)
         assert.ok(fnGetPartitionId.alwaysCalledWith('us-east-1'), 'expected default region to be used')

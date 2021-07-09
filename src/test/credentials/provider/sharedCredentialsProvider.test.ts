@@ -138,6 +138,28 @@ describe('SharedCredentialsProvider', async function () {
         assertSubstringsInText(sut.validate(), 'not supported')
     })
 
+    it('validation identifies an invalid credential_source', async function () {
+        const sut = new SharedCredentialsProvider(
+            'default',
+            new Map<string, Profile>([['default', { credential_source: 'invalidSource' }]])
+        )
+
+        assert.notStrictEqual(sut.validate(), undefined)
+        assertSubstringsInText(sut.validate(), 'is not supported', 'invalidSource')
+    })
+
+    it('validation identifies credential_source and source_profile both set', async function () {
+        const sut = new SharedCredentialsProvider(
+            'default',
+            new Map<string, Profile>([[
+                'default', { credential_source: 'EcsContainer', source_profile:'profile' }
+            ]])
+        )
+
+        assert.notStrictEqual(sut.validate(), undefined)
+        assertSubstringsInText(sut.validate(), 'cannot both be set')
+    })
+
     it('validates a valid profile with an access key', async function () {
         const sut = new SharedCredentialsProvider(
             'default',
@@ -188,17 +210,33 @@ describe('SharedCredentialsProvider', async function () {
         assert.strictEqual(sut.validate(), undefined)
     })
 
-    it('getCredentials throws when the profile is not valid', async function () {
+    it('validates a valid profile with credential_source', async function () {
+        const sut = new SharedCredentialsProvider(
+            'default',
+            new Map<string, Profile>([['default', { credential_source: 'EcsContainer' }]])
+        )
+
+        assert.strictEqual(sut.validate(), undefined)
+    })
+
+    it('isAvailable false when the profile is not valid', async function () {
         const sut = new SharedCredentialsProvider(
             'default',
             new Map<string, Profile>([['default', { aws_access_key_id: 'x' }]])
         )
 
-        await assert.rejects(
-            sut.getCredentials(),
-            /is not a valid Credential Profile/,
-            'Invalid profile error was not thrown'
+        assert.strictEqual(await sut.isAvailable(), false)
+    })
+
+    it('getCredentials throws when unsupported credential source', async function() {
+        const sut = new SharedCredentialsProvider(
+            'default',
+            new Map<string, Profile>([['default', { credential_source: 'Invalid' }]])
         )
+        try {
+            await sut.getCredentials()
+            assert.fail('expected exception')
+        } catch (err) {}
     })
 
     it('getCredentials does not wait forever for the SDK to respond', async function () {

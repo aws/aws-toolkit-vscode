@@ -15,12 +15,14 @@ import { SsoAccessTokenProvider } from '../sso/ssoAccessTokenProvider'
 import { CredentialsProvider, CredentialsProviderType ,CredentialsId } from './credentials'
 import { SsoCredentialProvider } from './ssoCredentialProvider'
 import { CredentialType } from '../../shared/telemetry/telemetry.gen'
+import { EnvVarsCredentialsProvider } from './envVarsCredentialsProvider'
 
 const SHARED_CREDENTIAL_PROPERTIES = {
     AWS_ACCESS_KEY_ID: 'aws_access_key_id',
     AWS_SECRET_ACCESS_KEY: 'aws_secret_access_key',
     AWS_SESSION_TOKEN: 'aws_session_token',
     CREDENTIAL_PROCESS: 'credential_process',
+    CREDENTIAL_SOURCE: 'credential_source',
     REGION: 'region',
     ROLE_ARN: 'role_arn',
     SOURCE_PROFILE: 'source_profile',
@@ -29,6 +31,12 @@ const SHARED_CREDENTIAL_PROPERTIES = {
     SSO_REGION: 'sso_region',
     SSO_ACCOUNT_ID: 'sso_account_id',
     SSO_ROLE_NAME: 'sso_role_name',
+}
+
+const CREDENTIAL_SOURCES = {
+    ECS_CONTAINER: 'EcsContainer',
+    EC2_INSTANCE_METADATA: 'Ec2InstanceMetadata',
+    ENVIRONMENT: 'Environment'
 }
 
 /**
@@ -66,7 +74,16 @@ export class SharedCredentialsProvider implements CredentialsProvider {
     }
 
     public getTelemetryType(): CredentialType {
-        return this.isSsoProfile() ? 'ssoProfile' : 'staticProfile'
+        if (this.isSsoProfile()) {
+            return 'ssoProfile'
+        } else if (this.isCredentialSource(CREDENTIAL_SOURCES.EC2_INSTANCE_METADATA)) {
+            return 'ec2Metadata'
+        } else if (this.isCredentialSource(CREDENTIAL_SOURCES.ECS_CONTAINER)) {
+            return 'ecsMetatdata' // TODO: fix telemetry value typo
+        } else if (this.isCredentialSource(CREDENTIAL_SOURCES.ENVIRONMENT)) {
+            return 'other'
+        }
+        return 'staticProfile'
     }
 
     public getHashCode(): string {
@@ -81,13 +98,24 @@ export class SharedCredentialsProvider implements CredentialsProvider {
         return !hasProfileProperty(this.profile, SHARED_CREDENTIAL_PROPERTIES.MFA_SERIAL) && !this.isSsoProfile()
     }
 
+    public async isAvailable(): Promise<boolean> {
+        const validationMessage = this.validate()
+        if (validationMessage) {
+            getLogger().error(`Profile ${this.profileName} is not a valid Credential Profile: ${validationMessage}`)
+            return false
+        }
+        return true
+    }
+
     /**
      * Returns undefined if the Profile is valid, else a string indicating what is invalid
      */
     public validate(): string | undefined {
         const expectedProperties: string[] = []
 
-        if (hasProfileProperty(this.profile, SHARED_CREDENTIAL_PROPERTIES.ROLE_ARN)) {
+        if (hasProfileProperty(this.profile, SHARED_CREDENTIAL_PROPERTIES.CREDENTIAL_SOURCE)) {
+            return this.validateSourcedCredentials()
+        } else if (hasProfileProperty(this.profile, SHARED_CREDENTIAL_PROPERTIES.ROLE_ARN)) {
             return this.validateSourceProfileChain()
         } else if (hasProfileProperty(this.profile, SHARED_CREDENTIAL_PROPERTIES.CREDENTIAL_PROCESS)) {
             // No validation. Don't check anything else.
@@ -121,10 +149,6 @@ export class SharedCredentialsProvider implements CredentialsProvider {
         const originalStsConfiguration = AWS.config.sts
 
         try {
-            const validationMessage = this.validate()
-            if (validationMessage) {
-                throw new Error(`Profile ${this.profileName} is not a valid Credential Profile: ${validationMessage}`)
-            }
             // Profiles with references involving non-aws partitions need help getting the right STS endpoint
             this.applyProfileRegionToGlobalStsConfig()
             //  SSO entry point
@@ -177,8 +201,26 @@ export class SharedCredentialsProvider implements CredentialsProvider {
         }
     }
 
+    private validateSourcedCredentials(): string | undefined {
+        if (hasProfileProperty(this.profile, SHARED_CREDENTIAL_PROPERTIES.SOURCE_PROFILE)) {
+            return `credential_source and source_profile cannot both be set`
+        }
+
+        const source = this.profile[SHARED_CREDENTIAL_PROPERTIES.CREDENTIAL_SOURCE]!
+        if (!Object.values(CREDENTIAL_SOURCES).includes(source)) {
+            return `Credential source ${this.profile[SHARED_CREDENTIAL_PROPERTIES.CREDENTIAL_SOURCE]} is not supported`
+        }
+    }
+
     private makeCredentialsProvider(): () => AWS.Credentials {
         const logger = getLogger()
+
+        if (hasProfileProperty(this.profile, SHARED_CREDENTIAL_PROPERTIES.CREDENTIAL_SOURCE)) {
+            logger.verbose(
+                `Profile ${this.profileName} contains ${SHARED_CREDENTIAL_PROPERTIES.CREDENTIAL_SOURCE} - treating as Environment Credentials`
+            )
+            return this.makeSourcedCredentialsProvider()
+        }
 
         if (hasProfileProperty(this.profile, SHARED_CREDENTIAL_PROPERTIES.ROLE_ARN)) {
             logger.verbose(
@@ -225,6 +267,19 @@ export class SharedCredentialsProvider implements CredentialsProvider {
             })
     }
 
+    private makeSourcedCredentialsProvider(): () => AWS.Credentials {
+        return () => {
+            if (this.isCredentialSource(CREDENTIAL_SOURCES.EC2_INSTANCE_METADATA)) {
+                return new AWS.EC2MetadataCredentials()
+            } else if (this.isCredentialSource(CREDENTIAL_SOURCES.ECS_CONTAINER)) {
+                return new AWS.ECSCredentials()
+            } else if (this.isCredentialSource(CREDENTIAL_SOURCES.ENVIRONMENT)) {
+                return new AWS.EnvironmentCredentials(EnvVarsCredentialsProvider.AWS_ENV_VAR_PREFIX)
+            }
+            throw new Error(`Credential source ${this.profile[SHARED_CREDENTIAL_PROPERTIES.CREDENTIAL_SOURCE]} is not supported`)
+        }
+    }
+
     private makeSsoProvider() {
         // These properties are validated before reaching this method
         const ssoRegion = this.profile[SHARED_CREDENTIAL_PROPERTIES.SSO_REGION]!
@@ -256,4 +311,12 @@ export class SharedCredentialsProvider implements CredentialsProvider {
         }
         return false
     }
+
+    private isCredentialSource(source: string): boolean {
+        if (hasProfileProperty(this.profile, SHARED_CREDENTIAL_PROPERTIES.CREDENTIAL_SOURCE)) {
+            return this.profile[SHARED_CREDENTIAL_PROPERTIES.CREDENTIAL_SOURCE] === source
+        }
+        return false
+    }
+
 }

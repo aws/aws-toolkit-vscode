@@ -1,0 +1,7 @@
+{
+  "name": "hello_world",
+  "version": "1.0.0",
+  "description": "Plain TypeScript project for testing purposes",
+  "main": "app.js",
+  "scripts": {}
+}

@@ -5,7 +5,12 @@
 
 import * as assert from 'assert'
 import { CredentialsProviderFactory } from '../../../credentials/providers/credentialsProviderFactory'
-import { CredentialsProvider, CredentialsProviderType ,CredentialsId, isEqual } from '../../../credentials/providers/credentials'
+import {
+    CredentialsProvider,
+    CredentialsProviderType,
+    CredentialsId,
+    isEqual,
+} from '../../../credentials/providers/credentials'
 import { CredentialsProviderManager } from '../../../credentials/providers/credentialsProviderManager'
 
 /**
@@ -17,12 +22,7 @@ class TestCredentialsProviderFactory implements CredentialsProviderFactory {
     public constructor(public readonly credentialSource: CredentialsProviderType, providerSubIds: string[]) {
         this.providers.push(
             ...providerSubIds.map<CredentialsProvider>(subId => {
-                return ({
-                    getCredentialsId: () => ({
-                        credentialSource: this.credentialSource,
-                        credentialTypeId: subId,
-                    }),
-                } as any) as CredentialsProvider
+                return makeSampleCredentialsProvider(this.credentialSource, subId, true)
             })
         )
     }
@@ -61,6 +61,10 @@ describe('CredentialsProviderManager', async function () {
         sut.addProviderFactory(factoryA)
         sut.addProviderFactory(factoryB)
 
+        const availableProvider = makeSampleCredentialsProvider('profile', 'two', true)
+        const unavailableProvider = makeSampleCredentialsProvider('profile', 'three', false)
+        sut.addProviders(availableProvider, unavailableProvider)
+
         const expectedCredentials = {
             'profile:one': {
                 credentialSource: 'profile',
@@ -74,8 +78,13 @@ describe('CredentialsProviderManager', async function () {
                 credentialSource: 'env',
                 credentialTypeId: 'two',
             },
+            'profile:two': {
+                credentialSource: 'profile',
+                credentialTypeId: 'two',
+            },
         }
-        assert.deepStrictEqual(expectedCredentials, await sut.getCredentialProviderNames())
+        const actual = await sut.getCredentialProviderNames()
+        assert.deepStrictEqual(expectedCredentials, actual)
     })
 
     describe('getAllCredentialsProviders', async function () {
@@ -86,9 +95,13 @@ describe('CredentialsProviderManager', async function () {
             sut.addProviderFactory(factoryA)
             sut.addProviderFactory(factoryB)
 
+            const availableProvider = makeSampleCredentialsProvider('profile', 'two', true)
+            const unavailableProvider = makeSampleCredentialsProvider('profile', 'three', false)
+            sut.addProviders(availableProvider, unavailableProvider)
+
             const providers = await sut.getAllCredentialsProviders()
 
-            assert.strictEqual(providers.length, 3, 'Manager did not return the expected number of providers')
+            assert.strictEqual(providers.length, 4, 'Manager did not return the expected number of providers')
             assert.ok(
                 providers.some(x =>
                     isEqual(x.getCredentialsId(), {
@@ -116,11 +129,39 @@ describe('CredentialsProviderManager', async function () {
                 ),
                 'Manager did not return the third provider'
             )
+            assert.ok(
+                providers.some(x =>
+                    isEqual(x.getCredentialsId(), {
+                        credentialSource: 'profile',
+                        credentialTypeId: 'two',
+                    })
+                ),
+                'Manager did not return the fourth provider'
+            )
         })
     })
 
     describe('getCredentialsProvider', async function () {
         it('returns a provider', async function () {
+            const testProvider = makeSampleCredentialsProvider('profile', 'default', true)
+            const expectedCredentialsId: CredentialsId = {
+                credentialSource: 'profile',
+                credentialTypeId: 'default',
+            }
+
+            sut.addProvider(testProvider)
+
+            const provider = await sut.getCredentialsProvider(expectedCredentialsId)
+
+            assert.notStrictEqual(provider, undefined, 'Manager did not return a provider')
+            assert.deepStrictEqual(
+                provider?.getCredentialsId(),
+                expectedCredentialsId,
+                'Manager did not return the expected provider'
+            )
+        })
+
+        it('returns a provider from a factory', async function () {
             const factoryA = new TestCredentialsProviderFactory('profile', ['default'])
             const expectedCredentialsId: CredentialsId = {
                 credentialSource: 'profile',
@@ -164,5 +205,49 @@ describe('CredentialsProviderManager', async function () {
 
             assert.strictEqual(provider, undefined, 'Manager was not supposed to return a provider')
         })
+
+        it('returns undefined when there is no provider for the given credentialsType', async function () {
+            const testProvider = makeSampleCredentialsProvider('ec2', 'instance', true)
+
+            sut.addProvider(testProvider)
+
+            const provider = await sut.getCredentialsProvider({
+                credentialSource: 'profile',
+                credentialTypeId: 'default',
+            })
+
+            assert.strictEqual(provider, undefined, 'Manager was not supposed to return a provider')
+        })
+
+        it('returns undefined when the given credentialsType matches but provider is not available', async function () {
+            const testProvider = makeSampleCredentialsProvider('profile', 'default', false)
+
+            sut.addProvider(testProvider)
+
+            const provider = await sut.getCredentialsProvider({
+                credentialSource: 'profile',
+                credentialTypeId: 'default',
+            })
+
+            assert.strictEqual(provider, undefined, 'Manager was not supposed to return a provider')
+        })
     })
 })
+
+function makeSampleCredentialsProvider(
+    testSource: string,
+    testProviderId: string,
+    available: boolean
+): CredentialsProvider {
+    return {
+        getCredentialsId: () => {
+            return {
+                credentialSource: testSource,
+                credentialTypeId: testProviderId,
+            }
+        },
+        isAvailable: () => {
+            return Promise.resolve(available)
+        },
+    } as any as CredentialsProvider
+}

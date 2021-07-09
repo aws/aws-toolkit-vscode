@@ -56,7 +56,7 @@ export class RegionNode extends AWSTreeNodeBase {
                 createFn: () => new EcrNode(ext.toolkitClientBuilder.createEcrClient(this.regionCode)),
             },
             { serviceId: 'lambda', createFn: () => new LambdaNode(this.regionCode) },
-            ...(isCloud9() ? [] : [{ serviceId: 'logs', createFn: () => new CloudWatchLogsNode(this.regionCode) }]),
+            { serviceId: 'logs', createFn: () => new CloudWatchLogsNode(this.regionCode) },
             {
                 serviceId: 's3',
                 createFn: () => new S3Node(ext.toolkitClientBuilder.createS3Client(this.regionCode)),

@@ -11,6 +11,7 @@ import {
     loadSharedCredentialsProfiles,
     updateAwsSdkLoadConfigEnvironmentVariable,
 } from '../sharedCredentials'
+import { CredentialsProviderType } from './credentials'
 import { BaseCredentialsProviderFactory } from './credentialsProviderFactory'
 import { SharedCredentialsProvider } from './sharedCredentialsProvider'
 
@@ -24,6 +25,10 @@ export class SharedCredentialsProviderFactory extends BaseCredentialsProviderFac
         if (await this.needsRefresh()) {
             await this.loadSharedCredentialsProviders()
         }
+    }
+
+    public getProviderType(): CredentialsProviderType | undefined {
+        return SharedCredentialsProvider.getProviderType()
     }
 
     protected resetProviders() {
@@ -61,10 +66,9 @@ export class SharedCredentialsProviderFactory extends BaseCredentialsProviderFac
     }
 
     private async addProviderIfValid(profileName: string, provider: SharedCredentialsProvider): Promise<void> {
-        const validationMessage = provider.validate()
-        if (validationMessage) {
+        if (!(await provider.isAvailable())) {
             this.logger.warn(
-                `Shared Credentials Profile ${profileName} is not valid. It will not be used by the toolkit. ${validationMessage}`
+                `Shared Credentials Profile ${profileName} is not valid. It will not be used by the toolkit.`
             )
         } else {
             this.addProvider(provider)

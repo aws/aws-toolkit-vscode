@@ -4,9 +4,31 @@
  */
 
 import { STS } from 'aws-sdk'
+import { ServiceConfigurationOptions } from 'aws-sdk/lib/service'
+import { ext } from '../extensionGlobals'
+import { ClassToInterfaceType } from '../utilities/tsUtils'
 
-export interface StsClient {
-    readonly regionCode: string
+export type StsClient = ClassToInterfaceType<DefaultStsClient>
+export class DefaultStsClient {
+    public constructor(
+        public readonly regionCode: string,
+        private readonly credentials?: ServiceConfigurationOptions
+    ) {}
 
-    getCallerIdentity(): Promise<STS.GetCallerIdentityResponse>
+    public async getCallerIdentity(): Promise<STS.GetCallerIdentityResponse> {
+        const sdkClient = await this.createSdkClient()
+        const response = await sdkClient.getCallerIdentity().promise()
+        return response
+    }
+
+    private async createSdkClient(): Promise<STS> {
+        return await ext.sdkClientBuilder.createAwsService(
+            STS,
+            {
+                ...this.credentials,
+                stsRegionalEndpoints: 'regional',
+            },
+            this.regionCode
+        )
+    }
 }

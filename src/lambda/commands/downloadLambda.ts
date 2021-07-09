@@ -35,7 +35,10 @@ export async function downloadLambdaCommand(functionNode: LambdaFunctionNode) {
     })
 }
 
-async function runDownloadLambda(functionNode: LambdaFunctionNode, window = Window.vscode()): Promise<telemetry.Result> {
+async function runDownloadLambda(
+    functionNode: LambdaFunctionNode,
+    window = Window.vscode()
+): Promise<telemetry.Result> {
     const workspaceFolders = vscode.workspace.workspaceFolders || []
     const functionName = functionNode.configuration.FunctionName!
 
@@ -137,7 +140,7 @@ async function downloadAndUnzipLambda(
         increment?: number | undefined
     }>,
     functionNode: LambdaFunctionNode,
-    downloadLocation: string,
+    extractLocation: string,
     window = Window.vscode(),
     lambda = ext.toolkitClientBuilder.createLambdaClient(functionNode.regionCode)
 ): Promise<void> {
@@ -166,26 +169,22 @@ async function downloadAndUnzipLambda(
         // Brings up issues in less performant systems.
         // keep attempting the unzip until the zip is fully built or fail after 5 seconds
         let zipErr: Error | undefined
-        const val = await waitUntil(async () => {
-            return await new Promise<boolean | undefined>(resolve => {
-                try {
-                    new AdmZip(downloadLocation).extractAllToAsync(downloadLocation, true, err => {
-                        if (err) {
-                            // err unzipping
-                            zipErr = err
-                            resolve(false)
-                        } else {
-                            progress.report({ increment: 10 })
-                            resolve(true)
-                        }
-                    })
-                } catch (err) {
-                    // err loading zip into AdmZip, prior to attempting an unzip
-                    zipErr = err
-                    resolve(false)
-                }
-            })
-        }, { timeout: 10000, interval: 1000, truthy: true })
+        const val = await waitUntil(
+            async () => {
+                return await new Promise<boolean | undefined>(resolve => {
+                    try {
+                        new AdmZip(downloadLocation).extractAllTo(extractLocation, true)
+                        progress.report({ increment: 10 })
+                        resolve(true)
+                    } catch (err) {
+                        // err loading zip into AdmZip, prior to attempting an unzip
+                        zipErr = err
+                        resolve(false)
+                    }
+                })
+            },
+            { timeout: 10000, interval: 1000, truthy: true }
+        )
 
         if (!val) {
             throw zipErr
