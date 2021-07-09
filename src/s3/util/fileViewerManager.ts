@@ -31,7 +31,7 @@ export class S3FileViewerManager {
         commands = Commands.vscode(),
         tempLocation?: string
     ) {
-        this.cacheArn = cacheArn
+        this.cacheArns = cacheArn
         //this.activeTabs = new Set<S3Tab>()
         this.window = window
         this.commands = commands
@@ -93,7 +93,7 @@ export class S3FileViewerManager {
             showOutputMessage(`error calling downloadWithProgress: ${err.toString()}`, this.outputChannel)
         }
 
-        this.cacheArn.add(fileNode.file.arn)
+        this.cacheArns.add(fileNode.file.arn)
         //await this.listTempFolder()
 
         return targetLocation
@@ -103,7 +103,7 @@ export class S3FileViewerManager {
         const targetPath = await this.createTargetPath(fileNode)
         const targetLocation = vscode.Uri.file(targetPath)
 
-        if (this.cacheArn.has(fileNode.file.arn)) {
+        if (this.cacheArns.has(fileNode.file.arn)) {
             //get it from temp IF it hasn't been recently modified, then return that
             showOutputMessage(`cache is working!, found ${fileNode.file.key} in cache`, this.outputChannel) //TODOD:: debug log remove
             //explorer (or at least the S3Node) needs to be refreshed to get the last modified date from S3
