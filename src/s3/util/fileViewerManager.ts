@@ -72,31 +72,14 @@ export class S3FileViewerManager {
         //const uri = vscode.Uri.file('')
 
         if (fileNode.file.sizeBytes === undefined) {
-            //for some reason sizeBytes is undefined
-            const cancelButtonLabel = 'Cancel' //TODOD:: localize
-            const confirmButtonLabel = 'Continue with download' //TODOD:: localize
-
-            const result = await this.window.showInformationMessage(
-                "The size of this file couldn't be determined, do you want to continue with the download?", //TODOD:: localize?
-                cancelButtonLabel,
-                confirmButtonLabel
-            )
-            if (result === cancelButtonLabel) {
-                return undefined
-            }
+            const message = "The size of this file couldn't be determined, do you want to continue with the download?"
+            if (!(await this.promptUserConfirm(message))) return undefined
         } else if (fileNode.file.sizeBytes > SIZE_LIMIT) {
             showOutputMessage(`size is >4MB, prompt user working`, this.outputChannel)
-            const cancelButtonLabel = 'Cancel' //TODOD:: localize
-            const confirmButtonLabel = 'Continue with download'
 
-            const result = await this.window.showInformationMessage(
-                'File size is greater than 4MB, do you want to continue with download?', //TODOD:: localize?
-                cancelButtonLabel,
-                confirmButtonLabel
-            )
-            if (result === cancelButtonLabel) {
-                return undefined
-            }
+            const message = 'File size is greater than 4MB, do you want to continue with download?'
+            if (!(await this.promptUserConfirm(message))) return undefined
+
             showOutputMessage(`user confirmed download, continuing`, this.outputChannel) //TODOD:: debug log,
         }
 
@@ -148,6 +131,22 @@ export class S3FileViewerManager {
                 //this.listTempFolder()
                 return undefined
             }
+        }
+        return undefined
+    }
+
+    async promptUserConfirm(message: string): Promise<string | undefined> {
+        //for some reason sizeBytes is undefined
+        const cancelButtonLabel = 'Cancel' //TODOD:: localize
+        const confirmButtonLabel = 'Continue with download' //TODOD:: localize
+
+        const result = await this.window.showInformationMessage(
+            message, //TODOD:: localize?
+            cancelButtonLabel,
+            confirmButtonLabel
+        )
+        if (result === cancelButtonLabel) {
+            return undefined
         }
         return undefined
     }
