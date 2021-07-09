@@ -54,6 +54,9 @@ export class S3FileViewerManager {
         this.window.showTextDocument(fileLocation)
     }
 
+    /**
+     * Fetches a file from S3 or gets it from the local cache if possible.
+     */
     public async getFile(fileNode: S3FileNode): Promise<vscode.Uri | undefined> {
         if (!this.tempLocation) {
             await this.createTemp()
