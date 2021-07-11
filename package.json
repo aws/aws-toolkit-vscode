@@ -1829,6 +1829,37 @@
                     "separator": "\\"
                 }
             }
+        ],
+        "walkthroughs": [
+            {
+                "id": "getStarted",
+                "title": "%AWS.walkthrough.gettingStarted.title%",
+                "description": "%AWS.walkthrough.gettingStarted.description%",
+                "when": "!config.aws.profile",
+                "steps": [
+                    {
+                        "id": "accessKeys",
+                        "title": "%AWS.walkthrough.gettingStarted.accessKeys.title%",
+                        "description": "%AWS.walkthrough.gettingStarted.accessKeys.description%",
+                        "media": {
+                            "image": "resources/walkthrough/iamCredentials.png",
+                            "altText": "Empty image"
+                        }
+                    },
+                    {
+                        "id": "createProfile",
+                        "title": "%AWS.walkthrough.gettingStarted.createProfile.title%",
+                        "description": "%AWS.walkthrough.gettingStarted.createProfile.description%",
+                        "media": {
+                            "image": "resources/walkthrough/createProfile.png",
+                            "altText": "Empty image"
+                        },
+                        "completionEvents": [
+                            "onContext:config.aws.profile"
+                        ]
+                    }
+                ]
+            }
         ]
     },
     "scripts": {
