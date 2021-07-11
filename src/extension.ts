@@ -138,7 +138,7 @@ export async function activate(context: vscode.ExtensionContext) {
         }
 
         // Used as a command for decoration-only codelenses.
-        context.subscriptions.push(vscode.commands.registerCommand('aws.doNothingCommand', () => {}))
+        context.subscriptions.push(vscode.commands.registerCommand('aws.doNothingCommand', () => { }))
 
         context.subscriptions.push(
             vscode.commands.registerCommand('aws.login', async () => await ext.awsContextCommands.onCommandLogin())
@@ -269,6 +269,9 @@ function initializeIconPaths(context: vscode.ExtensionContext) {
     ext.iconPaths.dark.cloudFormation = context.asAbsolutePath('resources/dark/cloudformation.svg')
     ext.iconPaths.light.cloudFormation = context.asAbsolutePath('resources/light/cloudformation.svg')
 
+    ext.iconPaths.dark.renderGraph = context.asAbsolutePath('resources/dark/stepfunctions/preview.svg')
+    ext.iconPaths.light.renderGraph = context.asAbsolutePath('resources/light/stepfunctions/preview.svg')
+
     ext.iconPaths.dark.ecr = context.asAbsolutePath('resources/dark/ecr.svg')
     ext.iconPaths.light.ecr = context.asAbsolutePath('resources/light/ecr.svg')
 
@@ -334,16 +337,15 @@ function makeEndpointsProvider(): EndpointsProvider {
         getLogger().error('Failure while loading Endpoints Manifest: %O', err)
 
         vscode.window.showErrorMessage(
-            `${localize('AWS.error.endpoint.load.failure', 'The AWS Toolkit was unable to load endpoints data.')} ${
-                isCloud9()
-                    ? localize(
-                          'AWS.error.impactedFunctionalityReset.cloud9',
-                          'Toolkit functionality may be impacted until the Cloud9 browser tab is refreshed.'
-                      )
-                    : localize(
-                          'AWS.error.impactedFunctionalityReset.vscode',
-                          'Toolkit functionality may be impacted until VS Code is restarted.'
-                      )
+            `${localize('AWS.error.endpoint.load.failure', 'The AWS Toolkit was unable to load endpoints data.')} ${isCloud9()
+                ? localize(
+                    'AWS.error.impactedFunctionalityReset.cloud9',
+                    'Toolkit functionality may be impacted until the Cloud9 browser tab is refreshed.'
+                )
+                : localize(
+                    'AWS.error.impactedFunctionalityReset.vscode',
+                    'Toolkit functionality may be impacted until VS Code is restarted.'
+                )
             }`
         )
     })

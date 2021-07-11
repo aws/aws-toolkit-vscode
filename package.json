@@ -55,6 +55,7 @@
         "onCommand:aws.stepfunctions.publishStateMachine",
         "onView:aws.cdk.explorer",
         "onCommand:aws.refreshCdkExplorer",
+        "onCommand:aws.cdk.renderGraph",
         "onCommand:aws.aboutToolkit",
         "onCommand:aws.cloudWatchLogs.viewLogStream",
         "onLanguage:asl",
@@ -844,6 +845,11 @@
             ],
             "view/item/context": [
                 {
+                    "command": "aws.cdk.renderGraph",
+                    "when": "view == aws.cdk.explorer && viewItem == awsCdkStateMachineNode",
+                    "group": "inline@1"
+                },
+                {
                     "command": "aws.apig.invokeRemoteRestApi",
                     "when": "view == aws.explorer && viewItem =~ /^(awsApiGatewayNode)$/",
                     "group": "0@1"
@@ -1061,6 +1067,15 @@
             ]
         },
         "commands": [
+            {
+                "command": "aws.cdk.renderGraph",
+                "title": "%AWS.command.cdk.renderGraph%",
+                "category": "AWS",
+                "icon": {
+                    "light": "resources/light/stepfunctions/preview.svg",
+                    "dark": "resources/dark/stepfunctions/preview.svg"
+                }
+            },
             {
                 "command": "aws.launchConfigForm",
                 "title": "%AWS.command.launchConfigForm.title%",

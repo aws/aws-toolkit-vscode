@@ -9,6 +9,8 @@ import { recordCdkAppExpanded, recordCdkHelp, recordCdkRefreshExplorer } from '.
 import { AwsCdkExplorer } from './explorer/awsCdkExplorer'
 import { AppNode } from './explorer/nodes/appNode'
 import { cdk } from './globals'
+import { renderGraphCommand } from './commands/renderGraph'
+import { ConstructNode } from './explorer/nodes/constructNode'
 
 /**
  * Activate AWS CDK related functionality for the extension.
@@ -67,5 +69,10 @@ async function registerCdkCommands(context: vscode.ExtensionContext, explorer: A
                 recordCdkRefreshExplorer()
             }
         })
+    )
+    context.subscriptions.push(
+        vscode.commands.registerCommand('aws.cdk.renderGraph', async (node: ConstructNode) => {
+            await renderGraphCommand(node)
+        }),
     )
 }

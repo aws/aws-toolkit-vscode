@@ -8,8 +8,8 @@ const localize = nls.loadMessageBundle()
 import { debounce } from 'lodash'
 //import * as path from 'path'
 import * as vscode from 'vscode'
-import { ext } from '../../../shared/extensionGlobals'
-import { getLogger, Logger } from '../../../shared/logger'
+import { ext } from '../../shared/extensionGlobals'
+import { getLogger, Logger } from '../../shared/logger'
 
 
 export interface MessageObject {
@@ -66,6 +66,7 @@ export class AslVisualizationCDK {
         webview.postMessage({
             command: 'update',
             stateMachineData,
+            //might need to make an isValid fntn
             isValid: true,
             errors: [],
         })
@@ -90,7 +91,6 @@ export class AslVisualizationCDK {
             }
         )
 
-
         const debouncedUpdate = debounce(this.sendUpdateMessage.bind(this), 500)
 
         // Handle messages from the webview
@@ -104,10 +104,11 @@ export class AslVisualizationCDK {
                         }
                         break
                     case 'webviewRendered': {
+                        // Webview has finished rendering, so now we can give it our
+                        // initial state machine definition.
                         await this.sendUpdateMessage(this.cfnDefinition)
                         break
                     }
-
                 }
             })
         )
@@ -135,7 +136,6 @@ export class AslVisualizationCDK {
         return panel
     }
 
-    //private createVisualizationWebviewPanel(documentUri: vscode.Uri): vscode.WebviewPanel {
     private createVisualizationWebviewPanel(): vscode.WebviewPanel {
         return vscode.window.createWebviewPanel(
             'stateMachineVisualization',
@@ -169,7 +169,6 @@ export class AslVisualizationCDK {
         statusTexts: {
             syncing: string
             notInSync: string
-            //inSync: string
         }
     ): string {
         return `
