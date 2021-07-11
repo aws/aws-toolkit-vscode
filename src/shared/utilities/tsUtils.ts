@@ -21,3 +21,13 @@ export type InterfaceNoSymbol<T> = Pick<T, NoSymbols<T>>
  * is that it cannot be re-declared for extension.
  */
 export type ClassToInterfaceType<T> = Pick<T, keyof T>
+
+type Expand<T> = T extends infer O ? { [K in keyof O]+?: O[K] } : never
+/**
+ * Forces a type to be resolved into its literal types.
+ *
+ * Normally imported types are left 'as-is' and are unable to be mapped. This alias uses
+ * type inference to effectively generate a type literal of the target type.
+ *
+ */
+export type ExpandWithObject<T> = Expand<T> extends Record<string, unknown> ? Expand<T> : never
