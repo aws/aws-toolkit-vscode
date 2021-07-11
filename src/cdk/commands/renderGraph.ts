@@ -21,7 +21,7 @@ export async function renderGraphCommand(
     node: ConstructNode,
     window = Window.vscode(),
     commands = Commands.vscode()
-): Promise<void> {
+    ): Promise<AslVisualizationCDK | undefined> {
     getLogger().debug('Render graph called for: %O', node)
 
     const uniqueIdentifier = node.label
@@ -32,11 +32,12 @@ export async function renderGraphCommand(
     try {
         const cfnDefinition = getCfnDefinitionForStateMachine(uniqueIdentifier, cdkOutPath, stackName)
 
-        new AslVisualizationCDK(cfnDefinition ? cfnDefinition : 'error', uniqueIdentifier)
+        const newVisualization = new AslVisualizationCDK(cfnDefinition ? cfnDefinition : 'error', uniqueIdentifier)
 
         getLogger().info('Rendered graph: %O', uniqueIdentifier)
         window.showInformationMessage(localize('AWS.cdk.renderGraph.success', 'Rendered graph {0}', uniqueIdentifier))
         telemetry.recordS3CreateBucket({ result: 'Succeeded' })
+        return newVisualization
     } catch (e) {
         getLogger().error(`Failed to create bucket ${uniqueIdentifier}: %O`, e)
         showErrorWithLogs(

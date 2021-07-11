@@ -11,6 +11,7 @@ import { AppNode } from './explorer/nodes/appNode'
 import { cdk } from './globals'
 import { renderGraphCommand } from './commands/renderGraph'
 import { ConstructNode } from './explorer/nodes/constructNode'
+import { AslVisualizationCDKManager } from './commands/aslVisualizationCDKManager'
 
 /**
  * Activate AWS CDK related functionality for the extension.
@@ -70,9 +71,14 @@ async function registerCdkCommands(context: vscode.ExtensionContext, explorer: A
             }
         })
     )
+
+    const visualizationManager = new AslVisualizationCDKManager(context)
     context.subscriptions.push(
         vscode.commands.registerCommand('aws.cdk.renderGraph', async (node: ConstructNode) => {
-            await renderGraphCommand(node)
-        }),
+            return await visualizationManager.visualizeStateMachine(
+                context.globalState,
+                node
+            )
+        })
     )
 }
