@@ -1,3 +1,19 @@
+# _1.28_ (2021-07-12)
+- **(Breaking Change)** Python 2.7 Lambda template removed from New Project Wizard
+- **(Feature)** Adding the ability to inject credentials/region into existing IntelliJ IDEA and PyCharm Run Configurations (e.g Application, JUnit, Python, PyTest). This requires experiments `aws.feature.javaRunConfigurationExtension` / `aws.feature.pythonRunConfigurationExtension`, see [Enabling Experiments](https://github.com/aws/aws-toolkit-jetbrains/blob/master/README.md#experimental-features)
+- **(Feature)** Add support for updating tags during SAM deployment
+- **(Feature)** (Experimental) Adding ability to create a local terminal using the currently selected AWS connection (experiment ID `aws.feature.connectedLocalTerminal`, see [Enabling Experiments](https://github.com/aws/aws-toolkit-jetbrains/blob/master/README.md#experimental-features)) [#2151](https://github.com/aws/aws-toolkit-jetbrains/issues/2151)
+- **(Feature)** Add support for pulling images from ECR
+- **(Bug Fix)** Fix missing text in the View S3 bucket with prefix dialog
+- **(Bug Fix)** Improved performance of listing S3 buckets in certain situations
+- **(Bug Fix)** Fix copying action in CloudWatch Logs Stream and Event Time providing epoch time instead of displayed value
+- **(Bug Fix)** Fix using message bus after project has been closed (Fixes [#2615](https://github.com/aws/aws-toolkit-jetbrains/issues/2615))
+- **(Bug Fix)** Fix S3 bucket viewer actions being triggered by short cuts even if it is not focused
+- **(Bug Fix)** Don't show Lambda run configuration suggestions on Go test code
+- **(Bug Fix)** Fix being unable to create Python 3.8 Image-based Lambdas in New Project wizard
+- **(Bug Fix)** Fixed showing templates that were not for Image-based Lambdas when Image is selected in New Project wizard
+- **(Deprecation)** An upcoming release will remove support for IDEs based on the 2020.2 platform
+
 # _1.27_ (2021-05-24)
 - **(Feature)** Add support for AppRunner. Create/delete/pause/resume/deploy and view logs for your AppRunner services.
 - **(Feature)** Add support for building and pushing local images to ECR
