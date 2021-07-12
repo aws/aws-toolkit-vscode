@@ -23,6 +23,7 @@ import com.intellij.ui.layout.Cell
 import com.intellij.ui.layout.CellBuilder
 import com.intellij.ui.layout.ComponentPredicate
 import com.intellij.ui.layout.Row
+import com.intellij.ui.layout.applyToComponent
 import com.intellij.ui.paint.LinePainter2D
 import com.intellij.ui.speedSearch.SpeedSearchSupply
 import com.intellij.util.text.DateFormatUtil
@@ -30,6 +31,7 @@ import com.intellij.util.text.SyncDateFormat
 import com.intellij.util.ui.GraphicsUtil
 import com.intellij.util.ui.JBUI
 import com.intellij.util.ui.UIUtil
+import org.jetbrains.annotations.Nls
 import software.aws.toolkits.jetbrains.utils.formatText
 import java.awt.AlphaComposite
 import java.awt.Color
@@ -262,7 +264,7 @@ fun CellBuilder<DialogPanel>.installOnParent(applies: () -> Boolean = { true }):
 /**
  * Similar to {@link com.intellij.ui.layout.CellBuilder#enableIf} but for component visibility
  */
-fun CellBuilder<JComponent>.visibleIf(predicate: ComponentPredicate): CellBuilder<JComponent> {
+fun <T : JComponent> CellBuilder<T>.visibleIf(predicate: ComponentPredicate): CellBuilder<T> {
     component.isVisible = predicate()
     predicate.addListener {
         component.isVisible = it
@@ -295,4 +297,12 @@ fun Cell.contextualHelp(description: String): CellBuilder<JBLabel> {
         installOn(l)
     }
     return component(l)
+}
+
+fun <T : JComponent> CellBuilder<T>.toolTipText(@Nls text: String): CellBuilder<T> {
+    applyToComponent {
+        toolTipText = text
+    }
+
+    return this
 }
