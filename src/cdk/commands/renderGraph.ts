@@ -44,7 +44,7 @@ export async function renderGraphCommand(
             localize('AWS.cdk.renderGraph.error.general', 'Failed to render graph {0}', uniqueIdentifier),
             window
         )
-        //telemetry.recordS3CreateBucket({ result: 'Failed' })
+        telemetry.recordS3CreateBucket({ result: 'Failed' })
     }
     //await refreshNode(node, commands)
 }

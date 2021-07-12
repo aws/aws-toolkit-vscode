@@ -22,9 +22,10 @@ export function getCfnDefinitionForStateMachine(uniqueIdentifier: string, cdkOut
                 jsonObj = jsonObj.Resources[`${key}`].Properties.DefinitionString["Fn::Join"][1]
                 data = JSON.stringify(jsonObj)
                 data = escape(data)
+                return data
             }
         }
-        return data
+        return 'Wrong state machine identifier'
     }
     catch (e) {
 

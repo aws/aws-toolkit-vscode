@@ -10,6 +10,7 @@ import { getLogger, Logger } from '../../shared/logger'
 import { AslVisualizationCDK } from './aslVisualizationCDK'
 import { ConstructNode } from '../explorer/nodes/constructNode'
 import { renderGraphCommand } from './renderGraph'
+import { StateMachineGraphCache } from '../../../src/stepFunctions/utils'
 
 export class AslVisualizationCDKManager {
     protected readonly managedVisualizations: Map<string, AslVisualizationCDK> = new Map<string, AslVisualizationCDK>()
@@ -28,7 +29,7 @@ export class AslVisualizationCDKManager {
         node: ConstructNode
     ): Promise<vscode.WebviewPanel | undefined> {
         const logger: Logger = getLogger()
-        //const cache = new StateMachineGraphCache()
+        const cache = new StateMachineGraphCache()
 
         // Attempt to retrieve existing visualization if it exists.
         const existingVisualization = this.getExistingVisualization(node.label)
@@ -40,7 +41,7 @@ export class AslVisualizationCDKManager {
 
         // Existing visualization does not exist, construct new visualization
         try {
-            //await cache.updateCache(globalStorage)
+            await cache.updateCache(globalStorage)
 
             const newVisualization = await renderGraphCommand(node)
             if (newVisualization) {
