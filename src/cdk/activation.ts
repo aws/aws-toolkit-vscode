@@ -9,7 +9,6 @@ import { recordCdkAppExpanded, recordCdkHelp, recordCdkRefreshExplorer } from '.
 import { AwsCdkExplorer } from './explorer/awsCdkExplorer'
 import { AppNode } from './explorer/nodes/appNode'
 import { cdk } from './globals'
-import { renderGraphCommand } from './commands/renderGraph'
 import { ConstructNode } from './explorer/nodes/constructNode'
 import { AslVisualizationCDKManager } from './commands/aslVisualizationCDKManager'
 

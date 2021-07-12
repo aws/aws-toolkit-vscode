@@ -66,7 +66,7 @@ export class AslVisualizationCDK {
         webview.postMessage({
             command: 'update',
             stateMachineData,
-            //might need to make an isValid fntn
+            //can I just put this true or should I make an isValid fntn?
             isValid: true,
             errors: [],
         })

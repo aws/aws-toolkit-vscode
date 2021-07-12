@@ -29,6 +29,7 @@ export class AslVisualizationCDKManager {
         node: ConstructNode
     ): Promise<vscode.WebviewPanel | undefined> {
         const logger: Logger = getLogger()
+        //not sure if I can use this cache
         const cache = new StateMachineGraphCache()
 
         // Attempt to retrieve existing visualization if it exists.

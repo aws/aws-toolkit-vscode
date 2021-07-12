@@ -21,7 +21,7 @@ export async function renderGraphCommand(
     node: ConstructNode,
     window = Window.vscode(),
     commands = Commands.vscode()
-    ): Promise<AslVisualizationCDK | undefined> {
+): Promise<AslVisualizationCDK | undefined> {
     getLogger().debug('Render graph called for: %O', node)
 
     const uniqueIdentifier = node.label
@@ -36,6 +36,7 @@ export async function renderGraphCommand(
 
         getLogger().info('Rendered graph: %O', uniqueIdentifier)
         window.showInformationMessage(localize('AWS.cdk.renderGraph.success', 'Rendered graph {0}', uniqueIdentifier))
+        //I know I need to change this telemetry part but not sure how
         telemetry.recordS3CreateBucket({ result: 'Succeeded' })
         return newVisualization
     } catch (e) {
@@ -44,8 +45,10 @@ export async function renderGraphCommand(
             localize('AWS.cdk.renderGraph.error.general', 'Failed to render graph {0}', uniqueIdentifier),
             window
         )
+        //change this part
         telemetry.recordS3CreateBucket({ result: 'Failed' })
     }
+    //not sure if we need to refresh nodes and if yes why we need to do this
     //await refreshNode(node, commands)
 }
 

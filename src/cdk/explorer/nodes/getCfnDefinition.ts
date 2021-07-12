@@ -1,4 +1,3 @@
-
 import * as fs from 'fs';
 
 
@@ -28,7 +27,7 @@ export function getCfnDefinitionForStateMachine(uniqueIdentifier: string, cdkOut
         return 'Wrong state machine identifier'
     }
     catch (e) {
-
+        return 'Unable to get cfn definition for state machine'
     }
 
 }
