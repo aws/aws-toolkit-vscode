@@ -4,7 +4,7 @@
  */
 //TODOD:: change feature icon on package.json
 
-//import * as vscode from 'vscode'import
+import * as vscode from 'vscode'
 import { ext } from '../../shared/extensionGlobals'
 import { Window } from '../../shared/vscode/window'
 //import { localize } from '../../shared/utilities/vsCodeUtils'
@@ -14,5 +14,12 @@ import { S3FileNode } from '../explorer/s3FileNode'
 
 export async function openFileCommand(node: S3FileNode, window = Window.vscode()): Promise<void> {
     const manager = ext.s3fileViewerManager
-    manager.openTab(node)
+    await manager.openTab(node)
+}
+
+export async function openFileEditModeCommand(s3Uri?: vscode.Uri): Promise<void> {
+    //TODOD:: implement this later, after approval of read-only
+    /*
+    const manager = ext.s3fileViewerManager
+    manager.openCurrentOnEdit(s3Uri)*/
 }
