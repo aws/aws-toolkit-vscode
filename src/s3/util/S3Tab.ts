@@ -8,30 +8,29 @@ import { ext } from '../../shared/extensionGlobals'
 //import { Bucket, DownloadFileRequest, File, S3Client } from '../../shared/clients/s3Client'
 import { showOutputMessage } from '../../shared/utilities/messages'
 import { getLogger } from '../../shared/logger'
-import * as testutil from '../../test/testUtil'
 import { readFileAsString } from '../../shared/filesystemUtilities'
 
-const fs = require('fs')
+//const fs = require('fs')
 
 export class S3Tab {
     //private file: File
     private fileUri: vscode.Uri
     private s3Uri: vscode.Uri
-    private window: typeof vscode.window
-    private context: Context
-    private outputChannel: vscode.OutputChannel
-    private activeTab: vscode.TextDocument | undefined
+    //private window: typeof vscode.window
+    //private context: Context
+    //private outputChannel: vscode.OutputChannel
+    //private activeTab: vscode.TextDocument | undefined
 
     //private editing: boolean
 
     public constructor(uri: vscode.Uri, window = vscode.window) {
         this.fileUri = uri
         this.s3Uri = vscode.Uri.parse('s3:' + this.fileUri.fsPath)
-        this.window = window
+        //this.window = window
         //if file is text, start state will be read-only
         //if file is not text, open file regularly and disable edit button
-        this.context = new Context(this.fileUri)
-        this.outputChannel = ext.outputChannel
+        //this.context = new Context(this.fileUri)
+        //this.outputChannel = ext.outputChannel
     }
 
     async openFileOnReadOnly(window: typeof vscode.window) {
@@ -46,7 +45,7 @@ export class S3Tab {
             const doc = await vscode.workspace.openTextDocument(this.s3Uri) // calls back into the provider
             //vscode.languages.setTextDocumentLanguage(doc, 'txt')
             await window.showTextDocument(doc, { preview: false })
-            this.activeTab = doc
+            //this.activeTab = doc
         } catch (e) {
             getLogger().error(`Given file not found, error: ${e}`)
         }
@@ -64,7 +63,6 @@ export class S3DocumentProvider implements vscode.TextDocumentContentProvider {
     onDidChange?: vscode.Event<vscode.Uri> | undefined
 
     public async provideTextDocumentContent(uri: vscode.Uri): Promise<string> {
-        //const fileStr = {data: ''}
         let data: any
         try {
             //data = await fs.readFileSync(uri.fsPath)
@@ -74,25 +72,17 @@ export class S3DocumentProvider implements vscode.TextDocumentContentProvider {
         }
         //getLogger().debug(data!)
         showOutputMessage(data!, ext.outputChannel)
-        /*
-        fs.readFile(uri.fsPath, function(err:any, data:any) {
-            if(err) throw err;
-
-            const arr = data.toString().replace(/\r\n/g,'\n').split('\n');
-            //fileStr.data = arr.join('\n')
-
-            for(const i of arr) {
-                showOutputMessage(`${i}`, ext.outputChannel)
-            }
-        })*/
 
         return data
     }
 }
 
+/*
 interface State {
     openFile(context: Context, window: typeof vscode.window): void
 }
+
+
 class ReadOnlyState implements State {
     private fileUri: vscode.Uri
     private provider: S3DocumentProvider
@@ -134,12 +124,12 @@ class Context {
         //this.state = new ReadOnlyState(fileUri)
         this.fileUri = fileUri
     }
-    /*
+    
     public set state (newState: State){
         this.state = newState
     }
 
     public get state () {
         return this.state
-    }*/
-}
+    }
+}*/
