@@ -14,7 +14,7 @@ import { S3FileNode } from '../explorer/s3FileNode'
 import { readablePath } from '../util'
 import { getStringHash } from '../../shared/utilities/textUtilities'
 import { getLogger } from '../../shared/logger'
-import { showConfirmationMessage, showErrorWithLogs } from '../../shared/utilities/messages'
+import { showConfirmationMessage } from '../../shared/utilities/messages'
 import { localize } from '../../shared/utilities/vsCodeUtils'
 
 const fs = require('fs')
@@ -214,6 +214,7 @@ export class S3FileViewerManager {
         return fileNode
     }
 
+    /*
     //TODOD:: remove helper method
     private listTempFolder(): Promise<void> {
         getLogger().debug('-------contents in temp:')
@@ -227,7 +228,7 @@ export class S3FileViewerManager {
         getLogger().debug('-------------------------')
         showOutputMessage('-------------------------', this.outputChannel)
         return Promise.resolve()
-    }
+    }*/
 
     public async createTemp(): Promise<void> {
         this.tempLocation = await makeTemporaryToolkitFolder()
