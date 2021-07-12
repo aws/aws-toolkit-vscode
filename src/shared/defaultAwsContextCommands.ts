@@ -226,6 +226,7 @@ export class DefaultAWSContextCommands {
             return true
         } else if (userResponse === localizedText.help) {
             env.openExternal(Uri.parse(credentialHelpUrl))
+            return await this.promptCredentialsSetup()
         }
 
         return false

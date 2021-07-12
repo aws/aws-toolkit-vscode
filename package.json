@@ -1843,7 +1843,7 @@
                         "description": "%AWS.walkthrough.gettingStarted.accessKeys.description%",
                         "media": {
                             "image": "resources/walkthrough/iamCredentials.png",
-                            "altText": "Empty image"
+                            "altText": "%AWS.walkthrough.gettingStarted.accessKeys.altText%"
                         }
                     },
                     {
@@ -1852,7 +1852,7 @@
                         "description": "%AWS.walkthrough.gettingStarted.createProfile.description%",
                         "media": {
                             "image": "resources/walkthrough/createProfile.png",
-                            "altText": "Empty image"
+                            "altText": "%AWS.walkthrough.gettingStarted.createProfile.altText%"
                         },
                         "completionEvents": [
                             "onContext:config.aws.profile"
