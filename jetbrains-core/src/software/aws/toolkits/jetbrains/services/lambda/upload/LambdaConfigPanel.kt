@@ -20,8 +20,8 @@ import software.aws.toolkits.jetbrains.services.iam.IamResources
 import software.aws.toolkits.jetbrains.services.iam.IamRole
 import software.aws.toolkits.jetbrains.services.lambda.LambdaWidgets.lambdaMemory
 import software.aws.toolkits.jetbrains.services.lambda.LambdaWidgets.lambdaTimeout
-import software.aws.toolkits.jetbrains.ui.EnvironmentVariablesTextField
 import software.aws.toolkits.jetbrains.ui.HandlerPanel
+import software.aws.toolkits.jetbrains.ui.KeyValueTextField
 import software.aws.toolkits.jetbrains.ui.ResourceSelector
 import software.aws.toolkits.jetbrains.ui.ResourceSelector.Companion.builder
 import software.aws.toolkits.jetbrains.ui.SliderPanel
@@ -49,7 +49,7 @@ class LambdaConfigPanel(private val project: Project, private val isUpdate: Bool
         private set
     lateinit var runtimeLabel: JLabel
         private set
-    lateinit var envVars: EnvironmentVariablesTextField
+    lateinit var envVars: KeyValueTextField
         private set
     lateinit var memorySlider: SliderPanel
         private set
@@ -120,7 +120,7 @@ class LambdaConfigPanel(private val project: Project, private val isUpdate: Bool
         handlerPanel = HandlerPanel(project)
         runtimeModel = SortedComboBoxModel(Comparator.comparing(Function { obj: Runtime -> obj.toString() }, Comparator.naturalOrder()))
         runtime = ComboBox(runtimeModel)
-        envVars = EnvironmentVariablesTextField()
+        envVars = KeyValueTextField()
         memorySlider = lambdaMemory()
         timeoutSlider = lambdaTimeout()
         iamRole = builder().resource(IamResources.LIST_LAMBDA_ROLES).awsConnection(project).build()

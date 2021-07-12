@@ -50,7 +50,7 @@
           <toolTipText resource-bundle="software/aws/toolkits/resources/MessagesBundle" key="lambda.function.iamRole.tooltip"/>
         </properties>
       </component>
-      <component id="d4e6f" class="software.aws.toolkits.jetbrains.ui.EnvironmentVariablesTextField" binding="envVars" custom-create="true">
+      <component id="d4e6f" class="software.aws.toolkits.jetbrains.ui.KeyValueTextField" binding="envVars" custom-create="true">
         <constraints>
           <grid row="6" column="1" row-span="1" col-span="2" vsize-policy="3" hsize-policy="3" anchor="0" fill="1" indent="0" use-parent-layout="false"/>
         </constraints>
