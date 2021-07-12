@@ -18,6 +18,7 @@ import software.amazon.awssdk.services.dynamodb.model.ExecuteStatementRequest
 import software.amazon.awssdk.services.dynamodb.model.KeySchemaElement
 import software.amazon.awssdk.services.dynamodb.model.KeyType
 import software.aws.toolkits.core.utils.debug
+import software.aws.toolkits.core.utils.error
 import software.aws.toolkits.core.utils.getLogger
 import software.aws.toolkits.jetbrains.services.dynamodb.DynamoDbUtils.executeStatementPaginator
 import software.aws.toolkits.jetbrains.services.dynamodb.Index
@@ -130,6 +131,7 @@ class DynamoDbTableEditor(private val dynamoTable: DynamoDbVirtualFile) : UserDa
                         searchResults.setBusy(false)
                     }
                 } catch (e: Exception) {
+                    LOG.error(e) { "Query failed to execute" }
                     withContext(edt) {
                         searchResults.setError(e)
                         searchResults.setBusy(false)

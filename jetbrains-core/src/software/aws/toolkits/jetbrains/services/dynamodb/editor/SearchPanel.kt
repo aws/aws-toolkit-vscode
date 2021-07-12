@@ -39,14 +39,27 @@ class SearchPanel(private val tableInfo: TableInfo, initialSearchType: SearchTyp
         decorator.setContentComponent(queryScanPanel)
     }
 
+    fun getComponent() = panel
+
     fun getSearchQuery(): Pair<Index, String> {
         queryScanPanel.apply()
 
-        return searchIndex to buildString {
-            append("""SELECT * FROM "${tableInfo.tableName}"""")
+        val fromField = buildString {
+            append('"')
+            append(verifyString(tableInfo.tableName))
+            append('"')
+
             searchIndex.indexName?.let {
-                append("""."$it"""")
+                append('.')
+                append('"')
+                append(verifyString(it))
+                append('"')
             }
+        }
+
+        return searchIndex to buildString {
+            append("SELECT * FROM ")
+            append(fromField)
 
             if (searchType == SearchType.Query) {
                 append(" WHERE ")
@@ -55,5 +68,12 @@ class SearchPanel(private val tableInfo: TableInfo, initialSearchType: SearchTyp
         }
     }
 
-    fun getComponent() = panel
+    private fun verifyString(str: String): String = str.takeIf {
+        str.matches(NAMING_RULES)
+    } ?: throw IllegalArgumentException("'$str' does not match $NAMING_RULES")
+
+    private companion object {
+        // https://docs.aws.amazon.com/amazondynamodb/latest/developerguide/HowItWorks.NamingRulesDataTypes.html#HowItWorks.NamingRules
+        private val NAMING_RULES = """^[A-Za-z0-9_\-.]+${'$'}""".toRegex()
+    }
 }
