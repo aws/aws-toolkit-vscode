@@ -40,14 +40,14 @@ export class S3Tab {
         //this.window.showTextDocument(this.fileUri)
     }
 
-    async openFileOnReadOnly(context: Context, window: typeof vscode.window) {
+    async openFileOnReadOnly(window: typeof vscode.window) {
         const s3Uri = vscode.Uri.parse('s3:' + this.fileUri.fsPath)
         //this.fileUri.scheme = 's3'
         //window.showTextDocument(this.fileUri)
         //testutil.toFile('bogus', tempFile.fsPath)
         const doc = await vscode.workspace.openTextDocument(s3Uri) // calls back into the provider
         //vscode.languages.setTextDocumentLanguage(doc, 'txt')
-        await vscode.window.showTextDocument(doc, { preview: false })
+        await window.showTextDocument(doc, { preview: false })
     }
 
     //onPressedButton = change state, how to do this?

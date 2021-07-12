@@ -54,7 +54,7 @@ export class S3FileViewerManager {
         //this will display the document at the end
         await this.listTempFolder()
         const newTab = new S3Tab(fileLocation)
-        await newTab.display()
+        await newTab.openFileOnReadOnly(this.window)
         this.activeTabs.add(newTab)
     }
 
