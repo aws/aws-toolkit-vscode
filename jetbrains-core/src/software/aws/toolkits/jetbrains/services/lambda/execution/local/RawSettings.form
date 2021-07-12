@@ -79,7 +79,7 @@
           <toolTipText resource-bundle="software/aws/toolkits/resources/MessagesBundle" key="lambda.function.env_vars.tooltip"/>
         </properties>
       </component>
-      <component id="e988" class="software.aws.toolkits.jetbrains.ui.EnvironmentVariablesTextField" binding="environmentVariables" custom-create="true">
+      <component id="e988" class="software.aws.toolkits.jetbrains.ui.KeyValueTextField" binding="environmentVariables" custom-create="true">
         <constraints>
           <grid row="4" column="1" row-span="1" col-span="1" vsize-policy="0" hsize-policy="3" anchor="0" fill="1" indent="0" use-parent-layout="false"/>
         </constraints>

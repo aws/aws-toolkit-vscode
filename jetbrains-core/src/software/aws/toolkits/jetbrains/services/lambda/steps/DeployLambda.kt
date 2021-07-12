@@ -6,7 +6,7 @@ package software.aws.toolkits.jetbrains.services.lambda.steps
 import com.intellij.execution.configurations.GeneralCommandLine
 import software.aws.toolkits.core.region.AwsRegion
 import software.aws.toolkits.core.utils.AttributeBagKey
-import software.aws.toolkits.jetbrains.services.lambda.deploy.CreateCapabilities
+import software.aws.toolkits.jetbrains.services.lambda.deploy.DeployServerlessApplicationSettings
 import software.aws.toolkits.jetbrains.services.lambda.sam.samDeployCommand
 import software.aws.toolkits.jetbrains.utils.execution.steps.Context
 import software.aws.toolkits.jetbrains.utils.execution.steps.MessageEmitter
@@ -15,12 +15,8 @@ import java.nio.file.Path
 
 class DeployLambda(
     private val packagedTemplateFile: Path,
-    private val stackName: String,
-    private val s3Bucket: String,
-    private val ecrRepo: String?,
-    private val capabilities: List<CreateCapabilities>,
-    private val parameters: Map<String, String>,
     private val envVars: Map<String, String>,
+    private val settings: DeployServerlessApplicationSettings,
     region: AwsRegion
 ) : SamCliStep() {
     override val stepName = message("serverless.application.deploy.step_name.create_change_set")
@@ -29,11 +25,7 @@ class DeployLambda(
     override fun constructCommandLine(context: Context): GeneralCommandLine = getCli().samDeployCommand(
         environmentVariables = envVars,
         templatePath = packagedTemplateFile,
-        stackName = stackName,
-        s3Bucket = s3Bucket,
-        ecrRepo = ecrRepo,
-        capabilities = capabilities,
-        parameters = parameters
+        settings = settings
     )
 
     override fun handleSuccessResult(output: String, messageEmitter: MessageEmitter, context: Context) {

@@ -20,7 +20,7 @@ import software.aws.toolkits.jetbrains.services.cloudformation.SamFunction
 import software.aws.toolkits.jetbrains.services.lambda.execution.sam.ImageDebugSupport
 import software.aws.toolkits.jetbrains.services.lambda.sam.SamTemplateUtils
 import software.aws.toolkits.jetbrains.services.lambda.sam.SamTemplateUtils.getFunctionEnvironmentVariables
-import software.aws.toolkits.jetbrains.ui.EnvironmentVariablesTextField
+import software.aws.toolkits.jetbrains.ui.KeyValueTextField
 import software.aws.toolkits.jetbrains.ui.ProjectFileBrowseListener
 import software.aws.toolkits.jetbrains.utils.ui.find
 import software.aws.toolkits.jetbrains.utils.ui.selected
@@ -42,7 +42,7 @@ class TemplateSettings(val project: Project) {
         private set
     private lateinit var functionModels: DefaultComboBoxModel<Function>
     private lateinit var imageSettingsPanel: JPanel
-    lateinit var environmentVariables: EnvironmentVariablesTextField
+    lateinit var environmentVariables: KeyValueTextField
         private set
     lateinit var imageDebugger: JComboBox<ImageDebugSupport>
         private set
@@ -94,7 +94,7 @@ class TemplateSettings(val project: Project) {
     private fun createUIComponents() {
         functionModels = DefaultComboBoxModel()
         function = ComboBox(functionModels)
-        environmentVariables = EnvironmentVariablesTextField()
+        environmentVariables = KeyValueTextField()
         imageDebuggerModel = SortedComboBoxModel(compareBy(Comparator.naturalOrder()) { it: ImageDebugSupport -> it.displayName() })
         imageDebugger = ComboBox(imageDebuggerModel)
         imageDebugger.renderer = SimpleListCellRenderer.create { label, value, _ -> label.text = value?.displayName() }

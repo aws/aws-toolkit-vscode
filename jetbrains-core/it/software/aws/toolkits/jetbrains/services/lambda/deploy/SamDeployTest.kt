@@ -13,6 +13,7 @@ import org.junit.Test
 import software.amazon.awssdk.regions.Region
 import software.amazon.awssdk.services.cloudformation.CloudFormationClient
 import software.amazon.awssdk.services.cloudformation.model.Parameter
+import software.amazon.awssdk.services.cloudformation.model.Tag
 import software.amazon.awssdk.services.ecr.EcrClient
 import software.amazon.awssdk.services.s3.S3Client
 import software.aws.toolkits.core.region.AwsRegion
@@ -102,7 +103,7 @@ class SamDeployTest {
         val stackName = "SamDeployTest-${UUID.randomUUID()}"
         val templateFile = setUpProject(largeTemplateLocation)
         runAssertsAndClean(stackName) {
-            val changeSetArn = createChangeSet(templateFile, stackName, mapOf("InstanceType" to "t2.small"), false)
+            val changeSetArn = createChangeSet(templateFile, stackName, hasImage = false, parameters = mapOf("InstanceType" to "t2.small"))
 
             assertThat(changeSetArn).isNotNull()
 
@@ -126,7 +127,7 @@ class SamDeployTest {
         val stackName = "SamDeployTest-${UUID.randomUUID()}"
         val templateFile = setUpProject()
         runAssertsAndClean(stackName) {
-            val changeSetArn = createChangeSet(templateFile, stackName, mapOf("TestParameter" to "FooBar"), false)
+            val changeSetArn = createChangeSet(templateFile, stackName, hasImage = false, parameters = mapOf("TestParameter" to "FooBar"))
 
             assertThat(changeSetArn).isNotNull()
 
@@ -169,6 +170,51 @@ class SamDeployTest {
         }
     }
 
+    @Test
+    fun deployAppUsingSamWithTags() {
+        val stackName = "SamDeployTest-${UUID.randomUUID()}"
+        val templateFile = setUpProject()
+        runAssertsAndClean(stackName) {
+            val changeSetArn = createChangeSet(
+                templateFile, stackName, hasImage = false,
+                tags = mapOf(
+                    "TestTag" to "FooBar",
+                    "some:gross" to "tag name and value",
+                    // SAM test cases https://github.com/aws/aws-sam-cli/pull/1798/files
+                    "a+-=._:/@" to "b+-=._:/@",
+                    "--c=" to "=d/"
+                )
+            )
+
+            assertThat(changeSetArn).isNotNull()
+
+            val describeChangeSetResponse = cfnClient.describeChangeSet {
+                it.stackName(stackName)
+                it.changeSetName(changeSetArn)
+            }
+
+            assertThat(describeChangeSetResponse).isNotNull
+            assertThat(describeChangeSetResponse.tags()).containsExactlyInAnyOrder(
+                Tag.builder()
+                    .key("TestTag")
+                    .value("FooBar")
+                    .build(),
+                Tag.builder()
+                    .key("some:gross")
+                    .value("tag name and value")
+                    .build(),
+                Tag.builder()
+                    .key("a+-=._:/@")
+                    .value("b+-=._:/@")
+                    .build(),
+                Tag.builder()
+                    .key("--c=")
+                    .value("=d/")
+                    .build()
+            )
+        }
+    }
+
     private fun setUpProject(templateFilePath: String? = null): VirtualFile {
         projectRule.fixture.addFileToProject(
             "hello_world/app.py",
@@ -202,7 +248,7 @@ class SamDeployTest {
                     Properties:
                       Handler: hello_world/app.lambda_handler
                       CodeUri: .
-                      Runtime: python2.7
+                      Runtime: python3.8
                       Timeout: 900
                 """.trimIndent()
             ).virtualFile
@@ -211,7 +257,13 @@ class SamDeployTest {
         }
     }
 
-    private fun createChangeSet(templateFile: VirtualFile, stackName: String, parameters: Map<String, String> = emptyMap(), hasImage: Boolean): String? =
+    private fun createChangeSet(
+        templateFile: VirtualFile,
+        stackName: String,
+        hasImage: Boolean,
+        parameters: Map<String, String> = emptyMap(),
+        tags: Map<String, String> = emptyMap()
+    ): String? =
         runUnderRealCredentials(projectRule.project) {
             var changeSetArn: String? = null
             val deployDialog = runInEdtAndGet {
@@ -220,13 +272,17 @@ class SamDeployTest {
                     message("serverless.application.deploy_in_progress.title", stackName),
                     createDeployWorkflow(
                         projectRule.project,
-                        stackName,
                         templateFile,
-                        bucketRule.createBucket(stackName),
-                        if (hasImage) repositoryRule.createRepository(stackName).repositoryUri() else null,
-                        true,
-                        parameters,
-                        CreateCapabilities.values().toList()
+                        DeployServerlessApplicationSettings(
+                            stackName = stackName,
+                            bucket = bucketRule.createBucket(stackName),
+                            ecrRepo = if (hasImage) repositoryRule.createRepository(stackName).repositoryUri() else null,
+                            autoExecute = true,
+                            parameters = parameters,
+                            tags = tags,
+                            useContainer = false,
+                            capabilities = CreateCapabilities.values().toList()
+                        )
                     ),
                     stackName
                 )
