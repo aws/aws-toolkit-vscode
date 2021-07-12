@@ -1,4 +1,0 @@
-{
-  "type" : "bugfix",
-  "description" : "Improved performance of listing S3 buckets in certain situations"
-}
