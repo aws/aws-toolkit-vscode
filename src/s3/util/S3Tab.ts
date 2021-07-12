@@ -9,6 +9,7 @@ import { ext } from '../../shared/extensionGlobals'
 import { showOutputMessage } from '../../shared/utilities/messages'
 import { getLogger } from '../../shared/logger'
 import * as testutil from '../../test/testUtil'
+import { readFileAsString } from '../../shared/filesystemUtilities'
 
 const fs = require('fs')
 
@@ -32,11 +33,21 @@ export class S3Tab {
     }
 
     async display() {
-        const startState = new ReadOnlyState(this.fileUri)
-        await startState.openFile(this.context, this.window)
+        //const startState = new ReadOnlyState(this.fileUri)
+        // await startState.openFile(this.context, this.window)
         //This only displays textDocuments
         //const doc = await vscode.workspace.openTextDocument(this.fileUri)
         //this.window.showTextDocument(this.fileUri)
+    }
+
+    async openFileOnReadOnly(context: Context, window: typeof vscode.window) {
+        const s3Uri = vscode.Uri.parse('s3:' + this.fileUri.fsPath)
+        //this.fileUri.scheme = 's3'
+        //window.showTextDocument(this.fileUri)
+        //testutil.toFile('bogus', tempFile.fsPath)
+        const doc = await vscode.workspace.openTextDocument(s3Uri) // calls back into the provider
+        //vscode.languages.setTextDocumentLanguage(doc, 'txt')
+        await vscode.window.showTextDocument(doc, { preview: false })
     }
 
     //onPressedButton = change state, how to do this?
@@ -50,7 +61,8 @@ export class S3DocumentProvider implements vscode.TextDocumentContentProvider {
         //const fileStr = {data: ''}
         let data: any
         try {
-            data = await fs.readFileSync(uri.fsPath)
+            //data = await fs.readFileSync(uri.fsPath)
+            data = await readFileAsString(uri.fsPath)
         } catch (e) {
             showOutputMessage(`${e}`, ext.outputChannel)
         }
@@ -88,9 +100,11 @@ class ReadOnlyState implements State {
     async openFile(context: Context, window: typeof vscode.window) {
         context.state = this
         //this.fileUri.scheme = 's3'
-        const content = await this.provider.provideTextDocumentContent(this.s3Uri)
         //window.showTextDocument(this.fileUri)
         //testutil.toFile('bogus', tempFile.fsPath)
+        const doc = await vscode.workspace.openTextDocument(this.s3Uri) // calls back into the provider
+        //vscode.languages.setTextDocumentLanguage(doc, 'txt')
+        await vscode.window.showTextDocument(doc, { preview: false })
     }
 }
 
