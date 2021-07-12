@@ -126,7 +126,7 @@ export class S3FileViewerManager {
         return targetLocation
     }
 
-    async getFromTemp(fileNode: S3FileNode): Promise<vscode.Uri | undefined> {
+    public async getFromTemp(fileNode: S3FileNode): Promise<vscode.Uri | undefined> {
         const targetPath = await this.createTargetPath(fileNode)
         const targetLocation = vscode.Uri.file(targetPath)
 
@@ -187,14 +187,14 @@ export class S3FileViewerManager {
         return undefined
     }
 
-    async createTargetPath(fileNode: S3FileNode): Promise<string> {
+    public createTargetPath(fileNode: S3FileNode): Promise<string> {
         const completePath = getStringHash(readablePath(fileNode)) //TODOD:: map hashes to real name
         //completePath = completePath.slice(4) //removes 's3://' from path
 
         //const splittedPath = completePath.split('/')
         //completePath = splittedPath.join('%')
 
-        return path.join(this.tempLocation!, 'S3%' + completePath)
+        return Promise.resolve(path.join(this.tempLocation!, 'S3%' + completePath))
     }
 
     async refreshNode(fileNode: S3FileNode): Promise<S3FileNode | undefined> {
@@ -215,7 +215,7 @@ export class S3FileViewerManager {
     }
 
     //TODOD:: remove helper method
-    public async listTempFolder(): Promise<void> {
+    private listTempFolder(): Promise<void> {
         getLogger().debug('-------contents in temp:')
         showOutputMessage('-------contents in temp:', this.outputChannel)
 
@@ -226,6 +226,7 @@ export class S3FileViewerManager {
 
         getLogger().debug('-------------------------')
         showOutputMessage('-------------------------', this.outputChannel)
+        return Promise.resolve()
     }
 
     public async createTemp(): Promise<void> {
