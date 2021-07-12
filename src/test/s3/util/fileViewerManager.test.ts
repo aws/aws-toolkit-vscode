@@ -58,9 +58,7 @@ describe('FileViewerManager', function () {
         testutil.toFile('bogus', tempFile.fsPath)
     })
 
-    describe('retrieves file from s3 if not in temp or invalid date', function () {
-        this.beforeEach(function () {})
-
+    describe('retrieves file from s3 if not in temp or invalid date', async function () {
         it('prompts if file has no specified size', async function () {
             when(window.showInformationMessage(anything(), anything(), anything())).thenReturn(
                 Promise.resolve('Cancel')

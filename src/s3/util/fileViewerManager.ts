@@ -4,6 +4,7 @@
  */
 import * as path from 'path'
 import * as vscode from 'vscode'
+import * as fs from 'fs'
 import { OutputChannel } from 'vscode'
 import { ext } from '../../shared/extensionGlobals'
 import { makeTemporaryToolkitFolder } from '../../shared/filesystemUtilities'
@@ -17,7 +18,6 @@ import { getLogger } from '../../shared/logger'
 import { showConfirmationMessage } from '../../shared/utilities/messages'
 import { localize } from '../../shared/utilities/vsCodeUtils'
 
-const fs = require('fs')
 const SIZE_LIMIT = 4 * Math.pow(10, 6)
 
 export class S3FileViewerManager {
