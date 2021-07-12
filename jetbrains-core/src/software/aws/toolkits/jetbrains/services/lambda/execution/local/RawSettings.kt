@@ -11,8 +11,8 @@ import software.aws.toolkits.jetbrains.services.lambda.LambdaBuilder
 import software.aws.toolkits.jetbrains.services.lambda.LambdaWidgets.lambdaMemory
 import software.aws.toolkits.jetbrains.services.lambda.LambdaWidgets.lambdaTimeout
 import software.aws.toolkits.jetbrains.services.lambda.RuntimeGroup
-import software.aws.toolkits.jetbrains.ui.EnvironmentVariablesTextField
 import software.aws.toolkits.jetbrains.ui.HandlerPanel
+import software.aws.toolkits.jetbrains.ui.KeyValueTextField
 import software.aws.toolkits.jetbrains.ui.SliderPanel
 import java.util.Comparator
 import javax.swing.JComboBox
@@ -29,7 +29,7 @@ class RawSettings(private val project: Project) {
         private set
     lateinit var memorySlider: SliderPanel
         private set
-    lateinit var environmentVariables: EnvironmentVariablesTextField
+    lateinit var environmentVariables: KeyValueTextField
         private set
     lateinit var runtimeModel: SortedComboBoxModel<Runtime>
         private set
@@ -42,7 +42,7 @@ class RawSettings(private val project: Project) {
         handlerPanel = HandlerPanel(project)
         timeoutSlider = lambdaTimeout()
         memorySlider = lambdaMemory()
-        environmentVariables = EnvironmentVariablesTextField()
+        environmentVariables = KeyValueTextField()
     }
 
     init {

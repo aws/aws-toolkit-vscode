@@ -3,9 +3,6 @@
 
 package software.aws.toolkits.jetbrains.services.lambda.deploy
 
-import com.intellij.execution.util.EnvVariablesTable
-import com.intellij.execution.util.EnvironmentVariable
-import com.intellij.openapi.application.ApplicationManager
 import com.intellij.openapi.application.ModalityState
 import com.intellij.openapi.application.runInEdt
 import com.intellij.openapi.module.ModuleUtilCore
@@ -14,10 +11,8 @@ import com.intellij.openapi.ui.DialogPanel
 import com.intellij.openapi.ui.DialogWrapper
 import com.intellij.openapi.ui.ValidationInfo
 import com.intellij.openapi.vfs.VirtualFile
-import com.intellij.ui.IdeBorderFactory
 import com.intellij.ui.MutableCollectionComboBoxModel
 import com.intellij.ui.SimpleListCellRenderer
-import com.intellij.ui.ToolbarDecorator
 import com.intellij.ui.layout.applyToComponent
 import com.intellij.ui.layout.buttonGroup
 import com.intellij.ui.layout.panel
@@ -27,6 +22,7 @@ import com.intellij.util.text.nullize
 import org.jetbrains.annotations.TestOnly
 import software.amazon.awssdk.services.cloudformation.CloudFormationClient
 import software.amazon.awssdk.services.cloudformation.model.StackSummary
+import software.amazon.awssdk.services.cloudformation.model.Tag
 import software.amazon.awssdk.services.ecr.EcrClient
 import software.amazon.awssdk.services.lambda.model.PackageType
 import software.amazon.awssdk.services.s3.S3Client
@@ -46,11 +42,13 @@ import software.aws.toolkits.jetbrains.services.s3.CreateS3BucketDialog
 import software.aws.toolkits.jetbrains.services.s3.resources.S3Resources
 import software.aws.toolkits.jetbrains.settings.DeploySettings
 import software.aws.toolkits.jetbrains.settings.relativeSamPath
+import software.aws.toolkits.jetbrains.ui.KeyValueTextField
 import software.aws.toolkits.jetbrains.ui.ResourceSelector
 import software.aws.toolkits.jetbrains.utils.ui.find
 import software.aws.toolkits.jetbrains.utils.ui.installOnParent
 import software.aws.toolkits.jetbrains.utils.ui.toolTipText
 import software.aws.toolkits.jetbrains.utils.ui.validationInfo
+import software.aws.toolkits.jetbrains.utils.ui.withBinding
 import software.aws.toolkits.resources.message
 import java.awt.Component
 import java.util.regex.PatternSyntaxException
@@ -61,6 +59,7 @@ data class DeployServerlessApplicationSettings(
     val ecrRepo: String?,
     val autoExecute: Boolean,
     val parameters: Map<String, String>,
+    val tags: Map<String, String>,
     val useContainer: Boolean,
     val capabilities: List<CreateCapabilities>
 )
@@ -74,7 +73,8 @@ class DeployServerlessApplicationDialog(
     private var newStackName: String = ""
     private var requireReview: Boolean = false
     private var deployType: DeployType = DeployType.CREATE
-    private var templateParameters: List<EnvironmentVariable> = emptyList()
+    private var templateParameters: Map<String, String> = emptyMap()
+    private var tags: Map<String, String> = emptyMap()
     private var showImageOptions: Boolean = false
 
     // non-dsl components
@@ -110,7 +110,8 @@ class DeployServerlessApplicationDialog(
         }
         .build()
 
-    private var environmentVariablesTable = EnvVariablesTable()
+    private val parametersField = KeyValueTextField()
+    private val tagsField = KeyValueTextField()
     private val capabilitiesSelector = CapabilitiesEnumCheckBoxes()
 
     private var templateFileParameters = CloudFormationTemplate.parse(project, templateFile).parameters().toList()
@@ -136,8 +137,8 @@ class DeployServerlessApplicationDialog(
             deployType = DeployType.UPDATE
             stackSelector.selectedItem { it.stackName() == stackName }
             // async populate parameters from remote
-            refreshTemplateParameters(stackName)
-        } ?: refreshTemplateParameters()
+            refreshTemplateParametersAndTags(stackName)
+        } ?: refreshTemplateParametersAndTags()
 
         s3BucketSelector.selectedItem = settings?.samBucketName(samPath)
         requireReview = !(settings?.samAutoExecute(samPath) ?: true)
@@ -162,7 +163,8 @@ class DeployServerlessApplicationDialog(
             null
         },
         autoExecute = !requireReview,
-        parameters = templateParameters.map { envVar -> envVar.name to envVar.value }.toMap(),
+        parameters = templateParameters,
+        tags = tags,
         useContainer = useContainer,
         capabilities = capabilitiesSelector.selected
     )
@@ -183,7 +185,7 @@ class DeployServerlessApplicationDialog(
                     ).toolTipText(message("serverless.application.deploy.tooltip.createStack"))
 
                     createStackButton.selected.addListener {
-                        refreshTemplateParameters()
+                        refreshTemplateParametersAndTags()
                     }
 
                     textField(::newStackName)
@@ -208,7 +210,7 @@ class DeployServerlessApplicationDialog(
                     ).toolTipText(message("serverless.application.deploy.tooltip.updateStack"))
 
                     updateStackButton.selected.addListener {
-                        refreshTemplateParameters()
+                        refreshTemplateParametersAndTags()
                     }
 
                     stackSelector()
@@ -223,36 +225,18 @@ class DeployServerlessApplicationDialog(
             }
 
             // stack parameters
-            row {
-                cell(isFullWidth = true) {
-                    if (ApplicationManager.getApplication().isUnitTestMode) {
-                        // dialog can't be created in test mode since there's a lot of magic happening to the dialog, so insert a dummy to test validation logic
-                        label("dummy").withValidationOnApply { validateParameters() }
-                        return@cell
-                    }
+            row(message("serverless.application.deploy.template.parameters")) {
+                parametersField()
+                    .withBinding(::templateParameters.toBinding())
+                    .toolTipText(message("serverless.application.deploy.tooltip.template.parameters"))
+                    .withValidationOnApply { validateParameters(it) }
+            }
 
-                    val tableComponent = environmentVariablesTable.component
-                    ToolbarDecorator.findAddButton(tableComponent)?.isVisible = false
-                    ToolbarDecorator.findRemoveButton(tableComponent)?.isVisible = false
-                    ToolbarDecorator.findEditButton(tableComponent)?.isVisible = false
-
-                    tableComponent()
-                        .withBinding(
-                            componentGet = { _ ->
-                                environmentVariablesTable.stopEditing()
-                                environmentVariablesTable.environmentVariables
-                            },
-                            componentSet = { _, value ->
-                                environmentVariablesTable.setValues(value)
-                            },
-                            ::templateParameters.toBinding()
-                        )
-                        .toolTipText(message("serverless.application.deploy.tooltip.template.parameters"))
-                        .applyToComponent {
-                            border = IdeBorderFactory.createTitledBorder(message("serverless.application.deploy.template.parameters"), false)
-                        }
-                        .withValidationOnApply { validateParameters() }
-                }
+            // deploy tags
+            val tagsString = message("tags.title")
+            row(tagsString) {
+                tagsField()
+                    .withBinding(::tags.toBinding())
             }
 
             // s3 bucket
@@ -339,24 +323,25 @@ class DeployServerlessApplicationDialog(
             }
         }
 
-    private fun refreshTemplateParameters(updateStackName: String? = null) {
+    private fun refreshTemplateParametersAndTags(stackName: String? = null) {
         when (deployType.name) {
             DeployType.CREATE.name -> {
                 populateParameters(templateFileParameters)
             }
 
             DeployType.UPDATE.name -> {
-                val stackName = updateStackName ?: stackSelector.selected()?.stackName()
-                if (stackName == null) {
+                val selectedStackName = stackName ?: stackSelector.selected()?.stackName()
+                if (selectedStackName == null) {
                     populateParameters(emptyList())
                 } else {
-                    cloudFormationClient.describeStack(stackName) {
+                    cloudFormationClient.describeStack(selectedStackName) {
                         it?.let {
                             runInEdt(ModalityState.any()) {
                                 // This check is here in-case createStack was selected before we got this update back
                                 // TODO: should really create a queuing pattern here so we can cancel on user-action
                                 if (deployType == DeployType.UPDATE) {
                                     populateParameters(templateFileParameters.mergeRemoteParameters(it.parameters()))
+                                    populateTags(it.tags())
                                 }
                             }
                         } ?: populateParameters(templateFileParameters)
@@ -383,9 +368,9 @@ class DeployServerlessApplicationDialog(
         return null
     }
 
-    private fun validateParameters(): ValidationInfo? {
+    private fun validateParameters(parametersComponent: KeyValueTextField): ValidationInfo? {
         // validate on ui element because value hasn't been committed yet
-        val parameters = environmentVariablesTable.environmentVariables.map { it.name to it.value }.toMap()
+        val parameters = parametersComponent.envVars
         val parameterDeclarations = templateFileParameters.associateBy { it.logicalName }
 
         val invalidParameters = parameters.entries.mapNotNull { (name, value) ->
@@ -472,19 +457,13 @@ class DeployServerlessApplicationDialog(
 
     // visible for testing
     internal fun populateParameters(parameters: List<Parameter>, templateFileDeclarationOverrides: List<Parameter>? = null) {
-        val values = parameters.map { parameter: Parameter ->
-            object : EnvironmentVariable(
-                parameter.logicalName,
-                parameter.defaultValue(),
-                false
-            ) {
-                override fun getNameIsWriteable(): Boolean = false
-                override fun getDescription(): String? = parameter.description()
-            }
-        }.toList()
-
-        environmentVariablesTable.setValues(values)
+        // TODO: would be nice to be able to pipe through the description
+        parametersField.envVars = parameters.associate { it.logicalName to (it.defaultValue() ?: "") }
         templateFileParameters = templateFileDeclarationOverrides ?: CloudFormationTemplate.parse(project, templateFile).parameters().toList()
+    }
+
+    private fun populateTags(tags: List<Tag>) {
+        tagsField.envVars = tags.associate { it.key() to it.value() }
     }
 
     companion object {

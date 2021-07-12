@@ -11,7 +11,7 @@ import software.aws.toolkits.jetbrains.core.executables.AutoResolvable
 import software.aws.toolkits.jetbrains.core.executables.ExecutableCommon
 import software.aws.toolkits.jetbrains.core.executables.ExecutableType
 import software.aws.toolkits.jetbrains.core.executables.Validatable
-import software.aws.toolkits.jetbrains.services.lambda.deploy.CreateCapabilities
+import software.aws.toolkits.jetbrains.services.lambda.deploy.DeployServerlessApplicationSettings
 import software.aws.toolkits.jetbrains.services.lambda.wizard.AppBasedImageTemplate
 import software.aws.toolkits.jetbrains.services.lambda.wizard.AppBasedZipTemplate
 import software.aws.toolkits.jetbrains.services.lambda.wizard.LocationBasedTemplate
@@ -147,12 +147,8 @@ fun GeneralCommandLine.samPackageCommand(
 
 fun GeneralCommandLine.samDeployCommand(
     environmentVariables: Map<String, String>,
-    stackName: String,
     templatePath: Path,
-    parameters: Map<String, String>,
-    capabilities: List<CreateCapabilities>,
-    s3Bucket: String,
-    ecrRepo: String? = null
+    settings: DeployServerlessApplicationSettings
 ) = this.apply {
     withEnvironment(environmentVariables)
     withWorkDirectory(templatePath.parent.toAbsolutePath().toString())
@@ -161,25 +157,35 @@ fun GeneralCommandLine.samDeployCommand(
     addParameter("--template-file")
     addParameter(templatePath.toString())
     addParameter("--stack-name")
-    addParameter(stackName)
+    addParameter(settings.stackName)
     addParameter("--s3-bucket")
-    addParameter(s3Bucket)
-    ecrRepo?.let {
+    addParameter(settings.bucket)
+    settings.ecrRepo?.let {
         addParameter("--image-repository")
-        addParameter(ecrRepo)
+        addParameter(it)
     }
 
-    if (capabilities.isNotEmpty()) {
+    if (settings.capabilities.isNotEmpty()) {
         addParameter("--capabilities")
-        addParameters(capabilities.map { it.capability })
+        addParameters(settings.capabilities.map { it.capability })
     }
 
     addParameter("--no-execute-changeset")
 
-    if (parameters.isNotEmpty()) {
+    if (settings.parameters.isNotEmpty()) {
         addParameter("--parameter-overrides")
         // Even though keys must be alphanumeric, escape it so that it is "valid" enough so that CFN can return a validation error instead of us failing
-        parameters.forEach { (key, value) ->
+        settings.parameters.forEach { (key, value) ->
+            addParameter(
+                "${escapeParameter(key)}=${escapeParameter(value)}"
+            )
+        }
+    }
+
+    if (settings.tags.isNotEmpty()) {
+        addParameter("--tags")
+        // Even though keys must be alphanumeric, escape it so that it is "valid" enough so that CFN can return a validation error instead of us failing
+        settings.tags.forEach { (key, value) ->
             addParameter(
                 "${escapeParameter(key)}=${escapeParameter(value)}"
             )

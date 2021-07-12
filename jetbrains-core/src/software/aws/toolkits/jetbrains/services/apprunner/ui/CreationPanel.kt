@@ -21,7 +21,7 @@ import software.aws.toolkits.jetbrains.services.apprunner.resources.AppRunnerRes
 import software.aws.toolkits.jetbrains.services.iam.CreateIamServiceRoleDialog
 import software.aws.toolkits.jetbrains.services.iam.IamResources
 import software.aws.toolkits.jetbrains.services.iam.IamRole
-import software.aws.toolkits.jetbrains.ui.EnvironmentVariablesTextField
+import software.aws.toolkits.jetbrains.ui.KeyValueTextField
 import software.aws.toolkits.jetbrains.ui.ResourceSelector
 import software.aws.toolkits.jetbrains.utils.toHumanReadable
 import software.aws.toolkits.jetbrains.utils.ui.contextualHelp
@@ -38,7 +38,7 @@ class CreationPanel(private val project: Project, ecrUri: String? = null) {
         val cpuValues = listOf("1 vCPU", "2 vCPU")
     }
 
-    val environmentVariables = EnvironmentVariablesTextField()
+    val environmentVariables = KeyValueTextField()
     lateinit var connection: ResourceSelector<ConnectionSummary>
         private set
     lateinit var ecrPolicy: ResourceSelector<IamRole>

@@ -10,6 +10,7 @@ import org.junit.Test
 import org.junit.rules.TemporaryFolder
 import software.aws.toolkits.core.lambda.LambdaRuntime
 import software.aws.toolkits.jetbrains.services.lambda.deploy.CreateCapabilities
+import software.aws.toolkits.jetbrains.services.lambda.deploy.DeployServerlessApplicationSettings
 import software.aws.toolkits.jetbrains.services.lambda.wizard.AppBasedImageTemplate
 import software.aws.toolkits.jetbrains.services.lambda.wizard.AppBasedZipTemplate
 import software.aws.toolkits.jetbrains.services.lambda.wizard.LocationBasedTemplate
@@ -281,10 +282,16 @@ class SamExecutableTest {
         val cmd = GeneralCommandLine("sam").samDeployCommand(
             environmentVariables = mapOf("Foo" to "Bar"),
             templatePath = templatePath,
-            stackName = "MyStack",
-            parameters = emptyMap(),
-            capabilities = listOf(CreateCapabilities.IAM, CreateCapabilities.NAMED_IAM),
-            s3Bucket = "myBucket"
+            DeployServerlessApplicationSettings(
+                stackName = "MyStack",
+                bucket = "myBucket",
+                ecrRepo = null,
+                autoExecute = true,
+                parameters = emptyMap(),
+                tags = emptyMap(),
+                useContainer = false,
+                capabilities = listOf(CreateCapabilities.IAM, CreateCapabilities.NAMED_IAM)
+            )
         )
 
         assertThat(cmd.commandLineString).isEqualTo(
@@ -315,16 +322,22 @@ class SamExecutableTest {
         val cmd = GeneralCommandLine("sam").samDeployCommand(
             environmentVariables = emptyMap(),
             templatePath = templatePath,
-            stackName = "MyStack",
-            parameters = mapOf(
-                "Hello1" to "World",
-                "Hello2" to "Wor ld",
-                "Hello3" to "\"Wor ld\"",
-                "Hello4" to "It's",
-                "Hello5" to "2+2=22"
-            ),
-            capabilities = emptyList(),
-            s3Bucket = "myBucket"
+            DeployServerlessApplicationSettings(
+                stackName = "MyStack",
+                bucket = "myBucket",
+                ecrRepo = null,
+                autoExecute = true,
+                parameters = mapOf(
+                    "Hello1" to "World",
+                    "Hello2" to "Wor ld",
+                    "Hello3" to "\"Wor ld\"",
+                    "Hello4" to "It's",
+                    "Hello5" to "2+2=22"
+                ),
+                tags = emptyMap(),
+                useContainer = false,
+                capabilities = emptyList()
+            )
         )
 
         assertThat(cmd.commandLineString).isEqualTo(
@@ -344,6 +357,53 @@ class SamExecutableTest {
                 """ "\"Hello3\"='\"Wor ld\"'" """.trim(),
                 """ \"Hello4\"=\"It's\" """.trim(),
                 """ \"Hello5\"=\"2+2=22\" """.trim()
+            ).joinToString(separator = " ")
+        )
+    }
+
+    @Test
+    fun `sam deploy with tags are correct`() {
+        val templatePath = tempFolder.newFile("template.yaml").toPath()
+        val cmd = GeneralCommandLine("sam").samDeployCommand(
+            environmentVariables = emptyMap(),
+            templatePath = templatePath,
+            DeployServerlessApplicationSettings(
+                stackName = "MyStack",
+                bucket = "myBucket",
+                ecrRepo = null,
+                autoExecute = true,
+                parameters = emptyMap(),
+                tags = mapOf(
+                    "Hello1" to "World",
+                    "Hello2" to "Wor ld",
+                    "Hello3" to "\"Wor ld\"",
+                    "Hello4" to "It's",
+                    "Hello5" to "2+2=22",
+                    "Hello;6" to "World",
+                ),
+                useContainer = false,
+                capabilities = emptyList()
+            )
+        )
+
+        assertThat(cmd.commandLineString).isEqualTo(
+            listOf(
+                "sam",
+                "deploy",
+                "--template-file",
+                "$templatePath",
+                "--stack-name",
+                "MyStack",
+                "--s3-bucket",
+                "myBucket",
+                "--no-execute-changeset",
+                "--tags",
+                """ \"Hello1\"=\"World\" """.trim(),
+                """ "\"Hello2\"=\"Wor ld\"" """.trim(),
+                """ "\"Hello3\"='\"Wor ld\"'" """.trim(),
+                """ \"Hello4\"=\"It's\" """.trim(),
+                """ \"Hello5\"=\"2+2=22\" """.trim(),
+                """ \"Hello;6\"=\"World\" """.trim(),
             ).joinToString(separator = " ")
         )
     }

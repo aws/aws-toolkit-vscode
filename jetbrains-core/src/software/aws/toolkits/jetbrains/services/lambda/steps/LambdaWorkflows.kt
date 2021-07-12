@@ -9,7 +9,7 @@ import software.aws.toolkits.jetbrains.core.awsClient
 import software.aws.toolkits.jetbrains.core.credentials.AwsConnectionManager
 import software.aws.toolkits.jetbrains.core.credentials.toEnvironmentVariables
 import software.aws.toolkits.jetbrains.core.utils.buildList
-import software.aws.toolkits.jetbrains.services.lambda.deploy.CreateCapabilities
+import software.aws.toolkits.jetbrains.services.lambda.deploy.DeployServerlessApplicationSettings
 import software.aws.toolkits.jetbrains.services.lambda.execution.sam.ValidateDocker
 import software.aws.toolkits.jetbrains.services.lambda.sam.SamCommon
 import software.aws.toolkits.jetbrains.services.lambda.sam.SamOptions
@@ -199,13 +199,8 @@ fun updateLambdaCodeWorkflowForImage(
 
 fun createDeployWorkflow(
     project: Project,
-    stackName: String,
     template: VirtualFile,
-    s3Bucket: String,
-    ecrRepo: String?,
-    useContainer: Boolean,
-    parameters: Map<String, String>,
-    capabilities: List<CreateCapabilities>
+    settings: DeployServerlessApplicationSettings
 ): StepWorkflow {
     val envVars = createAwsEnvVars(project)
     val region = AwsConnectionManager.getInstance(project).activeRegion
@@ -218,7 +213,7 @@ fun createDeployWorkflow(
 
     return StepWorkflow(
         buildList {
-            if (useContainer) {
+            if (settings.useContainer) {
                 add(ValidateDocker())
             }
 
@@ -229,7 +224,7 @@ fun createDeployWorkflow(
                         logicalId = null,
                         buildDir = buildDir,
                         buildEnvVars = envVars,
-                        samOptions = SamOptions(buildInContainer = useContainer)
+                        samOptions = SamOptions(buildInContainer = settings.useContainer)
                     )
                 )
             )
@@ -239,20 +234,16 @@ fun createDeployWorkflow(
                     packagedTemplatePath = packagedTemplate,
                     logicalId = null,
                     envVars = envVars,
-                    s3Bucket = s3Bucket,
-                    ecrRepo = ecrRepo
+                    s3Bucket = settings.bucket,
+                    ecrRepo = settings.ecrRepo
                 )
             )
             add(
                 DeployLambda(
                     packagedTemplateFile = packagedTemplate,
-                    stackName = stackName,
-                    ecrRepo = ecrRepo,
-                    s3Bucket = s3Bucket,
-                    capabilities = capabilities,
-                    parameters = parameters,
+                    region = region,
                     envVars = envVars,
-                    region = region
+                    settings = settings
                 )
             )
         }

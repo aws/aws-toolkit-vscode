@@ -119,25 +119,20 @@ class DeployServerlessApplicationAction : AnAction(
                 val settings = stackDialog.settings()
                 saveSettings(project, templateFile, settings)
 
-                val stackName = settings.stackName
-                continueDeployment(project, stackName, templateFile, settings)
+                continueDeployment(project, templateFile, settings)
             }
         }
     }
 
-    private fun continueDeployment(project: Project, stackName: String, templateFile: VirtualFile, settings: DeployServerlessApplicationSettings) {
+    private fun continueDeployment(project: Project, templateFile: VirtualFile, settings: DeployServerlessApplicationSettings) {
+        val stackName = settings.stackName
         val workflow = StepExecutor(
             project,
             message("serverless.application.deploy_in_progress.title", stackName),
             createDeployWorkflow(
                 project,
-                stackName,
                 templateFile,
-                settings.bucket,
-                settings.ecrRepo,
-                settings.useContainer,
-                settings.parameters,
-                settings.capabilities
+                settings
             ),
             stackName
         )
