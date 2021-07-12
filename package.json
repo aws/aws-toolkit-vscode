@@ -704,6 +704,10 @@
                     "when": "resourceScheme == awsCloudWatchLogs"
                 },
                 {
+                    "command": "aws.s3.openFileEditMode",
+                    "when": "resourceScheme == s3"
+                },
+                {
                     "command": "aws.cloudWatchLogs.viewLogStream",
                     "when": "false"
                 },
@@ -752,6 +756,10 @@
                     "when": "false"
                 },
                 {
+                    "command": "aws.s3.openFileEditMode",
+                    "when": "false"
+                },
+                {
                     "command": "aws.s3.uploadFileToParent",
                     "when": "false"
                 },
@@ -789,6 +797,11 @@
                 {
                     "command": "aws.saveCurrentLogStreamContent",
                     "when": "resourceScheme == awsCloudWatchLogs",
+                    "group": "navigation"
+                },
+                {
+                    "command": "aws.s3.openFileEditMode",
+                    "when": "resourceScheme == s3",
                     "group": "navigation"
                 },
                 {
@@ -1304,6 +1317,17 @@
                 "title": "%AWS.command.s3.openFile%",
                 "category": "%AWS.title%",
                 "icon": "$(open-preview)",
+                "cloud9": {
+                    "cn": {
+                        "category": "%AWS.title.cn%"
+                    }
+                }
+            },
+            {
+                "command": "aws.s3.openFileEditMode",
+                "title": "%AWS.command.s3.openFileEditMode%",
+                "category": "%AWS.title%",
+                "icon": "$(edit)",
                 "cloud9": {
                     "cn": {
                         "category": "%AWS.title.cn%"

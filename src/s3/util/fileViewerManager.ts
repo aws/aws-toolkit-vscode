@@ -23,7 +23,7 @@ const SIZE_LIMIT = 4 * Math.pow(10, 6)
 
 export class S3FileViewerManager {
     private cacheArns: Set<string>
-    private activeTabs: Set<S3Tab>
+    private activeTabs: Map<string, S3Tab>
     private window: typeof vscode.window
     private outputChannel: OutputChannel
     private commands: Commands
@@ -36,7 +36,7 @@ export class S3FileViewerManager {
         tempLocation?: string
     ) {
         this.cacheArns = cacheArn
-        this.activeTabs = new Set<S3Tab>()
+        this.activeTabs = new Map<string, S3Tab>()
         this.window = window
         this.commands = commands
         this.tempLocation = tempLocation
@@ -58,10 +58,22 @@ export class S3FileViewerManager {
         showOutputMessage(`file to be opened is: ${fileLocation}`, this.outputChannel)
         //TODOD:: delegate this logic to S3Tab.ts
         //this will display the document at the end
-        //await this.listTempFolder()
+        await this.listTempFolder()
         const newTab = new S3Tab(fileLocation)
         await newTab.openFileOnReadOnly(this.window)
-        this.activeTabs.add(newTab)
+        this.activeTabs.set(fileLocation.fsPath, newTab)
+    }
+
+    public async openCurrentOnEdit(s3Uri?: vscode.Uri): Promise<void> {
+        if (!s3Uri) {
+            return //TODOD:: why would it ever be undefined?
+        }
+        const tab = this.activeTabs.get(s3Uri.fsPath)
+
+        //close read-only tab
+
+        //open on edit mode
+        await tab?.openFileOnEditMode(this.window)
     }
 
     /**
@@ -198,7 +210,7 @@ export class S3FileViewerManager {
         //const splittedPath = completePath.split('/')
         //completePath = splittedPath.join('%')
 
-        return Promise.resolve(path.join(this.tempLocation!, 'S3%' + completePath))
+        return Promise.resolve(path.join(this.tempLocation!, 'S3=' + completePath))
     }
 
     async refreshNode(fileNode: S3FileNode): Promise<S3FileNode | undefined> {
@@ -218,13 +230,12 @@ export class S3FileViewerManager {
         return fileNode
     }
 
-    /*
     //TODOD:: remove helper method
     private listTempFolder(): Promise<void> {
         getLogger().debug('-------contents in temp:')
         showOutputMessage('-------contents in temp:', this.outputChannel)
 
-        fs.readdirSync(this.tempLocation).forEach((file: any) => {
+        fs.readdirSync(this.tempLocation!).forEach((file: any) => {
             showOutputMessage(` ${file}`, this.outputChannel)
             getLogger().debug(` ${file}`)
         })
@@ -232,7 +243,7 @@ export class S3FileViewerManager {
         getLogger().debug('-------------------------')
         showOutputMessage('-------------------------', this.outputChannel)
         return Promise.resolve()
-    }*/
+    }
 
     public async createTemp(): Promise<void> {
         this.tempLocation = await makeTemporaryToolkitFolder()

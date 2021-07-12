@@ -183,6 +183,7 @@
     "AWS.command.quickStart.error": "There was an error retrieving the Quick Start page",
     "AWS.command.s3.downloadFileAs": "Download As...",
     "AWS.command.s3.openFile": "Open File on Editor...",
+    "AWS.command.s3.openFileEditMode": "Edit file on S3",
     "AWS.command.s3.copyPath": "Copy Path",
     "AWS.command.s3.createBucket": "Create Bucket...",
     "AWS.command.s3.createFolder": "Create Folder...",
