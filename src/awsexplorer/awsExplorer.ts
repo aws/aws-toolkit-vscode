@@ -37,7 +37,11 @@ export class AwsExplorer implements vscode.TreeDataProvider<AWSTreeNodeBase>, Re
         localize('AWS.explorerNode.addRegion', 'Add a region to {0} Explorer...', getIdeProperties().company),
         'aws.showRegion',
         undefined,
-        localize('AWS.explorerNode.addRegion.tooltip', 'Click here to add a region to {0} Explorer.', getIdeProperties().company)
+        localize(
+            'AWS.explorerNode.addRegion.tooltip',
+            'Click here to add a region to {0} Explorer.',
+            getIdeProperties().company
+        )
     )
 
     public constructor(
@@ -51,7 +55,11 @@ export class AwsExplorer implements vscode.TreeDataProvider<AWSTreeNodeBase>, Re
         this.extContext.subscriptions.push(
             this.awsContext.onDidChangeContext(e => {
                 if (!e.accountId) {
-                    this.ROOT_NODE_SIGN_IN.label = localize('AWS.explorerNode.signIn', 'Connect to {0}...', getIdeProperties().company)
+                    this.ROOT_NODE_SIGN_IN.label = localize(
+                        'AWS.explorerNode.signIn',
+                        'Connect to {0}...',
+                        getIdeProperties().company
+                    )
                     this.ROOT_NODE_SIGN_IN.tooltip = localize(
                         'AWS.explorerNode.signIn.tooltip',
                         'Click here to select credentials for the {0} Toolkit',

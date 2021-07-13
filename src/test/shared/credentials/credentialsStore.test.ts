@@ -6,17 +6,18 @@
 import * as assert from 'assert'
 import * as sinon from 'sinon'
 import { CredentialsStore } from '../../../credentials/credentialsStore'
+import { Credentials } from '@aws-sdk/types'
 import { CredentialsProvider, CredentialsId } from '../../../credentials/providers/credentials'
 
 describe('CredentialsStore', async function () {
     let sandbox: sinon.SinonSandbox
     let sut: CredentialsStore
-    const sampleCredentials = ({} as any) as AWS.Credentials
+    const sampleCredentials = { expiration: new Date(Date.now() + 1000 * 60) } as Credentials
     const sampleCredentialsId: CredentialsId = {
         credentialSource: 'profile',
         credentialTypeId: 'someId',
     }
-    const sampleExpiredCredentials = ({ expired: true } as any) as AWS.Credentials
+    const sampleExpiredCredentials = { expiration: new Date(Date.now() - 1000 * 60) } as Credentials
 
     beforeEach(async function () {
         sandbox = sinon.createSandbox()
@@ -29,12 +30,12 @@ describe('CredentialsStore', async function () {
 
     function makeSampleCredentialsProvider(
         credentialsHashCode: number = 0,
-        testCredentials: AWS.Credentials
+        testCredentials: Credentials
     ): CredentialsProvider {
-        return ({
-            getCredentials: () => testCredentials,
+        return {
+            getCredentials: async () => testCredentials,
             getHashCode: () => credentialsHashCode,
-        } as any) as CredentialsProvider
+        } as unknown as CredentialsProvider
     }
 
     it('getCredentials returns undefined when credentials are not loaded', async function () {

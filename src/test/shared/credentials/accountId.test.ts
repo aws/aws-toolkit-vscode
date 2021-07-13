@@ -20,6 +20,9 @@ describe('getAccountId', function () {
         getCallerIdentity: () => {
             throw new Error('This test was not initialized')
         },
+        assumeRole: () => {
+            throw new Error('This test was not initialized')
+        },
     }
 
     const clientBuilder = {

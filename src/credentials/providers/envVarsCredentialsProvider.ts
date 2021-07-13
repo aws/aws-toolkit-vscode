@@ -3,7 +3,8 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
-import { Credentials, EnvironmentCredentials } from 'aws-sdk'
+import { Credentials } from '@aws-sdk/types'
+import { fromEnv } from '@aws-sdk/credential-provider-env'
 import { EnvironmentVariables } from '../../shared/environmentVariables'
 import { CredentialType } from '../../shared/telemetry/telemetry.gen'
 import { getStringHash } from '../../shared/utilities/textUtilities'
@@ -15,9 +16,7 @@ import { CredentialsId, CredentialsProvider, CredentialsProviderType } from './c
  * @see CredentialsProviderType
  */
 export class EnvVarsCredentialsProvider implements CredentialsProvider {
-    public static readonly AWS_ENV_VAR_PREFIX: string = 'AWS'
-
-    private credentials: EnvironmentCredentials | undefined
+    private credentials: Credentials | undefined
 
     public async isAvailable(): Promise<boolean> {
         const env = process.env as EnvironmentVariables
@@ -58,7 +57,7 @@ export class EnvVarsCredentialsProvider implements CredentialsProvider {
 
     public async getCredentials(): Promise<Credentials> {
         if (!this.credentials) {
-            this.credentials = new EnvironmentCredentials(EnvVarsCredentialsProvider.AWS_ENV_VAR_PREFIX)
+            this.credentials = await fromEnv()()
         }
         return this.credentials
     }

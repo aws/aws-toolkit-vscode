@@ -3,7 +3,7 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
-import {  CredentialsProvider, CredentialsProviderType , CredentialsId, isEqual } from './credentials'
+import { CredentialsProvider, CredentialsProviderType, CredentialsId, isEqual } from './credentials'
 
 /**
  * Responsible for producing CredentialsProvider objects for a Credential Type
@@ -19,7 +19,8 @@ export interface CredentialsProviderFactory {
 }
 
 export abstract class BaseCredentialsProviderFactory<T extends CredentialsProvider>
-    implements CredentialsProviderFactory {
+    implements CredentialsProviderFactory
+{
     protected providers: T[] = []
 
     public getProviderType(): CredentialsProviderType | undefined {

@@ -5,7 +5,8 @@
 
 import * as assert from 'assert'
 import * as sinon from 'sinon'
-import * as SDK from 'aws-sdk'
+import { SSO } from '@aws-sdk/client-sso'
+import { SSOOIDC } from '@aws-sdk/client-sso-oidc'
 import { SsoCredentialProvider } from '../../../credentials/providers/ssoCredentialProvider'
 import { SsoAccessTokenProvider } from '../../../credentials/sso/ssoAccessTokenProvider'
 import { DiskCache } from '../../../credentials/sso/diskCache'
@@ -17,13 +18,13 @@ describe('SsoCredentialProvider', () => {
 
         const ssoRegion = 'dummyRegion'
         const ssoUrl = '123abc.com/start'
-        const ssoOidcClient = new SDK.SSOOIDC()
+        const ssoOidcClient = new SSOOIDC({ region: ssoRegion })
         const cache = new DiskCache()
         const ssoAccessTokenProvider = new SsoAccessTokenProvider(ssoRegion, ssoUrl, ssoOidcClient, cache)
 
         const ssoAccount = 'dummyAccount'
         const ssoRole = 'dummyRole'
-        const ssoClient = new SDK.SSO()
+        const ssoClient = new SSO({ region: ssoRegion })
         const sut = new SsoCredentialProvider(ssoAccount, ssoRole, ssoClient, ssoAccessTokenProvider)
 
         const HOUR_IN_MS = 3600000
@@ -42,12 +43,7 @@ describe('SsoCredentialProvider', () => {
             const stubAccessToken = sandbox.stub(ssoAccessTokenProvider, 'accessToken').resolves(validAccessToken)
             const stubSsoClient = sandbox.stub(ssoClient, 'getRoleCredentials')
 
-            const errToThrow = new Error() as SDK.AWSError
-            errToThrow.code = 'UnauthorizedException'
-
-            stubSsoClient.returns(({
-                promise: sandbox.stub().throws(errToThrow),
-            } as any) as SDK.Request<GetRoleCredentialsResponse, SDK.AWSError>)
+            stubSsoClient.rejects({ code: 'UnauthorizedException' })
 
             const stubInvalidate = sandbox.stub(ssoAccessTokenProvider, 'invalidate').returns()
 
@@ -68,9 +64,7 @@ describe('SsoCredentialProvider', () => {
                 },
             }
             const stubSsoClient = sandbox.stub(ssoClient, 'getRoleCredentials')
-            stubSsoClient.returns(({
-                promise: sandbox.stub().resolves(response),
-            } as any) as SDK.Request<GetRoleCredentialsResponse, SDK.AWSError>)
+            stubSsoClient.resolves(response)
 
             const receivedCredentials = await sut.refreshCredentials()
 

@@ -5,7 +5,7 @@
 
 import * as assert from 'assert'
 import { BaseCredentialsProviderFactory } from '../../../credentials/providers/credentialsProviderFactory'
-import { CredentialsProvider, CredentialsProviderType ,CredentialsId } from '../../../credentials/providers/credentials'
+import { CredentialsProvider, CredentialsProviderType, CredentialsId } from '../../../credentials/providers/credentials'
 
 describe('BaseCredentialsProviderFactory', async function () {
     /**
@@ -96,8 +96,8 @@ describe('BaseCredentialsProviderFactory', async function () {
     }
 
     function makeSampleCredentialsProvider(testProviderId: string): CredentialsProvider {
-        return ({
+        return {
             getCredentialsId: () => makeSampleCredentialsId(testProviderId),
-        } as any) as CredentialsProvider
+        } as any as CredentialsProvider
     }
 })

@@ -3,7 +3,8 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
-import { Credentials, EC2MetadataCredentials } from 'aws-sdk'
+import { Credentials } from '@aws-sdk/types'
+import { fromInstanceMetadata } from '@aws-sdk/credential-provider-imds'
 import { DefaultEc2MetadataClient } from '../../shared/clients/ec2MetadataClient'
 import { Ec2MetadataClient } from '../../shared/clients/ec2MetadataClient'
 import { getLogger } from '../../shared/logger'
@@ -17,7 +18,7 @@ import { CredentialsId, CredentialsProvider, CredentialsProviderType } from './c
  * @see CredentialsProviderType
  */
 export class Ec2CredentialsProvider implements CredentialsProvider {
-    private credentials: EC2MetadataCredentials | undefined
+    private credentials: Credentials | undefined
     private region: string | undefined
     private available: boolean | undefined
 
@@ -86,7 +87,7 @@ export class Ec2CredentialsProvider implements CredentialsProvider {
 
     public async getCredentials(): Promise<Credentials> {
         if (!this.credentials) {
-            this.credentials = new EC2MetadataCredentials()
+            this.credentials = await fromInstanceMetadata()()
         }
         return this.credentials
     }

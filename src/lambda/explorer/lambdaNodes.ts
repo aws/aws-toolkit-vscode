@@ -42,8 +42,7 @@ export class LambdaNode extends AWSTreeNodeBase {
 
                 return [...this.functionNodes.values()]
             },
-            getErrorNode: async (error: Error, logID: number) =>
-                new ErrorNode(this, error, logID),
+            getErrorNode: async (error: Error, logID: number) => new ErrorNode(this, error, logID),
             getNoChildrenPlaceholderNode: async () =>
                 new PlaceholderNode(this, localize('AWS.explorerNode.lambda.noFunctions', '[No Functions found]')),
             sort: (nodeA: LambdaFunctionNode, nodeB: LambdaFunctionNode) =>
