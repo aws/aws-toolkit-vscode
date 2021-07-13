@@ -3,44 +3,16 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
-import * as nls from 'vscode-nls'
-const localize = nls.loadMessageBundle()
-import { debounce } from 'lodash'
-import * as path from 'path'
 import * as vscode from 'vscode'
 import { ext } from '../../../shared/extensionGlobals'
-import { getLogger, Logger } from '../../../shared/logger'
-// import { isDocumentValid } from '../../utils'
-// import * as yaml from 'yaml'
-
-// import { YAML_ASL } from '../../constants/aslFormats'
-
-// const YAML_OPTIONS: yaml.Options = {
-//     merge: false,
-//     maxAliasCount: 0,
-//     schema: 'yaml-1.1',
-//     version: '1.1',
-//     prettyErrors: true,
-// }
-
-// export interface MessageObject {
-//     command: string
-//     text: string
-//     error?: string
-//     stateMachineData: string
-// }
 
 export abstract class AbstractAslVisualization {
-    //public readonly documentUri: vscode.Uri
-    public readonly webviewPanel: vscode.WebviewPanel 
+    public readonly webviewPanel: vscode.WebviewPanel
     protected readonly disposables: vscode.Disposable[] = []
     protected isPanelDisposed = false
-    //private readonly onVisualizationDisposeEmitter = new vscode.EventEmitter<void>()
     protected readonly onVisualizationDisposeEmitter = new vscode.EventEmitter<void>()
 
-    //public constructor(textDocument: vscode.TextDocument) {
-    public constructor(webviewInput:any) {
-        //this.documentUri = textDocument.uri
+    public constructor(webviewInput: any) {
         this.webviewPanel = this.setupWebviewPanel(webviewInput)
     }
 
@@ -64,12 +36,11 @@ export abstract class AbstractAslVisualization {
         this.getPanel()?.reveal()
     }
 
-    abstract sendUpdateMessage(message:any) :void
+    abstract sendUpdateMessage(message: any): void
 
-    protected  abstract setupWebviewPanel(webviewInput:any): vscode.WebviewPanel
+    protected abstract setupWebviewPanel(webviewInput: any): vscode.WebviewPanel
 
-    //private createVisualizationWebviewPanel(title:any): vscode.WebviewPanel {
-    protected createVisualizationWebviewPanel(title:any): vscode.WebviewPanel {
+    protected createVisualizationWebviewPanel(title: any): vscode.WebviewPanel {
         return vscode.window.createWebviewPanel(
             'stateMachineVisualization',
             this.makeWebviewTitle(title),
@@ -89,12 +60,8 @@ export abstract class AbstractAslVisualization {
         )
     }
 
-    // private makeWebviewTitle(sourceDocumentUri: vscode.Uri): string {
-    //     return localize('AWS.stepFunctions.graph.titlePrefix', 'Graph: {0}', path.basename(sourceDocumentUri.fsPath))
-    // }
-    protected abstract makeWebviewTitle(title:any): string 
+    protected abstract makeWebviewTitle(title: any): string
 
-    //private getWebviewContent(
     protected getWebviewContent(
         webviewBodyScript: vscode.Uri,
         graphStateMachineLibrary: vscode.Uri,
@@ -161,10 +128,4 @@ export abstract class AbstractAslVisualization {
         </body>
     </html>`
     }
-
-    // private trackedDocumentDoesExist(trackedDocumentURI: vscode.Uri): boolean {
-    //     const document = vscode.workspace.textDocuments.find(doc => doc.fileName === trackedDocumentURI.fsPath)
-
-    //     return document !== undefined
-    // }
 }
