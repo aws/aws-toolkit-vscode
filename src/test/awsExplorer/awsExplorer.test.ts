@@ -26,6 +26,7 @@ describe('AwsExplorer', function () {
         const clientBuilder = {
             createS3Client: sandbox.stub().returns({}),
             createEcrClient: sandbox.stub().returns({}),
+            createEcsClient: sandbox.stub().returns({})
         }
         ext.toolkitClientBuilder = (clientBuilder as any) as ToolkitClientBuilder
     })

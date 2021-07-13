@@ -42,28 +42,28 @@ describe('EcsClusterNode', function () {
 
     describe('getChildren', function () {
         it('gets children', async function () {
-            when(ecs.listServices(cluster.clusterArn!)).thenResolve({
+            when(ecs.listServices(cluster.clusterArn!, undefined)).thenResolve({
                 services: [service],
                 nextToken: undefined,
             })
 
             const node = new EcsClusterNode(cluster, new EcsNode(instance(ecs)), instance(ecs))
-            const [folderNode, ...otherNodes] = await node.getChildren()
+            const [serviceNode, ...otherNodes] = await node.getChildren()
 
-            assertServiceNode(folderNode, service)
+            assertServiceNode(serviceNode, service)
             assert.strictEqual(otherNodes.length, 0)
         })
 
         it('gets children with node for loading more results', async function () {
-            when(ecs.listServices(cluster.clusterArn!)).thenResolve({
+            when(ecs.listServices(cluster.clusterArn!, undefined)).thenResolve({
                 services: [service],
                 nextToken,
             })
 
             const node = new EcsClusterNode(cluster, new EcsNode(instance(ecs)), instance(ecs))
-            const [folderNode, moreResultsNode, ...otherNodes] = await node.getChildren()
+            const [serviceNode, moreResultsNode, ...otherNodes] = await node.getChildren()
 
-            assertServiceNode(folderNode, service)
+            assertServiceNode(serviceNode, service)
             assertMoreResultsNode(moreResultsNode)
             assert.strictEqual(otherNodes.length, 0)
         })
