@@ -59,8 +59,6 @@ describe('InputBoxPrompter', function () {
         assert.strictEqual(inputBox.value, 'last response')
     })
 
-    // TODO: move these button tests somewhere else since they function
-    // exactly the same as QuickPick buttons
     describe('buttons', function () {
         it('back button returns control signal', async function () {
             const back = createBackButton()
