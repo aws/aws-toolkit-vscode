@@ -42,7 +42,7 @@ export class S3Tab {
         try {
             const doc = await vscode.workspace.openTextDocument(this.s3Uri) // calls back into the provider
             //vscode.languages.setTextDocumentLanguage(doc, 'txt')
-            await window.showTextDocument(doc, { preview: false })
+            await window.showTextDocument(doc, { preview: true })
             //this.activeTab = doc
         } catch (e) {
             getLogger().error(`Given file not found, error: ${e}`)
