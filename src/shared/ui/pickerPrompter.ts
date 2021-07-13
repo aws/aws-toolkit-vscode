@@ -24,7 +24,6 @@ interface AdditionalQuickPickOptions<T = never> {
     }
 }
 
-// TODO: add 'canPickMany' option back in then make a 'MultiQuickPickPrompter'
 export type ExtendedQuickPickOptions<T> = Omit<vscode.QuickPickOptions, 'buttons' | 'canPickMany' | 'placeHolder'> &
     AdditionalQuickPickOptions<T>
 
@@ -122,7 +121,7 @@ function makePickerAysnc<T>(picker: DataQuickPick<T>, items: Promise<DataQuickPi
 function promptUser<T>(picker: DataQuickPick<T>): Promise<DataQuickPickItem<T>[] | undefined> {
     return new Promise<DataQuickPickItem<T>[] | undefined>(resolve => {
         picker.onDidAccept(() => picker.selectedItems.length > 0 && resolve(Array.from(picker.selectedItems)))
-        picker.onDidHide(() => resolve(undefined)) // change to exit
+        picker.onDidHide(() => resolve(undefined))
         picker.onDidTriggerButton(button => {
             if (button === vscode.QuickInputButtons.Back) {
                 resolve([{ label: '', data: WIZARD_BACK }])
@@ -137,13 +136,11 @@ function promptUser<T>(picker: DataQuickPick<T>): Promise<DataQuickPickItem<T>[]
     }).finally(() => picker.hide())
 }
 
-// TODO: make a `MultiQuickPickPrompter` (very simple to make)
 export class QuickPickPrompter<T> extends Prompter<T> {
     protected _lastPicked?: DataQuickPickItem<T>
 
     public set lastResponse(response: DataQuickPickItem<T> | undefined) {
         if (response === undefined || !isDataQuickPickItem(response)) {
-            // TODO: refactor this code block into protected method
             return
         }
 
@@ -211,7 +208,6 @@ export class CustomQuickPickPrompter<T> extends QuickPickPrompter<T> {
         let items: DataQuickPickItem<T | symbol>[] | undefined = [...(picker.items as DataQuickPickItem<T | symbol>[])]
         let lastUserInput: string | undefined
 
-        // TODO: clean this code up
         function update(value: string = '') {
             if ((items === undefined || items.length === 0) && picker.busy === false) {
                 items = [...(picker.items as DataQuickPickItem<T | symbol>[])]

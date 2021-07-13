@@ -3,45 +3,18 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
-import * as vscode from 'vscode'
 import * as assert from 'assert'
-import * as sinon from 'sinon'
 import { ext } from '../../../shared/extensionGlobals'
 import * as buttons from '../../../shared/ui/buttons'
 import { clearTestIconPaths, IconPath, setupTestIconPaths } from '../utilities/iconPathUtils'
 
 describe('UI buttons', function () {
-    let sandbox: sinon.SinonSandbox
-
     before(function () {
         setupTestIconPaths()
-        sandbox = sinon.createSandbox()
     })
 
     after(function () {
         clearTestIconPaths()
-        sandbox.restore()
-    })
-
-    it('creates a help button with a link', async function () {
-        const help = buttons.createHelpButton('link')
-
-        const clickPromise = new Promise<void>((resolve, reject) => {
-            sandbox.stub(vscode.env, 'openExternal').callsFake(async uri => {
-                try {
-                    assert.strictEqual(uri.path, '/link')
-                    resolve()
-                } catch (e) {
-                    reject(e)
-                }
-                return true
-            })
-        })
-
-        assertIconPath(help.iconPath as IconPath)
-        help.onClick!()
-
-        return clickPromise
     })
 
     it('creates a help button with a tooltip', function () {
@@ -53,10 +26,10 @@ describe('UI buttons', function () {
     })
 
     it('creates a help button with a url', function () {
-        const url = 'http://fake.url'
-        const help = buttons.createHelpButton(undefined, url)
+        const url = 'http://fake.url/'
+        const help = buttons.createHelpButton(url)
 
-        assert.strictEqual(help.url, url)
+        assert.strictEqual(help.uri.toString(), url)
         assertIconPath(help.iconPath as IconPath)
     })
 

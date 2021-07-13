@@ -90,7 +90,7 @@ export class InputBoxPrompter extends Prompter<string> {
                     resolve(this.inputBox.value)
                 }
             })
-            this.inputBox.onDidHide(() => resolve(undefined)) // TODO: change to wizard exit
+            this.inputBox.onDidHide(() => resolve(undefined))
             this.inputBox.onDidTriggerButton(button => {
                 if (button === vscode.QuickInputButtons.Back) {
                     resolve(WIZARD_BACK)

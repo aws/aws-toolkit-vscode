@@ -28,19 +28,29 @@ export interface QuickInputButton<T> extends vscode.QuickInputButton {
  * @param tooltip Optional tooltip for button
  * @param url Optional URL to open when button is clicked
  */
-export function createHelpButton(uri: string | vscode.Uri, tooltip: string = HELP_TOOLTIP): QuickInputButton<void> {
-    const button: vscode.QuickInputButton = {
-        iconPath: {
-            light: vscode.Uri.file(ext.iconPaths.light.help),
-            dark: vscode.Uri.file(ext.iconPaths.dark.help),
-        },
-        tooltip,
-    }
-    const openUri = () => {
-        vscode.env.openExternal(typeof uri === 'string' ? vscode.Uri.parse(uri) : uri)
+export function createHelpButton(uri: string | vscode.Uri, tooltip: string = HELP_TOOLTIP): QuickInputLinkButton {
+    const iconPath = {
+        light: vscode.Uri.file(ext.iconPaths.light.help),
+        dark: vscode.Uri.file(ext.iconPaths.dark.help),
     }
 
-    return { ...button, onClick: openUri }
+    return new QuickInputLinkButton(uri, iconPath, tooltip)
+}
+
+export class QuickInputLinkButton implements QuickInputButton<void> {
+    public readonly uri: vscode.Uri
+
+    constructor(
+        link: string | vscode.Uri,
+        public readonly iconPath: vscode.QuickInputButton['iconPath'],
+        public readonly tooltip?: string
+    ) {
+        this.uri = typeof link === 'string' ? vscode.Uri.parse(link) : link
+    }
+
+    public onClick(): void {
+        vscode.env.openExternal(this.uri)
+    }
 }
 
 // Currently VS Code uses a static back button for every QuickInput, so we can't redefine any of its
