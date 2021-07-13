@@ -122,7 +122,6 @@ export async function activate(context: vscode.ExtensionContext) {
         ext.sdkClientBuilder = new DefaultAWSClientBuilder(awsContext)
         ext.toolkitClientBuilder = new DefaultToolkitClientBuilder(regionProvider)
         ext.s3fileViewerManager = new S3FileViewerManager()
-        await ext.s3fileViewerManager.createTemp()
 
         await initializeCredentials({
             extensionContext: context,

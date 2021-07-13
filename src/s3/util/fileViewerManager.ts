@@ -109,7 +109,9 @@ export class S3FileViewerManager {
                 cancel: localize('AWS.generic.cancel', 'Cancel'),
             }
 
-            if (!(await showConfirmationMessage(args, this.window))) return undefined
+            if (!(await showConfirmationMessage(args, this.window))) {
+                return undefined
+            }
         } else if (fileNode.file.sizeBytes > SIZE_LIMIT) {
             showOutputMessage(`size is >4MB, prompt user working`, this.outputChannel)
             getLogger().debug(`size is >4MB, prompt user working`)
@@ -124,7 +126,9 @@ export class S3FileViewerManager {
                 cancel: localize('AWS.generic.cancel', 'Cancel'),
             }
 
-            if (!(await showConfirmationMessage(args, this.window))) return undefined
+            if (!(await showConfirmationMessage(args, this.window))) {
+                return undefined
+            }
 
             getLogger().debug(`user confirmed download, continuing`)
             showOutputMessage(`user confirmed download, continuing`, this.outputChannel) //TODOD:: debug log,
@@ -193,18 +197,6 @@ export class S3FileViewerManager {
         return undefined
     }
 
-    async promptUserConfirm(message: string): Promise<string | undefined> {
-        //for some reason sizeBytes is undefined
-        const cancelButtonLabel = 'Cancel'
-        const confirmButtonLabel = 'Continue with download'
-
-        const result = await this.window.showInformationMessage(message, cancelButtonLabel, confirmButtonLabel)
-        if (result === cancelButtonLabel) {
-            return undefined
-        }
-        return undefined
-    }
-
     public createTargetPath(fileNode: S3FileNode): Promise<string> {
         const completePath = getStringHash(readablePath(fileNode)) //TODOD:: map hashes to real name
         //completePath = completePath.slice(4) //removes 's3://' from path
@@ -247,7 +239,7 @@ export class S3FileViewerManager {
         return Promise.resolve()
     }
 
-    public async createTemp(): Promise<void> {
+    private async createTemp(): Promise<void> {
         this.tempLocation = await makeTemporaryToolkitFolder()
         showOutputMessage(`folder created with location: ${this.tempLocation}`, this.outputChannel)
         getLogger().debug(`folder created with location: ${this.tempLocation}`)
