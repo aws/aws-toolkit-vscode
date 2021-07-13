@@ -8,12 +8,12 @@ import { ext } from '../extensionGlobals'
 import { getLogger } from '../logger'
 import { ClassToInterfaceType } from '../utilities/tsUtils'
 
-export interface ListServicesResponse {
-    readonly services: ECS.Service[]
-    readonly continuationToken?: string
-}
-
 export type EcsClient = ClassToInterfaceType<DefaultEcsClient>
+
+export type ServicesAndToken =  {
+    services: ECS.Service[],
+    nextToken?: string
+}
 export class DefaultEcsClient {
     public constructor(public readonly regionCode: string) {}
 
@@ -24,14 +24,14 @@ export class DefaultEcsClient {
         return clusterReponse.clusters ?? []
     }
 
-    public async listServices(cluster: string): Promise<ListServicesResponse> {
+    public async listServices(cluster: string, nextToken?: string): Promise<ServicesAndToken> {
         const sdkClient = await this.createSdkClient()
-        const serviceArnList = await sdkClient.listServices({cluster: cluster}).promise()
+        const serviceArnList = await sdkClient.listServices({cluster: cluster, nextToken: nextToken}).promise()
         try {
             const serviceResponse = await sdkClient.describeServices({services: serviceArnList.serviceArns!, cluster: cluster}).promise()
-            const response: ListServicesResponse = {
+            const response: ServicesAndToken = {
                 services: serviceResponse.services!,
-                continuationToken: serviceArnList.nextToken
+                nextToken: serviceArnList.nextToken,
             }
             return response
         } catch (error) {

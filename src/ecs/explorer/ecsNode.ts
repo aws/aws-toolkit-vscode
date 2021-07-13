@@ -5,9 +5,7 @@
 
 import { EcsClient } from '../../shared/clients/ecsClient'
 import * as vscode from 'vscode'
-// import { AWSTreeErrorHandlerNode } from '../../shared/treeview/nodes/awsTreeErrorHandlerNode'
 import { AWSTreeNodeBase } from '../../shared/treeview/nodes/awsTreeNodeBase'
-// import { DefaultEcsClustersNode } from './ecsClustersNode'
 import { EcsClusterNode } from './ecsClusterNode'
 import { makeChildrenNodes } from '../../shared/treeview/treeNodeUtilities'
 import { ErrorNode } from '../../shared/treeview/nodes/errorNode'

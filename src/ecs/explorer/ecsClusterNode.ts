@@ -30,7 +30,7 @@ export class EcsClusterNode extends AWSTreeNodeBase implements AWSResourceNode, 
         private readonly ecs: EcsClient,
     ) {
         super(cluster.clusterName!, vscode.TreeItemCollapsibleState.Collapsed)
-        this.tooltip = this.cluster.clusterArn
+        this.tooltip = `(Cluster) ${this.cluster.clusterArn}`
         this.contextValue = 'awsEcsCluster'
         this.childLoader = new ChildNodeLoader(this, token => this.loadPage(token))
     }
@@ -66,16 +66,16 @@ export class EcsClusterNode extends AWSTreeNodeBase implements AWSResourceNode, 
         this.childLoader.clearChildren()
     }
 
-    private async loadPage(continuationToken: string | undefined): Promise<ChildNodePage> {
-        getLogger().debug(`Loading page for %O using continuationToken %s`, this, continuationToken)
-        const response = await this.ecs.listServices(this.cluster.clusterArn!)
+    private async loadPage(nextToken: string | undefined): Promise<ChildNodePage> {
+        getLogger().debug(`Loading page for %O using continuationToken %s`, this, nextToken)
+        const response = await this.ecs.listServices(this.cluster.clusterArn!, nextToken)
     
         const services = response.services.map(service => new EcsServiceNode(service, this))
         
 
         getLogger().debug(`Loaded services: %O`, services)
         return {
-            newContinuationToken: response.continuationToken,
+            newContinuationToken: response.nextToken,
             newChildren: [...services],
         }
     }

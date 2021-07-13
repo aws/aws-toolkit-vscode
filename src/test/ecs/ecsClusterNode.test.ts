@@ -16,7 +16,7 @@ import { EcsServiceNode } from '../../ecs/explorer/ecsServiceNode'
 
 describe('EcsClusterNode', function () {
     const name = 'cluster-name'
-    const continuationToken = 'continuationToken'
+    const nextToken = 'nextToken'
     const cluster: ECS.Cluster = { clusterName: name, clusterArn: 'cluster-arn' }
     const service: ECS.Service = { serviceName: 'service-name', serviceArn: 'service-arn' }
     let ecs: EcsClient
@@ -44,7 +44,7 @@ describe('EcsClusterNode', function () {
         it('gets children', async function () {
             when(ecs.listServices(cluster.clusterArn!)).thenResolve({
                 services: [service],
-                continuationToken: undefined,
+                nextToken: undefined,
             })
 
             const node = new EcsClusterNode(cluster, new EcsNode(instance(ecs)), instance(ecs))
@@ -57,7 +57,7 @@ describe('EcsClusterNode', function () {
         it('gets children with node for loading more results', async function () {
             when(ecs.listServices(cluster.clusterArn!)).thenResolve({
                 services: [service],
-                continuationToken,
+                nextToken,
             })
 
             const node = new EcsClusterNode(cluster, new EcsNode(instance(ecs)), instance(ecs))
