@@ -3,12 +3,12 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 import { S3 } from 'aws-sdk'
-import { APIGateway, CloudFormation, CloudWatchLogs, IAM, Lambda, Schemas, StepFunctions, STS, SSM } from 'aws-sdk'
+import { APIGateway, CloudFormation, CloudWatchLogs, ECS, IAM, Lambda, Schemas, StepFunctions, STS, SSM } from 'aws-sdk'
 import { ApiGatewayClient } from '../../../shared/clients/apiGatewayClient'
 import { CloudFormationClient } from '../../../shared/clients/cloudFormationClient'
 import { CloudWatchLogsClient } from '../../../shared/clients/cloudWatchLogsClient'
 import { EcrClient, EcrRepository } from '../../../shared/clients/ecrClient'
-import { EcsClient } from '../../../shared/clients/ecsClient'
+import { EcsClient, ServicesAndToken } from '../../../shared/clients/ecsClient'
 import { IamClient } from '../../../shared/clients/iamClient'
 import { LambdaClient } from '../../../shared/clients/lambdaClient'
 import { SchemaClient } from '../../../shared/clients/schemaClient'
@@ -296,25 +296,21 @@ export class MockEcrClient implements EcrClient {
 
 export class MockEcsClient implements EcsClient {
     public readonly regionCode: string
-    public readonly listClusters: () => AsyncIterableIterator<string>
-    public readonly listServices: (cluster: string) => AsyncIterableIterator<string>
-    public readonly listTaskDefinitionFamilies: () => AsyncIterableIterator<string>
+    public readonly listClusters: () => Promise<ECS.Cluster[]>
+    public readonly listServices: (cluster: string, nextToken?: string) => Promise<ServicesAndToken>
 
     public constructor({
         regionCode = '',
-        listClusters = () => asyncGenerator([]),
-        listServices = (cluster: string) => asyncGenerator([]),
-        listTaskDefinitionFamilies = () => asyncGenerator([]),
+        listClusters = async () => ([]),
+        listServices = async () => ({services: [], nextToken: undefined}),
     }: {
         regionCode?: string
-        listClusters?(): AsyncIterableIterator<string>
-        listServices?(cluster: string): AsyncIterableIterator<string>
-        listTaskDefinitionFamilies?(): AsyncIterableIterator<string>
+        listClusters?(): Promise<ECS.Cluster[]>
+        listServices?(): Promise<ServicesAndToken>
     }) {
         this.regionCode = regionCode
         this.listClusters = listClusters
         this.listServices = listServices
-        this.listTaskDefinitionFamilies = listTaskDefinitionFamilies
     }
 }
 
