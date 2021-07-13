@@ -9,6 +9,7 @@ import { debounce } from 'lodash'
 import * as vscode from 'vscode'
 import { ext } from '../../shared/extensionGlobals'
 import { getLogger, Logger } from '../../shared/logger'
+import { AbstractAslVisualization } from '../../../src/stepFunctions/commands/visualizeStateMachine/abstractAslVisualization'
 
 
 export interface MessageObject {
@@ -18,38 +19,14 @@ export interface MessageObject {
     stateMachineData: string
 }
 
-export class AslVisualizationCDK {
+export class AslVisualizationCDK extends AbstractAslVisualization {
     public readonly cfnDefinition: string
     public readonly uniqueIdentifier: string
-    public readonly webviewPanel: vscode.WebviewPanel
-    protected readonly disposables: vscode.Disposable[] = []
-    protected isPanelDisposed = false
-    private readonly onVisualizationDisposeEmitter = new vscode.EventEmitter<void>()
 
     public constructor(cfnDefinition: string, uniqueIdentifier: string) {
+        super(uniqueIdentifier)
         this.cfnDefinition = cfnDefinition
         this.uniqueIdentifier = uniqueIdentifier
-        this.webviewPanel = this.setupWebviewPanel()
-    }
-
-    public get onVisualizationDisposeEvent(): vscode.Event<void> {
-        return this.onVisualizationDisposeEmitter.event
-    }
-
-    public getPanel(): vscode.WebviewPanel | undefined {
-        if (!this.isPanelDisposed) {
-            return this.webviewPanel
-        }
-    }
-
-    public getWebview(): vscode.Webview | undefined {
-        if (!this.isPanelDisposed) {
-            return this.webviewPanel?.webview
-        }
-    }
-
-    public showPanel(): void {
-        this.getPanel()?.reveal()
     }
 
     public async sendUpdateMessage(stateMachineData: string) {
@@ -71,11 +48,11 @@ export class AslVisualizationCDK {
         })
     }
 
-    private setupWebviewPanel(): vscode.WebviewPanel {
+    protected override setupWebviewPanel(uniqueIdentifier: string): vscode.WebviewPanel {
         const logger: Logger = getLogger()
 
         // Create and show panel
-        const panel = this.createVisualizationWebviewPanel()
+        const panel = this.createVisualizationWebviewPanel(uniqueIdentifier)
 
         // Set the initial html for the webpage
         panel.webview.html = this.getWebviewContent(
@@ -85,6 +62,10 @@ export class AslVisualizationCDK {
             panel.webview.asWebviewUri(ext.visualizationResourcePaths.stateMachineCustomThemeCSS),
             panel.webview.cspSource,
             {
+                inSync: localize(
+                    'AWS.stepFunctions.graph.status.inSync',
+                    ''
+                ),
                 notInSync: localize('AWS.stepFunctions.graph.status.notInSync', 'Errors detected. Cannot preview.'),
                 syncing: localize('AWS.stepFunctions.graph.status.syncing', 'Rendering ASL graph...'),
             }
@@ -135,89 +116,7 @@ export class AslVisualizationCDK {
         return panel
     }
 
-    private createVisualizationWebviewPanel(): vscode.WebviewPanel {
-        return vscode.window.createWebviewPanel(
-            'stateMachineVisualization',
-            this.makeWebviewTitle(this.uniqueIdentifier),
-            {
-                preserveFocus: true,
-                viewColumn: vscode.ViewColumn.Beside,
-            },
-            {
-                enableScripts: true,
-                localResourceRoots: [
-                    ext.visualizationResourcePaths.localWebviewScriptsPath,
-                    ext.visualizationResourcePaths.visualizationLibraryCachePath,
-                    ext.visualizationResourcePaths.stateMachineCustomThemePath,
-                ],
-                retainContextWhenHidden: true,
-            }
-        )
-    }
-
-    private makeWebviewTitle(uniqueIdentifier: string): string {
+    protected override makeWebviewTitle(uniqueIdentifier: string): string {
         return localize('AWS.stepFunctions.graph.titlePrefix', 'Graph: {0}', uniqueIdentifier)
-    }
-
-    private getWebviewContent(
-        webviewBodyScript: vscode.Uri,
-        graphStateMachineLibrary: vscode.Uri,
-        vsCodeCustomStyling: vscode.Uri,
-        graphStateMachineDefaultStyles: vscode.Uri,
-        cspSource: string,
-        statusTexts: {
-            syncing: string
-            notInSync: string
-        }
-    ): string {
-        return `
-    <!DOCTYPE html>
-    <html>
-        <head>
-            <meta http-equiv="Content-Security-Policy"
-            content="default-src 'none';
-            img-src ${cspSource} https: data:;
-            script-src ${cspSource} 'self' 'unsafe-eval';
-            style-src ${cspSource};"
-            >
-            <meta charset="UTF-8">
-            <link rel="stylesheet" href='${graphStateMachineDefaultStyles}'>
-            <link rel="stylesheet" href='${vsCodeCustomStyling}'>
-            <script src='${graphStateMachineLibrary}'></script>
-        </head>
-
-        <body>
-            <div id="svgcontainer" class="workflowgraph">
-                <svg></svg>
-            </div>
-            <div id = "forCDK" class="status-info">
-                <div id="cdk-status-messages" class="status-messages">
-                    <span class="rendering-asl-message">${statusTexts.syncing}</span>
-                    <span class="error-asl-message">${statusTexts.notInSync}</span>
-                </div>
-            </div>
-            <div class="graph-buttons-container">
-                <button id="zoomin">
-                    <svg focusable="false" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 16 16">
-                        <line x1="8" y1="1" x2="8" y2="15"></line>
-                        <line x1="15" y1="8" x2="1" y2="8"></line>
-                    </svg>
-                </button>
-                <button id="zoomout">
-                    <svg focusable="false" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 16 16">
-                        <line x1="15" y1="8" x2="1" y2="8"></line>
-                    </svg>
-                </button>
-                <button id="center">
-                    <svg focusable="false" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 16 16">
-                        <circle cx="8" cy="8" r="7" stroke-width="2" />
-                        <circle cx="8" cy="8" r="1" stroke-width="2" />
-                    </svg>
-                </button>
-            </div>
-
-            <script src='${webviewBodyScript}'></script>
-        </body>
-    </html>`
     }
 }

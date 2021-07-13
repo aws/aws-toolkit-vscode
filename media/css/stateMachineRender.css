@@ -151,6 +151,10 @@ body .status-info.start-error-asl {
     margin-right: 10px;
 }
 
+.in-sync-asl .status-messages #cdk-status-messages {
+    display: none;
+}
+
 .in-sync-asl .status-messages .previewing-asl-message {
     display: inline-block;
 }
