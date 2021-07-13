@@ -19,7 +19,7 @@ import { S3Node } from './explorer/s3Nodes'
 import { S3FileNode } from './explorer/s3FileNode'
 import { ext } from '../shared/extensionGlobals'
 import { ExtContext } from '../shared/extensions'
-import { S3DocumentProvider } from './util/S3Tab'
+import { S3DocumentProvider } from './document/s3DocumentProvider'
 import { showOutputMessage } from '../shared/utilities/messages'
 
 /**

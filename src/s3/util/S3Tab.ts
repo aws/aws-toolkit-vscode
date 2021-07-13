@@ -4,11 +4,8 @@
  */
 
 import * as vscode from 'vscode'
-import { ext } from '../../shared/extensionGlobals'
 //import { Bucket, DownloadFileRequest, File, S3Client } from '../../shared/clients/s3Client'
-import { showOutputMessage } from '../../shared/utilities/messages'
 import { getLogger } from '../../shared/logger'
-import { readFileAsString } from '../../shared/filesystemUtilities'
 
 //const fs = require('fs')
 
@@ -28,8 +25,9 @@ export class S3Tab {
         this.s3Uri = vscode.Uri.parse('s3:' + this.fileUri.fsPath)
         //this.window = window
         //if file is text, start state will be read-only
-        //if file is not text, open file regularly and disable edit button
-        //this.context = new Context(this.fileUri)
+
+        //if file is not text, open file on edit-mode with disabled edit button
+
         //this.outputChannel = ext.outputChannel
     }
 
@@ -56,25 +54,6 @@ export class S3Tab {
     }
 
     //onPressedButton = change state, how to do this?
-}
-export class S3DocumentProvider implements vscode.TextDocumentContentProvider {
-    public constructor() {}
-
-    onDidChange?: vscode.Event<vscode.Uri> | undefined
-
-    public async provideTextDocumentContent(uri: vscode.Uri): Promise<string> {
-        let data: any
-        try {
-            //data = await fs.readFileSync(uri.fsPath)
-            data = await readFileAsString(uri.fsPath)
-        } catch (e) {
-            showOutputMessage(`${e}`, ext.outputChannel)
-        }
-        //getLogger().debug(data!)
-        showOutputMessage(data!, ext.outputChannel)
-
-        return data
-    }
 }
 
 /*
