@@ -121,14 +121,6 @@ body .status-info.start-error-asl {
     display: none;
 }
 
-.vscode-dark #forCDK {
-    border: none;
-}
-
-.vscode-high-contrast #forCDK {
-    border: none;
-}
-
 .vscode-dark .status-info {
     border: 1px solid #6c6c6c;
     color: #949494;
@@ -151,23 +143,12 @@ body .status-info.start-error-asl {
     margin-right: 10px;
 }
 
-.in-sync-asl .status-messages #cdk-status-messages {
-    display: none;
-}
-
 .in-sync-asl .status-messages .previewing-asl-message {
     display: inline-block;
 }
 
 .syncing-asl .status-messages .rendering-asl-message {
     display: inline-block;
-}
-
-.not-in-sync-asl #cdk-status-messages .error-asl-message,
-.start-error-asl #cdk-status-messages .error-asl-message {
-    display: inline-block;
-    border: 1px solid #da6363;
-    padding: 12px;
 }
 
 .not-in-sync-asl .status-messages .error-asl-message,

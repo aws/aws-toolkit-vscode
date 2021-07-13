@@ -64,7 +64,7 @@ export class AslVisualizationCDK extends AbstractAslVisualization {
             {
                 inSync: localize(
                     'AWS.stepFunctions.graph.status.inSync',
-                    ''
+                    'Previewing ASL state machine'
                 ),
                 notInSync: localize('AWS.stepFunctions.graph.status.notInSync', 'Errors detected. Cannot preview.'),
                 syncing: localize('AWS.stepFunctions.graph.status.syncing', 'Rendering ASL graph...'),

@@ -11,20 +11,15 @@ import { AslVisualizationCDK } from './aslVisualizationCDK'
 import { ConstructNode } from '../explorer/nodes/constructNode'
 import { renderGraphCommand } from './renderGraph'
 import { StateMachineGraphCache } from '../../../src/stepFunctions/utils'
+import { AbstractAslVisualizationManager } from '../../../src/stepFunctions/commands/visualizeStateMachine/abstractAslVisualizationManager'
 
-export class AslVisualizationCDKManager {
-    protected readonly managedVisualizations: Map<string, AslVisualizationCDK> = new Map<string, AslVisualizationCDK>()
-    private readonly extensionContext: vscode.ExtensionContext
+export class AslVisualizationCDKManager extends AbstractAslVisualizationManager {
 
     public constructor(extensionContext: vscode.ExtensionContext) {
-        this.extensionContext = extensionContext
+        super(extensionContext)
     }
 
-    public getManagedVisualizations(): Map<string, AslVisualizationCDK> {
-        return this.managedVisualizations
-    }
-
-    public async visualizeStateMachine(
+    public override async visualizeStateMachine(
         globalStorage: vscode.Memento,
         node: ConstructNode
     ): Promise<vscode.WebviewPanel | undefined> {
@@ -64,20 +59,12 @@ export class AslVisualizationCDKManager {
         return
     }
 
-    private deleteVisualization(visualizationToDelete: AslVisualizationCDK): void {
-        this.managedVisualizations.delete(visualizationToDelete.uniqueIdentifier)
-    }
-
-    private handleNewVisualization(key: string, newVisualization: AslVisualizationCDK): void {
+    protected handleNewVisualization(key: string, newVisualization: AslVisualizationCDK): void {
         this.managedVisualizations.set(key, newVisualization)
 
         const visualizationDisposable = newVisualization.onVisualizationDisposeEvent(() => {
-            this.deleteVisualization(newVisualization)
+            this.deleteVisualization(newVisualization.uniqueIdentifier)
         })
-        this.extensionContext.subscriptions.push(visualizationDisposable)
-    }
-
-    private getExistingVisualization(uniqueIdentifier: string): AslVisualizationCDK | undefined {
-        return this.managedVisualizations.get(uniqueIdentifier)
+        this.pushToExtensionContextSubscriptions(visualizationDisposable)
     }
 }

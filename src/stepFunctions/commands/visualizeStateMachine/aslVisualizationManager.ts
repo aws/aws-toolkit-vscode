@@ -9,20 +9,15 @@ import * as vscode from 'vscode'
 import { getLogger, Logger } from '../../../shared/logger'
 import { StateMachineGraphCache } from '../../utils'
 import { AslVisualization } from './aslVisualization'
+import { AbstractAslVisualizationManager } from './abstractAslVisualizationManager'
 
-export class AslVisualizationManager {
-    protected readonly managedVisualizations: Map<string, AslVisualization> = new Map<string, AslVisualization>()
-    private readonly extensionContext: vscode.ExtensionContext
+export class AslVisualizationManager extends AbstractAslVisualizationManager {
 
     public constructor(extensionContext: vscode.ExtensionContext) {
-        this.extensionContext = extensionContext
+        super(extensionContext)
     }
 
-    public getManagedVisualizations(): Map<string, AslVisualization> {
-        return this.managedVisualizations
-    }
-
-    public async visualizeStateMachine(
+    public override async visualizeStateMachine(
         globalStorage: vscode.Memento,
         activeTextEditor: vscode.TextEditor | undefined
     ): Promise<vscode.WebviewPanel | undefined> {
@@ -45,7 +40,7 @@ export class AslVisualizationManager {
         const textDocument: vscode.TextDocument = activeTextEditor.document
 
         // Attempt to retrieve existing visualization if it exists.
-        const existingVisualization = this.getExistingVisualization(textDocument.uri)
+        const existingVisualization = this.getExistingVisualization(textDocument.uri.path)
         if (existingVisualization) {
             existingVisualization.showPanel()
 
@@ -75,20 +70,12 @@ export class AslVisualizationManager {
         return
     }
 
-    private deleteVisualization(visualizationToDelete: AslVisualization): void {
-        this.managedVisualizations.delete(visualizationToDelete.documentUri.path)
-    }
-
     private handleNewVisualization(newVisualization: AslVisualization): void {
         this.managedVisualizations.set(newVisualization.documentUri.path, newVisualization)
 
         const visualizationDisposable = newVisualization.onVisualizationDisposeEvent(() => {
-            this.deleteVisualization(newVisualization)
+            this.deleteVisualization(newVisualization.documentUri.path)
         })
-        this.extensionContext.subscriptions.push(visualizationDisposable)
-    }
-
-    private getExistingVisualization(uriToFind: vscode.Uri): AslVisualization | undefined {
-        return this.managedVisualizations.get(uriToFind.path)
+        this.pushToExtensionContextSubscriptions(visualizationDisposable)
     }
 }
