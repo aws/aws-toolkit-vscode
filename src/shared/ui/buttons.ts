@@ -26,6 +26,7 @@ export interface QuickInputButton<T> extends vscode.QuickInputButton {
  *
  * @param uri Opens the URI upon clicking
  * @param tooltip Optional tooltip for button
+ * @param url Optional URL to open when button is clicked
  */
 export function createHelpButton(uri: string | vscode.Uri, tooltip: string = HELP_TOOLTIP): QuickInputButton<void> {
     const button: vscode.QuickInputButton = {

@@ -119,9 +119,12 @@ export class MultiStepInputFlowController {
                 input.ignoreFocusOut = ignoreFocusOut ? ignoreFocusOut : false
                 let validating = validate('')
                 disposables.push(
-                    input.onDidTriggerButton(item => {
+                    input.onDidTriggerButton(async item => {
                         if (item === QuickInputButtons.Back) {
                             reject(InputFlowAction.back)
+                        } else if ((item as any).onClick !== undefined && typeof (item as any).onClick === 'function') {
+                            ;(item as any).onClick()
+                            reject(InputFlowAction.resume)
                         } else {
                             resolve(item as any)
                         }
@@ -129,8 +132,11 @@ export class MultiStepInputFlowController {
                     input.onDidAccept(async () => {
                         input.enabled = false
                         input.busy = true
-                        if (!(await validate(input.value))) {
+                        const validation = await validate(input.value)
+                        if (!validation) {
                             resolve(input.value)
+                        } else {
+                            input.validationMessage = validation
                         }
                         input.enabled = true
                         input.busy = false
