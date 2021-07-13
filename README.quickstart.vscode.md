@@ -202,7 +202,7 @@ The Toolkit provides commands (prefixed with `AWS:`) to the VS Code _command
 palette_, available by selecting _View > Command Palette_ or by typing
 `CTRL-SHIFT-p` (macOS: `CMD-SHIFT-p`).
 
-![Command Palette](./resources/marketplace/vscode/open-command-palette-codelens.gif)
+![Command Palette](./resources/marketplace/vscode/open-command-palette.gif)
 
 | AWS Command                                          | Description                                                                                                                                                                                                                                                                                                    |
 | :--------------------------------------------------- | :------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
