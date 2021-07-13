@@ -159,11 +159,16 @@ body .status-info.start-error-asl {
     display: inline-block;
 }
 
+.not-in-sync-asl #cdk-status-messages .error-asl-message,
+.start-error-asl #cdk-status-messages .error-asl-message {
+    display: inline-block;
+    border: 1px solid #da6363;
+    padding: 12px;
+}
+
 .not-in-sync-asl .status-messages .error-asl-message,
 .start-error-asl .status-messages .error-asl-message {
     display: inline-block;
-    border: 1px solid #da6363;
-    padding: 5px;
 }
 
 .vscode-dark .in-sync-asl svg circle {

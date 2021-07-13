@@ -192,7 +192,7 @@ export class AslVisualizationCDK {
                 <svg></svg>
             </div>
             <div id = "forCDK" class="status-info">
-                <div class="status-messages">
+                <div id="cdk-status-messages" class="status-messages">
                     <span class="rendering-asl-message">${statusTexts.syncing}</span>
                     <span class="error-asl-message">${statusTexts.notInSync}</span>
                 </div>
