@@ -55,7 +55,7 @@
         "onCommand:aws.stepfunctions.publishStateMachine",
         "onView:aws.cdk.explorer",
         "onCommand:aws.refreshCdkExplorer",
-        "onCommand:aws.cdk.renderGraph",
+        "onCommand:aws.cdk.renderStateMachineGraphFromCDK",
         "onCommand:aws.aboutToolkit",
         "onCommand:aws.cloudWatchLogs.viewLogStream",
         "onLanguage:asl",
@@ -845,11 +845,6 @@
             ],
             "view/item/context": [
                 {
-                    "command": "aws.cdk.renderGraph",
-                    "when": "view == aws.cdk.explorer && viewItem == awsCdkStateMachineNode",
-                    "group": "inline@1"
-                },
-                {
                     "command": "aws.apig.invokeRemoteRestApi",
                     "when": "view == aws.explorer && viewItem =~ /^(awsApiGatewayNode)$/",
                     "group": "0@1"
@@ -970,6 +965,11 @@
                     "group": "0@2"
                 },
                 {
+                    "command": "aws.cdk.renderStateMachineGraphFromCDK",
+                    "when": "view == aws.cdk.explorer && viewItem == awsCdkStateMachineNode",
+                    "group": "inline@1"
+                },
+                {
                     "command": "aws.s3.createBucket",
                     "when": "view == aws.explorer && viewItem == awsS3Node",
                     "group": "0@1"
@@ -1067,15 +1067,6 @@
             ]
         },
         "commands": [
-            {
-                "command": "aws.cdk.renderGraph",
-                "title": "%AWS.command.cdk.renderGraph%",
-                "category": "AWS",
-                "icon": {
-                    "light": "resources/light/stepfunctions/preview.svg",
-                    "dark": "resources/dark/stepfunctions/preview.svg"
-                }
-            },
             {
                 "command": "aws.launchConfigForm",
                 "title": "%AWS.command.launchConfigForm.title%",
@@ -1271,6 +1262,15 @@
                 "command": "aws.executeStateMachine",
                 "title": "%AWS.command.executeStateMachine%",
                 "category": "AWS"
+            },
+            {
+                "command": "aws.cdk.renderStateMachineGraphFromCDK",
+                "title": "%AWS.command.cdk.renderStateMachineGraphFromCDK%",
+                "category": "AWS",
+                "icon": {
+                    "light": "resources/light/stepfunctions/preview.svg",
+                    "dark": "resources/dark/stepfunctions/preview.svg"
+                }
             },
             {
                 "command": "aws.copyArn",

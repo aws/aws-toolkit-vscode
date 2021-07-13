@@ -4,7 +4,6 @@
  */
 
 import { getLogger } from '../../shared/logger'
-import * as telemetry from '../../shared/telemetry/telemetry'
 import { localize } from '../../shared/utilities/vsCodeUtils'
 import { Commands } from '../../shared/vscode/commands'
 import { Window } from '../../shared/vscode/window'
@@ -32,26 +31,17 @@ export async function renderGraphCommand(
     try {
         const cfnDefinition = getCfnDefinitionForStateMachine(uniqueIdentifier, cdkOutPath, stackName)
 
-        const newVisualization = new AslVisualizationCDK(cfnDefinition ? cfnDefinition : 'error', uniqueIdentifier)
+        const newVisualization = new AslVisualizationCDK(cfnDefinition, uniqueIdentifier)
 
         getLogger().info('Rendered graph: %O', uniqueIdentifier)
-        window.showInformationMessage(localize('AWS.cdk.renderGraph.success', 'Rendered graph {0}', uniqueIdentifier))
-        //I know I need to change this telemetry part but not sure how
-        telemetry.recordS3CreateBucket({ result: 'Succeeded' })
+        window.showInformationMessage(localize('AWS.cdk.renderStateMachineGraphFromCDK.success', 'Rendered graph {0}', uniqueIdentifier))
+
         return newVisualization
     } catch (e) {
         getLogger().error(`Failed to create bucket ${uniqueIdentifier}: %O`, e)
         showErrorWithLogs(
-            localize('AWS.cdk.renderGraph.error.general', 'Failed to render graph {0}', uniqueIdentifier),
+            localize('AWS.cdk.renderStateMachineGraphFromCDK.error.general', 'Failed to render graph {0}', uniqueIdentifier),
             window
         )
-        //change this part
-        telemetry.recordS3CreateBucket({ result: 'Failed' })
     }
-    //not sure if we need to refresh nodes and if yes why we need to do this
-    //await refreshNode(node, commands)
 }
-
-// async function refreshNode(node: ConstructNode, commands: Commands): Promise<void> {
-//     return commands.execute('aws.refreshAwsExplorerNode', node)
-// }

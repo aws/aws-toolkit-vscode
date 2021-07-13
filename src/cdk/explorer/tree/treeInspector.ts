@@ -64,7 +64,6 @@ export function getDisplayLabel(construct: ConstructTreeEntity): string {
     return construct.id
 }
 
-
 /** 
 * @param construct CDK construct
 */

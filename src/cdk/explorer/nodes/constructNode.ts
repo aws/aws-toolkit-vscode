@@ -24,7 +24,7 @@ export class ConstructNode extends AWSTreeNodeBase {
         public readonly construct: ConstructTreeEntity
     ) {
         super(construct.id, collapsibleState)
-        treeInspector.isStateMachine(construct) ? this.contextValue = 'awsCdkStateMachineNode' : this.contextValue = 'awsCdkConstructNode'
+        this.contextValue = treeInspector.isStateMachine(construct) ? 'awsCdkStateMachineNode' : 'awsCdkConstructNode'
 
         this.type = treeInspector.getTypeAttributeOrDefault(construct, '')
         this.properties = treeInspector.getProperties(construct)

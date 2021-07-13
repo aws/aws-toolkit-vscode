@@ -10,16 +10,12 @@
             "type": "extensionHost",
             "request": "launch",
             "runtimeExecutable": "${execPath}",
-            "args": [
-                "--extensionDevelopmentPath=${workspaceFolder}"
-            ],
+            "args": ["--extensionDevelopmentPath=${workspaceFolder}"],
             "env": {
                 "AWS_TOOLKIT_IGNORE_WEBPACK_BUNDLE": "true",
                 "SSMDOCUMENT_LANGUAGESERVER_PORT": "6010"
             },
-            "outFiles": [
-                "${workspaceFolder}/dist/**/*.js"
-            ],
+            "outFiles": ["${workspaceFolder}/dist/**/*.js"],
             "preLaunchTask": "npm: watch"
         },
         {
@@ -28,9 +24,7 @@
             "request": "attach",
             "port": 6009,
             "restart": true,
-            "outFiles": [
-                "${workspaceRoot}/dist/src/stepFunctions/asl/**.js"
-            ]
+            "outFiles": ["${workspaceRoot}/dist/src/stepFunctions/asl/**.js"]
         },
         {
             "name": "Attach to SSM Document Language Server",
@@ -38,21 +32,15 @@
             "request": "attach",
             "port": 6010,
             "restart": true,
-            "outFiles": [
-                "${workspaceRoot}/dist/src/ssmDocument/ssm/ssmServer.js"
-            ]
+            "outFiles": ["${workspaceRoot}/dist/src/ssmDocument/ssm/ssmServer.js"]
         },
         {
             "name": "Extension (webpack)",
             "type": "extensionHost",
             "request": "launch",
             "runtimeExecutable": "${execPath}",
-            "args": [
-                "--extensionDevelopmentPath=${workspaceFolder}"
-            ],
-            "outFiles": [
-                "${workspaceFolder}/dist/**/*.js"
-            ],
+            "args": ["--extensionDevelopmentPath=${workspaceFolder}"],
+            "outFiles": ["${workspaceFolder}/dist/**/*.js"],
             "preLaunchTask": "npm: compile"
         },
         {
@@ -72,9 +60,7 @@
                 "AWS_TOOLKIT_IGNORE_WEBPACK_BUNDLE": "true",
                 "NO_COVERAGE": "true"
             },
-            "outFiles": [
-                "${workspaceFolder}/dist/src/test/**/*.js"
-            ],
+            "outFiles": ["${workspaceFolder}/dist/src/test/**/*.js"],
             "preLaunchTask": "${defaultBuildTask}"
         },
         {
@@ -94,10 +80,7 @@
                 "AWS_TOOLKIT_IGNORE_WEBPACK_BUNDLE": "true",
                 "NO_COVERAGE": "true"
             },
-            "outFiles": [
-                "${workspaceFolder}/dist/.vscode/*",
-                "${workspaceFolder}/dist/src/test/**/*.js"
-            ],
+            "outFiles": ["${workspaceFolder}/dist/.vscode/*", "${workspaceFolder}/dist/src/test/**/*.js"],
             "preLaunchTask": "${defaultBuildTask}"
         },
         {
@@ -116,19 +99,14 @@
                 "AWS_TOOLKIT_IGNORE_WEBPACK_BUNDLE": "true",
                 "NO_COVERAGE": "true"
             },
-            "outFiles": [
-                "${workspaceFolder}/dist/src/integrationTest/**/*.js"
-            ],
+            "outFiles": ["${workspaceFolder}/dist/src/integrationTest/**/*.js"],
             "preLaunchTask": "npm: testCompile"
         }
     ],
     "compounds": [
         {
             "name": "Extension + Attach to SSM Document Language Server",
-            "configurations": [
-                "Extension",
-                "Attach to SSM Document Language Server"
-            ]
+            "configurations": ["Extension", "Attach to SSM Document Language Server"]
         }
     ]
 }

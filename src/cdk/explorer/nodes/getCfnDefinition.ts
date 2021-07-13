@@ -1,6 +1,5 @@
 import * as fs from 'fs';
 
-
 /**
  * @param uniqueIdentifier unique identifier of state machine
  * @param cdkOutPath cdk.out path
