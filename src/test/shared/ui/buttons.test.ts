@@ -32,6 +32,14 @@ describe('UI buttons', function () {
         assertIconPath(help.iconPath as IconPath)
     })
 
+    it('creates a help button with a url', function () {
+        const url = 'http://fake.url'
+        const help = buttons.createHelpButton(undefined, url)
+
+        assert.strictEqual(help.url, url)
+        assertIconPath(help.iconPath as IconPath)
+    })
+
     function assertIconPath(iconPath: IconPath) {
         assert.strictEqual(iconPath.dark.path, ext.iconPaths.dark.help)
         assert.strictEqual(iconPath.light.path, ext.iconPaths.light.help)
