@@ -59,8 +59,10 @@ export class S3FileViewerManager {
         //TODOD:: delegate this logic to S3Tab.ts
         //this will display the document at the end
         await this.listTempFolder()
-        const newTab = new S3Tab(fileLocation)
+
+        const newTab = this.activeTabs.get(fileLocation.fsPath) ?? new S3Tab(fileLocation)
         await newTab.openFileOnReadOnly(this.window)
+
         this.activeTabs.set(fileLocation.fsPath, newTab)
     }
 
@@ -73,7 +75,7 @@ export class S3FileViewerManager {
         //close read-only tab
 
         //open on edit mode
-        await tab?.openFileOnEditMode(this.window)
+        await tab!.openFileOnEditMode(this.window)
     }
 
     /**
