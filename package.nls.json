@@ -573,13 +573,5 @@
     "AWS.ssmDocument.ssm.maxItemsComputed.desc": "Controls the maximum number of problems produced by the SSM Document language server.",
     "AWS.picker.dynamic.noItemsFound.detail": "Click here to go back",
     "AWS.picker.dynamic.noItemsFound.label": "[No items found]",
-    "AWS.picker.dynamic.errorNode.label": "There was an error retrieving more items.",
-    "AWS.walkthrough.gettingStarted.title": "Get Started with AWS",
-    "AWS.walkthrough.gettingStarted.description": "Connect the Toolkit to your AWS account using AWS-supported credentials.",
-    "AWS.walkthrough.gettingStarted.accessKeys.title": "Obtain AWS Access Keys",
-    "AWS.walkthrough.gettingStarted.accessKeys.description": "To access AWS with the AWS Toolkit for Visual Studio Code, you must configure the toolkit with AWS account credentials. To do this with AWS-supported credentials, you must first obtain appropriate AWS access keys.\n[Learn More](https://docs.aws.amazon.com/toolkit-for-vscode/latest/userguide/obtain-credentials.html)",
-    "AWS.walkthrough.gettingStarted.accessKeys.altText": "AWS IAM Console",
-    "AWS.walkthrough.gettingStarted.createProfile.title": "Create Credentials Profile",
-    "AWS.walkthrough.gettingStarted.createProfile.description": "To grant the Toolkit access to your account you must make your AWS account credentials available to the toolkit.\n[Create Credentials Profile](command:aws.credential.profile.create)",
-    "AWS.walkthrough.gettingStarted.createProfile.altText": "Profile Creation Wizard"
+    "AWS.picker.dynamic.errorNode.label": "There was an error retrieving more items."
 }
