@@ -52,17 +52,17 @@ export class RegionNode extends AWSTreeNodeBase {
         const serviceCandidates = [
             { serviceId: 'apigateway', createFn: () => new ApiGatewayNode(partitionId, this.regionCode) },
             { serviceId: 'cloudformation', createFn: () => new CloudFormationNode(this.regionCode) },
+            { serviceId: 'logs', createFn: () => new CloudWatchLogsNode(this.regionCode) },
             {
                 serviceId: 'ecr',
                 createFn: () => new EcrNode(ext.toolkitClientBuilder.createEcrClient(this.regionCode)),
             },
+            { serviceId: 'ecs', createFn: () => new EcsNode(ext.toolkitClientBuilder.createEcsClient(this.regionCode))
+            },
             { serviceId: 'lambda', createFn: () => new LambdaNode(this.regionCode) },
-            { serviceId: 'logs', createFn: () => new CloudWatchLogsNode(this.regionCode) },
             {
                 serviceId: 's3',
                 createFn: () => new S3Node(ext.toolkitClientBuilder.createS3Client(this.regionCode)),
-            },
-            { serviceId: 'ecs', createFn: () => new EcsNode(ext.toolkitClientBuilder.createEcsClient(this.regionCode))
             },
             ...(isCloud9() ? [] : [{ serviceId: 'schemas', createFn: () => new SchemasNode(this.regionCode) }]),
             ...(isCloud9() ? [] : [{ serviceId: 'states', createFn: () => new StepFunctionsNode(this.regionCode) }]),
