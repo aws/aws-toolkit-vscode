@@ -43,7 +43,7 @@ export class AslVisualizationCDK extends AbstractAslVisualization {
             command: 'update',
             stateMachineData,
             //can I just put this true or should I make an isValid fntn?
-            isValid: true,
+            isValid: typeof stateMachineData === 'string',
             errors: [],
         })
     }
