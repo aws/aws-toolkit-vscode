@@ -135,7 +135,7 @@ object IdeVersions {
                 sdkFlavor = IdeFlavor.IU,
                 sdkVersion = "212.4638.7-EAP-SNAPSHOT",
                 plugins = commonPlugins + listOf(
-//                    "JavaScript",
+                    "JavaScript",
                     // Transitive dependency needed for javascript
                     // Can remove when https://github.com/JetBrains/gradle-intellij-plugin/issues/608 is fixed
                     "com.intellij.css",
