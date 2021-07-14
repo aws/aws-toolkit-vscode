@@ -18,8 +18,7 @@ import software.amazon.awssdk.services.ecs.model.LogDriver
 import software.amazon.awssdk.services.ecs.model.Service
 import software.aws.toolkits.jetbrains.AwsToolkit
 import software.aws.toolkits.jetbrains.core.awsClient
-import software.aws.toolkits.jetbrains.core.credentials.AwsConnectionManager
-import software.aws.toolkits.jetbrains.core.credentials.toEnvironmentVariables
+import software.aws.toolkits.jetbrains.core.credentials.withAwsConnection
 import software.aws.toolkits.jetbrains.core.explorer.actions.SingleExplorerNodeActionGroup
 import software.aws.toolkits.jetbrains.core.getResource
 import software.aws.toolkits.jetbrains.core.getResourceNow
@@ -143,7 +142,9 @@ class ExecuteCommandAction(
             if (EcsExecUtils.ensureServiceIsInStableState(project, container.service)) {
                 SessionManagerPluginInstallationVerification.requiresSessionManager(project) {
                     runInEdt {
-                        RunCommandDialog(project, container).show()
+                        project.withAwsConnection {
+                            RunCommandDialog(project, container, it).show()
+                        }
                     }
                 }
             } else {
@@ -166,12 +167,9 @@ class ExecuteCommandInShellAction(
         coroutineScope.launch {
             if (EcsExecUtils.ensureServiceIsInStableState(project, container.service)) {
                 SessionManagerPluginInstallationVerification.requiresSessionManager(project) {
-                    val connectionSettings = AwsConnectionManager.getInstance(project).connectionSettings()
-                    if (connectionSettings != null) {
-                        val environmentVariables = connectionSettings.region.toEnvironmentVariables() +
-                            connectionSettings.credentials.resolveCredentials().toEnvironmentVariables()
-                        runInEdt {
-                            OpenShellInContainerDialog(project, container, environmentVariables).show()
+                    runInEdt {
+                        project.withAwsConnection {
+                            OpenShellInContainerDialog(project, container, it).show()
                         }
                     }
                 }
