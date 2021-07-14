@@ -67,8 +67,13 @@ class EcrPushIntegrationTest {
             )
             // gross transform because we only have the short SHA right now
             val localImageId = runtime.agent.getImages(null).first { it.imageId.startsWith("sha256:${runtime.agentApplication.imageId}") }.imageId
-            val config = EcrUtils.buildDockerRepositoryModel(ecrLogin, remoteRepo, remoteTag)
-            EcrUtils.pushImage(projectRule.project, localImageId, serverInstance, config)
+            val pushRequest = ImageEcrPushRequest(
+                serverInstance,
+                localImageId,
+                remoteRepo,
+                remoteTag
+            )
+            EcrUtils.pushImage(projectRule.project, ecrLogin, pushRequest)
 
             assertThat(
                 ecrClient.batchGetImage {

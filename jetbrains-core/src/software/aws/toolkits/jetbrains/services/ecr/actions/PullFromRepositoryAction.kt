@@ -17,6 +17,7 @@ import kotlinx.coroutines.withContext
 import software.amazon.awssdk.services.ecr.EcrClient
 import software.aws.toolkits.core.utils.getLogger
 import software.aws.toolkits.jetbrains.core.awsClient
+import software.aws.toolkits.jetbrains.core.docker.ToolkitDockerAdapter
 import software.aws.toolkits.jetbrains.services.ecr.EcrLogin
 import software.aws.toolkits.jetbrains.services.ecr.EcrRepositoryNode
 import software.aws.toolkits.jetbrains.services.ecr.EcrUtils
@@ -119,7 +120,7 @@ private class PullFromEcrTask(
     override fun run(indicator: ProgressIndicator) {
         indicator.isIndeterminate = true
         val config = EcrUtils.buildDockerRepositoryModel(ecrLogin, repository, image)
-        task = EcrUtils.pullImage(project, runtime, config, indicator).also {
+        task = ToolkitDockerAdapter(project, runtime).pullImage(config, indicator).also {
             // don't return until docker process exits
             it.await()
         }

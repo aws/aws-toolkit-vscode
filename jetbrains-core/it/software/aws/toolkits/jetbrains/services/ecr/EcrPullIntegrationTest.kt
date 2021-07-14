@@ -14,6 +14,7 @@ import org.junit.rules.TemporaryFolder
 import software.amazon.awssdk.regions.Region
 import software.amazon.awssdk.services.ecr.EcrClient
 import software.aws.toolkits.core.rules.EcrTemporaryRepositoryRule
+import software.aws.toolkits.jetbrains.core.docker.ToolkitDockerAdapter
 import software.aws.toolkits.jetbrains.services.ecr.resources.Repository
 import java.util.UUID
 
@@ -65,14 +66,19 @@ class EcrPullIntegrationTest {
             // gross transform because we only have the short SHA right now
             val localImageId = runtime.agent.getImages(null).first { it.imageId.startsWith("sha256:${runtime.agentApplication.imageId}") }.imageId
             val config = EcrUtils.buildDockerRepositoryModel(ecrLogin, remoteRepo, remoteTag)
-
+            val pushRequest = ImageEcrPushRequest(
+                serverInstance,
+                localImageId,
+                remoteRepo,
+                remoteTag
+            )
             // push up and image and then delete the local tag
-            EcrUtils.pushImage(projectRule.project, localImageId, serverInstance, config)
+            EcrUtils.pushImage(projectRule.project, ecrLogin, pushRequest)
             runtime.agentApplication.deleteImage()
             assertThat(runtime.agent.getImages(null).firstOrNull { it.imageId == localImageId }).isNull()
 
             // pull it from the remote
-            EcrUtils.pullImage(project, serverInstance, config).await()
+            ToolkitDockerAdapter(project, serverInstance).pullImage(config).await()
             assertThat(runtime.agent.getImages(null).firstOrNull { it.imageId == localImageId }).isNotNull()
         }
     }
