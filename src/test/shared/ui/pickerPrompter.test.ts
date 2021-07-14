@@ -155,11 +155,13 @@ describe('CustomQuickPickPrompter', function () {
 
     it('filter box adds new item', async function () {
         const result = testPrompter.prompt()
-        picker.value = '123'
 
         const isShown = await waitUntil(
-            async () => picker.activeItems.length === 1 && picker.activeItems[0].description === '123',
-            { timeout: 1000, interval: 10, truthy: true }
+            async () =>
+                (picker.value = '123') &&
+                picker.activeItems.length === 1 &&
+                picker.activeItems[0].description === '123',
+            { timeout: 5000, interval: 10, truthy: true }
         )
 
         assert.ok(isShown)
@@ -179,13 +181,15 @@ describe('CustomQuickPickPrompter', function () {
         assert.strictEqual(prompter.quickPick.enabled, false)
 
         const isShown = waitUntil(
-            async () => picker.activeItems.length === 1 && picker.activeItems[0].description === '123',
-            { timeout: 1000, interval: 10, truthy: true }
+            async () =>
+                (picker.value = '123') &&
+                picker.activeItems.length === 1 &&
+                picker.activeItems[0].description === '123',
+            { timeout: 5000, interval: 10, truthy: true }
         )
 
         resolveItems(testItems)
         await itemsPromise
-        picker.value = '123'
 
         assert.ok(await isShown)
 
