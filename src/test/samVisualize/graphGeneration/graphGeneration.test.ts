@@ -9,8 +9,20 @@ import { join } from 'path'
 import { readdirSync, readFileSync } from 'fs'
 import { getProjectDir } from '../../testUtil'
 
-const TestInputDirectory = join(getProjectDir(), 'src', 'test', 'samVisualize', 'testYamlTemplates')
-const TestExpectedOutputDirectory = join(getProjectDir(), 'src', 'test', 'samVisualize', 'expectedGraphObjects')
+const TestInputDirectory = join(
+    getProjectDir(),
+    'testFixtures',
+    'workspaceFolder',
+    'samVisualize-test-data',
+    'testYamlTemplates'
+)
+const TestExpectedOutputDirectory = join(
+    getProjectDir(),
+    'testFixtures',
+    'workspaceFolder',
+    'samVisualize-test-data',
+    'expectedGraphObjects'
+)
 
 let inputFiles: Array<string>
 let expectedOutputFiles: Array<string>
