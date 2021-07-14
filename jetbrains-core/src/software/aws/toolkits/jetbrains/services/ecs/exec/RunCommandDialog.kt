@@ -5,12 +5,9 @@ package software.aws.toolkits.jetbrains.services.ecs.exec
 
 import com.intellij.execution.executors.DefaultRunExecutor
 import com.intellij.execution.runners.ExecutionEnvironmentBuilder
-import com.intellij.openapi.actionSystem.impl.SimpleDataContext
 import com.intellij.openapi.application.ModalityState
 import com.intellij.openapi.project.Project
 import com.intellij.openapi.ui.DialogWrapper
-import com.intellij.tools.Tool
-import com.intellij.tools.ToolRunProfile
 import com.intellij.ui.CollectionComboBoxModel
 import com.intellij.ui.components.JBTextField
 import com.intellij.ui.layout.GrowPolicy
@@ -18,6 +15,8 @@ import com.intellij.ui.layout.applyToComponent
 import com.intellij.ui.layout.panel
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
+import software.aws.toolkits.jetbrains.core.credentials.ConnectionSettings
+import software.aws.toolkits.jetbrains.core.credentials.toEnvironmentVariables
 import software.aws.toolkits.jetbrains.services.ecs.ContainerDetails
 import software.aws.toolkits.jetbrains.services.ecs.resources.EcsResources
 import software.aws.toolkits.jetbrains.ui.ResourceSelector
@@ -27,12 +26,11 @@ import software.aws.toolkits.resources.message
 import software.aws.toolkits.telemetry.EcsExecuteCommandType
 import software.aws.toolkits.telemetry.EcsTelemetry
 import software.aws.toolkits.telemetry.Result
-import java.nio.file.Path
 import javax.swing.JComponent
 import javax.swing.JTextField
 import javax.swing.plaf.basic.BasicComboBoxEditor
 
-class RunCommandDialog(private val project: Project, private val container: ContainerDetails) :
+class RunCommandDialog(private val project: Project, private val container: ContainerDetails, private val connectionSettings: ConnectionSettings) :
     DialogWrapper(project) {
     private val coroutineScope = ApplicationThreadPoolScope("RunCommandDialog")
     private val tasks = ResourceSelector
@@ -122,14 +120,15 @@ class RunCommandDialog(private val project: Project, private val container: Cont
     private suspend fun runCommand() {
         try {
             val awsCliPath = AwsCliExecutable().resolve() ?: throw IllegalStateException(message("executableCommon.missing_executable", "AWS CLI"))
-            val execCommand = buildExecCommandConfiguration(('"' + command + '"'), awsCliPath)
             val environment = ExecutionEnvironmentBuilder
                 .create(
                     project,
                     DefaultRunExecutor.getRunExecutorInstance(),
-                    ToolRunProfile(
-                        execCommand,
-                        SimpleDataContext.getProjectContext(project)
+                    RunCommandRunProfile(
+                        connectionSettings.toEnvironmentVariables(),
+                        constructExecCommandParameters(('"' + command + '"')),
+                        container.containerDefinition.name(),
+                        awsCliPath.toAbsolutePath().toString()
                     )
                 )
                 .build()
@@ -142,16 +141,6 @@ class RunCommandDialog(private val project: Project, private val container: Cont
         } catch (e: Exception) {
             EcsTelemetry.runExecuteCommand(project, Result.Failed, EcsExecuteCommandType.Command)
         }
-    }
-
-    fun buildExecCommandConfiguration(commandToExecute: String, path: Path): Tool {
-        val execCommand = Tool()
-        execCommand.isShowConsoleOnStdOut = true
-        execCommand.isUseConsole = true
-        execCommand.parameters = constructExecCommandParameters(commandToExecute)
-        execCommand.name = container.containerDefinition.name()
-        execCommand.program = path.toAbsolutePath().toString()
-        return execCommand
     }
 
     companion object {
