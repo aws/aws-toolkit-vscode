@@ -5,6 +5,7 @@
 import * as path from 'path'
 import * as vscode from 'vscode'
 import * as fs from 'fs'
+import { mkdirp } from 'fs-extra'
 import { OutputChannel } from 'vscode'
 import { ext } from '../../shared/extensionGlobals'
 import { makeTemporaryToolkitFolder } from '../../shared/filesystemUtilities'
@@ -134,6 +135,8 @@ export class S3FileViewerManager {
             showOutputMessage(`user confirmed download, continuing`, this.outputChannel) //TODOD:: debug log,
         }
 
+        //want to create every folder first
+        await this.createSubFolders(targetPath)
         //good to continue with download
         try {
             await downloadWithProgress(fileNode, targetLocation, this.window)
@@ -198,13 +201,24 @@ export class S3FileViewerManager {
     }
 
     public createTargetPath(fileNode: S3FileNode): Promise<string> {
-        const completePath = getStringHash(readablePath(fileNode)) //TODOD:: map hashes to real name
-        //completePath = completePath.slice(4) //removes 's3://' from path
+        //const completePath = getStringHash(readablePath(fileNode)) //TODOD:: map hashes to real name
 
+        let completePath = readablePath(fileNode) //TODOD:: map hashes to real name
+        completePath = completePath.slice(4) //removes 's3://' from path
+        completePath = completePath.slice(undefined, completePath.lastIndexOf('/') + 1) + '[S3]' + fileNode.file.name // add [S3] to the name of the file
+        completePath = this.tempLocation! + completePath
         //const splittedPath = completePath.split('/')
         //completePath = splittedPath.join('%')
 
-        return Promise.resolve(path.join(this.tempLocation!, 'S3=' + completePath))
+        //return Promise.resolve(path.join(this.tempLocation!, 'S3=' + completePath))
+        return Promise.resolve(completePath)
+    }
+
+    private async createSubFolders(targetPath: string): Promise<boolean> {
+        const folderStructure = targetPath.slice(undefined, targetPath.lastIndexOf('/'))
+        //fs.mkdirSync(folderStructure, { recursive: true })
+        await mkdirp(folderStructure)
+        return Promise.resolve(true)
     }
 
     async refreshNode(fileNode: S3FileNode): Promise<S3FileNode | undefined> {
