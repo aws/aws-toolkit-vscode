@@ -7,9 +7,10 @@ import { generateGraphFromYaml } from '../../../samVisualize/graphGeneration/cfn
 import { Node, Link } from '../../../samVisualize/graphGeneration/graph'
 import { join } from 'path'
 import { readdirSync, readFileSync } from 'fs'
+import { getProjectDir } from '../../testUtil'
 
-const TestInputDirectory = join('src', 'test', 'samVisualize', 'testYamlTemplates')
-const TestExpectedOutputDirectory = join('src', 'test', 'samVisualize', 'expectedGraphObjects')
+const TestInputDirectory = join(getProjectDir(), 'src', 'test', 'samVisualize', 'testYamlTemplates')
+const TestExpectedOutputDirectory = join(getProjectDir(), 'src', 'test', 'samVisualize', 'expectedGraphObjects')
 
 let inputFiles: Array<string>
 let expectedOutputFiles: Array<string>
