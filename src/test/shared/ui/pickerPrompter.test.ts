@@ -4,7 +4,6 @@
  */
 
 import * as assert from 'assert'
-import { waitUntil } from '../../../shared/utilities/timeoutUtils'
 import * as vscode from 'vscode'
 import {
     createLabelQuickPick,
@@ -15,6 +14,7 @@ import {
     DEFAULT_QUICKPICK_OPTIONS,
     QuickPickPrompter,
 } from '../../../shared/ui/pickerPrompter'
+import { TestQuickPick } from './picker.test'
 
 describe('createQuickPick', function () {
     const items: DataQuickPickItem<string>[] = [
@@ -148,53 +148,20 @@ describe('CustomQuickPickPrompter', function () {
     let testPrompter: CustomQuickPickPrompter<number>
 
     beforeEach(function () {
-        picker = vscode.window.createQuickPick() as any
+        picker = new TestQuickPick()
         picker.items = testItems
         testPrompter = new CustomQuickPickPrompter(picker, customInputSettings.label, customInputSettings.transform)
     })
 
     it('filter box adds new item', async function () {
         const result = testPrompter.prompt()
+        const input = '123'
 
-        const isShown = await waitUntil(
-            async () =>
-                (picker.value = '123') &&
-                picker.activeItems.length === 1 &&
-                picker.activeItems[0].description === '123',
-            { timeout: 5000, interval: 10, truthy: true }
-        )
-
-        assert.ok(isShown)
+        picker.value = input
+        assert.strictEqual(picker.activeItems[0].description, input)
 
         picker.selectedItems = [picker.activeItems[0]]
 
-        assert.strictEqual(await result, 123)
-    })
-
-    it('handles promise for items', async function () {
-        let resolveItems!: (items: DataQuickPickItem<number>[]) => void
-        const itemsPromise = new Promise<DataQuickPickItem<number>[]>(resolve => (resolveItems = resolve))
-        const prompter = createQuickPick(itemsPromise, { customInputSettings })
-        picker = prompter.quickPick
-        const result = prompter.prompt()
-        assert.strictEqual(prompter.quickPick.busy, true)
-        assert.strictEqual(prompter.quickPick.enabled, false)
-
-        const isShown = waitUntil(
-            async () =>
-                (picker.value = '123') &&
-                picker.activeItems.length === 1 &&
-                picker.activeItems[0].description === '123',
-            { timeout: 5000, interval: 10, truthy: true }
-        )
-
-        resolveItems(testItems)
-        await itemsPromise
-
-        assert.ok(await isShown)
-
-        picker.selectedItems = [picker.activeItems[0]]
-
-        assert.strictEqual(await result, 123)
+        assert.strictEqual(await result, Number(input))
     })
 })
