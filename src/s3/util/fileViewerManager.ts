@@ -178,7 +178,6 @@ export class S3FileViewerManager {
         const parent = fileNode.parent
         parent.clearChildren()
 
-        await this.commands.execute('aws.refreshAwsExplorerNode', fileNode)
         await this.commands.execute('aws.refreshAwsExplorerNode', parent)
         await this.commands.execute('aws.loadMoreChildren', parent)
 
