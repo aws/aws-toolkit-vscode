@@ -4,12 +4,10 @@
  */
 
 import * as assert from 'assert'
-import * as path from 'path'
 import * as vscode from 'vscode'
 import { S3BucketNode } from '../../../s3/explorer/s3BucketNode'
 import { S3FileNode } from '../../../s3/explorer/s3FileNode'
 import { S3FolderNode } from '../../../s3/explorer/s3FolderNode'
-import { readablePath } from '../../../s3/util'
 import { S3FileViewerManager } from '../../../s3/util/fileViewerManager'
 import { DefaultFile, S3Client } from '../../../shared/clients/s3Client'
 import { makeTemporaryToolkitFolder } from '../../../shared/filesystemUtilities'

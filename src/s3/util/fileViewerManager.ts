@@ -2,7 +2,6 @@
  * Copyright 2021 Amazon.com, Inc. or its affiliates. All Rights Reserved.
  * SPDX-License-Identifier: Apache-2.0
  */
-import * as path from 'path'
 import * as vscode from 'vscode'
 import * as fs from 'fs'
 import { mkdirp } from 'fs-extra'
@@ -14,7 +13,6 @@ import { Commands } from '../../shared/vscode/commands'
 import { downloadWithProgress } from '../commands/downloadFileAs'
 import { S3FileNode } from '../explorer/s3FileNode'
 import { readablePath } from '../util'
-import { getStringHash } from '../../shared/utilities/textUtilities'
 import { S3Tab } from './S3Tab'
 import { getLogger } from '../../shared/logger'
 import { showConfirmationMessage } from '../../shared/utilities/messages'
