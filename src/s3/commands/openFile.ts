@@ -12,7 +12,14 @@ import { Window } from '../../shared/vscode/window'
 import { S3FileNode } from '../explorer/s3FileNode'
 //import { FileViewerManager, SingletonManager } from '../util/fileViewerManager'
 
+const SIZE_LIMIT = 50 * Math.pow(10, 6)
 export async function openFileCommand(node: S3FileNode, window = Window.vscode()): Promise<void> {
+    if (node.file.sizeBytes! > SIZE_LIMIT) {
+        window.showErrorMessage(
+            'Files over 50MB currently not supported for file display, please use the "download as" function'
+        )
+        return
+    }
     const manager = ext.s3fileViewerManager
     manager.openTab(node)
 }
