@@ -39,16 +39,11 @@ describe('S3Tab', async function () {
         when(workspace.openTextDocument(anything())).thenReturn()
         when(window.showTextDocument(anything())).thenReturn()
 
-        //get the active text editor
         await s3Tab.openFileOnReadOnly(instance(workspace))
 
         const [uri] = capture(workspace.openTextDocument).last()
         assert.strictEqual((uri as vscode.Uri).fsPath, s3Uri.fsPath)
         assert.strictEqual((uri as vscode.Uri).scheme, s3Uri.scheme)
-
-        //find the dummy file uri
-
-        //assert that it is the same as the given uri
     })
 
     it('can be opened in edit mode', function () {})
