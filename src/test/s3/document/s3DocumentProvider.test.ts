@@ -12,16 +12,19 @@ import { makeTemporaryToolkitFolder } from '../../../shared/filesystemUtilities'
 
 describe('S3DocumentProvider', async function () {
     //make a temprorary directory
-    const tempFolder = await makeTemporaryToolkitFolder()
     const fileName = 'test.txt'
-    const fileLocation = vscode.Uri.parse('s3:' + path.join(tempFolder, fileName))
-
-    let provider: S3DocumentProvider
-
-    // TODO: Make this less flaky when we add manual timestamp controls.
     const message = "i don't like testing but this one is easy, it should work"
 
-    beforeEach(function () {
+    let tempFolder: string
+    let fileLocation: vscode.Uri
+    let provider: S3DocumentProvider
+    before(async function () {
+        tempFolder = await makeTemporaryToolkitFolder()
+        fileLocation = vscode.Uri.parse('s3:' + path.join(tempFolder, fileName))
+    })
+
+    // TODO: Make this less flaky when we add manual timestamp controls.
+    beforeEach(async function () {
         provider = new S3DocumentProvider()
     })
 
