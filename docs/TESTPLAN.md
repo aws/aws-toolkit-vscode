@@ -57,6 +57,14 @@ modifications/workarounds in `src/test/testRunner.ts`.
     -   [Mocha](https://mochajs.org/) framework is used to write tests.
 -   New code requires new tests.
 
+## Best Practices
+
+-   Use `function ()` and `async function ()` syntax for `describe()` and `it()` callbacks [instead of arrow functions.](https://mochajs.org/#arrow-functions)
+-   Do NOT include any `await` functions in `describe()` blocks directly (usage within `before`, `beforeEach`, `after`, `afterEach`, and `it` blocks are fine).
+    -   This will cause the toolkit to always evaluate the `describe` block and can cause issues with either tests not running or tests always running (if other tests are running with `.only`)
+    -   Tests that require an premade value from a Promise should initialize the value as a `let` and make the `await`ed call in the `before()` statement.
+-   Remember to clean up any `.only()` statements before pushing into PRs! Otherwise, the full suite of tests won't work.
+
 ## Testing Gaps
 
 -   No handling of case where VSCode crashes.
