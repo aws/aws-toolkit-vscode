@@ -9,7 +9,7 @@ const localize = nls.loadMessageBundle()
 import { Credentials } from 'aws-sdk'
 import { env, QuickPickItem, Uri, ViewColumn, window } from 'vscode'
 import { LoginManager } from '../credentials/loginManager'
-import { CredentialsId, fromString } from '../credentials/providers/credentials'
+import { asString, CredentialsId, fromString } from '../credentials/providers/credentials'
 import { CredentialsProviderManager } from '../credentials/providers/credentialsProviderManager'
 import { AwsContext } from './awsContext'
 import { AwsContextTreeCollection } from './awsContextTreeCollection'
@@ -30,6 +30,7 @@ import { getRegionsForActiveCredentials } from './regions/regionUtilities'
 import { createQuickPick, promptUser } from './ui/picker'
 import { SharedCredentialsProvider } from '../credentials/providers/sharedCredentialsProvider'
 import { getIdeProperties } from './extensionUtilities'
+import { credentialHelpUrl } from './constants'
 
 export class DefaultAWSContextCommands {
     private readonly _awsContext: AwsContext
@@ -76,17 +77,11 @@ export class DefaultAWSContextCommands {
             const profileName: string | undefined = await this.promptAndCreateNewCredentialsFile()
 
             if (profileName) {
-                // TODO: change this once we figure out what profile types we should have
-                const sharedProviderId: CredentialsId = {
-                    credentialSource: SharedCredentialsProvider.getProviderType(),
-                    credentialTypeId: profileName,
-                }
-
-                await this.loginManager.login({ passive: false, providerId: sharedProviderId })
+                await this.loginManager.login({ passive: false, providerId: fromString(profileName) })
             }
+        } else {
+            await this.editCredentials()
         }
-
-        await this.editCredentials()
     }
 
     public async onCommandLogout() {
@@ -150,7 +145,20 @@ export class DefaultAWSContextCommands {
                     secretKey: state.secretKey,
                 })
 
-                return state.profileName
+                const sharedProviderId: CredentialsId = {
+                    credentialSource: SharedCredentialsProvider.getProviderType(),
+                    credentialTypeId: state.profileName,
+                }
+
+                window.showInformationMessage(
+                    localize(
+                        'AWS.message.prompt.credentials.definition.done',
+                        'Credentials profile {0} created.',
+                        state.profileName
+                    )
+                )
+
+                return asString(sharedProviderId)
             }
 
             const response = await window.showWarningMessage(
@@ -181,7 +189,6 @@ export class DefaultAWSContextCommands {
         const credentialsFiles: string[] = await UserCredentialsUtils.findExistingCredentialsFilenames()
         const providerMap = await CredentialsProviderManager.getInstance().getCredentialProviderNames()
         const profileNames = Object.keys(providerMap)
-
         if (profileNames.length > 0) {
             // There are credentials for the user to choose from
             const dataProvider = new DefaultCredentialSelectionDataProvider(profileNames, ext.context)
@@ -190,43 +197,39 @@ export class DefaultAWSContextCommands {
                 return state.credentialProfile.label
             }
         } else if (credentialsFiles.length === 0) {
-            const userResponse = await window.showInformationMessage(
-                localize(
-                    'AWS.message.prompt.credentials.create',
-                    'You do not appear to have any {0} Credentials defined. Would you like to set one up now?',
-                    getIdeProperties().company
-                ),
-                localizedText.yes,
-                localizedText.no
-            )
-
-            if (userResponse !== localizedText.yes) {
-                return undefined
+            if (await this.promptCredentialsSetup()) {
+                return await this.promptAndCreateNewCredentialsFile()
             }
-
-            return await this.promptAndCreateNewCredentialsFile()
         } else {
-            // If no credentials were found, the user should be
-            // encouraged to define some.
-            const userResponse = await window.showInformationMessage(
-                localize(
-                    'AWS.message.prompt.credentials.create',
-                    'You do not appear to have any {0} Credentials defined. Would you like to set one up now?',
-                    getIdeProperties().company
-                ),
-                localizedText.yes,
-                localizedText.no
-            )
-
-            if (userResponse === localizedText.yes) {
-                // Start edit, the user will have to try connecting again
-                // after they have made their edits.
+            if (await this.promptCredentialsSetup()) {
                 await this.editCredentials()
             }
-
-            // If we get here, there are credentials for the user to choose from
-            return undefined
         }
+        return undefined
+    }
+
+    private async promptCredentialsSetup(): Promise<boolean> {
+        // If no credentials were found, the user should be
+        // encouraged to define some.
+        const userResponse = await window.showInformationMessage(
+            localize(
+                'AWS.message.prompt.credentials.create',
+                'You do not appear to have any {0} Credentials defined. Would you like to set one up now?',
+                getIdeProperties().company
+            ),
+            localizedText.yes,
+            localizedText.no,
+            localizedText.help
+        )
+
+        if (userResponse === localizedText.yes) {
+            return true
+        } else if (userResponse === localizedText.help) {
+            env.openExternal(Uri.parse(credentialHelpUrl))
+            return await this.promptCredentialsSetup()
+        }
+
+        return false
     }
 
     /**
