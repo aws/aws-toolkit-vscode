@@ -41,8 +41,8 @@ export async function activate(ctx: ExtContext): Promise<void> {
         vscode.commands.registerCommand('aws.s3.openFile', async (node: S3FileNode) => {
             await openFileCommand(node)
         }),
-        vscode.commands.registerCommand('aws.s3.openFileEditMode', async (uri?: vscode.Uri) => {
-            showOutputMessage(`command openFileEditMode() uri: ${uri}`, ext.outputChannel)
+        vscode.commands.registerCommand('aws.s3.openFileEditMode', async (uriOrNode?: vscode.Uri | S3FileNode) => {
+            showOutputMessage(`command openFileEditMode() uri: ${uriOrNode}`, ext.outputChannel)
             //await openFileEditModeCommand(uri)
         }),
         vscode.commands.registerCommand('aws.s3.uploadFile', async (node: S3BucketNode | S3FolderNode) => {
