@@ -35,6 +35,7 @@ export class S3Tab {
     }
 
     public async openFileOnReadOnly(): Promise<vscode.TextEditor | undefined> {
+        console.log('open file on read')
         if (!this.s3Uri) {
             this.s3Uri = vscode.Uri.parse('s3:' + this.fileUri.fsPath)
         }

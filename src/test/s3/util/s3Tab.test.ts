@@ -11,20 +11,30 @@ import * as testutil from '../../testUtil'
 import { S3Tab } from '../../../s3/util/s3Tab'
 
 describe.only('S3Tab', async function () {
-    const tempFolder = await makeTemporaryToolkitFolder()
+    console.log('14')
     const message = 'can this be read'
     const fileName = 'test.txt'
-    const fileUri = vscode.Uri.file(path.join(tempFolder, fileName))
-    const s3Uri = vscode.Uri.parse('s3:' + fileUri.fsPath)
-
-    testutil.toFile(message, fileUri.fsPath)
-
     const window = vscode.window
-    const s3Tab = new S3Tab(fileUri, window)
+
+    let tempFolder: string
+    let fileUri: vscode.Uri
+    let s3Uri: vscode.Uri
+    let s3Tab: S3Tab
+
+    before(async function () {
+        tempFolder = await makeTemporaryToolkitFolder()
+        fileUri = vscode.Uri.file(path.join(tempFolder, fileName))
+        s3Uri = vscode.Uri.parse('s3:' + fileUri.fsPath)
+        testutil.toFile(message, fileUri.fsPath)
+        s3Tab = new S3Tab(fileUri, window)
+    })
 
     it('can be opened in read-only mode', async function () {
+        console.log('27')
         //get the active text editor
-        assert.strictEqual((await s3Tab.openFileOnReadOnly())?.document.uri, s3Uri)
+        const response = await s3Tab.openFileOnReadOnly()
+        assert.strictEqual(response?.document.uri, s3Uri)
+
         //find the dummy file uri
 
         //assert that it is the same as the given uri
@@ -32,5 +42,5 @@ describe.only('S3Tab', async function () {
 
     it('can be opened in edit mode', function () {})
 
-    it('saves changes back to s3', async function () {})
+    it('saves changes back to s3', function () {})
 })
