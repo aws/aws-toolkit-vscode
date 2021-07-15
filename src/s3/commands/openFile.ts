@@ -2,7 +2,6 @@
  * Copyright 2021 Amazon.com, Inc. or its affiliates. All Rights Reserved.
  * SPDX-License-Identifier: Apache-2.0
  */
-//TODOD:: change feature icon on package.json
 
 import * as vscode from 'vscode'
 import { ext } from '../../shared/extensionGlobals'

@@ -21,8 +21,6 @@ export class S3DocumentProvider implements vscode.TextDocumentContentProvider {
         } catch (e) {
             showOutputMessage(`${e}`, ext.outputChannel)
         }
-        //getLogger().debug(data!)
-        showOutputMessage(data!, ext.outputChannel)
 
         return data ?? ''
     }

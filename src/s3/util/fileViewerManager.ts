@@ -53,10 +53,7 @@ export class S3FileViewerManager {
         if (!fileLocation) {
             return
         }
-        getLogger().debug(`file to be opened is: ${fileLocation}`)
-        showOutputMessage(`file to be opened is: ${fileLocation}`, this.outputChannel)
-
-        await this.listTempFolder()
+        getLogger().verbose(`S3FileViewer: File from s3 or temp to be opened is: ${fileLocation}`)
 
         const newTab = this.activeTabs.get(fileLocation.fsPath) ?? new S3Tab(fileLocation)
         await newTab.openFileOnReadOnly()
@@ -144,9 +141,8 @@ export class S3FileViewerManager {
             getLogger().debug(`FileViewer: User confirmed download, continuing`)
         }
 
-        //want to create every folder first
         await this.createSubFolders(targetPath)
-        //good to continue with download
+
         try {
             await downloadWithProgress(fileNode, targetLocation, this.window)
         } catch (err) {
@@ -206,16 +202,11 @@ export class S3FileViewerManager {
     }
 
     public createTargetPath(fileNode: S3FileNode): Promise<string> {
-        //const completePath = getStringHash(readablePath(fileNode)) //TODOD:: map hashes to real name
-
-        let completePath = readablePath(fileNode) //TODOD:: map hashes to real name
+        let completePath = readablePath(fileNode)
         completePath = completePath.slice(4) //removes 's3://' from path
         completePath = completePath.slice(undefined, completePath.lastIndexOf('/') + 1) + '[S3]' + fileNode.file.name // add [S3] to the name of the file
         completePath = this.tempLocation! + completePath
-        //const splittedPath = completePath.split('/')
-        //completePath = splittedPath.join('%')
 
-        //return Promise.resolve(path.join(this.tempLocation!, 'S3=' + completePath))
         return Promise.resolve(completePath)
     }
 
@@ -242,7 +233,7 @@ export class S3FileViewerManager {
         return fileNode
     }
 
-    //TODOD:: remove helper method
+    /*
     private listTempFolder(): Promise<void> {
         getLogger().debug('-------contents in temp:')
         showOutputMessage('-------contents in temp:', this.outputChannel)
@@ -255,7 +246,7 @@ export class S3FileViewerManager {
         getLogger().debug('-------------------------')
         showOutputMessage('-------------------------', this.outputChannel)
         return Promise.resolve()
-    }
+    }*/
 
     private async createTemp(): Promise<void> {
         this.tempLocation = await makeTemporaryToolkitFolder()
