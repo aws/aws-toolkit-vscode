@@ -3,6 +3,7 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
+import * as vscode from 'vscode'
 import { readFileSync } from 'fs'
 import { CloudFormation, updateYamlSchemasArray } from './cloudformation'
 import * as pathutils from '../utilities/pathUtils'
@@ -29,6 +30,7 @@ export class CloudFormationTemplateRegistry extends WatchedFiles<CloudFormation.
         try {
             template = await CloudFormation.load(path)
         } catch (e) {
+            await updateYamlSchemasArray(path, 'none')
             return undefined
         }
 
@@ -46,7 +48,14 @@ export class CloudFormationTemplateRegistry extends WatchedFiles<CloudFormation.
             return template
         }
 
+        await updateYamlSchemasArray(path, 'none')
         return undefined
+    }
+
+    // handles delete case
+    public async remove(path: string | vscode.Uri) {
+        await updateYamlSchemasArray(typeof path === 'string' ? path : pathutils.normalize(path.fsPath), 'none'),
+            super.remove(path)
     }
 }
 

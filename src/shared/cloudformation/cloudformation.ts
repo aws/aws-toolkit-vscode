@@ -772,7 +772,7 @@ const MANIFEST_URL = 'https://api.github.com/repos/awslabs/goformation/releases/
  * Checks manifest and downloads new schemas if the manifest version has been bumped.
  * Uses local, predownloaded version if up-to-date or network call fails
  * If the user has not previously used the toolkit and cannot pull the manifest, does not provide template autocomplete.
- * @param extensionContext 
+ * @param extensionContext
  */
 export async function refreshSchemas(extensionContext: vscode.ExtensionContext): Promise<void> {
     CFN_SCHEMA_PATH = normalizeSeparator(path.join(extensionContext.globalStoragePath, 'cloudformation.schema.json'))
@@ -822,51 +822,61 @@ export async function refreshSchemas(extensionContext: vscode.ExtensionContext):
  */
 export async function updateYamlSchemasArray(
     path: string,
-    type: 'cfn' | 'sam',
+    type: 'cfn' | 'sam' | 'none',
     config: WorkspaceConfiguration = vscode.workspace.getConfiguration('yaml'),
     paths: { cfnSchema: string; samSchema: string } = { cfnSchema: CFN_SCHEMA_PATH, samSchema: SAM_SCHEMA_PATH }
 ): Promise<void> {
     const relPath = normalizeSeparator(getWorkspaceRelativePath(path) ?? path)
     const schemas: { [key: string]: string | string[] | undefined } | undefined = config.get('schemas')
-    const writeTo = type === 'cfn' ? paths.cfnSchema : paths.samSchema
-    const deleteFrom = type === 'sam' ? paths.cfnSchema : paths.samSchema
+    const deleteFroms: string[] = []
+    if (type === 'cfn' || type == 'none') {
+        deleteFroms.push(paths.samSchema)
+    }
+    if (type === 'sam' || type == 'none') {
+        deleteFroms.push(paths.cfnSchema)
+    }
     let newWriteArr: string[] = [relPath]
-    let newDeleteArr: string[] = []
+    const modifiedArrays: { [key: string]: string[] } = {}
 
     if (schemas) {
-        if (schemas[writeTo]) {
-            newWriteArr = Array.isArray(schemas[writeTo])
-                ? (schemas[writeTo] as string[])
-                : [schemas[writeTo] as string]
-            if (!newWriteArr.includes(relPath)) {
-                newWriteArr.push(relPath)
+        if (type !== 'none') {
+            const writeTo = type === 'cfn' ? paths.cfnSchema : paths.samSchema
+            if (schemas[writeTo]) {
+                newWriteArr = Array.isArray(schemas[writeTo])
+                    ? (schemas[writeTo] as string[])
+                    : [schemas[writeTo] as string]
+                if (!newWriteArr.includes(relPath)) {
+                    newWriteArr.push(relPath)
+                }
             }
+            modifiedArrays[writeTo] = newWriteArr
         }
-        if (schemas[deleteFrom]) {
-            const temp = Array.isArray(schemas[deleteFrom])
-                ? (schemas[deleteFrom] as string[])
-                : [schemas[deleteFrom] as string]
-            newDeleteArr = temp.filter(val => val !== relPath)
+
+        for (const deleteFrom of deleteFroms) {
+            if (schemas[deleteFrom]) {
+                const temp = Array.isArray(schemas[deleteFrom])
+                    ? (schemas[deleteFrom] as string[])
+                    : [schemas[deleteFrom] as string]
+                modifiedArrays[deleteFrom] = temp.filter(val => val !== relPath)
+            }
         }
     }
 
-    try {
-        await config.update(
-            'schemas',
-            {
+    // don't edit settings if they don't exist and yaml isn't a template
+    if (!(type === 'none' && !schemas)) {
+        try {
+            await config.update('schemas', {
                 ...(schemas ? schemas : {}),
-                [writeTo]: newWriteArr,
-                [deleteFrom]: newDeleteArr,
-            }
-        )
-    } catch (e) {
-        getLogger().error('Could not write YAML schemas to configuration')
+                ...modifiedArrays,
+            })
+        } catch (e) {
+            getLogger().error('Could not write YAML schemas to configuration')
+        }
     }
-    
 }
 
 /**
- * Parses Goformation manifest and generates object containing latest version and schema URLs 
+ * Parses Goformation manifest and generates object containing latest version and schema URLs
  * @param manifest Manifest JSON from Github
  */
 export function getManifestDetails(manifest: string): { samUrl: string; cfnUrl: string; version: string } {
