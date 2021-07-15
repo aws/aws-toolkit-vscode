@@ -22,7 +22,6 @@ import com.jetbrains.rd.util.put
 import com.jetbrains.rd.util.reactive.adviseUntil
 import com.jetbrains.rdclient.protocol.RdDispatcher
 import com.jetbrains.rider.debugger.RiderDebuggerWorkerModelManager
-import com.jetbrains.rider.model.debuggerWorker.DotNetCoreAttachStartInfo
 import com.jetbrains.rider.model.debuggerWorker.DotNetDebuggerSessionModel
 import com.jetbrains.rider.model.debuggerWorkerConnectionHelperModel
 import com.jetbrains.rider.projectView.solution
@@ -39,6 +38,7 @@ import software.aws.toolkits.jetbrains.services.lambda.dotnet.FindPid.Companion.
 import software.aws.toolkits.jetbrains.services.lambda.execution.sam.SamDebugSupport
 import software.aws.toolkits.jetbrains.utils.ApplicationThreadPoolScope
 import software.aws.toolkits.jetbrains.utils.DotNetDebuggerUtils
+import software.aws.toolkits.jetbrains.utils.compatability.createNetCoreAttachStartInfo
 import software.aws.toolkits.jetbrains.utils.execution.steps.Context
 import software.aws.toolkits.jetbrains.utils.getCoroutineBgContext
 import software.aws.toolkits.jetbrains.utils.getCoroutineUiContext
@@ -113,10 +113,7 @@ object DotnetDebugUtils {
                                 backendPort
                             )
 
-                            val startInfo = DotNetCoreAttachStartInfo(
-                                processId = pid,
-                                needToBeInitializedImmediately = true
-                            )
+                            val startInfo = createNetCoreAttachStartInfo(pid)
 
                             val sessionModel = DotNetDebuggerSessionModel(startInfo)
                             sessionModel.sessionProperties.bindToSettings(debuggerLifetime).apply {
