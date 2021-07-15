@@ -35,26 +35,16 @@ export class S3Tab {
     }
 
     public async openFileOnReadOnly(workspace = vscode.workspace): Promise<vscode.TextEditor | undefined> {
-        console.log('open file on read')
         if (!this.s3Uri) {
             this.s3Uri = vscode.Uri.parse('s3:' + this.fileUri.fsPath)
         }
 
-        //this.fileUri.scheme = 's3'
-        //window.showTextDocument(this.fileUri)
-        //testutil.toFile('bogus', tempFile.fsPath)
         try {
-            console.log('trying to create doc')
             const doc = await workspace.openTextDocument(this.s3Uri) // calls back into the provider
-            //vscode.languages.setTextDocumentLanguage(doc, 'txt')
-            console.log('file on read created doc')
             return await this.window.showTextDocument(doc, { preview: true })
-            //this.activeTab = doc
         } catch (e) {
-            console.log(e)
             getLogger().error(`Given file not found, error: ${e}`)
         }
-        console.log('error hit')
     }
 
     public async openFileOnEditMode(window: typeof vscode.window) {

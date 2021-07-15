@@ -38,7 +38,7 @@ describe('S3Tab', async function () {
     it('can be opened in read-only mode', async function () {
         when(workspace.openTextDocument(anything())).thenReturn()
         when(window.showTextDocument(anything())).thenReturn()
-        console.log('27')
+
         //get the active text editor
         await s3Tab.openFileOnReadOnly(instance(workspace))
 
