@@ -43,9 +43,9 @@ export class S3FileViewerManager {
     }
 
     public async openTab(fileNode: S3FileNode): Promise<void> {
-        getLogger().debug(`++++++++++++++++++++++++++++++++manager was initialized, file: ${fileNode.file.key}`)
+        getLogger().verbose(`S3FileViewer: Retrieving and displaying file: ${fileNode.file.key}`)
         showOutputMessage(
-            `++++++++++++++++++++++++++++++++manager was initialized, file: ${fileNode.file.key}`,
+            localize('AWS.s3.fileViewer.info.fileKey', 'Retrieving and displaying file: {0}', fileNode.file.key),
             this.outputChannel
         )
 
@@ -67,25 +67,19 @@ export class S3FileViewerManager {
     public async openOnEditMode(uriOrNode: vscode.Uri | S3FileNode): Promise<void> {
         if (uriOrNode instanceof vscode.Uri) {
             //was activated from an open tab
-        } else {
-            //was
-        }
-
-        if (this.activeTabs.has(s3Uri.fsPath)) {
-            const tab = this.activeTabs.get(s3Uri.fsPath)
-            await tab!.openFileOnEditMode(this.window)
-        } else {
-            //was opened from the explorer
-            const fileLocation = await this.getFile(s3Uri as any)
+            if (this.activeTabs.has(uriOrNode.fsPath)) {
+                const tab = this.activeTabs.get(uriOrNode.fsPath)
+                await tab!.openFileOnEditMode(this.window)
+            }
+        } else if (uriOrNode instanceof S3FileNode) {
+            //was activated from the explorer, need to get the file
+            const fileLocation = await this.getFile(uriOrNode)
             if (!fileLocation) {
-                getLogger().error('Something went wrong')
                 return
             }
-            const newTab = new S3Tab(fileLocation)
+            const newTab = this.activeTabs.get(fileLocation.fsPath) ?? new S3Tab(fileLocation)
+            await newTab.openFileOnReadOnly()
         }
-        //close read-only tab
-
-        //open on edit mode
     }
 
     /**
@@ -99,16 +93,14 @@ export class S3FileViewerManager {
         const targetLocation = vscode.Uri.file(targetPath)
 
         const tempFile: vscode.Uri | undefined = await this.getFromTemp(fileNode)
-        //if it was found in temp, return the Uri location
+        //If it was found in temp, return the Uri location
         if (tempFile) {
             return tempFile
         }
 
-        //needs to be downloaded from S3
-        //if file is +4MB, prompt user to confirm before proceeding
-        //const uri = vscode.Uri.file('')
-
         if (fileNode.file.sizeBytes === undefined) {
+            getLogger().debug(`FileViewer: File size couldn't be determined, prompting user file: ${fileNode}`)
+
             const message = localize(
                 'AWS.s3.fileViewer.warning.noSize',
                 "File size couldn't be determined. Continue with download?"
@@ -120,11 +112,15 @@ export class S3FileViewerManager {
             }
 
             if (!(await showConfirmationMessage(args, this.window))) {
+                getLogger().debug(`FileViewer: User cancelled download`)
+                showOutputMessage(
+                    localize('AWS.s3.fileViewer.message.noSizeCancellation', 'Download cancelled'),
+                    this.outputChannel
+                )
                 return undefined
             }
         } else if (fileNode.file.sizeBytes > SIZE_LIMIT) {
-            showOutputMessage(`size is >4MB, prompt user working`, this.outputChannel)
-            getLogger().debug(`size is >4MB, prompt user working`)
+            getLogger().debug(`FileViewer: File size ${fileNode.file.sizeBytes} is >4MB, prompting user`)
 
             const message = localize(
                 'AWS.s3.fileViewer.warning.4mb',
@@ -137,11 +133,15 @@ export class S3FileViewerManager {
             }
 
             if (!(await showConfirmationMessage(args, this.window))) {
+                getLogger().debug(`FileViewer: User cancelled download`)
+                showOutputMessage(
+                    localize('AWS.s3.fileViewer.message.sizeLimitCancellation', 'Download cancelled'),
+                    this.outputChannel
+                )
                 return undefined
             }
 
-            getLogger().debug(`user confirmed download, continuing`)
-            showOutputMessage(`user confirmed download, continuing`, this.outputChannel) //TODOD:: debug log,
+            getLogger().debug(`FileViewer: User confirmed download, continuing`)
         }
 
         //want to create every folder first
@@ -150,13 +150,20 @@ export class S3FileViewerManager {
         try {
             await downloadWithProgress(fileNode, targetLocation, this.window)
         } catch (err) {
-            getLogger().debug(`error calling downloadWithProgress: ${err.toString()}`)
-            showOutputMessage(`error calling downloadWithProgress: ${err.toString()}`, this.outputChannel)
+            getLogger().error(`FileViewer: error calling downloadWithProgress: ${err.toString()}`)
+            showOutputMessage(
+                localize(
+                    'AWS.s3.fileViewer.error.download',
+                    'Error downloading file {0} from S3: {1}',
+                    fileNode.file.name,
+                    err.toString()
+                ),
+                this.outputChannel
+            )
         }
 
         this.cacheArns.add(fileNode.file.arn)
-        //await this.listTempFolder()
-
+        getLogger().debug(`New cached file: ${fileNode.file.arn} \n Cache contains: ${this.cacheArns}`)
         return targetLocation
     }
 
@@ -165,18 +172,14 @@ export class S3FileViewerManager {
         const targetLocation = vscode.Uri.file(targetPath)
 
         if (this.cacheArns.has(fileNode.file.arn)) {
-            //get it from temp IF it hasn't been recently modified, then return that
+            getLogger().info(`FileViewer: found file ${fileNode.file.key} in cache\n 
+                Cache contains: ${this.cacheArns}`)
 
-            getLogger().debug(`cache is working!, found ${fileNode.file.key} in cache`)
-            showOutputMessage(`cache is working!, found ${fileNode.file.key} in cache`, this.outputChannel) //TODOD:: debug log remove
-
-            //explorer (or at least the S3Node) needs to be refreshed to get the last modified date from S3
+            //Explorer (or at least the S3Node) needs to be refreshed to get the last modified date from S3
             const newNode = await this.refreshNode(fileNode)
             if (!newNode) {
-                showOutputMessage(
-                    `!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!! something happeneded`,
-                    this.outputChannel
-                ) //TODOD:: debug log, remove
+                getLogger().error(`FileViewer: Error, refreshNode() returned undefined with file: ${fileNode.file.key}`)
+                getLogger().debug(`Cache contains: ${this.cacheArns}`)
                 return
             }
 
@@ -184,25 +187,18 @@ export class S3FileViewerManager {
             const lastModifiedInS3 = fileNode!.file.lastModified
             const { birthtime } = fs.statSync(targetLocation.fsPath)
 
-            getLogger().debug(`last modified in S3: ${lastModifiedInS3}`)
-            showOutputMessage(`last modified in S3: ${lastModifiedInS3}`, this.outputChannel) //TODOD: debug log, remove
-            showOutputMessage(`creation date: ${birthtime}`, this.outputChannel)
-            getLogger().debug(`creation date: ${birthtime}`) //TODOD: debug log, remove
+            getLogger().debug(
+                `FileViewer: File ${fileNode.file.name} was last modified in S3: ${lastModifiedInS3}, cached on: ${birthtime}`
+            )
 
             if (lastModifiedInS3! <= birthtime) {
-                showOutputMessage(`good to retreive, last modified date is before creation`, this.outputChannel) //TODOD: debug log, remove
-                getLogger().debug(`good to retreive, last modified date is before creation`)
-
-                //await this.listTempFolder()
+                getLogger().info(`FileViewer: good to retrieve, last modified date is before creation`)
                 return targetLocation
             } else {
-                getLogger().debug(`last modified date is after creation date!!, removing file and redownloading`)
-                showOutputMessage(
-                    `last modified date is after creation date!!, removing file and redownloading`,
-                    this.outputChannel
-                ) //TODOD: debug log, remove
-
                 fs.unlinkSync(targetPath)
+                getLogger().info(
+                    `FileViewer: Last modified in s3 date is after cached date, removing file and redownloading`
+                )
                 return undefined
             }
         }
@@ -234,7 +230,6 @@ export class S3FileViewerManager {
         const parent = fileNode.parent
         parent.clearChildren()
 
-        await this.commands.execute('aws.refreshAwsExplorerNode', fileNode)
         await this.commands.execute('aws.refreshAwsExplorerNode', parent)
         await this.commands.execute('aws.loadMoreChildren', parent)
 
@@ -264,7 +259,14 @@ export class S3FileViewerManager {
 
     private async createTemp(): Promise<void> {
         this.tempLocation = await makeTemporaryToolkitFolder()
-        showOutputMessage(`folder created with location: ${this.tempLocation}`, this.outputChannel)
-        getLogger().debug(`folder created with location: ${this.tempLocation}`)
+        showOutputMessage(
+            localize(
+                'AWS.s3.message.tempCreation',
+                'Temp folder for FileViewer created with location: {0}',
+                this.tempLocation
+            ),
+            this.outputChannel
+        )
+        getLogger().info(`Temp folder for FileViewer created with location: ${this.tempLocation}`)
     }
 }
