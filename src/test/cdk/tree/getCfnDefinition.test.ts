@@ -6,26 +6,27 @@ const uniqueIdendifier = 'MyStateMachine'
 const cdkOutPath = __dirname.replace('/dist', '') + '/resources'
 const stackName = 'templateJsonTester'
 
-describe('GetCfnDefinition', function () {
+describe('CDK GetCfnDefinition for State Machines', function () {
+    console.log(cdkOutPath)
     it('get the correct cfn definition for state machine with correct inputs', async function () {
-        const data = getCfnDefinition.getCfnDefinitionForStateMachine(uniqueIdendifier, cdkOutPath, stackName)
+        const data = getCfnDefinition.getStateMachineDefinitionFromCfnTemplate(uniqueIdendifier, cdkOutPath, stackName)
         assert.strictEqual(unescapedJsonString, data)
     })
 
     it('get error message with wrong uniqueIdentifier', async function () {
-        const data = getCfnDefinition.getCfnDefinitionForStateMachine(uniqueIdendifier + '.', cdkOutPath, stackName)
+        const data = getCfnDefinition.getStateMachineDefinitionFromCfnTemplate(uniqueIdendifier + '.', cdkOutPath, stackName)
         const errorMessage = 'Wrong state machine identifier'
         assert.strictEqual(data, errorMessage)
     })
 
     it('get error message with wrong cdkOutPath', async function () {
-        const data = getCfnDefinition.getCfnDefinitionForStateMachine(uniqueIdendifier, cdkOutPath + '.', stackName)
+        const data = getCfnDefinition.getStateMachineDefinitionFromCfnTemplate(uniqueIdendifier, cdkOutPath + '.', stackName)
         const errorMessage = 'Unable to get cfn definition for state machine'
         assert.strictEqual(data, errorMessage)
     })
 
     it('get error message with wrong stack name', async function () {
-        const data = getCfnDefinition.getCfnDefinitionForStateMachine(uniqueIdendifier, cdkOutPath, stackName + '.')
+        const data = getCfnDefinition.getStateMachineDefinitionFromCfnTemplate(uniqueIdendifier, cdkOutPath, stackName + '.')
         const errorMessage = 'Unable to get cfn definition for state machine'
         assert.strictEqual(data, errorMessage)
     })

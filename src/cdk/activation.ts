@@ -73,7 +73,7 @@ async function registerCdkCommands(context: vscode.ExtensionContext, explorer: A
 
     const visualizationManager = new AslVisualizationCDKManager(context)
     context.subscriptions.push(
-        vscode.commands.registerCommand('aws.cdk.renderStateMachineGraphFromCDK', async (node: ConstructNode) => {
+        vscode.commands.registerCommand('aws.cdk.renderStateMachineGraph', async (node: ConstructNode) => {
             return await visualizationManager.visualizeStateMachine(
                 context.globalState,
                 node

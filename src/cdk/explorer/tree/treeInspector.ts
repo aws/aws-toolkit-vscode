@@ -63,18 +63,3 @@ export function getDisplayLabel(construct: ConstructTreeEntity): string {
 
     return construct.id
 }
-
-/** 
-* @param construct CDK construct
-*/
-export function isStateMachine(construct: ConstructTreeEntity): boolean {
-
-    if (construct.children) {
-        const resource = construct.children["Resource"]
-        if (!resource) return false
-
-        const type: string = getTypeAttributeOrDefault(resource, '')
-        if (type && type === 'AWS::StepFunctions::StateMachine') return true
-    }
-    return false
-}

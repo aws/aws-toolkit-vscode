@@ -10,7 +10,7 @@ import { Window } from '../../shared/vscode/window'
 import { ConstructNode } from '../explorer/nodes/constructNode'
 import { showErrorWithLogs } from '../../shared/utilities/messages'
 import { AslVisualizationCDK } from './aslVisualizationCDK'
-import { getCfnDefinitionForStateMachine } from '../explorer/nodes/getCfnDefinition'
+import { getStateMachineDefinitionFromCfnTemplate } from '../explorer/nodes/getCfnDefinition'
 
 /**
  * Renders a state graph of the state machine represented by the given node.
@@ -29,18 +29,18 @@ export async function renderGraphCommand(
 
     getLogger().info(`Rendering graph: ${uniqueIdentifier}`)
     try {
-        const cfnDefinition = getCfnDefinitionForStateMachine(uniqueIdentifier, cdkOutPath, stackName)
+        const cfnDefinition = getStateMachineDefinitionFromCfnTemplate(uniqueIdentifier, cdkOutPath, stackName)
 
         const newVisualization = new AslVisualizationCDK(cfnDefinition, uniqueIdentifier)
 
         getLogger().info('Rendered graph: %O', uniqueIdentifier)
-        window.showInformationMessage(localize('AWS.cdk.renderStateMachineGraphFromCDK.success', 'Rendered graph {0}', uniqueIdentifier))
+        window.showInformationMessage(localize('AWS.cdk.renderStateMachineGraph.success', 'Rendered graph {0}', uniqueIdentifier))
 
         return newVisualization
     } catch (e) {
         getLogger().error(`Failed to create bucket ${uniqueIdentifier}: %O`, e)
         showErrorWithLogs(
-            localize('AWS.cdk.renderStateMachineGraphFromCDK.error.general', 'Failed to render graph {0}', uniqueIdentifier),
+            localize('AWS.cdk.renderStateMachineGraph.error.general', 'Failed to render graph {0}', uniqueIdentifier),
             window
         )
     }

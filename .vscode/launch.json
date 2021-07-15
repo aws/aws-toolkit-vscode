@@ -106,7 +106,7 @@
     "compounds": [
         {
             "name": "Extension + Attach to SSM Document Language Server",
-            "configurations": ["Extension", "Attach to SSM Document Language Server"]
+            "configurations": ["Extension","Attach to SSM Document Language Server"]
         }
     ]
 }

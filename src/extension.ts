@@ -269,8 +269,8 @@ function initializeIconPaths(context: vscode.ExtensionContext) {
     ext.iconPaths.dark.cloudFormation = context.asAbsolutePath('resources/dark/cloudformation.svg')
     ext.iconPaths.light.cloudFormation = context.asAbsolutePath('resources/light/cloudformation.svg')
 
-    ext.iconPaths.dark.renderStateMachineGraphFromCDK = context.asAbsolutePath('resources/dark/stepfunctions/preview.svg')
-    ext.iconPaths.light.renderStateMachineGraphFromCDK = context.asAbsolutePath('resources/light/stepfunctions/preview.svg')
+    ext.iconPaths.dark.renderStateMachineGraph = context.asAbsolutePath('resources/dark/stepfunctions/preview.svg')
+    ext.iconPaths.light.renderStateMachineGraph = context.asAbsolutePath('resources/light/stepfunctions/preview.svg')
 
     ext.iconPaths.dark.ecr = context.asAbsolutePath('resources/dark/ecr.svg')
     ext.iconPaths.light.ecr = context.asAbsolutePath('resources/light/ecr.svg')
