@@ -54,12 +54,7 @@ export class CloudFormationTemplateRegistry extends WatchedFiles<CloudFormation.
 
     // handles delete case
     public async remove(path: string | vscode.Uri): Promise<void> {
-        try {
-            await updateYamlSchemasArray(typeof path === 'string' ? path : pathutils.normalize(path.fsPath), 'none')
-        } catch (e) {
-            // swallow: some issue writing to settings? possibly related to not having YAML extension installed.
-        }
-
+        await updateYamlSchemasArray(typeof path === 'string' ? path : pathutils.normalize(path.fsPath), 'none')
         await super.remove(path)
     }
 }
