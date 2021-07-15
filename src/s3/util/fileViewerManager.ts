@@ -54,10 +54,6 @@ export class S3FileViewerManager {
             return
         }
         getLogger().verbose(`S3FileViewer: File from s3 or temp to be opened is: ${fileLocation}`)
-        showOutputMessage(
-            localize('AWS.s3.fileViewer.info.fileLocation', 'File to be opened is: {0}', fileLocation.toString()),
-            this.outputChannel
-        )
 
         //TODOD:: delegate this logic to S3Tab.ts
         //this will display the document at the end
@@ -81,6 +77,8 @@ export class S3FileViewerManager {
         }
 
         if (fileNode.file.sizeBytes === undefined) {
+            getLogger().debug(`FileViewer: File size couldn't be determined, prompting user file: ${fileNode}`)
+
             const message = localize(
                 'AWS.s3.fileViewer.warning.noSize',
                 "File size couldn't be determined. Continue with download?"
@@ -92,6 +90,11 @@ export class S3FileViewerManager {
             }
 
             if (!(await showConfirmationMessage(args, this.window))) {
+                getLogger().debug(`FileViewer: User cancelled download`)
+                showOutputMessage(
+                    localize('AWS.s3.fileViewer.message.noSizeCancellation', 'Download cancelled'),
+                    this.outputChannel
+                )
                 return undefined
             }
         } else if (fileNode.file.sizeBytes > SIZE_LIMIT) {
@@ -108,14 +111,15 @@ export class S3FileViewerManager {
             }
 
             if (!(await showConfirmationMessage(args, this.window))) {
+                getLogger().debug(`FileViewer: User cancelled download`)
+                showOutputMessage(
+                    localize('AWS.s3.fileViewer.message.sizeLimitCancellation', 'Download cancelled'),
+                    this.outputChannel
+                )
                 return undefined
             }
 
             getLogger().debug(`FileViewer: User confirmed download, continuing`)
-            showOutputMessage(
-                localize('AWS.s3.fileViewer.message.sizeLimitConfirmed', 'Confirmed download, continuing'),
-                this.outputChannel
-            )
         }
 
         try {
@@ -123,13 +127,18 @@ export class S3FileViewerManager {
         } catch (err) {
             getLogger().error(`FileViewer: error calling downloadWithProgress: ${err.toString()}`)
             showOutputMessage(
-                localize('AWS.s3.fileViewer.error.download', 'Error downloading: {0}', err.toString()),
+                localize(
+                    'AWS.s3.fileViewer.error.download',
+                    'Error downloading file {0} from S3: {1}',
+                    fileNode.file.name,
+                    err.toString()
+                ),
                 this.outputChannel
             )
         }
 
         this.cacheArns.add(fileNode.file.arn)
-
+        getLogger().debug(`New cached file: ${fileNode.file.arn} \n Cache contains: ${this.cacheArns}`)
         return targetLocation
     }
 
@@ -138,7 +147,8 @@ export class S3FileViewerManager {
         const targetLocation = vscode.Uri.file(targetPath)
 
         if (this.cacheArns.has(fileNode.file.arn)) {
-            getLogger().info(`FileViewer: found file ${fileNode.file.key} in cache`)
+            getLogger().info(`FileViewer: found file ${fileNode.file.key} in cache\n 
+                Cache contains: ${this.cacheArns}`)
 
             //Explorer (or at least the S3Node) needs to be refreshed to get the last modified date from S3
             const newNode = await this.refreshNode(fileNode)
@@ -152,15 +162,16 @@ export class S3FileViewerManager {
             const lastModifiedInS3 = fileNode!.file.lastModified
             const { birthtime } = fs.statSync(targetLocation.fsPath)
 
-            getLogger().debug(`FileViewer: File ${fileNode.file.name} was last modified in S3: ${lastModifiedInS3}`)
-            getLogger().debug(`FileViewer: Last cached download date: ${birthtime}`)
+            getLogger().debug(
+                `FileViewer: File ${fileNode.file.name} was last modified in S3: ${lastModifiedInS3}, cached on: ${birthtime}`
+            )
 
             if (lastModifiedInS3! <= birthtime) {
                 getLogger().info(`FileViewer: good to retrieve, last modified date is before creation`)
                 return targetLocation
             } else {
                 fs.unlinkSync(targetPath)
-                getLogger().warn(
+                getLogger().info(
                     `FileViewer: Last modified in s3 date is after cached date, removing file and redownloading`
                 )
                 return undefined
@@ -216,6 +227,6 @@ export class S3FileViewerManager {
             ),
             this.outputChannel
         )
-        getLogger().debug(`Temp folder for FileViewer created with location: ${this.tempLocation}`)
+        getLogger().info(`Temp folder for FileViewer created with location: ${this.tempLocation}`)
     }
 }
