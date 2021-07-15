@@ -913,7 +913,7 @@
                     "group": "inline@1"
                 },
                 {
-                    "command": "aws.s3.openFile",
+                    "command": "aws.s3.openFileEditMode",
                     "when": "view == aws.explorer && viewItem == awsS3FileNode",
                     "group": "inline@1"
                 },

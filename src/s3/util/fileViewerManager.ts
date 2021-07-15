@@ -64,16 +64,28 @@ export class S3FileViewerManager {
         this.activeTabs.set(fileLocation.fsPath, newTab)
     }
 
-    public async openCurrentOnEdit(s3Uri?: vscode.Uri): Promise<void> {
-        if (!s3Uri) {
-            return //TODOD:: why would it ever be undefined?
+    public async openOnEditMode(uriOrNode: vscode.Uri | S3FileNode): Promise<void> {
+        if (uriOrNode instanceof vscode.Uri) {
+            //was activated from an open tab
+        } else {
+            //was
         }
-        const tab = this.activeTabs.get(s3Uri.fsPath)
 
+        if (this.activeTabs.has(s3Uri.fsPath)) {
+            const tab = this.activeTabs.get(s3Uri.fsPath)
+            await tab!.openFileOnEditMode(this.window)
+        } else {
+            //was opened from the explorer
+            const fileLocation = await this.getFile(s3Uri as any)
+            if (!fileLocation) {
+                getLogger().error('Something went wrong')
+                return
+            }
+            const newTab = new S3Tab(fileLocation)
+        }
         //close read-only tab
 
         //open on edit mode
-        await tab!.openFileOnEditMode(this.window)
     }
 
     /**

@@ -15,7 +15,7 @@ describe.only('S3Tab', async function () {
     const message = 'can this be read'
     const fileName = 'test.txt'
     const fileUri = vscode.Uri.file(path.join(tempFolder, fileName))
-    //const s3Uri = vscode.Uri.parse('s3:' + fileUri.fsPath)
+    const s3Uri = vscode.Uri.parse('s3:' + fileUri.fsPath)
 
     testutil.toFile(message, fileUri.fsPath)
 
@@ -24,7 +24,7 @@ describe.only('S3Tab', async function () {
 
     it('can be opened in read-only mode', async function () {
         //get the active text editor
-        assert.strictEqual((await s3Tab.openFileOnReadOnly())?.document.fileName, fileName)
+        assert.strictEqual((await s3Tab.openFileOnReadOnly())?.document.uri, s3Uri)
         //find the dummy file uri
 
         //assert that it is the same as the given uri
