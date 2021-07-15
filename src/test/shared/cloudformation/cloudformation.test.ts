@@ -683,7 +683,7 @@ describe('Cloudformation Utils', function () {
             updateYamlSchemasArray('/foo', 'cfn', config, { cfnSchema, samSchema })
             const val: any = config.get('schemas')
             assert.deepStrictEqual(val[cfnSchema], ['/foo'])
-            assert.deepStrictEqual(val[samSchema], [])
+            assert.deepStrictEqual(val[samSchema], undefined)
         })
 
         it('handles adding to and removing from a setting with an undefined value', function () {
@@ -691,7 +691,7 @@ describe('Cloudformation Utils', function () {
             updateYamlSchemasArray('/foo', 'cfn', config, { cfnSchema, samSchema })
             const val: any = config.get('schemas')
             assert.deepStrictEqual(val[cfnSchema], ['/foo'])
-            assert.deepStrictEqual(val[samSchema], [])
+            assert.deepStrictEqual(val[samSchema], undefined)
         })
         it('handles adding to and removing from a setting with a blank array', function () {
             config.update('schemas', { cfn: [], sam: [] })
@@ -715,6 +715,14 @@ describe('Cloudformation Utils', function () {
             const val: any = config.get('schemas')
             assert.deepStrictEqual(val[cfnSchema], ['/bar', '/foo'])
             assert.deepStrictEqual(val[samSchema], [])
+        })
+
+        it('handles removes from strings and arrays with `none`', function () {
+            config.update('schemas', { cfn: '/bar', sam: ['/foo', '/bar'] })
+            updateYamlSchemasArray('/bar', 'none', config, { cfnSchema, samSchema })
+            const val: any = config.get('schemas')
+            assert.deepStrictEqual(val[cfnSchema], [])
+            assert.deepStrictEqual(val[samSchema], ['/foo'])
         })
     })
 

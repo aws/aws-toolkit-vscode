@@ -838,31 +838,30 @@ export async function updateYamlSchemasArray(
     let newWriteArr: string[] = [relPath]
     const modifiedArrays: { [key: string]: string[] } = {}
 
-    if (schemas) {
-        if (type !== 'none') {
-            const writeTo = type === 'cfn' ? paths.cfnSchema : paths.samSchema
-            if (schemas[writeTo]) {
-                newWriteArr = Array.isArray(schemas[writeTo])
-                    ? (schemas[writeTo] as string[])
-                    : [schemas[writeTo] as string]
-                if (!newWriteArr.includes(relPath)) {
-                    newWriteArr.push(relPath)
-                }
+    if (type !== 'none') {
+        const writeTo = type === 'cfn' ? paths.cfnSchema : paths.samSchema
+        if (schemas && schemas[writeTo]) {
+            newWriteArr = Array.isArray(schemas[writeTo])
+                ? (schemas[writeTo] as string[])
+                : [schemas[writeTo] as string]
+            if (!newWriteArr.includes(relPath)) {
+                newWriteArr.push(relPath)
             }
-            modifiedArrays[writeTo] = newWriteArr
         }
+        modifiedArrays[writeTo] = newWriteArr
+    }
 
-        for (const deleteFrom of deleteFroms) {
-            if (schemas[deleteFrom]) {
-                const temp = Array.isArray(schemas[deleteFrom])
-                    ? (schemas[deleteFrom] as string[])
-                    : [schemas[deleteFrom] as string]
-                modifiedArrays[deleteFrom] = temp.filter(val => val !== relPath)
-            }
+    for (const deleteFrom of deleteFroms) {
+        if (schemas && schemas[deleteFrom]) {
+            const temp = Array.isArray(schemas[deleteFrom])
+                ? (schemas[deleteFrom] as string[])
+                : [schemas[deleteFrom] as string]
+            modifiedArrays[deleteFrom] = temp.filter(val => val !== relPath)
         }
     }
 
     // don't edit settings if they don't exist and yaml isn't a template
+    // do if schemas exists or if type isn't none
     if (!(type === 'none' && !schemas)) {
         try {
             await config.update('schemas', {
