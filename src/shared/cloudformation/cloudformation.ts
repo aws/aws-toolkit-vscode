@@ -3,13 +3,22 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
+import * as path from 'path'
+import * as vscode from 'vscode'
+import { mkdirSync, writeFile } from 'fs-extra'
 import { schema } from 'yaml-cfn'
-import { writeFile } from 'fs-extra'
 import * as yaml from 'js-yaml'
 import * as filesystemUtilities from '../filesystemUtilities'
 import { SystemUtilities } from '../systemUtilities'
 import { getLogger } from '../logger'
-import { LAMBDA_PACKAGE_TYPE_IMAGE } from '../constants'
+import { extensionSettingsPrefix, LAMBDA_PACKAGE_TYPE_IMAGE } from '../constants'
+import { normalizeSeparator } from '../utilities/pathUtils'
+import { HttpResourceFetcher } from '../resourcefetcher/httpResourceFetcher'
+import { ResourceFetcher } from '../resourcefetcher/resourcefetcher'
+import { FileResourceFetcher } from '../resourcefetcher/fileResourceFetcher'
+import { CompositeResourceFetcher } from '../resourcefetcher/compositeResourceFetcher'
+import { WorkspaceConfiguration } from '../vscode/workspace'
+import { getWorkspaceRelativePath } from '../utilities/workspaceUtils'
 
 export namespace CloudFormation {
     export const SERVERLESS_API_TYPE = 'AWS::Serverless::Api'
@@ -204,6 +213,10 @@ export namespace CloudFormation {
     }
 
     export interface Template {
+        AWSTemplateFormatVersion?: string
+
+        Transform?: { properties: any } | string
+
         Parameters?: {
             [key: string]: Parameter | undefined
         }
@@ -748,4 +761,170 @@ export namespace CloudFormation {
     export function makeResourceId(s: string) {
         return s.replace(/[^A-Za-z0-9]/g, '')
     }
+}
+
+let CFN_SCHEMA_PATH = ''
+let SAM_SCHEMA_PATH = ''
+const MANIFEST_URL = 'https://api.github.com/repos/awslabs/goformation/releases/latest'
+
+/**
+ * Loads JSON schemas for CFN and SAM templates.
+ * Checks manifest and downloads new schemas if the manifest version has been bumped.
+ * Uses local, predownloaded version if up-to-date or network call fails
+ * If the user has not previously used the toolkit and cannot pull the manifest, does not provide template autocomplete.
+ * @param extensionContext
+ */
+export async function refreshSchemas(extensionContext: vscode.ExtensionContext): Promise<void> {
+    CFN_SCHEMA_PATH = normalizeSeparator(path.join(extensionContext.globalStoragePath, 'cloudformation.schema.json'))
+    SAM_SCHEMA_PATH = normalizeSeparator(path.join(extensionContext.globalStoragePath, 'sam.schema.json'))
+    let manifest: string | undefined
+    try {
+        const manifestFetcher = new HttpResourceFetcher(MANIFEST_URL, { showUrl: true })
+        manifest = await manifestFetcher.get()
+    } catch (e) {
+        getLogger().error(`Failed getting manifest at ${MANIFEST_URL}:`, e)
+
+        return
+    }
+
+    if (!manifest) {
+        getLogger().error(`Schema manifest at ${MANIFEST_URL} was undefined`)
+
+        return
+    }
+
+    try {
+        const details = getManifestDetails(manifest)
+
+        await getRemoteOrCachedFile({
+            filepath: CFN_SCHEMA_PATH,
+            version: details.version,
+            url: details.cfnUrl,
+            cacheKey: 'cfnSchemaVersion',
+        })
+        await getRemoteOrCachedFile({
+            filepath: SAM_SCHEMA_PATH,
+            version: details.version,
+            url: details.samUrl,
+            cacheKey: 'samSchemaVersion',
+        })
+    } catch (e) {
+        getLogger().error('Could not get details from manifest:', (e as Error).message)
+    }
+}
+
+/**
+ * Maps a template file to a CFN or SAM schema.
+ * If present, removes association with the other type of schema.
+ * Does not modify other schemas not managed by AWS.
+ * @param path Template file path
+ * @param type Template type to use for filepath
+ */
+export async function updateYamlSchemasArray(
+    path: string,
+    type: 'cfn' | 'sam' | 'none',
+    config: WorkspaceConfiguration = vscode.workspace.getConfiguration('yaml'),
+    paths: { cfnSchema: string; samSchema: string } = { cfnSchema: CFN_SCHEMA_PATH, samSchema: SAM_SCHEMA_PATH }
+): Promise<void> {
+    const relPath = normalizeSeparator(getWorkspaceRelativePath(path) ?? path)
+    const schemas: { [key: string]: string | string[] | undefined } | undefined = config.get('schemas')
+    const deleteFroms: string[] = []
+    if (type === 'cfn' || type == 'none') {
+        deleteFroms.push(paths.samSchema)
+    }
+    if (type === 'sam' || type == 'none') {
+        deleteFroms.push(paths.cfnSchema)
+    }
+    let newWriteArr: string[] = [relPath]
+    const modifiedArrays: { [key: string]: string[] } = {}
+
+    if (type !== 'none') {
+        const writeTo = type === 'cfn' ? paths.cfnSchema : paths.samSchema
+        if (schemas && schemas[writeTo]) {
+            newWriteArr = Array.isArray(schemas[writeTo])
+                ? (schemas[writeTo] as string[])
+                : [schemas[writeTo] as string]
+            if (!newWriteArr.includes(relPath)) {
+                newWriteArr.push(relPath)
+            }
+        }
+        modifiedArrays[writeTo] = newWriteArr
+    }
+
+    for (const deleteFrom of deleteFroms) {
+        if (schemas && schemas[deleteFrom]) {
+            const temp = Array.isArray(schemas[deleteFrom])
+                ? (schemas[deleteFrom] as string[])
+                : [schemas[deleteFrom] as string]
+            modifiedArrays[deleteFrom] = temp.filter(val => val !== relPath)
+        }
+    }
+
+    // don't edit settings if they don't exist and yaml isn't a template
+    // do if schemas exists or if type isn't none
+    if (!(type === 'none' && !schemas)) {
+        try {
+            await config.update('schemas', {
+                ...(schemas ? schemas : {}),
+                ...modifiedArrays,
+            })
+        } catch (e) {
+            getLogger().error('Could not write YAML schemas to configuration', e.message)
+        }
+    }
+}
+
+/**
+ * Parses Goformation manifest and generates object containing latest version and schema URLs
+ * @param manifest Manifest JSON from Github
+ */
+export function getManifestDetails(manifest: string): { samUrl: string; cfnUrl: string; version: string } {
+    const json = JSON.parse(manifest)
+    if (json.tag_name) {
+        return {
+            samUrl: `https://raw.githubusercontent.com/awslabs/goformation/${json.tag_name}/schema/sam.schema.json`,
+            cfnUrl: `https://raw.githubusercontent.com/awslabs/goformation/${json.tag_name}/schema/cloudformation.schema.json`,
+            version: json.tag_name,
+        }
+    } else {
+        throw new Error('Manifest did not include a tag_name')
+    }
+}
+
+/**
+ * Pulls a remote version of file if the local version doesn't match the manifest version (does not check semver increases) or doesn't exist
+ * Pulls local version of file if it does. Uses remote as baskup in case local doesn't exist
+ * @param params.filepath Path to local file
+ * @param params.version Remote version
+ * @param params.url Url to fetch from
+ * @param params.cacheKey Cache key to check version against
+ */
+export async function getRemoteOrCachedFile(params: {
+    filepath: string
+    version: string
+    url: string
+    cacheKey: string
+}): Promise<string | undefined> {
+    const dir = path.parse(params.filepath).dir
+    if (!(await filesystemUtilities.fileExists(dir))) {
+        mkdirSync(dir, { recursive: true })
+    }
+    const cachedVersion = vscode.workspace.getConfiguration(extensionSettingsPrefix).get<string>(params.cacheKey)
+
+    const fetchers: ResourceFetcher[] = []
+    if (params.version !== cachedVersion && params.url) {
+        fetchers.push(
+            new HttpResourceFetcher(params.url, {
+                showUrl: true,
+                pipeLocation: params.filepath,
+                // updates curr version
+                onSuccess: () =>
+                    vscode.workspace.getConfiguration(extensionSettingsPrefix).update(params.cacheKey, params.version),
+            })
+        )
+    }
+    fetchers.push(new FileResourceFetcher(params.filepath))
+    const fetcher = new CompositeResourceFetcher(...fetchers)
+
+    return fetcher.get()
 }
