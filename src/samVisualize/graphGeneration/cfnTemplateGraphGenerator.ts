@@ -4,8 +4,9 @@
  */
 import { Graph, GraphObject } from './graph'
 import { yamlParse } from 'yaml-cfn'
-import { LinkTypes } from './linkTypes'
-import { isString, isObjectLike } from 'lodash'
+import { LinkTypes } from '../samVisualizeTypes'
+import * as _ from 'lodash'
+import { getLogger } from '../../shared/logger/logger'
 
 /**
  * @param inputYaml A string representing a YAML template
@@ -16,7 +17,13 @@ function yamlStringToObject(inputYaml: string): Record<string, unknown> {
     try {
         templateAsObject = yamlParse(inputYaml)
     } catch (err) {
-        console.error(err)
+        getLogger().error(
+            `SAM Visualize: Failed to load template "${inputYaml.substr(
+                0,
+                25
+            )}"... Please ensure the template is valid YAML: 0%`,
+            err
+        )
     }
     return templateAsObject
 }
@@ -34,21 +41,17 @@ function extractSubstitution(value: string): Array<string> {
 }
 
 /**
- * Returns whether or not a given entity can be traversed
- */
-function isTraversable(entity: any): boolean {
-    // Ensure it's of type object (and not null or undefined)
-    return isObjectLike(entity)
-}
-
-/**
  * Recursively traverses (DFS) an object representation of a yaml template resource, adding links to the graph where found
  * @param graph The Graph in which links are created. It is modified, due to traverse being recursive. But this Graph is not visible from outside the module, so there are no external side effects
- * @param currentObject The object wich is currently being searched for link keys
+ * @param currentObj The object wich is currently being searched for link keys
  * @param parentNodeName The name of the node representing the current parent node, which any found links will be added to.
  */
-function traverse(graph: Graph, currentObject: Record<string, any>, parentNodeName: string): void {
-    for (const [key, value] of Object.entries(currentObject)) {
+function traverse(graph: Graph, currentObj: Record<string, any>, parentNodeName: string): void {
+    // Cannot traverse on a string or number literal, no links will be found.
+    if (!_.isObjectLike(currentObj)) {
+        return
+    }
+    for (const [key, value] of Object.entries(currentObj)) {
         switch (key) {
             //  "DepenedsOn" can point to a single string or a list of strings. Here we wish to capture all resources in a list, or just a single resource.
             //  https://docs.aws.amazon.com/AWSCloudFormation/latest/UserGuide/aws-attribute-dependson.html
@@ -80,33 +83,27 @@ function traverse(graph: Graph, currentObject: Record<string, any>, parentNodeNa
             //  We can immediately extract the substituion if it points to a string, otherwise we must continue traversing
             //  https://docs.aws.amazon.com/AWSCloudFormation/latest/UserGuide/intrinsic-function-reference-sub.html
             case LinkTypes.Sub:
-                if (isString(value)) {
-                    const substituions = extractSubstitution(value)
-                    for (const destNodeName of substituions) {
+                if (_.isString(value)) {
+                    const substitutions = extractSubstitution(value)
+                    for (const destNodeName of substitutions) {
                         graph.createLink(parentNodeName, destNodeName, LinkTypes.Sub)
                     }
                 } else {
                     // Key must point to an array
                     for (const element of value) {
-                        if (isTraversable(element)) {
-                            traverse(graph, element, parentNodeName)
-                        }
+                        traverse(graph, element, parentNodeName)
                     }
                 }
                 break
             //  If a key is not a possible link, we continue to traverse for nested links
             default:
-                if (isTraversable(value)) {
-                    // If the value is an array, we traverse each traversable element
-                    if (Array.isArray(value)) {
-                        for (const element of value) {
-                            if (isTraversable(element)) {
-                                traverse(graph, element, parentNodeName)
-                            }
-                        }
-                    } else {
-                        traverse(graph, value, parentNodeName)
+                // If the value is an array, we traverse each traversable element
+                if (Array.isArray(value)) {
+                    for (const element of value) {
+                        traverse(graph, element, parentNodeName)
                     }
+                } else {
+                    traverse(graph, value, parentNodeName)
                 }
         }
     }

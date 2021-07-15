@@ -35,7 +35,7 @@ class Graph {
     /**
      * Stores the internal representation of the graph
      */
-    #graph: GraphObject
+    private graph: GraphObject
 
     // Note: https://262.ecma-international.org/6.0/#sec-set-objects
 
@@ -47,7 +47,7 @@ class Graph {
      * Node names are used as keys.
      * Exists to avoid iteration over the graph.nodes list to check for duplicates
      */
-    #nodeSet: Set<string>
+    private nodeSet: Set<string>
 
     /**
      * Stores which links exist in the graph
@@ -56,12 +56,12 @@ class Graph {
      * The combination of all three properties determines a unique Link.
      * Exists to avoid iteration over the graph.links list to check for duplicates
      */
-    #linkSet: Set<string>
+    private linkSet: Set<string>
 
     constructor() {
-        this.#graph = { nodes: [], links: [] }
-        this.#nodeSet = new Set<string>()
-        this.#linkSet = new Set<string>()
+        this.graph = { nodes: [], links: [] }
+        this.nodeSet = new Set<string>()
+        this.linkSet = new Set<string>()
     }
 
     /**
@@ -83,13 +83,13 @@ class Graph {
 
         // If both source and destination nodes exist in the graph, and an identical link does not already exist, create a new link
         if (
-            this.#nodeSet.has(sourceNodeName) &&
-            this.#nodeSet.has(destNodeName) &&
-            !this.#linkSet.has(newLinkIdentifier)
+            this.nodeSet.has(sourceNodeName) &&
+            this.nodeSet.has(destNodeName) &&
+            !this.linkSet.has(newLinkIdentifier)
         ) {
             // Register a link as existing in the graph
-            this.#linkSet.add(newLinkIdentifier)
-            this.#graph.links.push(newLink)
+            this.linkSet.add(newLinkIdentifier)
+            this.graph.links.push(newLink)
         }
     }
 
@@ -99,10 +99,10 @@ class Graph {
      * @param nodeType A string representing the type of the node to initialize in the graph
      */
     initNode(nodeName: string, nodeType?: string): void {
-        if (!this.#nodeSet.has(nodeName)) {
+        if (!this.nodeSet.has(nodeName)) {
             // Register a node as existing in the graph
-            this.#nodeSet.add(nodeName)
-            this.#graph.nodes.push({ name: nodeName, type: nodeType })
+            this.nodeSet.add(nodeName)
+            this.graph.nodes.push({ name: nodeName, type: nodeType })
         }
     }
 
@@ -111,7 +111,7 @@ class Graph {
      * @returns An object representing the graph
      */
     getObjectRepresentation(): GraphObject {
-        return this.#graph
+        return this.graph
     }
 }
 

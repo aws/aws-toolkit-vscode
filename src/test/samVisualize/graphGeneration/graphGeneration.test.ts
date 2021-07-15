@@ -55,15 +55,13 @@ describe('samVisualize Graph Generation from YAML', async function () {
                     return 0
                 }
                 // undefined gets placed after any value
-                if (l1.type && !l2.type) {
-                    return 1
-                }
-                if (!l1.type && l2.type) {
+                if (l1.type === undefined) {
                     return -1
                 }
-                if (l1.type && l2.type) {
-                    return l1.type > l2.type ? 1 : -1
+                if (l2.type === undefined) {
+                    return 1
                 }
+                return l1.type > l2.type ? 1 : -1
             }
             return l1.target > l2.target ? 1 : -1
         }
