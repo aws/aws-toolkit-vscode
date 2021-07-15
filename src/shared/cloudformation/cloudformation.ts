@@ -869,7 +869,7 @@ export async function updateYamlSchemasArray(
                 ...modifiedArrays,
             })
         } catch (e) {
-            getLogger().error('Could not write YAML schemas to configuration')
+            getLogger().error('Could not write YAML schemas to configuration', e.message)
         }
     }
 }

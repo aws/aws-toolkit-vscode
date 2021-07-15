@@ -148,7 +148,7 @@ export abstract class WatchedFiles<T> implements vscode.Disposable {
      * Removes an item from the registry.
      * @param absolutePath The absolute path to the item or a vscode.Uri to the item
      */
-    public remove(path: string | vscode.Uri): void {
+    public async remove(path: string | vscode.Uri): Promise<void> {
         if (typeof path === 'string') {
             this.registryData.delete(path)
         } else {
@@ -211,7 +211,7 @@ export abstract class WatchedFiles<T> implements vscode.Disposable {
             }),
             watcher.onDidDelete(async uri => {
                 getLogger().verbose(`${this.name}: manager detected a deleted file: ${uri.fsPath}`)
-                this.remove(uri)
+                await this.remove(uri)
             })
         )
     }
