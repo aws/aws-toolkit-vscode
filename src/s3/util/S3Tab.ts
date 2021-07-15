@@ -1,5 +1,5 @@
 /*!
- * Copyright 2020 Amazon.com, Inc. or its affiliates. All Rights Reserved.
+ * Copyright 2021 Amazon.com, Inc. or its affiliates. All Rights Reserved.
  * SPDX-License-Identifier: Apache-2.0
  */
 
@@ -11,19 +11,22 @@ import { getLogger } from '../../shared/logger'
 
 export class S3Tab {
     //private file: File
-    private fileUri: vscode.Uri
     private s3Uri: vscode.Uri
-    //private window: typeof vscode.window
+    private window: typeof vscode.window
+    //private context: Context
+    //private outputChannel: vscode.OutputChannel
+    //private activeTab: vscode.TextDocument | undefined
+    //private editing: boolean
     //private context: Context
     //private outputChannel: vscode.OutputChannel
     //private activeTab: vscode.TextDocument | undefined
 
     //private editing: boolean
 
-    public constructor(uri: vscode.Uri, window = vscode.window) {
-        this.fileUri = uri
+    public constructor(private fileUri: vscode.Uri, window = vscode.window) {
         this.s3Uri = vscode.Uri.parse('s3:' + this.fileUri.fsPath)
-        //this.window = window
+        this.window = window
+
         //if file is text, start state will be read-only
 
         //if file is not text, open file on edit-mode with disabled edit button
@@ -31,7 +34,7 @@ export class S3Tab {
         //this.outputChannel = ext.outputChannel
     }
 
-    async openFileOnReadOnly(window: typeof vscode.window) {
+    public async openFileOnReadOnly(): Promise<vscode.TextEditor | undefined> {
         if (!this.s3Uri) {
             this.s3Uri = vscode.Uri.parse('s3:' + this.fileUri.fsPath)
         }
@@ -42,15 +45,15 @@ export class S3Tab {
         try {
             const doc = await vscode.workspace.openTextDocument(this.s3Uri) // calls back into the provider
             //vscode.languages.setTextDocumentLanguage(doc, 'txt')
-            await window.showTextDocument(doc, { preview: true })
+            return await this.window.showTextDocument(doc, { preview: true })
             //this.activeTab = doc
         } catch (e) {
             getLogger().error(`Given file not found, error: ${e}`)
         }
     }
 
-    async openFileOnEditMode(window: typeof vscode.window) {
-        await window.showTextDocument(this.fileUri)
+    public async openFileOnEditMode(window: typeof vscode.window) {
+        await this.window.showTextDocument(this.fileUri)
     }
 
     //onPressedButton = change state, how to do this?

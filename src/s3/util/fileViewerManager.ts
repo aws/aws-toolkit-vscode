@@ -13,7 +13,7 @@ import { Commands } from '../../shared/vscode/commands'
 import { downloadWithProgress } from '../commands/downloadFileAs'
 import { S3FileNode } from '../explorer/s3FileNode'
 import { readablePath } from '../util'
-import { S3Tab } from './S3Tab'
+import { S3Tab } from './s3Tab'
 import { getLogger } from '../../shared/logger'
 import { showConfirmationMessage } from '../../shared/utilities/messages'
 import { localize } from '../../shared/utilities/vsCodeUtils'
@@ -55,12 +55,11 @@ export class S3FileViewerManager {
         }
         getLogger().debug(`file to be opened is: ${fileLocation}`)
         showOutputMessage(`file to be opened is: ${fileLocation}`, this.outputChannel)
-        //TODOD:: delegate this logic to S3Tab.ts
-        //this will display the document at the end
+
         await this.listTempFolder()
 
         const newTab = this.activeTabs.get(fileLocation.fsPath) ?? new S3Tab(fileLocation)
-        await newTab.openFileOnReadOnly(this.window)
+        await newTab.openFileOnReadOnly()
 
         this.activeTabs.set(fileLocation.fsPath, newTab)
     }
