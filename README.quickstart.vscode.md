@@ -72,7 +72,7 @@ Alternatively, you can run and debug just the AWS Lambda function and exclude ot
 
 When you run a debug session, the status and results are shown in the **OUTPUT** panel when the **AWS Toolkit** output channel is selected.
 
-![Configure and Run 2](./resources/marketplace/vscode/sam-configure-and-run-still-2.png)
+![Configure and Run](./resources/marketplace/vscode/sam-configure-and-run-still.png)
 
 ###### After a local run is complete, the output appears in the **OUTPUT** tab.
 
@@ -202,7 +202,7 @@ The Toolkit provides commands (prefixed with `AWS:`) to the VS Code _command
 palette_, available by selecting _View > Command Palette_ or by typing
 `CTRL-SHIFT-p` (macOS: `CMD-SHIFT-p`).
 
-![Command Palette](./resources/marketplace/vscode/open-command-palette-codelens.gif)
+![Command Palette](./resources/marketplace/vscode/open-command-palette.gif)
 
 | AWS Command                                          | Description                                                                                                                                                                                                                                                                                                    |
 | :--------------------------------------------------- | :------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
