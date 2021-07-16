@@ -68,28 +68,6 @@ export class S3Tab {
         }
 
         return undefined
-
-        // if (this.editor && this.editor.document.uri.scheme === 'file') {
-        //     try {
-        //         const doc = await workspace.openTextDocument(this.fileUri) // calls back into the provider
-        //         this.editor = await this.window.showTextDocument(doc, { preview: false })
-        //         await vscode.commands.executeCommand('workbench.action.closeActiveEditor')
-        //     } catch (e) {
-        //         getLogger().error(`Given file not found, error: ${e}`)
-        //     }
-        // }
-
-        // if (!this.s3Uri) {
-        //     this.s3Uri = vscode.Uri.parse('s3:' + this.fileUri.fsPath)
-        // }
-
-        // try {
-        //     const doc = await workspace.openTextDocument(this.s3Uri) // calls back into the provider
-        //     this.editor = await this.window.showTextDocument(doc, { preview: false })
-        //     return this.editor
-        // } catch (e) {
-        //     getLogger().error(`Given file not found, error: ${e}`)
-        // }
     }
 
     public async openFileOnEditMode(workspace = vscode.workspace): Promise<vscode.TextEditor | undefined> {
@@ -126,26 +104,6 @@ export class S3Tab {
         }
 
         return undefined
-
-        //if editor is defined, it means there exists already an editor for this tab open
-        // if (this.editor && this.editor.document.uri.scheme === 's3') {
-        //     try {
-        //         const doc = await workspace.openTextDocument(this.s3Uri) // calls back into the provider
-        //         this.editor = await this.window.showTextDocument(doc, { preview: false })
-        //         await vscode.commands.executeCommand('workbench.action.closeActiveEditor')
-        //     } catch (e) {
-        //         getLogger().error(`Given file not found, error: ${e}`)
-        //     }
-        // }
-        // //close it, then set it undefined
-
-        // try {
-        //     const doc = await workspace.openTextDocument(this.fileUri) // calls back into the provider
-        //     this.editor = await this.window.showTextDocument(doc, { preview: false })
-        //     return this.editor
-        // } catch (e) {
-        //     getLogger().error(`Given file not found, error: ${e}`)
-        // }
     }
 
     public async getActiveEditor(): Promise<vscode.TextEditor | undefined> {

@@ -13,7 +13,6 @@ import { S3Tab } from '../../../s3/util/s3Tab'
 import { anything, instance, mock, when, capture } from '../../utilities/mockito'
 
 describe('S3Tab', async function () {
-    console.log('14')
     const message = 'can this be read'
     const fileName = 'test.txt'
 
