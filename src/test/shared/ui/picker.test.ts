@@ -10,6 +10,92 @@ import * as vscode from 'vscode'
 import * as picker from '../../../shared/ui/picker'
 import { IteratorTransformer } from '../../../shared/utilities/collectionUtils'
 
+export class TestQuickPick<T extends vscode.QuickPickItem> implements vscode.QuickPick<T> {
+    public _value: string = ''
+    public placeholder: string | undefined
+    public readonly onDidChangeValue: vscode.Event<string>
+    public readonly onDidAccept: vscode.Event<void>
+    public readonly onDidHide: vscode.Event<void>
+    public buttons: readonly vscode.QuickInputButton[] = []
+    public readonly onDidTriggerButton: vscode.Event<vscode.QuickInputButton>
+    public items: readonly T[] = []
+    public canSelectMany: boolean = false
+    public matchOnDescription: boolean = false
+    public matchOnDetail: boolean = false
+    public activeItems: readonly T[] = []
+    public readonly onDidChangeActive: vscode.Event<T[]>
+    public _selectedItems: readonly T[] = []
+    public readonly onDidChangeSelection: vscode.Event<T[]>
+    public title: string | undefined
+    public step: number | undefined
+    public totalSteps: number | undefined
+    public enabled: boolean = true
+    public busy: boolean = false
+    public ignoreFocusOut: boolean = false
+
+    public isShowing: boolean = false
+
+    private readonly onDidHideEmitter: vscode.EventEmitter<void> = new vscode.EventEmitter()
+    private readonly onDidAcceptEmitter: vscode.EventEmitter<void> = new vscode.EventEmitter()
+    private readonly onDidChangeValueEmitter: vscode.EventEmitter<string> = new vscode.EventEmitter()
+    private readonly onDidChangeActiveEmitter: vscode.EventEmitter<T[]> = new vscode.EventEmitter()
+    private readonly onDidChangeSelectionEmitter: vscode.EventEmitter<T[]> = new vscode.EventEmitter()
+    private readonly onDidTriggerButtonEmitter: vscode.EventEmitter<vscode.QuickInputButton> = new vscode.EventEmitter()
+
+    public constructor() {
+        this.onDidHide = this.onDidHideEmitter.event
+        this.onDidAccept = this.onDidAcceptEmitter.event
+        this.onDidChangeValue = this.onDidChangeValueEmitter.event
+        this.onDidChangeActive = this.onDidChangeActiveEmitter.event
+        this.onDidChangeSelection = this.onDidChangeSelectionEmitter.event
+        this.onDidTriggerButton = this.onDidTriggerButtonEmitter.event
+    }
+
+    public show(): void {
+        this.isShowing = true
+    }
+    public hide(): void {
+        this.onDidHideEmitter.fire()
+        this.isShowing = false
+    }
+    public accept(value: readonly T[]) {
+        this._selectedItems = value
+        this.onDidAcceptEmitter.fire()
+        this.isShowing = false
+    }
+    public dispose(): void {}
+
+    public pressButton(button: vscode.QuickInputButton) {
+        this.onDidTriggerButtonEmitter.fire(button)
+    }
+
+    public get value(): string {
+        return this._value
+    }
+    public set value(value: string) {
+        this.onDidChangeValueEmitter.fire(value)
+        this._value = value
+        this.filterItems()
+    }
+
+    public get selectedItems(): readonly T[] {
+        return this._selectedItems
+    }
+
+    public set selectedItems(items: readonly T[]) {
+        this.accept(items)
+    }
+
+    private filterItems(): void {
+        this.activeItems = this.items.filter(
+            item =>
+                item.label.includes(this._value) ||
+                (item.description ?? '').includes(this._value) ||
+                (item.detail ?? ''.includes(this._value))
+        )
+    }
+}
+
 describe('createQuickPick', async function () {
     let testPicker: vscode.QuickPick<vscode.QuickPickItem> | undefined
 
@@ -297,68 +383,6 @@ describe('promptUser', async function () {
                 expectedResult[i],
                 `Expected ${expectedResult[i]}, got ${resultItems[i]} at element ${i}`
             )
-        }
-    }
-
-    class TestQuickPick<T extends vscode.QuickPickItem> implements vscode.QuickPick<T> {
-        public value: string = ''
-        public placeholder: string | undefined
-        public readonly onDidChangeValue: vscode.Event<string>
-        public readonly onDidAccept: vscode.Event<void>
-        public readonly onDidHide: vscode.Event<void>
-        public buttons: readonly vscode.QuickInputButton[] = []
-        public readonly onDidTriggerButton: vscode.Event<vscode.QuickInputButton>
-        public items: readonly T[] = []
-        public canSelectMany: boolean = false
-        public matchOnDescription: boolean = false
-        public matchOnDetail: boolean = false
-        public activeItems: readonly T[] = []
-        public readonly onDidChangeActive: vscode.Event<T[]>
-        public selectedItems: readonly T[] = []
-        public readonly onDidChangeSelection: vscode.Event<T[]>
-        public title: string | undefined
-        public step: number | undefined
-        public totalSteps: number | undefined
-        public enabled: boolean = true
-        public busy: boolean = false
-        public ignoreFocusOut: boolean = false
-
-        public isShowing: boolean = false
-
-        private readonly onDidHideEmitter: vscode.EventEmitter<void> = new vscode.EventEmitter()
-        private readonly onDidAcceptEmitter: vscode.EventEmitter<void> = new vscode.EventEmitter()
-        private readonly onDidChangeValueEmitter: vscode.EventEmitter<string> = new vscode.EventEmitter()
-        private readonly onDidChangeActiveEmitter: vscode.EventEmitter<T[]> = new vscode.EventEmitter()
-        private readonly onDidChangeSelectionEmitter: vscode.EventEmitter<T[]> = new vscode.EventEmitter()
-        private readonly onDidTriggerButtonEmitter: vscode.EventEmitter<
-            vscode.QuickInputButton
-        > = new vscode.EventEmitter()
-
-        public constructor() {
-            this.onDidHide = this.onDidHideEmitter.event
-            this.onDidAccept = this.onDidAcceptEmitter.event
-            this.onDidChangeValue = this.onDidChangeValueEmitter.event
-            this.onDidChangeActive = this.onDidChangeActiveEmitter.event
-            this.onDidChangeSelection = this.onDidChangeSelectionEmitter.event
-            this.onDidTriggerButton = this.onDidTriggerButtonEmitter.event
-        }
-
-        public show(): void {
-            this.isShowing = true
-        }
-        public hide(): void {
-            this.onDidHideEmitter.fire()
-            this.isShowing = false
-        }
-        public accept(value: T[]) {
-            this.selectedItems = value
-            this.onDidAcceptEmitter.fire()
-            this.isShowing = false
-        }
-        public dispose(): void {}
-
-        public pressButton(button: vscode.QuickInputButton) {
-            this.onDidTriggerButtonEmitter.fire(button)
         }
     }
 

@@ -16,6 +16,8 @@ export interface AdditionalInputBoxOptions {
 }
 
 /**
+ * @deprecated Use 'inputPrompter.ts' instead
+ *
  * Creates an InputBox to get a text response from the user.
  *
  * Used to wrap createInputBox and accommodate

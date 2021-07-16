@@ -37,10 +37,7 @@ export class DefaultCredentialSelectionDataProvider implements CredentialSelecti
     })
 
     private readonly _credentialsMru: CredentialsProfileMru
-    private readonly helpButton = createHelpButton(
-        localize('AWS.command.help', 'View Toolkit Documentation'),
-        credentialHelpUrl
-    )
+    private readonly helpButton = createHelpButton(credentialHelpUrl)
 
     public constructor(public readonly existingProfileNames: string[], protected context: ExtensionContext) {
         this._credentialsMru = new CredentialsProfileMru(context)

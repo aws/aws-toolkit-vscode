@@ -28,19 +28,6 @@ export abstract class Prompter<T> {
         return 1
     }
 
-    // A note on the following two methods:
-    //
-    // getLastResponse/setLastReponse are used to preserve some semblance of state in
-    // between different steps. it is up to implementing classes to check for type safety
-    // since there is a possibility for the 'last response' to be from a prompter of a
-    // completely different type
-    //
-    // why not keep state with prompters?
-    //
-    // as a whole, having prompters be regenerated every step is a solution to the state management
-    // problem. if we kept the same prompters for every step, we must also know how to update them
-    // as form state is manipulated by other steps.
-
     /** Implementing classes should use the argument to show the user what they last selected (if applicable) */
     public abstract get lastResponse(): any
     /** Implementing classes should return the user's response _before_ transforming into into type T */
