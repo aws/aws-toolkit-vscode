@@ -43,6 +43,8 @@ export class S3FileViewerManager {
     }
 
     public async openTab(fileNode: S3FileNode): Promise<void> {
+        if (this.activeTabs.has(fileNode.file.arn)) {
+        }
         getLogger().verbose(`S3FileViewer: Retrieving and displaying file: ${fileNode.file.key}`)
         showOutputMessage(
             localize('AWS.s3.fileViewer.info.fileKey', 'Retrieving and displaying file: {0}', fileNode.file.key),
@@ -66,7 +68,7 @@ export class S3FileViewerManager {
             //was activated from an open tab
             if (this.activeTabs.has(uriOrNode.fsPath)) {
                 const tab = this.activeTabs.get(uriOrNode.fsPath)
-                await tab!.openFileOnEditMode(this.window)
+                await tab!.openFileOnEditMode()
             }
         } else if (uriOrNode instanceof S3FileNode) {
             //was activated from the explorer, need to get the file
@@ -75,7 +77,7 @@ export class S3FileViewerManager {
                 return
             }
             const newTab = this.activeTabs.get(fileLocation.fsPath) ?? new S3Tab(fileLocation)
-            await newTab.openFileOnReadOnly()
+            await newTab.openFileOnEditMode()
         }
     }
 
@@ -159,7 +161,7 @@ export class S3FileViewerManager {
         }
 
         this.cacheArns.add(fileNode.file.arn)
-        getLogger().debug(`New cached file: ${fileNode.file.arn} \n Cache contains: ${this.cacheArns}`)
+        getLogger().debug(`New cached file: ${fileNode.file.arn} \n Cache contains: ${this.cacheArns.toString()}`)
         return targetLocation
     }
 
@@ -168,14 +170,15 @@ export class S3FileViewerManager {
         const targetLocation = vscode.Uri.file(targetPath)
 
         if (this.cacheArns.has(fileNode.file.arn)) {
-            getLogger().info(`FileViewer: found file ${fileNode.file.key} in cache\n 
-                Cache contains: ${this.cacheArns}`)
+            getLogger().info(
+                `FileViewer: found file ${fileNode.file.key} in cache\n Cache contains: ${this.cacheArns.toString()}`
+            )
 
             //Explorer (or at least the S3Node) needs to be refreshed to get the last modified date from S3
             const newNode = await this.refreshNode(fileNode)
             if (!newNode) {
                 getLogger().error(`FileViewer: Error, refreshNode() returned undefined with file: ${fileNode.file.key}`)
-                getLogger().debug(`Cache contains: ${this.cacheArns}`)
+                getLogger().debug(`Cache contains: ${this.cacheArns.toString()}`)
                 return
             }
 
