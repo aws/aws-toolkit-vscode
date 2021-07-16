@@ -1,0 +1,350 @@
+{
+    "nodes": [
+        { "name": "IAMGroup", "type": "AWS::IAM::Group" },
+        { "name": "SESReceiptRule", "type": "AWS::SES::ReceiptRule" },
+        { "name": "SESReceiptRuleSet", "type": "AWS::SES::ReceiptRuleSet" },
+        { "name": "S3Email", "type": "AWS::S3::Bucket" },
+        { "name": "S3EmailPolicy", "type": "AWS::S3::BucketPolicy" },
+        { "name": "PipelineConverter", "type": "AWS::CodePipeline::Pipeline" },
+        { "name": "PipelineConverterPolicy", "type": "AWS::IAM::Policy" },
+        { "name": "PipelineConverterRole", "type": "AWS::IAM::Role" },
+        {
+            "name": "PipelineConverterWebhook",
+            "type": "AWS::CodePipeline::Webhook"
+        },
+        { "name": "CodeBuildConverter", "type": "AWS::CodeBuild::Project" },
+        { "name": "CodeBuildConverterRole", "type": "AWS::IAM::Role" },
+        { "name": "CodeBuildConverterPolicyCWL", "type": "AWS::IAM::Policy" },
+        { "name": "CodeBuildConverterPolicyS3", "type": "AWS::IAM::Policy" },
+        {
+            "name": "CodeBuildConverterPolicyLambdaUpdate",
+            "type": "AWS::IAM::Policy"
+        },
+        { "name": "LambdaEmailConverter", "type": "AWS::Lambda::Function" },
+        { "name": "S3ConverterPermission", "type": "AWS::Lambda::Permission" },
+        { "name": "LambdaEmailConverterRole", "type": "AWS::IAM::Role" },
+        { "name": "LambdaEmailConverterPolicyS3", "type": "AWS::IAM::Policy" },
+        { "name": "PipelineInbound", "type": "AWS::CodePipeline::Pipeline" },
+        { "name": "PipelineInboundPolicy", "type": "AWS::IAM::Policy" },
+        { "name": "PipelineInboundRole", "type": "AWS::IAM::Role" },
+        { "name": "PipelineInboundWebhook", "type": "AWS::CodePipeline::Webhook" },
+        { "name": "CodeBuildInbound", "type": "AWS::CodeBuild::Project" },
+        { "name": "CodeBuildInboundRole", "type": "AWS::IAM::Role" },
+        { "name": "CodeBuildDeployPolicyCWL", "type": "AWS::IAM::Policy" },
+        { "name": "CodeBuildDeployPolicyS3", "type": "AWS::IAM::Policy" },
+        { "name": "CodeBuildDeployPolicyLambdaUpdate", "type": "AWS::IAM::Policy" },
+        { "name": "LambdaEmailInbound", "type": "AWS::Lambda::Function" },
+        { "name": "S3InboundPermission", "type": "AWS::Lambda::Permission" },
+        { "name": "LambdaEmailInboundRole", "type": "AWS::IAM::Role" },
+        { "name": "LambdaEmailInboundPolicyS3", "type": "AWS::IAM::Policy" },
+        { "name": "LambdaEmailInboundPolicySES", "type": "AWS::IAM::Policy" },
+        { "name": "PipelineOutbound", "type": "AWS::CodePipeline::Pipeline" },
+        { "name": "PipelineOutboundPolicy", "type": "AWS::IAM::Policy" },
+        { "name": "PipelineOutboundRole", "type": "AWS::IAM::Role" },
+        { "name": "PipelineOutboundWebhook", "type": "AWS::CodePipeline::Webhook" },
+        { "name": "CodeBuildOutbound", "type": "AWS::CodeBuild::Project" },
+        { "name": "CodeBuildOutboundRole", "type": "AWS::IAM::Role" },
+        { "name": "CodeBuildOutboundPolicyCWL", "type": "AWS::IAM::Policy" },
+        { "name": "CodeBuildOutboundPolicyS3", "type": "AWS::IAM::Policy" },
+        {
+            "name": "CodeBuildOutboundPolicyLambdaUpdate",
+            "type": "AWS::IAM::Policy"
+        },
+        { "name": "LambdaEmailOutbound", "type": "AWS::Lambda::Function" },
+        { "name": "S3OutboundPermission", "type": "AWS::Lambda::Permission" },
+        { "name": "LambdaEmailOutboundRole", "type": "AWS::IAM::Role" },
+        { "name": "LambdaEmailOutboundPolicyS3", "type": "AWS::IAM::Policy" },
+        { "name": "LambdaEmailOutboundPolicySES", "type": "AWS::IAM::Policy" }
+    ],
+    "links": [
+        { "source": "IAMGroup", "target": "S3Email", "type": "Fn::Sub" },
+        {
+            "source": "SESReceiptRule",
+            "target": "SESReceiptRuleSet",
+            "type": "Ref"
+        },
+        { "source": "SESReceiptRule", "target": "S3Email", "type": "Ref" },
+        {
+            "source": "S3Email",
+            "target": "LambdaEmailOutbound",
+            "type": "DependsOn"
+        },
+        {
+            "source": "S3Email",
+            "target": "LambdaEmailConverter",
+            "type": "DependsOn"
+        },
+        {
+            "source": "S3Email",
+            "target": "LambdaEmailInbound",
+            "type": "DependsOn"
+        },
+        {
+            "source": "S3Email",
+            "target": "LambdaEmailInbound",
+            "type": "Fn::GetAtt"
+        },
+        {
+            "source": "S3Email",
+            "target": "LambdaEmailOutbound",
+            "type": "Fn::GetAtt"
+        },
+        {
+            "source": "S3Email",
+            "target": "LambdaEmailConverter",
+            "type": "Fn::GetAtt"
+        },
+        { "source": "S3EmailPolicy", "target": "S3Email", "type": "Ref" },
+        { "source": "S3EmailPolicy", "target": "S3Email", "type": "Fn::Sub" },
+        {
+            "source": "PipelineConverter",
+            "target": "PipelineConverterRole",
+            "type": "Fn::GetAtt"
+        },
+        {
+            "source": "PipelineConverter",
+            "target": "CodeBuildConverter",
+            "type": "Ref"
+        },
+        {
+            "source": "PipelineConverterPolicy",
+            "target": "PipelineConverterRole",
+            "type": "Ref"
+        },
+        {
+            "source": "PipelineConverterWebhook",
+            "target": "PipelineConverter",
+            "type": "Ref"
+        },
+        {
+            "source": "PipelineConverterWebhook",
+            "target": "PipelineConverter",
+            "type": "Fn::GetAtt"
+        },
+        {
+            "source": "CodeBuildConverter",
+            "target": "CodeBuildConverterRole",
+            "type": "Fn::GetAtt"
+        },
+        {
+            "source": "CodeBuildConverter",
+            "target": "LambdaEmailConverter",
+            "type": "Ref"
+        },
+        {
+            "source": "CodeBuildConverterPolicyCWL",
+            "target": "CodeBuildConverterRole",
+            "type": "Ref"
+        },
+        {
+            "source": "CodeBuildConverterPolicyS3",
+            "target": "CodeBuildConverterRole",
+            "type": "Ref"
+        },
+        {
+            "source": "CodeBuildConverterPolicyLambdaUpdate",
+            "target": "CodeBuildConverterRole",
+            "type": "Ref"
+        },
+        {
+            "source": "CodeBuildConverterPolicyLambdaUpdate",
+            "target": "LambdaEmailConverter",
+            "type": "Fn::Sub"
+        },
+        {
+            "source": "LambdaEmailConverter",
+            "target": "LambdaEmailConverterRole",
+            "type": "Fn::GetAtt"
+        },
+        {
+            "source": "S3ConverterPermission",
+            "target": "LambdaEmailConverter",
+            "type": "DependsOn"
+        },
+        {
+            "source": "S3ConverterPermission",
+            "target": "LambdaEmailConverter",
+            "type": "Ref"
+        },
+        {
+            "source": "LambdaEmailConverterPolicyS3",
+            "target": "LambdaEmailConverterRole",
+            "type": "Ref"
+        },
+        {
+            "source": "LambdaEmailConverterPolicyS3",
+            "target": "S3Email",
+            "type": "Fn::Sub"
+        },
+        {
+            "source": "PipelineInbound",
+            "target": "PipelineInboundRole",
+            "type": "Fn::GetAtt"
+        },
+        {
+            "source": "PipelineInbound",
+            "target": "CodeBuildInbound",
+            "type": "Ref"
+        },
+        {
+            "source": "PipelineInboundPolicy",
+            "target": "PipelineInboundRole",
+            "type": "Ref"
+        },
+        {
+            "source": "PipelineInboundWebhook",
+            "target": "PipelineInbound",
+            "type": "Ref"
+        },
+        {
+            "source": "PipelineInboundWebhook",
+            "target": "PipelineInbound",
+            "type": "Fn::GetAtt"
+        },
+        {
+            "source": "CodeBuildInbound",
+            "target": "CodeBuildInboundRole",
+            "type": "Fn::GetAtt"
+        },
+        {
+            "source": "CodeBuildInbound",
+            "target": "LambdaEmailInbound",
+            "type": "Ref"
+        },
+        {
+            "source": "CodeBuildDeployPolicyCWL",
+            "target": "CodeBuildInboundRole",
+            "type": "Ref"
+        },
+        {
+            "source": "CodeBuildDeployPolicyS3",
+            "target": "CodeBuildInboundRole",
+            "type": "Ref"
+        },
+        {
+            "source": "CodeBuildDeployPolicyLambdaUpdate",
+            "target": "CodeBuildInboundRole",
+            "type": "Ref"
+        },
+        {
+            "source": "CodeBuildDeployPolicyLambdaUpdate",
+            "target": "LambdaEmailInbound",
+            "type": "Fn::Sub"
+        },
+        {
+            "source": "LambdaEmailInbound",
+            "target": "LambdaEmailInboundRole",
+            "type": "Fn::GetAtt"
+        },
+        {
+            "source": "S3InboundPermission",
+            "target": "LambdaEmailInbound",
+            "type": "DependsOn"
+        },
+        {
+            "source": "S3InboundPermission",
+            "target": "LambdaEmailInbound",
+            "type": "Ref"
+        },
+        {
+            "source": "LambdaEmailInboundPolicyS3",
+            "target": "LambdaEmailInboundRole",
+            "type": "Ref"
+        },
+        {
+            "source": "LambdaEmailInboundPolicyS3",
+            "target": "S3Email",
+            "type": "Fn::Sub"
+        },
+        {
+            "source": "LambdaEmailInboundPolicySES",
+            "target": "LambdaEmailInboundRole",
+            "type": "Ref"
+        },
+        {
+            "source": "PipelineOutbound",
+            "target": "PipelineOutboundRole",
+            "type": "Fn::GetAtt"
+        },
+        {
+            "source": "PipelineOutbound",
+            "target": "CodeBuildOutbound",
+            "type": "Ref"
+        },
+        {
+            "source": "PipelineOutboundPolicy",
+            "target": "PipelineOutboundRole",
+            "type": "Ref"
+        },
+        {
+            "source": "PipelineOutboundWebhook",
+            "target": "PipelineOutbound",
+            "type": "Ref"
+        },
+        {
+            "source": "PipelineOutboundWebhook",
+            "target": "PipelineOutbound",
+            "type": "Fn::GetAtt"
+        },
+        {
+            "source": "CodeBuildOutbound",
+            "target": "CodeBuildOutboundRole",
+            "type": "Fn::GetAtt"
+        },
+        {
+            "source": "CodeBuildOutbound",
+            "target": "LambdaEmailOutbound",
+            "type": "Ref"
+        },
+        {
+            "source": "CodeBuildOutboundPolicyCWL",
+            "target": "CodeBuildOutboundRole",
+            "type": "Ref"
+        },
+        {
+            "source": "CodeBuildOutboundPolicyS3",
+            "target": "CodeBuildOutboundRole",
+            "type": "Ref"
+        },
+        {
+            "source": "CodeBuildOutboundPolicyLambdaUpdate",
+            "target": "CodeBuildOutboundRole",
+            "type": "Ref"
+        },
+        {
+            "source": "CodeBuildOutboundPolicyLambdaUpdate",
+            "target": "LambdaEmailOutbound",
+            "type": "Fn::Sub"
+        },
+        {
+            "source": "LambdaEmailOutbound",
+            "target": "LambdaEmailOutboundRole",
+            "type": "Fn::GetAtt"
+        },
+        {
+            "source": "S3OutboundPermission",
+            "target": "LambdaEmailOutbound",
+            "type": "DependsOn"
+        },
+        {
+            "source": "S3OutboundPermission",
+            "target": "LambdaEmailOutbound",
+            "type": "Ref"
+        },
+        {
+            "source": "LambdaEmailOutboundPolicyS3",
+            "target": "LambdaEmailOutboundRole",
+            "type": "Ref"
+        },
+        {
+            "source": "LambdaEmailOutboundPolicyS3",
+            "target": "S3Email",
+            "type": "Fn::Sub"
+        },
+        {
+            "source": "LambdaEmailOutboundPolicySES",
+            "target": "LambdaEmailOutboundRole",
+            "type": "Ref"
+        }
+    ]
+}

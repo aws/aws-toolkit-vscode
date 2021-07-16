@@ -1,0 +1,11 @@
+{
+    "nodes": [
+        { "name": "AppFunction", "type": "AWS::Serverless::Function" },
+        { "name": "AppApi", "type": "AWS::Serverless::HttpApi" },
+        { "name": "AuthStack", "type": "AWS::Serverless::Application" }
+    ],
+    "links": [
+        { "source": "AppFunction", "target": "AppApi", "type": "Ref" },
+        { "source": "AppApi", "target": "AuthStack", "type": "Fn::GetAtt" }
+    ]
+}

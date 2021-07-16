@@ -1,0 +1,4 @@
+{
+    "nodes": [{ "name": "ConsumerFunction", "type": "AWS::Serverless::Function" }],
+    "links": []
+}

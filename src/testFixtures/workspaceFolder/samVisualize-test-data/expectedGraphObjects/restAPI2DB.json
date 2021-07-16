@@ -1,0 +1,64 @@
+{
+    "nodes": [
+        { "name": "ApiUsagePlan", "type": "AWS::ApiGateway::UsagePlan" },
+        { "name": "ApiDeployment", "type": "AWS::ApiGateway::Deployment" },
+        { "name": "ApiUsagePlanKey", "type": "AWS::ApiGateway::UsagePlanKey" },
+        { "name": "ApiKey", "type": "AWS::ApiGateway::ApiKey" },
+        { "name": "APIGatewayRole", "type": "AWS::IAM::Role" },
+        { "name": "DynamoDBTable", "type": "AWS::DynamoDB::Table" },
+        { "name": "MusicMethodPost", "type": "AWS::ApiGateway::Method" },
+        { "name": "MusicArtistMethodGet", "type": "AWS::ApiGateway::Method" },
+        { "name": "Api", "type": "AWS::ApiGateway::RestApi" },
+        { "name": "MusicResource", "type": "AWS::ApiGateway::Resource" },
+        { "name": "MusicArtistResource", "type": "AWS::ApiGateway::Resource" }
+    ],
+    "links": [
+        {
+            "source": "ApiUsagePlan",
+            "target": "ApiDeployment",
+            "type": "DependsOn"
+        },
+        { "source": "ApiUsagePlan", "target": "Api", "type": "Ref" },
+        { "source": "ApiKey", "target": "ApiDeployment", "type": "DependsOn" },
+        { "source": "ApiKey", "target": "Api", "type": "Ref" },
+        {
+            "source": "ApiDeployment",
+            "target": "MusicArtistMethodGet",
+            "type": "DependsOn"
+        },
+        { "source": "ApiDeployment", "target": "Api", "type": "Ref" },
+        {
+            "source": "MusicArtistMethodGet",
+            "target": "APIGatewayRole",
+            "type": "Fn::GetAtt"
+        },
+        { "source": "MusicArtistMethodGet", "target": "Api", "type": "Ref" },
+        {
+            "source": "MusicArtistMethodGet",
+            "target": "MusicArtistResource",
+            "type": "Ref"
+        },
+        {
+            "source": "APIGatewayRole",
+            "target": "DynamoDBTable",
+            "type": "Fn::GetAtt"
+        },
+        { "source": "ApiUsagePlanKey", "target": "ApiUsagePlan", "type": "Ref" },
+        { "source": "ApiUsagePlanKey", "target": "ApiKey", "type": "Ref" },
+        { "source": "MusicResource", "target": "Api", "type": "Fn::GetAtt" },
+        { "source": "MusicResource", "target": "Api", "type": "Ref" },
+        { "source": "MusicArtistResource", "target": "Api", "type": "Ref" },
+        {
+            "source": "MusicArtistResource",
+            "target": "MusicResource",
+            "type": "Ref"
+        },
+        { "source": "MusicMethodPost", "target": "Api", "type": "Ref" },
+        { "source": "MusicMethodPost", "target": "MusicResource", "type": "Ref" },
+        {
+            "source": "MusicMethodPost",
+            "target": "APIGatewayRole",
+            "type": "Fn::GetAtt"
+        }
+    ]
+}

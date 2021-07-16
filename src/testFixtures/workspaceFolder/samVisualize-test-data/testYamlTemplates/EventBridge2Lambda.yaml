@@ -1,0 +1,31 @@
+AWSTemplateFormatVersion: '2010-09-09'
+Transform: AWS::Serverless-2016-10-31
+Description: Serverless patterns - EventBridge to Lambda
+
+Resources:
+    # Define the consumer Lambda function and EventBridge rule
+    ConsumerFunction:
+        Type: AWS::Serverless::Function
+        Description: Invoked by EventBridge rule
+        Properties:
+            CodeUri: src/
+            Handler: app.handler
+            Runtime: nodejs12.x
+            Timeout: 3
+            Events:
+                Trigger:
+                    Type: EventBridgeRule
+                    Properties:
+                        Pattern:
+                            source:
+                                - custom.myApp
+                            detail-type:
+                                - transaction
+                            detail:
+                                location:
+                                    - 'prefix': 'EUR-'
+
+Outputs:
+    ConsumerFunction:
+        Description: ConsumerFunction function name
+        Value: !Ref ConsumerFunction
