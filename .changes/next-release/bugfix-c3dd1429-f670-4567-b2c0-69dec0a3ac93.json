@@ -1,0 +1,4 @@
+{
+  "type" : "bugfix",
+  "description" : "Fix being unable to update Lambda configuration if the Image packaging type"
+}
