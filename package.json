@@ -1027,7 +1027,7 @@
                 {
                     "command": "aws.s3.openFile",
                     "when": "view == aws.explorer && viewItem == awsS3FileNode",
-                    "group": "0@2"
+                    "group": "0@1"
                 },
                 {
                     "command": "aws.s3.uploadFile",

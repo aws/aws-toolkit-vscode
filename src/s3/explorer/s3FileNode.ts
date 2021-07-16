@@ -40,9 +40,7 @@ export class S3FileNode extends AWSTreeNodeBase implements AWSResourceNode {
             const readableSize = formatBytes(file.sizeBytes)
 
             // Prevent clock skew showing future date
-            const readableDate = moment(file.lastModified)
-                .subtract(5, 'second')
-                .from(now)
+            const readableDate = moment(file.lastModified).subtract(5, 'second').from(now)
 
             this.tooltip = localize(
                 'AWS.explorerNode.s3.fileTooltip',
@@ -55,6 +53,11 @@ export class S3FileNode extends AWSTreeNodeBase implements AWSResourceNode {
         }
         this.iconPath = fileIconPath()
         this.contextValue = 'awsS3FileNode'
+        this.command = {
+            command: 'aws.s3.openFile',
+            title: localize('AWS.command.s3.openFile', 'Open File in Editor'),
+            arguments: [this],
+        }
     }
 
     /**

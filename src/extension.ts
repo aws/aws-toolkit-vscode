@@ -121,6 +121,7 @@ export async function activate(context: vscode.ExtensionContext) {
         )
         ext.sdkClientBuilder = new DefaultAWSClientBuilder(awsContext)
         ext.toolkitClientBuilder = new DefaultToolkitClientBuilder(regionProvider)
+        ext.s3fileViewerManager = new S3FileViewerManager()
 
         await initializeCredentials({
             extensionContext: context,
@@ -262,10 +263,7 @@ export async function activate(context: vscode.ExtensionContext) {
         )
         throw error
     }
-
-    ext.s3fileViewerManager = new S3FileViewerManager()
 }
-
 export async function deactivate() {
     await ext.telemetry.shutdown()
 }
