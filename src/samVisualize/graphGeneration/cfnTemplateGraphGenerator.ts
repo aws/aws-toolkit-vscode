@@ -40,7 +40,7 @@ function extractSubstitution(value: string): Array<string> {
     const regex = /\${([^}]+)}/g
     let match = regex.exec(value)
     // Iterate to catch all possible matches
-    while (match !== null) {
+    while (match) {
         // The resource name is in the first capture group
         names.push(match[1])
         match = regex.exec(value)
