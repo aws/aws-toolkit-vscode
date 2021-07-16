@@ -5,7 +5,6 @@
 
 import * as vscode from 'vscode'
 //import { Bucket, DownloadFileRequest, File, S3Client } from '../../shared/clients/s3Client'
-import { getLogger } from '../../shared/logger'
 
 //const fs = require('fs')
 
@@ -36,51 +35,124 @@ export class S3Tab {
     }
 
     public async openFileOnReadOnly(workspace = vscode.workspace): Promise<vscode.TextEditor | undefined> {
-        if (this.editor && this.editor.document.uri.scheme === 'file') {
-            try {
-                const doc = await workspace.openTextDocument(this.fileUri) // calls back into the provider
-                this.editor = await this.window.showTextDocument(doc, { preview: false })
-                await vscode.commands.executeCommand('workbench.action.closeActiveEditor')
-            } catch (e) {
-                getLogger().error(`Given file not found, error: ${e}`)
-            }
-        }
+        //find if there is any active editor for this uri
+        const openEditor = await this.getActiveEditor()
 
-        if (!this.s3Uri) {
-            this.s3Uri = vscode.Uri.parse('s3:' + this.fileUri.fsPath)
-        }
-
-        try {
-            const doc = await workspace.openTextDocument(this.s3Uri) // calls back into the provider
+        if (!openEditor) {
+            //there isn't any tab open for this uri, simply open it in read-only with the s3Uri
+            const doc = await workspace.openTextDocument(this.s3Uri)
             this.editor = await this.window.showTextDocument(doc, { preview: false })
+
             return this.editor
-        } catch (e) {
-            getLogger().error(`Given file not found, error: ${e}`)
+        } else if (openEditor.document.uri.scheme === 's3') {
+            //there is one already in read-only, just shift focus to it by reopening it with the ViewColumn option
+            await this.window.showTextDocument(openEditor.document, {
+                preview: false,
+                viewColumn: openEditor.viewColumn,
+            })
+            this.editor = openEditor
+
+            return this.editor
+        } else if (openEditor.document.uri.scheme === 'file') {
+            //there is a tab open in edit-mode, it needs to be focused, then closed
+            await this.window.showTextDocument(openEditor.document, {
+                preview: false,
+                viewColumn: openEditor.viewColumn,
+            })
+            await vscode.commands.executeCommand('workbench.action.closeActiveEditor')
+            //good to open in read-only
+            const doc = await workspace.openTextDocument(this.s3Uri)
+            this.editor = await this.window.showTextDocument(doc, { preview: false })
+
+            return this.editor
         }
+
+        return undefined
+
+        // if (this.editor && this.editor.document.uri.scheme === 'file') {
+        //     try {
+        //         const doc = await workspace.openTextDocument(this.fileUri) // calls back into the provider
+        //         this.editor = await this.window.showTextDocument(doc, { preview: false })
+        //         await vscode.commands.executeCommand('workbench.action.closeActiveEditor')
+        //     } catch (e) {
+        //         getLogger().error(`Given file not found, error: ${e}`)
+        //     }
+        // }
+
+        // if (!this.s3Uri) {
+        //     this.s3Uri = vscode.Uri.parse('s3:' + this.fileUri.fsPath)
+        // }
+
+        // try {
+        //     const doc = await workspace.openTextDocument(this.s3Uri) // calls back into the provider
+        //     this.editor = await this.window.showTextDocument(doc, { preview: false })
+        //     return this.editor
+        // } catch (e) {
+        //     getLogger().error(`Given file not found, error: ${e}`)
+        // }
     }
 
     public async openFileOnEditMode(workspace = vscode.workspace): Promise<vscode.TextEditor | undefined> {
-        //if editor is defined, it means there exists already an editor for this tab open
-        if (this.editor && this.editor.document.uri.scheme === 's3') {
-            try {
-                const doc = await workspace.openTextDocument(this.s3Uri) // calls back into the provider
-                this.editor = await this.window.showTextDocument(doc, { preview: false })
-                await vscode.commands.executeCommand('workbench.action.closeActiveEditor')
-            } catch (e) {
-                getLogger().error(`Given file not found, error: ${e}`)
-            }
-        }
-        //close it, then set it undefined
+        //find if there is any active editor for this uri
+        const openEditor = await this.getActiveEditor()
 
-        try {
-            const doc = await workspace.openTextDocument(this.fileUri) // calls back into the provider
+        if (!openEditor) {
+            //there wasn't any open, just display it regularly
+            const doc = await workspace.openTextDocument(this.fileUri)
             this.editor = await this.window.showTextDocument(doc, { preview: false })
+
             return this.editor
-        } catch (e) {
-            getLogger().error(`Given file not found, error: ${e}`)
+        } else if (openEditor.document.uri.scheme === 'file') {
+            //there is a tab for this uri open in edit-mode, just shift focus to it by reopening it with the ViewColumn option
+            await this.window.showTextDocument(openEditor.document, {
+                preview: false,
+                viewColumn: openEditor.viewColumn,
+            })
+            this.editor = openEditor
+
+            return this.editor
+        } else if (openEditor.document.uri.scheme === 's3') {
+            // there is a read-only tab open, it needs to be focused, then closed
+            await this.window.showTextDocument(openEditor.document, {
+                preview: false,
+                viewColumn: openEditor.viewColumn,
+            })
+            await vscode.commands.executeCommand('workbench.action.closeActiveEditor')
+            //good to open in edit-mode
+            const doc = await workspace.openTextDocument(this.fileUri)
+            this.editor = await this.window.showTextDocument(doc, { preview: false })
+
+            return this.editor
         }
+
+        return undefined
+
+        //if editor is defined, it means there exists already an editor for this tab open
+        // if (this.editor && this.editor.document.uri.scheme === 's3') {
+        //     try {
+        //         const doc = await workspace.openTextDocument(this.s3Uri) // calls back into the provider
+        //         this.editor = await this.window.showTextDocument(doc, { preview: false })
+        //         await vscode.commands.executeCommand('workbench.action.closeActiveEditor')
+        //     } catch (e) {
+        //         getLogger().error(`Given file not found, error: ${e}`)
+        //     }
+        // }
+        // //close it, then set it undefined
+
+        // try {
+        //     const doc = await workspace.openTextDocument(this.fileUri) // calls back into the provider
+        //     this.editor = await this.window.showTextDocument(doc, { preview: false })
+        //     return this.editor
+        // } catch (e) {
+        //     getLogger().error(`Given file not found, error: ${e}`)
+        // }
     }
 
+    public async getActiveEditor(): Promise<vscode.TextEditor | undefined> {
+        const visibleEditor = vscode.window.visibleTextEditors
+
+        return visibleEditor.find((editor: vscode.TextEditor) => editor.document.uri.fsPath === this.fileUri.fsPath)
+    }
     //onPressedButton = change state, how to do this?
 }
 
