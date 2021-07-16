@@ -10,12 +10,11 @@ import { getLogger } from '../../shared/logger/logger'
 
 /**
  * @param inputYaml A string representing a YAML template
- * @returns A JavaScript object corresponding to the given YAML string
+ * @returns A JavaScript object corresponding to the given YAML string, or undefined if the input is not valid YAML
  */
-function yamlStringToObject(inputYaml: string): Record<string, unknown> {
-    let templateAsObject = {}
+function yamlStringToObject(inputYaml: string): Record<string, any> | undefined {
     try {
-        templateAsObject = yamlParse(inputYaml)
+        return yamlParse(inputYaml)
     } catch (err) {
         getLogger().error(
             `SAM Visualize: Failed to load template "${inputYaml.substr(
@@ -25,7 +24,6 @@ function yamlStringToObject(inputYaml: string): Record<string, unknown> {
             err
         )
     }
-    return templateAsObject
 }
 
 /**
@@ -36,8 +34,18 @@ function yamlStringToObject(inputYaml: string): Record<string, unknown> {
  * @returns A list of strings corresponding to the embedded resource names. If no resource names are found, returns an empty list.
  */
 function extractSubstitution(value: string): Array<string> {
-    const names: Array<string> | null = value.match(/\${[^}]+}/g)
-    return names ? names.map((str: string) => str.replace(/(\$|}|{)/g, '')) : []
+    // const names: Array<string> | null = value.match(/\${[^}]+}/g)
+    // return names ? names.map((str: string) => str.replace(/(\$|}|{)/g, '')) : []
+    const names = []
+    const regex = /\${([^}]+)}/g
+    let match = regex.exec(value)
+    // Iterate to catch all possible matches
+    while (match !== null) {
+        // The resource name is in the first capture group
+        names.push(match[1])
+        match = regex.exec(value)
+    }
+    return names
 }
 
 /**
@@ -109,27 +117,34 @@ function traverse(graph: Graph, currentObj: Record<string, any>, parentNodeName:
     }
 }
 /**
- * @param inputYaml A string representing a YAML template
- * @returns A GraphObject representing the graph
+ * Generates a graph of the resources contained in a CFN YAML template, provided the template adheres to the `Template Anatomy`
+ * @see https://docs.aws.amazon.com/AWSCloudFormation/latest/UserGuide/template-anatomy.html
+ * @param inputYaml A string representing a YAML template.
+ * @returns A GraphObject representing the graph, or `undefined` if the input does adhere to the `Template Anatomy`
  */
-function generateGraphFromYaml(inputYaml: string): GraphObject {
-    const templateData: Record<string, any> = yamlStringToObject(inputYaml)
-    // We only want Resources as nodes in our graph
-    const resources = templateData['Resources']
-    const graph = new Graph()
+export function generateGraphFromYaml(inputYaml: string): GraphObject | undefined {
+    const templateData = yamlStringToObject(inputYaml)
+    // A graph cannot be generated if the template data is not defined, or not an object
+    if (templateData !== undefined && _.isObjectLike(templateData)) {
+        // We only want Resources as nodes in the graph
+        const resources = templateData['Resources']
 
-    // Loop over each resource and initialize it in the map.
-    // These are the only nodes we wanna be working with, links to non-resources will be ignored.
-    for (const resourceName of Object.keys(resources)) {
-        graph.initNode(resourceName, resources[resourceName]['Type'])
+        // If the input yaml does not have a 'Resources, no graph can be generated
+        if (!_.isObjectLike(resources)) {
+            return undefined
+        }
+
+        const graph = new Graph()
+
+        // Loop over each resource and initialize it in the map.
+        // These are the only nodes we want to be working with, links to non-resources will be ignored.
+        for (const resourceName of Object.keys(resources)) {
+            graph.initNode(resourceName, resources[resourceName]['Type'])
+        }
+        // Now we can traverse each resource, after having defined each possible node in the map
+        for (const resourceName of Object.keys(resources)) {
+            traverse(graph, resources[resourceName], resourceName)
+        }
+        return graph.getObjectRepresentation()
     }
-    // Now we can traverse each resource, after having defined each possible node in the map
-    for (const resourceName of Object.keys(resources)) {
-        graph.initNode(resourceName, resources[resourceName]['Type'])
-        traverse(graph, resources[resourceName], resourceName)
-    }
-    // Return
-    return graph.getObjectRepresentation()
 }
-
-export { generateGraphFromYaml }

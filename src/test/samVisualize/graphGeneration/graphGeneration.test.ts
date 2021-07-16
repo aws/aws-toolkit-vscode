@@ -9,14 +9,14 @@ import { join } from 'path'
 import { readdirSync, readFileSync } from 'fs'
 import { getProjectDir } from '../../testUtil'
 
-const TestInputDirectory = join(
+const testInputDirectory = join(
     getProjectDir(),
     'testFixtures',
     'workspaceFolder',
     'samVisualize-test-data',
     'testYamlTemplates'
 )
-const TestExpectedOutputDirectory = join(
+const testExpectedOutputDirectory = join(
     getProjectDir(),
     'testFixtures',
     'workspaceFolder',
@@ -24,8 +24,18 @@ const TestExpectedOutputDirectory = join(
     'expectedGraphObjects'
 )
 
+// Holds incorrect CFN templates to test error cases
+const errorInputDirectory = join(
+    getProjectDir(),
+    'testFixtures',
+    'workspaceFolder',
+    'samVisualize-test-data',
+    'notCFNTemplates'
+)
+
 let inputFiles: Array<string>
 let expectedOutputFiles: Array<string>
+let errorFiles: Array<string>
 
 describe('samVisualize Graph Generation from YAML', async function () {
     /**
@@ -69,20 +79,22 @@ describe('samVisualize Graph Generation from YAML', async function () {
     }
 
     before(function () {
-        inputFiles = readdirSync(TestInputDirectory)
-        expectedOutputFiles = readdirSync(TestExpectedOutputDirectory)
+        inputFiles = readdirSync(testInputDirectory)
+        expectedOutputFiles = readdirSync(testExpectedOutputDirectory)
+        errorFiles = readdirSync(errorInputDirectory)
     })
 
-    it('same number of input files and expected output files', function () {
-        assert.strictEqual(inputFiles.length, expectedOutputFiles.length)
-    })
-
-    it('generateGraphFromYaml() generates correct graph from YAML Cloudformation Template', function () {
+    it('generates correct graph from YAML CFN Template', function () {
+        assert.strictEqual(
+            inputFiles.length,
+            expectedOutputFiles.length,
+            'Must have same number of test yaml templates and expected GraphObjects'
+        )
         // Input files are YAML or JSON
         // Output files are JSON
         for (const file of inputFiles) {
-            const inputFile = join(TestInputDirectory, file)
-            const expectedOutputFile = join(TestExpectedOutputDirectory, withoutExtension(file) + '.json')
+            const inputFile = join(testInputDirectory, file)
+            const expectedOutputFile = join(testExpectedOutputDirectory, withoutExtension(file) + '.json')
 
             const yamlString = readFileSync(inputFile).toString()
             const outputObject = generateGraphFromYaml(yamlString)
@@ -94,6 +106,7 @@ describe('samVisualize Graph Generation from YAML', async function () {
              * deeply compared regardless of their initial order.
              */
 
+            assert.ok(outputObject)
             const outputNodes = outputObject.nodes.sort(nodeAlphaCompare)
             const outputLinks = outputObject.links.sort(linkAlphaCompare)
             const expectedNodes = expectedObject.nodes.sort(nodeAlphaCompare)
@@ -101,6 +114,15 @@ describe('samVisualize Graph Generation from YAML', async function () {
 
             assert.deepStrictEqual(outputNodes, expectedNodes)
             assert.deepStrictEqual(outputLinks, expectedLinks)
+        }
+    })
+    // Note: A valid CFN template is defined here: https://docs.aws.amazon.com/AWSCloudFormation/latest/UserGuide/template-anatomy.html
+    it('gracefully returns undefined when input is valid yaml but not a valid CFN Template', function () {
+        for (const file of errorFiles) {
+            const errorFile = join(errorInputDirectory, file)
+            const badCFNTemplateString = readFileSync(errorFile).toString()
+
+            assert.strictEqual(generateGraphFromYaml(badCFNTemplateString), undefined)
         }
     })
 })

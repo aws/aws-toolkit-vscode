@@ -6,7 +6,7 @@
 /**
  * Denotes a Link between two Nodes in the context of a GraphObject
  */
-type Link = {
+export type Link = {
     source: string
     target: string
     type?: string
@@ -15,7 +15,7 @@ type Link = {
 /**
  * Denotes a Node in the context of a GraphObject
  */
-type Node = {
+export type Node = {
     name: string
     // Takes the form <a>::<b>::<c> eg. 'AWS::Serverless::Function'
     type?: string
@@ -26,16 +26,16 @@ type Node = {
  * Resources in the template are represented by Node objects.
  * Conntections between resources are represented by Link objects.
  */
-type GraphObject = {
+export type GraphObject = {
     nodes: Array<Node>
     links: Array<Link>
 }
 
-class Graph {
+export class Graph {
     /**
      * Stores the internal representation of the graph
      */
-    private graph: GraphObject
+    private readonly graph: GraphObject
 
     // Note: https://262.ecma-international.org/6.0/#sec-set-objects
 
@@ -47,7 +47,7 @@ class Graph {
      * Node names are used as keys.
      * Exists to avoid iteration over the graph.nodes list to check for duplicates
      */
-    private nodeSet: Set<string>
+    private readonly nodeSet: Set<string>
 
     /**
      * Stores which links exist in the graph
@@ -56,7 +56,7 @@ class Graph {
      * The combination of all three properties determines a unique Link.
      * Exists to avoid iteration over the graph.links list to check for duplicates
      */
-    private linkSet: Set<string>
+    private readonly linkSet: Set<string>
 
     constructor() {
         this.graph = { nodes: [], links: [] }
@@ -70,7 +70,7 @@ class Graph {
      * @param destNodeName A string representing the name of the destination node
      * @param linkType A string representing the type of link
      */
-    createLink(sourceNodeName: string, destNodeName: string, linkType?: string): void {
+    public createLink(sourceNodeName: string, destNodeName: string, linkType?: string): void {
         const newLink: Link = {
             source: sourceNodeName,
             target: destNodeName,
@@ -98,7 +98,7 @@ class Graph {
      * @param nodeName A string representing the name of the node to initialize in the graph
      * @param nodeType A string representing the type of the node to initialize in the graph
      */
-    initNode(nodeName: string, nodeType?: string): void {
+    public initNode(nodeName: string, nodeType?: string): void {
         if (!this.nodeSet.has(nodeName)) {
             // Register a node as existing in the graph
             this.nodeSet.add(nodeName)
@@ -110,9 +110,7 @@ class Graph {
      * Serializes the graph into an object.
      * @returns An object representing the graph
      */
-    getObjectRepresentation(): GraphObject {
+    public getObjectRepresentation(): GraphObject {
         return this.graph
     }
 }
-
-export { Graph, Node, Link, GraphObject }
