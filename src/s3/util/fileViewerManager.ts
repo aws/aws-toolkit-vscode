@@ -2,9 +2,9 @@
  * Copyright 2021 Amazon.com, Inc. or its affiliates. All Rights Reserved.
  * SPDX-License-Identifier: Apache-2.0
  */
-import * as path from 'path'
 import * as vscode from 'vscode'
 import * as fs from 'fs'
+import { mkdirp } from 'fs-extra'
 import { OutputChannel } from 'vscode'
 import { ext } from '../../shared/extensionGlobals'
 import { makeTemporaryToolkitFolder } from '../../shared/filesystemUtilities'
@@ -13,7 +13,7 @@ import { Commands } from '../../shared/vscode/commands'
 import { downloadWithProgress } from '../commands/downloadFileAs'
 import { S3FileNode } from '../explorer/s3FileNode'
 import { readablePath } from '../util'
-import { getStringHash } from '../../shared/utilities/textUtilities'
+import { S3Tab } from './s3Tab'
 import { getLogger } from '../../shared/logger'
 import { showConfirmationMessage } from '../../shared/utilities/messages'
 import { localize } from '../../shared/utilities/vsCodeUtils'
@@ -22,7 +22,7 @@ const SIZE_LIMIT = 4 * Math.pow(10, 6)
 
 export class S3FileViewerManager {
     private cacheArns: Set<string>
-    //private activeTabs: Set<S3Tab>
+    private activeTabs: Map<string, S3Tab>
     private window: typeof vscode.window
     private outputChannel: OutputChannel
     private commands: Commands
@@ -35,7 +35,7 @@ export class S3FileViewerManager {
         tempLocation?: string
     ) {
         this.cacheArns = cacheArn
-        //this.activeTabs = new Set<S3Tab>()
+        this.activeTabs = new Map<string, S3Tab>()
         this.window = window
         this.commands = commands
         this.tempLocation = tempLocation
@@ -43,6 +43,8 @@ export class S3FileViewerManager {
     }
 
     public async openTab(fileNode: S3FileNode): Promise<void> {
+        if (this.activeTabs.has(fileNode.file.arn)) {
+        }
         getLogger().verbose(`S3FileViewer: Retrieving and displaying file: ${fileNode.file.key}`)
         showOutputMessage(
             localize('AWS.s3.fileViewer.info.fileKey', 'Retrieving and displaying file: {0}', fileNode.file.key),
@@ -55,9 +57,28 @@ export class S3FileViewerManager {
         }
         getLogger().verbose(`S3FileViewer: File from s3 or temp to be opened is: ${fileLocation}`)
 
-        //TODOD:: delegate this logic to S3Tab.ts
-        //this will display the document at the end
-        this.window.showTextDocument(fileLocation)
+        const newTab = this.activeTabs.get(fileLocation.fsPath) ?? new S3Tab(fileLocation)
+        await newTab.openFileOnReadOnly()
+
+        this.activeTabs.set(fileLocation.fsPath, newTab)
+    }
+
+    public async openOnEditMode(uriOrNode: vscode.Uri | S3FileNode): Promise<void> {
+        if (uriOrNode instanceof vscode.Uri) {
+            //was activated from an open tab
+            if (this.activeTabs.has(uriOrNode.fsPath)) {
+                const tab = this.activeTabs.get(uriOrNode.fsPath)
+                await tab!.openFileOnEditMode()
+            }
+        } else if (uriOrNode instanceof S3FileNode) {
+            //was activated from the explorer, need to get the file
+            const fileLocation = await this.getFile(uriOrNode)
+            if (!fileLocation) {
+                return
+            }
+            const newTab = this.activeTabs.get(fileLocation.fsPath) ?? new S3Tab(fileLocation)
+            await newTab.openFileOnEditMode()
+        }
     }
 
     /**
@@ -122,6 +143,8 @@ export class S3FileViewerManager {
             getLogger().debug(`FileViewer: User confirmed download, continuing`)
         }
 
+        await this.createSubFolders(targetPath)
+
         try {
             await downloadWithProgress(fileNode, targetLocation, this.window)
         } catch (err) {
@@ -138,7 +161,7 @@ export class S3FileViewerManager {
         }
 
         this.cacheArns.add(fileNode.file.arn)
-        getLogger().debug(`New cached file: ${fileNode.file.arn} \n Cache contains: ${this.cacheArns}`)
+        getLogger().debug(`New cached file: ${fileNode.file.arn} \n Cache contains: ${this.cacheArns.toString()}`)
         return targetLocation
     }
 
@@ -147,14 +170,15 @@ export class S3FileViewerManager {
         const targetLocation = vscode.Uri.file(targetPath)
 
         if (this.cacheArns.has(fileNode.file.arn)) {
-            getLogger().info(`FileViewer: found file ${fileNode.file.key} in cache\n 
-                Cache contains: ${this.cacheArns}`)
+            getLogger().info(
+                `FileViewer: found file ${fileNode.file.key} in cache\n Cache contains: ${this.cacheArns.toString()}`
+            )
 
             //Explorer (or at least the S3Node) needs to be refreshed to get the last modified date from S3
             const newNode = await this.refreshNode(fileNode)
             if (!newNode) {
                 getLogger().error(`FileViewer: Error, refreshNode() returned undefined with file: ${fileNode.file.key}`)
-                getLogger().debug(`Cache contains: ${this.cacheArns}`)
+                getLogger().debug(`Cache contains: ${this.cacheArns.toString()}`)
                 return
             }
 
@@ -181,8 +205,19 @@ export class S3FileViewerManager {
     }
 
     public createTargetPath(fileNode: S3FileNode): Promise<string> {
-        const completePath = getStringHash(readablePath(fileNode))
-        return Promise.resolve(path.join(this.tempLocation!, 'S3%' + completePath))
+        let completePath = readablePath(fileNode)
+        completePath = completePath.slice(4) //removes 's3://' from path
+        completePath = completePath.slice(undefined, completePath.lastIndexOf('/') + 1) + '[S3]' + fileNode.file.name // add [S3] to the name of the file
+        completePath = this.tempLocation! + completePath
+
+        return Promise.resolve(completePath)
+    }
+
+    private async createSubFolders(targetPath: string): Promise<boolean> {
+        const folderStructure = targetPath.slice(undefined, targetPath.lastIndexOf('/'))
+        //fs.mkdirSync(folderStructure, { recursive: true })
+        await mkdirp(folderStructure)
+        return Promise.resolve(true)
     }
 
     async refreshNode(fileNode: S3FileNode): Promise<S3FileNode | undefined> {
@@ -202,12 +237,11 @@ export class S3FileViewerManager {
     }
 
     /*
-    //TODOD:: remove helper method
     private listTempFolder(): Promise<void> {
         getLogger().debug('-------contents in temp:')
         showOutputMessage('-------contents in temp:', this.outputChannel)
 
-        fs.readdirSync(this.tempLocation).forEach((file: any) => {
+        fs.readdirSync(this.tempLocation!).forEach((file: any) => {
             showOutputMessage(` ${file}`, this.outputChannel)
             getLogger().debug(` ${file}`)
         })
