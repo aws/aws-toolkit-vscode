@@ -10,7 +10,6 @@ import com.intellij.openapi.project.Project
 import com.intellij.openapi.util.io.FileUtil
 import com.intellij.openapi.util.io.FileUtilRt.getUserContentLoadLimit
 import com.intellij.openapi.util.text.StringUtil
-import com.intellij.openapi.vfs.LocalFileSystem
 import com.intellij.openapi.vfs.VirtualFileWrapper
 import com.intellij.ui.DoubleClickListener
 import com.intellij.ui.TreeTableSpeedSearch
@@ -63,12 +62,7 @@ class S3TreeTable(
                 return
             }
 
-            val lfs = LocalFileSystem.getInstance()
-            val virtualFiles = data.mapNotNull {
-                lfs.findFileByIoFile(it)
-            }
-
-            uploadObjects(project, this@S3TreeTable, virtualFiles, node)
+            uploadObjects(project, this@S3TreeTable, data.map { it.toPath() }, node)
         }
     }
 
