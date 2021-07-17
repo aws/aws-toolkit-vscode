@@ -10,11 +10,10 @@ import { Window } from '../../shared/vscode/window'
 import { ConstructNode } from '../explorer/nodes/constructNode'
 import { showErrorWithLogs } from '../../shared/utilities/messages'
 import { AslVisualizationCDK } from './aslVisualizationCDK'
-import { getStateMachineDefinitionFromCfnTemplate } from '../explorer/nodes/getCfnDefinition'
+import { getStateMachineDefinitionFromCfnTemplate, toUnescapedAslJson } from '../explorer/nodes/getCfnDefinition'
 
 /**
- * Renders a state graph of the state machine represented by the given node.
- *
+ * Renders a state graph of the state machine represented by the given node
  */
 export async function renderGraphCommand(
     node: ConstructNode,
@@ -29,8 +28,9 @@ export async function renderGraphCommand(
 
     getLogger().info(`Rendering graph: ${uniqueIdentifier}`)
     try {
-        const cfnDefinition = getStateMachineDefinitionFromCfnTemplate(uniqueIdentifier, cdkOutPath, stackName)
-
+        const templatePath = cdkOutPath + `/${stackName}.template.json`
+        const definitionString = getStateMachineDefinitionFromCfnTemplate(uniqueIdentifier, templatePath)
+        const cfnDefinition = toUnescapedAslJson(definitionString)
         const newVisualization = new AslVisualizationCDK(cfnDefinition, uniqueIdentifier)
 
         getLogger().info('Rendered graph: %O', uniqueIdentifier)

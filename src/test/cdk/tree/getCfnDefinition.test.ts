@@ -5,29 +5,25 @@ const unescapedJsonString: string = `{"StartAt":"Submit Job","States":{"Submit J
 const uniqueIdendifier = 'MyStateMachine'
 const cdkOutPath = __dirname.replace('/dist', '') + '/resources'
 const stackName = 'templateJsonTester'
+const templatePath = cdkOutPath + `/${stackName}.template.json`
 
 describe('CDK GetCfnDefinition for State Machines', function () {
     console.log(cdkOutPath)
     it('get the correct cfn definition for state machine with correct inputs', async function () {
-        const data = getCfnDefinition.getStateMachineDefinitionFromCfnTemplate(uniqueIdendifier, cdkOutPath, stackName)
+        var data = getCfnDefinition.getStateMachineDefinitionFromCfnTemplate(uniqueIdendifier, templatePath)
+        data = getCfnDefinition.toUnescapedAslJson(data)
         assert.strictEqual(unescapedJsonString, data)
     })
 
     it('get error message with wrong uniqueIdentifier', async function () {
-        const data = getCfnDefinition.getStateMachineDefinitionFromCfnTemplate(uniqueIdendifier + '.', cdkOutPath, stackName)
-        const errorMessage = 'Wrong state machine identifier'
+        const data = getCfnDefinition.getStateMachineDefinitionFromCfnTemplate(uniqueIdendifier + '.', templatePath)
+        const errorMessage = ''
         assert.strictEqual(data, errorMessage)
     })
 
-    it('get error message with wrong cdkOutPath', async function () {
-        const data = getCfnDefinition.getStateMachineDefinitionFromCfnTemplate(uniqueIdendifier, cdkOutPath + '.', stackName)
-        const errorMessage = 'Unable to get cfn definition for state machine'
-        assert.strictEqual(data, errorMessage)
-    })
-
-    it('get error message with wrong stack name', async function () {
-        const data = getCfnDefinition.getStateMachineDefinitionFromCfnTemplate(uniqueIdendifier, cdkOutPath, stackName + '.')
-        const errorMessage = 'Unable to get cfn definition for state machine'
+    it('get error message with wrong templatePath', async function () {
+        const data = getCfnDefinition.getStateMachineDefinitionFromCfnTemplate(uniqueIdendifier, templatePath+'x')
+        const errorMessage = ''
         assert.strictEqual(data, errorMessage)
     })
 

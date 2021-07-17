@@ -92,6 +92,10 @@ const mockConstructNode2 = new ConstructNode(
 
 const mockAslVisualizationCDK = new AslVisualizationCDK('','')
 
+var stub = sinon.createStubInstance(AslVisualizationCDKManager, {
+    visualizeStateMachine:
+  });
+
 //const MockAslVisualizeStateMachineCDKManager : AslVisualizationCDKManager = sinon.spy()
 
 // class MockAslVisualizeStateMachineCDKManager extends AslVisualizationCDKManager{

@@ -1,16 +1,18 @@
-import * as fs from 'fs';
+import * as fs from 'fs'
 
 /**
  * @param uniqueIdentifier unique identifier of state machine
  * @param cdkOutPath cdk.out path
  * @param stackName name of parent stack 
  * 
- * @returns the ASL Json definition string of the state machine construct
+ * @returns the escaped ASL Json definition string of the state machine construct
  */
-export function getStateMachineDefinitionFromCfnTemplate(uniqueIdentifier: string, cdkOutPath: string, stackName: string) {
+//export function getStateMachineDefinitionFromCfnTemplate(uniqueIdentifier: string, cdkOutPath: string, stackName: string) {
+export function getStateMachineDefinitionFromCfnTemplate(uniqueIdentifier: string, templatePath: string) {
 
     try {
-        var data = fs.readFileSync(cdkOutPath + `/${stackName}.template.json`, 'utf8');
+        //var data = fs.readFileSync(cdkOutPath + `/${stackName}.template.json`, 'utf8')
+        var data = fs.readFileSync(templatePath, 'utf8')
         var jsonObj = JSON.parse(data)
         var resources = jsonObj.Resources
 
@@ -21,41 +23,38 @@ export function getStateMachineDefinitionFromCfnTemplate(uniqueIdentifier: strin
             if (slicedKey === uniqueIdentifier) {
                 jsonObj = jsonObj.Resources[`${key}`].Properties.DefinitionString["Fn::Join"][1]
                 data = JSON.stringify(jsonObj)
-                data = unescape(data)
                 return data
             }
         }
-        return 'Wrong state machine identifier'
+        return ''
     }
     catch (e) {
-        return 'Unable to get cfn definition for state machine'
+        return ''
     }
 
 }
 
 /**
- * Removes all backslashes, empty quotes, [] brackets and 
- * 
  * @param escaped json state machine construct definition 
  * @returns unescaped json state machine construct definition
  */
-function unescape(escapedAslJsonStr: string) {
+export function toUnescapedAslJson(escapedAslJsonStr: string) {
     if (typeof (escapedAslJsonStr) != "string") return escapedAslJsonStr;
 
-    var helper1 = '{"Ref":'
-    var re1 = new RegExp(helper1, 'g');
-    var helper2 = '},""'
-    var re2 = new RegExp(helper2, 'g')
+    var refPrefix = '{"Ref":'
+    var re1 = new RegExp(refPrefix, 'g')
+    var refSuffix = '},""'
+    var re2 = new RegExp(refSuffix, 'g')
     return escapedAslJsonStr
-        .trim()
-        .substring(1) //remove square brackets that wrap str
+        .trim() //remove leading whitespaces
+        .substring(1) //remove square brackets that wrap escapedAslJsonStr
         .slice(0, -1)
-        .trim()
-        .substring(1) //remove quotes that wrap str
+        .trim() //remove leading whitespaces
+        .substring(1) //remove quotes that wrap escapedAslJsonStr
         .slice(0, -1)
         .replace(/\"\",/g, '') //remove empty quotes followed by a comma
         .replace(/\"\"/g, '') //remove empty quotes
         .replace(/\\/g, '') //remove backslashes
-        .replace(re1, '') //remove all {"Ref": "%" }
-        .replace(re2, '')
+        .replace(re1, '') //remove Ref prefix
+        .replace(re2, '') //remove Ref suffix
 };

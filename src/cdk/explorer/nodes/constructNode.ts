@@ -79,21 +79,19 @@ export class ConstructNode extends AWSTreeNodeBase {
         return entities
     }
 
-/** 
-* Determines if a CDK construct is of type state machine
-* 
-* @param construct CDK construct
-*/
-public isStateMachine(construct: ConstructTreeEntity): boolean {
+    /** 
+    * Determines if a CDK construct is of type state machine
+    * 
+    * @param construct CDK construct
+    */
+    public isStateMachine(construct: ConstructTreeEntity): boolean {
 
-    if(!construct.children) return false
+        if (!construct.children) return false
 
-    const resource = construct.children["Resource"]
-    if (!resource) return false
+        const resource = construct.children["Resource"]
+        if (!resource) return false
 
-    const type: string = treeInspector.getTypeAttributeOrDefault(resource, '')
-    if (!(type && type === 'AWS::StepFunctions::StateMachine')) return false
-    
-    return true
-}
+        const type: string = treeInspector.getTypeAttributeOrDefault(resource, '')
+        return type === 'AWS::StepFunctions::StateMachine'
+    }
 }
