@@ -27,9 +27,9 @@ import software.aws.toolkits.jetbrains.utils.getCoroutineBgContext
 import software.aws.toolkits.jetbrains.utils.getCoroutineUiContext
 import software.aws.toolkits.jetbrains.utils.notifyError
 import software.aws.toolkits.resources.message
-import java.io.InputStream
 import java.io.OutputStream
 import java.net.URL
+import java.nio.file.Path
 
 class S3VirtualBucket(val s3Bucket: Bucket, prefix: String, val client: S3Client, val project: Project) :
     LightVirtualFile(vfsName(s3Bucket, prefix)),
@@ -93,9 +93,9 @@ class S3VirtualBucket(val s3Bucket: Bucket, prefix: String, val client: S3Client
         }
     }
 
-    suspend fun upload(project: Project, source: InputStream, length: Long, key: String) {
+    suspend fun upload(project: Project, source: Path, key: String) {
         withContext(getCoroutineBgContext()) {
-            client.upload(project, source, length, s3Bucket.name(), key).await()
+            client.upload(project, source, s3Bucket.name(), key).await()
         }
     }
 
