@@ -7,19 +7,19 @@ import com.intellij.openapi.fileEditor.FileEditorManager
 import com.intellij.openapi.fileTypes.FileTypes
 import com.intellij.openapi.fileTypes.ex.FileTypeManagerEx
 import com.intellij.openapi.util.io.FileUtil
-import com.intellij.openapi.vfs.VirtualFile
 import com.intellij.testFramework.ProjectRule
+import com.intellij.testFramework.RuleChain
 import com.intellij.testFramework.runInEdtAndWait
 import kotlinx.coroutines.runBlocking
 import org.assertj.core.api.Assertions.assertThat
 import org.assertj.core.api.Assertions.assertThatThrownBy
 import org.junit.Rule
 import org.junit.Test
+import org.junit.rules.TemporaryFolder
 import org.mockito.kotlin.any
 import org.mockito.kotlin.argumentCaptor
 import org.mockito.kotlin.doAnswer
 import org.mockito.kotlin.doReturn
-import org.mockito.kotlin.mock
 import org.mockito.kotlin.stub
 import org.mockito.kotlin.verify
 import software.amazon.awssdk.core.sync.RequestBody
@@ -46,23 +46,21 @@ import software.aws.toolkits.jetbrains.core.AwsClientManager
 import software.aws.toolkits.jetbrains.core.MockClientManagerRule
 import software.aws.toolkits.jetbrains.core.credentials.MockAwsConnectionManager.ProjectAccountSettingsManagerRule
 import software.aws.toolkits.jetbrains.services.s3.editor.S3VirtualBucket
-import java.io.ByteArrayInputStream
 import java.net.URL
 import java.time.Instant
 
 class S3VirtualBucketTest {
+    private val projectRule = ProjectRule()
+    private val mockClientManager = MockClientManagerRule()
+    private val settingsManagerRule = ProjectAccountSettingsManagerRule(projectRule)
 
     @Rule
     @JvmField
-    val projectRule = ProjectRule()
-
-    @JvmField
-    @Rule
-    val mockClientManager = MockClientManagerRule()
+    val chain = RuleChain(projectRule, mockClientManager, settingsManagerRule)
 
     @Rule
     @JvmField
-    val settingsManagerRule = ProjectAccountSettingsManagerRule(projectRule)
+    val tempFolder = TemporaryFolder()
 
     @Test
     fun deleteObjects() {
@@ -131,30 +129,30 @@ class S3VirtualBucketTest {
     @Test
     fun uploadObject() {
         val s3Client = mockClientManager.create<S3Client>()
-        val uploadCaptor = argumentCaptor<PutObjectRequest>()
 
         s3Client.stub {
             on {
-                putObject(uploadCaptor.capture(), any<RequestBody>())
+                putObject(any<PutObjectRequest>(), any<RequestBody>())
             } doReturn PutObjectResponse.builder()
                 .versionId("VersionFoo")
                 .build()
         }
 
-        val testFile = mock<VirtualFile> { on { name } doReturn "TestFile" }
-        testFile.stub { on { length } doReturn 341 }
-        testFile.stub { on { inputStream } doReturn ByteArrayInputStream("Hello".toByteArray()) }
+        val testFile = tempFolder.newFile("someFile.html").toPath()
 
         val sut = S3VirtualBucket(Bucket.builder().name("TestBucket").build(), "", s3Client, projectRule.project)
         runBlocking {
-            sut.upload(projectRule.project, testFile.inputStream, testFile.length, "TestFile")
+            sut.upload(projectRule.project, testFile, "TestFile")
         }
 
-        verify(s3Client).putObject(any<PutObjectRequest>(), any<RequestBody>())
+        argumentCaptor<PutObjectRequest, RequestBody>().let { (request, body) ->
+            verify(s3Client).putObject(request.capture(), body.capture())
 
-        val uploadRequestCapture = uploadCaptor.firstValue
-        assertThat(uploadRequestCapture.bucket()).isEqualTo("TestBucket")
-        assertThat(uploadRequestCapture.key()).isEqualTo("TestFile")
+            assertThat(request.firstValue.bucket()).isEqualTo("TestBucket")
+            assertThat(request.firstValue.key()).isEqualTo("TestFile")
+
+            assertThat(body.firstValue.contentType()).isEqualTo("text/html")
+        }
     }
 
     @Test
