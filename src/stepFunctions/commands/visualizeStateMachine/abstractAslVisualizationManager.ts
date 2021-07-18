@@ -4,18 +4,17 @@
  */
 
 import * as vscode from 'vscode'
-import { AbstractAslVisualization } from './abstractAslVisualization'
 import { AslVisualization } from './aslVisualization'
 
 export abstract class AbstractAslVisualizationManager {
-    protected readonly managedVisualizations: Map<string, AbstractAslVisualization> = new Map<string, AslVisualization>()
+    protected readonly managedVisualizations: Map<string, AslVisualization> = new Map<string, AslVisualization>()
     private readonly extensionContext: vscode.ExtensionContext
 
     public constructor(extensionContext: vscode.ExtensionContext) {
         this.extensionContext = extensionContext
     }
 
-    public getManagedVisualizations(): Map<string, AbstractAslVisualization> {
+    public getManagedVisualizations(): Map<string, AslVisualization> {
         return this.managedVisualizations
     }
 
@@ -32,7 +31,7 @@ export abstract class AbstractAslVisualizationManager {
         this.extensionContext.subscriptions.push(visualizationDisposable)
     }
 
-    protected getExistingVisualization(visualization: any): AbstractAslVisualization | undefined {
+    protected getExistingVisualization(visualization: any): AslVisualization | undefined {
         return this.managedVisualizations.get(visualization)
     }
 }

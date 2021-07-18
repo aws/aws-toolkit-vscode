@@ -14,7 +14,6 @@ import { isDocumentValid } from '../../utils'
 import * as yaml from 'yaml'
 
 import { YAML_ASL } from '../../constants/aslFormats'
-import { AbstractAslVisualization } from './abstractAslVisualization'
 
 const YAML_OPTIONS: yaml.Options = {
     merge: false,
@@ -31,18 +30,43 @@ export interface MessageObject {
     stateMachineData: string
 }
 
-export class AslVisualization extends AbstractAslVisualization {
+export class AslVisualization {
     public readonly documentUri: vscode.Uri
+    public readonly webviewPanel: vscode.WebviewPanel
+    protected readonly disposables: vscode.Disposable[] = []
+    protected isPanelDisposed = false
+    private readonly onVisualizationDisposeEmitter = new vscode.EventEmitter<void>()
 
     public constructor(textDocument: vscode.TextDocument) {
-        super(textDocument)
         this.documentUri = textDocument.uri
+        this.webviewPanel = this.setupWebviewPanel(textDocument)
     }
 
-    public override async sendUpdateMessage(updatedTextDocument: vscode.TextDocument) {
+    public get onVisualizationDisposeEvent(): vscode.Event<void> {
+        return this.onVisualizationDisposeEmitter.event
+    }
+
+    public getPanel(): vscode.WebviewPanel | undefined {
+        if (!this.isPanelDisposed) {
+            return this.webviewPanel
+        }
+    }
+
+    public getWebview(): vscode.Webview | undefined {
+        if (!this.isPanelDisposed) {
+            return this.webviewPanel?.webview
+        }
+    }
+
+    public showPanel(): void {
+        this.getPanel()?.reveal()
+    }
+
+    public async sendUpdateMessage(updatedTextDocument: vscode.TextDocument) {
         const logger: Logger = getLogger()
         const isYaml = updatedTextDocument.languageId === YAML_ASL
-        const text = updatedTextDocument.getText()
+        //const text = updatedTextDocument.getText()
+        const text = this.getText(updatedTextDocument)
         let stateMachineData = text
         let yamlErrors: string[] = []
 
@@ -75,9 +99,14 @@ export class AslVisualization extends AbstractAslVisualization {
             isValid,
             errors: yamlErrors,
         })
+
     }
 
-    protected override setupWebviewPanel(textDocument: vscode.TextDocument): vscode.WebviewPanel {
+    protected getText(textDocument: vscode.TextDocument): string{
+        return textDocument.getText()
+    }
+
+    private setupWebviewPanel(textDocument: vscode.TextDocument): vscode.WebviewPanel {
         const documentUri = textDocument.uri
         const logger: Logger = getLogger()
 
@@ -187,8 +216,95 @@ export class AslVisualization extends AbstractAslVisualization {
         return panel
     }
 
-    protected override makeWebviewTitle(sourceDocumentUri: vscode.Uri): string {
+    private createVisualizationWebviewPanel(documentUri: vscode.Uri): vscode.WebviewPanel {
+        return vscode.window.createWebviewPanel(
+            'stateMachineVisualization',
+            this.makeWebviewTitle(documentUri),
+            {
+                preserveFocus: true,
+                viewColumn: vscode.ViewColumn.Beside,
+            },
+            {
+                enableScripts: true,
+                localResourceRoots: [
+                    ext.visualizationResourcePaths.localWebviewScriptsPath,
+                    ext.visualizationResourcePaths.visualizationLibraryCachePath,
+                    ext.visualizationResourcePaths.stateMachineCustomThemePath,
+                ],
+                retainContextWhenHidden: true,
+            }
+        )
+    }
+
+    private makeWebviewTitle(sourceDocumentUri: vscode.Uri): string {
         return localize('AWS.stepFunctions.graph.titlePrefix', 'Graph: {0}', path.basename(sourceDocumentUri.fsPath))
+    }
+
+    private getWebviewContent(
+        webviewBodyScript: vscode.Uri,
+        graphStateMachineLibrary: vscode.Uri,
+        vsCodeCustomStyling: vscode.Uri,
+        graphStateMachineDefaultStyles: vscode.Uri,
+        cspSource: string,
+        statusTexts: {
+            syncing: string
+            notInSync: string
+            inSync: string
+        }
+    ): string {
+        return `
+    <!DOCTYPE html>
+    <html>
+        <head>
+            <meta http-equiv="Content-Security-Policy"
+            content="default-src 'none';
+            img-src ${cspSource} https: data:;
+            script-src ${cspSource} 'self' 'unsafe-eval';
+            style-src ${cspSource};"
+            >
+            <meta charset="UTF-8">
+            <link rel="stylesheet" href='${graphStateMachineDefaultStyles}'>
+            <link rel="stylesheet" href='${vsCodeCustomStyling}'>
+            <script src='${graphStateMachineLibrary}'></script>
+        </head>
+
+        <body>
+            <div id="svgcontainer" class="workflowgraph">
+                <svg></svg>
+            </div>
+            <div class="status-info">
+                <svg viewBox="0 0 100 100" xmlns="http://www.w3.org/2000/svg">
+                    <circle cx="50" cy="50" r="42" stroke-width="4" />
+                </svg>
+                <div class="status-messages">
+                    <span class="previewing-asl-message">${statusTexts.inSync}</span>
+                    <span class="rendering-asl-message">${statusTexts.syncing}</span>
+                    <span class="error-asl-message">${statusTexts.notInSync}</span>
+                </div>
+            </div>
+            <div class="graph-buttons-container">
+                <button id="zoomin">
+                    <svg focusable="false" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 16 16">
+                        <line x1="8" y1="1" x2="8" y2="15"></line>
+                        <line x1="15" y1="8" x2="1" y2="8"></line>
+                    </svg>
+                </button>
+                <button id="zoomout">
+                    <svg focusable="false" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 16 16">
+                        <line x1="15" y1="8" x2="1" y2="8"></line>
+                    </svg>
+                </button>
+                <button id="center">
+                    <svg focusable="false" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 16 16">
+                        <circle cx="8" cy="8" r="7" stroke-width="2" />
+                        <circle cx="8" cy="8" r="1" stroke-width="2" />
+                    </svg>
+                </button>
+            </div>
+
+            <script src='${webviewBodyScript}'></script>
+        </body>
+    </html>`
     }
 
     private trackedDocumentDoesExist(trackedDocumentURI: vscode.Uri): boolean {

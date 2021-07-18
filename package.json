@@ -1616,6 +1616,7 @@
         "bytes": "^3.1.0",
         "cloudformation-schema-js-yaml": "^1.0.1",
         "cross-spawn": "^7.0.3",
+        "file-url": "^4.0.0",
         "fs-extra": "^9.0.1",
         "handlebars": "^4.7.7",
         "immutable": "^4.0.0-rc.12",

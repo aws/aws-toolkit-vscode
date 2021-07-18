@@ -7,11 +7,9 @@ import * as fs from 'fs'
  * 
  * @returns the escaped ASL Json definition string of the state machine construct
  */
-//export function getStateMachineDefinitionFromCfnTemplate(uniqueIdentifier: string, cdkOutPath: string, stackName: string) {
 export function getStateMachineDefinitionFromCfnTemplate(uniqueIdentifier: string, templatePath: string) {
 
     try {
-        //var data = fs.readFileSync(cdkOutPath + `/${stackName}.template.json`, 'utf8')
         var data = fs.readFileSync(templatePath, 'utf8')
         var jsonObj = JSON.parse(data)
         var resources = jsonObj.Resources

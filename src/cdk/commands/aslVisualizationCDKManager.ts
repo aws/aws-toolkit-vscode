@@ -26,7 +26,6 @@ export class AslVisualizationCDKManager extends AbstractAslVisualizationManager 
         const logger: Logger = getLogger()
         //not sure if I can use this cache
         const cache = new StateMachineGraphCache()
-
         // Attempt to retrieve existing visualization if it exists.
         const existingVisualization = this.getExistingVisualization(node.label)
         if (existingVisualization) {

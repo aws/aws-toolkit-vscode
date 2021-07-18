@@ -2,7 +2,7 @@
  * Copyright 2020 Amazon.com, Inc. or its affiliates. All Rights Reserved.
  * SPDX-License-Identifier: Apache-2.0
  */
-
+import * as vscode from 'vscode'
 import { getLogger } from '../../shared/logger'
 import { localize } from '../../shared/utilities/vsCodeUtils'
 import { Commands } from '../../shared/vscode/commands'
@@ -10,7 +10,6 @@ import { Window } from '../../shared/vscode/window'
 import { ConstructNode } from '../explorer/nodes/constructNode'
 import { showErrorWithLogs } from '../../shared/utilities/messages'
 import { AslVisualizationCDK } from './aslVisualizationCDK'
-import { getStateMachineDefinitionFromCfnTemplate, toUnescapedAslJson } from '../explorer/nodes/getCfnDefinition'
 
 /**
  * Renders a state graph of the state machine represented by the given node
@@ -25,14 +24,14 @@ export async function renderGraphCommand(
     const uniqueIdentifier = node.label
     var cdkOutPath = node.id?.replace(`/tree.json/${node.tooltip}`, ``)!
     var stackName = node.tooltip?.replace(`/${node.label}`, ``)!
-
     getLogger().info(`Rendering graph: ${uniqueIdentifier}`)
+
     try {
         const templatePath = cdkOutPath + `/${stackName}.template.json`
-        const definitionString = getStateMachineDefinitionFromCfnTemplate(uniqueIdentifier, templatePath)
-        const cfnDefinition = toUnescapedAslJson(definitionString)
-        const newVisualization = new AslVisualizationCDK(cfnDefinition, uniqueIdentifier)
-
+        let uri = vscode.Uri.file(templatePath);
+        const textDocument = await vscode.workspace.openTextDocument(uri)
+        const newVisualization = new AslVisualizationCDK(textDocument, templatePath, uniqueIdentifier)
+        console.log('five')
         getLogger().info('Rendered graph: %O', uniqueIdentifier)
         window.showInformationMessage(localize('AWS.cdk.renderStateMachineGraph.success', 'Rendered graph {0}', uniqueIdentifier))
 
