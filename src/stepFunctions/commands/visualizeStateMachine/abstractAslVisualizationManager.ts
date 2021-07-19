@@ -5,6 +5,9 @@
 
 import * as vscode from 'vscode'
 import { AslVisualization } from './aslVisualization'
+import * as nls from 'vscode-nls'
+const localize = nls.loadMessageBundle()
+import { Logger } from '../../../shared/logger'
 
 export abstract class AbstractAslVisualizationManager {
     protected readonly managedVisualizations: Map<string, AslVisualization> = new Map<string, AslVisualization>()
@@ -34,4 +37,17 @@ export abstract class AbstractAslVisualizationManager {
     protected getExistingVisualization(visualization: any): AslVisualization | undefined {
         return this.managedVisualizations.get(visualization)
     }
+
+    protected handleErr(err: any, logger: Logger) {
+        vscode.window.showInformationMessage(
+            localize(
+                'AWS.stepfunctions.visualisation.errors.rendering',
+                'There was an error rendering State Machine Graph, check logs for details.'
+            )
+        )
+
+        logger.debug('Unable to setup webview panel.')
+        logger.error(err as Error)
+    }
+
 }

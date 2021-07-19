@@ -13,6 +13,7 @@ import { cdk } from '../../../cdk/globals'
 import { AWSTreeNodeBase } from '../../../shared/treeview/nodes/awsTreeNodeBase'
 import { clearTestIconPaths, IconPath, setupTestIconPaths } from '../utilities/iconPathUtils'
 import * as treeUtils from '../utilities/treeTestUtils'
+import { isStateMachine } from '../../../cdk/explorer/nodes/constructNode'
 
 describe('ConstructNode', function () {
     before(async function () {
@@ -175,6 +176,82 @@ describe('ConstructNode', function () {
         const childNodes = await testNode.getChildren()
         assert.strictEqual(childNodes.length, 1)
         assert.strictEqual(childNodes[0] instanceof ConstructNode, true, 'Expected child node to be a ConstructNode')
+    })
+
+    it('returns true when tree node contains a node with id === "Resource" and type === "StateMachine"', async function () {
+        const construct: ConstructTreeEntity = {
+            id: 'StateMachine',
+            path: 'aws-stepfunctions-integ/StateMachine',
+            children: {
+                'Resource': {
+                    id: 'Resource',
+                    path: 'aws-stepfunctions-integ/StateMachine/Resource',
+                    attributes: {
+                        "aws:cdk:cloudformation:type": 'AWS::StepFunctions::StateMachine'
+                    }
+                }
+            }
+
+        }
+
+        assert.ok(isStateMachine(construct))
+    })
+
+    it('returns true when tree node contains a node with id !== "Resource" and type === "StateMachine"', async function () {
+        const construct: ConstructTreeEntity = {
+            id: 'StateMachine',
+            path: 'aws-stepfunctions-integ/StateMachine',
+            children: {
+                'Other': {
+                    id: 'Other',
+                    path: 'aws-stepfunctions-integ/StateMachine/Resource',
+                    attributes: {
+                        "aws:cdk:cloudformation:type": 'AWS::StepFunctions::StateMachine'
+                    }
+                }
+            }
+
+        }
+
+        assert.strictEqual(isStateMachine(construct), false)
+    })
+
+    it('returns false when tree node contains a node with id !== "Resource" and type !== "StateMachine"', async function () {
+
+        const construct: ConstructTreeEntity = {
+            id: 'StateMachine',
+            path: 'aws-stepfunctions-integ/LambdaFunction',
+            children: {
+                'Other': {
+                    id: 'Other',
+                    path: 'aws-stepfunctions-integ/LambdaFunction/Resource',
+                    attributes: {
+                        "aws:cdk:cloudformation:type": 'AWS::StepFunctions::LambdaFunction'
+                    }
+                }
+            }
+
+        }
+        assert.strictEqual(isStateMachine(construct), false)
+    })
+
+    it('returns false when tree node contains a node with id === "Resource" and type !== "StateMachine"', async function () {
+
+        const construct: ConstructTreeEntity = {
+            id: 'StateMachine',
+            path: 'aws-stepfunctions-integ/LambdaFunction',
+            children: {
+                'Resource': {
+                    id: 'Resource',
+                    path: 'aws-stepfunctions-integ/LambdaFunction/Resource',
+                    attributes: {
+                        "aws:cdk:cloudformation:type": 'AWS::StepFunctions::LambdaFunction'
+                    }
+                }
+            }
+
+        }
+        assert.strictEqual(isStateMachine(construct), false)
     })
 
     function generateTestNode(displayLabel: string): ConstructNode {

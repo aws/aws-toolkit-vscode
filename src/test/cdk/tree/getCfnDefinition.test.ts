@@ -11,20 +11,19 @@ describe('CDK GetCfnDefinition for State Machines', function () {
     console.log(cdkOutPath)
     it('get the correct cfn definition for state machine with correct inputs', async function () {
         var data = getCfnDefinition.getStateMachineDefinitionFromCfnTemplate(uniqueIdendifier, templatePath)
-        data = getCfnDefinition.toUnescapedAslJson(data)
+        data = getCfnDefinition.toUnescapedAslJson(data!)
         assert.strictEqual(unescapedJsonString, data)
     })
 
-    it('get error message with wrong uniqueIdentifier', async function () {
+    it('return undefined with wrong uniqueIdentifier', async function () {
         const data = getCfnDefinition.getStateMachineDefinitionFromCfnTemplate(uniqueIdendifier + '.', templatePath)
-        const errorMessage = ''
-        assert.strictEqual(data, errorMessage)
+        assert.strictEqual(data, undefined)
     })
 
-    it('get error message with wrong templatePath', async function () {
-        const data = getCfnDefinition.getStateMachineDefinitionFromCfnTemplate(uniqueIdendifier, templatePath+'x')
-        const errorMessage = ''
-        assert.strictEqual(data, errorMessage)
+    it('return undefined with wrong templatePath', async function () {
+        const data = getCfnDefinition.getStateMachineDefinitionFromCfnTemplate(uniqueIdendifier, templatePath + 'x')
+        console.log(data)
+        assert.strictEqual(data, undefined)
     })
 
 })

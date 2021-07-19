@@ -20,7 +20,7 @@ export class AslVisualizationCDK extends AslVisualization {
     protected override getText(textDocument: vscode.TextDocument): string {
         console.log('aslVisualizationCDK.ts')
         const definitionString = getStateMachineDefinitionFromCfnTemplate(this.uniqueIdentifier, this.templatePath)
-        const cfnDefinition = toUnescapedAslJson(definitionString)
+        const cfnDefinition = toUnescapedAslJson(definitionString!)
         return cfnDefinition
     }
 }

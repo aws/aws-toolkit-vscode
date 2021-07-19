@@ -1,4 +1,5 @@
 import * as fs from 'fs'
+import { getLogger, Logger } from '../../../shared/logger'
 
 /**
  * @param uniqueIdentifier unique identifier of state machine
@@ -8,7 +9,7 @@ import * as fs from 'fs'
  * @returns the escaped ASL Json definition string of the state machine construct
  */
 export function getStateMachineDefinitionFromCfnTemplate(uniqueIdentifier: string, templatePath: string) {
-
+    const logger: Logger = getLogger()
     try {
         var data = fs.readFileSync(templatePath, 'utf8')
         var jsonObj = JSON.parse(data)
@@ -24,12 +25,12 @@ export function getStateMachineDefinitionFromCfnTemplate(uniqueIdentifier: strin
                 return data
             }
         }
-        return ''
+        return
     }
-    catch (e) {
-        return ''
+    catch (err) {
+        logger.debug('Unable to extract state machine definition string from template.json file.')
+        logger.error(err as Error)
     }
-
 }
 
 /**

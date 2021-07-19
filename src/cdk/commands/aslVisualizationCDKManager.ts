@@ -3,8 +3,6 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
-import * as nls from 'vscode-nls'
-const localize = nls.loadMessageBundle()
 import * as vscode from 'vscode'
 import { getLogger, Logger } from '../../shared/logger'
 import { AslVisualizationCDK } from './aslVisualizationCDK'
@@ -44,15 +42,7 @@ export class AslVisualizationCDKManager extends AbstractAslVisualizationManager 
                 return newVisualization.getPanel()
             }
         } catch (err) {
-            vscode.window.showInformationMessage(
-                localize(
-                    'AWS.stepfunctions.visualisation.errors.rendering',
-                    'There was an error rendering State Machine Graph, check logs for details.'
-                )
-            )
-
-            logger.debug('Unable to setup webview panel.')
-            logger.error(err as Error)
+            this.handleErr(err, logger)
         }
 
         return
