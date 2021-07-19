@@ -3,7 +3,6 @@
 
 package software.aws.toolkits.jetbrains.services.ecr
 
-import com.intellij.docker.remote.run.runtime.DockerAgentBuildImageConfig
 import com.intellij.testFramework.ProjectRule
 import kotlinx.coroutines.runBlocking
 import org.assertj.core.api.Assertions.assertThat
@@ -14,6 +13,7 @@ import org.junit.rules.TemporaryFolder
 import software.amazon.awssdk.regions.Region
 import software.amazon.awssdk.services.ecr.EcrClient
 import software.aws.toolkits.core.rules.EcrTemporaryRepositoryRule
+import software.aws.toolkits.jetbrains.core.docker.ToolkitDockerAdapter
 import software.aws.toolkits.jetbrains.services.ecr.resources.Repository
 import java.util.UUID
 
@@ -58,22 +58,27 @@ class EcrPullIntegrationTest {
         runBlocking {
             val serverInstance = EcrUtils.getDockerServerRuntimeInstance().runtimeInstance
             val ecrLogin = ecrClient.authorizationToken.authorizationData().first().getDockerLogin()
-            val runtime = DelegatedRemoteDockerApplicationRuntime(
-                project,
-                DockerAgentBuildImageConfig(System.currentTimeMillis().toString(), dockerfile, false)
-            )
-            // gross transform because we only have the short SHA right now
-            val localImageId = runtime.agent.getImages(null).first { it.imageId.startsWith("sha256:${runtime.agentApplication.imageId}") }.imageId
-            val config = EcrUtils.buildDockerRepositoryModel(ecrLogin, remoteRepo, remoteTag)
+            val dockerAdapter = ToolkitDockerAdapter(project, serverInstance)
+            val imageId = dockerAdapter.buildLocalImage(dockerfile)!!
 
+            // gross transform because we only have the short SHA right now
+            val localImage = serverInstance.agent.getImages(null).first { it.imageId.startsWith("sha256:$imageId") }
+            val localImageId = localImage.imageId
+            val config = EcrUtils.buildDockerRepositoryModel(ecrLogin, remoteRepo, remoteTag)
+            val pushRequest = ImageEcrPushRequest(
+                serverInstance,
+                localImageId,
+                remoteRepo,
+                remoteTag
+            )
             // push up and image and then delete the local tag
-            EcrUtils.pushImage(projectRule.project, localImageId, serverInstance, config)
-            runtime.agentApplication.deleteImage()
-            assertThat(runtime.agent.getImages(null).firstOrNull { it.imageId == localImageId }).isNull()
+            EcrUtils.pushImage(projectRule.project, ecrLogin, pushRequest)
+            localImage.deleteImage()
+            assertThat(serverInstance.agent.getImages(null).firstOrNull { it.imageId == localImageId }).isNull()
 
             // pull it from the remote
-            EcrUtils.pullImage(project, serverInstance, config).await()
-            assertThat(runtime.agent.getImages(null).firstOrNull { it.imageId == localImageId }).isNotNull()
+            dockerAdapter.pullImage(config).await()
+            assertThat(serverInstance.agent.getImages(null).firstOrNull { it.imageId == localImageId }).isNotNull()
         }
     }
 }

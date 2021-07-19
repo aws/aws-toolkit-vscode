@@ -4,7 +4,6 @@
 package software.aws.toolkits.jetbrains.services.ecr
 
 import com.fasterxml.jackson.module.kotlin.jacksonObjectMapper
-import com.intellij.docker.remote.run.runtime.DockerAgentBuildImageConfig
 import com.intellij.testFramework.ProjectRule
 import kotlinx.coroutines.runBlocking
 import org.assertj.core.api.Assertions.assertThat
@@ -17,6 +16,7 @@ import software.amazon.awssdk.services.ecr.EcrClient
 import software.amazon.awssdk.services.ecr.model.Image
 import software.amazon.awssdk.services.ecr.model.ImageIdentifier
 import software.aws.toolkits.core.rules.EcrTemporaryRepositoryRule
+import software.aws.toolkits.jetbrains.core.docker.ToolkitDockerAdapter
 import software.aws.toolkits.jetbrains.services.ecr.resources.Repository
 import java.util.UUID
 
@@ -52,7 +52,7 @@ class EcrPushIntegrationTest {
         dockerfile.writeText(
             """
                 # arbitrary base image with a shell
-                FROM public.ecr.aws/lambda/provided:latest
+                FROM public.ecr.aws/amazonlinux/amazonlinux:2
                 RUN touch $(date +%s)
             """.trimIndent()
         )
@@ -61,14 +61,19 @@ class EcrPushIntegrationTest {
         runBlocking {
             val serverInstance = EcrUtils.getDockerServerRuntimeInstance().runtimeInstance
             val ecrLogin = ecrClient.authorizationToken.authorizationData().first().getDockerLogin()
-            val runtime = DelegatedRemoteDockerApplicationRuntime(
-                project,
-                DockerAgentBuildImageConfig(System.currentTimeMillis().toString(), dockerfile, false)
-            )
+            val dockerAdapter = ToolkitDockerAdapter(project, serverInstance)
+            val imageId = dockerAdapter.buildLocalImage(dockerfile)!!
+
             // gross transform because we only have the short SHA right now
-            val localImageId = runtime.agent.getImages(null).first { it.imageId.startsWith("sha256:${runtime.agentApplication.imageId}") }.imageId
-            val config = EcrUtils.buildDockerRepositoryModel(ecrLogin, remoteRepo, remoteTag)
-            EcrUtils.pushImage(projectRule.project, localImageId, serverInstance, config)
+            val localImage = serverInstance.agent.getImages(null).first { it.imageId.startsWith("sha256:$imageId") }
+            val localImageId = localImage.imageId
+            val pushRequest = ImageEcrPushRequest(
+                serverInstance,
+                localImageId,
+                remoteRepo,
+                remoteTag
+            )
+            EcrUtils.pushImage(projectRule.project, ecrLogin, pushRequest)
 
             assertThat(
                 ecrClient.batchGetImage {

@@ -2,13 +2,18 @@ using AWS.Daemon.Settings;
 using AWS.Psi.Lambda;
 using JetBrains.Application.Settings;
 using JetBrains.ReSharper.Feature.Services.Daemon;
-using JetBrains.ReSharper.Host.Features.RunMarkers;
 using JetBrains.ReSharper.Psi;
 using JetBrains.ReSharper.Psi.Caches.SymbolCache;
 using JetBrains.ReSharper.Psi.CSharp;
 using JetBrains.ReSharper.Psi.CSharp.Tree;
 using JetBrains.ReSharper.Psi.Tree;
 using IMethodDeclaration = JetBrains.ReSharper.Psi.CSharp.Tree.IMethodDeclaration;
+
+#if (PROFILE_2020_2 || PROFILE_2020_3 || PROFILE_2021_1) // TODO: Remove preprocessor conditions FIX_WHEN_MIN_IS_212
+using JetBrains.ReSharper.Host.Features.RunMarkers;
+#else
+using JetBrains.Rider.Backend.Features.RunMarkers;
+#endif
 
 namespace AWS.Daemon.RunMarkers
 {

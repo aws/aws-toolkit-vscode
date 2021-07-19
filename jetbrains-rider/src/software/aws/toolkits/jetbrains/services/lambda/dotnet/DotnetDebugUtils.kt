@@ -22,7 +22,6 @@ import com.jetbrains.rd.util.put
 import com.jetbrains.rd.util.reactive.adviseUntil
 import com.jetbrains.rdclient.protocol.RdDispatcher
 import com.jetbrains.rider.debugger.RiderDebuggerWorkerModelManager
-import com.jetbrains.rider.model.debuggerWorker.DotNetCoreAttachStartInfo
 import com.jetbrains.rider.model.debuggerWorker.DotNetDebuggerSessionModel
 import com.jetbrains.rider.model.debuggerWorkerConnectionHelperModel
 import com.jetbrains.rider.projectView.solution
@@ -39,6 +38,7 @@ import software.aws.toolkits.jetbrains.services.lambda.dotnet.FindPid.Companion.
 import software.aws.toolkits.jetbrains.services.lambda.execution.sam.SamDebugSupport
 import software.aws.toolkits.jetbrains.utils.ApplicationThreadPoolScope
 import software.aws.toolkits.jetbrains.utils.DotNetDebuggerUtils
+import software.aws.toolkits.jetbrains.utils.compatability.createNetCoreAttachStartInfo
 import software.aws.toolkits.jetbrains.utils.execution.steps.Context
 import software.aws.toolkits.jetbrains.utils.getCoroutineBgContext
 import software.aws.toolkits.jetbrains.utils.getCoroutineUiContext
@@ -52,7 +52,6 @@ object DotnetDebugUtils {
     private const val DEBUGGER_MODE = "server"
 
     private const val REMOTE_DEBUGGER_DIR = "/tmp/lambci_debug_files"
-    private const val REMOTE_NETCORE_CLI_PATH = "/var/lang/bin/dotnet"
     const val NUMBER_OF_DEBUG_PORTS = 2
 
     fun createDebugProcess(
@@ -113,10 +112,7 @@ object DotnetDebugUtils {
                                 backendPort
                             )
 
-                            val startInfo = DotNetCoreAttachStartInfo(
-                                processId = pid,
-                                needToBeInitializedImmediately = true
-                            )
+                            val startInfo = createNetCoreAttachStartInfo(pid)
 
                             val sessionModel = DotNetDebuggerSessionModel(startInfo)
                             sessionModel.sessionProperties.bindToSettings(debuggerLifetime).apply {
@@ -176,7 +172,10 @@ object DotnetDebugUtils {
             "exec",
             "-i",
             dockerContainer,
-            REMOTE_NETCORE_CLI_PATH,
+            // use dotnet binary bundled with worker since Lambda netcore2.1 image seems to be missing:
+            // System.Runtime.CompilerServices.TupleElementNamesAttribute' from assembly 'mscorlib, Version=4.0.0.0
+            // and therefore cannot debug netcore2.1 under Rider 2021.2+
+            "$REMOTE_DEBUGGER_DIR/linux-x64/dotnet/dotnet",
             "$REMOTE_DEBUGGER_DIR/${DotNetDebuggerUtils.debuggerAssemblyFile.name}",
             "--mode=$DEBUGGER_MODE",
             "--frontend-port=$frontendPort",

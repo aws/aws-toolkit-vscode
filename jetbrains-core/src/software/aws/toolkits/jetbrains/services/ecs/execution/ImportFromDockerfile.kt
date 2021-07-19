@@ -10,8 +10,8 @@ import com.intellij.openapi.project.Project
 import com.intellij.openapi.project.guessProjectDir
 import com.intellij.openapi.ui.Messages
 import software.aws.toolkits.core.utils.tryOrNull
+import software.aws.toolkits.jetbrains.core.docker.DockerfileParser
 import software.aws.toolkits.jetbrains.core.plugins.pluginIsInstalledAndEnabled
-import software.aws.toolkits.jetbrains.services.ecs.execution.docker.DockerfileParser
 import software.aws.toolkits.resources.message
 import java.awt.event.ActionEvent
 import java.awt.event.ActionListener
