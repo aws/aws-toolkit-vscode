@@ -12,7 +12,7 @@ import * as testutil from '../../testUtil'
 import { S3Tab } from '../../../s3/util/s3Tab'
 import { anything, instance, mock, when, capture } from '../../utilities/mockito'
 
-describe.only('S3Tab', async function () {
+describe('S3Tab', async function () {
     const message = 'can this be read'
     const fileName = 'test.txt'
 
