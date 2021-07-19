@@ -36,6 +36,7 @@ import software.aws.toolkits.jetbrains.services.cloudformation.stack.StackWindow
 import software.aws.toolkits.jetbrains.services.cloudformation.validateSamTemplateHasResources
 import software.aws.toolkits.jetbrains.services.lambda.LambdaHandlerResolver
 import software.aws.toolkits.jetbrains.services.lambda.deploy.DeployServerlessApplicationDialog
+import software.aws.toolkits.jetbrains.services.lambda.deploy.DeployServerlessApplicationSettings
 import software.aws.toolkits.jetbrains.services.lambda.sam.SamCommon
 import software.aws.toolkits.jetbrains.services.lambda.sam.SamExecutable
 import software.aws.toolkits.jetbrains.services.lambda.steps.DeployLambda
@@ -106,8 +107,7 @@ class DeployServerlessApplicationAction : AnAction(
                 FileDocumentManager.getInstance().saveAllDocuments()
 
                 val stackDialog = DeployServerlessApplicationDialog(project, templateFile)
-                stackDialog.show()
-                if (!stackDialog.isOK) {
+                if (!stackDialog.showAndGet()) {
                     SamTelemetry.deploy(
                         project = project,
                         version = SamCommon.getVersionString(),
@@ -116,27 +116,23 @@ class DeployServerlessApplicationAction : AnAction(
                     return@runInEdt
                 }
 
-                saveSettings(project, templateFile, stackDialog)
+                val settings = stackDialog.settings()
+                saveSettings(project, templateFile, settings)
 
-                val stackName = stackDialog.stackName
-                continueDeployment(project, stackName, templateFile, stackDialog)
+                continueDeployment(project, templateFile, settings)
             }
         }
     }
 
-    private fun continueDeployment(project: Project, stackName: String, templateFile: VirtualFile, stackDialog: DeployServerlessApplicationDialog) {
+    private fun continueDeployment(project: Project, templateFile: VirtualFile, settings: DeployServerlessApplicationSettings) {
+        val stackName = settings.stackName
         val workflow = StepExecutor(
             project,
             message("serverless.application.deploy_in_progress.title", stackName),
             createDeployWorkflow(
                 project,
-                stackName,
                 templateFile,
-                stackDialog.bucket,
-                stackDialog.ecrRepo,
-                stackDialog.useContainer,
-                stackDialog.parameters,
-                stackDialog.capabilities
+                settings
             ),
             stackName
         )
@@ -145,7 +141,7 @@ class DeployServerlessApplicationAction : AnAction(
             runBlocking {
                 val changeSetArn = it.getRequiredAttribute(DeployLambda.CHANGE_SET_ARN)
 
-                if (!stackDialog.autoExecute) {
+                if (!settings.autoExecute) {
                     val response = withContext(edtContext) { UploadFunctionContinueDialog(project, changeSetArn).showAndGet() }
                     if (!response) {
                         // TODO this telemetry needs to be improved. The user can finish the deployment later so we do not know if
@@ -251,16 +247,16 @@ class DeployServerlessApplicationAction : AnAction(
         return@runReadAction null
     }
 
-    private fun saveSettings(project: Project, templateFile: VirtualFile, stackDialog: DeployServerlessApplicationDialog) {
+    private fun saveSettings(project: Project, templateFile: VirtualFile, settings: DeployServerlessApplicationSettings) {
         ModuleUtil.findModuleForFile(templateFile, project)?.let { module ->
             relativeSamPath(module, templateFile)?.let { samPath ->
                 DeploySettings.getInstance(module)?.apply {
-                    setSamStackName(samPath, stackDialog.stackName)
-                    setSamBucketName(samPath, stackDialog.bucket)
-                    setSamEcrRepoUri(samPath, stackDialog.ecrRepo)
-                    setSamAutoExecute(samPath, stackDialog.autoExecute)
-                    setSamUseContainer(samPath, stackDialog.useContainer)
-                    setEnabledCapabilities(samPath, stackDialog.capabilities)
+                    setSamStackName(samPath, settings.stackName)
+                    setSamBucketName(samPath, settings.bucket)
+                    setSamEcrRepoUri(samPath, settings.ecrRepo)
+                    setSamAutoExecute(samPath, settings.autoExecute)
+                    setSamUseContainer(samPath, settings.useContainer)
+                    setEnabledCapabilities(samPath, settings.capabilities)
                 }
             }
         }

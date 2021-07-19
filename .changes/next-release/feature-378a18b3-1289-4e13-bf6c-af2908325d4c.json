@@ -1,0 +1,4 @@
+{
+  "type" : "feature",
+  "description" : "When uploading a file to S3, the content type is now set accoriding to the files extension"
+}

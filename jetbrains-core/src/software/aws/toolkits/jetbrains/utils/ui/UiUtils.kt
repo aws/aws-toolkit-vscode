@@ -22,7 +22,10 @@ import com.intellij.ui.components.JBTextArea
 import com.intellij.ui.layout.Cell
 import com.intellij.ui.layout.CellBuilder
 import com.intellij.ui.layout.ComponentPredicate
+import com.intellij.ui.layout.PropertyBinding
 import com.intellij.ui.layout.Row
+import com.intellij.ui.layout.applyToComponent
+import com.intellij.ui.layout.toBinding
 import com.intellij.ui.paint.LinePainter2D
 import com.intellij.ui.speedSearch.SpeedSearchSupply
 import com.intellij.util.text.DateFormatUtil
@@ -30,6 +33,8 @@ import com.intellij.util.text.SyncDateFormat
 import com.intellij.util.ui.GraphicsUtil
 import com.intellij.util.ui.JBUI
 import com.intellij.util.ui.UIUtil
+import org.jetbrains.annotations.Nls
+import software.aws.toolkits.jetbrains.ui.KeyValueTextField
 import software.aws.toolkits.jetbrains.utils.formatText
 import java.awt.AlphaComposite
 import java.awt.Color
@@ -50,6 +55,7 @@ import javax.swing.ListModel
 import javax.swing.table.TableCellRenderer
 import javax.swing.text.Highlighter
 import javax.swing.text.JTextComponent
+import kotlin.reflect.KMutableProperty0
 
 fun JTextField?.blankAsNull(): String? = if (this?.text?.isNotBlank() == true) {
     text
@@ -262,7 +268,7 @@ fun CellBuilder<DialogPanel>.installOnParent(applies: () -> Boolean = { true }):
 /**
  * Similar to {@link com.intellij.ui.layout.CellBuilder#enableIf} but for component visibility
  */
-fun CellBuilder<JComponent>.visibleIf(predicate: ComponentPredicate): CellBuilder<JComponent> {
+fun <T : JComponent> CellBuilder<T>.visibleIf(predicate: ComponentPredicate): CellBuilder<T> {
     component.isVisible = predicate()
     predicate.addListener {
         component.isVisible = it
@@ -295,4 +301,30 @@ fun Cell.contextualHelp(description: String): CellBuilder<JBLabel> {
         installOn(l)
     }
     return component(l)
+}
+
+fun CellBuilder<KeyValueTextField>.withBinding(binding: PropertyBinding<Map<String, String>>) =
+    this.withBinding(
+        componentGet = { component -> component.envVars },
+        componentSet = { component, value -> component.envVars = value },
+        binding
+    )
+
+fun Row.keyValueTextField(title: String? = null, property: KMutableProperty0<Map<String, String>>): CellBuilder<KeyValueTextField> {
+    val field = if (title == null) {
+        KeyValueTextField()
+    } else {
+        KeyValueTextField(title)
+    }
+
+    return component(field)
+        .withBinding(property.toBinding())
+}
+
+fun <T : JComponent> CellBuilder<T>.toolTipText(@Nls text: String): CellBuilder<T> {
+    applyToComponent {
+        toolTipText = text
+    }
+
+    return this
 }
