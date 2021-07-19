@@ -13,13 +13,6 @@ export class S3Tab {
     private s3Uri: vscode.Uri
     private window: typeof vscode.window
     private editor: vscode.TextEditor | undefined
-    //private context: Context
-    //private outputChannel: vscode.OutputChannel
-    //private activeTab: vscode.TextDocument | undefined
-    //private editing: boolean
-    //private context: Context
-    //private outputChannel: vscode.OutputChannel
-    //private activeTab: vscode.TextDocument | undefined
 
     //private editing: boolean
 
@@ -100,6 +93,7 @@ export class S3Tab {
         return undefined
     }
 
+    //will be deleted when handling usage of this.editor, need to check when tab closes to set it undefined
     public async getActiveEditor(): Promise<vscode.TextEditor | undefined> {
         const visibleEditor = vscode.window.visibleTextEditors
 

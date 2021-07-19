@@ -42,6 +42,16 @@ export class S3FileViewerManager {
         this.outputChannel = ext.outputChannel
     }
 
+    /**
+     * Given an S3FileNode, this function:
+     * Checks and creates a cache to store downloads
+     * Retrieves previously cached files on cache and
+     * Downloads file from S3 ands stores in cache
+     * Opens the tab on read-only with the use of an S3Tab
+     *
+     * @param fileNode
+     * @returns
+     */
     public async openTab(fileNode: S3FileNode): Promise<void> {
         if (this.activeTabs.has(fileNode.file.arn)) {
         }
@@ -82,7 +92,7 @@ export class S3FileViewerManager {
     }
 
     /**
-     * Fetches a file from S3 or gets it from the local cache if possible.
+     * Fetches a file from S3 or gets it from the local cache if possible and still valid.
      */
     public async getFile(fileNode: S3FileNode): Promise<vscode.Uri | undefined> {
         if (!this.tempLocation) {
@@ -165,6 +175,13 @@ export class S3FileViewerManager {
         return targetLocation
     }
 
+    /**
+     * Searches for given node previously downloaded to cache.
+     * Ensures that the cached download is still valid (hasn't been modified in S3 since its caching)
+     *
+     * @param fileNode - Node to be searched in temp
+     * @returns Location in temp directory, if any
+     */
     public async getFromTemp(fileNode: S3FileNode): Promise<vscode.Uri | undefined> {
         const targetPath = await this.createTargetPath(fileNode)
         const targetLocation = vscode.Uri.file(targetPath)
