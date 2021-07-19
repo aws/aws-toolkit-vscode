@@ -112,8 +112,8 @@ describe('samVisualize Graph Generation from YAML', async function () {
             const expectedNodes = expectedObject.nodes.sort(nodeAlphaCompare)
             const expectedLinks = expectedObject.links.sort(linkAlphaCompare)
 
-            assert.deepStrictEqual(outputNodes, expectedNodes)
-            assert.deepStrictEqual(outputLinks, expectedLinks)
+            assert.deepStrictEqual(outputNodes, expectedNodes, `with ${file} template`)
+            assert.deepStrictEqual(outputLinks, expectedLinks, `with ${file} template`)
         }
     })
     // Note: A valid CFN template is defined here: https://docs.aws.amazon.com/AWSCloudFormation/latest/UserGuide/template-anatomy.html

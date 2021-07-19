@@ -1,0 +1,9 @@
+Resources:
+    ThisResource:
+        Type: 'bar'
+        Uri: !Sub
+            - www.${Domain}
+            - { Domain: !Ref ThatResource }
+
+    ThatResource:
+        Type: 'foo'

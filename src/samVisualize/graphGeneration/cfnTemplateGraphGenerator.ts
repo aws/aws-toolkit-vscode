@@ -16,10 +16,12 @@ function yamlStringToObject(inputYaml: string): Record<string, any> | undefined 
     try {
         return yamlParse(inputYaml)
     } catch (err) {
+        // The number of characters previewed in an erroneous template string
+        const characterLimit = 25
         getLogger().error(
             `SAM Visualize: Failed to load template "${inputYaml.substr(
                 0,
-                25
+                characterLimit
             )}"... Please ensure the template is valid YAML: 0%`,
             err
         )
