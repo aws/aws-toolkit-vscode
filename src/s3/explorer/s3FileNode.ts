@@ -32,7 +32,7 @@ export class S3FileNode extends AWSTreeNodeBase implements AWSResourceNode {
         public readonly bucket: Bucket,
         public readonly file: File,
         public readonly parent: S3BucketNode | S3FolderNode,
-        private readonly s3: S3Client,
+        public readonly s3: S3Client,
         now: Date = new Date()
     ) {
         super(file.name)

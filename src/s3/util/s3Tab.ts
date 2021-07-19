@@ -4,8 +4,13 @@
  */
 
 import * as vscode from 'vscode'
+import * as fs from 'fs'
 //import { Bucket, DownloadFileRequest, File, S3Client } from '../../shared/clients/s3Client'
-
+import { S3BucketNode } from '../explorer/s3BucketNode'
+import { S3FileNode } from '../explorer/s3FileNode'
+import { S3FolderNode } from '../explorer/s3FolderNode'
+import { S3Client } from '../../shared/clients/s3Client'
+import { uploadWithProgress } from '../commands/uploadFile'
 //need to subscribe to ondidsave and upload to s3, might need the S3FileNode
 
 export class S3Tab {
@@ -13,11 +18,16 @@ export class S3Tab {
     private s3Uri: vscode.Uri
     private window: typeof vscode.window
     private editor: vscode.TextEditor | undefined
-
+    protected parent: S3BucketNode | S3FolderNode
+    private s3Client: S3Client
     //private editing: boolean
-    public constructor(private fileUri: vscode.Uri, window = vscode.window) {
+    public constructor(public fileUri: vscode.Uri, public s3FileNode: S3FileNode, window = vscode.window) {
         this.s3Uri = vscode.Uri.parse('s3:' + this.fileUri.fsPath)
+        this.parent = s3FileNode.parent
         this.window = window
+
+        //this.s3Client = ext.toolkitClientBuilder.createS3Client(regionCode)
+        this.s3Client = s3FileNode.s3
     }
 
     public async openFileOnReadOnly(workspace = vscode.workspace): Promise<vscode.TextEditor | undefined> {
@@ -47,11 +57,7 @@ export class S3Tab {
                 this.editor = openEditor
             } else if (openEditor.document.uri.scheme !== uri.scheme) {
                 // there is a read-only tab open, it needs to be focused, then closed
-                await this.window.showTextDocument(openEditor.document, {
-                    preview: false,
-                    viewColumn: openEditor.viewColumn,
-                })
-                await vscode.commands.executeCommand('workbench.action.closeActiveEditor')
+                await this.focusAndCloseTab()
                 //good to open in given mode
                 this.editor = await this.window.showTextDocument(doc, { preview: false })
             }
@@ -63,11 +69,42 @@ export class S3Tab {
         return this.editor
     }
 
+    public async focusAndCloseTab(): Promise<void> {
+        const editor = await this.getActiveEditor()
+        if (!editor) {
+            return
+        }
+        await this.window.showTextDocument(editor.document, {
+            preview: false,
+            viewColumn: editor.viewColumn,
+        })
+        await vscode.commands.executeCommand('workbench.action.closeActiveEditor')
+    }
+
+    public async uploadChangesToS3(): Promise<boolean> {
+        const request = {
+            bucketName: this.s3FileNode.bucket.name,
+            key: this.parent.path + this.s3FileNode.name,
+            fileLocation: this.fileUri,
+            fileSizeBytes: fs.statSync(this.fileUri.fsPath).size,
+            s3Client: this.s3Client,
+            window: this.window,
+        }
+
+        try {
+            await uploadWithProgress(request)
+            //await vscode.commands.executeCommand('AWS.refreshAwsExplorer')
+            //await this.openFileOnReadOnly()
+        } catch (e) {
+            //error with upload
+            return false
+        }
+        return true
+    }
     //will be deleted when handling usage of this.editor, need to check when tab closes to set it undefined
     public async getActiveEditor(): Promise<vscode.TextEditor | undefined> {
         const visibleEditor = vscode.window.visibleTextEditors
 
         return visibleEditor.find((editor: vscode.TextEditor) => editor.document.uri.fsPath === this.fileUri.fsPath)
     }
-    //onPressedButton = change state, how to do this?
 }

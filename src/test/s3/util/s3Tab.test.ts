@@ -11,6 +11,7 @@ import { makeTemporaryToolkitFolder } from '../../../shared/filesystemUtilities'
 import * as testutil from '../../testUtil'
 import { S3Tab } from '../../../s3/util/s3Tab'
 import { anything, instance, mock, when, capture } from '../../utilities/mockito'
+import { S3FileNode } from '../../../s3/explorer/s3FileNode'
 
 describe('S3Tab', async function () {
     const message = 'can this be read'
@@ -22,6 +23,7 @@ describe('S3Tab', async function () {
     let s3Tab: S3Tab
     let mockedWorkspace: typeof vscode.workspace
     let mockedWindow: typeof vscode.window
+    let s3Node: S3FileNode
 
     before(async function () {
         tempFolder = await makeTemporaryToolkitFolder()
@@ -32,7 +34,7 @@ describe('S3Tab', async function () {
         mockedWorkspace = mock()
         mockedWindow = mock()
         listTempFolder(tempFolder)
-        s3Tab = new S3Tab(fileUri, instance(mockedWindow))
+        s3Tab = new S3Tab(fileUri, s3Node, instance(mockedWindow))
     })
 
     it('can be opened in read-only mode', async function () {

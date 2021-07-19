@@ -27,6 +27,30 @@ export class S3FileViewerManager {
     private outputChannel: OutputChannel
     private commands: Commands
     private tempLocation: string | undefined
+    private readonly disposables: vscode.Disposable[] = [
+        vscode.workspace.onDidSaveTextDocument(async savedTextDoc => {
+            if (this.activeTabs.has(savedTextDoc.uri.fsPath)) {
+                const activeTab = this.activeTabs.get(savedTextDoc.uri.fsPath)
+                if (!activeTab) {
+                    return
+                }
+
+                if (await this.checkForValidity(activeTab.s3FileNode, activeTab.fileUri)) {
+                    //good to upload
+                    await activeTab.uploadChangesToS3()
+                    //refresh the activeTab.s3FileNode?
+                    const fileNode = await this.refreshNode(activeTab.s3FileNode)
+                    if (!fileNode) {
+                        return
+                    }
+                    await this.removeAndCloseTab(activeTab)
+                    await this.openTab(fileNode)
+                } else {
+                    //file is not valid to upload, please redownload again, changes may be lost, be aware of that
+                }
+            }
+        }),
+    ]
 
     public constructor(
         cacheArn: Set<string> = new Set<string>(),
@@ -67,7 +91,7 @@ export class S3FileViewerManager {
         }
         getLogger().verbose(`S3FileViewer: File from s3 or temp to be opened is: ${fileLocation}`)
 
-        const newTab = this.activeTabs.get(fileLocation.fsPath) ?? new S3Tab(fileLocation)
+        const newTab = this.activeTabs.get(fileLocation.fsPath) ?? new S3Tab(fileLocation, fileNode)
         await newTab.openFileOnReadOnly()
 
         this.activeTabs.set(fileLocation.fsPath, newTab)
@@ -86,7 +110,7 @@ export class S3FileViewerManager {
             if (!fileLocation) {
                 return
             }
-            const newTab = this.activeTabs.get(fileLocation.fsPath) ?? new S3Tab(fileLocation)
+            const newTab = this.activeTabs.get(fileLocation.fsPath) ?? new S3Tab(fileLocation, uriOrNode)
             await newTab.openFileOnEditMode()
         }
     }
@@ -191,23 +215,7 @@ export class S3FileViewerManager {
                 `FileViewer: found file ${fileNode.file.key} in cache\n Cache contains: ${this.cacheArns.toString()}`
             )
 
-            //Explorer (or at least the S3Node) needs to be refreshed to get the last modified date from S3
-            const newNode = await this.refreshNode(fileNode)
-            if (!newNode) {
-                getLogger().error(`FileViewer: Error, refreshNode() returned undefined with file: ${fileNode.file.key}`)
-                getLogger().debug(`Cache contains: ${this.cacheArns.toString()}`)
-                return
-            }
-
-            fileNode = newNode
-            const lastModifiedInS3 = fileNode!.file.lastModified
-            const { birthtime } = fs.statSync(targetLocation.fsPath)
-
-            getLogger().debug(
-                `FileViewer: File ${fileNode.file.name} was last modified in S3: ${lastModifiedInS3}, cached on: ${birthtime}`
-            )
-
-            if (lastModifiedInS3! <= birthtime) {
+            if (await this.checkForValidity(fileNode, targetLocation)) {
                 getLogger().info(`FileViewer: good to retrieve, last modified date is before creation`)
                 return targetLocation
             } else {
@@ -253,7 +261,26 @@ export class S3FileViewerManager {
         return fileNode
     }
 
-    /*
+    private async removeAndCloseTab(activeTab: S3Tab): Promise<void> {
+        let fileNode: S3FileNode | undefined = activeTab.s3FileNode
+        fileNode = await this.refreshNode(fileNode)
+        if (!fileNode) {
+            return
+        }
+
+        const fileUri = activeTab.fileUri
+        this.activeTabs.delete(activeTab.fileUri.fsPath)
+        this.cacheArns.delete(fileNode.arn)
+        await activeTab.focusAndCloseTab()
+        try {
+            fs.unlinkSync(await this.createTargetPath(fileNode))
+        } catch (e) {
+            showOutputMessage(e, this.outputChannel)
+        }
+
+        await this.listTempFolder()
+    }
+
     private listTempFolder(): Promise<void> {
         getLogger().debug('-------contents in temp:')
         showOutputMessage('-------contents in temp:', this.outputChannel)
@@ -266,7 +293,7 @@ export class S3FileViewerManager {
         getLogger().debug('-------------------------')
         showOutputMessage('-------------------------', this.outputChannel)
         return Promise.resolve()
-    }*/
+    }
 
     private async createTemp(): Promise<void> {
         this.tempLocation = await makeTemporaryToolkitFolder()
@@ -279,5 +306,46 @@ export class S3FileViewerManager {
             this.outputChannel
         )
         getLogger().info(`Temp folder for FileViewer created with location: ${this.tempLocation}`)
+    }
+
+    // private setEvents(): Promise<void> {
+    //     this.disposables.push(
+    //         vscode.workspace.onDidSaveTextDocument(async savedTextDoc => {
+    //             if(this.activeTabs.has(savedTextDoc.uri.fsPath)) {
+    //                 const activeTab = this.activeTabs.get(savedTextDoc.uri.fsPath)
+    //                 if (!activeTab) {
+    //                     return
+    //                 }
+
+    //                if (await this.checkForValidity(activeTab.s3FileNode, activeTab.fileUri )) {
+    //                     //good to upload
+    //                     await activeTab.uploadChangesToS3()
+    //                } else {
+    //                    //file is not valid to upload, please redownload again, changes may be lost, be aware of that
+    //                }
+    //             }
+    //         })
+    //     )
+
+    //     return Promise.resolve()
+    // }
+
+    private async checkForValidity(fileNode: S3FileNode, targetUri: vscode.Uri): Promise<boolean> {
+        const newNode = await this.refreshNode(fileNode)
+        if (!newNode) {
+            getLogger().error(`FileViewer: Error, refreshNode() returned undefined with file: ${fileNode.file.key}`)
+            getLogger().debug(`Cache contains: ${this.cacheArns.toString()}`)
+            return false
+        }
+
+        fileNode = newNode
+        const lastModifiedInS3 = fileNode!.file.lastModified
+        const { birthtime } = fs.statSync(targetUri.fsPath)
+
+        getLogger().debug(
+            `FileViewer: File ${fileNode.file.name} was last modified in S3: ${lastModifiedInS3}, cached on: ${birthtime}`
+        )
+
+        return lastModifiedInS3! <= birthtime
     }
 }
