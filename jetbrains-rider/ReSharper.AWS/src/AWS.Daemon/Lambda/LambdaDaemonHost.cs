@@ -1,6 +1,11 @@
 using AWS.Toolkit.Rider.Model;
 using JetBrains.ProjectModel;
+
+#if (PROFILE_2020_2 || PROFILE_2020_3 || PROFILE_2021_1) // TODO: Remove preprocessor conditions FIX_WHEN_MIN_IS_212
 using JetBrains.ReSharper.Host.Features;
+#else
+using JetBrains.RdBackend.Common.Features;
+#endif
 
 namespace AWS.Daemon.Lambda
 {

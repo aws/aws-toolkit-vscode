@@ -6,7 +6,6 @@ using JetBrains.Application.UI.Controls.BulbMenu.Anchors;
 using JetBrains.Application.UI.Controls.BulbMenu.Items;
 using JetBrains.Application.UI.Icons.ComposedIcons;
 using JetBrains.ProjectModel;
-using JetBrains.ReSharper.Host.Features.RunMarkers;
 using JetBrains.ReSharper.Resources.Shell;
 using JetBrains.RiderTutorials.Utils;
 using JetBrains.TextControl.DocumentMarkup;
@@ -14,6 +13,12 @@ using JetBrains.UI.Icons;
 using JetBrains.UI.RichText;
 using JetBrains.Util;
 using JetBrains.Util.Logging;
+
+#if (PROFILE_2020_2 || PROFILE_2020_3 || PROFILE_2021_1) // TODO: Remove preprocessor conditions FIX_WHEN_MIN_IS_212
+using JetBrains.ReSharper.Host.Features.RunMarkers;
+#else
+using JetBrains.Rider.Backend.Features.RunMarkers;
+#endif
 
 #if PROFILE_2020_2 // TODO: Remove preprocessor conditions FIX_WHEN_MIN_IS_203
 using IconGutterMarkType = JetBrains.TextControl.DocumentMarkup.IconGutterMark;

@@ -8,14 +8,21 @@ using JetBrains.Diagnostics;
 using JetBrains.Lifetimes;
 using JetBrains.ProjectModel;
 using JetBrains.Rd.Tasks;
-using JetBrains.ReSharper.Host.Features;
-using JetBrains.ReSharper.Host.Features.ProjectModel.View;
-using JetBrains.ReSharper.Host.Platform.Icons;
 using JetBrains.ReSharper.Psi;
 using JetBrains.ReSharper.Psi.Caches;
 using JetBrains.ReSharper.Psi.Modules;
 using JetBrains.ReSharper.Resources.Shell;
 using JetBrains.Util;
+
+#if (PROFILE_2020_2 || PROFILE_2020_3 || PROFILE_2021_1) // TODO: Remove preprocessor conditions FIX_WHEN_MIN_IS_212
+using JetBrains.ReSharper.Host.Features;
+using JetBrains.ReSharper.Host.Features.ProjectModel.View;
+using JetBrains.ReSharper.Host.Platform.Icons;
+#else
+using JetBrains.RdBackend.Common.Features;
+using JetBrains.RdBackend.Common.Features.ProjectModel.View;
+using JetBrains.Rider.Backend.Platform.Icons;
+#endif
 
 namespace AWS.Psi.Lambda
 {
