@@ -15,7 +15,6 @@ import { anything, instance, mock, when, capture } from '../../utilities/mockito
 describe.only('S3Tab', async function () {
     const message = 'can this be read'
     const fileName = 'test.txt'
-    const realWorkspace = vscode.workspace
 
     let openedDoc: vscode.TextDocument
     let openedS3Doc: vscode.TextDocument
