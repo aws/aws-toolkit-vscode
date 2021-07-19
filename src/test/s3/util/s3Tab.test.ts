@@ -16,8 +16,6 @@ describe('S3Tab', async function () {
     const message = 'can this be read'
     const fileName = 'test.txt'
 
-    let openedDoc: vscode.TextDocument
-    let openedS3Doc: vscode.TextDocument
     let tempFolder: string
     let fileUri: vscode.Uri
     let s3Uri: vscode.Uri
@@ -30,8 +28,6 @@ describe('S3Tab', async function () {
         fileUri = vscode.Uri.file(path.join(tempFolder, fileName))
         s3Uri = vscode.Uri.parse('s3:' + fileUri.fsPath)
         testutil.toFile(message, fileUri.fsPath)
-
-        openedDoc = await vscode.workspace.openTextDocument(fileUri)
 
         mockedWorkspace = mock()
         mockedWindow = mock()
