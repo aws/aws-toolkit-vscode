@@ -18,6 +18,6 @@ class DynamicResourceCopyIdentifierAction :
     DumbAware {
     override fun actionPerformed(selected: DynamicResourceNode, e: AnActionEvent) {
         CopyPasteManager.getInstance().setContents(StringSelection(selected.resource.identifier))
-        DynamicresourceTelemetry.copyIdentifier(selected.nodeProject)
+        DynamicresourceTelemetry.copyIdentifier(selected.nodeProject, resourceType = selected.resource.type.fullName)
     }
 }
