@@ -6,7 +6,7 @@
 import * as vscode from 'vscode'
 //import { Bucket, DownloadFileRequest, File, S3Client } from '../../shared/clients/s3Client'
 
-//const fs = require('fs')
+//need to subscribe to ondidsave and upload to s3, might need the S3FileNode
 
 export class S3Tab {
     //private file: File
@@ -26,12 +26,6 @@ export class S3Tab {
     public constructor(private fileUri: vscode.Uri, window = vscode.window) {
         this.s3Uri = vscode.Uri.parse('s3:' + this.fileUri.fsPath)
         this.window = window
-
-        //if file is text, start state will be read-only
-
-        //if file is not text, open file on edit-mode with disabled edit button
-
-        //this.outputChannel = ext.outputChannel
     }
 
     public async openFileOnReadOnly(workspace = vscode.workspace): Promise<vscode.TextEditor | undefined> {
@@ -113,60 +107,3 @@ export class S3Tab {
     }
     //onPressedButton = change state, how to do this?
 }
-
-/*
-interface State {
-    openFile(context: Context, window: typeof vscode.window): void
-}
-
-
-class ReadOnlyState implements State {
-    private fileUri: vscode.Uri
-    private provider: S3DocumentProvider
-    private s3Uri: vscode.Uri
-
-    public constructor(fileUri: vscode.Uri) {
-        this.fileUri = fileUri
-        this.s3Uri = vscode.Uri.parse('s3:' + this.fileUri.fsPath)
-        this.provider = new S3DocumentProvider()
-    }
-
-    async openFile(context: Context, window: typeof vscode.window) {
-        context.state = this
-        //this.fileUri.scheme = 's3'
-        //window.showTextDocument(this.fileUri)
-        //testutil.toFile('bogus', tempFile.fsPath)
-        const doc = await vscode.workspace.openTextDocument(this.s3Uri) // calls back into the provider
-        //vscode.languages.setTextDocumentLanguage(doc, 'txt')
-        await vscode.window.showTextDocument(doc, { preview: false })
-    }
-}
-
-//TODOD:: implement all for this
-class EditModeState implements State {
-    private fileUri: vscode.Uri
-
-    public constructor(fileUri: vscode.Uri, context: Context) {
-        this.fileUri = fileUri
-    }
-
-    openFile() {}
-}
-
-class Context {
-    private fileUri: vscode.Uri
-    state?: State | undefined
-
-    public constructor(fileUri: vscode.Uri) {
-        //this.state = new ReadOnlyState(fileUri)
-        this.fileUri = fileUri
-    }
-    
-    public set state (newState: State){
-        this.state = newState
-    }
-
-    public get state () {
-        return this.state
-    }
-}*/
