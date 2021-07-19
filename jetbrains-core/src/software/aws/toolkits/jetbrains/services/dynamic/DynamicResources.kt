@@ -3,8 +3,8 @@
 
 package software.aws.toolkits.jetbrains.services.dynamic
 
-import com.fasterxml.jackson.databind.JsonNode
 import com.fasterxml.jackson.module.kotlin.jacksonObjectMapper
+import com.fasterxml.jackson.module.kotlin.readValue
 import kotlinx.coroutines.CoroutineStart
 import kotlinx.coroutines.Deferred
 import kotlinx.coroutines.async
@@ -15,13 +15,13 @@ import software.aws.toolkits.jetbrains.utils.ApplicationThreadPoolScope
 
 object DynamicResources {
     private val coroutineScope = ApplicationThreadPoolScope("DynamicResources")
+
     val SUPPORTED_TYPES: Deferred<List<String>> =
         coroutineScope.async(start = CoroutineStart.LAZY) {
             val reader = jacksonObjectMapper()
             val resourceStream = DynamicResources.javaClass.getResourceAsStream("/cloudapi/dynamic_resources.json")
                 ?: throw RuntimeException("dynamic resource manifest not found")
-            val jsonTree = reader.readTree(resourceStream)
-            getSupportedTypes(jsonTree)
+            reader.readValue<Map<String, ResourceDetails>>(resourceStream).filter { it.value.operations.contains(Operation.LIST) }.map { it.key }
         }
 
     fun listResources(typeName: String): Resource.Cached<List<DynamicResource>> =
@@ -30,12 +30,10 @@ object DynamicResources {
         }
 
     fun listResources(resourceType: ResourceType): Resource.Cached<List<DynamicResource>> = listResources(resourceType.fullName)
+}
 
-    fun getSupportedTypes(resources: JsonNode): List<String> {
-        val supportedTypes = mutableListOf<String>()
-        resources.fields().forEach {
-            it.value.get("operations").forEach { permission -> if (permission.textValue().equals("LIST")) { supportedTypes.add(it.key) } }
-        }
-        return supportedTypes
-    }
+data class ResourceDetails(val operations: List<Operation>, val arnRegex: String? = null)
+
+enum class Operation {
+    CREATE, READ, UPDATE, DELETE, LIST;
 }
