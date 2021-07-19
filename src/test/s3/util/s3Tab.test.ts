@@ -12,7 +12,7 @@ import * as testutil from '../../testUtil'
 import { S3Tab } from '../../../s3/util/s3Tab'
 import { anything, instance, mock, when, capture } from '../../utilities/mockito'
 
-describe('S3Tab', async function () {
+describe.only('S3Tab', async function () {
     const message = 'can this be read'
     const fileName = 'test.txt'
 
@@ -40,25 +40,33 @@ describe('S3Tab', async function () {
     })
 
     it('can be opened in read-only mode', async function () {
-        when(mockedWorkspace.openTextDocument(anything())).thenReturn(Promise.resolve(openedS3Doc))
-        when(mockedWindow.showTextDocument(anything())).thenReturn(Promise.resolve({ document: openedS3Doc } as any))
+        when(mockedWorkspace.openTextDocument(anything())).thenReturn(Promise.resolve({ uri: s3Uri } as any))
+        when(mockedWindow.showTextDocument(anything())).thenReturn()
 
         await s3Tab.openFileOnReadOnly(instance(mockedWorkspace))
 
         const [uri] = capture(mockedWorkspace.openTextDocument).last()
         assert.strictEqual((uri as vscode.Uri).fsPath, s3Uri.fsPath)
         assert.strictEqual((uri as vscode.Uri).scheme, s3Uri.scheme)
+
+        const [showDocArgs] = capture(mockedWindow.showTextDocument).last()
+
+        assert.deepStrictEqual((showDocArgs as any).uri, s3Uri)
     })
 
     it('can be opened in edit mode', async function () {
-        when(mockedWorkspace.openTextDocument(anything())).thenReturn(Promise.resolve(openedDoc))
-        when(mockedWindow.showTextDocument(anything())).thenReturn({ document: openedS3Doc } as any)
+        when(mockedWorkspace.openTextDocument(anything())).thenReturn(Promise.resolve({ uri: fileUri } as any))
+        when(mockedWindow.showTextDocument(anything())).thenReturn()
 
         await s3Tab.openFileOnEditMode(instance(mockedWorkspace))
 
         const [uri] = capture(mockedWorkspace.openTextDocument).last()
         assert.strictEqual((uri as vscode.Uri).fsPath, fileUri.fsPath)
         assert.strictEqual((uri as vscode.Uri).scheme, fileUri.scheme)
+
+        const [showDocArgs] = capture(mockedWindow.showTextDocument).last()
+
+        assert.deepStrictEqual((showDocArgs as any).uri, fileUri)
     })
 
     it('saves changes back to s3', function () {})
