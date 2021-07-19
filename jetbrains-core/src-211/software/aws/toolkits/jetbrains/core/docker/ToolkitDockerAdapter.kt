@@ -5,15 +5,10 @@ package software.aws.toolkits.jetbrains.core.docker
 
 import com.intellij.docker.DockerAgentPathMapperImpl
 import com.intellij.docker.DockerServerRuntimeInstance
-import com.intellij.docker.agent.DockerAgentLogProvider
-import com.intellij.docker.agent.terminal.pipe.DockerTerminalPipe
 import com.intellij.docker.registry.DockerRepositoryModel
 import com.intellij.docker.remote.run.runtime.DockerAgentBuildImageConfig
-import com.intellij.docker.runtimes.DockerImageRuntime
 import com.intellij.openapi.project.Project
 import kotlinx.coroutines.future.await
-import software.aws.toolkits.core.utils.error
-import software.aws.toolkits.core.utils.getLogger
 import software.aws.toolkits.jetbrains.services.ecr.DockerfileEcrPushRequest
 import java.io.File
 
@@ -24,15 +19,7 @@ class ToolkitDockerAdapter(project: Project, serverRuntime: DockerServerRuntimeI
             DockerAgentPathMapperImpl(project)
         )
 
-        val logger = DockerAgentLogProvider(
-            infoFunction = LOG::info,
-            traceFunction = LOG::trace,
-            warnFunction = LOG::warn,
-            errorFunction = LOG::error,
-            isTraceEnabled = false
-        )
-
-        return deployment.deploy("untagged test image", DockerTerminalPipe("AWS Toolkit build for $dockerfile", logger), null)?.imageId
+        return deployment.deploy("untagged image", null, null)?.imageId
     }
 
     override suspend fun hackyBuildDockerfileWithUi(project: Project, pushRequest: DockerfileEcrPushRequest) =
@@ -40,10 +27,6 @@ class ToolkitDockerAdapter(project: Project, serverRuntime: DockerServerRuntimeI
 
     override suspend fun pushImage(localTag: String, config: DockerRepositoryModel) {
         val physicalLocalRuntime = serverRuntime.findRuntimeLater(localTag, false).await()
-        (physicalLocalRuntime as? DockerImageRuntime)?.pushImage(project, config) ?: LOG.error { "couldn't map tag to appropriate docker runtime" }
-    }
-
-    companion object {
-        val LOG = getLogger<ToolkitDockerAdapter>()
+        physicalLocalRuntime.pushImage(project, config)
     }
 }
