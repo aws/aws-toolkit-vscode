@@ -21,6 +21,8 @@ import * as fakeTelemetry from './fake/fakeTelemetryService'
 import { TestLogger } from './testLogger'
 import { FakeAwsContext } from './utilities/fakeAwsContext'
 import { initializeComputeRegion } from '../shared/extensionUtilities'
+import { activateExtension } from '../shared/utilities/vsCodeUtils'
+import { VSCODE_EXTENSION_ID } from '../shared/extensions'
 
 const testReportDir = join(__dirname, '../../../.test-reports')
 const testLogOutput = join(testReportDir, 'testLog.log')
@@ -32,6 +34,9 @@ before(async function () {
     // Clean up and set up test logs
     try {
         await remove(testLogOutput)
+    } catch (e) {}
+    try {
+        await activateExtension(VSCODE_EXTENSION_ID.yaml)
     } catch (e) {}
     mkdirpSync(testReportDir)
     // Set up global telemetry client
