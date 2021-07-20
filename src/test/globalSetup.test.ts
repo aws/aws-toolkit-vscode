@@ -36,7 +36,7 @@ before(async function () {
         await remove(testLogOutput)
     } catch (e) {}
     try {
-        activateExtension(VSCODE_EXTENSION_ID.yaml)
+        await activateExtension(VSCODE_EXTENSION_ID.yaml)
     } catch (e) {}
     mkdirpSync(testReportDir)
     // Set up global telemetry client
