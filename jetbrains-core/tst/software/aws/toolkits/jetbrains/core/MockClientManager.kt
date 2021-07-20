@@ -30,10 +30,14 @@ class MockClientManager : AwsClientManager() {
     private val mockClients = mutableMapOf<Key, SdkClient>()
 
     @Suppress("UNCHECKED_CAST")
-    override fun <T : SdkClient> createNewClient(sdkClass: KClass<T>, region: AwsRegion, credProvider: ToolkitCredentialsProvider): T =
-        mockClients[Key(sdkClass, region, credProvider.id)] as? T
-            ?: mockClients[Key(sdkClass)] as? T
-            ?: throw IllegalStateException("No mock registered for $sdkClass")
+    override fun <T : SdkClient> createNewClient(
+        sdkClass: KClass<T>,
+        region: AwsRegion,
+        credProvider: ToolkitCredentialsProvider,
+        endpointOverride: String?
+    ): T = mockClients[Key(sdkClass, region, credProvider.id)] as? T
+        ?: mockClients[Key(sdkClass)] as? T
+        ?: throw IllegalStateException("No mock registered for $sdkClass")
 
     override fun dispose() {
         super.dispose()
