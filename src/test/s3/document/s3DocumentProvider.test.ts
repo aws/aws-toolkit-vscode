@@ -10,7 +10,20 @@ import * as path from 'path'
 import { S3DocumentProvider } from '../../../s3/document/s3DocumentProvider'
 import { makeTemporaryToolkitFolder } from '../../../shared/filesystemUtilities'
 
+class ChangeEmitter {
+    private _onDidChange = new vscode.EventEmitter<vscode.Uri>()
+    public get onDidChange(): vscode.Event<vscode.Uri> {
+        return this._onDidChange.event
+    }
+
+    public fire(): void {
+        this._onDidChange.fire()
+    }
+}
+
 describe('S3DocumentProvider', async function () {
+    const changeEmitter = new ChangeEmitter()
+
     //make a temprorary directory
     const fileName = 'test.txt'
     const message = "i don't like testing but this one is easy, it should work"
@@ -25,7 +38,7 @@ describe('S3DocumentProvider', async function () {
 
     // TODO: Make this less flaky when we add manual timestamp controls.
     beforeEach(async function () {
-        provider = new S3DocumentProvider()
+        provider = new S3DocumentProvider(changeEmitter.onDidChange)
     })
 
     it('provides content if file exists and a blank string if it does not', async function () {

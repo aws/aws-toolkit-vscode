@@ -24,7 +24,6 @@ describe('S3Tab', async function () {
     let mockedWorkspace: typeof vscode.workspace
     let mockedWindow: typeof vscode.window
     let s3Node: S3FileNode
-
     before(async function () {
         tempFolder = await makeTemporaryToolkitFolder()
         fileUri = vscode.Uri.file(path.join(tempFolder, fileName))
