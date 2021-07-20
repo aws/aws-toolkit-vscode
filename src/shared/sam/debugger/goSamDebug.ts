@@ -143,7 +143,7 @@ export async function makeGoConfig(config: SamLaunchRequestArgs): Promise<GoDebu
         host: 'localhost',
         port: port,
         skipFiles: [],
-        debugArgs: isImageLambda || config.noDebug ? undefined : ['-delveAPI=2'],
+        debugArgs: isImageLambda || config.noDebug ? undefined : ['-delveAPI=2', '--check-go-version=false'],
         debugAdapter: 'legacy', // Just in case the Go extension decides to make Delve DAP the default
     }
 
