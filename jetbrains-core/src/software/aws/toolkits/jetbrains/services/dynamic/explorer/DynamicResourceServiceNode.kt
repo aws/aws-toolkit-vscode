@@ -26,6 +26,7 @@ import software.aws.toolkits.jetbrains.services.dynamic.DynamicResource
 import software.aws.toolkits.jetbrains.services.dynamic.DynamicResources
 import software.aws.toolkits.jetbrains.utils.notifyError
 import software.aws.toolkits.resources.message
+import software.aws.toolkits.telemetry.DynamicresourceTelemetry
 
 class DynamicResourceResourceTypeNode(project: Project, private val resourceType: String) :
     AwsExplorerNode<String>(project, resourceType, null),
@@ -78,6 +79,7 @@ class DynamicResourceNode(project: Project, val resource: DynamicResource) :
                         title = message("dynamic_resources.fetch.fail.title"),
                         content = message("dynamic_resources.fetch.fail.content", resource.identifier)
                     )
+                    DynamicresourceTelemetry.openModel(nodeProject, success = false)
 
                     null
                 } ?: return
@@ -89,7 +91,7 @@ class DynamicResourceNode(project: Project, val resource: DynamicResource) :
                 )
 
                 indicator.text = message("dynamic_resources.fetch.open")
-                WriteCommandAction.runWriteCommandAction(project) {
+                WriteCommandAction.runWriteCommandAction(nodeProject) {
                     FileEditorManager.getInstance(nodeProject).openFile(file, true)
                     CodeStyleManager.getInstance(nodeProject).reformat(PsiUtilCore.getPsiFile(nodeProject, file))
 
@@ -97,6 +99,7 @@ class DynamicResourceNode(project: Project, val resource: DynamicResource) :
 
                     // editor readonly prop is separate from file prop. this is graceful if the getDocument call returns null
                     FileDocumentManager.getInstance().getDocument(file)?.setReadOnly(true)
+                    DynamicresourceTelemetry.openModel(nodeProject, success = true)
                 }
             }
         }.queue()
