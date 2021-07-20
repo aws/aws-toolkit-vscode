@@ -21,25 +21,21 @@ import { localize } from '../../shared/utilities/vsCodeUtils'
 const SIZE_LIMIT = 4 * Math.pow(10, 6)
 
 export class S3FileViewerManager {
-    private cacheArns: Set<string>
     private activeTabs: Map<string, S3Tab>
-
     private outputChannel: OutputChannel
-    private tempLocation: string | undefined
+
     private _onDidChange = new vscode.EventEmitter<vscode.Uri>()
     public get onDidChange(): vscode.Event<vscode.Uri> {
         return this._onDidChange.event
     }
 
     public constructor(
-        cacheArn: Set<string> = new Set<string>(),
+        private cacheArns: Set<string> = new Set<string>(),
         private window: typeof vscode.window = vscode.window,
         private commands = Commands.vscode(),
-        tempLocation?: string
+        private _tempLocation?: string
     ) {
-        this.cacheArns = cacheArn
         this.activeTabs = new Map<string, S3Tab>()
-        this.tempLocation = tempLocation
         this.outputChannel = ext.outputChannel
 
         vscode.workspace.onDidSaveTextDocument(async savedTextDoc => {
@@ -120,7 +116,7 @@ export class S3FileViewerManager {
      * Fetches a file from S3 or gets it from the local cache if possible and still valid.
      */
     public async getFile(fileNode: S3FileNode): Promise<vscode.Uri | undefined> {
-        if (!this.tempLocation) {
+        if (!this._tempLocation) {
             await this.createTemp()
         }
         const targetPath = await this.createTargetPath(fileNode)
@@ -234,7 +230,7 @@ export class S3FileViewerManager {
         let completePath = readablePath(fileNode)
         completePath = completePath.slice(4) //removes 's3://' from path
         completePath = completePath.slice(undefined, completePath.lastIndexOf('/') + 1) + '[S3]' + fileNode.file.name // add [S3] to the name of the file
-        completePath = this.tempLocation! + completePath
+        completePath = this._tempLocation! + completePath
 
         return Promise.resolve(completePath)
     }
@@ -269,7 +265,6 @@ export class S3FileViewerManager {
             return
         }
 
-        const fileUri = activeTab.fileUri
         this.activeTabs.delete(activeTab.fileUri.fsPath)
         this.cacheArns.delete(fileNode.arn)
         await activeTab.focusAndCloseTab()
@@ -286,7 +281,7 @@ export class S3FileViewerManager {
         getLogger().debug('-------contents in temp:')
         showOutputMessage('-------contents in temp:', this.outputChannel)
 
-        fs.readdirSync(this.tempLocation!).forEach((file: any) => {
+        fs.readdirSync(this._tempLocation!).forEach((file: any) => {
             showOutputMessage(` ${file}`, this.outputChannel)
             getLogger().debug(` ${file}`)
         })
@@ -296,17 +291,22 @@ export class S3FileViewerManager {
         return Promise.resolve()
     }
 
-    private async createTemp(): Promise<void> {
-        this.tempLocation = await makeTemporaryToolkitFolder()
+    public async createTemp(): Promise<string> {
+        this._tempLocation = await makeTemporaryToolkitFolder()
         showOutputMessage(
             localize(
                 'AWS.s3.message.tempCreation',
                 'Temp folder for FileViewer created with location: {0}',
-                this.tempLocation
+                this._tempLocation
             ),
             this.outputChannel
         )
-        getLogger().info(`Temp folder for FileViewer created with location: ${this.tempLocation}`)
+        getLogger().info(`Temp folder for FileViewer created with location: ${this._tempLocation}`)
+        return this._tempLocation
+    }
+
+    public get tempLocation(): string | undefined {
+        return this._tempLocation
     }
 
     // private setEvents(): Promise<void> {

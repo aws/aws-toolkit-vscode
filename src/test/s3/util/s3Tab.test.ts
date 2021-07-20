@@ -7,15 +7,21 @@ import * as fs from 'fs'
 import * as assert from 'assert'
 import * as vscode from 'vscode'
 import * as path from 'path'
-import { makeTemporaryToolkitFolder } from '../../../shared/filesystemUtilities'
 import * as testutil from '../../testUtil'
+import { makeTemporaryToolkitFolder } from '../../../shared/filesystemUtilities'
 import { S3Tab } from '../../../s3/util/s3Tab'
 import { anything, instance, mock, when, capture } from '../../utilities/mockito'
 import { S3FileNode } from '../../../s3/explorer/s3FileNode'
+import { Bucket, S3Client } from '../../../shared/clients/s3Client'
+import { S3BucketNode } from '../../../s3/explorer/s3BucketNode'
+import { S3Node } from '../../../s3/explorer/s3Nodes'
 
 describe('S3Tab', async function () {
     const message = 'can this be read'
     const fileName = 'test.txt'
+    const key = 'foo/test.txt'
+    const bucketName = 'bucket-name'
+    const bucket: Bucket = { name: bucketName, region: 'region', arn: 'arn' }
 
     let tempFolder: string
     let fileUri: vscode.Uri
@@ -23,17 +29,24 @@ describe('S3Tab', async function () {
     let s3Tab: S3Tab
     let mockedWorkspace: typeof vscode.workspace
     let mockedWindow: typeof vscode.window
-    let s3Node: S3FileNode
+    let parentNode: S3BucketNode
+    let fileNodeTest: S3FileNode
+    let s3: S3Client
+
     before(async function () {
+        s3 = mock()
+        mockedWorkspace = mock()
+        mockedWindow = mock()
         tempFolder = await makeTemporaryToolkitFolder()
         fileUri = vscode.Uri.file(path.join(tempFolder, fileName))
         s3Uri = vscode.Uri.parse('s3:' + fileUri.fsPath)
+        parentNode = new S3BucketNode(bucket, {} as S3Node, instance(s3))
+        fileNodeTest = new S3FileNode(bucket, { name: fileName, key, arn: 'arn' }, parentNode, instance(s3))
+
         testutil.toFile(message, fileUri.fsPath)
 
-        mockedWorkspace = mock()
-        mockedWindow = mock()
         listTempFolder(tempFolder)
-        s3Tab = new S3Tab(fileUri, s3Node, instance(mockedWindow))
+        s3Tab = new S3Tab(fileUri, fileNodeTest, instance(mockedWindow))
     })
 
     it('can be opened in read-only mode', async function () {

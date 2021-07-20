@@ -54,6 +54,22 @@ describe('FileViewerManager', function () {
         testutil.toFile('bogus', tempFile.fsPath)
     })
 
+    describe('cache', function () {
+        let managerWithoutCache: S3FileViewerManager
+        this.beforeEach(async function () {
+            managerWithoutCache = new S3FileViewerManager()
+        })
+
+        it('creates a temporary folder', function () {
+            const tempLocation = managerWithoutCache.createTemp()
+            assert.deepStrictEqual(managerWithoutCache.tempLocation, tempLocation)
+        })
+
+        it('deletes the temp content after closing', function () {
+            const tempLocation = managerWithoutCache.createTemp()
+        })
+    })
+
     describe('retrieves file from s3 if not in temp or invalid date', async function () {
         it('prompts if file has no specified size', async function () {
             when(window.showWarningMessage(anything(), anything(), anything(), anything())).thenReturn(
