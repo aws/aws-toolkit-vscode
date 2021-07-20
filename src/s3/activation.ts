@@ -21,14 +21,17 @@ import { ext } from '../shared/extensionGlobals'
 import { ExtContext } from '../shared/extensions'
 import { S3DocumentProvider } from './document/s3DocumentProvider'
 import { showOutputMessage } from '../shared/utilities/messages'
+import { S3FileViewerManager } from './util/fileViewerManager'
 
 /**
  * Activates S3 components.
  */
 
 export async function activate(ctx: ExtContext): Promise<void> {
+    const manager = new S3FileViewerManager()
+
     ctx.extensionContext.subscriptions.push(
-        vscode.workspace.registerTextDocumentContentProvider('s3', new S3DocumentProvider())
+        vscode.workspace.registerTextDocumentContentProvider('s3', new S3DocumentProvider(manager.onDidChange))
     )
 
     ctx.extensionContext.subscriptions.push(
@@ -39,11 +42,11 @@ export async function activate(ctx: ExtContext): Promise<void> {
             await downloadFileAsCommand(node)
         }),
         vscode.commands.registerCommand('aws.s3.openFile', async (node: S3FileNode) => {
-            await openFileCommand(node)
+            await openFileCommand(node, manager)
         }),
         vscode.commands.registerCommand('aws.s3.openFileEditMode', async (uriOrNode: vscode.Uri | S3FileNode) => {
             showOutputMessage(`command openFileEditMode() uri: ${uriOrNode}`, ext.outputChannel)
-            await openFileEditModeCommand(uriOrNode)
+            await openFileEditModeCommand(uriOrNode, manager)
         }),
         vscode.commands.registerCommand('aws.s3.uploadFile', async (node: S3BucketNode | S3FolderNode) => {
             if (!node) {

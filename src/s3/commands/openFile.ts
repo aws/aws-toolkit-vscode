@@ -10,10 +10,15 @@ import { Window } from '../../shared/vscode/window'
 //import { localize } from '../../shared/utilities/vsCodeUtils'
 //import { showErrorWithLogs } from '../../shared/utilities/messages'
 import { S3FileNode } from '../explorer/s3FileNode'
+import { S3FileViewerManager } from '../util/fileViewerManager'
 //import { FileViewerManager, SingletonManager } from '../util/fileViewerManager'
 
 const SIZE_LIMIT = 50 * Math.pow(10, 6)
-export async function openFileCommand(node: S3FileNode, window = Window.vscode()): Promise<void> {
+export async function openFileCommand(
+    node: S3FileNode,
+    manager: S3FileViewerManager,
+    window = Window.vscode()
+): Promise<void> {
     if (node.file.sizeBytes! > SIZE_LIMIT) {
         window.showErrorMessage(
             localize(
@@ -23,12 +28,14 @@ export async function openFileCommand(node: S3FileNode, window = Window.vscode()
         )
         return
     }
-    const manager = ext.s3fileViewerManager
+
     await manager.openTab(node)
 }
 
-export async function openFileEditModeCommand(uriOrNode: vscode.Uri | S3FileNode): Promise<void> {
+export async function openFileEditModeCommand(
+    uriOrNode: vscode.Uri | S3FileNode,
+    manager: S3FileViewerManager
+): Promise<void> {
     //TODOD:: implement this later, after approval of read-only
-    const manager = ext.s3fileViewerManager
     manager.openOnEditMode(uriOrNode)
 }

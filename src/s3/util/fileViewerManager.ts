@@ -23,11 +23,25 @@ const SIZE_LIMIT = 4 * Math.pow(10, 6)
 export class S3FileViewerManager {
     private cacheArns: Set<string>
     private activeTabs: Map<string, S3Tab>
-    private window: typeof vscode.window
+
     private outputChannel: OutputChannel
-    private commands: Commands
     private tempLocation: string | undefined
-    private readonly disposables: vscode.Disposable[] = [
+    private _onDidChange = new vscode.EventEmitter<vscode.Uri>()
+    public get onDidChange(): vscode.Event<vscode.Uri> {
+        return this._onDidChange.event
+    }
+
+    public constructor(
+        cacheArn: Set<string> = new Set<string>(),
+        private window: typeof vscode.window = vscode.window,
+        private commands = Commands.vscode(),
+        tempLocation?: string
+    ) {
+        this.cacheArns = cacheArn
+        this.activeTabs = new Map<string, S3Tab>()
+        this.tempLocation = tempLocation
+        this.outputChannel = ext.outputChannel
+
         vscode.workspace.onDidSaveTextDocument(async savedTextDoc => {
             if (this.activeTabs.has(savedTextDoc.uri.fsPath)) {
                 const activeTab = this.activeTabs.get(savedTextDoc.uri.fsPath)
@@ -45,25 +59,12 @@ export class S3FileViewerManager {
                     }
                     await this.removeAndCloseTab(activeTab)
                     await this.openTab(fileNode)
+                    this._onDidChange.fire(activeTab.s3Uri)
                 } else {
                     //file is not valid to upload, please redownload again, changes may be lost, be aware of that
                 }
             }
-        }),
-    ]
-
-    public constructor(
-        cacheArn: Set<string> = new Set<string>(),
-        window: typeof vscode.window = vscode.window,
-        commands = Commands.vscode(),
-        tempLocation?: string
-    ) {
-        this.cacheArns = cacheArn
-        this.activeTabs = new Map<string, S3Tab>()
-        this.window = window
-        this.commands = commands
-        this.tempLocation = tempLocation
-        this.outputChannel = ext.outputChannel
+        })
     }
 
     /**

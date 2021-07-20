@@ -15,7 +15,7 @@ import { uploadWithProgress } from '../commands/uploadFile'
 
 export class S3Tab {
     //private file: File
-    private s3Uri: vscode.Uri
+    public s3Uri: vscode.Uri
     private window: typeof vscode.window
     private editor: vscode.TextEditor | undefined
     protected parent: S3BucketNode | S3FolderNode
