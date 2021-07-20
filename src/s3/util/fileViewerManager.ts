@@ -53,8 +53,6 @@ export class S3FileViewerManager {
      * @returns
      */
     public async openTab(fileNode: S3FileNode): Promise<void> {
-        if (this.activeTabs.has(fileNode.file.arn)) {
-        }
         getLogger().verbose(`S3FileViewer: Retrieving and displaying file: ${fileNode.file.key}`)
         showOutputMessage(
             localize('AWS.s3.fileViewer.info.fileKey', 'Retrieving and displaying file: {0}', fileNode.file.key),
@@ -153,7 +151,10 @@ export class S3FileViewerManager {
             getLogger().debug(`FileViewer: User confirmed download, continuing`)
         }
 
-        await this.createSubFolders(targetPath)
+        if (!(await this.createSubFolders(targetPath))) {
+            //error creating the folder structure
+            return undefined
+        }
 
         try {
             await downloadWithProgress(fileNode, targetLocation, this.window)
@@ -223,18 +224,23 @@ export class S3FileViewerManager {
 
     public createTargetPath(fileNode: S3FileNode): Promise<string> {
         let completePath = readablePath(fileNode)
-        completePath = completePath.slice(4) //removes 's3://' from path
-        completePath = completePath.slice(undefined, completePath.lastIndexOf('/') + 1) + '[S3]' + fileNode.file.name // add [S3] to the name of the file
-        completePath = this.tempLocation! + completePath
+        completePath = `${this.tempLocation!}${completePath.slice(4, completePath.lastIndexOf('/') + 1)}[S3]${
+            fileNode.file.name
+        }`
 
         return Promise.resolve(completePath)
     }
 
     private async createSubFolders(targetPath: string): Promise<boolean> {
         const folderStructure = targetPath.slice(undefined, targetPath.lastIndexOf('/'))
-        //fs.mkdirSync(folderStructure, { recursive: true })
-        await mkdirp(folderStructure)
-        return Promise.resolve(true)
+
+        try {
+            await mkdirp(folderStructure)
+        } catch (e) {
+            getLogger().error(`S3FileViewer: Error creating S3 folder structure on system error: ${e}`)
+            return false
+        }
+        return true
     }
 
     async refreshNode(fileNode: S3FileNode): Promise<S3FileNode | undefined> {

@@ -41,8 +41,8 @@ export class S3Tab {
 
             return this.editor
         } else if (openEditor.document.uri.scheme === 'file') {
-            //there is a tab open in edit-mode, it needs to be focused, then closed
-            await this.window.showTextDocument(openEditor.document, {
+            //there is a tab open in edit-mode, just needs to be focused
+            this.editor = await this.window.showTextDocument(openEditor.document, {
                 preview: false,
                 viewColumn: openEditor.viewColumn,
             })
