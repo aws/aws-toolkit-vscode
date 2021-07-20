@@ -13,6 +13,7 @@ import com.intellij.database.dataSource.DatabaseAuthProvider.AuthWidget
 import com.intellij.database.dataSource.DatabaseConnectionInterceptor.ProtoConnection
 import com.intellij.database.dataSource.DatabaseCredentialsAuthProvider
 import com.intellij.database.dataSource.LocalDataSource
+import com.intellij.openapi.project.Project
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.future.future
 import software.amazon.awssdk.services.secretsmanager.SecretsManagerClient
@@ -44,7 +45,7 @@ class SecretsManagerAuth : DatabaseAuthProvider, CoroutineScope by ApplicationTh
 
     override fun getDisplayName(): String = message("datagrip.auth.secrets_manager")
 
-    override fun createWidget(creds: DatabaseCredentials, source: LocalDataSource): AuthWidget? =
+    override fun createWidget(project: Project?, creds: DatabaseCredentials, source: LocalDataSource): AuthWidget? =
         SecretsManagerAuthWidget()
 
     override fun intercept(

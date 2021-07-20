@@ -42,6 +42,8 @@ import software.amazon.awssdk.services.ecr.EcrClient
 import software.aws.toolkits.core.utils.error
 import software.aws.toolkits.core.utils.getLogger
 import software.aws.toolkits.jetbrains.core.awsClient
+import software.aws.toolkits.jetbrains.core.docker.LocalImage
+import software.aws.toolkits.jetbrains.core.docker.ToolkitDockerAdapter
 import software.aws.toolkits.jetbrains.services.ecr.DockerRunConfiguration
 import software.aws.toolkits.jetbrains.services.ecr.DockerfileEcrPushRequest
 import software.aws.toolkits.jetbrains.services.ecr.EcrPushRequest
@@ -51,7 +53,6 @@ import software.aws.toolkits.jetbrains.services.ecr.ImageEcrPushRequest
 import software.aws.toolkits.jetbrains.services.ecr.getDockerLogin
 import software.aws.toolkits.jetbrains.services.ecr.resources.EcrResources
 import software.aws.toolkits.jetbrains.services.ecr.resources.Repository
-import software.aws.toolkits.jetbrains.services.ecr.toLocalImageList
 import software.aws.toolkits.jetbrains.ui.ResourceSelector
 import software.aws.toolkits.jetbrains.utils.ApplicationThreadPoolScope
 import software.aws.toolkits.jetbrains.utils.getCoroutineBgContext
@@ -120,11 +121,6 @@ class PushToRepositoryAction : EcrDockerAction() {
     }
 }
 
-internal data class LocalImage(
-    val imageId: String,
-    val tag: String?
-)
-
 internal class PushToEcrDialog(
     private val project: Project,
     selectedRepository: Repository,
@@ -154,9 +150,8 @@ internal class PushToEcrDialog(
         init()
 
         coroutineScope.launch {
-            val serverRuntime = dockerServerRuntime.await()
-            val images = serverRuntime.agent.getImages(null)
-            localImageRepoTags.add(images.toLocalImageList())
+            val dockerAdapter = ToolkitDockerAdapter(project, dockerServerRuntime.await())
+            localImageRepoTags.add(dockerAdapter.getLocalImages())
             localImageRepoTags.update()
         }
     }

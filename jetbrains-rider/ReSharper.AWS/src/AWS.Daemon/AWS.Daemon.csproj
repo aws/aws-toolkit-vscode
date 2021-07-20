@@ -1,13 +1,13 @@
 <Project Sdk="Microsoft.NET.Sdk">
 
     <PropertyGroup>
-        <TargetFramework>net461</TargetFramework>
+        <TargetFramework>$(NetFrameworkTarget)</TargetFramework>
         <RootNamespace>AWS.Daemon</RootNamespace>
     </PropertyGroup>
 
     <ItemGroup>
         <PackageReference Include="JetBrains.Rider.SDK" Version="$(RiderSDKVersion)" />
-        <PackageReference Include="Microsoft.NETFramework.ReferenceAssemblies.net461" Version="1.0.0" />
+        <PackageReference Include="Microsoft.NETFramework.ReferenceAssemblies.$(NetFrameworkTarget)" Version="1.0.0" />
     </ItemGroup>
 
     <ItemGroup>

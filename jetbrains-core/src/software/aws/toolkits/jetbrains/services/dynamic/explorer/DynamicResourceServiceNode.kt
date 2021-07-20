@@ -38,8 +38,15 @@ class DynamicResourceResourceTypeNode(project: Project, private val resourceType
     override fun isAlwaysExpand(): Boolean = false
 
     override fun getChildren(): List<AwsExplorerNode<*>> = super.getChildren()
-    override fun getChildrenInternal(): List<AwsExplorerNode<*>> = nodeProject.getResourceNow(DynamicResources.listResources(resourceType))
-        .map { DynamicResourceNode(nodeProject, it) }
+    override fun getChildrenInternal(): List<AwsExplorerNode<*>> = try {
+        nodeProject.getResourceNow(DynamicResources.listResources(resourceType))
+            .map { DynamicResourceNode(nodeProject, it) }.also {
+                DynamicresourceTelemetry.listType(project = nodeProject, success = true, resourceType = resourceType)
+            }
+    } catch (e: Exception) {
+        DynamicresourceTelemetry.listType(project = nodeProject, success = false, resourceType = resourceType)
+        throw e
+    }
 }
 
 class DynamicResourceNode(project: Project, val resource: DynamicResource) :
@@ -79,7 +86,7 @@ class DynamicResourceNode(project: Project, val resource: DynamicResource) :
                         title = message("dynamic_resources.fetch.fail.title"),
                         content = message("dynamic_resources.fetch.fail.content", resource.identifier)
                     )
-                    DynamicresourceTelemetry.openModel(nodeProject, success = false)
+                    DynamicresourceTelemetry.openModel(nodeProject, success = false, resourceType = resource.type.fullName)
 
                     null
                 } ?: return
@@ -99,7 +106,7 @@ class DynamicResourceNode(project: Project, val resource: DynamicResource) :
 
                     // editor readonly prop is separate from file prop. this is graceful if the getDocument call returns null
                     FileDocumentManager.getInstance().getDocument(file)?.setReadOnly(true)
-                    DynamicresourceTelemetry.openModel(nodeProject, success = true)
+                    DynamicresourceTelemetry.openModel(nodeProject, success = true, resourceType = resource.type.fullName)
                 }
             }
         }.queue()

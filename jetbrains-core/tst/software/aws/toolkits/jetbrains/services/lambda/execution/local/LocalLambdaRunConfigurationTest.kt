@@ -31,8 +31,8 @@ import software.aws.toolkits.jetbrains.utils.getState
 import software.aws.toolkits.jetbrains.utils.rules.HeavyJavaCodeInsightTestFixtureRule
 import software.aws.toolkits.jetbrains.utils.rules.addClass
 import software.aws.toolkits.jetbrains.utils.rules.addModule
-import software.aws.toolkits.jetbrains.utils.toElement
 import software.aws.toolkits.jetbrains.utils.value
+import software.aws.toolkits.jetbrains.utils.xmlElement
 import software.aws.toolkits.resources.message
 import java.nio.file.Paths
 
@@ -604,7 +604,7 @@ class LocalLambdaRunConfigurationTest {
     @Test
     fun readExternalHandlerBasedDoesNotThrowException() {
         // This tests for backwards compatibility, data should not be changed except in backwards compatible ways
-        val element =
+        val element = xmlElement(
             """
             <configuration name="HelloWorldFunction" type="aws.lambda" factoryName="Local" temporary="true" nameIsGenerated="true">
               <option name="credentialProviderId" value="profile:default" />
@@ -623,7 +623,8 @@ class LocalLambdaRunConfigurationTest {
               <option name="useTemplate" value="false" />
               <method v="2" />
             </configuration>
-        """.toElement()
+        """
+        )
 
         runInEdtAndWait {
             val runConfiguration = samRunConfiguration(projectRule.project)
@@ -644,7 +645,7 @@ class LocalLambdaRunConfigurationTest {
     @Test
     fun readExternalTemplateBasedDoesNotThrowException() {
         // This tests for backwards compatibility, data should not be changed except in backwards compatible ways
-        val element =
+        val element = xmlElement(
             """
                 <configuration name="HelloWorldFunction" type="aws.lambda" factoryName="Local" temporary="true" nameIsGenerated="true">
                   <option name="credentialProviderId" value="profile:default" />
@@ -663,7 +664,8 @@ class LocalLambdaRunConfigurationTest {
                   <option name="useTemplate" value="true" />
                   <method v="2" />
                 </configuration>
-        """.toElement()
+        """
+        )
 
         runInEdtAndWait {
             val runConfiguration = samRunConfiguration(projectRule.project)
@@ -684,7 +686,7 @@ class LocalLambdaRunConfigurationTest {
     @Test
     fun readInputFileBasedDoesNotThrowException() {
         // This tests for backwards compatibility, data should not be changed except in backwards compatible ways
-        val element =
+        val element = xmlElement(
             """
                 <configuration name="HelloWorldFunction" type="aws.lambda" factoryName="Local" temporary="true" nameIsGenerated="true">
                   <option name="credentialProviderId" value="profile:default" />
@@ -703,7 +705,8 @@ class LocalLambdaRunConfigurationTest {
                   <option name="useTemplate" value="true" />
                   <method v="2" />
                 </configuration>
-        """.toElement()
+        """
+        )
 
         runInEdtAndWait {
             val runConfiguration = samRunConfiguration(projectRule.project)
@@ -718,7 +721,7 @@ class LocalLambdaRunConfigurationTest {
     @Test
     fun readInputTextBasedDoesNotThrowException() {
         // This tests for backwards compatibility, data should not be changed except in backwards compatible ways
-        val element =
+        val element = xmlElement(
             """
                 <configuration name="HelloWorldFunction" type="aws.lambda" factoryName="Local" temporary="true" nameIsGenerated="true">
                   <option name="credentialProviderId" value="profile:default" />
@@ -737,7 +740,8 @@ class LocalLambdaRunConfigurationTest {
                   <option name="useTemplate" value="true" />
                   <method v="2" />
                 </configuration>
-        """.toElement()
+        """
+        )
 
         runInEdtAndWait {
             val runConfiguration = samRunConfiguration(projectRule.project)
@@ -752,7 +756,7 @@ class LocalLambdaRunConfigurationTest {
     @Test
     fun readSamSettings() {
         // This tests for backwards compatibility, data should not be changed except in backwards compatible ways
-        val element =
+        val element = xmlElement(
             """
                 <configuration name="HelloWorldFunction" type="aws.lambda" factoryName="Local" temporary="true" nameIsGenerated="true">
                   <option name="credentialProviderId" value="profile:default" />
@@ -778,7 +782,8 @@ class LocalLambdaRunConfigurationTest {
                   </sam>
                   <method v="2" />
                 </configuration>
-        """.toElement()
+        """
+        )
 
         runInEdtAndWait {
             val runConfiguration = samRunConfiguration(projectRule.project)
