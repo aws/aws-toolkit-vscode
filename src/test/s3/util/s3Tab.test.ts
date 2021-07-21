@@ -3,7 +3,6 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
-import * as fs from 'fs'
 import * as assert from 'assert'
 import * as vscode from 'vscode'
 import * as path from 'path'
