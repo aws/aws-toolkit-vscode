@@ -143,7 +143,9 @@ export class S3FileViewerManager {
     }
 
     /**
-     * Fetches a file from S3 or gets it from the local cache if possible and still valid.
+     * Fetches a file from S3 or gets it from the local cache if possible and still valid (this.checkForValidity()).
+     *
+     * @see S3FileViewerManager.checkForValidity()
      */
     public async getFile(fileNode: S3FileNode): Promise<vscode.Uri | undefined> {
         if (!this._tempLocation) {

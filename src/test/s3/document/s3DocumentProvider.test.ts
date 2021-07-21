@@ -36,7 +36,6 @@ describe('S3DocumentProvider', async function () {
         fileLocation = vscode.Uri.parse('s3:' + path.join(tempFolder, fileName))
     })
 
-    // TODO: Make this less flaky when we add manual timestamp controls.
     beforeEach(async function () {
         provider = new S3DocumentProvider(changeEmitter.onDidChange)
     })

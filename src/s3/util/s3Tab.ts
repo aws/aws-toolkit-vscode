@@ -28,15 +28,15 @@ export class S3Tab {
         this.s3Client = s3FileNode.s3
     }
 
-    public async openFileInReadOnly(workspace = vscode.workspace): Promise<vscode.TextEditor | undefined> {
-        return this.openFile(this.s3Uri, workspace)
+    public async openFileInReadOnly(workspace = vscode.workspace): Promise<void> {
+        await this.openFile(this.s3Uri, workspace)
     }
 
-    public async openFileInEditMode(workspace = vscode.workspace): Promise<vscode.TextEditor | undefined> {
-        return this.openFile(this.fileUri, workspace)
+    public async openFileInEditMode(workspace = vscode.workspace): Promise<void> {
+        await this.openFile(this.fileUri, workspace)
     }
 
-    public async openFile(uri: vscode.Uri, workspace = vscode.workspace): Promise<vscode.TextEditor | undefined> {
+    public async openFile(uri: vscode.Uri, workspace = vscode.workspace): Promise<void> {
         //find if there is any active editor for this uri
         const openEditor = await this.getActiveEditor()
         try {
@@ -61,8 +61,6 @@ export class S3Tab {
             this.window.showErrorMessage('Error opening file ', e)
             this.editor = undefined
         }
-
-        return this.editor
     }
 
     public async focusAndCloseTab(): Promise<void> {
