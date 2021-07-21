@@ -39,7 +39,7 @@ describe('S3Tab', async function () {
         when(mockedWorkspace.openTextDocument(anything())).thenReturn(Promise.resolve({ uri: s3Uri } as any))
         when(mockedWindow.showTextDocument(anything())).thenReturn()
 
-        await s3Tab.openFileOnReadOnly(instance(mockedWorkspace))
+        await s3Tab.openFileInReadOnly(instance(mockedWorkspace))
 
         const [uri] = capture(mockedWorkspace.openTextDocument).last()
         assert.strictEqual((uri as vscode.Uri).fsPath, s3Uri.fsPath)
@@ -54,7 +54,7 @@ describe('S3Tab', async function () {
         when(mockedWorkspace.openTextDocument(anything())).thenReturn(Promise.resolve({ uri: fileUri } as any))
         when(mockedWindow.showTextDocument(anything())).thenReturn()
 
-        await s3Tab.openFileOnEditMode(instance(mockedWorkspace))
+        await s3Tab.openFileInEditMode(instance(mockedWorkspace))
 
         const [uri] = capture(mockedWorkspace.openTextDocument).last()
         assert.strictEqual((uri as vscode.Uri).fsPath, fileUri.fsPath)
@@ -65,7 +65,7 @@ describe('S3Tab', async function () {
         assert.deepStrictEqual((showDocArgs as any).uri, fileUri)
     })
 
-    it('saves changes back to s3', function () {})
+    it('calls S3 when saving changes', function () {})
 })
 
 function listTempFolder(tempLocation: string) {

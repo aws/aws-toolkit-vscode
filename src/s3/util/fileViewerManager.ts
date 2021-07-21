@@ -66,26 +66,33 @@ export class S3FileViewerManager {
         getLogger().verbose(`S3FileViewer: File from s3 or temp to be opened is: ${fileLocation}`)
 
         const newTab = this.activeTabs.get(fileLocation.fsPath) ?? new S3Tab(fileLocation)
-        await newTab.openFileOnReadOnly()
+        await newTab.openFileInReadOnly()
 
         this.activeTabs.set(fileLocation.fsPath, newTab)
     }
 
-    public async openOnEditMode(uriOrNode: vscode.Uri | S3FileNode): Promise<void> {
+    public async openInEditMode(uriOrNode: vscode.Uri | S3FileNode): Promise<void> {
         if (uriOrNode instanceof vscode.Uri) {
             //was activated from an open tab
             if (this.activeTabs.has(uriOrNode.fsPath)) {
                 const tab = this.activeTabs.get(uriOrNode.fsPath)
-                await tab!.openFileOnEditMode()
+                await tab!.openFileInEditMode()
+            } else {
+                this.window.showErrorMessage(
+                    localize(
+                        'AWS.s3.fileViewer.error.editMode',
+                        'Error switching to edit mode, please try reopening from the AWS Explorer'
+                    )
+                )
             }
-        } else if (uriOrNode instanceof S3FileNode) {
+        } else {
             //was activated from the explorer, need to get the file
             const fileLocation = await this.getFile(uriOrNode)
             if (!fileLocation) {
                 return
             }
             const newTab = this.activeTabs.get(fileLocation.fsPath) ?? new S3Tab(fileLocation)
-            await newTab.openFileOnEditMode()
+            await newTab.openFileInEditMode()
         }
     }
 
@@ -169,6 +176,7 @@ export class S3FileViewerManager {
                 ),
                 this.outputChannel
             )
+            return undefined
         }
 
         this.cacheArns.add(fileNode.file.arn)
@@ -222,6 +230,13 @@ export class S3FileViewerManager {
         return undefined
     }
 
+    /**
+     * E.g. For a file 'foo.txt' inside a bucket 'bucketName' and folder 'folderName'
+     * '/tmp/aws-toolkit-vscode/vsctkzV38Hc/bucketName/folderName/[S3]foo.txt'
+     *
+     * @param fileNode
+     * @returns fs path that has the tempLocation, the S3 location (bucket and folders) and the name with the file preceded by [S3]
+     */
     public createTargetPath(fileNode: S3FileNode): Promise<string> {
         let completePath = readablePath(fileNode)
         completePath = `${this.tempLocation!}${completePath.slice(4, completePath.lastIndexOf('/') + 1)}[S3]${

@@ -430,6 +430,7 @@
     "AWS.s3.fileViewer.message.noSizeCancellation": "Download cancelled",
     "AWS.s3.fileViewer.error.download": "Error downloading file {0} from S3: {1}",
     "AWS.s3.fileViewer.error.invalidSize": "Files over 50MB currently not supported for file display, please use the \"download as\" function",
+    "AWS.s3.fileViewer.error.editMode": "Error switching to edit mode, please try reopening from the AWS Explorer",
     "AWS.s3.uploadFile.progressTitle": "Uploading {0}...",
     "AWS.s3.uploadFile.openButton": "Upload",
     "AWS.s3.uploadFile.startUpload": "Uploading file from {0} to {1}",

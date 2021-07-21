@@ -30,5 +30,5 @@ export async function openFileCommand(node: S3FileNode, window = Window.vscode()
 export async function openFileEditModeCommand(uriOrNode: vscode.Uri | S3FileNode): Promise<void> {
     //TODOD:: implement this later, after approval of read-only
     const manager = ext.s3fileViewerManager
-    manager.openOnEditMode(uriOrNode)
+    manager.openInEditMode(uriOrNode)
 }

@@ -21,7 +21,7 @@ export class S3Tab {
         this.window = window
     }
 
-    public async openFileOnReadOnly(workspace = vscode.workspace): Promise<vscode.TextEditor | undefined> {
+    public async openFileInReadOnly(workspace = vscode.workspace): Promise<vscode.TextEditor | undefined> {
         //find if there is any active editor for this uri
         const openEditor = await this.getActiveEditor()
 
@@ -57,7 +57,7 @@ export class S3Tab {
         return undefined
     }
 
-    public async openFileOnEditMode(workspace = vscode.workspace): Promise<vscode.TextEditor | undefined> {
+    public async openFileInEditMode(workspace = vscode.workspace): Promise<vscode.TextEditor | undefined> {
         //find if there is any active editor for this uri
         const openEditor = await this.getActiveEditor()
 
