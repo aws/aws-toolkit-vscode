@@ -84,11 +84,19 @@ abstract class ToolkitClientManager {
      * Creates a new client for the requested [AwsClientKey]
      */
     @Suppress("UNCHECKED_CAST")
-    protected open fun <T : SdkClient> createNewClient(
+    open fun <T : SdkClient> createNewClient(
         sdkClass: KClass<T>,
         region: AwsRegion,
-        credProvider: ToolkitCredentialsProvider
-    ): T = createNewClient(sdkClass, sdkHttpClient(), Region.of(region.id), credProvider, userAgent)
+        credProvider: ToolkitCredentialsProvider,
+        endpointOverride: String? = null
+    ): T = createNewClient(
+        sdkClass = sdkClass,
+        httpClient = sdkHttpClient(),
+        region = Region.of(region.id),
+        credProvider = credProvider,
+        userAgent = userAgent,
+        endpointOverride = endpointOverride
+    )
 
     companion object {
         private val GLOBAL_SERVICE_DENY_LIST = setOf(
