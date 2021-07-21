@@ -295,22 +295,6 @@ export class S3FileViewerManager {
         } catch (e) {
             showOutputMessage(e, this.outputChannel)
         }
-
-        await this.listTempFolder()
-    }
-
-    private listTempFolder(): Promise<void> {
-        getLogger().debug('-------contents in temp:')
-        showOutputMessage('-------contents in temp:', this.outputChannel)
-
-        fs.readdirSync(this._tempLocation!).forEach((file: any) => {
-            showOutputMessage(` ${file}`, this.outputChannel)
-            getLogger().debug(` ${file}`)
-        })
-
-        getLogger().debug('-------------------------')
-        showOutputMessage('-------------------------', this.outputChannel)
-        return Promise.resolve()
     }
 
     public async createTemp(): Promise<string> {
@@ -331,6 +315,14 @@ export class S3FileViewerManager {
         return this._tempLocation
     }
 
+    /**
+     * Checks that the cached date is after the last modified date in S3.
+     * If not, file targetUri is invalid and needs to be redownloaded.
+     *
+     * @param fileNode instance in S3
+     * @param targetUri file downloaded in system
+     * @returns
+     */
     private async checkForValidity(fileNode: S3FileNode, targetUri: vscode.Uri): Promise<boolean> {
         const newNode = await this.refreshNode(fileNode)
         if (!newNode) {

@@ -50,7 +50,6 @@ describe('S3Tab', async function () {
 
         testutil.toFile(message, fileUri.fsPath)
 
-        listTempFolder(tempFolder)
         s3Tab = new S3Tab(fileUri, fileNodeTest, instance(mockedWindow))
     })
 
@@ -99,13 +98,3 @@ describe('S3Tab', async function () {
         assert.deepStrictEqual(uploadArgs.fileLocation, fileUri)
     })
 })
-
-function listTempFolder(tempLocation: string) {
-    console.log('-------contents in temp:')
-
-    fs.readdirSync(tempLocation!).forEach((file: any) => {
-        console.log(` ${file}`)
-    })
-
-    console.log('-------------------------')
-}
