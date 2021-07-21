@@ -60,8 +60,9 @@ describe('FileViewerManager', function () {
             managerWithoutCache = new S3FileViewerManager()
         })
 
-        it('creates a temporary folder', function () {
-            const tempLocation = managerWithoutCache.createTemp()
+        it('creates a temporary folder', async function () {
+            assert.strictEqual(managerWithoutCache.tempLocation, undefined)
+            const tempLocation = await managerWithoutCache.createTemp()
             assert.deepStrictEqual(managerWithoutCache.tempLocation, tempLocation)
         })
     })
