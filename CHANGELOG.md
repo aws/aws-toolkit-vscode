@@ -1,3 +1,7 @@
+# _1.29_ (2021-07-20)
+- **(Feature)** When uploading a file to S3, the content type is now set accoriding to the files extension
+- **(Bug Fix)** Fix being unable to update Lambda configuration if the Image packaging type
+
 # _1.28_ (2021-07-12)
 - **(Breaking Change)** Python 2.7 Lambda template removed from New Project Wizard
 - **(Feature)** Adding the ability to inject credentials/region into existing IntelliJ IDEA and PyCharm Run Configurations (e.g Application, JUnit, Python, PyTest). This requires experiments `aws.feature.javaRunConfigurationExtension` / `aws.feature.pythonRunConfigurationExtension`, see [Enabling Experiments](https://github.com/aws/aws-toolkit-jetbrains/blob/master/README.md#experimental-features)
