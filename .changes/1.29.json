@@ -1,0 +1,11 @@
+{
+  "date" : "2021-07-20",
+  "version" : "1.29",
+  "entries" : [ {
+    "type" : "feature",
+    "description" : "When uploading a file to S3, the content type is now set accoriding to the files extension"
+  }, {
+    "type" : "bugfix",
+    "description" : "Fix being unable to update Lambda configuration if the Image packaging type"
+  } ]
+}
