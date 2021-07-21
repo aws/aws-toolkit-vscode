@@ -26,13 +26,6 @@ export interface WorkspaceConfiguration {
      * See {@link module:vscode.WorkspaceConfiguration.get}.
      */
     get<T>(key: string): T | undefined
-
-    update(
-        key: string,
-        value: any,
-        configurationTarget?: boolean | vscode.ConfigurationTarget | undefined,
-        overrideInLanguage?: boolean | undefined
-    ): Thenable<void>
 }
 
 class DefaultWorkspace implements Workspace {

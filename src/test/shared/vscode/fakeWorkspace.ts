@@ -50,26 +50,22 @@ export interface ConfigurationOptions {
 export interface FakeConfiguration {}
 
 class DefaultFakeConfiguration implements WorkspaceConfiguration, FakeConfiguration {
-    private readonly map: Map<string, any> = new Map<string, any>()
+    private readonly key: string | undefined
+    private readonly value: any | undefined
 
     /**
      * @returns the {@link value}.
      */
     public get<T>(key: string): T | undefined {
-        if (this.map.has(key)) {
-            return this.map.get(key) as T | undefined
+        if (key === this.key) {
+            return this.value as T | undefined
         }
 
         return undefined
     }
 
-    public async update(key: string, value: any): Promise<void> {
-        this.map.set(key, value)
-    }
-
     public constructor({ key, value }: ConfigurationOptions = {}) {
-        if (key) {
-            this.map.set(key, value)
-        }
+        this.key = key
+        this.value = value
     }
 }

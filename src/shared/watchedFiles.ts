@@ -36,7 +36,7 @@ export abstract class WatchedFiles<T> implements vscode.Disposable {
      * Load in filesystem items, doing any parsing/validaton as required. If it fails, throws
      * @param path A string with the absolute path to the detected file
      */
-    protected abstract load(path: string): Promise<T | undefined>
+    protected abstract load(path: string): Promise<T>
     /**
      * Name for logs
      */
@@ -95,12 +95,7 @@ export abstract class WatchedFiles<T> implements vscode.Disposable {
         this.assertAbsolute(pathAsString)
         try {
             const item = await this.load(pathAsString)
-            if (item) {
-                this.registryData.set(pathAsString, item)
-            } else {
-                // if value isn't valid for type, remove from registry
-                this.registryData.delete(pathAsString)
-            }
+            this.registryData.set(pathAsString, item)
         } catch (e) {
             if (!quiet) {
                 throw e
@@ -148,7 +143,7 @@ export abstract class WatchedFiles<T> implements vscode.Disposable {
      * Removes an item from the registry.
      * @param absolutePath The absolute path to the item or a vscode.Uri to the item
      */
-    public async remove(path: string | vscode.Uri): Promise<void> {
+    public remove(path: string | vscode.Uri): void {
         if (typeof path === 'string') {
             this.registryData.delete(path)
         } else {
@@ -211,7 +206,7 @@ export abstract class WatchedFiles<T> implements vscode.Disposable {
             }),
             watcher.onDidDelete(async uri => {
                 getLogger().verbose(`${this.name}: manager detected a deleted file: ${uri.fsPath}`)
-                await this.remove(uri)
+                this.remove(uri)
             })
         )
     }
