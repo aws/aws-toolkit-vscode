@@ -64,10 +64,6 @@ describe('FileViewerManager', function () {
             const tempLocation = managerWithoutCache.createTemp()
             assert.deepStrictEqual(managerWithoutCache.tempLocation, tempLocation)
         })
-
-        it('deletes the temp content after closing', function () {
-            const tempLocation = managerWithoutCache.createTemp()
-        })
     })
 
     describe('retrieves file from s3 if not in temp or invalid date', async function () {
@@ -166,6 +162,15 @@ describe('FileViewerManager', function () {
             when(parent.getChildren()).thenResolve([updatedNode])
 
             assert.deepStrictEqual(await fileViewerManager.getFromTemp(testNode), undefined)
+        })
+    })
+
+    describe('on save', function () {
+        beforeEach(async function () {})
+
+        it('uploads back to s3, closes and reopens in edit mode', function () {
+            // when(parent.path).thenReturn('s3://bucket/')
+            // when(s3.uploadFile(anything())).thenResolve()
         })
     })
 })

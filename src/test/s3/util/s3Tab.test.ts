@@ -19,7 +19,7 @@ import { S3Node } from '../../../s3/explorer/s3Nodes'
 describe('S3Tab', async function () {
     const message = 'can this be read'
     const fileName = 'test.txt'
-    const key = 'foo/test.txt'
+    const key = 'test.txt'
     const bucketName = 'bucket-name'
     const bucket: Bucket = { name: bucketName, region: 'region', arn: 'arn' }
 
@@ -41,7 +41,12 @@ describe('S3Tab', async function () {
         fileUri = vscode.Uri.file(path.join(tempFolder, fileName))
         s3Uri = vscode.Uri.parse('s3:' + fileUri.fsPath)
         parentNode = new S3BucketNode(bucket, {} as S3Node, instance(s3))
-        fileNodeTest = new S3FileNode(bucket, { name: fileName, key, arn: 'arn' }, parentNode, instance(s3))
+        fileNodeTest = new S3FileNode(
+            bucket,
+            { name: fileName, key, arn: 'arn', lastModified: undefined, sizeBytes: 16 },
+            parentNode,
+            instance(s3)
+        )
 
         testutil.toFile(message, fileUri.fsPath)
 
@@ -79,7 +84,20 @@ describe('S3Tab', async function () {
         assert.deepStrictEqual((showDocArgs as any).uri, fileUri)
     })
 
-    it('saves changes back to s3', function () {})
+    it('saves changes back to s3', async function () {
+        when(s3.uploadFile(anything())).thenResolve()
+        s3Tab = new S3Tab(fileUri, fileNodeTest, vscode.window)
+
+        const result = await s3Tab.uploadChangesToS3()
+
+        assert.ok(result)
+
+        const [uploadArgs] = capture(s3.uploadFile).last()
+
+        assert.strictEqual(uploadArgs.bucketName, bucketName)
+        assert.strictEqual(uploadArgs.key, key)
+        assert.deepStrictEqual(uploadArgs.fileLocation, fileUri)
+    })
 })
 
 function listTempFolder(tempLocation: string) {

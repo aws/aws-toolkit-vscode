@@ -24,6 +24,7 @@ import { createBucketCommand } from './createBucket'
 import { recordAwsRefreshExplorer } from '../../shared/telemetry/telemetry'
 import { S3BucketNode } from '../explorer/s3BucketNode'
 import { S3FolderNode } from '../explorer/s3FolderNode'
+import { ConsoleLogTransport } from '../../shared/logger/consoleLogTransport'
 
 export interface FileSizeBytes {
     /**

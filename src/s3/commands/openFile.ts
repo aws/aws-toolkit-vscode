@@ -4,10 +4,8 @@
  */
 
 import * as vscode from 'vscode'
-import { ext } from '../../shared/extensionGlobals'
 import { localize } from '../../shared/utilities/vsCodeUtils'
 import { Window } from '../../shared/vscode/window'
-//import { localize } from '../../shared/utilities/vsCodeUtils'
 //import { showErrorWithLogs } from '../../shared/utilities/messages'
 import { S3FileNode } from '../explorer/s3FileNode'
 import { S3FileViewerManager } from '../util/fileViewerManager'

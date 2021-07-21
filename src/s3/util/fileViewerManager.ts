@@ -21,7 +21,6 @@ import { localize } from '../../shared/utilities/vsCodeUtils'
 const SIZE_LIMIT = 4 * Math.pow(10, 6)
 
 export class S3FileViewerManager {
-    private activeTabs: Map<string, S3Tab>
     private outputChannel: OutputChannel
 
     private _onDidChange = new vscode.EventEmitter<vscode.Uri>()
@@ -33,9 +32,9 @@ export class S3FileViewerManager {
         private cacheArns: Set<string> = new Set<string>(),
         private window: typeof vscode.window = vscode.window,
         private commands = Commands.vscode(),
-        private _tempLocation?: string
+        private _tempLocation?: string,
+        private activeTabs: Map<string, S3Tab> = new Map<string, S3Tab>()
     ) {
-        this.activeTabs = new Map<string, S3Tab>()
         this.outputChannel = ext.outputChannel
 
         vscode.workspace.onDidSaveTextDocument(async savedTextDoc => {

@@ -4,7 +4,6 @@
  */
 
 import * as vscode from 'vscode'
-import * as fs from 'fs'
 //import { Bucket, DownloadFileRequest, File, S3Client } from '../../shared/clients/s3Client'
 import { S3BucketNode } from '../explorer/s3BucketNode'
 import { S3FileNode } from '../explorer/s3FileNode'
@@ -13,6 +12,8 @@ import { S3Client } from '../../shared/clients/s3Client'
 import { uploadWithProgress } from '../commands/uploadFile'
 //need to subscribe to ondidsave and upload to s3, might need the S3FileNode
 
+//const contentType = mime.lookup(path.basename(request.fileLocation.fsPath)) || DEFAULT_CONTENT_TYPE
+//FOUND IN : s3Client.ts
 export class S3Tab {
     //private file: File
     public s3Uri: vscode.Uri
@@ -86,11 +87,10 @@ export class S3Tab {
             bucketName: this.s3FileNode.bucket.name,
             key: this.parent.path + this.s3FileNode.name,
             fileLocation: this.fileUri,
-            fileSizeBytes: fs.statSync(this.fileUri.fsPath).size,
+            fileSizeBytes: this.s3FileNode.file.sizeBytes!,
             s3Client: this.s3Client,
             window: this.window,
         }
-
         try {
             await uploadWithProgress(request)
             //await vscode.commands.executeCommand('AWS.refreshAwsExplorer')
@@ -101,6 +101,7 @@ export class S3Tab {
         }
         return true
     }
+
     //will be deleted when handling usage of this.editor, need to check when tab closes to set it undefined
     public async getActiveEditor(): Promise<vscode.TextEditor | undefined> {
         const visibleEditor = vscode.window.visibleTextEditors
