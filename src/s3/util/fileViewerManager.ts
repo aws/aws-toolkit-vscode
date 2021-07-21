@@ -22,7 +22,8 @@ const SIZE_LIMIT = 4 * Math.pow(10, 6)
 
 export class S3FileViewerManager {
     private outputChannel: OutputChannel
-
+    private promptOnEdit = true
+    //onDidChange to trigger refresh of contents on the document provider
     private _onDidChange = new vscode.EventEmitter<vscode.Uri>()
     public get onDidChange(): vscode.Event<vscode.Uri> {
         return this._onDidChange.event
@@ -73,8 +74,6 @@ export class S3FileViewerManager {
      * @returns
      */
     public async openTab(fileNode: S3FileNode): Promise<void> {
-        if (this.activeTabs.has(fileNode.file.arn)) {
-        }
         getLogger().verbose(`S3FileViewer: Retrieving and displaying file: ${fileNode.file.key}`)
         showOutputMessage(
             localize('AWS.s3.fileViewer.info.fileKey', 'Retrieving and displaying file: {0}', fileNode.file.key),
@@ -94,6 +93,23 @@ export class S3FileViewerManager {
     }
 
     public async openOnEditMode(uriOrNode: vscode.Uri | S3FileNode): Promise<void> {
+        if (this.promptOnEdit) {
+            const message =
+                'Switching S3 tab to Editing Mode, please be aware all saved changes will be uploaded back to the original location in S3'
+
+            const dontShow = "Don't show this again"
+            const help = 'Help'
+
+            this.window.showWarningMessage(message, dontShow, help).then(selection => {
+                if (selection === dontShow) {
+                    this.promptOnEdit = false
+                }
+
+                if (selection === help) {
+                    //add help section
+                }
+            })
+        }
         if (uriOrNode instanceof vscode.Uri) {
             //was activated from an open tab
             if (this.activeTabs.has(uriOrNode.fsPath)) {
@@ -307,28 +323,6 @@ export class S3FileViewerManager {
     public get tempLocation(): string | undefined {
         return this._tempLocation
     }
-
-    // private setEvents(): Promise<void> {
-    //     this.disposables.push(
-    //         vscode.workspace.onDidSaveTextDocument(async savedTextDoc => {
-    //             if(this.activeTabs.has(savedTextDoc.uri.fsPath)) {
-    //                 const activeTab = this.activeTabs.get(savedTextDoc.uri.fsPath)
-    //                 if (!activeTab) {
-    //                     return
-    //                 }
-
-    //                if (await this.checkForValidity(activeTab.s3FileNode, activeTab.fileUri )) {
-    //                     //good to upload
-    //                     await activeTab.uploadChangesToS3()
-    //                } else {
-    //                    //file is not valid to upload, please redownload again, changes may be lost, be aware of that
-    //                }
-    //             }
-    //         })
-    //     )
-
-    //     return Promise.resolve()
-    // }
 
     private async checkForValidity(fileNode: S3FileNode, targetUri: vscode.Uri): Promise<boolean> {
         const newNode = await this.refreshNode(fileNode)

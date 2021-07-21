@@ -93,8 +93,6 @@ export class S3Tab {
         }
         try {
             await uploadWithProgress(request)
-            //await vscode.commands.executeCommand('AWS.refreshAwsExplorer')
-            //await this.openFileOnReadOnly()
         } catch (e) {
             //error with upload
             return false
