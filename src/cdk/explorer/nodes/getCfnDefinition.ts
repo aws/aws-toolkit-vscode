@@ -1,3 +1,8 @@
+/*!
+ * Copyright 2021 Amazon.com, Inc. or its affiliates. All Rights Reserved.
+ * SPDX-License-Identifier: Apache-2.0
+ */
+
 import * as fs from 'fs'
 import { getLogger, Logger } from '../../../shared/logger'
 
@@ -11,17 +16,17 @@ import { getLogger, Logger } from '../../../shared/logger'
 export function getStateMachineDefinitionFromCfnTemplate(uniqueIdentifier: string, templatePath: string) {
     const logger: Logger = getLogger()
     try {
-        var data = fs.readFileSync(templatePath, 'utf8')
-        var jsonObj = JSON.parse(data)
-        var resources = jsonObj.Resources
+        let data = fs.readFileSync(templatePath, 'utf8')
+        const jsonObj = JSON.parse(data)
+        const resources = jsonObj.Resources
 
-        for (var key of Object.keys(resources)) {
+        for (const key of Object.keys(resources)) {
             if (key === 'CDKMetadata') continue
 
-            var slicedKey = key.slice(0, -8)
+            const slicedKey = key.slice(0, -8)
             if (slicedKey === uniqueIdentifier) {
-                jsonObj = jsonObj.Resources[`${key}`].Properties.DefinitionString["Fn::Join"][1]
-                data = JSON.stringify(jsonObj)
+                const definitionString = jsonObj.Resources[`${key}`].Properties.DefinitionString["Fn::Join"][1]
+                data = JSON.stringify(definitionString)
                 return data
             }
         }
@@ -34,16 +39,16 @@ export function getStateMachineDefinitionFromCfnTemplate(uniqueIdentifier: strin
 }
 
 /**
- * @param escaped json state machine construct definition 
+ * @param escapedAslJsonStr json state machine construct definition 
  * @returns unescaped json state machine construct definition
  */
-export function toUnescapedAslJson(escapedAslJsonStr: string) {
+export function toUnescapedAslJsonString(escapedAslJsonStr: string) {
     if (typeof (escapedAslJsonStr) != "string") return escapedAslJsonStr;
 
-    var refPrefix = '{"Ref":'
-    var re1 = new RegExp(refPrefix, 'g')
-    var refSuffix = '},""'
-    var re2 = new RegExp(refSuffix, 'g')
+    const refPrefix = '{"Ref":'
+    const re1 = new RegExp(refPrefix, 'g')
+    const refSuffix = '},""'
+    const re2 = new RegExp(refSuffix, 'g')
     return escapedAslJsonStr
         .trim() //remove leading whitespaces
         .substring(1) //remove square brackets that wrap escapedAslJsonStr

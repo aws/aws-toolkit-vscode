@@ -65,7 +65,6 @@ export class AslVisualization {
     public async sendUpdateMessage(updatedTextDocument: vscode.TextDocument) {
         const logger: Logger = getLogger()
         const isYaml = updatedTextDocument.languageId === YAML_ASL
-        //const text = updatedTextDocument.getText()
         const text = this.getText(updatedTextDocument)
         let stateMachineData = text
         let yamlErrors: string[] = []
@@ -99,7 +98,6 @@ export class AslVisualization {
             isValid,
             errors: yamlErrors,
         })
-
     }
 
     protected getText(textDocument: vscode.TextDocument): string{

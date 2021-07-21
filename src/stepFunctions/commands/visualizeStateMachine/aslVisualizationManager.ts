@@ -17,7 +17,7 @@ export class AslVisualizationManager extends AbstractAslVisualizationManager {
         super(extensionContext)
     }
 
-    public override async visualizeStateMachine(
+    public async visualizeStateMachine(
         globalStorage: vscode.Memento,
         activeTextEditor: vscode.TextEditor | undefined
     ): Promise<vscode.WebviewPanel | undefined> {

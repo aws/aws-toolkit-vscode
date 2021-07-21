@@ -1,11 +1,11 @@
 /*!
- * Copyright 2019 Amazon.com, Inc. or its affiliates. All Rights Reserved.
+ * Copyright 2021 Amazon.com, Inc. or its affiliates. All Rights Reserved.
  * SPDX-License-Identifier: Apache-2.0
  */
 
 import * as vscode from 'vscode'
 import { AslVisualization } from '../../../src/stepFunctions/commands/visualizeStateMachine/aslVisualization'
-import { getStateMachineDefinitionFromCfnTemplate, toUnescapedAslJson } from '../explorer/nodes/getCfnDefinition'
+import { getStateMachineDefinitionFromCfnTemplate, toUnescapedAslJsonString } from '../explorer/nodes/getCfnDefinition'
 
 export class AslVisualizationCDK extends AslVisualization {
     public readonly templatePath: string
@@ -17,10 +17,8 @@ export class AslVisualizationCDK extends AslVisualization {
         this.uniqueIdentifier = uniqueIdentifier
     }
 
-    protected override getText(textDocument: vscode.TextDocument): string {
-        console.log('aslVisualizationCDK.ts')
+    protected getText(textDocument: vscode.TextDocument): string {
         const definitionString = getStateMachineDefinitionFromCfnTemplate(this.uniqueIdentifier, this.templatePath)
-        const cfnDefinition = toUnescapedAslJson(definitionString!)
-        return cfnDefinition
+        return toUnescapedAslJsonString(definitionString!)
     }
 }

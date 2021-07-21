@@ -17,12 +17,11 @@ export class AslVisualizationCDKManager extends AbstractAslVisualizationManager 
         super(extensionContext)
     }
 
-    public override async visualizeStateMachine(
+    public async visualizeStateMachine(
         globalStorage: vscode.Memento,
         node: ConstructNode
     ): Promise<vscode.WebviewPanel | undefined> {
         const logger: Logger = getLogger()
-        //not sure if I can use this cache
         const cache = new StateMachineGraphCache()
         // Attempt to retrieve existing visualization if it exists.
         const existingVisualization = this.getExistingVisualization(node.label)

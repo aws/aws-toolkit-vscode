@@ -1,5 +1,5 @@
 /*!
- * Copyright 2020 Amazon.com, Inc. or its affiliates. All Rights Reserved.
+ * Copyright 2021 Amazon.com, Inc. or its affiliates. All Rights Reserved.
  * SPDX-License-Identifier: Apache-2.0
  */
 import * as vscode from 'vscode'
@@ -22,22 +22,22 @@ export async function renderGraphCommand(
     getLogger().debug('Render graph called for: %O', node)
 
     const uniqueIdentifier = node.label
-    var cdkOutPath = node.id?.replace(`/tree.json/${node.tooltip}`, ``)!
-    var stackName = node.tooltip?.replace(`/${node.label}`, ``)!
+    const cdkOutPath = node.id?.replace(`/tree.json/${node.tooltip}`, ``)
+    const stackName = node.tooltip?.replace(`/${node.label}`, ``)
     getLogger().info(`Rendering graph: ${uniqueIdentifier}`)
 
     try {
+        // eslint-disable-next-line @typescript-eslint/restrict-plus-operands
         const templatePath = cdkOutPath + `/${stackName}.template.json`
-        let uri = vscode.Uri.file(templatePath);
+        const uri = vscode.Uri.file(templatePath);
         const textDocument = await vscode.workspace.openTextDocument(uri)
         const newVisualization = new AslVisualizationCDK(textDocument, templatePath, uniqueIdentifier)
-        console.log('five')
         getLogger().info('Rendered graph: %O', uniqueIdentifier)
         window.showInformationMessage(localize('AWS.cdk.renderStateMachineGraph.success', 'Rendered graph {0}', uniqueIdentifier))
 
         return newVisualization
     } catch (e) {
-        getLogger().error(`Failed to create bucket ${uniqueIdentifier}: %O`, e)
+        getLogger().error(`Failed to render graph ${uniqueIdentifier}: %O`, e)
         showErrorWithLogs(
             localize('AWS.cdk.renderStateMachineGraph.error.general', 'Failed to render graph {0}', uniqueIdentifier),
             window
