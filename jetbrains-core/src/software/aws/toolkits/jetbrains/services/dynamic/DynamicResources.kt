@@ -19,7 +19,7 @@ object DynamicResources {
     val SUPPORTED_TYPES: Deferred<List<String>> =
         coroutineScope.async(start = CoroutineStart.LAZY) {
             val reader = jacksonObjectMapper()
-            DynamicResources.javaClass.getResourceAsStream("/cloudapi/dynamic_resources.json")?.use{ resourceStream ->
+            DynamicResources.javaClass.getResourceAsStream("/cloudapi/dynamic_resources.json")?.use { resourceStream ->
                 reader.readValue<Map<String, ResourceDetails>>(resourceStream).filter { it.value.operations.contains(Operation.LIST) }.map { it.key }
             } ?: throw RuntimeException("dynamic resource manifest not found")
         }
