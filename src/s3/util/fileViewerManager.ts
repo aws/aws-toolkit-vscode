@@ -101,7 +101,7 @@ export class S3FileViewerManager {
         if (this.promptOnEdit) {
             const message = localize(
                 'AWS.s3.fileViewer.warning.editStateWarning',
-                'Switching S3 tab to Editing Mode, please be aware all saved changes will be uploaded back to the original location in S3'
+                'Opening S3 tab on Edit Mode, please be aware all saved changes will be uploaded back to the original location in S3'
             )
 
             const dontShow = localize('AWS.s3.fileViewer.button.dismiss', "Dismiss and don't show this again")

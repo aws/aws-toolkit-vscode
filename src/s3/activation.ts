@@ -20,7 +20,6 @@ import { S3FileNode } from './explorer/s3FileNode'
 import { ext } from '../shared/extensionGlobals'
 import { ExtContext } from '../shared/extensions'
 import { S3DocumentProvider } from './document/s3DocumentProvider'
-import { showOutputMessage } from '../shared/utilities/messages'
 import { S3FileViewerManager } from './util/fileViewerManager'
 
 /**
@@ -45,7 +44,6 @@ export async function activate(ctx: ExtContext): Promise<void> {
             await openFileCommand(node, manager)
         }),
         vscode.commands.registerCommand('aws.s3.openFileEditMode', async (uriOrNode: vscode.Uri | S3FileNode) => {
-            showOutputMessage(`command openFileEditMode() uri: ${uriOrNode}`, ext.outputChannel)
             await openFileEditModeCommand(uriOrNode, manager)
         }),
         vscode.commands.registerCommand('aws.s3.uploadFile', async (node: S3BucketNode | S3FolderNode) => {
