@@ -3,12 +3,8 @@
 
 package software.aws.toolkits.jetbrains.core.credentials
 
-import com.intellij.configurationStore.deserializeAndLoadState
-import com.intellij.configurationStore.serializeStateInto
 import com.intellij.openapi.application.ApplicationManager
 import org.assertj.core.api.Assertions.assertThat
-import org.jdom.Element
-import org.jdom.output.XMLOutputter
 import org.junit.After
 import org.junit.Before
 import org.junit.Rule
@@ -24,8 +20,9 @@ import software.aws.toolkits.jetbrains.core.region.AwsRegionProvider
 import software.aws.toolkits.jetbrains.core.region.MockRegionProviderRule
 import software.aws.toolkits.jetbrains.core.region.getDefaultRegion
 import software.aws.toolkits.jetbrains.services.sts.StsResources
+import software.aws.toolkits.jetbrains.utils.deserializeState
 import software.aws.toolkits.jetbrains.utils.rules.HeavyJavaCodeInsightTestFixtureRule
-import software.aws.toolkits.jetbrains.utils.toElement
+import software.aws.toolkits.jetbrains.utils.serializeState
 import java.nio.file.Files
 import java.util.concurrent.CompletableFuture
 import java.util.concurrent.CountDownLatch
@@ -72,7 +69,7 @@ class DefaultAwsConnectionManagerTest {
 
     @Test
     fun `Starts with no active credentials`() {
-        assertThat(manager.isValidConnectionSettings()).isFalse()
+        assertThat(manager.isValidConnectionSettings()).isFalse
         assertThat(manager.recentlyUsedCredentials()).isEmpty()
     }
 
@@ -91,19 +88,19 @@ class DefaultAwsConnectionManagerTest {
 
     @Test
     fun `On load, default region of credential is used if there is no other active region`() {
-        val element =
-            """
-            <AccountState>
-                <option name="activeProfile" value="Mock" />
-            </AccountState>
-        """.toElement()
-
         val region = AwsRegion("us-west-2", "Oregon", "AWS")
         val credentials = mockCredentialManager.addCredentials(id = "Mock", region = region)
         markConnectionSettingsAsValid(credentials, regionProviderRule.defaultRegion())
         regionProviderRule.addRegion(region)
 
-        deserializeAndLoadState(manager, element)
+        deserializeState(
+            """
+             <AccountState>
+                 <option name="activeProfile" value="Mock" />
+             </AccountState>
+             """,
+            manager,
+        )
 
         manager.waitUntilConnectionStateIsStable()
 
@@ -126,14 +123,14 @@ class DefaultAwsConnectionManagerTest {
 
         changeCredentialProvider(credentials)
 
-        assertThat(manager.isValidConnectionSettings()).isTrue()
+        assertThat(manager.isValidConnectionSettings()).isTrue
         assertThat(manager.connectionSettings()?.credentials?.id).isEqualTo(credentials.id)
 
         assertThat(manager.recentlyUsedCredentials()).element(0).isEqualTo(credentials)
 
         changeCredentialProvider(credentials2)
 
-        assertThat(manager.isValidConnectionSettings()).isTrue()
+        assertThat(manager.isValidConnectionSettings()).isTrue
         assertThat(manager.connectionSettings()?.credentials?.id).isEqualTo(credentials2.id)
 
         assertThat(manager.recentlyUsedCredentials()).element(0).isEqualTo(credentials2)
@@ -210,9 +207,7 @@ class DefaultAwsConnectionManagerTest {
     @Test
     fun `Active region is persisted`() {
         manager.changeRegion(AwsRegion.GLOBAL)
-        val element = Element("AccountState")
-        serializeStateInto(manager, element)
-        assertThat(element.string()).isEqualToIgnoringWhitespace(
+        assertThat(serializeState("AccountState", manager)).isEqualToIgnoringWhitespace(
             """
             <AccountState>
                 <option name="activeRegion" value="aws-global" />
@@ -232,9 +227,7 @@ class DefaultAwsConnectionManagerTest {
         markConnectionSettingsAsValid(credentials, manager.activeRegion)
         changeCredentialProvider(credentials)
 
-        val element = Element("AccountState")
-        serializeStateInto(manager, element)
-        assertThat(element.string()).isEqualToIgnoringWhitespace(
+        assertThat(serializeState("AccountState", manager)).isEqualToIgnoringWhitespace(
             """
             <AccountState>
                 <option name="activeProfile" value="Mock" />
@@ -250,7 +243,10 @@ class DefaultAwsConnectionManagerTest {
 
     @Test
     fun `Active credential can be restored from persistence`() {
-        val element =
+        val credentials = mockCredentialManager.addCredentials("Mock")
+        markConnectionSettingsAsValid(credentials, regionProviderRule.defaultRegion())
+
+        deserializeState(
             """
             <AccountState>
                 <option name="activeProfile" value="Mock" />
@@ -260,12 +256,9 @@ class DefaultAwsConnectionManagerTest {
                     </list>
                 </option>
             </AccountState>
-        """.toElement()
-
-        val credentials = mockCredentialManager.addCredentials("Mock")
-        markConnectionSettingsAsValid(credentials, regionProviderRule.defaultRegion())
-
-        deserializeAndLoadState(manager, element)
+             """,
+            manager,
+        )
 
         manager.waitUntilConnectionStateIsStable()
 
@@ -275,7 +268,7 @@ class DefaultAwsConnectionManagerTest {
 
     @Test
     fun `Active region can be restored from persistence`() {
-        val element =
+        deserializeState(
             """
             <AccountState>
                 <option name="activeRegion" value="${getDefaultRegion().id}" />
@@ -285,9 +278,9 @@ class DefaultAwsConnectionManagerTest {
                     </list>
                 </option>
             </AccountState>
-        """.toElement()
-
-        deserializeAndLoadState(manager, element)
+             """,
+            manager,
+        )
 
         manager.waitUntilConnectionStateIsStable()
 
@@ -299,7 +292,7 @@ class DefaultAwsConnectionManagerTest {
 
     @Test
     fun `Attempting to restore a region that no longer exists is handled gracefully`() {
-        val element =
+        deserializeState(
             """
             <AccountState>
                 <option name="activeRegion" value="DoesNotExist" />
@@ -309,8 +302,9 @@ class DefaultAwsConnectionManagerTest {
                     </list>
                 </option>
             </AccountState>
-        """.toElement()
-        deserializeAndLoadState(manager, element)
+             """,
+            manager,
+        )
 
         manager.waitUntilConnectionStateIsStable()
 
@@ -320,7 +314,7 @@ class DefaultAwsConnectionManagerTest {
 
     @Test
     fun `Attempting to restore a credential that no longer exists is handled gracefully`() {
-        val element =
+        deserializeState(
             """
             <AccountState>
                 <option name="activeProfile" value="DoesNotExist" />
@@ -330,13 +324,13 @@ class DefaultAwsConnectionManagerTest {
                     </list>
                 </option>
             </AccountState>
-        """.toElement()
-
-        deserializeAndLoadState(manager, element)
+             """,
+            manager,
+        )
 
         manager.waitUntilConnectionStateIsStable()
 
-        assertThat(manager.isValidConnectionSettings()).isFalse()
+        assertThat(manager.isValidConnectionSettings()).isFalse
         assertThat(manager.recentlyUsedCredentials()).isEmpty()
         assertThat(manager.connectionSettings()).isNull()
     }
@@ -347,7 +341,7 @@ class DefaultAwsConnectionManagerTest {
 
         markConnectionSettingsAsInvalid(mockCredentials, regionProviderRule.defaultRegion())
 
-        val element =
+        deserializeState(
             """
             <AccountState>
                 <option name="activeProfile" value="${mockCredentials.id}" />
@@ -357,13 +351,13 @@ class DefaultAwsConnectionManagerTest {
                     </list>
                 </option>
             </AccountState>
-        """.toElement()
-
-        deserializeAndLoadState(manager, element)
+             """,
+            manager,
+        )
 
         manager.waitUntilConnectionStateIsStable()
 
-        assertThat(manager.isValidConnectionSettings()).isFalse()
+        assertThat(manager.isValidConnectionSettings()).isFalse
     }
 
     @Test
@@ -371,16 +365,16 @@ class DefaultAwsConnectionManagerTest {
         val credentials = mockCredentialManager.addCredentials(DEFAULT_PROFILE_ID)
         markConnectionSettingsAsValid(credentials, regionProviderRule.defaultRegion())
 
-        val element =
+        deserializeState(
             """
             <AccountState/>
-        """.toElement()
-
-        deserializeAndLoadState(manager, element)
+             """,
+            manager,
+        )
 
         manager.waitUntilConnectionStateIsStable()
 
-        assertThat(manager.isValidConnectionSettings()).isTrue()
+        assertThat(manager.isValidConnectionSettings()).isTrue
         assertThat(manager.connectionSettings()?.credentials?.id).isEqualTo(DEFAULT_PROFILE_ID)
 
         assertThat(manager.recentlyUsedCredentials()).hasSize(1)
@@ -398,13 +392,13 @@ class DefaultAwsConnectionManagerTest {
         changeRegion(AwsRegionProvider.getInstance().defaultRegion())
         changeCredentialProvider(adminCredentials)
 
-        assertThat(manager.isValidConnectionSettings()).isTrue()
+        assertThat(manager.isValidConnectionSettings()).isTrue
 
         assertThat(manager.selectedCredentialIdentifier?.id).isEqualTo(adminCredentials.id)
 
         ApplicationManager.getApplication().messageBus.syncPublisher(CredentialManager.CREDENTIALS_CHANGED).providerRemoved(adminCredentials)
 
-        assertThat(manager.isValidConnectionSettings()).isFalse()
+        assertThat(manager.isValidConnectionSettings()).isFalse
         assertThat(manager.selectedCredentialIdentifier).isNull()
         assertThat(manager.connectionSettings()).isNull()
     }
@@ -418,13 +412,13 @@ class DefaultAwsConnectionManagerTest {
         changeRegion(AwsRegionProvider.getInstance().defaultRegion())
         changeCredentialProvider(defaultCredentials)
 
-        assertThat(manager.isValidConnectionSettings()).isFalse()
+        assertThat(manager.isValidConnectionSettings()).isFalse
 
         markConnectionSettingsAsValid(defaultCredentials, AwsRegionProvider.getInstance().defaultRegion())
         manager.refreshConnectionState()
         manager.waitUntilConnectionStateIsStable()
 
-        assertThat(manager.isValidConnectionSettings()).isTrue()
+        assertThat(manager.isValidConnectionSettings()).isTrue
     }
 
     @Test
@@ -436,13 +430,13 @@ class DefaultAwsConnectionManagerTest {
         changeRegion(AwsRegionProvider.getInstance().defaultRegion())
         changeCredentialProvider(defaultCredentials)
 
-        assertThat(manager.isValidConnectionSettings()).isFalse()
+        assertThat(manager.isValidConnectionSettings()).isFalse
 
         markConnectionSettingsAsValid(defaultCredentials, AwsRegionProvider.getInstance().defaultRegion())
         ApplicationManager.getApplication().messageBus.syncPublisher(CredentialManager.CREDENTIALS_CHANGED).providerModified(defaultCredentials)
         manager.waitUntilConnectionStateIsStable()
 
-        assertThat(manager.isValidConnectionSettings()).isTrue()
+        assertThat(manager.isValidConnectionSettings()).isTrue
     }
 
     @Test
@@ -454,13 +448,13 @@ class DefaultAwsConnectionManagerTest {
         changeRegion(AwsRegionProvider.getInstance().defaultRegion())
         changeCredentialProvider(credentials)
 
-        assertThat(manager.isValidConnectionSettings()).isTrue()
+        assertThat(manager.isValidConnectionSettings()).isTrue
 
         markConnectionSettingsAsInvalid(credentials, AwsRegionProvider.getInstance().defaultRegion())
         ApplicationManager.getApplication().messageBus.syncPublisher(CredentialManager.CREDENTIALS_CHANGED).providerModified(credentials)
         manager.waitUntilConnectionStateIsStable()
 
-        assertThat(manager.isValidConnectionSettings()).isFalse()
+        assertThat(manager.isValidConnectionSettings()).isFalse
     }
 
     private fun markConnectionSettingsAsValid(credentialsIdentifier: CredentialIdentifier, region: AwsRegion) {
@@ -488,7 +482,6 @@ class DefaultAwsConnectionManagerTest {
         manager.waitUntilConnectionStateIsStable()
     }
 
-    private fun Element?.string(): String = XMLOutputter().outputString(this)
     companion object {
         const val DEFAULT_PROFILE_ID = "profile:default"
     }

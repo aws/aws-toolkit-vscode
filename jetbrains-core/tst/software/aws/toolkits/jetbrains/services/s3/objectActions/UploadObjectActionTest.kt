@@ -122,7 +122,7 @@ class UploadObjectActionTest : ObjectActionTestBase() {
 
         retryableAssert {
             verifyBlocking(s3Bucket, never()) {
-                upload(any(), any(), any(), any())
+                upload(any(), any(), any())
             }
             verify(treeTable, never()).invalidateLevel(any())
             verify(treeTable, never()).refresh()
@@ -141,7 +141,7 @@ class UploadObjectActionTest : ObjectActionTestBase() {
 
         retryableAssert {
             argumentCaptor<String>().apply {
-                verifyBlocking(s3Bucket) { upload(any(), any(), any(), capture()) }
+                verifyBlocking(s3Bucket) { upload(any(), any(), capture()) }
 
                 assertThat(allValues).hasSize(1)
                 assertThat(firstValue).isEqualTo("path1/${newFile.name}")
@@ -165,7 +165,7 @@ class UploadObjectActionTest : ObjectActionTestBase() {
 
         retryableAssert {
             argumentCaptor<String>().apply {
-                verifyBlocking(s3Bucket, times(2)) { upload(any(), any(), any(), capture()) }
+                verifyBlocking(s3Bucket, times(2)) { upload(any(), any(), capture()) }
 
                 assertThat(firstValue).isEqualTo("path1/${newFile.name}")
                 assertThat(secondValue).isEqualTo("path1/${newFile2.name}")
@@ -190,7 +190,7 @@ class UploadObjectActionTest : ObjectActionTestBase() {
 
         retryableAssert {
             argumentCaptor<String>().apply {
-                verifyBlocking(s3Bucket, times(2)) { upload(any(), any(), any(), capture()) }
+                verifyBlocking(s3Bucket, times(2)) { upload(any(), any(), capture()) }
 
                 assertThat(firstValue).isEqualTo("path1/${newFile.name}")
                 assertThat(secondValue).isEqualTo("path1/${newFile2.name}")
@@ -209,7 +209,7 @@ class UploadObjectActionTest : ObjectActionTestBase() {
 
         s3Bucket.stub {
             onBlocking {
-                upload(any(), any(), any(), any())
+                upload(any(), any(), any())
             }.thenReturn(null).thenThrow(S3Exception.builder().message("Test exception").build())
         }
 
@@ -220,7 +220,7 @@ class UploadObjectActionTest : ObjectActionTestBase() {
 
         retryableAssert {
             argumentCaptor<String>().apply {
-                verifyBlocking(s3Bucket, times(2)) { upload(any(), any(), any(), capture()) }
+                verifyBlocking(s3Bucket, times(2)) { upload(any(), any(), capture()) }
 
                 assertThat(firstValue).isEqualTo("path1/${newFile.name}")
             }
@@ -236,7 +236,7 @@ class UploadObjectActionTest : ObjectActionTestBase() {
 
         s3Bucket.stub {
             onBlocking {
-                upload(any(), any(), any(), any())
+                upload(any(), any(), any())
             }.thenReturn(null).thenThrow(S3Exception.builder().message("Test exception").build())
         }
 
@@ -246,7 +246,7 @@ class UploadObjectActionTest : ObjectActionTestBase() {
         sut.executeAction(nodes)
 
         retryableAssert {
-            verifyBlocking(s3Bucket, never()) { upload(any(), any(), any(), any()) }
+            verifyBlocking(s3Bucket, never()) { upload(any(), any(), any()) }
             verify(treeTable, never()).invalidateLevel(dir)
             verify(treeTable, never()).refresh()
         }
@@ -261,7 +261,7 @@ class UploadObjectActionTest : ObjectActionTestBase() {
 
         retryableAssert {
             argumentCaptor<String>().apply {
-                verifyBlocking(s3Bucket) { upload(any(), any(), any(), capture()) }
+                verifyBlocking(s3Bucket) { upload(any(), any(), capture()) }
 
                 assertThat(allValues).hasSize(1)
                 assertThat(firstValue).isEqualTo(newFile.name)

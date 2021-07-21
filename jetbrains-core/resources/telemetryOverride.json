@@ -1,6 +1,53 @@
 {
-    "types": [],
+    "types": [
+        {
+            "name": "resourceType",
+            "type": "string",
+            "description": "The dynamic resource type being interacted with"
+        }
+    ],
     "metrics": [
+        {
+            "name": "apprunner_openServiceUrl",
+            "description": "Open the service URL in a browser"
+        },
+        {
+            "name": "dynamicresource_openModel",
+            "description": "Open the dynamic resource model in the IDE",
+            "metadata": [
+                {
+                    "type": "result"
+                },
+                {
+                    "type": "resourceType"
+                }
+            ]
+        },
+        {
+            "name": "dynamicresource_listType",
+            "description": "Expand a Resource Type node",
+            "metadata": [
+                {
+                    "type": "result"
+                },
+                {
+                    "type": "resourceType"
+                }
+            ]
+        },
+        {
+            "name": "dynamicresource_selectResources",
+            "description": "Change the list of available dynamic resources in the AWS Explorer"
+        },
+        {
+            "name": "dynamicresource_copyIdentifier",
+            "description": "Copy the dynamic resource identifier",
+            "metadata": [
+                {
+                    "type": "resourceType"
+                }
+            ]
+        },
         {
             "name": "aws_openLocalTerminal",
             "description": "Open local terminal with aws connection injected",
