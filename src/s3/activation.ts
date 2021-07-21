@@ -30,10 +30,7 @@ export async function activate(ctx: ExtContext): Promise<void> {
     const manager = new S3FileViewerManager()
 
     ctx.extensionContext.subscriptions.push(
-        vscode.workspace.registerTextDocumentContentProvider('s3', new S3DocumentProvider(manager.onDidChange))
-    )
-
-    ctx.extensionContext.subscriptions.push(
+        vscode.workspace.registerTextDocumentContentProvider('s3', new S3DocumentProvider(manager.onDidChange)),
         vscode.commands.registerCommand('aws.s3.copyPath', async (node: S3FolderNode | S3FileNode) => {
             await copyPathCommand(node)
         }),
