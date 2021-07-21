@@ -4,12 +4,16 @@
 package software.aws.toolkits.jetbrains.services.dynamic
 
 import com.fasterxml.jackson.module.kotlin.jacksonObjectMapper
+import com.intellij.openapi.project.Project
 import kotlinx.coroutines.CoroutineStart
 import kotlinx.coroutines.Deferred
 import kotlinx.coroutines.async
 import software.amazon.awssdk.services.cloudformation.CloudFormationClient
+import software.amazon.awssdk.services.cloudformation.model.RegistryType
+import software.amazon.awssdk.services.cloudformation.model.Visibility
 import software.aws.toolkits.jetbrains.core.ClientBackedCachedResource
 import software.aws.toolkits.jetbrains.core.Resource
+import software.aws.toolkits.jetbrains.core.awsClient
 import software.aws.toolkits.jetbrains.utils.ApplicationThreadPoolScope
 
 object DynamicResources {
@@ -33,4 +37,12 @@ object DynamicResources {
         }
 
     fun listResources(resourceType: ResourceType): Resource.Cached<List<DynamicResource>> = listResources(resourceType.fullName)
+
+    suspend fun resourcesAvailableInCurrentRegion(project: Project): List<String> {
+        val typesInCurrentRegion = project.awsClient<CloudFormationClient>().listTypes {
+            it.visibility(Visibility.PUBLIC)
+            it.type(RegistryType.RESOURCE)
+        }.typeSummaries().map { it.typeName() }
+        return SUPPORTED_TYPES.await().filter { it in typesInCurrentRegion }
+    }
 }
