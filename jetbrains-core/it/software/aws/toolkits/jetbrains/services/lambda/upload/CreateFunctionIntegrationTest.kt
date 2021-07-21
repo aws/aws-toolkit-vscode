@@ -5,9 +5,8 @@ package software.aws.toolkits.jetbrains.services.lambda.upload
 
 import com.intellij.testFramework.DisposableRule
 import com.intellij.testFramework.RuleChain
-import com.intellij.testFramework.RunAll.runAll
+import com.intellij.testFramework.RunAll
 import com.intellij.testFramework.runInEdtAndGet
-import com.intellij.util.ThrowableRunnable
 import org.assertj.core.api.Assertions.assertThat
 import org.junit.After
 import org.junit.Before
@@ -108,8 +107,9 @@ class CreateFunctionIntegrationTest {
 
     @After
     fun tearDown() {
-        runAll(
-            ThrowableRunnable {
+        // static method import incompatible when jb converted framework to KT: FIX_WHEN_MIN_IS_212
+        RunAll(
+            {
                 try {
                     lambdaClient.deleteFunction { it.functionName(lambdaName) }
                 } catch (e: Exception) {
@@ -118,10 +118,10 @@ class CreateFunctionIntegrationTest {
                     }
                 }
             },
-            ThrowableRunnable {
+            {
                 iamClient.deleteRole { it.roleName(iamRole.roleName()) }
             }
-        )
+        ).run()
     }
 
     @Test
