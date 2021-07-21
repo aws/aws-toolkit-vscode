@@ -41,10 +41,12 @@ describe('S3DocumentProvider', async function () {
         provider = new S3DocumentProvider(changeEmitter.onDidChange)
     })
 
-    it('provides content if file exists and a blank string if it does not', async function () {
+    it('provides a blank string if file does not exist', async function () {
         //try to read a file that doesn't exist yet
         assert.strictEqual(await provider.provideTextDocumentContent(fileLocation), '')
+    })
 
+    it('provides content if file exists and a blank string if it does not', async function () {
         //place a file in there
         // get the file's fsPath
         //try to read the file now

@@ -1327,12 +1327,7 @@
                 "command": "aws.s3.openFileEditMode",
                 "title": "%AWS.command.s3.openFileEditMode%",
                 "category": "%AWS.title%",
-                "icon": "$(edit)",
-                "cloud9": {
-                    "cn": {
-                        "category": "%AWS.title.cn%"
-                    }
-                }
+                "icon": "$(edit)"
             },
             {
                 "command": "aws.s3.uploadFile",

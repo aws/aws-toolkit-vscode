@@ -92,12 +92,12 @@ export class S3FileViewerManager {
         getLogger().verbose(`S3FileViewer: File from s3 or temp to be opened is: ${fileLocation}`)
 
         const newTab = this.activeTabs.get(fileLocation.fsPath) ?? new S3Tab(fileLocation, fileNode)
-        await newTab.openFileOnReadOnly()
+        await newTab.openFileInReadOnly()
 
         this.activeTabs.set(fileLocation.fsPath, newTab)
     }
 
-    public async openOnEditMode(uriOrNode: vscode.Uri | S3FileNode): Promise<void> {
+    public async openInEditMode(uriOrNode: vscode.Uri | S3FileNode): Promise<void> {
         if (this.promptOnEdit) {
             const message = localize(
                 'AWS.s3.fileViewer.warning.editStateWarning',
@@ -121,16 +121,24 @@ export class S3FileViewerManager {
             //was activated from an open tab
             if (this.activeTabs.has(uriOrNode.fsPath)) {
                 const tab = this.activeTabs.get(uriOrNode.fsPath)
-                await tab!.openFileOnEditMode()
+                await tab!.openFileInEditMode()
+            } else {
+                this.window.showErrorMessage(
+                    localize(
+                        'AWS.s3.fileViewer.error.editMode',
+                        'Error switching to edit mode, please try reopening from the AWS Explorer'
+                    )
+                )
             }
-        } else if (uriOrNode instanceof S3FileNode) {
+        } else {
             //was activated from the explorer, need to get the file
             const fileLocation = await this.getFile(uriOrNode)
             if (!fileLocation) {
                 return
             }
+
             const newTab = this.activeTabs.get(fileLocation.fsPath) ?? new S3Tab(fileLocation, uriOrNode)
-            await newTab.openFileOnEditMode()
+            await newTab.openFileInEditMode()
         }
     }
 
@@ -196,7 +204,10 @@ export class S3FileViewerManager {
             getLogger().debug(`FileViewer: User confirmed download, continuing`)
         }
 
-        await this.createSubFolders(targetPath)
+        if (!(await this.createSubFolders(targetPath))) {
+            //error creating the folder structure
+            return undefined
+        }
 
         try {
             await downloadWithProgress(fileNode, targetLocation, this.window)
@@ -211,6 +222,7 @@ export class S3FileViewerManager {
                 ),
                 this.outputChannel
             )
+            return undefined
         }
 
         this.cacheArns.add(fileNode.file.arn)
@@ -248,20 +260,32 @@ export class S3FileViewerManager {
         return undefined
     }
 
+    /**
+     * E.g. For a file 'foo.txt' inside a bucket 'bucketName' and folder 'folderName'
+     * '/tmp/aws-toolkit-vscode/vsctkzV38Hc/bucketName/folderName/[S3]foo.txt'
+     *
+     * @param fileNode
+     * @returns fs path that has the tempLocation, the S3 location (bucket and folders) and the name with the file preceded by [S3]
+     */
     public createTargetPath(fileNode: S3FileNode): Promise<string> {
         let completePath = readablePath(fileNode)
-        completePath = completePath.slice(4) //removes 's3://' from path
-        completePath = completePath.slice(undefined, completePath.lastIndexOf('/') + 1) + '[S3]' + fileNode.file.name // add [S3] to the name of the file
-        completePath = this._tempLocation! + completePath
+        completePath = `${this.tempLocation!}${completePath.slice(4, completePath.lastIndexOf('/') + 1)}[S3]${
+            fileNode.file.name
+        }`
 
         return Promise.resolve(completePath)
     }
 
     private async createSubFolders(targetPath: string): Promise<boolean> {
         const folderStructure = targetPath.slice(undefined, targetPath.lastIndexOf('/'))
-        //fs.mkdirSync(folderStructure, { recursive: true })
-        await mkdirp(folderStructure)
-        return Promise.resolve(true)
+
+        try {
+            await mkdirp(folderStructure)
+        } catch (e) {
+            getLogger().error(`S3FileViewer: Error creating S3 folder structure on system error: ${e}`)
+            return false
+        }
+        return true
     }
 
     async refreshNode(fileNode: S3FileNode): Promise<S3FileNode | undefined> {

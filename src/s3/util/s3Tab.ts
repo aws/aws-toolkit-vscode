@@ -28,11 +28,11 @@ export class S3Tab {
         this.s3Client = s3FileNode.s3
     }
 
-    public async openFileOnReadOnly(workspace = vscode.workspace): Promise<vscode.TextEditor | undefined> {
+    public async openFileInReadOnly(workspace = vscode.workspace): Promise<vscode.TextEditor | undefined> {
         return this.openFile(this.s3Uri, workspace)
     }
 
-    public async openFileOnEditMode(workspace = vscode.workspace): Promise<vscode.TextEditor | undefined> {
+    public async openFileInEditMode(workspace = vscode.workspace): Promise<vscode.TextEditor | undefined> {
         return this.openFile(this.fileUri, workspace)
     }
 

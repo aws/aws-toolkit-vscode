@@ -26,7 +26,7 @@ export async function openFileEditModeCommand(
     if (uriOrNode instanceof S3FileNode && !sizeLimitPrompt(uriOrNode)) {
         return
     }
-    manager.openOnEditMode(uriOrNode)
+    manager.openInEditMode(uriOrNode)
 }
 
 function sizeLimitPrompt(node: S3FileNode, window = Window.vscode()): boolean {
@@ -39,5 +39,6 @@ function sizeLimitPrompt(node: S3FileNode, window = Window.vscode()): boolean {
         )
         return false
     }
+
     return true
 }
