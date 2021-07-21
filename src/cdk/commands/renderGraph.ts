@@ -5,37 +5,29 @@
 import * as vscode from 'vscode'
 import { getLogger } from '../../shared/logger'
 import { localize } from '../../shared/utilities/vsCodeUtils'
-import { Commands } from '../../shared/vscode/commands'
 import { Window } from '../../shared/vscode/window'
 import { ConstructNode } from '../explorer/nodes/constructNode'
 import { showErrorWithLogs } from '../../shared/utilities/messages'
-import { AslVisualizationCDK } from './aslVisualizationCDK'
+import { AslVisualizationCDKManager } from './../commands/aslVisualizationCDKManager'
 
 /**
  * Renders a state graph of the state machine represented by the given node
  */
-export async function renderGraphCommand(
+export async function renderGraphCommand(this: any,
     node: ConstructNode,
-    window = Window.vscode(),
-    commands = Commands.vscode()
-): Promise<AslVisualizationCDK | undefined> {
+    extensionContext: vscode.Memento,
+    visualizationManager: AslVisualizationCDKManager,
+    window = Window.vscode()
+): Promise<void> {
     getLogger().debug('Render graph called for: %O', node)
 
     const uniqueIdentifier = node.label
-    const cdkOutPath = node.id?.replace(`/tree.json/${node.tooltip}`, ``)
-    const stackName = node.tooltip?.replace(`/${node.label}`, ``)
     getLogger().info(`Rendering graph: ${uniqueIdentifier}`)
 
     try {
-        // eslint-disable-next-line @typescript-eslint/restrict-plus-operands
-        const templatePath = cdkOutPath + `/${stackName}.template.json`
-        const uri = vscode.Uri.file(templatePath);
-        const textDocument = await vscode.workspace.openTextDocument(uri)
-        const newVisualization = new AslVisualizationCDK(textDocument, templatePath, uniqueIdentifier)
+        visualizationManager.visualizeStateMachine(extensionContext, node)
         getLogger().info('Rendered graph: %O', uniqueIdentifier)
         window.showInformationMessage(localize('AWS.cdk.renderStateMachineGraph.success', 'Rendered graph {0}', uniqueIdentifier))
-
-        return newVisualization
     } catch (e) {
         getLogger().error(`Failed to render graph ${uniqueIdentifier}: %O`, e)
         showErrorWithLogs(

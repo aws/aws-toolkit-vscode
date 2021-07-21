@@ -34,8 +34,15 @@ export class AslVisualizationCDKManager extends AbstractAslVisualizationManager 
         // Existing visualization does not exist, construct new visualization
         try {
             await cache.updateCache(globalStorage)
-
-            const newVisualization = await renderGraphCommand(node)
+            const uniqueIdentifier = node.label
+            const cdkOutPath = node.id?.replace(`/tree.json/${node.tooltip}`, ``)
+            const stackName = node.tooltip?.replace(`/${node.label}`, ``)
+            // eslint-disable-next-line @typescript-eslint/restrict-plus-operands
+            const templatePath = cdkOutPath + `/${stackName}.template.json`
+            const uri = vscode.Uri.file(templatePath);
+            const textDocument = await vscode.workspace.openTextDocument(uri)
+            //const newVisualization = await renderGraphCommand(node)
+            const newVisualization = new AslVisualizationCDK(textDocument, templatePath, uniqueIdentifier)
             if (newVisualization) {
                 this.handleNewVisualization(node.label, newVisualization)
                 return newVisualization.getPanel()
