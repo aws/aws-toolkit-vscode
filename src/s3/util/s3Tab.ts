@@ -15,29 +15,24 @@ import { uploadWithProgress } from '../commands/uploadFile'
 //const contentType = mime.lookup(path.basename(request.fileLocation.fsPath)) || DEFAULT_CONTENT_TYPE
 //FOUND IN : s3Client.ts
 export class S3Tab {
-    //private file: File
     public s3Uri: vscode.Uri
     private window: typeof vscode.window
     private editor: vscode.TextEditor | undefined
-    protected parent: S3BucketNode | S3FolderNode
+    private parent: S3BucketNode | S3FolderNode
     private s3Client: S3Client
-    //private editing: boolean
+
     public constructor(public fileUri: vscode.Uri, public s3FileNode: S3FileNode, window = vscode.window) {
         this.s3Uri = vscode.Uri.parse('s3:' + this.fileUri.fsPath)
         this.parent = s3FileNode.parent
         this.window = window
-
-        //this.s3Client = ext.toolkitClientBuilder.createS3Client(regionCode)
         this.s3Client = s3FileNode.s3
     }
 
     public async openFileOnReadOnly(workspace = vscode.workspace): Promise<vscode.TextEditor | undefined> {
-        //find if there is any active editor for this uri
         return this.openFile(this.s3Uri, workspace)
     }
 
     public async openFileOnEditMode(workspace = vscode.workspace): Promise<vscode.TextEditor | undefined> {
-        //find if there is any active editor for this uri
         return this.openFile(this.fileUri, workspace)
     }
 
@@ -82,6 +77,11 @@ export class S3Tab {
         await vscode.commands.executeCommand('workbench.action.closeActiveEditor')
     }
 
+    /**
+     * Uploads current uri back to parent
+     *
+     * @returns true if upload succe]
+     */
     public async uploadChangesToS3(): Promise<boolean> {
         const request = {
             bucketName: this.s3FileNode.bucket.name,

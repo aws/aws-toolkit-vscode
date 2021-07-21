@@ -57,7 +57,12 @@ export class S3FileViewerManager {
                     await this.openTab(fileNode)
                     this._onDidChange.fire(activeTab.s3Uri)
                 } else {
-                    //file is not valid to upload, please redownload again, changes may be lost, be aware of that
+                    window.showErrorMessage(
+                        localize(
+                            'AWS.s3.fileViewer.error.invalidUpload',
+                            'File is invalid to upload, file has changed in S3 since last cache download. Please try and reopen the file. Be aware current changes may be lost.'
+                        )
+                    )
                 }
             }
         })
@@ -94,11 +99,13 @@ export class S3FileViewerManager {
 
     public async openOnEditMode(uriOrNode: vscode.Uri | S3FileNode): Promise<void> {
         if (this.promptOnEdit) {
-            const message =
+            const message = localize(
+                'AWS.s3.fileViewer.warning.editStateWarning',
                 'Switching S3 tab to Editing Mode, please be aware all saved changes will be uploaded back to the original location in S3'
+            )
 
-            const dontShow = "Don't show this again"
-            const help = 'Help'
+            const dontShow = localize('AWS.s3.fileViewer.button.dismiss', "Dismiss and don't show this again")
+            const help = localize('AWS.s3.fileViewer.button.help', 'Help')
 
             this.window.showWarningMessage(message, dontShow, help).then(selection => {
                 if (selection === dontShow) {
