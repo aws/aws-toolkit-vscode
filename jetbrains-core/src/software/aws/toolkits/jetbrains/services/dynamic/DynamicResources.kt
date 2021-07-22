@@ -4,17 +4,14 @@
 package software.aws.toolkits.jetbrains.services.dynamic
 
 import com.fasterxml.jackson.module.kotlin.jacksonObjectMapper
-import com.intellij.openapi.project.Project
 import kotlinx.coroutines.CoroutineStart
 import kotlinx.coroutines.Deferred
 import kotlinx.coroutines.async
-import kotlinx.coroutines.withContext
 import software.amazon.awssdk.services.cloudformation.CloudFormationClient
 import software.amazon.awssdk.services.cloudformation.model.RegistryType
 import software.amazon.awssdk.services.cloudformation.model.Visibility
 import software.aws.toolkits.jetbrains.core.ClientBackedCachedResource
 import software.aws.toolkits.jetbrains.core.Resource
-import software.aws.toolkits.jetbrains.core.awsClient
 import software.aws.toolkits.jetbrains.utils.ApplicationThreadPoolScope
 
 object DynamicResources {
@@ -39,30 +36,15 @@ object DynamicResources {
 
     fun listResources(resourceType: ResourceType): Resource.Cached<List<DynamicResource>> = listResources(resourceType.fullName)
 
-    fun listTypesInCurrentRegion(): Resource.Cached<List<String>> = ClientBackedCachedResource(CloudFormationClient::class, "cloudformation.dynamic.resources.in.current.region") {
-        listabc(this@ClientBackedCachedResource)
+    fun listTypesInCurrentRegion(): Resource.Cached<List<String>> = ClientBackedCachedResource(
+        CloudFormationClient::class, "cloudformation.dynamic.resources.in.current.region"
+    ) {
+        getResourcesForCurrentRegion(this@ClientBackedCachedResource)
     }
 
-    fun listabc(cfnClient: CloudFormationClient) :List<String> {
-        val a = cfnClient.listTypesPaginator {
+    private fun getResourcesForCurrentRegion(cfnClient: CloudFormationClient): List<String> =
+        cfnClient.listTypesPaginator {
             it.visibility(Visibility.PUBLIC)
             it.type(RegistryType.RESOURCE)
-        }.flatMap { it.typeSummaries().map { it.typeName() }  }
-        println("hello listabc " + a.size)
-        return a
-    }
-
-    suspend fun resourceAvailableInCurrentRegion(project: Project, resourceName: String): Boolean =
-        withContext(coroutineScope.coroutineContext) {
-            println(resourceName)
-            val abc = mutableListOf<String>()
-            project.awsClient<CloudFormationClient>().listTypesPaginator {
-                it.visibility(Visibility.PUBLIC)
-                it.type(RegistryType.RESOURCE)
-            }.iterator().forEach { it1 -> abc += it1.typeSummaries().map { it.typeName() } }
-            println(abc)
-            resourceName in abc
-        }
-
-
+        }.flatMap { it.typeSummaries().map { it.typeName() } }
 }

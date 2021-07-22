@@ -3,7 +3,6 @@
 
 package software.aws.toolkits.jetbrains.services.dynamic.explorer
 
-import com.intellij.ide.projectView.PresentationData
 import com.intellij.json.JsonFileType
 import com.intellij.openapi.command.WriteCommandAction
 import com.intellij.openapi.fileEditor.FileDocumentManager
@@ -14,7 +13,6 @@ import com.intellij.openapi.project.Project
 import com.intellij.psi.codeStyle.CodeStyleManager
 import com.intellij.psi.util.PsiUtilCore
 import com.intellij.testFramework.LightVirtualFile
-import kotlinx.coroutines.runBlocking
 import software.amazon.awssdk.arns.Arn
 import software.amazon.awssdk.services.cloudformation.CloudFormationClient
 import software.aws.toolkits.core.utils.error
@@ -39,15 +37,13 @@ class DynamicResourceResourceTypeNode(project: Project, private val resourceType
     // calls to CloudAPI time-expensive and likely to throttle
     override fun isAlwaysExpand(): Boolean = false
     override fun statusText(): String? = if (!resourceAvailableInCurrentRegion) "Unavailable in current region" else null
-
-
     override fun getChildren(): List<AwsExplorerNode<*>> = super.getChildren()
-    override fun getChildrenInternal(): List<AwsExplorerNode<*>> {
-        println("Hello node " + nodeProject.getResourceNow(DynamicResources.listTypesInCurrentRegion()).size)
-        return if (resourceAvailableInCurrentRegion)
+
+    override fun getChildrenInternal(): List<AwsExplorerNode<*>> =
+        if (resourceAvailableInCurrentRegion) {
             nodeProject.getResourceNow(DynamicResources.listResources(resourceType))
-                .map { DynamicResourceNode(nodeProject, it) } else emptyList()
-    }
+                .map { DynamicResourceNode(nodeProject, it) }
+        } else emptyList()
 }
 
 class DynamicResourceNode(project: Project, val resource: DynamicResource) :

@@ -26,7 +26,6 @@ class OtherResourcesNode(project: Project, service: AwsExplorerServiceNode) :
         val shouldShow = DynamicResourcesSettings.getInstance().selected
 
         val nodes = coroutineScope.async {
-            println("Dynamic Resources " + DynamicResources.SUPPORTED_TYPES.await().size)
             listOf(DynamicResourceSelectorNode(nodeProject)) + DynamicResources.SUPPORTED_TYPES.await()
                 .filter { it in shouldShow }
                 .map { DynamicResourceResourceTypeNode(nodeProject, it) }
