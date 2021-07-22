@@ -7,9 +7,8 @@ import * as fs from 'fs'
 import { getLogger, Logger } from '../../../shared/logger'
 
 /**
- * @param uniqueIdentifier unique identifier of state machine
- * @param cdkOutPath cdk.out path
- * @param stackName name of parent stack 
+ * @param {string} uniqueIdentifier - unique identifier of state machine
+ * @param {string} templatePath - path for the template.json file
  * 
  * @returns the escaped ASL Json definition string of the state machine construct
  */
@@ -39,7 +38,7 @@ export function getStateMachineDefinitionFromCfnTemplate(uniqueIdentifier: strin
 }
 
 /**
- * @param escapedAslJsonStr json state machine construct definition 
+ * @param {string} escapedAslJsonStr - json state machine construct definition 
  * @returns unescaped json state machine construct definition
  */
 export function toUnescapedAslJsonString(escapedAslJsonStr: string) {
