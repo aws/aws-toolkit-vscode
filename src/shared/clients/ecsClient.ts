@@ -14,19 +14,35 @@ export type ServicesAndToken =  {
     services: ECS.Service[],
     nextToken?: string
 }
+
+export type ClustersAndToken = {
+    clusters: ECS.Cluster[],
+    nextToken?: string
+}
+
+const MAX_RESULTS = 50
 export class DefaultEcsClient {
     public constructor(public readonly regionCode: string) {}
 
-    public async listClusters(): Promise<ECS.Cluster[]> {
+    public async listClusters(nextToken?: string): Promise<ClustersAndToken> {
         const sdkClient = await this.createSdkClient()
-        const clusterArnList = await sdkClient.listClusters().promise()
-        const clusterResponse =  await sdkClient.describeClusters({ clusters: clusterArnList.clusterArns}).promise()
-        return clusterResponse.clusters ?? []
+        const clusterArnList = await sdkClient.listClusters({maxResults: MAX_RESULTS, nextToken}).promise()
+        try {
+            const clusterResponse =  await sdkClient.describeClusters({ clusters: clusterArnList.clusterArns}).promise()
+            const response: ClustersAndToken = {
+                clusters: clusterResponse.clusters!,
+                nextToken: clusterArnList.nextToken
+            }
+            return response
+        } catch (error) {
+            getLogger().error('ecs: Failed to list clusters: %s', error)
+            throw error
+        }
     }
 
     public async listServices(cluster: string, nextToken?: string): Promise<ServicesAndToken> {
         const sdkClient = await this.createSdkClient()
-        const serviceArnList = await sdkClient.listServices({cluster: cluster, nextToken: nextToken}).promise()
+        const serviceArnList = await sdkClient.listServices({cluster: cluster, maxResults: MAX_RESULTS, nextToken}).promise()
         try {
             const serviceResponse = await sdkClient.describeServices({services: serviceArnList.serviceArns!, cluster: cluster}).promise()
             const response: ServicesAndToken = {
@@ -35,7 +51,7 @@ export class DefaultEcsClient {
             }
             return response
         } catch (error) {
-            getLogger().error('Failed to list services for cluster %s: %O', cluster, error)
+            getLogger().error('ecs: Failed to list services for cluster %s: %O', cluster, error)
             throw error
         }
         

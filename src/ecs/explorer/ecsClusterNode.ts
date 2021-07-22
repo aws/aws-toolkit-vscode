@@ -22,7 +22,7 @@ import { getLogger } from '../../shared/logger'
  * Represents an ECS cluster
  */
 export class EcsClusterNode extends AWSTreeNodeBase implements AWSResourceNode, LoadMoreNode {
-      private readonly childLoader: ChildNodeLoader
+    private readonly childLoader: ChildNodeLoader
 
     public constructor(
         public readonly cluster: ECS.Cluster,
@@ -72,8 +72,7 @@ export class EcsClusterNode extends AWSTreeNodeBase implements AWSResourceNode, 
     
         const services = response.services.map(service => new EcsServiceNode(service, this))
         
-
-        getLogger().debug(`Loaded services: %O`, services)
+        getLogger().debug(`ecs: Loaded services: %O`, services)
         return {
             newContinuationToken: response.nextToken,
             newChildren: [...services],

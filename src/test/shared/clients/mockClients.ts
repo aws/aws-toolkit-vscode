@@ -8,7 +8,7 @@ import { ApiGatewayClient } from '../../../shared/clients/apiGatewayClient'
 import { CloudFormationClient } from '../../../shared/clients/cloudFormationClient'
 import { CloudWatchLogsClient } from '../../../shared/clients/cloudWatchLogsClient'
 import { EcrClient, EcrRepository } from '../../../shared/clients/ecrClient'
-import { EcsClient, ServicesAndToken } from '../../../shared/clients/ecsClient'
+import { ClustersAndToken, EcsClient, ServicesAndToken } from '../../../shared/clients/ecsClient'
 import { IamClient } from '../../../shared/clients/iamClient'
 import { LambdaClient } from '../../../shared/clients/lambdaClient'
 import { SchemaClient } from '../../../shared/clients/schemaClient'
@@ -296,16 +296,16 @@ export class MockEcrClient implements EcrClient {
 
 export class MockEcsClient implements EcsClient {
     public readonly regionCode: string
-    public readonly listClusters: () => Promise<ECS.Cluster[]>
+    public readonly listClusters: (nextToken?: string) => Promise<ClustersAndToken>
     public readonly listServices: (cluster: string, nextToken?: string) => Promise<ServicesAndToken>
 
     public constructor({
         regionCode = '',
-        listClusters = async () => ([]),
+        listClusters = async () => ({clusters: [], nextToken: undefined}),
         listServices = async () => ({services: [], nextToken: undefined}),
     }: {
         regionCode?: string
-        listClusters?(): Promise<ECS.Cluster[]>
+        listClusters?(): Promise<ClustersAndToken>
         listServices?(): Promise<ServicesAndToken>
     }) {
         this.regionCode = regionCode
