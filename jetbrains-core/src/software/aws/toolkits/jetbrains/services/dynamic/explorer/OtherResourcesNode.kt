@@ -24,7 +24,6 @@ class OtherResourcesNode(project: Project, service: AwsExplorerServiceNode) :
     override fun getChildren(): List<AwsExplorerNode<*>> = super.getChildren()
     override fun getChildrenInternal(): List<AwsExplorerNode<*>> {
         val shouldShow = DynamicResourcesSettings.getInstance().selected
-
         val nodes = coroutineScope.async {
             listOf(DynamicResourceSelectorNode(nodeProject)) + DynamicResources.SUPPORTED_TYPES.await()
                 .filter { it in shouldShow }
