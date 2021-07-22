@@ -49,5 +49,4 @@ export abstract class AbstractAslVisualizationManager {
         logger.debug('Unable to setup webview panel.')
         logger.error(err as Error)
     }
-
 }

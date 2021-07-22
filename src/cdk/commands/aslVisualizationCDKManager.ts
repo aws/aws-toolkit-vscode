@@ -23,8 +23,14 @@ export class AslVisualizationCDKManager extends AbstractAslVisualizationManager 
     ): Promise<vscode.WebviewPanel | undefined> {
         const logger: Logger = getLogger()
         const cache = new StateMachineGraphCache()
+        const uniqueIdentifier = node.label
+        const cdkOutPath = node.id?.replace(`/tree.json/${node.tooltip}`, ``)
+        const stackName = node.tooltip?.replace(`/${uniqueIdentifier}`, ``)
+        // eslint-disable-next-line @typescript-eslint/restrict-plus-operands
+        const templatePath = cdkOutPath + `/${stackName}.template.json`
+        const uri = vscode.Uri.file(templatePath);
         // Attempt to retrieve existing visualization if it exists.
-        const existingVisualization = this.getExistingVisualization(node.label)
+        const existingVisualization = this.getExistingVisualization(uri.path + uniqueIdentifier)
         if (existingVisualization) {
             existingVisualization.showPanel()
 
@@ -34,17 +40,12 @@ export class AslVisualizationCDKManager extends AbstractAslVisualizationManager 
         // Existing visualization does not exist, construct new visualization
         try {
             await cache.updateCache(globalStorage)
-            const uniqueIdentifier = node.label
-            const cdkOutPath = node.id?.replace(`/tree.json/${node.tooltip}`, ``)
-            const stackName = node.tooltip?.replace(`/${node.label}`, ``)
-            // eslint-disable-next-line @typescript-eslint/restrict-plus-operands
-            const templatePath = cdkOutPath + `/${stackName}.template.json`
-            const uri = vscode.Uri.file(templatePath);
+
             const textDocument = await vscode.workspace.openTextDocument(uri)
             //const newVisualization = await renderGraphCommand(node)
             const newVisualization = new AslVisualizationCDK(textDocument, templatePath, uniqueIdentifier)
             if (newVisualization) {
-                this.handleNewVisualization(node.label, newVisualization)
+                this.handleNewVisualization(newVisualization)
                 return newVisualization.getPanel()
             }
         } catch (err) {
@@ -54,11 +55,11 @@ export class AslVisualizationCDKManager extends AbstractAslVisualizationManager 
         return
     }
 
-    protected handleNewVisualization(key: string, newVisualization: AslVisualizationCDK): void {
-        this.managedVisualizations.set(key, newVisualization)
+    protected handleNewVisualization(newVisualization: AslVisualizationCDK): void {
+        this.managedVisualizations.set(newVisualization.documentUri.path + newVisualization.uniqueIdentifier, newVisualization)
 
         const visualizationDisposable = newVisualization.onVisualizationDisposeEvent(() => {
-            this.deleteVisualization(newVisualization.uniqueIdentifier)
+            this.deleteVisualization(newVisualization.templatePath)
         })
         this.pushToExtensionContextSubscriptions(visualizationDisposable)
     }

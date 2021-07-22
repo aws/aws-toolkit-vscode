@@ -62,7 +62,7 @@ export class AslVisualizationManager extends AbstractAslVisualizationManager {
         return
     }
 
-    private handleNewVisualization(newVisualization: AslVisualization): void {
+    protected handleNewVisualization(newVisualization: AslVisualization): void {
         this.managedVisualizations.set(newVisualization.documentUri.path, newVisualization)
 
         const visualizationDisposable = newVisualization.onVisualizationDisposeEvent(() => {
