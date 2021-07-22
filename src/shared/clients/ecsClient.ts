@@ -20,8 +20,8 @@ export class DefaultEcsClient {
     public async listClusters(): Promise<ECS.Cluster[]> {
         const sdkClient = await this.createSdkClient()
         const clusterArnList = await sdkClient.listClusters().promise()
-        const clusterReponse =  await sdkClient.describeClusters({ clusters: clusterArnList.clusterArns}).promise()
-        return clusterReponse.clusters ?? []
+        const clusterResponse =  await sdkClient.describeClusters({ clusters: clusterArnList.clusterArns}).promise()
+        return clusterResponse.clusters ?? []
     }
 
     public async listServices(cluster: string, nextToken?: string): Promise<ServicesAndToken> {

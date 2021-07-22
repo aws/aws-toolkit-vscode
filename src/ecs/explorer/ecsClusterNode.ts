@@ -67,7 +67,7 @@ export class EcsClusterNode extends AWSTreeNodeBase implements AWSResourceNode, 
     }
 
     private async loadPage(nextToken: string | undefined): Promise<ChildNodePage> {
-        getLogger().debug(`Loading page for %O using continuationToken %s`, this, nextToken)
+        getLogger().debug(`ecs: Loading page for %O using continuationToken %s`, this, nextToken)
         const response = await this.ecs.listServices(this.cluster.clusterArn!, nextToken)
     
         const services = response.services.map(service => new EcsServiceNode(service, this))
