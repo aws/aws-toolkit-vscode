@@ -3,7 +3,7 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 import { S3 } from 'aws-sdk'
-import { APIGateway, CloudFormation, CloudWatchLogs, ECS, IAM, Lambda, Schemas, StepFunctions, STS, SSM } from 'aws-sdk'
+import { APIGateway, CloudFormation, CloudWatchLogs, IAM, Lambda, Schemas, StepFunctions, STS, SSM } from 'aws-sdk'
 import { ApiGatewayClient } from '../../../shared/clients/apiGatewayClient'
 import { CloudFormationClient } from '../../../shared/clients/cloudFormationClient'
 import { CloudWatchLogsClient } from '../../../shared/clients/cloudWatchLogsClient'
