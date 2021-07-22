@@ -17,6 +17,8 @@ import org.jetbrains.plugins.terminal.TerminalTabState
 import org.jetbrains.plugins.terminal.TerminalView
 import org.jetbrains.plugins.terminal.cloud.CloudTerminalProcess
 import org.jetbrains.plugins.terminal.cloud.CloudTerminalRunner
+import software.aws.toolkits.jetbrains.core.credentials.ConnectionSettings
+import software.aws.toolkits.jetbrains.core.credentials.toEnvironmentVariables
 import software.aws.toolkits.jetbrains.core.executables.ExecutableInstance
 import software.aws.toolkits.jetbrains.core.executables.ExecutableManager
 import software.aws.toolkits.jetbrains.core.executables.getExecutable
@@ -35,7 +37,7 @@ import javax.swing.JComponent
 class OpenShellInContainerDialog(
     private val project: Project,
     private val container: ContainerDetails,
-    private val environmentVariables: Map<String, String>
+    private val connectionSettings: ConnectionSettings
 ) : DialogWrapper(project) {
     private val coroutineScope = ApplicationThreadPoolScope("OpenShellInContainerDialog")
     private val tasks = ResourceSelector
@@ -126,7 +128,7 @@ class OpenShellInContainerDialog(
     private fun constructExecCommand(executable: ExecutableInstance.Executable): PtyProcess {
         val task = tasks.selected() ?: throw IllegalStateException("No tasks selected")
         val commandLine = executable.getCommandLine().execCommand(
-            environmentVariables,
+            connectionSettings.toEnvironmentVariables(),
             container.service.clusterArn(),
             task,
             ('"' + shell + '"'),

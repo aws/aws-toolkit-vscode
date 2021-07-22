@@ -114,7 +114,7 @@ class UpdateFunctionConfigDialog(private val project: Project, private val initi
         name = initialSettings.name,
         description = view.description.text,
         packageType = view.configSettings.packageType(),
-        runtime = view.configSettings.runtime.selectedItem as Runtime,
+        runtime = if (view.configSettings.packageType() == PackageType.ZIP) view.configSettings.runtime.selectedItem as Runtime else null,
         handler = view.configSettings.handlerPanel.handler.text,
         iamRole = view.configSettings.iamRole.selected()!!,
         envVars = view.configSettings.envVars.envVars,

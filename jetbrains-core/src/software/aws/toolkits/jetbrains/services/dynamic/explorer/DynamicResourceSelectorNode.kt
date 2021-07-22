@@ -9,6 +9,7 @@ import software.aws.toolkits.jetbrains.core.explorer.nodes.AwsExplorerNode
 import software.aws.toolkits.jetbrains.settings.DynamicResourcesConfigurable
 import software.aws.toolkits.jetbrains.settings.DynamicResourcesSettings
 import software.aws.toolkits.resources.message
+import software.aws.toolkits.telemetry.DynamicresourceTelemetry
 
 class DynamicResourceSelectorNode(nodeProject: Project) : AwsExplorerNode<Unit>(nodeProject, Unit, null) {
     override fun displayName() = message("explorer.node.other.add_remove", DynamicResourcesSettings.getInstance().resourcesAvailable())
@@ -17,5 +18,6 @@ class DynamicResourceSelectorNode(nodeProject: Project) : AwsExplorerNode<Unit>(
 
     override fun onDoubleClick() {
         ShowSettingsUtil.getInstance().showSettingsDialog(nodeProject, DynamicResourcesConfigurable::class.java)
+        DynamicresourceTelemetry.selectResources(nodeProject)
     }
 }

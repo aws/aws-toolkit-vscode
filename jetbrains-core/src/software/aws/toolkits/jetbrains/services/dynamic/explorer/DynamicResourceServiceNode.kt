@@ -26,6 +26,7 @@ import software.aws.toolkits.jetbrains.services.dynamic.DynamicResource
 import software.aws.toolkits.jetbrains.services.dynamic.DynamicResources
 import software.aws.toolkits.jetbrains.utils.notifyError
 import software.aws.toolkits.resources.message
+import software.aws.toolkits.telemetry.DynamicresourceTelemetry
 
 class DynamicResourceResourceTypeNode(project: Project, private val resourceType: String) :
     AwsExplorerNode<String>(project, resourceType, null),
@@ -39,11 +40,19 @@ class DynamicResourceResourceTypeNode(project: Project, private val resourceType
     override fun statusText(): String? = if (!resourceAvailableInCurrentRegion) "Unavailable in current region" else null
     override fun getChildren(): List<AwsExplorerNode<*>> = super.getChildren()
 
-    override fun getChildrenInternal(): List<AwsExplorerNode<*>> =
-        if (resourceAvailableInCurrentRegion) {
-            nodeProject.getResourceNow(DynamicResources.listResources(resourceType))
-                .map { DynamicResourceNode(nodeProject, it) }
-        } else emptyList()
+    override fun getChildrenInternal(): List<AwsExplorerNode<*>> = try {
+        if (resourceAvailableInCurrentRegion){nodeProject.getResourceNow(DynamicResources.listResources(resourceType))
+            .map { DynamicResourceNode(nodeProject, it) }.also {
+                DynamicresourceTelemetry.listType(project = nodeProject, success = true, resourceType = resourceType)
+            }} else {
+                emptyList()
+        }
+
+    } catch (e: Exception) {
+        DynamicresourceTelemetry.listType(project = nodeProject, success = false, resourceType = resourceType)
+        throw e
+    }
+
 }
 
 class DynamicResourceNode(project: Project, val resource: DynamicResource) :
@@ -83,6 +92,7 @@ class DynamicResourceNode(project: Project, val resource: DynamicResource) :
                         title = message("dynamic_resources.fetch.fail.title"),
                         content = message("dynamic_resources.fetch.fail.content", resource.identifier)
                     )
+                    DynamicresourceTelemetry.openModel(nodeProject, success = false, resourceType = resource.type.fullName)
 
                     null
                 } ?: return
@@ -94,7 +104,7 @@ class DynamicResourceNode(project: Project, val resource: DynamicResource) :
                 )
 
                 indicator.text = message("dynamic_resources.fetch.open")
-                WriteCommandAction.runWriteCommandAction(project) {
+                WriteCommandAction.runWriteCommandAction(nodeProject) {
                     FileEditorManager.getInstance(nodeProject).openFile(file, true)
                     CodeStyleManager.getInstance(nodeProject).reformat(PsiUtilCore.getPsiFile(nodeProject, file))
 
@@ -102,6 +112,7 @@ class DynamicResourceNode(project: Project, val resource: DynamicResource) :
 
                     // editor readonly prop is separate from file prop. this is graceful if the getDocument call returns null
                     FileDocumentManager.getInstance().getDocument(file)?.setReadOnly(true)
+                    DynamicresourceTelemetry.openModel(nodeProject, success = true, resourceType = resource.type.fullName)
                 }
             }
         }.queue()

@@ -141,9 +141,11 @@ val prepareBuildProps = tasks.register("prepareBuildProps") {
     outputs.file(riderSdkVersionPropsPath)
 
     doLast {
+        val netFrameworkTarget = ideProfile.rider.netFrameworkTarget
         val riderSdkVersion = ideProfile.rider.nugetVersion
         val configText = """<Project>
   <PropertyGroup>
+    <NetFrameworkTarget>$netFrameworkTarget</NetFrameworkTarget>
     <RiderSDKVersion>[$riderSdkVersion]</RiderSDKVersion>
     <DefineConstants>PROFILE_${ideProfile.name.replace(".", "_")}</DefineConstants>
   </PropertyGroup>
@@ -256,6 +258,10 @@ tasks.withType<PrepareSandboxTask>().all {
     from(resharperDllsDir) {
         into("aws-toolkit-jetbrains/dotnet")
     }
+}
+
+tasks.withType<Test>().all {
+    dependsOn(tasks.prepareTestingSandbox)
 }
 
 tasks.compileKotlin {

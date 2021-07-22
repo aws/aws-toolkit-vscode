@@ -29,7 +29,6 @@ import com.jetbrains.rdclient.protocol.RdDispatcher
 import com.jetbrains.rider.RiderEnvironment
 import com.jetbrains.rider.debugger.DebuggerHelperHost
 import com.jetbrains.rider.debugger.RiderDebuggerWorkerModelManager
-import com.jetbrains.rider.model.debuggerWorker.DotNetCoreExeStartInfo
 import com.jetbrains.rider.model.debuggerWorker.DotNetDebuggerSessionModel
 import com.jetbrains.rider.model.debuggerWorkerConnectionHelperModel
 import com.jetbrains.rider.projectView.solution
@@ -45,6 +44,7 @@ import software.aws.toolkits.jetbrains.services.clouddebug.execution.steps.Resou
 import software.aws.toolkits.jetbrains.services.ecs.execution.ImmutableContainerOptions
 import software.aws.toolkits.jetbrains.utils.DotNetDebuggerUtils
 import software.aws.toolkits.jetbrains.utils.DotNetRuntimeUtils
+import software.aws.toolkits.jetbrains.utils.compatability.createNetCoreStartInfo
 import software.aws.toolkits.jetbrains.utils.execution.steps.Context
 import software.aws.toolkits.resources.message
 import java.io.File
@@ -331,19 +331,6 @@ class DotNetDebuggerSupport : DebuggerSupport() {
 
         return promise
     }
-
-    private fun createNetCoreStartInfo(exePath: String): DotNetCoreExeStartInfo =
-        DotNetCoreExeStartInfo(
-            dotNetCoreInfo = makeDotnetCoreInfo(),
-            exePath = exePath,
-            workingDirectory = "",
-            arguments = "",
-            environmentVariables = emptyList(),
-            runtimeArguments = null,
-            executeAsIs = false,
-            useExternalConsole = false,
-            needToBeInitializedImmediately = true
-        )
 
     private fun prepareDebuggerArtifacts(targetPath: File, assemblyNames: Array<String>) {
         val assemblyFileErrors = mutableListOf<String>()

@@ -3,6 +3,15 @@
 
 package software.aws.toolkits.jetbrains.core
 
+import com.github.tomakehurst.wiremock.WireMockServer
+import com.github.tomakehurst.wiremock.client.WireMock.aResponse
+import com.github.tomakehurst.wiremock.client.WireMock.any
+import com.github.tomakehurst.wiremock.client.WireMock.anyRequestedFor
+import com.github.tomakehurst.wiremock.client.WireMock.anyUrl
+import com.github.tomakehurst.wiremock.client.WireMock.stubFor
+import com.github.tomakehurst.wiremock.client.WireMock.verify
+import com.github.tomakehurst.wiremock.core.WireMockConfiguration
+import com.github.tomakehurst.wiremock.matching.ContainsPattern
 import com.intellij.openapi.application.ApplicationManager
 import com.intellij.openapi.util.Disposer
 import com.intellij.openapi.util.use
@@ -20,6 +29,7 @@ import software.amazon.awssdk.core.client.config.SdkAdvancedClientOption
 import software.amazon.awssdk.core.client.config.SdkClientOption
 import software.amazon.awssdk.core.signer.Signer
 import software.amazon.awssdk.http.SdkHttpClient
+import software.amazon.awssdk.services.lambda.LambdaClient
 import software.aws.toolkits.core.region.Endpoint
 import software.aws.toolkits.core.region.Service
 import software.aws.toolkits.core.region.anAwsRegion
@@ -171,6 +181,29 @@ class AwsClientManagerTest {
 
         assertThat(first.serviceName()).isEqualTo("dummyClient")
         assertThat(second).isSameAs(first)
+    }
+
+    @Test
+    fun userAgentIsPassed() {
+        val wireMockServer = WireMockServer(WireMockConfiguration.wireMockConfig())
+        try {
+            wireMockServer.start()
+
+            stubFor(any(anyUrl()).willReturn(aResponse().withStatus(200)))
+
+            val sut = getClientManager().createNewClient(
+                LambdaClient::class,
+                regionProvider.createAwsRegion(),
+                credentialManager.createCredentialProvider(),
+                endpointOverride = wireMockServer.baseUrl()
+            )
+
+            sut.listFunctions()
+
+            verify(anyRequestedFor(anyUrl()).withHeader("User-Agent", ContainsPattern("AWS-Toolkit-For-JetBrains/")))
+        } finally {
+            wireMockServer.stop()
+        }
     }
 
     // Test against real version so bypass ServiceManager for the client manager

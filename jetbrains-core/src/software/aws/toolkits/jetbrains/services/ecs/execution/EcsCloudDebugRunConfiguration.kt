@@ -85,10 +85,11 @@ class EcsCloudDebugRunConfiguration(project: Project, private val configFactory:
 
         if (!EcsUtils.isInstrumented(immutableSettings.serviceArn)) {
             throw RuntimeConfigurationError(
-                message("cloud_debug.run_configuration.not_instrumented.service", EcsUtils.serviceArnToName(immutableSettings.serviceArn))
-            ) {
-                InstrumentResourceAction(clusterArn(), serviceArn()).performAction(project)
-            }
+                message("cloud_debug.run_configuration.not_instrumented.service", EcsUtils.serviceArnToName(immutableSettings.serviceArn)),
+                Runnable {
+                    InstrumentResourceAction(clusterArn(), serviceArn()).performAction(project)
+                }
+            )
         }
     }
 

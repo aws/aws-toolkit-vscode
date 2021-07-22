@@ -7,10 +7,9 @@ import com.intellij.openapi.progress.ProgressIndicator
 import com.intellij.openapi.progress.ProgressManager
 import com.intellij.openapi.progress.Task
 import com.intellij.openapi.project.Project
-import com.intellij.util.io.inputStream
 import com.intellij.util.io.outputStream
-import com.intellij.util.io.size
 import software.amazon.awssdk.core.sync.RequestBody
+import software.amazon.awssdk.http.ContentStreamProvider
 import software.amazon.awssdk.services.s3.S3Client
 import software.amazon.awssdk.services.s3.model.GetObjectRequest
 import software.amazon.awssdk.services.s3.model.GetObjectResponse
@@ -37,12 +36,11 @@ fun S3Client.upload(
     key: String,
     message: String = message("s3.upload.object.progress", key),
     startInBackground: Boolean = true
-): CompletionStage<PutObjectResponse> = upload(project, source.inputStream(), source.size(), bucket, key, message, startInBackground)
+): CompletionStage<PutObjectResponse> = upload(project, RequestBody.fromFile(source), bucket, key, message, startInBackground)
 
-fun S3Client.upload(
+private fun S3Client.upload(
     project: Project,
-    source: InputStream,
-    length: Long,
+    source: RequestBody,
     bucket: String,
     key: String,
     message: String = message("s3.upload.object.progress", key),
@@ -53,12 +51,18 @@ fun S3Client.upload(
     ProgressManager.getInstance().run(
         object : Task.Backgroundable(project, message, true, if (startInBackground) ALWAYS_BACKGROUND else null) {
             override fun run(indicator: ProgressIndicator) {
-                indicator.isIndeterminate = false
+                indicator.isIndeterminate = source.optionalContentLength().isEmpty
+                val requestSource = if (source.optionalContentLength().isPresent) {
+                    val length = source.optionalContentLength().get()
+                    val newProvider = ProgressTrackingContentProvider(indicator, source.contentStreamProvider(), length)
+
+                    RequestBody.fromContentProvider(newProvider, length, source.contentType())
+                } else {
+                    source
+                }
+
                 try {
-                    val result = ProgressMonitorInputStream(indicator, source, length = length).use {
-                        this@upload.putObject(request, RequestBody.fromInputStream(it, length))
-                    }
-                    future.complete(result)
+                    future.complete(this@upload.putObject(request, requestSource))
                 } catch (e: Exception) {
                     future.completeExceptionally(e)
                 }
@@ -66,6 +70,26 @@ fun S3Client.upload(
         }
     )
     return future
+}
+
+private class ProgressTrackingContentProvider(
+    private val progressIndicator: ProgressIndicator,
+    private val underlyingInputStreamProvider: ContentStreamProvider,
+    private val length: Long
+) : ContentStreamProvider {
+    private var currentStream: InputStream? = null
+
+    override fun newStream(): InputStream {
+        currentStream?.let {
+            runCatching {
+                it.close()
+            }
+        }
+
+        return ProgressMonitorInputStream(progressIndicator, underlyingInputStreamProvider.newStream(), length).also {
+            currentStream = it
+        }
+    }
 }
 
 fun S3Client.download(
