@@ -20,6 +20,11 @@ export class S3DocumentProvider implements vscode.TextDocumentContentProvider {
             showOutputMessage(`${e}`, ext.outputChannel)
             getLogger().error(`S3DocumentProvider: Error opening ${uri.fsPath} on read-only ${e}`)
         }
+
+        if (!data) {
+            getLogger().error(`S3DocumentProvider: Something went wrong opening ${uri.fsPath}`)
+        }
+
         return data ?? ''
     }
 }

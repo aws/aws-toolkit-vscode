@@ -433,7 +433,7 @@
     "AWS.s3.fileViewer.error.invalidUpload": "File is invalid to upload, file has changed in S3 since last cache download. Please try and reopen the file. Be aware current changes may be lost.",
     "AWS.s3.fileViewer.warning.noSize": "File size couldn't be determined. Continue with download?",
     "AWS.s3.fileViewer.warning.4mb": "File size is more than 4MB. Continue with download?",
-    "AWS.s3.fileViewer.warning.editStateWarning": "Opening S3 tab on Edit Mode, please be aware all saved changes will be uploaded back to the original location in S3",
+    "AWS.s3.fileViewer.warning.editStateWarning": "Opening S3 tab in Edit Mode, please be aware all saved changes will be uploaded back to the original location in S3",
     "AWS.s3.fileViewer.error.editMode": "Error switching to edit mode, please try reopening from the AWS Explorer",
     "AWS.s3.uploadFile.progressTitle": "Uploading {0}...",
     "AWS.s3.uploadFile.openButton": "Upload",

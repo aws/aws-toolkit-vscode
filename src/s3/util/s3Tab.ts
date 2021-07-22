@@ -17,7 +17,7 @@ import { uploadWithProgress } from '../commands/uploadFile'
 export class S3Tab {
     public s3Uri: vscode.Uri
     private window: typeof vscode.window
-    private editor: vscode.TextEditor | undefined
+    public editor: vscode.TextEditor | undefined
     private parent: S3BucketNode | S3FolderNode
     private s3Client: S3Client
 
@@ -38,21 +38,21 @@ export class S3Tab {
 
     public async openFile(uri: vscode.Uri, workspace = vscode.workspace): Promise<void> {
         //find if there is any active editor for this uri
-        const openEditor = await this.getActiveEditor()
+        const openEditor = this.editor
         try {
             const doc = await workspace.openTextDocument(uri)
             if (!openEditor) {
                 //there wasn't any open, just display it regularly
                 this.editor = await this.window.showTextDocument(doc, { preview: false })
-            } else if (openEditor.document.uri.scheme === uri.scheme) {
+            } else if (openEditor.document.uri.scheme === 'file' || openEditor.document.uri.scheme === uri.scheme) {
                 //there is a tab for this uri scheme open, just shift focus to it by reopening it with the ViewColumn option
                 await this.window.showTextDocument(openEditor.document, {
                     preview: false,
                     viewColumn: openEditor.viewColumn,
                 })
                 this.editor = openEditor
-            } else if (openEditor.document.uri.scheme !== uri.scheme) {
-                // there is a read-only tab open, it needs to be focused, then closed
+            } else {
+                // there is already a tab open, it needs to be focused, then closed
                 await this.focusAndCloseTab()
                 //good to open in given mode
                 this.editor = await this.window.showTextDocument(doc, { preview: false })

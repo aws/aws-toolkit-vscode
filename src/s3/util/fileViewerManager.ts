@@ -66,6 +66,26 @@ export class S3FileViewerManager {
                 }
             }
         })
+
+        this.window.onDidChangeVisibleTextEditors(editors => {
+            const editorSet = new Set(editors)
+            for (const value of this.activeTabs.values()) {
+                //if visible text editors don't contain a given S3Tab anymore,
+                //set the S3Tab.editor to undefined
+                if (value.editor) {
+                    if (!editorSet.has(value.editor)) {
+                        value.editor = undefined
+                    }
+                }
+            }
+        })
+
+        vscode.workspace.onDidCloseTextDocument(async closedTextDoc => {
+            if (this.activeTabs.has(closedTextDoc.uri.fsPath)) {
+                const closedTab = this.activeTabs.get(closedTextDoc.uri.fsPath)
+                closedTab!.editor = undefined
+            }
+        })
     }
 
     /**
@@ -101,7 +121,7 @@ export class S3FileViewerManager {
         if (this.promptOnEdit) {
             const message = localize(
                 'AWS.s3.fileViewer.warning.editStateWarning',
-                'Opening S3 tab on Edit Mode, please be aware all saved changes will be uploaded back to the original location in S3'
+                'Opening S3 tab in Edit Mode, please be aware all saved changes will be uploaded back to the original location in S3'
             )
 
             const dontShow = localize('AWS.s3.fileViewer.button.dismiss', "Dismiss and don't show this again")
