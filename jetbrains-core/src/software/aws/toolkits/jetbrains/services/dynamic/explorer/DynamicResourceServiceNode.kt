@@ -41,18 +41,18 @@ class DynamicResourceResourceTypeNode(project: Project, private val resourceType
     override fun getChildren(): List<AwsExplorerNode<*>> = super.getChildren()
 
     override fun getChildrenInternal(): List<AwsExplorerNode<*>> = try {
-        if (resourceAvailableInCurrentRegion){nodeProject.getResourceNow(DynamicResources.listResources(resourceType))
-            .map { DynamicResourceNode(nodeProject, it) }.also {
-                DynamicresourceTelemetry.listType(project = nodeProject, success = true, resourceType = resourceType)
-            }} else {
-                emptyList()
+        if (resourceAvailableInCurrentRegion) {
+            nodeProject.getResourceNow(DynamicResources.listResources(resourceType))
+                .map { DynamicResourceNode(nodeProject, it) }.also {
+                    DynamicresourceTelemetry.listType(project = nodeProject, success = true, resourceType = resourceType)
+                }
+        } else {
+            emptyList()
         }
-
     } catch (e: Exception) {
         DynamicresourceTelemetry.listType(project = nodeProject, success = false, resourceType = resourceType)
         throw e
     }
-
 }
 
 class DynamicResourceNode(project: Project, val resource: DynamicResource) :
