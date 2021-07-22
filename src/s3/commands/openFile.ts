@@ -2,9 +2,8 @@
  * Copyright 2021 Amazon.com, Inc. or its affiliates. All Rights Reserved.
  * SPDX-License-Identifier: Apache-2.0
  */
-//TODOD:: change feature icon on package.json
 
-//import * as vscode from 'vscode'import
+import * as vscode from 'vscode'
 import { ext } from '../../shared/extensionGlobals'
 import { localize } from '../../shared/utilities/vsCodeUtils'
 import { Window } from '../../shared/vscode/window'
@@ -25,5 +24,11 @@ export async function openFileCommand(node: S3FileNode, window = Window.vscode()
         return
     }
     const manager = ext.s3fileViewerManager
-    manager.openTab(node)
+    await manager.openTab(node)
+}
+
+export async function openFileEditModeCommand(uriOrNode: vscode.Uri | S3FileNode): Promise<void> {
+    //TODOD:: implement this later, after approval of read-only
+    const manager = ext.s3fileViewerManager
+    manager.openInEditMode(uriOrNode)
 }
