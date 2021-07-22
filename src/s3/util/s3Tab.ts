@@ -4,13 +4,8 @@
  */
 
 import * as vscode from 'vscode'
-//import { Bucket, DownloadFileRequest, File, S3Client } from '../../shared/clients/s3Client'
-import { S3BucketNode } from '../explorer/s3BucketNode'
 import { S3FileNode } from '../explorer/s3FileNode'
-import { S3FolderNode } from '../explorer/s3FolderNode'
-import { S3Client } from '../../shared/clients/s3Client'
 import { uploadWithProgress } from '../commands/uploadFile'
-//need to subscribe to ondidsave and upload to s3, might need the S3FileNode
 
 //const contentType = mime.lookup(path.basename(request.fileLocation.fsPath)) || DEFAULT_CONTENT_TYPE
 //FOUND IN : s3Client.ts
@@ -18,14 +13,10 @@ export class S3Tab {
     public s3Uri: vscode.Uri
     private window: typeof vscode.window
     public editor: vscode.TextEditor | undefined
-    private parent: S3BucketNode | S3FolderNode
-    private s3Client: S3Client
 
     public constructor(public fileUri: vscode.Uri, public s3FileNode: S3FileNode, window = vscode.window) {
         this.s3Uri = vscode.Uri.parse('s3:' + this.fileUri.fsPath)
-        this.parent = s3FileNode.parent
         this.window = window
-        this.s3Client = s3FileNode.s3
     }
 
     public async openFileInReadOnly(workspace = vscode.workspace): Promise<void> {
@@ -64,7 +55,7 @@ export class S3Tab {
     }
 
     public async focusAndCloseTab(): Promise<void> {
-        const editor = await this.getActiveEditor()
+        const editor = this.editor
         if (!editor) {
             return
         }
@@ -83,10 +74,10 @@ export class S3Tab {
     public async uploadChangesToS3(): Promise<boolean> {
         const request = {
             bucketName: this.s3FileNode.bucket.name,
-            key: this.parent.path + this.s3FileNode.name,
+            key: this.s3FileNode.parent.path + this.s3FileNode.name,
             fileLocation: this.fileUri,
             fileSizeBytes: this.s3FileNode.file.sizeBytes!,
-            s3Client: this.s3Client,
+            s3Client: this.s3FileNode.s3,
             window: this.window,
         }
         try {
@@ -96,12 +87,5 @@ export class S3Tab {
             return false
         }
         return true
-    }
-
-    //will be deleted when handling usage of this.editor, need to check when tab closes to set it undefined
-    public async getActiveEditor(): Promise<vscode.TextEditor | undefined> {
-        const visibleEditor = vscode.window.visibleTextEditors
-
-        return visibleEditor.find((editor: vscode.TextEditor) => editor.document.uri.fsPath === this.fileUri.fsPath)
     }
 }

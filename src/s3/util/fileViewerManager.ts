@@ -47,7 +47,9 @@ export class S3FileViewerManager {
 
                 if (await this.checkForValidity(activeTab.s3FileNode, activeTab.fileUri)) {
                     //good to upload
-                    await activeTab.uploadChangesToS3()
+                    if (!(await activeTab.uploadChangesToS3())) {
+                        this.window.showErrorMessage('Error uploading file to S3. Changes will not be saved.')
+                    }
                     //refresh the activeTab.s3FileNode?
                     const fileNode = await this.refreshNode(activeTab.s3FileNode)
                     if (!fileNode) {
@@ -121,10 +123,10 @@ export class S3FileViewerManager {
         if (this.promptOnEdit) {
             const message = localize(
                 'AWS.s3.fileViewer.warning.editStateWarning',
-                'Opening S3 tab in Edit Mode, please be aware all saved changes will be uploaded back to the original location in S3'
+                'Opening S3 file for editing. Saved changes will be written directly to the original location in S3.'
             )
 
-            const dontShow = localize('AWS.s3.fileViewer.button.dismiss', "Dismiss and don't show this again")
+            const dontShow = localize('AWS.s3.fileViewer.button.dismiss', "Don't show this again")
             const help = localize('AWS.s3.fileViewer.button.help', 'Help')
 
             this.window.showWarningMessage(message, dontShow, help).then(selection => {
@@ -377,14 +379,18 @@ export class S3FileViewerManager {
             return false
         }
 
-        fileNode = newNode
-        const lastModifiedInS3 = fileNode!.file.lastModified
+        const lastModifiedInS3 = newNode.file.lastModified
         const { birthtime } = fs.statSync(targetUri.fsPath)
 
         getLogger().debug(
-            `FileViewer: File ${fileNode.file.name} was last modified in S3: ${lastModifiedInS3}, cached on: ${birthtime}`
+            `FileViewer: File ${newNode.file.name} was last modified in S3: ${lastModifiedInS3}, cached on: ${birthtime}`
         )
 
-        return lastModifiedInS3! <= birthtime
+        if (!lastModifiedInS3) {
+            getLogger().error(`S3FileViewer: FileNode has not last modified date, file node: ${fileNode.toString()}`)
+            return false
+        }
+
+        return lastModifiedInS3 <= birthtime
     }
 }
