@@ -48,7 +48,10 @@ export class S3FileViewerManager {
                 if (await this.checkForValidity(activeTab.s3FileNode, activeTab.fileUri)) {
                     //good to upload
                     if (!(await activeTab.uploadChangesToS3())) {
-                        this.window.showErrorMessage('Error uploading file to S3. Changes will not be saved.')
+                        this.window.showErrorMessage(
+                            'Error uploading file to S3. Changes will not be saved. Please try and resave this edit mode file'
+                        )
+                        return
                     }
                     //refresh the activeTab.s3FileNode?
                     const fileNode = await this.refreshNode(activeTab.s3FileNode)
