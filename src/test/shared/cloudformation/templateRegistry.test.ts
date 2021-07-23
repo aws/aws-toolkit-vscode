@@ -53,7 +53,7 @@ describe('CloudFormation Template Registry', async function () {
                 const filename = vscode.Uri.file(path.join(tempFolder, 'template.yaml'))
                 await strToYamlFile(badYaml, filename.fsPath)
 
-                await assert.rejects(testRegistry.addItemToRegistry(vscode.Uri.file(filename.fsPath)))
+                assert.strictEqual(await testRegistry.addItemToRegistry(vscode.Uri.file(filename.fsPath)), undefined)
             })
         })
 
@@ -96,7 +96,7 @@ describe('CloudFormation Template Registry', async function () {
                 await testRegistry.addItemToRegistry(vscode.Uri.file(filename.fsPath))
                 assert.strictEqual(testRegistry.registeredItems.length, 1)
 
-                testRegistry.remove(vscode.Uri.file(filename.fsPath))
+                await testRegistry.remove(vscode.Uri.file(filename.fsPath))
                 assert.strictEqual(testRegistry.registeredItems.length, 0)
             })
 
@@ -106,7 +106,7 @@ describe('CloudFormation Template Registry', async function () {
                 await testRegistry.addItemToRegistry(vscode.Uri.file(filename.fsPath))
                 assert.strictEqual(testRegistry.registeredItems.length, 1)
 
-                testRegistry.remove(vscode.Uri.file(path.join(tempFolder, 'wrong-template.yaml')))
+                await testRegistry.remove(vscode.Uri.file(path.join(tempFolder, 'wrong-template.yaml')))
                 assert.strictEqual(testRegistry.registeredItems.length, 1)
             })
         })
