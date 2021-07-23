@@ -11,10 +11,12 @@ import com.intellij.ui.SimpleTextAttributes
 import com.intellij.ui.treeStructure.SimpleNode
 import kotlinx.coroutines.runBlocking
 import software.amazon.awssdk.services.s3.model.NoSuchBucketException
+import software.amazon.awssdk.services.s3.model.S3Exception
 import software.aws.toolkits.core.utils.error
 import software.aws.toolkits.core.utils.getLogger
 import software.aws.toolkits.jetbrains.core.utils.buildList
 import software.aws.toolkits.jetbrains.services.s3.NOT_VERSIONED_VERSION_ID
+import software.aws.toolkits.jetbrains.utils.notifyError
 import software.aws.toolkits.resources.message
 import java.time.Instant
 
@@ -128,6 +130,15 @@ open class S3TreeDirectoryNode(bucket: S3VirtualBucket, parent: S3TreeDirectoryN
         } catch (e: NoSuchBucketException) {
             bucket.handleDeletedBucket()
             return emptyList()
+        } catch (e: S3Exception) {
+            e.notifyError("Access denied to bucket")
+            return buildList {
+                if (continuationMarker != null) {
+                    add(S3TreeErrorContinuationNode(bucket, this@S3TreeDirectoryNode, this@S3TreeDirectoryNode.key, continuationMarker))
+                } else {
+                    add(S3TreeErrorNode(bucket, this@S3TreeDirectoryNode))
+                }
+            }
         } catch (e: Exception) {
             LOG.error(e) { "Loading objects failed!" }
             return buildList {

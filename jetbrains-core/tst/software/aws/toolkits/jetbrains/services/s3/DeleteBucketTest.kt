@@ -122,10 +122,10 @@ class DeleteBucketTest {
             // Silly hack because test file editor impl has a bunch of asserts about the document/psi that don't exist in the real impl
             associateFilePattern(FileTypes.PLAIN_TEXT, bucket.name(), disposableRule.disposable)
 
-            assertThat(openEditor(projectRule.project, bucket)).isNotNull
+            assertThat(openEditor(projectRule.project, bucket.name())).isNotNull
         }
 
-        val s3VirtualBucket = S3VirtualBucket(bucket, "", s3Mock, projectRule.project)
+        val s3VirtualBucket = S3VirtualBucket(bucket.name(), "", s3Mock, projectRule.project)
         val fileEditorManager = FileEditorManager.getInstance(projectRule.project)
 
         assertThat(fileEditorManager.openFiles).contains(s3VirtualBucket)
