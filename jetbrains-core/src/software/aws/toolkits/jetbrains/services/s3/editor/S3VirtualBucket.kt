@@ -8,13 +8,11 @@ import com.intellij.openapi.project.Project
 import com.intellij.openapi.vfs.VirtualFile
 import com.intellij.openapi.vfs.VirtualFileManager
 import com.intellij.testFramework.LightVirtualFile
-import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.future.await
 import kotlinx.coroutines.runBlocking
 import kotlinx.coroutines.withContext
 import software.amazon.awssdk.core.sync.RequestBody
 import software.amazon.awssdk.services.s3.S3Client
-import software.amazon.awssdk.services.s3.model.Bucket
 import software.amazon.awssdk.services.s3.model.ListObjectVersionsResponse
 import software.amazon.awssdk.services.s3.model.ListObjectsV2Response
 import software.amazon.awssdk.services.s3.model.ObjectIdentifier
@@ -22,7 +20,6 @@ import software.aws.toolkits.jetbrains.core.explorer.refreshAwsTree
 import software.aws.toolkits.jetbrains.services.s3.download
 import software.aws.toolkits.jetbrains.services.s3.resources.S3Resources
 import software.aws.toolkits.jetbrains.services.s3.upload
-import software.aws.toolkits.jetbrains.utils.ApplicationThreadPoolScope
 import software.aws.toolkits.jetbrains.utils.getCoroutineBgContext
 import software.aws.toolkits.jetbrains.utils.getCoroutineUiContext
 import software.aws.toolkits.jetbrains.utils.notifyError
@@ -31,9 +28,8 @@ import java.io.OutputStream
 import java.net.URL
 import java.nio.file.Path
 
-class S3VirtualBucket(val s3Bucket: Bucket, prefix: String, val client: S3Client, val project: Project) :
-    LightVirtualFile(vfsName(s3Bucket, prefix)),
-    CoroutineScope by ApplicationThreadPoolScope("S3VirtualBucket") {
+class S3VirtualBucket(val s3Bucket: String, prefix: String, val client: S3Client, val project: Project) :
+    LightVirtualFile(vfsName(s3Bucket, prefix)) {
 
     var prefix = prefix
         set(value) {
@@ -54,68 +50,68 @@ class S3VirtualBucket(val s3Bucket: Bucket, prefix: String, val client: S3Client
         if (other !is S3VirtualBucket) {
             return false
         }
-        return s3Bucket.name() == (other as? S3VirtualBucket)?.s3Bucket?.name() && prefix == (other as? S3VirtualBucket)?.prefix
+        return s3Bucket == (other as? S3VirtualBucket)?.s3Bucket && prefix == (other as? S3VirtualBucket)?.prefix
     }
 
-    override fun hashCode(): Int = s3Bucket.name().hashCode() + prefix.hashCode()
+    override fun hashCode(): Int = s3Bucket.hashCode() + prefix.hashCode()
 
     suspend fun newFolder(name: String) {
         withContext(getCoroutineBgContext()) {
-            client.putObject({ it.bucket(s3Bucket.name()).key(name.trimEnd('/') + "/") }, RequestBody.empty())
+            client.putObject({ it.bucket(s3Bucket).key(name.trimEnd('/') + "/") }, RequestBody.empty())
         }
     }
 
     suspend fun listObjects(prefix: String, continuationToken: String?): ListObjectsV2Response =
         withContext(getCoroutineBgContext()) {
             client.listObjectsV2 {
-                it.bucket(s3Bucket.name()).delimiter("/").prefix(prefix).maxKeys(MAX_ITEMS_TO_LOAD).continuationToken(continuationToken)
+                it.bucket(s3Bucket).delimiter("/").prefix(prefix).maxKeys(MAX_ITEMS_TO_LOAD).continuationToken(continuationToken)
             }
         }
 
     suspend fun listObjectVersions(key: String, keyMarker: String?, versionIdMarker: String?): ListObjectVersionsResponse? =
         withContext(getCoroutineBgContext()) {
             client.listObjectVersions {
-                it.bucket(s3Bucket.name()).prefix(key).delimiter("/").maxKeys(MAX_ITEMS_TO_LOAD).keyMarker(keyMarker).versionIdMarker(versionIdMarker)
+                it.bucket(s3Bucket).prefix(key).delimiter("/").maxKeys(MAX_ITEMS_TO_LOAD).keyMarker(keyMarker).versionIdMarker(versionIdMarker)
             }
         }
 
     suspend fun deleteObjects(keys: List<String>) {
         withContext(getCoroutineBgContext()) {
             val keysToDelete = keys.map { ObjectIdentifier.builder().key(it).build() }
-            client.deleteObjects { it.bucket(s3Bucket.name()).delete { del -> del.objects(keysToDelete) } }
+            client.deleteObjects { it.bucket(s3Bucket).delete { del -> del.objects(keysToDelete) } }
         }
     }
 
     suspend fun renameObject(fromKey: String, toKey: String) {
         withContext(getCoroutineBgContext()) {
-            client.copyObject { it.copySource("${s3Bucket.name()}/$fromKey").destinationBucket(s3Bucket.name()).destinationKey(toKey) }
-            client.deleteObject { it.bucket(s3Bucket.name()).key(fromKey) }
+            client.copyObject { it.copySource("$s3Bucket/$fromKey").destinationBucket(s3Bucket).destinationKey(toKey) }
+            client.deleteObject { it.bucket(s3Bucket).key(fromKey) }
         }
     }
 
     suspend fun upload(project: Project, source: Path, key: String) {
         withContext(getCoroutineBgContext()) {
-            client.upload(project, source, s3Bucket.name(), key).await()
+            client.upload(project, source, s3Bucket, key).await()
         }
     }
 
     suspend fun download(project: Project, key: String, versionId: String? = null, output: OutputStream) {
         withContext(getCoroutineBgContext()) {
-            client.download(project, s3Bucket.name(), key, versionId, output).await()
+            client.download(project, s3Bucket, key, versionId, output).await()
         }
     }
 
     fun generateUrl(key: String, versionId: String?): URL = client.utilities().getUrl {
-        it.bucket(s3Bucket.name())
+        it.bucket(s3Bucket)
         it.key(key)
         it.versionId(versionId)
     }
 
     fun handleDeletedBucket() {
-        notifyError(project = project, content = message("s3.open.viewer.bucket_does_not_exist", s3Bucket.name()))
+        notifyError(project = project, content = message("s3.open.viewer.bucket_does_not_exist", s3Bucket))
         val fileEditorManager = FileEditorManager.getInstance(project)
         fileEditorManager.openFiles.forEach {
-            if (it is S3VirtualBucket && it.name == s3Bucket.name()) {
+            if (it is S3VirtualBucket && it.name == s3Bucket) {
                 runBlocking(getCoroutineUiContext()) {
                     fileEditorManager.closeFile(it)
                 }
@@ -127,10 +123,10 @@ class S3VirtualBucket(val s3Bucket: Bucket, prefix: String, val client: S3Client
     private companion object {
         const val MAX_ITEMS_TO_LOAD = 300
 
-        fun vfsName(s3Bucket: Bucket, subroot: String): String = if (subroot.isBlank()) {
-            s3Bucket.name()
+        fun vfsName(s3BucketName: String, subroot: String): String = if (subroot.isBlank()) {
+            s3BucketName
         } else {
-            "${s3Bucket.name()}/$subroot"
+            "$s3BucketName/$subroot"
         }
     }
 }
