@@ -1316,12 +1316,7 @@
                 "command": "aws.s3.openFile",
                 "title": "%AWS.command.s3.openFile%",
                 "category": "%AWS.title%",
-                "icon": "$(open-preview)",
-                "cloud9": {
-                    "cn": {
-                        "category": "%AWS.title.cn%"
-                    }
-                }
+                "icon": "$(open-preview)"
             },
             {
                 "command": "aws.s3.openFileEditMode",
