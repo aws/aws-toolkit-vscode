@@ -32,7 +32,7 @@ class S3BucketNode(project: Project, val bucket: Bucket) :
     override fun isAlwaysShowPlus(): Boolean = false
 
     override fun onDoubleClick() {
-        openEditor(nodeProject, bucket)
+        openEditor(nodeProject, bucket.name())
     }
 
     override fun displayName(): String = bucket.name()

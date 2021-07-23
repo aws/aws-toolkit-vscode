@@ -28,6 +28,6 @@ class OpenPrefixedBucketViewerAction : SingleResourceNodeAction<S3BucketNode>(),
             return
         }
 
-        openEditor(selected.nodeProject, selected.bucket, prefix)
+        openEditor(selected.nodeProject, selected.bucket.name(), prefix)
     }
 }
