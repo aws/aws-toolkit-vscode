@@ -54,7 +54,20 @@ export class DefaultEcsClient {
             getLogger().error('ecs: Failed to list services for cluster %s: %O', cluster, error)
             throw error
         }
-        
+    }
+
+    public async listContainerNames(taskDefinition: string): Promise<string[]> {
+        const sdkClient = await this.createSdkClient()
+        try {
+            const describeTaskDefinitionResponse = await sdkClient.describeTaskDefinition({taskDefinition}).promise()
+            const containerNames = describeTaskDefinitionResponse.taskDefinition?.containerDefinitions?.map(cd => {
+                return cd.name ?? ''
+            })
+            return containerNames ?? []
+        } catch (error) {
+            getLogger().error('ecs: Failed to list containers for task definition %s: %O', taskDefinition, error)
+            throw error
+        }
     }
 
     protected async createSdkClient(): Promise<ECS> {
