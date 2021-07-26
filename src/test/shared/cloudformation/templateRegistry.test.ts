@@ -18,6 +18,8 @@ import { badYaml, makeSampleSamTemplateYaml, strToYamlFile } from './cloudformat
 import { assertEqualPaths, toFile } from '../../testUtil'
 import { CloudFormation } from '../../../shared/cloudformation/cloudformation'
 import { WatchedItem } from '../../../shared/watchedFiles'
+import { FakeWorkspace } from '../vscode/fakeWorkspace'
+import { WorkspaceConfiguration } from '../../../shared/vscode/workspace'
 
 // TODO almost all of these tests should be moved to test WatchedFiles instead
 describe('CloudFormation Template Registry', async function () {
@@ -26,8 +28,10 @@ describe('CloudFormation Template Registry', async function () {
     describe('CloudFormationTemplateRegistry', async function () {
         let testRegistry: CloudFormationTemplateRegistry
         let tempFolder: string
+        let config: WorkspaceConfiguration
 
         beforeEach(async function () {
+            config = new FakeWorkspace().getConfiguration()
             tempFolder = await makeTemporaryToolkitFolder()
             testRegistry = new CloudFormationTemplateRegistry()
         })

@@ -18,6 +18,8 @@ import * as path from 'path'
 import { CloudFormationTemplateRegistry } from '../../../shared/cloudformation/templateRegistry'
 import { isImageLambdaConfig } from '../../../lambda/local/debugConfiguration'
 import { ext } from '../../../shared/extensionGlobals'
+import { FakeWorkspace } from '../../shared/vscode/fakeWorkspace'
+import { WorkspaceConfiguration } from '../../../shared/vscode/workspace'
 
 describe('makeCoreCLRDebugConfiguration', async function () {
     let tempFolder: string
@@ -122,8 +124,10 @@ describe('isImageLambdaConfig', async function () {
 
     let registry: CloudFormationTemplateRegistry
     let appDir: string
+    let config: WorkspaceConfiguration
 
     beforeEach(async function () {
+        config = new FakeWorkspace().getConfiguration()
         tempFolder = await makeTemporaryToolkitFolder()
         fakeWorkspaceFolder = {
             uri: vscode.Uri.file(tempFolder),

@@ -21,6 +21,11 @@ export interface TemplateDatum {
 }
 
 export class CloudFormationTemplateRegistry extends WatchedFiles<CloudFormation.Template> {
+    public constructor(
+        private readonly config: vscode.WorkspaceConfiguration = vscode.workspace.getConfiguration('yaml')
+    ) {
+        super()
+    }
     protected name: string = 'CloudFormationTemplateRegistry'
     protected async load(path: string): Promise<CloudFormation.Template | undefined> {
         // P0: Assume all template.yaml/yml files are CFN templates and assign correct JSON schema.
@@ -30,7 +35,7 @@ export class CloudFormationTemplateRegistry extends WatchedFiles<CloudFormation.
         try {
             template = await CloudFormation.load(path)
         } catch (e) {
-            await updateYamlSchemasArray(path, 'none')
+            await updateYamlSchemasArray(path, 'none', this.config)
             return undefined
         }
 
@@ -39,22 +44,22 @@ export class CloudFormationTemplateRegistry extends WatchedFiles<CloudFormation.
         if (template.AWSTemplateFormatVersion || template.Resources) {
             if (template.Transform && template.Transform.toString().startsWith('AWS::Serverless')) {
                 // apply serverless schema
-                await updateYamlSchemasArray(path, 'sam')
+                await updateYamlSchemasArray(path, 'sam', this.config)
             } else {
                 // apply cfn schema
-                await updateYamlSchemasArray(path, 'cfn')
+                await updateYamlSchemasArray(path, 'cfn', this.config)
             }
 
             return template
         }
 
-        await updateYamlSchemasArray(path, 'none')
+        await updateYamlSchemasArray(path, 'none', this.config)
         return undefined
     }
 
     // handles delete case
     public async remove(path: string | vscode.Uri): Promise<void> {
-        await updateYamlSchemasArray(typeof path === 'string' ? path : pathutils.normalize(path.fsPath), 'none')
+        await updateYamlSchemasArray(typeof path === 'string' ? path : pathutils.normalize(path.fsPath), 'none', config)
         await super.remove(path)
     }
 }
