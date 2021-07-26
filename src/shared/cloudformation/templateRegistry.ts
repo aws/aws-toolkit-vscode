@@ -14,6 +14,7 @@ import { getLambdaDetails } from '../../lambda/utils'
 import { ext } from '../extensionGlobals'
 import { WatchedFiles, WatchedItem } from '../watchedFiles'
 import { getLogger } from '../logger'
+import { WorkspaceConfiguration } from '../vscode/workspace'
 
 export interface TemplateDatum {
     path: string
@@ -21,9 +22,7 @@ export interface TemplateDatum {
 }
 
 export class CloudFormationTemplateRegistry extends WatchedFiles<CloudFormation.Template> {
-    public constructor(
-        private readonly config: vscode.WorkspaceConfiguration = vscode.workspace.getConfiguration('yaml')
-    ) {
+    public constructor(private readonly config: WorkspaceConfiguration = vscode.workspace.getConfiguration('yaml')) {
         super()
     }
     protected name: string = 'CloudFormationTemplateRegistry'
@@ -59,7 +58,11 @@ export class CloudFormationTemplateRegistry extends WatchedFiles<CloudFormation.
 
     // handles delete case
     public async remove(path: string | vscode.Uri): Promise<void> {
-        await updateYamlSchemasArray(typeof path === 'string' ? path : pathutils.normalize(path.fsPath), 'none', config)
+        await updateYamlSchemasArray(
+            typeof path === 'string' ? path : pathutils.normalize(path.fsPath),
+            'none',
+            this.config
+        )
         await super.remove(path)
     }
 }
