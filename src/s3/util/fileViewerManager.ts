@@ -123,7 +123,7 @@ export class S3FileViewerManager {
             const edit = 'Open in edit mode'
             const read = 'Try in read-only'
             if (await showConfirmationMessage({ prompt, confirm: edit, cancel: read }, this.window)) {
-                await this.openInEditMode(fileNode)
+                return await this.openInEditMode(fileNode)
             }
         }
 

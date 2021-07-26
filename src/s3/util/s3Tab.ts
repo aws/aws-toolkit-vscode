@@ -4,10 +4,8 @@
  */
 
 import * as vscode from 'vscode'
-import { ext } from '../../shared/extensionGlobals'
 import { S3FileNode } from '../explorer/s3FileNode'
 import { uploadWithProgress } from '../commands/uploadFile'
-import { showOutputMessage } from '../../shared/utilities/messages'
 
 //const contentType = mime.lookup(path.basename(request.fileLocation.fsPath)) || DEFAULT_CONTENT_TYPE
 //FOUND IN : s3Client.ts
@@ -26,7 +24,15 @@ export class S3Tab {
     }
 
     public async openFileInEditMode(workspace = vscode.workspace): Promise<void> {
-        await this.openFile(this.fileUri, workspace)
+        //await this.openFile(this.fileUri, workspace)
+        const openEditor = await this.getActiveEditor()
+        if (openEditor && openEditor.document.uri.scheme === 'file') {
+            //shift focus
+            const doc = await workspace.openTextDocument(this.fileUri)
+            await this.window.showTextDocument(doc, { preview: false })
+        } else {
+            vscode.commands.executeCommand('workbench.action.quickOpen', this.fileUri.fsPath)
+        }
     }
 
     public async openFile(uri: vscode.Uri, workspace = vscode.workspace): Promise<void> {
@@ -53,8 +59,6 @@ export class S3Tab {
             }
         } catch (e) {
             this.window.showErrorMessage(`Error opening file ${e}`)
-            showOutputMessage(`Please try cmmd+click on: ${uri.fsPath}`, ext.outputChannel)
-            console.log(`Please try cmmd+click on: ${uri.fsPath}`)
             this.editor = undefined
         }
     }
