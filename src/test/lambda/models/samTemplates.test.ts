@@ -21,28 +21,31 @@ import { Set } from 'immutable'
 
 import { samZipLambdaRuntimes } from '../../../lambda/models/samLambdaRuntime'
 
-const validTemplateOptions: Set<SamTemplate> = Set<SamTemplate>([
-    helloWorldTemplate,
-    eventBridgeHelloWorldTemplate,
-    eventBridgeStarterAppTemplate,
-    stepFunctionsSampleApp,
-    typeScriptBackendTemplate,
-])
+let validTemplateOptions: Set<SamTemplate>
+let validPythonTemplateOptions: Set<SamTemplate>
+let validNode12TemplateOptions: Set<SamTemplate>
+let defaultTemplateOptions: Set<SamTemplate>
 
-const validPythonTemplateOptions: Set<SamTemplate> = Set<SamTemplate>([
-    helloWorldTemplate,
-    eventBridgeHelloWorldTemplate,
-    eventBridgeStarterAppTemplate,
-    stepFunctionsSampleApp,
-])
+before(function () {
+    validTemplateOptions = Set([
+        helloWorldTemplate,
+        eventBridgeHelloWorldTemplate,
+        eventBridgeStarterAppTemplate,
+        stepFunctionsSampleApp,
+        typeScriptBackendTemplate,
+    ])
 
-const validNode12TemplateOptions: Set<SamTemplate> = Set<SamTemplate>([
-    helloWorldTemplate,
-    stepFunctionsSampleApp,
-    typeScriptBackendTemplate,
-])
+    validPythonTemplateOptions = Set([
+        helloWorldTemplate,
+        eventBridgeHelloWorldTemplate,
+        eventBridgeStarterAppTemplate,
+        stepFunctionsSampleApp,
+    ])
 
-const defaultTemplateOptions: Set<SamTemplate> = Set<SamTemplate>([helloWorldTemplate, stepFunctionsSampleApp])
+    validNode12TemplateOptions = Set([helloWorldTemplate, stepFunctionsSampleApp, typeScriptBackendTemplate])
+
+    defaultTemplateOptions = Set([helloWorldTemplate, stepFunctionsSampleApp])
+})
 
 describe('getSamTemplateWizardOption', function () {
     it('should successfully return available templates for specific runtime', function () {

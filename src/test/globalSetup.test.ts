@@ -23,6 +23,7 @@ import { FakeAwsContext } from './utilities/fakeAwsContext'
 import { initializeComputeRegion } from '../shared/extensionUtilities'
 import { Uri } from 'vscode'
 import { CloudFormationSchemas, YamlExtension } from '../shared/cloudformation/yamlExtension'
+import { lazyLoadSamTemplateStrings } from '../lambda/models/samTemplates'
 
 const testReportDir = join(__dirname, '../../../.test-reports')
 const testLogOutput = join(testReportDir, 'testLog.log')
@@ -44,6 +45,7 @@ before(async function () {
     ext.init(fakeContext, extWindow.Window.vscode())
     ext.telemetry = service
     await initializeComputeRegion()
+    lazyLoadSamTemplateStrings()
 })
 
 // These currently are only ever read by the Yaml extension, which we have stubbed out
