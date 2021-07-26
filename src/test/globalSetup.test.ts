@@ -7,6 +7,7 @@
  * Before/After hooks for all "unit" tests
  */
 import * as assert from 'assert'
+import * as path from 'path'
 import { appendFileSync, mkdirpSync, remove } from 'fs-extra'
 import { join } from 'path'
 import { CodelensRootRegistry } from '../shared/sam/codelensRootRegistry'
@@ -24,12 +25,14 @@ import { initializeComputeRegion } from '../shared/extensionUtilities'
 import { Uri } from 'vscode'
 import { CloudFormationSchemas, YamlExtension } from '../shared/cloudformation/yamlExtension'
 import { lazyLoadSamTemplateStrings } from '../lambda/models/samTemplates'
+import { makeTemporaryToolkitFolder } from '../shared/filesystemUtilities'
 
 const testReportDir = join(__dirname, '../../../.test-reports')
 const testLogOutput = join(testReportDir, 'testLog.log')
 
 // Expectation: Tests are not run concurrently
 let testLogger: TestLogger | undefined
+let fakeSchemas: CloudFormationSchemas
 
 before(async function () {
     // Clean up and set up test logs
@@ -46,13 +49,14 @@ before(async function () {
     ext.telemetry = service
     await initializeComputeRegion()
     lazyLoadSamTemplateStrings()
-})
 
-// These currently are only ever read by the Yaml extension, which we have stubbed out
-const fakeSchemas: CloudFormationSchemas = {
-    standard: Uri.parse(''),
-    sam: Uri.parse(''),
-}
+    // These currently are only ever read by the Yaml extension, which we have stubbed out
+    const fakeSchemaDirectory = await makeTemporaryToolkitFolder()
+    fakeSchemas = {
+        standard: Uri.parse(path.join(fakeSchemaDirectory, 'cloudformation.schema.json')),
+        sam: Uri.parse(path.join(fakeSchemaDirectory, 'sam.schema.json')),
+    }
+})
 
 const fakeYamlExtension: YamlExtension = {
     assignSchema: (path, schema) => undefined,
