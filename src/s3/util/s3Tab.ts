@@ -29,7 +29,8 @@ export class S3Tab {
 
     public async openFile(uri: vscode.Uri, workspace = vscode.workspace): Promise<void> {
         //find if there is any active editor for this uri
-        const openEditor = this.editor
+        const openEditor = await this.getActiveEditor()
+
         try {
             const doc = await workspace.openTextDocument(uri)
             if (!openEditor) {
@@ -55,7 +56,7 @@ export class S3Tab {
     }
 
     public async focusAndCloseTab(): Promise<void> {
-        const editor = this.editor
+        const editor = await this.getActiveEditor()
         if (!editor) {
             return
         }
@@ -87,5 +88,11 @@ export class S3Tab {
             return false
         }
         return true
+    }
+
+    //will be deleted when handling usage of this.editor, need to check when tab closes to set it undefined
+    public async getActiveEditor(): Promise<vscode.TextEditor | undefined> {
+        const visibleEditor = vscode.window.visibleTextEditors
+        return visibleEditor.find((editor: vscode.TextEditor) => editor.document.uri.fsPath === this.fileUri.fsPath)
     }
 }

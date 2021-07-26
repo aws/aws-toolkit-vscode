@@ -55,9 +55,7 @@ export class S3FileViewerManager {
                     }
                     //refresh the activeTab.s3FileNode?
                     const fileNode = await this.refreshNode(activeTab.s3FileNode)
-                    if (!fileNode) {
-                        return
-                    }
+
                     await this.removeAndCloseTab(activeTab)
                     await this.openTab(fileNode)
                     this._onDidChange.fire(activeTab.s3Uri)
@@ -72,25 +70,18 @@ export class S3FileViewerManager {
             }
         })
 
-        this.window.onDidChangeVisibleTextEditors(editors => {
-            const editorSet = new Set(editors)
-            for (const value of this.activeTabs.values()) {
-                //if visible text editors don't contain a given S3Tab anymore,
-                //set the S3Tab.editor to undefined
-                if (value.editor) {
-                    if (!editorSet.has(value.editor)) {
-                        value.editor = undefined
-                    }
-                }
-            }
-        })
-
-        vscode.workspace.onDidCloseTextDocument(async closedTextDoc => {
-            if (this.activeTabs.has(closedTextDoc.uri.fsPath)) {
-                const closedTab = this.activeTabs.get(closedTextDoc.uri.fsPath)
-                closedTab!.editor = undefined
-            }
-        })
+        // this.window.onDidChangeVisibleTextEditors(editors => {
+        //     //const editorSet = new Set(editors)
+        //     // for (const value of this.activeTabs.values()) {
+        //     //     //if visible text editors don't contain a given S3Tab anymore,
+        //     //     //set the S3Tab.editor to undefined
+        //     //     if (value.editor) {
+        //     //         if (!editorSet.has(value.editor)) {
+        //     //             value.editor = undefined
+        //     //         }
+        //     //     }
+        //     // }
+        // })
     }
 
     /**
@@ -98,7 +89,7 @@ export class S3FileViewerManager {
      * Checks and creates a cache to store downloads
      * Retrieves previously cached files on cache and
      * Downloads file from S3 ands stores in cache
-     * Opens the tab on read-only with the use of an S3Tab
+     * Opens the tab on read-only with the use of an S3Tab, or shifts focus to an edit tab if any.
      *
      * @param fileNode
      * @returns
@@ -138,7 +129,7 @@ export class S3FileViewerManager {
                 }
 
                 if (selection === help) {
-                    //add help section
+                    //TODO: add help section
                 }
             })
         }
@@ -147,6 +138,8 @@ export class S3FileViewerManager {
             if (this.activeTabs.has(uriOrNode.fsPath)) {
                 const tab = this.activeTabs.get(uriOrNode.fsPath)
                 await tab!.openFileInEditMode()
+
+                this.activeTabs.set(uriOrNode.fsPath, tab!)
             } else {
                 this.window.showErrorMessage(
                     localize(
@@ -162,8 +155,10 @@ export class S3FileViewerManager {
                 return
             }
 
-            const newTab = this.activeTabs.get(fileLocation.fsPath) ?? new S3Tab(fileLocation, uriOrNode)
-            await newTab.openFileInEditMode()
+            const tab = this.activeTabs.get(fileLocation.fsPath) ?? new S3Tab(fileLocation, uriOrNode)
+            await tab.openFileInEditMode()
+
+            this.activeTabs.set(tab.fileUri.fsPath, tab)
         }
     }
 
@@ -315,7 +310,7 @@ export class S3FileViewerManager {
         return true
     }
 
-    async refreshNode(fileNode: S3FileNode): Promise<S3FileNode | undefined> {
+    async refreshNode(fileNode: S3FileNode): Promise<S3FileNode> {
         const parent = fileNode.parent
         parent.clearChildren()
 
@@ -334,9 +329,6 @@ export class S3FileViewerManager {
     private async removeAndCloseTab(activeTab: S3Tab): Promise<void> {
         let fileNode: S3FileNode | undefined = activeTab.s3FileNode
         fileNode = await this.refreshNode(fileNode)
-        if (!fileNode) {
-            return
-        }
 
         this.activeTabs.delete(activeTab.fileUri.fsPath)
         this.cacheArns.delete(fileNode.arn)
