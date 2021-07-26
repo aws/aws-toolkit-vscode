@@ -797,7 +797,7 @@ export async function refreshSchemas(schemas: CloudFormationSchemas): Promise<vo
             cacheKey: 'cfnSchemaVersion',
         })
         await getRemoteOrCachedFile({
-            filepath: schemas.standard.fsPath,
+            filepath: schemas.sam.fsPath,
             version: details.version,
             url: details.samUrl,
             cacheKey: 'samSchemaVersion',
