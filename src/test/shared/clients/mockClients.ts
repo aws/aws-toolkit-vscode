@@ -298,19 +298,23 @@ export class MockEcsClient implements EcsClient {
     public readonly regionCode: string
     public readonly listClusters: (nextToken?: string) => Promise<ClustersAndToken>
     public readonly listServices: (cluster: string, nextToken?: string) => Promise<ServicesAndToken>
+    public readonly listContainerNames: (taskDefinition: string) => Promise<string[]>
 
     public constructor({
         regionCode = '',
         listClusters = async () => ({clusters: [], nextToken: undefined}),
         listServices = async () => ({services: [], nextToken: undefined}),
+        listContainerNames = async () => []
     }: {
         regionCode?: string
         listClusters?(): Promise<ClustersAndToken>
         listServices?(): Promise<ServicesAndToken>
+        listContainerNames?(): Promise<string[]>
     }) {
         this.regionCode = regionCode
         this.listClusters = listClusters
         this.listServices = listServices
+        this.listContainerNames = listContainerNames
     }
 }
 
