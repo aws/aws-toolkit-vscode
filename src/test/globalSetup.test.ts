@@ -36,6 +36,8 @@ before(async function () {
         await remove(testLogOutput)
     } catch (e) {}
     try {
+        await activateExtension('json')
+        await activateExtension('json-language-features')
         await activateExtension(VSCODE_EXTENSION_ID.yaml)
     } catch (e) {}
     mkdirpSync(testReportDir)
