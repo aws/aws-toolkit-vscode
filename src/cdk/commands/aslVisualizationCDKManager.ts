@@ -29,11 +29,7 @@ export class AslVisualizationCDKManager extends AbstractAslVisualizationManager 
         const stackName = node.tooltip?.replace(`/${uniqueIdentifier}`, ``)
         const templatePath = String(cdkOutPath) + `/${stackName}.template.json`
         const uri = vscode.Uri.file(templatePath);
-        //const appName = node.id!
         const appName = getCDKAppName(cdkOutPath!)
-        //const appName = node.
-        // Attempt to retrieve existing visualization if it exists.
-        //const existingVisualization = this.getExistingVisualization(uri.path + uniqueIdentifier)
         const existingVisualization = this.getExistingVisualization(appName, uniqueIdentifier)
         if (existingVisualization) {
             existingVisualization.showPanel()
@@ -78,7 +74,6 @@ export class AslVisualizationCDKManager extends AbstractAslVisualizationManager 
     }
 
     protected deleteVisualization(cdkAppName: string, visualizationToDelete: string): void {
-        //this.managedVisualizations.delete(visualizationToDelete)
         this.managedVisualizations.get(cdkAppName)?.delete(visualizationToDelete)
     }
 
@@ -88,7 +83,7 @@ export class AslVisualizationCDKManager extends AbstractAslVisualizationManager 
 }
 
 /**
- * @param {string} cdkJsonPath - path to the cdk.json file 
+ * @param {string} cdkOutPath - path to the cdk.out folder
  * @returns name of the CDK Application
  */
 export function getCDKAppName(cdkOutPath: string) {
