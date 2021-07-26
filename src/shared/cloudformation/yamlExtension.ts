@@ -6,6 +6,7 @@
 import { readFileSync } from 'fs-extra'
 import * as vscode from 'vscode'
 import { VSCODE_EXTENSION_ID } from '../extensions'
+import { getLogger } from '../logger/logger'
 
 // sourced from https://github.com/redhat-developer/vscode-yaml/blob/3d82d61ea63d3e3a9848fe6b432f8f1f452c1bec/src/schema-extension-api.ts
 // removed everything that is not currently being used
@@ -44,17 +45,20 @@ export function activateYamlExtension(): YamlExtension {
     const schemaMap = new Map<string, vscode.Uri>()
 
     if (yamlExt !== undefined) {
-        yamlExt.activate().then(api => {
-            api.registerContributor(
-                AWS_SCHEME,
-                resource => {
-                    return schemaMap.get(resource)?.toString()
-                },
-                uri => {
-                    return readFileSync(vscode.Uri.parse(uri).fsPath).toString()
-                }
-            )
-        })
+        yamlExt.activate().then(
+            api => {
+                api.registerContributor(
+                    AWS_SCHEME,
+                    resource => {
+                        return schemaMap.get(resource)?.toString()
+                    },
+                    uri => {
+                        return readFileSync(vscode.Uri.parse(uri).fsPath).toString()
+                    }
+                )
+            },
+            err => getLogger().error('Failed to activate YAML extension: %O', err)
+        )
     }
 
     return {
