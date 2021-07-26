@@ -16,7 +16,8 @@
                 "SSMDOCUMENT_LANGUAGESERVER_PORT": "6010"
             },
             "outFiles": ["${workspaceFolder}/dist/**/*.js"],
-            "preLaunchTask": "npm: watch"
+            "preLaunchTask": "npm: watch",
+            "outputCapture": "std", // or "console" 
         },
         {
             "name": "Attach to ASL Server",

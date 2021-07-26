@@ -12,6 +12,7 @@ import { AbstractAslVisualizationManager } from '../../../src/stepFunctions/comm
 import { StateMachineGraphCache } from '../../../src/stepFunctions/utils'
 
 export class AslVisualizationCDKManager extends AbstractAslVisualizationManager {
+    protected readonly managedVisualizations: Map<string, Map<string, AslVisualizationCDK>> = new Map<string, Map<string, AslVisualizationCDK>>()
 
     public constructor(extensionContext: vscode.ExtensionContext) {
         super(extensionContext)
@@ -28,8 +29,12 @@ export class AslVisualizationCDKManager extends AbstractAslVisualizationManager 
         const stackName = node.tooltip?.replace(`/${uniqueIdentifier}`, ``)
         const templatePath = String(cdkOutPath) + `/${stackName}.template.json`
         const uri = vscode.Uri.file(templatePath);
+        //const appName = node.id!
+        const appName = getCDKAppName(cdkOutPath!)
+        //const appName = node.
         // Attempt to retrieve existing visualization if it exists.
-        const existingVisualization = this.getExistingVisualization(uri.path + uniqueIdentifier)
+        //const existingVisualization = this.getExistingVisualization(uri.path + uniqueIdentifier)
+        const existingVisualization = this.getExistingVisualization(appName, uniqueIdentifier)
         if (existingVisualization) {
             existingVisualization.showPanel()
 
@@ -43,7 +48,7 @@ export class AslVisualizationCDKManager extends AbstractAslVisualizationManager 
             const textDocument = await vscode.workspace.openTextDocument(uri)
             const newVisualization = new AslVisualizationCDK(textDocument, templatePath, uniqueIdentifier)
             if (newVisualization) {
-                this.handleNewVisualization(newVisualization)
+                this.handleNewVisualization(appName, newVisualization)
                 return newVisualization.getPanel()
             }
         } catch (err) {
@@ -53,12 +58,41 @@ export class AslVisualizationCDKManager extends AbstractAslVisualizationManager 
         return
     }
 
-    protected handleNewVisualization(newVisualization: AslVisualizationCDK): void {
-        this.managedVisualizations.set(newVisualization.documentUri.path + newVisualization.uniqueIdentifier, newVisualization)
+    protected handleNewVisualization(cdkAppName: string, newVisualization: AslVisualizationCDK): void {
+        let map = this.managedVisualizations.get(cdkAppName)
+        if (!map) {
+            map = new Map<string, AslVisualizationCDK>()
+            map.set(newVisualization.uniqueIdentifier, newVisualization)
+            this.managedVisualizations.set(cdkAppName, map)
+        }
+        else map.set(newVisualization.uniqueIdentifier, newVisualization)
 
         const visualizationDisposable = newVisualization.onVisualizationDisposeEvent(() => {
-            this.deleteVisualization(newVisualization.documentUri.path + newVisualization.uniqueIdentifier,)
+            this.deleteVisualization(cdkAppName, newVisualization.uniqueIdentifier)
         })
         this.pushToExtensionContextSubscriptions(visualizationDisposable)
     }
+
+    public getManagedVisualizations(): Map<string, Map<string, AslVisualizationCDK>> {
+        return this.managedVisualizations
+    }
+
+    protected deleteVisualization(cdkAppName: string, visualizationToDelete: string): void {
+        //this.managedVisualizations.delete(visualizationToDelete)
+        this.managedVisualizations.get(cdkAppName)?.delete(visualizationToDelete)
+    }
+
+    protected getExistingVisualization(cdkAppName: string, stateMachineName: string): AslVisualizationCDK | undefined {
+        return this.managedVisualizations.get(cdkAppName)?.get(stateMachineName)
+    }
 }
+
+/**
+ * @param {string} cdkJsonPath - path to the cdk.json file 
+ * @returns name of the CDK Application
+ */
+export function getCDKAppName(cdkOutPath: string) {
+    if (typeof (cdkOutPath) != "string") return cdkOutPath;
+    cdkOutPath = cdkOutPath.replace('/cdk.out', '')
+    return cdkOutPath.substring(cdkOutPath.lastIndexOf("/") + 1, cdkOutPath.length)
+};

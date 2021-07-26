@@ -11,6 +11,7 @@ import { StateMachineGraphCache } from '../../utils'
 import { getLogger, Logger } from '../../../shared/logger'
 
 export class AslVisualizationManager extends AbstractAslVisualizationManager {
+    protected readonly managedVisualizations: Map<string, AslVisualization> = new Map<string, AslVisualization>()
 
     public constructor(extensionContext: vscode.ExtensionContext) {
         super(extensionContext)
@@ -68,5 +69,17 @@ export class AslVisualizationManager extends AbstractAslVisualizationManager {
             this.deleteVisualization(newVisualization.documentUri.path)
         })
         this.pushToExtensionContextSubscriptions(visualizationDisposable)
+    }
+
+    public getManagedVisualizations(): Map<string, AslVisualization> {
+        return this.managedVisualizations
+    }
+
+    protected deleteVisualization(visualizationToDelete: string): void {
+        this.managedVisualizations.delete(visualizationToDelete)
+    }
+
+    protected getExistingVisualization(visualization: string): AslVisualization | undefined {
+        return this.managedVisualizations.get(visualization)
     }
 }
