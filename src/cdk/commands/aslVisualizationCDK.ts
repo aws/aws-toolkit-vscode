@@ -5,7 +5,7 @@
 
 import * as vscode from 'vscode'
 import { AslVisualization } from '../../../src/stepFunctions/commands/visualizeStateMachine/aslVisualization'
-import { getStateMachineDefinitionFromCfnTemplate, toUnescapedAslJsonString } from '../explorer/nodes/getCfnDefinition'
+import { getStateMachineDefinitionFromCfnTemplate, toUnescapedAslJsonString } from '../../stepFunctions/commands/visualizeStateMachine/getStateMachineDefinitionFromCfnTemplate'
 
 export class AslVisualizationCDK extends AslVisualization {
     public readonly templatePath: string
@@ -19,6 +19,6 @@ export class AslVisualizationCDK extends AslVisualization {
 
     protected getText(textDocument: vscode.TextDocument): string {
         const definitionString = getStateMachineDefinitionFromCfnTemplate(this.uniqueIdentifier, this.templatePath)
-        return toUnescapedAslJsonString(definitionString!)
+        return toUnescapedAslJsonString(definitionString ? definitionString : '')
     }
 }

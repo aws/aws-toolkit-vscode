@@ -4,12 +4,12 @@
  */
 
 import * as vscode from 'vscode'
-import { getLogger, Logger } from '../../shared/logger'
+
 import { AslVisualizationCDK } from './aslVisualizationCDK'
 import { ConstructNode } from '../explorer/nodes/constructNode'
-import { renderGraphCommand } from './renderGraph'
-import { StateMachineGraphCache } from '../../../src/stepFunctions/utils'
+import { getLogger, Logger } from '../../shared/logger'
 import { AbstractAslVisualizationManager } from '../../../src/stepFunctions/commands/visualizeStateMachine/abstractAslVisualizationManager'
+import { StateMachineGraphCache } from '../../../src/stepFunctions/utils'
 
 export class AslVisualizationCDKManager extends AbstractAslVisualizationManager {
 
@@ -26,8 +26,7 @@ export class AslVisualizationCDKManager extends AbstractAslVisualizationManager 
         const uniqueIdentifier = node.label
         const cdkOutPath = node.id?.replace(`/tree.json/${node.tooltip}`, ``)
         const stackName = node.tooltip?.replace(`/${uniqueIdentifier}`, ``)
-        // eslint-disable-next-line @typescript-eslint/restrict-plus-operands
-        const templatePath = cdkOutPath + `/${stackName}.template.json`
+        const templatePath = String(cdkOutPath) + `/${stackName}.template.json`
         const uri = vscode.Uri.file(templatePath);
         // Attempt to retrieve existing visualization if it exists.
         const existingVisualization = this.getExistingVisualization(uri.path + uniqueIdentifier)
@@ -42,7 +41,6 @@ export class AslVisualizationCDKManager extends AbstractAslVisualizationManager 
             await cache.updateCache(globalStorage)
 
             const textDocument = await vscode.workspace.openTextDocument(uri)
-            //const newVisualization = await renderGraphCommand(node)
             const newVisualization = new AslVisualizationCDK(textDocument, templatePath, uniqueIdentifier)
             if (newVisualization) {
                 this.handleNewVisualization(newVisualization)
@@ -59,7 +57,7 @@ export class AslVisualizationCDKManager extends AbstractAslVisualizationManager 
         this.managedVisualizations.set(newVisualization.documentUri.path + newVisualization.uniqueIdentifier, newVisualization)
 
         const visualizationDisposable = newVisualization.onVisualizationDisposeEvent(() => {
-            this.deleteVisualization(newVisualization.templatePath)
+            this.deleteVisualization(newVisualization.documentUri.path + newVisualization.uniqueIdentifier,)
         })
         this.pushToExtensionContextSubscriptions(visualizationDisposable)
     }

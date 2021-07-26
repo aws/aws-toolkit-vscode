@@ -3,17 +3,19 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 import * as vscode from 'vscode'
+
+import { ConstructNode } from '../explorer/nodes/constructNode'
+import { AslVisualizationCDKManager } from './../commands/aslVisualizationCDKManager'
 import { getLogger } from '../../shared/logger'
+import { showErrorWithLogs } from '../../shared/utilities/messages'
 import { localize } from '../../shared/utilities/vsCodeUtils'
 import { Window } from '../../shared/vscode/window'
-import { ConstructNode } from '../explorer/nodes/constructNode'
-import { showErrorWithLogs } from '../../shared/utilities/messages'
-import { AslVisualizationCDKManager } from './../commands/aslVisualizationCDKManager'
+
 
 /**
  * Renders a state graph of the state machine represented by the given node
  */
-export async function renderGraphCommand(this: any,
+export async function renderGraphCommand(
     node: ConstructNode,
     extensionContext: vscode.Memento,
     visualizationManager: AslVisualizationCDKManager,
@@ -27,7 +29,7 @@ export async function renderGraphCommand(this: any,
     try {
         visualizationManager.visualizeStateMachine(extensionContext, node)
         getLogger().info('Rendered graph: %O', uniqueIdentifier)
-        window.showInformationMessage(localize('AWS.cdk.renderStateMachineGraph.success', 'Rendered graph {0}', uniqueIdentifier))
+        //window.showInformationMessage(localize('AWS.cdk.renderStateMachineGraph.success', 'Rendered graph {0}', uniqueIdentifier))
     } catch (e) {
         getLogger().error(`Failed to render graph ${uniqueIdentifier}: %O`, e)
         showErrorWithLogs(

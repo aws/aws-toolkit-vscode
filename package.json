@@ -51,6 +51,7 @@
         "onCommand:aws.help",
         "onCommand:aws.github",
         "onCommand:aws.previewStateMachine",
+        "onCommand:aws.previewStateMachineCDK",
         "onCommand:aws.stepfunctions.createStateMachineFromTemplate",
         "onCommand:aws.stepfunctions.publishStateMachine",
         "onView:aws.cdk.explorer",
@@ -738,6 +739,10 @@
                     "when": "!isCloud9"
                 },
                 {
+                    "command": "aws.previewStateMachineCDK",
+                    "when": "!isCloud9"
+                },
+                {
                     "command": "aws.cdk.help",
                     "when": "!isCloud9"
                 }
@@ -746,6 +751,11 @@
                 {
                     "command": "aws.previewStateMachine",
                     "when": "(editorLangId == asl || editorLangId == asl-yaml) && !isCloud9",
+                    "group": "navigation"
+                },
+                {
+                    "command": "aws.previewStateMachineCDK",
+                    "when": "!isCloud9",
                     "group": "navigation"
                 },
                 {
@@ -1354,6 +1364,15 @@
             {
                 "command": "aws.previewStateMachine",
                 "title": "%AWS.command.stepFunctions.previewStateMachine%",
+                "category": "AWS",
+                "icon": {
+                    "light": "resources/light/stepfunctions/preview.svg",
+                    "dark": "resources/dark/stepfunctions/preview.svg"
+                }
+            },
+            {
+                "command": "aws.previewStateMachineCDK",
+                "title": "%AWS.command.cdk.previewStateMachine%",
                 "category": "AWS",
                 "icon": {
                     "light": "resources/light/stepfunctions/preview.svg",

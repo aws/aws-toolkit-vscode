@@ -4,10 +4,12 @@
  */
 
 import * as vscode from 'vscode'
-import { AslVisualization } from './aslVisualization'
 import * as nls from 'vscode-nls'
-const localize = nls.loadMessageBundle()
+
+import { AslVisualization } from './aslVisualization'
 import { Logger } from '../../../shared/logger'
+
+const localize = nls.loadMessageBundle()
 
 export abstract class AbstractAslVisualizationManager {
     protected readonly managedVisualizations: Map<string, AslVisualization> = new Map<string, AslVisualization>()
@@ -26,7 +28,7 @@ export abstract class AbstractAslVisualizationManager {
         input: any
     ): Promise<vscode.WebviewPanel | undefined>
 
-    protected deleteVisualization(visualizationToDelete: any): void {
+    protected deleteVisualization(visualizationToDelete: string): void {
         this.managedVisualizations.delete(visualizationToDelete)
     }
 
@@ -34,11 +36,11 @@ export abstract class AbstractAslVisualizationManager {
         this.extensionContext.subscriptions.push(visualizationDisposable)
     }
 
-    protected getExistingVisualization(visualization: any): AslVisualization | undefined {
+    protected getExistingVisualization(visualization: string): AslVisualization | undefined {
         return this.managedVisualizations.get(visualization)
     }
 
-    protected handleErr(err: any, logger: Logger) {
+    protected handleErr(err: Error, logger: Logger) {
         vscode.window.showInformationMessage(
             localize(
                 'AWS.stepfunctions.visualisation.errors.rendering',

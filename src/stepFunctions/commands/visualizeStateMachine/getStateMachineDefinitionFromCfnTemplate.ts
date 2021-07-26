@@ -45,9 +45,9 @@ export function toUnescapedAslJsonString(escapedAslJsonStr: string) {
     if (typeof (escapedAslJsonStr) != "string") return escapedAslJsonStr;
 
     const refPrefix = '{"Ref":'
-    const re1 = new RegExp(refPrefix, 'g')
+    const refPrefixRegExp = new RegExp(refPrefix, 'g')
     const refSuffix = '},""'
-    const re2 = new RegExp(refSuffix, 'g')
+    const refSuffixRegExp = new RegExp(refSuffix, 'g')
     return escapedAslJsonStr
         .trim() //remove leading whitespaces
         .substring(1) //remove square brackets that wrap escapedAslJsonStr
@@ -58,6 +58,10 @@ export function toUnescapedAslJsonString(escapedAslJsonStr: string) {
         .replace(/\"\",/g, '') //remove empty quotes followed by a comma
         .replace(/\"\"/g, '') //remove empty quotes
         .replace(/\\/g, '') //remove backslashes
-        .replace(re1, '') //remove Ref prefix
-        .replace(re2, '') //remove Ref suffix
+        .replace(refPrefixRegExp, '') //remove Ref prefix
+        .replace(refSuffixRegExp, '') //remove Ref suffix
 };
+
+export function toUnescapedAslJson(arg0: string): string | undefined {
+    throw new Error('Function not implemented.')
+}

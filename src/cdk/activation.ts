@@ -4,14 +4,16 @@
  */
 
 import * as vscode from 'vscode'
-import { cdkDocumentationUrl } from '../shared/constants'
-import { recordCdkAppExpanded, recordCdkHelp, recordCdkRefreshExplorer } from '../shared/telemetry/telemetry'
-import { AwsCdkExplorer } from './explorer/awsCdkExplorer'
-import { AppNode } from './explorer/nodes/appNode'
-import { cdk } from './globals'
-import { ConstructNode } from './explorer/nodes/constructNode'
+
 import { AslVisualizationCDKManager } from './commands/aslVisualizationCDKManager'
 import { renderGraphCommand } from './commands/renderGraph'
+import { previewCDKStateMachineFromCommandPalette } from './commands/renderGraphCommandPalette'
+import { AwsCdkExplorer } from './explorer/awsCdkExplorer'
+import { AppNode } from './explorer/nodes/appNode'
+import { ConstructNode } from './explorer/nodes/constructNode'
+import { cdk } from './globals'
+import { cdkDocumentationUrl } from '../shared/constants'
+import { recordCdkAppExpanded, recordCdkHelp, recordCdkRefreshExplorer } from '../shared/telemetry/telemetry'
 
 /**
  * Activate AWS CDK related functionality for the extension.
@@ -76,6 +78,12 @@ async function registerCdkCommands(context: vscode.ExtensionContext, explorer: A
     context.subscriptions.push(
         vscode.commands.registerCommand('aws.cdk.renderStateMachineGraph', async (node: ConstructNode) => {
             await renderGraphCommand(node, context.globalState, visualizationManager)
+        })
+    )
+
+    context.subscriptions.push(
+        vscode.commands.registerCommand('aws.previewStateMachineCDK', async () => {
+            return await previewCDKStateMachineFromCommandPalette(context.globalState, visualizationManager)
         })
     )
 }

@@ -3,13 +3,12 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
-import * as nls from 'vscode-nls'
-const localize = nls.loadMessageBundle()
 import * as vscode from 'vscode'
-import { getLogger, Logger } from '../../../shared/logger'
-import { StateMachineGraphCache } from '../../utils'
-import { AslVisualization } from './aslVisualization'
+
 import { AbstractAslVisualizationManager } from './abstractAslVisualizationManager'
+import { AslVisualization } from './aslVisualization'
+import { StateMachineGraphCache } from '../../utils'
+import { getLogger, Logger } from '../../../shared/logger'
 
 export class AslVisualizationManager extends AbstractAslVisualizationManager {
 
