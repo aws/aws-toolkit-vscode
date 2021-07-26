@@ -9,6 +9,7 @@ import * as fs from 'fs-extra'
 import { CloudFormationTemplateRegistry } from '../../shared/cloudformation/templateRegistry'
 import { makeSampleSamTemplateYaml, strToYamlFile } from '../../test/shared/cloudformation/cloudformationTestUtils'
 import { getTestWorkspaceFolder } from '../integrationTestsUtilities'
+import { ext } from '../../shared/extensionGlobals'
 
 /**
  * Note: these tests are pretty shallow right now. They do not test the following:
@@ -29,7 +30,7 @@ describe('CloudFormation Template Registry', async function () {
         testDir = path.join(workspaceDir, dir.toString())
         testDirNested = path.join(testDir, 'nested')
         await fs.mkdirp(testDirNested)
-        registry = new CloudFormationTemplateRegistry()
+        registry = ext.templateRegistry
     })
 
     afterEach(async function () {

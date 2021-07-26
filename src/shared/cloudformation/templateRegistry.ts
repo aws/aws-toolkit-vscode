@@ -14,7 +14,7 @@ import { getLambdaDetails } from '../../lambda/utils'
 import { ext } from '../extensionGlobals'
 import { WatchedFiles, WatchedItem } from '../watchedFiles'
 import { getLogger } from '../logger'
-import { CloudFormationSchemas, YamlExtension } from './activation'
+import { CloudFormationSchemas, YamlExtension } from './yamlExtension'
 
 export interface TemplateDatum {
     path: string

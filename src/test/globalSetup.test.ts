@@ -21,7 +21,8 @@ import * as fakeTelemetry from './fake/fakeTelemetryService'
 import { TestLogger } from './testLogger'
 import { FakeAwsContext } from './utilities/fakeAwsContext'
 import { initializeComputeRegion } from '../shared/extensionUtilities'
-import { CloudFormationSchemas, YamlExtension } from '../shared/cloudformation/activation'
+import { Uri } from 'vscode'
+import { CloudFormationSchemas, YamlExtension } from '../shared/cloudformation/yamlExtension'
 
 const testReportDir = join(__dirname, '../../../.test-reports')
 const testLogOutput = join(testReportDir, 'testLog.log')
@@ -45,9 +46,10 @@ before(async function () {
     await initializeComputeRegion()
 })
 
+// These currently are only ever read by the Yaml extension, which we have stubbed out
 const fakeSchemas: CloudFormationSchemas = {
-    standard: '' as any,
-    sam: '' as any,
+    standard: Uri.parse(''),
+    sam: Uri.parse(''),
 }
 
 const fakeYamlExtension: YamlExtension = {

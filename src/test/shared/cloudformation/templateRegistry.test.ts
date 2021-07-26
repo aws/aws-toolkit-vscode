@@ -18,6 +18,7 @@ import { badYaml, makeSampleSamTemplateYaml, strToYamlFile } from './cloudformat
 import { assertEqualPaths, toFile } from '../../testUtil'
 import { CloudFormation } from '../../../shared/cloudformation/cloudformation'
 import { WatchedItem } from '../../../shared/watchedFiles'
+import { ext } from '../../../shared/extensionGlobals'
 
 // TODO almost all of these tests should be moved to test WatchedFiles instead
 describe('CloudFormation Template Registry', async function () {
@@ -29,7 +30,7 @@ describe('CloudFormation Template Registry', async function () {
 
         beforeEach(async function () {
             tempFolder = await makeTemporaryToolkitFolder()
-            testRegistry = new CloudFormationTemplateRegistry()
+            testRegistry = ext.templateRegistry
         })
 
         afterEach(async function () {

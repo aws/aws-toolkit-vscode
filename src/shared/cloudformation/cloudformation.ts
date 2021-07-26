@@ -16,7 +16,7 @@ import { HttpResourceFetcher } from '../resourcefetcher/httpResourceFetcher'
 import { ResourceFetcher } from '../resourcefetcher/resourcefetcher'
 import { FileResourceFetcher } from '../resourcefetcher/fileResourceFetcher'
 import { CompositeResourceFetcher } from '../resourcefetcher/compositeResourceFetcher'
-import { CloudFormationSchemas } from './activation'
+import { CloudFormationSchemas } from './yamlExtension'
 
 export namespace CloudFormation {
     export const SERVERLESS_API_TYPE = 'AWS::Serverless::Api'
