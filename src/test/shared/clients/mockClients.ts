@@ -36,6 +36,7 @@ import {
     CreateFolderResponse,
     ListObjectVersionsResponse,
     DeleteObjectsResponse,
+    HeadObjectRequest,
 } from '../../../shared/clients/s3Client'
 
 interface Clients {
@@ -483,6 +484,7 @@ export class MockS3Client implements S3Client {
     public readonly listFiles: (request: ListFilesRequest) => Promise<ListFilesResponse>
     public readonly createFolder: (request: CreateFolderRequest) => Promise<CreateFolderResponse>
     public readonly downloadFile: (request: DownloadFileRequest) => Promise<void>
+    public readonly getHeadObject: (request: HeadObjectRequest) => Promise<S3.HeadObjectOutput>
     public readonly uploadFile: (request: UploadFileRequest) => Promise<void>
     public readonly listObjectVersions: (request: ListObjectVersionsRequest) => Promise<ListObjectVersionsResponse>
     public readonly listObjectVersionsIterable: (
@@ -500,6 +502,7 @@ export class MockS3Client implements S3Client {
         listFiles = async (request: ListFilesRequest) => ({ files: [], folders: [] }),
         createFolder = async (request: CreateFolderRequest) => ({ folder: { name: '', path: '', arn: '' } }),
         downloadFile = async (request: DownloadFileRequest) => {},
+        getHeadObject = async (request: HeadObjectRequest) => ({}),
         uploadFile = async (request: UploadFileRequest) => {},
         listObjectVersions = async (request: ListObjectVersionsRequest) => ({ objects: [] }),
         listObjectVersionsIterable = (request: ListObjectVersionsRequest) => asyncGenerator([]),
@@ -514,6 +517,7 @@ export class MockS3Client implements S3Client {
         listFiles?(request: ListFilesRequest): Promise<ListFilesResponse>
         createFolder?(request: CreateFolderRequest): Promise<CreateFolderResponse>
         downloadFile?(request: DownloadFileRequest): Promise<void>
+        getHeadObject?(request: HeadObjectRequest): Promise<S3.HeadObjectOutput>
         uploadFile?(request: UploadFileRequest): Promise<void>
         listObjectVersions?(request: ListObjectVersionsRequest): Promise<ListObjectVersionsResponse>
         listObjectVersionsIterable?(
@@ -530,6 +534,7 @@ export class MockS3Client implements S3Client {
         this.listFiles = listFiles
         this.createFolder = createFolder
         this.downloadFile = downloadFile
+        this.getHeadObject = getHeadObject
         this.uploadFile = uploadFile
         this.listObjectVersions = listObjectVersions
         this.listObjectVersionsIterable = listObjectVersionsIterable

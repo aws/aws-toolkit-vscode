@@ -4,6 +4,7 @@
  */
 import * as vscode from 'vscode'
 import * as fs from 'fs'
+import * as mime from 'mime-types'
 import { mkdirp } from 'fs-extra'
 import { OutputChannel } from 'vscode'
 import { ext } from '../../shared/extensionGlobals'
@@ -100,6 +101,10 @@ export class S3FileViewerManager {
             localize('AWS.s3.fileViewer.info.fileKey', 'Retrieving and displaying file: {0}', fileNode.file.key),
             this.outputChannel
         )
+        const headResponse = await fileNode.s3.getHeadObject({
+            bucketName: fileNode.bucket.name,
+            key: fileNode.file.key,
+        })
 
         const fileLocation = await this.getFile(fileNode)
         if (!fileLocation) {
@@ -108,6 +113,20 @@ export class S3FileViewerManager {
         getLogger().verbose(`S3FileViewer: File from s3 or temp to be opened is: ${fileLocation}`)
 
         const newTab = this.activeTabs.get(fileLocation.fsPath) ?? new S3Tab(fileLocation, fileNode)
+
+        //before opening, ask user how to handle it if it is not text
+        const type = mime.contentType(headResponse.ContentType!)
+        const charset = mime.charset(type as string)
+
+        if (charset != 'UTF-8') {
+            const prompt = "Can't open this file type in read-only mode, do you want to try opening in edit?"
+            const edit = 'Open in edit mode'
+            const read = 'Try in read-only'
+            if (await showConfirmationMessage({ prompt, confirm: edit, cancel: read }, this.window)) {
+                await this.openInEditMode(fileNode)
+            }
+        }
+
         await newTab.openFileInReadOnly()
 
         this.activeTabs.set(fileLocation.fsPath, newTab)

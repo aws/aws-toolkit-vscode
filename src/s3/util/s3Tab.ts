@@ -4,8 +4,10 @@
  */
 
 import * as vscode from 'vscode'
+import { ext } from '../../shared/extensionGlobals'
 import { S3FileNode } from '../explorer/s3FileNode'
 import { uploadWithProgress } from '../commands/uploadFile'
+import { showOutputMessage } from '../../shared/utilities/messages'
 
 //const contentType = mime.lookup(path.basename(request.fileLocation.fsPath)) || DEFAULT_CONTENT_TYPE
 //FOUND IN : s3Client.ts
@@ -50,7 +52,9 @@ export class S3Tab {
                 this.editor = await this.window.showTextDocument(doc, { preview: false })
             }
         } catch (e) {
-            this.window.showErrorMessage('Error opening file ', e)
+            this.window.showErrorMessage(`Error opening file ${e}`)
+            showOutputMessage(`Please try cmmd+click on: ${uri.fsPath}`, ext.outputChannel)
+            console.log(`Please try cmmd+click on: ${uri.fsPath}`)
             this.editor = undefined
         }
     }

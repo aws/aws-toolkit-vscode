@@ -80,6 +80,11 @@ export interface UploadFileRequest {
     readonly fileLocation: vscode.Uri
 }
 
+export interface HeadObjectRequest {
+    readonly bucketName: string
+    readonly key: string
+}
+
 export interface ListObjectVersionsRequest {
     readonly bucketName: string
     readonly continuationToken?: ContinuationToken
@@ -253,6 +258,7 @@ export class DefaultS3Client {
 
         // https://docs.aws.amazon.com/sdk-for-javascript/v2/developer-guide/requests-using-stream-objects.html
         const readStream = s3.getObject({ Bucket: request.bucketName, Key: request.key }).createReadStream()
+
         const writeStream = this.fileStreams.createWriteStream(request.saveLocation)
 
         try {
@@ -262,6 +268,24 @@ export class DefaultS3Client {
             throw e
         }
         getLogger().debug('DownloadFile succeeded')
+    }
+
+    public async getHeadObject(request: HeadObjectRequest): Promise<S3.HeadObjectOutput> {
+        const s3 = await this.createS3()
+
+        getLogger().debug('HeadObject called with request: %O', request)
+
+        try {
+            const response = await s3.headObject({ Bucket: request.bucketName, Key: request.key }).promise()
+
+            if (response.$response.error) {
+                throw response.$response.error
+            }
+            return response
+        } catch (e) {
+            getLogger().error('Failed to retrieve bucket header %s: %O', request.bucketName, e)
+            throw e
+        }
     }
 
     /**
