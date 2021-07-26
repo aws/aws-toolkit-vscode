@@ -33,7 +33,7 @@ describe('CloudFormation Template Registry', async function () {
         beforeEach(async function () {
             config = new FakeWorkspace().getConfiguration()
             tempFolder = await makeTemporaryToolkitFolder()
-            testRegistry = new CloudFormationTemplateRegistry()
+            testRegistry = new CloudFormationTemplateRegistry(config)
         })
 
         afterEach(async function () {
