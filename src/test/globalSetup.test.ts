@@ -21,8 +21,7 @@ import * as fakeTelemetry from './fake/fakeTelemetryService'
 import { TestLogger } from './testLogger'
 import { FakeAwsContext } from './utilities/fakeAwsContext'
 import { initializeComputeRegion } from '../shared/extensionUtilities'
-import { activateExtension } from '../shared/utilities/vsCodeUtils'
-import { VSCODE_EXTENSION_ID } from '../shared/extensions'
+import { CloudFormationSchemas, YamlExtension } from '../shared/cloudformation/activation'
 
 const testReportDir = join(__dirname, '../../../.test-reports')
 const testLogOutput = join(testReportDir, 'testLog.log')
@@ -35,9 +34,6 @@ before(async function () {
     try {
         await remove(testLogOutput)
     } catch (e) {}
-    try {
-        await activateExtension(VSCODE_EXTENSION_ID.yaml)
-    } catch (e) {}
     mkdirpSync(testReportDir)
     // Set up global telemetry client
     const fakeContext = new FakeExtensionContext()
@@ -49,10 +45,20 @@ before(async function () {
     await initializeComputeRegion()
 })
 
+const fakeSchemas: CloudFormationSchemas = {
+    standard: '' as any,
+    sam: '' as any,
+}
+
+const fakeYamlExtension: YamlExtension = {
+    assignSchema: (path, schema) => undefined,
+    removeSchema: path => undefined,
+}
+
 beforeEach(function () {
     // Set every test up so that TestLogger is the logger used by toolkit code
     testLogger = setupTestLogger()
-    ext.templateRegistry = new CloudFormationTemplateRegistry()
+    ext.templateRegistry = new CloudFormationTemplateRegistry(fakeSchemas, fakeYamlExtension)
     ext.codelensRootRegistry = new CodelensRootRegistry()
 })
 

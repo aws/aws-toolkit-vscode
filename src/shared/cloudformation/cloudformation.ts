@@ -12,13 +12,11 @@ import * as filesystemUtilities from '../filesystemUtilities'
 import { SystemUtilities } from '../systemUtilities'
 import { getLogger } from '../logger'
 import { extensionSettingsPrefix, LAMBDA_PACKAGE_TYPE_IMAGE } from '../constants'
-import { normalizeSeparator } from '../utilities/pathUtils'
 import { HttpResourceFetcher } from '../resourcefetcher/httpResourceFetcher'
 import { ResourceFetcher } from '../resourcefetcher/resourcefetcher'
 import { FileResourceFetcher } from '../resourcefetcher/fileResourceFetcher'
 import { CompositeResourceFetcher } from '../resourcefetcher/compositeResourceFetcher'
-import { WorkspaceConfiguration } from '../vscode/workspace'
-import { getWorkspaceRelativePath } from '../utilities/workspaceUtils'
+import { CloudFormationSchemas } from './activation'
 
 export namespace CloudFormation {
     export const SERVERLESS_API_TYPE = 'AWS::Serverless::Api'
@@ -763,8 +761,6 @@ export namespace CloudFormation {
     }
 }
 
-let CFN_SCHEMA_PATH = ''
-let SAM_SCHEMA_PATH = ''
 const MANIFEST_URL = 'https://api.github.com/repos/awslabs/goformation/releases/latest'
 
 /**
@@ -774,9 +770,7 @@ const MANIFEST_URL = 'https://api.github.com/repos/awslabs/goformation/releases/
  * If the user has not previously used the toolkit and cannot pull the manifest, does not provide template autocomplete.
  * @param extensionContext
  */
-export async function refreshSchemas(extensionContext: vscode.ExtensionContext): Promise<void> {
-    CFN_SCHEMA_PATH = normalizeSeparator(path.join(extensionContext.globalStoragePath, 'cloudformation.schema.json'))
-    SAM_SCHEMA_PATH = normalizeSeparator(path.join(extensionContext.globalStoragePath, 'sam.schema.json'))
+export async function refreshSchemas(schemas: CloudFormationSchemas): Promise<void> {
     let manifest: string | undefined
     try {
         const manifestFetcher = new HttpResourceFetcher(MANIFEST_URL, { showUrl: true })
@@ -797,80 +791,19 @@ export async function refreshSchemas(extensionContext: vscode.ExtensionContext):
         const details = getManifestDetails(manifest)
 
         await getRemoteOrCachedFile({
-            filepath: CFN_SCHEMA_PATH,
+            filepath: schemas.standard.fsPath,
             version: details.version,
             url: details.cfnUrl,
             cacheKey: 'cfnSchemaVersion',
         })
         await getRemoteOrCachedFile({
-            filepath: SAM_SCHEMA_PATH,
+            filepath: schemas.standard.fsPath,
             version: details.version,
             url: details.samUrl,
             cacheKey: 'samSchemaVersion',
         })
     } catch (e) {
         getLogger().error('Could not get details from manifest:', (e as Error).message)
-    }
-}
-
-/**
- * Maps a template file to a CFN or SAM schema.
- * If present, removes association with the other type of schema.
- * Does not modify other schemas not managed by AWS.
- * @param path Template file path
- * @param type Template type to use for filepath
- */
-export async function updateYamlSchemasArray(
-    path: string,
-    type: 'cfn' | 'sam' | 'none',
-    config: WorkspaceConfiguration = vscode.workspace.getConfiguration('yaml'),
-    paths: { cfnSchema: string; samSchema: string } = { cfnSchema: CFN_SCHEMA_PATH, samSchema: SAM_SCHEMA_PATH }
-): Promise<void> {
-    const relPath = normalizeSeparator(getWorkspaceRelativePath(path) ?? path)
-    const schemas: { [key: string]: string | string[] | undefined } | undefined = config.get('schemas')
-    const deleteFroms: string[] = []
-    if (type === 'cfn' || type == 'none') {
-        deleteFroms.push(paths.samSchema)
-    }
-    if (type === 'sam' || type == 'none') {
-        deleteFroms.push(paths.cfnSchema)
-    }
-    let newWriteArr: string[] = [relPath]
-    const modifiedArrays: { [key: string]: string[] } = {}
-
-    if (type !== 'none') {
-        const writeTo = type === 'cfn' ? paths.cfnSchema : paths.samSchema
-        if (schemas && schemas[writeTo]) {
-            newWriteArr = Array.isArray(schemas[writeTo])
-                ? (schemas[writeTo] as string[])
-                : [schemas[writeTo] as string]
-            if (!newWriteArr.includes(relPath)) {
-                newWriteArr.push(relPath)
-            }
-        }
-        modifiedArrays[writeTo] = newWriteArr
-    }
-
-    for (const deleteFrom of deleteFroms) {
-        if (schemas && schemas[deleteFrom]) {
-            const temp = Array.isArray(schemas[deleteFrom])
-                ? (schemas[deleteFrom] as string[])
-                : [schemas[deleteFrom] as string]
-            modifiedArrays[deleteFrom] = temp.filter(val => val !== relPath)
-        }
-    }
-
-    // don't edit settings if they don't exist and yaml isn't a template
-    // do if schemas exists or if type isn't none
-    if (!(type === 'none' && !schemas)) {
-        try {
-            await config.update('schemas', {
-                ...(schemas ? schemas : {}),
-                ...modifiedArrays,
-            })
-        } catch (e) {
-            getLogger().error('Could not write YAML schemas to configuration', e.message)
-        }
     }
 }
 

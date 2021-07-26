@@ -5,7 +5,7 @@
 
 import * as vscode from 'vscode'
 import { readFileSync } from 'fs'
-import { CloudFormation, updateYamlSchemasArray } from './cloudformation'
+import { CloudFormation } from './cloudformation'
 import * as pathutils from '../utilities/pathUtils'
 import * as path from 'path'
 import { isInDirectory } from '../filesystemUtilities'
@@ -14,6 +14,7 @@ import { getLambdaDetails } from '../../lambda/utils'
 import { ext } from '../extensionGlobals'
 import { WatchedFiles, WatchedItem } from '../watchedFiles'
 import { getLogger } from '../logger'
+import { CloudFormationSchemas, YamlExtension } from './activation'
 
 export interface TemplateDatum {
     path: string
@@ -21,16 +22,22 @@ export interface TemplateDatum {
 }
 
 export class CloudFormationTemplateRegistry extends WatchedFiles<CloudFormation.Template> {
+    constructor(private readonly schemas: CloudFormationSchemas, private readonly yamlExtension: YamlExtension) {
+        super()
+    }
+
     protected name: string = 'CloudFormationTemplateRegistry'
     protected async load(path: string): Promise<CloudFormation.Template | undefined> {
         // P0: Assume all template.yaml/yml files are CFN templates and assign correct JSON schema.
         // P1: Alter registry functionality to search ALL YAML files and apply JSON schemas + add to registry based on validity
+        const uri = vscode.Uri.file(path)
 
         let template: CloudFormation.Template | undefined
         try {
             template = await CloudFormation.load(path)
         } catch (e) {
-            await updateYamlSchemasArray(path, 'none')
+            getLogger().error(`Failed to parse CFN template ${path}: %O`, e)
+            this.yamlExtension.removeSchema(uri)
             return undefined
         }
 
@@ -39,22 +46,23 @@ export class CloudFormationTemplateRegistry extends WatchedFiles<CloudFormation.
         if (template.AWSTemplateFormatVersion || template.Resources) {
             if (template.Transform && template.Transform.toString().startsWith('AWS::Serverless')) {
                 // apply serverless schema
-                await updateYamlSchemasArray(path, 'sam')
+                this.yamlExtension.assignSchema(uri, this.schemas.sam)
             } else {
                 // apply cfn schema
-                await updateYamlSchemasArray(path, 'cfn')
+                this.yamlExtension.assignSchema(uri, this.schemas.standard)
             }
 
             return template
         }
 
-        await updateYamlSchemasArray(path, 'none')
+        this.yamlExtension.removeSchema(uri)
         return undefined
     }
 
     // handles delete case
     public async remove(path: string | vscode.Uri): Promise<void> {
-        await updateYamlSchemasArray(typeof path === 'string' ? path : pathutils.normalize(path.fsPath), 'none')
+        const uri = typeof path === 'string' ? vscode.Uri.file(path) : path
+        this.yamlExtension.removeSchema(uri)
         await super.remove(path)
     }
 }
