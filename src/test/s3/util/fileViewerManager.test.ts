@@ -8,14 +8,14 @@ import * as vscode from 'vscode'
 import { S3BucketNode } from '../../../s3/explorer/s3BucketNode'
 import { S3FileNode } from '../../../s3/explorer/s3FileNode'
 import { S3FolderNode } from '../../../s3/explorer/s3FolderNode'
-import { S3FileViewerManager } from '../../../s3/util/fileViewerManager'
+import { S3FileViewerManager, S3Tab } from '../../../s3/util/fileViewerManager'
 import { DefaultFile, S3Client } from '../../../shared/clients/s3Client'
 import { makeTemporaryToolkitFolder } from '../../../shared/filesystemUtilities'
 import { FakeCommands } from '../../shared/vscode/fakeCommands'
 import * as testutil from '../../testUtil'
-import { anything, instance, mock, when } from '../../utilities/mockito'
+import { anything, capture, instance, mock, when } from '../../utilities/mockito'
 
-describe('FileViewerManager', function () {
+describe.only('FileViewerManager', function () {
     const bucketName = 'bucket-name'
     const key = 'file.jpg'
     const sizeBytes = 16
@@ -24,21 +24,24 @@ describe('FileViewerManager', function () {
     let testNode: S3FileNode
     let s3: S3Client
     let fileViewerManager: S3FileViewerManager
-    let window: typeof vscode.window
+    let mockedWindow: typeof vscode.window
     let testCache: Set<string>
     let tempPath: string
     let parent: S3BucketNode | S3FolderNode
     let commands: FakeCommands
     let tempFile: vscode.Uri
+    let mockedWorkspace: typeof vscode.workspace
+    let s3TempFile: vscode.Uri
 
     beforeEach(async function () {
-        window = mock()
+        mockedWindow = mock()
         s3 = mock()
         parent = mock()
+        mockedWorkspace = mock()
         tempPath = await makeTemporaryToolkitFolder()
         testCache = new Set<string>()
         commands = new FakeCommands()
-        fileViewerManager = new S3FileViewerManager(testCache, instance(window), commands, tempPath)
+        fileViewerManager = new S3FileViewerManager(testCache, instance(mockedWindow), commands, tempPath, undefined)
         file = new DefaultFile({
             partitionId: 'aws',
             bucketName,
@@ -51,6 +54,7 @@ describe('FileViewerManager', function () {
         const completePath = await fileViewerManager.createTargetPath(testNode)
 
         tempFile = vscode.Uri.file(completePath)
+        s3TempFile = vscode.Uri.parse('s3:' + tempFile.fsPath)
         testutil.toFile('bogus', tempFile.fsPath)
     })
 
@@ -69,7 +73,7 @@ describe('FileViewerManager', function () {
 
     describe('retrieves file from s3 if not in temp or invalid date', async function () {
         it('prompts if file has no specified size', async function () {
-            when(window.showWarningMessage(anything(), anything(), anything(), anything())).thenReturn(
+            when(mockedWindow.showWarningMessage(anything(), anything(), anything(), anything())).thenReturn(
                 Promise.resolve({ title: 'Cancel' } as any)
             )
 
@@ -86,7 +90,7 @@ describe('FileViewerManager', function () {
         })
 
         it('prompts if file size is greater than 4MB', async function () {
-            when(window.showWarningMessage(anything(), anything(), anything(), anything())).thenReturn(
+            when(mockedWindow.showWarningMessage(anything(), anything(), anything(), anything())).thenReturn(
                 Promise.resolve({ title: 'Cancel' } as any)
             )
 
@@ -103,7 +107,7 @@ describe('FileViewerManager', function () {
         })
 
         it('downloads if prompts are confirmed', async function () {
-            when(window.showWarningMessage(anything(), anything(), anything(), anything())).thenReturn(
+            when(mockedWindow.showWarningMessage(anything(), anything(), anything(), anything())).thenReturn(
                 Promise.resolve({ title: 'Continue with download' } as any)
             )
 
@@ -166,12 +170,69 @@ describe('FileViewerManager', function () {
         })
     })
 
-    describe('on save', function () {
-        beforeEach(async function () {})
+    it('opens a file in read-only mode', async function () {
+        when(mockedWorkspace.openTextDocument(anything())).thenReturn(Promise.resolve({ uri: s3TempFile } as any))
+        when(mockedWindow.showTextDocument(anything())).thenReturn()
+        when(mockedWindow.visibleTextEditors).thenReturn([
+            {
+                document: {
+                    uri: {
+                        scheme: 's3',
+                        _fsPath: tempFile.fsPath,
+                    },
+                },
+            } as any,
+        ])
 
-        it('uploads back to s3, closes and reopens in edit mode', function () {
-            // when(parent.path).thenReturn('s3://bucket/')
-            // when(s3.uploadFile(anything())).thenResolve()
-        })
+        await fileViewerManager.openFileInReadOnly(tempFile, instance(mockedWorkspace))
+
+        const [uri] = capture(mockedWorkspace.openTextDocument).last()
+        assert.strictEqual((uri as vscode.Uri).fsPath, s3TempFile.fsPath)
+        assert.strictEqual((uri as vscode.Uri).scheme, s3TempFile.scheme)
+
+        const [showDocArgs] = capture(mockedWindow.showTextDocument).last()
+
+        assert.deepStrictEqual((showDocArgs as any).uri, s3TempFile)
+    })
+
+    it('opens a file in edit mode', async function () {
+        when(mockedWorkspace.openTextDocument(anything())).thenReturn(Promise.resolve({ uri: tempFile } as any))
+        when(mockedWindow.showTextDocument(anything())).thenReturn({
+            document: { uri: { scheme: 'file', fsPath: tempFile.fsPath } } as any,
+        } as any)
+        when(mockedWindow.visibleTextEditors).thenReturn([
+            {
+                document: {
+                    uri: {
+                        scheme: 'file',
+                        fsPath: tempFile.fsPath,
+                    },
+                },
+            } as any,
+        ])
+
+        await fileViewerManager.openFileInEditMode(tempFile, instance(mockedWorkspace))
+
+        const [uri] = capture(mockedWorkspace.openTextDocument).last()
+        assert.strictEqual((uri as vscode.Uri).fsPath, tempFile.fsPath)
+        assert.strictEqual((uri as vscode.Uri).scheme, tempFile.scheme)
+
+        const [showDocArgs] = capture(mockedWindow.showTextDocument).last()
+
+        assert.deepStrictEqual((showDocArgs as any).uri, tempFile)
+    })
+
+    it('calls S3 when saving changes', async function () {
+        when(s3.uploadFile(anything())).thenResolve()
+        const tab = {
+            fileUri: tempFile,
+            s3Uri: s3TempFile,
+            editor: undefined,
+            s3FileNode: testNode,
+        } as S3Tab
+
+        const result = await fileViewerManager.uploadChangesToS3(tab)
+
+        assert.ok(result)
     })
 })

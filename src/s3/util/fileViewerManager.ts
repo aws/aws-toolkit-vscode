@@ -14,13 +14,18 @@ import { Commands } from '../../shared/vscode/commands'
 import { downloadWithProgress } from '../commands/downloadFileAs'
 import { S3FileNode } from '../explorer/s3FileNode'
 import { readablePath } from '../util'
-import { S3Tab } from './s3Tab'
 import { getLogger } from '../../shared/logger'
 import { showConfirmationMessage } from '../../shared/utilities/messages'
 import { localize } from '../../shared/utilities/vsCodeUtils'
+import { uploadWithProgress } from '../commands/uploadFile'
 
 const SIZE_LIMIT = 4 * Math.pow(10, 6)
-
+export interface S3Tab {
+    fileUri: vscode.Uri
+    s3Uri: vscode.Uri
+    editor: vscode.TextEditor | undefined
+    s3FileNode: S3FileNode
+}
 export class S3FileViewerManager {
     private outputChannel: OutputChannel
     private promptOnEdit = true
@@ -48,7 +53,7 @@ export class S3FileViewerManager {
 
                 if (await this.checkForValidity(activeTab.s3FileNode, activeTab.fileUri)) {
                     //good to upload
-                    if (!(await activeTab.uploadChangesToS3())) {
+                    if (!(await this.uploadChangesToS3(activeTab))) {
                         this.window.showErrorMessage(
                             'Error uploading file to S3. Changes will not be saved. Please try and resave this edit mode file'
                         )
@@ -85,6 +90,23 @@ export class S3FileViewerManager {
         // })
     }
 
+    public async getActiveEditor(targetUri: vscode.Uri): Promise<vscode.TextEditor | undefined> {
+        const visibleEditor = this.window.visibleTextEditors
+        return visibleEditor.find((editor: vscode.TextEditor) => editor.document.uri.fsPath === targetUri.fsPath)
+    }
+
+    public async focusAndCloseTab(uri: vscode.Uri): Promise<void> {
+        const editor = await this.getActiveEditor(uri)
+        if (!editor) {
+            return
+        }
+        await this.window.showTextDocument(editor.document, {
+            preview: false,
+            viewColumn: editor.viewColumn,
+        })
+        await vscode.commands.executeCommand('workbench.action.closeActiveEditor')
+    }
+
     /**
      * Given an S3FileNode, this function:
      * Checks and creates a cache to store downloads
@@ -111,8 +133,7 @@ export class S3FileViewerManager {
             return
         }
         getLogger().verbose(`S3FileViewer: File from s3 or temp to be opened is: ${fileLocation}`)
-
-        const newTab = this.activeTabs.get(fileLocation.fsPath) ?? new S3Tab(fileLocation, fileNode)
+        const s3Uri = vscode.Uri.parse('s3:' + fileLocation.fsPath)
 
         //before opening, ask user how to handle it if it is not text
         const type = mime.contentType(headResponse.ContentType!)
@@ -126,10 +147,45 @@ export class S3FileViewerManager {
                 return await this.openInEditMode(fileNode)
             }
         }
+        const editor = await this.openFileInReadOnly(fileLocation)
 
-        await newTab.openFileInReadOnly()
+        const newTab =
+            this.activeTabs.get(fileLocation.fsPath) ??
+            ({ fileUri: fileLocation, s3Uri, editor, s3FileNode: fileNode } as S3Tab)
 
         this.activeTabs.set(fileLocation.fsPath, newTab)
+    }
+
+    public async openFileInReadOnly(
+        uri: vscode.Uri,
+        workspace = vscode.workspace
+    ): Promise<vscode.TextEditor | undefined> {
+        const s3Uri = vscode.Uri.parse('s3:' + uri.fsPath)
+
+        //find if there is any active editor for this uri
+        const openEditor = await this.getActiveEditor(s3Uri)
+
+        try {
+            const doc = await workspace.openTextDocument(s3Uri)
+            if (!openEditor) {
+                //there wasn't any open, just display it regularly
+                return await this.window.showTextDocument(doc, { preview: false })
+            } else if (openEditor.document.uri.scheme === 'file' || openEditor.document.uri.scheme === s3Uri.scheme) {
+                //there is a tab for this uri scheme open, just shift focus to it by reopening it with the ViewColumn option
+                return await this.window.showTextDocument(openEditor.document, {
+                    preview: false,
+                    viewColumn: openEditor.viewColumn,
+                })
+            } else {
+                // there is already a tab open, it needs to be focused, then closed
+                await this.focusAndCloseTab(uri)
+                //good to open in given mode
+                return await this.window.showTextDocument(doc, { preview: false })
+            }
+        } catch (e) {
+            this.window.showErrorMessage(`Error opening file ${e}`)
+            return undefined
+        }
     }
 
     public async openInEditMode(uriOrNode: vscode.Uri | S3FileNode): Promise<void> {
@@ -156,7 +212,7 @@ export class S3FileViewerManager {
             //was activated from an open tab
             if (this.activeTabs.has(uriOrNode.fsPath)) {
                 const tab = this.activeTabs.get(uriOrNode.fsPath)
-                await tab!.openFileInEditMode()
+                await this.openFileInEditMode(uriOrNode)
 
                 this.activeTabs.set(uriOrNode.fsPath, tab!)
             } else {
@@ -173,11 +229,29 @@ export class S3FileViewerManager {
             if (!fileLocation) {
                 return
             }
+            const s3Uri = vscode.Uri.parse(fileLocation.fsPath)
+            const editor = await this.openFileInEditMode(fileLocation)
 
-            const tab = this.activeTabs.get(fileLocation.fsPath) ?? new S3Tab(fileLocation, uriOrNode)
-            await tab.openFileInEditMode()
+            const tab =
+                this.activeTabs.get(fileLocation.fsPath) ??
+                ({ fileUri: fileLocation, s3Uri, editor, s3FileNode: uriOrNode } as S3Tab) //new S3Tab(fileLocation, uriOrNode)
 
             this.activeTabs.set(tab.fileUri.fsPath, tab)
+        }
+    }
+
+    public async openFileInEditMode(
+        uri: vscode.Uri,
+        workspace = vscode.workspace
+    ): Promise<vscode.TextEditor | undefined> {
+        //await this.openFile(this.fileUri, workspace)
+        const openEditor = await this.getActiveEditor(uri)
+        if (openEditor && openEditor.document.uri.scheme === 'file') {
+            //shift focus
+            const doc = await workspace.openTextDocument(uri)
+            return await this.window.showTextDocument(doc, { preview: false })
+        } else {
+            return vscode.commands.executeCommand('workbench.action.quickOpen', uri.fsPath)
         }
     }
 
@@ -329,6 +403,12 @@ export class S3FileViewerManager {
         return true
     }
 
+    /**
+     * Gets the latest instance of given fileNode
+     *
+     * @param fileNode
+     * @returns
+     */
     async refreshNode(fileNode: S3FileNode): Promise<S3FileNode> {
         const parent = fileNode.parent
         parent.clearChildren()
@@ -351,7 +431,7 @@ export class S3FileViewerManager {
 
         this.activeTabs.delete(activeTab.fileUri.fsPath)
         this.cacheArns.delete(fileNode.arn)
-        await activeTab.focusAndCloseTab()
+        await this.focusAndCloseTab(activeTab.fileUri)
         try {
             fs.unlinkSync(await this.createTargetPath(fileNode))
         } catch (e) {
@@ -360,21 +440,25 @@ export class S3FileViewerManager {
     }
 
     public async createTemp(): Promise<string> {
-        this._tempLocation = await makeTemporaryToolkitFolder()
+        this.tempLocation = await makeTemporaryToolkitFolder()
         showOutputMessage(
             localize(
                 'AWS.s3.message.tempCreation',
                 'Temp folder for FileViewer created with location: {0}',
-                this._tempLocation
+                this.tempLocation
             ),
             this.outputChannel
         )
-        getLogger().info(`Temp folder for FileViewer created with location: ${this._tempLocation}`)
-        return this._tempLocation
+        getLogger().info(`Temp folder for FileViewer created with location: ${this.tempLocation}`)
+        return this._tempLocation!
     }
 
     public get tempLocation(): string | undefined {
         return this._tempLocation
+    }
+
+    public set tempLocation(temp: string | undefined) {
+        this._tempLocation = temp
     }
 
     /**
@@ -406,5 +490,28 @@ export class S3FileViewerManager {
         }
 
         return lastModifiedInS3 <= birthtime
+    }
+
+    /**
+     * Uploads current uri back to parent
+     *
+     * @returns true if upload succe]
+     */
+    public async uploadChangesToS3(tab: S3Tab): Promise<boolean> {
+        const request = {
+            bucketName: tab.s3FileNode.bucket.name,
+            key: tab.s3FileNode.parent.path + tab.s3FileNode.name,
+            fileLocation: tab.fileUri,
+            fileSizeBytes: tab.s3FileNode.file.sizeBytes!,
+            s3Client: tab.s3FileNode.s3,
+            window: this.window,
+        }
+        try {
+            await uploadWithProgress(request)
+        } catch (e) {
+            //error with upload
+            return false
+        }
+        return true
     }
 }
