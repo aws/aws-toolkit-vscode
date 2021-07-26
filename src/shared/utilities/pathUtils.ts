@@ -113,3 +113,12 @@ export function getDriveLetter(path: string): string {
 
     return fullpath.substring(0, 1)
 }
+
+/**
+ * Returns the name of a file without an extension
+ * @param file File name from which the extension is removed
+ * @returns A string file name with the extension removed
+ */
+export function trimExtension(file: string) {
+    return file.replace(/\.[^/.]+$/, '')
+}

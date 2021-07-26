@@ -9,7 +9,7 @@ import * as vscode from 'vscode'
  * Maps a resource type to a Webview URI pointing to a corresponding svg icon
  */
 export type IconURIMap = {
-    [index: string]: string
+    [resourceType: string]: string
 }
 /**
  * Creates a map between a resource type and a webview URI pointing to a corresponding svg icon
@@ -25,10 +25,13 @@ export function generateIconsMap(iconDir: string, webview: vscode.Webview): Icon
     for (const icon of icons) {
         const vscfile = vscode.Uri.file(join(iconDir, icon))
         // Convert the icon name from <a>-<b>-<c>.svg to <a>::<b>::<c>
-        // to match with Cloudformation resource names, which will be used as keys to retrieve the paths.
+        // to match with CloudFormation resource names, which will be used as keys to retrieve the paths.
         // See https://docs.aws.amazon.com/AWSCloudFormation/latest/UserGuide/aws-template-resource-type-ref.html
         // Note: images will always be in .svg format
-        const resourceKey = icon.replace('-', '::').replace('.svg', '')
+
+        // Since CloudFormation resource names will always be lower case, we convert the key to lower case here so that
+        // icon names can be case insensitive.
+        const resourceKey = icon.replace('-', '::').replace('.svg', '').toLowerCase()
 
         iconsMap[resourceKey] = webview.asWebviewUri(vscfile).toString()
     }

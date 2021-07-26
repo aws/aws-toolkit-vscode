@@ -8,7 +8,7 @@ import { join } from 'path'
 import { readdirSync } from 'fs'
 import { generateIconsMap, IconURIMap } from '../../../samVisualize/rendering/icons'
 import { getProjectDir } from '../../testUtil'
-import { withoutExtension } from '../withoutExtension'
+import { trimExtension } from '../../../shared/utilities/pathUtils'
 
 const iconsDir = join(getProjectDir(), '..', '..', 'media', 'samVisualizeMedia', 'icons')
 let icons: Array<string>
@@ -32,7 +32,7 @@ describe('generateIconsMap', function () {
 
             const iconPath = join(iconsDir, icon)
             // Icon <a>-<b>.svg (or <a>-<b>-<c>.svg) is used for resource type <a>::<b>::* (or <a>::<b>::<c>)
-            const resourceType = withoutExtension(icon).replace('-', '::')
+            const resourceType = trimExtension(icon).replace('-', '::')
 
             const expectedWebviewURI = testWebview.asWebviewUri(vscode.Uri.file(iconPath)).toString()
             assert.strictEqual(iconURIMap[resourceType], expectedWebviewURI)
