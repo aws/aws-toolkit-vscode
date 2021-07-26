@@ -15,22 +15,22 @@ import { LoadMoreNode } from '../../shared/treeview/nodes/loadMoreNode'
 import { ChildNodeLoader, ChildNodePage } from '../../awsexplorer/childNodeLoader'
 import { getLogger } from '../../shared/logger/logger'
 
-
 export class EcsNode extends AWSTreeNodeBase implements LoadMoreNode {
     private readonly childLoader: ChildNodeLoader
 
-    public constructor(private readonly ecs: EcsClient
-    ) {
+    public constructor(private readonly ecs: EcsClient) {
         super('ECS', vscode.TreeItemCollapsibleState.Collapsed)
-        this.childLoader = new ChildNodeLoader(this, token => this.loadPage(token))
+        this.childLoader = new ChildNodeLoader(
+            () => this,
+            token => this.loadPage(token)
+        )
         this.update()
     }
 
     public async getChildren(): Promise<AWSTreeNodeBase[]> {
         return await makeChildrenNodes({
-            getChildNodes:async () => this.childLoader.getChildren(),
-            getErrorNode: async (error: Error, logID: number) =>
-                new ErrorNode(this, error, logID),
+            getChildNodes: async () => this.childLoader.getChildren(),
+            getErrorNode: async (error: Error, logID: number) => new ErrorNode(this, error, logID),
             getNoChildrenPlaceholderNode: async () =>
                 new PlaceholderNode(this, localize('AWS.explorerNode.ecs.noClusters', '[No Clusters found]')),
         })
@@ -52,11 +52,11 @@ export class EcsNode extends AWSTreeNodeBase implements LoadMoreNode {
         getLogger().debug(`ecs: Loading page for %O using continuationToken %s`, this, nextToken)
         const response = await this.ecs.listClusters(nextToken)
         const clusters = response.clusters.map(cluster => new EcsClusterNode(cluster, this, this.ecs))
-        
+
         getLogger().debug(`ecs: Loaded clusters: %O`, clusters)
         return {
             newContinuationToken: response.nextToken,
-            newChildren: [...clusters]
+            newChildren: [...clusters],
         }
     }
 

@@ -14,17 +14,17 @@ import { inspect } from 'util'
  * Clicking the node executes the Load More command for the parent Node.
  */
 export class MoreResultsNode extends AWSTreeNodeBase {
-    public constructor(public parent: LoadMoreNode) {
+    public constructor(public getParent: () => LoadMoreNode) {
         super(localize('AWS.explorerNode.loadMoreChildren', 'Load More...'))
         this.command = {
             command: 'aws.loadMoreChildren',
             title: localize('AWS.explorerNode.loadMoreChildren', 'Load More...'),
-            arguments: [parent],
+            arguments: [getParent],
         }
         this.contextValue = 'awsMoreResultsNode'
     }
 
     public [inspect.custom](): string {
-        return `MoreResultsNode (parent=${this.parent})`
+        return `MoreResultsNode (parent=${this.getParent()})`
     }
 }

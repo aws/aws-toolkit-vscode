@@ -43,7 +43,10 @@ export class S3FolderNode extends AWSTreeNodeBase implements AWSResourceNode, Lo
         this.tooltip = folder.path
         this.iconPath = folderIconPath()
         this.contextValue = 'awsS3FolderNode'
-        this.childLoader = new ChildNodeLoader(this, token => this.loadPage(token))
+        this.childLoader = new ChildNodeLoader(
+            () => this,
+            token => this.loadPage(token)
+        )
     }
 
     public async getChildren(): Promise<AWSTreeNodeBase[]> {

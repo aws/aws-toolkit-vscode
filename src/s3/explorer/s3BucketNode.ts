@@ -47,7 +47,10 @@ export class S3BucketNode extends AWSTreeNodeBase implements AWSResourceNode, Lo
             light: vscode.Uri.file(ext.iconPaths.light.s3),
         }
         this.contextValue = 'awsS3BucketNode'
-        this.childLoader = new ChildNodeLoader(this, token => this.loadPage(token))
+        this.childLoader = new ChildNodeLoader(
+            () => this,
+            token => this.loadPage(token)
+        )
     }
 
     public async getChildren(): Promise<AWSTreeNodeBase[]> {

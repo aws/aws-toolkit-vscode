@@ -27,23 +27,24 @@ export class EcsClusterNode extends AWSTreeNodeBase implements AWSResourceNode, 
     public constructor(
         public readonly cluster: ECS.Cluster,
         public readonly parent: EcsNode,
-        private readonly ecs: EcsClient,
+        private readonly ecs: EcsClient
     ) {
         super(cluster.clusterName!, vscode.TreeItemCollapsibleState.Collapsed)
         this.tooltip = `(Cluster) ${this.cluster.clusterArn}`
         this.contextValue = 'awsEcsCluster'
-        this.childLoader = new ChildNodeLoader(this, token => this.loadPage(token))
+        this.childLoader = new ChildNodeLoader(
+            () => this,
+            token => this.loadPage(token)
+        )
     }
 
     public async getChildren(): Promise<AWSTreeNodeBase[]> {
         return await makeChildrenNodes({
             getChildNodes: async () => this.childLoader.getChildren(),
-            getErrorNode: async (error: Error, logID: number) =>
-                new ErrorNode(this, error, logID),
+            getErrorNode: async (error: Error, logID: number) => new ErrorNode(this, error, logID),
             getNoChildrenPlaceholderNode: async () =>
                 new PlaceholderNode(this, localize('AWS.explorerNode.ecs.noServices', '[No Services found]')),
         })
-
     }
 
     public get arn(): string {
@@ -69,9 +70,9 @@ export class EcsClusterNode extends AWSTreeNodeBase implements AWSResourceNode, 
     private async loadPage(nextToken: string | undefined): Promise<ChildNodePage> {
         getLogger().debug(`ecs: Loading page for %O using continuationToken %s`, this, nextToken)
         const response = await this.ecs.listServices(this.cluster.clusterArn!, nextToken)
-    
+
         const services = response.services.map(service => new EcsServiceNode(service, this, this.ecs))
-        
+
         getLogger().debug(`ecs: Loaded services: %O`, services)
         return {
             newContinuationToken: response.nextToken,
