@@ -23,8 +23,6 @@ import { FakeAwsContext } from './utilities/fakeAwsContext'
 import { initializeComputeRegion } from '../shared/extensionUtilities'
 import { FakeWorkspace } from './shared/vscode/fakeWorkspace'
 import { WorkspaceConfiguration } from '../shared/vscode/workspace'
-// import { activateExtension } from '../shared/utilities/vsCodeUtils'
-// import { VSCODE_EXTENSION_ID } from '../shared/extensions'
 
 const testReportDir = join(__dirname, '../../../.test-reports')
 const testLogOutput = join(testReportDir, 'testLog.log')
@@ -38,11 +36,6 @@ before(async function () {
     try {
         await remove(testLogOutput)
     } catch (e) {}
-    // try {
-    //     await activateExtension('json')
-    //     await activateExtension('json-language-features')
-    //     await activateExtension(VSCODE_EXTENSION_ID.yaml)
-    // } catch (e) {}
     mkdirpSync(testReportDir)
     // Set up global telemetry client
     const fakeContext = new FakeExtensionContext()
