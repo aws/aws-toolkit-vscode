@@ -55,6 +55,16 @@ describe('S3Tab', async function () {
     it('can be opened in read-only mode', async function () {
         when(mockedWorkspace.openTextDocument(anything())).thenReturn(Promise.resolve({ uri: s3Uri } as any))
         when(mockedWindow.showTextDocument(anything())).thenReturn()
+        when(mockedWindow.visibleTextEditors).thenReturn([
+            {
+                document: {
+                    uri: {
+                        scheme: 's3',
+                        _fsPath: fileUri.fsPath,
+                    },
+                },
+            } as any,
+        ])
 
         await s3Tab.openFileInReadOnly(instance(mockedWorkspace))
 
@@ -69,7 +79,19 @@ describe('S3Tab', async function () {
 
     it('can be opened in edit mode', async function () {
         when(mockedWorkspace.openTextDocument(anything())).thenReturn(Promise.resolve({ uri: fileUri } as any))
-        when(mockedWindow.showTextDocument(anything())).thenReturn()
+        when(mockedWindow.showTextDocument(anything())).thenReturn({
+            document: { uri: { scheme: 'file', fsPath: fileUri.fsPath } } as any,
+        } as any)
+        when(mockedWindow.visibleTextEditors).thenReturn([
+            {
+                document: {
+                    uri: {
+                        scheme: 'file',
+                        fsPath: fileUri.fsPath,
+                    },
+                },
+            } as any,
+        ])
 
         await s3Tab.openFileInEditMode(instance(mockedWorkspace))
 
