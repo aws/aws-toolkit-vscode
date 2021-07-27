@@ -25,7 +25,10 @@ export interface S3Tab {
     s3Uri: vscode.Uri
     editor: vscode.TextEditor | undefined
     s3FileNode: S3FileNode
+    type: string
+    charset: string
 }
+
 export class S3FileViewerManager {
     private outputChannel: OutputChannel
     private promptOnEdit = true
@@ -95,8 +98,11 @@ export class S3FileViewerManager {
         return visibleEditor.find((editor: vscode.TextEditor) => editor.document.uri.fsPath === targetUri.fsPath)
     }
 
-    public async focusAndCloseTab(uri: vscode.Uri, workspace = vscode.workspace): Promise<void> {
-        const editor = await this.getActiveEditor(uri)
+    public async focusAndCloseTab(
+        uri: vscode.Uri,
+        editor?: vscode.TextEditor,
+        workspace = vscode.workspace
+    ): Promise<void> {
         if (!editor) {
             const doc = await workspace.openTextDocument(uri)
             await this.window.showTextDocument(doc, {
@@ -152,44 +158,58 @@ export class S3FileViewerManager {
                 return await this.openInEditMode(fileNode)
             }
         }
-        const editor = await this.openFileInReadOnly(fileLocation)
 
         const newTab =
             this.activeTabs.get(fileLocation.fsPath) ??
-            ({ fileUri: fileLocation, s3Uri, editor, s3FileNode: fileNode } as S3Tab)
+            ({ fileUri: fileLocation, s3Uri, editor: undefined, s3FileNode: fileNode, type, charset } as S3Tab)
+
+        await this.opener(newTab, newTab.s3Uri, true)
 
         this.activeTabs.set(fileLocation.fsPath, newTab)
     }
 
-    public async openFileInReadOnly(
+    /**
+     * Opens a given file on given tab.
+     *
+     * @param tab
+     * @param uri Uri to be opened will use the scheme attached to this
+     * @param preview boolean for argument to window.showTextDocument()
+     * @param workspace
+     * @returns
+     */
+    public async opener(
+        tab: S3Tab,
         uri: vscode.Uri,
+        preview: boolean,
         workspace = vscode.workspace
     ): Promise<vscode.TextEditor | undefined> {
-        const s3Uri = vscode.Uri.parse('s3:' + uri.fsPath)
-
-        //find if there is any active editor for this uri
-        const openEditor = await this.getActiveEditor(s3Uri)
+        const openEditor = tab.editor
 
         try {
-            const doc = await workspace.openTextDocument(s3Uri)
+            let doc = await workspace.openTextDocument(uri)
             if (!openEditor) {
                 //there wasn't any open, just display it regularly
-                return await this.window.showTextDocument(doc, { preview: true })
-            } else if (openEditor.document.uri.scheme === 'file' || openEditor.document.uri.scheme === s3Uri.scheme) {
+                tab.editor = await this.window.showTextDocument(doc, { preview })
+                return tab.editor
+            } else if (openEditor.document.uri.scheme === 'file' || openEditor.document.uri.scheme === uri.scheme) {
+                doc = openEditor.document
                 //there is a tab for this uri scheme open (or scheme file), just shift focus to it by reopening it with the ViewColumn option
-                return await this.window.showTextDocument(openEditor.document, {
+                tab.editor = await this.window.showTextDocument(doc, {
                     preview: false,
                     viewColumn: openEditor.viewColumn,
                 })
+                return tab.editor
             } else {
                 // there is already a tab open, it needs to be focused, then closed
-                await this.focusAndCloseTab(uri)
+                await this.focusAndCloseTab(tab.fileUri, tab.editor)
                 //good to open in given mode
-                return await this.window.showTextDocument(doc, { preview: true })
+                tab.editor = await this.window.showTextDocument(doc, { preview })
+                return tab.editor
             }
         } catch (e) {
             this.window.showErrorMessage(`Error opening file ${e}`)
-            return undefined
+            tab.editor = undefined
+            return tab.editor
         }
     }
 
@@ -213,12 +233,11 @@ export class S3FileViewerManager {
                 }
             })
         }
-
         if (uriOrNode instanceof vscode.Uri) {
             //was activated from an open tab
             if (this.activeTabs.has(uriOrNode.fsPath)) {
                 const tab = this.activeTabs.get(uriOrNode.fsPath)
-                await this.openFileInEditMode(uriOrNode)
+                await this.openFileInEditMode(tab!)
 
                 this.activeTabs.set(uriOrNode.fsPath, tab!)
             } else {
@@ -231,37 +250,64 @@ export class S3FileViewerManager {
             }
         } else {
             //was activated from the explorer, need to get the file
+
+            const fileNode = uriOrNode
+            const headResponse = await fileNode.s3.getHeadObject({
+                bucketName: fileNode.bucket.name,
+                key: fileNode.file.key,
+            })
+            const type = mime.contentType(headResponse.ContentType!)
+            const charset = mime.charset(type as string)
+
             const fileLocation = await this.getFile(uriOrNode)
             if (!fileLocation) {
                 return
             }
             const s3Uri = vscode.Uri.parse(fileLocation.fsPath)
-            const editor = await this.openFileInEditMode(fileLocation)
+            let tab = this.activeTabs.get(fileLocation.fsPath)
 
-            const tab =
-                this.activeTabs.get(fileLocation.fsPath) ??
-                ({ fileUri: fileLocation, s3Uri, editor, s3FileNode: uriOrNode } as S3Tab) //new S3Tab(fileLocation, uriOrNode)
+            if (!tab) {
+                tab = { fileUri: fileLocation, s3Uri, editor: undefined, s3FileNode: uriOrNode, type, charset } as S3Tab //new S3Tab(fileLocation, uriOrNode)
+            }
 
+            if (charset != 'UTF-8') {
+                tab.editor = await vscode.commands.executeCommand('workbench.action.quickOpen', tab.fileUri.fsPath)
+            }
+
+            tab.editor = await this.opener(tab, tab.fileUri, false)
+
+            //await this.openFileInEditMode(tab)
             this.activeTabs.set(tab.fileUri.fsPath, tab)
         }
     }
 
-    public async openFileInEditMode(
-        uri: vscode.Uri,
-        workspace = vscode.workspace
-    ): Promise<vscode.TextEditor | undefined> {
-        //await this.openFile(this.fileUri, workspace)
-        const openEditor = await this.getActiveEditor(uri)
-        if (openEditor && openEditor.document.uri.scheme === 'file') {
-            //shift focus
-            const doc = await workspace.openTextDocument(uri)
-            return await this.window.showTextDocument(doc, { preview: false })
-        } else {
-            //const s3Uri = vscode.Uri.parse('s3:' + uri.fsPath)
-            await this.focusAndCloseTab(uri)
+    public async openFileInEditMode(tab: S3Tab, workspace = vscode.workspace): Promise<vscode.TextEditor | undefined> {
+        return await this.opener(tab, tab.fileUri, false, workspace)
+        //const openEditor = tab.editor
 
-            return vscode.commands.executeCommand('workbench.action.quickOpen', uri.fsPath)
-        }
+        // try{
+        //     const doc = await workspace.openTextDocument(tab.fileUri)
+        //     if(!openEditor) {
+        //         //want to open tab
+        //         tab.editor = await this.window.showTextDocument(doc, { preview: false })
+        //         return tab.editor
+        //     }
+        //     if (openEditor.document.uri.scheme === 'file') {
+        //         //shift focus
+        //         tab.editor = await this.window.showTextDocument(doc, { preview: false, viewColumn: openEditor.viewColumn })
+        //         return tab.editor
+        //     } else {
+        //         //it is a scheme:'s3', needs to be closed, then
+        //         await this.focusAndCloseTab(tab.fileUri, tab.editor)
+        //         //opened in edit mode
+        //         tab.editor = await this.window.showTextDocument(doc, { preview: false })
+        //         return tab.editor
+        //     }
+        // } catch (e) {
+        //     this.window.showErrorMessage(`Error opening file ${e}`)
+        //     tab.editor = undefined
+        //     return tab.editor
+        // }
     }
 
     /**
