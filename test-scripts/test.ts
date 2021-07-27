@@ -5,8 +5,7 @@
 
 import { resolve } from 'path'
 import { runTests } from 'vscode-test'
-import { VSCODE_EXTENSION_ID } from '../src/shared/extensions'
-import { installVSCodeExtension, setupVSCodeTestInstance } from './launchTestUtilities'
+import { setupVSCodeTestInstance } from './launchTestUtilities'
 import { env } from 'process'
 
 /**
@@ -17,7 +16,6 @@ const START_UP_DELAY = 20000
 
 async function setupVSCode(): Promise<string> {
     const vsCodeExecutablePath = await setupVSCodeTestInstance()
-    await installVSCodeExtension(vsCodeExecutablePath, VSCODE_EXTENSION_ID.yaml)
     await new Promise(r => setTimeout(r, START_UP_DELAY))
     return vsCodeExecutablePath
 }
