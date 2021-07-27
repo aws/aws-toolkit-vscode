@@ -7,16 +7,15 @@ import com.intellij.openapi.application.ModalityState
 import com.intellij.openapi.project.Project
 import com.intellij.openapi.ui.DialogWrapper
 import com.intellij.openapi.ui.ValidationInfo
-import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 import software.amazon.awssdk.services.sqs.SqsClient
 import software.amazon.awssdk.services.sqs.model.QueueAttributeName
 import software.aws.toolkits.core.utils.getLogger
 import software.aws.toolkits.core.utils.warn
+import software.aws.toolkits.jetbrains.core.applicationThreadPoolScope
 import software.aws.toolkits.jetbrains.core.explorer.refreshAwsTree
 import software.aws.toolkits.jetbrains.services.sqs.resources.SqsResources
-import software.aws.toolkits.jetbrains.utils.ApplicationThreadPoolScope
 import software.aws.toolkits.jetbrains.utils.getCoroutineUiContext
 import software.aws.toolkits.resources.message
 import software.aws.toolkits.telemetry.Result
@@ -27,7 +26,8 @@ import javax.swing.JComponent
 class CreateQueueDialog(
     private val project: Project,
     private val client: SqsClient
-) : DialogWrapper(project), CoroutineScope by ApplicationThreadPoolScope("CreateQueueDialog") {
+) : DialogWrapper(project) {
+    private val coroutineScope = applicationThreadPoolScope(project)
     val view = CreateQueuePanel()
 
     init {
@@ -56,7 +56,7 @@ class CreateQueueDialog(
         setOKButtonText(message("general.create_in_progress"))
         isOKActionEnabled = false
 
-        launch {
+        coroutineScope.launch {
             try {
                 createQueue()
                 withContext(getCoroutineUiContext(ModalityState.any())) {

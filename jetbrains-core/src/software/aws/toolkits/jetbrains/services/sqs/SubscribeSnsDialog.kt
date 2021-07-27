@@ -7,7 +7,6 @@ import com.intellij.openapi.application.ModalityState
 import com.intellij.openapi.project.Project
 import com.intellij.openapi.ui.DialogWrapper
 import com.intellij.openapi.ui.ValidationInfo
-import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 import software.amazon.awssdk.services.iam.IamClient
@@ -19,8 +18,8 @@ import software.amazon.awssdk.services.sqs.SqsClient
 import software.amazon.awssdk.services.sqs.model.QueueAttributeName
 import software.aws.toolkits.core.utils.getLogger
 import software.aws.toolkits.core.utils.warn
+import software.aws.toolkits.jetbrains.core.applicationThreadPoolScope
 import software.aws.toolkits.jetbrains.core.awsClient
-import software.aws.toolkits.jetbrains.utils.ApplicationThreadPoolScope
 import software.aws.toolkits.jetbrains.utils.getCoroutineUiContext
 import software.aws.toolkits.jetbrains.utils.notifyInfo
 import software.aws.toolkits.resources.message
@@ -31,7 +30,8 @@ import javax.swing.JComponent
 class SubscribeSnsDialog(
     private val project: Project,
     private val queue: Queue
-) : DialogWrapper(project), CoroutineScope by ApplicationThreadPoolScope("SubscribeSnsDialog") {
+) : DialogWrapper(project) {
+    private val coroutineScope = applicationThreadPoolScope(project)
     private val snsClient: SnsClient = project.awsClient()
     private val sqsClient: SqsClient = project.awsClient()
     private val iamClient: IamClient = project.awsClient()
@@ -69,7 +69,7 @@ class SubscribeSnsDialog(
         setOKButtonText(message("sqs.subscribe.sns.in_progress"))
         isOKActionEnabled = false
 
-        launch {
+        coroutineScope.launch {
             try {
                 val policy = sqsClient.getQueueAttributes {
                     it.queueUrl(queue.queueUrl)

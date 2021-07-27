@@ -52,7 +52,7 @@ abstract class AbstractToolkitDockerAdapter(protected val project: Project, prot
     abstract fun buildLocalImage(dockerfile: File): String?
 
     open suspend fun hackyBuildDockerfileWithUi(project: Project, pushRequest: DockerfileEcrPushRequest): String? {
-        val (runConfiguration, remoteRepo, remoteTag) = pushRequest
+        val (runConfiguration, _, _) = pushRequest
         // use connection specified in run configuration
         val server = RemoteServersManager.getInstance().findByName(runConfiguration.serverName, runConfiguration.serverType)
         val (serverConnection, dockerRuntime) = EcrUtils.getDockerServerRuntimeInstance(server)

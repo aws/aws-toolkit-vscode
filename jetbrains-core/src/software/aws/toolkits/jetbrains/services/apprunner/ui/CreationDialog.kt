@@ -6,7 +6,6 @@ package software.aws.toolkits.jetbrains.services.apprunner.ui
 import com.intellij.openapi.application.ModalityState
 import com.intellij.openapi.project.Project
 import com.intellij.openapi.ui.DialogWrapper
-import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 import software.amazon.awssdk.services.apprunner.AppRunnerClient
@@ -17,10 +16,10 @@ import software.amazon.awssdk.services.apprunner.model.ImageRepositoryType
 import software.amazon.awssdk.services.apprunner.model.SourceCodeVersionType
 import software.aws.toolkits.core.utils.error
 import software.aws.toolkits.core.utils.getLogger
+import software.aws.toolkits.jetbrains.core.applicationThreadPoolScope
 import software.aws.toolkits.jetbrains.core.awsClient
 import software.aws.toolkits.jetbrains.core.explorer.refreshAwsTree
 import software.aws.toolkits.jetbrains.services.apprunner.resources.AppRunnerResources
-import software.aws.toolkits.jetbrains.utils.ApplicationThreadPoolScope
 import software.aws.toolkits.jetbrains.utils.getCoroutineUiContext
 import software.aws.toolkits.jetbrains.utils.notifyInfo
 import software.aws.toolkits.resources.message
@@ -30,8 +29,8 @@ import software.aws.toolkits.telemetry.Result
 import javax.swing.JComponent
 
 class CreationDialog(private val project: Project, ecrUri: String? = null) :
-    DialogWrapper(project),
-    CoroutineScope by ApplicationThreadPoolScope("ApprunnerCreationPanel") {
+    DialogWrapper(project) {
+    private val coroutineScope = applicationThreadPoolScope(project)
     val panel = CreationPanel(project, ecrUri)
 
     init {
@@ -54,7 +53,7 @@ class CreationDialog(private val project: Project, ecrUri: String? = null) :
         isOKActionEnabled = false
         setOKButtonText(message("general.create_in_progress"))
         panel.component.apply()
-        launch {
+        coroutineScope.launch {
             try {
                 val client = project.awsClient<AppRunnerClient>()
                 val request = buildRequest(panel)

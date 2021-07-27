@@ -10,12 +10,12 @@ import com.intellij.openapi.fileChooser.FileChooserFactory
 import com.intellij.openapi.project.Project
 import com.intellij.util.io.isDirectory
 import kotlinx.coroutines.launch
+import software.aws.toolkits.jetbrains.core.applicationThreadPoolScope
 import software.aws.toolkits.jetbrains.core.utils.getRequiredData
 import software.aws.toolkits.jetbrains.services.s3.editor.S3EditorDataKeys
 import software.aws.toolkits.jetbrains.services.s3.editor.S3TreeDirectoryNode
 import software.aws.toolkits.jetbrains.services.s3.editor.S3TreeNode
 import software.aws.toolkits.jetbrains.services.s3.editor.S3TreeTable
-import software.aws.toolkits.jetbrains.utils.ApplicationThreadPoolScope
 import software.aws.toolkits.jetbrains.utils.notifyError
 import software.aws.toolkits.resources.message
 import software.aws.toolkits.telemetry.Result
@@ -50,7 +50,8 @@ fun uploadObjects(project: Project, treeTable: S3TreeTable, files: List<Path>, p
     if (files.isEmpty()) {
         return
     }
-    ApplicationThreadPoolScope("UploadObjectAction").launch {
+    val scope = project.applicationThreadPoolScope("UploadObjectAction")
+    scope.launch {
         var changeMade = false
         try {
             files.forEach {

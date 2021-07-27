@@ -16,7 +16,6 @@ import com.intellij.openapi.ui.SimpleToolWindowPanel
 import com.intellij.openapi.util.Disposer
 import com.intellij.ui.SearchTextField
 import com.intellij.ui.components.breadcrumbs.Breadcrumbs
-import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.launch
 import software.amazon.awssdk.services.cloudwatchlogs.CloudWatchLogsClient
 import software.aws.toolkits.jetbrains.core.awsClient
@@ -41,7 +40,8 @@ class CloudWatchLogStream(
     private val previousEvent: LogStreamEntry? = null,
     private val duration: Duration? = null,
     streamLogs: Boolean = false
-) : CoroutineScope by ApplicationThreadPoolScope("CloudWatchLogStream"), Disposable {
+) : Disposable {
+    private val coroutineScope = ApplicationThreadPoolScope("CloudWatchLogStream", this)
     lateinit var content: JPanel
         private set
     private lateinit var breadcrumbHolder: JPanel
@@ -91,7 +91,7 @@ class CloudWatchLogStream(
         searchField.onEmpty {
             val oldTable = searchStreamTable
             searchStreamTable = null
-            launch(edtContext) {
+            coroutineScope.launch(edtContext) {
                 tablePanel.setContent(logStreamTable.component)
                 // Dispose the old one if it was not null
                 oldTable?.let { launch { Disposer.dispose(it) } }
@@ -108,11 +108,11 @@ class CloudWatchLogStream(
                 val table = LogStreamTable(project, client, logGroup, logStream, LogStreamTable.TableType.FILTER)
                 Disposer.register(this@CloudWatchLogStream, table)
                 searchStreamTable = table
-                launch(edtContext) {
+                coroutineScope.launch(edtContext) {
                     tablePanel.setContent(table.component)
                     oldTable?.let { launch { Disposer.dispose(it) } }
                 }
-                launch {
+                coroutineScope.launch {
                     table.channel.send(CloudWatchLogsActor.Message.LoadInitialFilter(searchField.text))
                 }
             }
@@ -141,7 +141,7 @@ class CloudWatchLogStream(
         tablePanel.toolbar = toolbar.component
     }
 
-    internal fun refreshTable() = launch {
+    internal fun refreshTable() = coroutineScope.launch {
         if (searchField.text.isNotEmpty() && searchStreamTable != null) {
             searchStreamTable?.channel?.send(CloudWatchLogsActor.Message.LoadInitialFilter(searchField.text.trim()))
         } else if (previousEvent != null && duration != null) {

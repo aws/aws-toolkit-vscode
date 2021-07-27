@@ -15,15 +15,14 @@ import com.intellij.ui.DoubleClickListener
 import com.intellij.ui.TreeTableSpeedSearch
 import com.intellij.ui.treeStructure.treetable.TreeTable
 import com.intellij.util.containers.Convertor
-import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 import software.amazon.awssdk.services.s3.model.NoSuchBucketException
 import software.aws.toolkits.core.utils.error
 import software.aws.toolkits.core.utils.getLogger
 import software.aws.toolkits.core.utils.info
+import software.aws.toolkits.jetbrains.core.applicationThreadPoolScope
 import software.aws.toolkits.jetbrains.services.s3.objectActions.uploadObjects
-import software.aws.toolkits.jetbrains.utils.ApplicationThreadPoolScope
 import software.aws.toolkits.jetbrains.utils.getCoroutineUiContext
 import software.aws.toolkits.jetbrains.utils.notifyError
 import software.aws.toolkits.resources.message
@@ -46,7 +45,8 @@ class S3TreeTable(
     val rootNode: S3TreeDirectoryNode,
     val bucket: S3VirtualBucket,
     private val project: Project
-) : TreeTable(treeTableModel), CoroutineScope by ApplicationThreadPoolScope("S3TreeTable") {
+) : TreeTable(treeTableModel) {
+    private val coroutineScope = applicationThreadPoolScope(project)
     private val edt = getCoroutineUiContext()
 
     private val dropTargetListener = object : DropTargetAdapter() {
@@ -110,7 +110,7 @@ class S3TreeTable(
             fileWrapper.virtualFile?.isWritable = true
         }
 
-        launch {
+        coroutineScope.launch {
             try {
                 bucket.download(project, objectNode.key, objectNode.versionId, fileWrapper.file.outputStream())
                 withContext(edt) {
@@ -142,7 +142,7 @@ class S3TreeTable(
     private fun handleLoadingMore(row: Int): Boolean {
         val continuationNode = (tree.getPathForRow(row).lastPathComponent as? DefaultMutableTreeNode)?.userObject as? S3TreeContinuationNode<*> ?: return false
 
-        launch {
+        coroutineScope.launch {
             continuationNode.loadMore()
             refresh()
         }

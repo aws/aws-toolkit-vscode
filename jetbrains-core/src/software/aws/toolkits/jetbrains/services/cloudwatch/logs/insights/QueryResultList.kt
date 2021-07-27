@@ -6,7 +6,6 @@ import com.intellij.openapi.Disposable
 import com.intellij.openapi.project.Project
 import com.intellij.openapi.ui.SimpleToolWindowPanel
 import com.intellij.openapi.util.Disposer
-import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.launch
 import software.aws.toolkits.jetbrains.services.cloudwatch.logs.InsightsQueryResultsActor
 import software.aws.toolkits.jetbrains.utils.ApplicationThreadPoolScope
@@ -22,7 +21,8 @@ class QueryResultList(
     fields: List<String>,
     queryId: String,
     private val queryDetails: QueryDetails
-) : CoroutineScope by ApplicationThreadPoolScope("CloudWatchLogsGroup"), Disposable {
+) : Disposable {
+    private val coroutineScope = ApplicationThreadPoolScope("QueryResultList", this)
     lateinit var resultsPanel: JPanel
         private set
     private lateinit var tablePanel: SimpleToolWindowPanel
@@ -48,7 +48,7 @@ class QueryResultList(
     }
 
     private fun loadInitialResultsTable() {
-        launch { resultsTable.channel.send(InsightsQueryResultsActor.Message.StartLoadingAll) }
+        coroutineScope.launch { resultsTable.channel.send(InsightsQueryResultsActor.Message.StartLoadingAll) }
     }
 
     override fun dispose() {
