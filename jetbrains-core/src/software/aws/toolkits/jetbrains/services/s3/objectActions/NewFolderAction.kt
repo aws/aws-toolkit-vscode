@@ -7,28 +7,28 @@ import com.intellij.icons.AllIcons
 import com.intellij.openapi.actionSystem.CommonDataKeys
 import com.intellij.openapi.actionSystem.DataContext
 import com.intellij.openapi.ui.Messages
-import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.launch
 import software.amazon.awssdk.services.s3.model.NoSuchBucketException
+import software.aws.toolkits.jetbrains.core.applicationThreadPoolScope
 import software.aws.toolkits.jetbrains.core.utils.getRequiredData
 import software.aws.toolkits.jetbrains.services.s3.editor.S3EditorDataKeys
 import software.aws.toolkits.jetbrains.services.s3.editor.S3TreeDirectoryNode
 import software.aws.toolkits.jetbrains.services.s3.editor.S3TreeNode
 import software.aws.toolkits.jetbrains.services.s3.editor.S3TreeObjectNode
-import software.aws.toolkits.jetbrains.utils.ApplicationThreadPoolScope
 import software.aws.toolkits.jetbrains.utils.notifyError
 import software.aws.toolkits.resources.message
 import software.aws.toolkits.telemetry.Result
 import software.aws.toolkits.telemetry.S3Telemetry
 
-class NewFolderAction : S3ObjectAction(message("s3.new.folder"), AllIcons.Actions.NewFolder), CoroutineScope by ApplicationThreadPoolScope("NewFolderAction") {
+class NewFolderAction : S3ObjectAction(message("s3.new.folder"), AllIcons.Actions.NewFolder) {
     override fun performAction(dataContext: DataContext, nodes: List<S3TreeNode>) {
         val project = dataContext.getRequiredData(CommonDataKeys.PROJECT)
         val treeTable = dataContext.getRequiredData(S3EditorDataKeys.BUCKET_TABLE)
         val node = nodes.firstOrNull() ?: treeTable.rootNode
+        val scope = applicationThreadPoolScope(project)
 
         Messages.showInputDialog(project, message("s3.new.folder.name"), message("s3.new.folder"), null)?.let { key ->
-            launch {
+            scope.launch {
                 var result = Result.Failed
                 try {
                     node.bucket.newFolder(node.directoryPath() + key)

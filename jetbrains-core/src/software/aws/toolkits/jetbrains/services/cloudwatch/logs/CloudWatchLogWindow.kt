@@ -7,11 +7,11 @@ import com.intellij.openapi.components.ServiceManager
 import com.intellij.openapi.project.Project
 import com.intellij.util.text.DateFormatUtil
 import icons.AwsIcons
-import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.withContext
 import software.amazon.awssdk.services.cloudwatchlogs.CloudWatchLogsClient
 import software.aws.toolkits.core.utils.error
 import software.aws.toolkits.core.utils.getLogger
+import software.aws.toolkits.jetbrains.core.applicationThreadPoolScope
 import software.aws.toolkits.jetbrains.core.toolwindow.ToolkitToolWindowManager
 import software.aws.toolkits.jetbrains.core.toolwindow.ToolkitToolWindowType
 import software.aws.toolkits.jetbrains.services.cloudwatch.logs.editor.CloudWatchLogGroup
@@ -19,14 +19,14 @@ import software.aws.toolkits.jetbrains.services.cloudwatch.logs.editor.CloudWatc
 import software.aws.toolkits.jetbrains.services.cloudwatch.logs.insights.DetailedLogRecord
 import software.aws.toolkits.jetbrains.services.cloudwatch.logs.insights.QueryDetails
 import software.aws.toolkits.jetbrains.services.cloudwatch.logs.insights.QueryResultList
-import software.aws.toolkits.jetbrains.utils.ApplicationThreadPoolScope
 import software.aws.toolkits.jetbrains.utils.getCoroutineUiContext
 import software.aws.toolkits.resources.message
 import software.aws.toolkits.telemetry.CloudwatchlogsTelemetry
 import software.aws.toolkits.telemetry.Result
 import java.time.Duration
 
-class CloudWatchLogWindow(private val project: Project) : CoroutineScope by ApplicationThreadPoolScope("openLogGroup") {
+class CloudWatchLogWindow(private val project: Project) {
+    private val coroutineScope = applicationThreadPoolScope(project)
     private val toolWindow = ToolkitToolWindowManager.getInstance(project, CW_LOGS_TOOL_WINDOW)
     private val edtContext = getCoroutineUiContext()
 

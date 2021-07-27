@@ -6,25 +6,24 @@ package software.aws.toolkits.jetbrains.services.apprunner.actions
 import com.intellij.openapi.actionSystem.AnActionEvent
 import com.intellij.openapi.project.DumbAware
 import icons.AwsIcons
-import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.launch
 import software.amazon.awssdk.services.cloudwatchlogs.CloudWatchLogsClient
+import software.aws.toolkits.jetbrains.core.applicationThreadPoolScope
 import software.aws.toolkits.jetbrains.core.awsClient
 import software.aws.toolkits.jetbrains.core.explorer.actions.SingleResourceNodeAction
 import software.aws.toolkits.jetbrains.services.apprunner.AppRunnerServiceNode
 import software.aws.toolkits.jetbrains.services.cloudwatch.logs.CloudWatchLogWindow
 import software.aws.toolkits.jetbrains.services.cloudwatch.logs.checkIfLogGroupExists
-import software.aws.toolkits.jetbrains.utils.ApplicationThreadPoolScope
 import software.aws.toolkits.jetbrains.utils.notifyError
 import software.aws.toolkits.resources.message
 import software.aws.toolkits.telemetry.ApprunnerTelemetry
 
 class ViewSystemLogsAction :
     SingleResourceNodeAction<AppRunnerServiceNode>(message("apprunner.view_service_log_streams"), null, AwsIcons.Resources.CloudWatch.LOGS),
-    CoroutineScope by ApplicationThreadPoolScope("AppRunnerViewServiceLogStreamsAction"),
     DumbAware {
     override fun actionPerformed(selected: AppRunnerServiceNode, e: AnActionEvent) {
-        launch {
+        val scope = applicationThreadPoolScope(selected.nodeProject)
+        scope.launch {
             try {
                 viewLogGroup(selected, "service")
             } finally {
@@ -36,10 +35,10 @@ class ViewSystemLogsAction :
 
 class ViewApplicationLogsAction :
     SingleResourceNodeAction<AppRunnerServiceNode>(message("apprunner.view_application_log_streams"), null, AwsIcons.Resources.CloudWatch.LOGS),
-    CoroutineScope by ApplicationThreadPoolScope("AppRunnerViewApplicationLogStreamsAction"),
     DumbAware {
     override fun actionPerformed(selected: AppRunnerServiceNode, e: AnActionEvent) {
-        launch {
+        val scope = applicationThreadPoolScope(selected.nodeProject)
+        scope.launch {
             try {
                 viewLogGroup(selected, "application")
             } finally {

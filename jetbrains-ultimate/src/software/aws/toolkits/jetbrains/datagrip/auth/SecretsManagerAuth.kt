@@ -14,17 +14,16 @@ import com.intellij.database.dataSource.DatabaseConnectionInterceptor.ProtoConne
 import com.intellij.database.dataSource.DatabaseCredentialsAuthProvider
 import com.intellij.database.dataSource.LocalDataSource
 import com.intellij.openapi.project.Project
-import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.future.future
 import software.amazon.awssdk.services.secretsmanager.SecretsManagerClient
 import software.aws.toolkits.core.utils.getLogger
 import software.aws.toolkits.core.utils.info
 import software.aws.toolkits.jetbrains.core.AwsClientManager
+import software.aws.toolkits.jetbrains.core.applicationThreadPoolScope
 import software.aws.toolkits.jetbrains.core.credentials.ConnectionSettings
 import software.aws.toolkits.jetbrains.datagrip.getAwsConnectionSettings
 import software.aws.toolkits.jetbrains.datagrip.getDatabaseEngine
 import software.aws.toolkits.jetbrains.datagrip.secretsManagerIsApplicable
-import software.aws.toolkits.jetbrains.utils.ApplicationThreadPoolScope
 import software.aws.toolkits.resources.message
 import software.aws.toolkits.telemetry.DatabaseCredentials.SecretsManager
 import software.aws.toolkits.telemetry.RdsTelemetry
@@ -37,7 +36,7 @@ data class SecretsManagerConfiguration(
     val secretId: String
 )
 
-class SecretsManagerAuth : DatabaseAuthProvider, CoroutineScope by ApplicationThreadPoolScope("RedshiftSecretsManagerAuth") {
+class SecretsManagerAuth : DatabaseAuthProvider {
     private val objectMapper = jacksonObjectMapper().disable(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES)
 
     override fun getId(): String = providerId
@@ -53,7 +52,8 @@ class SecretsManagerAuth : DatabaseAuthProvider, CoroutineScope by ApplicationTh
         silent: Boolean
     ): CompletionStage<ProtoConnection>? {
         LOG.info { "Intercepting db connection [$connection]" }
-        return future {
+        val scope = applicationThreadPoolScope(connection.runConfiguration.project)
+        return scope.future {
             var result = Result.Succeeded
             val project = connection.runConfiguration.project
             try {

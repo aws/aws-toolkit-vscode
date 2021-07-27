@@ -11,14 +11,13 @@ import com.intellij.openapi.application.ModalityState
 import com.intellij.openapi.application.runInEdt
 import com.intellij.openapi.project.Project
 import com.intellij.openapi.ui.DialogWrapper
-import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.launch
 import software.amazon.awssdk.services.sqs.SqsClient
 import software.amazon.awssdk.services.sqs.model.QueueAttributeName
 import software.aws.toolkits.core.utils.getLogger
 import software.aws.toolkits.core.utils.warn
+import software.aws.toolkits.jetbrains.core.applicationThreadPoolScope
 import software.aws.toolkits.jetbrains.ui.ConfirmPolicyPanel
-import software.aws.toolkits.jetbrains.utils.ApplicationThreadPoolScope
 import software.aws.toolkits.jetbrains.utils.ui.formatAndSet
 import software.aws.toolkits.resources.message
 import java.awt.Component
@@ -31,7 +30,8 @@ class ConfirmQueuePolicyDialog(
     topicArn: String,
     private val existingPolicy: String?,
     parent: Component? = null
-) : DialogWrapper(project, parent, false, IdeModalityType.PROJECT), CoroutineScope by ApplicationThreadPoolScope("ConfirmQueuePolicy") {
+) : DialogWrapper(project, parent, false, IdeModalityType.PROJECT) {
+    private val coroutineScope = applicationThreadPoolScope(project)
     private val policyStatement = createSqsSnsSubscribePolicyStatement(queue.arn, topicArn)
 
     val view = ConfirmPolicyPanel(project, message("sqs.confirm.iam.warning.sqs_queue_permissions"))
@@ -52,7 +52,7 @@ class ConfirmQueuePolicyDialog(
 
         setOKButtonText(message("sqs.confirm.iam.in_progress"))
         isOKActionEnabled = false
-        launch {
+        coroutineScope.launch {
             try {
                 addPolicy()
                 runInEdt(ModalityState.any()) {

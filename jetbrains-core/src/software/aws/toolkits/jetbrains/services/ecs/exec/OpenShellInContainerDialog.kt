@@ -17,6 +17,7 @@ import org.jetbrains.plugins.terminal.TerminalTabState
 import org.jetbrains.plugins.terminal.TerminalView
 import org.jetbrains.plugins.terminal.cloud.CloudTerminalProcess
 import org.jetbrains.plugins.terminal.cloud.CloudTerminalRunner
+import software.aws.toolkits.jetbrains.core.applicationThreadPoolScope
 import software.aws.toolkits.jetbrains.core.credentials.ConnectionSettings
 import software.aws.toolkits.jetbrains.core.credentials.toEnvironmentVariables
 import software.aws.toolkits.jetbrains.core.executables.ExecutableInstance
@@ -25,7 +26,6 @@ import software.aws.toolkits.jetbrains.core.executables.getExecutable
 import software.aws.toolkits.jetbrains.services.ecs.ContainerDetails
 import software.aws.toolkits.jetbrains.services.ecs.resources.EcsResources
 import software.aws.toolkits.jetbrains.ui.ResourceSelector
-import software.aws.toolkits.jetbrains.utils.ApplicationThreadPoolScope
 import software.aws.toolkits.jetbrains.utils.getCoroutineUiContext
 import software.aws.toolkits.resources.message
 import software.aws.toolkits.telemetry.EcsExecuteCommandType
@@ -39,7 +39,7 @@ class OpenShellInContainerDialog(
     private val container: ContainerDetails,
     private val connectionSettings: ConnectionSettings
 ) : DialogWrapper(project) {
-    private val coroutineScope = ApplicationThreadPoolScope("OpenShellInContainerDialog")
+    private val coroutineScope = applicationThreadPoolScope(project)
     private val tasks = ResourceSelector
         .builder()
         .resource(
@@ -106,7 +106,7 @@ class OpenShellInContainerDialog(
         try {
             ExecutableManager.getInstance().getExecutable<AwsCliExecutable>().thenAccept { awsCliExecutable ->
                 when (awsCliExecutable) {
-                    is ExecutableInstance.Executable -> awsCliExecutable
+                    is ExecutableInstance.Executable -> {} // noop
                     is ExecutableInstance.UnresolvedExecutable -> throw Exception(message("executableCommon.missing_executable", "AWS CLI"))
                     is ExecutableInstance.InvalidExecutable -> throw Exception(awsCliExecutable.validationError)
                 }

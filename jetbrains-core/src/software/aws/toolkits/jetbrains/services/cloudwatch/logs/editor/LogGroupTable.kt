@@ -17,7 +17,6 @@ import com.intellij.ui.TableSpeedSearch
 import com.intellij.ui.table.JBTable
 import com.intellij.ui.table.TableView
 import com.intellij.util.ui.ListTableModel
-import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.channels.Channel
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.runBlocking
@@ -41,7 +40,8 @@ class LogGroupTable(
     private val client: CloudWatchLogsClient,
     private val logGroup: String,
     type: TableType
-) : CoroutineScope by ApplicationThreadPoolScope("LogGroupTable"), Disposable {
+) : Disposable {
+    private val coroutineScope = ApplicationThreadPoolScope("LogGroupTable", this)
     val component: JComponent
     val channel: Channel<CloudWatchLogsActor.Message>
     private val groupTable: TableView<LogStream>
@@ -85,7 +85,7 @@ class LogGroupTable(
         component = ScrollPaneFactory.createScrollPane(groupTable).also {
             it.bottomReached {
                 if (groupTable.rowCount != 0) {
-                    launch { logGroupActor.channel.send(CloudWatchLogsActor.Message.LoadForward) }
+                    coroutineScope.launch { logGroupActor.channel.send(CloudWatchLogsActor.Message.LoadForward) }
                 }
             }
         }

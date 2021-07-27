@@ -13,7 +13,6 @@ import com.intellij.execution.ui.ConsoleViewContentType
 import com.intellij.openapi.util.Key
 import com.intellij.xdebugger.XDebugSessionListener
 import com.intellij.xdebugger.XDebuggerManager
-import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.TimeoutCancellationException
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
@@ -21,12 +20,12 @@ import kotlinx.coroutines.runBlocking
 import kotlinx.coroutines.withTimeout
 import software.aws.toolkits.core.utils.getLogger
 import software.aws.toolkits.core.utils.warn
+import software.aws.toolkits.jetbrains.core.applicationThreadPoolScope
 import software.aws.toolkits.jetbrains.services.lambda.execution.sam.SamDebugSupport
 import software.aws.toolkits.jetbrains.services.lambda.execution.sam.SamRunningState
 import software.aws.toolkits.jetbrains.services.lambda.execution.sam.resolveDebuggerSupport
 import software.aws.toolkits.jetbrains.services.lambda.sam.SamExecutable
 import software.aws.toolkits.jetbrains.services.lambda.steps.GetPorts.Companion.DEBUG_PORTS
-import software.aws.toolkits.jetbrains.utils.ApplicationThreadPoolScope
 import software.aws.toolkits.jetbrains.utils.execution.steps.Context
 import software.aws.toolkits.jetbrains.utils.execution.steps.MessageEmitter
 import software.aws.toolkits.jetbrains.utils.execution.steps.Step
@@ -37,7 +36,7 @@ import java.util.concurrent.atomic.AtomicBoolean
 class AttachDebugger(
     val environment: ExecutionEnvironment,
     val state: SamRunningState
-) : Step(), CoroutineScope by ApplicationThreadPoolScope("AttachSamDebugger") {
+) : Step() {
     override val stepName = message("sam.debug.attach")
     override val hidden = false
 
@@ -101,8 +100,9 @@ class AttachDebugger(
                 throw ExecutionException(e)
             }
         }
+        val scope = applicationThreadPoolScope(context.project)
         // Make sure the session is always cleaned up
-        launch {
+        scope.launch {
             while (!context.isCompleted()) {
                 delay(100)
             }
