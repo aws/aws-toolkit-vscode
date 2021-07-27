@@ -18,7 +18,6 @@ import com.intellij.openapi.ui.Messages
 import com.intellij.openapi.util.io.FileUtilRt
 import com.intellij.openapi.vfs.VirtualFile
 import com.intellij.openapi.vfs.VirtualFileWrapper
-import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.runBlocking
 import kotlinx.coroutines.withContext
 import software.amazon.awssdk.services.cloudwatchlogs.CloudWatchLogsClient
@@ -27,7 +26,6 @@ import software.aws.toolkits.core.utils.error
 import software.aws.toolkits.core.utils.getLogger
 import software.aws.toolkits.jetbrains.services.cloudwatch.logs.actions.OpenStreamInEditor
 import software.aws.toolkits.jetbrains.services.cloudwatch.logs.actions.buildStringFromLogsOutput
-import software.aws.toolkits.jetbrains.utils.ApplicationThreadPoolScope
 import software.aws.toolkits.jetbrains.utils.getCoroutineUiContext
 import software.aws.toolkits.jetbrains.utils.notifyError
 import software.aws.toolkits.jetbrains.utils.notifyInfo
@@ -40,8 +38,7 @@ import java.time.Instant
 import kotlin.streams.asSequence
 
 class LogStreamDownloadTask(project: Project, val client: CloudWatchLogsClient, val logGroup: String, val logStream: String) :
-    Task.Backgroundable(project, message("cloudwatch.logs.opening_in_editor", logStream), true),
-    CoroutineScope by ApplicationThreadPoolScope("OpenLogStreamInEditor") {
+    Task.Backgroundable(project, message("cloudwatch.logs.opening_in_editor", logStream), true) {
     private val edt = getCoroutineUiContext()
 
     override fun run(indicator: ProgressIndicator) = runBlocking {

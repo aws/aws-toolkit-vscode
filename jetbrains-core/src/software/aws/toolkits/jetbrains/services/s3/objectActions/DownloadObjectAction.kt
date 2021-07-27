@@ -12,13 +12,13 @@ import com.intellij.openapi.ui.Messages
 import com.intellij.openapi.vfs.VfsUtil
 import com.intellij.util.io.exists
 import com.intellij.util.io.isDirectory
-import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.launch
 import software.amazon.awssdk.services.s3.model.NoSuchBucketException
 import software.aws.toolkits.core.utils.deleteIfExists
 import software.aws.toolkits.core.utils.getLogger
 import software.aws.toolkits.core.utils.info
 import software.aws.toolkits.core.utils.outputStream
+import software.aws.toolkits.jetbrains.core.applicationThreadPoolScope
 import software.aws.toolkits.jetbrains.core.utils.getRequiredData
 import software.aws.toolkits.jetbrains.services.s3.editor.S3EditorDataKeys
 import software.aws.toolkits.jetbrains.services.s3.editor.S3Object
@@ -30,7 +30,6 @@ import software.aws.toolkits.jetbrains.services.s3.objectActions.DownloadObjectA
 import software.aws.toolkits.jetbrains.services.s3.objectActions.DownloadObjectAction.ConflictResolution.OVERWRITE_ALL
 import software.aws.toolkits.jetbrains.services.s3.objectActions.DownloadObjectAction.ConflictResolution.SKIP
 import software.aws.toolkits.jetbrains.services.s3.objectActions.DownloadObjectAction.ConflictResolution.SKIP_ALL
-import software.aws.toolkits.jetbrains.utils.ApplicationThreadPoolScope
 import software.aws.toolkits.jetbrains.utils.notifyError
 import software.aws.toolkits.resources.message
 import software.aws.toolkits.telemetry.S3Telemetry
@@ -38,9 +37,7 @@ import java.nio.file.Path
 import java.nio.file.Paths
 
 class DownloadObjectAction :
-    S3ObjectAction(message("s3.download.object.action"), AllIcons.Actions.Download),
-    CoroutineScope by ApplicationThreadPoolScope("DownloadObjectAction") {
-
+    S3ObjectAction(message("s3.download.object.action"), AllIcons.Actions.Download) {
     private data class DownloadInfo(val sourceBucket: S3VirtualBucket, val s3Object: String, val versionId: String?, val diskLocation: Path) {
         constructor(sourceBucket: S3VirtualBucket, s3Object: S3Object, diskLocation: Path) : this(
             sourceBucket,
@@ -198,7 +195,8 @@ class DownloadObjectAction :
     }
 
     private fun downloadAll(project: Project, files: List<DownloadInfo>) {
-        launch {
+        val scope = applicationThreadPoolScope(project)
+        scope.launch {
             try {
                 files.forEach {
                     try {

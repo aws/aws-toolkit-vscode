@@ -8,7 +8,6 @@ import com.intellij.openapi.options.ConfigurationException
 import com.intellij.openapi.project.Project
 import com.intellij.openapi.ui.DialogWrapper
 import com.intellij.openapi.ui.ValidationInfo
-import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 import software.amazon.awssdk.services.sqs.SqsClient
@@ -16,7 +15,7 @@ import software.amazon.awssdk.services.sqs.model.QueueAttributeName
 import software.amazon.awssdk.services.sqs.model.SqsException
 import software.aws.toolkits.core.utils.error
 import software.aws.toolkits.core.utils.getLogger
-import software.aws.toolkits.jetbrains.utils.ApplicationThreadPoolScope
+import software.aws.toolkits.jetbrains.core.applicationThreadPoolScope
 import software.aws.toolkits.jetbrains.utils.getCoroutineUiContext
 import software.aws.toolkits.jetbrains.utils.notifyInfo
 import software.aws.toolkits.resources.message
@@ -29,7 +28,8 @@ class EditAttributesDialog(
     private val client: SqsClient,
     private val queue: Queue,
     private val attributes: Map<QueueAttributeName, String>
-) : DialogWrapper(project), CoroutineScope by ApplicationThreadPoolScope("EditAttributesDialog") {
+) : DialogWrapper(project) {
+    private val coroutineScope = applicationThreadPoolScope(project)
     val view = EditAttributesPanel()
 
     init {
@@ -65,7 +65,7 @@ class EditAttributesDialog(
             return
         }
         isOKActionEnabled = false
-        launch {
+        coroutineScope.launch {
             try {
                 updateAttributes()
                 notifyInfo(

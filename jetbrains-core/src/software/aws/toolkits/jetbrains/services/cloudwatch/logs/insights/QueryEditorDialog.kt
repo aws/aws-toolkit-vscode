@@ -7,7 +7,6 @@ import com.intellij.openapi.application.ModalityState
 import com.intellij.openapi.project.Project
 import com.intellij.openapi.ui.DialogWrapper
 import com.intellij.openapi.ui.ValidationInfo
-import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.async
 import kotlinx.coroutines.future.await
 import kotlinx.coroutines.launch
@@ -15,10 +14,10 @@ import kotlinx.coroutines.withContext
 import software.amazon.awssdk.services.cloudwatchlogs.CloudWatchLogsClient
 import software.aws.toolkits.jetbrains.core.AwsClientManager
 import software.aws.toolkits.jetbrains.core.AwsResourceCache
+import software.aws.toolkits.jetbrains.core.applicationThreadPoolScope
 import software.aws.toolkits.jetbrains.core.credentials.ConnectionSettings
 import software.aws.toolkits.jetbrains.services.cloudwatch.logs.CloudWatchLogWindow
 import software.aws.toolkits.jetbrains.services.cloudwatch.logs.resources.CloudWatchResources
-import software.aws.toolkits.jetbrains.utils.ApplicationThreadPoolScope
 import software.aws.toolkits.jetbrains.utils.getCoroutineUiContext
 import software.aws.toolkits.jetbrains.utils.notifyError
 import software.aws.toolkits.resources.message
@@ -34,7 +33,8 @@ import javax.swing.JComponent
 class QueryEditorDialog(
     private val project: Project,
     private val initialQueryDetails: QueryDetails
-) : DialogWrapper(project), CoroutineScope by ApplicationThreadPoolScope("QueryEditorDialog") {
+) : DialogWrapper(project) {
+    private val coroutineScope = applicationThreadPoolScope(project)
     constructor(project: Project, connectionSettings: ConnectionSettings, logGroupName: String) :
         this(project, defaultQuery(connectionSettings, logGroupName))
 
@@ -45,7 +45,7 @@ class QueryEditorDialog(
         super.init()
 
         title = message("cloudwatch.logs.query_editor_title")
-        launch {
+        coroutineScope.launch {
             setView(initialQueryDetails)
         }
     }
@@ -105,7 +105,7 @@ class QueryEditorDialog(
         close(OK_EXIT_CODE)
         val queryDetails = getQueryDetails()
         val fieldList = getFields(queryDetails.getQueryString())
-        launch {
+        coroutineScope.launch {
             val queryId = startQueryAsync(queryDetails).await()
             CloudWatchLogWindow.getInstance(project).showQueryResults(queryDetails, queryId, fieldList)
         }
@@ -176,7 +176,7 @@ class QueryEditorDialog(
         return null
     }
 
-    fun startQueryAsync(queryDetails: QueryDetails) = async {
+    fun startQueryAsync(queryDetails: QueryDetails) = coroutineScope.async {
         val (credentials, region) = queryDetails.connectionSettings
         val client = AwsClientManager.getInstance().getClient<CloudWatchLogsClient>(credentials, region)
         val timeRange = queryDetails.getQueryRange()

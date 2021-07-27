@@ -17,6 +17,7 @@ import software.amazon.awssdk.services.ecs.model.ContainerDefinition
 import software.amazon.awssdk.services.ecs.model.LogDriver
 import software.amazon.awssdk.services.ecs.model.Service
 import software.aws.toolkits.jetbrains.AwsToolkit
+import software.aws.toolkits.jetbrains.core.applicationThreadPoolScope
 import software.aws.toolkits.jetbrains.core.awsClient
 import software.aws.toolkits.jetbrains.core.credentials.withAwsConnection
 import software.aws.toolkits.jetbrains.core.explorer.actions.SingleExplorerNodeActionGroup
@@ -31,7 +32,6 @@ import software.aws.toolkits.jetbrains.services.ecs.exec.OpenShellInContainerDia
 import software.aws.toolkits.jetbrains.services.ecs.exec.RunCommandDialog
 import software.aws.toolkits.jetbrains.services.ecs.resources.EcsResources
 import software.aws.toolkits.jetbrains.services.ecs.resources.SessionManagerPluginInstallationVerification
-import software.aws.toolkits.jetbrains.utils.ApplicationThreadPoolScope
 import software.aws.toolkits.jetbrains.utils.notifyError
 import software.aws.toolkits.jetbrains.utils.notifyInfo
 import software.aws.toolkits.jetbrains.utils.notifyWarn
@@ -136,7 +136,7 @@ class ExecuteCommandAction(
     private val project: Project,
     private val container: ContainerDetails
 ) : AnAction(message("ecs.execute_command_run"), null, null) {
-    private val coroutineScope = ApplicationThreadPoolScope("ContainerActions")
+    private val coroutineScope = applicationThreadPoolScope(project)
     override fun actionPerformed(e: AnActionEvent) {
         coroutineScope.launch {
             if (EcsExecUtils.ensureServiceIsInStableState(project, container.service)) {
@@ -162,7 +162,7 @@ class ExecuteCommandInShellAction(
     private val project: Project,
     private val container: ContainerDetails
 ) : AnAction(message("ecs.execute_command_run_command_in_shell"), null, null) {
-    private val coroutineScope = ApplicationThreadPoolScope("ContainerActions")
+    private val coroutineScope = applicationThreadPoolScope(project)
     override fun actionPerformed(e: AnActionEvent) {
         coroutineScope.launch {
             if (EcsExecUtils.ensureServiceIsInStableState(project, container.service)) {

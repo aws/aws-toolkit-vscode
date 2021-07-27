@@ -6,7 +6,6 @@ package software.aws.toolkits.jetbrains.services.cloudwatch.logs.insights
 import com.intellij.openapi.project.Project
 import com.intellij.openapi.ui.DialogWrapper
 import com.intellij.openapi.ui.ValidationInfo
-import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 import software.amazon.awssdk.services.cloudwatchlogs.CloudWatchLogsClient
@@ -14,9 +13,9 @@ import software.aws.toolkits.core.utils.error
 import software.aws.toolkits.core.utils.getLogger
 import software.aws.toolkits.jetbrains.core.AwsClientManager
 import software.aws.toolkits.jetbrains.core.AwsResourceCache
+import software.aws.toolkits.jetbrains.core.applicationThreadPoolScope
 import software.aws.toolkits.jetbrains.core.credentials.ConnectionSettings
 import software.aws.toolkits.jetbrains.services.cloudwatch.logs.resources.CloudWatchResources
-import software.aws.toolkits.jetbrains.utils.ApplicationThreadPoolScope
 import software.aws.toolkits.jetbrains.utils.getCoroutineBgContext
 import software.aws.toolkits.jetbrains.utils.notifyError
 import software.aws.toolkits.jetbrains.utils.notifyInfo
@@ -32,7 +31,8 @@ class SaveQueryDialog(
     private val connectionSettings: ConnectionSettings,
     private val query: String,
     private val logGroups: List<String>
-) : DialogWrapper(project), CoroutineScope by ApplicationThreadPoolScope("SavingQuery") {
+) : DialogWrapper(project) {
+    private val coroutineScope = applicationThreadPoolScope(project)
     val view = EnterQueryName()
     private val action: OkAction = object : OkAction() {
         init {
@@ -80,7 +80,7 @@ class SaveQueryDialog(
         return definitions.find { it.name() == queryName }?.queryDefinitionId()
     }
 
-    fun saveQuery() = launch {
+    fun saveQuery() = coroutineScope.launch {
         var result = Result.Succeeded
         try {
             val queryName = view.queryName.text
