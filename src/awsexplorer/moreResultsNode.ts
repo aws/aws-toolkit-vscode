@@ -14,6 +14,7 @@ import { inspect } from 'util'
  * Clicking the node executes the Load More command for the parent Node.
  */
 export class MoreResultsNode extends AWSTreeNodeBase {
+    // Parent is a get method to prevent circular referencing
     public constructor(public getParent: () => LoadMoreNode) {
         super(localize('AWS.explorerNode.loadMoreChildren', 'Load More...'))
         this.command = {
