@@ -40,35 +40,32 @@ export class S3FileViewerManager {
 
         vscode.workspace.onDidSaveTextDocument(async savedTextDoc => {
             if (this.activeTabs.has(savedTextDoc.uri.fsPath)) {
-                const activeTab = this.activeTabs.get(savedTextDoc.uri.fsPath)
-                if (!activeTab) {
-                    return
-                }
+                const activeTab = this.activeTabs.get(savedTextDoc.uri.fsPath)!
 
-                if (await this.checkForValidity(activeTab.s3FileNode, activeTab.fileUri)) {
-                    //good to upload
-                    if (!(await activeTab.uploadChangesToS3())) {
-                        this.window.showErrorMessage(
-                            'Error uploading file to S3. Changes will not be saved. Please try and resave this edit mode file'
-                        )
-                        return
-                    }
-                    //refresh the activeTab.s3FileNode?
-                    const fileNode = await this.refreshNode(activeTab.s3FileNode)
-                    if (!fileNode) {
-                        return
-                    }
-                    await this.removeAndCloseTab(activeTab)
-                    await this.openTab(fileNode)
-                    this._onDidChange.fire(activeTab.s3Uri)
-                } else {
+                if (!(await this.checkForValidity(activeTab.s3FileNode, activeTab.fileUri))) {
                     window.showErrorMessage(
                         localize(
                             'AWS.s3.fileViewer.error.invalidUpload',
                             'File is invalid to upload, file has changed in S3 since last cache download. Please try and reopen the file. Be aware current changes may be lost.'
                         )
                     )
+                    return
                 }
+
+                if (!(await activeTab.uploadChangesToS3())) {
+                    this.window.showErrorMessage(
+                        'Error uploading file to S3. Changes will not be saved. Please try and resave this edit mode file'
+                    )
+                    return
+                }
+                //refresh the activeTab.s3FileNode?
+                const fileNode = await this.refreshNode(activeTab.s3FileNode)
+                if (!fileNode) {
+                    return
+                }
+                await this.removeAndCloseTab(activeTab)
+                await this.openTab(fileNode)
+                this._onDidChange.fire(activeTab.s3Uri)
             }
         })
 
@@ -344,7 +341,7 @@ export class S3FileViewerManager {
         try {
             fs.unlinkSync(await this.createTargetPath(fileNode))
         } catch (e) {
-            showOutputMessage(e, this.outputChannel)
+            getLogger().error(`S3FileViewer: Error removing file ${activeTab.fileUri.fsPath} from cache: ${e}`)
         }
     }
 
@@ -358,7 +355,7 @@ export class S3FileViewerManager {
             ),
             this.outputChannel
         )
-        getLogger().info(`Temp folder for FileViewer created with location: ${this._tempLocation}`)
+        getLogger().info(`S3FileViewer: Temp folder for FileViewer created with location: ${this._tempLocation}`)
         return this._tempLocation
     }
 
