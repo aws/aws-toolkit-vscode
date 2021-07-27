@@ -37,20 +37,26 @@ export async function runCommandInContainer(node: EcsContainerNode, window = Win
 
     const quickPick = picker.createQuickPick({
         options: {
-            title: 'ECS Exec',
+            title: 'Choose a task',
             ignoreFocusOut: true,
         },
         items: quickPickItems,
     })
 
-    const taskChoice = await picker.promptUser({
-        picker: quickPick,
-        onDidTriggerButton: (button, resolve, reject) => {
-            if (button === vscode.QuickInputButtons.Back) {
-                resolve(undefined)
-            }
-        },
-    })
+    let taskChoice
+
+    if (quickPickItems.length === 1) {
+        taskChoice = quickPickItems
+    } else {
+        taskChoice = await picker.promptUser({
+            picker: quickPick,
+            onDidTriggerButton: (button, resolve, reject) => {
+                if (button === vscode.QuickInputButtons.Back) {
+                    resolve(undefined)
+                }
+            },
+        })
+    }
 
     if (!taskChoice) {
         return
@@ -86,5 +92,7 @@ export async function runCommandInContainer(node: EcsContainerNode, window = Win
     ).run()
 
     getLogger().info(response.stdout)
-    console.log(response)
+    if (response.exitCode !== 0 || response.stderr) {
+        getLogger().error(response.stderr)
+    }
 }
