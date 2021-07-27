@@ -9,7 +9,8 @@ import * as fs from 'fs-extra'
 import { CloudFormationTemplateRegistry } from '../../shared/cloudformation/templateRegistry'
 import { makeSampleSamTemplateYaml, strToYamlFile } from '../../test/shared/cloudformation/cloudformationTestUtils'
 import { getTestWorkspaceFolder } from '../integrationTestsUtilities'
-import { ext } from '../../shared/extensionGlobals'
+import { CloudFormationSchemas, YamlExtension } from '../../shared/cloudformation/yamlExtension'
+import { Uri } from 'vscode'
 
 /**
  * Note: these tests are pretty shallow right now. They do not test the following:
@@ -21,16 +22,26 @@ describe('CloudFormation Template Registry', async function () {
     let testDir: string
     let testDirNested: string
     let dir: number = 0
+    let fakeSchemas: CloudFormationSchemas
+    let fakeYamlExtension: YamlExtension
 
     before(async function () {
         workspaceDir = getTestWorkspaceFolder()
+        fakeSchemas = {
+            standard: Uri.parse(path.join(workspaceDir, 'cloudformation.schema.json')),
+            sam: Uri.parse(path.join(workspaceDir, 'sam.schema.json')),
+        }
+        fakeYamlExtension = {
+            assignSchema: (path, schema) => undefined,
+            removeSchema: path => undefined,
+        }
     })
 
     beforeEach(async function () {
         testDir = path.join(workspaceDir, dir.toString())
         testDirNested = path.join(testDir, 'nested')
         await fs.mkdirp(testDirNested)
-        registry = ext.templateRegistry
+        registry = new CloudFormationTemplateRegistry(fakeSchemas, fakeYamlExtension)
     })
 
     afterEach(async function () {

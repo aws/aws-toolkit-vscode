@@ -49,6 +49,7 @@ export function setTestTimeout(testName: string | undefined, ms: number) {
 before(async function () {
     console.log('globalSetup: before()')
     // Needed for getLogger().
+    await new Promise(r => setTimeout(r, 5000))
     await activateExtension(VSCODE_EXTENSION_ID.awstoolkit, false)
 
     // Log as much as possible, useful for debugging integration tests.
