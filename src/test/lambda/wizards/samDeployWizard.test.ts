@@ -184,7 +184,11 @@ function normalizePath(...paths: string[]): string {
 }
 
 describe('SamDeployWizard', async function () {
-    const extContext = await FakeExtensionContext.getFakeExtContext()
+    let extContext: ExtContext
+    before(async function () {
+        extContext = await FakeExtensionContext.getFakeExtContext()
+    })
+
     describe('TEMPLATE', async function () {
         it('fails gracefully when no templates are found', async function () {
             const wizard = new SamDeployWizard(new MockSamDeployWizardContext(extContext, [[]], [undefined], [], []))

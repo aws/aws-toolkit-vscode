@@ -1,0 +1,4 @@
+{
+	"type": "Bug Fix",
+	"description": "CloudWatch Logs: show a placeholder message instead of an error when no logs exist"
+}

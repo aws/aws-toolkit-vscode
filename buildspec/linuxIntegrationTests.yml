@@ -26,9 +26,10 @@ phases:
             - '>/dev/null pip3 install --upgrade aws-sam-cli'
             - '>/dev/null pip3 install --upgrade awscli'
             - '>/dev/null pip3 install pylint'
-            # Install Go
-            - '>/dev/null VERSION=$(curl "https://golang.org/VERSION?m=text") && wget -q "https://dl.google.com/go/$VERSION.linux-amd64.tar.gz"'
-            - '>/dev/null tar -C /usr/local -xzf $VERSION.linux-amd64.tar.gz && export PATH=$PATH:/usr/local/go/bin && go env -w GOPROXY=direct'
+            # Install latest version of Go (known to 'goenv')
+            - '>/dev/null VERSION=$(goenv install --list | tail -n 1) && goenv install $VERSION'
+            - '>/dev/null goenv global $VERSION && go env -w GOPROXY=direct'
+            - go version
             # login to DockerHub so we don't get throttled
             - docker login --username $(echo $DOCKER_HUB_TOKEN | jq -r '.username') --password $(echo $DOCKER_HUB_TOKEN | jq -r '.password') || true
 
