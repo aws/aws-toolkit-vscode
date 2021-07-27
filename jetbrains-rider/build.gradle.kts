@@ -260,10 +260,6 @@ tasks.withType<PrepareSandboxTask>().all {
     }
 }
 
-tasks.withType<Test>().all {
-    dependsOn(tasks.prepareTestingSandbox)
-}
-
 tasks.compileKotlin {
     dependsOn(generateModels)
 }
