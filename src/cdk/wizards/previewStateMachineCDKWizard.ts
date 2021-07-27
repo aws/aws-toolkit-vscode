@@ -98,45 +98,36 @@ export default class PreviewStateMachineCDKWizard extends MultiStepWizard<Previe
     }
 
     private readonly TEMPLATE_FORMAT_ACTION: WizardStep = async () => {
-        //get the selected cdk application
-        //get list of state machines in that cdk application
-        //map that to PreviewStateMachineCDKWizardResponse 
-        //const STATE_MACHINES = []
 
         const appLocation = this.cdkApplication ? this.cdkApplication.cdkApplocation : undefined
         const appNode = new AppNode(appLocation!)
-        let constructNodes = await appNode.getChildren()
+        const constructNodes = await appNode.getChildren()
         //filter placeholder nodes
-        constructNodes = constructNodes.filter(i => i.contextValue !== undefined)
-        //constructNodes = constructNodes.filter(i => i.description)
-        // const STACK_NODES: Thenable<AWSTreeNodeBase[]> = []
-        // constructNodes.map(node => {
-        //     (await STACK_NODES).push(node.getChildren())
-        // })
+        //constructNodes = constructNodes.filter(i => i.contextValue === 'awsCdkConstructNode' || i.contextValue === 'awsCdkStateMachineNode' )
+
         const STATE_MACHINES: ConstructNodePickItem[] = []
-        const HELPER: AWSTreeNodeBase[] = []
+        const topLevelNodes: ConstructNode[] = []
         constructNodes.map(node => {
-            const children = node.getChildren()
-            //const children = node.getOnlyConstructNodes()
-            
-            children.then(n => {
-                n.map(i=> HELPER.push(i))
-            }),
-            
-
-                STATE_MACHINES.push({
-                    //need to change this part!!!!!!!!!!!!!!!!
-                    //label: constructNodes.length.toString(),
-                    //label: node.label!,
-
-                    label: node.label!,
-                    //label: node.contextValue?node.contextValue:'none',
-                    //label: HELPER.length.toString(),
-                    //label: node.getChildren().then(),
-                    stateMachineNode: node!
-                })
+            //if(node.contextValue === 'awsCdkConstructNode' || node.contextValue === 'awsCdkStateMachineNode'){
+            topLevelNodes.push(node as ConstructNode)
+            //}
         })
 
+        //what about nested construct nodes??
+        while(topLevelNodes.length>0){
+            const tester = await topLevelNodes.pop()?.getChildren()
+            if (tester) {
+                tester.map(async node => {
+                    //const tester = await node.getChildren()
+                    if (node.contextValue === 'awsCdkStateMachineNode') {
+                        STATE_MACHINES.push({
+                            label: node.label ? node.label : '',
+                            stateMachineNode: node as ConstructNode
+                        })
+                    }
+                })
+            }
+        }
 
         const quickPick = picker.createQuickPick({
             options: {
@@ -144,15 +135,12 @@ export default class PreviewStateMachineCDKWizard extends MultiStepWizard<Previe
                 title: localize(
                     'AWS.message.prompt.selectCDKStateMachine.placeholder',
                     'Select State Machine'
-                    //this.cdkApplication?this.cdkApplication.cdkApplocation.cdkJsonPath:'undefined'
                 ),
                 step: 2,
                 totalSteps: 2,
             },
             buttons: [vscode.QuickInputButtons.Back],
             items: STATE_MACHINES,
-            //items: HELPER,
-            //items: STARTER_TEMPLATES,
         })
 
         const choices = await this.promptUser({

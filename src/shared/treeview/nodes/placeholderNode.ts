@@ -11,5 +11,6 @@ export class PlaceholderNode extends AWSTreeNodeBase {
     public constructor(public readonly parent: AWSTreeNodeBase, label: string, tooltip?: string) {
         super(label)
         this.tooltip = tooltip
+        this.contextValue = 'placeholderNode'
     }
 }
