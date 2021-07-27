@@ -22,7 +22,7 @@ export abstract class AbstractAslVisualizationManager {
         input: any
     ): Promise<vscode.WebviewPanel | undefined>
 
-    protected pushToExtensionContextSubscriptions(visualizationDisposable: any) {
+    protected pushToExtensionContextSubscriptions(visualizationDisposable: vscode.Disposable) {
         this.extensionContext.subscriptions.push(visualizationDisposable)
     }
 

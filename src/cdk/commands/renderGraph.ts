@@ -29,7 +29,6 @@ export async function renderGraphCommand(
     try {
         visualizationManager.visualizeStateMachine(extensionContext, node)
         getLogger().info('Rendered graph: %O', uniqueIdentifier)
-        //window.showInformationMessage(localize('AWS.cdk.renderStateMachineGraph.success', 'Rendered graph {0}', uniqueIdentifier))
     } catch (e) {
         getLogger().error(`Failed to render graph ${uniqueIdentifier}: %O`, e)
         showErrorWithLogs(
