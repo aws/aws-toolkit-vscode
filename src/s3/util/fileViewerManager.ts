@@ -95,15 +95,20 @@ export class S3FileViewerManager {
         return visibleEditor.find((editor: vscode.TextEditor) => editor.document.uri.fsPath === targetUri.fsPath)
     }
 
-    public async focusAndCloseTab(uri: vscode.Uri): Promise<void> {
+    public async focusAndCloseTab(uri: vscode.Uri, workspace = vscode.workspace): Promise<void> {
         const editor = await this.getActiveEditor(uri)
         if (!editor) {
-            return
+            const doc = await workspace.openTextDocument(uri)
+            await this.window.showTextDocument(doc, {
+                preview: false,
+            })
+        } else {
+            await this.window.showTextDocument(editor.document, {
+                preview: false,
+                viewColumn: editor.viewColumn,
+            })
         }
-        await this.window.showTextDocument(editor.document, {
-            preview: false,
-            viewColumn: editor.viewColumn,
-        })
+
         await vscode.commands.executeCommand('workbench.action.closeActiveEditor')
     }
 
@@ -169,9 +174,9 @@ export class S3FileViewerManager {
             const doc = await workspace.openTextDocument(s3Uri)
             if (!openEditor) {
                 //there wasn't any open, just display it regularly
-                return await this.window.showTextDocument(doc, { preview: false })
+                return await this.window.showTextDocument(doc, { preview: true })
             } else if (openEditor.document.uri.scheme === 'file' || openEditor.document.uri.scheme === s3Uri.scheme) {
-                //there is a tab for this uri scheme open, just shift focus to it by reopening it with the ViewColumn option
+                //there is a tab for this uri scheme open (or scheme file), just shift focus to it by reopening it with the ViewColumn option
                 return await this.window.showTextDocument(openEditor.document, {
                     preview: false,
                     viewColumn: openEditor.viewColumn,
@@ -180,7 +185,7 @@ export class S3FileViewerManager {
                 // there is already a tab open, it needs to be focused, then closed
                 await this.focusAndCloseTab(uri)
                 //good to open in given mode
-                return await this.window.showTextDocument(doc, { preview: false })
+                return await this.window.showTextDocument(doc, { preview: true })
             }
         } catch (e) {
             this.window.showErrorMessage(`Error opening file ${e}`)
@@ -208,6 +213,7 @@ export class S3FileViewerManager {
                 }
             })
         }
+
         if (uriOrNode instanceof vscode.Uri) {
             //was activated from an open tab
             if (this.activeTabs.has(uriOrNode.fsPath)) {
@@ -251,6 +257,9 @@ export class S3FileViewerManager {
             const doc = await workspace.openTextDocument(uri)
             return await this.window.showTextDocument(doc, { preview: false })
         } else {
+            //const s3Uri = vscode.Uri.parse('s3:' + uri.fsPath)
+            await this.focusAndCloseTab(uri)
+
             return vscode.commands.executeCommand('workbench.action.quickOpen', uri.fsPath)
         }
     }
