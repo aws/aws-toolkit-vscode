@@ -3,16 +3,22 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
-import { AWSTreeNodeBase } from "../../shared/treeview/nodes/awsTreeNodeBase";
+import { EcsClient } from '../../shared/clients/ecsClient'
+import { AWSTreeNodeBase } from '../../shared/treeview/nodes/awsTreeNodeBase'
 
 export class EcsContainerNode extends AWSTreeNodeBase {
     public constructor(
         public readonly continerName: string,
-        public readonly serviceArn: string,
-        public readonly clusterArn: string
+        public readonly serviceName: string,
+        public readonly clusterArn: string,
+        public readonly ecs: EcsClient
     ) {
         super(continerName)
         this.tooltip = `(Container) ${continerName}`
-        this.contextValue = 'awsEcsContainer'
+        this.contextValue = 'awsEcsContainerNode'
+    }
+
+    public listTasks() {
+        return this.ecs.listTasks(this.clusterArn, this.serviceName)
     }
 }
