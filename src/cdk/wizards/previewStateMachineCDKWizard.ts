@@ -110,6 +110,7 @@ export default class PreviewStateMachineCDKWizard extends MultiStepWizard<Previe
 
         //what about nested construct nodes??
         while(topLevelNodes.length>0){
+            //topLevelNodes.forEach()
             const tester = await topLevelNodes.pop()?.getChildren()
             if (tester) {
                 tester.map(async node => {
