@@ -30,7 +30,7 @@ export class EcsClusterNode extends AWSTreeNodeBase implements AWSResourceNode, 
         private readonly ecs: EcsClient
     ) {
         super(cluster.clusterName!, vscode.TreeItemCollapsibleState.Collapsed)
-        this.tooltip = `(Cluster) ${this.cluster.clusterArn}`
+        this.tooltip = this.cluster.clusterArn
         this.contextValue = 'awsEcsCluster'
         this.childLoader = new ChildNodeLoader(
             () => this,

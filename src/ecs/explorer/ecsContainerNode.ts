@@ -12,7 +12,7 @@ export class EcsContainerNode extends AWSTreeNodeBase {
         public readonly clusterArn: string
     ) {
         super(continerName)
-        this.tooltip = `(Container) ${continerName}`
+        this.tooltip = continerName
         this.contextValue = 'awsEcsContainer'
     }
 }
