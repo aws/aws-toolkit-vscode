@@ -19,12 +19,7 @@ import {
 import { CdkAppLocation } from '../explorer/cdkProject'
 import { detectCdkProjects } from '../explorer/detectCdkProjects'
 import { ConstructNode } from '../explorer/nodes/constructNode'
-import { String } from 'aws-sdk/clients/cloudsearch'
-import { map } from 'lodash'
 import { AppNode } from '../explorer/nodes/appNode'
-import { PlaceholderNode } from '../../shared/treeview/nodes/placeholderNode'
-import { AWSTreeNodeBase } from '../../shared/treeview/nodes/awsTreeNodeBase'
-import { helpers } from 'handlebars'
 
 export interface CdkAppLocationPickItem {
     label: string,
