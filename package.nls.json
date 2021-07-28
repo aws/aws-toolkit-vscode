@@ -424,6 +424,7 @@
     "AWS.s3.fileViewer.button.dismiss": "Don't show this again",
     "AWS.s3.fileViewer.button.help": "Help",
     "AWS.s3.fileViewer.button.cancelUpload": "Cancel upload",
+    "AWS.s3.fileViewer.button.overwrite": "Overwrite",
     "AWS.s3.fileViewer.message.tempCreation": "Temp folder for FileViewer created with location: {0}",
     "AWS.s3.fileViewer.message.fileKey": "Retrieving and displaying file {0}",
     "AWS.s3.fileViewer.message.fileLocation": "File to be opened is: {0}",
