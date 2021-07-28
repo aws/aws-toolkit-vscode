@@ -172,19 +172,18 @@ describe.only('FileViewerManager', function () {
 
     it('opens a file in read-only mode', async function () {
         when(mockedWorkspace.openTextDocument(anything())).thenReturn(Promise.resolve({ uri: s3TempFile } as any))
-        when(mockedWindow.showTextDocument(anything())).thenReturn()
-        when(mockedWindow.visibleTextEditors).thenReturn([
-            {
-                document: {
-                    uri: {
-                        scheme: 's3',
-                        _fsPath: tempFile.fsPath,
-                    },
-                },
-            } as any,
-        ])
+        when(mockedWindow.showTextDocument(anything())).thenReturn({ data: 'expected result' } as any)
 
-        await fileViewerManager.openFileInReadOnly(tempFile, instance(mockedWorkspace))
+        const tab = {
+            fileUri: tempFile,
+            s3Uri: s3TempFile,
+            editor: undefined,
+            s3FileNode: testNode,
+            type: '',
+            charset: 'UTF-8',
+        } as S3Tab
+
+        await fileViewerManager.openFileGivenMode(tab, tab.s3Uri, false, instance(mockedWorkspace))
 
         const [uri] = capture(mockedWorkspace.openTextDocument).last()
         assert.strictEqual((uri as vscode.Uri).fsPath, s3TempFile.fsPath)
@@ -197,9 +196,10 @@ describe.only('FileViewerManager', function () {
 
     it('opens a file in edit mode', async function () {
         when(mockedWorkspace.openTextDocument(anything())).thenReturn(Promise.resolve({ uri: tempFile } as any))
-        when(mockedWindow.showTextDocument(anything())).thenReturn({
-            document: { uri: { scheme: 'file', fsPath: tempFile.fsPath } } as any,
-        } as any)
+        // when(mockedWindow.showTextDocument(anything())).thenReturn({
+        //     document: { uri: { scheme: 'file', fsPath: tempFile.fsPath } } as any,
+        // } as any)
+        when(mockedWindow.showTextDocument(anything())).thenReturn({ data: 'expected result' } as any)
         when(mockedWindow.visibleTextEditors).thenReturn([
             {
                 document: {
@@ -211,7 +211,16 @@ describe.only('FileViewerManager', function () {
             } as any,
         ])
 
-        await fileViewerManager.openFileInEditMode(tempFile, instance(mockedWorkspace))
+        const tab = {
+            fileUri: tempFile,
+            s3Uri: s3TempFile,
+            editor: undefined,
+            s3FileNode: testNode,
+            type: '',
+            charset: 'UTF-8',
+        } as S3Tab
+
+        await fileViewerManager.openFileGivenMode(tab, tab.fileUri, true, instance(mockedWorkspace))
 
         const [uri] = capture(mockedWorkspace.openTextDocument).last()
         assert.strictEqual((uri as vscode.Uri).fsPath, tempFile.fsPath)

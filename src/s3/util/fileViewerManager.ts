@@ -38,6 +38,11 @@ export class S3FileViewerManager {
         return this._onDidChange.event
     }
 
+    //this field stores the next file to be opened in preview mode
+    //reason for this is to avoid a race condition when downloading bigger files (within limit of preview)
+    //and a smaller file, the one needed to be displayed is the last one clicked
+    private toPreview: string | undefined
+
     public constructor(
         private cacheArns: Set<string> = new Set<string>(),
         private window: typeof vscode.window = vscode.window,
@@ -115,6 +120,10 @@ export class S3FileViewerManager {
      * @param fileNode
      */
     public async openTab(fileNode: S3FileNode): Promise<void> {
+        if (fileNode.file.sizeBytes! < SIZE_LIMIT) {
+            this.toPreview = fileNode.file.arn
+        }
+
         getLogger().verbose(`S3FileViewer: Retrieving and displaying file: ${fileNode.file.key}`)
         showOutputMessage(
             localize('AWS.s3.fileViewer.info.fileKey', 'Retrieving and displaying file: {0}', fileNode.file.key),
@@ -145,11 +154,23 @@ export class S3FileViewerManager {
             }
         }
 
-        const tab =
-            this.activeTabs.get(fileLocation.fsPath) ??
-            ({ fileUri: fileLocation, s3Uri, editor: undefined, s3FileNode: fileNode, type, charset } as S3Tab)
-
-        await this.openFileGivenMode(tab, tab.s3Uri, true)
+        let tab: S3Tab | undefined
+        if (fileNode.file.sizeBytes! < SIZE_LIMIT) {
+            const pathToPreview = await this.arnToFsPath(this.toPreview!)
+            if (s3Uri.fsPath !== pathToPreview) {
+                return
+            }
+            tab =
+                this.activeTabs.get(pathToPreview) ??
+                ({ fileUri: fileLocation, s3Uri, editor: undefined, s3FileNode: fileNode, type, charset } as S3Tab)
+            await this.openFileGivenMode(tab, tab.s3Uri, true)
+            this.toPreview = undefined
+        } else {
+            tab =
+                this.activeTabs.get(fileLocation.fsPath) ??
+                ({ fileUri: fileLocation, s3Uri, editor: undefined, s3FileNode: fileNode, type, charset } as S3Tab)
+            await this.openFileGivenMode(tab, tab.s3Uri, false)
+        }
 
         this.activeTabs.set(fileLocation.fsPath, tab)
     }
@@ -537,5 +558,14 @@ export class S3FileViewerManager {
             return false
         }
         return true
+    }
+
+    //arn:aws:s3:::bucket-to-test-window/idk/learning.js
+    public arnToFsPath(arn: string): Promise<string> {
+        const s3Path = arn.split(':::')[1]
+        const indexOfFileName = s3Path.lastIndexOf('/')
+        const fileName = s3Path.slice(indexOfFileName + 1)
+        const fsPath = `${this.tempLocation!}/${s3Path.slice(undefined, s3Path.lastIndexOf('/') + 1)}[S3]${fileName}`
+        return Promise.resolve(fsPath)
     }
 }
