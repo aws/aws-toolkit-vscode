@@ -20,7 +20,7 @@ export class MoreResultsNode extends AWSTreeNodeBase {
         this.command = {
             command: 'aws.loadMoreChildren',
             title: localize('AWS.explorerNode.loadMoreChildren', 'Load More...'),
-            arguments: [getParent],
+            arguments: [getParent()],
         }
         this.contextValue = 'awsMoreResultsNode'
     }
