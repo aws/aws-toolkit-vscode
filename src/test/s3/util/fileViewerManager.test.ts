@@ -15,7 +15,7 @@ import { FakeCommands } from '../../shared/vscode/fakeCommands'
 import * as testutil from '../../testUtil'
 import { anything, capture, instance, mock, when } from '../../utilities/mockito'
 
-describe.only('FileViewerManager', function () {
+describe('FileViewerManager', function () {
     const bucketName = 'bucket-name'
     const key = 'file.jpg'
     const sizeBytes = 16
