@@ -10,7 +10,6 @@ import com.intellij.openapi.components.service
 import com.intellij.openapi.project.Project
 import com.intellij.util.Alarm
 import com.intellij.util.AlarmFactory
-import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Deferred
 import kotlinx.coroutines.async
 import kotlinx.coroutines.coroutineScope
@@ -265,8 +264,8 @@ class DefaultAwsResourceCache(
     private val clock: Clock,
     private val maximumCacheEntries: Int,
     private val maintenanceInterval: Duration
-) : AwsResourceCache, Disposable, ToolkitCredentialsChangeListener, CoroutineScope by ApplicationThreadPoolScope("DefaultAwsResourceCache") {
-
+) : AwsResourceCache, Disposable, ToolkitCredentialsChangeListener {
+    private val coroutineScope = ApplicationThreadPoolScope("DefaultAwsResourceCache", this)
     @Suppress("unused")
     constructor() : this(Clock.systemDefaultZone(), MAXIMUM_CACHE_ENTRIES, DEFAULT_MAINTENANCE_INTERVAL)
 
@@ -299,7 +298,7 @@ class DefaultAwsResourceCache(
                     fetchIfNeeded(context, currentValue)
                 } as Entry<T>
 
-                launch {
+                coroutineScope.launch {
                     try {
                         context.future.complete(result.value.await())
                     } catch (e: Throwable) {
@@ -370,7 +369,7 @@ class DefaultAwsResourceCache(
     }
 
     override fun dispose() {
-        launch { clear() }
+        coroutineScope.launch { clear() }
     }
 
     override fun providerRemoved(identifier: CredentialIdentifier) = clearByCredential(identifier.id)
@@ -396,7 +395,7 @@ class DefaultAwsResourceCache(
     }
 
     private fun <T> fetch(context: Context<T>): Entry<T> {
-        val value = async {
+        val value = coroutineScope.async {
             context.resource.fetch(context.region, context.credentials)
         }
 

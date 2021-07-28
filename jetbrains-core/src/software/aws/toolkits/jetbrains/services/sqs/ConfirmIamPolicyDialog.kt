@@ -8,15 +8,14 @@ import com.intellij.openapi.application.ModalityState
 import com.intellij.openapi.application.runInEdt
 import com.intellij.openapi.project.Project
 import com.intellij.openapi.ui.DialogWrapper
-import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.launch
 import software.amazon.awssdk.services.iam.IamClient
 import software.amazon.awssdk.services.lambda.LambdaClient
 import software.aws.toolkits.core.utils.getLogger
 import software.aws.toolkits.core.utils.warn
+import software.aws.toolkits.jetbrains.core.applicationThreadPoolScope
 import software.aws.toolkits.jetbrains.services.lambda.upload.createSqsPollerPolicy
 import software.aws.toolkits.jetbrains.ui.ConfirmPolicyPanel
-import software.aws.toolkits.jetbrains.utils.ApplicationThreadPoolScope
 import software.aws.toolkits.jetbrains.utils.ui.formatAndSet
 import software.aws.toolkits.resources.message
 import java.awt.Component
@@ -29,7 +28,8 @@ class ConfirmIamPolicyDialog(
     private val functionName: String,
     private val queue: Queue,
     parent: Component? = null
-) : DialogWrapper(project, parent, false, IdeModalityType.PROJECT), CoroutineScope by ApplicationThreadPoolScope("ConfirmIamPolicy") {
+) : DialogWrapper(project, parent, false, IdeModalityType.PROJECT) {
+    private val coroutineScope = applicationThreadPoolScope(project)
     private val rolePolicy: String by lazy { createSqsPollerPolicy(queue.arn) }
     private val policyName: String by lazy { "AWSLambdaSQSPollerExecutionRole-$functionName-${queue.queueName}-${queue.region.id}" }
     val view = ConfirmPolicyPanel(project, message("sqs.confirm.iam.warning.text"))
@@ -50,7 +50,7 @@ class ConfirmIamPolicyDialog(
 
         setOKButtonText(message("general.create_in_progress"))
         isOKActionEnabled = false
-        launch {
+        coroutineScope.launch {
             try {
                 val policyArn = createPolicy()
                 attachPolicy(policyArn)

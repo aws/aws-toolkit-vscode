@@ -14,7 +14,6 @@ import com.intellij.ui.ScrollPaneFactory
 import com.intellij.ui.TableSpeedSearch
 import com.intellij.ui.table.TableView
 import com.intellij.util.ui.ListTableModel
-import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.channels.Channel
 import kotlinx.coroutines.launch
 import software.amazon.awssdk.services.cloudwatchlogs.CloudWatchLogsClient
@@ -37,7 +36,8 @@ class LogStreamTable(
     private val logGroup: String,
     private val logStream: String,
     type: TableType
-) : CoroutineScope by ApplicationThreadPoolScope("LogStreamTable"), Disposable {
+) : Disposable {
+    private val coroutineScope = ApplicationThreadPoolScope("LogStreamTable", this)
 
     enum class TableType {
         LIST,
@@ -87,12 +87,12 @@ class LogStreamTable(
         component = ScrollPaneFactory.createScrollPane(logsTable).also {
             it.topReached {
                 if (logsTable.rowCount != 0) {
-                    launch { logStreamActor.channel.send(CloudWatchLogsActor.Message.LoadBackward) }
+                    coroutineScope.launch { logStreamActor.channel.send(CloudWatchLogsActor.Message.LoadBackward) }
                 }
             }
             it.bottomReached {
                 if (logsTable.rowCount != 0) {
-                    launch { logStreamActor.channel.send(CloudWatchLogsActor.Message.LoadForward) }
+                    coroutineScope.launch { logStreamActor.channel.send(CloudWatchLogsActor.Message.LoadForward) }
                 }
             }
         }

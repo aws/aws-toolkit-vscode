@@ -8,10 +8,9 @@ import com.intellij.openapi.actionSystem.AnAction
 import com.intellij.openapi.actionSystem.AnActionEvent
 import com.intellij.openapi.project.DumbAware
 import com.intellij.openapi.project.Project
-import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.launch
+import software.aws.toolkits.jetbrains.core.applicationThreadPoolScope
 import software.aws.toolkits.jetbrains.services.cloudwatch.logs.LogStreamEntry
-import software.aws.toolkits.jetbrains.utils.ApplicationThreadPoolScope
 import software.aws.toolkits.jetbrains.utils.getCoroutineUiContext
 import software.aws.toolkits.resources.message
 import software.aws.toolkits.telemetry.CloudwatchlogsTelemetry
@@ -22,12 +21,12 @@ class OpenCurrentInEditorAction(
     private val tableEntries: () -> List<LogStreamEntry>
 ) :
     AnAction(message("cloudwatch.logs.open_in_editor"), null, AllIcons.Actions.Menu_open),
-    CoroutineScope by ApplicationThreadPoolScope("OpenCurrentInEditorAction"),
     DumbAware {
+    private val coroutineScope = applicationThreadPoolScope(project)
     private val edt = getCoroutineUiContext()
 
     override fun actionPerformed(e: AnActionEvent) {
-        launch {
+        coroutineScope.launch {
             val success = OpenStreamInEditor.open(project, edt, logStream, tableEntries().buildStringFromLogs())
             CloudwatchlogsTelemetry.viewCurrentMessagesInEditor(project, success = success, value = tableEntries().size.toDouble())
         }

@@ -17,12 +17,11 @@ import com.intellij.openapi.vfs.VirtualFile
 import com.intellij.xdebugger.XDebugProcess
 import com.intellij.xdebugger.XDebugProcessStarter
 import com.intellij.xdebugger.XDebugSession
-import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
+import software.aws.toolkits.jetbrains.core.applicationThreadPoolScope
 import software.aws.toolkits.jetbrains.services.lambda.sam.SamExecutable
 import software.aws.toolkits.jetbrains.services.lambda.steps.SamRunnerStep
-import software.aws.toolkits.jetbrains.utils.ApplicationThreadPoolScope
 import software.aws.toolkits.jetbrains.utils.execution.steps.Context
 import java.net.InetSocketAddress
 import java.nio.file.Files
@@ -53,7 +52,7 @@ fun inferSourceRoot(project: Project, virtualFile: VirtualFile): VirtualFile? {
     }
 }
 
-object GoDebugHelper : CoroutineScope by ApplicationThreadPoolScope("GoDebugHelper") {
+object GoDebugHelper {
     // TODO see https://youtrack.jetbrains.com/issue/GO-10775 for "Debugger disconnected unexpectedly" when the lambda finishes
     suspend fun createGoDebugProcess(
         debugHost: String,
@@ -66,10 +65,11 @@ object GoDebugHelper : CoroutineScope by ApplicationThreadPoolScope("GoDebugHelp
             val processHandler = process.processHandler
             val socketAddress = InetSocketAddress(debugHost, debugPorts.first())
 
+            val scope = applicationThreadPoolScope(session.project)
             processHandler.addProcessListener(
                 object : ProcessAdapter() {
                     override fun startNotified(event: ProcessEvent) {
-                        launch {
+                        scope.launch {
                             val samProcessHandler = context.pollingGet(SamRunnerStep.SAM_PROCESS_HANDLER)
                             val debuggerConnector = object : ProcessAdapter() {
                                 val connected = AtomicBoolean(false)

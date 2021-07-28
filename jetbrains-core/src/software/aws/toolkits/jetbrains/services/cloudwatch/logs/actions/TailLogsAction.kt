@@ -8,22 +8,21 @@ import com.intellij.openapi.actionSystem.AnActionEvent
 import com.intellij.openapi.actionSystem.ToggleAction
 import com.intellij.openapi.project.DumbAware
 import com.intellij.openapi.project.Project
-import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.channels.Channel
 import kotlinx.coroutines.channels.ClosedSendChannelException
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 import org.jetbrains.annotations.TestOnly
+import software.aws.toolkits.jetbrains.core.applicationThreadPoolScope
 import software.aws.toolkits.jetbrains.services.cloudwatch.logs.CloudWatchLogsActor
-import software.aws.toolkits.jetbrains.utils.ApplicationThreadPoolScope
 import software.aws.toolkits.resources.message
 import software.aws.toolkits.telemetry.CloudwatchlogsTelemetry
 
 class TailLogsAction(private val project: Project, private val channel: () -> Channel<CloudWatchLogsActor.Message>) :
     ToggleAction(message("cloudwatch.logs.tail"), null, AllIcons.RunConfigurations.Scroll_down),
-    CoroutineScope by ApplicationThreadPoolScope("TailCloudWatchLogs"),
     DumbAware {
+    private val coroutineScope = applicationThreadPoolScope(project)
     private var isSelected = false
     var logStreamingJob: Job? = null
         private set
@@ -46,7 +45,7 @@ class TailLogsAction(private val project: Project, private val channel: () -> Ch
     }
 
     private fun startTailing() {
-        logStreamingJob = launch {
+        logStreamingJob = coroutineScope.launch {
             while (true) {
                 try {
                     channel().send(CloudWatchLogsActor.Message.LoadForward)

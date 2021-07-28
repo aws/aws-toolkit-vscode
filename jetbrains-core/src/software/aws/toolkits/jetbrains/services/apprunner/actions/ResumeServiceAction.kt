@@ -10,7 +10,6 @@ import com.intellij.openapi.ui.DialogWrapper
 import com.intellij.openapi.ui.Messages
 import com.intellij.ui.components.JBLabel
 import com.intellij.ui.layout.panel
-import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.launch
 import software.amazon.awssdk.services.apprunner.AppRunnerClient
 import software.amazon.awssdk.services.apprunner.model.AppRunnerException
@@ -18,13 +17,13 @@ import software.amazon.awssdk.services.apprunner.model.ServiceStatus
 import software.amazon.awssdk.services.apprunner.model.ServiceSummary
 import software.aws.toolkits.core.utils.error
 import software.aws.toolkits.core.utils.getLogger
+import software.aws.toolkits.jetbrains.core.applicationThreadPoolScope
 import software.aws.toolkits.jetbrains.core.awsClient
 import software.aws.toolkits.jetbrains.core.explorer.actions.SingleResourceNodeAction
 import software.aws.toolkits.jetbrains.core.explorer.refreshAwsTree
 import software.aws.toolkits.jetbrains.core.help.HelpIds
 import software.aws.toolkits.jetbrains.services.apprunner.AppRunnerServiceNode
 import software.aws.toolkits.jetbrains.services.apprunner.resources.AppRunnerResources
-import software.aws.toolkits.jetbrains.utils.ApplicationThreadPoolScope
 import software.aws.toolkits.jetbrains.utils.notifyError
 import software.aws.toolkits.jetbrains.utils.notifyInfo
 import software.aws.toolkits.resources.message
@@ -34,8 +33,7 @@ import javax.swing.JComponent
 
 class ResumeServiceAction :
     SingleResourceNodeAction<AppRunnerServiceNode>(message("apprunner.action.resume")),
-    DumbAware,
-    CoroutineScope by ApplicationThreadPoolScope("ResumeServiceAction") {
+    DumbAware {
     override fun update(selected: AppRunnerServiceNode, e: AnActionEvent) {
         e.presentation.isVisible = selected.service.status() == ServiceStatus.PAUSED
     }
@@ -61,7 +59,8 @@ class ResumeServiceAction :
         }
 
         if (dialog.showAndGet()) {
-            launch {
+            val scope = applicationThreadPoolScope(selected.nodeProject)
+            scope.launch {
                 performResume(selected.nodeProject, selected.nodeProject.awsClient(), selected.service)
             }
         } else {

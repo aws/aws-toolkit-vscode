@@ -14,7 +14,6 @@ import com.intellij.openapi.project.Project
 import com.intellij.openapi.ui.SimpleToolWindowPanel
 import com.intellij.openapi.util.Disposer
 import com.intellij.ui.SearchTextField
-import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.launch
 import software.amazon.awssdk.services.cloudwatchlogs.CloudWatchLogsClient
 import software.aws.toolkits.jetbrains.core.awsClient
@@ -30,7 +29,8 @@ import javax.swing.JPanel
 class CloudWatchLogGroup(
     private val project: Project,
     private val logGroup: String
-) : CoroutineScope by ApplicationThreadPoolScope("CloudWatchLogsGroup"), Disposable {
+) : Disposable {
+    private val coroutineScope = ApplicationThreadPoolScope("CloudWatchLogsGroup", this)
     lateinit var content: JPanel
         private set
 
@@ -70,7 +70,7 @@ class CloudWatchLogGroup(
         searchField.onEmpty {
             val oldTable = searchGroupTable
             searchGroupTable = null
-            launch(edtContext) {
+            coroutineScope.launch(edtContext) {
                 tablePanel.setContent(groupTable.component)
                 // Dispose the old one if it was not null
                 oldTable?.let { launch { Disposer.dispose(it) } }
@@ -85,11 +85,11 @@ class CloudWatchLogGroup(
                 val table = LogGroupTable(project, client, logGroup, LogGroupTable.TableType.FILTER)
                 Disposer.register(this@CloudWatchLogGroup, table)
                 searchGroupTable = table
-                launch(edtContext) {
+                coroutineScope.launch(edtContext) {
                     tablePanel.setContent(table.component)
                     oldTable?.let { launch { Disposer.dispose(it) } }
                 }
-                launch {
+                coroutineScope.launch {
                     table.channel.send(CloudWatchLogsActor.Message.LoadInitialFilter(searchField.text))
                 }
             }
@@ -110,7 +110,7 @@ class CloudWatchLogGroup(
     }
 
     internal fun refreshTable() {
-        launch { groupTable.channel.send(CloudWatchLogsActor.Message.LoadInitial) }
+        coroutineScope.launch { groupTable.channel.send(CloudWatchLogsActor.Message.LoadInitial) }
     }
 
     override fun dispose() {}

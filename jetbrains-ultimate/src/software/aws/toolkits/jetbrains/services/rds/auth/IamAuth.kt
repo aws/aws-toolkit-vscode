@@ -10,12 +10,12 @@ import com.intellij.database.dataSource.DatabaseAuthProvider.AuthWidget
 import com.intellij.database.dataSource.DatabaseConnectionInterceptor.ProtoConnection
 import com.intellij.database.dataSource.DatabaseCredentialsAuthProvider
 import com.intellij.database.dataSource.LocalDataSource
-import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.future.future
 import software.amazon.awssdk.regions.Region
 import software.amazon.awssdk.services.rds.RdsUtilities
 import software.aws.toolkits.core.utils.getLogger
 import software.aws.toolkits.core.utils.info
+import software.aws.toolkits.jetbrains.core.applicationThreadPoolScope
 import software.aws.toolkits.jetbrains.core.credentials.ConnectionSettings
 import software.aws.toolkits.jetbrains.datagrip.getAwsConnectionSettings
 import software.aws.toolkits.jetbrains.datagrip.getDatabaseEngine
@@ -23,7 +23,6 @@ import software.aws.toolkits.jetbrains.datagrip.hostFromJdbcString
 import software.aws.toolkits.jetbrains.datagrip.iamIsApplicable
 import software.aws.toolkits.jetbrains.datagrip.portFromJdbcString
 import software.aws.toolkits.jetbrains.datagrip.validateIamConfiguration
-import software.aws.toolkits.jetbrains.utils.ApplicationThreadPoolScope
 import software.aws.toolkits.resources.message
 import software.aws.toolkits.telemetry.DatabaseCredentials.IAM
 import software.aws.toolkits.telemetry.RdsTelemetry
@@ -38,7 +37,7 @@ data class RdsAuth(
 )
 
 // [DatabaseAuthProvider] is marked as internal, but JetBrains advised this was a correct usage
-class IamAuth : DatabaseAuthProvider, CoroutineScope by ApplicationThreadPoolScope("RdsIamAuth") {
+class IamAuth : DatabaseAuthProvider {
     private val rdsUtilities = RdsUtilities.builder().build()
 
     override fun getId(): String = providerId
@@ -52,7 +51,8 @@ class IamAuth : DatabaseAuthProvider, CoroutineScope by ApplicationThreadPoolSco
         silent: Boolean
     ): CompletionStage<ProtoConnection>? {
         LOG.info { "Intercepting db connection [$connection]" }
-        return future {
+        val scope = applicationThreadPoolScope(connection.runConfiguration.project)
+        return scope.future {
             var result = Result.Succeeded
             try {
                 val credentials = getCredentials(connection)

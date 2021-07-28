@@ -10,15 +10,14 @@ import com.intellij.database.dataSource.DatabaseAuthProvider.AuthWidget
 import com.intellij.database.dataSource.DatabaseConnectionInterceptor.ProtoConnection
 import com.intellij.database.dataSource.DatabaseCredentialsAuthProvider
 import com.intellij.database.dataSource.LocalDataSource
-import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.future.future
 import software.amazon.awssdk.services.redshift.RedshiftClient
 import software.aws.toolkits.core.utils.getLogger
 import software.aws.toolkits.core.utils.info
 import software.aws.toolkits.jetbrains.core.AwsClientManager
+import software.aws.toolkits.jetbrains.core.applicationThreadPoolScope
 import software.aws.toolkits.jetbrains.core.credentials.ConnectionSettings
 import software.aws.toolkits.jetbrains.datagrip.getAwsConnectionSettings
-import software.aws.toolkits.jetbrains.utils.ApplicationThreadPoolScope
 import software.aws.toolkits.resources.message
 import software.aws.toolkits.telemetry.DatabaseCredentials.IAM
 import software.aws.toolkits.telemetry.RedshiftTelemetry
@@ -32,7 +31,7 @@ data class RedshiftSettings(
 )
 
 // [DatabaseAuthProvider] is marked as internal, but JetBrains advised this was a correct usage
-class IamAuth : DatabaseAuthProvider, CoroutineScope by ApplicationThreadPoolScope("RedshiftIamAuth") {
+class IamAuth : DatabaseAuthProvider {
     override fun getId(): String = providerId
     override fun isApplicable(dataSource: LocalDataSource): Boolean = dataSource.dbms.isRedshift
     override fun getDisplayName(): String = message("redshift.auth.aws")
@@ -40,7 +39,8 @@ class IamAuth : DatabaseAuthProvider, CoroutineScope by ApplicationThreadPoolSco
     override fun createWidget(creds: DatabaseCredentials, source: LocalDataSource): AuthWidget? = IamAuthWidget()
     override fun intercept(connection: ProtoConnection, silent: Boolean): CompletionStage<ProtoConnection>? {
         LOG.info { "Intercepting db connection [$connection]" }
-        return future {
+        val scope = applicationThreadPoolScope(connection.runConfiguration.project)
+        return scope.future {
             var result = Result.Succeeded
             val project = connection.runConfiguration.project
             try {

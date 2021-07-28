@@ -21,7 +21,7 @@ import software.aws.toolkits.jetbrains.core.credentials.AwsConnectionManager
 import software.aws.toolkits.jetbrains.core.filter
 import software.aws.toolkits.jetbrains.core.map
 import software.aws.toolkits.jetbrains.core.region.AwsRegionProvider
-import software.aws.toolkits.jetbrains.utils.ApplicationThreadPoolScope
+import software.aws.toolkits.jetbrains.utils.getCoroutineBgContext
 import java.time.Instant
 import java.time.LocalDateTime
 import java.time.ZoneId
@@ -36,7 +36,7 @@ object S3Resources {
         // TODO when the resource cache is coroutine based, remove the runBlocking and withContext
         runBlocking {
             // withContext is needed to put this on a thread pool
-            withContext(ApplicationThreadPoolScope("ListRegionalizedBuckets").coroutineContext) {
+            withContext(getCoroutineBgContext()) {
                 buckets.map { bucket ->
                     async {
                         LOG.tryOrNull("Cannot determine region for ${bucket.name()}", level = Level.WARN) {
