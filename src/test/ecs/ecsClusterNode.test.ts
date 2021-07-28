@@ -33,7 +33,7 @@ describe('EcsClusterNode', function () {
 
     function assertMoreResultsNode(node: AWSTreeNodeBase): void {
         assert.ok(node instanceof MoreResultsNode, `Node ${node} should be a More Results Node`)
-        assertClusterNode((node as MoreResultsNode).parent)
+        assertClusterNode((node as MoreResultsNode).getParent())
     }
 
     beforeEach(function () {
@@ -43,7 +43,7 @@ describe('EcsClusterNode', function () {
     describe('getChildren', function () {
         it('gets children', async function () {
             when(ecs.listServices(cluster.clusterArn!, undefined)).thenResolve({
-                services: [service],
+                resource: [service],
                 nextToken: undefined,
             })
 
@@ -56,7 +56,7 @@ describe('EcsClusterNode', function () {
 
         it('gets children with node for loading more results', async function () {
             when(ecs.listServices(cluster.clusterArn!, undefined)).thenResolve({
-                services: [service],
+                resource: [service],
                 nextToken,
             })
 

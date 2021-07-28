@@ -8,7 +8,7 @@ import { ApiGatewayClient } from '../../../shared/clients/apiGatewayClient'
 import { CloudFormationClient } from '../../../shared/clients/cloudFormationClient'
 import { CloudWatchLogsClient } from '../../../shared/clients/cloudWatchLogsClient'
 import { EcrClient, EcrRepository } from '../../../shared/clients/ecrClient'
-import { ClustersAndToken, EcsClient, ServicesAndToken } from '../../../shared/clients/ecsClient'
+import { EcsResourceAndToken, EcsClient } from '../../../shared/clients/ecsClient'
 import { IamClient } from '../../../shared/clients/iamClient'
 import { LambdaClient } from '../../../shared/clients/lambdaClient'
 import { SchemaClient } from '../../../shared/clients/schemaClient'
@@ -296,21 +296,25 @@ export class MockEcrClient implements EcrClient {
 
 export class MockEcsClient implements EcsClient {
     public readonly regionCode: string
-    public readonly listClusters: (nextToken?: string) => Promise<ClustersAndToken>
-    public readonly listServices: (cluster: string, nextToken?: string) => Promise<ServicesAndToken>
+    public readonly listClusters: (nextToken?: string) => Promise<EcsResourceAndToken>
+    public readonly listServices: (cluster: string, nextToken?: string) => Promise<EcsResourceAndToken>
+    public readonly listContainerNames: (taskDefinition: string) => Promise<string[]>
 
     public constructor({
         regionCode = '',
-        listClusters = async () => ({clusters: [], nextToken: undefined}),
-        listServices = async () => ({services: [], nextToken: undefined}),
+        listClusters = async () => ({ resource: [], nextToken: undefined }),
+        listServices = async () => ({ resource: [], nextToken: undefined }),
+        listContainerNames = async () => [],
     }: {
         regionCode?: string
-        listClusters?(): Promise<ClustersAndToken>
-        listServices?(): Promise<ServicesAndToken>
+        listClusters?(): Promise<EcsResourceAndToken>
+        listServices?(): Promise<EcsResourceAndToken>
+        listContainerNames?(): Promise<string[]>
     }) {
         this.regionCode = regionCode
         this.listClusters = listClusters
         this.listServices = listServices
+        this.listContainerNames = listContainerNames
     }
 }
 

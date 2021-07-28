@@ -26,11 +26,11 @@ export class ChildNodeLoader {
     private cache: ChildNodeCache
 
     public constructor(
-        parent: LoadMoreNode,
+        getParent: () => LoadMoreNode,
         loadPage: (continuationToken: string | undefined) => Promise<ChildNodePage>
     ) {
         this.loadPage = loadPage
-        this.moreResults = new MoreResultsNode(parent)
+        this.moreResults = new MoreResultsNode(getParent)
         this.loadChildrenLock = new AsyncLock()
         this.cache = new ChildNodeCache()
     }

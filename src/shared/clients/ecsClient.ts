@@ -10,27 +10,27 @@ import { ClassToInterfaceType } from '../utilities/tsUtils'
 
 export type EcsClient = ClassToInterfaceType<DefaultEcsClient>
 
-export type ServicesAndToken = {
-    services: ECS.Service[]
+export type EcsResourceAndToken = {
+    resource: ECS.Cluster[] | ECS.Service[]
     nextToken?: string
 }
 
-export type ClustersAndToken = {
-    clusters: ECS.Cluster[]
-    nextToken?: string
-}
-
-const MAX_RESULTS = 50
+const MAX_RESULTS_PER_RESPONSE = 100
 export class DefaultEcsClient {
     public constructor(public readonly regionCode: string) {}
 
-    public async listClusters(nextToken?: string): Promise<ClustersAndToken> {
+    public async listClusters(nextToken?: string): Promise<EcsResourceAndToken> {
         const sdkClient = await this.createSdkClient()
-        const clusterArnList = await sdkClient.listClusters({ maxResults: MAX_RESULTS, nextToken }).promise()
+        const clusterArnList = await sdkClient
+            .listClusters({ maxResults: MAX_RESULTS_PER_RESPONSE, nextToken })
+            .promise()
+        if (clusterArnList.clusterArns?.length === 0) {
+            return { resource: [] }
+        }
         try {
             const clusterResponse = await sdkClient.describeClusters({ clusters: clusterArnList.clusterArns }).promise()
-            const response: ClustersAndToken = {
-                clusters: clusterResponse.clusters!,
+            const response: EcsResourceAndToken = {
+                resource: clusterResponse.clusters!,
                 nextToken: clusterArnList.nextToken,
             }
             return response
@@ -40,17 +40,20 @@ export class DefaultEcsClient {
         }
     }
 
-    public async listServices(cluster: string, nextToken?: string): Promise<ServicesAndToken> {
+    public async listServices(cluster: string, nextToken?: string): Promise<EcsResourceAndToken> {
         const sdkClient = await this.createSdkClient()
         const serviceArnList = await sdkClient
-            .listServices({ cluster: cluster, maxResults: MAX_RESULTS, nextToken })
+            .listServices({ cluster: cluster, maxResults: MAX_RESULTS_PER_RESPONSE, nextToken })
             .promise()
+        if (serviceArnList.serviceArns?.length === 0) {
+            return { resource: [] }
+        }
         try {
             const serviceResponse = await sdkClient
                 .describeServices({ services: serviceArnList.serviceArns!, cluster: cluster })
                 .promise()
-            const response: ServicesAndToken = {
-                services: serviceResponse.services!,
+            const response: EcsResourceAndToken = {
+                resource: serviceResponse.services!,
                 nextToken: serviceArnList.nextToken,
             }
             return response

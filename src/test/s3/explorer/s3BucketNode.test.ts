@@ -43,7 +43,7 @@ describe('S3BucketNode', function () {
 
     function assertMoreResultsNode(node: AWSTreeNodeBase): void {
         assert.ok(node instanceof MoreResultsNode, `Node ${node} should be a More Results Node`)
-        assertBucketNode((node as MoreResultsNode).parent)
+        assertBucketNode((node as MoreResultsNode).getParent())
     }
 
     beforeEach(function () {

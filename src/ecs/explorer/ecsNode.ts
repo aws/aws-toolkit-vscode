@@ -20,7 +20,10 @@ export class EcsNode extends AWSTreeNodeBase implements LoadMoreNode {
 
     public constructor(private readonly ecs: EcsClient) {
         super('ECS', vscode.TreeItemCollapsibleState.Collapsed)
-        this.childLoader = new ChildNodeLoader(this, token => this.loadPage(token))
+        this.childLoader = new ChildNodeLoader(
+            () => this,
+            token => this.loadPage(token)
+        )
         this.update()
     }
 
@@ -48,11 +51,11 @@ export class EcsNode extends AWSTreeNodeBase implements LoadMoreNode {
     private async loadPage(nextToken: string | undefined): Promise<ChildNodePage> {
         getLogger().debug(`ecs: Loading page for %O using continuationToken %s`, this, nextToken)
         const response = await this.ecs.listClusters(nextToken)
-        const clusters = response.clusters.map(cluster => new EcsClusterNode(cluster, this, this.ecs))
+        const clusters = response.resource.map(cluster => new EcsClusterNode(cluster, this, this.ecs))
 
         getLogger().debug(
             `ecs: Loaded clusters: %O`,
-            clusters.map(cluster => cluster.name)
+            clusters.map(clusterNode => clusterNode.name)
         )
         return {
             newContinuationToken: response.nextToken,

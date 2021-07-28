@@ -33,8 +33,8 @@ describe('EcsNode', function () {
 
     it('gets children', async function () {
         when(ecs.listClusters(undefined)).thenResolve({
-            clusters: [firstCluster, secondCluster],
-            nextToken: undefined
+            resource: [firstCluster, secondCluster],
+            nextToken: undefined,
         })
 
         const node = new EcsNode(instance(ecs))
@@ -47,8 +47,8 @@ describe('EcsNode', function () {
 
     it('gets children with node for loading more results', async function () {
         when(ecs.listClusters(undefined)).thenResolve({
-            clusters: [firstCluster],
-            nextToken
+            resource: [firstCluster],
+            nextToken,
         })
 
         const node = new EcsNode(instance(ecs))
