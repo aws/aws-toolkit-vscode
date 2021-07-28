@@ -17,11 +17,6 @@ import {
     makeFakeAwsContextWithPlaceholderIds,
 } from '../utilities/fakeAwsContext'
 
-/**
- * Used for the 'replacer' argument for the JSON.stringify call
- * Ignores the 'moreResults' property on LoadMoreNodes which contain a circular reference,
- * where the JSON.stringify call will error
- */
 describe('AwsExplorer', function () {
     let sandbox: sinon.SinonSandbox
 

@@ -3,7 +3,7 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
-import { AWSTreeNodeBase } from "../../shared/treeview/nodes/awsTreeNodeBase";
+import { AWSTreeNodeBase } from '../../shared/treeview/nodes/awsTreeNodeBase'
 
 export class EcsContainerNode extends AWSTreeNodeBase {
     public constructor(
