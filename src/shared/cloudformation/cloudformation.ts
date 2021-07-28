@@ -826,13 +826,17 @@ export async function refreshSchemas(extensionContext: vscode.ExtensionContext):
 export async function updateYamlSchemasArray(
     path: string,
     type: 'cfn' | 'sam' | 'none',
-    config: WorkspaceConfiguration | undefined,
-    paths: { cfnSchema: string; samSchema: string } = { cfnSchema: CFN_SCHEMA_PATH, samSchema: SAM_SCHEMA_PATH }
+    testOverrides?: {
+        skipExtensionLoad?: boolean
+        config?: WorkspaceConfiguration | undefined
+        paths?: { cfnSchema: string; samSchema: string }
+    }
 ): Promise<void> {
-    if (!vscode.extensions.getExtension(VSCODE_EXTENSION_ID.yaml)) {
+    if (testOverrides.skipExtensionLoad || !vscode.extensions.getExtension(VSCODE_EXTENSION_ID.yaml)) {
         return
     }
-    config = config ?? vscode.workspace.getConfiguration('yaml')
+    const paths = testOverrides.paths || { cfnSchema: CFN_SCHEMA_PATH, samSchema: SAM_SCHEMA_PATH }
+    const config = testOverrides?.config ?? vscode.workspace.getConfiguration('yaml')
     const relPath = normalizeSeparator(getWorkspaceRelativePath(path) ?? path)
     const schemas: { [key: string]: string | string[] | undefined } | undefined = config.get('schemas')
     const deleteFroms: string[] = []
