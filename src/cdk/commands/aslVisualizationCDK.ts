@@ -26,4 +26,6 @@ export class AslVisualizationCDK extends AslVisualization {
     protected makeWebviewTitle(sourceDocumentUri: vscode.Uri): string {
         return localize('AWS.stepFunctions.graph.titlePrefix', 'Graph: {0}', this.uniqueIdentifier)
     }
+
+    
 }
