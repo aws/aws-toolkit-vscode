@@ -43,13 +43,18 @@ export class S3FileViewerManager {
                 const activeTab = this.activeTabs.get(savedTextDoc.uri.fsPath)!
 
                 if (!(await this.checkForValidity(activeTab.s3FileNode, activeTab.fileUri))) {
-                    window.showErrorMessage(
+                    const cancelUpload = localize('AWS.s3.fileViewer.button.cancelUpload', 'Cancel upload')
+                    const response = await window.showErrorMessage(
                         localize(
                             'AWS.s3.fileViewer.error.invalidUpload',
-                            'File is invalid to upload, file has changed in S3 since last cache download. Please try and reopen the file. Be aware current changes may be lost.'
-                        )
+                            'File is invalid to upload, file has changed in S3 since last cache download. Please compare your version with the one in S3. Then decide if you want to overwrite them or cancel this upload.'
+                        ),
+                        cancelUpload,
+                        'Overwrite'
                     )
-                    return
+                    if (response === cancelUpload) {
+                        return
+                    }
                 }
 
                 if (!(await activeTab.uploadChangesToS3())) {
