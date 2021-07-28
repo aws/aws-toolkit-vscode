@@ -12,10 +12,9 @@ import { S3FileViewerManager } from '../util/fileViewerManager'
 const SIZE_LIMIT = 50 * Math.pow(10, 6)
 
 export async function openFileCommand(node: S3FileNode, manager: S3FileViewerManager): Promise<void> {
-    if (!isFileSizeValid(node)) {
-        return
+    if (isFileSizeValid(node)) {
+        await manager.openTab(node)
     }
-    await manager.openTab(node)
 }
 
 export async function openFileEditModeCommand(
