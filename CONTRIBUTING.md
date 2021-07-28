@@ -83,6 +83,11 @@ See [CODE_GUIDELINES.md](./docs/CODE_GUIDELINES.md) for coding conventions.
 -   `src/testFixtures/` is excluded in `.vscode/settings.json`, to prevent VSCode
     from treating its files as project files.
 -   VSCode extension examples: <https://github.com/microsoft/vscode-extension-samples>
+-   Tests
+    -   Use `function ()` and `async function ()` syntax for `describe()` and `it()` callbacks [instead of arrow functions.](https://mochajs.org/#arrow-functions)
+    -   Do NOT include any `await` functions in `describe()` blocks directly (usage in `before`, `beforeEach`, `after`, `afterEach`, and `it` blocks is fine).
+        -   `await` in `describe()` causes the framework to always evaluate the `describe` block and can cause issues with either tests not running or always running (if other tests are marked with `.only`)
+        -   Tests that require a premade value from a Promise should initialize the value as a `let` and make the `await`ed assignment in `before()`.
 -   How to debug unresolved promise rejections:
 
     1. Declare a global unhandledRejection handler.
