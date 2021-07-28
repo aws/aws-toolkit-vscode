@@ -67,8 +67,11 @@ export class S3FileViewerManager {
                 }
 
                 if (!(await this.uploadChangesToS3(activeTab))) {
-                    this.window.showErrorMessage(
-                        'Error uploading file to S3. Changes will not be saved. Please try and resave this edit mode file'
+                    this.window.showWarningMessage(
+                        localize(
+                            'AWS.s3.fileViewer.error.upload',
+                            'Error uploading file to S3. Changes will not be saved. Please try and resave this edit mode file'
+                        )
                     )
                     return
                 }
@@ -187,11 +190,11 @@ export class S3FileViewerManager {
         if (this.promptOnEdit) {
             const message = localize(
                 'AWS.s3.fileViewer.warning.editStateWarning',
-                'Opening S3 file for editing. Saved changes will be written directly to the original location in S3.'
+                'You are now editing an S3 file. Saved changes will be uploaded to your S3 bucket.'
             )
 
             const dontShow = localize('AWS.s3.fileViewer.button.dismiss', "Don't show this again")
-            const help = localize('AWS.s3.fileViewer.button.help', 'Help')
+            const help = localize('AWS.s3.fileViewer.button.learnMore', 'Learn more')
 
             this.window.showWarningMessage(message, dontShow, help).then(selection => {
                 if (selection === dontShow) {
