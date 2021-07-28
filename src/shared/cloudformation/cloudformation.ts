@@ -832,10 +832,10 @@ export async function updateYamlSchemasArray(
         paths?: { cfnSchema: string; samSchema: string }
     }
 ): Promise<void> {
-    if (testOverrides.skipExtensionLoad || !vscode.extensions.getExtension(VSCODE_EXTENSION_ID.yaml)) {
+    if (!testOverrides?.skipExtensionLoad && !vscode.extensions.getExtension(VSCODE_EXTENSION_ID.yaml)) {
         return
     }
-    const paths = testOverrides.paths || { cfnSchema: CFN_SCHEMA_PATH, samSchema: SAM_SCHEMA_PATH }
+    const paths = testOverrides?.paths ?? { cfnSchema: CFN_SCHEMA_PATH, samSchema: SAM_SCHEMA_PATH }
     const config = testOverrides?.config ?? vscode.workspace.getConfiguration('yaml')
     const relPath = normalizeSeparator(getWorkspaceRelativePath(path) ?? path)
     const schemas: { [key: string]: string | string[] | undefined } | undefined = config.get('schemas')
