@@ -80,7 +80,7 @@ export class S3FileViewerManager {
                 if (download) {
                     if (!(await this.uploadChangesToS3(activeTab))) {
                         this.window.showErrorMessage(
-                            'Error uploading file to S3. Please try and resave this edit mode file'
+                            'Error uploading file to S3. Changes were not saved back to S3. Please try and resave this edit mode file'
                         )
                         return
                     }
@@ -204,10 +204,11 @@ export class S3FileViewerManager {
                 'You are now editing an S3 file. Saved changes will be uploaded to your S3 bucket.'
             )
 
+            const ok = localize('AWS.s3.fileViewer.ok', 'Ok')
             const dontShow = localize('AWS.s3.fileViewer.button.dismiss', "Don't show this again")
-            const help = localize('AWS.s3.fileViewer.button.learnMore', 'Learn more')
+            const help = localize('AWS.generic.message.learnMore', 'Learn more')
 
-            this.window.showWarningMessage(message, dontShow, help).then(selection => {
+            this.window.showWarningMessage(message, ok, dontShow, help).then(selection => {
                 if (selection === dontShow) {
                     this.promptOnEdit = false
                 }
