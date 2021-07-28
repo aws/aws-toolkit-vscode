@@ -29,7 +29,7 @@ export async function openFileEditModeCommand(
         size = uriOrNode.file.sizeBytes!
         fileNode = uriOrNode
     } else {
-        size = 0
+        size = fs.statSync(uriOrNode.fsPath).size
         fileNode = undefined
     }
     //const size = uriOrNode instanceof S3FileNode ? uriOrNode.file.sizeBytes : fs.statSync(uriOrNode.fsPath).size
