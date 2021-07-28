@@ -19,6 +19,7 @@ import { FileResourceFetcher } from '../resourcefetcher/fileResourceFetcher'
 import { CompositeResourceFetcher } from '../resourcefetcher/compositeResourceFetcher'
 import { WorkspaceConfiguration } from '../vscode/workspace'
 import { getWorkspaceRelativePath } from '../utilities/workspaceUtils'
+import { VSCODE_EXTENSION_ID } from '../extensions'
 
 export namespace CloudFormation {
     export const SERVERLESS_API_TYPE = 'AWS::Serverless::Api'
@@ -775,8 +776,10 @@ const MANIFEST_URL = 'https://api.github.com/repos/awslabs/goformation/releases/
  * @param extensionContext
  */
 export async function refreshSchemas(extensionContext: vscode.ExtensionContext): Promise<void> {
-    CFN_SCHEMA_PATH = normalizeSeparator(path.join(extensionContext.globalStoragePath, 'cloudformation.schema.json'))
-    SAM_SCHEMA_PATH = normalizeSeparator(path.join(extensionContext.globalStoragePath, 'sam.schema.json'))
+    CFN_SCHEMA_PATH = normalizeSeparator(
+        path.join('file:/', extensionContext.globalStoragePath, 'cloudformation.schema.json')
+    )
+    SAM_SCHEMA_PATH = normalizeSeparator(path.join('file:/', extensionContext.globalStoragePath, 'sam.schema.json'))
     let manifest: string | undefined
     try {
         const manifestFetcher = new HttpResourceFetcher(MANIFEST_URL, { showUrl: true })
@@ -823,9 +826,13 @@ export async function refreshSchemas(extensionContext: vscode.ExtensionContext):
 export async function updateYamlSchemasArray(
     path: string,
     type: 'cfn' | 'sam' | 'none',
-    config: WorkspaceConfiguration = vscode.workspace.getConfiguration('yaml'),
+    config: WorkspaceConfiguration | undefined,
     paths: { cfnSchema: string; samSchema: string } = { cfnSchema: CFN_SCHEMA_PATH, samSchema: SAM_SCHEMA_PATH }
 ): Promise<void> {
+    if (!vscode.extensions.getExtension(VSCODE_EXTENSION_ID.yaml)) {
+        return
+    }
+    config = config ?? vscode.workspace.getConfiguration('yaml')
     const relPath = normalizeSeparator(getWorkspaceRelativePath(path) ?? path)
     const schemas: { [key: string]: string | string[] | undefined } | undefined = config.get('schemas')
     const deleteFroms: string[] = []

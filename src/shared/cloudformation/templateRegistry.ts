@@ -22,7 +22,7 @@ export interface TemplateDatum {
 }
 
 export class CloudFormationTemplateRegistry extends WatchedFiles<CloudFormation.Template> {
-    public constructor(private readonly config: WorkspaceConfiguration = vscode.workspace.getConfiguration('yaml')) {
+    public constructor(private readonly config?: WorkspaceConfiguration) {
         super()
     }
     protected name: string = 'CloudFormationTemplateRegistry'
