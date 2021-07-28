@@ -73,7 +73,10 @@ export class EcsClusterNode extends AWSTreeNodeBase implements AWSResourceNode, 
 
         const services = response.resource.map(service => new EcsServiceNode(service, this, this.ecs))
 
-        getLogger().debug(`ecs: Loaded services: %O`, services)
+        getLogger().debug(
+            `ecs: Loaded services: %O`,
+            services.map(serviceNode => serviceNode.name)
+        )
         return {
             newContinuationToken: response.nextToken,
             newChildren: [...services],

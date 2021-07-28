@@ -53,7 +53,10 @@ export class EcsNode extends AWSTreeNodeBase implements LoadMoreNode {
         const response = await this.ecs.listClusters(nextToken)
         const clusters = response.resource.map(cluster => new EcsClusterNode(cluster, this, this.ecs))
 
-        getLogger().debug(`ecs: Loaded clusters: %O`, clusters)
+        getLogger().debug(
+            `ecs: Loaded clusters: %O`,
+            clusters.map(clusterNode => clusterNode.name)
+        )
         return {
             newContinuationToken: response.nextToken,
             newChildren: [...clusters],
