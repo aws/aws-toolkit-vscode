@@ -10,7 +10,7 @@ import { generateIconsMap, IconURIMap } from '../../../samVisualize/rendering/ic
 import { getProjectDir } from '../../testUtil'
 import { trimExtension } from '../../../shared/utilities/pathUtils'
 
-const iconsDir = join(getProjectDir(), '..', '..', 'media', 'samVisualizeMedia', 'icons')
+const iconsDir = join(getProjectDir(), '..', '..', 'resources', 'light', 'samVisualize', 'icons')
 let icons: Array<string>
 let testWebview: vscode.Webview
 
