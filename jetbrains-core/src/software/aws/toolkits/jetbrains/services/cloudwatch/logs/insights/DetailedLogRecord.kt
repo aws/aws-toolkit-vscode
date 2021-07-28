@@ -11,7 +11,6 @@ import com.intellij.ui.table.TableView
 import com.intellij.util.ExceptionUtil
 import com.intellij.util.ui.ListTableModel
 import com.intellij.util.ui.StatusText
-import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Deferred
 import kotlinx.coroutines.async
 import kotlinx.coroutines.launch
@@ -32,7 +31,8 @@ class DetailedLogRecord(
     private val project: Project,
     private val client: CloudWatchLogsClient,
     private val logRecordPointer: String
-) : CoroutineScope by ApplicationThreadPoolScope("DetailedLogEvents"), Disposable {
+) : Disposable {
+    private val coroutineScope = ApplicationThreadPoolScope("DetailedLogEvents", this)
     val title = message("cloudwatch.logs.log_record", logRecordPointer)
 
     private lateinit var breadcrumbHolder: JPanel
@@ -59,7 +59,7 @@ class DetailedLogRecord(
     init {
         recordLoadTask = loadLogRecordAsync()
         locationInformation.isVisible = false
-        launch {
+        coroutineScope.launch {
             val record = recordLoadTask.await()
             val items = record.map { it.key to it.value }
             tableView.listTableModel.items = items
@@ -77,7 +77,7 @@ class DetailedLogRecord(
         }
     }
 
-    private fun loadLogRecordAsync() = async<LogRecord> {
+    private fun loadLogRecordAsync() = coroutineScope.async<LogRecord> {
         var result = Result.Succeeded
         try {
             return@async client.getLogRecord {

@@ -16,16 +16,11 @@ import kotlin.coroutines.CoroutineContext
  *
  * see: [com.intellij.openapi.application.Application.executeOnPooledThread]
  */
-class ApplicationThreadPoolScope : CoroutineScope {
-    @Deprecated("Always pass Disposable")
-    constructor(coroutineName: String) {
-        this.coroutineContext = SupervisorJob() + getCoroutineBgContext() + CoroutineName(coroutineName)
-    }
+class ApplicationThreadPoolScope(coroutineName: String, disposable: Disposable) : CoroutineScope {
+    override val coroutineContext: CoroutineContext
 
-    constructor(coroutineName: String, disposable: Disposable) {
+    init {
         this.coroutineContext = SupervisorJob() + getCoroutineBgContext() + CoroutineName(coroutineName)
         Disposer.register(disposable) { cancel("Parent disposable was disposed") }
     }
-
-    override val coroutineContext: CoroutineContext
 }

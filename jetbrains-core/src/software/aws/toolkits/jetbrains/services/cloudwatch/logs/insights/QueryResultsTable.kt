@@ -10,7 +10,6 @@ import com.intellij.ui.DoubleClickListener
 import com.intellij.ui.ScrollPaneFactory
 import com.intellij.ui.table.TableView
 import com.intellij.util.ui.ListTableModel
-import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.channels.Channel
 import kotlinx.coroutines.launch
 import software.amazon.awssdk.services.cloudwatchlogs.CloudWatchLogsClient
@@ -28,7 +27,8 @@ class QueryResultsTable(
     connectionSettings: ConnectionSettings,
     fields: List<String>,
     queryId: String
-) : CoroutineScope by ApplicationThreadPoolScope("QueryResultsTable"), Disposable {
+) : Disposable {
+    private val coroutineScope = ApplicationThreadPoolScope("QueryResultsTable", this)
     private val client = let {
         val (credentials, region) = connectionSettings
         AwsClientManager.getInstance().getClient<CloudWatchLogsClient>(credentials, region)
@@ -66,7 +66,7 @@ class QueryResultsTable(
             override fun onDoubleClick(e: MouseEvent): Boolean {
                 // assume you can't double click multiple selection
                 val identifier = resultsTable.selectedObject?.identifier() ?: return false
-                launch { CloudWatchLogWindow.getInstance(project).showDetailedEvent(client, identifier) }
+                coroutineScope.launch { CloudWatchLogWindow.getInstance(project).showDetailedEvent(client, identifier) }
                 return true
             }
         }.installOn(resultsTable)

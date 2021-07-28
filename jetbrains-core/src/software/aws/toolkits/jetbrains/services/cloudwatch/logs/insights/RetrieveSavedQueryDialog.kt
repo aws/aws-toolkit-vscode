@@ -5,10 +5,8 @@ package software.aws.toolkits.jetbrains.services.cloudwatch.logs.insights
 import com.intellij.openapi.project.Project
 import com.intellij.openapi.ui.DialogWrapper
 import com.intellij.openapi.ui.ValidationInfo
-import kotlinx.coroutines.CoroutineScope
 import software.amazon.awssdk.services.cloudwatchlogs.model.QueryDefinition
 import software.aws.toolkits.jetbrains.core.credentials.ConnectionSettings
-import software.aws.toolkits.jetbrains.utils.ApplicationThreadPoolScope
 import software.aws.toolkits.resources.message
 import software.aws.toolkits.telemetry.CloudwatchinsightsTelemetry
 import software.aws.toolkits.telemetry.Result
@@ -20,7 +18,7 @@ class RetrieveSavedQueryDialog(
     private val parentEditor: QueryEditor,
     private val project: Project,
     connectionSettings: ConnectionSettings
-) : DialogWrapper(project), CoroutineScope by ApplicationThreadPoolScope("RetriveSavedInsightsQuery") {
+) : DialogWrapper(project) {
     private val view = SelectSavedQuery(connectionSettings)
 
     private val action: OkAction = object : OkAction() {

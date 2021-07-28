@@ -6,28 +6,27 @@ package software.aws.toolkits.jetbrains.services.ecs.actions
 import com.intellij.openapi.actionSystem.AnActionEvent
 import com.intellij.openapi.project.DumbAware
 import icons.AwsIcons
-import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.launch
 import software.amazon.awssdk.services.cloudwatchlogs.CloudWatchLogsClient
+import software.aws.toolkits.jetbrains.core.applicationThreadPoolScope
 import software.aws.toolkits.jetbrains.core.awsClient
 import software.aws.toolkits.jetbrains.core.explorer.actions.SingleResourceNodeAction
 import software.aws.toolkits.jetbrains.services.cloudwatch.logs.CloudWatchLogWindow
 import software.aws.toolkits.jetbrains.services.cloudwatch.logs.checkIfLogGroupExists
 import software.aws.toolkits.jetbrains.services.ecs.EcsClusterNode
 import software.aws.toolkits.jetbrains.services.ecs.EcsUtils.clusterArnToName
-import software.aws.toolkits.jetbrains.utils.ApplicationThreadPoolScope
 import software.aws.toolkits.jetbrains.utils.notifyError
 import software.aws.toolkits.resources.message
 
 class EcsLogGroupAction :
     SingleResourceNodeAction<EcsClusterNode>(message("cloudwatch.logs.view_log_streams"), null, AwsIcons.Resources.CloudWatch.LOGS),
-    CoroutineScope by ApplicationThreadPoolScope("EcsLogGroupAction"),
     DumbAware {
     override fun actionPerformed(selected: EcsClusterNode, e: AnActionEvent) {
-        launch {
-            val project = selected.nodeProject
-            val client = project.awsClient<CloudWatchLogsClient>()
-            val logGroup = "/ecs/${clusterArnToName(selected.resourceArn())}"
+        val project = selected.nodeProject
+        val client = project.awsClient<CloudWatchLogsClient>()
+        val logGroup = "/ecs/${clusterArnToName(selected.resourceArn())}"
+        val scope = applicationThreadPoolScope(project)
+        scope.launch {
             if (client.checkIfLogGroupExists(logGroup)) {
                 val window = CloudWatchLogWindow.getInstance(project)
                 window.showLogGroup(logGroup)
