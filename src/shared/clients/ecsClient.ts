@@ -24,6 +24,9 @@ export class DefaultEcsClient {
         const clusterArnList = await sdkClient
             .listClusters({ maxResults: MAX_RESULTS_PER_RESPONSE, nextToken })
             .promise()
+        if (clusterArnList.clusterArns?.length === 0) {
+            return { resource: [] }
+        }
         try {
             const clusterResponse = await sdkClient.describeClusters({ clusters: clusterArnList.clusterArns }).promise()
             const response: EcsResourceAndToken = {
@@ -42,6 +45,9 @@ export class DefaultEcsClient {
         const serviceArnList = await sdkClient
             .listServices({ cluster: cluster, maxResults: MAX_RESULTS_PER_RESPONSE, nextToken })
             .promise()
+        if (serviceArnList.serviceArns?.length === 0) {
+            return { resource: [] }
+        }
         try {
             const serviceResponse = await sdkClient
                 .describeServices({ services: serviceArnList.serviceArns!, cluster: cluster })
