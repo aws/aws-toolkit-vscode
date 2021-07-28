@@ -13,18 +13,15 @@ export class S3DocumentProvider implements vscode.TextDocumentContentProvider {
     public constructor(public onDidChange: vscode.Event<vscode.Uri>) {}
 
     public async provideTextDocumentContent(uri: vscode.Uri): Promise<string> {
-        let data: any
+        let data: string
         try {
             data = await readFileAsString(uri.fsPath)
         } catch (e) {
             showOutputMessage(`${e}`, ext.outputChannel)
             getLogger().error(`S3DocumentProvider: Error opening ${uri.fsPath} on read-only ${e}`)
+            return ''
         }
 
-        if (!data) {
-            getLogger().error(`S3DocumentProvider: Something went wrong opening ${uri.fsPath}`)
-        }
-
-        return data ?? ''
+        return data
     }
 }

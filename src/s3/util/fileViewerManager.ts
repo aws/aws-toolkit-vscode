@@ -41,28 +41,37 @@ export class S3FileViewerManager {
         vscode.workspace.onDidSaveTextDocument(async savedTextDoc => {
             if (this.activeTabs.has(savedTextDoc.uri.fsPath)) {
                 const activeTab = this.activeTabs.get(savedTextDoc.uri.fsPath)!
+                let download = true
 
                 if (!(await this.checkForValidity(activeTab.s3FileNode, activeTab.fileUri))) {
-                    const cancelUpload = localize('AWS.s3.fileViewer.button.cancelUpload', 'Cancel upload')
+                    const cancelUpload = localize(
+                        'AWS.s3.fileViewer.button.cancelUpload',
+                        'Cancel, and redownload file'
+                    )
+                    const overwrite = localize('AWS.s3.fileViewer.button.overwrite', 'Overwrite')
+
                     const response = await window.showErrorMessage(
                         localize(
                             'AWS.s3.fileViewer.error.invalidUpload',
                             'File is invalid to upload, file has changed in S3 since last cache download. Please compare your version with the one in S3. Then decide if you want to overwrite them or cancel this upload.'
                         ),
                         cancelUpload,
-                        'Overwrite'
+                        overwrite
                     )
                     if (response === cancelUpload) {
+                        download = false
+                    }
+                }
+
+                if (download) {
+                    if (!(await activeTab.uploadChangesToS3())) {
+                        this.window.showErrorMessage(
+                            'Error uploading file to S3. Please try and resave this edit mode file'
+                        )
                         return
                     }
                 }
 
-                if (!(await activeTab.uploadChangesToS3())) {
-                    this.window.showErrorMessage(
-                        'Error uploading file to S3. Changes will not be saved. Please try and resave this edit mode file'
-                    )
-                    return
-                }
                 //refresh the activeTab.s3FileNode?
                 const fileNode = await this.refreshNode(activeTab.s3FileNode)
                 if (!fileNode) {
