@@ -78,7 +78,7 @@ export interface SignedUrlRequest {
     readonly key: string
     readonly operation?: string
     readonly body?: string
-    readonly time?: string
+    readonly time?: number
 }
 
 export interface UploadFileRequest {

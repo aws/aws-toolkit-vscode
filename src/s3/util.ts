@@ -70,3 +70,17 @@ export function validateBucketName(name: string): string | undefined {
 
     return undefined
 }
+
+export function validateTime(time: string): string | undefined {
+    const number = Number(time)
+
+    if (isNaN(Number(time)) || !Number.isSafeInteger(number)) {
+        return localize('AWS.s3.validateTime.error.notNumber', 'Input has to be an integer')
+    }
+
+    if (Number(time) < 0) {
+        return localize('AWS.s3.validateTime.error.negative', 'Input has to be a positive number')
+    }
+
+    return undefined
+}
