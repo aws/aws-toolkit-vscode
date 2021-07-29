@@ -3,7 +3,6 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
-import * as vscode from 'vscode'
 import { SignedUrlRequest } from '../../shared/clients/s3Client'
 import { ext } from '../../shared/extensionGlobals'
 import { Env } from '../../shared/vscode/env'
@@ -31,10 +30,10 @@ export async function presignedURLCommand(
 
     const url = await s3Client.getSignedUrl(request)
 
-    await copyUrl(window, env, url)
+    await copyUrl(url, window, env)
 }
 
-async function promptTime(fileName: string, window = vscode.window): Promise<number> {
+export async function promptTime(fileName: string, window = Window.vscode()): Promise<number> {
     const timeStr = await window.showInputBox({
         value: '15',
         prompt: localize('AWS.s3.promptTime.prompt', 'Please enter the valid time (in minutes) for ${0} URL', fileName),
@@ -51,7 +50,7 @@ async function promptTime(fileName: string, window = vscode.window): Promise<num
     return Promise.resolve(time)
 }
 
-async function copyUrl(window: Window, env: Env, url: string) {
+export async function copyUrl(url: string, window = Window.vscode(), env = Env.vscode()) {
     await env.clipboard.writeText(url)
     window.setStatusBarMessage(
         addCodiconToString(
