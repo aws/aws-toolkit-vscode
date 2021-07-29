@@ -33,7 +33,7 @@ describe('EcsClusterNode', function () {
 
     function assertMoreResultsNode(node: AWSTreeNodeBase): void {
         assert.ok(node instanceof MoreResultsNode, `Node ${node} should be a More Results Node`)
-        assertClusterNode((node as MoreResultsNode).getParent())
+        assertClusterNode((node as MoreResultsNode).parent)
     }
 
     beforeEach(function () {

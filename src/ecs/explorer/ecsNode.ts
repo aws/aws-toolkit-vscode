@@ -20,10 +20,7 @@ export class EcsNode extends AWSTreeNodeBase implements LoadMoreNode {
 
     public constructor(private readonly ecs: EcsClient) {
         super('ECS', vscode.TreeItemCollapsibleState.Collapsed)
-        this.childLoader = new ChildNodeLoader(
-            () => this,
-            token => this.loadPage(token)
-        )
+        this.childLoader = new ChildNodeLoader(this, token => this.loadPage(token))
         this.update()
     }
 

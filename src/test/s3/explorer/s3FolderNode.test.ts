@@ -43,7 +43,7 @@ describe('S3FolderNode', function () {
 
     function assertMoreResultsNode(node: AWSTreeNodeBase): void {
         assert.ok(node instanceof MoreResultsNode, `Node ${node} should be a More Results Node`)
-        assertFolderNode((node as MoreResultsNode).getParent(), folder)
+        assertFolderNode((node as MoreResultsNode).parent, folder)
     }
 
     beforeEach(function () {

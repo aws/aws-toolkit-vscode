@@ -10,6 +10,7 @@ import { getLogger } from '../../shared/logger'
 import { ChildProcess } from '../../shared/utilities/childProcess'
 import { EcsContainerNode } from '../explorer/ecsContainerNode'
 import { localize } from '../../shared/utilities/vsCodeUtils'
+import { recordEcsRunExecuteCommand } from '../../shared/telemetry/telemetry.gen'
 
 export async function runCommandInContainer(node: EcsContainerNode, window = Window.vscode()): Promise<void> {
     getLogger().debug('RunCommandInContainer called for: %O', node)
@@ -94,5 +95,8 @@ export async function runCommandInContainer(node: EcsContainerNode, window = Win
     getLogger().info(response.stdout)
     if (response.exitCode !== 0 || response.stderr) {
         getLogger().error(response.stderr)
+        recordEcsRunExecuteCommand({ result: 'Failed', ecsExecuteCommandType: 'command' })
+    } else {
+        recordEcsRunExecuteCommand({ result: 'Succeeded', ecsExecuteCommandType: 'command' })
     }
 }

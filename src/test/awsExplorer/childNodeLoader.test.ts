@@ -29,7 +29,7 @@ class FakeLoadMore implements LoadMoreNode {
 
 describe('ChildNodeLoader', function () {
     const fakeNode = new FakeNode()
-    const fakeLoadMore = () => new FakeLoadMore()
+    const fakeLoadMore = new FakeLoadMore()
 
     function childLoader(): ChildNodeLoader {
         return continuedChildLoader()
@@ -73,7 +73,7 @@ describe('ChildNodeLoader', function () {
             const [firstNode, moreResultsNode, ...otherNodes] = await loader.getChildren()
 
             assert.strictEqual(firstNode, fakeNode)
-            assert.strictEqual((moreResultsNode as MoreResultsNode).getParent, fakeLoadMore)
+            assert.strictEqual((moreResultsNode as MoreResultsNode).parent, fakeLoadMore)
             assert.strictEqual(otherNodes.length, 0)
         })
     })
@@ -100,7 +100,7 @@ describe('ChildNodeLoader', function () {
 
             assert.strictEqual(firstNode, fakeNode)
             assert.strictEqual(secondNode, fakeNode)
-            assert.strictEqual((moreResultsNode as MoreResultsNode).getParent, fakeLoadMore)
+            assert.strictEqual((moreResultsNode as MoreResultsNode).parent, fakeLoadMore)
             assert.strictEqual(otherNodes.length, 0)
         })
 
@@ -130,7 +130,7 @@ describe('ChildNodeLoader', function () {
             assert.strictEqual(firstNode, fakeNode)
             assert.strictEqual(secondNode, fakeNode)
             assert.strictEqual(thirdNode, fakeNode)
-            assert.strictEqual((moreResultsNode as MoreResultsNode).getParent, fakeLoadMore)
+            assert.strictEqual((moreResultsNode as MoreResultsNode).parent, fakeLoadMore)
             assert.strictEqual(otherNodes.length, 0)
         })
     })

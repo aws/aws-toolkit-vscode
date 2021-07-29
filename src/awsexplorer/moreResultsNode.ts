@@ -15,17 +15,17 @@ import { inspect } from 'util'
  */
 export class MoreResultsNode extends AWSTreeNodeBase {
     // Parent is a get method to prevent circular referencing
-    public constructor(public getParent: () => LoadMoreNode) {
+    public constructor(public parent: LoadMoreNode) {
         super(localize('AWS.explorerNode.loadMoreChildren', 'Load More...'))
         this.command = {
             command: 'aws.loadMoreChildren',
             title: localize('AWS.explorerNode.loadMoreChildren', 'Load More...'),
-            arguments: [getParent()],
+            arguments: [parent],
         }
         this.contextValue = 'awsMoreResultsNode'
     }
 
     public [inspect.custom](): string {
-        return `MoreResultsNode (parent=${this.getParent()})`
+        return `MoreResultsNode (parent=${this.parent})`
     }
 }
