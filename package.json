@@ -1829,6 +1829,43 @@
                     "separator": "\\"
                 }
             }
+        ],
+        "walkthroughs": [
+            {
+                "id": "getStarted",
+                "title": "%AWS.walkthrough.gettingStarted.title%",
+                "description": "%AWS.walkthrough.gettingStarted.description%",
+                "steps": [
+                    {
+                        "id": "connect",
+                        "title": "%AWS.walkthrough.gettingStarted.connect%",
+                        "media": {
+                            "markdown": "resources/walkthrough/setup-connect.md"
+                        },
+                        "completionEvents": [
+                            "onContext:config.aws.profile"
+                        ]
+                    },
+                    {
+                        "id": "changeRegions",
+                        "title": "%AWS.walkthrough.gettingStarted.changeRegions%",
+                        "media": {
+                            "markdown": "resources/walkthrough/setup-region.md"
+                        },
+                        "completionEvents": [
+                            "onCommand:aws.showRegion",
+                            "onCommand:aws.hideRegion"
+                        ]
+                    },
+                    {
+                        "id": "setupToolchain",
+                        "title": "%AWS.walkthrough.gettingStarted.setupToolchain%",
+                        "media": {
+                            "markdown": "resources/walkthrough/setup-toolchain.md"
+                        }
+                    }
+                ]
+            }
         ]
     },
     "scripts": {
