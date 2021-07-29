@@ -55,9 +55,9 @@ export class S3FileViewerManager {
         vscode.workspace.onDidSaveTextDocument(async savedTextDoc => {
             if (this.activeTabs.has(savedTextDoc.uri.fsPath)) {
                 const activeTab = this.activeTabs.get(savedTextDoc.uri.fsPath)!
-                let download = true
+                let upload = true
 
-                if (!(await this.checkForValidity(activeTab.s3FileNode, activeTab.fileUri))) {
+                if (!(await this.isValidFile(activeTab.s3FileNode, activeTab.fileUri))) {
                     const cancelUpload = localize(
                         'AWS.s3.fileViewer.button.cancelUpload',
                         'Cancel, and redownload file'
@@ -73,11 +73,11 @@ export class S3FileViewerManager {
                         overwrite
                     )
                     if (response === cancelUpload) {
-                        download = false
+                        upload = false
                     }
                 }
 
-                if (download) {
+                if (upload) {
                     if (!(await this.uploadChangesToS3(activeTab))) {
                         this.window.showErrorMessage(
                             'Error uploading file to S3. Changes were not saved back to S3. Please try and resave this edit mode file'
@@ -92,15 +92,10 @@ export class S3FileViewerManager {
                     return
                 }
                 await this.removeAndCloseTab(activeTab)
-                await this.openTab(fileNode)
+                await this.openInReadMode(fileNode)
                 this._onDidChange.fire(activeTab.s3Uri)
             }
         })
-    }
-
-    public async getActiveEditor(targetUri: vscode.Uri): Promise<vscode.TextEditor | undefined> {
-        const visibleEditor = this.window.visibleTextEditors
-        return visibleEditor.find((editor: vscode.TextEditor) => editor.document.uri.fsPath === targetUri.fsPath)
     }
 
     public async focusAndCloseTab(
@@ -132,7 +127,7 @@ export class S3FileViewerManager {
      *
      * @param fileNode
      */
-    public async openTab(fileNode: S3FileNode): Promise<void> {
+    public async openInReadMode(fileNode: S3FileNode): Promise<void> {
         if (fileNode.file.sizeBytes! < SIZE_LIMIT) {
             this.toPreview = fileNode.file.arn
         }
@@ -317,7 +312,7 @@ export class S3FileViewerManager {
     /**
      * Fetches a file from S3 or gets it from the local cache if possible and still valid (this.checkForValidity()).
      *
-     * @see S3FileViewerManager.checkForValidity()
+     * @see S3FileViewerManager.isValidFile()
      */
     public async getFile(fileNode: S3FileNode): Promise<vscode.Uri | undefined> {
         if (!this._tempLocation) {
@@ -420,7 +415,7 @@ export class S3FileViewerManager {
                 `FileViewer: found file ${fileNode.file.key} in cache\n Cache contains: ${this.cacheArns.toString()}`
             )
 
-            if (await this.checkForValidity(fileNode, targetLocation)) {
+            if (await this.isValidFile(fileNode, targetLocation)) {
                 getLogger().info(`FileViewer: good to retrieve, last modified date is before creation`)
                 return targetLocation
             } else {
@@ -528,7 +523,7 @@ export class S3FileViewerManager {
      * @param targetUri file downloaded in system
      * @returns
      */
-    private async checkForValidity(fileNode: S3FileNode, targetUri: vscode.Uri): Promise<boolean> {
+    private async isValidFile(fileNode: S3FileNode, targetUri: vscode.Uri): Promise<boolean> {
         const newNode = await this.refreshNode(fileNode)
         if (!newNode) {
             getLogger().error(`FileViewer: Error, refreshNode() returned undefined with file: ${fileNode.file.key}`)
