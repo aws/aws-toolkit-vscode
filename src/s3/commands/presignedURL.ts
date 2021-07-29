@@ -19,7 +19,7 @@ export async function presignedURLCommand(
     env = Env.vscode()
 ): Promise<void> {
     const time = await promptTime(node.file.key)
-    const s3Client = ext.toolkitClientBuilder.createS3Client(node.bucket.region)
+    const s3Client = node.s3
 
     const request: SignedUrlRequest = {
         bucketName: node.bucket.name,
