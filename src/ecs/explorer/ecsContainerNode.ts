@@ -14,7 +14,7 @@ export class EcsContainerNode extends AWSTreeNodeBase {
         public readonly ecs: EcsClient
     ) {
         super(continerName)
-        this.tooltip = `(Container) ${continerName}`
+        this.tooltip = continerName
         this.contextValue = 'awsEcsContainerNode'
     }
 
