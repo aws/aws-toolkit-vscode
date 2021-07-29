@@ -73,6 +73,14 @@ export interface DownloadFileRequest {
     readonly saveLocation: vscode.Uri
 }
 
+export interface SignedUrlRequest {
+    readonly bucketName: string
+    readonly key: string
+    readonly operation?: string
+    readonly body?: string
+    readonly time?: string
+}
+
 export interface UploadFileRequest {
     readonly bucketName: string
     readonly key: string
@@ -262,6 +270,20 @@ export class DefaultS3Client {
             throw e
         }
         getLogger().debug('DownloadFile succeeded')
+    }
+
+    public async getSignedUrl(request: SignedUrlRequest): Promise<string> {
+        const time = request.time ? request.time : 15
+        const operation = request.operation ? request.operation : 'getObject'
+        const s3 = await this.createS3()
+
+        const url = s3.getSignedUrl(operation, {
+            Bucket: request.bucketName,
+            Key: request.key,
+            Body: request.body,
+            Expires: time,
+        })
+        return Promise.resolve(url)
     }
 
     /**
