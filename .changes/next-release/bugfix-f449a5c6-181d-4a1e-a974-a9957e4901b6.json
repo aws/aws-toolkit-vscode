@@ -1,0 +1,4 @@
+{
+  "type" : "bugfix",
+  "description" : "Fix `ActionPlaces.isPopupPlace` error after opening the AWS connection settings menu (#2736)"
+}
