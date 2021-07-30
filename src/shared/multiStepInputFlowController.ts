@@ -122,7 +122,7 @@ export class MultiStepInputFlowController {
                     input.onDidTriggerButton(async item => {
                         if (item === QuickInputButtons.Back) {
                             reject(InputFlowAction.back)
-                        } else if ((item as any).onClick !== undefined && typeof (item as any).onClick === 'function') {
+                        } else if (typeof (item as any).onClick === 'function') {
                             ;(item as any).onClick()
                             reject(InputFlowAction.resume)
                         } else {
