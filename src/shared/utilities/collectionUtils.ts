@@ -251,7 +251,7 @@ export function pushIf<T>(arr: T[], condition: boolean, ...elements: T[]) {
 
 /**
  * Applies `settings` to a base object. The shared properties between the settings and the object must have the
- * same types, enforced by the TypeScript compiler. Will only apply primitives.
+ * same types, enforced by the TypeScript compiler. Will only apply primitives. Silently ignores objects.
  */
 export function applyPrimitives<T1 extends Record<string, any>, T2 extends T1>(obj: T2, settings: T1): void {
     const clone = Object.assign({}, settings)
