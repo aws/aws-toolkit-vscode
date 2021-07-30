@@ -9,8 +9,9 @@ import { WIZARD_BACK } from '../wizards/wizard'
 import { QuickInputButton, PrompterButtons } from './buttons'
 import { Prompter, PromptResult } from './prompter'
 
+// TODO: allow `validateInput` to return a Thenable so we don't need to omit it from the options
 /** Additional options to configure the `InputBox` beyond the standard API */
-interface AdditionalInputBoxOptions {
+export type ExtendedInputBoxOptions = Omit<vscode.InputBoxOptions, 'validateInput' | 'placeHolder'> & {
     title?: string
     step?: number
     placeholder?: string
@@ -19,9 +20,7 @@ interface AdditionalInputBoxOptions {
     validateInput?(value: string): string | undefined
 }
 
-export type ExtendedInputBoxOptions = Omit<vscode.InputBoxOptions, 'buttons' | 'validateInput' | 'placeHolder'> &
-    AdditionalInputBoxOptions
-export type DataInputBox = Omit<vscode.InputBox, 'buttons'> & { buttons: PrompterButtons<string> }
+export type InputBox = Omit<vscode.InputBox, 'buttons'> & { buttons: PrompterButtons<string> }
 
 export const DEFAULT_INPUTBOX_OPTIONS: vscode.InputBoxOptions = {
     ignoreFocusOut: true,
@@ -34,7 +33,7 @@ export const DEFAULT_INPUTBOX_OPTIONS: vscode.InputBoxOptions = {
  * @returns An InputBoxPrompter. This can be used directly with the `prompt` method or can be fed into a Wizard.
  */
 export function createInputBox(options?: ExtendedInputBoxOptions): InputBoxPrompter {
-    const inputBox = vscode.window.createInputBox() as DataInputBox
+    const inputBox = vscode.window.createInputBox() as InputBox
     applyPrimitives(inputBox, { ...DEFAULT_INPUTBOX_OPTIONS, ...options })
 
     const prompter = new InputBoxPrompter(inputBox)
@@ -46,6 +45,11 @@ export function createInputBox(options?: ExtendedInputBoxOptions): InputBoxPromp
     return prompter
 }
 
+/**
+ * Prompter abstraction over an InputBox UI element.
+ *
+ * See `createInputBox` for easy creation of instances of this class.
+ */
 export class InputBoxPrompter extends Prompter<string> {
     private _lastResponse?: string
     private validateEvents: vscode.Disposable[] = []
@@ -59,7 +63,7 @@ export class InputBoxPrompter extends Prompter<string> {
         return this._lastResponse
     }
 
-    constructor(public readonly inputBox: DataInputBox) {
+    constructor(public readonly inputBox: InputBox) {
         super()
     }
 
