@@ -126,7 +126,7 @@ describe('FilterBoxQuickPickPrompter', function () {
         { label: 'item2', data: 1 },
         { label: 'item3', data: 2 },
     ]
-    const customInputSettings = {
+    const filterBoxInputSettings = {
         label: 'Enter a number',
         transform: (resp: string) => Number.parseInt(resp),
     }
@@ -137,7 +137,7 @@ describe('FilterBoxQuickPickPrompter', function () {
     beforeEach(function () {
         picker = new TestQuickPick()
         picker.items = testItems
-        testPrompter = new FilterBoxQuickPickPrompter(picker, customInputSettings.label, customInputSettings.transform)
+        testPrompter = new FilterBoxQuickPickPrompter(picker, filterBoxInputSettings)
     })
 
     it('filter box adds new item', async function () {
