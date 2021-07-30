@@ -159,6 +159,24 @@ export class QuickPickPrompter<T> extends Prompter<T> {
     }
 
     /**
+     * Attempts to set the currently selected items. If matching items were found, the first item in the
+     * QuickPick is selected.
+     *
+     * @param items The items to look for
+     */
+    public selectItems(...items: DataQuickPickItem<T>[]): void {
+        const selected = new Set(items.map(item => item.label))
+
+        // Note: activeItems refer to the 'highlighted' items in a QuickPick, while selectedItems only
+        // changes _after_ the user hits enter or clicks something
+        this.quickPick.activeItems = this.quickPick.items.filter(item => selected.has(item.label))
+
+        if (this.quickPick.activeItems.length === 0) {
+            this.quickPick.activeItems = [this.quickPick.items[0]]
+        }
+    }
+
+    /**
      * Loads items into the QuickPick. Can accept an array or a Promise for items. Promises will cause the
      * QuickPick to become 'busy', disabling user-input until loading is finished. Items are appended to
      * the current set of items. Use `clearItems` prior to loading if this behavior is not desired. The
@@ -170,6 +188,7 @@ export class QuickPickPrompter<T> extends Prompter<T> {
     public loadItems(items: Promise<DataQuickPickItem<T>[]> | DataQuickPickItem<T>[]): Promise<void> {
         const picker = this.quickPick
         const previous = picker.items
+        const previousSelected = picker.activeItems
 
         if (items instanceof Promise) {
             picker.busy = true
@@ -177,11 +196,13 @@ export class QuickPickPrompter<T> extends Prompter<T> {
 
             return items.then(items => {
                 picker.items = previous.concat(items)
+                this.selectItems(...previousSelected)
                 picker.busy = false
                 picker.enabled = true
             })
         } else {
             picker.items = previous.concat(items)
+            this.selectItems(...previousSelected)
             return Promise.resolve()
         }
     }
