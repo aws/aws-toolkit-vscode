@@ -72,6 +72,12 @@ export class InputBoxPrompter extends Prompter<string> {
         this.inputBox.totalSteps = total
     }
 
+    /**
+     * Sets a validation hook into the InputBox, checking whenever the input changes or when the user
+     * attempts to submit their response.
+     *
+     * @param validate Validator function
+     */
     public setValidation(validate: (value: string) => string | undefined): void {
         this.validateEvents.forEach(d => d.dispose())
         this.validateEvents = []
