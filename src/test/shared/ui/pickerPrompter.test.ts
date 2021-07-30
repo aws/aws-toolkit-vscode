@@ -51,19 +51,6 @@ describe('createQuickPick', function () {
         assert.strictEqual(prompter.quickPick.enabled, true)
         assert.deepStrictEqual(prompter.quickPick.items, items)
     })
-
-    it('promise that returns undefined causes prompter to hide', async function () {
-        let resolveItems!: (items: DataQuickPickItem<string>[] | undefined) => void
-        const itemsPromise = new Promise<DataQuickPickItem<string>[] | undefined>(resolve => (resolveItems = resolve))
-        const prompter = createQuickPick(itemsPromise)
-        prompter.prompt()
-
-        const didHide = new Promise(resolve => prompter.quickPick.onDidHide(resolve))
-
-        resolveItems(undefined)
-        await itemsPromise
-        return didHide
-    })
 })
 
 describe('createLabelQuickPick', function () {
