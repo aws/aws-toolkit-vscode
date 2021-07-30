@@ -57,7 +57,7 @@ function isDataQuickPickItem(obj: any): obj is DataQuickPickItem<any> {
  * @returns A QuickPickPrompter. This can be used directly with the `prompt` method or can be fed into a Wizard.
  */
 export function createQuickPick<T>(
-    items: DataQuickPickItem<T>[] | Promise<DataQuickPickItem<T>[] | undefined>,
+    items: DataQuickPickItem<T>[] | Promise<DataQuickPickItem<T>[]>,
     options?: ExtendedQuickPickOptions<T>
 ): QuickPickPrompter<T> {
     const picker = vscode.window.createQuickPick<DataQuickPickItem<T>>() as DataQuickPick<T>
@@ -73,23 +73,19 @@ export function createQuickPick<T>(
               )
             : new QuickPickPrompter<T>(picker)
 
-    if (items instanceof Promise) {
-        makePickerAysnc(picker, items)
-    } else {
-        picker.items = items
-    }
+    prompter.loadItems(items)
 
     return prompter
 }
 
 /** Creates a QuickPick from normal QuickPickItems, using the `label` as the return value. */
 export function createLabelQuickPick<T extends string>(
-    items: LabelQuickPickItem<T>[] | Promise<LabelQuickPickItem<T>[] | undefined>,
+    items: LabelQuickPickItem<T>[] | Promise<LabelQuickPickItem<T>[]>,
     options?: ExtendedQuickPickOptions<T>
 ): QuickPickPrompter<T> {
     if (items instanceof Promise) {
         return createQuickPick(
-            items.then(items => (items !== undefined ? items.map(item => ({ ...item, data: item.label })) : undefined)),
+            items.then(items => items.map(item => ({ ...item, data: item.label }))),
             options
         )
     }
@@ -97,21 +93,6 @@ export function createLabelQuickPick<T extends string>(
         items.map(item => ({ ...item, data: item.label })),
         options
     )
-}
-
-function makePickerAysnc<T>(picker: DataQuickPick<T>, items: Promise<DataQuickPickItem<T>[] | undefined>): void {
-    picker.busy = true
-    picker.enabled = false
-
-    items.then(items => {
-        if (items === undefined) {
-            picker.hide()
-        } else {
-            picker.items = items
-            picker.busy = false
-            picker.enabled = true
-        }
-    })
 }
 
 /**
@@ -177,6 +158,34 @@ export class QuickPickPrompter<T> extends Prompter<T> {
         return result instanceof Function ? await result() : result
     }
 
+    /**
+     * Loads items into the QuickPick. Can accept an array or a Promise for items. Promises will cause the
+     * QuickPick to become 'busy', disabling user-input until loading is finished. Items are appended to
+     * the current set of items. Use `clearItems` prior to loading if this behavior is not desired. The
+     * previously selected item will remain selected if it still exists after loading.
+     *
+     * @param items DataQuickPickItems or a promise for said items
+     * @returns A promise that is resolved when loading has finished
+     */
+    public loadItems(items: Promise<DataQuickPickItem<T>[]> | DataQuickPickItem<T>[]): Promise<void> {
+        const picker = this.quickPick
+        const previous = picker.items
+
+        if (items instanceof Promise) {
+            picker.busy = true
+            picker.enabled = false
+
+            return items.then(items => {
+                picker.items = previous.concat(items)
+                picker.busy = false
+                picker.enabled = true
+            })
+        } else {
+            picker.items = previous.concat(items)
+            return Promise.resolve()
+        }
+    }
+
     public setLastResponse(picked: DataQuickPickItem<T> | undefined = this._lastPicked): void {
         if (picked === undefined) {
             return
@@ -192,7 +201,8 @@ export class QuickPickPrompter<T> extends Prompter<T> {
 
 /**
  * Allows the prompter to accept the QuickPick filter box as input, shown as a QuickPickItem.
- * Note: untested with any picker that can refresh items (haven't needed this functionality yet)
+ *
+ * It is recommended to use `createQuickPick` instead of instantiating this class in isolation.
  *
  * @param label The label of the QuickPickItem that shows the user's input
  * @param transform Required when the expected type is not a string, transforming the input into the expected type or a control signal.
