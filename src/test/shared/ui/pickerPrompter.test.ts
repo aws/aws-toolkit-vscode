@@ -8,7 +8,7 @@ import * as vscode from 'vscode'
 import {
     createLabelQuickPick,
     createQuickPick,
-    CustomQuickPickPrompter,
+    FilterBoxQuickPickPrompter,
     DataQuickPick,
     DataQuickPickItem,
     DEFAULT_QUICKPICK_OPTIONS,
@@ -145,12 +145,12 @@ describe('CustomQuickPickPrompter', function () {
     }
 
     let picker: DataQuickPick<number>
-    let testPrompter: CustomQuickPickPrompter<number>
+    let testPrompter: FilterBoxQuickPickPrompter<number>
 
     beforeEach(function () {
         picker = new TestQuickPick()
         picker.items = testItems
-        testPrompter = new CustomQuickPickPrompter(picker, customInputSettings.label, customInputSettings.transform)
+        testPrompter = new FilterBoxQuickPickPrompter(picker, customInputSettings.label, customInputSettings.transform)
     })
 
     it('filter box adds new item', async function () {

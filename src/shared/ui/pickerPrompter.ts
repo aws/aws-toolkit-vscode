@@ -66,7 +66,7 @@ export function createQuickPick<T>(
 
     const prompter =
         options.customInputSettings !== undefined
-            ? new CustomQuickPickPrompter<T>(
+            ? new FilterBoxQuickPickPrompter<T>(
                   picker,
                   options.customInputSettings.label,
                   options.customInputSettings.transform
@@ -228,7 +228,7 @@ export class QuickPickPrompter<T> extends Prompter<T> {
  * @param label The label of the QuickPickItem that shows the user's input
  * @param transform Required when the expected type is not a string, transforming the input into the expected type or a control signal.
  */
-export class CustomQuickPickPrompter<T> extends QuickPickPrompter<T> {
+export class FilterBoxQuickPickPrompter<T> extends QuickPickPrompter<T> {
     constructor(quickPick: DataQuickPick<T>, label: string, transform: (v: string) => PromptResult<T>) {
         super(quickPick)
         this.addCustomInput(label, transform)
