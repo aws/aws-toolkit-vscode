@@ -120,7 +120,7 @@ describe('QuickPickPrompter', function () {
     })
 })
 
-describe('CustomQuickPickPrompter', function () {
+describe('FilterBoxQuickPickPrompter', function () {
     const testItems = [
         { label: 'item1', data: 0 },
         { label: 'item2', data: 1 },
