@@ -34,6 +34,9 @@ export function generateIconsMap(iconDir: string, webview: vscode.Webview): Icon
         const resourceKey = icon.replace('-', '::').replace('.svg', '').toLowerCase()
 
         iconsMap[resourceKey] = webview.asWebviewUri(vscfile).toString()
+
+        // Include an icon to default to when no other icon matches.
+        iconsMap['default'] = webview.asWebviewUri(vscode.Uri.file(join(iconDir, 'default.svg'))).toString()
     }
 
     return iconsMap
