@@ -13,7 +13,7 @@ import { Window } from '../../../shared/vscode/window'
 import { FakeEnv } from '../../shared/vscode/fakeEnv'
 import { anything, instance, mock, when } from '../../utilities/mockito'
 
-describe.only('presignedURLCommand', function () {
+describe('presignedURLCommand', function () {
     const bucketName = 'bucket-name'
     const key = 'file.jpg'
     const fileName = 'file.jpg'
