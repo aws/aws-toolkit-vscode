@@ -91,6 +91,7 @@ class ExplorerToolWindow(project: Project) : SimpleToolWindowPanel(true, true), 
 
         toolbar = ActionManager.getInstance().createActionToolbar(ActionPlaces.TOOLBAR, group, true).apply {
             layoutPolicy = WRAP_LAYOUT_POLICY
+            setTargetComponent(this@ExplorerToolWindow)
         }.component
 
         background = UIUtil.getTreeBackground()
