@@ -85,6 +85,8 @@ export function createQuickPick<T>(
     return prompter
 }
 
+// Note: the generic type used in `createLabelQuickPick` is needed to infer the correct type when using string
+// literal types. Otherwise the narrowness of the type would be lost.
 /** Creates a QuickPick from normal QuickPickItems, using the `label` as the return value. */
 export function createLabelQuickPick<T extends string>(
     items: LabelQuickPickItem<T>[] | Promise<LabelQuickPickItem<T>[]>,

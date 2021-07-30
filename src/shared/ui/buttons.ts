@@ -12,7 +12,7 @@ const localize = nls.loadMessageBundle()
 const HELP_TOOLTIP = localize('AWS.command.help', 'View Toolkit Documentation')
 
 type WizardButton<T> = QuickInputButton<T | WizardControl> | QuickInputButton<void>
-export type PrompterButtons<T = WizardControl> = readonly WizardButton<T>[]
+export type PrompterButtons<T> = readonly WizardButton<T>[]
 
 /** Light wrapper around VS Code's buttons, adding a `onClick` callback. */
 export interface QuickInputButton<T> extends vscode.QuickInputButton {
