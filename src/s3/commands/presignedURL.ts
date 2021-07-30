@@ -4,7 +4,6 @@
  */
 
 import { SignedUrlRequest } from '../../shared/clients/s3Client'
-import { ext } from '../../shared/extensionGlobals'
 import { Env } from '../../shared/vscode/env'
 import { S3FileNode } from '../explorer/s3FileNode'
 import { Window } from '../../shared/vscode/window'
@@ -18,7 +17,7 @@ export async function presignedURLCommand(
     window = Window.vscode(),
     env = Env.vscode()
 ): Promise<void> {
-    const time = await promptTime(node.file.key)
+    const time = await promptTime(node.file.key, window)
     const s3Client = node.s3
 
     const request: SignedUrlRequest = {

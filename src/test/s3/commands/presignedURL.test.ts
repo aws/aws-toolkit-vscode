@@ -11,9 +11,9 @@ import { S3Node } from '../../../s3/explorer/s3Nodes'
 import { Bucket, S3Client } from '../../../shared/clients/s3Client'
 import { Window } from '../../../shared/vscode/window'
 import { FakeEnv } from '../../shared/vscode/fakeEnv'
-import { anything, capture, instance, mock, when } from '../../utilities/mockito'
+import { anything, instance, mock, when } from '../../utilities/mockito'
 
-describe('presignedURLCommand', function () {
+describe.only('presignedURLCommand', function () {
     const bucketName = 'bucket-name'
     const key = 'file.jpg'
     const fileName = 'file.jpg'
