@@ -14,7 +14,7 @@ import { downloadFileAsCommand } from './downloadFileAs'
 const SIZE_LIMIT = 50 * Math.pow(10, 6)
 
 export async function openFileCommand(node: S3FileNode, manager: S3FileViewerManager): Promise<void> {
-    if (await isFileSizeValid(node.file.sizeBytes)) {
+    if (await isFileSizeValid(node.file.sizeBytes, node)) {
         await manager.openTab(node)
     }
 }
@@ -48,16 +48,19 @@ async function isFileSizeValid(
         return true
     }
     if (size > SIZE_LIMIT) {
-        const response = await window.showErrorMessage(
-            localize(
-                'AWS.s3.fileViewer.error.invalidSize',
-                'Files over 50MB currently not supported for file display, please use the "Download as..." function'
-            ),
-            'Download as..'
-        )
-        if (response === 'Download as..') {
-            await downloadFileAsCommand(fileNode!)
-        }
+        window
+            .showErrorMessage(
+                localize(
+                    'AWS.s3.fileViewer.error.invalidSize',
+                    'Files over 50MB currently not supported for file display, please use the "Download as..." function'
+                ),
+                localize('AWS.s3.button.downloadAs', 'Download as..')
+            )
+            .then(async response => {
+                if (response === 'Download as..') {
+                    await downloadFileAsCommand(fileNode!)
+                }
+            })
         return false
     }
 
