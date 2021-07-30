@@ -118,6 +118,18 @@ describe('QuickPickPrompter', function () {
         testPrompter.setLastResponse({ label: 'item4', data: 3 })
         assert.deepStrictEqual(picker.activeItems, [testItems[0]])
     })
+
+    it('can set a new active selection', async function () {
+        picker.onDidChangeActive(active => {
+            if (active[0].data === testItems[2].data) {
+                picker.selectedItems = active
+            }
+        })
+        const result = testPrompter.prompt()
+        testPrompter.selectItems(testItems[2])
+
+        assert.strictEqual(await result, testItems[2].data)
+    })
 })
 
 describe('FilterBoxQuickPickPrompter', function () {
@@ -135,19 +147,45 @@ describe('FilterBoxQuickPickPrompter', function () {
     let testPrompter: FilterBoxQuickPickPrompter<number>
 
     beforeEach(function () {
-        picker = new TestQuickPick()
-        picker.items = testItems
+        picker = vscode.window.createQuickPick() as any
         testPrompter = new FilterBoxQuickPickPrompter(picker, filterBoxInputSettings)
+        testPrompter.loadItems(testItems)
     })
 
-    it('filter box adds new item', async function () {
+    it('adds a new item based off the filter box', async function () {
         const result = testPrompter.prompt()
         const input = '123'
 
-        picker.value = input
-        assert.strictEqual(picker.activeItems[0].description, input)
+        picker.onDidChangeActive(items => {
+            if (picker.value === input) {
+                assert.strictEqual(items[0].description, input)
+                picker.selectedItems = items
+            } else {
+                picker.value = input
+            }
+        })
 
-        picker.selectedItems = [picker.activeItems[0]]
+        assert.strictEqual(await result, Number(input))
+    })
+
+    it('can handle additional items being added', async function () {
+        const result = testPrompter.prompt()
+        const input = '456'
+        const newItems = [{ label: 'item4', data: 3 }]
+        const newItemsPromise = Promise.resolve(newItems)
+
+        picker.onDidChangeActive(items => {
+            if (picker.items.length !== 6) {
+                picker.value = input
+                return
+            }
+
+            assert.strictEqual(items[0].description, input)
+            picker.selectedItems = [items[0]]
+        })
+
+        testPrompter.loadItems(newItems)
+        testPrompter.loadItems(newItemsPromise)
 
         assert.strictEqual(await result, Number(input))
     })
