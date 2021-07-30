@@ -13,8 +13,8 @@ import {
     DataQuickPickItem,
     DEFAULT_QUICKPICK_OPTIONS,
     QuickPickPrompter,
+    CUSTOM_USER_INPUT,
 } from '../../../shared/ui/pickerPrompter'
-import { TestQuickPick } from './picker.test'
 
 describe('createQuickPick', function () {
     const items: DataQuickPickItem<string>[] = [
@@ -110,12 +110,12 @@ describe('QuickPickPrompter', function () {
     })
 
     it('can set last response', async function () {
-        testPrompter.setLastResponse(testItems[2])
+        testPrompter.lastResponse = testItems[2]
         assert.deepStrictEqual(picker.activeItems, [testItems[2]])
     })
 
     it('shows first item if last response does not exist', async function () {
-        testPrompter.setLastResponse({ label: 'item4', data: 3 })
+        testPrompter.lastResponse = { label: 'item4', data: 3 }
         assert.deepStrictEqual(picker.activeItems, [testItems[0]])
     })
 
@@ -186,6 +186,24 @@ describe('FilterBoxQuickPickPrompter', function () {
 
         testPrompter.loadItems(newItems)
         testPrompter.loadItems(newItemsPromise)
+
+        assert.strictEqual(await result, Number(input))
+    })
+
+    it('can accept custom input as a last response', async function () {
+        const result = testPrompter.prompt()
+        const input = '123'
+
+        picker.onDidChangeActive(items => {
+            picker.onDidChangeActive(items => {
+                if (picker.value === input) {
+                    assert.strictEqual(items[0].description, input)
+                    picker.selectedItems = items
+                } else {
+                    testPrompter.lastResponse = { data: CUSTOM_USER_INPUT, description: input } as any
+                }
+            })
+        })
 
         assert.strictEqual(await result, Number(input))
     })

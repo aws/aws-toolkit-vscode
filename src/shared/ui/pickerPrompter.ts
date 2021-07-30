@@ -52,7 +52,7 @@ type LabelQuickPickItem<T> = vscode.QuickPickItem & { label: T }
 export type DataQuickPickItem<T> = vscode.QuickPickItem & { data: QuickPickData<T> }
 export type DataQuickPick<T> = Omit<vscode.QuickPick<DataQuickPickItem<T>>, 'buttons'> & { buttons: PrompterButtons<T> }
 
-const CUSTOM_USER_INPUT = Symbol()
+export const CUSTOM_USER_INPUT = Symbol()
 
 function isDataQuickPickItem(obj: any): obj is DataQuickPickItem<any> {
     return typeof obj === 'object' && typeof (obj as vscode.QuickPickItem).label === 'string' && 'data' in obj
@@ -216,7 +216,7 @@ export class QuickPickPrompter<T> extends Prompter<T> {
         }
     }
 
-    public setLastResponse(picked: DataQuickPickItem<T> | undefined = this._lastPicked): void {
+    protected setLastResponse(picked: DataQuickPickItem<T> | undefined = this._lastPicked): void {
         if (picked === undefined) {
             return
         }
@@ -239,6 +239,14 @@ export class QuickPickPrompter<T> extends Prompter<T> {
  */
 export class FilterBoxQuickPickPrompter<T> extends QuickPickPrompter<T> {
     private onChangeValue?: vscode.Disposable
+
+    public set lastResponse(response: DataQuickPickItem<T> | undefined) {
+        super.lastResponse = response
+
+        if (this.isUserInput(response)) {
+            this.quickPick.value = response.description ?? ''
+        }
+    }
 
     constructor(quickPick: DataQuickPick<T>, private readonly settings: FilterBoxInputSettings<T>) {
         super(quickPick)
@@ -285,13 +293,5 @@ export class FilterBoxQuickPickPrompter<T> extends QuickPickPrompter<T> {
 
     private isUserInput(picked: any): picked is DataQuickPickItem<symbol> {
         return picked !== undefined && picked.data === CUSTOM_USER_INPUT
-    }
-
-    public setLastResponse(picked: DataQuickPickItem<T> | undefined = this._lastPicked): void {
-        super.setLastResponse(picked)
-
-        if (this.isUserInput(picked)) {
-            this.quickPick.value = picked.description ?? ''
-        }
     }
 }
