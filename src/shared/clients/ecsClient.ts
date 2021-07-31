@@ -81,10 +81,8 @@ export class DefaultEcsClient {
         const sdkClient = await this.createSdkClient()
 
         const params: ECS.ListTasksRequest = { cluster: cluster, serviceName: serviceName, desiredStatus: 'RUNNING' }
-        console.log(params)
         try {
             const listTasksResponse = await sdkClient.listTasks(params).promise()
-            console.log(listTasksResponse)
             return listTasksResponse.taskArns ?? []
         } catch (error) {
             getLogger().error(`ecs: Failed to get tasks for Cluster ${cluster} and Service ${serviceName}: `)
