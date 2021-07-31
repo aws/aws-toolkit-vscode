@@ -5,12 +5,12 @@
 
 import * as assert from 'assert'
 import { ECS } from 'aws-sdk'
-import { AWSTreeNodeBase } from '../../shared/treeview/nodes/awsTreeNodeBase'
-import { EcsClusterNode } from '../../ecs/explorer/ecsClusterNode'
-import { EcsNode } from '../../ecs/explorer/ecsNode'
-import { EcsClient } from '../../shared/clients/ecsClient'
-import { instance, mock, when } from '../utilities/mockito'
-import { MoreResultsNode } from '../../awsexplorer/moreResultsNode'
+import { AWSTreeNodeBase } from '../../../shared/treeview/nodes/awsTreeNodeBase'
+import { EcsClusterNode } from '../../../ecs/explorer/ecsClusterNode'
+import { EcsNode } from '../../../ecs/explorer/ecsNode'
+import { EcsClient } from '../../../shared/clients/ecsClient'
+import { instance, mock, when } from '../../utilities/mockito'
+import { MoreResultsNode } from '../../../awsexplorer/moreResultsNode'
 
 describe('EcsNode', function () {
     const nextToken = 'nextToken'

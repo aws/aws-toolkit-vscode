@@ -4,15 +4,15 @@
  */
 
 import * as assert from 'assert'
-import { MoreResultsNode } from '../../awsexplorer/moreResultsNode'
-import { AWSTreeNodeBase } from '../../shared/treeview/nodes/awsTreeNodeBase'
-import { LoadMoreNode } from '../../shared/treeview/nodes/loadMoreNode'
-import { instance, mock, when } from '../utilities/mockito'
-import { EcsClusterNode } from '../../ecs/explorer/ecsClusterNode'
+import { MoreResultsNode } from '../../../awsexplorer/moreResultsNode'
+import { AWSTreeNodeBase } from '../../../shared/treeview/nodes/awsTreeNodeBase'
+import { LoadMoreNode } from '../../../shared/treeview/nodes/loadMoreNode'
+import { instance, mock, when } from '../../utilities/mockito'
+import { EcsClusterNode } from '../../../ecs/explorer/ecsClusterNode'
 import { ECS } from 'aws-sdk'
-import { EcsClient } from '../../shared/clients/ecsClient'
-import { EcsNode } from '../../ecs/explorer/ecsNode'
-import { EcsServiceNode } from '../../ecs/explorer/ecsServiceNode'
+import { EcsClient } from '../../../shared/clients/ecsClient'
+import { EcsNode } from '../../../ecs/explorer/ecsNode'
+import { EcsServiceNode } from '../../../ecs/explorer/ecsServiceNode'
 
 describe('EcsClusterNode', function () {
     const name = 'cluster-name'

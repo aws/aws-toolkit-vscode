@@ -2,6 +2,8 @@
  * Copyright 2021 Amazon.com, Inc. or its affiliates. All Rights Reserved.
  * SPDX-License-Identifier: Apache-2.0
  */
+import * as nls from 'vscode-nls'
+const localize = nls.loadMessageBundle()
 
 import * as vscode from 'vscode'
 import * as picker from '../../shared/ui/picker'
@@ -9,14 +11,21 @@ import { Window } from '../../shared/vscode/window'
 import { getLogger } from '../../shared/logger'
 import { ChildProcess } from '../../shared/utilities/childProcess'
 import { EcsContainerNode } from '../explorer/ecsContainerNode'
-import { localize } from '../../shared/utilities/vsCodeUtils'
 import { recordEcsRunExecuteCommand } from '../../shared/telemetry/telemetry.gen'
+import { DefaultSettingsConfiguration } from '../../shared/settingsConfiguration'
+import { extensionSettingsPrefix } from '../../shared/constants'
 
 export async function runCommandInContainer(node: EcsContainerNode, window = Window.vscode()): Promise<void> {
     getLogger().debug('RunCommandInContainer called for: %O', node)
 
     const verifySSMPluginResponse = await new ChildProcess(true, 'session-manager-plugin').run()
     if (!verifySSMPluginResponse.stdout.startsWith('The Session Manager plugin was installed successfully')) {
+        window.showErrorMessage(
+            localize(
+                'AWS.command.ecs.runCommandInContainer.noCliOrPlugin',
+                'This feature requires the AWS CLI with the SSM Session Manager plugin'
+            )
+        )
         throw new Error('The Session Manager plugin for the AWS CLI is not installed.')
     }
 
@@ -73,6 +82,29 @@ export async function runCommandInContainer(node: EcsContainerNode, window = Win
     })
     if (!command) {
         return
+    }
+
+    // Warn the user that commands may modify the container, give the option to dismiss future prompts
+    const configuration = new DefaultSettingsConfiguration(extensionSettingsPrefix)
+    if (configuration.readSetting('ecs.warnRunCommand')) {
+        const choice = await window.showInformationMessage(
+            localize(
+                'AWS.command.ecs.runCommandInContainer.warnBeforeExecute',
+                'Command may modify the running container {0}. Are you sure?',
+                node.continerName
+            ),
+            { modal: true },
+            localize('AWS.generic.response.yes', 'Yes'),
+            localize('AWS.command.ecs.runCommandInContainer.yesDoNotShowAgain', "Yes, and don't ask again")
+        )
+        if (choice === undefined) {
+            getLogger().debug('ecs: Cancelled runCommandInContainer')
+            return
+        } else if (
+            choice === localize('AWS.command.ecs.runCommandInContainer.yesDoNotShowAgain', "Yes, and don't ask again")
+        ) {
+            configuration.writeSetting('ecs.warnRunCommand', false, vscode.ConfigurationTarget.Global)
+        }
     }
 
     const response = await new ChildProcess(

@@ -180,6 +180,11 @@
                     "type": "boolean",
                     "description": "%AWS.configuration.enableCodeLenses%",
                     "default": true
+                },
+                "aws.ecs.warnRunCommand": {
+                    "type": "boolean",
+                    "description": "%AWS.configuration.description.ecs.warnRunCommand%",
+                    "default": true
                 }
             }
         },
