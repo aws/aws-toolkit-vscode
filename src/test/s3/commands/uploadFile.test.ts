@@ -5,7 +5,6 @@
 
 import * as assert from 'assert'
 import * as vscode from 'vscode'
-import * as path from 'path'
 import { S3 } from 'aws-sdk'
 import { FileSizeBytes, getFileToUpload, promptUserForBucket, uploadFileCommand } from '../../../s3/commands/uploadFile'
 import { S3Node } from '../../../s3/explorer/s3Nodes'
@@ -23,14 +22,13 @@ describe('uploadFileCommand', function () {
     const key = 'file.jpg'
     const sizeBytes = 16
     const fileLocation = vscode.Uri.file('/file.jpg')
-    const fileName = path.basename(fileLocation.fsPath)
     const statFile: FileSizeBytes = _file => sizeBytes
     let outputChannel: MockOutputChannel
     let s3: S3Client
     let bucketNode: S3BucketNode
     let window: FakeWindow
     let getBucket: (s3client: S3Client, window?: Window) => Promise<S3.Bucket | string>
-    let getFile: (document?: vscode.Uri, window?: Window) => Promise<vscode.Uri | undefined>
+    let getFile: (document?: vscode.Uri, window?: Window) => Promise<vscode.Uri[] | undefined>
     let commands: Commands
 
     beforeEach(function () {
@@ -65,7 +63,7 @@ describe('uploadFileCommand', function () {
 
             getFile = (document, window) => {
                 return new Promise((resolve, reject) => {
-                    resolve(fileLocation)
+                    resolve([fileLocation])
                 })
             }
 
@@ -87,15 +85,10 @@ describe('uploadFileCommand', function () {
             assert.strictEqual(uploadFileRequest.key, key)
             assert.strictEqual(uploadFileRequest.fileLocation, fileLocation)
 
-            uploadFileRequest.progressListener!(4) // +25% (+4/16)
-
-            assert.deepStrictEqual(window.progress.reported, [{ increment: 25 }])
-            assert.strictEqual(window.progress.options?.location, vscode.ProgressLocation.Notification)
-            assert.strictEqual(window.progress.options?.title, 'Uploading file.jpg...')
-
             assert.deepStrictEqual(outputChannel.lines, [
-                `Uploading file ${fileName} to s3://bucket-name/file.jpg`,
-                `Successfully uploaded file ${fileName} to bucket-name`,
+                'Uploading file file.jpg to s3://bucket-name/file.jpg',
+                '1/1 files uploaded to s3://bucket-name',
+                'Succesfully uploaded 1/1 files',
             ])
         })
 
@@ -130,7 +123,7 @@ describe('uploadFileCommand', function () {
             commands = new FakeCommands()
             getFile = (document, window) => {
                 return new Promise((resolve, reject) => {
-                    resolve(fileLocation)
+                    resolve([fileLocation])
                 })
             }
 
@@ -154,9 +147,11 @@ describe('uploadFileCommand', function () {
                 outputChannel,
                 commands
             )
+
             assert.deepStrictEqual(outputChannel.lines, [
-                `Uploading file ${fileName} to s3://bucket-name/file.jpg`,
-                `Successfully uploaded file ${fileName} to bucket-name`,
+                'Uploading file file.jpg to s3://bucket-name/file.jpg',
+                '1/1 files uploaded to s3://bucket-name',
+                'Succesfully uploaded 1/1 files',
             ])
         })
 
@@ -203,7 +198,7 @@ describe('uploadFileCommand', function () {
 
     getFile = (document, window) => {
         return new Promise((resolve, reject) => {
-            resolve(fileLocation)
+            resolve([fileLocation])
         })
     }
 
@@ -229,27 +224,15 @@ describe('uploadFileCommand', function () {
             commands
         )
 
-        // eslint-disable-next-line @typescript-eslint/unbound-method
-        const [uploadFileRequest] = capture(s3.uploadFile).last()
-
-        assert.strictEqual(uploadFileRequest.bucketName, bucketName)
-        assert.strictEqual(uploadFileRequest.key, key)
-        assert.strictEqual(uploadFileRequest.fileLocation, fileLocation)
-
-        uploadFileRequest.progressListener!(4) // +25% (+4/16)
-
-        assert.deepStrictEqual(window.progress.reported, [{ increment: 25 }])
-        assert.strictEqual(window.progress.options?.location, vscode.ProgressLocation.Notification)
-        assert.strictEqual(window.progress.options?.title, 'Uploading file.jpg...')
-        
         assert.deepStrictEqual(outputChannel.lines, [
-            `Uploading file ${fileName} to s3://bucket-name/file.jpg`,
-            `Successfully uploaded file ${fileName} to bucket-name`,
+            'Uploading file file.jpg to s3://bucket-name/file.jpg',
+            '1/1 files uploaded to s3://bucket-name',
+            `Succesfully uploaded 1/1 files`,
         ])
     })
 
     it('errors when s3 call fails', async function () {
-        when(s3.uploadFile(anything())).thenReject(new Error('Expected failure'))
+        when(s3.uploadFile(anything())).thenThrow(new Error('Expected failure'))
 
         window = new FakeWindow({ dialog: { openSelections: [fileLocation] } })
         outputChannel = new MockOutputChannel()
@@ -264,7 +247,11 @@ describe('uploadFileCommand', function () {
             commands
         )
 
-        assert.ok(window.message.error?.includes('Failed to upload file'))
+        assert.deepStrictEqual(outputChannel.lines, [
+            'Uploading file file.jpg to s3://bucket-name/file.jpg',
+            'File file.jpg failed to upload error: Expected failure',
+            'Succesfully uploaded 0/1 files',
+        ])
     })
 })
 
@@ -292,7 +279,7 @@ describe('getFileToUpload', function () {
 
     it('directly asks user for file if no active editor', async function () {
         const response = await getFileToUpload(undefined, window, prompt)
-        assert.strictEqual(response, fileLocation)
+        assert.deepStrictEqual(response, [fileLocation])
     })
 
     it('Returns undefined if no file is selected on first prompt', async function () {
@@ -307,14 +294,14 @@ describe('getFileToUpload', function () {
         selection.label = alreadyOpenedUri.fsPath
 
         const response = await getFileToUpload(alreadyOpenedUri, window, prompt)
-        assert.strictEqual(response, alreadyOpenedUri)
+        assert.deepStrictEqual(response, [alreadyOpenedUri])
     })
 
     it('opens the file prompt if a user selects to browse for more files', async function () {
         selection.label = 'Browse for more files...'
 
         const response = await getFileToUpload(fileLocation, window, prompt)
-        assert.strictEqual(response, fileLocation)
+        assert.deepStrictEqual(response, [fileLocation])
     })
 
     it('returns undefined if the user does not select a file through the file browser', async function () {

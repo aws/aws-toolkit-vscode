@@ -174,7 +174,7 @@ export async function uploadFileCommand(
         }
     }
 
-    const requestNumber = await uploadWithProgress(uploadRequests)
+    const requestNumber = await uploadWithProgress(uploadRequests, undefined, outputChannel)
 
     showOutputMessage(`Succesfully uploaded ${requestNumber}/${uploadRequests.length} files`, outputChannel)
 
@@ -201,12 +201,12 @@ async function uploadWithProgress(
     window = Window.vscode(),
     outputChannel = ext.outputChannel
 ): Promise<number> {
-    let requestNumber = 1
+    let requestNumber: number = 0
 
-    uploadRequests.forEach(async request => {
+    for (const request of uploadRequests) {
         const fileName = path.basename(request.key)
         const destinationPath = readablePath({ bucket: { name: request.bucketName }, path: request.key })
-
+        const destinationNoFile = destinationPath.slice(0, destinationPath.lastIndexOf('/'))
         showOutputMessage(
             localize('AWS.s3.uploadFile.startUpload', 'Uploading file {0} to {1}', fileName, destinationPath),
             outputChannel
@@ -231,34 +231,19 @@ async function uploadWithProgress(
                     })
                 }
             )
+            requestNumber += 1
             showOutputMessage(
-                `${requestNumber}/${uploadRequests.length} files uploaded to ${destinationPath}.`,
+                `${requestNumber}/${uploadRequests.length} files uploaded to ${destinationNoFile}`,
                 outputChannel
             )
             telemetry.recordS3UploadObject({ result: 'Succeeded' })
-            requestNumber += 1
         } catch (error) {
-            showOutputMessage(`File ${fileName} failed to upload`, outputChannel)
+            showOutputMessage(`File ${fileName} failed to upload error: ${error.message}`, outputChannel)
             telemetry.recordS3UploadObject({ result: 'Failed' })
         }
-    })
+    }
 
-    return Promise.resolve(requestNumber)
-
-    // return window.withProgress(
-    //     {
-    //         location: vscode.ProgressLocation.Notification,
-    //         title: localize('AWS.s3.uploadFile.progressTitle', 'Uploading {0}...', path.basename(fileLocation.fsPath)),
-    //     },
-    //     progress => {
-    //         return s3Client.uploadFile({
-    //             bucketName: bucketName,
-    //             key: key,
-    //             fileLocation,
-    //             progressListener: progressReporter({ progress, totalBytes: fileSizeBytes }),
-    //         })
-    //     }
-    // )
+    return requestNumber
 }
 
 interface BucketQuickPickItem extends vscode.QuickPickItem {
