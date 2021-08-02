@@ -764,8 +764,8 @@ export namespace CloudFormation {
     }
 }
 
-let CFN_SCHEMA_PATH = ''
-let SAM_SCHEMA_PATH = ''
+let cfnSchemaPath = ''
+let samSchemaPath = ''
 const MANIFEST_URL = 'https://api.github.com/repos/awslabs/goformation/releases/latest'
 
 /**
@@ -776,10 +776,12 @@ const MANIFEST_URL = 'https://api.github.com/repos/awslabs/goformation/releases/
  * @param extensionContext
  */
 export async function refreshSchemas(extensionContext: vscode.ExtensionContext): Promise<void> {
-    CFN_SCHEMA_PATH = normalizeSeparator(
+    // path.join() is intentionally used here, we want a single "/" after "file:/".
+    // YAML extension doesn't load schema if `file://` is appended on Windows, and doesn't like no `file:/` or `file://` on MacOS
+    cfnSchemaPath = normalizeSeparator(
         path.join('file:/', extensionContext.globalStoragePath, 'cloudformation.schema.json')
     )
-    SAM_SCHEMA_PATH = normalizeSeparator(path.join('file:/', extensionContext.globalStoragePath, 'sam.schema.json'))
+    samSchemaPath = normalizeSeparator(path.join('file:/', extensionContext.globalStoragePath, 'sam.schema.json'))
     let manifest: string | undefined
     try {
         const manifestFetcher = new HttpResourceFetcher(MANIFEST_URL, { showUrl: true })
@@ -800,13 +802,13 @@ export async function refreshSchemas(extensionContext: vscode.ExtensionContext):
         const details = getManifestDetails(manifest)
 
         await getRemoteOrCachedFile({
-            filepath: CFN_SCHEMA_PATH,
+            filepath: cfnSchemaPath,
             version: details.version,
             url: details.cfnUrl,
             cacheKey: 'cfnSchemaVersion',
         })
         await getRemoteOrCachedFile({
-            filepath: SAM_SCHEMA_PATH,
+            filepath: samSchemaPath,
             version: details.version,
             url: details.samUrl,
             cacheKey: 'samSchemaVersion',
@@ -826,17 +828,17 @@ export async function refreshSchemas(extensionContext: vscode.ExtensionContext):
 export async function updateYamlSchemasArray(
     path: string,
     type: 'cfn' | 'sam' | 'none',
-    testOverrides?: {
+    opts?: {
         skipExtensionLoad?: boolean
         config?: WorkspaceConfiguration | undefined
         paths?: { cfnSchema: string; samSchema: string }
     }
 ): Promise<void> {
-    if (!testOverrides?.skipExtensionLoad && !vscode.extensions.getExtension(VSCODE_EXTENSION_ID.yaml)) {
+    if (!opts?.skipExtensionLoad && !vscode.extensions.getExtension(VSCODE_EXTENSION_ID.yaml)) {
         return
     }
-    const paths = testOverrides?.paths ?? { cfnSchema: CFN_SCHEMA_PATH, samSchema: SAM_SCHEMA_PATH }
-    const config = testOverrides?.config ?? vscode.workspace.getConfiguration('yaml')
+    const paths = opts?.paths ?? { cfnSchema: cfnSchemaPath, samSchema: samSchemaPath }
+    const config = opts?.config ?? vscode.workspace.getConfiguration('yaml')
     const relPath = normalizeSeparator(getWorkspaceRelativePath(path) ?? path)
     const schemas: { [key: string]: string | string[] | undefined } | undefined = config.get('schemas')
     const deleteFroms: string[] = []
