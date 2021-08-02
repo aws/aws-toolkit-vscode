@@ -35,7 +35,7 @@ describe('presignedURLCommand', function () {
         node = new S3FileNode(bucket, { name: key, key: key, arn: 'arn' }, bucketNode, instance(s3))
     })
 
-    it("returns the uer's input time", async function () {
+    it("returns the user's input time", async function () {
         when(window.showInputBox(anything())).thenReturn(Promise.resolve('20'))
 
         const response = await promptTime(fileName, instance(window))
