@@ -40,7 +40,7 @@ export class GitExtension {
             return
         }
 
-        const whenActive = () => {
+        const onAfterActive = () => {
             this.api = ext.exports.enabled ? ext.exports.getAPI(1) : undefined
             ext.exports.onDidChangeEnablement(enabled => {
                 this.api = enabled ? ext.exports.getAPI(1) : undefined
@@ -48,9 +48,9 @@ export class GitExtension {
         }
 
         if (ext.isActive) {
-            whenActive()
+            onAfterActive()
         } else {
-            ext.activate().then(whenActive)
+            ext.activate().then(onAfterActive)
         }
     }
 
