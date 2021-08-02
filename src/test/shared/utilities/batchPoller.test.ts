@@ -22,7 +22,7 @@ describe('BatchPoller', function () {
 
     let clock: FakeTimers.InstalledClock
     let poller: BatchPoller<TestModel>
-    let fakePollEvents: PollEvent<TestModel>[]
+    let pollEvents: PollEvent<TestModel>[]
 
     let testInput: TestModel
     let listener: PollListener<TestModel>
@@ -39,8 +39,8 @@ describe('BatchPoller', function () {
 
     beforeEach(function () {
         clock.reset()
-        poller = new BatchPoller(listFakePollEvents, TEST_OPTIONS)
-        fakePollEvents = []
+        poller = new BatchPoller(listpollEvents, TEST_OPTIONS)
+        pollEvents = []
         resetFirstEvent()
     })
 
@@ -51,9 +51,9 @@ describe('BatchPoller', function () {
         listener = createListener(testEvent.id, model => (updatedModel = model))
     }
 
-    async function listFakePollEvents(): Promise<PollEvent<TestModel>[]> {
-        const events = [...fakePollEvents]
-        fakePollEvents = []
+    async function listpollEvents(): Promise<PollEvent<TestModel>[]> {
+        const events = [...pollEvents]
+        pollEvents = []
         return events
     }
 
@@ -61,16 +61,16 @@ describe('BatchPoller', function () {
         return { id, update, isPending: model => model === TRANSIENT }
     }
 
-    function registerFakeEvent(event: PollEvent<TestModel>, updateTime: number = 0): void {
+    function registerEvent(event: PollEvent<TestModel>, updateTime: number = 0): void {
         if (updateTime === 0) {
-            fakePollEvents.push(event)
+            pollEvents.push(event)
         } else {
-            setTimeout(() => fakePollEvents.push(event), updateTime)
+            setTimeout(() => pollEvents.push(event), updateTime)
         }
     }
 
     it(`requests events after ${TEST_OPTIONS.baseTime} (base time) milliseconds`, async function () {
-        registerFakeEvent(testEvent)
+        registerEvent(testEvent)
         poller.addPollListener(listener)
 
         await clock.tickAsync(TEST_OPTIONS.baseTime)
@@ -80,16 +80,16 @@ describe('BatchPoller', function () {
     it(`waits for longer periods of time after each collision`, async function () {
         poller.addPollListener(listener)
 
-        registerFakeEvent({ id: 0, model: TRANSIENT }, TEST_OPTIONS.baseTime)
-        registerFakeEvent({ id: 0, model: STEADY }, TEST_OPTIONS.baseTime * 10)
+        registerEvent({ id: 0, model: TRANSIENT }, TEST_OPTIONS.baseTime)
+        registerEvent({ id: 0, model: STEADY }, TEST_OPTIONS.baseTime * 10)
 
         await clock.tickAsync(TEST_OPTIONS.baseTime)
         assert.strictEqual(updatedModel, undefined)
-        assert.strictEqual(fakePollEvents.length, 1)
+        assert.strictEqual(pollEvents.length, 1)
 
         await clock.tickAsync(TEST_OPTIONS.baseTime * 2)
         assert.strictEqual(updatedModel, undefined)
-        assert.strictEqual(fakePollEvents.length, 0)
+        assert.strictEqual(pollEvents.length, 0)
 
         await clock.tickAsync(TEST_OPTIONS.baseTime * 20)
         assert.strictEqual(updatedModel, testInput)
@@ -99,11 +99,11 @@ describe('BatchPoller', function () {
         const firstEvent: PollEvent<TestModel> = { id: 0, model: TRANSIENT }
         const secondEvent: PollEvent<TestModel> = { id: 0, model: STEADY }
 
-        fakePollEvents.push(firstEvent)
+        pollEvents.push(firstEvent)
         poller.addPollListener(createListener(firstEvent.id, model => (updatedModel = model)))
 
         await clock.tickAsync(TEST_OPTIONS.baseTime)
-        fakePollEvents.push(secondEvent)
+        pollEvents.push(secondEvent)
 
         await clock.tickAsync(TEST_OPTIONS.baseTime)
         assert.strictEqual(updatedModel, undefined)
@@ -118,11 +118,11 @@ describe('BatchPoller', function () {
         const finalEvent1 = { id: 0, model: STEADY }
         const finalEvent2 = { id: 1, model: STEADY }
 
-        registerFakeEvent({ id: 0, model: TRANSIENT })
-        registerFakeEvent({ id: 1, model: TRANSIENT })
-        registerFakeEvent(finalEvent1, TEST_OPTIONS.baseTime)
-        registerFakeEvent({ id: 1, model: TRANSIENT }, TEST_OPTIONS.baseTime)
-        registerFakeEvent(finalEvent2, TEST_OPTIONS.baseTime * 4)
+        registerEvent({ id: 0, model: TRANSIENT })
+        registerEvent({ id: 1, model: TRANSIENT })
+        registerEvent(finalEvent1, TEST_OPTIONS.baseTime)
+        registerEvent({ id: 1, model: TRANSIENT }, TEST_OPTIONS.baseTime)
+        registerEvent(finalEvent2, TEST_OPTIONS.baseTime * 4)
 
         poller.addPollListener(createListener(finalEvent1.id, model => (updatedModel1 = model)))
         poller.addPollListener(createListener(finalEvent2.id, model => (updatedModel2 = model)))
@@ -143,8 +143,8 @@ describe('BatchPoller', function () {
         let updatedModel2: TestModel | undefined
         const finalEvent1 = { id: 0, model: STEADY }
         const finalEvent2 = { id: 1, model: STEADY }
-        registerFakeEvent(finalEvent1)
-        registerFakeEvent(finalEvent2, TEST_OPTIONS.baseTime)
+        registerEvent(finalEvent1)
+        registerEvent(finalEvent2, TEST_OPTIONS.baseTime)
 
         poller.addPollListener(createListener(finalEvent1.id, model => (updatedModel1 = model)))
 
@@ -172,14 +172,14 @@ describe('BatchPoller', function () {
         }
 
         it('can remove listener directly', async function () {
-            registerFakeEvent(testEvent)
+            registerEvent(testEvent)
             poller.addPollListener(listener)
 
             await checkRemoveListener(listener)
         })
 
         it('can remove listener by id', async function () {
-            registerFakeEvent(testEvent)
+            registerEvent(testEvent)
             poller.addPollListener(listener)
 
             await checkRemoveListener(listener.id)
@@ -190,9 +190,9 @@ describe('BatchPoller', function () {
             const otherEvent: PollEvent<TestModel> = { id: 1, model: TRANSIENT, retryAfter: TEST_OPTIONS.baseTime * 5 }
             const otherListener = createListener(otherEvent.id, model => (otherModel = model))
 
-            registerFakeEvent(testEvent)
-            registerFakeEvent(otherEvent)
-            registerFakeEvent({ id: 1, model: STEADY }, TEST_OPTIONS.baseTime * 4)
+            registerEvent(testEvent)
+            registerEvent(otherEvent)
+            registerEvent({ id: 1, model: STEADY }, TEST_OPTIONS.baseTime * 4)
 
             poller.addPollListener(listener)
             poller.addPollListener(otherListener)
