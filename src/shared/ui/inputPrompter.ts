@@ -112,7 +112,7 @@ export class InputBoxPrompter extends Prompter<string> {
                 }
             })
             this.inputBox.show()
-        }).finally(() => this.inputBox.hide())
+        }).finally(() => this.inputBox.dispose())
 
         return await promptPromise
     }

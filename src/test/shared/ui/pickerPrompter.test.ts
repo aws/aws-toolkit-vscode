@@ -182,23 +182,24 @@ describe('FilterBoxQuickPickPrompter', function () {
         const input = '456'
 
         picker.onDidChangeActive(items => {
-            if (picker.items.length !== 6) {
+            if (picker.items.length === 5) {
                 picker.value = input
                 picker.fireOnDidChangeValue(input)
                 return
             }
 
-            picker.selectedItems = [items[0]]
+            if (items[0].description !== undefined) {
+                picker.selectedItems = [items[0]]
+            }
         })
 
-        const result = loadAndPrompt()
         const newItems = [{ label: 'item4', data: 3 }]
         const newItemsPromise = Promise.resolve(newItems)
 
-        testPrompter.loadItems(newItems)
-        testPrompter.loadItems(newItemsPromise)
+        await testPrompter.loadItems(newItems)
+        await testPrompter.loadItems(newItemsPromise)
 
-        assert.strictEqual(await result, Number(input))
+        assert.strictEqual(await loadAndPrompt(), Number(input))
     })
 
     it('can accept custom input as a last response', async function () {

@@ -123,7 +123,7 @@ function promptUser<T>(picker: DataQuickPick<T>): Promise<DataQuickPickItem<T>[]
             }
         })
         picker.show()
-    }).finally(() => picker.hide())
+    }).finally(() => picker.dispose())
 }
 
 export class QuickPickPrompter<T> extends Prompter<T> {
