@@ -169,6 +169,7 @@ describe('FilterBoxQuickPickPrompter', function () {
             if (items[0].description !== undefined) {
                 picker.selectedItems = [items[0]]
             } else {
+                // Note: VSC 1.42 will _not_ fire the change value event when setting `picker.value`
                 picker.value = input
                 picker.fireOnDidChangeValue(input)
             }
