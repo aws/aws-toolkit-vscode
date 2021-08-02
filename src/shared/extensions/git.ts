@@ -13,10 +13,10 @@ import { getLogger } from '../logger/logger'
 /**
  * Wrapper around the internal VS Code Git extension.
  *
- * The Git extension is a special case in that its API has an additional 'enablement' mechanism where-in
- * the extension may be active, but its features have intentionally been disabled by the user. The current
- * implementation 'silenty' (it still logs something) fails when the API is disabled since the common case
- * uses these methods supplementary to other functionality rather than as a dependency. A caller can always
+ * The Git extension is a special case in that its {@link GitTypes.API API} has an additional 'enablement'
+ * mechanism where-in the extension may be active, but its features have intentionally been disabled by the user.
+ * The current implementation 'silenty' (it still logs something) fails when the API is disabled since the common
+ * case uses these methods supplementary to other functionality rather than as a dependency. A caller can always
  * check the `enabled` field to decisively determine if the extension is active.
  */
 export class GitExtension {
@@ -26,11 +26,7 @@ export class GitExtension {
         return this.api !== undefined
     }
 
-    constructor() {
-        this.init()
-    }
-
-    private init(): void {
+    public constructor() {
         const ext = vscode.extensions.getExtension<GitTypes.GitExtension>(VSCODE_EXTENSION_ID.git)
 
         if (ext === undefined) {
@@ -40,18 +36,12 @@ export class GitExtension {
             return
         }
 
-        const onAfterActive = () => {
+        ext.activate().then(() => {
             this.api = ext.exports.enabled ? ext.exports.getAPI(1) : undefined
             ext.exports.onDidChangeEnablement(enabled => {
                 this.api = enabled ? ext.exports.getAPI(1) : undefined
             })
-        }
-
-        if (ext.isActive) {
-            onAfterActive()
-        } else {
-            ext.activate().then(onAfterActive)
-        }
+        })
     }
 
     /**
