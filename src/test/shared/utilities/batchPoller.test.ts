@@ -4,7 +4,7 @@
  */
 
 import * as FakeTimers from '@sinonjs/fake-timers'
-import { BatchPoller, PollEvent, PollListener, BatchPollerOptions } from '../../../shared/utilities/BatchPoller'
+import { BatchPoller, PollEvent, PollListener, BatchPollerOptions } from '../../../shared/utilities/batchPoller'
 import * as assert from 'assert'
 
 type TestModel = string
