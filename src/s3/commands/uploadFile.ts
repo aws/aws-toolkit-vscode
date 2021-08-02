@@ -176,7 +176,15 @@ export async function uploadFileCommand(
 
     const requestNumber = await uploadWithProgress(uploadRequests, undefined, outputChannel)
 
-    showOutputMessage(`Succesfully uploaded ${requestNumber}/${uploadRequests.length} files`, outputChannel)
+    showOutputMessage(
+        localize(
+            'AWS.s3.uploadFile.success',
+            'Succesfully uploaded {0}/{1} files',
+            requestNumber,
+            uploadRequests.length
+        ),
+        outputChannel
+    )
 
     recordAwsRefreshExplorer()
     commands.execute('aws.refreshAwsExplorer')
@@ -233,12 +241,27 @@ async function uploadWithProgress(
             )
             requestNumber += 1
             showOutputMessage(
-                `${requestNumber}/${uploadRequests.length} files uploaded to ${destinationNoFile}`,
+                localize(
+                    'AWS.s3.uploadFile.progressReport',
+                    '{0}/{1} files uploaded to {3}',
+                    requestNumber,
+                    uploadRequests.length,
+                    destinationNoFile
+                ),
                 outputChannel
             )
             telemetry.recordS3UploadObject({ result: 'Succeeded' })
         } catch (error) {
-            showOutputMessage(`File ${fileName} failed to upload error: ${error.message}`, outputChannel)
+            showOutputMessage(
+                localize(
+                    'AWS.s3.uploadFile.error.general',
+                    'File {0} failed to upload error: {1}',
+                    fileName,
+                    error.message
+                ),
+                outputChannel
+            )
+
             telemetry.recordS3UploadObject({ result: 'Failed' })
         }
     }
