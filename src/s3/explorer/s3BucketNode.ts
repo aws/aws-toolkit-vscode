@@ -99,7 +99,8 @@ export class S3BucketNode extends AWSTreeNodeBase implements AWSResourceNode, Lo
      * See {@link S3Client.uploadFile}.
      */
     public async uploadFile(request: UploadFileRequest): Promise<void> {
-        return this.s3.uploadFile(request)
+        const managedUpload = await this.s3.uploadFile(request)
+        await managedUpload.promise()
     }
 
     /**

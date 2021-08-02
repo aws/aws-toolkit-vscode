@@ -5,9 +5,13 @@
 
 import * as assert from 'assert'
 import * as vscode from 'vscode'
-import * as path from 'path'
 import { S3 } from 'aws-sdk'
-import { FileSizeBytes, getFileToUpload, promptUserForBucket, uploadFileCommand } from '../../../s3/commands/uploadFile'
+import {
+    FileSizeBytes,
+    getFilesToUpload,
+    promptUserForBucket,
+    uploadFileCommand,
+} from '../../../s3/commands/uploadFile'
 import { S3Node } from '../../../s3/explorer/s3Nodes'
 import { S3BucketNode } from '../../../s3/explorer/s3BucketNode'
 import { S3Client } from '../../../shared/clients/s3Client'
@@ -23,17 +27,18 @@ describe('uploadFileCommand', function () {
     const key = 'file.jpg'
     const sizeBytes = 16
     const fileLocation = vscode.Uri.file('/file.jpg')
-    const fileName = path.basename(fileLocation.fsPath)
     const statFile: FileSizeBytes = _file => sizeBytes
     let outputChannel: MockOutputChannel
     let s3: S3Client
     let bucketNode: S3BucketNode
     let window: FakeWindow
     let getBucket: (s3client: S3Client, window?: Window) => Promise<S3.Bucket | string>
-    let getFile: (document?: vscode.Uri, window?: Window) => Promise<vscode.Uri | undefined>
+    let getFile: (document?: vscode.Uri, window?: Window) => Promise<vscode.Uri[] | undefined>
     let commands: Commands
+    let mockedUpload: S3.ManagedUpload
 
     beforeEach(function () {
+        mockedUpload = mock()
         s3 = mock()
         commands = new FakeCommands()
         bucketNode = new S3BucketNode(
@@ -59,13 +64,14 @@ describe('uploadFileCommand', function () {
         })
 
         it('uploads successfully', async function () {
-            when(s3.uploadFile(anything())).thenResolve()
+            when(s3.uploadFile(anything())).thenResolve(instance(mockedUpload))
+            when(mockedUpload.promise()).thenResolve()
 
             window = new FakeWindow({ dialog: { openSelections: [fileLocation] } })
 
             getFile = (document, window) => {
                 return new Promise((resolve, reject) => {
-                    resolve(fileLocation)
+                    resolve([fileLocation])
                 })
             }
 
@@ -87,15 +93,11 @@ describe('uploadFileCommand', function () {
             assert.strictEqual(uploadFileRequest.key, key)
             assert.strictEqual(uploadFileRequest.fileLocation, fileLocation)
 
-            uploadFileRequest.progressListener!(4) // +25% (+4/16)
-
-            assert.deepStrictEqual(window.progress.reported, [{ increment: 25 }])
-            assert.strictEqual(window.progress.options?.location, vscode.ProgressLocation.Notification)
-            assert.strictEqual(window.progress.options?.title, 'Uploading file.jpg...')
-
             assert.deepStrictEqual(outputChannel.lines, [
-                `Uploading file ${fileName} to s3://bucket-name/file.jpg`,
-                `Successfully uploaded file ${fileName} to bucket-name`,
+                'Uploading file file.jpg to s3://bucket-name/file.jpg',
+                'Successfully uploaded file.jpg',
+                '1/1 file(s) uploaded to s3://bucket-name',
+                'Successfully uploaded 1/1 file(s)',
             ])
         })
 
@@ -130,7 +132,7 @@ describe('uploadFileCommand', function () {
             commands = new FakeCommands()
             getFile = (document, window) => {
                 return new Promise((resolve, reject) => {
-                    resolve(fileLocation)
+                    resolve([fileLocation])
                 })
             }
 
@@ -142,7 +144,8 @@ describe('uploadFileCommand', function () {
         })
 
         it('uploads if user provides file and bucket', async function () {
-            when(s3.uploadFile(anything())).thenResolve()
+            when(s3.uploadFile(anything())).thenResolve(instance(mockedUpload))
+            when(mockedUpload.promise()).thenResolve()
 
             await uploadFileCommand(
                 instance(s3),
@@ -154,9 +157,12 @@ describe('uploadFileCommand', function () {
                 outputChannel,
                 commands
             )
+
             assert.deepStrictEqual(outputChannel.lines, [
-                `Uploading file ${fileName} to s3://bucket-name/file.jpg`,
-                `Successfully uploaded file ${fileName} to bucket-name`,
+                'Uploading file file.jpg to s3://bucket-name/file.jpg',
+                'Successfully uploaded file.jpg',
+                '1/1 file(s) uploaded to s3://bucket-name',
+                'Successfully uploaded 1/1 file(s)',
             ])
         })
 
@@ -203,7 +209,7 @@ describe('uploadFileCommand', function () {
 
     getFile = (document, window) => {
         return new Promise((resolve, reject) => {
-            resolve(fileLocation)
+            resolve([fileLocation])
         })
     }
 
@@ -214,7 +220,8 @@ describe('uploadFileCommand', function () {
     }
 
     it('successfully upload file', async function () {
-        when(s3.uploadFile(anything())).thenResolve()
+        when(s3.uploadFile(anything())).thenResolve(instance(mockedUpload))
+        when(mockedUpload.promise()).thenResolve()
 
         window = new FakeWindow({ dialog: { openSelections: [fileLocation] } })
 
@@ -229,27 +236,16 @@ describe('uploadFileCommand', function () {
             commands
         )
 
-        // eslint-disable-next-line @typescript-eslint/unbound-method
-        const [uploadFileRequest] = capture(s3.uploadFile).last()
-
-        assert.strictEqual(uploadFileRequest.bucketName, bucketName)
-        assert.strictEqual(uploadFileRequest.key, key)
-        assert.strictEqual(uploadFileRequest.fileLocation, fileLocation)
-
-        uploadFileRequest.progressListener!(4) // +25% (+4/16)
-
-        assert.deepStrictEqual(window.progress.reported, [{ increment: 25 }])
-        assert.strictEqual(window.progress.options?.location, vscode.ProgressLocation.Notification)
-        assert.strictEqual(window.progress.options?.title, 'Uploading file.jpg...')
-
         assert.deepStrictEqual(outputChannel.lines, [
-            `Uploading file ${fileName} to s3://bucket-name/file.jpg`,
-            `Successfully uploaded file ${fileName} to bucket-name`,
+            'Uploading file file.jpg to s3://bucket-name/file.jpg',
+            'Successfully uploaded file.jpg',
+            '1/1 file(s) uploaded to s3://bucket-name',
+            `Successfully uploaded 1/1 file(s)`,
         ])
     })
 
     it('errors when s3 call fails', async function () {
-        when(s3.uploadFile(anything())).thenReject(new Error('Expected failure'))
+        when(s3.uploadFile(anything())).thenThrow(new Error('Expected failure'))
 
         window = new FakeWindow({ dialog: { openSelections: [fileLocation] } })
         outputChannel = new MockOutputChannel()
@@ -264,7 +260,14 @@ describe('uploadFileCommand', function () {
             commands
         )
 
-        assert.ok(window.message.error?.includes('Failed to upload file'))
+        assert.deepStrictEqual(outputChannel.lines, [
+            'Uploading file file.jpg to s3://bucket-name/file.jpg',
+            `Failed to upload file file.jpg: Expected failure`,
+            '0/1 file(s) uploaded to s3://bucket-name',
+            'Successfully uploaded 0/1 file(s)',
+            'Failed uploads:',
+            `${key}`,
+        ])
     })
 })
 
@@ -291,14 +294,14 @@ describe('getFileToUpload', function () {
     })
 
     it('directly asks user for file if no active editor', async function () {
-        const response = await getFileToUpload(undefined, window, prompt)
-        assert.strictEqual(response, fileLocation)
+        const response = await getFilesToUpload(undefined, window, prompt)
+        assert.deepStrictEqual(response, [fileLocation])
     })
 
     it('Returns undefined if no file is selected on first prompt', async function () {
         window = new FakeWindow({ dialog: { openSelections: undefined } })
 
-        const response = await getFileToUpload(undefined, window, prompt)
+        const response = await getFilesToUpload(undefined, window, prompt)
         assert.strictEqual(response, undefined)
     })
 
@@ -306,22 +309,22 @@ describe('getFileToUpload', function () {
         const alreadyOpenedUri = vscode.Uri.file('/alreadyOpened.txt')
         selection.label = alreadyOpenedUri.fsPath
 
-        const response = await getFileToUpload(alreadyOpenedUri, window, prompt)
-        assert.strictEqual(response, alreadyOpenedUri)
+        const response = await getFilesToUpload(alreadyOpenedUri, window, prompt)
+        assert.deepStrictEqual(response, [alreadyOpenedUri])
     })
 
     it('opens the file prompt if a user selects to browse for more files', async function () {
         selection.label = 'Browse for more files...'
 
-        const response = await getFileToUpload(fileLocation, window, prompt)
-        assert.strictEqual(response, fileLocation)
+        const response = await getFilesToUpload(fileLocation, window, prompt)
+        assert.deepStrictEqual(response, [fileLocation])
     })
 
     it('returns undefined if the user does not select a file through the file browser', async function () {
         selection.label = 'Browse for more files...'
         window = new FakeWindow({ dialog: { openSelections: undefined } })
 
-        const response = await getFileToUpload(fileLocation, window, prompt)
+        const response = await getFilesToUpload(fileLocation, window, prompt)
 
         assert.strictEqual(response, undefined)
     })

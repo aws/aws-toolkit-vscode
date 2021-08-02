@@ -570,7 +570,7 @@ export class MockS3Client implements S3Client {
     public readonly listFiles: (request: ListFilesRequest) => Promise<ListFilesResponse>
     public readonly createFolder: (request: CreateFolderRequest) => Promise<CreateFolderResponse>
     public readonly downloadFile: (request: DownloadFileRequest) => Promise<void>
-    public readonly uploadFile: (request: UploadFileRequest) => Promise<void>
+    public readonly uploadFile: (request: UploadFileRequest) => Promise<S3.ManagedUpload>
     public readonly listObjectVersions: (request: ListObjectVersionsRequest) => Promise<ListObjectVersionsResponse>
     public readonly listObjectVersionsIterable: (
         request: ListObjectVersionsRequest
@@ -589,7 +589,9 @@ export class MockS3Client implements S3Client {
         createFolder = async (request: CreateFolderRequest) => ({ folder: { name: '', path: '', arn: '' } }),
         downloadFile = async (request: DownloadFileRequest) => {},
         getSignedUrl = async (request: SignedUrlRequest) => '',
-        uploadFile = async (request: UploadFileRequest) => {},
+        uploadFile = async (request: UploadFileRequest) => {
+            return new S3.ManagedUpload({})
+        },
         listObjectVersions = async (request: ListObjectVersionsRequest) => ({ objects: [] }),
         listObjectVersionsIterable = (request: ListObjectVersionsRequest) => asyncGenerator([]),
         deleteObject = async (request: DeleteObjectRequest) => {},
@@ -604,7 +606,7 @@ export class MockS3Client implements S3Client {
         createFolder?(request: CreateFolderRequest): Promise<CreateFolderResponse>
         downloadFile?(request: DownloadFileRequest): Promise<void>
         getSignedUrl?(request: SignedUrlRequest): Promise<string>
-        uploadFile?(request: UploadFileRequest): Promise<void>
+        uploadFile?(request: UploadFileRequest): Promise<S3.ManagedUpload>
         listObjectVersions?(request: ListObjectVersionsRequest): Promise<ListObjectVersionsResponse>
         listObjectVersionsIterable?(
             request: ListObjectVersionsRequest
