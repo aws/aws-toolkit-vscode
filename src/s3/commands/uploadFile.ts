@@ -16,7 +16,7 @@ import * as telemetry from '../../shared/telemetry/telemetry'
 import { readablePath } from '../util'
 import { progressReporter } from '../progressReporter'
 import { localize } from '../../shared/utilities/vsCodeUtils'
-import { showErrorWithLogs, showOutputMessage } from '../../shared/utilities/messages'
+import { showOutputMessage } from '../../shared/utilities/messages'
 import { createQuickPick, promptUser, verifySinglePickerOutput } from '../../shared/ui/picker'
 import { addCodiconToString } from '../../shared/utilities/textUtilities'
 import { S3Client } from '../../shared/clients/s3Client'
@@ -243,7 +243,7 @@ async function uploadWithProgress(
             showOutputMessage(
                 localize(
                     'AWS.s3.uploadFile.progressReport',
-                    '{0}/{1} files uploaded to {3}',
+                    '{0}/{1} files uploaded to {2}',
                     requestNumber,
                     uploadRequests.length,
                     destinationNoFile
