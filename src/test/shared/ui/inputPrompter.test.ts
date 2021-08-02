@@ -8,7 +8,7 @@ import { createBackButton, QuickInputButton } from '../../../shared/ui/buttons'
 import { WIZARD_BACK } from '../../../shared/wizards/wizard'
 import * as vscode from 'vscode'
 import { createInputBox, DEFAULT_INPUTBOX_OPTIONS, InputBoxPrompter } from '../../../shared/ui/inputPrompter'
-import { TestInputBox } from './input.test' // TestInputBox will eventually be apart of this file
+import { exposeEmitters, ExposeEmitters } from '../vscode/testUtils'
 
 describe('createInputBox', function () {
     it('creates a new prompter with options', async function () {
@@ -27,17 +27,23 @@ describe('createInputBox', function () {
 })
 
 describe('InputBoxPrompter', function () {
-    let inputBox: TestInputBox
+    let inputBox: ExposeEmitters<vscode.InputBox>
     let testPrompter: InputBoxPrompter
 
     beforeEach(function () {
-        inputBox = new TestInputBox()
+        inputBox = exposeEmitters(vscode.window.createInputBox())
         testPrompter = new InputBoxPrompter(inputBox)
     })
 
+    /** Sets the input box's value then fires an accept event */
+    function accept(value: string): void {
+        inputBox.value = value
+        inputBox.fireOnDidAccept()
+    }
+
     it('accepts user input', async function () {
         const result = testPrompter.prompt()
-        inputBox.accept('input')
+        accept('input')
         assert.strictEqual(await result, 'input')
     })
 
@@ -49,7 +55,7 @@ describe('InputBoxPrompter', function () {
 
     it('returns last response', async function () {
         const result = testPrompter.prompt()
-        inputBox.accept('input')
+        accept('input')
         assert.strictEqual(await result, 'input')
         assert.strictEqual(testPrompter.lastResponse, 'input')
     })
@@ -65,7 +71,7 @@ describe('InputBoxPrompter', function () {
             inputBox.buttons = [back]
 
             const result = testPrompter.prompt()
-            inputBox.pressButton(back)
+            inputBox.fireOnDidTriggerButton(back)
 
             assert.strictEqual(await result, WIZARD_BACK)
         })
@@ -78,7 +84,7 @@ describe('InputBoxPrompter', function () {
             inputBox.buttons = [button]
 
             const result = testPrompter.prompt()
-            inputBox.pressButton(button)
+            inputBox.fireOnDidTriggerButton(button)
 
             assert.strictEqual(await result, 'answer')
         })
@@ -91,9 +97,8 @@ describe('InputBoxPrompter', function () {
             inputBox.buttons = [button]
 
             const result = testPrompter.prompt()
-            inputBox.pressButton(button)
-            assert.ok(inputBox.isShowing)
-            inputBox.accept('answer')
+            inputBox.fireOnDidTriggerButton(button)
+            accept('answer')
 
             assert.strictEqual(await result, 'answer')
         })
@@ -103,10 +108,9 @@ describe('InputBoxPrompter', function () {
         it('will not accept input if validation message is showing', async function () {
             const result = testPrompter.prompt()
             inputBox.validationMessage = 'bad input'
-            inputBox.accept('hello')
-            assert.ok(inputBox.isShowing)
+            accept('hello')
             inputBox.validationMessage = undefined
-            inputBox.accept('goodbye')
+            accept('goodbye')
 
             assert.strictEqual(await result, 'goodbye')
         })
@@ -116,13 +120,13 @@ describe('InputBoxPrompter', function () {
             testPrompter.setValidation(validateInput)
             const result = testPrompter.prompt()
 
-            inputBox.value = 'hello'
+            inputBox.fireOnDidChangeValue('hello')
             assert.strictEqual(inputBox.validationMessage, 'NaN')
-            inputBox.value = '100'
+            inputBox.fireOnDidChangeValue('100')
             assert.strictEqual(inputBox.validationMessage, undefined)
-            inputBox.validationMessage = 'this is not possible'
-            inputBox.accept()
-            assert.strictEqual(await result, '100')
+            accept('we cannot accept this message')
+            accept('200')
+            assert.strictEqual(await result, '200')
         })
     })
 })
