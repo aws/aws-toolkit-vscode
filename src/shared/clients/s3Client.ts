@@ -76,9 +76,9 @@ export interface DownloadFileRequest {
 export interface SignedUrlRequest {
     readonly bucketName: string
     readonly key: string
+    readonly time: number
     readonly operation?: string
     readonly body?: string
-    readonly time?: number
 }
 
 export interface UploadFileRequest {
@@ -272,8 +272,14 @@ export class DefaultS3Client {
         getLogger().debug('DownloadFile succeeded')
     }
 
+    /**
+     * Generates a presigned URL for the given file in S3.
+     * Takes a valid time option, which must be in seconds. This is the time the URL will be valid for
+     *
+     * @returns the string of the link to the presigned URL
+     */
     public async getSignedUrl(request: SignedUrlRequest): Promise<string> {
-        const time = request.time ? request.time : 15
+        const time = request.time
         const operation = request.operation ? request.operation : 'getObject'
         const s3 = await this.createS3()
 
@@ -283,7 +289,7 @@ export class DefaultS3Client {
             Body: request.body,
             Expires: time,
         })
-        return Promise.resolve(url)
+        return url
     }
 
     /**

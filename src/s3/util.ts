@@ -4,7 +4,6 @@
  */
 
 import { localize } from '../shared/utilities/vsCodeUtils'
-
 /**
  * Creates a readable path to an s3 bucket or object (e.g. s3://...).
  *
@@ -66,20 +65,6 @@ export function validateBucketName(name: string): string | undefined {
             'AWS.s3.validateBucketName.error.resemblesIpAddress',
             'Bucket name must not resemble an IP address'
         )
-    }
-
-    return undefined
-}
-
-export function validateTime(time: string): string | undefined {
-    const number = Number(time)
-
-    if (isNaN(Number(time)) || !Number.isSafeInteger(number)) {
-        return localize('AWS.s3.validateTime.error.notNumber', 'Input has to be an integer')
-    }
-
-    if (Number(time) < 0) {
-        return localize('AWS.s3.validateTime.error.negative', 'Input has to be a positive number')
     }
 
     return undefined

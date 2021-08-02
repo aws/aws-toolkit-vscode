@@ -10,24 +10,38 @@ import { Window } from '../../shared/vscode/window'
 import { addCodiconToString } from '../../shared/utilities/textUtilities'
 import { localize } from '../../shared/utilities/vsCodeUtils'
 import { COPY_TO_CLIPBOARD_INFO_TIMEOUT_MS } from '../../shared/constants'
-import { validateTime } from '../util'
+import { invalidNumber } from '../../shared/localizedText'
+import { getLogger } from '../../shared/logger/logger'
 
 export async function presignedURLCommand(
     node: S3FileNode,
     window = Window.vscode(),
     env = Env.vscode()
 ): Promise<void> {
-    const time = await promptTime(node.file.key, window)
+    let validTime: number
+    try {
+        validTime = await promptTime(node.file.key, window)
+    } catch (e) {
+        getLogger().error(e)
+        return
+    }
+
     const s3Client = node.s3
 
     const request: SignedUrlRequest = {
         bucketName: node.bucket.name,
         key: node.file.key,
+        time: validTime * 60,
         operation: 'getObject',
-        time: time,
     }
 
-    const url = await s3Client.getSignedUrl(request)
+    let url: string
+    try {
+        url = await s3Client.getSignedUrl(request)
+    } catch (e) {
+        window.showErrorMessage('Error creating the presigned URL. Make sure you have access to the requested file.')
+        return
+    }
 
     await copyUrl(url, window, env)
 }
@@ -35,7 +49,7 @@ export async function presignedURLCommand(
 export async function promptTime(fileName: string, window = Window.vscode()): Promise<number> {
     const timeStr = await window.showInputBox({
         value: '15',
-        prompt: localize('AWS.s3.promptTime.prompt', 'Please enter the valid time (in minutes) for ${0} URL', fileName),
+        prompt: localize('AWS.s3.promptTime.prompt', 'Please enter the valid time (in minutes) for {0} URL', fileName),
         placeHolder: localize('AWS.s3.promptTime.placeHolder', 'Defaults to 15 minutes'),
         validateInput: validateTime,
     })
@@ -43,7 +57,7 @@ export async function promptTime(fileName: string, window = Window.vscode()): Pr
     const time = Number(timeStr)
 
     if (isNaN(time) || time < 0) {
-        return 15
+        throw new Error(`promptTime: Invalid input by the user`)
     }
 
     return Promise.resolve(time)
@@ -58,4 +72,14 @@ export async function copyUrl(url: string, window = Window.vscode(), env = Env.v
         ),
         COPY_TO_CLIPBOARD_INFO_TIMEOUT_MS
     )
+}
+
+function validateTime(time: string): string | undefined {
+    const number = Number(time)
+
+    if (isNaN(Number(time)) || !Number.isSafeInteger(number) || Number(time) <= 0) {
+        return invalidNumber
+    }
+
+    return undefined
 }
