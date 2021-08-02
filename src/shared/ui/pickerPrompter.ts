@@ -177,7 +177,7 @@ export class QuickPickPrompter<T> extends Prompter<T> {
         this.quickPick.activeItems = this.quickPick.items.filter(item => selected.has(item.label))
 
         if (this.quickPick.activeItems.length === 0) {
-            this.quickPick.activeItems = this.quickPick.items.length > 0 ? [this.quickPick.items[0]] : []
+            this.quickPick.activeItems = [this.quickPick.items[0]]
         }
     }
 
