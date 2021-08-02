@@ -134,11 +134,7 @@ export class QuickPickPrompter<T> extends Prompter<T> {
             return
         }
 
-        this.quickPick.activeItems = this.quickPick.items.filter(item => item.label === response.label)
-
-        if (this.quickPick.activeItems.length === 0) {
-            this.quickPick.activeItems = [this.quickPick.items[0]]
-        }
+        this.selectItems(response)
     }
 
     public get lastResponse() {
@@ -213,18 +209,6 @@ export class QuickPickPrompter<T> extends Prompter<T> {
             picker.items = previous.concat(items)
             this.selectItems(...previousSelected)
             return Promise.resolve()
-        }
-    }
-
-    protected setLastResponse(picked: DataQuickPickItem<T> | undefined = this._lastPicked): void {
-        if (picked === undefined) {
-            return
-        }
-
-        this.quickPick.activeItems = this.quickPick.items.filter(item => item.label === picked.label)
-
-        if (this.quickPick.activeItems.length === 0) {
-            this.quickPick.activeItems = [this.quickPick.items[0]]
         }
     }
 }
