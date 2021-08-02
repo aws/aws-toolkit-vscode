@@ -35,22 +35,12 @@ describe('presignedURLCommand', function () {
         node = new S3FileNode(bucket, { name: key, key: key, arn: 'arn' }, bucketNode, instance(s3))
     })
 
-    describe('prompts user for valid time', function () {
-        it("returns the user's input time", async function () {
-            when(window.showInputBox(anything())).thenReturn(Promise.resolve('20'))
+    it("returns the uer's input time", async function () {
+        when(window.showInputBox(anything())).thenReturn(Promise.resolve('20'))
 
-            const response = await promptTime(fileName, instance(window))
+        const response = await promptTime(fileName, instance(window))
 
-            assert.strictEqual(response, 20)
-        })
-
-        it('returns 15 if user enters an invalid time', async function () {
-            when(window.showInputBox(anything())).thenReturn(Promise.resolve('invalid input'))
-
-            const response = await promptTime(fileName, instance(window))
-
-            assert.strictEqual(response, 15)
-        })
+        assert.strictEqual(response, 20)
     })
 
     it('calls S3 to get the URL', async function () {

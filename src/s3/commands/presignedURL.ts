@@ -10,7 +10,7 @@ import { Window } from '../../shared/vscode/window'
 import { addCodiconToString } from '../../shared/utilities/textUtilities'
 import { localize } from '../../shared/utilities/vsCodeUtils'
 import { COPY_TO_CLIPBOARD_INFO_TIMEOUT_MS } from '../../shared/constants'
-import { invalidNumber } from '../../shared/localizedText'
+import { invalidNumberWarning } from '../../shared/localizedText'
 import { getLogger } from '../../shared/logger/logger'
 
 export async function presignedURLCommand(
@@ -78,7 +78,7 @@ function validateTime(time: string): string | undefined {
     const number = Number(time)
 
     if (isNaN(Number(time)) || !Number.isSafeInteger(number) || Number(time) <= 0) {
-        return invalidNumber
+        return invalidNumberWarning
     }
 
     return undefined
