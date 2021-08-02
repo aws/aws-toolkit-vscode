@@ -157,9 +157,8 @@ describe('FilterBoxQuickPickPrompter', function () {
         const input = '123'
 
         picker.onDidChangeActive(items => {
-            if (picker.value === input) {
-                assert.strictEqual(items[0].description, input)
-                picker.selectedItems = items
+            if (items[0].description !== undefined) {
+                picker.selectedItems = [items[0]]
             } else {
                 picker.value = input
             }
@@ -180,7 +179,6 @@ describe('FilterBoxQuickPickPrompter', function () {
                 return
             }
 
-            assert.strictEqual(items[0].description, input)
             picker.selectedItems = [items[0]]
         })
 
@@ -195,14 +193,11 @@ describe('FilterBoxQuickPickPrompter', function () {
         const input = '123'
 
         picker.onDidChangeActive(items => {
-            picker.onDidChangeActive(items => {
-                if (picker.value === input) {
-                    assert.strictEqual(items[0].description, input)
-                    picker.selectedItems = items
-                } else {
-                    testPrompter.lastResponse = { data: CUSTOM_USER_INPUT, description: input } as any
-                }
-            })
+            if (items[0].description !== undefined) {
+                picker.selectedItems = [items[0]]
+            } else {
+                testPrompter.lastResponse = { data: CUSTOM_USER_INPUT, description: input } as any
+            }
         })
 
         assert.strictEqual(await result, Number(input))
