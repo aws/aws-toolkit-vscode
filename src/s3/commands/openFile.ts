@@ -33,8 +33,6 @@ export async function openFileEditModeCommand(
     } else {
         return await manager.openInEditMode(uriOrNode)
     }
-    //const size = uriOrNode instanceof S3FileNode ? uriOrNode.file.sizeBytes : fs.statSync(uriOrNode.fsPath).size
-    //const fileNode = uriOrNode instanceof S3FileNode ? uriOrNode : undefined
 }
 
 async function isFileSizeValid(
