@@ -133,6 +133,7 @@ describe('QuickPickPrompter', function () {
 })
 
 describe('FilterBoxQuickPickPrompter', function () {
+    const TEST_TIMEOUT = 5000
     const testItems = [
         { label: 'item1', data: 0 },
         { label: 'item2', data: 1 },
@@ -146,14 +147,21 @@ describe('FilterBoxQuickPickPrompter', function () {
     let picker: DataQuickPick<number>
     let testPrompter: FilterBoxQuickPickPrompter<number>
 
+    function addTimeout(): void {
+        setTimeout(picker.hide.bind(picker), TEST_TIMEOUT)
+    }
+
+    function loadAndPrompt(): ReturnType<typeof testPrompter.prompt> {
+        return testPrompter.loadItems(testItems).then(() => testPrompter.prompt())
+    }
+
     beforeEach(function () {
         picker = vscode.window.createQuickPick() as any
         testPrompter = new FilterBoxQuickPickPrompter(picker, filterBoxInputSettings)
-        testPrompter.loadItems(testItems)
+        addTimeout()
     })
 
     it('adds a new item based off the filter box', async function () {
-        const result = testPrompter.prompt()
         const input = '123'
 
         picker.onDidChangeActive(items => {
@@ -164,14 +172,11 @@ describe('FilterBoxQuickPickPrompter', function () {
             }
         })
 
-        assert.strictEqual(await result, Number(input))
+        assert.strictEqual(await loadAndPrompt(), Number(input))
     })
 
     it('can handle additional items being added', async function () {
-        const result = testPrompter.prompt()
         const input = '456'
-        const newItems = [{ label: 'item4', data: 3 }]
-        const newItemsPromise = Promise.resolve(newItems)
 
         picker.onDidChangeActive(items => {
             if (picker.items.length !== 6) {
@@ -182,6 +187,10 @@ describe('FilterBoxQuickPickPrompter', function () {
             picker.selectedItems = [items[0]]
         })
 
+        const result = loadAndPrompt()
+        const newItems = [{ label: 'item4', data: 3 }]
+        const newItemsPromise = Promise.resolve(newItems)
+
         testPrompter.loadItems(newItems)
         testPrompter.loadItems(newItemsPromise)
 
@@ -189,7 +198,6 @@ describe('FilterBoxQuickPickPrompter', function () {
     })
 
     it('can accept custom input as a last response', async function () {
-        const result = testPrompter.prompt()
         const input = '123'
 
         picker.onDidChangeActive(items => {
@@ -200,6 +208,6 @@ describe('FilterBoxQuickPickPrompter', function () {
             }
         })
 
-        assert.strictEqual(await result, Number(input))
+        assert.strictEqual(await loadAndPrompt(), Number(input))
     })
 })
