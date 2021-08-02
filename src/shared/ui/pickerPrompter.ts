@@ -225,10 +225,10 @@ export class FilterBoxQuickPickPrompter<T> extends QuickPickPrompter<T> {
     private onChangeValue?: vscode.Disposable
 
     public set lastResponse(response: DataQuickPickItem<T> | undefined) {
-        super.lastResponse = response
-
         if (this.isUserInput(response)) {
             this.quickPick.value = response.description ?? ''
+        } else {
+            super.lastResponse = response
         }
     }
 
