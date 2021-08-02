@@ -15,6 +15,7 @@ import {
     QuickPickPrompter,
     CUSTOM_USER_INPUT,
 } from '../../../shared/ui/pickerPrompter'
+import { exposeEmitters, ExposeEmitters } from '../vscode/testUtils'
 
 describe('createQuickPick', function () {
     const items: DataQuickPickItem<string>[] = [
@@ -144,7 +145,7 @@ describe('FilterBoxQuickPickPrompter', function () {
         transform: (resp: string) => Number.parseInt(resp),
     }
 
-    let picker: DataQuickPick<number>
+    let picker: ExposeEmitters<DataQuickPick<number>>
     let testPrompter: FilterBoxQuickPickPrompter<number>
 
     function addTimeout(): void {
@@ -156,7 +157,7 @@ describe('FilterBoxQuickPickPrompter', function () {
     }
 
     beforeEach(function () {
-        picker = vscode.window.createQuickPick() as any
+        picker = exposeEmitters(vscode.window.createQuickPick() as any)
         testPrompter = new FilterBoxQuickPickPrompter(picker, filterBoxInputSettings)
         addTimeout()
     })
@@ -169,6 +170,7 @@ describe('FilterBoxQuickPickPrompter', function () {
                 picker.selectedItems = [items[0]]
             } else {
                 picker.value = input
+                picker.fireOnDidChangeValue(input)
             }
         })
 
@@ -181,6 +183,7 @@ describe('FilterBoxQuickPickPrompter', function () {
         picker.onDidChangeActive(items => {
             if (picker.items.length !== 6) {
                 picker.value = input
+                picker.fireOnDidChangeValue(input)
                 return
             }
 
@@ -205,6 +208,7 @@ describe('FilterBoxQuickPickPrompter', function () {
                 picker.selectedItems = [items[0]]
             } else {
                 testPrompter.lastResponse = { data: CUSTOM_USER_INPUT, description: input } as any
+                picker.fireOnDidChangeValue(input)
             }
         })
 
