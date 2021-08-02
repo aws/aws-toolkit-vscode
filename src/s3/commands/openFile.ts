@@ -4,7 +4,6 @@
  */
 
 import * as vscode from 'vscode'
-import * as fs from 'fs'
 import { localize } from '../../shared/utilities/vsCodeUtils'
 import { Window } from '../../shared/vscode/window'
 import { S3FileNode } from '../explorer/s3FileNode'
@@ -28,15 +27,14 @@ export async function openFileEditModeCommand(
     if (uriOrNode instanceof S3FileNode) {
         size = uriOrNode.file.sizeBytes!
         fileNode = uriOrNode
+        if (await isFileSizeValid(size, fileNode)) {
+            await manager.openInEditMode(uriOrNode)
+        }
     } else {
-        size = fs.statSync(uriOrNode.fsPath).size
-        fileNode = undefined
+        return await manager.openInEditMode(uriOrNode)
     }
     //const size = uriOrNode instanceof S3FileNode ? uriOrNode.file.sizeBytes : fs.statSync(uriOrNode.fsPath).size
     //const fileNode = uriOrNode instanceof S3FileNode ? uriOrNode : undefined
-    if (await isFileSizeValid(size, fileNode)) {
-        await manager.openInEditMode(uriOrNode)
-    }
 }
 
 async function isFileSizeValid(
