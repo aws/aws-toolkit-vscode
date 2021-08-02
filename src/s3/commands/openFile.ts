@@ -4,7 +4,6 @@
  */
 
 import * as vscode from 'vscode'
-import * as fs from 'fs'
 import { localize } from '../../shared/utilities/vsCodeUtils'
 import { Window } from '../../shared/vscode/window'
 import { S3FileNode } from '../explorer/s3FileNode'
@@ -14,8 +13,8 @@ import { downloadFileAsCommand } from './downloadFileAs'
 const SIZE_LIMIT = 50 * Math.pow(10, 6)
 
 export async function openFileCommand(node: S3FileNode, manager: S3FileViewerManager): Promise<void> {
-    if (await isFileSizeValid(node.file.sizeBytes)) {
-        await manager.openInReadMode(node)
+    if (await isFileSizeValid(node.file.sizeBytes, node)) {
+        await manager.openTab(node)
     }
 }
 
@@ -28,15 +27,14 @@ export async function openFileEditModeCommand(
     if (uriOrNode instanceof S3FileNode) {
         size = uriOrNode.file.sizeBytes!
         fileNode = uriOrNode
+        if (await isFileSizeValid(size, fileNode)) {
+            await manager.openInEditMode(uriOrNode)
+        }
     } else {
-        size = fs.statSync(uriOrNode.fsPath).size
-        fileNode = undefined
+        return await manager.openInEditMode(uriOrNode)
     }
     //const size = uriOrNode instanceof S3FileNode ? uriOrNode.file.sizeBytes : fs.statSync(uriOrNode.fsPath).size
     //const fileNode = uriOrNode instanceof S3FileNode ? uriOrNode : undefined
-    if (await isFileSizeValid(size, fileNode)) {
-        await manager.openInEditMode(uriOrNode)
-    }
 }
 
 async function isFileSizeValid(
@@ -48,16 +46,19 @@ async function isFileSizeValid(
         return true
     }
     if (size > SIZE_LIMIT) {
-        const response = await window.showErrorMessage(
-            localize(
-                'AWS.s3.fileViewer.error.invalidSize',
-                'Files over 50MB currently not supported for file display, please use the "Download as..." function'
-            ),
-            'Download as..'
-        )
-        if (response === 'Download as..') {
-            await downloadFileAsCommand(fileNode!)
-        }
+        window
+            .showErrorMessage(
+                localize(
+                    'AWS.s3.fileViewer.error.invalidSize',
+                    'Files over 50MB currently not supported for file display, please use the "Download as..." function'
+                ),
+                localize('AWS.s3.button.downloadAs', 'Download as..')
+            )
+            .then(async response => {
+                if (response === 'Download as..') {
+                    await downloadFileAsCommand(fileNode!)
+                }
+            })
         return false
     }
 
