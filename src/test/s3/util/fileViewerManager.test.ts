@@ -183,7 +183,7 @@ describe('FileViewerManager', function () {
             charset: 'UTF-8',
         } as S3Tab
 
-        await fileViewerManager.openFileGivenMode(tab, tab.s3Uri, false, instance(mockedWorkspace))
+        await fileViewerManager.openFile(tab, tab.s3Uri, false, instance(mockedWorkspace))
 
         const [uri] = capture(mockedWorkspace.openTextDocument).last()
         assert.strictEqual((uri as vscode.Uri).fsPath, s3TempFile.fsPath)
@@ -220,7 +220,7 @@ describe('FileViewerManager', function () {
             charset: 'UTF-8',
         } as S3Tab
 
-        await fileViewerManager.openFileGivenMode(tab, tab.fileUri, true, instance(mockedWorkspace))
+        await fileViewerManager.openFile(tab, tab.fileUri, true, instance(mockedWorkspace))
 
         const [uri] = capture(mockedWorkspace.openTextDocument).last()
         assert.strictEqual((uri as vscode.Uri).fsPath, tempFile.fsPath)

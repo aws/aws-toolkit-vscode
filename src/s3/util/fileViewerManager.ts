@@ -103,18 +103,11 @@ export class S3FileViewerManager {
         editor?: vscode.TextEditor,
         workspace = vscode.workspace
     ): Promise<void> {
-        if (!editor) {
-            const doc = await workspace.openTextDocument(uri)
-            await this.window.showTextDocument(doc, {
-                preview: false,
-            })
-        } else {
-            await this.window.showTextDocument(editor.document, {
-                preview: false,
-                viewColumn: editor.viewColumn,
-            })
-        }
-
+        const doc = editor ? editor.document : await workspace.openTextDocument(uri)
+        await this.window.showTextDocument(doc, {
+            preview: false,
+            viewColumn: editor?.viewColumn,
+        })
         await vscode.commands.executeCommand('workbench.action.closeActiveEditor')
     }
 
@@ -137,10 +130,25 @@ export class S3FileViewerManager {
             localize('AWS.s3.fileViewer.info.fileKey', 'Retrieving and displaying file: {0}', fileNode.file.key),
             this.outputChannel
         )
-        const headResponse = await fileNode.s3.getHeadObject({
-            bucketName: fileNode.bucket.name,
-            key: fileNode.file.key,
-        })
+        let headResponse
+        try {
+            headResponse = await fileNode.s3.getHeadObject({
+                bucketName: fileNode.bucket.name,
+                key: fileNode.file.key,
+            })
+        } catch (e) {
+            getLogger().error('S3FileViewer: Error calling getHeadObject, error: ', e)
+        }
+
+        let type
+        let charset
+        if (headResponse) {
+            type = mime.contentType(headResponse.ContentType!)
+            charset = mime.charset(type as string)
+        } else {
+            type = ''
+            charset = ''
+        }
 
         const fileLocation = await this.getFile(fileNode)
         if (!fileLocation) {
@@ -149,16 +157,13 @@ export class S3FileViewerManager {
         getLogger().verbose(`S3FileViewer: File from s3 or temp to be opened is: ${fileLocation}`)
         const s3Uri = vscode.Uri.parse('s3:' + fileLocation.fsPath)
 
-        //before opening, ask user how to handle it if it is not text
-        const type = mime.contentType(headResponse.ContentType!)
-        const charset = mime.charset(type as string)
-
         if (charset != 'UTF-8') {
             const prompt = "Can't open this file type in read-only mode, do you want to try opening in edit?"
             const edit = 'Open in edit mode'
             const read = 'Try in read-only'
             if (await showConfirmationMessage({ prompt, confirm: edit, cancel: read }, this.window)) {
-                return await this.openInEditMode(fileNode)
+                await this.openInEditMode(fileNode)
+                return
             }
         }
 
@@ -171,13 +176,13 @@ export class S3FileViewerManager {
             tab =
                 this.activeTabs.get(pathToPreview) ??
                 ({ fileUri: fileLocation, s3Uri, editor: undefined, s3FileNode: fileNode, type, charset } as S3Tab)
-            await this.openFileGivenMode(tab, tab.s3Uri, true)
+            await this.openFile(tab, tab.s3Uri, true)
             this.toPreview = undefined
         } else {
             tab =
                 this.activeTabs.get(fileLocation.fsPath) ??
                 ({ fileUri: fileLocation, s3Uri, editor: undefined, s3FileNode: fileNode, type, charset } as S3Tab)
-            await this.openFileGivenMode(tab, tab.s3Uri, false)
+            await this.openFile(tab, tab.s3Uri, false)
         }
 
         this.activeTabs.set(fileLocation.fsPath, tab)
@@ -199,11 +204,10 @@ export class S3FileViewerManager {
                 'You are now editing an S3 file. Saved changes will be uploaded to your S3 bucket.'
             )
 
-            const ok = localize('AWS.s3.fileViewer.ok', 'Ok')
             const dontShow = localize('AWS.s3.fileViewer.button.dismiss', "Don't show this again")
             const help = localize('AWS.generic.message.learnMore', 'Learn more')
 
-            this.window.showWarningMessage(message, ok, dontShow, help).then(selection => {
+            this.window.showWarningMessage(message, dontShow, help).then(selection => {
                 if (selection === dontShow) {
                     this.promptOnEdit = false
                 }
@@ -218,7 +222,7 @@ export class S3FileViewerManager {
             if (this.activeTabs.has(uriOrNode.fsPath)) {
                 const tab = this.activeTabs.get(uriOrNode.fsPath)
 
-                await this.openFileGivenMode(tab!, tab!.fileUri, false)
+                await this.openFile(tab!, tab!.fileUri, false)
 
                 this.activeTabs.set(uriOrNode.fsPath, tab!)
             } else {
@@ -232,12 +236,26 @@ export class S3FileViewerManager {
         } else {
             //was activated from the explorer, need to get the file
             const fileNode = uriOrNode
-            const headResponse = await fileNode.s3.getHeadObject({
-                bucketName: fileNode.bucket.name,
-                key: fileNode.file.key,
-            })
-            const type = mime.contentType(headResponse.ContentType!)
-            const charset = mime.charset(type as string)
+
+            let headResponse
+            try {
+                headResponse = await fileNode.s3.getHeadObject({
+                    bucketName: fileNode.bucket.name,
+                    key: fileNode.file.key,
+                })
+            } catch (e) {
+                getLogger().error('S3FileViewer: Error calling getHeadObject, error: ', e)
+            }
+
+            let type
+            let charset
+            if (headResponse) {
+                type = mime.contentType(headResponse.ContentType!)
+                charset = mime.charset(type as string)
+            } else {
+                type = ''
+                charset = ''
+            }
 
             const fileLocation = await this.getFile(uriOrNode)
             if (!fileLocation) {
@@ -250,6 +268,8 @@ export class S3FileViewerManager {
                 tab = { fileUri: fileLocation, s3Uri, editor: undefined, s3FileNode: uriOrNode, type, charset } as S3Tab
             }
 
+            // Can't open images, etc. in VS Code through `openTextDocument`.
+            // HACK: Routing opening to VS Code's quickOpen functionality will use VS Code's built-in file handling
             if (charset != 'UTF-8') {
                 showOutputMessage(
                     'Opening non-text file, please press enter on quickpick to continue.',
@@ -257,7 +277,7 @@ export class S3FileViewerManager {
                 )
                 tab.editor = await vscode.commands.executeCommand('workbench.action.quickOpen', tab.fileUri.fsPath)
             } else {
-                tab.editor = await this.openFileGivenMode(tab, tab.fileUri, false)
+                tab.editor = await this.openFile(tab, tab.fileUri, false)
             }
 
             this.activeTabs.set(tab.fileUri.fsPath, tab)
@@ -273,7 +293,7 @@ export class S3FileViewerManager {
      * @param workspace
      * @returns
      */
-    public async openFileGivenMode(
+    public async openFile(
         tab: S3Tab,
         uri: vscode.Uri,
         preview: boolean,
@@ -563,13 +583,12 @@ export class S3FileViewerManager {
         try {
             await uploadWithProgress(request)
         } catch (e) {
-            //error with upload
+            getLogger().error(e.message)
             return false
         }
         return true
     }
 
-    //arn:aws:s3:::bucket-to-test-window/idk/learning.js
     public arnToFsPath(arn: string): Promise<string> {
         const s3Path = arn.split(':::')[1]
         const indexOfFileName = s3Path.lastIndexOf('/')
