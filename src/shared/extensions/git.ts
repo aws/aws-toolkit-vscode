@@ -93,20 +93,24 @@ export class GitExtension {
         //
         // TODO: make a promise 'pipe' function
         if (branches.length === 0) {
-            return promisify(execFile)(this.api.git.path, ['ls-remote', '--heads', remote.fetchUrl ?? ''])
-                .then(({ stdout }) => stdout.toString())
-                .then(output => output.split(/\r?\n/))
-                .then(output =>
-                    output.map(branch => ({
+            try {
+                const { stdout } = await promisify(execFile)(this.api.git.path, [
+                    'ls-remote',
+                    '--heads',
+                    remote.fetchUrl ?? '',
+                ])
+                return stdout
+                    .toString()
+                    .split(/\r?\n/)
+                    .map(branch => ({
                         name: branch.replace(/.*refs\/heads\//, 'head/'),
                         remote: remote.name,
                         type: GitTypes.RefType.RemoteHead,
                     }))
-                )
-                .catch(err => {
-                    getLogger().verbose(`git: failed to get branches for remote "${remote.fetchUrl}": %O`, err)
-                    return []
-                })
+            } catch (err) {
+                getLogger().verbose(`git: failed to get branches for remote "${remote.fetchUrl}": %O`, err)
+                return []
+            }
         }
 
         return branches
