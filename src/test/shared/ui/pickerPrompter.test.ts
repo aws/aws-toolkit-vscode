@@ -166,7 +166,7 @@ describe('FilterBoxQuickPickPrompter', function () {
         const input = '123'
 
         picker.onDidChangeActive(items => {
-            if (items[0].description !== undefined) {
+            if (items[0]?.description !== undefined) {
                 picker.selectedItems = [items[0]]
             } else {
                 // Note: VSC 1.42 will _not_ fire the change value event when setting `picker.value`
@@ -188,7 +188,7 @@ describe('FilterBoxQuickPickPrompter', function () {
                 return
             }
 
-            if (items[0].description !== undefined) {
+            if (items[0]?.description !== undefined) {
                 picker.selectedItems = [items[0]]
             }
         })
@@ -206,7 +206,7 @@ describe('FilterBoxQuickPickPrompter', function () {
         const input = '123'
 
         picker.onDidChangeActive(items => {
-            if (items[0].description !== undefined) {
+            if (items[0]?.description !== undefined) {
                 picker.selectedItems = [items[0]]
             } else {
                 testPrompter.lastResponse = { data: CUSTOM_USER_INPUT, description: input } as any
