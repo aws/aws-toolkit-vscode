@@ -72,7 +72,7 @@ export default class PreviewStateMachineCDKWizard extends MultiStepWizard<Previe
         if (CDK_APPLOCATIONS.length === 0) {
             CDK_APPLOCATIONS.push(
                 {
-                    label: 'No workspace found',
+                    label: '[No workspace found]',
                     cdkApplocation: undefined
                 }
             )
@@ -120,7 +120,7 @@ export default class PreviewStateMachineCDKWizard extends MultiStepWizard<Previe
         })
         if (TOP_LEVEL_NODES.length === 0) {
             TOP_LEVEL_NODES.push({
-                label: 'No cdk application',
+                label: `[No cdk application(s) found in workspace '${getCDKAppName(appLocation.cdkJsonPath)}']`,
                 topLevelNode: undefined
             })
         }
@@ -173,7 +173,7 @@ export default class PreviewStateMachineCDKWizard extends MultiStepWizard<Previe
 
         if (STATE_MACHINES.length === 0) {
             STATE_MACHINES.push({
-                label: `No state machine(s) in '${topLevelNode?.label}'`,
+                label: `[No state machine(s) found in cdk applciation'${topLevelNode?.label}']`,
                 stateMachineNode: undefined
             })
         }
