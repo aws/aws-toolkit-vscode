@@ -4,7 +4,13 @@
  */
 
 import * as FakeTimers from '@sinonjs/fake-timers'
-import { BatchPoller, PollEvent, PollListener, BatchPollerOptions } from '../../../shared/utilities/batchPoller'
+import {
+    BatchPoller,
+    PollEvent,
+    PollListener,
+    BatchPollerOptions,
+    exponentialBackoff,
+} from '../../../shared/utilities/batchPoller'
 import * as assert from 'assert'
 
 type TestModel = string
@@ -17,17 +23,98 @@ describe('BatchPoller', function () {
         name: 'test poller',
         baseTime: 5000,
         jitter: 0,
+        backoffFactor: 1,
         logging: false,
+        // For testing we will just use the most aggressive heuristic
+        // That is, always use the smallest retry after time
+        heuristic: deltas => Math.min(...deltas),
     }
+
+    const backoff = exponentialBackoff.bind(undefined, TEST_OPTIONS)
 
     let clock: FakeTimers.InstalledClock
     let poller: BatchPoller<TestModel>
     let pollEvents: PollEvent<TestModel>[]
 
-    let testInput: TestModel
-    let listener: PollListener<TestModel>
-    let updatedModel: TestModel | undefined
-    let testEvent: PollEvent<TestModel>
+    /** Returns the sum of backoff times: backoff(n) + backoff(n-1) + ... + backoff(0) */
+    function cumulativeBackoff(count: number): number {
+        return backoff(count) + (count > 0 ? cumulativeBackoff(count - 1) : 0)
+    }
+
+    async function listpollEvents(): Promise<PollEvent<TestModel>[]> {
+        const events = [...pollEvents]
+        pollEvents = []
+        return events
+    }
+
+    function registerEvent(event: PollEvent<TestModel>, updateTime: number = 0): void {
+        if (updateTime === 0) {
+            pollEvents.push(event)
+        } else {
+            setTimeout(() => pollEvents.push(event), updateTime)
+        }
+    }
+
+    function isTestModel(obj: any): obj is TestModel {
+        return typeof obj === 'string'
+    }
+
+    /** Testing construct that encapsulates a model with a listener. */
+    class Subscriber {
+        private static idCounter: number = 0
+        private id: number = Subscriber.idCounter++
+        private model!: TestModel
+        private snapshot: Map<number, TestModel> = new Map()
+        public listener: PollListener<TestModel>
+
+        public constructor(model: TestModel = TRANSIENT) {
+            this.listener = {
+                id: this.id,
+                update: this.update.bind(this),
+                isPending: model => model === TRANSIENT,
+            }
+            poller.addPollListener(this.listener)
+            this.update(model)
+        }
+
+        private update(model: TestModel): void {
+            this.model = model
+            this.snapshot.set(Date.now(), model)
+        }
+
+        /**
+         * Creates a new event offset from the current time.
+         */
+        public createEvent(event: Omit<PollEvent<TestModel>, 'id'> | TestModel, when: number = 0): void {
+            if (isTestModel(event)) {
+                registerEvent({ model: event, id: this.id }, Date.now() + when)
+            } else {
+                registerEvent({ ...event, id: this.id }, Date.now() + when)
+            }
+        }
+
+        /**
+         * Asserts the subscriber has the expected state at the specified time.
+         *
+         * If no time is provided, it uses the current state.
+         */
+        public assertState(expected: TestModel, when?: number): void {
+            const actual = when !== undefined ? this.snapshot.get(when) : this.model
+            assert.strictEqual(actual, expected)
+        }
+
+        public assertUpdatedWhen(when: number): void {
+            assert.strictEqual(this.snapshot.has(when), true)
+        }
+
+        public assertNotUpdatedWhen(when: number): void {
+            assert.strictEqual(this.snapshot.has(when), false)
+        }
+
+        public remove(): void {
+            poller.removePollListener(this.id)
+        }
+    }
 
     before(function () {
         clock = FakeTimers.install()
@@ -41,172 +128,94 @@ describe('BatchPoller', function () {
         clock.reset()
         poller = new BatchPoller(listpollEvents, TEST_OPTIONS)
         pollEvents = []
-        resetFirstEvent()
     })
 
-    function resetFirstEvent(): void {
-        testInput = STEADY
-        testEvent = { id: 0, model: testInput }
-        updatedModel = undefined
-        listener = createListener(testEvent.id, model => (updatedModel = model))
-    }
-
-    async function listpollEvents(): Promise<PollEvent<TestModel>[]> {
-        const events = [...pollEvents]
-        pollEvents = []
-        return events
-    }
-
-    function createListener(id: number | string, update: (model: TestModel) => void): PollListener<TestModel> {
-        return { id, update, isPending: model => model === TRANSIENT }
-    }
-
-    function registerEvent(event: PollEvent<TestModel>, updateTime: number = 0): void {
-        if (updateTime === 0) {
-            pollEvents.push(event)
-        } else {
-            setTimeout(() => pollEvents.push(event), updateTime)
-        }
-    }
+    it(`starts running when adding a new listener`, function () {
+        new Subscriber()
+        assert.strictEqual(poller.status, 'Running')
+    })
 
     it(`requests events after ${TEST_OPTIONS.baseTime} (base time) milliseconds`, async function () {
-        registerEvent(testEvent)
-        poller.addPollListener(listener)
+        const subscriber = new Subscriber()
+        subscriber.createEvent(STEADY)
 
-        await clock.tickAsync(TEST_OPTIONS.baseTime)
-        assert.strictEqual(updatedModel, testInput)
+        await clock.tickAsync(TEST_OPTIONS.baseTime * 100)
+
+        subscriber.assertState(STEADY)
+        subscriber.assertUpdatedWhen(TEST_OPTIONS.baseTime)
     })
 
     it(`waits for longer periods of time after each collision`, async function () {
-        poller.addPollListener(listener)
+        const subscriber = new Subscriber()
+        subscriber.createEvent(TRANSIENT, backoff(0))
+        subscriber.createEvent(STEADY, cumulativeBackoff(2))
 
-        registerEvent({ id: 0, model: TRANSIENT }, TEST_OPTIONS.baseTime)
-        registerEvent({ id: 0, model: STEADY }, TEST_OPTIONS.baseTime * 10)
+        await clock.tickAsync(cumulativeBackoff(3))
 
-        await clock.tickAsync(TEST_OPTIONS.baseTime)
-        assert.strictEqual(updatedModel, undefined)
-        assert.strictEqual(pollEvents.length, 1)
-
-        await clock.tickAsync(TEST_OPTIONS.baseTime * 2)
-        assert.strictEqual(updatedModel, undefined)
-        assert.strictEqual(pollEvents.length, 0)
-
-        await clock.tickAsync(TEST_OPTIONS.baseTime * 20)
-        assert.strictEqual(updatedModel, testInput)
-    })
-
-    it(`requests more events if listeners are still waiting`, async function () {
-        const firstEvent: PollEvent<TestModel> = { id: 0, model: TRANSIENT }
-        const secondEvent: PollEvent<TestModel> = { id: 0, model: STEADY }
-
-        pollEvents.push(firstEvent)
-        poller.addPollListener(createListener(firstEvent.id, model => (updatedModel = model)))
-
-        await clock.tickAsync(TEST_OPTIONS.baseTime)
-        pollEvents.push(secondEvent)
-
-        await clock.tickAsync(TEST_OPTIONS.baseTime)
-        assert.strictEqual(updatedModel, undefined)
-
-        await clock.tickAsync(TEST_OPTIONS.baseTime)
-        assert.strictEqual(updatedModel, secondEvent.model)
+        subscriber.assertNotUpdatedWhen(backoff(0))
+        subscriber.assertState(STEADY, cumulativeBackoff(2))
     })
 
     it(`handles multiple listeners`, async function () {
-        let updatedModel1: TestModel | undefined
-        let updatedModel2: TestModel | undefined
-        const finalEvent1 = { id: 0, model: STEADY }
-        const finalEvent2 = { id: 1, model: STEADY }
+        const subscriber1 = new Subscriber()
+        const subscriber2 = new Subscriber()
 
-        registerEvent({ id: 0, model: TRANSIENT })
-        registerEvent({ id: 1, model: TRANSIENT })
-        registerEvent(finalEvent1, TEST_OPTIONS.baseTime)
-        registerEvent({ id: 1, model: TRANSIENT }, TEST_OPTIONS.baseTime)
-        registerEvent(finalEvent2, TEST_OPTIONS.baseTime * 4)
+        subscriber1.createEvent(TRANSIENT)
+        subscriber1.createEvent(STEADY, backoff(0) / 2)
+        subscriber2.createEvent(TRANSIENT)
+        subscriber2.createEvent(TRANSIENT, backoff(0) / 2)
+        subscriber2.createEvent(STEADY, backoff(1) / 2 + backoff(0))
 
-        poller.addPollListener(createListener(finalEvent1.id, model => (updatedModel1 = model)))
-        poller.addPollListener(createListener(finalEvent2.id, model => (updatedModel2 = model)))
+        await clock.tickAsync(cumulativeBackoff(1))
 
-        await clock.tickAsync(TEST_OPTIONS.baseTime)
-        assert.strictEqual(updatedModel1, undefined)
+        subscriber1.assertUpdatedWhen(backoff(0))
+        subscriber2.assertNotUpdatedWhen(backoff(0))
+        subscriber2.assertUpdatedWhen(cumulativeBackoff(1))
 
-        await clock.tickAsync(TEST_OPTIONS.baseTime * 2)
-        assert.strictEqual(updatedModel1, finalEvent1.model)
-        assert.strictEqual(updatedModel2, undefined)
-
-        await clock.tickAsync(TEST_OPTIONS.baseTime * 2)
-        assert.strictEqual(updatedModel2, finalEvent2.model)
+        subscriber1.assertState(STEADY)
+        subscriber2.assertState(STEADY)
     })
 
     it(`pushes the timeout to at least the base time when adding a new listener`, async function () {
-        let updatedModel1: TestModel | undefined
-        let updatedModel2: TestModel | undefined
-        const finalEvent1 = { id: 0, model: STEADY }
-        const finalEvent2 = { id: 1, model: STEADY }
-        registerEvent(finalEvent1)
-        registerEvent(finalEvent2, TEST_OPTIONS.baseTime)
+        const offset = backoff(0) / 4
+        const subscriber1 = new Subscriber()
+        subscriber1.createEvent(STEADY, backoff(0))
 
-        poller.addPollListener(createListener(finalEvent1.id, model => (updatedModel1 = model)))
+        await clock.tickAsync(offset)
 
-        await clock.tickAsync(TEST_OPTIONS.baseTime / 2)
-        assert.strictEqual(updatedModel1, undefined)
-        assert.strictEqual(updatedModel2, undefined)
+        const subscriber2 = new Subscriber()
+        subscriber2.createEvent(STEADY, backoff(0))
 
-        poller.addPollListener(createListener(finalEvent2.id, model => (updatedModel2 = model)))
+        await clock.tickAsync(cumulativeBackoff(1))
 
-        await clock.tickAsync(TEST_OPTIONS.baseTime / 2)
-        assert.strictEqual(updatedModel1, undefined)
-        assert.strictEqual(updatedModel2, undefined)
-
-        await clock.tickAsync(TEST_OPTIONS.baseTime)
-        assert.strictEqual(updatedModel1, finalEvent1.model)
-        assert.strictEqual(updatedModel2, finalEvent2.model)
+        subscriber1.assertUpdatedWhen(backoff(0) + offset)
+        subscriber2.assertUpdatedWhen(cumulativeBackoff(1) + offset)
     })
 
-    describe(`remove listeners`, function () {
-        async function checkRemoveListener(listener: Parameters<BatchPoller['removePollListener']>[0]): Promise<void> {
-            await clock.tickAsync(TEST_OPTIONS.baseTime / 2)
-            poller.removePollListener(listener)
-            await clock.tickAsync(TEST_OPTIONS.baseTime / 2)
-            assert.strictEqual(updatedModel, undefined)
-        }
+    it('can remove listener directly', async function () {
+        const subscriber = new Subscriber()
+        subscriber.remove()
+        assert.strictEqual(poller.status, 'Stopped')
+    })
 
-        it('can remove listener directly', async function () {
-            registerEvent(testEvent)
-            poller.addPollListener(listener)
+    it('can remove listener by id', async function () {
+        const subscriber = new Subscriber()
+        poller.removePollListener(subscriber.listener)
+        assert.strictEqual(poller.status, 'Stopped')
+    })
 
-            await checkRemoveListener(listener)
-        })
+    it('regenerates timer when removing a listener', async function () {
+        const subscriber1 = new Subscriber()
+        const subscriber2 = new Subscriber()
 
-        it('can remove listener by id', async function () {
-            registerEvent(testEvent)
-            poller.addPollListener(listener)
+        subscriber1.createEvent(STEADY)
+        subscriber2.createEvent(STEADY)
 
-            await checkRemoveListener(listener.id)
-        })
+        await clock.tickAsync(backoff(0) / 2)
+        subscriber1.remove()
+        await clock.tickAsync(backoff(0))
 
-        it('regenerates timer when removing a listener', async function () {
-            let otherModel: TestModel | undefined
-            const otherEvent: PollEvent<TestModel> = { id: 1, model: TRANSIENT, retryAfter: TEST_OPTIONS.baseTime * 5 }
-            const otherListener = createListener(otherEvent.id, model => (otherModel = model))
-
-            registerEvent(testEvent)
-            registerEvent(otherEvent)
-            registerEvent({ id: 1, model: STEADY }, TEST_OPTIONS.baseTime * 4)
-
-            poller.addPollListener(listener)
-            poller.addPollListener(otherListener)
-
-            await clock.tickAsync((TEST_OPTIONS.baseTime * 3) / 2)
-
-            resetFirstEvent()
-            poller.addPollListener(listener)
-
-            await clock.tickAsync(TEST_OPTIONS.baseTime / 2)
-            await checkRemoveListener(listener)
-            await clock.tickAsync((TEST_OPTIONS.baseTime * 3) / 2)
-
-            assert.strictEqual(otherModel, undefined)
-        })
+        subscriber1.assertState(TRANSIENT)
+        subscriber2.assertUpdatedWhen((backoff(0) * 3) / 2)
     })
 })
