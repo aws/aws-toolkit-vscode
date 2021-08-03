@@ -1,5 +1,5 @@
 /*!
- * Copyright 2018-2019 Amazon.com, Inc. or its affiliates. All Rights Reserved.
+ * Copyright 2021 Amazon.com, Inc. or its affiliates. All Rights Reserved.
  * SPDX-License-Identifier: Apache-2.0
  */
 
@@ -18,24 +18,22 @@ import {
 } from '../../shared/wizards/multiStepWizard'
 import { CdkAppLocation } from '../explorer/cdkProject'
 import { detectCdkProjects } from '../explorer/detectCdkProjects'
-import { ConstructNode } from '../explorer/nodes/constructNode'
 import { AppNode } from '../explorer/nodes/appNode'
+import { ConstructNode } from '../explorer/nodes/constructNode'
 
 export interface CdkAppLocationPickItem {
     label: string,
-    cdkApplocation: CdkAppLocation
+    cdkApplocation: CdkAppLocation | undefined
 }
 
 export interface TopLevelNodePickItem {
     label: string,
-    topLevelNode: ConstructNode
+    topLevelNode: ConstructNode | undefined
 }
 
 export interface ConstructNodePickItem {
     label: string,
-    //stateMachineNode: ConstructNode | PlaceholderNode
-    stateMachineNode: ConstructNode
-    //stateMachineNode: string
+    stateMachineNode: ConstructNode | undefined
 }
 
 interface PreviewStateMachineCDKWizardResponse {
@@ -52,7 +50,6 @@ export default class PreviewStateMachineCDKWizard extends MultiStepWizard<Previe
 
     public constructor(promptUser?: typeof picker.promptUser) {
         super()
-
         this.promptUser = promptUser || picker.promptUser.bind(picker)
     }
 
@@ -63,10 +60,7 @@ export default class PreviewStateMachineCDKWizard extends MultiStepWizard<Previe
     private readonly SELECT_WORKSPACE_ACTION: WizardStep = async () => {
         const cdkAppLocations: CdkAppLocation[] = await detectCdkProjects(vscode.workspace.workspaceFolders)
 
-        //if (cdkAppLocations.length === 0) return wizardContinue(this.SELECT_WORKSPACE_ACTION)
-        if (cdkAppLocations.length === 0) return WIZARD_TERMINATE
-        //if (cdkAppLocations.length === 0) return WIZARD_GOBACK
-        //need to pick out only the applications containing a state machine 
+        //if (cdkAppLocations.length === 0) return WIZARD_TERMINATE
         const CDK_APPLOCATIONS: CdkAppLocationPickItem[] = []
         cdkAppLocations.map(obj => {
             CDK_APPLOCATIONS.push(
@@ -75,6 +69,14 @@ export default class PreviewStateMachineCDKWizard extends MultiStepWizard<Previe
                     cdkApplocation: obj
                 })
         })
+        if (CDK_APPLOCATIONS.length === 0) {
+            CDK_APPLOCATIONS.push(
+                {
+                    label: 'No workspace found',
+                    cdkApplocation: undefined
+                }
+            )
+        }
         const quickPick = picker.createQuickPick<CdkAppLocationPickItem>({
             options: {
                 ignoreFocusOut: true,
@@ -107,26 +109,28 @@ export default class PreviewStateMachineCDKWizard extends MultiStepWizard<Previe
         if (!appLocation) return WIZARD_GOBACK
         const appNode = new AppNode(appLocation!)
         const constructNodes = await appNode.getChildren()
-        if (constructNodes.length === 0) return WIZARD_TERMINATE
-        //filter placeholder nodes
-        //constructNodes = constructNodes.filter(i => i.contextValue === 'awsCdkConstructNode' || i.contextValue === 'awsCdkStateMachineNode' )
+        //if (constructNodes.length === 0) return WIZARD_TERMINATE
 
         const TOP_LEVEL_NODES: TopLevelNodePickItem[] = []
-        //const topLevelNodes: ConstructNode[] = []
         constructNodes.map(node => {
-            //topLevelNodes.push(node as ConstructNode)
             TOP_LEVEL_NODES.push({
                 label: node.label ? node.label : '',
                 topLevelNode: node as ConstructNode
             })
         })
+        if (TOP_LEVEL_NODES.length === 0) {
+            TOP_LEVEL_NODES.push({
+                label: 'No cdk application',
+                topLevelNode: undefined
+            })
+        }
 
         const quickPick = picker.createQuickPick({
             options: {
                 ignoreFocusOut: true,
                 title: localize(
                     'AWS.message.prompt.selectCDKStateMachine.placeholder',
-                    'Select State Machine'
+                    'Select CDK Application'
                 ),
                 step: 2,
                 totalSteps: 3,
@@ -146,25 +150,33 @@ export default class PreviewStateMachineCDKWizard extends MultiStepWizard<Previe
 
         this.topLevelNode = picker.verifySinglePickerOutput<TopLevelNodePickItem>(choices)
 
-        return this.topLevelNode ? wizardContinue(this.SELECT_STATE_MACHINE_ACTION) : WIZARD_GOBACK      
+        return this.topLevelNode ? wizardContinue(this.SELECT_STATE_MACHINE_ACTION) : WIZARD_GOBACK
     }
 
     private readonly SELECT_STATE_MACHINE_ACTION: WizardStep = async () => {
         const topLevelNode = this.topLevelNode ? this.topLevelNode : undefined
         const STATE_MACHINES: ConstructNodePickItem[] = []
 
-        const tester = await topLevelNode?.topLevelNode.getChildren()
-            if (tester) {
-                tester.map(async node => {
-                    //const tester = await node.getChildren()
-                    if (node.contextValue === 'awsCdkStateMachineNode') {
-                        STATE_MACHINES.push({
-                            label: node.label ? node.label : '',
-                            stateMachineNode: node as ConstructNode
-                        })
-                    }
-                })
-            }
+        const topLevelNodes = await topLevelNode?.topLevelNode?.getChildren()
+
+        if (topLevelNodes && topLevelNodes.length > 0) {
+            topLevelNodes.map(async node => {
+                //const topLevelNodes = await node.getChildren()
+                if (node.contextValue === 'awsCdkStateMachineNode') {
+                    STATE_MACHINES.push({
+                        label: node.label ? node.label : '',
+                        stateMachineNode: node as ConstructNode
+                    })
+                }
+            })
+        }
+
+        if (STATE_MACHINES.length === 0) {
+            STATE_MACHINES.push({
+                label: `No state machine(s) in '${topLevelNode?.label}'`,
+                stateMachineNode: undefined
+            })
+        }
 
         const quickPick = picker.createQuickPick({
             options: {

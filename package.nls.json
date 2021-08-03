@@ -10,6 +10,7 @@
     "Aws.cdk.explorerNode.noApps": "[No CDK Apps found in Workspaces]",
     "Aws.cdk.explorerNode.app.noConstructTree": "[Unable to load construct tree for this App. Run `cdk synth`]",
     "Aws.cdk.explorerNode.app.noStacks": "[No stacks in this App]",
+    "Aws.cdk.explorerNode.app.noStateMachines": "[No state machines in this App]",
     "Aws.cdk.explorerNode.app.renderStateMachineGraph": "Render graph",
     "AWS.cdk.renderStateMachineGraph.success": "Rendered graph {0}",
     "AWS.cdk.renderStateMachineGraph.error.general": "Failed to render graph {0}",
