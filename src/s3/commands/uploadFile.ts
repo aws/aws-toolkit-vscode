@@ -261,7 +261,7 @@ async function uploadWithProgress(
         )
 
         try {
-            const response = await window.withProgress(
+            await window.withProgress(
                 {
                     cancellable: true,
                     location: vscode.ProgressLocation.Notification,
