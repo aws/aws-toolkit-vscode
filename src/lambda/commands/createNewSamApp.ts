@@ -464,10 +464,7 @@ export async function writeToolkitReadme(
     getText: (path: string) => Promise<string> = readFileAsString
 ): Promise<boolean> {
     try {
-        const configString: string = configurations.reduce((acc, cur) => {
-            return `${acc}
-* ${cur.name}`
-        }, '')
+        const configString: string = configurations.reduce((acc, cur) => `${acc}\n* ${cur.name}`, '')
         const readme = (await getText(ext.context.asAbsolutePath(SAM_INIT_README_SOURCE)))
             .replace(/\$\{PRODUCTNAME\}/g, `${getIdeProperties().company} Toolkit For ${getIdeProperties().longName}`)
             .replace(/\$\{IDE\}/g, getIdeProperties().shortName)
