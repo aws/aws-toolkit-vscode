@@ -174,17 +174,56 @@ export async function uploadFileCommand(
         }
     }
 
-    const requestNumber = await uploadWithProgress(uploadRequests, undefined, outputChannel)
-
+    let failedRequests = await uploadWithProgress(uploadRequests, undefined, outputChannel)
+    const completedRequests = uploadRequests.length - failedRequests.length
     showOutputMessage(
         localize(
             'AWS.s3.uploadFile.success',
             'Succesfully uploaded {0}/{1} files',
-            requestNumber,
+            completedRequests,
             uploadRequests.length
         ),
         outputChannel
     )
+
+    while (failedRequests.length >= 0) {
+        const failedKeys = uploadRequests.map(request => request.key)
+        getLogger().error(`List of requests failed to upload:\n${failedRequests.toString().split(',').join('\n')}`)
+
+        if (failedRequests.length > 5) {
+            showOutputMessage(
+                localize(
+                    'AWS.s3.uploadFile.failed',
+                    'Failed uploads:\n{0}\nSee logs for full list of failed items',
+                    failedKeys.toString().split(',').slice(0, 5).join('\n')
+                ),
+                outputChannel
+            )
+        }
+        if (failedRequests.length > 0) {
+            showOutputMessage(
+                localize(
+                    'AWS.s3.uploadFile.failed',
+                    'Failed uploads:\n{0}',
+                    failedKeys.toString().split(',').join('\n')
+                ),
+
+                outputChannel
+            )
+        }
+
+        //at least one request failed
+        const response = await window.showErrorMessage(
+            `${failedRequests.length}/${uploadRequests.length} failed.`,
+            'Try again',
+            'Continue'
+        )
+        if (response === 'Try again') {
+            failedRequests = await uploadWithProgress(failedRequests)
+        } else {
+            break
+        }
+    }
 
     recordAwsRefreshExplorer()
     commands.execute('aws.refreshAwsExplorer')
@@ -208,8 +247,9 @@ async function uploadWithProgress(
     uploadRequests: UploadRequest[],
     window = Window.vscode(),
     outputChannel = ext.outputChannel
-): Promise<number> {
+): Promise<UploadRequest[]> {
     let requestNumber: number = 0
+    const failedRequests: UploadRequest[] = []
 
     for (const request of uploadRequests) {
         const fileName = path.basename(request.key)
@@ -221,8 +261,9 @@ async function uploadWithProgress(
         )
 
         try {
-            await window.withProgress(
+            const response = await window.withProgress(
                 {
+                    cancellable: true,
                     location: vscode.ProgressLocation.Notification,
                     title: localize(
                         'AWS.s3.uploadFile.progressTitle',
@@ -252,6 +293,7 @@ async function uploadWithProgress(
             )
             telemetry.recordS3UploadObject({ result: 'Succeeded' })
         } catch (error) {
+            failedRequests.push(request)
             showOutputMessage(
                 localize(
                     'AWS.s3.uploadFile.error.general',
@@ -266,7 +308,7 @@ async function uploadWithProgress(
         }
     }
 
-    return requestNumber
+    return failedRequests
 }
 
 interface BucketQuickPickItem extends vscode.QuickPickItem {
