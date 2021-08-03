@@ -50,7 +50,6 @@ export abstract class Prompter<T> {
                 result = transform
             }
         }
-
         return result
     }
 

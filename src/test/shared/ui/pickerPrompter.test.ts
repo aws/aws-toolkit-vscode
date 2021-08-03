@@ -92,8 +92,8 @@ describe('QuickPickPrompter', function () {
     })
 
     it('can select an item', async function () {
+        testPrompter.onDidShow(() => (picker.selectedItems = [testItems[0]]))
         const result = testPrompter.prompt()
-        picker.selectedItems = [testItems[0]]
         assert.strictEqual(await result, testItems[0].data)
     })
 
@@ -104,8 +104,8 @@ describe('QuickPickPrompter', function () {
     })
 
     it('returns last response', async function () {
+        testPrompter.onDidShow(() => (picker.selectedItems = [testItems[1]]))
         const result = testPrompter.prompt()
-        picker.selectedItems = [testItems[1]]
         assert.strictEqual(await result, testItems[1].data)
         assert.strictEqual(testPrompter.lastResponse, testItems[1])
     })
@@ -126,8 +126,8 @@ describe('QuickPickPrompter', function () {
                 picker.selectedItems = active
             }
         })
+        testPrompter.onDidShow(() => testPrompter.selectItems(testItems[2]))
         const result = testPrompter.prompt()
-        testPrompter.selectItems(testItems[2])
 
         assert.strictEqual(await result, testItems[2].data)
     })
@@ -149,7 +149,7 @@ describe('FilterBoxQuickPickPrompter', function () {
     let testPrompter: FilterBoxQuickPickPrompter<number>
 
     function addTimeout(): void {
-        setTimeout(picker.hide.bind(picker), TEST_TIMEOUT)
+        setTimeout(picker.dispose.bind(picker), TEST_TIMEOUT)
     }
 
     function loadAndPrompt(): ReturnType<typeof testPrompter.prompt> {
@@ -168,11 +168,13 @@ describe('FilterBoxQuickPickPrompter', function () {
         picker.onDidChangeActive(items => {
             if (items[0]?.description !== undefined) {
                 picker.selectedItems = [items[0]]
-            } else {
-                // Note: VSC 1.42 will _not_ fire the change value event when setting `picker.value`
-                picker.value = input
-                picker.fireOnDidChangeValue(input)
             }
+        })
+
+        testPrompter.onDidShow(() => {
+            // Note: VSC 1.42 will _not_ fire the change value event when setting `picker.value`
+            picker.value = input
+            picker.fireOnDidChangeValue(input)
         })
 
         assert.strictEqual(await loadAndPrompt(), Number(input))
@@ -182,22 +184,21 @@ describe('FilterBoxQuickPickPrompter', function () {
         const input = '456'
 
         picker.onDidChangeActive(items => {
-            if (picker.items.length === 5) {
-                picker.value = input
-                picker.fireOnDidChangeValue(input)
-                return
-            }
-
             if (items[0]?.description !== undefined) {
                 picker.selectedItems = [items[0]]
             }
         })
 
-        const newItems = [{ label: 'item4', data: 3 }]
-        const newItemsPromise = Promise.resolve(newItems)
+        testPrompter.onDidShow(async () => {
+            picker.value = input
+            picker.fireOnDidChangeValue(input)
 
-        await testPrompter.loadItems(newItems)
-        await testPrompter.loadItems(newItemsPromise)
+            const newItems = [{ label: 'item4', data: 3 }]
+            const newItemsPromise = Promise.resolve(newItems)
+
+            await testPrompter.loadItems(newItems)
+            await testPrompter.loadItems(newItemsPromise)
+        })
 
         assert.strictEqual(await loadAndPrompt(), Number(input))
     })
@@ -205,13 +206,14 @@ describe('FilterBoxQuickPickPrompter', function () {
     it('can accept custom input as a last response', async function () {
         const input = '123'
 
-        picker.onDidChangeActive(items => {
-            if (items[0]?.description !== undefined) {
-                picker.selectedItems = [items[0]]
-            } else {
-                testPrompter.lastResponse = { data: CUSTOM_USER_INPUT, description: input } as any
-                picker.fireOnDidChangeValue(input)
-            }
+        testPrompter.lastResponse = { data: CUSTOM_USER_INPUT, description: input } as any
+        picker.fireOnDidChangeValue(input)
+        testPrompter.onDidShow(() => {
+            picker.onDidChangeActive(active => {
+                if (active[0]?.description !== undefined) {
+                    picker.selectedItems = [active[0]]
+                }
+            })
         })
 
         assert.strictEqual(await loadAndPrompt(), Number(input))

@@ -108,7 +108,10 @@ export function createLabelQuickPick<T extends string>(
  * Sets up the QuickPick events. Reject is intentionally not used since errors should be handled through
  * control signals, not exceptions.
  */
-function promptUser<T>(picker: DataQuickPick<T>): Promise<DataQuickPickItem<T>[] | undefined> {
+function promptUser<T>(
+    picker: DataQuickPick<T>,
+    onDidShowEmitter: vscode.EventEmitter<void>
+): Promise<DataQuickPickItem<T>[] | undefined> {
     return new Promise<DataQuickPickItem<T>[] | undefined>(resolve => {
         picker.onDidAccept(() => picker.selectedItems.length > 0 && resolve(Array.from(picker.selectedItems)))
         picker.onDidHide(() => resolve(undefined))
@@ -123,11 +126,14 @@ function promptUser<T>(picker: DataQuickPick<T>): Promise<DataQuickPickItem<T>[]
             }
         })
         picker.show()
+        onDidShowEmitter.fire()
     }).finally(() => picker.dispose())
 }
 
 export class QuickPickPrompter<T> extends Prompter<T> {
     protected _lastPicked?: DataQuickPickItem<T>
+    private onDidShowEmitter: vscode.EventEmitter<void> = new vscode.EventEmitter()
+    public onDidShow: vscode.Event<void> = this.onDidShowEmitter.event
 
     public set lastResponse(response: DataQuickPickItem<T> | undefined) {
         if (response === undefined || !isDataQuickPickItem(response)) {
@@ -151,7 +157,8 @@ export class QuickPickPrompter<T> extends Prompter<T> {
     }
 
     protected async promptUser(): Promise<PromptResult<T>> {
-        const choices = await promptUser(this.quickPick)
+        const choices = await promptUser(this.quickPick, this.onDidShowEmitter)
+        this.onDidShowEmitter.dispose()
 
         if (choices === undefined) {
             return choices
