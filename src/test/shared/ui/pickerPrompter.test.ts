@@ -66,10 +66,9 @@ describe('createLabelQuickPick', function () {
 
     it('can use promises', async function () {
         const labelItems = [{ label: 'name1' }, { label: 'name2' }]
-        const itemsPromise = new Promise<vscode.QuickPickItem[]>(resolve => resolve(labelItems))
+        const itemsPromise = Promise.resolve(labelItems)
 
         const prompter = createLabelQuickPick(itemsPromise)
-        prompter.prompt()
 
         assert.strictEqual(prompter.quickPick.busy, true)
         assert.strictEqual(prompter.quickPick.enabled, false)
@@ -97,7 +96,7 @@ describe('QuickPickPrompter', function () {
         assert.strictEqual(await result, testItems[0].data)
     })
 
-    it('steps can be set', async function () {
+    it('steps can be set', function () {
         testPrompter.setSteps(1, 2)
         assert.strictEqual(picker.step, 1)
         assert.strictEqual(picker.totalSteps, 2)
@@ -110,12 +109,26 @@ describe('QuickPickPrompter', function () {
         assert.strictEqual(testPrompter.lastResponse, testItems[1])
     })
 
-    it('can set last response', async function () {
+    it('can set last response', function () {
         testPrompter.lastResponse = testItems[2]
         assert.deepStrictEqual(picker.activeItems, [testItems[2]])
     })
 
-    it('shows first item if last response does not exist', async function () {
+    it('can load multiple batches of items in parallel', async function () {
+        await Promise.all([
+            testPrompter.loadItems(Promise.resolve([{ label: 'test4', data: 3 }])),
+            testPrompter.loadItems(Promise.resolve([{ label: 'test5', data: 4 }])),
+            testPrompter.loadItems(Promise.resolve([{ label: 'test6', data: 5 }])),
+            testPrompter.loadItems([
+                { label: 'test7', data: 6 },
+                { label: 'test8', data: 7 },
+            ]),
+        ])
+        assert.strictEqual(testPrompter.quickPick.items.length, 8)
+        assert.strictEqual(new Set(testPrompter.quickPick.items.map(i => i.label)).size, 8)
+    })
+
+    it('shows first item if last response does not exist', function () {
         testPrompter.lastResponse = { label: 'item4', data: 3 }
         assert.deepStrictEqual(picker.activeItems, [testItems[0]])
     })

@@ -199,21 +199,21 @@ export class QuickPickPrompter<T> extends Prompter<T> {
      */
     public loadItems(items: Promise<DataQuickPickItem<T>[]> | DataQuickPickItem<T>[]): Promise<void> {
         const picker = this.quickPick
-        const previous = picker.items
-        const previousSelected = picker.activeItems
 
         if (items instanceof Promise) {
             picker.busy = true
             picker.enabled = false
 
             return items.then(items => {
-                picker.items = previous.concat(items)
+                const previousSelected = picker.activeItems
+                picker.items = picker.items.concat(items)
                 this.selectItems(...previousSelected)
                 picker.busy = false
                 picker.enabled = true
             })
         } else {
-            picker.items = previous.concat(items)
+            const previousSelected = picker.activeItems
+            picker.items = picker.items.concat(items)
             this.selectItems(...previousSelected)
             return Promise.resolve()
         }
