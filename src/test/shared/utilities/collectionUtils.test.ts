@@ -25,6 +25,7 @@ import {
     getPaginatedAwsCallIter,
     getPaginatedAwsCallIterParams,
     IteratorTransformer,
+    median,
 } from '../../../shared/utilities/collectionUtils'
 
 import { asyncGenerator } from '../../utilities/collectionUtils'
@@ -447,6 +448,16 @@ describe('CollectionUtils', async function () {
                 secondI++
                 secondItem = await secondIter.next()
             }
+        })
+    })
+
+    describe('median', function () {
+        it('returns the correct median for even arrays', function () {
+            assert.strictEqual(median([1, 2, 3, 4]), (2 + 3) / 2)
+        })
+
+        it('returns the correct median for odd arrays', function () {
+            assert.strictEqual(median([5, 6, 7, 8, 9]), 7)
         })
     })
 })

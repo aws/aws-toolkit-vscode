@@ -186,7 +186,7 @@ export async function* getPaginatedAwsCallIter<TRequest, TResponse>(
             [params.nextTokenNames.request]: nextToken,
         })
         if (response[params.nextTokenNames.response]) {
-            nextToken = (response[params.nextTokenNames.response] as any) as string
+            nextToken = response[params.nextTokenNames.response] as any as string
         } else {
             // done; returns last response with { done: true }
             return response
@@ -247,4 +247,15 @@ export function pushIf<T>(arr: T[], condition: boolean, ...elements: T[]) {
     if (condition) {
         arr.push(...elements)
     }
+}
+
+/**
+ * Returns the median of an array of numbers.
+ *
+ * @param arr Array of numbers
+ */
+export function median(arr: number[]): number {
+    arr.sort()
+    const half = Math.floor(arr.length / 2)
+    return arr.length % 2 ? arr[half] : (arr[half - 1] + arr[half]) / 2.0
 }

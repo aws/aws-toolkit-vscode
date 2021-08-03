@@ -24,7 +24,7 @@ describe('BatchPoller', function () {
         baseTime: 5000,
         jitter: 0,
         backoffFactor: 1,
-        logging: false,
+        logging: true,
         // For testing we will just use the most aggressive heuristic
         // That is, always use the smallest retry after time
         heuristic: deltas => Math.min(...deltas),
