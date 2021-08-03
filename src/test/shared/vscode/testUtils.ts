@@ -5,20 +5,28 @@
 
 import * as vscode from 'vscode'
 
-type InterceptEvent<T> = {
-    [Property in keyof T as `fire${Capitalize<Property & string>}`]: T[Property] extends vscode.Event<infer R>
+type EventEmitters<T> = {
+    [P in keyof T]: T[P] extends vscode.Event<any> ? P : never
+}[keyof T]
+
+type InterceptEmitters<T, K extends keyof T> = {
+    [P in K as `fire${Capitalize<P & string>}`]: T[P] extends vscode.Event<infer R>
         ? vscode.EventEmitter<R>['fire']
         : never
 } &
     T
-type FilteredKeys<T> = { [Property in keyof T]: T[Property] extends never ? never : Property }[keyof T]
+type FilteredKeys<T> = { [P in keyof T]: T[P] extends never ? never : P }[keyof T]
 type NoNever<T> = Pick<T, FilteredKeys<T>>
 
 function capitalize<S extends string>(s: S): Capitalize<S> {
     return `${s[0].toUpperCase()}${s.slice(1)}` as any
 }
 
-export type ExposeEmitters<T> = NoNever<InterceptEvent<T>>
+/**
+ * Adds references to event emitters for all known public events as specified by the generic K type.
+ * New methods are shown with 'fire' prepended to the capitalized event name.
+ */
+export type ExposeEmitters<T, K extends EventEmitters<T>> = NoNever<InterceptEmitters<T, K>>
 
 /**
  * Exposes private event emitters of the object. This should exclusively be used for testing purposes since there
@@ -27,14 +35,22 @@ export type ExposeEmitters<T> = NoNever<InterceptEvent<T>>
  * recommended to limit the amount of accumulated state when firing these events.
  *
  * @params obj Target object
+ * @params keys Events to expose emitters for
  * @returns The extended object with {@link ExposeEmitters exposed methods}
+ * @throws Throws an error listing any events that did not have matching emitters
  */
-export function exposeEmitters<T>(obj: T): ExposeEmitters<T> {
+export function exposeEmitters<T, K extends EventEmitters<T>>(obj: T, keys: K[]): ExposeEmitters<T, K> {
     Object.entries(obj).forEach(([key, value]) => {
         if (key.startsWith('_onDid') && value instanceof vscode.EventEmitter) {
-            Object.assign(obj, { [`fire${capitalize(key.slice(1).replace('Emitter', ''))}`]: value.fire.bind(value) })
+            const targetEvent = key.slice(1).replace('Emitter', '')
+            keys = keys.filter(k => k !== targetEvent)
+            Object.assign(obj, { [`fire${capitalize(targetEvent)}`]: value.fire.bind(value) })
         }
     })
+
+    if (keys.length > 0) {
+        throw new Error(`exposeEmitters(): failed to find emitters for keys ${keys.map(k => `"${k}"`).join(', ')}`)
+    }
 
     return obj as any
 }

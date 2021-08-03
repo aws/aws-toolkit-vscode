@@ -60,7 +60,7 @@ function isDataQuickPickItem(obj: any): obj is DataQuickPickItem<any> {
 
 /**
  * Creates a new QuickPick using special DataQuickPickItem interfaces. Information that should be returned when
- * the user selects an item should be placed in the `data` property of each item. If only the `label` is desired,
+ * the user selects an item must be placed in the `data` property of each item. If only the `label` is desired,
  * use `createLabelQuickPick` instead.
  *
  * @param items An array or a Promise for items.

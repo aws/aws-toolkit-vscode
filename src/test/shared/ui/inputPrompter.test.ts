@@ -27,11 +27,15 @@ describe('createInputBox', function () {
 })
 
 describe('InputBoxPrompter', function () {
-    let inputBox: ExposeEmitters<vscode.InputBox>
+    let inputBox: ExposeEmitters<vscode.InputBox, 'onDidAccept' | 'onDidChangeValue' | 'onDidTriggerButton'>
     let testPrompter: InputBoxPrompter
 
     beforeEach(function () {
-        inputBox = exposeEmitters(vscode.window.createInputBox())
+        inputBox = exposeEmitters(vscode.window.createInputBox(), [
+            'onDidAccept',
+            'onDidChangeValue',
+            'onDidTriggerButton',
+        ])
         testPrompter = new InputBoxPrompter(inputBox)
     })
 

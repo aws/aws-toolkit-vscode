@@ -83,11 +83,11 @@ describe('QuickPickPrompter', function () {
         { label: 'item2', data: 1 },
         { label: 'item3', data: 2 },
     ]
-    let picker: ExposeEmitters<DataQuickPick<number>>
+    let picker: ExposeEmitters<DataQuickPick<number>, 'onDidChangeValue' | 'onDidTriggerButton'>
     let testPrompter: QuickPickPrompter<number>
 
     beforeEach(function () {
-        picker = exposeEmitters(vscode.window.createQuickPick() as any)
+        picker = exposeEmitters(vscode.window.createQuickPick(), ['onDidChangeValue', 'onDidTriggerButton'])
         picker.items = testItems
         testPrompter = new QuickPickPrompter(picker)
     })
@@ -187,7 +187,7 @@ describe('FilterBoxQuickPickPrompter', function () {
         transform: (resp: string) => Number.parseInt(resp),
     }
 
-    let picker: ExposeEmitters<DataQuickPick<number>>
+    let picker: ExposeEmitters<DataQuickPick<number>, 'onDidChangeValue'>
     let testPrompter: FilterBoxQuickPickPrompter<number>
 
     function addTimeout(): void {
@@ -199,7 +199,7 @@ describe('FilterBoxQuickPickPrompter', function () {
     }
 
     beforeEach(function () {
-        picker = exposeEmitters(vscode.window.createQuickPick() as any)
+        picker = exposeEmitters(vscode.window.createQuickPick(), ['onDidChangeValue'])
         testPrompter = new FilterBoxQuickPickPrompter(picker, filterBoxInputSettings)
         addTimeout()
     })
