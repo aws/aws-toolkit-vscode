@@ -25,6 +25,12 @@ export interface CdkAppLocationPickItem {
     label: string,
     cdkApplocation: CdkAppLocation
 }
+
+export interface TopLevelNodePickItem {
+    label: string,
+    topLevelNode: ConstructNode
+}
+
 export interface ConstructNodePickItem {
     label: string,
     //stateMachineNode: ConstructNode | PlaceholderNode
@@ -33,12 +39,14 @@ export interface ConstructNodePickItem {
 }
 
 interface PreviewStateMachineCDKWizardResponse {
-    cdkApplication: CdkAppLocationPickItem
+    cdkApplication: CdkAppLocationPickItem,
+    topLevelNode: TopLevelNodePickItem,
     stateMachine: ConstructNodePickItem
 }
 
 export default class PreviewStateMachineCDKWizard extends MultiStepWizard<PreviewStateMachineCDKWizardResponse> {
     private cdkApplication?: CdkAppLocationPickItem
+    private topLevelNode?: TopLevelNodePickItem
     private stateMachine?: ConstructNodePickItem
     private promptUser: typeof picker.promptUser
 
@@ -49,13 +57,15 @@ export default class PreviewStateMachineCDKWizard extends MultiStepWizard<Previe
     }
 
     protected get startStep() {
-        return this.CREATE_TEMPLATE_ACTION
+        return this.SELECT_WORKSPACE_ACTION
     }
 
-    private readonly CREATE_TEMPLATE_ACTION: WizardStep = async () => {
+    private readonly SELECT_WORKSPACE_ACTION: WizardStep = async () => {
         const cdkAppLocations: CdkAppLocation[] = await detectCdkProjects(vscode.workspace.workspaceFolders)
 
-        if (cdkAppLocations.length === 0) return wizardContinue(this.TEMPLATE_FORMAT_ACTION)
+        //if (cdkAppLocations.length === 0) return wizardContinue(this.SELECT_WORKSPACE_ACTION)
+        if (cdkAppLocations.length === 0) return WIZARD_TERMINATE
+        //if (cdkAppLocations.length === 0) return WIZARD_GOBACK
         //need to pick out only the applications containing a state machine 
         const CDK_APPLOCATIONS: CdkAppLocationPickItem[] = []
         cdkAppLocations.map(obj => {
@@ -69,11 +79,11 @@ export default class PreviewStateMachineCDKWizard extends MultiStepWizard<Previe
             options: {
                 ignoreFocusOut: true,
                 title: localize(
-                    'AWS.message.prompt.selectCDKApplication.placeholder',
-                    'Select CDK Application'
+                    'AWS.message.prompt.selectCDKWorkspace.placeholder',
+                    'Select CDK workspace'
                 ),
                 step: 1,
-                totalSteps: 2,
+                totalSteps: 3,
             },
             buttons: [vscode.QuickInputButtons.Back],
             items: CDK_APPLOCATIONS,
@@ -89,29 +99,61 @@ export default class PreviewStateMachineCDKWizard extends MultiStepWizard<Previe
         })
 
         this.cdkApplication = picker.verifySinglePickerOutput<CdkAppLocationPickItem>(choices)
-        return this.cdkApplication ? wizardContinue(this.TEMPLATE_FORMAT_ACTION) : WIZARD_GOBACK
+        return this.cdkApplication ? wizardContinue(this.SELECT_APPLICATION_ACTION) : WIZARD_GOBACK
     }
 
-    private readonly TEMPLATE_FORMAT_ACTION: WizardStep = async () => {
-
+    private readonly SELECT_APPLICATION_ACTION: WizardStep = async () => {
         const appLocation = this.cdkApplication ? this.cdkApplication.cdkApplocation : undefined
+        if (!appLocation) return WIZARD_GOBACK
         const appNode = new AppNode(appLocation!)
         const constructNodes = await appNode.getChildren()
+        if (constructNodes.length === 0) return WIZARD_TERMINATE
         //filter placeholder nodes
         //constructNodes = constructNodes.filter(i => i.contextValue === 'awsCdkConstructNode' || i.contextValue === 'awsCdkStateMachineNode' )
 
-        const STATE_MACHINES: ConstructNodePickItem[] = []
-        const topLevelNodes: ConstructNode[] = []
+        const TOP_LEVEL_NODES: TopLevelNodePickItem[] = []
+        //const topLevelNodes: ConstructNode[] = []
         constructNodes.map(node => {
-            //if(node.contextValue === 'awsCdkConstructNode' || node.contextValue === 'awsCdkStateMachineNode'){
-            topLevelNodes.push(node as ConstructNode)
-            //}
+            //topLevelNodes.push(node as ConstructNode)
+            TOP_LEVEL_NODES.push({
+                label: node.label ? node.label : '',
+                topLevelNode: node as ConstructNode
+            })
         })
 
-        //what about nested construct nodes??
-        while(topLevelNodes.length>0){
-            //topLevelNodes.forEach()
-            const tester = await topLevelNodes.pop()?.getChildren()
+        const quickPick = picker.createQuickPick({
+            options: {
+                ignoreFocusOut: true,
+                title: localize(
+                    'AWS.message.prompt.selectCDKStateMachine.placeholder',
+                    'Select State Machine'
+                ),
+                step: 2,
+                totalSteps: 3,
+            },
+            buttons: [vscode.QuickInputButtons.Back],
+            items: TOP_LEVEL_NODES,
+        })
+
+        const choices = await this.promptUser({
+            picker: quickPick,
+            onDidTriggerButton: (button, resolve) => {
+                if (button === vscode.QuickInputButtons.Back) {
+                    resolve(undefined)
+                }
+            },
+        })
+
+        this.topLevelNode = picker.verifySinglePickerOutput<TopLevelNodePickItem>(choices)
+
+        return this.topLevelNode ? wizardContinue(this.SELECT_STATE_MACHINE_ACTION) : WIZARD_GOBACK      
+    }
+
+    private readonly SELECT_STATE_MACHINE_ACTION: WizardStep = async () => {
+        const topLevelNode = this.topLevelNode ? this.topLevelNode : undefined
+        const STATE_MACHINES: ConstructNodePickItem[] = []
+
+        const tester = await topLevelNode?.topLevelNode.getChildren()
             if (tester) {
                 tester.map(async node => {
                     //const tester = await node.getChildren()
@@ -123,7 +165,6 @@ export default class PreviewStateMachineCDKWizard extends MultiStepWizard<Previe
                     }
                 })
             }
-        }
 
         const quickPick = picker.createQuickPick({
             options: {
@@ -132,8 +173,8 @@ export default class PreviewStateMachineCDKWizard extends MultiStepWizard<Previe
                     'AWS.message.prompt.selectCDKStateMachine.placeholder',
                     'Select State Machine'
                 ),
-                step: 2,
-                totalSteps: 2,
+                step: 3,
+                totalSteps: 3,
             },
             buttons: [vscode.QuickInputButtons.Back],
             items: STATE_MACHINES,
@@ -156,8 +197,10 @@ export default class PreviewStateMachineCDKWizard extends MultiStepWizard<Previe
     protected getResult() {
         return (
             (this.cdkApplication &&
+                this.topLevelNode &&
                 this.stateMachine && {
                 cdkApplication: this.cdkApplication,
+                topLevelNode: this.topLevelNode,
                 stateMachine: this.stateMachine,
             }) ||
             undefined

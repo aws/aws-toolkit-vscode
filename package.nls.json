@@ -345,6 +345,7 @@
     "AWS.message.prompt.selectLocalLambda.placeholder": "Select a lambda function",
     "AWS.message.prompt.selectStateMachineTemplate.placeholder": "Select a starter template",
     "AWS.message.prompt.selectStateMachineTemplateFormat.placeholder": "Select template format",
+    "AWS.message.prompt.selectCDKWorkspace.placeholder": "Select CDK workspace",
     "AWS.message.prompt.selectCDKApplication.placeholder": "Select CDK application",
     "AWS.message.prompt.selectCDKStateMachine.placeholder": "Select a State Machine",
     "AWS.message.prompt.quickStart.toastMessage": "You are now using AWS Toolkit version {0}",
