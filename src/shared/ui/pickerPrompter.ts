@@ -171,8 +171,8 @@ export class QuickPickPrompter<T> extends Prompter<T> {
     }
 
     /**
-     * Attempts to set the currently selected items. If matching items were found, the first item in the
-     * QuickPick is selected.
+     * Attempts to set the currently selected items. If no matching items were found, the first item in
+     * the QuickPick is selected.
      *
      * @param items The items to look for
      */

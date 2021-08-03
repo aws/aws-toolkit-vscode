@@ -109,6 +109,13 @@ describe('QuickPickPrompter', function () {
         assert.strictEqual(testPrompter.lastResponse, testItems[1])
     })
 
+    it('preserves the current active selection when loading', async function () {
+        testPrompter.selectItems(testItems[2])
+        await testPrompter.loadItems([{ label: 'test4', data: 3 }])
+        assert.strictEqual(picker.activeItems[0], testItems[2])
+        assert.strictEqual(picker.items.length, 4)
+    })
+
     it('can set last response', function () {
         testPrompter.lastResponse = testItems[2]
         assert.deepStrictEqual(picker.activeItems, [testItems[2]])
