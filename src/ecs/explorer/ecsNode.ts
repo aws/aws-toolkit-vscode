@@ -17,14 +17,21 @@ import { getLogger } from '../../shared/logger/logger'
 
 export class EcsNode extends AWSTreeNodeBase implements LoadMoreNode {
     private readonly childLoader: ChildNodeLoader
+    public persistChildren: boolean = false
 
     public constructor(private readonly ecs: EcsClient) {
         super('ECS', vscode.TreeItemCollapsibleState.Collapsed)
         this.childLoader = new ChildNodeLoader(this, token => this.loadPage(token))
-        this.update()
+        this.contextValue = 'awsEcsNode'
     }
 
     public async getChildren(): Promise<AWSTreeNodeBase[]> {
+        // This helps decipher when this method is called by a loadMoreChildren command or an explorer refresh
+        if (!this.persistChildren) {
+            this.clearChildren()
+        } else {
+            this.persistChildren = false
+        }
         return await makeChildrenNodes({
             getChildNodes: async () => this.childLoader.getChildren(),
             getErrorNode: async (error: Error, logID: number) => new ErrorNode(this, error, logID),
@@ -45,10 +52,14 @@ export class EcsNode extends AWSTreeNodeBase implements LoadMoreNode {
         this.childLoader.clearChildren()
     }
 
+    public setPersistChildren(): void {
+        this.persistChildren = true
+    }
+
     private async loadPage(nextToken: string | undefined): Promise<ChildNodePage> {
         getLogger().debug(`ecs: Loading page for %O using continuationToken %s`, this, nextToken)
         const response = await this.ecs.listClusters(nextToken)
-        const clusters = response.resource.map(cluster => new EcsClusterNode(cluster, this, this.ecs))
+        const clusters = response.resource.map(c => new EcsClusterNode(c, this, this.ecs))
 
         getLogger().debug(
             `ecs: Loaded clusters: %O`,
@@ -58,9 +69,5 @@ export class EcsNode extends AWSTreeNodeBase implements LoadMoreNode {
             newContinuationToken: response.nextToken,
             newChildren: [...clusters],
         }
-    }
-
-    public update(): void {
-        this.tooltip = this.label
     }
 }

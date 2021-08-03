@@ -16,6 +16,11 @@ class FakeNode extends AWSTreeNodeBase {
 }
 
 class FakeLoadMore implements LoadMoreNode {
+    public persistChildren: boolean = false
+
+    public setPersistChildren(): void {
+        this.persistChildren = true
+    }
     public loadMoreChildren(): Promise<void> {
         return Promise.resolve()
     }

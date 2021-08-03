@@ -23,6 +23,7 @@ import { getLogger } from '../../shared/logger'
  */
 export class EcsClusterNode extends AWSTreeNodeBase implements AWSResourceNode, LoadMoreNode {
     private readonly childLoader: ChildNodeLoader
+    public persistChildren: boolean = false
 
     public constructor(
         public readonly cluster: ECS.Cluster,
@@ -36,6 +37,11 @@ export class EcsClusterNode extends AWSTreeNodeBase implements AWSResourceNode, 
     }
 
     public async getChildren(): Promise<AWSTreeNodeBase[]> {
+        if (!this.persistChildren) {
+            this.clearChildren()
+        } else {
+            this.persistChildren = false
+        }
         return await makeChildrenNodes({
             getChildNodes: async () => this.childLoader.getChildren(),
             getErrorNode: async (error: Error, logID: number) => new ErrorNode(this, error, logID),
@@ -64,11 +70,15 @@ export class EcsClusterNode extends AWSTreeNodeBase implements AWSResourceNode, 
         this.childLoader.clearChildren()
     }
 
+    public setPersistChildren(): void {
+        this.persistChildren = true
+    }
+
     private async loadPage(nextToken: string | undefined): Promise<ChildNodePage> {
         getLogger().debug(`ecs: Loading page for %O using continuationToken %s`, this, nextToken)
         const response = await this.ecs.listServices(this.cluster.clusterArn!, nextToken)
 
-        const services = response.resource.map(service => new EcsServiceNode(service, this, this.ecs))
+        const services = response.resource.map(s => new EcsServiceNode(s, this, this.ecs))
 
         getLogger().debug(
             `ecs: Loaded services: %O`,

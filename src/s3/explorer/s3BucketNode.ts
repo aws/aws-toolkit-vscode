@@ -33,6 +33,7 @@ import { S3Node } from './s3Nodes'
  */
 export class S3BucketNode extends AWSTreeNodeBase implements AWSResourceNode, LoadMoreNode {
     private readonly childLoader: ChildNodeLoader
+    public persistChildren: boolean = false
 
     public constructor(
         public readonly bucket: Bucket,
@@ -51,6 +52,11 @@ export class S3BucketNode extends AWSTreeNodeBase implements AWSResourceNode, Lo
     }
 
     public async getChildren(): Promise<AWSTreeNodeBase[]> {
+        if (!this.persistChildren) {
+            this.clearChildren()
+        } else {
+            this.persistChildren = false
+        }
         return await makeChildrenNodes({
             getChildNodes: async () => this.childLoader.getChildren(),
             getErrorNode: async (error: Error, logID: number) => new ErrorNode(this, error, logID),
@@ -69,6 +75,10 @@ export class S3BucketNode extends AWSTreeNodeBase implements AWSResourceNode, Lo
 
     public clearChildren(): void {
         this.childLoader.clearChildren()
+    }
+
+    public setPersistChildren(): void {
+        this.persistChildren = true
     }
 
     private async loadPage(continuationToken: string | undefined): Promise<ChildNodePage> {
