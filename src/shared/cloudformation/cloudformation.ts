@@ -877,10 +877,14 @@ export async function updateYamlSchemasArray(
     // do if schemas exists or if type isn't none
     if (!(type === 'none' && !schemas)) {
         try {
-            await config.update('schemas', {
-                ...(schemas ? schemas : {}),
-                ...modifiedArrays,
-            })
+            await config.update(
+                'schemas',
+                {
+                    ...(schemas ? schemas : {}),
+                    ...modifiedArrays,
+                },
+                vscode.ConfigurationTarget.Global
+            )
         } catch (e) {
             getLogger().error('Could not write YAML schemas to configuration', e.message)
         }
