@@ -1,5 +1,5 @@
 {
-    "AppApi": 31,
-    "AuthStack": 22,
-    "AppFunction": 52
+    "AppApi": { "start": 1015, "end": 1799 },
+    "AuthStack": { "start": 720, "end": 940 },
+    "AppFunction": { "start": 1804, "end": 2189 }
 }

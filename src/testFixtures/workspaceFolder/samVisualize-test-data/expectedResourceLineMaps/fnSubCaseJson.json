@@ -1,4 +1,4 @@
 {
-    "ThisResource" : 3,
-    "ThatResource" : 10
+    "ThisResource": { "start": 41, "end": 265 },
+    "ThatResource": { "start": 279, "end": 312 }
 }

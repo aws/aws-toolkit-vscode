@@ -3,7 +3,6 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 import * as assert from 'assert'
-import * as vscode from 'vscode'
 import { join } from 'path'
 import { readdirSync, readFileSync } from 'fs'
 import { generateResourceLineMap, ResourceLineMap } from '../../../samVisualize/rendering/navigation'
@@ -43,15 +42,16 @@ describe('generateResourceLineMap', function () {
     it('correctly generates a map between a resource name and its (zero based) line in the template', async function () {
         for (const file of templateFiles) {
             const templatePath = join(yamlTemplatesDir, file)
+
             const resourceLineMapPath = join(resourceLineMapDir, trimExtension(file) + '.json')
+
+            const templateContents = readFileSync(templatePath).toString()
 
             const expectedResourceLineMap: ResourceLineMap = JSON.parse(readFileSync(resourceLineMapPath).toString())
 
-            vscode.workspace.openTextDocument(templatePath).then(textDocument => {
-                const actualResourceLineMap = generateResourceLineMap(textDocument)
+            const actualResourceLineMap = generateResourceLineMap(templateContents)
 
-                assert.deepStrictEqual(actualResourceLineMap, expectedResourceLineMap)
-            })
+            assert.deepStrictEqual(actualResourceLineMap, expectedResourceLineMap, `In ${file}`)
         }
     })
 })

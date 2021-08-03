@@ -1,48 +1,186 @@
 {
-    "IAMGroup": 71,
-    "SESReceiptRule": 116,
-    "SESReceiptRuleSet": 139,
-    "S3Email": 141,
-    "S3EmailPolicy": 230,
-    "PipelineConverter": 254,
-    "PipelineConverterPolicy": 312,
-    "PipelineConverterRole": 462,
-    "PipelineConverterWebhook": 482,
-    "CodeBuildConverter": 497,
-    "CodeBuildConverterRole": 523,
-    "CodeBuildConverterPolicyCWL": 543,
-    "CodeBuildConverterPolicyS3": 577,
-    "CodeBuildConverterPolicyLambdaUpdate": 599,
-    "LambdaEmailConverter": 623,
-    "S3ConverterPermission": 638,
-    "LambdaEmailConverterRole": 649,
-    "LambdaEmailConverterPolicyS3": 670,
-    "PipelineInbound": 695,
-    "PipelineInboundPolicy": 753,
-    "PipelineInboundRole": 903,
-    "PipelineInboundWebhook": 923,
-    "CodeBuildInbound": 938,
-    "CodeBuildInboundRole": 964,
-    "CodeBuildDeployPolicyCWL": 984,
-    "CodeBuildDeployPolicyS3": 1018,
-    "CodeBuildDeployPolicyLambdaUpdate": 1040,
-    "LambdaEmailInbound": 1064,
-    "S3InboundPermission": 1080,
-    "LambdaEmailInboundRole": 1091,
-    "LambdaEmailInboundPolicyS3": 1112,
-    "LambdaEmailInboundPolicySES": 1137,
-    "PipelineOutbound": 1152,
-    "PipelineOutboundPolicy": 1210,
-    "PipelineOutboundRole": 1360,
-    "PipelineOutboundWebhook": 1380,
-    "CodeBuildOutbound": 1395,
-    "CodeBuildOutboundRole": 1421,
-    "CodeBuildOutboundPolicyCWL": 1441,
-    "CodeBuildOutboundPolicyS3": 1475,
-    "CodeBuildOutboundPolicyLambdaUpdate": 1497,
-    "LambdaEmailOutbound": 1521,
-    "S3OutboundPermission": 1537,
-    "LambdaEmailOutboundRole": 1548,
-    "LambdaEmailOutboundPolicyS3": 1569,
-    "LambdaEmailOutboundPolicySES": 1594
+    "CodeBuildConverter": {
+        "end": 32034,
+        "start": 30659
+    },
+    "CodeBuildConverterPolicyCWL": {
+        "end": 34959,
+        "start": 32994
+    },
+    "CodeBuildConverterPolicyLambdaUpdate": {
+        "end": 37256,
+        "start": 36029
+    },
+    "CodeBuildConverterPolicyS3": {
+        "end": 36015,
+        "start": 34973
+    },
+    "CodeBuildConverterRole": {
+        "end": 32980,
+        "start": 32048
+    },
+    "CodeBuildDeployPolicyCWL": {
+        "end": 60649,
+        "start": 58693
+    },
+    "CodeBuildDeployPolicyLambdaUpdate": {
+        "end": 62934,
+        "start": 61714
+    },
+    "CodeBuildDeployPolicyS3": {
+        "end": 61700,
+        "start": 60663
+    },
+    "CodeBuildInbound": {
+        "end": 57737,
+        "start": 56370
+    },
+    "CodeBuildInboundRole": {
+        "end": 58679,
+        "start": 57751
+    },
+    "CodeBuildOutbound": {
+        "end": 84217,
+        "start": 82846
+    },
+    "CodeBuildOutboundPolicyCWL": {
+        "end": 87136,
+        "start": 85175
+    },
+    "CodeBuildOutboundPolicyLambdaUpdate": {
+        "end": 89428,
+        "start": 88204
+    },
+    "CodeBuildOutboundPolicyS3": {
+        "end": 88190,
+        "start": 87150
+    },
+    "CodeBuildOutboundRole": {
+        "end": 85161,
+        "start": 84231
+    },
+    "IAMGroup": {
+        "end": 6824,
+        "start": 4032
+    },
+    "LambdaEmailConverter": {
+        "end": 38039,
+        "start": 37270
+    },
+    "LambdaEmailConverterPolicyS3": {
+        "end": 40828,
+        "start": 39590
+    },
+    "LambdaEmailConverterRole": {
+        "end": 39576,
+        "start": 38529
+    },
+    "LambdaEmailInbound": {
+        "end": 63831,
+        "start": 62948
+    },
+    "LambdaEmailInboundPolicyS3": {
+        "end": 66606,
+        "start": 65372
+    },
+    "LambdaEmailInboundPolicySES": {
+        "end": 67292,
+        "start": 66620
+    },
+    "LambdaEmailInboundRole": {
+        "end": 65358,
+        "start": 64315
+    },
+    "LambdaEmailOutbound": {
+        "end": 90299,
+        "start": 89442
+    },
+    "LambdaEmailOutboundPolicyS3": {
+        "end": 93081,
+        "start": 91845
+    },
+    "LambdaEmailOutboundPolicySES": {
+        "end": 93720,
+        "start": 93095
+    },
+    "LambdaEmailOutboundRole": {
+        "end": 91831,
+        "start": 90786
+    },
+    "PipelineConverter": {
+        "end": 18751,
+        "start": 15107
+    },
+    "PipelineConverterPolicy": {
+        "end": 28833,
+        "start": 18765
+    },
+    "PipelineConverterRole": {
+        "end": 29784,
+        "start": 28847
+    },
+    "PipelineConverterWebhook": {
+        "end": 30645,
+        "start": 29798
+    },
+    "PipelineInbound": {
+        "end": 44476,
+        "start": 40842
+    },
+    "PipelineInboundPolicy": {
+        "end": 54554,
+        "start": 44490
+    },
+    "PipelineInboundRole": {
+        "end": 55501,
+        "start": 54568
+    },
+    "PipelineInboundWebhook": {
+        "end": 56356,
+        "start": 55515
+    },
+    "PipelineOutbound": {
+        "end": 70945,
+        "start": 67306
+    },
+    "PipelineOutboundPolicy": {
+        "end": 81025,
+        "start": 70959
+    },
+    "PipelineOutboundRole": {
+        "end": 81974,
+        "start": 81039
+    },
+    "PipelineOutboundWebhook": {
+        "end": 82832,
+        "start": 81988
+    },
+    "S3ConverterPermission": {
+        "end": 38515,
+        "start": 38053
+    },
+    "S3Email": {
+        "end": 13817,
+        "start": 8051
+    },
+    "S3EmailPolicy": {
+        "end": 15093,
+        "start": 13831
+    },
+    "S3InboundPermission": {
+        "end": 64301,
+        "start": 63845
+    },
+    "S3OutboundPermission": {
+        "end": 90772,
+        "start": 90313
+    },
+    "SESReceiptRule": {
+        "end": 7896,
+        "start": 6838
+    },
+    "SESReceiptRuleSet": {
+        "end": 8037,
+        "start": 7910
+    }
 }

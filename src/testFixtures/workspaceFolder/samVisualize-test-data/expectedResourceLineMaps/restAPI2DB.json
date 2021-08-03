@@ -1,13 +1,13 @@
 {
-    "DynamoDBTable": 12,
-    "APIGatewayRole": 40,
-    "MusicMethodPost": 75,
-    "MusicResource": 69,
-    "MusicArtistResource": 103,
-    "MusicArtistMethodGet": 109,
-    "Api": 64,
-    "ApiDeployment": 146,
-    "ApiUsagePlan": 163,
-    "ApiUsagePlanKey": 178,
-    "ApiKey": 153
+    "DynamoDBTable": {"start" : 354, "end": 1405},
+    "APIGatewayRole": {"start" : 1409, "end": 2402},
+    "MusicMethodPost": {"start" : 2741, "end": 4324},
+    "MusicResource": {"start" : 2549, "end": 2737},
+    "MusicArtistResource": {"start" : 4328, "end": 4517},
+    "MusicArtistMethodGet": {"start" : 4521, "end": 7111},
+    "Api": {"start" : 2406, "end": 2545},
+    "ApiDeployment": {"start" : 7115, "end": 7323},
+    "ApiUsagePlan": {"start" : 7625 , "end": 8071 },
+    "ApiUsagePlanKey": {"start" : 8075, "end": 8261},
+    "ApiKey": {"start" : 7327, "end": 7621}
 }
