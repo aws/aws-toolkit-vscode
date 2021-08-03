@@ -1898,7 +1898,7 @@
     "devDependencies": {
         "@aws-toolkits/telemetry": "1.0.6",
         "@sinonjs/fake-timers": "^7.0.5",
-        "@types/adm-zip": "^0.4.32",
+        "@types/adm-zip": "^0.4.34",
         "@types/async-lock": "^1.1.0",
         "@types/bytes": "^3.1.0",
         "@types/cross-spawn": "^6.0.0",
@@ -1922,7 +1922,7 @@
         "@types/xml2js": "^0.4.8",
         "@typescript-eslint/eslint-plugin": "^4.24.0",
         "@typescript-eslint/parser": "^4.24.0",
-        "circular-dependency-plugin": "^5.2.0",
+        "circular-dependency-plugin": "^5.2.2",
         "decache": "^4.4.0",
         "esbuild-loader": "2.13.1",
         "eslint": "^7.28.0",
