@@ -19,7 +19,7 @@ export async function runCommandInContainer(node: EcsContainerNode, window = Win
     getLogger().debug('RunCommandInContainer called for: %O', node)
 
     const verifySSMPluginResponse = await new ChildProcess(true, 'session-manager-plugin').run()
-    if (!verifySSMPluginResponse.stdout.startsWith('The Session Manager plugin was installed successfully')) {
+    if (verifySSMPluginResponse.exitCode !== 0) {
         window.showErrorMessage(
             localize(
                 'AWS.command.ecs.runCommandInContainer.noCliOrPlugin',
@@ -125,7 +125,7 @@ export async function runCommandInContainer(node: EcsContainerNode, window = Win
     ).run()
 
     getLogger().info(response.stdout)
-    if (response.exitCode !== 0 || response.stderr) {
+    if (response.exitCode !== 0) {
         getLogger().error(response.stderr)
         recordEcsRunExecuteCommand({ result: 'Failed', ecsExecuteCommandType: 'command' })
     } else {
