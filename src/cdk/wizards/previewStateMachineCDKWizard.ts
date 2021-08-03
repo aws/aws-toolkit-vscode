@@ -173,7 +173,7 @@ export default class PreviewStateMachineCDKWizard extends MultiStepWizard<Previe
 
         if (STATE_MACHINES.length === 0) {
             STATE_MACHINES.push({
-                label: `[No state machine(s) found in cdk applciation'${topLevelNode?.label}']`,
+                label: `[No state machine(s) found in cdk applciation '${topLevelNode?.label}']`,
                 stateMachineNode: undefined
             })
         }
