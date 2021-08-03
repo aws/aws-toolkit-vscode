@@ -275,7 +275,7 @@ export class S3FileViewerManager {
                     'Opening non-text file, please press enter on quickpick to continue.',
                     this.outputChannel
                 )
-                tab.editor = await vscode.commands.executeCommand('workbench.action.quickOpen', tab.fileUri.fsPath)
+                tab.editor = await vscode.commands.executeCommand('vscode.open', tab.fileUri)
             } else {
                 tab.editor = await this.openFile(tab, tab.fileUri, false)
             }
