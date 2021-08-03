@@ -249,6 +249,104 @@ class JavaLambdaHandlerResolverTest {
     }
 
     @Test
+    fun `resolves handlers with 2 parameters`() {
+        val fixture = projectRule.fixture
+
+        fixture.openClass(
+            """
+            package com.example;
+
+            import com.amazonaws.services.lambda.runtime.Context;
+            import java.io.InputStream;
+            import java.io.OutputStream;
+
+            public class LambdaHandler {
+                public static void streamsOnly(InputStream input, OutputStream output) { }
+
+                public static void contextAndAnything(Object input, Context context) { }
+
+                public static void doesNotResolve(Object input, OutputStream outputStream) { }
+
+                public static void doesNotResolve2(InputStream input, Object outputStream) { }
+            }
+            """
+        )
+
+        runInEdtAndWait {
+            val isHandlerValid: (String) -> Boolean = { handler -> Lambda.isHandlerValid(fixture.project, Runtime.JAVA11, handler) }
+
+            assertThat(isHandlerValid("com.example.LambdaHandler::streamsOnly")).isTrue
+            assertThat(isHandlerValid("com.example.LambdaHandler::contextAndAnything")).isTrue
+            assertThat(isHandlerValid("com.example.LambdaHandler::doesNotResolve")).isFalse
+            assertThat(isHandlerValid("com.example.LambdaHandler::doesNotResolve2")).isFalse
+        }
+    }
+
+    @Test
+    fun `resolves handlers with 1 parameter`() {
+        val fixture = projectRule.fixture
+
+        fixture.openClass(
+            """
+            package com.example;
+
+            import com.amazonaws.services.lambda.runtime.Context;
+            import java.io.InputStream;
+
+            public class LambdaHandler {
+                public static void works(InputStream input) { }
+
+                public static void alsoWorks(Object input) { }
+
+                public static void alsoAlsoWorks(Context context) { }
+            }
+            """
+        )
+
+        runInEdtAndWait {
+            val isHandlerValid: (String) -> Boolean = { handler -> Lambda.isHandlerValid(fixture.project, Runtime.JAVA11, handler) }
+
+            assertThat(isHandlerValid("com.example.LambdaHandler::works")).isTrue
+            assertThat(isHandlerValid("com.example.LambdaHandler::alsoWorks")).isTrue
+            assertThat(isHandlerValid("com.example.LambdaHandler::alsoAlsoWorks")).isTrue
+        }
+    }
+
+    @Test
+    fun `resolves handlers with 3 parameters`() {
+        val fixture = projectRule.fixture
+
+        fixture.openClass(
+            """
+            package com.example;
+
+            import com.amazonaws.services.lambda.runtime.Context;
+            import java.io.InputStream;
+            import java.io.OutputStream;
+
+            public class LambdaHandler {
+                public static void works(InputStream input, OutputStream output, Context context) { }
+
+                public static void doesntWork(Object input, OutputStream output, Context context) { }
+
+                public static void doesntWork2(InputStream input, Object output, Context context) { }
+
+                public static void doesntWork3(InputStream input, OutputStream output, Object context) { }
+            }
+            """
+        )
+
+        runInEdtAndWait {
+            val isHandlerValid: (String) -> Boolean = { handler -> Lambda.isHandlerValid(fixture.project, Runtime.JAVA11, handler) }
+
+            assertThat(isHandlerValid("com.example.LambdaHandler::works")).isTrue
+            assertThat(isHandlerValid("com.example.LambdaHandler::doesntWork")).isFalse
+            assertThat(isHandlerValid("com.example.LambdaHandler::doesntWork2")).isFalse
+            assertThat(isHandlerValid("com.example.LambdaHandler::doesntWork3")).isFalse
+        }
+    }
+
+    @Test
     fun testMultipleMethodsInSameClassParameterLength() {
         val fixture = projectRule.fixture
 

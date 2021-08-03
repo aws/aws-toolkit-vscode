@@ -1,0 +1,4 @@
+{
+  "type" : "bugfix",
+  "description" : "Fix Java Lambda run marker issues and disable runmarker processing in tests and language-injected text fragments"
+}

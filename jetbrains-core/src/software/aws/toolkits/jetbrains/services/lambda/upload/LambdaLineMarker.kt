@@ -23,6 +23,7 @@ import software.aws.toolkits.jetbrains.services.lambda.LambdaHandlerResolver
 import software.aws.toolkits.jetbrains.services.lambda.RuntimeGroup
 import software.aws.toolkits.jetbrains.services.lambda.runtimeGroup
 import software.aws.toolkits.jetbrains.settings.LambdaSettings
+import software.aws.toolkits.jetbrains.utils.isTestOrInjectedText
 import software.aws.toolkits.resources.message
 import javax.swing.Icon
 
@@ -39,6 +40,11 @@ class LambdaLineMarker : LineMarkerProviderDescriptor() {
         }
 
         val runtimeGroup = element.language.runtimeGroup ?: return null
+
+        if (element.isTestOrInjectedText()) {
+            return null
+        }
+
         val handlerResolver = LambdaHandlerResolver.getInstanceOrNull(runtimeGroup) ?: return null
         val handler = handlerResolver.determineHandler(element) ?: return null
 

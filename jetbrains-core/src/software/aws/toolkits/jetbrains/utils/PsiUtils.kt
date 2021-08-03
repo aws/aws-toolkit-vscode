@@ -1,0 +1,22 @@
+// Copyright 2021 Amazon.com, Inc. or its affiliates. All Rights Reserved.
+// SPDX-License-Identifier: Apache-2.0
+
+package software.aws.toolkits.jetbrains.utils
+
+import com.intellij.injected.editor.VirtualFileWindow
+import com.intellij.openapi.roots.ProjectRootManager
+import com.intellij.psi.PsiElement
+
+fun PsiElement.isTestOrInjectedText(): Boolean {
+    val project = this.project
+    val virtualFile = this.containingFile.virtualFile
+    if (virtualFile is VirtualFileWindow) {
+        return true
+    }
+
+    if (ProjectRootManager.getInstance(project).fileIndex.isInTestSourceContent(virtualFile)) {
+        return true
+    }
+
+    return false
+}
