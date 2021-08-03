@@ -4,7 +4,7 @@
  */
 
 import * as assert from 'assert'
-import { copyUrl, presignedURLCommand, promptTime } from '../../../s3/commands/presignedURL'
+import { copyUrl, presignedURLCommand } from '../../../s3/commands/presignedURL'
 import { S3BucketNode } from '../../../s3/explorer/s3BucketNode'
 import { S3FileNode } from '../../../s3/explorer/s3FileNode'
 import { S3Node } from '../../../s3/explorer/s3Nodes'
@@ -16,7 +16,6 @@ import { anything, instance, mock, when } from '../../utilities/mockito'
 describe('presignedURLCommand', function () {
     const bucketName = 'bucket-name'
     const key = 'file.jpg'
-    const fileName = 'file.jpg'
     const testUrl = 'https://presigned-url.com'
 
     let env: FakeEnv
@@ -33,14 +32,6 @@ describe('presignedURLCommand', function () {
         const bucket: Bucket = { name: bucketName, region: 'region', arn: 'arn' }
         bucketNode = new S3BucketNode(bucket, {} as S3Node, instance(s3))
         node = new S3FileNode(bucket, { name: key, key: key, arn: 'arn' }, bucketNode, instance(s3))
-    })
-
-    it("returns the uer's input time", async function () {
-        when(window.showInputBox(anything())).thenReturn(Promise.resolve('20'))
-
-        const response = await promptTime(fileName, instance(window))
-
-        assert.strictEqual(response, 20)
     })
 
     it('calls S3 to get the URL', async function () {
