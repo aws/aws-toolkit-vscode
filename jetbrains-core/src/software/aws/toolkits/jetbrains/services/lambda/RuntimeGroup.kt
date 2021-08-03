@@ -54,8 +54,6 @@ abstract class RuntimeGroup {
     open fun getModuleType(): ModuleType<*>? = null
     open fun getIdeSdkType(): SdkType? = null
 
-    open fun supportsSamBuild(): Boolean = true
-
     // This only works with Zip and is only called on that path since image is based on what debugger EPs we have
     fun validateSamVersionForZipDebugging(runtime: Runtime, samVersion: SemVer) {
         val minVersion = supportedRuntimes.first { it.toSdkRuntime() == runtime }.minSamDebuggingVersion()
