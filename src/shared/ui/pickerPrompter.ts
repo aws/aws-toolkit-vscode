@@ -133,6 +133,7 @@ function promptUser<T>(
 export class QuickPickPrompter<T> extends Prompter<T> {
     protected _lastPicked?: DataQuickPickItem<T>
     private onDidShowEmitter: vscode.EventEmitter<void> = new vscode.EventEmitter()
+    /** Event that is fired immediately after the prompter is shown. */
     public onDidShow: vscode.Event<void> = this.onDidShowEmitter.event
 
     public set lastResponse(response: DataQuickPickItem<T> | undefined) {
@@ -180,7 +181,8 @@ export class QuickPickPrompter<T> extends Prompter<T> {
         const selected = new Set(items.map(item => item.label))
 
         // Note: activeItems refer to the 'highlighted' items in a QuickPick, while selectedItems only
-        // changes _after_ the user hits enter or clicks something
+        // changes _after_ the user hits enter or clicks something. For a multi-select QuickPick,
+        // selectedItems will change as options are clicked (and not when accepting).
         this.quickPick.activeItems = this.quickPick.items.filter(item => selected.has(item.label))
 
         if (this.quickPick.activeItems.length === 0) {

@@ -5,6 +5,7 @@
 
 import * as assert from 'assert'
 import * as vscode from 'vscode'
+import { createBackButton } from '../../../shared/ui/buttons'
 import {
     createLabelQuickPick,
     createQuickPick,
@@ -15,6 +16,7 @@ import {
     QuickPickPrompter,
     CUSTOM_USER_INPUT,
 } from '../../../shared/ui/pickerPrompter'
+import { WIZARD_BACK } from '../../../shared/wizards/wizard'
 import { exposeEmitters, ExposeEmitters } from '../vscode/testUtils'
 
 describe('createQuickPick', function () {
@@ -81,11 +83,11 @@ describe('QuickPickPrompter', function () {
         { label: 'item2', data: 1 },
         { label: 'item3', data: 2 },
     ]
-    let picker: DataQuickPick<number>
+    let picker: ExposeEmitters<DataQuickPick<number>>
     let testPrompter: QuickPickPrompter<number>
 
     beforeEach(function () {
-        picker = vscode.window.createQuickPick() as any
+        picker = exposeEmitters(vscode.window.createQuickPick() as any)
         picker.items = testItems
         testPrompter = new QuickPickPrompter(picker)
     })
@@ -100,6 +102,26 @@ describe('QuickPickPrompter', function () {
         testPrompter.setSteps(1, 2)
         assert.strictEqual(picker.step, 1)
         assert.strictEqual(picker.totalSteps, 2)
+    })
+
+    it('can handle back button', async function () {
+        testPrompter.onDidShow(() => picker.fireOnDidTriggerButton(createBackButton()))
+        assert.strictEqual(await testPrompter.prompt(), WIZARD_BACK)
+    })
+
+    it('can accept input from buttons', async function () {
+        const testButton = { iconPath: '', onClick: () => 5 }
+        testPrompter.onDidShow(() => picker.fireOnDidTriggerButton(testButton))
+        assert.strictEqual(await testPrompter.prompt(), 5)
+    })
+
+    it('does not close if button does not return anything', async function () {
+        const testButton = { iconPath: '', onClick: () => {} }
+        testPrompter.onDidShow(() => {
+            picker.fireOnDidTriggerButton(testButton)
+            picker.selectedItems = [testItems[0]]
+        })
+        assert.strictEqual(await testPrompter.prompt(), testItems[0].data)
     })
 
     it('returns last response', async function () {
