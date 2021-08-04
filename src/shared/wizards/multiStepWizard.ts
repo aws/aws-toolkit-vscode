@@ -52,6 +52,9 @@ export function wizardContinue(step: WizardStep): Transition {
     }
 }
 
+/**
+ * @deprecated Use `wizard.ts` with `wizardForm.ts` instead.
+ */
 export abstract class MultiStepWizard<TResult> {
     protected constructor() {}
 
