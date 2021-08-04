@@ -58,9 +58,9 @@ type StepCache = { picked?: any; stepOffset?: number } & { [key: string]: any }
 export type StateWithCache<TState> = TState & { stepCache: StepCache }
 
 /**
- * A generic wizard that consumes data from a series of 'prompts'. Wizards will modify a single property of
- * their internal state with each prompt. The 'form' public property exposes functionality to add prompters
- * with optional context.
+ * A generic wizard that consumes data from a series of {@link Prompter prompters}. The 'form' public property
+ * exposes functionality to add prompters to the wizard with optional context, utilizing the {@link WizardForm}
+ * class. Wizards will modify a single property of their internal state with each prompt.
  */
 export class Wizard<TState extends Partial<Record<keyof TState, unknown>>> {
     private readonly boundSteps: Map<string, StepFunction<TState>> = new Map()
