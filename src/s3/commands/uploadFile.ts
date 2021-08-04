@@ -262,8 +262,7 @@ async function uploadBatchOfFiles(
             const failedRequests: UploadRequest[] = []
             const successfulRequests: UploadRequest[] = []
 
-            const cancel = token.onCancellationRequested(e => {
-                failedRequests.concat(uploadRequests.slice(requestIdx))
+            token.onCancellationRequested(e => {
                 return failedRequests
             })
 
@@ -308,9 +307,8 @@ async function uploadBatchOfFiles(
                     progressListener(requestIdx)
                 }
             }
-            // for (const request of uploadRequests) {
 
-            // }
+            failedRequests.concat(uploadRequests.slice(requestIdx))
 
             return failedRequests
         }
