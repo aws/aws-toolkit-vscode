@@ -248,14 +248,15 @@ describe('FilterBoxQuickPickPrompter', function () {
     it('can accept custom input as a last response', async function () {
         const input = '123'
 
-        testPrompter.lastResponse = { data: CUSTOM_USER_INPUT, description: input } as any
-        picker.fireOnDidChangeValue(input)
         testPrompter.onDidShow(() => {
             picker.onDidChangeActive(active => {
                 if (active[0]?.description !== undefined) {
                     picker.selectedItems = [active[0]]
                 }
             })
+
+            testPrompter.lastResponse = { data: CUSTOM_USER_INPUT, description: input } as any
+            picker.fireOnDidChangeValue(input)
         })
 
         assert.strictEqual(await loadAndPrompt(), Number(input))
