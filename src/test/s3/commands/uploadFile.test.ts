@@ -17,7 +17,7 @@ import { Commands } from '../../../shared/vscode/commands'
 import { Window } from '../../../shared/vscode/window'
 import { FakeCommands } from '../../shared/vscode/fakeCommands'
 
-describe('uploadFileCommand', function () {
+describe.only('uploadFileCommand', function () {
     const bucketName = 'bucket-name'
     const key = 'file.jpg'
     const sizeBytes = 16
@@ -87,8 +87,9 @@ describe('uploadFileCommand', function () {
 
             assert.deepStrictEqual(outputChannel.lines, [
                 'Uploading file file.jpg to s3://bucket-name/file.jpg',
+                'Successfully uploaded file.jpg',
                 '1/1 files uploaded to s3://bucket-name',
-                'Succesfully uploaded 1/1 files',
+                'Successfully uploaded 1/1 files',
             ])
         })
 
@@ -150,8 +151,9 @@ describe('uploadFileCommand', function () {
 
             assert.deepStrictEqual(outputChannel.lines, [
                 'Uploading file file.jpg to s3://bucket-name/file.jpg',
+                'Successfully uploaded file.jpg',
                 '1/1 files uploaded to s3://bucket-name',
-                'Succesfully uploaded 1/1 files',
+                'Successfully uploaded 1/1 files',
             ])
         })
 
@@ -226,8 +228,9 @@ describe('uploadFileCommand', function () {
 
         assert.deepStrictEqual(outputChannel.lines, [
             'Uploading file file.jpg to s3://bucket-name/file.jpg',
+            'Successfully uploaded file.jpg',
             '1/1 files uploaded to s3://bucket-name',
-            `Succesfully uploaded 1/1 files`,
+            `Successfully uploaded 1/1 files`,
         ])
     })
 
@@ -249,8 +252,11 @@ describe('uploadFileCommand', function () {
 
         assert.deepStrictEqual(outputChannel.lines, [
             'Uploading file file.jpg to s3://bucket-name/file.jpg',
-            'File file.jpg failed to upload error: Expected failure',
-            'Succesfully uploaded 0/1 files',
+            `File ${key} failed to upload error: Expected failure`,
+            '0/1 files uploaded to s3://bucket-name',
+            'Successfully uploaded 0/1 files',
+            'Failed uploads:',
+            `${key}`,
         ])
     })
 })

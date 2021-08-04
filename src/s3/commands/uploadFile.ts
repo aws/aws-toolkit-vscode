@@ -174,14 +174,14 @@ export async function uploadFileCommand(
         }
     }
 
-    let failedRequests = await uploadBatchOfFiles(uploadRequests)
+    let failedRequests = await uploadBatchOfFiles(uploadRequests, window, outputChannel)
     //let failedRequests = await uploadWithProgress(uploadRequests, undefined, outputChannel)
 
     const completedRequests = uploadRequests.length - failedRequests.length
     showOutputMessage(
         localize(
             'AWS.s3.uploadFile.success',
-            'Succesfully uploaded {0}/{1} files',
+            'Successfully uploaded {0}/{1} files',
             completedRequests,
             uploadRequests.length
         ),
@@ -221,7 +221,7 @@ export async function uploadFileCommand(
             'Continue'
         )
         if (response === 'Try again') {
-            failedRequests = await uploadBatchOfFiles(failedRequests)
+            failedRequests = await uploadBatchOfFiles(failedRequests, window, outputChannel)
         } else {
             break
         }
@@ -254,7 +254,7 @@ async function uploadBatchOfFiles(
         {
             cancellable: true,
             location: vscode.ProgressLocation.Notification,
-            title: 'Uploading batch of files',
+            title: `Uploading ${uploadRequests.length} files to ${uploadRequests[0].bucketName}`,
         },
         async (progress, token) => {
             let uploadedCount: number = 0
@@ -281,7 +281,7 @@ async function uploadBatchOfFiles(
                     outputChannel
                 )
 
-                const uploadResult = await uploadWithProgress(request)
+                const uploadResult = await uploadWithProgress(request, window, outputChannel)
 
                 if (uploadResult) {
                     //this request failed to upload
@@ -308,9 +308,7 @@ async function uploadBatchOfFiles(
                 }
             }
 
-            failedRequests.concat(uploadRequests.slice(requestIdx))
-
-            return failedRequests
+            return failedRequests.concat(uploadRequests.slice(requestIdx))
         }
     )
     return response
@@ -347,6 +345,7 @@ async function uploadWithProgress(
                 })
             }
         )
+        showOutputMessage(`Successfully uploaded ${fileName}`, outputChannel)
         telemetry.recordS3UploadObject({ result: 'Succeeded' })
     } catch (error) {
         showOutputMessage(
