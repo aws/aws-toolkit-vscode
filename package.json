@@ -1991,7 +1991,7 @@
         "vscode-languageserver": "^6.1.1",
         "vscode-languageserver-textdocument": "^1.0.1",
         "vscode-nls": "^4.1.1",
-        "vue": "^2.6.12",
+        "vue": "^2.6.14",
         "winston": "^3.2.1",
         "winston-transport": "^4.3.0",
         "xml2js": "^0.4.19",
