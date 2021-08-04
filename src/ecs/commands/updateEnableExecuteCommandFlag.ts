@@ -7,13 +7,15 @@ const localize = nls.loadMessageBundle()
 
 import { getLogger } from '../../shared/logger'
 import { recordEcsDisableExecuteCommand, recordEcsEnableExecuteCommand } from '../../shared/telemetry/telemetry.gen'
+import { Commands } from '../../shared/vscode/commands'
 import { Window } from '../../shared/vscode/window'
 import { EcsServiceNode } from '../explorer/ecsServiceNode'
 
 export async function updateEnableExecuteCommandFlag(
     node: EcsServiceNode,
     enable: boolean,
-    window = Window.vscode()
+    window = Window.vscode(),
+    commands = Commands.vscode()
 ): Promise<void> {
     const hasExecEnabled = node.service.enableExecuteCommand
 
@@ -51,6 +53,7 @@ export async function updateEnableExecuteCommandFlag(
             await node.ecs.updateService(node.service.clusterArn!, node.name, false)
             recordEcsDisableExecuteCommand({ result: 'Succeeded', passive: false })
         }
-        // TODO Add a refresh explorer command
+
+        commands.execute('aws.refreshAwsExplorer')
     }
 }
