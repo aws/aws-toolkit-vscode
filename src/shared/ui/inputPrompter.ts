@@ -27,10 +27,10 @@ export const DEFAULT_INPUTBOX_OPTIONS: vscode.InputBoxOptions = {
 }
 
 /**
- * Creates a new InputBox.
+ * Creates a new input box UI element.
  *
  * @param options Customizes the InputBox and InputBoxPrompter.
- * @returns An InputBoxPrompter. This can be used directly with the `prompt` method or can be fed into a Wizard.
+ * @returns An {@link InputBoxPrompter}. This can be used directly with the `prompt` method or can be fed into a Wizard.
  */
 export function createInputBox(options?: ExtendedInputBoxOptions): InputBoxPrompter {
     const inputBox = vscode.window.createInputBox() as InputBox
@@ -46,9 +46,9 @@ export function createInputBox(options?: ExtendedInputBoxOptions): InputBoxPromp
 }
 
 /**
- * Prompter abstraction over an InputBox UI element.
+ * UI element that accepts user-inputted text. Wraps around {@link vscode.InputBox InputBox}.
  *
- * See `createInputBox` for easy creation of instances of this class.
+ * See {@link createInputBox} for easy creation of instances of this class.
  */
 export class InputBoxPrompter extends Prompter<string> {
     private _lastResponse?: string

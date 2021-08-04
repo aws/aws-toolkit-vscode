@@ -59,13 +59,13 @@ function isDataQuickPickItem(obj: any): obj is DataQuickPickItem<any> {
 }
 
 /**
- * Creates a new QuickPick using special DataQuickPickItem interfaces. Information that should be returned when
- * the user selects an item must be placed in the `data` property of each item. If only the `label` is desired,
- * use `createLabelQuickPick` instead.
+ * Creates a UI element that presents a list of items. Information that should be returned when the user selects an
+ * item must be placed in the `data` property of each item. If only the `label` is desired, use
+ * {@link createLabelQuickPick} instead.
  *
  * @param items An array or a Promise for items.
  * @param options Customizes the QuickPick and QuickPickPrompter.
- * @returns A QuickPickPrompter. This can be used directly with the `prompt` method or can be fed into a Wizard.
+ * @returns A {@link QuickPickPrompter}. This can be used directly with the `prompt` method or can be fed into a Wizard.
  */
 export function createQuickPick<T>(
     items: DataQuickPickItem<T>[] | Promise<DataQuickPickItem<T>[]>,
@@ -130,6 +130,9 @@ function promptUser<T>(
     }).finally(() => picker.dispose())
 }
 
+/**
+ * A generic UI element that presents a list of items for the user to select. Wraps around {@link vscode.QuickPick QuickPick}.
+ */
 export class QuickPickPrompter<T> extends Prompter<T> {
     protected _lastPicked?: DataQuickPickItem<T>
     private onDidShowEmitter: vscode.EventEmitter<void> = new vscode.EventEmitter()

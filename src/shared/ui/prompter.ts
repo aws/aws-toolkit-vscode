@@ -14,8 +14,8 @@ export type PromptResult<T> = T | WizardControl | undefined
 type Transform<T, R = T> = (result: T) => R
 
 /**
- * A generic dialog object that encapsulates the presentation and transformation of user
- * responses to arbitrary GUIs.
+ * A generic abstraction of 'prompt' UIs. Returns the user's input by calling the {@link Prompter.prompt prompt}
+ * method. Can apply a series of deferred transformation callbacks to the input via {@link Prompter.transform transform}.
  */
 export abstract class Prompter<T> {
     private disposed = false
