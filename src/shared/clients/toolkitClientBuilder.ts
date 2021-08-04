@@ -19,6 +19,7 @@ import { DefaultS3Client, S3Client } from './s3Client'
 import { RegionProvider } from '../regions/regionProvider'
 import { DEFAULT_PARTITION } from '../regions/regionUtilities'
 import { ClassToInterfaceType } from '../utilities/tsUtils'
+import { AppRunnerClient, DefaultAppRunnerClient } from './apprunnerClient'
 
 export type ToolkitClientBuilder = ClassToInterfaceType<DefaultToolkitClientBuilder>
 export class DefaultToolkitClientBuilder {
@@ -70,5 +71,9 @@ export class DefaultToolkitClientBuilder {
 
     public createSsmClient(regionCode: string): SsmDocumentClient {
         return new DefaultSsmDocumentClient(regionCode)
+    }
+
+    public createAppRunnerClient(regionCode: string): AppRunnerClient {
+        return new DefaultAppRunnerClient(regionCode)
     }
 }
