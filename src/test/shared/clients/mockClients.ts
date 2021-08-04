@@ -2,7 +2,7 @@
  * Copyright 2018-2019 Amazon.com, Inc. or its affiliates. All Rights Reserved.
  * SPDX-License-Identifier: Apache-2.0
  */
-import { S3 } from 'aws-sdk'
+import { AppRunner, S3 } from 'aws-sdk'
 import { APIGateway, CloudFormation, CloudWatchLogs, IAM, Lambda, Schemas, StepFunctions, STS, SSM } from 'aws-sdk'
 import { ApiGatewayClient } from '../../../shared/clients/apiGatewayClient'
 import { CloudFormationClient } from '../../../shared/clients/cloudFormationClient'
@@ -37,6 +37,7 @@ import {
     ListObjectVersionsResponse,
     DeleteObjectsResponse,
 } from '../../../shared/clients/s3Client'
+import { AppRunnerClient } from '../../../shared/clients/apprunnerClient'
 
 interface Clients {
     apiGatewayClient: ApiGatewayClient
@@ -51,6 +52,7 @@ interface Clients {
     stsClient: StsClient
     s3Client: S3Client
     ssmDocumentClient: SsmDocumentClient
+    apprunnerClient: AppRunnerClient
 }
 
 export class MockToolkitClientBuilder implements ToolkitClientBuilder {
@@ -69,8 +71,13 @@ export class MockToolkitClientBuilder implements ToolkitClientBuilder {
             stsClient: new MockStsClient({}),
             s3Client: new MockS3Client({}),
             ssmDocumentClient: new MockSsmDocumentClient(),
+            apprunnerClient: new MockAppRunnerClient(),
             ...overrideClients,
         }
+    }
+
+    public createAppRunnerClient(regionCode: string): AppRunnerClient {
+        return this.clients.apprunnerClient
     }
 
     public createApiGatewayClient(regionCode: string): ApiGatewayClient {
@@ -536,5 +543,63 @@ export class MockS3Client implements S3Client {
         this.deleteObject = deleteObject
         this.deleteObjects = deleteObjects
         this.deleteBucket = deleteBucket
+    }
+}
+
+export class MockAppRunnerClient implements AppRunnerClient {
+    public readonly regionCode: string = ''
+
+    public constructor() {}
+
+    public async createService(request: AppRunner.CreateServiceRequest): Promise<AppRunner.CreateServiceResponse> {
+        throw new Error('Not implemented')
+    }
+
+    public async listServices(request: AppRunner.ListServicesRequest): Promise<AppRunner.ListServicesResponse> {
+        throw new Error('Not implemented')
+    }
+
+    public async pauseService(request: AppRunner.PauseServiceRequest): Promise<AppRunner.PauseServiceResponse> {
+        throw new Error('Not implemented')
+    }
+
+    public async resumeService(request: AppRunner.ResumeServiceRequest): Promise<AppRunner.ResumeServiceResponse> {
+        throw new Error('Not implemented')
+    }
+
+    public async updateService(request: AppRunner.UpdateServiceRequest): Promise<AppRunner.UpdateServiceResponse> {
+        throw new Error('Not implemented')
+    }
+
+    public async createConnection(
+        request: AppRunner.CreateConnectionRequest
+    ): Promise<AppRunner.CreateConnectionResponse> {
+        throw new Error('Not implemented')
+    }
+
+    public async listConnections(
+        request: AppRunner.ListConnectionsRequest
+    ): Promise<AppRunner.ListConnectionsResponse> {
+        throw new Error('Not implemented')
+    }
+
+    public async describeService(
+        request: AppRunner.DescribeServiceRequest
+    ): Promise<AppRunner.DescribeServiceResponse> {
+        throw new Error('Not implemented')
+    }
+
+    public async startDeployment(
+        request: AppRunner.StartDeploymentRequest
+    ): Promise<AppRunner.StartDeploymentResponse> {
+        throw new Error('Not implemented')
+    }
+
+    public async listOperations(request: AppRunner.ListOperationsRequest): Promise<AppRunner.ListOperationsResponse> {
+        throw new Error('Not implemented')
+    }
+
+    public async deleteService(request: AppRunner.DeleteServiceRequest): Promise<AppRunner.DeleteServiceResponse> {
+        throw new Error('Not implemented')
     }
 }
