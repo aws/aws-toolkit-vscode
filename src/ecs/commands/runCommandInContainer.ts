@@ -18,15 +18,23 @@ import { extensionSettingsPrefix } from '../../shared/constants'
 export async function runCommandInContainer(node: EcsContainerNode, window = Window.vscode()): Promise<void> {
     getLogger().debug('RunCommandInContainer called for: %O', node)
 
-    const verifySSMPluginResponse = await new ChildProcess(true, 'session-manager-plugin').run()
-    if (verifySSMPluginResponse.exitCode !== 0) {
+    const verifyAwsCliResponse = await new ChildProcess(true, 'aws').run()
+    if (verifyAwsCliResponse.exitCode !== 0) {
+        window.showErrorMessage(
+            localize('AWS.command.ecs.runCommandInContainer.noCliFound', 'Please install the AWS CLI before proceding')
+        )
+        throw new Error('The AWS CLI is not installed.')
+    }
+
+    const verifySsmPluginResponse = await new ChildProcess(true, 'session-manager-plugin').run()
+    if (verifySsmPluginResponse.exitCode !== 0) {
         window.showErrorMessage(
             localize(
-                'AWS.command.ecs.runCommandInContainer.noCliOrPlugin',
-                'This feature requires the AWS CLI with the SSM Session Manager plugin'
+                'AWS.command.ecs.runCommandInContainer.noPluginFound',
+                'Please install the SSM Session Manager plugin before proceding'
             )
         )
-        throw new Error('The Session Manager plugin for the AWS CLI is not installed.')
+        throw new Error('The SSM Session Manager plugin is not installed.')
     }
 
     //Quick pick to choose from the tasks in that service
