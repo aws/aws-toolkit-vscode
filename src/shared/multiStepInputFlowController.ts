@@ -3,8 +3,7 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
-import { Disposable, env, QuickInput, QuickInputButton, QuickInputButtons, QuickPickItem, Uri, window } from 'vscode'
-import { HelpButton } from '../shared/ui/buttons'
+import { Disposable, QuickInput, QuickInputButton, QuickInputButtons, QuickPickItem, window } from 'vscode'
 
 // Taken from the VSCode QuickInput sample, coordinates flows through
 // a multi-step input sequence.
@@ -123,10 +122,8 @@ export class MultiStepInputFlowController {
                     input.onDidTriggerButton(async item => {
                         if (item === QuickInputButtons.Back) {
                             reject(InputFlowAction.back)
-                        } else if (item instanceof HelpButton) {
-                            if (item.url) {
-                                await env.openExternal(Uri.parse(item.url))
-                            }
+                        } else if (typeof (item as any).onClick === 'function') {
+                            ;(item as any).onClick()
                             reject(InputFlowAction.resume)
                         } else {
                             resolve(item as any)
