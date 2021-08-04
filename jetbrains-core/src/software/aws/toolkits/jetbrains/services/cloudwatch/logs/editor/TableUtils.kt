@@ -17,6 +17,7 @@ import software.aws.toolkits.jetbrains.utils.ui.setSelectionHighlighting
 import software.aws.toolkits.resources.message
 import java.awt.Component
 import java.text.SimpleDateFormat
+import java.util.Comparator
 import javax.swing.JTable
 import javax.swing.SortOrder
 import javax.swing.table.TableCellRenderer
@@ -44,12 +45,17 @@ class LogStreamsStreamColumnRenderer() : TableCellRenderer {
     }
 }
 
-class LogStreamsDateColumn : ColumnInfo<LogStream, String>(message("cloudwatch.logs.last_event_time")) {
+class LogStreamsDateColumn(private val format: SyncDateFormat? = null) : ColumnInfo<LogStream, String>(message("cloudwatch.logs.last_event_time")) {
     private val renderer = ResizingTextColumnRenderer()
-    override fun valueOf(item: LogStream?): String? = TimeFormatConversion.convertEpochTimeToStringDateTime(item?.lastEventTimestamp(), showSeconds = false)
+    override fun valueOf(item: LogStream?): String? = TimeFormatConversion.convertEpochTimeToStringDateTime(
+        item?.lastEventTimestamp(),
+        showSeconds = false,
+        format = format
+    )
 
     override fun isCellEditable(item: LogStream?): Boolean = false
     override fun getRenderer(item: LogStream?): TableCellRenderer? = renderer
+    override fun getComparator(): Comparator<LogStream> = Comparator.comparing { it.lastEventTimestamp() }
 }
 
 class LogGroupTableSorter(model: ListTableModel<LogStream>) : TableRowSorter<ListTableModel<LogStream>>(model) {
@@ -68,12 +74,17 @@ class LogGroupFilterTableSorter(model: ListTableModel<LogStream>) : TableRowSort
     }
 }
 
-class LogStreamDateColumn : ColumnInfo<LogStreamEntry, String>(message("general.time")) {
+class LogStreamDateColumn(private val format: SyncDateFormat? = null) : ColumnInfo<LogStreamEntry, String>(message("general.time")) {
     private val renderer = ResizingTextColumnRenderer()
-    override fun valueOf(item: LogStreamEntry?): String? = TimeFormatConversion.convertEpochTimeToStringDateTime(item?.timestamp, showSeconds = true)
+    override fun valueOf(item: LogStreamEntry?): String? = TimeFormatConversion.convertEpochTimeToStringDateTime(
+        item?.timestamp,
+        showSeconds = true,
+        format = format
+    )
 
     override fun isCellEditable(item: LogStreamEntry?): Boolean = false
     override fun getRenderer(item: LogStreamEntry?): TableCellRenderer? = renderer
+    override fun getComparator(): Comparator<LogStreamEntry> = Comparator.comparing { it.timestamp }
 }
 
 class LogStreamMessageColumn : ColumnInfo<LogStreamEntry, String>(message("general.message")) {
@@ -92,8 +103,8 @@ class LogStreamMessageColumn : ColumnInfo<LogStreamEntry, String>(message("gener
 }
 
 object TimeFormatConversion {
-    fun convertEpochTimeToStringDateTime(epochTime: Long?, showSeconds: Boolean): String? {
-        val formatter: SyncDateFormat = if (showSeconds) {
+    fun convertEpochTimeToStringDateTime(epochTime: Long?, showSeconds: Boolean, format: SyncDateFormat? = null): String? {
+        val formatter = format ?: if (showSeconds) {
             SyncDateFormat(SimpleDateFormat("yyyy-MM-dd HH:mm:ss.SSS"))
         } else {
             DateFormatUtil.getDateTimeFormat()

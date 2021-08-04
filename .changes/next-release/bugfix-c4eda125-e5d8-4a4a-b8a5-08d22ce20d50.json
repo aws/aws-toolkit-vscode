@@ -1,0 +1,4 @@
+{
+  "type" : "bugfix",
+  "description" : "Fix CWL last event sorting (#2737)"
+}
