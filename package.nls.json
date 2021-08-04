@@ -192,6 +192,7 @@
     "AWS.command.quickStart.error": "There was an error retrieving the Quick Start page",
     "AWS.command.s3.downloadFileAs": "Download As...",
     "AWS.command.s3.copyPath": "Copy Path",
+    "AWS.command.s3.presignedURL": "Generate Presigned URL...",
     "AWS.command.s3.createBucket": "Create Bucket...",
     "AWS.command.s3.createFolder": "Create Folder...",
     "AWS.command.s3.uploadFile": "Upload File...",
@@ -431,6 +432,8 @@
     "AWS.s3.downloadFile.progressTitle": "Downloading {0}...",
     "AWS.s3.downloadFile.saveButton": "Download",
     "AWS.s3.downloadFile.error.general": "Failed to download file {0}",
+    "AWS.s3.promptTime.placeHolder": "Defaults to 15 minutes",
+    "AWS.s3.promptTime.prompt": "Enter a valid time (in minutes) for URL: ${0}",
     "AWS.s3.uploadFile.progressTitle": "Uploading {0}...",
     "AWS.s3.uploadFile.openButton": "Upload",
     "AWS.s3.uploadFile.startUpload": "Uploading file from {0} to {1}",
@@ -566,6 +569,7 @@
     "AWS.stepfunctions.visualisation.errors.rendering": "There was an error rendering State Machine Graph, check logs for details.",
     "AWS.stepfunctions.visualisation.errors.rename": "State machine visualization closed due to file renaming or closure.",
     "AWS.submitFeedback.title": "Submit Quick Feedback",
+    "AWS.validateTime.error.invalidNumber": "Input must be a positive number",
     "AWS.wizard.selectedPreviously": "Selected Previously",
     "AWS.generic.response.dismiss": "Dismiss",
     "AWS.generic.response.no": "No",
@@ -585,5 +589,10 @@
     "AWS.ssmDocument.ssm.maxItemsComputed.desc": "Controls the maximum number of problems produced by the SSM Document language server.",
     "AWS.picker.dynamic.noItemsFound.detail": "Click here to go back",
     "AWS.picker.dynamic.noItemsFound.label": "[No items found]",
-    "AWS.picker.dynamic.errorNode.label": "There was an error retrieving more items."
+    "AWS.picker.dynamic.errorNode.label": "There was an error retrieving more items.",
+    "AWS.walkthrough.gettingStarted.title": "Get Started with AWS",
+    "AWS.walkthrough.gettingStarted.description": "These walkthroughs help you set up the AWS Toolkit for Visual Studio Code.",
+    "AWS.walkthrough.gettingStarted.connect": "Connect to AWS",
+    "AWS.walkthrough.gettingStarted.changeRegions": "Change AWS Regions",
+    "AWS.walkthrough.gettingStarted.setupToolchain": "Configure your toolchain"
 }
