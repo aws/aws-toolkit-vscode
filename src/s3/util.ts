@@ -4,7 +4,6 @@
  */
 
 import { localize } from '../shared/utilities/vsCodeUtils'
-
 /**
  * Creates a readable path to an s3 bucket or object (e.g. s3://...).
  *
