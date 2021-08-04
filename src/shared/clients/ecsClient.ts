@@ -85,7 +85,26 @@ export class DefaultEcsClient {
             const listTasksResponse = await sdkClient.listTasks(params).promise()
             return listTasksResponse.taskArns ?? []
         } catch (error) {
-            getLogger().error(`ecs: Failed to get tasks for Cluster "${cluster}" and Service "${serviceName}": `)
+            getLogger().error(
+                `ecs: Failed to get tasks for Cluster "${cluster}" and Service "${serviceName}": ${error}`
+            )
+            throw error
+        }
+    }
+
+    public async updateService(cluster: string, serviceName: string, enable: boolean): Promise<void> {
+        const sdkClient = await this.createSdkClient()
+
+        const params: ECS.UpdateServiceRequest = {
+            cluster,
+            service: serviceName,
+            enableExecuteCommand: enable,
+            forceNewDeployment: true,
+        }
+        try {
+            sdkClient.updateService(params).promise()
+        } catch (error) {
+            getLogger().error(`ecs: Failed to update service: ${error} `)
             throw error
         }
     }

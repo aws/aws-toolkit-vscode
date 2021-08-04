@@ -1104,6 +1104,16 @@
                     "command": "aws.command.runCommandInContainer",
                     "group": "0@1",
                     "when": "view == aws.explorer && viewItem == awsEcsContainerNode"
+                },
+                {
+                    "command": "aws.command.enableEcsExec",
+                    "group": "0@1",
+                    "when": "view == aws.explorer && viewItem == awsEcsServiceNode"
+                },
+                {
+                    "command": "aws.command.disableEcsExec",
+                    "group": "0@2",
+                    "when": "view == aws.explorer && viewItem == awsEcsServiceNode"
                 }
             ]
         },
@@ -1752,6 +1762,26 @@
             {
                 "command": "aws.command.runCommandInContainer",
                 "title": "%AWS.command.runCommandInContainer%",
+                "category": "%AWS.title%",
+                "cloud9": {
+                    "cn": {
+                        "category": "%AWS.title.cn%"
+                    }
+                }
+            },
+            {
+                "command": "aws.command.enableEcsExec",
+                "title": "%AWS.command.enableEcsExec%",
+                "category": "%AWS.title%",
+                "cloud9": {
+                    "cn": {
+                        "category": "%AWS.title.cn%"
+                    }
+                }
+            },
+            {
+                "command": "aws.command.disableEcsExec",
+                "title": "%AWS.command.disableEcsExec%",
                 "category": "%AWS.title%",
                 "cloud9": {
                     "cn": {

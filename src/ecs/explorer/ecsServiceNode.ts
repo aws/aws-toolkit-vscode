@@ -19,11 +19,11 @@ export class EcsServiceNode extends AWSTreeNodeBase implements AWSResourceNode {
     public constructor(
         public readonly service: ECS.Service,
         public readonly parent: EcsClusterNode,
-        private readonly ecs: EcsClient
+        public readonly ecs: EcsClient
     ) {
         super(service.serviceName!, vscode.TreeItemCollapsibleState.Collapsed)
         this.tooltip = service.serviceArn
-        this.contextValue = 'awsEcsService'
+        this.contextValue = 'awsEcsServiceNode'
     }
 
     public async getChildren(): Promise<AWSTreeNodeBase[]> {
