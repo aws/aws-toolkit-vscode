@@ -179,6 +179,7 @@ async function registerAwsExplorerCommands(
 
     context.subscriptions.push(
         vscode.commands.registerCommand('aws.loadMoreChildren', async (node: AWSTreeNodeBase & LoadMoreNode) => {
+            node.setPersistChildren()
             await loadMoreChildrenCommand(node, awsExplorer)
         })
     )

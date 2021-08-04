@@ -9,8 +9,14 @@ import { AWSTreeNodeBase } from '../../shared/treeview/nodes/awsTreeNodeBase'
 import { LoadMoreNode } from '../../shared/treeview/nodes/loadMoreNode'
 
 class FakeNode extends AWSTreeNodeBase implements LoadMoreNode {
+    public persistChildren: boolean = false
+
     public constructor(public name: string) {
         super('FakeNode')
+    }
+
+    setPersistChildren(): void {
+        this.persistChildren = true
     }
 
     public loadMoreChildren(): Promise<void> {

@@ -8,7 +8,7 @@ import { ApiGatewayClient } from '../../../shared/clients/apiGatewayClient'
 import { CloudFormationClient } from '../../../shared/clients/cloudFormationClient'
 import { CloudWatchLogsClient } from '../../../shared/clients/cloudWatchLogsClient'
 import { EcrClient, EcrRepository } from '../../../shared/clients/ecrClient'
-import { EcsClient } from '../../../shared/clients/ecsClient'
+import { EcsResourceAndToken, EcsClient } from '../../../shared/clients/ecsClient'
 import { IamClient } from '../../../shared/clients/iamClient'
 import { LambdaClient } from '../../../shared/clients/lambdaClient'
 import { SchemaClient } from '../../../shared/clients/schemaClient'
@@ -296,25 +296,25 @@ export class MockEcrClient implements EcrClient {
 
 export class MockEcsClient implements EcsClient {
     public readonly regionCode: string
-    public readonly listClusters: () => AsyncIterableIterator<string>
-    public readonly listServices: (cluster: string) => AsyncIterableIterator<string>
-    public readonly listTaskDefinitionFamilies: () => AsyncIterableIterator<string>
+    public readonly listClusters: (nextToken?: string) => Promise<EcsResourceAndToken>
+    public readonly listServices: (cluster: string, nextToken?: string) => Promise<EcsResourceAndToken>
+    public readonly listContainerNames: (taskDefinition: string) => Promise<string[]>
 
     public constructor({
         regionCode = '',
-        listClusters = () => asyncGenerator([]),
-        listServices = (cluster: string) => asyncGenerator([]),
-        listTaskDefinitionFamilies = () => asyncGenerator([]),
+        listClusters = async () => ({ resource: [], nextToken: undefined }),
+        listServices = async () => ({ resource: [], nextToken: undefined }),
+        listContainerNames = async () => [],
     }: {
         regionCode?: string
-        listClusters?(): AsyncIterableIterator<string>
-        listServices?(cluster: string): AsyncIterableIterator<string>
-        listTaskDefinitionFamilies?(): AsyncIterableIterator<string>
+        listClusters?(): Promise<EcsResourceAndToken>
+        listServices?(): Promise<EcsResourceAndToken>
+        listContainerNames?(): Promise<string[]>
     }) {
         this.regionCode = regionCode
         this.listClusters = listClusters
         this.listServices = listServices
-        this.listTaskDefinitionFamilies = listTaskDefinitionFamilies
+        this.listContainerNames = listContainerNames
     }
 }
 
