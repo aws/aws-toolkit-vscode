@@ -17,7 +17,7 @@ import { Commands } from '../../../shared/vscode/commands'
 import { Window } from '../../../shared/vscode/window'
 import { FakeCommands } from '../../shared/vscode/fakeCommands'
 
-describe.only('uploadFileCommand', function () {
+describe('uploadFileCommand', function () {
     const bucketName = 'bucket-name'
     const key = 'file.jpg'
     const sizeBytes = 16
