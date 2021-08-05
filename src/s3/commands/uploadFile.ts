@@ -39,6 +39,7 @@ interface UploadRequest {
     fileSizeBytes: number
     s3Client: S3Client
     window: Window
+    ongoingUpload: S3.ManagedUpload | undefined
 }
 
 /**
@@ -102,6 +103,7 @@ export async function uploadFileCommand(
                 fileSizeBytes: fileSizeBytes(file),
                 s3Client,
                 window: window,
+                ongoingUpload: undefined,
             }
 
             uploadRequests.push(request)
@@ -151,6 +153,7 @@ export async function uploadFileCommand(
                         fileSizeBytes: fileSizeBytes(file),
                         s3Client,
                         window: window,
+                        ongoingUpload: undefined,
                     }
 
                     uploadRequests.push(request)
@@ -260,9 +263,11 @@ async function uploadBatchOfFiles(
             let uploadedCount: number = 0
             let requestIdx: number = 0
             const failedRequests: UploadRequest[] = []
-            const successfulRequests: UploadRequest[] = []
 
             token.onCancellationRequested(e => {
+                if (uploadRequests[requestIdx].ongoingUpload) {
+                    uploadRequests[requestIdx].ongoingUpload?.abort()
+                }
                 return failedRequests
             })
 
@@ -287,7 +292,6 @@ async function uploadBatchOfFiles(
                     //this request failed to upload
                     failedRequests.push(uploadResult)
                 } else {
-                    successfulRequests.push(request)
                     uploadedCount += 1
                 }
 
@@ -329,6 +333,7 @@ async function uploadWithProgress(
     try {
         await window.withProgress(
             {
+                cancellable: true,
                 location: vscode.ProgressLocation.Notification,
                 title: localize(
                     'AWS.s3.uploadFile.progressTitle',
@@ -336,15 +341,25 @@ async function uploadWithProgress(
                     path.basename(request.fileLocation.fsPath)
                 ),
             },
-            progress => {
-                return request.s3Client.uploadFile({
+            async (progress, token) => {
+                const currentStream = await request.s3Client.uploadFile({
                     bucketName: request.bucketName,
                     key: request.key,
                     fileLocation: request.fileLocation,
                     progressListener: progressReporter({ progress, totalBytes: request.fileSizeBytes }),
                 })
+
+                request.ongoingUpload = currentStream
+
+                token.onCancellationRequested(e => {
+                    currentStream.abort()
+                    throw new Error(`User cancelled upload for ${fileName}`)
+                })
+
+                return await currentStream.promise()
             }
         )
+        request.ongoingUpload = undefined
         showOutputMessage(`Successfully uploaded ${fileName}`, outputChannel)
         telemetry.recordS3UploadObject({ result: 'Succeeded' })
     } catch (error) {
