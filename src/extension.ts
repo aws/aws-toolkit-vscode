@@ -302,6 +302,9 @@ function initializeIconPaths(context: vscode.ExtensionContext) {
     ext.iconPaths.dark.schema = context.asAbsolutePath('resources/dark/schema.svg')
     ext.iconPaths.light.schema = context.asAbsolutePath('resources/light/schema.svg')
 
+    ext.iconPaths.dark.statemachine = context.asAbsolutePath('resources/dark/apprunner.svg')
+    ext.iconPaths.light.statemachine = context.asAbsolutePath('resources/light/apprunner.svg')
+
     ext.iconPaths.dark.statemachine = context.asAbsolutePath('resources/dark/stepfunctions/preview.svg')
     ext.iconPaths.light.statemachine = context.asAbsolutePath('resources/light/stepfunctions/preview.svg')
 
