@@ -341,13 +341,6 @@ export class DefaultS3Client {
         )
 
         return managedUploaded
-        // try {
-        //     await Promise.all([promisifyReadStream(readStream), managedUploaded.promise()])
-        // } catch (e) {
-        //     getLogger().error('Failed to upload %s to bucket %s: %O', request.key, request.bucketName, e)
-        //     throw e
-        // }
-        // getLogger().debug('UploadFile succeeded')
     }
 
     /**

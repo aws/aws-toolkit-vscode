@@ -6,7 +6,12 @@
 import * as assert from 'assert'
 import * as vscode from 'vscode'
 import { S3 } from 'aws-sdk'
-import { FileSizeBytes, getFileToUpload, promptUserForBucket, uploadFileCommand } from '../../../s3/commands/uploadFile'
+import {
+    FileSizeBytes,
+    getFilesToUpload,
+    promptUserForBucket,
+    uploadFileCommand,
+} from '../../../s3/commands/uploadFile'
 import { S3Node } from '../../../s3/explorer/s3Nodes'
 import { S3BucketNode } from '../../../s3/explorer/s3BucketNode'
 import { S3Client } from '../../../shared/clients/s3Client'
@@ -91,7 +96,7 @@ describe('uploadFileCommand', function () {
             assert.deepStrictEqual(outputChannel.lines, [
                 'Uploading file file.jpg to s3://bucket-name/file.jpg',
                 'Successfully uploaded file.jpg',
-                '1/1 files uploaded to s3://bucket-name',
+                '1/1 file(s) uploaded to s3://bucket-name',
                 'Successfully uploaded 1/1 files',
             ])
         })
@@ -156,7 +161,7 @@ describe('uploadFileCommand', function () {
             assert.deepStrictEqual(outputChannel.lines, [
                 'Uploading file file.jpg to s3://bucket-name/file.jpg',
                 'Successfully uploaded file.jpg',
-                '1/1 files uploaded to s3://bucket-name',
+                '1/1 file(s) uploaded to s3://bucket-name',
                 'Successfully uploaded 1/1 files',
             ])
         })
@@ -234,7 +239,7 @@ describe('uploadFileCommand', function () {
         assert.deepStrictEqual(outputChannel.lines, [
             'Uploading file file.jpg to s3://bucket-name/file.jpg',
             'Successfully uploaded file.jpg',
-            '1/1 files uploaded to s3://bucket-name',
+            '1/1 file(s) uploaded to s3://bucket-name',
             `Successfully uploaded 1/1 files`,
         ])
     })
@@ -257,8 +262,8 @@ describe('uploadFileCommand', function () {
 
         assert.deepStrictEqual(outputChannel.lines, [
             'Uploading file file.jpg to s3://bucket-name/file.jpg',
-            `File ${key} failed to upload error: Expected failure`,
-            '0/1 files uploaded to s3://bucket-name',
+            `Failed to upload file file.jpg: Expected failure`,
+            '0/1 file(s) uploaded to s3://bucket-name',
             'Successfully uploaded 0/1 files',
             'Failed uploads:',
             `${key}`,
@@ -289,14 +294,14 @@ describe('getFileToUpload', function () {
     })
 
     it('directly asks user for file if no active editor', async function () {
-        const response = await getFileToUpload(undefined, window, prompt)
+        const response = await getFilesToUpload(undefined, window, prompt)
         assert.deepStrictEqual(response, [fileLocation])
     })
 
     it('Returns undefined if no file is selected on first prompt', async function () {
         window = new FakeWindow({ dialog: { openSelections: undefined } })
 
-        const response = await getFileToUpload(undefined, window, prompt)
+        const response = await getFilesToUpload(undefined, window, prompt)
         assert.strictEqual(response, undefined)
     })
 
@@ -304,14 +309,14 @@ describe('getFileToUpload', function () {
         const alreadyOpenedUri = vscode.Uri.file('/alreadyOpened.txt')
         selection.label = alreadyOpenedUri.fsPath
 
-        const response = await getFileToUpload(alreadyOpenedUri, window, prompt)
+        const response = await getFilesToUpload(alreadyOpenedUri, window, prompt)
         assert.deepStrictEqual(response, [alreadyOpenedUri])
     })
 
     it('opens the file prompt if a user selects to browse for more files', async function () {
         selection.label = 'Browse for more files...'
 
-        const response = await getFileToUpload(fileLocation, window, prompt)
+        const response = await getFilesToUpload(fileLocation, window, prompt)
         assert.deepStrictEqual(response, [fileLocation])
     })
 
@@ -319,7 +324,7 @@ describe('getFileToUpload', function () {
         selection.label = 'Browse for more files...'
         window = new FakeWindow({ dialog: { openSelections: undefined } })
 
-        const response = await getFileToUpload(fileLocation, window, prompt)
+        const response = await getFilesToUpload(fileLocation, window, prompt)
 
         assert.strictEqual(response, undefined)
     })

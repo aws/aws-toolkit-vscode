@@ -21,7 +21,6 @@ import { createQuickPick, promptUser, verifySinglePickerOutput } from '../../sha
 import { addCodiconToString } from '../../shared/utilities/textUtilities'
 import { S3Client } from '../../shared/clients/s3Client'
 import { createBucketCommand } from './createBucket'
-import { recordAwsRefreshExplorer } from '../../shared/telemetry/telemetry'
 import { S3BucketNode } from '../explorer/s3BucketNode'
 import { S3FolderNode } from '../explorer/s3FolderNode'
 
@@ -54,7 +53,7 @@ export async function uploadFileCommand(
     nodeOrDocument: S3BucketNode | S3FolderNode | vscode.Uri | undefined,
     fileSizeBytes: FileSizeBytes = statFile,
     getBucket = promptUserForBucket,
-    getFile = getFileToUpload,
+    getFile = getFilesToUpload,
     window = Window.vscode(),
     outputChannel = ext.outputChannel,
     commands = Commands.vscode()
@@ -111,7 +110,7 @@ export async function uploadFileCommand(
     } else {
         while (true) {
             filesToUpload = await getFile(document, window)
-            if (filesToUpload) {
+            if (filesToUpload && filesToUpload.length > 0) {
                 let bucketResponse: S3.Bucket | string
                 try {
                     bucketResponse = await getBucket(s3Client)
@@ -178,7 +177,6 @@ export async function uploadFileCommand(
     }
 
     let failedRequests = await uploadBatchOfFiles(uploadRequests, window, outputChannel)
-    //let failedRequests = await uploadWithProgress(uploadRequests, undefined, outputChannel)
 
     const completedRequests = uploadRequests.length - failedRequests.length
     showOutputMessage(
@@ -198,31 +196,31 @@ export async function uploadFileCommand(
         if (failedRequests.length > 5) {
             showOutputMessage(
                 localize(
-                    'AWS.s3.uploadFile.failed',
+                    'AWS.s3.uploadFile.failedMany',
                     'Failed uploads:\n{0}\nSee logs for full list of failed items',
                     failedKeys.toString().split(',').slice(0, 5).join('\n')
                 ),
                 outputChannel
             )
-        }
-        if (failedRequests.length > 0) {
+        } else {
             showOutputMessage(
                 localize(
                     'AWS.s3.uploadFile.failed',
                     'Failed uploads:\n{0}',
                     failedKeys.toString().split(',').join('\n')
                 ),
-
                 outputChannel
             )
         }
-
+        const tryAgain = localize('AWS.generic.response.tryAgain', 'Try again')
+        const cont = localize('AWS.generic.response.continue', 'Continue')
         //at least one request failed
         const response = await window.showErrorMessage(
             `${failedRequests.length}/${uploadRequests.length} failed.`,
-            'Try again',
-            'Continue'
+            tryAgain,
+            cont
         )
+
         if (response === 'Try again') {
             failedRequests = await uploadBatchOfFiles(failedRequests, window, outputChannel)
         } else {
@@ -230,7 +228,6 @@ export async function uploadFileCommand(
         }
     }
 
-    recordAwsRefreshExplorer()
     commands.execute('aws.refreshAwsExplorer')
     return
 }
@@ -271,10 +268,7 @@ async function uploadBatchOfFiles(
                 return failedRequests
             })
 
-            token.isCancellationRequested
             const progressListener = progressReporter({ progress, totalBytes: uploadRequests.length })
-            //handle the loop here
-            //modify uploadwithProgress() to be for a single file again
 
             while (!token.isCancellationRequested && requestIdx < uploadRequests.length) {
                 const request = uploadRequests[requestIdx]
@@ -298,7 +292,7 @@ async function uploadBatchOfFiles(
                 showOutputMessage(
                     localize(
                         'AWS.s3.uploadFile.progressReport',
-                        '{0}/{1} files uploaded to {2}',
+                        '{0}/{1} file(s) uploaded to {2}',
                         uploadedCount,
                         uploadRequests.length,
                         destinationNoFile
@@ -364,12 +358,7 @@ async function uploadWithProgress(
         telemetry.recordS3UploadObject({ result: 'Succeeded' })
     } catch (error) {
         showOutputMessage(
-            localize(
-                'AWS.s3.uploadFile.error.general',
-                'File {0} failed to upload error: {1}',
-                fileName,
-                error.message
-            ),
+            localize('AWS.s3.uploadFile.error.general', 'Failed to upload file {0}: {1}', fileName, error.message),
             outputChannel
         )
 
@@ -480,7 +469,7 @@ export async function promptUserForBucket(
  *
  * @returns file selected by the user
  */
-export async function getFileToUpload(
+export async function getFilesToUpload(
     document?: vscode.Uri,
     window = Window.vscode(),
     promptUserFunction = promptUser
