@@ -34,6 +34,14 @@ describe('WizardForm', function () {
         assert.notStrictEqual(testForm.getPrompterProvider('prop1'), undefined)
     })
 
+    it('uses relative order', function () {
+        testForm.body.prop1.bindPrompter(() => new SimplePrompter(0), { relativeOrder: 1 })
+        testForm.body.prop2.bindPrompter(() => new SimplePrompter(''), { relativeOrder: 0 })
+
+        tester.prop2.assertShowFirst()
+        tester.prop1.assertShowSecond()
+    })
+
     it('shows prompter based on context', function () {
         testForm.body.prop1.bindPrompter(() => new SimplePrompter(0), { showWhen: state => state.prop2 === 'hello' })
         tester.prop1.assertDoesNotShow()
@@ -121,13 +129,6 @@ describe('WizardForm', function () {
             tester.nestedProp.prop1.assertShow()
         })
 
-        it('can check if a form would be shown', function () {
-            testForm.body.nestedProp.applyForm(nestedTestForm, { showWhen: state => !!state.prop1 })
-            tester.nestedProp.assertDoesNotShow()
-            tester.prop1.applyInput(1)
-            tester.nestedProp.assertShow()
-        })
-
         it('propagates state to local forms', function () {
             nestedTestForm.body.prop1.bindPrompter(() => new SimplePrompter(''), {
                 showWhen: state => state.prop2 === 'hello',
@@ -170,21 +171,6 @@ describe('WizardForm', function () {
             tester.nestedProp.prop1.clearInput()
             tester.nestedProp.prop2.applyInput('hello')
             tester.nestedProp.prop1.assertShow()
-        })
-
-        it('can apply form with "setDefault"', function () {
-            nestedTestForm.body.prop1.bindPrompter(() => new SimplePrompter(''), { requireParent: true })
-            nestedTestForm.body.prop2.setDefault(state => (state.prop1 ? `${state.prop1}.${state.prop1}` : undefined))
-
-            testForm.body.nestedProp.applyForm(nestedTestForm, { setDefault: () => ({ prop1: 'test' }) })
-            tester.nestedProp.prop1.assertDoesNotShow()
-            tester.nestedProp.prop1.assertValue('test')
-            tester.nestedProp.prop2.assertValue(undefined)
-            tester.nestedProp.applyInput({})
-            tester.nestedProp.prop1.assertShow()
-            tester.nestedProp.applyInput({ prop1: 'new' })
-            tester.nestedProp.prop1.assertDoesNotShow()
-            tester.nestedProp.prop2.assertValue('new.new')
         })
     })
 })
