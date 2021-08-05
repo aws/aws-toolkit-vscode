@@ -1078,6 +1078,11 @@
                     "group": "2@3"
                 },
                 {
+                    "command": "aws.s3.presignedURL",
+                    "when": "view == aws.explorer && viewItem =~ /^(awsS3FileNode)$/",
+                    "group": "2@4"
+                },
+                {
                     "command": "aws.s3.deleteBucket",
                     "when": "view == aws.explorer && viewItem == awsS3BucketNode",
                     "group": "3@1"
@@ -1290,6 +1295,11 @@
                         "category": "%AWS.title.cn%"
                     }
                 }
+            },
+            {
+                "command": "aws.s3.presignedURL",
+                "title": "%AWS.command.s3.presignedURL%",
+                "category": "%AWS.title%"
             },
             {
                 "command": "aws.s3.copyPath",
