@@ -160,7 +160,7 @@ describe('FilterBoxQuickPickPrompter', function () {
         validator: (resp: string) => (Number.isNaN(Number.parseInt(resp)) ? 'NaN' : undefined),
     }
 
-    let picker: ExposeEmitters<DataQuickPick<number>, 'onDidChangeValue'>
+    let picker: ExposeEmitters<DataQuickPick<number>, 'onDidChangeValue' | 'onDidAccept'>
     let testPrompter: FilterBoxQuickPickPrompter<number>
 
     function addTimeout(): void {
@@ -172,7 +172,7 @@ describe('FilterBoxQuickPickPrompter', function () {
     }
 
     beforeEach(function () {
-        picker = exposeEmitters(vscode.window.createQuickPick(), ['onDidChangeValue'])
+        picker = exposeEmitters(vscode.window.createQuickPick(), ['onDidChangeValue', 'onDidAccept'])
         testPrompter = new FilterBoxQuickPickPrompter(picker, filterBoxInputSettings)
         addTimeout()
     })
@@ -225,6 +225,7 @@ describe('FilterBoxQuickPickPrompter', function () {
             picker.onDidChangeActive(active => {
                 if (active[0]?.description !== undefined) {
                     picker.selectedItems = [active[0]]
+                    picker.fireOnDidAccept()
                 }
             })
 
