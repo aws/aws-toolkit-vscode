@@ -14,28 +14,18 @@ import { EcsContainerNode } from '../explorer/ecsContainerNode'
 import { recordEcsRunExecuteCommand } from '../../shared/telemetry/telemetry.gen'
 import { DefaultSettingsConfiguration } from '../../shared/settingsConfiguration'
 import { extensionSettingsPrefix } from '../../shared/constants'
+import { getIdeProperties } from '../../shared/extensionUtilities'
+import { showOutputMessage } from '../../shared/utilities/messages'
+import { ext } from '../../shared/extensionGlobals'
 
-export async function runCommandInContainer(node: EcsContainerNode, window = Window.vscode()): Promise<void> {
-    getLogger().debug('RunCommandInContainer called for: %O', node)
+export async function runCommandInContainer(
+    node: EcsContainerNode,
+    window = Window.vscode(),
+    outputChannel = ext.outputChannel
+): Promise<void> {
+    getLogger().debug('RunCommandInContainer called for: %O', node.continerName)
 
-    const verifyAwsCliResponse = await new ChildProcess(true, 'aws').run()
-    if (verifyAwsCliResponse.exitCode !== 0) {
-        window.showErrorMessage(
-            localize('AWS.command.ecs.runCommandInContainer.noCliFound', 'Please install the AWS CLI before proceding')
-        )
-        throw new Error('The AWS CLI is not installed.')
-    }
-
-    const verifySsmPluginResponse = await new ChildProcess(true, 'session-manager-plugin').run()
-    if (verifySsmPluginResponse.exitCode !== 0) {
-        window.showErrorMessage(
-            localize(
-                'AWS.command.ecs.runCommandInContainer.noPluginFound',
-                'Please install the SSM Session Manager plugin before proceding'
-            )
-        )
-        throw new Error('The SSM Session Manager plugin is not installed.')
-    }
+    await verifyCliAndPlugin(window)
 
     //Quick pick to choose from the tasks in that service
     const quickPickItems = (await node.listTasks()).map(task => {
@@ -55,7 +45,7 @@ export async function runCommandInContainer(node: EcsContainerNode, window = Win
 
     const quickPick = picker.createQuickPick({
         options: {
-            title: 'Choose a task',
+            title: localize('AWS.command.ecs.runCommandInContainer.chooseTask', 'Choose a task'),
             ignoreFocusOut: true,
         },
         items: quickPickItems,
@@ -84,7 +74,11 @@ export async function runCommandInContainer(node: EcsContainerNode, window = Win
 
     //Get command line text from user to run in the container
     const command = await window.showInputBox({
-        prompt: localize('AWS.command.ecs.runCommandInContainer.prompt', 'Enter the command to run in container'),
+        prompt: localize(
+            'AWS.command.ecs.runCommandInContainer.prompt',
+            'Enter the command to run in container: {0}',
+            node.continerName
+        ),
         placeHolder: localize('AWS.command.ecs.runCommandInContainer.placeHolder', 'Command to run'),
         ignoreFocusOut: true,
     })
@@ -103,14 +97,12 @@ export async function runCommandInContainer(node: EcsContainerNode, window = Win
             ),
             { modal: true },
             localize('AWS.generic.response.yes', 'Yes'),
-            localize('AWS.command.ecs.runCommandInContainer.yesDoNotShowAgain', "Yes, and don't ask again")
+            localize('AWS.message.prompt.yesDontAskAgain', "Yes, and don't ask again")
         )
         if (choice === undefined) {
             getLogger().debug('ecs: Cancelled runCommandInContainer')
             return
-        } else if (
-            choice === localize('AWS.command.ecs.runCommandInContainer.yesDoNotShowAgain', "Yes, and don't ask again")
-        ) {
+        } else if (choice === localize('AWS.message.prompt.yesDontAskAgain', "Yes, and don't ask again")) {
             configuration.writeSetting('ecs.warnRunCommand', false, vscode.ConfigurationTarget.Global)
         }
     }
@@ -132,11 +124,35 @@ export async function runCommandInContainer(node: EcsContainerNode, window = Win
         '--interactive'
     ).run()
 
-    getLogger().info(response.stdout)
     if (response.exitCode !== 0) {
         getLogger().error(response.stderr)
         recordEcsRunExecuteCommand({ result: 'Failed', ecsExecuteCommandType: 'command' })
     } else {
+        showOutputMessage(response.stdout, outputChannel)
         recordEcsRunExecuteCommand({ result: 'Succeeded', ecsExecuteCommandType: 'command' })
+    }
+}
+
+async function verifyCliAndPlugin(window: Window): Promise<void> {
+    const verifyAwsCliResponse = await new ChildProcess(true, 'aws', undefined, '--version').run()
+    if (verifyAwsCliResponse.exitCode !== 0) {
+        const noCli = localize(
+            'AWS.command.ecs.runCommandInContainer.noCliFound',
+            'Please install the {0} CLI before proceding',
+            getIdeProperties().company
+        )
+        window.showErrorMessage(noCli)
+        throw new Error('The AWS CLI is not installed.')
+    }
+
+    const verifySsmPluginResponse = await new ChildProcess(true, 'session-manager-plugin').run()
+    if (verifySsmPluginResponse.exitCode !== 0) {
+        window.showErrorMessage(
+            localize(
+                'AWS.command.ecs.runCommandInContainer.noPluginFound',
+                'Please install the SSM Session Manager plugin before proceding'
+            )
+        )
+        throw new Error('The SSM Session Manager plugin is not installed.')
     }
 }
