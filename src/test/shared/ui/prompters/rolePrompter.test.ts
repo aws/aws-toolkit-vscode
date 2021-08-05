@@ -19,7 +19,6 @@ describe('RolePrompter', function () {
     let mockIamClient: IamClient
     let prompterProvider: RolePrompter
     let prompter: picker.QuickPickPrompter<IAM.Role>
-
     let picker: ExposeEmitters<vscode.QuickPick<picker.DataQuickPickItem<IAM.Role>>, 'onDidTriggerButton'>
 
     beforeEach(function () {
@@ -62,8 +61,17 @@ describe('RolePrompter', function () {
         })
 
         prompter.onDidShow(() => {
-            roleResponse.Roles.push({ RoleName: 'test-role2', Arn: 'test-arn2' } as any)
-            picker.fireOnDidTriggerButton(picker.buttons.filter(b => b.tooltip === 'Refresh')[0])
+            if (picker.items.length === 0) {
+                picker.onDidChangeActive(() => {
+                    if (picker.items.length === 1) {
+                        roleResponse.Roles.push({ RoleName: 'test-role2', Arn: 'test-arn2' } as any)
+                        picker.fireOnDidTriggerButton(picker.buttons.filter(b => b.tooltip === 'Refresh')[0])
+                    }
+                })
+            } else {
+                roleResponse.Roles.push({ RoleName: 'test-role2', Arn: 'test-arn2' } as any)
+                picker.fireOnDidTriggerButton(picker.buttons.filter(b => b.tooltip === 'Refresh')[0])
+            }
         })
 
         assert.strictEqual(await prompter.prompt(), roleResponse.Roles[1])
@@ -72,12 +80,20 @@ describe('RolePrompter', function () {
     it('can create a new role', async function () {
         picker.onDidChangeActive(() => {
             if (picker.items.length === 2) {
-                picker.selectedItems = [picker.items[0]]
+                picker.selectedItems = [picker.items[1]]
             }
         })
 
         prompter.onDidShow(() => {
-            picker.fireOnDidTriggerButton(picker.buttons.filter(b => b.tooltip === 'Create Role...')[0])
+            if (picker.items.length === 0) {
+                picker.onDidChangeActive(() => {
+                    if (picker.items.length === 1) {
+                        picker.fireOnDidTriggerButton(picker.buttons.filter(b => b.tooltip === 'Create Role...')[0])
+                    }
+                })
+            } else {
+                picker.fireOnDidTriggerButton(picker.buttons.filter(b => b.tooltip === 'Create Role...')[0])
+            }
         })
 
         assert.strictEqual(await prompter.prompt(), newRole)
