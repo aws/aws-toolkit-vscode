@@ -37,7 +37,7 @@ describe('runCommandInContainer', function () {
 
     const successfulExecResult: FakeChildProcessResult = new FakeChildProcessResult({})
 
-    let ecs: EcsClient = new DefaultEcsClient('fakeRegion')
+    const ecs: EcsClient = new DefaultEcsClient('fakeRegion')
     let node: EcsContainerNode
 
     beforeEach(function () {
