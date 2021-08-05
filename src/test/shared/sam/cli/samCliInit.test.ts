@@ -9,6 +9,7 @@ import {
     eventBridgeStarterAppTemplate,
     getSamCliTemplateParameter,
     helloWorldTemplate,
+    lazyLoadSamTemplateStrings,
 } from '../../../../lambda/models/samTemplates'
 import { SamCliContext } from '../../../../shared/sam/cli/samCliContext'
 import { runSamCliInit, SamCliInitArgs } from '../../../../shared/sam/cli/samCliInit'
@@ -51,6 +52,8 @@ describe('runSamCliInit', async function () {
     let sampleSamInitArgs: SamCliInitArgs
 
     before(function () {
+        lazyLoadSamTemplateStrings()
+
         sampleSamInitArgs = {
             name: 'qwerty',
             location: '/some/path/to/code.js',
@@ -195,6 +198,8 @@ describe('runSamCliInit', async function () {
         let samInitArgsWithExtraContent: SamCliInitArgs
 
         before(function () {
+            lazyLoadSamTemplateStrings()
+
             extraContent = {
                 AWS_Schema_registry: 'testRegistry',
                 AWS_Schema_name: 'testSchema',
