@@ -73,6 +73,14 @@ export interface DownloadFileRequest {
     readonly saveLocation: vscode.Uri
 }
 
+export interface SignedUrlRequest {
+    readonly bucketName: string
+    readonly key: string
+    readonly time: number
+    readonly operation?: string
+    readonly body?: string
+}
+
 export interface UploadFileRequest {
     readonly bucketName: string
     readonly key: string
@@ -262,6 +270,26 @@ export class DefaultS3Client {
             throw e
         }
         getLogger().debug('DownloadFile succeeded')
+    }
+
+    /**
+     * Generates a presigned URL for the given file in S3.
+     * Takes a valid time option, which must be in seconds. This is the time the URL will be valid for
+     *
+     * @returns the string of the link to the presigned URL
+     */
+    public async getSignedUrl(request: SignedUrlRequest): Promise<string> {
+        const time = request.time
+        const operation = request.operation ? request.operation : 'getObject'
+        const s3 = await this.createS3()
+
+        const url = s3.getSignedUrl(operation, {
+            Bucket: request.bucketName,
+            Key: request.key,
+            Body: request.body,
+            Expires: time,
+        })
+        return url
     }
 
     /**
