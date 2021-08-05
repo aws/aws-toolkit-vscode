@@ -333,6 +333,12 @@ export class MockIamClient implements IamClient {
     public constructor({ listRoles = async () => ({ Roles: [] }) }: { listRoles?(): Promise<IAM.ListRolesResponse> }) {
         this.listRoles = listRoles
     }
+    public createRole(request: IAM.CreateRoleRequest): Promise<IAM.CreateRoleResponse> {
+        throw new Error('Method not implemented.')
+    }
+    public attachRolePolicy(request: IAM.AttachRolePolicyRequest): Promise<void> {
+        throw new Error('Method not implemented.')
+    }
 }
 
 export class MockLambdaClient implements LambdaClient {
