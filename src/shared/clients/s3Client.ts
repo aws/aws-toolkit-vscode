@@ -278,9 +278,6 @@ export class DefaultS3Client {
         try {
             const response = await s3.headObject({ Bucket: request.bucketName, Key: request.key }).promise()
 
-            if (response.$response.error) {
-                throw response.$response.error
-            }
             return response
         } catch (e) {
             getLogger().error('Failed to retrieve bucket header %s: %O', request.bucketName, e)
