@@ -24,7 +24,7 @@ export function getStateMachineDefinitionFromCfnTemplate(uniqueIdentifier: strin
 
             const slicedKey = key.slice(0, -8)
             if (slicedKey === uniqueIdentifier) {
-                const definitionString = jsonObj.Resources[`${key}`].Properties.DefinitionString["Fn::Join"][1]
+                const definitionString = jsonObj.Resources[`${key}`].Properties.DefinitionString
                 data = JSON.stringify(definitionString)
                 return data
             }
@@ -44,22 +44,23 @@ export function getStateMachineDefinitionFromCfnTemplate(uniqueIdentifier: strin
 export function toUnescapedAslJsonString(escapedAslJsonStr: string) {
     if (typeof (escapedAslJsonStr) != "string") return escapedAslJsonStr;
 
-    const refPrefix = '{"Ref":'
-    const refPrefixRegExp = new RegExp(refPrefix, 'g')
-    const refSuffix = '},""'
-    const refSuffixRegExp = new RegExp(refSuffix, 'g')
+    const fnJoinPrefix = '{"Fn::Join":["",['
+    const fnJoinSuffix = ']]}'
+    const refRegExp = /(,{"Ref":)(.*?)(},")(.*?)(")/g
+    const refRegExp2 = /(,{"Ref":)(.*?)(},"")/g
+    const fnGetAttRegExp = /(,{"Fn::GetAtt")(.*?)(]},"")/g
+    
     return escapedAslJsonStr
         .trim() //remove leading whitespaces
-        .substring(1) //remove square brackets that wrap escapedAslJsonStr
-        .slice(0, -1)
+        .replace(fnJoinPrefix,'')
+        .replace(fnJoinSuffix,'')
         .trim() //remove leading whitespaces
-        .substring(1) //remove quotes that wrap escapedAslJsonStr
-        .slice(0, -1)
-        .replace(/\"\",/g, '') //remove empty quotes followed by a comma
-        .replace(/\"\"/g, '') //remove empty quotes
+        .substring(1) //remove the quotes that wrap escapedAslJsonStr
+        .slice(0, -1) //remove the quotes that wrap escapedAslJsonStr
         .replace(/\\/g, '') //remove backslashes
-        .replace(refPrefixRegExp, '') //remove Ref prefix
-        .replace(refSuffixRegExp, '') //remove Ref suffix
+        .replace(refRegExp,'')
+        .replace(refRegExp2,'')
+        .replace(fnGetAttRegExp,'')
 };
 
 export function toUnescapedAslJson(arg0: string): string | undefined {
