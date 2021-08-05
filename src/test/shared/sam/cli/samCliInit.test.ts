@@ -9,6 +9,7 @@ import {
     eventBridgeStarterAppTemplate,
     getSamCliTemplateParameter,
     helloWorldTemplate,
+    lazyLoadSamTemplateStrings,
 } from '../../../../lambda/models/samTemplates'
 import { SamCliContext } from '../../../../shared/sam/cli/samCliContext'
 import { runSamCliInit, SamCliInitArgs } from '../../../../shared/sam/cli/samCliInit'
@@ -48,13 +49,19 @@ describe('runSamCliInit', async function () {
 
     const sampleDependencyManager = 'npm'
 
-    const sampleSamInitArgs: SamCliInitArgs = {
-        name: 'qwerty',
-        location: '/some/path/to/code.js',
-        runtime: 'nodejs10.x',
-        template: helloWorldTemplate,
-        dependencyManager: sampleDependencyManager,
-    }
+    let sampleSamInitArgs: SamCliInitArgs
+
+    before(function () {
+        lazyLoadSamTemplateStrings()
+
+        sampleSamInitArgs = {
+            name: 'qwerty',
+            location: '/some/path/to/code.js',
+            runtime: 'nodejs10.x',
+            template: helloWorldTemplate,
+            dependencyManager: sampleDependencyManager,
+        }
+    })
 
     describe('runSamCliInit with HelloWorld template', async function () {
         it('Passes init command to sam cli', async function () {
@@ -187,23 +194,30 @@ describe('runSamCliInit', async function () {
     })
 
     describe('runSamCliInit With EventBridgeStartAppTemplate', async function () {
-        const extraContent: SchemaTemplateExtraContext = {
-            AWS_Schema_registry: 'testRegistry',
-            AWS_Schema_name: 'testSchema',
-            AWS_Schema_root: 'test',
-            AWS_Schema_source: 'AWS',
-            AWS_Schema_detail_type: 'ec2',
-            user_agent: 'testAgent',
-        }
+        let extraContent: SchemaTemplateExtraContext
+        let samInitArgsWithExtraContent: SamCliInitArgs
 
-        const samInitArgsWithExtraContent: SamCliInitArgs = {
-            name: 'qwerty',
-            location: '/some/path/to/code.js',
-            runtime: 'python3.6',
-            template: eventBridgeStarterAppTemplate,
-            extraContent: extraContent,
-            dependencyManager: sampleDependencyManager,
-        }
+        before(function () {
+            lazyLoadSamTemplateStrings()
+
+            extraContent = {
+                AWS_Schema_registry: 'testRegistry',
+                AWS_Schema_name: 'testSchema',
+                AWS_Schema_root: 'test',
+                AWS_Schema_source: 'AWS',
+                AWS_Schema_detail_type: 'ec2',
+                user_agent: 'testAgent',
+            }
+
+            samInitArgsWithExtraContent = {
+                name: 'qwerty',
+                location: '/some/path/to/code.js',
+                runtime: 'python3.6',
+                template: eventBridgeStarterAppTemplate,
+                extraContent: extraContent,
+                dependencyManager: sampleDependencyManager,
+            }
+        })
 
         it('Passes --extra-context for eventBridgeStarterAppTemplate', async function () {
             const processInvoker: SamCliProcessInvoker = new ExtendedTestSamCliProcessInvoker(
