@@ -246,15 +246,15 @@ describe('FilterBoxQuickPickPrompter', function () {
                     items[0]?.detail?.includes('NaN') &&
                     items[0]?.invalidSelection
                 ) {
-                    picker.selectedItems = [picker.items[0]]
-                    disposable.dispose()
-                    picker.value = ''
-                    picker.fireOnDidChangeValue('')
                     picker.onDidChangeActive(items => {
                         if (items.length > 0) {
                             picker.selectedItems = [picker.items[0]]
                         }
                     })
+                    picker.selectedItems = [picker.items[0]]
+                    disposable.dispose()
+                    picker.value = ''
+                    picker.fireOnDidChangeValue('')
                 }
             })
 
