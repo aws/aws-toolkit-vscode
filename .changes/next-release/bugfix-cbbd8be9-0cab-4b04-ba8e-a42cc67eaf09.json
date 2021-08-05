@@ -1,4 +1,0 @@
-{
-  "type" : "bugfix",
-  "description" : "Fix some warnings due to slow operations on EDT (#2735)"
-}
