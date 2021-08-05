@@ -1,4 +1,0 @@
-{
-  "type" : "bugfix",
-  "description" : "Fix Go Lambda handler resolving into Go standard library (#2730)"
-}
