@@ -114,6 +114,15 @@ const scenarios: TestScenario[] = [
         language: 'python',
         dependencyManager: 'pip',
     },
+    // TODO: Add Python3.9 support to integration test hosts
+    // {
+    //     runtime: 'python3.9',
+    //     displayName: 'python3.9 (ZIP)',
+    //     path: 'hello_world/app.py',
+    //     debugSessionType: 'python',
+    //     language: 'python',
+    //     dependencyManager: 'pip',
+    // },
     {
         runtime: 'java8',
         displayName: 'java8 (Gradle ZIP)',
@@ -196,6 +205,25 @@ const scenarios: TestScenario[] = [
         dependencyManager: 'pip',
     },
     {
+        runtime: 'python3.8',
+        displayName: 'python3.8 (Image)',
+        baseImage: `amazon/python3.8-base`,
+        path: 'hello_world/app.py',
+        debugSessionType: 'python',
+        language: 'python',
+        dependencyManager: 'pip',
+    },
+    // TODO: Add Python3.9 support to integration test hosts
+    // {
+    //     runtime: 'python3.9',
+    //     displayName: 'python3.9 (Image)',
+    //     baseImage: `amazon/python3.9-base`,
+    //     path: 'hello_world/app.py',
+    //     debugSessionType: 'python',
+    //     language: 'python',
+    //     dependencyManager: 'pip',
+    // },
+    {
         runtime: 'go1.x',
         displayName: 'go1.x (Image)',
         baseImage: 'amazon/go1.x-base',
@@ -204,15 +232,6 @@ const scenarios: TestScenario[] = [
         language: 'go',
         dependencyManager: 'mod',
     },
-    // {
-    //     runtime: 'python3.8',
-    //     displayName: 'python3.8 (Image)',
-    //     baseImage: `amazon/python3.8-base`,
-    //     path: 'hello_world/app.py',
-    //     debugSessionType: 'python',
-    //     language: 'python',
-    //     dependencyManager: 'pip',
-    // },
     {
         runtime: 'java8',
         displayName: 'java8 (Maven Image)',
