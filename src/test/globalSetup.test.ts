@@ -23,6 +23,7 @@ import { FakeAwsContext } from './utilities/fakeAwsContext'
 import { initializeComputeRegion } from '../shared/extensionUtilities'
 import { FakeWorkspace } from './shared/vscode/fakeWorkspace'
 import { WorkspaceConfiguration } from '../shared/vscode/workspace'
+import { lazyLoadSamTemplateStrings } from '../lambda/models/samTemplates'
 
 const testReportDir = join(__dirname, '../../../.test-reports')
 const testLogOutput = join(testReportDir, 'testLog.log')
@@ -45,6 +46,7 @@ before(async function () {
     ext.init(fakeContext, extWindow.Window.vscode())
     ext.telemetry = service
     await initializeComputeRegion()
+    lazyLoadSamTemplateStrings()
 })
 
 beforeEach(function () {
