@@ -38,7 +38,8 @@ object Lambda {
         // Don't search through ".aws-sam" folders
         val samBuildFileScopes = GlobalSearchScope.filesScope(project, findSamBuildContents(project))
         val excludeSamBuildFileScopes = GlobalSearchScope.notScope(samBuildFileScopes)
-        val scope = GlobalSearchScope.allScope(project).intersectWith(excludeSamBuildFileScopes)
+        // only search within project content roots
+        val scope = GlobalSearchScope.projectScope(project).intersectWith(excludeSamBuildFileScopes)
 
         val elements = resolver.findPsiElements(project, handler, scope)
 

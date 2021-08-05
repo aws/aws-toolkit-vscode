@@ -99,6 +99,6 @@ abstract class LambdaBuilder {
         const val TASK_PATH = "/var/task"
 
         fun getModule(psiFile: PsiFile): Module = ModuleUtil.findModuleForFile(psiFile)
-            ?: throw IllegalStateException("Failed to locate module for $psiFile")
+            ?: throw IllegalStateException("Failed to locate module for ${psiFile.virtualFile}")
     }
 }
