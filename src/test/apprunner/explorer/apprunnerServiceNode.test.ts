@@ -30,11 +30,15 @@ describe('AppRunnerServiceNode', function () {
 
     before(function () {
         mockCloudWatchLogsClient = mock()
-
-        ext.awsExplorer = { refresh: () => {} } as any
-        ext.toolkitClientBuilder = {
+        // Forces assignment of the property key without affecting its value
+        // eslint-disable-next-line no-self-assign
+        ext.awsExplorer = ext.awsExplorer
+        // eslint-disable-next-line no-self-assign
+        ext.toolkitClientBuilder = ext.toolkitClientBuilder
+        sinon.stub(ext, 'awsExplorer').value({ refresh: () => {} } as any)
+        sinon.stub(ext, 'toolkitClientBuilder').value({
             createCloudWatchLogsClient: () => instance(mockCloudWatchLogsClient),
-        } as any
+        } as any)
     })
 
     beforeEach(function () {

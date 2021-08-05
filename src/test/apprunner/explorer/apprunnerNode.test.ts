@@ -29,13 +29,16 @@ describe('AppRunnerNode', function () {
 
     before(function () {
         clock = FakeTimers.install()
-        ext.awsExplorer = {
+        // Forces assignment of the property key without affecting its value
+        // eslint-disable-next-line no-self-assign
+        ext.awsExplorer = ext.awsExplorer
+        sinon.stub(ext, 'awsExplorer').value({
             refresh: (target: AppRunnerNode | AppRunnerServiceNode | undefined) => {
                 if (target === node) {
                     target.getChildren()
                 }
             },
-        } as any
+        } as any)
     })
 
     beforeEach(function () {
@@ -63,7 +66,7 @@ describe('AppRunnerNode', function () {
         when(mockApprunnerClient.listServices(anything())).thenResolve({ ServiceSummaryList: [updatedSummary] })
 
         await node.getChildren()
-        assert.strictEqual(childNode.getInfo().Status, 'PAUSED')
+        assert.strictEqual(childNode.info.Status, 'PAUSED')
     })
 
     it('deletes AppRunnerServiceNodes', async function () {
@@ -87,6 +90,6 @@ describe('AppRunnerNode', function () {
         await clock.tickAsync(100000)
         verify(mockApprunnerClient.listServices(anything())).times(2)
 
-        assert.strictEqual(childNode.getInfo().Status, 'PAUSED')
+        assert.strictEqual(childNode.info.Status, 'PAUSED')
     })
 })

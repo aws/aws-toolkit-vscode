@@ -17,13 +17,12 @@ const localize = nls.loadMessageBundle()
 
 const POLLING_INTERVAL = 20000
 export class AppRunnerNode extends AWSTreeNodeBase {
-    private readonly serviceNodes: Map<AppRunner.ServiceId, AppRunnerServiceNode>
+    private readonly serviceNodes: Map<AppRunner.ServiceId, AppRunnerServiceNode> = new Map()
     private readonly pollingNodes: Set<string> = new Set()
     private pollTimer?: NodeJS.Timeout
 
     public constructor(public readonly region: string, public readonly client: AppRunnerClient) {
         super('App Runner', vscode.TreeItemCollapsibleState.Collapsed)
-        this.serviceNodes = new Map<string, AppRunnerServiceNode>()
         this.contextValue = 'awsAppRunnerNode'
     }
 
@@ -60,7 +59,7 @@ export class AppRunnerNode extends AWSTreeNodeBase {
         while (true) {
             const next = await iterator.next()
 
-            next.value.ServiceSummaryList.map((summary: AppRunner.Service) => services.push(summary))
+            next.value.ServiceSummaryList.forEach((summary: AppRunner.Service) => services.push(summary))
 
             if (next.done) {
                 break
