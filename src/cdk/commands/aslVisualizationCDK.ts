@@ -21,12 +21,6 @@ export class AslVisualizationCDK extends AslVisualization {
 
     protected getText(textDocument: vscode.TextDocument): string {
         const definitionString = getStateMachineDefinitionFromCfnTemplate(this.uniqueIdentifier, this.templatePath)
-        const text = toUnescapedAslJsonString(definitionString ? definitionString : '')
-        writeFile(`/Users/yonakim/Desktop/NewCDKExamples/aws-cdk-examples/typescript/Testing/${this.uniqueIdentifier}.asl.json`, text, (err) => {
-            // When a request is aborted - the callback is called with an AbortError
-          });
-        //console.log(this.templatePath)
-        //console.log(toUnescapedAslJsonString(definitionString ? definitionString : ''))
         return toUnescapedAslJsonString(definitionString ? definitionString : '')
     }
 
