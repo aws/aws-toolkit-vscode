@@ -17,7 +17,7 @@ import { Commands } from '../../../shared/vscode/commands'
 import { Window } from '../../../shared/vscode/window'
 import { FakeCommands } from '../../shared/vscode/fakeCommands'
 
-describe('uploadFileCommand', function () {
+describe.only('uploadFileCommand', function () {
     const bucketName = 'bucket-name'
     const key = 'file.jpg'
     const sizeBytes = 16
@@ -30,8 +30,10 @@ describe('uploadFileCommand', function () {
     let getBucket: (s3client: S3Client, window?: Window) => Promise<S3.Bucket | string>
     let getFile: (document?: vscode.Uri, window?: Window) => Promise<vscode.Uri[] | undefined>
     let commands: Commands
+    let mockedUpload: S3.ManagedUpload
 
     beforeEach(function () {
+        mockedUpload = mock()
         s3 = mock()
         commands = new FakeCommands()
         bucketNode = new S3BucketNode(
@@ -57,7 +59,8 @@ describe('uploadFileCommand', function () {
         })
 
         it('uploads successfully', async function () {
-            when(s3.uploadFile(anything())).thenResolve()
+            when(s3.uploadFile(anything())).thenResolve(instance(mockedUpload))
+            when(mockedUpload.promise()).thenResolve()
 
             window = new FakeWindow({ dialog: { openSelections: [fileLocation] } })
 
@@ -136,7 +139,8 @@ describe('uploadFileCommand', function () {
         })
 
         it('uploads if user provides file and bucket', async function () {
-            when(s3.uploadFile(anything())).thenResolve()
+            when(s3.uploadFile(anything())).thenResolve(instance(mockedUpload))
+            when(mockedUpload.promise()).thenResolve()
 
             await uploadFileCommand(
                 instance(s3),
@@ -211,7 +215,8 @@ describe('uploadFileCommand', function () {
     }
 
     it('successfully upload file', async function () {
-        when(s3.uploadFile(anything())).thenResolve()
+        when(s3.uploadFile(anything())).thenResolve(instance(mockedUpload))
+        when(mockedUpload.promise()).thenResolve()
 
         window = new FakeWindow({ dialog: { openSelections: [fileLocation] } })
 
