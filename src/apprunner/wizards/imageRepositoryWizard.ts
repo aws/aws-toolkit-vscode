@@ -37,6 +37,7 @@ function makeButtons() {
 }
 
 const PUBLIC_ECR = 'public.ecr.aws'
+const APP_RUNNER_ECR_ENTITY = 'build.apprunner.amazonaws'
 
 export type TaggedEcrRepository = EcrRepository & { tag?: string }
 
@@ -222,7 +223,7 @@ export class AppRunnerImageRepositoryForm extends WizardForm<ImageRepositorySour
         const form = this.body
         const rolePrompter = new RolePrompter(iamClient, {
             title: localize('AWS.apprunner.createService.selectRole.title', 'Select a role to pull from ECR'),
-            filter: role => (role.AssumeRolePolicyDocument ?? '').includes('build.apprunner.amazonaws.com'),
+            filter: role => (role.AssumeRolePolicyDocument ?? '').includes(APP_RUNNER_ECR_ENTITY),
             createRole: createEcrRole.bind(undefined, iamClient),
         })
 
