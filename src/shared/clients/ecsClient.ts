@@ -88,6 +88,7 @@ export class DefaultEcsClient {
             getLogger().error(`ecs: Failed to get tasks for Cluster "${cluster}" and Service "${serviceName}": `)
             throw error
         }
+
     }
 
     protected async createSdkClient(): Promise<ECS> {
