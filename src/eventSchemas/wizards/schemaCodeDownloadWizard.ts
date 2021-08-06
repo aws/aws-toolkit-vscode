@@ -41,7 +41,7 @@ export interface SchemaCodeDownloadWizardContext {
 
 export class DefaultSchemaCodeDownloadWizardContext extends WizardContext implements SchemaCodeDownloadWizardContext {
     public readonly schemaLangs = codeLang.schemaCodeLangs
-    private readonly helpButton = createHelpButton(localize('AWS.command.help', 'View Toolkit Documentation'))
+    private readonly helpButton = createHelpButton()
     private readonly totalSteps = 3
     public constructor(private readonly node: SchemaItemNode) {
         super()
