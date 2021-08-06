@@ -23,7 +23,6 @@ import { getLogger } from '../../shared/logger'
  */
 export class EcsClusterNode extends AWSTreeNodeBase implements AWSResourceNode, LoadMoreNode {
     private readonly childLoader: ChildNodeLoader
-    public persistChildren: boolean = false
 
     public constructor(
         public readonly cluster: ECS.Cluster,
@@ -37,11 +36,6 @@ export class EcsClusterNode extends AWSTreeNodeBase implements AWSResourceNode, 
     }
 
     public async getChildren(): Promise<AWSTreeNodeBase[]> {
-        if (!this.persistChildren) {
-            this.clearChildren()
-        } else {
-            this.persistChildren = false
-        }
         return await makeChildrenNodes({
             getChildNodes: async () => this.childLoader.getChildren(),
             getErrorNode: async (error: Error, logID: number) => new ErrorNode(this, error, logID),
@@ -68,10 +62,6 @@ export class EcsClusterNode extends AWSTreeNodeBase implements AWSResourceNode, 
 
     public clearChildren(): void {
         this.childLoader.clearChildren()
-    }
-
-    public setPersistChildren(): void {
-        this.persistChildren = true
     }
 
     private async loadPage(nextToken: string | undefined): Promise<ChildNodePage> {

@@ -22,7 +22,7 @@ export class EcsServiceNode extends AWSTreeNodeBase implements AWSResourceNode {
         public readonly ecs: EcsClient
     ) {
         super(service.serviceName!, vscode.TreeItemCollapsibleState.Collapsed)
-        this.tooltip = service.serviceArn
+        this.tooltip = `${service.serviceArn}\nTask Definition: ${service.taskDefinition}`
         this.contextValue = 'awsEcsServiceNode'
     }
 
@@ -30,7 +30,6 @@ export class EcsServiceNode extends AWSTreeNodeBase implements AWSResourceNode {
         return await makeChildrenNodes({
             getChildNodes: async () => {
                 const containerNames = await this.ecs.listContainerNames(this.service.taskDefinition!)
-
                 return containerNames.map(name => new EcsContainerNode(name, this.name, this.parent.arn, this.ecs))
             },
             getErrorNode: async (error: Error, logID: number) => new ErrorNode(this, error, logID),

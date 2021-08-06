@@ -45,15 +45,4 @@ export interface LoadMoreNode {
      * Clears all children from the Node's cache.
      */
     clearChildren(): void
-
-    /**
-     * Sets persistChildren value to true
-     */
-    setPersistChildren(): void
-
-    /**
-     * Instructs the node to persist the child nodes during getChildren(). A false value will clear the children nodes
-     * during getChildren()
-     */
-    persistChildren: boolean
 }

@@ -108,6 +108,18 @@ export class DefaultEcsClient {
             throw error
         }
     }
+    public async describeTasks(cluster: string, tasks: string[]): Promise<ECS.Task[]> {
+        const sdkClient = await this.createSdkClient()
+
+        const params: ECS.DescribeTasksRequest = { cluster, tasks }
+        try {
+            const describedTasks = await sdkClient.describeTasks(params).promise()
+            return describedTasks.tasks ?? []
+        } catch (error) {
+            getLogger().error(error)
+            throw error
+        }
+    }
 
     protected async createSdkClient(): Promise<ECS> {
         return await ext.sdkClientBuilder.createAwsService(ECS, undefined, this.regionCode)

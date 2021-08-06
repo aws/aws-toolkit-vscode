@@ -11,15 +11,15 @@ export type QuickPickDataType<T> = T | WizardControl | undefined
 export type MultiQuickPickResult<T> = T[] | WizardControl | undefined
 export type PromptResult<T> = T | WizardControl | undefined
 
-type Transform<T, R = T> = (result: T) => R | void | Promise<R | void>
+type Transform<T, R = T> = (result: T) => R
 
 /**
- * A generic dialog object that encapsulates the presentation and transformation of user
- * responses to arbitrary GUIs.
+ * A generic abstraction of 'prompt' UIs. Returns the user's input by calling the {@link Prompter.prompt prompt}
+ * method. Can apply a series of deferred transformation callbacks to the input via {@link Prompter.transform transform}.
  */
 export abstract class Prompter<T> {
     private disposed = false
-    protected afterCallbacks: Transform<T, any>[] = []
+    protected transforms: Transform<T, any>[] = []
 
     constructor() {}
 
@@ -28,44 +28,24 @@ export abstract class Prompter<T> {
         return 1
     }
 
-    // A note on the following two methods:
-    //
-    // getLastResponse/setLastReponse are used to preserve some semblance of state in
-    // between different steps. it is up to implementing classes to check for type safety
-    // since there is a possibility for the 'last response' to be from a prompter of a
-    // completely different type
-    //
-    // why not keep state with prompters?
-    //
-    // as a whole, having prompters be regenerated every step is a solution to the state management
-    // problem. if we kept the same prompters for every step, we must also know how to update them
-    // as form state is manipulated by other steps.
-
     /** Implementing classes should use the argument to show the user what they last selected (if applicable) */
     public abstract get lastResponse(): any
     /** Implementing classes should return the user's response _before_ transforming into into type T */
     public abstract set lastResponse(response: any)
 
-    /** Adds a hook that is called after the user responds */
-    public after(callback: Transform<T, PromptResult<T>>): this {
-        this.afterCallbacks.push(callback)
-        return this
-    }
-
     /** Type-helper, allows Prompters to be mapped to different shapes */
     public transform<R>(callback: Transform<T, R>): Prompter<R> {
-        this.afterCallbacks.push(callback)
+        this.transforms.push(callback)
         return this as unknown as Prompter<R>
     }
 
-    /** Applies the 'after' hooks to the user response in the order in which they were added */
-    private async applyAfterCallbacks(result: PromptResult<T>): Promise<PromptResult<T>> {
-        while (this.afterCallbacks.length > 0) {
+    /** Applies transformations to the user response in the order in which they were added */
+    private applyTransforms(result: PromptResult<T>): PromptResult<T> {
+        for (const cb of this.transforms) {
             if (!isValidResponse(result)) {
                 return result
             }
-            const cb = this.afterCallbacks.shift()!
-            const transform: T | undefined = await cb(result)
+            const transform: T | undefined = cb(result)
             if (transform !== undefined) {
                 result = transform
             }
@@ -82,7 +62,7 @@ export abstract class Prompter<T> {
             throw new Error('Cannot call "prompt" multiple times')
         }
         this.disposed = true
-        return this.applyAfterCallbacks(await this.promptUser())
+        return this.applyTransforms(await this.promptUser())
     }
 
     protected abstract promptUser(): Promise<PromptResult<T>>
