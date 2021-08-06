@@ -92,7 +92,7 @@ function createInstanceStep(): Prompter<AppRunner.InstanceConfiguration> {
     ]
 
     const items: picker.DataQuickPickItem<AppRunner.InstanceConfiguration>[] = enumerations.map(e => ({
-        label: `${e[0]} vCPU${e[0] > 1 ? 's' : ''}, ${e[1]} GBs Memory`,
+        label: `${e[0]} vCPUs, ${e[1]} GBs Memory`,
         data: { Cpu: `${e[0]} vCPU`, Memory: `${e[1]} GB` },
     }))
 
