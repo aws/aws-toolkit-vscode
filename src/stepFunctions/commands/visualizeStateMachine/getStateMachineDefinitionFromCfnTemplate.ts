@@ -46,22 +46,24 @@ export function toUnescapedAslJsonString(escapedAslJsonStr: string) {
 
     const fnJoinPrefix = '{"Fn::Join":["",['
     const fnJoinSuffix = ']]}'
-    const refRegExp = /(,{"Ref":)(.*?)(},")(.*?)(")/g
-    const refRegExp2 = /(,{"Ref":)(.*?)(},"")/g
-    const fnGetAttRegExp = /(,{"Fn::GetAtt")(.*?)(]},"")/g
-    
+    const refRegExp = /(,{"Ref":)(.*?)(},")(.*?)(")/g //ARN of state machine followed by pseudo parameter
+    const refRegExp2 = /(,{"Ref":)(.*?)(},"")/g //ARN of state machine
+    const fnGetAttRegExp = /(,{"Fn::GetAtt")(.*?)(]},")(.*?)(")/g //value for a specified attribute of this type followed by pseudo parameter
+    const fnGetAttRegExp2 = /(,{"Fn::GetAtt")(.*?)(]},"")/g //value for a specified attribute of this type
+
     return escapedAslJsonStr
         .trim() //remove leading whitespaces
-        .replace(fnJoinPrefix,'')
-        .replace(fnJoinSuffix,'')
+        .replace(fnJoinPrefix, '')
+        .replace(fnJoinSuffix, '')
         .trim() //remove leading whitespaces
         .substring(1) //remove the quotes that wrap escapedAslJsonStr
         .slice(0, -1) //remove the quotes that wrap escapedAslJsonStr
         .replace(/\\/g, '') //remove backslashes
-        .replace(refRegExp,'')
-        .replace(refRegExp2,'')
-        .replace(fnGetAttRegExp,'')
-};
+        .replace(refRegExp, '')
+        .replace(refRegExp2, '')
+        .replace(fnGetAttRegExp, '')
+        .replace(fnGetAttRegExp2, '')
+}
 
 export function toUnescapedAslJson(arg0: string): string | undefined {
     throw new Error('Function not implemented.')

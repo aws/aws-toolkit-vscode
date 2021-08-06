@@ -7,7 +7,6 @@ import { localize } from '../../../src/shared/utilities/vsCodeUtils'
 import * as vscode from 'vscode'
 import { AslVisualization } from '../../../src/stepFunctions/commands/visualizeStateMachine/aslVisualization'
 import { getStateMachineDefinitionFromCfnTemplate, toUnescapedAslJsonString } from '../../stepFunctions/commands/visualizeStateMachine/getStateMachineDefinitionFromCfnTemplate'
-import { writeFile } from 'fs';
 
 export class AslVisualizationCDK extends AslVisualization {
     public readonly templatePath: string
@@ -27,6 +26,4 @@ export class AslVisualizationCDK extends AslVisualization {
     protected makeWebviewTitle(sourceDocumentUri: vscode.Uri): string {
         return localize('AWS.stepFunctions.graph.titlePrefix', 'Graph: {0}', this.uniqueIdentifier)
     }
-
-    
 }
