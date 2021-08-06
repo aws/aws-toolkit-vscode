@@ -29,7 +29,7 @@ export async function runCommandInContainer(
 
     //Quick pick to choose from the tasks in that service
     const taskArns = await node.listTasks()
-    const quickPickItems: vscode.QuickPickItem[] = (await node.desribeTasks(taskArns)).map(task => {
+    const quickPickItems: vscode.QuickPickItem[] = (await node.describeTasks(taskArns)).map(task => {
         // The last 32 digits of the task arn is the task identifier
         return {
             label: task.taskArn!.substr(-32),

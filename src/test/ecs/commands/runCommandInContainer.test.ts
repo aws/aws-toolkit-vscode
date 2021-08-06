@@ -11,7 +11,6 @@ import { DefaultEcsClient, EcsClient } from '../../../shared/clients/ecsClient'
 import { ChildProcess } from '../../../shared/utilities/childProcess'
 import { FakeWindow } from '../../shared/vscode/fakeWindow'
 import { FakeChildProcessResult } from '../../shared/sam/cli/testSamCliProcessInvoker'
-import { ECS } from 'aws-sdk'
 
 describe('runCommandInContainer', function () {
     let sandbox: sinon.SinonSandbox

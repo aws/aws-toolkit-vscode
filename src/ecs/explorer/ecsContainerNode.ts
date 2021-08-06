@@ -22,7 +22,7 @@ export class EcsContainerNode extends AWSTreeNodeBase {
         return this.ecs.listTasks(this.clusterArn, this.serviceName)
     }
 
-    public desribeTasks(tasks: string[]) {
+    public describeTasks(tasks: string[]) {
         return this.ecs.describeTasks(this.clusterArn, tasks)
     }
 }
