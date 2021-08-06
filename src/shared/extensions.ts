@@ -20,6 +20,7 @@ export const VSCODE_EXTENSION_ID = {
     go: 'golang.go',
     java: 'redhat.java',
     javadebug: 'vscjava.vscode-java-debug',
+    git: 'vscode.git',
 }
 
 /**

@@ -22,7 +22,7 @@ export interface TemplateDatum {
 }
 
 export class CloudFormationTemplateRegistry extends WatchedFiles<CloudFormation.Template> {
-    public constructor(private readonly config: WorkspaceConfiguration = vscode.workspace.getConfiguration('yaml')) {
+    public constructor(private readonly config?: WorkspaceConfiguration) {
         super()
     }
     protected name: string = 'CloudFormationTemplateRegistry'
@@ -34,7 +34,7 @@ export class CloudFormationTemplateRegistry extends WatchedFiles<CloudFormation.
         try {
             template = await CloudFormation.load(path)
         } catch (e) {
-            await updateYamlSchemasArray(path, 'none', this.config)
+            await updateYamlSchemasArray(path, 'none', { config: this.config, skipExtensionLoad: !!this.config })
             return undefined
         }
 
@@ -43,26 +43,25 @@ export class CloudFormationTemplateRegistry extends WatchedFiles<CloudFormation.
         if (template.AWSTemplateFormatVersion || template.Resources) {
             if (template.Transform && template.Transform.toString().startsWith('AWS::Serverless')) {
                 // apply serverless schema
-                await updateYamlSchemasArray(path, 'sam', this.config)
+                await updateYamlSchemasArray(path, 'sam', { config: this.config, skipExtensionLoad: !!this.config })
             } else {
                 // apply cfn schema
-                await updateYamlSchemasArray(path, 'cfn', this.config)
+                await updateYamlSchemasArray(path, 'cfn', { config: this.config, skipExtensionLoad: !!this.config })
             }
 
             return template
         }
 
-        await updateYamlSchemasArray(path, 'none', this.config)
+        await updateYamlSchemasArray(path, 'none', { config: this.config, skipExtensionLoad: !!this.config })
         return undefined
     }
 
     // handles delete case
     public async remove(path: string | vscode.Uri): Promise<void> {
-        await updateYamlSchemasArray(
-            typeof path === 'string' ? path : pathutils.normalize(path.fsPath),
-            'none',
-            this.config
-        )
+        await updateYamlSchemasArray(typeof path === 'string' ? path : pathutils.normalize(path.fsPath), 'none', {
+            config: this.config,
+            skipExtensionLoad: !!this.config,
+        })
         await super.remove(path)
     }
 }

@@ -11,3 +11,7 @@ export const no: string = localize('AWS.generic.response.no', 'No')
 export const localizedDelete: string = localize('AWS.generic.delete', 'Delete')
 export const cancel: string = localize('AWS.generic.cancel', 'Cancel')
 export const help: string = localize('AWS.generic.help', 'Help')
+export const invalidNumberWarning: string = localize(
+    'AWS.validateTime.error.invalidNumber',
+    'Input must be a positive number'
+)
