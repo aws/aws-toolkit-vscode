@@ -78,6 +78,10 @@ const BIND_PROMPTER: FormProperty = 'bindPrompter'
 const APPLY_FORM: FormProperty = 'applyForm'
 const SET_DEFAULT: FormProperty = 'setDefault'
 
+/**
+ * Maps individual {@link Prompter prompters} to a desired property of the output interface as defined by
+ * the generic type. Properties can the be queried for their bound prompters by consuming classes.
+ */
 export class WizardForm<TState extends Partial<Record<keyof TState, unknown>>> {
     protected readonly formData = new Map<string, FormDataElement<TState, any> & { _isForm?: boolean }>()
     public readonly body: Form<Required<TState>>

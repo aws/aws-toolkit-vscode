@@ -21,7 +21,7 @@ import {
 import { ActivationReloadState, SamInitState } from '../../shared/activationReloadState'
 import { AwsContext } from '../../shared/awsContext'
 import { ext } from '../../shared/extensionGlobals'
-import { fileExists, isInDirectory } from '../../shared/filesystemUtilities'
+import { fileExists, isInDirectory, readFileAsString } from '../../shared/filesystemUtilities'
 import { getLogger } from '../../shared/logger'
 import { RegionProvider } from '../../shared/regions/regionProvider'
 import { getRegionsForActiveCredentials } from '../../shared/regions/regionUtilities'
@@ -50,11 +50,13 @@ import { debugNewSamAppUrl, launchConfigDocUrl } from '../../shared/constants'
 import { Runtime } from 'aws-sdk/clients/lambda'
 import { getIdeProperties, isCloud9 } from '../../shared/extensionUtilities'
 import { execSync } from 'child_process'
+import { writeFile } from 'fs-extra'
 
 type CreateReason = 'unknown' | 'userCancelled' | 'fileNotFound' | 'complete' | 'error'
 
 export const SAM_INIT_TEMPLATE_FILES: string[] = ['template.yaml', 'template.yml']
-export const SAM_INIT_README_FILE: string = 'README.md'
+export const SAM_INIT_README_FILE: string = 'README.TOOLKIT.md'
+export const SAM_INIT_README_SOURCE: string = 'resources/markdown/samReadme.md'
 
 export async function resumeCreateNewSamApp(
     extContext: ExtContext,
@@ -86,15 +88,18 @@ export async function resumeCreateNewSamApp(
 
         samVersion = await getSamCliVersion(getSamCliContext())
 
-        await addInitialLaunchConfiguration(
+        const configs = await addInitialLaunchConfiguration(
             extContext,
             folder,
             templateUri,
             samInitState?.isImage ? samInitState?.runtime : undefined
         )
-        isCloud9()
-            ? await vscode.workspace.openTextDocument(readmeUri)
-            : await vscode.commands.executeCommand('markdown.showPreviewToSide', readmeUri)
+        const tryOpenReadme = await writeToolkitReadme(readmeUri.fsPath, configs)
+        if (tryOpenReadme) {
+            isCloud9()
+                ? await vscode.workspace.openTextDocument(readmeUri)
+                : await vscode.commands.executeCommand('markdown.showPreviewToSide', readmeUri)
+        }
     } catch (err) {
         createResult = 'Failed'
         reason = 'error'
@@ -203,17 +208,18 @@ export async function createNewSamApplication(
         await runSamCliInit(initArguments, samCliContext)
 
         const templateUri = await getProjectUri(config, SAM_INIT_TEMPLATE_FILES)
-        const readmeUri = await getProjectUri(config, [SAM_INIT_README_FILE])
-        if (!templateUri || !readmeUri) {
+        if (!templateUri) {
             reason = 'fileNotFound'
 
             return
         }
 
+        const readmeUri = vscode.Uri.file(path.join(path.dirname(templateUri.fsPath), SAM_INIT_README_FILE))
+
         // Needs to be done or else gopls won't start
         if (goRuntimes.includes(createRuntime)) {
             try {
-                execSync('go mod tidy', { cwd: path.join(path.dirname(readmeUri.fsPath), 'hello-world') })
+                execSync('go mod tidy', { cwd: path.join(path.dirname(templateUri.fsPath), 'hello-world') })
             } catch (err) {
                 getLogger().warn(
                     localize(
@@ -277,6 +283,8 @@ export async function createNewSamApplication(
             truthy: false,
         })
 
+        let tryOpenReadme: boolean = false
+
         if (isTemplateRegistered) {
             const newLaunchConfigs = await addInitialLaunchConfiguration(
                 extContext,
@@ -284,6 +292,7 @@ export async function createNewSamApplication(
                 templateUri,
                 createRuntime
             )
+            tryOpenReadme = await writeToolkitReadme(readmeUri.fsPath, newLaunchConfigs)
             if (newLaunchConfigs && newLaunchConfigs.length > 0) {
                 showCompletionNotification(config.name, `"${newLaunchConfigs.map(config => config.name).join('", "')}"`)
             }
@@ -312,9 +321,14 @@ export async function createNewSamApplication(
 
         activationReloadState.clearSamInitState()
         // TODO: Replace when Cloud9 supports `markdown` commands
-        isCloud9()
-            ? await vscode.workspace.openTextDocument(readmeUri)
-            : await vscode.commands.executeCommand('markdown.showPreviewToSide', readmeUri)
+
+        if (tryOpenReadme) {
+            isCloud9()
+                ? await vscode.workspace.openTextDocument(readmeUri)
+                : await vscode.commands.executeCommand('markdown.showPreviewToSide', readmeUri)
+        } else {
+            await vscode.workspace.openTextDocument(templateUri)
+        }
     } catch (err) {
         createResult = 'Failed'
         reason = 'error'
@@ -435,5 +449,42 @@ async function showCompletionNotification(appName: string, configs: string): Pro
         await openLaunchJsonFile()
     } else if (action === learnMore) {
         vscode.env.openExternal(vscode.Uri.parse(debugNewSamAppUrl))
+    }
+}
+
+/**
+ * Creates a new SAM readme tailored to the IDE and created launch configs
+ * @param readmeLocation Location of new readme file
+ * @param configurations Debug configs to list in readme
+ * @returns True on success, false otherwise
+ */
+export async function writeToolkitReadme(
+    readmeLocation: string,
+    configurations: vscode.DebugConfiguration[] = [],
+    getText: (path: string) => Promise<string> = readFileAsString
+): Promise<boolean> {
+    try {
+        const configString: string = configurations.reduce((acc, cur) => `${acc}\n* ${cur.name}`, '')
+        const readme = (await getText(ext.context.asAbsolutePath(SAM_INIT_README_SOURCE)))
+            .replace(/\$\{PRODUCTNAME\}/g, `${getIdeProperties().company} Toolkit For ${getIdeProperties().longName}`)
+            .replace(/\$\{IDE\}/g, getIdeProperties().shortName)
+            .replace(/\$\{CODELENS\}/g, getIdeProperties().codelens)
+            .replace(/\$\{COMPANYNAME\}/g, getIdeProperties().company)
+            .replace(/\$\{COMMANDPALETTE\}/g, getIdeProperties().commandPalette)
+            .replace(/\$\{LISTOFCONFIGURATIONS\}/g, configString)
+            .replace(
+                /\$\{DOCURL\}/g,
+                isCloud9()
+                    ? 'https://docs.aws.amazon.com/cloud9/latest/user-guide/serverless-apps-toolkit.html'
+                    : 'https://docs.aws.amazon.com/toolkit-for-vscode/latest/userguide/serverless-apps.html'
+            )
+
+        await writeFile(readmeLocation, readme)
+
+        return true
+    } catch (e) {
+        getLogger().error(`writeToolkitReadme failed, skip adding toolkit readme: ${(e as Error).message}`)
+
+        return false
     }
 }

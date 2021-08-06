@@ -37,6 +37,7 @@ import {
     ListObjectVersionsResponse,
     DeleteObjectsResponse,
     HeadObjectRequest,
+    SignedUrlRequest,
 } from '../../../shared/clients/s3Client'
 
 interface Clients {
@@ -493,6 +494,7 @@ export class MockS3Client implements S3Client {
     public readonly deleteObject: (request: DeleteObjectRequest) => Promise<void>
     public readonly deleteObjects: (request: DeleteObjectsRequest) => Promise<DeleteObjectsResponse>
     public readonly deleteBucket: (request: DeleteBucketRequest) => Promise<void>
+    public readonly getSignedUrl: (request: SignedUrlRequest) => Promise<string>
 
     public constructor({
         regionCode = '',
@@ -503,6 +505,7 @@ export class MockS3Client implements S3Client {
         createFolder = async (request: CreateFolderRequest) => ({ folder: { name: '', path: '', arn: '' } }),
         downloadFile = async (request: DownloadFileRequest) => {},
         getHeadObject = async (request: HeadObjectRequest) => ({}),
+        getSignedUrl = async (request: SignedUrlRequest) => '',
         uploadFile = async (request: UploadFileRequest) => {},
         listObjectVersions = async (request: ListObjectVersionsRequest) => ({ objects: [] }),
         listObjectVersionsIterable = (request: ListObjectVersionsRequest) => asyncGenerator([]),
@@ -518,6 +521,7 @@ export class MockS3Client implements S3Client {
         createFolder?(request: CreateFolderRequest): Promise<CreateFolderResponse>
         downloadFile?(request: DownloadFileRequest): Promise<void>
         getHeadObject?(request: HeadObjectRequest): Promise<S3.HeadObjectOutput>
+        getSignedUrl?(request: SignedUrlRequest): Promise<string>
         uploadFile?(request: UploadFileRequest): Promise<void>
         listObjectVersions?(request: ListObjectVersionsRequest): Promise<ListObjectVersionsResponse>
         listObjectVersionsIterable?(
@@ -535,6 +539,7 @@ export class MockS3Client implements S3Client {
         this.createFolder = createFolder
         this.downloadFile = downloadFile
         this.getHeadObject = getHeadObject
+        this.getSignedUrl = getSignedUrl
         this.uploadFile = uploadFile
         this.listObjectVersions = listObjectVersions
         this.listObjectVersionsIterable = listObjectVersionsIterable
