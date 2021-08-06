@@ -5,6 +5,7 @@
 
 import * as vscode from 'vscode'
 import * as nls from 'vscode-nls'
+import { documentationUrl } from '../constants'
 import { ext } from '../extensionGlobals'
 import { WizardControl } from '../wizards/wizard'
 
@@ -28,7 +29,10 @@ export interface QuickInputButton<T> extends vscode.QuickInputButton {
  * @param tooltip Optional tooltip for button
  * @param url Optional URL to open when button is clicked
  */
-export function createHelpButton(uri: string | vscode.Uri, tooltip: string = HELP_TOOLTIP): QuickInputLinkButton {
+export function createHelpButton(
+    uri: string | vscode.Uri = documentationUrl,
+    tooltip: string = HELP_TOOLTIP
+): QuickInputLinkButton {
     const iconPath = {
         light: vscode.Uri.file(ext.iconPaths.light.help),
         dark: vscode.Uri.file(ext.iconPaths.dark.help),
