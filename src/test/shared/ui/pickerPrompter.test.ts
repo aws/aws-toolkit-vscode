@@ -172,6 +172,9 @@ describe('FilterBoxQuickPickPrompter', function () {
     }
 
     beforeEach(function () {
+        if (vscode.version.startsWith('1.42')) {
+            this.skip()
+        }
         picker = exposeEmitters(vscode.window.createQuickPick(), ['onDidChangeValue', 'onDidAccept'])
         testPrompter = new FilterBoxQuickPickPrompter(picker, filterBoxInputSettings)
         addTimeout()
