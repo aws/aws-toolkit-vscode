@@ -38,7 +38,7 @@ export function generateResourceLineMap(cfnTemplate: string): ResourceLineMap | 
             `SAM Visualize: Failed to locate a 'Resources' key in template "${cfnTemplate.substr(
                 0,
                 characterLimit
-            )}"... Please ensure the template follows Template Anatomy: 0%`
+            )}"... Ensure the template follows Template Anatomy: 0%`
         )
         return undefined
     }
