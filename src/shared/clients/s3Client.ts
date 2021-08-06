@@ -304,7 +304,7 @@ export class DefaultS3Client {
      * @returns The S3.ManagedUpload stream
      * @throws Error if there is an error calling S3 or piping between streams.
      */
-    public async uploadFile(request: UploadFileRequest): Promise<any> {
+    public async uploadFile(request: UploadFileRequest): Promise<S3.ManagedUpload> {
         getLogger().debug(
             'UploadFile called for bucketName: %s, key: %s, fileLocation: %s',
             request.bucketName,
