@@ -6,7 +6,7 @@
 import { Branch, ControlSignal, StateMachineController, StepFunction } from './stateController'
 import * as _ from 'lodash'
 import { Prompter, PromptResult } from '../../shared/ui/prompter'
-import { CachedPrompter, WizardForm } from './wizardForm'
+import { PrompterProvider, WizardForm } from './wizardForm'
 
 /** Checks if the user response is valid (i.e. not undefined and not a control signal) */
 export function isValidResponse<T>(response: PromptResult<T>): response is T {
@@ -99,6 +99,11 @@ export class Wizard<TState extends Partial<Record<keyof TState, unknown>>> {
         return this._form.body
     }
 
+    /** The internal wizard form with bound prompters. This can be applied to other wizards. */
+    public get boundForm() {
+        return this._form
+    }
+
     private _estimator: ((state: TState) => number) | undefined
     public set parentEstimator(estimator: (state: TState) => number) {
         this._estimator = estimator
@@ -161,7 +166,7 @@ export class Wizard<TState extends Partial<Record<keyof TState, unknown>>> {
         }
     }
 
-    private createBoundStep<TProp>(prop: string, provider: CachedPrompter<TState, TProp>): StepFunction<TState> {
+    private createBoundStep<TProp>(prop: string, provider: PrompterProvider<TState, TProp>): StepFunction<TState> {
         const stepCache: StepCache = {}
 
         return async state => {
@@ -203,7 +208,7 @@ export class Wizard<TState extends Partial<Record<keyof TState, unknown>>> {
 
     private async promptUser<TProp>(
         state: StateWithCache<TState, TProp>,
-        provider: CachedPrompter<TState, TProp>,
+        provider: PrompterProvider<TState, TProp>,
         impliedResponse?: TProp
     ): Promise<PromptResult<TProp>> {
         const prompter = provider(state as StateWithCache<WizardState<TState>, TProp>)

@@ -14,15 +14,20 @@ import {
 } from '../../shared/ui/buttons'
 import { Remote } from '../../../types/git.d'
 import { GitExtension } from '../../shared/extensions/git'
-import * as input from '../../shared/ui/inputPrompter'
 import * as vscode from 'vscode'
-import * as picker from '../../shared/ui/pickerPrompter'
-import { CachedFunction, Prompter, CachedPrompter } from '../../shared/ui/prompter'
+import { CachedFunction, CachedPrompter } from '../../shared/ui/prompter'
 import { WizardForm } from '../../shared/wizards/wizardForm'
 import { createVariablesPrompter } from '../../shared/ui/common/variablesPrompter'
 import { AppRunnerClient } from '../../shared/clients/apprunnerClient'
 import { makeDeploymentButton } from './apprunnerCreateServiceWizard'
 import { ConnectionSummary } from 'aws-sdk/clients/apprunner'
+import {
+    createLabelQuickPick,
+    createQuickPick,
+    DataQuickPickItem,
+    QuickPickPrompter,
+} from '../../shared/ui/pickerPrompter'
+import { createInputBox, InputBoxPrompter } from '../../shared/ui/inputPrompter'
 
 const localize = nls.loadMessageBundle()
 
@@ -42,11 +47,11 @@ function validateCommand(command: string): string | undefined {
     return undefined
 }
 
-function createRepoPrompter(git: GitExtension): Prompter<Remote> {
+function createRepoPrompter(git: GitExtension): QuickPickPrompter<Remote> {
     const remotes = git.getRemotes()
     const userInputString = localize('AWS.apprunner.createService.customRepo', 'Enter GitHub URL')
     const items = remotes.map(remote => ({ label: remote.name, detail: remote.fetchUrl, data: remote }))
-    return picker.createQuickPick(items, {
+    return createQuickPick(items, {
         title: localize('AWS.apprunner.createService.selectRepository.title', 'Select a remote GitHub repository'),
         placeholder: localize(
             'AWS.apprunner.createService.selectRepository.placeholder',
@@ -60,7 +65,11 @@ function createRepoPrompter(git: GitExtension): Prompter<Remote> {
     })
 }
 
-function createBranchPrompter(git: GitExtension, cache: { [key: string]: any }, repo: string = ''): Prompter<string> {
+function createBranchPrompter(
+    git: GitExtension,
+    cache: { [key: string]: any },
+    repo: string = ''
+): QuickPickPrompter<string> {
     const last = cache[repo]
     const branchItems =
         last ??
@@ -74,7 +83,7 @@ function createBranchPrompter(git: GitExtension, cache: { [key: string]: any }, 
             return branchItems
         })
     const userInputString = localize('AWS.apprunner.createService.customRepo', 'Enter branch name')
-    return picker.createLabelQuickPick(branchItems, {
+    return createLabelQuickPick(branchItems, {
         title: localize('AWS.apprunner.createService.selectBranch.title', 'Select a branch'),
         filterBoxInputSettings: {
             label: userInputString,
@@ -88,25 +97,25 @@ function createBranchPrompter(git: GitExtension, cache: { [key: string]: any }, 
     })
 }
 
-function createRuntimePrompter(): Prompter<AppRunner.Runtime> {
+function createRuntimePrompter(): QuickPickPrompter<AppRunner.Runtime> {
     const items = [
         { label: 'python3', data: 'PYTHON_3' },
         { label: 'nodejs12', data: 'NODEJS_12' },
     ]
 
-    return picker.createQuickPick(items, {
+    return createQuickPick(items, {
         title: localize('AWS.apprunner.createService.selectRuntime.title', 'Select a runtime'),
         buttons: makeButtons(),
     })
 }
 
-function createBuildCommandPrompter(runtime: AppRunner.Runtime): Prompter<string> {
+function createBuildCommandPrompter(runtime: AppRunner.Runtime): InputBoxPrompter {
     const buildCommandMap = {
         python: 'pip install -r requirements.txt',
         node: 'npm install',
     } as { [key: string]: string }
 
-    return input.createInputBox({
+    return createInputBox({
         title: localize('AWS.apprunner.createService.buildCommand.title', 'Enter a build command'),
         buttons: makeButtons(),
         placeholder:
@@ -115,13 +124,13 @@ function createBuildCommandPrompter(runtime: AppRunner.Runtime): Prompter<string
     })
 }
 
-function createStartCommandPrompter(runtime: AppRunner.Runtime): Prompter<string> {
+function createStartCommandPrompter(runtime: AppRunner.Runtime): InputBoxPrompter {
     const startCommandMap = {
         python: 'python runapp.py',
         node: 'node app.js',
     } as { [key: string]: string }
 
-    return input.createInputBox({
+    return createInputBox({
         title: localize('AWS.apprunner.createService.startCommand.title', 'Enter a start command'),
         buttons: makeButtons(),
         placeholder:
@@ -130,7 +139,7 @@ function createStartCommandPrompter(runtime: AppRunner.Runtime): Prompter<string
     })
 }
 
-function createPortPrompter(): Prompter<string> {
+function createPortPrompter(): InputBoxPrompter {
     const validatePort = (port: string) => {
         if (isNaN(Number(port)) || port === '') {
             return localize('AWS.apprunner.createService.selectPort.invalidPort', 'Port must be a number')
@@ -139,7 +148,7 @@ function createPortPrompter(): Prompter<string> {
         return undefined
     }
 
-    return input.createInputBox({
+    return createInputBox({
         validateInput: validatePort,
         title: localize('AWS.apprunner.createService.selectPort.title', 'Enter a port for the new service'),
         placeholder: 'Enter a port',
@@ -152,7 +161,7 @@ export class ConnectionPrompter extends CachedPrompter<ConnectionSummary> {
         super()
     }
 
-    protected load(): Promise<picker.DataQuickPickItem<ConnectionSummary>[]> {
+    protected load(): Promise<DataQuickPickItem<ConnectionSummary>[]> {
         return this.client.listConnections({}).then(resp => {
             const connections = resp.ConnectionSummaryList.filter(conn => conn.Status === 'AVAILABLE').map(conn => ({
                 label: conn.ConnectionName!,
@@ -178,10 +187,10 @@ export class ConnectionPrompter extends CachedPrompter<ConnectionSummary> {
         })
     }
 
-    protected createPrompter(loader: CachedFunction<ConnectionPrompter['load']>): Prompter<ConnectionSummary> {
+    protected createPrompter(loader: CachedFunction<ConnectionPrompter['load']>): QuickPickPrompter<ConnectionSummary> {
         const connections = loader()
         const refreshButton = createRefreshButton()
-        const prompter = picker.createQuickPick(connections, {
+        const prompter = createQuickPick(connections, {
             title: localize('AWS.apprunner.createService.selectConnection.title', 'Select a connection'),
             buttons: [refreshButton, ...makeButtons()],
         })
@@ -197,18 +206,7 @@ export class ConnectionPrompter extends CachedPrompter<ConnectionSummary> {
     }
 }
 
-function createCodeRepositorySubForm(git: GitExtension): WizardForm<AppRunner.CodeRepository> {
-    const subform = new WizardForm<AppRunner.CodeRepository>()
-    const form = subform.body
-
-    form.RepositoryUrl.bindPrompter(() => createRepoPrompter(git).transform(r => r.fetchUrl!))
-
-    form.SourceCodeVersion.Value.bindPrompter(state =>
-        createBranchPrompter(git, state.stepCache, state.RepositoryUrl).transform(resp =>
-            resp.replace(`${state.RepositoryUrl}/`, '')
-        )
-    )
-
+function createSourcePrompter(): QuickPickPrompter<AppRunner.ConfigurationSource> {
     const configDetail = localize(
         'AWS.apprunner.createService.configSource.detail',
         'App Runner will read "apprunner.yaml" in the root of your repository for configuration details'
@@ -216,26 +214,36 @@ function createCodeRepositorySubForm(git: GitExtension): WizardForm<AppRunner.Co
     const apiLabel = localize('AWS.apprunner.createService.configSource.apiLabel', 'Configure all settings here')
     const repoLabel = localize('AWS.apprunner.createService.configSource.repoLabel', 'Use configuration file')
 
-    form.CodeConfiguration.ConfigurationSource.bindPrompter(() => {
-        return picker.createQuickPick(
-            [
-                { label: apiLabel, data: 'API' },
-                { label: repoLabel, data: 'REPOSITORY', detail: configDetail },
-            ],
-            {
-                title: localize('AWS.apprunner.createService.configSource.title', 'Choose configuration source'),
-                buttons: makeButtons(),
-            }
-        )
-    })
+    return createQuickPick(
+        [
+            { label: apiLabel, data: 'API' },
+            { label: repoLabel, data: 'REPOSITORY', detail: configDetail },
+        ],
+        {
+            title: localize('AWS.apprunner.createService.configSource.title', 'Choose configuration source'),
+            buttons: makeButtons(),
+        }
+    )
+}
 
+function createCodeRepositorySubForm(git: GitExtension): WizardForm<AppRunner.CodeRepository> {
+    const subform = new WizardForm<AppRunner.CodeRepository>()
+    const form = subform.body
+
+    form.RepositoryUrl.bindPrompter(() => createRepoPrompter(git).transform(r => r.fetchUrl!))
+    form.SourceCodeVersion.Value.bindPrompter(state =>
+        createBranchPrompter(git, state.stepCache, state.RepositoryUrl).transform(resp =>
+            resp.replace(`${state.RepositoryUrl}/`, '')
+        )
+    )
+    form.CodeConfiguration.ConfigurationSource.bindPrompter(createSourcePrompter)
     form.SourceCodeVersion.Type.setDefault(() => 'BRANCH')
 
     const codeConfigForm = new WizardForm<AppRunner.CodeConfigurationValues>()
-    codeConfigForm.body.Runtime.bindPrompter(() => createRuntimePrompter())
+    codeConfigForm.body.Runtime.bindPrompter(createRuntimePrompter)
     codeConfigForm.body.BuildCommand.bindPrompter(state => createBuildCommandPrompter(state.Runtime!))
     codeConfigForm.body.StartCommand.bindPrompter(state => createStartCommandPrompter(state.Runtime!))
-    codeConfigForm.body.Port.bindPrompter(() => createPortPrompter())
+    codeConfigForm.body.Port.bindPrompter(createPortPrompter)
     codeConfigForm.body.RuntimeEnvironmentVariables.bindPrompter(() => createVariablesPrompter(makeButtons()))
     // TODO: ask user if they would like to save their parameters into an App Runner config file
 
@@ -246,9 +254,7 @@ function createCodeRepositorySubForm(git: GitExtension): WizardForm<AppRunner.Co
     return subform
 }
 
-export type CodeRepositorySource = AppRunner.SourceConfiguration
-
-export class AppRunnerCodeRepositoryForm extends WizardForm<CodeRepositorySource> {
+export class AppRunnerCodeRepositoryForm extends WizardForm<AppRunner.SourceConfiguration> {
     constructor(
         client: AppRunnerClient,
         git: GitExtension,

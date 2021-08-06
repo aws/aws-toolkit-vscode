@@ -13,16 +13,13 @@ import {
     QuickInputToggleButton,
 } from '../../shared/ui/buttons'
 import { ext } from '../../shared/extensionGlobals'
-import { IamClient } from '../../shared/clients/iamClient'
 import * as input from '../../shared/ui/inputPrompter'
 import * as picker from '../../shared/ui/pickerPrompter'
 import { Prompter } from '../../shared/ui/prompter'
 import { Wizard, WizardState } from '../../shared/wizards/wizard'
-import { AppRunnerImageRepositoryForm, ImageRepositorySource } from './imageRepositoryWizard'
-import { AppRunnerCodeRepositoryForm, CodeRepositorySource } from './codeRepositoryWizard'
-import { WizardForm } from '../../shared/wizards/wizardForm'
+import { AppRunnerImageRepositoryForm } from './imageRepositoryWizard'
+import { AppRunnerCodeRepositoryForm } from './codeRepositoryWizard'
 import * as vscode from 'vscode'
-import { AppRunnerClient } from '../../shared/clients/apprunnerClient'
 import { BasicExitPrompterProvider } from '../../shared/ui/common/exitPrompter'
 import { GitExtension } from '../../shared/extensions/git'
 
@@ -56,32 +53,6 @@ function makeButtons() {
         createBackButton(),
         createExitButton(),
     ]
-}
-
-export interface CreateAppRunnerServiceContext {
-    readonly iamClient: IamClient
-    readonly apprunnerClient: AppRunnerClient
-    readonly autoDeployButton: QuickInputToggleButton
-    readonly codeRepositoryForm: WizardForm<CodeRepositorySource>
-    readonly imageRepositoryForm: WizardForm<ImageRepositorySource>
-}
-
-export class DefaultCreateAppRunnerServiceContext implements CreateAppRunnerServiceContext {
-    public readonly iamClient: IamClient
-    public readonly apprunnerClient: AppRunnerClient
-    public readonly autoDeployButton: QuickInputToggleButton
-    public readonly codeRepositoryForm: WizardForm<CodeRepositorySource>
-    public readonly imageRepositoryForm: WizardForm<ImageRepositorySource>
-
-    constructor(public readonly region: string, public readonly git: GitExtension) {
-        const ecrClient = ext.toolkitClientBuilder.createEcrClient(region)
-
-        this.iamClient = ext.toolkitClientBuilder.createIamClient(region)
-        this.apprunnerClient = ext.toolkitClientBuilder.createAppRunnerClient(region)
-        this.autoDeployButton = makeDeploymentButton()
-        this.codeRepositoryForm = new AppRunnerCodeRepositoryForm(this.apprunnerClient, git, this.autoDeployButton)
-        this.imageRepositoryForm = new AppRunnerImageRepositoryForm(ecrClient, this.iamClient, this.autoDeployButton)
-    }
 }
 
 // I'm sure this code could be reused in many places
@@ -159,10 +130,10 @@ function showDeploymentCostNotifcation(): void {
 
 function createSourcePrompter(
     autoDeployButton: QuickInputToggleButton
-): Prompter<CreateServiceRequest['SourceConfiguration']> {
+): Prompter<AppRunner.CreateServiceRequest['SourceConfiguration']> {
     const ecrPath = {
         label: 'ECR',
-        data: { ImageRepository: {} } as ImageRepositorySource,
+        data: { ImageRepository: {} } as AppRunner.SourceConfiguration,
         detail: localize(
             'AWS.apprunner.createService.ecr.detail',
             'Create a service from a public or private Elastic Container Registry repository'
@@ -171,7 +142,7 @@ function createSourcePrompter(
 
     const repositoryPath = {
         label: 'Repository',
-        data: { CodeRepository: {} } as CodeRepositorySource,
+        data: { CodeRepository: {} } as AppRunner.SourceConfiguration,
         detail: localize('AWS.apprunner.createService.repository.detail', 'Create a service from a GitHub repository'),
     }
 
@@ -181,21 +152,34 @@ function createSourcePrompter(
     })
 }
 
-export type CreateServiceRequest = Omit<AppRunner.CreateServiceRequest, 'SourceConfiguration'> & {
-    SourceConfiguration: CodeRepositorySource | ImageRepositorySource
-}
+export class CreateAppRunnerServiceWizard extends Wizard<AppRunner.CreateServiceRequest> {
+    public constructor(
+        region: string,
+        initState: WizardState<AppRunner.CreateServiceRequest> = {},
+        implicitState: WizardState<AppRunner.CreateServiceRequest> = {}
+    ) {
+        super({
+            initState,
+            implicitState,
+            exitPrompterProvider: new BasicExitPrompterProvider(),
+        })
 
-export class CreateAppRunnerServiceForm extends WizardForm<CreateServiceRequest> {
-    public constructor(context: CreateAppRunnerServiceContext) {
-        super()
-        const form = this.body
+        const ecrClient = ext.toolkitClientBuilder.createEcrClient(region)
+        const iamClient = ext.toolkitClientBuilder.createIamClient(region)
+        const apprunnerClient = ext.toolkitClientBuilder.createAppRunnerClient(region)
+        const autoDeployButton = makeDeploymentButton()
+        const gitExtension = new GitExtension()
+        const codeRepositoryForm = new AppRunnerCodeRepositoryForm(apprunnerClient, gitExtension, autoDeployButton)
+        const imageRepositoryForm = new AppRunnerImageRepositoryForm(ecrClient, iamClient, autoDeployButton)
 
-        form.SourceConfiguration.bindPrompter(() => createSourcePrompter(context.autoDeployButton))
+        const form = this.form
 
-        form.SourceConfiguration.applyForm(context.imageRepositoryForm, {
+        form.SourceConfiguration.bindPrompter(() => createSourcePrompter(autoDeployButton))
+
+        form.SourceConfiguration.applyForm(imageRepositoryForm, {
             showWhen: state => state.SourceConfiguration?.ImageRepository !== undefined,
         })
-        form.SourceConfiguration.applyForm(context.codeRepositoryForm, {
+        form.SourceConfiguration.applyForm(codeRepositoryForm, {
             showWhen: state => state.SourceConfiguration?.CodeRepository !== undefined,
         })
 
@@ -208,20 +192,5 @@ export class CreateAppRunnerServiceForm extends WizardForm<CreateServiceRequest>
         )
 
         form.InstanceConfiguration.bindPrompter(() => createInstanceStep())
-    }
-}
-
-export class CreateAppRunnerServiceWizard extends Wizard<CreateServiceRequest> {
-    public constructor(
-        context: CreateAppRunnerServiceContext,
-        initState: WizardState<AppRunner.CreateServiceRequest> = {},
-        implicitState: WizardState<AppRunner.CreateServiceRequest> = {}
-    ) {
-        super({
-            initForm: new CreateAppRunnerServiceForm(context),
-            initState,
-            implicitState,
-            exitPrompterProvider: new BasicExitPrompterProvider(),
-        })
     }
 }

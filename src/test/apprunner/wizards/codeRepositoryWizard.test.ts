@@ -8,12 +8,8 @@ import * as sinon from 'sinon'
 import * as picker from '../../../shared/ui/pickerPrompter'
 import * as assert from 'assert'
 import { AppRunner } from 'aws-sdk'
-import { createFormTester, FormTester } from '../../shared/wizards/wizardTestUtils'
-import {
-    AppRunnerCodeRepositoryForm,
-    CodeRepositorySource,
-    ConnectionPrompter,
-} from '../../../apprunner/wizards/codeRepositoryWizard'
+import { createWizardTester, WizardTester } from '../../shared/wizards/wizardTestUtils'
+import { AppRunnerCodeRepositoryForm, ConnectionPrompter } from '../../../apprunner/wizards/codeRepositoryWizard'
 import { AppRunnerClient } from '../../../shared/clients/apprunnerClient'
 import { ConnectionSummary } from 'aws-sdk/clients/apprunner'
 import { Prompter } from '../../../shared/ui/prompter'
@@ -21,12 +17,12 @@ import { WIZARD_EXIT } from '../../../shared/wizards/wizard'
 import { exposeEmitters, ExposeEmitters } from '../../shared/vscode/testUtils'
 
 describe('AppRunnerCodeRepositoryForm', function () {
-    let tester: FormTester<CodeRepositorySource>
-    let repoTester: FormTester<AppRunner.CodeRepository>
+    let tester: WizardTester<AppRunner.SourceConfiguration>
+    let repoTester: WizardTester<AppRunner.CodeRepository>
 
     beforeEach(function () {
         const form = new AppRunnerCodeRepositoryForm({} as any, {} as any) // git api will never be called
-        tester = createFormTester(form)
+        tester = createWizardTester(form)
         repoTester = tester.CodeRepository
     })
 

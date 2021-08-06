@@ -5,8 +5,9 @@
 
 import * as _ from 'lodash'
 import * as assert from 'assert'
-import { WizardForm } from '../../../shared/wizards/wizardForm'
 import { ExpandWithObject } from '../../../shared/utilities/tsUtils'
+import { Wizard } from '../../../shared/wizards/wizard'
+import { WizardForm } from '../../../shared/wizards/wizardForm'
 
 interface MockWizardFormElement<TProp> {
     applyInput(input: TProp): void
@@ -48,7 +49,7 @@ const NOT_ASSERT_SHOW_ANY: FormTesterMethodKey = 'assertDoesNotShowAny'
 const ASSERT_VALUE: FormTesterMethodKey = 'assertValue'
 const SHOW_COUNT: FormTesterMethodKey = 'assertShowCount'
 
-export type FormTester<T> = MockForm<Required<T>> & Pick<MockWizardFormElement<any>, typeof SHOW_COUNT>
+export type WizardTester<T> = MockForm<Required<T>> & Pick<MockWizardFormElement<any>, typeof SHOW_COUNT>
 
 function failIf(cond: boolean, message?: string): void {
     if (cond) {
@@ -56,7 +57,8 @@ function failIf(cond: boolean, message?: string): void {
     }
 }
 
-export function createFormTester<T extends Partial<T>>(form: WizardForm<T>): FormTester<T> {
+export function createWizardTester<T extends Partial<T>>(wizard: Wizard<T> | WizardForm<T>): WizardTester<T> {
+    const form = wizard instanceof Wizard ? wizard.boundForm : wizard
     const state = {} as T
 
     function canShowPrompter(prop: string): boolean {
@@ -112,7 +114,7 @@ export function createFormTester<T extends Partial<T>>(form: WizardForm<T>): For
             failIf(actual !== expected, `Property "${path}" had unexpected value: ${actual} !== ${expected}`)
     }
 
-    function createFormWrapper(path: string[] = []): FormTester<T> {
+    function createFormWrapper(path: string[] = []): WizardTester<T> {
         return new Proxy(
             {},
             {
@@ -154,7 +156,7 @@ export function createFormTester<T extends Partial<T>>(form: WizardForm<T>): For
                     }
                 },
             }
-        ) as FormTester<T>
+        ) as WizardTester<T>
     }
 
     return createFormWrapper()

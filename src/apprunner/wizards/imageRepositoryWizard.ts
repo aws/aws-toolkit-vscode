@@ -215,9 +215,7 @@ function createImageRepositorySubForm(
 
     return subform
 }
-
-export type ImageRepositorySource = AppRunner.SourceConfiguration
-export class AppRunnerImageRepositoryForm extends WizardForm<ImageRepositorySource> {
+export class AppRunnerImageRepositoryForm extends WizardForm<AppRunner.SourceConfiguration> {
     constructor(ecrClient: EcrClient, iamClient: IamClient, autoDeployButton = makeDeploymentButton()) {
         super()
         const form = this.body

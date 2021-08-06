@@ -4,41 +4,34 @@
  */
 
 import * as _ from 'lodash'
-import {
-    CreateAppRunnerServiceForm,
-    CreateServiceRequest,
-} from '../../../apprunner/wizards/apprunnerCreateServiceWizard'
-import { createFormTester, FormTester } from '../../../test/shared/wizards/wizardTestUtils'
-import { IamClient } from '../../../shared/clients/iamClient'
-import { AppRunnerImageRepositoryForm } from '../../../apprunner/wizards/imageRepositoryWizard'
-import { AppRunnerCodeRepositoryForm } from '../../../apprunner/wizards/codeRepositoryWizard'
-import { EcrClient } from '../../../shared/clients/ecrClient'
-import { AppRunnerClient } from '../../../shared/clients/apprunnerClient'
-import { GitExtension } from '../../../shared/extensions/git'
-import { QuickInputToggleButton } from '../../../shared/ui/buttons'
+import { createWizardTester, WizardTester } from '../../../test/shared/wizards/wizardTestUtils'
+import { AppRunner } from 'aws-sdk'
+import { CreateAppRunnerServiceWizard } from '../../../apprunner/wizards/apprunnerCreateServiceWizard'
+import { ext } from '../../../shared/extensionGlobals'
 
 describe('CreateServiceWizard', function () {
-    let tester: FormTester<CreateServiceRequest>
+    let tester: WizardTester<AppRunner.CreateServiceRequest>
+    let lastClientBuilder: typeof ext.toolkitClientBuilder
 
-    beforeEach(function () {
-        const iamClient: IamClient = {} as any
-        const ecrClient: EcrClient = {} as any
-        const apprunnerClient: AppRunnerClient = {} as any
-        const gitExtension: GitExtension = {} as any
-
-        const fakeContext = {
-            iamClient,
-            apprunnerClient,
-            imageRepositoryForm: new AppRunnerImageRepositoryForm(ecrClient, iamClient),
-            codeRepositoryForm: new AppRunnerCodeRepositoryForm(apprunnerClient, gitExtension),
-            autoDeployButton: new QuickInputToggleButton({} as any, {} as any),
-        }
-
-        const form = new CreateAppRunnerServiceForm(fakeContext)
-        tester = createFormTester(form)
+    before(function () {
+        lastClientBuilder = ext.toolkitClientBuilder
+        ext.toolkitClientBuilder = {
+            createAppRunnerClient: () => ({} as any),
+            createEcrClient: () => ({} as any),
+            createIamClient: () => ({} as any),
+        } as any
     })
 
-    describe('CreateAppRunnerServiceForm', function () {
+    beforeEach(function () {
+        const wizard = new CreateAppRunnerServiceWizard('')
+        tester = createWizardTester(wizard)
+    })
+
+    after(function () {
+        ext.toolkitClientBuilder = lastClientBuilder
+    })
+
+    describe('CreateAppRunnerServiceWizard', function () {
         it('prompts for source first', function () {
             tester.SourceConfiguration.assertShowFirst()
         })

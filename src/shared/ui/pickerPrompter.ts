@@ -45,6 +45,10 @@ export type ExtendedQuickPickOptions<T> = Omit<
     filterBoxInputSettings?: FilterBoxInputSettings<T>
     /** Used to sort QuickPick items after loading new ones */
     compare?: (a: DataQuickPickItem<T>, b: DataQuickPickItem<T>) => number
+    /** Item to show if no items were loaded */
+    placeholderItem?: DataQuickPickItem<T>
+    /** Item to show if there was an error loading items */
+    errorItem?: DataQuickPickItem<T>
 }
 
 export const DEFAULT_QUICKPICK_OPTIONS: vscode.QuickPickOptions = {

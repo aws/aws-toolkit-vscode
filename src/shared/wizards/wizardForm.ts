@@ -8,7 +8,7 @@ import * as _ from 'lodash'
 import { StateWithCache, WizardState } from './wizard'
 import { ExpandWithObject } from '../utilities/tsUtils'
 
-export type CachedPrompter<TState, TProp> = (state: StateWithCache<WizardState<TState>, TProp>) => Prompter<TProp>
+export type PrompterProvider<TState, TProp> = (state: StateWithCache<WizardState<TState>, TProp>) => Prompter<TProp>
 
 type DefaultFunction<TState, TProp> = (state: WizardState<TState>) => TProp | undefined
 
@@ -44,7 +44,7 @@ interface FormElement<TProp, TState> {
      * Binds a Prompter-provider to the specified property. The provider is called with the current Wizard
      * state whenever the property is ready for input, and should return a Prompter object.
      */
-    bindPrompter(provider: CachedPrompter<TState, TProp>, options?: ContextOptions<TState, TProp>): void
+    bindPrompter(provider: PrompterProvider<TState, TProp>, options?: ContextOptions<TState, TProp>): void
     // TODO: potentially add options to this, or rethink how defaults should work
     setDefault(defaultFunction: DefaultFunction<TState, TProp> | TProp): void
 }
@@ -69,7 +69,7 @@ type Form<T, TState = T> = {
         : FormElement<T[Property], TState>
 }
 
-type FormDataElement<TState, TProp> = ContextOptions<TState, TProp> & { provider?: CachedPrompter<TState, TProp> }
+type FormDataElement<TState, TProp> = ContextOptions<TState, TProp> & { provider?: PrompterProvider<TState, TProp> }
 
 function isAssigned<TProp>(obj: TProp): boolean {
     return obj !== undefined || _.isEmpty(obj) === false
@@ -101,7 +101,7 @@ export class WizardForm<TState extends Partial<Record<keyof TState, unknown>>> {
         return [...this.formData.keys()].sort(this.compareOrder.bind(this))
     }
 
-    public getPrompterProvider(prop: string): CachedPrompter<TState, any> | undefined {
+    public getPrompterProvider(prop: string): PrompterProvider<TState, any> | undefined {
         return this.formData.get(prop)?.provider
     }
 
@@ -189,7 +189,7 @@ export class WizardForm<TState extends Partial<Record<keyof TState, unknown>>> {
     }
 
     private createBindPrompterMethod<TProp>(prop: string): PrompterBind<TProp, TState> {
-        return (provider: CachedPrompter<TState, TProp>, options: ContextOptions<TState, TProp> = {}): void => {
+        return (provider: PrompterProvider<TState, TProp>, options: ContextOptions<TState, TProp> = {}): void => {
             this.applyElement(prop, { ...options, provider })
         }
     }
