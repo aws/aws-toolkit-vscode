@@ -166,10 +166,7 @@ object IdeVersions {
         ideProfiles[it] ?: throw IllegalStateException("Can't find profile for $it")
     }
 
-    private fun resolveIdeProfileName(providers: ProviderFactory): Provider<String> =
-        providers.environmentVariable("ALTERNATIVE_IDE_PROFILE_NAME").forUseAtConfigurationTime().orElse(
-            providers.gradleProperty("ideProfileName").forUseAtConfigurationTime()
-        )
+    private fun resolveIdeProfileName(providers: ProviderFactory): Provider<String> = providers.gradleProperty("ideProfileName").forUseAtConfigurationTime()
 }
 
 open class ProductProfile(
