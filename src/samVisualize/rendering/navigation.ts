@@ -5,7 +5,7 @@
 import { getLogger } from '../../shared/logger/logger'
 import * as yaml from 'yaml'
 /**
- * Maps a resource name to the start and end positions of it's definition in a template
+ * Maps a resource name to the start and end positions of its definition in a template
  */
 export type ResourceLineMap = {
     [resourceName: string]: { start: number; end: number }
