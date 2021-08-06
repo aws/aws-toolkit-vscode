@@ -11,25 +11,29 @@ import { DefaultEcsClient, EcsClient } from '../../../shared/clients/ecsClient'
 import { ChildProcess } from '../../../shared/utilities/childProcess'
 import { FakeWindow } from '../../shared/vscode/fakeWindow'
 import { FakeChildProcessResult } from '../../shared/sam/cli/testSamCliProcessInvoker'
+import { ECS } from 'aws-sdk'
 
 describe('runCommandInContainer', function () {
     let sandbox: sinon.SinonSandbox
     const taskListOne = ['onlyTask']
     const taskListTwo = ['taskId1', 'taskId2']
+    const describedTasksOne = [
+        { taskArn: 'thisstringneedstobeoverthirtytwocharacterslong', lastStatus: 'running', desiredStatus: 'running' },
+    ]
     const chosenTask = [{ label: 'taskId1' }]
     const containerName = 'containerName'
     const serviceName = 'serviceName'
     const clusterArn = 'arn:fake:cluster'
 
-    const hasSSMPluginChildProcessResult: FakeChildProcessResult = {
-        stdout: 'The Session Manager plugin was installed successfully',
+    const doesNotAwsCliChildProcessResult: FakeChildProcessResult = {
+        stdout: '',
         error: undefined,
-        exitCode: 0,
-        stderr: '',
+        exitCode: 254,
+        stderr: 'This is not installed',
     }
 
     const doesNotHaveSSMPluginChildProcessResult: FakeChildProcessResult = {
-        stdout: 'Cannot find text here',
+        stdout: '',
         error: undefined,
         exitCode: 254,
         stderr: 'This is not installed',
@@ -50,28 +54,24 @@ describe('runCommandInContainer', function () {
     })
 
     it('prompts for command', async function () {
-        const childCalls = sandbox
-            .stub(ChildProcess.prototype, 'run')
-            .onFirstCall()
-            .resolves(hasSSMPluginChildProcessResult)
-        childCalls.onSecondCall().resolves(successfulExecResult)
+        const childCalls = sandbox.stub(ChildProcess.prototype, 'run').onFirstCall().resolves(successfulExecResult)
+        childCalls.onSecondCall().resolves(successfulExecResult).onThirdCall().resolves(successfulExecResult)
         sandbox.stub(ecs, 'listTasks').resolves(taskListTwo)
+        sandbox.stub(ecs, 'describeTasks').resolves(describedTasksOne)
         sandbox.stub(picker, 'promptUser').resolves(chosenTask)
 
         const window = new FakeWindow({ inputBox: { input: 'ls' } })
         await runCommandInContainer(node, window)
 
-        assert.strictEqual(childCalls.callCount, 2)
-        assert.strictEqual(window.inputBox.options?.prompt, 'Enter the command to run in container')
+        assert.strictEqual(childCalls.callCount, 3)
+        assert.strictEqual(window.inputBox.options?.prompt, 'Enter the command to run in container: containerName')
     })
 
     it('does not show picker if only one task exists', async function () {
-        const childCalls = sandbox
-            .stub(ChildProcess.prototype, 'run')
-            .onFirstCall()
-            .resolves(hasSSMPluginChildProcessResult)
-        childCalls.onSecondCall().resolves(successfulExecResult)
+        const childCalls = sandbox.stub(ChildProcess.prototype, 'run').onFirstCall().resolves(successfulExecResult)
+        childCalls.onSecondCall().resolves(successfulExecResult).onThirdCall().resolves(successfulExecResult)
         sandbox.stub(ecs, 'listTasks').resolves(taskListOne)
+        sandbox.stub(ecs, 'describeTasks').resolves(describedTasksOne)
         const pickerStub = sandbox.stub(picker, 'promptUser')
 
         const window = new FakeWindow({ inputBox: { input: 'ls' } })
@@ -80,11 +80,11 @@ describe('runCommandInContainer', function () {
         assert.strictEqual(pickerStub.notCalled, true)
     })
 
-    it('throws error if SSM plugin not installed', async function () {
+    it('throws error if AWS CLI not installed', async function () {
         const childCalls = sandbox
             .stub(ChildProcess.prototype, 'run')
             .onFirstCall()
-            .resolves(doesNotHaveSSMPluginChildProcessResult)
+            .resolves(doesNotAwsCliChildProcessResult)
         childCalls.onSecondCall().resolves(successfulExecResult)
         const listTasksStub = sandbox.stub(ecs, 'listTasks').resolves(taskListTwo)
         const pickerStub = sandbox.stub(picker, 'promptUser')
@@ -94,10 +94,27 @@ describe('runCommandInContainer', function () {
             await runCommandInContainer(node, window)
         } catch (error) {
             assert.ok(error)
-            assert.strictEqual(String(error), 'Error: The Session Manager plugin for the AWS CLI is not installed.')
         }
 
         assert.strictEqual(childCalls.callCount, 1)
+        assert.strictEqual(listTasksStub.notCalled, true)
+        assert.strictEqual(pickerStub.notCalled, true)
+    })
+
+    it('throws error if SSM plugin not installed', async function () {
+        const childCalls = sandbox.stub(ChildProcess.prototype, 'run').onFirstCall().resolves(successfulExecResult)
+        childCalls.onSecondCall().resolves(doesNotHaveSSMPluginChildProcessResult)
+        const listTasksStub = sandbox.stub(ecs, 'listTasks').resolves(taskListTwo)
+        const pickerStub = sandbox.stub(picker, 'promptUser')
+
+        const window = new FakeWindow({ inputBox: { input: 'ls' } })
+        try {
+            await runCommandInContainer(node, window)
+        } catch (error) {
+            assert.ok(error)
+        }
+
+        assert.strictEqual(childCalls.callCount, 2)
         assert.strictEqual(listTasksStub.notCalled, true)
         assert.strictEqual(pickerStub.notCalled, true)
     })
