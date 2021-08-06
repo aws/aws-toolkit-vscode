@@ -98,7 +98,7 @@ export class S3FolderNode extends AWSTreeNodeBase implements AWSResourceNode, Lo
      */
     public async uploadFile(request: UploadFileRequest): Promise<void> {
         const managedUpload = await this.s3.uploadFile(request)
-        return await managedUpload.promise()
+        await managedUpload.promise()
     }
 
     public get arn(): string {
