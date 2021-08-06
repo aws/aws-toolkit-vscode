@@ -245,6 +245,12 @@ function statFile(file: vscode.Uri) {
     return statSync(file.fsPath).size
 }
 
+/**
+ * Uploads an array of requests to their specified s3 location.
+ *
+ * @returns array of unsuccessful requests
+ */
+
 async function uploadBatchOfFiles(
     uploadRequests: UploadRequest[],
     window = Window.vscode(),
@@ -254,7 +260,12 @@ async function uploadBatchOfFiles(
         {
             cancellable: true,
             location: vscode.ProgressLocation.Notification,
-            title: `Uploading ${uploadRequests.length} files to ${uploadRequests[0].bucketName}`,
+            title: localize(
+                'AWS.s3.uploadFile.progressTitle.batch',
+                'Uploading {0} file(s) to {1}',
+                uploadRequests.length,
+                uploadRequests[0].bucketName
+            ),
         },
         async (progress, token) => {
             let uploadedCount: number = 0

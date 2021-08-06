@@ -301,6 +301,7 @@ export class DefaultS3Client {
      * Assigns the target content type based on the mime type of the file.
      * If content type cannot be determined, defaults to {@link DEFAULT_CONTENT_TYPE}.
      *
+     * @returns The S3.ManagedUpload stream
      * @throws Error if there is an error calling S3 or piping between streams.
      */
     public async uploadFile(request: UploadFileRequest): Promise<any> {
