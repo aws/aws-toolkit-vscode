@@ -33,8 +33,7 @@ export async function runCommandInContainer(
         // The last 32 digits of the task arn is the task identifier
         return {
             label: task.taskArn!.substr(-32),
-            description: `Last status: ${task.lastStatus}`,
-            detail: `Desired status: ${task.desiredStatus}`,
+            detail: `Status: ${task.lastStatus}  Desired status: ${task.desiredStatus}`,
         }
     })
     if (quickPickItems.length === 0) {
