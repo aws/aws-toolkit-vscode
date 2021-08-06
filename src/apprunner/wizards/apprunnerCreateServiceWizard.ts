@@ -17,11 +17,12 @@ import * as input from '../../shared/ui/inputPrompter'
 import * as picker from '../../shared/ui/pickerPrompter'
 import { Prompter } from '../../shared/ui/prompter'
 import { Wizard, WizardState } from '../../shared/wizards/wizard'
-import { AppRunnerImageRepositoryForm } from './imageRepositoryWizard'
-import { AppRunnerCodeRepositoryForm } from './codeRepositoryWizard'
+import { AppRunnerImageRepositoryWizard } from './imageRepositoryWizard'
+import { AppRunnerCodeRepositoryWizard } from './codeRepositoryWizard'
 import * as vscode from 'vscode'
 import { BasicExitPrompterProvider } from '../../shared/ui/common/exitPrompter'
 import { GitExtension } from '../../shared/extensions/git'
+import { APPRUNNER_PRICING_URL } from '../../shared/constants'
 
 const localize = nls.loadMessageBundle()
 
@@ -43,16 +44,12 @@ export function makeDeploymentButton() {
     const [autoDeploymentsDisable, autoDeploymentsEnable] = makeDeployButtons()
 
     return new QuickInputToggleButton(autoDeploymentsDisable, autoDeploymentsEnable, {
-        onCallback: showDeploymentCostNotifcation,
+        onCallback: showDeploymentCostNotification,
     })
 }
 
-function makeButtons() {
-    return [
-        createHelpButton('https://docs.aws.amazon.com/toolkit-for-vscode/latest/userguide/welcome.html'),
-        createBackButton(),
-        createExitButton(),
-    ]
+function makeButtons(helpUri?: string | vscode.Uri) {
+    return [createHelpButton(helpUri), createBackButton(), createExitButton()]
 }
 
 // I'm sure this code could be reused in many places
@@ -105,7 +102,7 @@ function createInstanceStep(): Prompter<AppRunner.InstanceConfiguration> {
     })
 }
 
-function showDeploymentCostNotifcation(): void {
+function showDeploymentCostNotification(): void {
     const shouldShow = ext.context.globalState.get('apprunner.deployments.notifyPricing', true)
 
     if (shouldShow) {
@@ -115,12 +112,12 @@ function showDeploymentCostNotifcation(): void {
         )
         const viewPricing = localize('aws.apprunner.createService.priceNotice.view', 'View Pricing')
         const dontShow = localize('aws.generic.doNotShowAgain', "Don't Show Again")
-        const pricingUri = vscode.Uri.parse('https://aws.amazon.com/apprunner/pricing/')
+        const pricingUri = vscode.Uri.parse(APPRUNNER_PRICING_URL)
 
         vscode.window.showInformationMessage(notice, viewPricing, dontShow).then(button => {
             if (button === viewPricing) {
                 vscode.env.openExternal(pricingUri)
-                showDeploymentCostNotifcation()
+                showDeploymentCostNotification()
             } else if (button === dontShow) {
                 ext.context.globalState.update('apprunner.deployments.notifyPricing', false)
             }
@@ -169,17 +166,17 @@ export class CreateAppRunnerServiceWizard extends Wizard<AppRunner.CreateService
         const apprunnerClient = ext.toolkitClientBuilder.createAppRunnerClient(region)
         const autoDeployButton = makeDeploymentButton()
         const gitExtension = new GitExtension()
-        const codeRepositoryForm = new AppRunnerCodeRepositoryForm(apprunnerClient, gitExtension, autoDeployButton)
-        const imageRepositoryForm = new AppRunnerImageRepositoryForm(ecrClient, iamClient, autoDeployButton)
+        const codeRepositoryWizard = new AppRunnerCodeRepositoryWizard(apprunnerClient, gitExtension, autoDeployButton)
+        const imageRepositoryWizard = new AppRunnerImageRepositoryWizard(ecrClient, iamClient, autoDeployButton)
 
         const form = this.form
 
         form.SourceConfiguration.bindPrompter(() => createSourcePrompter(autoDeployButton))
 
-        form.SourceConfiguration.applyForm(imageRepositoryForm, {
+        form.SourceConfiguration.applyBoundForm(imageRepositoryWizard.boundForm, {
             showWhen: state => state.SourceConfiguration?.ImageRepository !== undefined,
         })
-        form.SourceConfiguration.applyForm(codeRepositoryForm, {
+        form.SourceConfiguration.applyBoundForm(codeRepositoryWizard.boundForm, {
             showWhen: state => state.SourceConfiguration?.CodeRepository !== undefined,
         })
 
@@ -192,5 +189,6 @@ export class CreateAppRunnerServiceWizard extends Wizard<AppRunner.CreateService
         )
 
         form.InstanceConfiguration.bindPrompter(() => createInstanceStep())
+        form.SourceConfiguration.AutoDeploymentsEnabled.setDefault(() => autoDeployButton.state === 'on')
     }
 }

@@ -51,7 +51,7 @@ interface FormElement<TProp, TState> {
 
 // These methods are only applicable to object-like elements
 interface ParentFormElement<TProp extends Record<string, any>, TState> {
-    applyForm(
+    applyBoundForm(
         form: WizardForm<TProp>,
         options?: Pick<ContextOptions<TState, TProp>, 'showWhen' | 'requireParent'>
     ): void
@@ -59,7 +59,7 @@ interface ParentFormElement<TProp extends Record<string, any>, TState> {
 
 type PrompterBind<TProp, TState> = FormElement<TProp, TState>['bindPrompter']
 type SetDefault<TProp, TState> = FormElement<TProp, TState>['setDefault']
-type ApplyForm<TProp, TState> = ParentFormElement<TProp, TState>['applyForm']
+type ApplyBoundForm<TProp, TState> = ParentFormElement<TProp, TState>['applyBoundForm']
 
 /** Transforms an interface into a collection of FormElements, applied recursively */
 type Form<T, TState = T> = {
@@ -82,7 +82,7 @@ function checkParent<TState>(prop: string, state: TState, options: FormDataEleme
 
 type FormProperty = keyof (FormElement<any, any> & ParentFormElement<any, any>)
 const BIND_PROMPTER: FormProperty = 'bindPrompter'
-const APPLY_FORM: FormProperty = 'applyForm'
+const APPLY_FORM: FormProperty = 'applyBoundForm'
 const SET_DEFAULT: FormProperty = 'setDefault'
 
 /**
@@ -194,7 +194,7 @@ export class WizardForm<TState extends Partial<Record<keyof TState, unknown>>> {
         }
     }
 
-    private createApplyFormMethod<TProp>(prop: string): ApplyForm<TProp, TState> {
+    private createApplyFormMethod<TProp>(prop: string): ApplyBoundForm<TProp, TState> {
         return (form: WizardForm<TProp>, options?: ContextOptions<TState, TProp>) => {
             form.formData.forEach((element, key) => {
                 // TODO: use an assert here to ensure that no elements are rewritten

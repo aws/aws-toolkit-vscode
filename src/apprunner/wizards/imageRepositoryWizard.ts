@@ -16,7 +16,7 @@ import { EcrClient, EcrRepository } from '../../shared/clients/ecrClient'
 import * as input from '../../shared/ui/inputPrompter'
 import * as picker from '../../shared/ui/pickerPrompter'
 import { Prompter } from '../../shared/ui/prompter'
-import { Wizard, WizardControl } from '../../shared/wizards/wizard'
+import { Wizard, WizardControl, WIZARD_BACK } from '../../shared/wizards/wizard'
 import { WizardPrompter } from '../../shared/ui/wizardPrompter'
 
 import * as nls from 'vscode-nls'
@@ -25,15 +25,12 @@ import { createVariablesPrompter } from '../../shared/ui/common/variablesPrompte
 import { makeDeploymentButton } from './apprunnerCreateServiceWizard'
 import { IamClient } from '../../shared/clients/iamClient'
 import { RolePrompter } from '../../shared/ui/common/rolePrompter'
+import { getLogger } from '../../shared/logger/logger'
 
 const localize = nls.loadMessageBundle()
 
 function makeButtons() {
-    return [
-        createHelpButton('https://docs.aws.amazon.com/toolkit-for-vscode/latest/userguide/welcome.html'),
-        createBackButton(),
-        createExitButton(),
-    ]
+    return [createHelpButton(), createBackButton(), createExitButton()]
 }
 
 const PUBLIC_ECR = 'public.ecr.aws'
@@ -81,11 +78,26 @@ function createImagePrompter(
     const last = cache['repos']
     const imageRepos =
         last ??
-        toArrayAsync(ecrClient.describeRepositories()).then(resp => {
-            const repos = resp.map(repo => ({ label: repo.repositoryName, detail: repo.repositoryUri, data: repo }))
-            cache['repos'] = repos
-            return repos
-        })
+        toArrayAsync(ecrClient.describeRepositories())
+            .then(resp => {
+                const repos = resp.map(repo => ({ label: repo.repositoryName, detail: repo.repositoryUri, data: repo }))
+                cache['repos'] = repos
+                return repos
+            })
+            .catch(err => {
+                getLogger().error(`Unabled to list repositories: %O`, err)
+                return [
+                    {
+                        label: localize(
+                            'AWS.apprunner.createService.selectImageRepo.failed',
+                            'Failed to list repositories'
+                        ),
+                        description: localize('AWS.generic.goBack', 'Click to go back'),
+                        data: WIZARD_BACK,
+                    },
+                ]
+            })
+
     const customUserInputLabel = localize('AWS.apprunner.createService.selectImageRepo.input', 'Custom ECR URL')
     const customUserInputTransform = (resp: string) => {
         const userInputParts = resp.split(':')
@@ -162,11 +174,35 @@ function createTagPrompter(
     const last: picker.DataQuickPickItem<TaggedEcrRepository>[] = cache[imageRepo.repositoryName]
     const tagItems =
         last ??
-        toArrayAsync(ecrClient.describeTags(imageRepo.repositoryName)).then(tags => {
-            const tagT = tags.map(tag => ({ label: tag }))
-            cache[imageRepo.repositoryName] = tagT
-            return tagT
-        })
+        toArrayAsync(ecrClient.describeTags(imageRepo.repositoryName))
+            .then(tags => {
+                if (tags.length === 0) {
+                    return [
+                        {
+                            label: localize('AWS.apprunner.createService.selectTags.noFound', 'No tags found'),
+                            description: localize('AWS.generic.goBack', 'Click to go back'),
+                            data: WIZARD_BACK,
+                        },
+                    ]
+                }
+
+                const tagT = tags.map(tag => ({ label: tag }))
+                cache[imageRepo.repositoryName] = tagT
+                return tagT
+            })
+            .catch(err => {
+                getLogger().error(`Unabled to list tags for repository "${imageRepo.repositoryName}": %O`, err)
+                return [
+                    {
+                        label: localize(
+                            'AWS.apprunner.createService.selectTag.failed',
+                            'Failed to get tags for repository'
+                        ),
+                        description: localize('AWS.generic.goBack', 'Click to go back'),
+                        data: WIZARD_BACK,
+                    },
+                ]
+            })
 
     return picker.createLabelQuickPick(tagItems, {
         title: localize('AWS.apprunner.createService.selectTag.title', 'Select an ECR tag'),
@@ -215,17 +251,18 @@ function createImageRepositorySubForm(
 
     return subform
 }
-export class AppRunnerImageRepositoryForm extends WizardForm<AppRunner.SourceConfiguration> {
+
+export class AppRunnerImageRepositoryWizard extends Wizard<AppRunner.SourceConfiguration> {
     constructor(ecrClient: EcrClient, iamClient: IamClient, autoDeployButton = makeDeploymentButton()) {
         super()
-        const form = this.body
+        const form = this.form
         const rolePrompter = new RolePrompter(iamClient, {
             title: localize('AWS.apprunner.createService.selectRole.title', 'Select a role to pull from ECR'),
             filter: role => (role.AssumeRolePolicyDocument ?? '').includes(APP_RUNNER_ECR_ENTITY),
             createRole: createEcrRole.bind(undefined, iamClient),
         })
 
-        form.ImageRepository.applyForm(createImageRepositorySubForm(ecrClient, autoDeployButton))
+        form.ImageRepository.applyBoundForm(createImageRepositorySubForm(ecrClient, autoDeployButton))
         form.AuthenticationConfiguration.AccessRoleArn.bindPrompter(
             rolePrompter.transform(resp => resp.Arn),
             {

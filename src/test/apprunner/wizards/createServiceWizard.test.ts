@@ -51,6 +51,10 @@ describe('CreateServiceWizard', function () {
             tester.InstanceConfiguration.assertShowThird()
         })
 
+        it('sets auto-deployment to "off" by default', function () {
+            tester.SourceConfiguration.AutoDeploymentsEnabled.assertValue(false)
+        })
+
         it('prompts for ECR or GitHub repository', function () {
             tester.SourceConfiguration.assertShow()
             tester.SourceConfiguration.CodeRepository.assertDoesNotShowAny()

@@ -28,15 +28,17 @@ import {
     QuickPickPrompter,
 } from '../../shared/ui/pickerPrompter'
 import { createInputBox, InputBoxPrompter } from '../../shared/ui/inputPrompter'
+import {
+    APPRUNNER_CONNECTION_HELP_URL,
+    APPRUNNER_CONFIGURATION_HELP_URL,
+    APPRUNNER_RUNTIME_HELP_URL,
+} from '../../shared/constants'
+import { Wizard } from '../../shared/wizards/wizard'
 
 const localize = nls.loadMessageBundle()
 
-function makeButtons() {
-    return [
-        createHelpButton('https://docs.aws.amazon.com/toolkit-for-vscode/latest/userguide/welcome.html'),
-        createBackButton(),
-        createExitButton(),
-    ]
+function makeButtons(helpUri?: string | vscode.Uri) {
+    return [createHelpButton(helpUri), createBackButton(), createExitButton()]
 }
 
 function validateCommand(command: string): string | undefined {
@@ -105,7 +107,7 @@ function createRuntimePrompter(): QuickPickPrompter<AppRunner.Runtime> {
 
     return createQuickPick(items, {
         title: localize('AWS.apprunner.createService.selectRuntime.title', 'Select a runtime'),
-        buttons: makeButtons(),
+        buttons: makeButtons(APPRUNNER_RUNTIME_HELP_URL),
     })
 }
 
@@ -117,7 +119,7 @@ function createBuildCommandPrompter(runtime: AppRunner.Runtime): InputBoxPrompte
 
     return createInputBox({
         title: localize('AWS.apprunner.createService.buildCommand.title', 'Enter a build command'),
-        buttons: makeButtons(),
+        buttons: makeButtons(APPRUNNER_RUNTIME_HELP_URL),
         placeholder:
             buildCommandMap[Object.keys(buildCommandMap).filter(key => runtime.toLowerCase().includes(key))[0]],
         validateInput: validateCommand,
@@ -132,7 +134,7 @@ function createStartCommandPrompter(runtime: AppRunner.Runtime): InputBoxPrompte
 
     return createInputBox({
         title: localize('AWS.apprunner.createService.startCommand.title', 'Enter a start command'),
-        buttons: makeButtons(),
+        buttons: makeButtons(APPRUNNER_RUNTIME_HELP_URL),
         placeholder:
             startCommandMap[Object.keys(startCommandMap).filter(key => runtime.toLowerCase().includes(key))[0]],
         validateInput: validateCommand,
@@ -172,12 +174,12 @@ export class ConnectionPrompter extends CachedPrompter<ConnectionSummary> {
                 return [
                     {
                         label: 'No connections found',
-                        detail: 'Create a new GitHub connection for App Runner',
+                        detail: 'Click for documentation on creating a new GitHub connection for App Runner',
                         data: {} as any,
                         invalidSelection: true,
                         onClick: vscode.env.openExternal.bind(
                             vscode.env,
-                            vscode.Uri.parse(`https://docs.aws.amazon.com/apprunner/latest/dg/manage-connections.html`)
+                            vscode.Uri.parse(APPRUNNER_CONNECTION_HELP_URL)
                         ),
                     },
                 ]
@@ -192,7 +194,7 @@ export class ConnectionPrompter extends CachedPrompter<ConnectionSummary> {
         const refreshButton = createRefreshButton()
         const prompter = createQuickPick(connections, {
             title: localize('AWS.apprunner.createService.selectConnection.title', 'Select a connection'),
-            buttons: [refreshButton, ...makeButtons()],
+            buttons: [refreshButton, ...makeButtons(APPRUNNER_CONNECTION_HELP_URL)],
         })
 
         const refresh = () => {
@@ -221,7 +223,7 @@ function createSourcePrompter(): QuickPickPrompter<AppRunner.ConfigurationSource
         ],
         {
             title: localize('AWS.apprunner.createService.configSource.title', 'Choose configuration source'),
-            buttons: makeButtons(),
+            buttons: makeButtons(APPRUNNER_CONFIGURATION_HELP_URL),
         }
     )
 }
@@ -247,27 +249,27 @@ function createCodeRepositorySubForm(git: GitExtension): WizardForm<AppRunner.Co
     codeConfigForm.body.RuntimeEnvironmentVariables.bindPrompter(() => createVariablesPrompter(makeButtons()))
     // TODO: ask user if they would like to save their parameters into an App Runner config file
 
-    form.CodeConfiguration.CodeConfigurationValues.applyForm(codeConfigForm, {
+    form.CodeConfiguration.CodeConfigurationValues.applyBoundForm(codeConfigForm, {
         showWhen: state => state.CodeConfiguration?.ConfigurationSource === 'API',
     })
 
     return subform
 }
 
-export class AppRunnerCodeRepositoryForm extends WizardForm<AppRunner.SourceConfiguration> {
+export class AppRunnerCodeRepositoryWizard extends Wizard<AppRunner.SourceConfiguration> {
     constructor(
         client: AppRunnerClient,
         git: GitExtension,
         autoDeployButton: QuickInputToggleButton = makeDeploymentButton()
     ) {
         super()
-        const form = this.body
+        const form = this.form
         const connectionPrompter = new ConnectionPrompter(client)
 
         form.AuthenticationConfiguration.ConnectionArn.bindPrompter(
             connectionPrompter.transform(conn => conn.ConnectionArn!)
         )
-        form.CodeRepository.applyForm(createCodeRepositorySubForm(git))
+        form.CodeRepository.applyBoundForm(createCodeRepositorySubForm(git))
         form.AutoDeploymentsEnabled.setDefault(() => autoDeployButton.state === 'on')
     }
 }

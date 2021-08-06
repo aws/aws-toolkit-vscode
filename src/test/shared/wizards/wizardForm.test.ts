@@ -128,7 +128,7 @@ describe('WizardForm', function () {
 
         it('can apply another form to a property', function () {
             nestedTestForm.body.prop1.bindPrompter(() => new SimplePrompter(''))
-            testForm.nestedProp.applyForm(nestedTestForm)
+            testForm.nestedProp.applyBoundForm(nestedTestForm)
             tester.nestedProp.prop1.assertShow()
         })
 
@@ -136,7 +136,7 @@ describe('WizardForm', function () {
             nestedTestForm.body.prop1.bindPrompter(() => new SimplePrompter(''), {
                 showWhen: state => state.prop2 === 'hello',
             })
-            testForm.nestedProp.applyForm(nestedTestForm)
+            testForm.nestedProp.applyBoundForm(nestedTestForm)
             tester.nestedProp.prop1.assertDoesNotShow()
             tester.nestedProp.prop2.applyInput('hello')
             tester.nestedProp.prop1.assertShow()
@@ -147,7 +147,7 @@ describe('WizardForm', function () {
                 showWhen: state => state.prop2 === 'hello',
             })
             nestedTestForm.body.prop2.setDefault(() => 'hello')
-            testForm.nestedProp.applyForm(nestedTestForm, { requireParent: true })
+            testForm.nestedProp.applyBoundForm(nestedTestForm, { requireParent: true })
             tester.nestedProp.prop1.assertDoesNotShow()
             tester.nestedProp.prop2.assertValue(undefined)
             tester.nestedProp.applyInput({})
@@ -162,7 +162,7 @@ describe('WizardForm', function () {
                 showWhen: state => state.prop1 === 'goodbye',
             })
 
-            testForm.nestedProp.applyForm(nestedTestForm, { showWhen: state => state.prop2 === 'start' })
+            testForm.nestedProp.applyBoundForm(nestedTestForm, { showWhen: state => state.prop2 === 'start' })
             tester.nestedProp.assertDoesNotShowAny()
             tester.nestedProp.applyInput({})
             tester.nestedProp.assertDoesNotShowAny()

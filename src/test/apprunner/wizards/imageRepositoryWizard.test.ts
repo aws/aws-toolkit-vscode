@@ -6,18 +6,18 @@
 import { AppRunner } from 'aws-sdk'
 import { createWizardTester, WizardTester } from '../../shared/wizards/wizardTestUtils'
 import {
-    AppRunnerImageRepositoryForm,
+    AppRunnerImageRepositoryWizard,
     ImageIdentifierForm,
     TaggedEcrRepository,
 } from '../../../apprunner/wizards/imageRepositoryWizard'
 
-describe('AppRunnerImageRepositoryForm', function () {
+describe('AppRunnerImageRepositoryWizard', function () {
     let tester: WizardTester<AppRunner.SourceConfiguration>
     let repoTester: WizardTester<AppRunner.ImageRepository>
 
     beforeEach(function () {
-        const form = new AppRunnerImageRepositoryForm({} as any, {} as any) // ecr will never be called
-        tester = createWizardTester(form)
+        const wizard = new AppRunnerImageRepositoryWizard({} as any, {} as any) // the clients will never be called
+        tester = createWizardTester(wizard)
         repoTester = tester.ImageRepository
     })
 

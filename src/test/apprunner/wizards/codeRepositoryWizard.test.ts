@@ -9,20 +9,22 @@ import * as picker from '../../../shared/ui/pickerPrompter'
 import * as assert from 'assert'
 import { AppRunner } from 'aws-sdk'
 import { createWizardTester, WizardTester } from '../../shared/wizards/wizardTestUtils'
-import { AppRunnerCodeRepositoryForm, ConnectionPrompter } from '../../../apprunner/wizards/codeRepositoryWizard'
+import { AppRunnerCodeRepositoryWizard, ConnectionPrompter } from '../../../apprunner/wizards/codeRepositoryWizard'
 import { AppRunnerClient } from '../../../shared/clients/apprunnerClient'
 import { ConnectionSummary } from 'aws-sdk/clients/apprunner'
 import { Prompter } from '../../../shared/ui/prompter'
 import { WIZARD_EXIT } from '../../../shared/wizards/wizard'
 import { exposeEmitters, ExposeEmitters } from '../../shared/vscode/testUtils'
+import { APPRUNNER_CONNECTION_HELP_URL } from '../../../shared/constants'
 
-describe('AppRunnerCodeRepositoryForm', function () {
+describe('AppRunnerCodeRepositoryWizard', function () {
     let tester: WizardTester<AppRunner.SourceConfiguration>
     let repoTester: WizardTester<AppRunner.CodeRepository>
 
     beforeEach(function () {
-        const form = new AppRunnerCodeRepositoryForm({} as any, {} as any) // git api will never be called
-        tester = createWizardTester(form)
+        // apprunner client and git api will never be called
+        const wizard = new AppRunnerCodeRepositoryWizard({} as any, {} as any)
+        tester = createWizardTester(wizard)
         repoTester = tester.CodeRepository
     })
 
@@ -190,9 +192,6 @@ describe('ConnectionPrompter', function () {
         fakePicker.selectedItems = fakePicker.activeItems
         fakePicker.hide()
         assert.strictEqual(await result, WIZARD_EXIT)
-        assert.strictEqual(
-            openExternal.firstCall.args[0].toString(),
-            'https://docs.aws.amazon.com/apprunner/latest/dg/manage-connections.html'
-        )
+        assert.strictEqual(openExternal.firstCall.args[0].toString(), APPRUNNER_CONNECTION_HELP_URL)
     })
 })
