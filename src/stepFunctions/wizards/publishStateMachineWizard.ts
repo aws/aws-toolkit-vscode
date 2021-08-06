@@ -76,7 +76,7 @@ interface PublishActionQuickPickItem {
     action: PublishStateMachineAction
 }
 export class DefaultPublishStateMachineWizardContext extends WizardContext implements PublishStateMachineWizardContext {
-    private readonly helpButton = createHelpButton(localize('AWS.command.help', 'View Toolkit Documentation'))
+    private readonly helpButton = createHelpButton()
     private iamRoles: IAM.roleListType | undefined
     private stateMachines: StepFunctions.StateMachineList | undefined
     private readonly iamClient: IamClient
