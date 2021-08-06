@@ -3,7 +3,6 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
-
 import { EcsClient } from '../../shared/clients/ecsClient'
 import { AWSTreeNodeBase } from '../../shared/treeview/nodes/awsTreeNodeBase'
 
@@ -21,5 +20,9 @@ export class EcsContainerNode extends AWSTreeNodeBase {
 
     public listTasks() {
         return this.ecs.listTasks(this.clusterArn, this.serviceName)
+    }
+
+    public desribeTasks(tasks: string[]) {
+        return this.ecs.describeTasks(this.clusterArn, tasks)
     }
 }

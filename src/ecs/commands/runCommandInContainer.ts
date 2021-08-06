@@ -28,9 +28,14 @@ export async function runCommandInContainer(
     await verifyCliAndPlugin(window)
 
     //Quick pick to choose from the tasks in that service
-    const quickPickItems = (await node.listTasks()).map(task => {
+    const taskArns = await node.listTasks()
+    const quickPickItems: vscode.QuickPickItem[] = (await node.desribeTasks(taskArns)).map(task => {
         // The last 32 digits of the task arn is the task identifier
-        return { label: task.substr(-32) }
+        return {
+            label: task.taskArn!.substr(-32),
+            description: `Last status: ${task.lastStatus}`,
+            detail: `Desired status: ${task.desiredStatus}`,
+        }
     })
     if (quickPickItems.length === 0) {
         window.showInformationMessage(

@@ -85,10 +85,24 @@ export class DefaultEcsClient {
             const listTasksResponse = await sdkClient.listTasks(params).promise()
             return listTasksResponse.taskArns ?? []
         } catch (error) {
-            getLogger().error(`ecs: Failed to get tasks for Cluster "${cluster}" and Service "${serviceName}": `)
+            getLogger().error(
+                `ecs: Failed to get tasks for Cluster "${cluster}" and Service "${serviceName}": ${error} `
+            )
             throw error
         }
+    }
 
+    public async describeTasks(cluster: string, tasks: string[]): Promise<ECS.Task[]> {
+        const sdkClient = await this.createSdkClient()
+
+        const params: ECS.DescribeTasksRequest = { cluster, tasks }
+        try {
+            const describedTasks = await sdkClient.describeTasks(params).promise()
+            return describedTasks.tasks ?? []
+        } catch (error) {
+            getLogger().error(error)
+            throw error
+        }
     }
 
     protected async createSdkClient(): Promise<ECS> {

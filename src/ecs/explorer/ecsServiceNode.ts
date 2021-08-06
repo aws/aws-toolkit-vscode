@@ -22,7 +22,7 @@ export class EcsServiceNode extends AWSTreeNodeBase implements AWSResourceNode {
         private readonly ecs: EcsClient
     ) {
         super(service.serviceName!, vscode.TreeItemCollapsibleState.Collapsed)
-        this.tooltip = service.serviceArn
+        this.tooltip = `${service.serviceArn}\nTask Definition: ${service.taskDefinition}`
         this.contextValue = 'awsEcsService'
     }
 
