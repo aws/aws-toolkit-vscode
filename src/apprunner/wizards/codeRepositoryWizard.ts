@@ -33,7 +33,8 @@ import {
     APPRUNNER_CONFIGURATION_HELP_URL,
     APPRUNNER_RUNTIME_HELP_URL,
 } from '../../shared/constants'
-import { Wizard } from '../../shared/wizards/wizard'
+import { Wizard, WIZARD_BACK } from '../../shared/wizards/wizard'
+import { getLogger } from '../../shared/logger/logger'
 
 const localize = nls.loadMessageBundle()
 
@@ -164,29 +165,46 @@ export class ConnectionPrompter extends CachedPrompter<ConnectionSummary> {
     }
 
     protected load(): Promise<DataQuickPickItem<ConnectionSummary>[]> {
-        return this.client.listConnections({}).then(resp => {
-            const connections = resp.ConnectionSummaryList.filter(conn => conn.Status === 'AVAILABLE').map(conn => ({
-                label: conn.ConnectionName!,
-                data: conn,
-            }))
+        return this.client
+            .listConnections({})
+            .then(resp => {
+                const connections = resp.ConnectionSummaryList.filter(conn => conn.Status === 'AVAILABLE').map(
+                    conn => ({
+                        label: conn.ConnectionName!,
+                        data: conn,
+                    })
+                )
 
-            if (connections.length === 0) {
+                if (connections.length === 0) {
+                    return [
+                        {
+                            label: 'No connections found',
+                            detail: 'Click for documentation on creating a new GitHub connection for App Runner',
+                            data: {} as any,
+                            invalidSelection: true,
+                            onClick: vscode.env.openExternal.bind(
+                                vscode.env,
+                                vscode.Uri.parse(APPRUNNER_CONNECTION_HELP_URL)
+                            ),
+                        },
+                    ]
+                } else {
+                    return connections
+                }
+            })
+            .catch(err => {
+                getLogger().error(`Failed to list GitHub connections: %O`, err)
                 return [
                     {
-                        label: 'No connections found',
-                        detail: 'Click for documentation on creating a new GitHub connection for App Runner',
-                        data: {} as any,
-                        invalidSelection: true,
-                        onClick: vscode.env.openExternal.bind(
-                            vscode.env,
-                            vscode.Uri.parse(APPRUNNER_CONNECTION_HELP_URL)
+                        label: localize(
+                            'AWS.apprunner.createService.selectConnection.failed',
+                            'Failed to list GitHub connections'
                         ),
+                        description: localize('AWS.generic.goBack', 'Click to go back'),
+                        data: WIZARD_BACK,
                     },
                 ]
-            } else {
-                return connections
-            }
-        })
+            })
     }
 
     protected createPrompter(loader: CachedFunction<ConnectionPrompter['load']>): QuickPickPrompter<ConnectionSummary> {

@@ -66,6 +66,8 @@ export type DataQuickPickItem<T> = vscode.QuickPickItem & {
     data: QuickPickData<T>
     invalidSelection?: boolean
     onClick?: () => any | Promise<any>
+    /** Stops the QuickPick from estimating how many steps an item would add in a Wizard flow */
+    skipEstimate?: boolean
 }
 
 export type DataQuickPick<T> = Omit<vscode.QuickPick<DataQuickPickItem<T>>, 'buttons'> & { buttons: PrompterButtons<T> }
@@ -113,12 +115,12 @@ export function createLabelQuickPick<T extends string>(
 ): QuickPickPrompter<T> {
     if (items instanceof Promise) {
         return createQuickPick(
-            items.then(items => items.map(item => ({ ...item, data: item.label }))),
+            items.then(items => items.map(item => ({ data: item.label, ...item }))),
             options
         )
     }
     return createQuickPick(
-        items.map(item => ({ ...item, data: item.label })),
+        items.map(item => ({ data: item.label, ...item })),
         options
     )
 }
@@ -339,6 +341,10 @@ export class QuickPickPrompter<T> extends Prompter<T> {
         const estimates = new Map<string, number>()
 
         const setEstimate = (item: DataQuickPickItem<T>) => {
+            if (item.skipEstimate) {
+                return
+            }
+
             if (item.data instanceof Function) {
                 return item
                     .data()

@@ -78,15 +78,7 @@ export class AppRunnerNode extends AWSTreeNodeBase {
                 if (this.serviceNodes.has(summary.ServiceArn)) {
                     this.serviceNodes.get(summary.ServiceArn)!.update(summary)
                 } else {
-                    // Get top-level operation (always the first element)
-                    const operations = (
-                        await this.client.listOperations({ MaxResults: 1, ServiceArn: summary.ServiceArn })
-                    ).OperationSummaryList
-                    const operation = operations && operations[0]?.EndedAt === undefined ? operations[0] : undefined
-                    this.serviceNodes.set(
-                        summary.ServiceArn,
-                        new AppRunnerServiceNode(this, this.client, summary, operation as any)
-                    )
+                    this.serviceNodes.set(summary.ServiceArn, new AppRunnerServiceNode(this, this.client, summary))
                 }
                 deletedNodeArns.delete(summary.ServiceArn)
             })

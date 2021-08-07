@@ -26,6 +26,7 @@ import { makeDeploymentButton } from './apprunnerCreateServiceWizard'
 import { IamClient } from '../../shared/clients/iamClient'
 import { RolePrompter } from '../../shared/ui/common/rolePrompter'
 import { getLogger } from '../../shared/logger/logger'
+import { BasicExitPrompterProvider } from '../../shared/ui/common/exitPrompter'
 
 const localize = nls.loadMessageBundle()
 
@@ -232,6 +233,7 @@ function createImageRepositorySubForm(
     // note: this is intentionally initialized only once to preserve caches
     const imageIdentifierWizard = new Wizard({
         initForm: new ImageIdentifierForm(ecrClient),
+        exitPrompterProvider: new BasicExitPrompterProvider(),
     })
 
     form.ImageIdentifier.bindPrompter(() =>

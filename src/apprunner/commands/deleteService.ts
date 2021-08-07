@@ -21,7 +21,7 @@ function validateName(name: string) {
 
 export async function deleteService(node: AppRunnerServiceNode): Promise<void> {
     let telemetryResult: telemetry.Result = 'Failed'
-    const appRunnerServiceStatus = node.info.Status
+    const appRunnerServiceStatus = node.info.Status as telemetry.AppRunnerServiceStatus
 
     try {
         const inputBox = createInputBox({
@@ -41,10 +41,10 @@ export async function deleteService(node: AppRunnerServiceNode): Promise<void> {
         await node.delete()
         telemetryResult = 'Succeeded'
     } finally {
-        //telemetry.recordAppRunnerDeleteService({
-        //  result: telemetryResult,
-        //  appRunnerServiceStatus,
-        //  passive: false,
-        //})
+        telemetry.recordApprunnerDeleteService({
+            result: telemetryResult,
+            appRunnerServiceStatus,
+            passive: false,
+        })
     }
 }
