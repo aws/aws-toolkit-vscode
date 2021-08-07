@@ -19,7 +19,7 @@ import { CachedFunction, CachedPrompter } from '../../shared/ui/prompter'
 import { WizardForm } from '../../shared/wizards/wizardForm'
 import { createVariablesPrompter } from '../../shared/ui/common/variablesPrompter'
 import { AppRunnerClient } from '../../shared/clients/apprunnerClient'
-import { makeDeploymentButton } from './apprunnerCreateServiceWizard'
+import { makeDeploymentButton } from './deploymentButton'
 import { ConnectionSummary } from 'aws-sdk/clients/apprunner'
 import {
     createLabelQuickPick,
