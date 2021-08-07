@@ -20,6 +20,7 @@ import { StepFunctionsNode } from '../stepFunctions/explorer/stepFunctionsNodes'
 import { DEFAULT_PARTITION } from '../shared/regions/regionUtilities'
 import { SsmDocumentNode } from '../ssmDocument/explorer/ssmDocumentNode'
 import { AppRunnerNode } from '../apprunner/explorer/apprunnerNode'
+import { LoadMoreNode } from '../shared/treeview/nodes/loadMoreNode'
 
 /**
  * An AWS Explorer node representing a region.
@@ -77,7 +78,16 @@ export class RegionNode extends AWSTreeNodeBase {
         }
     }
 
+    private tryClearChildren(): void {
+        this.childNodes.forEach(cn => {
+            if ('clearChildren' in cn) {
+                ;(cn as AWSTreeNodeBase & LoadMoreNode).clearChildren()
+            }
+        })
+    }
+
     public async getChildren(): Promise<AWSTreeNodeBase[]> {
+        this.tryClearChildren()
         return this.childNodes
     }
 
