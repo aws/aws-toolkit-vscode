@@ -18,7 +18,7 @@ import { PlaceholderNode } from '../../shared/treeview/nodes/placeholderNode'
 import { makeChildrenNodes } from '../../shared/treeview/treeNodeUtilities'
 import { LogGroupNode } from './logGroupNode'
 
-export abstract class CloudWatchLogsParentNode extends AWSTreeNodeBase {
+export abstract class CloudWatchLogsBase extends AWSTreeNodeBase {
     protected readonly logGroupNodes: Map<string, LogGroupNode>
 
     public constructor(
@@ -61,7 +61,7 @@ export abstract class CloudWatchLogsParentNode extends AWSTreeNodeBase {
         )
     }
 }
-export class CloudWatchLogsNode extends CloudWatchLogsParentNode {
+export class CloudWatchLogsNode extends CloudWatchLogsBase {
     public constructor(regionCode: string) {
         super(
             'CloudWatch Logs',

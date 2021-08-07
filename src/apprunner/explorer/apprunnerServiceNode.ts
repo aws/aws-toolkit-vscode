@@ -11,7 +11,7 @@ import { AppRunnerNode } from './apprunnerNode'
 import { CloudWatchLogsClient } from '../../shared/clients/cloudWatchLogsClient'
 import { ext } from '../../shared/extensionGlobals'
 import { toArrayAsync, toMap } from '../../shared/utilities/collectionUtils'
-import { CloudWatchLogsParentNode } from '../../cloudWatchLogs/explorer/cloudWatchLogsNode'
+import { CloudWatchLogsBase } from '../../cloudWatchLogs/explorer/cloudWatchLogsNode'
 import { CloudWatchLogs } from 'aws-sdk'
 import { AWSResourceNode } from '../../shared/treeview/nodes/awsResourceNode'
 
@@ -31,7 +31,7 @@ const OPERATION_STATUS = {
 
 type ServiceOperation = keyof typeof OPERATION_STATUS
 
-export class AppRunnerServiceNode extends CloudWatchLogsParentNode implements AWSResourceNode {
+export class AppRunnerServiceNode extends CloudWatchLogsBase implements AWSResourceNode {
     public readonly name: string
     public readonly arn: string
     private readonly lock: AsyncLock = new AsyncLock()
