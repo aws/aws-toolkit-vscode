@@ -179,8 +179,8 @@ export class MockCloudWatchLogsClient implements CloudWatchLogsClient {
         public readonly regionCode: string = '',
 
         public readonly describeLogGroups: (
-            statusFilter?: string[]
-        ) => AsyncIterableIterator<CloudWatchLogs.LogGroup> = (statusFilter?: string[]) => asyncGenerator([]),
+            request?: CloudWatchLogs.DescribeLogGroupsRequest
+        ) => AsyncIterableIterator<CloudWatchLogs.LogGroup> = () => asyncGenerator([]),
 
         public readonly describeLogStreams: (
             request: CloudWatchLogs.DescribeLogStreamsRequest
