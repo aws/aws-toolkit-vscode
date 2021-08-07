@@ -52,7 +52,7 @@ export class AppRunnerServiceNode extends CloudWatchLogsBase implements AWSResou
             dark: vscode.Uri.file(ext.iconPaths.dark.apprunner),
             light: vscode.Uri.file(ext.iconPaths.light.apprunner),
         }
-        this.id = `AppRunnerService-${_info.ServiceName}`
+        this.id = `AppRunnerService-${_info.ServiceArn}`
         this.name = _info.ServiceName
         this.arn = _info.ServiceArn
 
