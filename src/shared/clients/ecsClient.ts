@@ -49,11 +49,9 @@ export class DefaultEcsClient {
             return { resource: [] }
         }
         try {
-            const serviceResponse = await sdkClient
-                .describeServices({ services: serviceArnList.serviceArns!, cluster: cluster })
-                .promise()
+            const services = await this.describeServices(cluster, serviceArnList.serviceArns!)
             const response: EcsResourceAndToken = {
-                resource: serviceResponse.services!,
+                resource: services,
                 nextToken: serviceArnList.nextToken,
             }
             return response
@@ -103,6 +101,11 @@ export class DefaultEcsClient {
             getLogger().error(error)
             throw error
         }
+    }
+
+    public async describeServices(cluster: string, services: string[]): Promise<ECS.Service[]> {
+        const sdkClient = await this.createSdkClient()
+        return (await sdkClient.describeServices({ cluster, services }).promise()).services ?? []
     }
 
     protected async createSdkClient(): Promise<ECS> {
