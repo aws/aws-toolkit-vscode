@@ -27,9 +27,25 @@ export async function runCommandInContainer(
 
     await verifyCliAndPlugin(window)
 
-    //Quick pick to choose from the tasks in that service
+    // Check to see if there are any deployments in process
+    const deployments = (await node.ecs.describeServices(node.clusterArn, [node.serviceName]))[0].deployments
+    if (deployments) {
+        for (let i = 0; i < deployments.length; i++) {
+            if (deployments[i].status === 'ACTIVE' || deployments[i].rolloutState === 'IN_PROGRESS') {
+                window.showWarningMessage(
+                    localize(
+                        'AWS.command.ecs.runCommandInContainer.warnDeploymentInProgress',
+                        'A deployment for this service may still be in progress. Not all containers may be running.'
+                    )
+                )
+            }
+            break
+        }
+    }
+
+    // Quick pick to choose from the tasks in that service
     const taskArns = await node.listTasks()
-    const quickPickItems: vscode.QuickPickItem[] = (await node.desribeTasks(taskArns)).map(task => {
+    const quickPickItems: vscode.QuickPickItem[] = (await node.describeTasks(taskArns)).map(task => {
         // The last 32 digits of the task arn is the task identifier
         return {
             label: task.taskArn!.substr(-32),
@@ -129,6 +145,7 @@ export async function runCommandInContainer(
     ).run()
 
     if (response.exitCode !== 0) {
+        showOutputMessage(response.stderr, outputChannel)
         getLogger().error(response.stderr)
         recordEcsRunExecuteCommand({ result: 'Failed', ecsExecuteCommandType: 'command' })
     } else {
