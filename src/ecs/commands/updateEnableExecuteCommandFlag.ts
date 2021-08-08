@@ -19,17 +19,45 @@ export async function updateEnableExecuteCommandFlag(
 ): Promise<void> {
     const hasExecEnabled = node.service.enableExecuteCommand
 
-    if (enable && hasExecEnabled) {
-        // display already enabled/disabled
-        window.showInformationMessage(
-            localize('AWS.command.ecs.enableEcsExec.alreadyEnabled', 'ECS Exec is already enabled for this service')
-        )
-        return
-    } else if (!enable && !hasExecEnabled) {
-        window.showInformationMessage(
-            localize('AWS.command.ecs.enableEcsExec.alreadyDisabled', 'ECS Exec is already disabled for this service')
-        )
-        return
+    const enableWarning = localize(
+        'AWS.command.ecs.runCommandInContainer.warning.enableExecuteFlag',
+        'Enabling command execution will change the state of resources in your AWS account, including but not limited to stopping and restarting the service.\nAltering the state of resources while the Execute Command is enabled can lead to unpredictable results.\n Do you wish to continue?'
+    )
+    const disableWarning = localize(
+        'AWS.command.ecs.runCommandInContainer.warning.disableExecuteFlag',
+        'Disabling command execution will change the state of resources in your AWS account, including but not limited to stopping and restarting the service.\n Do you wish to continue?'
+    )
+    const yes = localize('AWS.generic.response.yes', 'Yes')
+    const yesDontAskAgain = localize('AWS.message.prompt.yesDontAskAgain', "Yes, and don't ask again")
+    const no = localize('AWS.generic.response.no', 'No')
+
+    if (enable) {
+        if (hasExecEnabled) {
+            window.showInformationMessage(
+                localize('AWS.command.ecs.enableEcsExec.alreadyEnabled', 'ECS Exec is already enabled for this service')
+            )
+        } else {
+            const proceed = await window.showWarningMessage(enableWarning, yes, yesDontAskAgain, no)
+            if (proceed === undefined || proceed === 'No') {
+                return
+            }
+        }
+        // disable
+    } else {
+        if (hasExecEnabled) {
+            const proceed = await window.showWarningMessage(disableWarning, yes, yesDontAskAgain, no)
+            if (proceed === undefined || proceed === 'No') {
+                return
+            }
+        } else {
+            window.showInformationMessage(
+                localize(
+                    'AWS.command.ecs.enableEcsExec.alreadyDisabled',
+                    'ECS Exec is already disabled for this service'
+                )
+            )
+            return
+        }
     }
 
     // Warn the user this will redeploy the entire service
