@@ -145,6 +145,7 @@ export async function runCommandInContainer(
     ).run()
 
     if (response.exitCode !== 0) {
+        showOutputMessage(response.stderr, outputChannel)
         getLogger().error(response.stderr)
         recordEcsRunExecuteCommand({ result: 'Failed', ecsExecuteCommandType: 'command' })
     } else {
