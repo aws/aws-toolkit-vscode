@@ -18,18 +18,31 @@ export function getStateMachineDefinitionFromCfnTemplate(uniqueIdentifier: strin
         let data = fs.readFileSync(templatePath, 'utf8')
         const jsonObj = JSON.parse(data)
         const resources = jsonObj.Resources
+        let key = ''
 
+        const matchingKeyList: string[] = []
         for (const key of Object.keys(resources)) {
+            //the resources list always contains 'CDKMetadata'
             if (key === 'CDKMetadata') continue
 
-            const slicedKey = key.slice(0, -8)
-            if (slicedKey === uniqueIdentifier) {
-                const definitionString = jsonObj.Resources[`${key}`].Properties.DefinitionString
-                data = JSON.stringify(definitionString)
-                return data
+            if (key.substring(0, uniqueIdentifier.length) === uniqueIdentifier) {
+                matchingKeyList.push(key)
             }
         }
-        return
+        if (matchingKeyList.length === 0) {
+            return
+        }
+        else if (matchingKeyList.length === 1) {
+            key = matchingKeyList.pop()!
+        }
+        else {
+            //return minimun length key in matchingKeyList
+            key = matchingKeyList.reduce((a, b) => a.length <= b.length ? a : b)
+        }
+
+        const definitionString = jsonObj.Resources[`${key}`].Properties.DefinitionString
+        data = JSON.stringify(definitionString)
+        return data
     }
     catch (err) {
         logger.debug('Unable to extract state machine definition string from template.json file.')
