@@ -111,6 +111,7 @@ export class AppRunnerNode extends AWSTreeNodeBase {
 
     public deleteNode(id: string): void {
         this.serviceNodes.delete(id)
+        this.pollingNodes.delete(id)
     }
 
     public async createService(request: AppRunner.CreateServiceRequest): Promise<void> {
