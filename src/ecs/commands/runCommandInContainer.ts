@@ -56,7 +56,7 @@ export async function runCommandInContainer(
         window.showInformationMessage(
             localize(
                 'AWS.command.ecs.runCommandInContainer.noTasks',
-                'There are no running tasks for the service: {0}',
+                'No running tasks for service: {0}',
                 node.serviceName
             )
         )
