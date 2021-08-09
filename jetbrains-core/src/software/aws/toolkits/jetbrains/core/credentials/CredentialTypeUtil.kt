@@ -13,5 +13,7 @@ fun CredentialType?.toTelemetryType(): TelemetryCredentialType = when (this) {
     CredentialType.AssumeRoleProfile -> TelemetryCredentialType.AssumeRoleProfile
     CredentialType.AssumeMfaRoleProfile -> TelemetryCredentialType.AssumeMfaRoleProfile
     CredentialType.SsoProfile -> TelemetryCredentialType.SsoProfile
+    CredentialType.Ec2Metadata -> TelemetryCredentialType.Ec2Metadata
+    CredentialType.EcsMetadata -> TelemetryCredentialType.EcsMetatdata
     null -> TelemetryCredentialType.Other
 }
