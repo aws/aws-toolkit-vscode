@@ -95,8 +95,9 @@ export async function checkExplorerForDefaultRegion(
             ignoreFocusOut: true,
             title: localize(
                 'AWS.message.prompt.defaultRegionHidden',
-                "This profile's default region ({0}) is currently hidden. Would you like to show it in the Explorer?",
-                profileRegion
+                'Default region "{0}" of profile "{1}" is currently hidden. Show it in the Explorer?',
+                profileRegion,
+                profileName
             ),
         },
         items: items,
