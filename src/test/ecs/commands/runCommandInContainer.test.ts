@@ -11,6 +11,7 @@ import { DefaultEcsClient, EcsClient } from '../../../shared/clients/ecsClient'
 import { ChildProcess } from '../../../shared/utilities/childProcess'
 import { FakeWindow } from '../../shared/vscode/fakeWindow'
 import { FakeChildProcessResult } from '../../shared/sam/cli/testSamCliProcessInvoker'
+import { DefaultSettingsConfiguration } from '../../../shared/settingsConfiguration'
 
 describe('runCommandInContainer', function () {
     let sandbox: sinon.SinonSandbox
@@ -23,8 +24,9 @@ describe('runCommandInContainer', function () {
     const containerName = 'containerName'
     const serviceName = 'serviceName'
     const clusterArn = 'arn:fake:cluster'
+    const serviceNoDeployments = [{ deployments: [{ status: 'PRIMARY', rolloutState: 'COMPLETED' }] }]
 
-    const doesNotAwsCliChildProcessResult: FakeChildProcessResult = {
+    const doesNotHaveAwsCliChildProcessResult: FakeChildProcessResult = {
         stdout: '',
         error: undefined,
         exitCode: 254,
@@ -38,7 +40,7 @@ describe('runCommandInContainer', function () {
         stderr: 'This is not installed',
     }
 
-    const successfulExecResult: FakeChildProcessResult = new FakeChildProcessResult({})
+    const successfulCPResult: FakeChildProcessResult = new FakeChildProcessResult({})
 
     const ecs: EcsClient = new DefaultEcsClient('fakeRegion')
     let node: EcsContainerNode
@@ -53,11 +55,13 @@ describe('runCommandInContainer', function () {
     })
 
     it('prompts for command', async function () {
-        const childCalls = sandbox.stub(ChildProcess.prototype, 'run').onFirstCall().resolves(successfulExecResult)
-        childCalls.onSecondCall().resolves(successfulExecResult).onThirdCall().resolves(successfulExecResult)
+        const childCalls = sandbox.stub(ChildProcess.prototype, 'run').onFirstCall().resolves(successfulCPResult)
+        childCalls.onSecondCall().resolves(successfulCPResult).onThirdCall().resolves(successfulCPResult)
+        sandbox.stub(ecs, 'describeServices').resolves(serviceNoDeployments)
         sandbox.stub(ecs, 'listTasks').resolves(taskListTwo)
         sandbox.stub(ecs, 'describeTasks').resolves(describedTasksOne)
         sandbox.stub(picker, 'promptUser').resolves(chosenTask)
+        sandbox.stub(DefaultSettingsConfiguration.prototype, 'readSetting').returns(false)
 
         const window = new FakeWindow({ inputBox: { input: 'ls' } })
         await runCommandInContainer(node, window)
@@ -67,24 +71,27 @@ describe('runCommandInContainer', function () {
     })
 
     it('does not show picker if only one task exists', async function () {
-        const childCalls = sandbox.stub(ChildProcess.prototype, 'run').onFirstCall().resolves(successfulExecResult)
-        childCalls.onSecondCall().resolves(successfulExecResult).onThirdCall().resolves(successfulExecResult)
+        const childCalls = sandbox.stub(ChildProcess.prototype, 'run').onFirstCall().resolves(successfulCPResult)
+        childCalls.onSecondCall().resolves(successfulCPResult).onThirdCall().resolves(successfulCPResult)
+        sandbox.stub(ecs, 'describeServices').resolves(serviceNoDeployments)
         sandbox.stub(ecs, 'listTasks').resolves(taskListOne)
         sandbox.stub(ecs, 'describeTasks').resolves(describedTasksOne)
+        sandbox.stub(DefaultSettingsConfiguration.prototype, 'readSetting').returns(false)
         const pickerStub = sandbox.stub(picker, 'promptUser')
 
         const window = new FakeWindow({ inputBox: { input: 'ls' } })
         await runCommandInContainer(node, window)
 
         assert.strictEqual(pickerStub.notCalled, true)
+        assert.strictEqual(childCalls.callCount, 3)
     })
 
     it('throws error if AWS CLI not installed', async function () {
         const childCalls = sandbox
             .stub(ChildProcess.prototype, 'run')
             .onFirstCall()
-            .resolves(doesNotAwsCliChildProcessResult)
-        childCalls.onSecondCall().resolves(successfulExecResult)
+            .resolves(doesNotHaveAwsCliChildProcessResult)
+        childCalls.onSecondCall().resolves(successfulCPResult)
         const listTasksStub = sandbox.stub(ecs, 'listTasks').resolves(taskListTwo)
         const pickerStub = sandbox.stub(picker, 'promptUser')
 
@@ -101,7 +108,7 @@ describe('runCommandInContainer', function () {
     })
 
     it('throws error if SSM plugin not installed', async function () {
-        const childCalls = sandbox.stub(ChildProcess.prototype, 'run').onFirstCall().resolves(successfulExecResult)
+        const childCalls = sandbox.stub(ChildProcess.prototype, 'run').onFirstCall().resolves(successfulCPResult)
         childCalls.onSecondCall().resolves(doesNotHaveSSMPluginChildProcessResult)
         const listTasksStub = sandbox.stub(ecs, 'listTasks').resolves(taskListTwo)
         const pickerStub = sandbox.stub(picker, 'promptUser')
