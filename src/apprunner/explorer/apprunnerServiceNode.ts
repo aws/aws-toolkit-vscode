@@ -129,7 +129,7 @@ export class AppRunnerServiceNode extends CloudWatchLogsBase implements AWSResou
             .catch(err => {
                 // Apparently App Runner can rarely list deleted services with the wrong status
                 getLogger().warn(
-                    `Unable to list operations for service "${this._info.ServiceName}", it will not be shown.`
+                    `Failed to list operations for service "${this._info.ServiceName}", service may be in an unstable state.`
                 )
                 getLogger().debug(`Failed to list operations for service "${this.arn}": %O`, err)
             })
