@@ -58,7 +58,7 @@ export async function runCommandInContainer(
         window.showInformationMessage(
             localize(
                 'AWS.command.ecs.runCommandInContainer.noTasks',
-                'There are no running tasks for the service: {0}',
+                'No running tasks for service: {0}',
                 node.serviceName
             )
         )
@@ -149,7 +149,9 @@ export async function runCommandInContainer(
 
     if (response.exitCode !== 0) {
         showOutputMessage(response.stderr, outputChannel)
-        getLogger().error(response.stderr)
+        const cmd = new ChildProcess(...)
+        const response = await cmd.run()
+        getLogger().error('ECS command failed: %O: %O', cmd, response.stderr)
         recordEcsRunExecuteCommand({ result: 'Failed', ecsExecuteCommandType: 'command' })
     } else {
         showOutputMessage(response.stdout, outputChannel)
@@ -162,7 +164,7 @@ async function verifyCliAndPlugin(window: Window): Promise<boolean> {
     if (verifyAwsCliResponse.exitCode !== 0) {
         const noCli = localize(
             'AWS.command.ecs.runCommandInContainer.noCliFound',
-            'Please install the {0} CLI before proceding',
+            'This feature requires the {0} CLI (aws) to be installed and available on your $PATH',
             getIdeProperties().company
         )
         window.showErrorMessage(noCli)
@@ -174,7 +176,7 @@ async function verifyCliAndPlugin(window: Window): Promise<boolean> {
         window.showErrorMessage(
             localize(
                 'AWS.command.ecs.runCommandInContainer.noPluginFound',
-                'Please install the SSM Session Manager plugin before proceding'
+                'This feature requires the SSM Session Manager plugin (session-manager-plugin) to be installed and available on your $PATH'
             )
         )
         return false
