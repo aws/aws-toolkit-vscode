@@ -64,6 +64,7 @@ import { ExtContext } from './shared/extensions'
 import { activate as activateApiGateway } from './apigateway/activation'
 import { activate as activateStepFunctions } from './stepFunctions/activation'
 import { activate as activateSsmDocument } from './ssmDocument/activation'
+import { activate as activateAppRunner } from './apprunner/activation'
 import { CredentialsStore } from './credentials/credentialsStore'
 import { getSamCliContext } from './shared/sam/cli/samCliContext'
 import * as extWindow from './shared/vscode/window'
@@ -213,6 +214,8 @@ export async function activate(context: vscode.ExtensionContext) {
             toolkitOutputChannel,
             remoteInvokeOutputChannel,
         })
+
+        await activateAppRunner(extContext)
 
         await activateApiGateway({
             extContext: extContext,

@@ -5,13 +5,7 @@
 
 import { AppRunner } from 'aws-sdk'
 import * as nls from 'vscode-nls'
-import {
-    createBackButton,
-    createExitButton,
-    createHelpButton,
-    QuickInputButton,
-    QuickInputToggleButton,
-} from '../../shared/ui/buttons'
+import { createBackButton, createExitButton, createHelpButton, QuickInputToggleButton } from '../../shared/ui/buttons'
 import { ext } from '../../shared/extensionGlobals'
 import * as input from '../../shared/ui/inputPrompter'
 import * as picker from '../../shared/ui/pickerPrompter'
@@ -22,31 +16,9 @@ import { AppRunnerCodeRepositoryWizard } from './codeRepositoryWizard'
 import * as vscode from 'vscode'
 import { BasicExitPrompterProvider } from '../../shared/ui/common/exitPrompter'
 import { GitExtension } from '../../shared/extensions/git'
-import { APPRUNNER_PRICING_URL } from '../../shared/constants'
+import { makeDeploymentButton } from './deploymentButton'
 
 const localize = nls.loadMessageBundle()
-
-function makeDeployButtons() {
-    const autoDeploymentsEnable: QuickInputButton<void> = {
-        iconPath: new vscode.ThemeIcon('sync-ignored'),
-        tooltip: localize('AWS.apprunner.buttons.enableAutoDeploy', 'Turn on automatic deployment'),
-    }
-
-    const autoDeploymentsDisable: QuickInputButton<void> = {
-        iconPath: new vscode.ThemeIcon('sync'),
-        tooltip: localize('AWS.apprunner.buttons.disableAutoDeploy', 'Turn off automatic deployment'),
-    }
-
-    return [autoDeploymentsDisable, autoDeploymentsEnable]
-}
-
-export function makeDeploymentButton() {
-    const [autoDeploymentsDisable, autoDeploymentsEnable] = makeDeployButtons()
-
-    return new QuickInputToggleButton(autoDeploymentsDisable, autoDeploymentsEnable, {
-        onCallback: showDeploymentCostNotification,
-    })
-}
 
 function makeButtons(helpUri?: string | vscode.Uri) {
     return [createHelpButton(helpUri), createBackButton(), createExitButton()]
@@ -100,29 +72,6 @@ function createInstanceStep(): Prompter<AppRunner.InstanceConfiguration> {
         title: localize('AWS.apprunner.createService.selectInstanceConfig.title', 'Select instance configuration'),
         buttons: makeButtons(),
     })
-}
-
-function showDeploymentCostNotification(): void {
-    const shouldShow = ext.context.globalState.get('apprunner.deployments.notifyPricing', true)
-
-    if (shouldShow) {
-        const notice = localize(
-            'aws.apprunner.createService.priceNotice.message',
-            'App Runner automatic deployments incur an additional cost.'
-        )
-        const viewPricing = localize('aws.apprunner.createService.priceNotice.view', 'View Pricing')
-        const dontShow = localize('aws.generic.doNotShowAgain', "Don't Show Again")
-        const pricingUri = vscode.Uri.parse(APPRUNNER_PRICING_URL)
-
-        vscode.window.showInformationMessage(notice, viewPricing, dontShow).then(button => {
-            if (button === viewPricing) {
-                vscode.env.openExternal(pricingUri)
-                showDeploymentCostNotification()
-            } else if (button === dontShow) {
-                ext.context.globalState.update('apprunner.deployments.notifyPricing', false)
-            }
-        })
-    }
 }
 
 function createSourcePrompter(

@@ -7,7 +7,7 @@ import * as vscode from 'vscode'
 import * as fs from 'fs-extra'
 import { showErrorWithLogs } from '../../utilities/messages'
 import { WIZARD_RETRY } from '../../wizards/wizard'
-import { createQuickPick, QuickPickPrompter } from '../pickerPrompter'
+import { createQuickPick, DataQuickPickItem, QuickPickPrompter } from '../pickerPrompter'
 import * as nls from 'vscode-nls'
 import { PrompterButtons } from '../buttons'
 import { promisifyThenable } from '../../utilities/vsCodeUtils'
@@ -87,9 +87,9 @@ export function createVariablesPrompter(
             })
     }
 
-    const items = [
+    const items: DataQuickPickItem<{ [name: string]: string }>[] = [
         { label: localize('AWS.generic.skip', 'Skip'), data: {} },
-        { label: localize('AWS.generic.useFile', 'Use file...'), data: openDialog },
+        { label: localize('AWS.generic.useFile', 'Use file...'), data: openDialog, skipEstimate: true },
     ]
 
     return createQuickPick<{ [name: string]: string }>(items, {

@@ -16,6 +16,7 @@ import { CloudWatchLogs } from 'aws-sdk'
 import { AWSResourceNode } from '../../shared/treeview/nodes/awsResourceNode'
 
 import * as nls from 'vscode-nls'
+import { getLogger } from '../../shared/logger'
 const localize = nls.loadMessageBundle()
 
 const CONTEXT_BASE = 'awsAppRunnerServiceNode'
@@ -51,7 +52,7 @@ export class AppRunnerServiceNode extends CloudWatchLogsBase implements AWSResou
             dark: vscode.Uri.file(ext.iconPaths.dark.apprunner),
             light: vscode.Uri.file(ext.iconPaths.light.apprunner),
         }
-        this.id = `AppRunnerService-${_info.ServiceName}`
+        this.id = `AppRunnerService-${_info.ServiceArn}`
         this.name = _info.ServiceName
         this.arn = _info.ServiceArn
 
@@ -116,16 +117,27 @@ export class AppRunnerServiceNode extends CloudWatchLogsBase implements AWSResou
     }
 
     private async updateOperation(): Promise<void> {
-        const operations = (await this.client.listOperations({ MaxResults: 1, ServiceArn: this._info.ServiceArn }))
-            .OperationSummaryList
-        const operation = operations && operations[0]?.EndedAt === undefined ? operations[0] : undefined
-        if (operation !== undefined) {
-            this.setOperation(this._info, operation.Id!, operation.Type as any)
-        }
+        return this.client
+            .listOperations({ MaxResults: 1, ServiceArn: this._info.ServiceArn })
+            .then(resp => {
+                const operations = resp.OperationSummaryList
+                const operation = operations && operations[0]?.EndedAt === undefined ? operations[0] : undefined
+                if (operation !== undefined) {
+                    this.setOperation(this._info, operation.Id!, operation.Type as any)
+                }
+            })
+            .catch(err => {
+                // Apparently App Runner can rarely list deleted services with the wrong status
+                getLogger().warn(
+                    `Failed to list operations for service "${this._info.ServiceName}", service may be in an unstable state.`
+                )
+                getLogger().debug(`Failed to list operations for service "${this.arn}": %O`, err)
+            })
     }
 
     private updateInfo(info: AppRunner.ServiceSummary | AppRunner.Service): void {
-        if (info.Status === 'OPERATION_IN_PROGRESS' && this._info.Status !== info.Status) {
+        if (info.Status === 'OPERATION_IN_PROGRESS' && this.currentOperation.Type === undefined) {
+            // Asynchronous since it is not currently possible for race-conditions to occur with updating operations
             this.updateOperation()
         }
 
