@@ -66,7 +66,7 @@ class OpenLogStreamInEditorActionTest {
                 }
             )
 
-        val tableModel = ListTableModel<LogStream>(LogStreamsStreamColumn())
+        val tableModel = ListTableModel<LogStream>(LogStreamsStreamColumn(sortable = false))
         val table = JBTable(tableModel)
         tableModel.addRow(LogStream.builder().logStreamName("54321").build())
         // select the first row

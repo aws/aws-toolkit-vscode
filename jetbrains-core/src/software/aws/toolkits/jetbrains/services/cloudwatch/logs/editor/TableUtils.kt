@@ -8,7 +8,6 @@ import com.intellij.ui.speedSearch.SpeedSearchUtil
 import com.intellij.util.text.DateFormatUtil
 import com.intellij.util.text.SyncDateFormat
 import com.intellij.util.ui.ColumnInfo
-import com.intellij.util.ui.ListTableModel
 import software.amazon.awssdk.services.cloudwatchlogs.model.LogStream
 import software.aws.toolkits.jetbrains.services.cloudwatch.logs.LogStreamEntry
 import software.aws.toolkits.jetbrains.utils.ui.ResizingTextColumnRenderer
@@ -17,18 +16,15 @@ import software.aws.toolkits.jetbrains.utils.ui.setSelectionHighlighting
 import software.aws.toolkits.resources.message
 import java.awt.Component
 import java.text.SimpleDateFormat
-import java.util.Comparator
 import javax.swing.JTable
-import javax.swing.SortOrder
 import javax.swing.table.TableCellRenderer
-import javax.swing.table.TableRowSorter
 
-class LogStreamsStreamColumn : ColumnInfo<LogStream, String>(message("cloudwatch.logs.log_streams")) {
+class LogStreamsStreamColumn(private val sortable: Boolean) : ColumnInfo<LogStream, String>(message("cloudwatch.logs.log_streams")) {
     private val renderer = LogStreamsStreamColumnRenderer()
     override fun valueOf(item: LogStream?): String? = item?.logStreamName()
-
     override fun isCellEditable(item: LogStream?): Boolean = false
-    override fun getRenderer(item: LogStream?): TableCellRenderer? = renderer
+    override fun getRenderer(item: LogStream?): TableCellRenderer = renderer
+    override fun getComparator(): Comparator<LogStream>? = if (sortable) Comparator.comparing { it.logStreamName() } else null
 }
 
 class LogStreamsStreamColumnRenderer() : TableCellRenderer {
@@ -45,7 +41,10 @@ class LogStreamsStreamColumnRenderer() : TableCellRenderer {
     }
 }
 
-class LogStreamsDateColumn(private val format: SyncDateFormat? = null) : ColumnInfo<LogStream, String>(message("cloudwatch.logs.last_event_time")) {
+class LogStreamsDateColumn(
+    private val sortable: Boolean,
+    val format: SyncDateFormat? = null
+) : ColumnInfo<LogStream, String>(message("cloudwatch.logs.last_event_time")) {
     private val renderer = ResizingTextColumnRenderer()
     override fun valueOf(item: LogStream?): String? = TimeFormatConversion.convertEpochTimeToStringDateTime(
         item?.lastEventTimestamp(),
@@ -54,24 +53,8 @@ class LogStreamsDateColumn(private val format: SyncDateFormat? = null) : ColumnI
     )
 
     override fun isCellEditable(item: LogStream?): Boolean = false
-    override fun getRenderer(item: LogStream?): TableCellRenderer? = renderer
-    override fun getComparator(): Comparator<LogStream> = Comparator.comparing { it.lastEventTimestamp() }
-}
-
-class LogGroupTableSorter(model: ListTableModel<LogStream>) : TableRowSorter<ListTableModel<LogStream>>(model) {
-    init {
-        sortKeys = listOf(SortKey(1, SortOrder.DESCENDING))
-        setSortable(0, false)
-        setSortable(1, false)
-    }
-}
-
-class LogGroupFilterTableSorter(model: ListTableModel<LogStream>) : TableRowSorter<ListTableModel<LogStream>>(model) {
-    init {
-        sortKeys = listOf(SortKey(0, SortOrder.DESCENDING))
-        setSortable(0, false)
-        setSortable(1, false)
-    }
+    override fun getRenderer(item: LogStream?): TableCellRenderer = renderer
+    override fun getComparator(): Comparator<LogStream>? = if (sortable) Comparator.comparing { it.lastEventTimestamp() } else null
 }
 
 class LogStreamDateColumn(private val format: SyncDateFormat? = null) : ColumnInfo<LogStreamEntry, String>(message("general.time")) {
@@ -83,8 +66,7 @@ class LogStreamDateColumn(private val format: SyncDateFormat? = null) : ColumnIn
     )
 
     override fun isCellEditable(item: LogStreamEntry?): Boolean = false
-    override fun getRenderer(item: LogStreamEntry?): TableCellRenderer? = renderer
-    override fun getComparator(): Comparator<LogStreamEntry> = Comparator.comparing { it.timestamp }
+    override fun getRenderer(item: LogStreamEntry?): TableCellRenderer = renderer
 }
 
 class LogStreamMessageColumn : ColumnInfo<LogStreamEntry, String>(message("general.message")) {
@@ -99,7 +81,7 @@ class LogStreamMessageColumn : ColumnInfo<LogStreamEntry, String>(message("gener
 
     override fun valueOf(item: LogStreamEntry?): String? = item?.message
     override fun isCellEditable(item: LogStreamEntry?): Boolean = false
-    override fun getRenderer(item: LogStreamEntry?): TableCellRenderer? = renderer
+    override fun getRenderer(item: LogStreamEntry?): TableCellRenderer = renderer
 }
 
 object TimeFormatConversion {
