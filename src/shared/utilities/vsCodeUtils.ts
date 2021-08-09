@@ -90,7 +90,10 @@ export function isExtensionActive(extId: string): boolean {
  * @param silent  Return undefined on failure, instead of throwing
  * @returns Extension object, or undefined on failure if `silent`
  */
-export async function activateExtension(extId: string, silent: boolean = true): Promise<vscode.Extension<void> | undefined> {
+export async function activateExtension(
+    extId: string,
+    silent: boolean = true
+): Promise<vscode.Extension<void> | undefined> {
     let loggerInitialized: boolean
     try {
         getLogger()
@@ -128,4 +131,11 @@ export async function activateExtension(extId: string, silent: boolean = true): 
     }
 
     return extension
+}
+
+/**
+ * Convenience function to make a Thenable into a Promise.
+ */
+export function promisifyThenable<T>(thenable: Thenable<T>): Promise<T> {
+    return new Promise((resolve, reject) => thenable.then(resolve, reject))
 }

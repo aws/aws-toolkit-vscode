@@ -82,7 +82,7 @@ describe('InputBoxPrompter', function () {
 
         it('buttons can return values', async function () {
             const button: QuickInputButton<string> = {
-                iconPath: '',
+                iconPath: vscode.Uri.parse(''),
                 onClick: () => 'answer',
             }
             inputBox.buttons = [button]
@@ -95,7 +95,7 @@ describe('InputBoxPrompter', function () {
 
         it('buttons with void return type do not close the prompter', async function () {
             const button: QuickInputButton<void> = {
-                iconPath: '',
+                iconPath: vscode.Uri.parse(''),
                 onClick: () => {},
             }
             inputBox.buttons = [button]
