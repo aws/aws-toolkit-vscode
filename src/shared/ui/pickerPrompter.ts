@@ -5,9 +5,9 @@
 
 import * as vscode from 'vscode'
 
-import { WIZARD_BACK } from '../wizards/wizard'
+import { StepEstimator, WIZARD_BACK, WIZARD_EXIT } from '../wizards/wizard'
 import { QuickInputButton, PrompterButtons } from './buttons'
-import { Prompter, PromptResult } from './prompter'
+import { Prompter, PromptResult, Transform } from './prompter'
 import { applyPrimitives } from '../utilities/collectionUtils'
 
 /** Settings applied when using a QuickPickPrompter in 'filter-box input' mode. */
@@ -16,6 +16,13 @@ interface FilterBoxInputSettings<T> {
     label: string
     /** Parses the user's input into a the desired type. */
     transform: (v: string) => PromptResult<T>
+    /** The inverse must be provided if using implicit state. */
+    inverse?: (output: PromptResult<T>) => string
+    /**
+     * Checks for any errors in the input.
+     * Returned strings are shown in the 'detail' part of the user-input QuickPickItem.
+     */
+    validator?: (input: string) => string | undefined
 }
 
 // Note: 'placeHolder' and 'onDidSelectItem' are ommited since they do not make since the context of the Prompter
@@ -36,6 +43,12 @@ export type ExtendedQuickPickOptions<T> = Omit<
      * using the filter box as input.
      */
     filterBoxInputSettings?: FilterBoxInputSettings<T>
+    /** Used to sort QuickPick items after loading new ones */
+    compare?: (a: DataQuickPickItem<T>, b: DataQuickPickItem<T>) => number
+    /** Item to show if no items were loaded */
+    placeholderItem?: DataQuickPickItem<T>
+    /** Item to show if there was an error loading items */
+    errorItem?: DataQuickPickItem<T>
 }
 
 export const DEFAULT_QUICKPICK_OPTIONS: vscode.QuickPickOptions = {
@@ -49,7 +62,14 @@ type LabelQuickPickItem<T> = vscode.QuickPickItem & { label: T }
  * Attaches additional information as `data` to a QuickPickItem. Alternatively, `data` can be a function that
  * returns a Promise, evaluated after the user selects the item.
  */
-export type DataQuickPickItem<T> = vscode.QuickPickItem & { data: QuickPickData<T> }
+export type DataQuickPickItem<T> = vscode.QuickPickItem & {
+    data: QuickPickData<T>
+    invalidSelection?: boolean
+    onClick?: () => any | Promise<any>
+    /** Stops the QuickPick from estimating how many steps an item would add in a Wizard flow */
+    skipEstimate?: boolean
+}
+
 export type DataQuickPick<T> = Omit<vscode.QuickPick<DataQuickPickItem<T>>, 'buttons'> & { buttons: PrompterButtons<T> }
 
 export const CUSTOM_USER_INPUT = Symbol()
@@ -74,6 +94,7 @@ export function createQuickPick<T>(
     const picker = vscode.window.createQuickPick<DataQuickPickItem<T>>() as DataQuickPick<T>
     options = { ...DEFAULT_QUICKPICK_OPTIONS, ...options }
     applyPrimitives(picker, { ...DEFAULT_QUICKPICK_OPTIONS, ...options })
+    picker.buttons = options.buttons ?? []
 
     const prompter =
         options.filterBoxInputSettings !== undefined
@@ -94,14 +115,35 @@ export function createLabelQuickPick<T extends string>(
 ): QuickPickPrompter<T> {
     if (items instanceof Promise) {
         return createQuickPick(
-            items.then(items => items.map(item => ({ ...item, data: item.label }))),
+            items.then(items => items.map(item => ({ data: item.label, ...item }))),
             options
         )
     }
     return createQuickPick(
-        items.map(item => ({ ...item, data: item.label })),
+        items.map(item => ({ data: item.label, ...item })),
         options
     )
+}
+
+function acceptItems<T>(picker: DataQuickPick<T>, resolve: (items: DataQuickPickItem<T>[]) => void): void {
+    if (picker.selectedItems.length === 0) {
+        return
+    }
+
+    picker.selectedItems.forEach(item => (item.onClick !== undefined ? item.onClick() : undefined))
+
+    if (picker.selectedItems.some(item => item.invalidSelection)) {
+        return
+    }
+
+    // TODO: if data is a function => Promise then we need to invoke the function and wait for the Promise
+    // to resolve, then we can return (and we should set the picker to be busy/disabled)
+
+    resolve(Array.from(picker.selectedItems))
+}
+
+function castDatumToItems<T>(...datum: T[]): DataQuickPickItem<T>[] {
+    return datum.map(data => ({ label: '', data }))
 }
 
 /**
@@ -113,15 +155,15 @@ function promptUser<T>(
     onDidShowEmitter: vscode.EventEmitter<void>
 ): Promise<DataQuickPickItem<T>[] | undefined> {
     return new Promise<DataQuickPickItem<T>[] | undefined>(resolve => {
-        picker.onDidAccept(() => picker.selectedItems.length > 0 && resolve(Array.from(picker.selectedItems)))
-        picker.onDidHide(() => resolve(undefined))
+        picker.onDidAccept(() => acceptItems(picker, resolve))
+        picker.onDidHide(() => resolve(castDatumToItems(WIZARD_EXIT)))
         picker.onDidTriggerButton(button => {
             if (button === vscode.QuickInputButtons.Back) {
-                resolve([{ label: '', data: WIZARD_BACK }])
+                resolve(castDatumToItems(WIZARD_BACK))
             } else if ((button as QuickInputButton<T>).onClick !== undefined) {
                 const response = (button as QuickInputButton<T>).onClick!()
                 if (response !== undefined) {
-                    resolve([{ label: '', data: response }])
+                    resolve(castDatumToItems(response))
                 }
             }
         })
@@ -131,28 +173,51 @@ function promptUser<T>(
 }
 
 /**
+ * Atempts to recover a QuickPick item given an already processed response.
+ *
+ * This is generally required when the prompter is being used in a 'saved' state, such as when updating forms
+ * that were already submitted. Failed recoveries simply return undefined, which means that the last selected
+ * item is unknown (generally the default in this case is to select the first item).
+ */
+function recoverItemFromData<T>(data: T, items: readonly DataQuickPickItem<T>[]): DataQuickPickItem<T> | undefined {
+    const stringified = JSON.stringify(data)
+
+    return items.find(item => {
+        if (typeof item.data === 'object') {
+            return stringified === JSON.stringify(item.data)
+        }
+
+        return typeof item.data === 'function' ? false : data === item.data
+    })
+}
+
+/**
  * A generic UI element that presents a list of items for the user to select. Wraps around {@link vscode.QuickPick QuickPick}.
  */
 export class QuickPickPrompter<T> extends Prompter<T> {
+    protected _estimator?: StepEstimator<T>
     protected _lastPicked?: DataQuickPickItem<T>
     private onDidShowEmitter: vscode.EventEmitter<void> = new vscode.EventEmitter()
     /** Event that is fired immediately after the prompter is shown. */
     public onDidShow: vscode.Event<void> = this.onDidShowEmitter.event
 
     public set lastResponse(response: DataQuickPickItem<T> | undefined) {
-        if (response === undefined || !isDataQuickPickItem(response)) {
-            return
-        }
-
-        this.selectItems(response)
+        this.setLastResponse(response)
     }
 
     public get lastResponse() {
         return this._lastPicked
     }
 
-    constructor(public readonly quickPick: DataQuickPick<T>) {
+    constructor(
+        public readonly quickPick: DataQuickPick<T>,
+        protected readonly compare?: ExtendedQuickPickOptions<T>['compare']
+    ) {
         super()
+    }
+
+    public transform<R>(callback: Transform<T, R>): QuickPickPrompter<R> {
+        return super.transform(callback) as QuickPickPrompter<R>
     }
 
     public setSteps(current: number, total: number): void {
@@ -160,18 +225,8 @@ export class QuickPickPrompter<T> extends Prompter<T> {
         this.quickPick.totalSteps = total
     }
 
-    protected async promptUser(): Promise<PromptResult<T>> {
-        const choices = await promptUser(this.quickPick, this.onDidShowEmitter)
-        this.onDidShowEmitter.dispose()
-
-        if (choices === undefined) {
-            return choices
-        }
-
-        this._lastPicked = choices[0]
-        const result = choices[0].data
-
-        return result instanceof Function ? await result() : result
+    public clearItems(): void {
+        this.quickPick.items = []
     }
 
     /**
@@ -193,6 +248,7 @@ export class QuickPickPrompter<T> extends Prompter<T> {
         }
     }
 
+    // TODO: add options to this to clear items _before_ loading them
     /**
      * Loads items into the QuickPick. Can accept an array or a Promise for items. Promises will cause the
      * QuickPick to become 'busy', disabling user-input until loading is finished. Items are appended to
@@ -221,6 +277,108 @@ export class QuickPickPrompter<T> extends Prompter<T> {
             picker.items = picker.items.concat(items)
             this.selectItems(...previousSelected)
             return Promise.resolve()
+        }
+    }
+
+    /**
+     * Clears the prompter, then loads new items. Will automatically attempt to select the previously
+     * selected items. This is a combination of {@link QuickPickPrompter.loadItems loadItems} and
+     * {@link QuickPickPrompter.clearItems clearItems}.
+     *
+     * @param items Items to load
+     * @returns Promise that is resolved upon completion
+     */
+    public clearAndLoadItems(items: Promise<DataQuickPickItem<T>[]> | DataQuickPickItem<T>[]): Promise<void> {
+        const previousSelected = [...this.quickPick.activeItems]
+        this.clearItems()
+        return this.loadItems(items).then(() => this.selectItems(...previousSelected))
+    }
+
+    protected async promptUser(): Promise<PromptResult<T>> {
+        await this.setEstimatorHook()
+        const choices = await promptUser(this.quickPick, this.onDidShowEmitter)
+        this.onDidShowEmitter.dispose()
+
+        if (choices === undefined) {
+            return choices
+        }
+
+        this._lastPicked = choices[0]
+        const result = choices[0].data
+
+        return result instanceof Function ? await result() : result
+    }
+
+    public setLastResponse(picked: T | DataQuickPickItem<T> | undefined): void {
+        // TODO: figure out how to recover from implicit responses
+        if (picked === undefined) {
+            return
+        } else if (!isDataQuickPickItem(picked)) {
+            const recovered = recoverItemFromData(picked, this.quickPick.items)
+            this.quickPick.activeItems = this.quickPick.items.filter(item => item.label === recovered?.label)
+        } else {
+            this.quickPick.activeItems = this.quickPick.items.filter(item => item.label === picked.label)
+        }
+
+        if (this.quickPick.activeItems.length === 0) {
+            this.quickPick.activeItems = [this.quickPick.items[0]]
+        }
+    }
+
+    public setStepEstimator(estimator: StepEstimator<T>): void {
+        this._estimator = estimator
+    }
+
+    private async setEstimatorHook(): Promise<void> {
+        if (this._estimator === undefined) {
+            return
+        }
+
+        function hashItem(item: DataQuickPickItem<any>): string {
+            return `${item.label}:${item.description ?? ''}:${item.detail ?? ''}`
+        }
+
+        const estimates = new Map<string, number>()
+
+        const setEstimate = (item: DataQuickPickItem<T>) => {
+            if (item.skipEstimate) {
+                return
+            }
+
+            if (item.data instanceof Function) {
+                return item
+                    .data()
+                    .then(data => this.applyTransforms(data))
+                    .then(result => this._estimator!(result))
+                    .then(estimate => estimates.set(hashItem(item), estimate))
+            } else {
+                const transformed = this.applyTransforms(item.data)
+                const estimate = this._estimator!(transformed)
+                estimates.set(hashItem(item), estimate)
+            }
+        }
+
+        const promises = this.quickPick.items.map(setEstimate)
+
+        const current: number = this.quickPick.step!
+        const total: number = this.quickPick.totalSteps!
+
+        this.quickPick.onDidChangeActive(async active => {
+            if (active.length === 0) {
+                return
+            }
+
+            const sets = active.filter(item => !estimates.has(hashItem(item))).map(setEstimate)
+            await sets[0]
+            const estimate = estimates.get(hashItem(active[0])) ?? 0
+            this.setSteps(current, total + estimate)
+        })
+
+        // We await the first promise before returning to guarantee that there is no 'stutter'
+        // when showing the current/total step numbers
+        if (promises.length > 0) {
+            await promises[0]
+            this.setSteps(current, total + estimates.get(hashItem(this.quickPick.items[0]))!)
         }
     }
 }
@@ -265,6 +423,8 @@ export class FilterBoxQuickPickPrompter<T> extends QuickPickPrompter<T> {
 
     private addFilterBoxInput(): void {
         const picker = this.quickPick as DataQuickPick<T | symbol>
+        const validator = (input: string) =>
+            this.settings.validator !== undefined ? this.settings.validator(input) : undefined
         const items = picker.items.filter(item => item.data !== CUSTOM_USER_INPUT)
         const { label } = this.settings
 
@@ -275,6 +435,8 @@ export class FilterBoxQuickPickPrompter<T> extends QuickPickPrompter<T> {
                     description: value,
                     alwaysShow: true,
                     data: CUSTOM_USER_INPUT,
+                    invalidSelection: validator(value) !== undefined,
+                    detail: validator(value),
                 } as DataQuickPickItem<T | symbol>
 
                 picker.items = [customUserInputItem, ...items]

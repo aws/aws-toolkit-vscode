@@ -110,13 +110,13 @@ describe('QuickPickPrompter', function () {
     })
 
     it('can accept input from buttons', async function () {
-        const testButton = { iconPath: '', onClick: () => 5 }
+        const testButton = { iconPath: vscode.Uri.parse(''), onClick: () => 5 }
         testPrompter.onDidShow(() => picker.fireOnDidTriggerButton(testButton))
         assert.strictEqual(await testPrompter.prompt(), 5)
     })
 
     it('does not close if button does not return anything', async function () {
-        const testButton = { iconPath: '', onClick: () => {} }
+        const testButton = { iconPath: vscode.Uri.parse(''), onClick: () => {} }
         testPrompter.onDidShow(() => {
             picker.fireOnDidTriggerButton(testButton)
             picker.selectedItems = [testItems[0]]
@@ -131,47 +131,19 @@ describe('QuickPickPrompter', function () {
         assert.strictEqual(testPrompter.lastResponse, testItems[1])
     })
 
-    it('preserves the current active selection when loading', async function () {
-        testPrompter.selectItems(testItems[2])
-        await testPrompter.loadItems([{ label: 'test4', data: 3 }])
-        assert.strictEqual(picker.activeItems[0], testItems[2])
-        assert.strictEqual(picker.items.length, 4)
-    })
-
-    it('can set last response', function () {
-        testPrompter.lastResponse = testItems[2]
+    it('can set last response', async function () {
+        testPrompter.setLastResponse(testItems[2])
         assert.deepStrictEqual(picker.activeItems, [testItems[2]])
     })
 
-    it('can load multiple batches of items in parallel', async function () {
-        await Promise.all([
-            testPrompter.loadItems(Promise.resolve([{ label: 'test4', data: 3 }])),
-            testPrompter.loadItems(Promise.resolve([{ label: 'test5', data: 4 }])),
-            testPrompter.loadItems(Promise.resolve([{ label: 'test6', data: 5 }])),
-            testPrompter.loadItems([
-                { label: 'test7', data: 6 },
-                { label: 'test8', data: 7 },
-            ]),
-        ])
-        assert.strictEqual(testPrompter.quickPick.items.length, 8)
-        assert.strictEqual(new Set(testPrompter.quickPick.items.map(i => i.label)).size, 8)
+    it('tries to recover last reponse from partial data', async function () {
+        testPrompter.setLastResponse(2)
+        assert.deepStrictEqual(picker.activeItems, [testItems[2]])
     })
 
-    it('shows first item if last response does not exist', function () {
-        testPrompter.lastResponse = { label: 'item4', data: 3 }
+    it('shows first item if last response does not exist', async function () {
+        testPrompter.setLastResponse({ label: 'item4', data: 3 })
         assert.deepStrictEqual(picker.activeItems, [testItems[0]])
-    })
-
-    it('can set a new active selection', async function () {
-        picker.onDidChangeActive(active => {
-            if (active[0].data === testItems[2].data) {
-                picker.selectedItems = active
-            }
-        })
-        testPrompter.onDidShow(() => testPrompter.selectItems(testItems[2]))
-        const result = testPrompter.prompt()
-
-        assert.strictEqual(await result, testItems[2].data)
     })
 })
 
@@ -185,9 +157,10 @@ describe('FilterBoxQuickPickPrompter', function () {
     const filterBoxInputSettings = {
         label: 'Enter a number',
         transform: (resp: string) => Number.parseInt(resp),
+        validator: (resp: string) => (Number.isNaN(Number.parseInt(resp)) ? 'NaN' : undefined),
     }
 
-    let picker: ExposeEmitters<DataQuickPick<number>, 'onDidChangeValue'>
+    let picker: ExposeEmitters<DataQuickPick<number>, 'onDidChangeValue' | 'onDidAccept'>
     let testPrompter: FilterBoxQuickPickPrompter<number>
 
     function addTimeout(): void {
@@ -202,8 +175,7 @@ describe('FilterBoxQuickPickPrompter', function () {
         if (vscode.version.startsWith('1.42')) {
             this.skip()
         }
-
-        picker = exposeEmitters(vscode.window.createQuickPick(), ['onDidChangeValue'])
+        picker = exposeEmitters(vscode.window.createQuickPick(), ['onDidChangeValue', 'onDidAccept'])
         testPrompter = new FilterBoxQuickPickPrompter(picker, filterBoxInputSettings)
         addTimeout()
     })
@@ -256,6 +228,7 @@ describe('FilterBoxQuickPickPrompter', function () {
             picker.onDidChangeActive(active => {
                 if (active[0]?.description !== undefined) {
                     picker.selectedItems = [active[0]]
+                    picker.fireOnDidAccept()
                 }
             })
 
@@ -264,5 +237,34 @@ describe('FilterBoxQuickPickPrompter', function () {
         })
 
         assert.strictEqual(await loadAndPrompt(), Number(input))
+    })
+
+    it('validates the custom input', async function () {
+        const input = 'not a number'
+
+        testPrompter.onDidShow(() => {
+            const disposable = picker.onDidChangeActive(items => {
+                if (
+                    items[0]?.description === input &&
+                    items[0]?.detail?.includes('NaN') &&
+                    items[0]?.invalidSelection
+                ) {
+                    picker.onDidChangeActive(items => {
+                        if (items.length > 0) {
+                            picker.selectedItems = [picker.items[0]]
+                        }
+                    })
+                    picker.selectedItems = [picker.items[0]]
+                    disposable.dispose()
+                    picker.value = ''
+                    picker.fireOnDidChangeValue('')
+                }
+            })
+
+            picker.value = input
+            picker.fireOnDidChangeValue(input)
+        })
+
+        assert.strictEqual(await loadAndPrompt(), testItems[0].data)
     })
 })

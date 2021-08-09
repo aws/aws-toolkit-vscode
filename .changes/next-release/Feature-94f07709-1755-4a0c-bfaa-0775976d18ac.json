@@ -1,0 +1,4 @@
+{
+	"type": "Feature",
+	"description": "App Runner: You can now create, pause, resume, deploy, and delete App Runner services within the AWS explorer."
+}

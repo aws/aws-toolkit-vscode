@@ -26,8 +26,9 @@ describe('AwsExplorer', function () {
         const clientBuilder = {
             createS3Client: sandbox.stub().returns({}),
             createEcrClient: sandbox.stub().returns({}),
+            createAppRunnerClient: sandbox.stub().returns({}),
         }
-        ext.toolkitClientBuilder = (clientBuilder as any) as ToolkitClientBuilder
+        ext.toolkitClientBuilder = clientBuilder as any as ToolkitClientBuilder
     })
 
     afterEach(function () {
@@ -35,7 +36,7 @@ describe('AwsExplorer', function () {
     })
 
     it('displays region nodes with user-friendly region names', async function () {
-        const awsContext = makeFakeAwsContextWithPlaceholderIds(({} as any) as AWS.Credentials)
+        const awsContext = makeFakeAwsContextWithPlaceholderIds({} as any as AWS.Credentials)
         const regionProvider = new FakeRegionProvider()
 
         const fakeContext = new FakeExtensionContext()
@@ -55,7 +56,7 @@ describe('AwsExplorer', function () {
     })
 
     it('refreshes when the Region Provider is updated', async function () {
-        const awsContext = makeFakeAwsContextWithPlaceholderIds(({} as any) as AWS.Credentials)
+        const awsContext = makeFakeAwsContextWithPlaceholderIds({} as any as AWS.Credentials)
         const regionProvider = new FakeRegionProvider()
 
         const fakeContext = new FakeExtensionContext()
