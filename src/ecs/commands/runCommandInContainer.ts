@@ -172,7 +172,7 @@ async function verifyCliAndPlugin(window: Window): Promise<void> {
         window.showErrorMessage(
             localize(
                 'AWS.command.ecs.runCommandInContainer.noPluginFound',
-                'Please install the SSM Session Manager plugin before proceding'
+                'This feature requires the SSM Session Manager plugin (session-manager-plugin) to be installed and available on your $PATH'
             )
         )
         throw new Error('The SSM Session Manager plugin is not installed.')
