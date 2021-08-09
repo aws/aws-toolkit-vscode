@@ -8,13 +8,13 @@ import { AWSTreeNodeBase } from '../../shared/treeview/nodes/awsTreeNodeBase'
 
 export class EcsContainerNode extends AWSTreeNodeBase {
     public constructor(
-        public readonly continerName: string,
+        public readonly containerName: string,
         public readonly serviceName: string,
         public readonly clusterArn: string,
         public readonly ecs: EcsClient
     ) {
-        super(continerName)
-        this.tooltip = continerName
+        super(containerName)
+        this.tooltip = containerName
         this.contextValue = 'awsEcsContainerNode'
     }
 

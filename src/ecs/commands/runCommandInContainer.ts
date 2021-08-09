@@ -23,9 +23,11 @@ export async function runCommandInContainer(
     window = Window.vscode(),
     outputChannel = ext.outputChannel
 ): Promise<void> {
-    getLogger().debug('RunCommandInContainer called for: %O', node.continerName)
+    getLogger().debug('RunCommandInContainer called for: %O', node.containerName)
 
-    await verifyCliAndPlugin(window)
+    if (!(await verifyCliAndPlugin(window))) {
+        return
+    }
 
     // Check to see if there are any deployments in process
     const deployments = (await node.ecs.describeServices(node.clusterArn, [node.serviceName]))[0].deployments
@@ -97,7 +99,7 @@ export async function runCommandInContainer(
         prompt: localize(
             'AWS.command.ecs.runCommandInContainer.prompt',
             'Enter the command to run in container: {0}',
-            node.continerName
+            node.containerName
         ),
         placeHolder: localize('AWS.command.ecs.runCommandInContainer.placeHolder', 'Command to run'),
         ignoreFocusOut: true,
@@ -114,7 +116,7 @@ export async function runCommandInContainer(
             localize(
                 'AWS.command.ecs.runCommandInContainer.warnBeforeExecute',
                 'Command may modify the running container {0}. Are you sure?',
-                node.continerName
+                node.containerName
             ),
             { modal: true },
             localize('AWS.generic.response.yes', 'Yes'),
@@ -139,7 +141,7 @@ export async function runCommandInContainer(
         '--task',
         task,
         '--container',
-        node.continerName,
+        node.containerName,
         '--command',
         command,
         '--interactive'
@@ -155,7 +157,7 @@ export async function runCommandInContainer(
     }
 }
 
-async function verifyCliAndPlugin(window: Window): Promise<void> {
+async function verifyCliAndPlugin(window: Window): Promise<boolean> {
     const verifyAwsCliResponse = await new ChildProcess(true, 'aws', undefined, '--version').run()
     if (verifyAwsCliResponse.exitCode !== 0) {
         const noCli = localize(
@@ -164,7 +166,7 @@ async function verifyCliAndPlugin(window: Window): Promise<void> {
             getIdeProperties().company
         )
         window.showErrorMessage(noCli)
-        throw new Error('The AWS CLI is not installed.')
+        return false
     }
 
     const verifySsmPluginResponse = await new ChildProcess(true, 'session-manager-plugin').run()
@@ -175,6 +177,7 @@ async function verifyCliAndPlugin(window: Window): Promise<void> {
                 'Please install the SSM Session Manager plugin before proceding'
             )
         )
-        throw new Error('The SSM Session Manager plugin is not installed.')
+        return false
     }
+    return true
 }
