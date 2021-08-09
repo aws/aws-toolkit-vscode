@@ -5,8 +5,9 @@
 
 import * as _ from 'lodash'
 import * as assert from 'assert'
-import { WizardForm } from '../../../shared/wizards/wizardForm'
 import { ExpandWithObject } from '../../../shared/utilities/tsUtils'
+import { Wizard } from '../../../shared/wizards/wizard'
+import { WizardForm } from '../../../shared/wizards/wizardForm'
 
 interface MockWizardFormElement<TProp> {
     applyInput(input: TProp): void
@@ -21,10 +22,12 @@ interface MockWizardFormElement<TProp> {
     assertShowFirst(): void
     assertShowSecond(): void
     assertShowThird(): void
+    assertShowAny(): void
     assertDoesNotShow(): void
     /** Verifies that no sub-properties of the target would show prompters. */
     assertDoesNotShowAny(): void
     assertValue(expected: TProp | undefined): void
+    assertShowCount(count: number): void
 }
 
 type MockForm<T, TState = T> = {
@@ -33,8 +36,6 @@ type MockForm<T, TState = T> = {
         : MockWizardFormElement<T[Property]>
 }
 
-export type FormTester<T> = MockForm<Required<T>> & { showCount: number }
-
 type FormTesterMethodKey = keyof MockWizardFormElement<any>
 const APPLY_INPUT: FormTesterMethodKey = 'applyInput'
 const CLEAR_INPUT: FormTesterMethodKey = 'clearInput'
@@ -42,9 +43,13 @@ const ASSERT_SHOW: FormTesterMethodKey = 'assertShow'
 const ASSERT_SHOW_FIRST: FormTesterMethodKey = 'assertShowFirst'
 const ASSERT_SHOW_SECOND: FormTesterMethodKey = 'assertShowSecond'
 const ASSERT_SHOW_THIRD: FormTesterMethodKey = 'assertShowThird'
+const ASSERT_SHOW_ANY: FormTesterMethodKey = 'assertShowAny'
 const NOT_ASSERT_SHOW: FormTesterMethodKey = 'assertDoesNotShow'
 const NOT_ASSERT_SHOW_ANY: FormTesterMethodKey = 'assertDoesNotShowAny'
 const ASSERT_VALUE: FormTesterMethodKey = 'assertValue'
+const SHOW_COUNT: FormTesterMethodKey = 'assertShowCount'
+
+export type WizardTester<T> = MockForm<Required<T>> & Pick<MockWizardFormElement<any>, typeof SHOW_COUNT>
 
 function failIf(cond: boolean, message?: string): void {
     if (cond) {
@@ -52,12 +57,9 @@ function failIf(cond: boolean, message?: string): void {
     }
 }
 
-export function createFormTester<T extends Partial<T>>(form: WizardForm<T>): FormTester<T> {
+export function createWizardTester<T extends Partial<T>>(wizard: Wizard<T> | WizardForm<T>): WizardTester<T> {
+    const form = wizard instanceof Wizard ? wizard.boundForm : wizard
     const state = {} as T
-
-    const base = Object.defineProperty({}, 'showCount', {
-        get: () => form.properties.filter(prop => canShowPrompter(prop)).length,
-    })
 
     function canShowPrompter(prop: string): boolean {
         const defaultState = form.applyDefaults(state)
@@ -68,7 +70,7 @@ export function createFormTester<T extends Partial<T>>(form: WizardForm<T>): For
 
         const provider = form.getPrompterProvider(prop)
 
-        return provider !== undefined && provider({} as any) !== undefined
+        return provider !== undefined // && provider({ stepCache: {} } as any) !== undefined
     }
 
     function showableChildren(parent: string): string[] {
@@ -84,8 +86,8 @@ export function createFormTester<T extends Partial<T>>(form: WizardForm<T>): For
 
         failIf(order === -1, `Property "${prop}" would not be shown`)
         failIf(
-            order !== expected + 1,
-            `Property "${prop}" would be shown in the wrong order: ${order} !== ${expected + 1}`
+            order !== expected - 1,
+            `Property "${prop}" would be shown in the wrong order: ${order + 1} !== ${expected}`
         )
     }
 
@@ -105,41 +107,56 @@ export function createFormTester<T extends Partial<T>>(form: WizardForm<T>): For
         }
     }
 
-    function createFormWrapper(path: string[] = []): FormTester<T> {
-        return new Proxy(path.length === 0 ? base : {}, {
-            get: (obj, prop, rec) => {
-                const propPath = path.join('.')
+    function assertValue<TProp>(path: string): MockWizardFormElement<TProp>['assertValue'] {
+        const actual = _.get(form.applyDefaults(state), path)
 
-                // Using a switch rather than a map since a generic index signature is not yet possible
-                switch (prop) {
-                    case APPLY_INPUT:
-                        return <TProp>(input: TProp) => _.set(state, path, input)
-                    case CLEAR_INPUT:
-                        return () => _.set(state, path, undefined)
-                    case ASSERT_SHOW:
-                        return assertShow(propPath)
-                    case ASSERT_SHOW_FIRST:
-                        return assertShow(propPath, 1)
-                    case ASSERT_SHOW_SECOND:
-                        return assertShow(propPath, 2)
-                    case ASSERT_SHOW_THIRD:
-                        return assertShow(propPath, 3)
-                    case NOT_ASSERT_SHOW:
-                        return () => failIf(form.canShowProperty(propPath, state), `Property "${prop}" would be shown`)
-                    case NOT_ASSERT_SHOW_ANY:
-                        return assertShowNone(propPath)
-                    case ASSERT_VALUE: // TODO: remove message
-                        return <TProp>(expected: TProp) =>
-                            assert.deepStrictEqual(
-                                _.get(form.applyDefaults(state), path),
-                                expected,
-                                `Property "${prop}" had unexpected value`
-                            )
-                    default:
-                        return Reflect.get(obj, prop, rec) ?? createFormWrapper([...path, prop.toString()])
-                }
-            },
-        }) as FormTester<T>
+        return (expected: TProp) =>
+            failIf(actual !== expected, `Property "${path}" had unexpected value: ${actual} !== ${expected}`)
+    }
+
+    function createFormWrapper(path: string[] = []): WizardTester<T> {
+        return new Proxy(
+            {},
+            {
+                get: (obj, prop, rec) => {
+                    const propPath = path.join('.')
+
+                    // Using a switch rather than a map since a generic index signature is not yet possible
+                    switch (prop) {
+                        case APPLY_INPUT:
+                            return <TProp>(input: TProp) => _.set(state, path, input)
+                        case CLEAR_INPUT:
+                            return () => _.set(state, path, undefined)
+                        case ASSERT_SHOW:
+                            return assertShow(propPath)
+                        case ASSERT_SHOW_FIRST:
+                            return assertShow(propPath, 1)
+                        case ASSERT_SHOW_SECOND:
+                            return assertShow(propPath, 2)
+                        case ASSERT_SHOW_THIRD:
+                            return assertShow(propPath, 3)
+                        case ASSERT_SHOW_ANY:
+                            return () =>
+                                failIf(
+                                    showableChildren(propPath).length === 0,
+                                    `No properties of "${propPath}" would be shown`
+                                )
+                        case NOT_ASSERT_SHOW:
+                            return () =>
+                                failIf(form.canShowProperty(propPath, state), `Property "${propPath}" would be shown`)
+                        case NOT_ASSERT_SHOW_ANY:
+                            return assertShowNone(propPath)
+                        case ASSERT_VALUE:
+                            return assertValue(propPath)
+                        case SHOW_COUNT:
+                            return (count: number) =>
+                                assert.strictEqual(form.properties.filter(prop => canShowPrompter(prop)).length, count)
+                        default:
+                            return Reflect.get(obj, prop, rec) ?? createFormWrapper([...path, prop.toString()])
+                    }
+                },
+            }
+        ) as WizardTester<T>
     }
 
     return createFormWrapper()

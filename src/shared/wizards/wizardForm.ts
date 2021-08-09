@@ -8,10 +8,13 @@ import * as _ from 'lodash'
 import { StateWithCache, WizardState } from './wizard'
 import { ExpandWithObject } from '../utilities/tsUtils'
 
-export type PrompterProvider<TState, TProp> = (state: StateWithCache<WizardState<TState>>) => Prompter<TProp>
+export type PrompterProvider<TState, TProp> = (state: StateWithCache<WizardState<TState>, TProp>) => Prompter<TProp>
 
 type DefaultFunction<TState, TProp> = (state: WizardState<TState>) => TProp | undefined
 
+// *************************************************************************************//
+// TODO: add a 'ContextBuilder' object that just pipes these options to the destination //
+// *************************************************************************************//
 interface ContextOptions<TState, TProp> {
     /**
      * Applies a conditional function that is evaluated after every user-input but only if the
@@ -31,9 +34,10 @@ interface ContextOptions<TState, TProp> {
      */
     requireParent?: boolean
     /**
-     * If set to true the wizard will ignore prompts for already assigned properties (default: true)
+     * Used to determine which prompter should be shown when multiple prompters are able to be
+     * show in a single instance. A lower order will be shown before a higher order.
      */
-    implicit?: boolean // not actually implemented
+    relativeOrder?: number
 }
 interface FormElement<TProp, TState> {
     /**
@@ -47,12 +51,15 @@ interface FormElement<TProp, TState> {
 
 // These methods are only applicable to object-like elements
 interface ParentFormElement<TProp extends Record<string, any>, TState> {
-    applyForm(form: WizardForm<TProp>, options?: ContextOptions<TState, TProp>): void
+    applyBoundForm(
+        form: WizardForm<TProp>,
+        options?: Pick<ContextOptions<TState, TProp>, 'showWhen' | 'requireParent'>
+    ): void
 }
 
 type PrompterBind<TProp, TState> = FormElement<TProp, TState>['bindPrompter']
 type SetDefault<TProp, TState> = FormElement<TProp, TState>['setDefault']
-type ApplyForm<TProp, TState> = ParentFormElement<TProp, TState>['applyForm']
+type ApplyBoundForm<TProp, TState> = ParentFormElement<TProp, TState>['applyBoundForm']
 
 /** Transforms an interface into a collection of FormElements, applied recursively */
 type Form<T, TState = T> = {
@@ -75,7 +82,7 @@ function checkParent<TState>(prop: string, state: TState, options: FormDataEleme
 
 type FormProperty = keyof (FormElement<any, any> & ParentFormElement<any, any>)
 const BIND_PROMPTER: FormProperty = 'bindPrompter'
-const APPLY_FORM: FormProperty = 'applyForm'
+const APPLY_FORM: FormProperty = 'applyBoundForm'
 const SET_DEFAULT: FormProperty = 'setDefault'
 
 /**
@@ -83,7 +90,7 @@ const SET_DEFAULT: FormProperty = 'setDefault'
  * the generic type. Properties can the be queried for their bound prompters by consuming classes.
  */
 export class WizardForm<TState extends Partial<Record<keyof TState, unknown>>> {
-    protected readonly formData = new Map<string, FormDataElement<TState, any> & { _isForm?: boolean }>()
+    protected readonly formData = new Map<string, FormDataElement<TState, any>>()
     public readonly body: Form<Required<TState>>
 
     constructor() {
@@ -91,15 +98,11 @@ export class WizardForm<TState extends Partial<Record<keyof TState, unknown>>> {
     }
 
     public get properties(): string[] {
-        return [...this.formData.keys()]
+        return [...this.formData.keys()].sort(this.compareOrder.bind(this))
     }
 
     public getPrompterProvider(prop: string): PrompterProvider<TState, any> | undefined {
         return this.formData.get(prop)?.provider
-    }
-
-    public isImplicit(prop: string): boolean {
-        return this.formData.get(prop)?.implicit ?? true
     }
 
     public applyDefaults(state: TState): TState {
@@ -119,7 +122,14 @@ export class WizardForm<TState extends Partial<Record<keyof TState, unknown>>> {
         return defaultState
     }
 
-    private applyElement(key: string, element: FormDataElement<TState, any> & { _isForm?: boolean }) {
+    private compareOrder(key1: string, key2: string): number {
+        const f1 = this.formData.get(key1)
+        const f2 = this.formData.get(key2)
+
+        return (f1?.relativeOrder ?? Number.MAX_VALUE) - (f2?.relativeOrder ?? Number.MAX_VALUE)
+    }
+
+    private applyElement(key: string, element: FormDataElement<TState, any>) {
         this.formData.set(key, { ...this.formData.get(key), ...element })
     }
 
@@ -135,7 +145,7 @@ export class WizardForm<TState extends Partial<Record<keyof TState, unknown>>> {
             return false
         }
 
-        return options.provider !== undefined || (options._isForm ?? false)
+        return options.provider !== undefined
     }
 
     private convertElement<TProp>(
@@ -147,9 +157,12 @@ export class WizardForm<TState extends Partial<Record<keyof TState, unknown>>> {
 
         if (element.provider !== undefined) {
             wrappedElement.provider = state => {
-                const stateWithCache = Object.assign(_.get(state, prop, {}), { stepCache: state.stepCache })
+                const stateWithCache = Object.assign(_.get(state, prop, {}), {
+                    stepCache: state.stepCache,
+                    estimator: state.estimator,
+                })
 
-                return element.provider!(stateWithCache as StateWithCache<WizardState<TProp>>)
+                return element.provider!(stateWithCache as StateWithCache<WizardState<TProp>, any>)
             }
         }
 
@@ -164,12 +177,13 @@ export class WizardForm<TState extends Partial<Record<keyof TState, unknown>>> {
             element.setDefault !== undefined
                 ? state =>
                       options?.requireParent !== true || _.get(state, prop) !== undefined
-                          ? element.setDefault!(_.get(state, prop, {}))
+                          ? options?.showWhen === undefined || options.showWhen(state)
+                              ? element.setDefault!(_.get(state, prop, {}))
+                              : undefined
                           : undefined
                 : undefined
 
-        wrappedElement.implicit = element.implicit ?? options?.implicit
-        wrappedElement.requireParent = element.requireParent ?? options?.requireParent
+        wrappedElement.requireParent = element.requireParent
 
         return wrappedElement
     }
@@ -180,13 +194,12 @@ export class WizardForm<TState extends Partial<Record<keyof TState, unknown>>> {
         }
     }
 
-    private createApplyFormMethod<TProp>(prop: string): ApplyForm<TProp, TState> {
+    private createApplyFormMethod<TProp>(prop: string): ApplyBoundForm<TProp, TState> {
         return (form: WizardForm<TProp>, options?: ContextOptions<TState, TProp>) => {
             form.formData.forEach((element, key) => {
+                // TODO: use an assert here to ensure that no elements are rewritten
                 this.applyElement(`${prop}.${key}`, this.convertElement(prop, element, options))
             })
-
-            this.applyElement(prop, { _isForm: true, ...options })
         }
     }
 
