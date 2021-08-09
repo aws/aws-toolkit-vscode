@@ -107,6 +107,7 @@ export async function runCommandInContainer(
     }
 
     // Warn the user that commands may modify the container, give the option to dismiss future prompts
+    const yesDontAskAgain = localize('AWS.message.prompt.yesDontAskAgain', "Yes, and don't ask again")
     const configuration = new DefaultSettingsConfiguration(extensionSettingsPrefix)
     if (configuration.readSetting('ecs.warnRunCommand')) {
         const choice = await window.showInformationMessage(
@@ -117,12 +118,12 @@ export async function runCommandInContainer(
             ),
             { modal: true },
             localize('AWS.generic.response.yes', 'Yes'),
-            localize('AWS.message.prompt.yesDontAskAgain', "Yes, and don't ask again")
+            yesDontAskAgain
         )
         if (choice === undefined) {
             getLogger().debug('ecs: Cancelled runCommandInContainer')
             return
-        } else if (choice === localize('AWS.message.prompt.yesDontAskAgain', "Yes, and don't ask again")) {
+        } else if (choice === yesDontAskAgain) {
             configuration.writeSetting('ecs.warnRunCommand', false, vscode.ConfigurationTarget.Global)
         }
     }

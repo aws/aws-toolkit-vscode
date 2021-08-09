@@ -302,6 +302,7 @@ export class MockEcsClient implements EcsClient {
     public readonly listContainerNames: (taskDefinition: string) => Promise<string[]>
     public readonly listTasks: (cluster: string, serviceName: string) => Promise<string[]>
     public readonly describeTasks: (cluster: string, tasks: string[]) => Promise<ECS.Task[]>
+    public readonly describeServices: (cluster: string, services: string[]) => Promise<ECS.Service[]>
 
     public constructor({
         regionCode = '',
@@ -310,6 +311,7 @@ export class MockEcsClient implements EcsClient {
         listContainerNames = async () => [],
         listTasks = async () => [],
         describeTasks = async () => [],
+        describeServices = async () => [],
     }: {
         regionCode?: string
         listClusters?(): Promise<EcsResourceAndToken>
@@ -317,6 +319,7 @@ export class MockEcsClient implements EcsClient {
         listContainerNames?(): Promise<string[]>
         listTasks?(): Promise<string[]>
         describeTasks?(): Promise<ECS.Task[]>
+        describeServices?(): Promise<ECS.Service[]>
     }) {
         this.regionCode = regionCode
         this.listClusters = listClusters
@@ -324,6 +327,7 @@ export class MockEcsClient implements EcsClient {
         this.listContainerNames = listContainerNames
         this.listTasks = listTasks
         this.describeTasks = describeTasks
+        this.describeServices = describeServices
     }
 }
 
