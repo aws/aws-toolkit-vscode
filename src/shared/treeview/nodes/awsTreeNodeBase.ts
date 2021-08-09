@@ -4,6 +4,7 @@
  */
 
 import { TreeItem, TreeItemCollapsibleState } from 'vscode'
+import { ext } from '../../extensionGlobals'
 
 export abstract class AWSTreeNodeBase extends TreeItem {
     protected constructor(label: string, collapsibleState?: TreeItemCollapsibleState) {
@@ -12,5 +13,9 @@ export abstract class AWSTreeNodeBase extends TreeItem {
 
     public getChildren(): Thenable<AWSTreeNodeBase[]> {
         return Promise.resolve([])
+    }
+
+    public refresh(): void {
+        ext.awsExplorer.refresh(this)
     }
 }
