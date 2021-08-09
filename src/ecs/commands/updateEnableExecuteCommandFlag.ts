@@ -5,7 +5,9 @@
 import * as nls from 'vscode-nls'
 const localize = nls.loadMessageBundle()
 
-import { getLogger } from '../../shared/logger'
+import * as vscode from 'vscode'
+import { extensionSettingsPrefix } from '../../shared/constants'
+import { DefaultSettingsConfiguration } from '../../shared/settingsConfiguration'
 import { recordEcsDisableExecuteCommand, recordEcsEnableExecuteCommand } from '../../shared/telemetry/telemetry.gen'
 import { Commands } from '../../shared/vscode/commands'
 import { Window } from '../../shared/vscode/window'
@@ -31,24 +33,47 @@ export async function updateEnableExecuteCommandFlag(
     const yesDontAskAgain = localize('AWS.message.prompt.yesDontAskAgain', "Yes, and don't ask again")
     const no = localize('AWS.generic.response.no', 'No')
 
+    const configuration = new DefaultSettingsConfiguration(extensionSettingsPrefix)
+
     if (enable) {
         if (hasExecEnabled) {
             window.showInformationMessage(
                 localize('AWS.command.ecs.enableEcsExec.alreadyEnabled', 'ECS Exec is already enabled for this service')
             )
+            return
         } else {
-            const proceed = await window.showWarningMessage(enableWarning, yes, yesDontAskAgain, no)
-            if (proceed === undefined || proceed === 'No') {
-                return
+            if (configuration.readSetting('ecs.warnBeforeEnablingExcecuteCommand')) {
+                const choice = await window.showWarningMessage(enableWarning, yes, yesDontAskAgain, no)
+                if (choice === undefined || choice === 'No') {
+                    return
+                } else if (choice === yesDontAskAgain) {
+                    configuration.writeSetting(
+                        'ecs.warnBeforeEnablingExcecuteCommand',
+                        false,
+                        vscode.ConfigurationTarget.Global
+                    )
+                }
             }
+            await node.ecs.updateService(node.service.clusterArn!, node.name, true)
+            recordEcsEnableExecuteCommand({ result: 'Succeeded', passive: false })
         }
         // disable
     } else {
         if (hasExecEnabled) {
-            const proceed = await window.showWarningMessage(disableWarning, yes, yesDontAskAgain, no)
-            if (proceed === undefined || proceed === 'No') {
-                return
+            if (configuration.readSetting('ecs.warnBeforeDisablingExecuteCommand')) {
+                const choice = await window.showWarningMessage(disableWarning, yes, yesDontAskAgain, no)
+                if (choice === undefined || choice === 'No') {
+                    return
+                } else if (choice === yesDontAskAgain) {
+                    configuration.writeSetting(
+                        'ecs.warnBeforeDisablingExecuteCommand',
+                        false,
+                        vscode.ConfigurationTarget.Global
+                    )
+                }
             }
+            await node.ecs.updateService(node.service.clusterArn!, node.name, false)
+            recordEcsDisableExecuteCommand({ result: 'Succeeded', passive: false })
         } else {
             window.showInformationMessage(
                 localize(
@@ -59,29 +84,6 @@ export async function updateEnableExecuteCommandFlag(
             return
         }
     }
-
-    // Warn the user this will redeploy the entire service
-    const choice = await window.showInformationMessage(
-        localize(
-            'AWS.command.ecs.enableEcsExec.warnWillRedeploy',
-            'This action will update the service and redeploy its running tasks. Do you wish to continue?'
-        ),
-        { modal: true },
-        localize('AWS.generic.response.yes', 'Yes')
-    )
-
-    if (choice === undefined) {
-        getLogger().debug('ecs: Enable/Disable ECS Exec cancelled')
-        return
-    } else {
-        if (enable) {
-            await node.ecs.updateService(node.service.clusterArn!, node.name, true)
-            recordEcsEnableExecuteCommand({ result: 'Succeeded', passive: false })
-        } else {
-            await node.ecs.updateService(node.service.clusterArn!, node.name, false)
-            recordEcsDisableExecuteCommand({ result: 'Succeeded', passive: false })
-        }
-
-        commands.execute('aws.refreshAwsExplorer')
-    }
+    node.parent.clearChildren()
+    commands.execute('aws.refreshAwsExplorer', node.parent)
 }
