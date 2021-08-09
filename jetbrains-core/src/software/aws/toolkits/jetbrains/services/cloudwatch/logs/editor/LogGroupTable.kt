@@ -34,6 +34,7 @@ import java.awt.event.KeyAdapter
 import java.awt.event.KeyEvent
 import java.awt.event.MouseEvent
 import javax.swing.JComponent
+import javax.swing.SortOrder
 
 class LogGroupTable(
     private val project: Project,
@@ -53,9 +54,15 @@ class LogGroupTable(
     }
 
     init {
+        val (sortColumn, sortOrder) = when (type) {
+            TableType.LIST -> 1 to SortOrder.DESCENDING // Sort by event time, most recent first
+            TableType.FILTER -> 0 to SortOrder.ASCENDING // Sort by name alphabetically
+        }
         val tableModel = ListTableModel(
-            arrayOf(LogStreamsStreamColumn(), LogStreamsDateColumn()),
-            mutableListOf<LogStream>()
+            arrayOf(LogStreamsStreamColumn(sortable = type == TableType.FILTER), LogStreamsDateColumn(sortable = type == TableType.LIST)),
+            mutableListOf<LogStream>(),
+            sortColumn,
+            sortOrder
         )
         groupTable = TableView(tableModel).apply {
             setPaintBusy(true)
@@ -64,10 +71,6 @@ class LogGroupTable(
             emptyText.text = message("loading_resource.loading")
             tableHeader.reorderingAllowed = false
             tableHeader.resizingAllowed = false
-        }
-        groupTable.rowSorter = when (type) {
-            TableType.LIST -> LogGroupTableSorter(tableModel)
-            TableType.FILTER -> LogGroupFilterTableSorter(tableModel)
         }
         TableSpeedSearch(groupTable)
         addTableMouseListener(groupTable)
