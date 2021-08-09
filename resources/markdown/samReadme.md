@@ -2,7 +2,7 @@
 
 This project contains source code and supporting files for a serverless application that you can locally run, debug, and deploy to ${COMPANYNAME} with the ${PRODUCTNAME}.
 
-A "SAM" (serverless application model) project is a project that contains a template.yaml file which is understood by ${COMPANYNAME} tooling (such as SAM CLI, and the $PRODUCTNAME}).
+A "SAM" (serverless application model) project is a project that contains a template.yaml file which is understood by ${COMPANYNAME} tooling (such as SAM CLI, and the ${PRODUCTNAME}).
 
 <br />
 
