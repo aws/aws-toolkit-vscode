@@ -11,12 +11,15 @@ enum class CredentialType {
     CredentialProcessProfile,
     AssumeRoleProfile,
     AssumeMfaRoleProfile,
-    SsoProfile
+    SsoProfile,
+    Ec2Metadata,
+    EcsMetadata
 }
 
 enum class CredentialSourceId {
     SharedCredentials,
     SdkStore,
+    Ecs,
     Ec2,
     EnvVars
 }
