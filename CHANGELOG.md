@@ -1,3 +1,15 @@
+## 1.28.0 2021-08-09
+
+- **Bug Fix** SAM Invoke Webview: fix 'Show All Fields' causing a blank page
+- **Bug Fix** CloudWatch Logs: show a placeholder message instead of an error when no logs exist
+- **Feature** Credentials: support for ECS container provided credentials
+- **Feature** Credentials: Improved guidance during new credential profile creation
+- **Feature** Added Getting Started walkthroughs to aid in configuring the Toolkit
+- **Feature** S3: new command/action: 'Generate Presigned URL'
+- **Feature** App Runner: You can now create, pause, resume, deploy, and delete App Runner services within the AWS explorer.
+- **Feature** New SAM applications come with toolkit-specific instructions
+- **Feature** Apply JSON schemas to Cloudformation and SAM templates (must be named `template.yaml`)
+
 ## 1.27.0 2021-07-01
 
 - **Bug Fix** SAM: fixed issue with downloading deployed lambdas
