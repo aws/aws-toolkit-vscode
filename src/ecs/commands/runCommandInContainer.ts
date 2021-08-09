@@ -147,7 +147,9 @@ export async function runCommandInContainer(
 
     if (response.exitCode !== 0) {
         showOutputMessage(response.stderr, outputChannel)
-        getLogger().error(response.stderr)
+        const cmd = new ChildProcess(...)
+        const response = await cmd.run()
+        getLogger().error('ECS command failed: %O: %O', cmd, response.stderr)
         recordEcsRunExecuteCommand({ result: 'Failed', ecsExecuteCommandType: 'command' })
     } else {
         showOutputMessage(response.stdout, outputChannel)
