@@ -120,7 +120,7 @@ describe('PreviewStateMachineCDKWizard', async function () {
         //push mock cdk app location to CDK_APPLOCATION
         CDK_APPLOCATIONS.push(
             {
-                label: 'getCDKAppName(obj.cdkJsonPath)',
+                label: getCDKAppName(testNode.cdkJsonPath),
                 cdkApplocation: testNode
                 //cdkApplocation: obj
             })
@@ -143,13 +143,13 @@ describe('PreviewStateMachineCDKWizard', async function () {
     })
 
     it('returns cdk application, top level node, and state machine node when completed', async function () {
+        const testNode = getTestNode()
         const CDK_APPLOCATIONS: CdkAppLocationPickItem[] = []
         //push mock cdk app location to CDK_APPLOCATION
         CDK_APPLOCATIONS.push(
             {
-                label: 'getCDKAppName(obj.cdkJsonPath)',
-                cdkApplocation: undefined
-                //cdkApplocation: obj
+                label: getCDKAppName(testNode.cdkJsonPath),
+                cdkApplocation: testNode
             })
         const TOP_LEVEL_NODES: TopLevelNodePickItem[] = []
         //push mock top level node to TOP_LEVEL_NODES
@@ -164,15 +164,30 @@ describe('PreviewStateMachineCDKWizard', async function () {
             stateMachineNode: mockStateMachineNode
             //stateMachineNode: node as ConstructNode
         })
-        const promptResults = [CDK_APPLOCATIONS[0], TOP_LEVEL_NODES[0], STATE_MACHINES[0]]
+        const promptResults = [
+            [{
+                label: getCDKAppName(testNode.cdkJsonPath),
+                cdkApplocation: testNode
+            }],
+            [{
+                label: mockTopLevelNode.label,
+                topLevelNode: mockTopLevelNode
+            }],
+            [{
+                label: mockStateMachineNode.label,
+                stateMachineNode: mockStateMachineNode
+            }]
+        ]
 
         const mockUserPrompt: any = (options: any) => Promise.resolve(promptResults.shift())
 
         const wizard = new PreviewStateMachineCDKWizard(mockUserPrompt)
         const result = await wizard.run()
-
-        assert.strictEqual(result,undefined)
-        //assert.deepStrictEqual(result, { cdkApplication: CDK_APPLOCATIONS[0], topLevelNode: TOP_LEVEL_NODES[0], stateMachine: STATE_MACHINES[0] })
+        //assert.deepStrictEqual(result?.cdkApplication.label,getCDKAppName(testNode.cdkJsonPath))
+        assert.ok(TOP_LEVEL_NODES[0])
+        assert.ok(STATE_MACHINES[0])
+        //assert.strictEqual(result,undefined)
+        assert.deepStrictEqual(result, { cdkApplication: CDK_APPLOCATIONS[0], topLevelNode: TOP_LEVEL_NODES[0], stateMachine: STATE_MACHINES[0] })
     })
 
     function getTestNode(): app.CdkAppLocation {
