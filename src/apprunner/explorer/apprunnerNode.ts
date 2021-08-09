@@ -77,6 +77,10 @@ export class AppRunnerNode extends AWSTreeNodeBase {
             serviceSummaries.map(async summary => {
                 if (this.serviceNodes.has(summary.ServiceArn)) {
                     this.serviceNodes.get(summary.ServiceArn)!.update(summary)
+                    if (summary.Status !== 'OPERATION_IN_PROGRESS') {
+                        this.pollingNodes.delete(summary.ServiceArn)
+                        this.clearPollTimer()
+                    }
                 } else {
                     this.serviceNodes.set(summary.ServiceArn, new AppRunnerServiceNode(this, this.client, summary))
                 }
@@ -87,6 +91,13 @@ export class AppRunnerNode extends AWSTreeNodeBase {
         deletedNodeArns.forEach(this.deleteNode.bind(this))
     }
 
+    private clearPollTimer(): void {
+        if (this.pollingNodes.size === 0 && this.pollTimer) {
+            clearInterval(this.pollTimer)
+            this.pollTimer = undefined
+        }
+    }
+
     public startPolling(id: string): void {
         this.pollingNodes.add(id)
         this.pollTimer = this.pollTimer ?? setInterval(this.refresh.bind(this), POLLING_INTERVAL)
@@ -95,10 +106,7 @@ export class AppRunnerNode extends AWSTreeNodeBase {
     public stopPolling(id: string): void {
         this.pollingNodes.delete(id)
         this.serviceNodes.get(id)?.refresh()
-        if (this.pollingNodes.size === 0 && this.pollTimer) {
-            clearInterval(this.pollTimer)
-            this.pollTimer = undefined
-        }
+        this.clearPollTimer()
     }
 
     public deleteNode(id: string): void {
