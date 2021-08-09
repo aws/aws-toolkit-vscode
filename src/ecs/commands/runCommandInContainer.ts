@@ -160,7 +160,7 @@ async function verifyCliAndPlugin(window: Window): Promise<void> {
     if (verifyAwsCliResponse.exitCode !== 0) {
         const noCli = localize(
             'AWS.command.ecs.runCommandInContainer.noCliFound',
-            'Please install the {0} CLI before proceding',
+            'This feature requires the {0} CLI (aws) to be installed and available on your $PATH',
             getIdeProperties().company
         )
         window.showErrorMessage(noCli)
