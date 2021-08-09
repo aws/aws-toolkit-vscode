@@ -774,6 +774,38 @@
                 {
                     "command": "aws.cdk.help",
                     "when": "!isCloud9"
+                },
+                {
+                    "command": "aws.apprunner.startDeployment",
+                    "when": "false"
+                },
+                {
+                    "command": "aws.apprunner.createService",
+                    "when": "false"
+                },
+                {
+                    "command": "aws.apprunner.pauseService",
+                    "when": "false"
+                },
+                {
+                    "command": "aws.apprunner.resumeService",
+                    "when": "false"
+                },
+                {
+                    "command": "aws.apprunner.copyServiceUrl",
+                    "when": "false"
+                },
+                {
+                    "command": "aws.apprunner.open",
+                    "when": "false"
+                },
+                {
+                    "command": "aws.apprunner.deleteService",
+                    "when": "false"
+                },
+                {
+                    "command": "aws.apprunner.createServiceFromEcr",
+                    "when": "false"
                 }
             ],
             "editor/title": [
@@ -1032,12 +1064,12 @@
                 },
                 {
                     "command": "aws.copyName",
-                    "when": "view == aws.explorer && viewItem =~ /^(awsRegionFunctionNode|awsRegionFunctionNodeDownloadable|awsCloudFormationFunctionNode|awsStateMachineNode|awsCloudFormationNode|awsS3BucketNode|awsS3FolderNode|awsS3FileNode|awsApiGatewayNode)$/",
+                    "when": "view == aws.explorer && viewItem =~ /^(awsRegionFunctionNode|awsRegionFunctionNodeDownloadable|awsCloudFormationFunctionNode|awsStateMachineNode|awsCloudFormationNode|awsS3BucketNode|awsS3FolderNode|awsS3FileNode|awsApiGatewayNode)$|^awsAppRunnerServiceNode/",
                     "group": "2@1"
                 },
                 {
                     "command": "aws.copyArn",
-                    "when": "view == aws.explorer && viewItem =~ /^(awsRegionFunctionNode|awsRegionFunctionNodeDownloadable|awsCloudFormationFunctionNode|awsStateMachineNode|awsCloudFormationNode|awsCloudWatchLogNode|awsS3BucketNode|awsS3FolderNode|awsS3FileNode|awsApiGatewayNode|awsEcrRepositoryNode)$/",
+                    "when": "view == aws.explorer && viewItem =~ /^(awsRegionFunctionNode|awsRegionFunctionNodeDownloadable|awsCloudFormationFunctionNode|awsStateMachineNode|awsCloudFormationNode|awsCloudWatchLogNode|awsS3BucketNode|awsS3FolderNode|awsS3FileNode|awsApiGatewayNode|awsEcrRepositoryNode)$|^awsAppRunnerServiceNode/",
                     "group": "2@2"
                 },
                 {
@@ -1099,6 +1131,46 @@
                     "command": "aws.ssmDocument.deleteDocument",
                     "group": "3@2",
                     "when": "view == aws.explorer && viewItem == awsDocumentItemNodeWriteable"
+                },
+                {
+                    "command": "aws.apprunner.createServiceFromEcr",
+                    "group": "0@2",
+                    "when": "view == aws.explorer && viewItem =~ /awsEcrTagNode|awsEcrRepositoryNode/"
+                },
+                {
+                    "command": "aws.apprunner.startDeployment",
+                    "group": "0@1",
+                    "when": "view == aws.explorer && viewItem == awsAppRunnerServiceNode.RUNNING"
+                },
+                {
+                    "command": "aws.apprunner.createService",
+                    "group": "0@2",
+                    "when": "view == aws.explorer && viewItem == awsAppRunnerNode"
+                },
+                {
+                    "command": "aws.apprunner.pauseService",
+                    "group": "0@3",
+                    "when": "view == aws.explorer && viewItem == awsAppRunnerServiceNode.RUNNING"
+                },
+                {
+                    "command": "aws.apprunner.resumeService",
+                    "group": "0@3",
+                    "when": "view == aws.explorer && viewItem == awsAppRunnerServiceNode.PAUSED"
+                },
+                {
+                    "command": "aws.apprunner.copyServiceUrl",
+                    "group": "1@1",
+                    "when": "view == aws.explorer && viewItem == awsAppRunnerServiceNode.RUNNING"
+                },
+                {
+                    "command": "aws.apprunner.open",
+                    "group": "1@2",
+                    "when": "view == aws.explorer && viewItem == awsAppRunnerServiceNode.RUNNING"
+                },
+                {
+                    "command": "aws.apprunner.deleteService",
+                    "group": "3@1",
+                    "when": "view == aws.explorer && viewItem =~ /awsAppRunnerServiceNode.[RUNNING|PAUSED|CREATE_FAILED]/"
                 }
             ]
         },
@@ -1748,6 +1820,86 @@
                         "category": "%AWS.title.cn%"
                     }
                 }
+            },
+            {
+                "command": "aws.apprunner.createService",
+                "title": "%AWS.command.apprunner.createService%",
+                "category": "%AWS.title%",
+                "cloud9": {
+                    "cn": {
+                        "category": "%AWS.title.cn%"
+                    }
+                }
+            },
+            {
+                "command": "aws.apprunner.createServiceFromEcr",
+                "title": "%AWS.command.apprunner.createServiceFromEcr%",
+                "category": "%AWS.title%",
+                "cloud9": {
+                    "cn": {
+                        "category": "%AWS.title.cn%"
+                    }
+                }
+            },
+            {
+                "command": "aws.apprunner.pauseService",
+                "title": "%AWS.command.apprunner.pauseService%",
+                "category": "%AWS.title%",
+                "cloud9": {
+                    "cn": {
+                        "category": "%AWS.title.cn%"
+                    }
+                }
+            },
+            {
+                "command": "aws.apprunner.resumeService",
+                "title": "%AWS.command.apprunner.resumeService%",
+                "category": "AWS",
+                "cloud9": {
+                    "cn": {
+                        "category": "%AWS.title.cn%"
+                    }
+                }
+            },
+            {
+                "command": "aws.apprunner.copyServiceUrl",
+                "title": "%AWS.command.apprunner.copyServiceUrl%",
+                "category": "%AWS.title%",
+                "cloud9": {
+                    "cn": {
+                        "category": "%AWS.title.cn%"
+                    }
+                }
+            },
+            {
+                "command": "aws.apprunner.open",
+                "title": "%AWS.command.apprunner.open%",
+                "category": "%AWS.title%",
+                "cloud9": {
+                    "cn": {
+                        "category": "%AWS.title.cn%"
+                    }
+                }
+            },
+            {
+                "command": "aws.apprunner.deleteService",
+                "title": "%AWS.generic.promptDelete%",
+                "category": "%AWS.title%",
+                "cloud9": {
+                    "cn": {
+                        "category": "%AWS.title.cn%"
+                    }
+                }
+            },
+            {
+                "command": "aws.apprunner.startDeployment",
+                "title": "%AWS.command.apprunner.startDeployment%",
+                "category": "%AWS.title%",
+                "cloud9": {
+                    "cn": {
+                        "category": "%AWS.title.cn%"
+                    }
+                }
             }
         ],
         "jsonValidation": [
@@ -1906,7 +2058,7 @@
         "createRelease": "ts-node ./build-scripts/createRelease.ts"
     },
     "devDependencies": {
-        "@aws-toolkits/telemetry": "1.0.6",
+        "@aws-toolkits/telemetry": "1.0.9",
         "@sinonjs/fake-timers": "^7.0.5",
         "@types/adm-zip": "^0.4.34",
         "@types/async-lock": "^1.1.3",
@@ -1967,7 +2119,7 @@
         "adm-zip": "^0.4.13",
         "amazon-states-language-service": "^1.6.4",
         "async-lock": "^1.3.0",
-        "aws-sdk": "^2.882.0",
+        "aws-sdk": "^2.960.0",
         "aws-ssm-document-language-service": "^1.0.0",
         "bytes": "^3.1.0",
         "cross-spawn": "^7.0.3",
