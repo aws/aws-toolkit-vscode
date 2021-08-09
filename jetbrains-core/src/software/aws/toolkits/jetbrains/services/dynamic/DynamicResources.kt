@@ -4,6 +4,7 @@
 package software.aws.toolkits.jetbrains.services.dynamic
 
 import com.fasterxml.jackson.module.kotlin.jacksonObjectMapper
+import com.intellij.openapi.Disposable
 import kotlinx.coroutines.CoroutineStart
 import kotlinx.coroutines.Deferred
 import kotlinx.coroutines.async
@@ -12,8 +13,8 @@ import software.aws.toolkits.jetbrains.core.ClientBackedCachedResource
 import software.aws.toolkits.jetbrains.core.Resource
 import software.aws.toolkits.jetbrains.utils.ApplicationThreadPoolScope
 
-object DynamicResources {
-    private val coroutineScope = ApplicationThreadPoolScope("DynamicResources")
+object DynamicResources : Disposable {
+    private val coroutineScope = ApplicationThreadPoolScope("DynamicResources", this)
     val SUPPORTED_TYPES: Deferred<List<String>> =
         coroutineScope.async(start = CoroutineStart.LAZY) {
             val reader = jacksonObjectMapper()
@@ -33,4 +34,6 @@ object DynamicResources {
         }
 
     fun listResources(resourceType: ResourceType): Resource.Cached<List<DynamicResource>> = listResources(resourceType.fullName)
+
+    override fun dispose() {}
 }
