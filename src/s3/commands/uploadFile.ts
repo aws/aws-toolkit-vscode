@@ -216,7 +216,7 @@ export async function uploadFileCommand(
         const cont = localize('AWS.generic.response.skip', 'Skip')
         //at least one request failed
         const response = await window.showErrorMessage(
-            `${failedRequests.length}/${uploadRequests.length} failed.`,
+            `S3 Upload: ${failedRequests.length}/${uploadRequests.length} failed.`,
             tryAgain,
             cont
         )

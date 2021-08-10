@@ -7,7 +7,7 @@ import * as vscode from 'vscode'
 import * as nls from 'vscode-nls'
 import { documentationUrl } from '../constants'
 import { ext } from '../extensionGlobals'
-import { WizardControl } from '../wizards/wizard'
+import { WizardControl, WIZARD_EXIT, WIZARD_RETRY } from '../wizards/wizard'
 
 const localize = nls.loadMessageBundle()
 const HELP_TOOLTIP = localize('AWS.command.help', 'View Toolkit Documentation')
@@ -57,9 +57,80 @@ export class QuickInputLinkButton implements QuickInputButton<void> {
     }
 }
 
+type ButtonState = 'on' | 'off'
+interface ToggleButtonOptions {
+    initState?: ButtonState
+    onCallback?: () => void
+    offCallBack?: () => void
+}
+
+/**
+ * Basic toggle button. Swaps icons whenever clicked.
+ */
+export class QuickInputToggleButton implements QuickInputButton<WizardControl> {
+    private _state: ButtonState
+
+    public get iconPath(): vscode.QuickInputButton['iconPath'] {
+        return this._state === 'on' ? this.onState.iconPath : this.offState.iconPath
+    }
+
+    public get tooltip(): string | undefined {
+        return this._state === 'on' ? this.onState.tooltip : this.offState.tooltip
+    }
+
+    /** The current state of the button, either 'on' or 'off' */
+    public get state(): ButtonState {
+        return this._state
+    }
+
+    constructor(
+        private readonly onState: vscode.QuickInputButton,
+        private readonly offState: vscode.QuickInputButton,
+        private readonly options: ToggleButtonOptions = {}
+    ) {
+        this._state = options?.initState ?? 'off'
+    }
+
+    public onClick(): WizardControl {
+        this._state = this._state === 'on' ? 'off' : 'on'
+
+        if (this._state === 'on' && this.options.onCallback !== undefined) {
+            this.options.onCallback()
+        }
+        if (this._state === 'off' && this.options.offCallBack !== undefined) {
+            this.options.offCallBack()
+        }
+
+        return WIZARD_RETRY
+    }
+}
+
 // Currently VS Code uses a static back button for every QuickInput, so we can't redefine any of its
 // properties without potentially affecting other extensions. Creating a wrapper is possible, but it
 // would still need to be swapped out for the real Back button when adding it to the QuickInput.
 export function createBackButton(): QuickInputButton<WizardControl> {
     return vscode.QuickInputButtons.Back as QuickInputButton<WizardControl>
+}
+
+export function createExitButton(): QuickInputButton<WizardControl> {
+    return {
+        iconPath: new vscode.ThemeIcon('close'),
+        tooltip: localize('AWS.generic.exit', 'Exit'),
+        onClick: () => WIZARD_EXIT,
+    }
+}
+
+export function createRefreshButton(): QuickInputButton<void> {
+    return {
+        iconPath: new vscode.ThemeIcon('refresh'),
+        tooltip: localize('AWS.generic.refresh', 'Refresh'),
+    }
+}
+
+/** Creates a '+' button. Usually used to add new resources during a prompt. */
+export function createPlusButton(tooltip?: string): QuickInputButton<void> {
+    return {
+        iconPath: new vscode.ThemeIcon('plus'),
+        tooltip,
+    }
 }
