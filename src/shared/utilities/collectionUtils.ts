@@ -186,7 +186,7 @@ export async function* getPaginatedAwsCallIter<TRequest, TResponse>(
             [params.nextTokenNames.request]: nextToken,
         })
         if (response[params.nextTokenNames.response]) {
-            nextToken = (response[params.nextTokenNames.response] as any) as string
+            nextToken = response[params.nextTokenNames.response] as any as string
         } else {
             // done; returns last response with { done: true }
             return response
@@ -247,4 +247,17 @@ export function pushIf<T>(arr: T[], condition: boolean, ...elements: T[]) {
     if (condition) {
         arr.push(...elements)
     }
+}
+
+/**
+ * Applies `settings` to a base object. The shared properties between the settings and the object must have the
+ * same types, enforced by the TypeScript compiler. Will only apply primitives. Silently ignores objects.
+ */
+export function applyPrimitives<T1 extends Record<string, any>, T2 extends T1>(obj: T2, settings: T1): void {
+    const clone = Object.assign({}, settings)
+    Object.keys(clone)
+        .filter(key => typeof clone[key] === 'object')
+        .forEach(key => delete clone[key])
+
+    Object.assign(obj, clone)
 }

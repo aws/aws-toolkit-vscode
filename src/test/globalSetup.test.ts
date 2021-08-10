@@ -21,12 +21,15 @@ import * as fakeTelemetry from './fake/fakeTelemetryService'
 import { TestLogger } from './testLogger'
 import { FakeAwsContext } from './utilities/fakeAwsContext'
 import { initializeComputeRegion } from '../shared/extensionUtilities'
+import { FakeWorkspace } from './shared/vscode/fakeWorkspace'
+import { WorkspaceConfiguration } from '../shared/vscode/workspace'
 
 const testReportDir = join(__dirname, '../../../.test-reports')
 const testLogOutput = join(testReportDir, 'testLog.log')
 
 // Expectation: Tests are not run concurrently
 let testLogger: TestLogger | undefined
+let config: WorkspaceConfiguration
 
 before(async function () {
     // Clean up and set up test logs
@@ -47,7 +50,8 @@ before(async function () {
 beforeEach(function () {
     // Set every test up so that TestLogger is the logger used by toolkit code
     testLogger = setupTestLogger()
-    ext.templateRegistry = new CloudFormationTemplateRegistry()
+    config = new FakeWorkspace().getConfiguration()
+    ext.templateRegistry = new CloudFormationTemplateRegistry(config)
     ext.codelensRootRegistry = new CodelensRootRegistry()
 })
 

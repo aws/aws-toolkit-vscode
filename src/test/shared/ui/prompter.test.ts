@@ -37,13 +37,15 @@ describe('Prompter', function () {
         await assert.rejects(prompter.prompt())
     })
 
-    it('can attach multiple callbacks', async function () {
+    it('can attach multiple transformations', async function () {
         const prompter = new SimplePrompter(1)
-        prompter.after(resp => resp * 2)
-        prompter.after(resp => resp + 2)
-        prompter.after(resp => resp * 2)
-        prompter.after(resp => resp - 2)
-        prompter.transform(resp => resp.toString()).after(resp => `result: ${resp}`)
+        prompter
+            .transform(resp => resp * 2)
+            .transform(resp => resp + 2)
+            .transform(resp => resp * 2)
+            .transform(resp => resp - 2)
+            .transform(resp => resp.toString())
+            .transform(resp => `result: ${resp}`)
         assert.strictEqual(await prompter.prompt(), 'result: 6')
     })
 })

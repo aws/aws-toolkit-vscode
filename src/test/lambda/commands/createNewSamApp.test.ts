@@ -14,11 +14,12 @@ import {
     addInitialLaunchConfiguration,
     getProjectUri,
     SAM_INIT_TEMPLATE_FILES,
+    writeToolkitReadme,
 } from '../../../lambda/commands/createNewSamApp'
 import { LaunchConfiguration } from '../../../shared/debug/launchConfiguration'
 import { anything, capture, instance, mock, when } from 'ts-mockito'
 import { makeSampleSamTemplateYaml } from '../../shared/cloudformation/cloudformationTestUtils'
-import { makeTemporaryToolkitFolder } from '../../../shared/filesystemUtilities'
+import { makeTemporaryToolkitFolder, readFileAsString } from '../../../shared/filesystemUtilities'
 import { ExtContext } from '../../../shared/extensions'
 import {
     AwsSamDebuggerConfiguration,
@@ -26,6 +27,7 @@ import {
 } from '../../../shared/sam/debugger/awsSamDebugConfiguration'
 import { ext } from '../../../shared/extensionGlobals'
 import { normalize } from '../../../shared/utilities/pathUtils'
+import { getIdeProperties, isCloud9 } from '../../../shared/extensionUtilities'
 
 const TEMPLATE_YAML = 'template.yaml'
 
@@ -254,6 +256,50 @@ describe('createNewSamApp', function () {
             assert.notDeepStrictEqual(launchConfigs1, launchConfigs2)
             assert.strictEqual(launchConfigs1!.length, 2)
             assert.strictEqual(launchConfigs2!.length, 1)
+        })
+    })
+
+    describe('writeToolkitReadme', async () => {
+        let tempPath: string
+        before(async () => {
+            const dir = await makeTemporaryToolkitFolder()
+            tempPath = path.join(dir, 'temp.md')
+        })
+
+        it('replaces flags in the file - VS Code', async () => {
+            const success = await writeToolkitReadme(
+                tempPath,
+                [
+                    {
+                        type: 'foo',
+                        name: 'fooName',
+                        request: 'fooRequest',
+                    },
+                    {
+                        type: 'bar',
+                        name: 'barName',
+                        request: 'barRequest',
+                    },
+                ],
+                async (path: string) => {
+                    return '${PRODUCTNAME} ${IDE} ${CODELENS} ${COMPANYNAME} ${COMMANDPALETTE} ${DOCURL}${LISTOFCONFIGURATIONS}'
+                }
+            )
+
+            assert.ok(success)
+            const content = await readFileAsString(tempPath)
+            assert.strictEqual(
+                content,
+                `${getIdeProperties().company} Toolkit For ${getIdeProperties().longName} ${
+                    getIdeProperties().shortName
+                } ${getIdeProperties().codelens} ${getIdeProperties().company} ${getIdeProperties().commandPalette} ${
+                    isCloud9()
+                        ? 'https://docs.aws.amazon.com/cloud9/latest/user-guide/serverless-apps-toolkit.html'
+                        : 'https://docs.aws.amazon.com/toolkit-for-vscode/latest/userguide/serverless-apps.html'
+                }
+* fooName
+* barName`
+            )
         })
     })
 })
