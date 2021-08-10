@@ -146,10 +146,12 @@ abstract class CloudWatchLogsActor<T>(
                             title = message("cloudwatch.logs.exception"),
                             content = message("cloudwatch.logs.failed_to_load_more")
                         )
-                        listOf<T>()
+                        listOf()
                     }
                     withContext(edtContext) {
-                        table.listTableModel.addRows(items)
+                        if (items.isNotEmpty()) {
+                            table.listTableModel.addRows(items)
+                        }
                         table.setPaintBusy(false)
                     }
                 }

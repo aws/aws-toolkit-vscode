@@ -19,6 +19,8 @@ import software.amazon.awssdk.services.cloudwatchlogs.model.GetLogEventsRequest
 import software.amazon.awssdk.services.cloudwatchlogs.model.GetLogEventsResponse
 import software.amazon.awssdk.services.cloudwatchlogs.model.OutputLogEvent
 import software.amazon.awssdk.services.cloudwatchlogs.paginators.GetLogEventsIterable
+import software.aws.toolkits.jetbrains.services.cloudwatch.logs.editor.LogStreamDateColumn
+import software.aws.toolkits.jetbrains.services.cloudwatch.logs.editor.LogStreamMessageColumn
 import software.aws.toolkits.jetbrains.utils.BaseCoroutineTest
 import software.aws.toolkits.jetbrains.utils.waitForModelToBeAtLeast
 import software.aws.toolkits.jetbrains.utils.waitForTrue
@@ -35,7 +37,10 @@ class LogStreamListActorTest : BaseCoroutineTest() {
     @Before
     fun loadVariables() {
         client = mockClientManagerRule.create()
-        tableModel = ListTableModel<LogStreamEntry>()
+        tableModel = ListTableModel(
+            arrayOf(LogStreamDateColumn(), LogStreamMessageColumn()),
+            mutableListOf<LogStreamEntry>()
+        )
         table = TableView(tableModel)
         actor = LogStreamListActor(projectRule.project, client, table, "abc", "def")
     }
