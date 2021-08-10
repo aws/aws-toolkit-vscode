@@ -2,6 +2,7 @@
  * Copyright 2021 Amazon.com, Inc. or its affiliates. All Rights Reserved.
  * SPDX-License-Identifier: Apache-2.0
  */
+import * as path from 'path'
 import * as vscode from 'vscode'
 import * as fs from 'fs'
 import * as mime from 'mime-types'
@@ -226,6 +227,18 @@ export class S3FileViewerManager {
             //was activated from an open tab
             if (this.activeTabs.has(uriOrNode.fsPath)) {
                 const tab = this.activeTabs.get(uriOrNode.fsPath)
+
+                const contentType = mime.contentType(path.extname(tab!.fileUri.fsPath))
+
+                if (contentType) {
+                    if (mime.charset(contentType) != 'UTF-8') {
+                        this.focusAndCloseTab(tab!.s3Uri, tab!.editor)
+                        tab!.editor = await vscode.commands.executeCommand('vscode.open', tab!.fileUri, {
+                            preview: false,
+                        })
+                        return
+                    }
+                }
 
                 await this.openFile(tab!, tab!.fileUri, false)
 

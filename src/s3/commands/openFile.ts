@@ -22,12 +22,10 @@ export async function openFileEditModeCommand(
     uriOrNode: vscode.Uri | S3FileNode,
     manager: S3FileViewerManager
 ): Promise<void> {
-    let size: number
-    let fileNode: S3FileNode | undefined
     if (uriOrNode instanceof S3FileNode) {
-        size = uriOrNode.file.sizeBytes!
-        fileNode = uriOrNode
-        if (await isFileSizeValid(size, fileNode)) {
+        const size = uriOrNode.file.sizeBytes
+
+        if (await isFileSizeValid(size, uriOrNode)) {
             await manager.openInEditMode(uriOrNode)
         }
     } else {
