@@ -23,9 +23,11 @@ export async function runCommandInContainer(
     window = Window.vscode(),
     outputChannel = ext.outputChannel
 ): Promise<void> {
-    getLogger().debug('RunCommandInContainer called for: %O', node.continerName)
+    getLogger().debug('RunCommandInContainer called for: %O', node.containerName)
 
-    await verifyCliAndPlugin(window)
+    if (!(await verifyCliAndPlugin(window))) {
+        return
+    }
 
     // Check to see if there are any deployments in process
     const deployments = (await node.ecs.describeServices(node.clusterArn, [node.serviceName]))[0].deployments
@@ -45,7 +47,11 @@ export async function runCommandInContainer(
 
     // Quick pick to choose from the tasks in that service
     const taskArns = await node.listTasks()
-    const quickPickItems: vscode.QuickPickItem[] = (await node.describeTasks(taskArns)).map(task => {
+    // Filter for only 'Running' tasks
+    const runningTasks = (await node.describeTasks(taskArns)).filter(t => {
+        return t.lastStatus === 'RUNNING' && t.desiredStatus === 'RUNNING'
+    })
+    const quickPickItems: vscode.QuickPickItem[] = runningTasks.map(task => {
         // The last 32 digits of the task arn is the task identifier
         return {
             label: task.taskArn!.substr(-32),
@@ -56,7 +62,7 @@ export async function runCommandInContainer(
         window.showInformationMessage(
             localize(
                 'AWS.command.ecs.runCommandInContainer.noTasks',
-                'There are no running tasks for the service: {0}',
+                'No running tasks for service: {0}',
                 node.serviceName
             )
         )
@@ -69,6 +75,7 @@ export async function runCommandInContainer(
             ignoreFocusOut: true,
         },
         items: quickPickItems,
+        buttons: [vscode.QuickInputButtons.Back],
     })
 
     let taskChoice
@@ -97,7 +104,7 @@ export async function runCommandInContainer(
         prompt: localize(
             'AWS.command.ecs.runCommandInContainer.prompt',
             'Enter the command to run in container: {0}',
-            node.continerName
+            node.containerName
         ),
         placeHolder: localize('AWS.command.ecs.runCommandInContainer.placeHolder', 'Command to run'),
         ignoreFocusOut: true,
@@ -114,7 +121,7 @@ export async function runCommandInContainer(
             localize(
                 'AWS.command.ecs.runCommandInContainer.warnBeforeExecute',
                 'Command may modify the running container {0}. Are you sure?',
-                node.continerName
+                node.containerName
             ),
             { modal: true },
             localize('AWS.generic.response.yes', 'Yes'),
@@ -128,7 +135,7 @@ export async function runCommandInContainer(
         }
     }
 
-    const response = await new ChildProcess(
+    const cmd = new ChildProcess(
         true,
         'aws',
         undefined,
@@ -139,32 +146,33 @@ export async function runCommandInContainer(
         '--task',
         task,
         '--container',
-        node.continerName,
+        node.containerName,
         '--command',
         command,
         '--interactive'
-    ).run()
+    )
+    const processResponse = await cmd.run()
 
-    if (response.exitCode !== 0) {
-        showOutputMessage(response.stderr, outputChannel)
-        getLogger().error(response.stderr)
+    if (processResponse.exitCode !== 0) {
+        showOutputMessage(processResponse.stderr, outputChannel)
+        getLogger().error('ECS command failed: %O: %O', cmd, processResponse.stderr)
         recordEcsRunExecuteCommand({ result: 'Failed', ecsExecuteCommandType: 'command' })
     } else {
-        showOutputMessage(response.stdout, outputChannel)
+        showOutputMessage(processResponse.stdout, outputChannel)
         recordEcsRunExecuteCommand({ result: 'Succeeded', ecsExecuteCommandType: 'command' })
     }
 }
 
-async function verifyCliAndPlugin(window: Window): Promise<void> {
+async function verifyCliAndPlugin(window: Window): Promise<boolean> {
     const verifyAwsCliResponse = await new ChildProcess(true, 'aws', undefined, '--version').run()
     if (verifyAwsCliResponse.exitCode !== 0) {
         const noCli = localize(
             'AWS.command.ecs.runCommandInContainer.noCliFound',
-            'Please install the {0} CLI before proceding',
+            'This feature requires the {0} CLI (aws) to be installed and available on your $PATH',
             getIdeProperties().company
         )
         window.showErrorMessage(noCli)
-        throw new Error('The AWS CLI is not installed.')
+        return false
     }
 
     const verifySsmPluginResponse = await new ChildProcess(true, 'session-manager-plugin').run()
@@ -172,9 +180,10 @@ async function verifyCliAndPlugin(window: Window): Promise<void> {
         window.showErrorMessage(
             localize(
                 'AWS.command.ecs.runCommandInContainer.noPluginFound',
-                'Please install the SSM Session Manager plugin before proceding'
+                'This feature requires the SSM Session Manager plugin (session-manager-plugin) to be installed and available on your $PATH'
             )
         )
-        throw new Error('The SSM Session Manager plugin is not installed.')
+        return false
     }
+    return true
 }
