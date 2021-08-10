@@ -18,7 +18,7 @@ describe('runCommandInContainer', function () {
     const taskListOne = ['onlyTask']
     const taskListTwo = ['taskId1', 'taskId2']
     const describedTasksOne = [
-        { taskArn: 'thisstringneedstobeoverthirtytwocharacterslong', lastStatus: 'running', desiredStatus: 'running' },
+        { taskArn: 'thisstringneedstobeoverthirtytwocharacterslong', lastStatus: 'RUNNING', desiredStatus: 'RUNNING' },
     ]
     const chosenTask = [{ label: 'taskId1' }]
     const containerName = 'containerName'
