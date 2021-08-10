@@ -47,7 +47,11 @@ export async function runCommandInContainer(
 
     // Quick pick to choose from the tasks in that service
     const taskArns = await node.listTasks()
-    const quickPickItems: vscode.QuickPickItem[] = (await node.describeTasks(taskArns)).map(task => {
+    // Filter for only 'Running' tasks
+    const runningTasks = (await node.describeTasks(taskArns)).filter(t => {
+        return t.lastStatus === 'RUNNING' && t.desiredStatus === 'RUNNING'
+    })
+    const quickPickItems: vscode.QuickPickItem[] = runningTasks.map(task => {
         // The last 32 digits of the task arn is the task identifier
         return {
             label: task.taskArn!.substr(-32),
@@ -71,6 +75,7 @@ export async function runCommandInContainer(
             ignoreFocusOut: true,
         },
         items: quickPickItems,
+        buttons: [vscode.QuickInputButtons.Back],
     })
 
     let taskChoice
