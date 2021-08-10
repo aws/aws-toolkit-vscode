@@ -56,6 +56,9 @@ export async function updateEnableExecuteCommandFlag(
         }
         await node.ecs.updateService(node.service.clusterArn!, node.name, true)
         recordEcsEnableExecuteCommand({ result: 'Succeeded', passive: false })
+        node.parent.clearChildren()
+        commands.execute('aws.refreshAwsExplorer', node.parent)
+        return
     }
     if (!hasExecEnabled) {
         window.showInformationMessage(
