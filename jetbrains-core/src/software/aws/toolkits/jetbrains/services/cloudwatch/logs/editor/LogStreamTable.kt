@@ -28,7 +28,6 @@ import software.aws.toolkits.jetbrains.utils.ui.topReached
 import software.aws.toolkits.resources.message
 import javax.swing.JComponent
 import javax.swing.JTable
-import javax.swing.SortOrder
 
 class LogStreamTable(
     val project: Project,
@@ -53,9 +52,6 @@ class LogStreamTable(
         val model = ListTableModel(
             arrayOf(LogStreamDateColumn(), LogStreamMessageColumn()),
             mutableListOf<LogStreamEntry>(),
-            // Don't sort in the model because the requests come sorted
-            -1,
-            SortOrder.UNSORTED
         )
         logsTable = TableView(model).apply {
             autoscrolls = true
