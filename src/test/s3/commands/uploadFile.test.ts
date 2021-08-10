@@ -97,7 +97,7 @@ describe('uploadFileCommand', function () {
                 'Uploading file file.jpg to s3://bucket-name/file.jpg',
                 'Successfully uploaded file.jpg',
                 '1/1 file(s) uploaded to s3://bucket-name',
-                'Successfully uploaded 1/1 files',
+                'Successfully uploaded 1/1 file(s)',
             ])
         })
 
@@ -162,7 +162,7 @@ describe('uploadFileCommand', function () {
                 'Uploading file file.jpg to s3://bucket-name/file.jpg',
                 'Successfully uploaded file.jpg',
                 '1/1 file(s) uploaded to s3://bucket-name',
-                'Successfully uploaded 1/1 files',
+                'Successfully uploaded 1/1 file(s)',
             ])
         })
 
@@ -240,7 +240,7 @@ describe('uploadFileCommand', function () {
             'Uploading file file.jpg to s3://bucket-name/file.jpg',
             'Successfully uploaded file.jpg',
             '1/1 file(s) uploaded to s3://bucket-name',
-            `Successfully uploaded 1/1 files`,
+            `Successfully uploaded 1/1 file(s)`,
         ])
     })
 
@@ -264,7 +264,7 @@ describe('uploadFileCommand', function () {
             'Uploading file file.jpg to s3://bucket-name/file.jpg',
             `Failed to upload file file.jpg: Expected failure`,
             '0/1 file(s) uploaded to s3://bucket-name',
-            'Successfully uploaded 0/1 files',
+            'Successfully uploaded 0/1 file(s)',
             'Failed uploads:',
             `${key}`,
         ])
