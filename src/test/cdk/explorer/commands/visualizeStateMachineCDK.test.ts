@@ -8,7 +8,7 @@ import * as sinon from 'sinon'
 import * as vscode from 'vscode'
 
 import { AslVisualizationCDK } from '../../../../cdk/commands/aslVisualizationCDK'
-import { AslVisualizationCDKManager, getCDKAppName } from '../../../../cdk/commands/aslVisualizationCDKManager'
+import { AslVisualizationCDKManager, getCDKAppWorkspaceName } from '../../../../cdk/commands/aslVisualizationCDKManager'
 import { ConstructNode, isStateMachine } from '../../../../cdk/explorer/nodes/constructNode'
 import { ConstructTreeEntity } from '../../../../cdk/explorer/tree/types'
 import { Disposable } from 'vscode-languageclient'
@@ -126,7 +126,7 @@ const mockNonSMConstructTreeEntity: ConstructTreeEntity = {
 
 const mockNonConstructNode = new ConstructNode(
     new FakeParentNode('cdkJsonPath'),
-    'MyLambdaFunction',
+    'MyCDKApp1/MyLambdaFunction',
     vscode.TreeItemCollapsibleState.Collapsed,
     mockNonSMConstructTreeEntity
 )
@@ -147,14 +147,21 @@ const mockStateMachineConstructTreeEntity: ConstructTreeEntity = {
 
 const mockStateMachineNode = new ConstructNode(
     new FakeParentNode('cdkJsonPath'),
-    'MyStateMachine',
+    'MyCDKApp1/MyStateMachine',
+    vscode.TreeItemCollapsibleState.Collapsed,
+    mockStateMachineConstructTreeEntity
+)
+
+const mockStateMachineNodeSameName = new ConstructNode(
+    new FakeParentNode('cdkJsonPath'),
+    'MyCDKApp2/MyStateMachine',
     vscode.TreeItemCollapsibleState.Collapsed,
     mockStateMachineConstructTreeEntity
 )
 
 const mockStateMachineNode2 = new ConstructNode(
     new FakeParentNode('cdkJsonPath'),
-    'MyStateMachine2',
+    'MyCDKApp1/MyStateMachine2',
     vscode.TreeItemCollapsibleState.Collapsed,
     mockStateMachineConstructTreeEntity
 )
@@ -187,6 +194,7 @@ describe('StepFunctions VisualizeStateMachine', async function () {
     // Before each
     beforeEach(function () {
         mockAslVisualizationCDKManager = new MockAslVisualizationCDKManager(mockExtensionContext)
+        //mockAslVisualizationCDKManager = new MockAslVisualizationCDKManager(mockExtensionContext,mockTextDocumentOne)
     })
 
     // After each
@@ -207,7 +215,7 @@ describe('StepFunctions VisualizeStateMachine', async function () {
 
     // Tests
     it('Test AslVisualizationCDK on setup all properties are correct', function () {
-        const vis = new MockAslVisualizationCDK(mockTextDocumentOne, '', '')
+        const vis = new MockAslVisualizationCDK(mockTextDocumentOne, '', '', '')
 
         assert.deepStrictEqual(vis.documentUri, mockTextDocumentOne.uri)
         assert.strictEqual(vis.getIsPanelDisposed(), false)
@@ -251,7 +259,7 @@ describe('StepFunctions VisualizeStateMachine', async function () {
         await mockAslVisualizationCDKManager.visualizeStateMachine(mockGlobalStorage, mockStateMachineNode)
         assert.strictEqual(mockAslVisualizationCDKManager.getManagedVisualizations().size, 1)
 
-        // visualization for mockStateMachineNode again
+        // visualization for the same mockStateMachineNode
         await mockAslVisualizationCDKManager.visualizeStateMachine(mockGlobalStorage, mockStateMachineNode)
         assert.strictEqual(mockAslVisualizationCDKManager.getManagedVisualizations().size, 1)
     })
@@ -265,6 +273,9 @@ describe('StepFunctions VisualizeStateMachine', async function () {
 
         // visualization for mockStateMachineNode2
         await mockAslVisualizationCDKManager.visualizeStateMachine(mockGlobalStorage, mockStateMachineNode2)
+
+        await mockAslVisualizationCDKManager.visualizeStateMachine(mockGlobalStorage, mockStateMachineNode2)
+        await mockAslVisualizationCDKManager.visualizeStateMachine(mockGlobalStorage, mockStateMachineNode)
         assert.strictEqual(mockAslVisualizationCDKManager.getManagedVisualizations().size, 2)
     })
 
@@ -293,7 +304,16 @@ describe('StepFunctions VisualizeStateMachine', async function () {
     })
 
     it('Test AslVisualizationCDKManager managedVisualizationsCDK set allows multiple VisCDK with the same identifier with different cdk application names', async function () {
+        assert.strictEqual(mockAslVisualizationCDKManager.getManagedVisualizations().size, 0)
 
+        // visualization for mockStateMachineNode
+        await mockAslVisualizationCDKManager.visualizeStateMachine(mockGlobalStorage, mockStateMachineNode)
+        assert.strictEqual(mockAslVisualizationCDKManager.getManagedVisualizations().size, 1)
+
+        //mockAslVisualizationCDKManager.setAppName('cdkAppName2')
+        await mockAslVisualizationCDKManager.visualizeStateMachine(mockGlobalStorage, mockStateMachineNodeSameName)
+        assert.strictEqual(mockAslVisualizationCDKManager.getManagedVisualizations().size, 2)
+        //assert.strictEqual(mockStateMachineNode.id,'hello')
     })
 
     it('Test AslVisualizationCDKManager managedVisualizationsCDK set removes visualization on removal of template.json file, single visCDK', async function () {
@@ -327,24 +347,31 @@ class MockAslVisualizationCDK extends AslVisualizationCDK {
 }
 
 class MockAslVisualizationCDKManager extends AslVisualizationCDKManager {
+    // public mockTextDocument: vscode.TextDocument
+    public workspaceName: string = "CDKWorkspace"
+
     public async visualizeStateMachine(
         globalStorage: vscode.Memento,
-        node: ConstructNode
+        node: ConstructNode,
     ): Promise<vscode.WebviewPanel | undefined> {
         if (!isStateMachine(node.construct)) {
-            console.log('is not a state machine')
             return
         }
 
         const logger: Logger = getLogger()
         const uniqueIdentifier = node.label
-        const cdkOutPath = node.id?.replace(`/tree.json/${node.tooltip}`, ``)
-        const stackName = node.tooltip?.replace(`/${uniqueIdentifier}`, ``)
-        const templatePath = String(cdkOutPath) + `/${stackName}.template.json`
-        const appName = getCDKAppName(cdkOutPath!)
-        const existingVisualization = this.getExistingVisualization(appName, uniqueIdentifier)
+        const stateMachineName = uniqueIdentifier.substring(uniqueIdentifier.lastIndexOf("/") + 1, uniqueIdentifier.length)
+        //const cdkOutPath = node.id?.replace(`/tree.json/${node.tooltip}`, ``)
+        //const stackName = node.tooltip?.replace(`/${uniqueIdentifier}`, ``)
+        //const templatePath = String(cdkOutPath) + `/${stackName}.template.json`
+        const templatePath = 'templatePath'
+        //const appName = getCDKAppWorkspaceName(cdkOutPath!)
+        console.log("Unique Identifier: " + uniqueIdentifier)
+        console.log("SMName: " + stateMachineName)
+        const existingVisualization = this.getExistingVisualization(this.workspaceName, uniqueIdentifier)
 
         if (existingVisualization) {
+            console.log('exists!!')
             existingVisualization.showPanel()
 
             return existingVisualization.getPanel()
@@ -352,16 +379,16 @@ class MockAslVisualizationCDKManager extends AslVisualizationCDKManager {
 
         // Existing visualization does not exist, construct new visualization
         try {
-            const newVisualization = new MockAslVisualizationCDK(mockTextDocumentOne, templatePath, uniqueIdentifier)
+            console.log('does not exist')
+            const newVisualization = new MockAslVisualizationCDK(mockTextDocumentOne, templatePath, uniqueIdentifier, stateMachineName)
             if (newVisualization) {
-                this.handleNewVisualization(appName, newVisualization)
+                this.handleNewVisualization(this.workspaceName, newVisualization)
                 return newVisualization.getPanel()
             }
         } catch (err) {
             this.handleErr(err, logger)
         }
 
-        console.log('cannot render visualization')
         return
     }
 }

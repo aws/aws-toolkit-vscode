@@ -117,7 +117,7 @@
             "Fn::Join": [
               "",
               [
-                "{\"StartAt\":\"Submit Job\",\"States\":{\"Submit Job\":{\"Next\":\"Wait X Seconds\",\"Type\":\"Task\",\"Resource\":\"",
+                "{\"StartAt\":\"Submit Job2\",\"States\":{\"Submit Job2\":{\"Next\":\"Wait X Seconds\",\"Type\":\"Task\",\"Resource\":\"",
                 {
                   "Ref": "SubmitJobFB773A16"
                 },

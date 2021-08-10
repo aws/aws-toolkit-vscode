@@ -2,7 +2,6 @@
  * Copyright 2021 Amazon.com, Inc. or its affiliates. All Rights Reserved.
  * SPDX-License-Identifier: Apache-2.0
  */
-
 import * as vscode from 'vscode'
 import * as nls from 'vscode-nls'
 import * as picker from '../../shared/ui/picker'
@@ -59,16 +58,16 @@ export default class PreviewStateMachineCDKWizard extends MultiStepWizard<Previe
 
     private readonly SELECT_WORKSPACE_ACTION: WizardStep = async () => {
         const cdkAppLocations: CdkAppLocation[] = await detectCdkProjects(vscode.workspace.workspaceFolders)
-
-        //if (cdkAppLocations.length === 0) return WIZARD_TERMINATE
         const CDK_APPLOCATIONS: CdkAppLocationPickItem[] = []
+
         cdkAppLocations.map(obj => {
             CDK_APPLOCATIONS.push(
                 {
-                    label: getCDKAppName(obj.cdkJsonPath),
+                    label: getCDKAppWorkspaceName(obj.cdkJsonPath),
                     cdkApplocation: obj
                 })
         })
+
         if (CDK_APPLOCATIONS.length === 0) {
             CDK_APPLOCATIONS.push(
                 {
@@ -77,6 +76,7 @@ export default class PreviewStateMachineCDKWizard extends MultiStepWizard<Previe
                 }
             )
         }
+
         const quickPick = picker.createQuickPick<CdkAppLocationPickItem>({
             options: {
                 ignoreFocusOut: true,
@@ -106,21 +106,23 @@ export default class PreviewStateMachineCDKWizard extends MultiStepWizard<Previe
 
     private readonly SELECT_APPLICATION_ACTION: WizardStep = async () => {
         const appLocation = this.cdkApplication ? this.cdkApplication.cdkApplocation : undefined
+
         if (!appLocation) return WIZARD_GOBACK
+
         const appNode = new AppNode(appLocation!)
         const constructNodes = await appNode.getChildren()
-        //if (constructNodes.length === 0) return WIZARD_TERMINATE
-
         const TOP_LEVEL_NODES: TopLevelNodePickItem[] = []
+
         constructNodes.map(node => {
             TOP_LEVEL_NODES.push({
                 label: node.label ? node.label : '',
                 topLevelNode: node as ConstructNode
             })
         })
+
         if (TOP_LEVEL_NODES.length === 0) {
             TOP_LEVEL_NODES.push({
-                label: `[No cdk application(s) found in workspace '${getCDKAppName(appLocation.cdkJsonPath)}']`,
+                label: `[No cdk application(s) found in workspace '${getCDKAppWorkspaceName(appLocation.cdkJsonPath)}']`,
                 topLevelNode: undefined
             })
         }
@@ -161,7 +163,6 @@ export default class PreviewStateMachineCDKWizard extends MultiStepWizard<Previe
 
         if (topLevelNodes && topLevelNodes.length > 0) {
             topLevelNodes.map(async node => {
-                //const topLevelNodes = await node.getChildren()
                 if (node.contextValue === 'awsCdkStateMachineNode') {
                     STATE_MACHINES.push({
                         label: node.label ? node.label : '',
@@ -224,7 +225,7 @@ export default class PreviewStateMachineCDKWizard extends MultiStepWizard<Previe
  * @param {string} cdkJsonPath - path to the cdk.json file 
  * @returns name of the CDK Application
  */
-export function getCDKAppName(cdkJsonPath: string) {
+export function getCDKAppWorkspaceName(cdkJsonPath: string) {
     if (typeof (cdkJsonPath) != "string") return cdkJsonPath;
     cdkJsonPath = cdkJsonPath.replace('/cdk.json', '')
     return cdkJsonPath.substring(cdkJsonPath.lastIndexOf("/") + 1, cdkJsonPath.length)

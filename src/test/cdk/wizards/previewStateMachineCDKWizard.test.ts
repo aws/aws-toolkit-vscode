@@ -10,7 +10,7 @@ import * as sinon from 'sinon'
 import { ConstructNode } from '../../../../src/cdk/explorer/nodes/constructNode'
 import { ConstructTreeEntity } from '../../../../src/cdk/explorer/tree/types'
 import { FakeParentNode } from '../explorer/constructNode.test'
-import PreviewStateMachineCDKWizard, { CdkAppLocationPickItem, ConstructNodePickItem, getCDKAppName, TopLevelNodePickItem } from '../../../cdk/wizards/previewStateMachineCDKWizard'
+import PreviewStateMachineCDKWizard, { CdkAppLocationPickItem, ConstructNodePickItem, getCDKAppWorkspaceName, TopLevelNodePickItem } from '../../../cdk/wizards/previewStateMachineCDKWizard'
 
 let sandbox: sinon.SinonSandbox
 const workspaceFolderName = 'cdk-test-folder'
@@ -76,9 +76,10 @@ describe('PreviewStateMachineCDKWizard', async function () {
 
     const CDK_APPLOCATIONS: CdkAppLocationPickItem[] = []
     CDK_APPLOCATIONS.push({
-            label: getCDKAppName(testNode.cdkJsonPath),
-            cdkApplocation: testNode
+        label: getCDKAppWorkspaceName(testNode.cdkJsonPath),
+        cdkApplocation: testNode
     })
+
     const TOP_LEVEL_NODES: TopLevelNodePickItem[] = []
     TOP_LEVEL_NODES.push({
         label: mockTopLevelNode.label,
@@ -118,9 +119,7 @@ describe('PreviewStateMachineCDKWizard', async function () {
                 stateMachineNode: undefined
             }]
         ]
-
         const mockUserPrompt: any = (options: any) => Promise.resolve(promptResults.shift())
-
         const wizard = new PreviewStateMachineCDKWizard(mockUserPrompt)
         const result = await wizard.run()
 
@@ -130,7 +129,7 @@ describe('PreviewStateMachineCDKWizard', async function () {
     it('returns undefined when no top level node exists', async function () {
         const promptResults = [
             [{
-                label: getCDKAppName(testNode.cdkJsonPath),
+                label: getCDKAppWorkspaceName(testNode.cdkJsonPath),
                 cdkApplocation: testNode
             }],
             [{
@@ -142,9 +141,7 @@ describe('PreviewStateMachineCDKWizard', async function () {
                 stateMachineNode: undefined
             }]
         ]
-
         const mockUserPrompt: any = (options: any) => Promise.resolve(promptResults.shift())
-
         const wizard = new PreviewStateMachineCDKWizard(mockUserPrompt)
         const result = await wizard.run()
 
@@ -154,7 +151,7 @@ describe('PreviewStateMachineCDKWizard', async function () {
     it('returns undefined when no state machine node exists', async function () {
         const promptResults = [
             [{
-                label: getCDKAppName(testNode.cdkJsonPath),
+                label: getCDKAppWorkspaceName(testNode.cdkJsonPath),
                 cdkApplocation: testNode
             }],
             [{
@@ -176,7 +173,7 @@ describe('PreviewStateMachineCDKWizard', async function () {
     it('returns cdk application, top level node, and state machine node when completed', async function () {
         const promptResults = [
             [{
-                label: getCDKAppName(testNode.cdkJsonPath),
+                label: getCDKAppWorkspaceName(testNode.cdkJsonPath),
                 cdkApplocation: testNode
             }],
             [{
@@ -188,7 +185,6 @@ describe('PreviewStateMachineCDKWizard', async function () {
                 stateMachineNode: mockStateMachineNode
             }]
         ]
-
         const mockUserPrompt: any = (options: any) => Promise.resolve(promptResults.shift())
         const wizard = new PreviewStateMachineCDKWizard(mockUserPrompt)
         const result = await wizard.run()

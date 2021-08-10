@@ -77,7 +77,3 @@ export function toUnescapedAslJsonString(escapedAslJsonStr: string) {
         .replace(fnGetAttRegExp, '')
         .replace(fnGetAttRegExp2, '')
 }
-
-export function toUnescapedAslJson(arg0: string): string | undefined {
-    throw new Error('Function not implemented.')
-}
