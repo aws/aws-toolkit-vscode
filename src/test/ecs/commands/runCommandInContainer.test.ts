@@ -12,6 +12,7 @@ import { ChildProcess } from '../../../shared/utilities/childProcess'
 import { FakeWindow } from '../../shared/vscode/fakeWindow'
 import { FakeChildProcessResult } from '../../shared/sam/cli/testSamCliProcessInvoker'
 import { DefaultSettingsConfiguration } from '../../../shared/settingsConfiguration'
+import { MockOutputChannel } from '../../mockOutputChannel'
 
 describe('runCommandInContainer', function () {
     let sandbox: sinon.SinonSandbox
@@ -25,6 +26,7 @@ describe('runCommandInContainer', function () {
     const serviceName = 'serviceName'
     const clusterArn = 'arn:fake:cluster'
     const serviceNoDeployments = [{ deployments: [{ status: 'PRIMARY', rolloutState: 'COMPLETED' }] }]
+    const outputChannel = new MockOutputChannel()
 
     const doesNotHaveAwsCliChildProcessResult: FakeChildProcessResult = {
         stdout: '',
@@ -64,7 +66,7 @@ describe('runCommandInContainer', function () {
         sandbox.stub(DefaultSettingsConfiguration.prototype, 'readSetting').returns(false)
 
         const window = new FakeWindow({ inputBox: { input: 'ls' } })
-        await runCommandInContainer(node, window)
+        await runCommandInContainer(node, window, outputChannel)
 
         assert.strictEqual(childCalls.callCount, 3)
         assert.strictEqual(window.inputBox.options?.prompt, 'Enter the command to run in container: containerName')
@@ -80,7 +82,7 @@ describe('runCommandInContainer', function () {
         const pickerStub = sandbox.stub(picker, 'promptUser')
 
         const window = new FakeWindow({ inputBox: { input: 'ls' } })
-        await runCommandInContainer(node, window)
+        await runCommandInContainer(node, window, outputChannel)
 
         assert.strictEqual(pickerStub.notCalled, true)
         assert.strictEqual(childCalls.callCount, 3)
@@ -97,7 +99,7 @@ describe('runCommandInContainer', function () {
 
         const window = new FakeWindow({ inputBox: { input: 'ls' } })
         try {
-            await runCommandInContainer(node, window)
+            await runCommandInContainer(node, window, outputChannel)
         } catch (error) {
             assert.ok(error)
         }
@@ -115,7 +117,7 @@ describe('runCommandInContainer', function () {
 
         const window = new FakeWindow({ inputBox: { input: 'ls' } })
         try {
-            await runCommandInContainer(node, window)
+            await runCommandInContainer(node, window, outputChannel)
         } catch (error) {
             assert.ok(error)
         }
