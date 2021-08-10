@@ -182,7 +182,7 @@ export async function uploadFileCommand(
     showOutputMessage(
         localize(
             'AWS.s3.uploadFile.success',
-            'Successfully uploaded {0}/{1} files',
+            'Successfully uploaded {0}/{1} file(s)',
             completedRequests,
             uploadRequests.length
         ),
@@ -212,8 +212,8 @@ export async function uploadFileCommand(
                 outputChannel
             )
         }
-        const tryAgain = localize('AWS.generic.response.tryAgain', 'Try again')
-        const cont = localize('AWS.generic.response.continue', 'Continue')
+        const tryAgain = localize('AWS.generic.response.retry', 'Retry')
+        const cont = localize('AWS.generic.response.skip', 'Skip')
         //at least one request failed
         const response = await window.showErrorMessage(
             `${failedRequests.length}/${uploadRequests.length} failed.`,
