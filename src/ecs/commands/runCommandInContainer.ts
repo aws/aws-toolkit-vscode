@@ -130,7 +130,7 @@ export async function runCommandInContainer(
         }
     }
 
-    const response = await new ChildProcess(
+    const cmd = new ChildProcess(
         true,
         'aws',
         undefined,
@@ -145,16 +145,15 @@ export async function runCommandInContainer(
         '--command',
         command,
         '--interactive'
-    ).run()
+    )
+    const processResponse = await cmd.run()
 
-    if (response.exitCode !== 0) {
-        showOutputMessage(response.stderr, outputChannel)
-        const cmd = new ChildProcess(...)
-        const response = await cmd.run()
-        getLogger().error('ECS command failed: %O: %O', cmd, response.stderr)
+    if (processResponse.exitCode !== 0) {
+        showOutputMessage(processResponse.stderr, outputChannel)
+        getLogger().error('ECS command failed: %O: %O', cmd, processResponse.stderr)
         recordEcsRunExecuteCommand({ result: 'Failed', ecsExecuteCommandType: 'command' })
     } else {
-        showOutputMessage(response.stdout, outputChannel)
+        showOutputMessage(processResponse.stdout, outputChannel)
         recordEcsRunExecuteCommand({ result: 'Succeeded', ecsExecuteCommandType: 'command' })
     }
 }
