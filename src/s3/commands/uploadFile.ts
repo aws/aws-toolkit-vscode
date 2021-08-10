@@ -213,12 +213,17 @@ export async function uploadFileCommand(
             )
         }
         const tryAgain = localize('AWS.generic.response.retry', 'Retry')
-        const cont = localize('AWS.generic.response.skip', 'Skip')
+        const continueButton = localize('AWS.generic.response.skip', 'Skip')
         //at least one request failed
         const response = await window.showErrorMessage(
-            `S3 Upload: ${failedRequests.length}/${uploadRequests.length} failed.`,
+            localize(
+                'AWS.s3.uploadFile.retryPrompt',
+                'S3 Upload: {0}/{1} failed.',
+                failedRequests.length,
+                uploadRequests.length
+            ),
             tryAgain,
-            cont
+            continueButton
         )
 
         if (response === 'Try again') {
