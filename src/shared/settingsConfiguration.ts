@@ -57,7 +57,7 @@ export class DefaultSettingsConfiguration implements SettingsConfiguration {
         }
     }
 
-    public disable(promptName: string, settings: SettingsConfiguration): void {
+    public disable(promptName: string): void {
         try {
             let prompts = this.readSetting<string[]>('doNotShowPrompts', [])
             if (typeof prompts !== 'object' || !Array.isArray(prompts)) {
@@ -66,7 +66,7 @@ export class DefaultSettingsConfiguration implements SettingsConfiguration {
             }
             if (!prompts.includes(promptName)) {
                 prompts.push(promptName)
-                settings.writeSetting('doNotShowPrompts', prompts, vscode.ConfigurationTarget.Global)
+                this.writeSetting('doNotShowPrompts', prompts, vscode.ConfigurationTarget.Global)
             }
         } catch (e) {
             getLogger().error('Failed to read setting: doNotShowPrompts', e)
