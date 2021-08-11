@@ -1,0 +1,4 @@
+{
+  "type" : "bugfix",
+  "description" : "Fix regression in SAM run configurations using file-based input (#2762)"
+}

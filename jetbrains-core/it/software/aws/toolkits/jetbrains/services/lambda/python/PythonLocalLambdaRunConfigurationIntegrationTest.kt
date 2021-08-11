@@ -155,6 +155,28 @@ class PythonLocalLambdaRunConfigurationIntegrationTest(private val runtime: Runt
     }
 
     @Test
+    fun samIsExecutedWithFileInput() {
+        projectRule.fixture.addFileToProject("requirements.txt", "")
+
+        val envVars = mutableMapOf("Foo" to "Bar", "Bat" to "Baz")
+
+        val runConfiguration = createHandlerBasedRunConfiguration(
+            project = projectRule.project,
+            runtime = runtime,
+            handler = "src/hello_world.app.env_print",
+            input = projectRule.fixture.tempDirFixture.createFile("tmp", "Hello World").canonicalPath!!,
+            inputIsFile = true,
+            credentialsProviderId = mockId,
+            environmentVariables = envVars
+        )
+        assertThat(runConfiguration).isNotNull
+
+        val executeLambda = executeRunConfigurationAndWait(runConfiguration)
+
+        assertThat(executeLambda.exitCode).isEqualTo(0)
+    }
+
+    @Test
     fun sessionCredentialsArePassed() {
         projectRule.fixture.addFileToProject("requirements.txt", "")
 
