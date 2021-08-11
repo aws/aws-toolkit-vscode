@@ -231,6 +231,7 @@ class WrappingCellRenderer(
     }
 }
 
+// TODO: figure out why this has weird hysteresis during rendering causing no text
 class ResizingDateColumnRenderer(showSeconds: Boolean) : ResizingColumnRenderer() {
     private val formatter: SyncDateFormat = if (showSeconds) {
         SyncDateFormat(SimpleDateFormat("yyyy-MM-dd HH:mm:ss.SSS"))

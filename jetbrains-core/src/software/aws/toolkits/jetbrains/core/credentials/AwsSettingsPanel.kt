@@ -53,7 +53,7 @@ private class AwsSettingsPanel(private val project: Project) :
     @Suppress("FunctionName")
     override fun ID(): String = ID
 
-    override fun getPresentation(): StatusBarWidget.WidgetPresentation? = this
+    override fun getPresentation(): StatusBarWidget.WidgetPresentation = this
 
     override fun getTooltipText() = "${SettingsSelector.tooltipText} [${accountSettingsManager.connectionState.displayMessage}]"
 
@@ -99,7 +99,7 @@ class SettingsSelector(private val project: Project) {
             dataContext,
             JBPopupFactory.ActionSelectionAid.SPEEDSEARCH,
             true,
-            ActionPlaces.STATUS_BAR_PLACE
+            ActionPlaces.getActionGroupPopupPlace(ID)
         )
 
     companion object {

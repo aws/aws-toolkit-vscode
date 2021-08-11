@@ -47,6 +47,4 @@ class NodeJsRuntimeGroup : SdkBasedRuntimeGroup() {
     override fun runtimeForSdk(sdk: Sdk): LambdaRuntime? = null
 
     override fun getModuleType(): ModuleType<*> = WebModuleTypeBase.getInstance()
-
-    override fun supportsSamBuild(): Boolean = true
 }

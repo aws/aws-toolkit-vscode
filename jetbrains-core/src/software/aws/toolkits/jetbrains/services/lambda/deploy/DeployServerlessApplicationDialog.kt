@@ -111,7 +111,7 @@ class DeployServerlessApplicationDialog(
         .build()
 
     private val parametersField = KeyValueTextField()
-    private val tagsField = KeyValueTextField()
+    private val tagsField = KeyValueTextField(message("tags.title"))
     private val capabilitiesSelector = CapabilitiesEnumCheckBoxes()
 
     private var templateFileParameters = CloudFormationTemplate.parse(project, templateFile).parameters().toList()
@@ -221,7 +221,7 @@ class DeployServerlessApplicationDialog(
                             it.isEnabled && (it.isLoading || it.selected() == null)
                         }
                         .toolTipText(message("serverless.application.deploy.tooltip.updateStack"))
-                }
+                }.largeGapAfter()
             }
 
             // stack parameters

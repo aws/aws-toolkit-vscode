@@ -62,7 +62,7 @@ phases:
         fi
 
       - chmod +x gradlew
-      - ./gradlew buildPlugin --console plain --info
+      - ./gradlew -PideProfileName=$ALTERNATIVE_IDE_PROFILE_NAME buildPlugin --console plain --info
       - Xvfb ${DISPLAY} -screen 0 ${SCREEN_WIDTH}x${SCREEN_HEIGHT}x${SCREEN_DEPTH} &
       - while [ ! -e /tmp/.X11-unix/X99 ]; do sleep 0.1; done
       - XFCE_PANEL_MIGRATE_DEFAULT=1 xfce4-session --display=${DISPLAY} &

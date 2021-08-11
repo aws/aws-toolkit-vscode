@@ -5,10 +5,14 @@ package software.aws.toolkits.jetbrains.services.lambda.go
 
 import com.fasterxml.jackson.module.kotlin.jacksonObjectMapper
 import com.fasterxml.jackson.module.kotlin.readValue
+import com.goide.sdk.GoSdk
+import com.goide.sdk.GoSdkService
+import com.goide.sdk.GoSdkUtil
 import com.goide.vgo.VgoTestUtil
 import com.intellij.execution.executors.DefaultDebugExecutor
 import com.intellij.openapi.application.ApplicationInfo
 import com.intellij.openapi.module.WebModuleTypeBase
+import com.intellij.openapi.vfs.newvfs.impl.VfsRootAccess
 import com.intellij.testFramework.PsiTestUtil
 import com.intellij.testFramework.fixtures.CodeInsightTestFixture
 import com.intellij.testFramework.runInEdtAndWait
@@ -181,8 +185,6 @@ class GoLocalRunConfigurationIntegrationTest(private val runtime: LambdaRuntime)
 
     @Test
     fun samIsExecutedWithDebugger() {
-        // only run this test on > 2020.1. FIX_WHEN_MIN_IS_202
-        assumeFalse(ApplicationInfo.getInstance().let { info -> (info.majorVersion == "2020" && info.minorVersionMainPart == "1") })
         projectRule.fixture.addLambdaFile(fileContents)
 
         val runConfiguration = createHandlerBasedRunConfiguration(
@@ -205,6 +207,32 @@ class GoLocalRunConfigurationIntegrationTest(private val runtime: LambdaRuntime)
         // assertThat(executeLambda.stdout).contains(input.toUpperCase())
 
         assertThat(debuggerIsHit.get()).isTrue
+    }
+
+    @Test
+    fun `works when handler is 'main'`() {
+        assumeFalse(true) // TODO: fix when new build images are ready
+        // fails if [Lambda.findPsiElementsForHandler] finds the handler in the Go standard library
+        val sdkDir = GoSdkUtil.suggestSdkDirectory()!!.children.sortedByDescending { it.name }.first().canonicalPath!!
+        VfsRootAccess.allowRootAccess(projectRule.project, sdkDir)
+        runInEdtAndWait {
+            GoSdkService.getInstance(projectRule.project).setSdk(GoSdk.fromHomePath(sdkDir))
+        }
+        projectRule.fixture.addLambdaFile(fileContents)
+
+        val runConfiguration = createHandlerBasedRunConfiguration(
+            project = projectRule.project,
+            runtime = runtime.toSdkRuntime(),
+            handler = "main",
+            input = "\"${input}\"",
+            credentialsProviderId = mockId
+        )
+
+        assertThat(runConfiguration).isNotNull
+
+        val executeLambda = executeRunConfigurationAndWait(runConfiguration, DefaultDebugExecutor.EXECUTOR_ID)
+
+        assertThat(executeLambda.exitCode).isEqualTo(0)
     }
 
     @Test

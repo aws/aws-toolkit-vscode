@@ -1,3 +1,11 @@
+# _1.30_ (2021-08-05)
+- **(Feature)** Add ability to view bucket by entering bucket name/URI
+- **(Bug Fix)** Fix CWL last event sorting ([#2737](https://github.com/aws/aws-toolkit-jetbrains/issues/2737))
+- **(Bug Fix)** Fix Go Lambda handler resolving into Go standard library ([#2730](https://github.com/aws/aws-toolkit-jetbrains/issues/2730))
+- **(Bug Fix)** Fix `ActionPlaces.isPopupPlace` error after opening the AWS connection settings menu ([#2736](https://github.com/aws/aws-toolkit-jetbrains/issues/2736))
+- **(Bug Fix)** Fix some warnings due to slow operations on EDT ([#2735](https://github.com/aws/aws-toolkit-jetbrains/issues/2735))
+- **(Bug Fix)** Fix Java Lambda run marker issues and disable runmarker processing in tests and language-injected text fragments
+
 # _1.29_ (2021-07-20)
 - **(Feature)** When uploading a file to S3, the content type is now set accoriding to the files extension
 - **(Bug Fix)** Fix being unable to update Lambda configuration if the Image packaging type

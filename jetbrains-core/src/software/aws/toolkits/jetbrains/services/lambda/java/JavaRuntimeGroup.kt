@@ -43,6 +43,4 @@ class JavaRuntimeGroup : SdkBasedRuntimeGroup() {
     override fun getModuleType(): ModuleType<*> = JavaModuleType.getModuleType()
 
     override fun getIdeSdkType(): SdkType = JavaSdk.getInstance()
-
-    override fun supportsSamBuild(): Boolean = true
 }

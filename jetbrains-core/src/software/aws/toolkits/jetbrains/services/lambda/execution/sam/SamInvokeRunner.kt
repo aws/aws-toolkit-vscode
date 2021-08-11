@@ -3,6 +3,7 @@
 
 package software.aws.toolkits.jetbrains.services.lambda.execution.sam
 
+import com.intellij.execution.ExecutionResult
 import com.intellij.execution.configurations.RunProfile
 import com.intellij.execution.configurations.RunProfileState
 import com.intellij.execution.configurations.RunnerSettings
@@ -12,6 +13,9 @@ import com.intellij.execution.runners.AsyncProgramRunner
 import com.intellij.execution.runners.ExecutionEnvironment
 import com.intellij.execution.runners.RunContentBuilder
 import com.intellij.execution.ui.RunContentDescriptor
+import com.intellij.openapi.application.ModalityState
+import com.intellij.openapi.application.ReadAction
+import com.intellij.util.concurrency.AppExecutorUtil
 import org.jetbrains.concurrency.AsyncPromise
 import org.jetbrains.concurrency.Promise
 import org.slf4j.event.Level
@@ -68,11 +72,14 @@ class SamInvokeRunner : AsyncProgramRunner<RunnerSettings>() {
 
     override fun execute(environment: ExecutionEnvironment, state: RunProfileState): Promise<RunContentDescriptor?> {
         val runPromise = AsyncPromise<RunContentDescriptor?>()
-        val runContentDescriptor = state.execute(environment.executor, this)?.let {
-            RunContentBuilder(it, environment).showRunContent(environment.contentToReuse)
-        }
-
-        runPromise.setResult(runContentDescriptor)
+        ReadAction.nonBlocking<ExecutionResult> {
+            state.execute(environment.executor, this)
+        }.finishOnUiThread(ModalityState.any()) { executionResult ->
+            executionResult?.let {
+                val runContent = RunContentBuilder(it, environment).showRunContent(environment.contentToReuse)
+                runPromise.setResult(runContent)
+            }
+        }.submit(AppExecutorUtil.getAppExecutorService())
 
         return runPromise
     }

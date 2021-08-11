@@ -37,6 +37,4 @@ class PythonRuntimeGroup : SdkBasedRuntimeGroup() {
     override fun getModuleType(): ModuleType<*> = PythonModuleTypeBase.getInstance()
 
     override fun getIdeSdkType(): SdkType = PythonSdkType.getInstance()
-
-    override fun supportsSamBuild(): Boolean = true
 }
