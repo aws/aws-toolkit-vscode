@@ -568,7 +568,7 @@ export class S3FileViewerManager {
     /**
      * Uploads current uri back to parent
      *
-     * @returns true if upload succe]
+     * @returns true if upload succeeded
      */
     public async uploadChangesToS3(tab: S3Tab): Promise<boolean> {
         const request = {
