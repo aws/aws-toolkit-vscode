@@ -150,7 +150,12 @@ export class SharedCredentialsProvider implements CredentialsProvider {
         return undefined
     }
 
-    // Patches 'source_profile' credentials as static representations, which the SDK can handle in all cases
+    /**
+     * Patches 'source_profile' credentials as static representations, which the SDK can handle in all cases.
+     *
+     * The SDK is unable to resolve `source_profile` fields when the source profile uses SSO/MFA/credential_process.
+     * We can handle this resolution ourselves, giving the SDK the resolved credentials by 'pre-loading' them.
+     */
     private async patchSourceCredentials(): Promise<ParsedIniData> {
         const loadedCreds: ParsedIniData = {}
 
