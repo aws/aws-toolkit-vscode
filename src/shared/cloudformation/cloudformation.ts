@@ -764,8 +764,8 @@ export namespace CloudFormation {
     }
 }
 
-let cfnSchemaPath = ''
-let samSchemaPath = ''
+let cfnSchemaUri: vscode.Uri
+let samSchemaUri: vscode.Uri
 const MANIFEST_URL = 'https://api.github.com/repos/awslabs/goformation/releases/latest'
 
 /**
@@ -776,12 +776,11 @@ const MANIFEST_URL = 'https://api.github.com/repos/awslabs/goformation/releases/
  * @param extensionContext
  */
 export async function refreshSchemas(extensionContext: vscode.ExtensionContext): Promise<void> {
-    // path.join() is intentionally used here, we want a single "/" after "file:/".
-    // YAML extension doesn't load schema if `file://` is appended on Windows, and doesn't like no `file:/` or `file://` on MacOS
-    cfnSchemaPath = normalizeSeparator(
-        path.join('file:/', extensionContext.globalStoragePath, 'cloudformation.schema.json')
+    // Cast the paths to
+    cfnSchemaUri = vscode.Uri.file(
+        normalizeSeparator(path.join(extensionContext.globalStoragePath, 'cloudformation.schema.json'))
     )
-    samSchemaPath = normalizeSeparator(path.join('file:/', extensionContext.globalStoragePath, 'sam.schema.json'))
+    samSchemaUri = vscode.Uri.file(normalizeSeparator(path.join(extensionContext.globalStoragePath, 'sam.schema.json')))
     let manifest: string | undefined
     try {
         const manifestFetcher = new HttpResourceFetcher(MANIFEST_URL, { showUrl: true })
@@ -802,13 +801,13 @@ export async function refreshSchemas(extensionContext: vscode.ExtensionContext):
         const details = getManifestDetails(manifest)
 
         await getRemoteOrCachedFile({
-            filepath: cfnSchemaPath,
+            filepath: cfnSchemaUri.fsPath,
             version: details.version,
             url: details.cfnUrl,
             cacheKey: 'cfnSchemaVersion',
         })
         await getRemoteOrCachedFile({
-            filepath: samSchemaPath,
+            filepath: samSchemaUri.fsPath,
             version: details.version,
             url: details.samUrl,
             cacheKey: 'samSchemaVersion',
@@ -837,7 +836,10 @@ export async function updateYamlSchemasArray(
     if (!opts?.skipExtensionLoad && !vscode.extensions.getExtension(VSCODE_EXTENSION_ID.yaml)) {
         return
     }
-    const paths = opts?.paths ?? { cfnSchema: cfnSchemaPath, samSchema: samSchemaPath }
+    const paths = opts?.paths ?? {
+        cfnSchema: cfnSchemaUri.toString(),
+        samSchema: samSchemaUri.toString(),
+    }
     const config = opts?.config ?? vscode.workspace.getConfiguration('yaml')
     const relPath = normalizeSeparator(getWorkspaceRelativePath(path) ?? path)
     const schemas: { [key: string]: string | string[] | undefined } | undefined = config.get('schemas')
