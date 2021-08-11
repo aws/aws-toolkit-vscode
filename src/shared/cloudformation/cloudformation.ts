@@ -834,9 +834,8 @@ export async function updateYamlSchemasArray(
     }
 ): Promise<void> {
     if (
-        (!opts?.skipExtensionLoad && !vscode.extensions.getExtension(VSCODE_EXTENSION_ID.yaml)) ||
-        !cfnSchemaUri ||
-        !samSchemaUri
+        !opts?.skipExtensionLoad &&
+        (!vscode.extensions.getExtension(VSCODE_EXTENSION_ID.yaml) || !cfnSchemaUri || !samSchemaUri)
     ) {
         return
     }
