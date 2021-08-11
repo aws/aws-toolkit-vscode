@@ -833,16 +833,21 @@ export async function updateYamlSchemasArray(
         paths?: { cfnSchema: string; samSchema: string }
     }
 ): Promise<void> {
+    const paths = opts?.paths ?? {
+        cfnSchema: cfnSchemaUri?.toString(),
+        samSchema: samSchemaUri?.toString(),
+    }
+
+    // URIs are not guaranteed to be loaded when this function is called.
+    // We should always return if they're undefined.
     if (
-        !opts?.skipExtensionLoad &&
-        (!vscode.extensions.getExtension(VSCODE_EXTENSION_ID.yaml) || !cfnSchemaUri || !samSchemaUri)
+        (!opts?.skipExtensionLoad && !vscode.extensions.getExtension(VSCODE_EXTENSION_ID.yaml)) ||
+        !paths.cfnSchema ||
+        !paths.samSchema
     ) {
         return
     }
-    const paths = opts?.paths ?? {
-        cfnSchema: cfnSchemaUri.toString(),
-        samSchema: samSchemaUri.toString(),
-    }
+
     const config = opts?.config ?? vscode.workspace.getConfiguration('yaml')
     const relPath = normalizeSeparator(getWorkspaceRelativePath(path) ?? path)
     const schemas: { [key: string]: string | string[] | undefined } | undefined = config.get('schemas')
