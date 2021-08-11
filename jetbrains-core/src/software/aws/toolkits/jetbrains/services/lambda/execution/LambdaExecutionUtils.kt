@@ -4,8 +4,10 @@
 package software.aws.toolkits.jetbrains.services.lambda.execution
 
 import com.intellij.execution.configurations.RuntimeConfigurationError
+import com.intellij.execution.process.ProcessListener
 import com.intellij.openapi.Disposable
 import com.intellij.openapi.project.Project
+import com.intellij.openapi.util.Key
 import com.intellij.openapi.vfs.LocalFileSystem
 import com.intellij.openapi.vfs.VirtualFile
 import com.intellij.util.messages.MessageBus
@@ -88,3 +90,5 @@ fun String?.validateSupportedRuntime(): Runtime {
 
     return runtime
 }
+
+val TEST_PROCESS_LISTENER = Key<ProcessListener>("TEST_PROCESS_LISTENER")

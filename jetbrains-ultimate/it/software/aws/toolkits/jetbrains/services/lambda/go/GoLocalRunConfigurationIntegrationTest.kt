@@ -184,6 +184,26 @@ class GoLocalRunConfigurationIntegrationTest(private val runtime: LambdaRuntime)
     }
 
     @Test
+    fun samIsExecutedWithFileInput() {
+        projectRule.fixture.addLambdaFile(envVarsFileContents)
+
+        val runConfiguration = createHandlerBasedRunConfiguration(
+            project = projectRule.project,
+            runtime = runtime.toSdkRuntime(),
+            handler = "handler",
+            input = projectRule.fixture.tempDirFixture.createFile("tmp", "\"${input}\"").canonicalPath!!,
+            inputIsFile = true,
+            credentialsProviderId = mockId,
+        )
+
+        assertThat(runConfiguration).isNotNull
+
+        val executeLambda = executeRunConfigurationAndWait(runConfiguration)
+
+        assertThat(executeLambda.exitCode).isEqualTo(0)
+    }
+
+    @Test
     fun samIsExecutedWithDebugger() {
         projectRule.fixture.addLambdaFile(fileContents)
 
