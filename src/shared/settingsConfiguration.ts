@@ -57,3 +57,30 @@ export class DefaultSettingsConfiguration implements SettingsConfiguration {
         }
     }
 }
+
+export function disable(promptName: string, settings: SettingsConfiguration): void {
+    let prompts: string[] = []
+    try {
+        prompts = settings.readSetting<string[]>('doNotShowPrompts', [])
+        if (typeof prompts !== 'object' || !Array.isArray(prompts)) {
+            getLogger().warn('setting "doNotShowPrompts" has an unexpected type. Overwriting.')
+            prompts = []
+        }
+    } catch (e) {
+        getLogger().error('Failed to read setting: doNotShowPrompts', e)
+    }
+
+    if (!prompts.includes(promptName)) {
+        prompts.push(promptName)
+        settings.writeSetting('doNotShowPrompts', prompts, vscode.ConfigurationTarget.Global)
+    }
+}
+
+export function readPromptSetting(promptName: string, settings: SettingsConfiguration): boolean {
+    const promptSetting = settings.readSetting<string[]>('doNotShowPrompts')
+    if (typeof promptSetting !== 'object' || !Array.isArray(promptSetting)) {
+        getLogger().warn('setting "doNotShowPrompts" has an unexpected type. Falling back to default.')
+        return true
+    }
+    return promptSetting.includes(promptName)
+}

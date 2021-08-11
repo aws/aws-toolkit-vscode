@@ -37,6 +37,7 @@
     "AWS.configuration.description.samcli.location": "Location of SAM CLI. SAM CLI is used to create, build, package, and deploy Serverless Applications. [Learn More](https://aws.amazon.com/serverless/sam/)",
     "AWS.configuration.description.telemetry": "Enable AWS Toolkit to send usage data to AWS.",
     "AWS.configuration.description.telemetry.cn": "Enable Amazon Toolkit to send usage data to Amazon.",
+    "AWS.configuration.description.doNotShowPrompts": "List of prompts not to show again.",
     "AWS.configuration.enableCodeLenses": "Enable SAM hints in source files",
     "AWS.stepFunctions.asl.format.enable.desc": "Enables the default formatter used with Amazon States Language files",
     "AWS.stepFunctions.asl.maxItemsComputed.desc": "The maximum number of outline symbols and folding regions computed (limited for performance reasons).",
@@ -589,6 +590,5 @@
     "AWS.walkthrough.gettingStarted.description": "These walkthroughs help you set up the AWS Toolkit for Visual Studio Code.",
     "AWS.walkthrough.gettingStarted.connect": "Connect to AWS",
     "AWS.walkthrough.gettingStarted.changeRegions": "Change AWS Regions",
-    "AWS.walkthrough.gettingStarted.setupToolchain": "Configure your toolchain",
-    "AWS.setting.togglePrompts.description": "Toggle prompts and notifications."
+    "AWS.walkthrough.gettingStarted.setupToolchain": "Configure your toolchain"
 }

@@ -181,14 +181,10 @@
                     "description": "%AWS.configuration.enableCodeLenses%",
                     "default": true
                 },
-                "aws.togglePrompts": {
+                "aws.doNotShowPrompts": {
                     "type": "object",
                     "description": "%AWS.setting.togglePrompts.description%",
-                    "default": {
-                        "warnBeforeRunCommand": true,
-                        "warnBeforeEnablingExcecuteCommand": true,
-                        "warnBeforeDisablingExecuteCommand": true
-                    }
+                    "default": []
                 }
             }
         },
