@@ -99,6 +99,27 @@ class NodeJsLocalLambdaRunConfigurationIntegrationTest(private val runtime: Runt
     }
 
     @Test
+    fun samIsExecutedWithFileInput() {
+        projectRule.fixture.addPackageJsonFile()
+
+        val runConfiguration = createHandlerBasedRunConfiguration(
+            project = projectRule.project,
+            runtime = runtime,
+            handler = "hello_world/app.lambdaHandler",
+            input = projectRule.fixture.tempDirFixture.createFile("tmp", "\"Hello World\"").canonicalPath!!,
+            inputIsFile = true,
+            credentialsProviderId = mockCredentialsId
+        )
+
+        assertThat(runConfiguration).isNotNull
+
+        val executeLambda = executeRunConfigurationAndWait(runConfiguration)
+
+        assertThat(executeLambda.exitCode).isEqualTo(0)
+        assertThat(executeLambda.stdout).contains("Hello World")
+    }
+
+    @Test
     fun samIsExecutedWithContainer() {
         projectRule.fixture.addPackageJsonFile()
 

@@ -14,13 +14,11 @@ import com.intellij.execution.executors.DefaultDebugExecutor
 import com.intellij.execution.process.ProcessHandler
 import com.intellij.execution.runners.ExecutionEnvironment
 import com.intellij.execution.runners.ProgramRunner
-import com.intellij.openapi.fileEditor.FileDocumentManager
 import com.intellij.openapi.module.Module
 import com.intellij.openapi.module.ModuleUtil
 import com.intellij.openapi.project.Project
 import com.intellij.openapi.vfs.VirtualFile
 import com.intellij.psi.PsiFile
-import kotlinx.coroutines.runBlocking
 import software.aws.toolkits.core.telemetry.DefaultMetricEvent
 import software.aws.toolkits.jetbrains.core.AwsResourceCache
 import software.aws.toolkits.jetbrains.core.utils.buildList
@@ -41,7 +39,6 @@ import software.aws.toolkits.jetbrains.utils.execution.steps.ParallelStep
 import software.aws.toolkits.jetbrains.utils.execution.steps.Step
 import software.aws.toolkits.jetbrains.utils.execution.steps.StepExecutor
 import software.aws.toolkits.jetbrains.utils.execution.steps.StepWorkflow
-import software.aws.toolkits.jetbrains.utils.getCoroutineUiContext
 import software.aws.toolkits.resources.message
 import software.aws.toolkits.telemetry.LambdaPackageType
 import software.aws.toolkits.telemetry.LambdaTelemetry
@@ -75,18 +72,12 @@ class SamRunningState(
             }
         )
 
-        runBlocking(getCoroutineUiContext()) {
-            FileDocumentManager.getInstance().saveAllDocuments()
-        }
+        val lambdaBuilder = LambdaBuilder.getInstance(settings.runtimeGroup)
 
-        val samState = environment.state as SamRunningState
-        val lambdaSettings = samState.settings
-        val lambdaBuilder = LambdaBuilder.getInstance(lambdaSettings.runtimeGroup)
+        val buildLambdaRequest = buildBuildLambdaRequest(environment.project, settings)
 
-        val buildLambdaRequest = buildBuildLambdaRequest(environment.project, lambdaSettings)
-
-        samState.pathMappings = createPathMappings(lambdaBuilder, lambdaSettings, buildLambdaRequest)
-        val buildWorkflow = buildWorkflow(environment, settings, samState, buildLambdaRequest, buildView)
+        pathMappings = createPathMappings(lambdaBuilder, settings, buildLambdaRequest)
+        val buildWorkflow = buildWorkflow(environment, settings, this, buildLambdaRequest, buildView)
 
         return DefaultExecutionResult(buildView, buildWorkflow)
     }
