@@ -118,7 +118,7 @@ export class S3FileViewerManager {
                 key: fileNode.file.key,
             })
         } catch (e) {
-            getLogger().error('S3FileViewer: Error calling getHeadObject, error: ', e)
+            getLogger().error('S3Client: getHeadObject failed: ', e)
         }
 
         let type
