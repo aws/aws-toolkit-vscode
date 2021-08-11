@@ -776,7 +776,7 @@ const MANIFEST_URL = 'https://api.github.com/repos/awslabs/goformation/releases/
  * @param extensionContext
  */
 export async function refreshSchemas(extensionContext: vscode.ExtensionContext): Promise<void> {
-    // Cast the paths to
+    // Convert the paths to URIs which is what the YAML extension expects
     cfnSchemaUri = vscode.Uri.file(
         normalizeSeparator(path.join(extensionContext.globalStoragePath, 'cloudformation.schema.json'))
     )
