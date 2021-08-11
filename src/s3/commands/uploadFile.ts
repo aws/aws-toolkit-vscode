@@ -213,7 +213,7 @@ export async function uploadFileCommand(
             )
         }
         const tryAgain = localize('AWS.generic.response.retry', 'Retry')
-        const continueButton = localize('AWS.generic.response.skip', 'Skip')
+        const skipButton = localize('AWS.generic.response.skip', 'Skip')
         //at least one request failed
         const response = await window.showErrorMessage(
             localize(
