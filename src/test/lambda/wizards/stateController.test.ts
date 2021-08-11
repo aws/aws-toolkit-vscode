@@ -8,9 +8,9 @@ import * as sinon from 'sinon'
 import { StateMachineController, ControlSignal, StepResult } from '../../../shared/wizards/stateController'
 
 function assertStepsPassthrough<T>(
-    controller: StateMachineController<T>, 
-    current: number, 
-    total: number, 
+    controller: StateMachineController<T>,
+    current: number,
+    total: number,
     result?: StepResult<T>
 ): StepResult<T> | undefined {
     assert.strictEqual(controller.currentStep, current)
@@ -30,7 +30,7 @@ describe('StateMachineController', function () {
         await assert.doesNotReject(controller.run())
     })
 
-    it('can exit mid-run', async function() {
+    it('can exit mid-run', async function () {
         const controller = new StateMachineController<number>()
         const step1 = sinon.stub()
         const step2 = sinon.stub()
@@ -46,7 +46,7 @@ describe('StateMachineController', function () {
         assert.strictEqual(step3.called, false, 'The third step should not be called')
     })
 
-    it('detects cycle', async function() {
+    it('detects cycle', async function () {
         const controller = new StateMachineController<number>()
         const step1 = sinon.stub()
         const step2 = sinon.stub()
@@ -59,7 +59,7 @@ describe('StateMachineController', function () {
         await assert.rejects(controller.run(), /Cycle/)
     })
 
-    it('can add the same function as a step multiple times', async function() {
+    it('can add the same function as a step multiple times', async function () {
         const controller = new StateMachineController<number>()
         const step1 = sinon.stub()
         step1.onFirstCall().returns(0)
@@ -70,9 +70,9 @@ describe('StateMachineController', function () {
         assert.strictEqual(await controller.run(), 1)
     })
 
-    it('step functions do not have side effects', async function() {
+    it('step functions do not have side effects', async function () {
         const mystate = { mystring: '', isGood: true }
-        const controller = new StateMachineController<{ mystring: string, isGood: boolean }>(mystate)
+        const controller = new StateMachineController<{ mystring: string; isGood: boolean }>(mystate)
         const step1 = sinon.stub()
         const step2 = sinon.stub()
         const step3 = sinon.stub()
@@ -188,16 +188,21 @@ describe('StateMachineController', function () {
         })
 
         it('handles branches', async function () {
-            const controller = new StateMachineController<{ branch1: string, branch2: string }>()
+            const controller = new StateMachineController<{ branch1: string; branch2: string }>()
             const step1 = sinon.stub()
             const branch1 = sinon.stub()
             const branch2 = sinon.stub()
             const step3 = sinon.stub()
             // step1 -> branch1 -> step1 -> branch2 -> step3 -> branch2 -> step3 -> terminate
             step1.onFirstCall().returns({ nextState: { branch2: 'no' }, nextSteps: [branch1] })
-            step1.onSecondCall().callsFake(() => 
-                assertStepsPassthrough(controller, 1, 2, { nextState: { branch1: 'no', branch2: 'no' }, nextSteps: [branch2] } )
-            )
+            step1
+                .onSecondCall()
+                .callsFake(() =>
+                    assertStepsPassthrough(controller, 1, 2, {
+                        nextState: { branch1: 'no', branch2: 'no' },
+                        nextSteps: [branch2],
+                    })
+                )
             branch1.returns(undefined)
             branch2.callsFake(state =>
                 assertStepsPassthrough(controller, 2, 3, { nextState: { branch2: 'yes', branch1: state.branch1 } })

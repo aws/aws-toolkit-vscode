@@ -11,6 +11,7 @@ import { deleteBucketCommand } from './commands/deleteBucket'
 import { deleteFileCommand } from './commands/deleteFile'
 import { downloadFileAsCommand } from './commands/downloadFileAs'
 import { presignedURLCommand } from './commands/presignedURL'
+import { openFileCommand, openFileEditModeCommand } from './commands/openFile'
 import { uploadFileCommand } from './commands/uploadFile'
 import { uploadFileToParentCommand } from './commands/uploadFileToParent'
 import { S3BucketNode } from './explorer/s3BucketNode'
@@ -19,11 +20,18 @@ import { S3Node } from './explorer/s3Nodes'
 import { S3FileNode } from './explorer/s3FileNode'
 import { ext } from '../shared/extensionGlobals'
 import { ExtContext } from '../shared/extensions'
+import { S3DocumentProvider } from './document/s3DocumentProvider'
+import { showOutputMessage } from '../shared/utilities/messages'
 
 /**
  * Activates S3 components.
  */
+
 export async function activate(ctx: ExtContext): Promise<void> {
+    ctx.extensionContext.subscriptions.push(
+        vscode.workspace.registerTextDocumentContentProvider('s3', new S3DocumentProvider())
+    )
+
     ctx.extensionContext.subscriptions.push(
         vscode.commands.registerCommand('aws.s3.copyPath', async (node: S3FolderNode | S3FileNode) => {
             await copyPathCommand(node)
@@ -33,6 +41,13 @@ export async function activate(ctx: ExtContext): Promise<void> {
         }),
         vscode.commands.registerCommand('aws.s3.downloadFileAs', async (node: S3FileNode) => {
             await downloadFileAsCommand(node)
+        }),
+        vscode.commands.registerCommand('aws.s3.openFile', async (node: S3FileNode) => {
+            await openFileCommand(node)
+        }),
+        vscode.commands.registerCommand('aws.s3.openFileEditMode', async (uriOrNode: vscode.Uri | S3FileNode) => {
+            showOutputMessage(`command openFileEditMode() uri: ${uriOrNode}`, ext.outputChannel)
+            await openFileEditModeCommand(uriOrNode)
         }),
         vscode.commands.registerCommand('aws.s3.uploadFile', async (node: S3BucketNode | S3FolderNode) => {
             if (!node) {

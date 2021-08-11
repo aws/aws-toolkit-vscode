@@ -704,6 +704,10 @@
                     "when": "resourceScheme == awsCloudWatchLogs"
                 },
                 {
+                    "command": "aws.s3.openFileEditMode",
+                    "when": "resourceScheme == s3"
+                },
+                {
                     "command": "aws.cloudWatchLogs.viewLogStream",
                     "when": "false"
                 },
@@ -745,6 +749,14 @@
                 },
                 {
                     "command": "aws.s3.downloadFileAs",
+                    "when": "false"
+                },
+                {
+                    "command": "aws.s3.openFile",
+                    "when": "false"
+                },
+                {
+                    "command": "aws.s3.openFileEditMode",
                     "when": "false"
                 },
                 {
@@ -817,6 +829,11 @@
                 {
                     "command": "aws.saveCurrentLogStreamContent",
                     "when": "resourceScheme == awsCloudWatchLogs",
+                    "group": "navigation"
+                },
+                {
+                    "command": "aws.s3.openFileEditMode",
+                    "when": "resourceScheme == s3",
                     "group": "navigation"
                 },
                 {
@@ -928,9 +945,14 @@
                     "group": "inline@1"
                 },
                 {
-                    "command": "aws.s3.downloadFileAs",
+                    "command": "aws.s3.openFileEditMode",
                     "when": "view == aws.explorer && viewItem == awsS3FileNode",
                     "group": "inline@1"
+                },
+                {
+                    "command": "aws.s3.downloadFileAs",
+                    "when": "view == aws.explorer && viewItem == awsS3FileNode",
+                    "group": "inline@2"
                 },
                 {
                     "command": "aws.s3.createBucket",
@@ -1044,6 +1066,11 @@
                 },
                 {
                     "command": "aws.s3.downloadFileAs",
+                    "when": "view == aws.explorer && viewItem == awsS3FileNode",
+                    "group": "0@1"
+                },
+                {
+                    "command": "aws.s3.openFile",
                     "when": "view == aws.explorer && viewItem == awsS3FileNode",
                     "group": "0@1"
                 },
@@ -1366,6 +1393,23 @@
                         "category": "%AWS.title.cn%"
                     }
                 }
+            },
+            {
+                "command": "aws.s3.openFile",
+                "title": "%AWS.command.s3.openFile%",
+                "category": "%AWS.title%",
+                "icon": "$(open-preview)",
+                "cloud9": {
+                    "cn": {
+                        "category": "%AWS.title.cn%"
+                    }
+                }
+            },
+            {
+                "command": "aws.s3.openFileEditMode",
+                "title": "%AWS.command.s3.openFileEditMode%",
+                "category": "%AWS.title%",
+                "icon": "$(edit)"
             },
             {
                 "command": "aws.s3.uploadFile",
