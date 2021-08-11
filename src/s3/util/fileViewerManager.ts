@@ -66,7 +66,7 @@ export class S3FileViewerManager {
                 if (download) {
                     if (!(await activeTab.uploadChangesToS3())) {
                         this.window.showErrorMessage(
-                            'Error uploading file to S3. Please try and resave this edit mode file'
+                            'Error uploading file to S3.'
                         )
                         return
                     }
