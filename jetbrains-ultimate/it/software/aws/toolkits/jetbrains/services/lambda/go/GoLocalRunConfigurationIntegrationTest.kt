@@ -228,7 +228,7 @@ class GoLocalRunConfigurationIntegrationTest(private val runtime: LambdaRuntime)
         val executeLambda = executeRunConfigurationAndWait(runConfiguration, DefaultDebugExecutor.EXECUTOR_ID)
 
         assertThat(executeLambda.exitCode).isEqualTo(0)
-         assertThat(executeLambda.stdout).contains(input.toUpperCase())
+        assertThat(executeLambda.stdout).contains(input.toUpperCase())
 
         assertThat(debuggerIsHit.get()).isTrue
     }
