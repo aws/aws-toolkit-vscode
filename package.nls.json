@@ -589,5 +589,6 @@
     "AWS.walkthrough.gettingStarted.description": "These walkthroughs help you set up the AWS Toolkit for Visual Studio Code.",
     "AWS.walkthrough.gettingStarted.connect": "Connect to AWS",
     "AWS.walkthrough.gettingStarted.changeRegions": "Change AWS Regions",
-    "AWS.walkthrough.gettingStarted.setupToolchain": "Configure your toolchain"
+    "AWS.walkthrough.gettingStarted.setupToolchain": "Configure your toolchain",
+    "AWS.setting.togglePrompts.description": "Toggle prompts and notifications."
 }

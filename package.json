@@ -180,6 +180,15 @@
                     "type": "boolean",
                     "description": "%AWS.configuration.enableCodeLenses%",
                     "default": true
+                },
+                "aws.togglePrompts": {
+                    "type": "object",
+                    "description": "%AWS.setting.togglePrompts.description%",
+                    "default": {
+                        "warnBeforeRunCommand": true,
+                        "warnBeforeEnablingExcecuteCommand": true,
+                        "warnBeforeDisablingExecuteCommand": true
+                    }
                 }
             }
         },
