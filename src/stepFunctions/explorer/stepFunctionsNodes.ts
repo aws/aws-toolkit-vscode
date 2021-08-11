@@ -18,8 +18,19 @@ import { PlaceholderNode } from '../../shared/treeview/nodes/placeholderNode'
 import { makeChildrenNodes } from '../../shared/treeview/treeNodeUtilities'
 import { toArrayAsync, toMap, updateInPlace } from '../../shared/utilities/collectionUtils'
 import { listStateMachines } from '../../stepFunctions/utils'
+import { Commands } from '../../shared/vscode/commands'
 
 export const CONTEXT_VALUE_STATE_MACHINE = 'awsStateMachineNode'
+
+const sfnNodeMap = new Map<string, StepFunctionsNode>()
+
+export function refreshStepFunctionsTree(regionCode: string) {
+    const node = sfnNodeMap.get(regionCode)
+
+    if (node) {
+        Commands.vscode().execute('aws.refreshAwsExplorerNode', node)
+    }
+}
 
 /**
  * An AWS Explorer node representing the Step Functions Service.
@@ -31,6 +42,8 @@ export class StepFunctionsNode extends AWSTreeNodeBase {
     public constructor(private readonly regionCode: string) {
         super('Step Functions', vscode.TreeItemCollapsibleState.Collapsed)
         this.stateMachineNodes = new Map<string, StateMachineNode>()
+
+        sfnNodeMap.set(regionCode, this)
     }
 
     public async getChildren(): Promise<AWSTreeNodeBase[]> {
@@ -40,8 +53,7 @@ export class StepFunctionsNode extends AWSTreeNodeBase {
 
                 return [...this.stateMachineNodes.values()]
             },
-            getErrorNode: async (error: Error, logID: number) =>
-                new ErrorNode(this, error, logID),
+            getErrorNode: async (error: Error, logID: number) => new ErrorNode(this, error, logID),
             getNoChildrenPlaceholderNode: async () =>
                 new PlaceholderNode(
                     this,
