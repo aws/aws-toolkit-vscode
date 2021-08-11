@@ -41,7 +41,9 @@ open class NewProjectWizardDialog(
     }
 
     fun setProjectLocation(folder: String) {
-        textField(JTextFieldFixture.byLabel(jLabel(JLabelFixture.byText("Project location:"))), timeout = Duration.ofSeconds(30)).text = folder
+        // Give more time to find the label. The UI can load slow or perform a step like SAM validation
+        val label = jLabel(JLabelFixture.byText("Project location:"), timeout = Duration.ofSeconds(30))
+        textField(JTextFieldFixture.byLabel(label)).text = folder
     }
 
     fun pressNext() {
