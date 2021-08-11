@@ -56,31 +56,29 @@ export class DefaultSettingsConfiguration implements SettingsConfiguration {
             return false
         }
     }
-}
 
-export function disable(promptName: string, settings: SettingsConfiguration): void {
-    let prompts: string[] = []
-    try {
-        prompts = settings.readSetting<string[]>('doNotShowPrompts', [])
-        if (typeof prompts !== 'object' || !Array.isArray(prompts)) {
-            getLogger().warn('setting "doNotShowPrompts" has an unexpected type. Overwriting.')
-            prompts = []
+    public disable(promptName: string, settings: SettingsConfiguration): void {
+        try {
+            let prompts = this.readSetting<string[]>('doNotShowPrompts', [])
+            if (typeof prompts !== 'object' || !Array.isArray(prompts)) {
+                getLogger().warn('setting "doNotShowPrompts" has an unexpected type. Overwriting.')
+                prompts = []
+            }
+            if (!prompts.includes(promptName)) {
+                prompts.push(promptName)
+                settings.writeSetting('doNotShowPrompts', prompts, vscode.ConfigurationTarget.Global)
+            }
+        } catch (e) {
+            getLogger().error('Failed to read setting: doNotShowPrompts', e)
         }
-    } catch (e) {
-        getLogger().error('Failed to read setting: doNotShowPrompts', e)
     }
 
-    if (!prompts.includes(promptName)) {
-        prompts.push(promptName)
-        settings.writeSetting('doNotShowPrompts', prompts, vscode.ConfigurationTarget.Global)
+    public readPromptSetting(promptName: string): boolean {
+        const promptSetting = this.readSetting<string[]>('doNotShowPrompts')
+        if (typeof promptSetting !== 'object' || !Array.isArray(promptSetting)) {
+            getLogger().warn('setting "doNotShowPrompts" has an unexpected type. Falling back to default.')
+            return true
+        }
+        return promptSetting.includes(promptName)
     }
-}
-
-export function readPromptSetting(promptName: string, settings: SettingsConfiguration): boolean {
-    const promptSetting = settings.readSetting<string[]>('doNotShowPrompts')
-    if (typeof promptSetting !== 'object' || !Array.isArray(promptSetting)) {
-        getLogger().warn('setting "doNotShowPrompts" has an unexpected type. Falling back to default.')
-        return true
-    }
-    return promptSetting.includes(promptName)
 }
