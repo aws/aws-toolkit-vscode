@@ -22,6 +22,7 @@ import {
 } from '../wizards/publishStateMachineWizard'
 
 import { VALID_SFN_PUBLISH_FORMATS, YAML_FORMATS } from '../constants/aslFormats'
+import { refreshStepFunctionsTree } from '../explorer/stepFunctionsNodes'
 
 export async function publishStateMachine(awsContext: AwsContext, outputChannel: vscode.OutputChannel) {
     const logger: Logger = getLogger()
@@ -67,6 +68,7 @@ export async function publishStateMachine(awsContext: AwsContext, outputChannel:
         ).run()
         if (wizardResponse?.createResponse) {
             await createStateMachine(wizardResponse.createResponse, text, outputChannel, region, client)
+            refreshStepFunctionsTree(region)
         } else if (wizardResponse?.updateResponse) {
             await updateStateMachine(wizardResponse.updateResponse, text, outputChannel, region, client)
         }
