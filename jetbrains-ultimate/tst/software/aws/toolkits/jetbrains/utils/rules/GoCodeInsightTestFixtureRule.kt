@@ -8,7 +8,10 @@ import com.goide.project.GoModuleSettings
 import com.goide.psi.GoFile
 import com.goide.sdk.GoSdk
 import com.goide.sdk.GoSdkImpl
+import com.intellij.execution.configurations.GeneralCommandLine
+import com.intellij.execution.util.ExecUtil
 import com.intellij.openapi.projectRoots.Sdk
+import com.intellij.openapi.vfs.VirtualFile
 import com.intellij.psi.PsiElement
 import com.intellij.psi.PsiFile
 import com.intellij.testFramework.LightProjectDescriptor
@@ -85,8 +88,15 @@ fun CodeInsightTestFixture.addGoModFile(
 
         module hello-world
 
-        go 1.14
+        go 1.16
         """.trimIndent()
 ): PsiFile = this.addFileToProject("$subPath/go.mod", content)
+
+fun runGoModTidy(goModFile: VirtualFile) {
+    val output = ExecUtil.execAndGetOutput(GeneralCommandLine("go").withParameters("mod", "tidy").withWorkDirectory(goModFile.parent.path))
+    if (output.exitCode != 0) {
+        throw IllegalStateException("'go mod tidy' did not return 0: ${output.stderr}")
+    }
+}
 
 fun createMockSdk(root: String, version: String): GoSdk = GoSdkImpl(root, version, null)

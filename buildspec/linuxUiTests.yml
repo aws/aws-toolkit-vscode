@@ -16,8 +16,6 @@ env:
     SCREEN_HEIGHT: 1080
     SCREEN_DEPTH: 24
 
-    DEBIAN_FRONTEND: noninteractive
-
 phases:
   install:
     runtime-versions:
@@ -25,12 +23,7 @@ phases:
       dotnet: 3.1
 
     commands:
-      # WORKAROUND for yarn key being out of date, update keys so we can run builds TODO remove dirmngr and apt-key commands
-      - apt-get install dirmngr
-      - apt-key adv --refresh-keys --keyserver keyserver.ubuntu.com
-      - apt-get update
-      - apt-get install -y xvfb xfce4 procps ffmpeg xterm xinput
-
+      - startDesktop.sh
       - mkdir -p /tmp/.aws
       - aws sts assume-role --role-arn $ASSUME_ROLE_ARN --role-session-name ui-test > /tmp/.aws/creds.json
       - export KEY_ID=`jq -r '.Credentials.AccessKeyId' /tmp/.aws/creds.json`
@@ -42,8 +35,6 @@ phases:
         aws_secret_access_key=$SECRET
         aws_session_token=$TOKEN"
 
-      - pip3 install --user --upgrade  aws-sam-cli
-
       # login to DockerHub so we don't get throttled
       - export DOCKER_USERNAME=`echo $DOCKER_HUB_TOKEN | jq -r '.username'`
       - export DOCKER_PASSWORD=`echo $DOCKER_HUB_TOKEN | jq -r '.password'`
@@ -51,10 +42,6 @@ phases:
 
   build:
     commands:
-      - export SAM_CLI_EXEC=`which sam`
-      - echo "SAM CLI location $SAM_CLI_EXEC"
-      - $SAM_CLI_EXEC --version
-
       - |
         if [ "$CODEARTIFACT_DOMAIN_NAME" ] && [ "$CODEARTIFACT_REPO_NAME" ]; then
           CODEARTIFACT_URL=$(aws codeartifact get-repository-endpoint --domain $CODEARTIFACT_DOMAIN_NAME --repository $CODEARTIFACT_REPO_NAME --format maven --query repositoryEndpoint --output text)
@@ -63,29 +50,22 @@ phases:
 
       - chmod +x gradlew
       - ./gradlew -PideProfileName=$ALTERNATIVE_IDE_PROFILE_NAME buildPlugin --console plain --info
-      - Xvfb ${DISPLAY} -screen 0 ${SCREEN_WIDTH}x${SCREEN_HEIGHT}x${SCREEN_DEPTH} &
-      - while [ ! -e /tmp/.X11-unix/X99 ]; do sleep 0.1; done
-      - XFCE_PANEL_MIGRATE_DEFAULT=1 xfce4-session --display=${DISPLAY} &
-      - xinput list
-      - xterm -e "xinput list | grep -Po 'id=\K\d+(?=.*slave)' | xargs -P0 -n1 xinput test" &
-      # Disable keyboard repeat. Keyboard repeat can mess up hotkeys.
-      - xfconf-query -c keyboards --property /Default/KeyRepeat --create --type bool --set false
-      - ffmpeg -loglevel quiet -f x11grab -video_size ${SCREEN_WIDTH}x${SCREEN_HEIGHT} -i ${DISPLAY} -codec:v libx264 -pix_fmt yuv420p -vf drawtext="fontsize=48:box=1:boxcolor=black@0.75:boxborderw=5:fontcolor=white:x=0:y=h-text_h:text='%{gmtime\:%H\\\\\:%M\\\\\:%S}'" -framerate 12 -g 12 /tmp/screen_recording.mp4 &
 
-      - env AWS_ACCESS_KEY_ID=$KEY_ID AWS_SECRET_ACCESS_KEY=$SECRET AWS_SESSION_TOKEN=$TOKEN ./gradlew uiTestCore coverageReport --console plain --info
+      - ffmpeg -loglevel quiet -nostdin -f x11grab -video_size ${SCREEN_WIDTH}x${SCREEN_HEIGHT} -i ${DISPLAY} -codec:v libx264 -pix_fmt yuv420p -vf drawtext="fontsize=48:box=1:boxcolor=black@0.75:boxborderw=5:fontcolor=white:x=0:y=h-text_h:text='%{gmtime\:%H\\\\\:%M\\\\\:%S}'" -framerate 12 -g 12 /tmp/screen_recording.mp4 &
+      - env AWS_ACCESS_KEY_ID=$KEY_ID AWS_SECRET_ACCESS_KEY=$SECRET AWS_SESSION_TOKEN=$TOKEN ./gradlew -PideProfileName=$ALTERNATIVE_IDE_PROFILE_NAME uiTestCore coverageReport --console plain --info
 
   post_build:
     commands:
       - TEST_ARTIFACTS="/tmp/testArtifacts"
       - mkdir -p $TEST_ARTIFACTS/test-reports
 
-      - pkill -2 ffmpeg; while pgrep ffmpeg > /dev/null; do sleep 1; done;
+      - pkill -SIGINT ffmpeg && sleep 5
 
       - rsync -rmq --include='*/' --include '**/build/idea-sandbox/system*/log/**' --exclude='*' . $TEST_ARTIFACTS/ || true
       - rsync -rmq --include='*/' --include '**/build/reports/**' --exclude='*' . $TEST_ARTIFACTS/ || true
       - rsync -rmq --include='*/' --include '**/test-results/**/*.xml' --exclude='*' . $TEST_ARTIFACTS/test-reports || true
 
-      - cp /tmp/screen_recording.mp4 $TEST_ARTIFACTS/
+      - mv /tmp/screen_recording.mp4 $TEST_ARTIFACTS/
 
       - VCS_COMMIT_ID="${CODEBUILD_RESOLVED_SOURCE_VERSION}"
       - CI_BUILD_URL=$(echo $CODEBUILD_BUILD_URL | sed 's/#/%23/g') # Encode `#` in the URL because otherwise the url is clipped in the Codecov.io site
