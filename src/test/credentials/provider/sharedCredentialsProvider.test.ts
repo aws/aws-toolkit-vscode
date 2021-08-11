@@ -8,7 +8,7 @@ import * as FakeTimers from '@sinonjs/fake-timers'
 import * as sinon from 'sinon'
 import { SharedCredentialsProvider } from '../../../credentials/providers/sharedCredentialsProvider'
 import { Profile } from '../../../shared/credentials/credentialsFile'
-import { stripUndefined } from '../../../test/testUtil'
+import { stripUndefined } from '../../../shared/utilities/collectionUtils'
 import * as process from '@aws-sdk/credential-provider-process'
 import { ParsedIniData } from '@aws-sdk/shared-ini-file-loader'
 

@@ -83,14 +83,3 @@ export async function tickPromise<T>(promise: Promise<T>, clock: FakeTimers.Inst
     clock.tick(t)
     return await promise
 }
-
-/** Recursively delete undefined key/value pairs */
-export function stripUndefined(obj: any): void {
-    Object.keys(obj).forEach(key => {
-        if (obj[key] === undefined) {
-            delete obj[key]
-        } else if (typeof obj[key] === 'object') {
-            stripUndefined(obj[key])
-        }
-    })
-}
