@@ -50,7 +50,7 @@ async function isFileSizeValid(
             .showErrorMessage(
                 localize(
                     'AWS.s3.fileViewer.error.invalidSize',
-                    'Files over 50MB currently not supported for file display, please use the "Download as..." function'
+                    'Files over 50MB currently not supported for file display, use the "Download as..." action'
                 ),
                 localize('AWS.s3.button.downloadAs', 'Download as..')
             )
