@@ -67,13 +67,22 @@ export class S3FileViewerManager {
                     const response = await window.showErrorMessage(
                         localize(
                             'AWS.s3.fileViewer.error.invalidUpload',
-                            'File is invalid to upload, file has changed in S3 since last cache download. Please compare your version with the one in S3. Then decide if you want to overwrite them or cancel this upload.'
+                            'File has changed in S3 since last cache download. Compare your version with the one in S3, then choose to overwrite it or cancel this upload.'
                         ),
                         cancelUpload,
                         overwrite
                     )
                     if (response === cancelUpload) {
                         upload = false
+                    }
+                }
+
+                if (upload) {
+                    if (!(await activeTab.uploadChangesToS3())) {
+                        this.window.showErrorMessage(
+                            'Error uploading file to S3.'
+                        )
+                        return
                     }
                 }
 
