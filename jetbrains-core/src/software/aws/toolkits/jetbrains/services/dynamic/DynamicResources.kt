@@ -40,14 +40,11 @@ object DynamicResources : Disposable {
     fun listTypesInCurrentRegion(): Resource.Cached<List<String>> = ClientBackedCachedResource(
         CloudFormationClient::class, "cloudformation.dynamic.resources.in.current.region"
     ) {
-        getResourcesForCurrentRegion(this@ClientBackedCachedResource)
-    }
-
-    private fun getResourcesForCurrentRegion(cfnClient: CloudFormationClient): List<String> =
-        cfnClient.listTypesPaginator {
+        this.listTypesPaginator {
             it.visibility(Visibility.PUBLIC)
             it.type(RegistryType.RESOURCE)
         }.flatMap { it.typeSummaries().map { it.typeName() } }
+    }
 
     override fun dispose() {}
 }

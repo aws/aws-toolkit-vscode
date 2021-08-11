@@ -37,15 +37,14 @@ class DynamicResourceResourceTypeNode(project: Project, private val resourceType
 
     // calls to CloudAPI time-expensive and likely to throttle
     override fun isAlwaysExpand(): Boolean = false
-    override fun statusText(): String? = if (!resourceAvailableInCurrentRegion) "Unavailable in current region" else null
+    override fun statusText(): String? = if (!resourceAvailableInCurrentRegion) message("dynamic.resources.unavailable_in_region") else null
     override fun getChildren(): List<AwsExplorerNode<*>> = super.getChildren()
 
     override fun getChildrenInternal(): List<AwsExplorerNode<*>> = try {
         if (resourceAvailableInCurrentRegion) {
             nodeProject.getResourceNow(DynamicResources.listResources(resourceType))
-                .map { DynamicResourceNode(nodeProject, it) }.also {
-                    DynamicresourceTelemetry.listType(project = nodeProject, success = true, resourceType = resourceType)
-                }
+                .map { DynamicResourceNode(nodeProject, it) }
+                .also { DynamicresourceTelemetry.listType(project = nodeProject, success = true, resourceType = resourceType) }
         } else {
             emptyList()
         }
