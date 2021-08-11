@@ -22,7 +22,7 @@ export interface PromptSetting {
 
 export function disablePrompt(promptName: PROMPT_NAME, settings: SettingsConfiguration): void {
     try {
-        let prompts = settings.readSetting<PromptSetting>('togglePrompts', DEFAULT_PROMPTS)
+        const prompts = settings.readSetting<PromptSetting>('togglePrompts', DEFAULT_PROMPTS)
 
         prompts[promptName] = false
         settings.writeSetting('togglePrompts', prompts, vscode.ConfigurationTarget.Global)
