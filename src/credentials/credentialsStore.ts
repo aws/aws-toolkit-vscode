@@ -25,10 +25,13 @@ export class CredentialsStore {
 
     /**
      * Checks if the stored credentials are valid. Non-existent or expired credentials returns false.
+     *
+     * If the expiration property does not exist, it is assumed to never expire.
      */
     public isValid(key: string): boolean {
         if (this.credentialsCache[key]) {
-            return (this.credentialsCache[key].credentials.expiration ?? new Date(0)) >= new Date()
+            const expiration = this.credentialsCache[key].credentials.expiration
+            return expiration !== undefined ? expiration >= new Date() : true
         }
 
         return false

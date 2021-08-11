@@ -7,7 +7,7 @@ import * as assert from 'assert'
 import * as sinon from 'sinon'
 import { CredentialsStore } from '../../../credentials/credentialsStore'
 import { Credentials } from '@aws-sdk/types'
-import { CredentialsProvider, CredentialsId } from '../../../credentials/providers/credentials'
+import { CredentialsProvider, CredentialsId, asString } from '../../../credentials/providers/credentials'
 
 describe('CredentialsStore', async function () {
     let sandbox: sinon.SinonSandbox
@@ -40,6 +40,13 @@ describe('CredentialsStore', async function () {
 
     it('getCredentials returns undefined when credentials are not loaded', async function () {
         assert.strictEqual(await sut.getCredentials(sampleCredentialsId), undefined)
+    })
+
+    it('treats credentials with no expiration as valid', async function () {
+        const noExpirationProvider = makeSampleCredentialsProvider(1, { ...sampleCredentials, expiration: undefined })
+        await sut.upsertCredentials(sampleCredentialsId, noExpirationProvider)
+
+        assert.strictEqual(sut.isValid(asString(sampleCredentialsId)), true)
     })
 
     it('upsertCredentials creates when credentials are not loaded', async function () {
