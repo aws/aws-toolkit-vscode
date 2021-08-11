@@ -833,7 +833,11 @@ export async function updateYamlSchemasArray(
         paths?: { cfnSchema: string; samSchema: string }
     }
 ): Promise<void> {
-    if (!opts?.skipExtensionLoad && !vscode.extensions.getExtension(VSCODE_EXTENSION_ID.yaml)) {
+    if (
+        (!opts?.skipExtensionLoad && !vscode.extensions.getExtension(VSCODE_EXTENSION_ID.yaml)) ||
+        !cfnSchemaUri ||
+        !samSchemaUri
+    ) {
         return
     }
     const paths = opts?.paths ?? {
