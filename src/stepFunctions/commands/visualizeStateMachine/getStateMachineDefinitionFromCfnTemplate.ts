@@ -52,7 +52,7 @@ export function getStateMachineDefinitionFromCfnTemplate(uniqueIdentifier: strin
 
 /**
  * @param {string} escapedAslJsonStr - json state machine construct definition 
- * @returns unescaped json state machine construct definition
+ * @returns unescaped json state machine construct definition in asl.json
  */
 export function toUnescapedAslJsonString(escapedAslJsonStr: string) {
     if (typeof (escapedAslJsonStr) != "string") return escapedAslJsonStr;

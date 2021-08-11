@@ -1,5 +1,5 @@
 /*!
- * Copyright 2019 Amazon.com, Inc. or its affiliates. All Rights Reserved.
+ * Copyright 2021 Amazon.com, Inc. or its affiliates. All Rights Reserved.
  * SPDX-License-Identifier: Apache-2.0
  */
 
@@ -12,7 +12,6 @@ import { AbstractAslVisualizationManager } from '../../../src/stepFunctions/comm
 import { StateMachineGraphCache } from '../../../src/stepFunctions/utils'
 
 export class AslVisualizationCDKManager extends AbstractAslVisualizationManager {
-    //Map<WorkspaceName, Map<CDKAppName/StateMachineName, AslVisualizationCDK>
     protected readonly managedVisualizations: Map<string, Map<string, AslVisualizationCDK>> = new Map<string, Map<string, AslVisualizationCDK>>()
 
     public constructor(extensionContext: vscode.ExtensionContext) {
@@ -87,7 +86,7 @@ export class AslVisualizationCDKManager extends AbstractAslVisualizationManager 
  * @param {string} cdkOutPath - path to the cdk.out folder
  * @returns name of the CDK application workspace name
  */
- export function getCDKAppWorkspaceName(cdkOutPath: string) {
+export function getCDKAppWorkspaceName(cdkOutPath: string) {
     if (typeof (cdkOutPath) != "string") return cdkOutPath;
     cdkOutPath = cdkOutPath.replace('/cdk.out', '')
     return cdkOutPath.substring(cdkOutPath.lastIndexOf("/") + 1, cdkOutPath.length)

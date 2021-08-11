@@ -2,6 +2,7 @@
  * Copyright 2021 Amazon.com, Inc. or its affiliates. All Rights Reserved.
  * SPDX-License-Identifier: Apache-2.0
  */
+
 import * as app from '../../../cdk/explorer/cdkProject'
 import * as assert from 'assert'
 import * as vscode from 'vscode'
@@ -52,7 +53,7 @@ const mockStateMachineConstructTreeEntity: ConstructTreeEntity = {
 }
 
 const mockStateMachineNode = new ConstructNode(
-    new FakeParentNode('cdkJsonPath2'),
+    new FakeParentNode('cdkJsonPath'),
     'MyStateMachine',
     vscode.TreeItemCollapsibleState.Collapsed,
     mockStateMachineConstructTreeEntity
@@ -104,7 +105,7 @@ describe('PreviewStateMachineCDKWizard', async function () {
         assert.ok(!result)
     })
 
-    it('returns undefined when no cdk application exists', async function () {
+    it('returns undefined when cdk application does not exist', async function () {
         const promptResults = [
             [{
                 label: '',
@@ -126,7 +127,7 @@ describe('PreviewStateMachineCDKWizard', async function () {
         assert.deepStrictEqual(result, undefined)
     })
 
-    it('returns undefined when no top level node exists', async function () {
+    it('returns undefined when top level node does not exist', async function () {
         const promptResults = [
             [{
                 label: getCDKAppWorkspaceName(testNode.cdkJsonPath),
@@ -148,7 +149,7 @@ describe('PreviewStateMachineCDKWizard', async function () {
         assert.deepStrictEqual(result, undefined)
     })
 
-    it('returns undefined when no state machine node exists', async function () {
+    it('returns undefined when state machine node does not exist', async function () {
         const promptResults = [
             [{
                 label: getCDKAppWorkspaceName(testNode.cdkJsonPath),

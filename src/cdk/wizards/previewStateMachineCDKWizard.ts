@@ -2,6 +2,7 @@
  * Copyright 2021 Amazon.com, Inc. or its affiliates. All Rights Reserved.
  * SPDX-License-Identifier: Apache-2.0
  */
+
 import * as vscode from 'vscode'
 import * as nls from 'vscode-nls'
 import * as picker from '../../shared/ui/picker'
@@ -158,7 +159,6 @@ export default class PreviewStateMachineCDKWizard extends MultiStepWizard<Previe
     private readonly SELECT_STATE_MACHINE_ACTION: WizardStep = async () => {
         const topLevelNode = this.topLevelNode ? this.topLevelNode : undefined
         const STATE_MACHINES: ConstructNodePickItem[] = []
-
         const topLevelNodes = await topLevelNode?.topLevelNode?.getChildren()
 
         if (topLevelNodes && topLevelNodes.length > 0) {
@@ -203,7 +203,6 @@ export default class PreviewStateMachineCDKWizard extends MultiStepWizard<Previe
         })
 
         this.stateMachine = picker.verifySinglePickerOutput<ConstructNodePickItem>(choices)
-
         return this.stateMachine ? WIZARD_TERMINATE : WIZARD_GOBACK
     }
 
@@ -223,7 +222,7 @@ export default class PreviewStateMachineCDKWizard extends MultiStepWizard<Previe
 
 /**
  * @param {string} cdkJsonPath - path to the cdk.json file 
- * @returns name of the CDK Application
+ * @returns name of the workspace of the CDK Application
  */
 export function getCDKAppWorkspaceName(cdkJsonPath: string) {
     if (typeof (cdkJsonPath) != "string") return cdkJsonPath;

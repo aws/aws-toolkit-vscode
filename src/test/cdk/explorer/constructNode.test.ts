@@ -1,5 +1,5 @@
 /*!
- * Copyright 2019 Amazon.com, Inc. or its affiliates. All Rights Reserved.
+ * Copyright 2021 Amazon.com, Inc. or its affiliates. All Rights Reserved.
  * SPDX-License-Identifier: Apache-2.0
  */
 
@@ -178,6 +178,17 @@ describe('ConstructNode', function () {
         assert.strictEqual(childNodes[0] instanceof ConstructNode, true, 'Expected child node to be a ConstructNode')
     })
 
+    function generateTestNode(displayLabel: string): ConstructNode {
+        return new ConstructNode(
+            new FakeParentNode(cdkJsonPath),
+            displayLabel,
+            vscode.TreeItemCollapsibleState.Collapsed,
+            treeUtils.generateConstructTreeEntity(displayLabel, constructTreePath)
+        )
+    }
+})
+
+describe('Check if ConstructNode is a state machine', function() {
     it('returns true when tree node contains a node with id === "Resource" and type === "StateMachine"', async function () {
         const construct: ConstructTreeEntity = {
             id: 'StateMachine',
@@ -253,15 +264,6 @@ describe('ConstructNode', function () {
         }
         assert.strictEqual(isStateMachine(construct), false)
     })
-
-    function generateTestNode(displayLabel: string): ConstructNode {
-        return new ConstructNode(
-            new FakeParentNode(cdkJsonPath),
-            displayLabel,
-            vscode.TreeItemCollapsibleState.Collapsed,
-            treeUtils.generateConstructTreeEntity(displayLabel, constructTreePath)
-        )
-    }
 })
 
 export class FakeParentNode extends AWSTreeNodeBase {
