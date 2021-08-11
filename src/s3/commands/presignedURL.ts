@@ -3,6 +3,7 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
+import * as telemetry from '../../shared/telemetry/telemetry'
 import { SignedUrlRequest } from '../../shared/clients/s3Client'
 import { Env } from '../../shared/vscode/env'
 import { S3FileNode } from '../explorer/s3FileNode'
@@ -23,6 +24,7 @@ export async function presignedURLCommand(
         validTime = await promptTime(node.file.key, window)
     } catch (e) {
         getLogger().error(e)
+        telemetry.recordS3CopyUrl({ result: 'Cancelled', presigned: true })
         return
     }
 
@@ -40,10 +42,12 @@ export async function presignedURLCommand(
         url = await s3Client.getSignedUrl(request)
     } catch (e) {
         window.showErrorMessage('Error creating the presigned URL. Make sure you have access to the requested file.')
+        telemetry.recordS3CopyUrl({ result: 'Failed', presigned: true })
         return
     }
 
     await copyUrl(url, window, env)
+    telemetry.recordS3CopyUrl({ result: 'Succeeded', presigned: true })
 }
 
 export async function promptTime(fileName: string, window = Window.vscode()): Promise<number> {
