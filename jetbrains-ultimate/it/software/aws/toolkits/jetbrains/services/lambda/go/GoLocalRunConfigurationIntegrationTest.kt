@@ -10,8 +10,8 @@ import com.goide.sdk.GoSdkService
 import com.goide.sdk.GoSdkUtil
 import com.goide.vgo.VgoTestUtil
 import com.intellij.execution.executors.DefaultDebugExecutor
-import com.intellij.openapi.application.ApplicationInfo
 import com.intellij.openapi.module.WebModuleTypeBase
+import com.intellij.openapi.vfs.VirtualFile
 import com.intellij.openapi.vfs.newvfs.impl.VfsRootAccess
 import com.intellij.testFramework.PsiTestUtil
 import com.intellij.testFramework.fixtures.CodeInsightTestFixture
@@ -36,6 +36,7 @@ import software.aws.toolkits.jetbrains.utils.checkBreakPointHit
 import software.aws.toolkits.jetbrains.utils.executeRunConfigurationAndWait
 import software.aws.toolkits.jetbrains.utils.rules.HeavyGoCodeInsightTestFixtureRule
 import software.aws.toolkits.jetbrains.utils.rules.addGoModFile
+import software.aws.toolkits.jetbrains.utils.rules.runGoModTidy
 import software.aws.toolkits.jetbrains.utils.samImageRunDebugTest
 import software.aws.toolkits.jetbrains.utils.setSamExecutableFromEnvironment
 
@@ -60,6 +61,7 @@ class GoLocalRunConfigurationIntegrationTest(private val runtime: LambdaRuntime)
     private val input = RuleUtils.randomName()
     private val mockId = "MockCredsId"
     private val mockCreds = AwsBasicCredentials.create("Access", "ItsASecret")
+    private lateinit var goModFile: VirtualFile
 
     private val fileContents = """
         package main
@@ -109,7 +111,7 @@ class GoLocalRunConfigurationIntegrationTest(private val runtime: LambdaRuntime)
         val fixture = projectRule.fixture
 
         PsiTestUtil.addModule(projectRule.project, WebModuleTypeBase.getInstance(), "main", fixture.tempDirFixture.findOrCreateDir("."))
-        projectRule.fixture.addGoModFile("hello-world")
+        goModFile = projectRule.fixture.addGoModFile("hello-world").virtualFile
 
         // This block does 2 things:
         // 1. sets up vgo support which is required for sam cli
@@ -124,6 +126,7 @@ class GoLocalRunConfigurationIntegrationTest(private val runtime: LambdaRuntime)
     @Test
     fun sessionCredentialsArePassed() {
         projectRule.fixture.addLambdaFile(envVarsFileContents)
+        runGoModTidy(goModFile)
 
         val mockSessionId = "mockSessionId"
         val mockSessionCreds = AwsSessionCredentials.create("access", "secret", "session")
@@ -151,6 +154,7 @@ class GoLocalRunConfigurationIntegrationTest(private val runtime: LambdaRuntime)
     @Test
     fun samIsExecuted() {
         projectRule.fixture.addLambdaFile(envVarsFileContents)
+        runGoModTidy(goModFile)
 
         val envVars = mutableMapOf("Foo" to "Bar", "Bat" to "Baz")
 
@@ -206,6 +210,7 @@ class GoLocalRunConfigurationIntegrationTest(private val runtime: LambdaRuntime)
     @Test
     fun samIsExecutedWithDebugger() {
         projectRule.fixture.addLambdaFile(fileContents)
+        runGoModTidy(goModFile)
 
         val runConfiguration = createHandlerBasedRunConfiguration(
             project = projectRule.project,
@@ -223,8 +228,7 @@ class GoLocalRunConfigurationIntegrationTest(private val runtime: LambdaRuntime)
         val executeLambda = executeRunConfigurationAndWait(runConfiguration, DefaultDebugExecutor.EXECUTOR_ID)
 
         assertThat(executeLambda.exitCode).isEqualTo(0)
-        // TODO checking stdout doesn't work on sam cli 1.18.1
-        // assertThat(executeLambda.stdout).contains(input.toUpperCase())
+         assertThat(executeLambda.stdout).contains(input.toUpperCase())
 
         assertThat(debuggerIsHit.get()).isTrue
     }
@@ -239,6 +243,7 @@ class GoLocalRunConfigurationIntegrationTest(private val runtime: LambdaRuntime)
             GoSdkService.getInstance(projectRule.project).setSdk(GoSdk.fromHomePath(sdkDir))
         }
         projectRule.fixture.addLambdaFile(fileContents)
+        runGoModTidy(goModFile)
 
         val runConfiguration = createHandlerBasedRunConfiguration(
             project = projectRule.project,
@@ -268,8 +273,6 @@ class GoLocalRunConfigurationIntegrationTest(private val runtime: LambdaRuntime)
 
     @Test
     fun samIsExecutedWithDebuggerImage() {
-        // only run this test on > 2020.1
-        assumeFalse(ApplicationInfo.getInstance().let { info -> (info.majorVersion == "2020" && info.minorVersionMainPart == "1") })
         samImageRunDebugTest(
             projectRule = projectRule,
             relativePath = "samProjects/image/$runtime",
@@ -277,8 +280,6 @@ class GoLocalRunConfigurationIntegrationTest(private val runtime: LambdaRuntime)
             runtime = runtime,
             mockCredentialsId = mockId,
             input = input,
-            // TODO skip this for now because it doesn't work on SAM cli 1.18.1
-            expectedOutput = null,
             addBreakpoint = { projectRule.addBreakpoint() }
         )
     }
