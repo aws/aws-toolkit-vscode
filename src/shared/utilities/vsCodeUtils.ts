@@ -132,3 +132,10 @@ export async function activateExtension(
 
     return extension
 }
+
+/**
+ * Convenience function to make a Thenable into a Promise.
+ */
+export function promisifyThenable<T>(thenable: Thenable<T>): Promise<T> {
+    return new Promise((resolve, reject) => thenable.then(resolve, reject))
+}

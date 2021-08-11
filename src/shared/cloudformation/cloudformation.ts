@@ -5,7 +5,7 @@
 
 import * as path from 'path'
 import * as vscode from 'vscode'
-import { mkdirSync, writeFile } from 'fs-extra'
+import { mkdirSync, writeFile, writeFileSync } from 'fs-extra'
 import { schema } from 'yaml-cfn'
 import * as yaml from 'js-yaml'
 import * as filesystemUtilities from '../filesystemUtilities'
@@ -19,6 +19,7 @@ import { FileResourceFetcher } from '../resourcefetcher/fileResourceFetcher'
 import { CompositeResourceFetcher } from '../resourcefetcher/compositeResourceFetcher'
 import { WorkspaceConfiguration } from '../vscode/workspace'
 import { getWorkspaceRelativePath } from '../utilities/workspaceUtils'
+import { VSCODE_EXTENSION_ID } from '../extensions'
 
 export namespace CloudFormation {
     export const SERVERLESS_API_TYPE = 'AWS::Serverless::Api'
@@ -763,8 +764,8 @@ export namespace CloudFormation {
     }
 }
 
-let CFN_SCHEMA_PATH = ''
-let SAM_SCHEMA_PATH = ''
+let cfnSchemaUri: vscode.Uri
+let samSchemaUri: vscode.Uri
 const MANIFEST_URL = 'https://api.github.com/repos/awslabs/goformation/releases/latest'
 
 /**
@@ -775,8 +776,11 @@ const MANIFEST_URL = 'https://api.github.com/repos/awslabs/goformation/releases/
  * @param extensionContext
  */
 export async function refreshSchemas(extensionContext: vscode.ExtensionContext): Promise<void> {
-    CFN_SCHEMA_PATH = normalizeSeparator(path.join(extensionContext.globalStoragePath, 'cloudformation.schema.json'))
-    SAM_SCHEMA_PATH = normalizeSeparator(path.join(extensionContext.globalStoragePath, 'sam.schema.json'))
+    // Convert the paths to URIs which is what the YAML extension expects
+    cfnSchemaUri = vscode.Uri.file(
+        normalizeSeparator(path.join(extensionContext.globalStoragePath, 'cloudformation.schema.json'))
+    )
+    samSchemaUri = vscode.Uri.file(normalizeSeparator(path.join(extensionContext.globalStoragePath, 'sam.schema.json')))
     let manifest: string | undefined
     try {
         const manifestFetcher = new HttpResourceFetcher(MANIFEST_URL, { showUrl: true })
@@ -797,13 +801,13 @@ export async function refreshSchemas(extensionContext: vscode.ExtensionContext):
         const details = getManifestDetails(manifest)
 
         await getRemoteOrCachedFile({
-            filepath: CFN_SCHEMA_PATH,
+            filepath: cfnSchemaUri.fsPath,
             version: details.version,
             url: details.cfnUrl,
             cacheKey: 'cfnSchemaVersion',
         })
         await getRemoteOrCachedFile({
-            filepath: SAM_SCHEMA_PATH,
+            filepath: samSchemaUri.fsPath,
             version: details.version,
             url: details.samUrl,
             cacheKey: 'samSchemaVersion',
@@ -823,9 +827,28 @@ export async function refreshSchemas(extensionContext: vscode.ExtensionContext):
 export async function updateYamlSchemasArray(
     path: string,
     type: 'cfn' | 'sam' | 'none',
-    config: WorkspaceConfiguration = vscode.workspace.getConfiguration('yaml'),
-    paths: { cfnSchema: string; samSchema: string } = { cfnSchema: CFN_SCHEMA_PATH, samSchema: SAM_SCHEMA_PATH }
+    opts?: {
+        skipExtensionLoad?: boolean
+        config?: WorkspaceConfiguration | undefined
+        paths?: { cfnSchema: string; samSchema: string }
+    }
 ): Promise<void> {
+    const paths = opts?.paths ?? {
+        cfnSchema: cfnSchemaUri?.toString(),
+        samSchema: samSchemaUri?.toString(),
+    }
+
+    // URIs are not guaranteed to be loaded when this function is called.
+    // We should always return if they're undefined.
+    if (
+        (!opts?.skipExtensionLoad && !vscode.extensions.getExtension(VSCODE_EXTENSION_ID.yaml)) ||
+        !paths.cfnSchema ||
+        !paths.samSchema
+    ) {
+        return
+    }
+
+    const config = opts?.config ?? vscode.workspace.getConfiguration('yaml')
     const relPath = normalizeSeparator(getWorkspaceRelativePath(path) ?? path)
     const schemas: { [key: string]: string | string[] | undefined } | undefined = config.get('schemas')
     const deleteFroms: string[] = []
@@ -864,10 +887,14 @@ export async function updateYamlSchemasArray(
     // do if schemas exists or if type isn't none
     if (!(type === 'none' && !schemas)) {
         try {
-            await config.update('schemas', {
-                ...(schemas ? schemas : {}),
-                ...modifiedArrays,
-            })
+            await config.update(
+                'schemas',
+                {
+                    ...(schemas ? schemas : {}),
+                    ...modifiedArrays,
+                },
+                vscode.ConfigurationTarget.Global
+            )
         } catch (e) {
             getLogger().error('Could not write YAML schemas to configuration', e.message)
         }
@@ -916,10 +943,11 @@ export async function getRemoteOrCachedFile(params: {
         fetchers.push(
             new HttpResourceFetcher(params.url, {
                 showUrl: true,
-                pipeLocation: params.filepath,
                 // updates curr version
-                onSuccess: () =>
-                    vscode.workspace.getConfiguration(extensionSettingsPrefix).update(params.cacheKey, params.version),
+                onSuccess: contents => {
+                    writeFileSync(params.filepath, contents)
+                    vscode.workspace.getConfiguration(extensionSettingsPrefix).update(params.cacheKey, params.version)
+                },
             })
         )
     }

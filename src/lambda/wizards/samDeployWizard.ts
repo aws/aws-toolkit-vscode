@@ -238,7 +238,7 @@ export function writeSavedBucket(
 export class DefaultSamDeployWizardContext implements SamDeployWizardContext {
     public readonly getParameters = getParameters
     public readonly getOverriddenParameters = getOverriddenParameters
-    private readonly helpButton = createHelpButton(localize('AWS.command.help', 'View Toolkit Documentation'))
+    private readonly helpButton = createHelpButton()
 
     private readonly totalSteps: number = 4
     public additionalSteps: number = 0

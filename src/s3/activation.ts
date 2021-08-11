@@ -10,6 +10,7 @@ import { createFolderCommand } from './commands/createFolder'
 import { deleteBucketCommand } from './commands/deleteBucket'
 import { deleteFileCommand } from './commands/deleteFile'
 import { downloadFileAsCommand } from './commands/downloadFileAs'
+import { presignedURLCommand } from './commands/presignedURL'
 import { uploadFileCommand } from './commands/uploadFile'
 import { uploadFileToParentCommand } from './commands/uploadFileToParent'
 import { S3BucketNode } from './explorer/s3BucketNode'
@@ -26,6 +27,9 @@ export async function activate(ctx: ExtContext): Promise<void> {
     ctx.extensionContext.subscriptions.push(
         vscode.commands.registerCommand('aws.s3.copyPath', async (node: S3FolderNode | S3FileNode) => {
             await copyPathCommand(node)
+        }),
+        vscode.commands.registerCommand('aws.s3.presignedURL', async (node: S3FileNode) => {
+            await presignedURLCommand(node)
         }),
         vscode.commands.registerCommand('aws.s3.downloadFileAs', async (node: S3FileNode) => {
             await downloadFileAsCommand(node)

@@ -5,6 +5,7 @@
 
 import * as assert from 'assert'
 import { Prompter, PromptResult } from '../../../shared/ui/prompter'
+import { StepEstimator } from '../../../shared/wizards/wizard'
 
 export class SimplePrompter<T> extends Prompter<T> {
     constructor(private readonly input: T | PromptResult<T>) {
@@ -14,6 +15,7 @@ export class SimplePrompter<T> extends Prompter<T> {
         return this.input
     }
     public setSteps(current: number, total: number): void {}
+    public setStepEstimator(estimator: StepEstimator<T>): void {}
     public set lastResponse(response: any) {}
     public get lastResponse(): any {
         return undefined
@@ -37,13 +39,15 @@ describe('Prompter', function () {
         await assert.rejects(prompter.prompt())
     })
 
-    it('can attach multiple callbacks', async function () {
+    it('can attach multiple transformations', async function () {
         const prompter = new SimplePrompter(1)
-        prompter.after(resp => resp * 2)
-        prompter.after(resp => resp + 2)
-        prompter.after(resp => resp * 2)
-        prompter.after(resp => resp - 2)
-        prompter.transform(resp => resp.toString()).after(resp => `result: ${resp}`)
+        prompter
+            .transform(resp => resp * 2)
+            .transform(resp => resp + 2)
+            .transform(resp => resp * 2)
+            .transform(resp => resp - 2)
+            .transform(resp => resp.toString())
+            .transform(resp => `result: ${resp}`)
         assert.strictEqual(await prompter.prompt(), 'result: 6')
     })
 })

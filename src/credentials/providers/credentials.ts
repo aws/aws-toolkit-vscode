@@ -76,8 +76,9 @@ export const credentialsProviderType = ['profile', 'ec2', 'ecs', 'env'] as const
 export function credentialsProviderToTelemetryType(o: CredentialsProviderType): telemetry.CredentialSourceId {
     switch (o) {
         case 'ec2':
-        case 'ecs':
             return 'ec2'
+        case 'ecs':
+            return 'ecs'
         case 'env':
             return 'envVars'
         case 'profile':

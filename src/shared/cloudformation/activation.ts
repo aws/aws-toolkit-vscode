@@ -14,7 +14,7 @@ import { NoopWatcher } from '../watchedFiles'
 import { refreshSchemas } from './cloudformation'
 import { VSCODE_EXTENSION_ID } from '../extensions'
 
-export const TEMPLATE_FILE_GLOB_PATTERN = '**/template.{yaml,yml}'
+export const TEMPLATE_FILE_GLOB_PATTERN = '**/*.{yaml,yml}'
 
 /**
  * Match any file path that contains a .aws-sam folder. The way this works is:
@@ -33,9 +33,7 @@ export const TEMPLATE_FILE_EXCLUDE_PATTERN = /.*[/\\]\.aws-sam([/\\].*|$)/
 export async function activate(extensionContext: vscode.ExtensionContext): Promise<void> {
     refreshSchemas(extensionContext)
     // Note: redhat.vscode-yaml no longer works on vscode 1.42
-    if (await activateExtension(VSCODE_EXTENSION_ID.yaml)) {
-        addCustomTags()
-    }
+    activateExtension(VSCODE_EXTENSION_ID.yaml).then(addCustomTags)
 
     try {
         const registry = new CloudFormationTemplateRegistry()
@@ -60,12 +58,22 @@ export async function activate(extensionContext: vscode.ExtensionContext): Promi
 }
 
 /**
- * Adds custom tags to the YAML extension's settings in order to hide error notifications for intrinsic functions if a user has the YAML extension.
- * Lifted near-verbatim from cfn-lint's VS Code extension; writes to workspace instead of global.
+ * Adds custom tags to the YAML extension's settings in order to hide error
+ * notifications for SAM/CFN intrinsic functions if a user has the YAML extension.
+ *
+ * Lifted near-verbatim from the cfn-lint VSCode extension.
  * https://github.com/aws-cloudformation/cfn-lint-visual-studio-code/blob/629de0bac4f36cfc6534e409a6f6766a2240992f/client/src/extension.ts#L56
  */
 function addCustomTags(): void {
-    const currentTags = vscode.workspace.getConfiguration().get<string[]>('yaml.customTags') ?? []
+    const settingName = 'yaml.customTags'
+    const currentTags = vscode.workspace.getConfiguration().get<string[]>(settingName) ?? []
+    if (!Array.isArray(currentTags)) {
+        getLogger().error(
+            'setting "%s" is not an array. SAM/CFN intrinsic functions will not be recognized.',
+            settingName
+        )
+        return
+    }
     const cloudFormationTags = [
         '!And',
         '!And sequence',
@@ -95,6 +103,9 @@ function addCustomTags(): void {
         '!Split',
         '!Split sequence',
     ]
-    const updateTags = currentTags.concat(cloudFormationTags.filter(item => currentTags.indexOf(item) < 0))
-    vscode.workspace.getConfiguration().update('yaml.customTags', updateTags, vscode.ConfigurationTarget.Workspace)
+    const missingTags = cloudFormationTags.filter(item => !currentTags.includes(item))
+    if (missingTags.length > 0) {
+        const updateTags = currentTags.concat(missingTags)
+        vscode.workspace.getConfiguration().update('yaml.customTags', updateTags, vscode.ConfigurationTarget.Global)
+    }
 }
