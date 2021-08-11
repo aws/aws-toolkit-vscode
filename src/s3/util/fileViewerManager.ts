@@ -50,17 +50,18 @@ export class S3FileViewerManager {
         private activeTabs: Map<string, S3Tab> = new Map<string, S3Tab>()
     ) {
         this.outputChannel = ext.outputChannel
-
+        let ongoingUpload = false
         vscode.workspace.onDidSaveTextDocument(async savedTextDoc => {
+            if (ongoingUpload) {
+                return
+            }
+            ongoingUpload = true
             if (this.activeTabs.has(savedTextDoc.uri.fsPath)) {
                 const activeTab = this.activeTabs.get(savedTextDoc.uri.fsPath)!
                 let upload = true
 
                 if (!(await this.isValidFile(activeTab.s3FileNode, activeTab.fileUri))) {
-                    const cancelUpload = localize(
-                        'AWS.s3.fileViewer.button.cancelUpload',
-                        'Cancel, and redownload file'
-                    )
+                    const cancelUpload = localize('AWS.s3.fileViewer.button.cancelUpload', 'Cancel download')
                     const overwrite = localize('AWS.s3.fileViewer.button.overwrite', 'Overwrite')
 
                     const response = await window.showErrorMessage(
@@ -76,23 +77,22 @@ export class S3FileViewerManager {
                     }
                 }
 
+                const fileNode = await this.refreshNode(activeTab.s3FileNode)
+
+                await this.focusAndCloseTab(activeTab.fileUri, activeTab.editor)
+                activeTab.editor = undefined
+                await this.openInReadMode(fileNode)
+                this._onDidChange.fire(activeTab.s3Uri)
+
                 if (upload) {
                     if (!(await this.uploadChangesToS3(activeTab))) {
                         this.window.showErrorMessage(
                             'Error uploading file to S3. Changes were not saved back to S3. Please try and resave this edit mode file'
                         )
-                        return
                     }
                 }
 
-                //refresh the activeTab.s3FileNode?
-                const fileNode = await this.refreshNode(activeTab.s3FileNode)
-                if (!fileNode) {
-                    return
-                }
-                await this.removeAndCloseTab(activeTab)
-                await this.openInReadMode(fileNode)
-                this._onDidChange.fire(activeTab.s3Uri)
+                ongoingUpload = false
             }
         })
     }
@@ -108,30 +108,6 @@ export class S3FileViewerManager {
             viewColumn: editor?.viewColumn,
         })
         await vscode.commands.executeCommand('workbench.action.closeActiveEditor')
-    }
-
-    public async getCharset(fileNode: S3FileNode): Promise<string> {
-        let headResponse
-        try {
-            headResponse = await fileNode.s3.getHeadObject({
-                bucketName: fileNode.bucket.name,
-                key: fileNode.file.key,
-            })
-        } catch (e) {
-            getLogger().error('S3FileViewer: Error calling getHeadObject, error: ', e)
-        }
-
-        let type
-        let charset
-        if (headResponse) {
-            type = mime.contentType(headResponse.ContentType!)
-            charset = mime.charset(type as string)
-        } else {
-            type = ''
-            charset = ''
-        }
-
-        return charset ? charset : ''
     }
 
     /**
@@ -154,7 +130,7 @@ export class S3FileViewerManager {
             this.outputChannel
         )
 
-        const charset = await this.getCharset(fileNode)
+        const charset = await fileNode.s3.getCharset({ key: fileNode.file.key, bucketName: fileNode.bucket.name })
 
         const fileLocation = await this.getFile(fileNode)
         if (!fileLocation) {
@@ -182,13 +158,13 @@ export class S3FileViewerManager {
             tab =
                 this.activeTabs.get(pathToPreview) ??
                 ({ fileUri: fileLocation, s3Uri, editor: undefined, s3FileNode: fileNode } as S3Tab)
-            await this.openFile(tab, tab.s3Uri, true)
+            await this.openTextFile(tab, tab.s3Uri, true)
             this.toPreview = undefined
         } else {
             tab =
                 this.activeTabs.get(fileLocation.fsPath) ??
                 ({ fileUri: fileLocation, s3Uri, editor: undefined, s3FileNode: fileNode } as S3Tab)
-            await this.openFile(tab, tab.s3Uri, false)
+            await this.openTextFile(tab, tab.s3Uri, false)
         }
 
         this.activeTabs.set(fileLocation.fsPath, tab)
@@ -240,7 +216,7 @@ export class S3FileViewerManager {
                     }
                 }
 
-                await this.openFile(tab!, tab!.fileUri, false)
+                await this.openTextFile(tab!, tab!.fileUri, false)
 
                 this.activeTabs.set(uriOrNode.fsPath, tab!)
             } else {
@@ -254,7 +230,7 @@ export class S3FileViewerManager {
         } else {
             //was activated from the explorer, need to get the file
             const fileNode = uriOrNode
-            const charset = await this.getCharset(fileNode)
+            const charset = await fileNode.s3.getCharset({ key: fileNode.file.key, bucketName: fileNode.bucket.name })
 
             const fileLocation = await this.getFile(uriOrNode)
             if (!fileLocation) {
@@ -267,16 +243,11 @@ export class S3FileViewerManager {
                 tab = { fileUri: fileLocation, s3Uri, editor: undefined, s3FileNode: uriOrNode } as S3Tab
             }
 
-            // Can't open images, etc. in VS Code through `openTextDocument`.
-            // HACK: Routing opening to VS Code's open functionality, will use VS Code's built-in file handling
+            //If not UTF-8 (text file), differ to vscode's open functionality
             if (charset != 'UTF-8') {
-                showOutputMessage(
-                    'Opening non-text file, please press enter on quickpick to continue.',
-                    this.outputChannel
-                )
                 tab.editor = await vscode.commands.executeCommand('vscode.open', tab.fileUri, { preview: false })
             } else {
-                tab.editor = await this.openFile(tab, tab.fileUri, false)
+                tab.editor = await this.openTextFile(tab, tab.fileUri, false)
             }
 
             this.activeTabs.set(tab.fileUri.fsPath, tab)
@@ -292,7 +263,7 @@ export class S3FileViewerManager {
      * @param workspace
      * @returns
      */
-    public async openFile(
+    public async openTextFile(
         tab: S3Tab,
         uri: vscode.Uri,
         preview: boolean,
@@ -496,20 +467,6 @@ export class S3FileViewerManager {
         })
 
         return fileNode
-    }
-
-    private async removeAndCloseTab(activeTab: S3Tab): Promise<void> {
-        let fileNode: S3FileNode | undefined = activeTab.s3FileNode
-        fileNode = await this.refreshNode(fileNode)
-
-        this.activeTabs.delete(activeTab.fileUri.fsPath)
-        this.cacheArns.delete(fileNode.arn)
-        await this.focusAndCloseTab(activeTab.fileUri)
-        try {
-            fs.unlinkSync(await this.createTargetPath(fileNode))
-        } catch (e) {
-            getLogger().error(`S3FileViewer: Error removing file ${activeTab.fileUri.fsPath} from cache: ${e}`)
-        }
     }
 
     public async createTemp(): Promise<string> {

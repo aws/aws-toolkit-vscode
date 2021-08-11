@@ -93,6 +93,11 @@ export interface HeadObjectRequest {
     readonly key: string
 }
 
+export interface CharsetRequest {
+    readonly key: string
+    readonly bucketName: string
+}
+
 export interface ListObjectVersionsRequest {
     readonly bucketName: string
     readonly continuationToken?: ContinuationToken
@@ -291,6 +296,24 @@ export class DefaultS3Client {
             getLogger().error('Failed to retrieve bucket header %s: %O', request.bucketName, e)
             throw e
         }
+    }
+
+    public async getCharset(request: CharsetRequest): Promise<string> {
+        let headResponse
+        try {
+            headResponse = await this.getHeadObject({
+                bucketName: request.bucketName,
+                key: request.key,
+            })
+        } catch (e) {
+            getLogger().error('S3FileViewer: Error calling getHeadObject, error: ', e)
+            return ''
+        }
+
+        const type = mime.contentType(headResponse.ContentType!)
+        const charset = mime.charset(type.toString())
+
+        return charset ? charset : ''
     }
 
     /**

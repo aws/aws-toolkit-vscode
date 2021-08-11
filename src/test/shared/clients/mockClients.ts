@@ -38,6 +38,7 @@ import {
     DeleteObjectsResponse,
     HeadObjectRequest,
     SignedUrlRequest,
+    CharsetRequest,
 } from '../../../shared/clients/s3Client'
 
 interface Clients {
@@ -486,6 +487,7 @@ export class MockS3Client implements S3Client {
     public readonly createFolder: (request: CreateFolderRequest) => Promise<CreateFolderResponse>
     public readonly downloadFile: (request: DownloadFileRequest) => Promise<void>
     public readonly getHeadObject: (request: HeadObjectRequest) => Promise<S3.HeadObjectOutput>
+    public readonly getCharset: (request: CharsetRequest) => Promise<string>
     public readonly uploadFile: (request: UploadFileRequest) => Promise<void>
     public readonly listObjectVersions: (request: ListObjectVersionsRequest) => Promise<ListObjectVersionsResponse>
     public readonly listObjectVersionsIterable: (
@@ -505,6 +507,7 @@ export class MockS3Client implements S3Client {
         createFolder = async (request: CreateFolderRequest) => ({ folder: { name: '', path: '', arn: '' } }),
         downloadFile = async (request: DownloadFileRequest) => {},
         getHeadObject = async (request: HeadObjectRequest) => ({}),
+        getCharset = async (request: CharsetRequest) => '',
         getSignedUrl = async (request: SignedUrlRequest) => '',
         uploadFile = async (request: UploadFileRequest) => {},
         listObjectVersions = async (request: ListObjectVersionsRequest) => ({ objects: [] }),
@@ -521,6 +524,7 @@ export class MockS3Client implements S3Client {
         createFolder?(request: CreateFolderRequest): Promise<CreateFolderResponse>
         downloadFile?(request: DownloadFileRequest): Promise<void>
         getHeadObject?(request: HeadObjectRequest): Promise<S3.HeadObjectOutput>
+        getCharset?(request: CharsetRequest): Promise<string>
         getSignedUrl?(request: SignedUrlRequest): Promise<string>
         uploadFile?(request: UploadFileRequest): Promise<void>
         listObjectVersions?(request: ListObjectVersionsRequest): Promise<ListObjectVersionsResponse>
@@ -539,6 +543,7 @@ export class MockS3Client implements S3Client {
         this.createFolder = createFolder
         this.downloadFile = downloadFile
         this.getHeadObject = getHeadObject
+        this.getCharset = getCharset
         this.getSignedUrl = getSignedUrl
         this.uploadFile = uploadFile
         this.listObjectVersions = listObjectVersions
