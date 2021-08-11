@@ -3,6 +3,7 @@
 
 package software.aws.toolkits.jetbrains.settings
 
+import com.intellij.openapi.Disposable
 import com.intellij.openapi.options.BoundConfigurable
 import com.intellij.openapi.project.ProjectManager
 import com.intellij.ui.CheckBoxList
@@ -19,8 +20,8 @@ import javax.swing.DefaultListModel
 import javax.swing.JCheckBox
 import javax.swing.ListSelectionModel
 
-class DynamicResourcesConfigurable : BoundConfigurable(message("aws.settings.dynamic_resources_configurable.title")) {
-    private val coroutineScope = ApplicationThreadPoolScope("DynamicResourcesConfigurable")
+class DynamicResourcesConfigurable : BoundConfigurable(message("aws.settings.dynamic_resources_configurable.title")), Disposable {
+    private val coroutineScope = ApplicationThreadPoolScope("DynamicResourcesConfigurable", this)
     private val checklistModel = DefaultListModel<JCheckBox>()
     private val checklist = CheckBoxList<String>(checklistModel)
     private val changeSet = mutableSetOf<Int>()
@@ -136,4 +137,6 @@ class DynamicResourcesConfigurable : BoundConfigurable(message("aws.settings.dyn
             this.map(fn)
         }
     }
+
+    override fun dispose() {}
 }
