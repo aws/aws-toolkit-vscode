@@ -223,7 +223,7 @@ export async function uploadFileCommand(
                 uploadRequests.length
             ),
             tryAgain,
-            continueButton
+            skipButton
         )
 
         if (response === 'Try again') {
