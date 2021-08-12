@@ -10,7 +10,10 @@ import com.goide.sdk.GoSdk
 import com.goide.sdk.GoSdkImpl
 import com.intellij.execution.configurations.GeneralCommandLine
 import com.intellij.execution.util.ExecUtil
+import com.intellij.openapi.Disposable
+import com.intellij.openapi.application.ApplicationInfo
 import com.intellij.openapi.projectRoots.Sdk
+import com.intellij.openapi.util.Disposer
 import com.intellij.openapi.vfs.VirtualFile
 import com.intellij.psi.PsiElement
 import com.intellij.psi.PsiFile
@@ -97,6 +100,51 @@ fun runGoModTidy(goModFile: VirtualFile) {
     if (output.exitCode != 0) {
         throw IllegalStateException("'go mod tidy' did not return 0: ${output.stderr}")
     }
+}
+
+fun CodeInsightTestFixture.ensureCorrectGoVersion(disposable: Disposable) {
+    val versionCmd = GeneralCommandLine("goenv").withParameters("--version")
+    if (ExecUtil.execAndGetOutput(versionCmd).exitCode != 0) {
+        println("WARNING: goenv not found, can't switch Go SDK!!!!")
+        return
+    }
+
+    val goVersionOverride = when (ApplicationInfo.getInstance().build.baselineVersion) {
+        202 -> "1.14.15" // TODO: FIX_WHEN_MIN_IS_202
+        203 -> "1.15.14" // TODO: FIX_WHEN_MIN_IS_203
+        else -> null
+    }
+
+    goVersionOverride?.let {
+        val overrideLocation = this.tempDirPath
+
+        installGoSdk(overrideLocation, it)
+        switchGoSdk(overrideLocation, it)
+
+        Disposer.register(disposable) {
+            removeGoOverride(overrideLocation)
+        }
+    }
+}
+
+private fun installGoSdk(overrideLocation: String, version: String) {
+    println("Installing Go version $version")
+    GeneralCommandLine("goenv").withParameters("install", version, "--skip-existing").withWorkDirectory(overrideLocation).runAndValidateCommand()
+}
+
+private fun switchGoSdk(overrideLocation: String, version: String) {
+    println("Switching to Go version $version")
+    GeneralCommandLine("goenv").withParameters("local", version).withWorkDirectory(overrideLocation).runAndValidateCommand()
+}
+
+private fun removeGoOverride(overrideLocation: String) {
+    println("Removing Go override")
+    GeneralCommandLine("goenv").withParameters("local", "--unset").withWorkDirectory(overrideLocation).runAndValidateCommand()
+}
+
+private fun GeneralCommandLine.runAndValidateCommand() {
+    val output = ExecUtil.execAndGetOutput(this)
+    check(output.exitCode == 0) { "${this.commandLineString} failed!\n ${output.stderr}" }
 }
 
 fun createMockSdk(root: String, version: String): GoSdk = GoSdkImpl(root, version, null)
