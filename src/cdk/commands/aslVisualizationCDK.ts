@@ -3,7 +3,6 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
-import { localize } from '../../../src/shared/utilities/vsCodeUtils'
 import * as vscode from 'vscode'
 import { AslVisualization } from '../../../src/stepFunctions/commands/visualizeStateMachine/aslVisualization'
 import { getStateMachineDefinitionFromCfnTemplate, toUnescapedAslJsonString } from '../../stepFunctions/commands/visualizeStateMachine/getStateMachineDefinitionFromCfnTemplate'
@@ -21,11 +20,12 @@ export class AslVisualizationCDK extends AslVisualization {
     }
 
     protected getText(textDocument: vscode.TextDocument): string {
+        this.updateWebviewTitle()
         const definitionString = getStateMachineDefinitionFromCfnTemplate(this.stateMachineName, this.templatePath)
         return toUnescapedAslJsonString(definitionString ? definitionString : '')
     }
 
-    // protected makeWebviewTitle(sourceDocumentUri: vscode.Uri): string {
-    //     return localize('AWS.stepFunctions.graph.titlePrefix', 'Graph: {0}', this.stateMachineName)
-    // }
+    protected updateWebviewTitle() {
+        this.getPanel()!.title = this.stateMachineName
+    }
 }

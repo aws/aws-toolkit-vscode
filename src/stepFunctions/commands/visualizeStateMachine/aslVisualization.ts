@@ -100,7 +100,7 @@ export class AslVisualization {
         })
     }
 
-    protected getText(textDocument: vscode.TextDocument): string{
+    protected getText(textDocument: vscode.TextDocument): string {
         return textDocument.getText()
     }
 
@@ -217,7 +217,7 @@ export class AslVisualization {
     private createVisualizationWebviewPanel(documentUri: vscode.Uri): vscode.WebviewPanel {
         return vscode.window.createWebviewPanel(
             'stateMachineVisualization',
-            this.makeWebviewTitle(documentUri),
+            localize('AWS.stepFunctions.graph.titlePrefix', 'Graph: {0}', path.basename(documentUri.fsPath)),
             {
                 preserveFocus: true,
                 viewColumn: vscode.ViewColumn.Beside,
@@ -232,14 +232,6 @@ export class AslVisualization {
                 retainContextWhenHidden: true,
             }
         )
-    }
-
-    protected makeWebviewTitle(sourceDocumentUri: vscode.Uri | string): string {
-        //for aslVisualizationCDK
-        if(typeof sourceDocumentUri === 'string') {
-            return sourceDocumentUri
-        }
-        return localize('AWS.stepFunctions.graph.titlePrefix', 'Graph: {0}', path.basename(sourceDocumentUri.fsPath))
     }
 
     private getWebviewContent(
