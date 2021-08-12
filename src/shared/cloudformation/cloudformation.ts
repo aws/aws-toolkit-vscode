@@ -5,7 +5,7 @@
 
 import * as path from 'path'
 import * as vscode from 'vscode'
-import { mkdirSync, writeFile } from 'fs-extra'
+import { mkdirSync, writeFile, writeFileSync } from 'fs-extra'
 import { schema } from 'yaml-cfn'
 import * as yaml from 'js-yaml'
 import * as filesystemUtilities from '../filesystemUtilities'
@@ -943,10 +943,11 @@ export async function getRemoteOrCachedFile(params: {
         fetchers.push(
             new HttpResourceFetcher(params.url, {
                 showUrl: true,
-                pipeLocation: params.filepath,
                 // updates curr version
-                onSuccess: () =>
-                    vscode.workspace.getConfiguration(extensionSettingsPrefix).update(params.cacheKey, params.version),
+                onSuccess: contents => {
+                    writeFileSync(params.filepath, contents)
+                    vscode.workspace.getConfiguration(extensionSettingsPrefix).update(params.cacheKey, params.version)
+                },
             })
         )
     }
