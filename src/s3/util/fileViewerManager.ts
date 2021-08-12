@@ -78,10 +78,8 @@ export class S3FileViewerManager {
                 }
 
                 if (upload) {
-                    if (!(await activeTab.uploadChangesToS3())) {
-                        this.window.showErrorMessage(
-                            'Error uploading file to S3.'
-                        )
+                    if (!(await this.uploadChangesToS3(activeTab))) {
+                        this.window.showErrorMessage('Error uploading file to S3.')
                         return
                     }
                 }
