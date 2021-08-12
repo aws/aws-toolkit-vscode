@@ -1,0 +1,4 @@
+{
+    "nodes": [{ "name": "HelloWorldFunction", "type": "AWS::Serverless::Function" }],
+    "links": []
+}
