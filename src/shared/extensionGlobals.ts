@@ -4,6 +4,7 @@
  */
 
 import { ExtensionContext, OutputChannel, Uri } from 'vscode'
+import { AwsExplorer } from '../awsexplorer/awsExplorer'
 import { S3FileViewerManager } from '../s3/util/fileViewerManager'
 import { AWSClientBuilder } from './awsClientBuilder'
 import { AWSContextCommands } from './awsContextCommands'
@@ -22,6 +23,7 @@ export namespace ext {
     export let window: Window
     export let outputChannel: OutputChannel
     export let awsContextCommands: AWSContextCommands
+    export let awsExplorer: AwsExplorer
     export let sdkClientBuilder: AWSClientBuilder
     export let toolkitClientBuilder: ToolkitClientBuilder
     export let telemetry: TelemetryService
@@ -71,6 +73,7 @@ export namespace ext {
 }
 
 export interface IconPaths {
+    apprunner: string
     statemachine: string
     help: string
     cloudFormation: string
@@ -102,6 +105,7 @@ function makeIconPathsObject(): IconPaths {
         folder: '',
         file: '',
         schema: '',
+        apprunner: '',
         statemachine: '',
         cloudWatchLogGroup: '',
         bucket: '',
