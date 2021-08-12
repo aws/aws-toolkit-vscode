@@ -4,6 +4,7 @@
  */
 
 import * as vscode from 'vscode'
+import * as AWS from '@aws-sdk/types'
 
 export interface AwsContextCredentials {
     readonly credentials: AWS.Credentials

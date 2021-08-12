@@ -3,7 +3,16 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
-import * as AWS from 'aws-sdk'
+import * as AWS from '@aws-sdk/types'
+import { AssumeRoleParams, fromIni } from '@aws-sdk/credential-provider-ini'
+import { fromProcess } from '@aws-sdk/credential-provider-process'
+import { ParsedIniData, SharedConfigFiles } from '@aws-sdk/shared-ini-file-loader'
+import { SSO } from '@aws-sdk/client-sso'
+import { SSOOIDC } from '@aws-sdk/client-sso-oidc'
+import { chain } from '@aws-sdk/property-provider'
+import { fromInstanceMetadata, fromContainerMetadata } from '@aws-sdk/credential-provider-imds'
+import { fromEnv } from '@aws-sdk/credential-provider-env'
+
 import { Profile } from '../../shared/credentials/credentialsFile'
 import { getLogger } from '../../shared/logger'
 import { getStringHash } from '../../shared/utilities/textUtilities'
@@ -12,10 +21,10 @@ import { hasProfileProperty, resolveProviderWithCancel } from '../credentialsUti
 import { SSO_PROFILE_PROPERTIES, validateSsoProfile } from '../sso/sso'
 import { DiskCache } from '../sso/diskCache'
 import { SsoAccessTokenProvider } from '../sso/ssoAccessTokenProvider'
-import { CredentialsProvider, CredentialsProviderType ,CredentialsId } from './credentials'
+import { CredentialsProvider, CredentialsProviderType, CredentialsId } from './credentials'
 import { SsoCredentialProvider } from './ssoCredentialProvider'
 import { CredentialType } from '../../shared/telemetry/telemetry.gen'
-import { EnvVarsCredentialsProvider } from './envVarsCredentialsProvider'
+import { ext } from '../../shared/extensionGlobals'
 
 const SHARED_CREDENTIAL_PROPERTIES = {
     AWS_ACCESS_KEY_ID: 'aws_access_key_id',
@@ -36,7 +45,7 @@ const SHARED_CREDENTIAL_PROPERTIES = {
 const CREDENTIAL_SOURCES = {
     ECS_CONTAINER: 'EcsContainer',
     EC2_INSTANCE_METADATA: 'Ec2InstanceMetadata',
-    ENVIRONMENT: 'Environment'
+    ENVIRONMENT: 'Environment',
 }
 
 /**
@@ -141,27 +150,55 @@ export class SharedCredentialsProvider implements CredentialsProvider {
         return undefined
     }
 
-    public async getCredentials(): Promise<AWS.Credentials> {
-        // Profiles with references involving non-aws partitions need help getting the right STS endpoint
-        // when resolving SharedIniFileCredentials. We set the global sts configuration with a suitable region
-        // only to perform the resolve, then reset it.
-        // This hack can be removed when https://github.com/aws/aws-sdk-js/issues/3088 is addressed.
-        const originalStsConfiguration = AWS.config.sts
+    /**
+     * Patches 'source_profile' credentials as static representations, which the SDK can handle in all cases.
+     *
+     * The SDK is unable to resolve `source_profile` fields when the source profile uses SSO/MFA/credential_process.
+     * We can handle this resolution ourselves, giving the SDK the resolved credentials by 'pre-loading' them.
+     */
+    private async patchSourceCredentials(): Promise<ParsedIniData> {
+        const loadedCreds: ParsedIniData = {}
 
-        try {
-            // Profiles with references involving non-aws partitions need help getting the right STS endpoint
-            this.applyProfileRegionToGlobalStsConfig()
-            //  SSO entry point
-            if (this.isSsoProfile()) {
-                const ssoCredentialProvider = this.makeSsoProvider()
-                return await ssoCredentialProvider.refreshCredentials()
+        if (hasProfileProperty(this.profile, SHARED_CREDENTIAL_PROPERTIES.SOURCE_PROFILE)) {
+            const source = new SharedCredentialsProvider(
+                this.profile[SHARED_CREDENTIAL_PROPERTIES.SOURCE_PROFILE]!,
+                this.allSharedCredentialProfiles
+            )
+            const creds = await source.getCredentials()
+            loadedCreds[this.profile[SHARED_CREDENTIAL_PROPERTIES.SOURCE_PROFILE]!] = {
+                [SHARED_CREDENTIAL_PROPERTIES.AWS_ACCESS_KEY_ID]: creds.accessKeyId,
+                [SHARED_CREDENTIAL_PROPERTIES.AWS_SECRET_ACCESS_KEY]: creds.secretAccessKey,
+                [SHARED_CREDENTIAL_PROPERTIES.AWS_SESSION_TOKEN]: creds.sessionToken,
             }
-            const provider = new AWS.CredentialProviderChain([this.makeCredentialsProvider()])
-            return await resolveProviderWithCancel(this.profileName, provider.resolvePromise())
-        } finally {
-            // Profiles with references involving non-aws partitions need help getting the right STS endpoint
-            AWS.config.sts = originalStsConfiguration
+            loadedCreds[this.profileName] = {
+                [SHARED_CREDENTIAL_PROPERTIES.MFA_SERIAL]: source.profile[SHARED_CREDENTIAL_PROPERTIES.MFA_SERIAL],
+            }
         }
+
+        loadedCreds[this.profileName] = {
+            ...loadedCreds[this.profileName],
+            ...this.profile,
+        }
+
+        return loadedCreds
+    }
+
+    public async getCredentials(): Promise<AWS.Credentials> {
+        const validationMessage = this.validate()
+        if (validationMessage) {
+            throw new Error(`Profile ${this.profileName} is not a valid Credential Profile: ${validationMessage}`)
+        }
+
+        const loadedCreds: ParsedIniData = await this.patchSourceCredentials()
+
+        //  SSO entry point
+        if (this.isSsoProfile()) {
+            const ssoCredentialProvider = this.makeSsoProvider()
+            return await ssoCredentialProvider.refreshCredentials()
+        }
+
+        const provider = chain(this.makeCredentialsProvider(loadedCreds))
+        return await resolveProviderWithCancel(this.profileName, provider())
     }
 
     private getMissingProperties(propertyNames: string[]): string[] {
@@ -212,7 +249,7 @@ export class SharedCredentialsProvider implements CredentialsProvider {
         }
     }
 
-    private makeCredentialsProvider(): () => AWS.Credentials {
+    private makeCredentialsProvider(loadedCreds: ParsedIniData): AWS.CredentialProvider {
         const logger = getLogger()
 
         if (hasProfileProperty(this.profile, SHARED_CREDENTIAL_PROPERTIES.CREDENTIAL_SOURCE)) {
@@ -227,7 +264,7 @@ export class SharedCredentialsProvider implements CredentialsProvider {
                 `Profile ${this.profileName} contains ${SHARED_CREDENTIAL_PROPERTIES.ROLE_ARN} - treating as regular Shared Credentials`
             )
 
-            return this.makeSharedIniFileCredentialsProvider()
+            return this.makeSharedIniFileCredentialsProvider(loadedCreds)
         }
 
         if (hasProfileProperty(this.profile, SHARED_CREDENTIAL_PROPERTIES.CREDENTIAL_PROCESS)) {
@@ -235,7 +272,7 @@ export class SharedCredentialsProvider implements CredentialsProvider {
                 `Profile ${this.profileName} contains ${SHARED_CREDENTIAL_PROPERTIES.CREDENTIAL_PROCESS} - treating as Process Credentials`
             )
 
-            return () => new AWS.ProcessCredentials({ profile: this.profileName })
+            return fromProcess({ profile: this.profileName })
         }
 
         if (hasProfileProperty(this.profile, SHARED_CREDENTIAL_PROPERTIES.AWS_SESSION_TOKEN)) {
@@ -243,7 +280,7 @@ export class SharedCredentialsProvider implements CredentialsProvider {
                 `Profile ${this.profileName} contains ${SHARED_CREDENTIAL_PROPERTIES.AWS_SESSION_TOKEN} - treating as regular Shared Credentials`
             )
 
-            return this.makeSharedIniFileCredentialsProvider()
+            return this.makeSharedIniFileCredentialsProvider(loadedCreds)
         }
 
         if (hasProfileProperty(this.profile, SHARED_CREDENTIAL_PROPERTIES.AWS_ACCESS_KEY_ID)) {
@@ -251,33 +288,48 @@ export class SharedCredentialsProvider implements CredentialsProvider {
                 `Profile ${this.profileName} contains ${SHARED_CREDENTIAL_PROPERTIES.AWS_ACCESS_KEY_ID} - treating as regular Shared Credentials`
             )
 
-            return this.makeSharedIniFileCredentialsProvider()
+            return this.makeSharedIniFileCredentialsProvider(loadedCreds)
         }
 
         logger.error(`Profile ${this.profileName} did not contain any supported properties`)
         throw new Error(`Shared Credentials profile ${this.profileName} is not supported`)
     }
 
-    private makeSharedIniFileCredentialsProvider(): () => AWS.Credentials {
-        return () =>
-            new AWS.SharedIniFileCredentials({
-                profile: this.profileName,
-                tokenCodeFn: async (mfaSerial, callback) =>
-                    await getMfaTokenFromUser(mfaSerial, this.profileName, callback),
-            })
+    private makeSharedIniFileCredentialsProvider(loadedCreds: ParsedIniData): AWS.CredentialProvider {
+        const assumeRole = async (credentials: AWS.Credentials, params: AssumeRoleParams) => {
+            const region = this.getDefaultRegion() ?? 'us-east-1'
+            const stsClient = ext.toolkitClientBuilder.createStsClient(region, { credentials })
+            const response = await stsClient.assumeRole(params)
+            return {
+                accessKeyId: response.Credentials!.AccessKeyId!,
+                secretAccessKey: response.Credentials!.SecretAccessKey!,
+                sessionToken: response.Credentials?.SessionToken,
+                expiration: response.Credentials?.Expiration,
+            }
+        }
+
+        return fromIni({
+            profile: this.profileName,
+            mfaCodeProvider: async mfaSerial => await getMfaTokenFromUser(mfaSerial, this.profileName),
+            roleAssumer: assumeRole,
+            loadedConfig: Promise.resolve({
+                credentialsFile: loadedCreds,
+                configFile: {},
+            } as SharedConfigFiles),
+        })
     }
 
-    private makeSourcedCredentialsProvider(): () => AWS.Credentials {
-        return () => {
-            if (this.isCredentialSource(CREDENTIAL_SOURCES.EC2_INSTANCE_METADATA)) {
-                return new AWS.EC2MetadataCredentials()
-            } else if (this.isCredentialSource(CREDENTIAL_SOURCES.ECS_CONTAINER)) {
-                return new AWS.ECSCredentials()
-            } else if (this.isCredentialSource(CREDENTIAL_SOURCES.ENVIRONMENT)) {
-                return new AWS.EnvironmentCredentials(EnvVarsCredentialsProvider.AWS_ENV_VAR_PREFIX)
-            }
-            throw new Error(`Credential source ${this.profile[SHARED_CREDENTIAL_PROPERTIES.CREDENTIAL_SOURCE]} is not supported`)
+    private makeSourcedCredentialsProvider(): AWS.CredentialProvider {
+        if (this.isCredentialSource(CREDENTIAL_SOURCES.EC2_INSTANCE_METADATA)) {
+            return fromInstanceMetadata()
+        } else if (this.isCredentialSource(CREDENTIAL_SOURCES.ECS_CONTAINER)) {
+            return fromContainerMetadata()
+        } else if (this.isCredentialSource(CREDENTIAL_SOURCES.ENVIRONMENT)) {
+            return fromEnv()
         }
+        throw new Error(
+            `Credential source ${this.profile[SHARED_CREDENTIAL_PROPERTIES.CREDENTIAL_SOURCE]} is not supported`
+        )
     }
 
     private makeSsoProvider() {
@@ -285,22 +337,14 @@ export class SharedCredentialsProvider implements CredentialsProvider {
         const ssoRegion = this.profile[SHARED_CREDENTIAL_PROPERTIES.SSO_REGION]!
         const ssoUrl = this.profile[SHARED_CREDENTIAL_PROPERTIES.SSO_START_URL]!
 
-        const ssoOidcClient = new AWS.SSOOIDC({ region: ssoRegion })
+        const ssoOidcClient = new SSOOIDC({ region: ssoRegion })
         const cache = new DiskCache()
         const ssoAccessTokenProvider = new SsoAccessTokenProvider(ssoRegion, ssoUrl, ssoOidcClient, cache)
 
-        const ssoClient = new AWS.SSO({ region: ssoRegion })
+        const ssoClient = new SSO({ region: ssoRegion })
         const ssoAccount = this.profile[SHARED_CREDENTIAL_PROPERTIES.SSO_ACCOUNT_ID]!
         const ssoRole = this.profile[SHARED_CREDENTIAL_PROPERTIES.SSO_ROLE_NAME]!
         return new SsoCredentialProvider(ssoAccount, ssoRole, ssoClient, ssoAccessTokenProvider)
-    }
-
-    private applyProfileRegionToGlobalStsConfig() {
-        if (!AWS.config.sts) {
-            AWS.config.sts = {}
-        }
-
-        AWS.config.sts.region = this.getDefaultRegion()
     }
 
     public isSsoProfile(): boolean {
@@ -318,5 +362,4 @@ export class SharedCredentialsProvider implements CredentialsProvider {
         }
         return false
     }
-
 }
