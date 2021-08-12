@@ -8,7 +8,7 @@ import * as vscode from 'vscode'
 import PreviewStateMachineCDKWizard from '../wizards/previewStateMachineCDKWizard'
 import { AslVisualizationCDKManager } from './aslVisualizationCDKManager'
 import { getLogger, Logger } from '../../shared/logger'
-import { renderStateMachineGraphCommand } from './ renderStateMachineGraph'
+import { renderStateMachineGraphCommand } from './renderStateMachineGraph'
 
 export async function previewCDKStateMachineFromCommandPalette(context: vscode.Memento, aslVisualizationCDKManager: AslVisualizationCDKManager) {
     const logger: Logger = getLogger()

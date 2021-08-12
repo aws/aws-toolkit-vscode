@@ -157,15 +157,15 @@ export default class PreviewStateMachineCDKWizard extends MultiStepWizard<Previe
         const topLevelNodes = await topLevelNode?.topLevelNode?.getChildren()
 
         if (topLevelNodes && topLevelNodes.length > 0) {
-            topLevelNodes.filter( function (node) {
+            topLevelNodes.filter(function (node) {
                 return node.contextValue === 'awsCdkStateMachineNode'
             })
-            .map(async node => {
+                .map(async node => {
                     stateMachines.push({
                         label: node.label ? node.label : '',
                         stateMachineNode: node as ConstructNode
                     })
-            })
+                })
         }
 
         if (stateMachines.length === 0) {

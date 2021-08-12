@@ -15,7 +15,7 @@ import { getLogger, Logger } from '../../../shared/logger'
 export function getStateMachineDefinitionFromCfnTemplate(uniqueIdentifier: string, templatePath: string) {
     const logger: Logger = getLogger()
     try {
-        let data = fs.readFileSync(templatePath, 'utf8')
+        const data = fs.readFileSync(templatePath, 'utf8')
         const jsonObj = JSON.parse(data)
         const resources = jsonObj.Resources
         let key
@@ -41,8 +41,7 @@ export function getStateMachineDefinitionFromCfnTemplate(uniqueIdentifier: strin
         }
 
         const definitionString = jsonObj.Resources[`${key}`].Properties.DefinitionString
-        data = JSON.stringify(definitionString)
-        return data
+        return definitionString
     }
     catch (err) {
         logger.debug('Unable to extract state machine definition string from template.json file.')
@@ -50,30 +49,20 @@ export function getStateMachineDefinitionFromCfnTemplate(uniqueIdentifier: strin
     }
 }
 
+interface CdkStateMachineWithPlaceholders {
+    "Fn::Join": (string | any)[]
+}
+
 /**
- * @param {string} escapedAslJsonStr - json state machine construct definition 
+ * @param {string} escapedAslJsonStr - json state machine construct definition
  * @returns unescaped json state machine construct definition in asl.json
  */
-export function toUnescapedAslJsonString(escapedAslJsonStr: string) {
-    if (typeof (escapedAslJsonStr) != "string") return escapedAslJsonStr;
+export function toUnescapedAslJsonString(escapedAslJsonStr: string | CdkStateMachineWithPlaceholders) {
+    if (typeof (escapedAslJsonStr) === 'string') {
+        return escapedAslJsonStr
+    }
 
-    const fnJoinPrefix = '{"Fn::Join":["",['
-    const fnJoinSuffix = ']]}'
-    const refRegExp = /(,{"Ref":)(.*?)(},")(.*?)(")/g //ARN of state machine followed by pseudo parameter
-    const refRegExp2 = /(,{"Ref":)(.*?)(},"")/g //ARN of state machine
-    const fnGetAttRegExp = /(,{"Fn::GetAtt")(.*?)(]},")(.*?)(")/g //value for a specified attribute of this type followed by pseudo parameter
-    const fnGetAttRegExp2 = /(,{"Fn::GetAtt")(.*?)(]},"")/g //value for a specified attribute of this type
-
-    return escapedAslJsonStr
-        .trim() //remove leading whitespaces
-        .replace(fnJoinPrefix, '')
-        .replace(fnJoinSuffix, '')
-        .trim() //remove leading whitespaces
-        .substring(1) //remove the quotes that wrap escapedAslJsonStr
-        .slice(0, -1) //remove the quotes that wrap escapedAslJsonStr
-        .replace(/\\/g, '') //remove backslashes
-        .replace(refRegExp, '')
-        .replace(refRegExp2, '')
-        .replace(fnGetAttRegExp, '')
-        .replace(fnGetAttRegExp2, '')
+    const definitionStringWithPlaceholders: (string | any)[] = escapedAslJsonStr['Fn::Join'][1]
+    const definitionStringSegments: string[] = definitionStringWithPlaceholders.filter((segment) => typeof (segment) === 'string')
+    return definitionStringSegments.join('')
 }

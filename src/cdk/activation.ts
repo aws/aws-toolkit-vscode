@@ -6,7 +6,7 @@
 import * as vscode from 'vscode'
 
 import { AslVisualizationCDKManager } from './commands/aslVisualizationCDKManager'
-import { renderStateMachineGraphCommand } from './commands/ renderStateMachineGraph'
+import { renderStateMachineGraphCommand } from './commands/renderStateMachineGraph'
 import { previewCDKStateMachineFromCommandPalette } from './commands/renderGraphCommandPalette'
 import { AwsCdkExplorer } from './explorer/awsCdkExplorer'
 import { AppNode } from './explorer/nodes/appNode'
