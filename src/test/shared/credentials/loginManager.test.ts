@@ -3,6 +3,7 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
+import * as AWS from '@aws-sdk/types'
 import * as assert from 'assert'
 import * as sinon from 'sinon'
 import { LoginManager } from '../../../credentials/loginManager'
@@ -15,12 +16,12 @@ import { CredentialsStore } from '../../../credentials/credentialsStore'
 describe('LoginManager', async function () {
     let sandbox: sinon.SinonSandbox
 
-    const awsContext = ({
+    const awsContext = {
         setCredentials: () => {
             throw new Error('This test was not initialized')
         },
-    } as any) as AwsContext
-    const sampleCredentials = ({} as any) as AWS.Credentials
+    } as any as AwsContext
+    const sampleCredentials = {} as any as AWS.Credentials
     const sampleCredentialsId: CredentialsId = {
         credentialSource: 'profile',
         credentialTypeId: 'someId',
@@ -47,7 +48,7 @@ describe('LoginManager', async function () {
             getDefaultRegion: sandbox.stub().returns('someRegion'),
             getHashCode: sandbox.stub().returns('1234'),
             canAutoConnect: sandbox.stub().returns(true),
-            isAvailable: sandbox.stub().returns(Promise.resolve(true))
+            isAvailable: sandbox.stub().returns(Promise.resolve(true)),
         }
 
         getAccountIdStub = sandbox.stub(accountId, 'getAccountId')
