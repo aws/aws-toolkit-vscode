@@ -234,7 +234,11 @@ export class AslVisualization {
         )
     }
 
-    protected makeWebviewTitle(sourceDocumentUri: vscode.Uri): string {
+    protected makeWebviewTitle(sourceDocumentUri: vscode.Uri | string): string {
+        //for aslVisualizationCDK
+        if(typeof sourceDocumentUri === 'string') {
+            return sourceDocumentUri
+        }
         return localize('AWS.stepFunctions.graph.titlePrefix', 'Graph: {0}', path.basename(sourceDocumentUri.fsPath))
     }
 

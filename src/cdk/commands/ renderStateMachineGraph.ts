@@ -6,7 +6,7 @@
 import * as vscode from 'vscode'
 
 import { ConstructNode } from '../explorer/nodes/constructNode'
-import { AslVisualizationCDKManager } from './../commands/aslVisualizationCDKManager'
+import { AslVisualizationCDKManager } from './aslVisualizationCDKManager'
 import { getLogger } from '../../shared/logger'
 import { showErrorWithLogs } from '../../shared/utilities/messages'
 import { localize } from '../../shared/utilities/vsCodeUtils'
@@ -16,16 +16,13 @@ import { Window } from '../../shared/vscode/window'
 /**
  * Renders a state graph of the state machine represented by the given node
  */
-export async function renderGraphCommand(
+export async function renderStateMachineGraphCommand(
     node: ConstructNode,
     extensionContext: vscode.Memento,
     visualizationManager: AslVisualizationCDKManager,
     window = Window.vscode()
 ): Promise<void> {
-    getLogger().debug('Render graph called for: %O', node)
-
     const uniqueIdentifier = node.label
-    getLogger().info(`Rendering graph: ${uniqueIdentifier}`)
 
     try {
         visualizationManager.visualizeStateMachine(extensionContext, node)

@@ -10,13 +10,13 @@ import { getStateMachineDefinitionFromCfnTemplate, toUnescapedAslJsonString } fr
 
 export class AslVisualizationCDK extends AslVisualization {
     public readonly templatePath: string
-    public readonly uniqueIdentifier: string
+    public readonly cdkAppName: string
     public readonly stateMachineName: string
 
-    public constructor(textDocument: vscode.TextDocument, templatePath: string, uniqueIdentifier: string, stateMachineName: string) {
+    public constructor(textDocument: vscode.TextDocument, templatePath: string, cdkAppName: string, stateMachineName: string) {
         super(textDocument)
         this.templatePath = templatePath
-        this.uniqueIdentifier = uniqueIdentifier
+        this.cdkAppName = cdkAppName
         this.stateMachineName = stateMachineName
     }
 
@@ -25,7 +25,7 @@ export class AslVisualizationCDK extends AslVisualization {
         return toUnescapedAslJsonString(definitionString ? definitionString : '')
     }
 
-    protected makeWebviewTitle(sourceDocumentUri: vscode.Uri): string {
-        return localize('AWS.stepFunctions.graph.titlePrefix', 'Graph: {0}', this.stateMachineName)
-    }
+    // protected makeWebviewTitle(sourceDocumentUri: vscode.Uri): string {
+    //     return localize('AWS.stepFunctions.graph.titlePrefix', 'Graph: {0}', this.stateMachineName)
+    // }
 }

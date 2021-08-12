@@ -8,7 +8,7 @@ import * as vscode from 'vscode'
 import PreviewStateMachineCDKWizard from '../wizards/previewStateMachineCDKWizard'
 import { AslVisualizationCDKManager } from './aslVisualizationCDKManager'
 import { getLogger, Logger } from '../../shared/logger'
-import { renderGraphCommand } from './renderGraph'
+import { renderStateMachineGraphCommand } from './ renderStateMachineGraph'
 
 export async function previewCDKStateMachineFromCommandPalette(context: vscode.Memento, aslVisualizationCDKManager: AslVisualizationCDKManager) {
     const logger: Logger = getLogger()
@@ -19,6 +19,6 @@ export async function previewCDKStateMachineFromCommandPalette(context: vscode.M
         logger.debug(
             `User selected the ${wizardResponse.stateMachine} state machine of ${wizardResponse.cdkApplication.label} CDK application`
         )
-        renderGraphCommand(wizardResponse.stateMachine.stateMachineNode, context, aslVisualizationCDKManager)
+        renderStateMachineGraphCommand(wizardResponse.stateMachine.stateMachineNode, context, aslVisualizationCDKManager)
     }
 }

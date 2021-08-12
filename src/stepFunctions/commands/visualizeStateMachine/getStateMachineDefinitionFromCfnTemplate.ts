@@ -18,7 +18,7 @@ export function getStateMachineDefinitionFromCfnTemplate(uniqueIdentifier: strin
         let data = fs.readFileSync(templatePath, 'utf8')
         const jsonObj = JSON.parse(data)
         const resources = jsonObj.Resources
-        let key = ''
+        let key
 
         const matchingKeyList: string[] = []
         for (const key of Object.keys(resources)) {
@@ -33,10 +33,10 @@ export function getStateMachineDefinitionFromCfnTemplate(uniqueIdentifier: strin
             return
         }
         else if (matchingKeyList.length === 1) {
-            key = matchingKeyList.pop()!
+            key = matchingKeyList[0]
         }
         else {
-            //return minimun length key in matchingKeyList
+            //return minimum length key in matchingKeyList
             key = matchingKeyList.reduce((a, b) => a.length <= b.length ? a : b)
         }
 

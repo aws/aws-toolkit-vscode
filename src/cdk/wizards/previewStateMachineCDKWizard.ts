@@ -58,19 +58,16 @@ export default class PreviewStateMachineCDKWizard extends MultiStepWizard<Previe
     }
 
     private readonly SELECT_WORKSPACE_ACTION: WizardStep = async () => {
-        const cdkAppLocations: CdkAppLocation[] = await detectCdkProjects(vscode.workspace.workspaceFolders)
-        const CDK_APPLOCATIONS: CdkAppLocationPickItem[] = []
-
-        cdkAppLocations.map(obj => {
-            CDK_APPLOCATIONS.push(
-                {
-                    label: getCDKAppWorkspaceName(obj.cdkJsonPath),
-                    cdkApplocation: obj
-                })
+        const cdkAppLocationsHelper: CdkAppLocation[] = await detectCdkProjects(vscode.workspace.workspaceFolders)
+        const cdkAppLocations: CdkAppLocationPickItem[] = cdkAppLocationsHelper.map(obj => {
+            return {
+                label: getCDKAppWorkspaceName(obj.cdkJsonPath),
+                cdkApplocation: obj
+            }
         })
 
-        if (CDK_APPLOCATIONS.length === 0) {
-            CDK_APPLOCATIONS.push(
+        if (cdkAppLocations.length === 0) {
+            cdkAppLocations.push(
                 {
                     label: '[No workspace found]',
                     cdkApplocation: undefined
@@ -89,7 +86,7 @@ export default class PreviewStateMachineCDKWizard extends MultiStepWizard<Previe
                 totalSteps: 3,
             },
             buttons: [vscode.QuickInputButtons.Back],
-            items: CDK_APPLOCATIONS,
+            items: cdkAppLocations,
         })
 
         const choices = await this.promptUser({
@@ -110,19 +107,17 @@ export default class PreviewStateMachineCDKWizard extends MultiStepWizard<Previe
 
         if (!appLocation) return WIZARD_GOBACK
 
-        const appNode = new AppNode(appLocation!)
+        const appNode = new AppNode(appLocation)
         const constructNodes = await appNode.getChildren()
-        const TOP_LEVEL_NODES: TopLevelNodePickItem[] = []
-
-        constructNodes.map(node => {
-            TOP_LEVEL_NODES.push({
-                label: node.label ? node.label : '',
+        const cdkApplications: TopLevelNodePickItem[] = constructNodes.map(node => {
+            return {
+                label: node.label || '',
                 topLevelNode: node as ConstructNode
-            })
+            }
         })
 
-        if (TOP_LEVEL_NODES.length === 0) {
-            TOP_LEVEL_NODES.push({
+        if (cdkApplications.length === 0) {
+            cdkApplications.push({
                 label: `[No cdk application(s) found in workspace '${getCDKAppWorkspaceName(appLocation.cdkJsonPath)}']`,
                 topLevelNode: undefined
             })
@@ -139,7 +134,7 @@ export default class PreviewStateMachineCDKWizard extends MultiStepWizard<Previe
                 totalSteps: 3,
             },
             buttons: [vscode.QuickInputButtons.Back],
-            items: TOP_LEVEL_NODES,
+            items: cdkApplications,
         })
 
         const choices = await this.promptUser({
@@ -158,22 +153,23 @@ export default class PreviewStateMachineCDKWizard extends MultiStepWizard<Previe
 
     private readonly SELECT_STATE_MACHINE_ACTION: WizardStep = async () => {
         const topLevelNode = this.topLevelNode ? this.topLevelNode : undefined
-        const STATE_MACHINES: ConstructNodePickItem[] = []
+        const stateMachines: ConstructNodePickItem[] = []
         const topLevelNodes = await topLevelNode?.topLevelNode?.getChildren()
 
         if (topLevelNodes && topLevelNodes.length > 0) {
-            topLevelNodes.map(async node => {
-                if (node.contextValue === 'awsCdkStateMachineNode') {
-                    STATE_MACHINES.push({
+            topLevelNodes.filter( function (node) {
+                return node.contextValue === 'awsCdkStateMachineNode'
+            })
+            .map(async node => {
+                    stateMachines.push({
                         label: node.label ? node.label : '',
                         stateMachineNode: node as ConstructNode
                     })
-                }
             })
         }
 
-        if (STATE_MACHINES.length === 0) {
-            STATE_MACHINES.push({
+        if (stateMachines.length === 0) {
+            stateMachines.push({
                 label: `[No state machine(s) found in cdk applciation '${topLevelNode?.label}']`,
                 stateMachineNode: undefined
             })
@@ -190,7 +186,7 @@ export default class PreviewStateMachineCDKWizard extends MultiStepWizard<Previe
                 totalSteps: 3,
             },
             buttons: [vscode.QuickInputButtons.Back],
-            items: STATE_MACHINES,
+            items: stateMachines,
         })
 
         const choices = await this.promptUser({

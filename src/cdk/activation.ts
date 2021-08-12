@@ -6,7 +6,7 @@
 import * as vscode from 'vscode'
 
 import { AslVisualizationCDKManager } from './commands/aslVisualizationCDKManager'
-import { renderGraphCommand } from './commands/renderGraph'
+import { renderStateMachineGraphCommand } from './commands/ renderStateMachineGraph'
 import { previewCDKStateMachineFromCommandPalette } from './commands/renderGraphCommandPalette'
 import { AwsCdkExplorer } from './explorer/awsCdkExplorer'
 import { AppNode } from './explorer/nodes/appNode'
@@ -77,12 +77,12 @@ async function registerCdkCommands(context: vscode.ExtensionContext, explorer: A
     const visualizationManager = new AslVisualizationCDKManager(context)
     context.subscriptions.push(
         vscode.commands.registerCommand('aws.cdk.renderStateMachineGraph', async (node: ConstructNode) => {
-            await renderGraphCommand(node, context.globalState, visualizationManager)
+            await renderStateMachineGraphCommand(node, context.globalState, visualizationManager)
         })
     )
 
     context.subscriptions.push(
-        vscode.commands.registerCommand('aws.previewStateMachineCDK', async () => {
+        vscode.commands.registerCommand('aws.cdk.renderStateMachineGraphFromCommandPalette', async () => {
             return await previewCDKStateMachineFromCommandPalette(context.globalState, visualizationManager)
         })
     )
