@@ -182,8 +182,8 @@
                     "default": true
                 },
                 "aws.doNotShowPrompts": {
-                    "type": "object",
-                    "description": "%AWS.setting.togglePrompts.description%",
+                    "type": "array",
+                    "description": "%AWS.configuration.description.doNotShowPrompts%",
                     "default": []
                 }
             }
