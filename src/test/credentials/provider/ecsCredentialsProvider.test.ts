@@ -4,7 +4,6 @@
  */
 
 import * as assert from 'assert'
-import { ECSCredentials } from 'aws-sdk'
 import { EcsCredentialsProvider } from '../../../credentials/providers/ecsCredentialsProvider'
 import { EnvironmentVariables } from '../../../shared/environmentVariables'
 
@@ -45,13 +44,5 @@ describe('EcsCredentialsProvider', function () {
 
     it('should return undefined region when not provided', function () {
         assert.strictEqual(credentialsProvider.getDefaultRegion(), undefined)
-    })
-
-    it('returns credentials', async function () {
-        env.AWS_CONTAINER_CREDENTIALS_FULL_URI = dummyUri
-
-        const credentials = await credentialsProvider.getCredentials()
-
-        assert(credentials instanceof ECSCredentials)
     })
 })

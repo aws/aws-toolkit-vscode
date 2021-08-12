@@ -3,7 +3,8 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
-import { Credentials, ECSCredentials } from 'aws-sdk'
+import { Credentials } from '@aws-sdk/types'
+import { fromContainerMetadata } from '@aws-sdk/credential-provider-imds'
 import { EnvironmentVariables } from '../../shared/environmentVariables'
 import { CredentialType } from '../../shared/telemetry/telemetry.gen'
 import { getStringHash } from '../../shared/utilities/textUtilities'
@@ -15,7 +16,7 @@ import { CredentialsId, CredentialsProvider, CredentialsProviderType } from './c
  * @see CredentialsProviderType
  */
 export class EcsCredentialsProvider implements CredentialsProvider {
-    private credentials: ECSCredentials | undefined
+    private credentials: Credentials | undefined
 
     public async isAvailable(): Promise<boolean> {
         const env = process.env as EnvironmentVariables
@@ -56,7 +57,7 @@ export class EcsCredentialsProvider implements CredentialsProvider {
 
     public async getCredentials(): Promise<Credentials> {
         if (!this.credentials) {
-            this.credentials = new ECSCredentials()
+            this.credentials = await fromContainerMetadata()()
         }
         return this.credentials
     }

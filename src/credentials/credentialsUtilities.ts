@@ -7,7 +7,7 @@ import * as nls from 'vscode-nls'
 const localize = nls.loadMessageBundle()
 
 import * as vscode from 'vscode'
-import { Credentials } from 'aws-sdk'
+import { Credentials } from '@aws-sdk/types'
 import { credentialHelpUrl } from '../shared/constants'
 import { Profile } from '../shared/credentials/credentialsFile'
 import { isCloud9 } from '../shared/extensionUtilities'
@@ -64,16 +64,16 @@ export function hasProfileProperty(profile: Profile, propertyName: string): bool
  * User cancellation or timeout expiration will cause rejection.
  *
  * @param profile Profile name to display for the progress message
- * @param provider This can be a Promise that returns Credentials, or void if using 'refresh'
+ * @param provider A promise that resolves in Credentials
  * @param timeout How long to wait for resolution without user intervention (default: 5 minutes)
  *
  * @returns The resolved Credentials or undefined if the the provider was a 'refresh' Promise
  */
-export async function resolveProviderWithCancel<T extends AWS.Credentials | void>(
+export async function resolveProviderWithCancel(
     profile: string,
-    provider: Promise<T>,
+    provider: Promise<Credentials>,
     timeout: Timeout | number = CREDENTIALS_TIMEOUT
-): Promise<T> {
+): Promise<Credentials> {
     if (typeof timeout === 'number') {
         timeout = new Timeout(timeout)
     }
@@ -88,14 +88,13 @@ export async function resolveProviderWithCancel<T extends AWS.Credentials | void
         }
     }, CREDENTIALS_PROGRESS_DELAY)
 
-    await waitTimeout(provider, timeout, {
+    return (await waitTimeout(provider, timeout, {
         onCancel: () => {
             throw new Error(`Request to get credentials for "${profile}" cancelled`)
         },
         onExpire: () => {
             throw new Error(`Request to get credentials for "${profile}" expired`)
         },
-    })
-
-    return provider
+        allowUndefined: false,
+    })) as Credentials
 }

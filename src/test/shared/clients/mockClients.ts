@@ -432,6 +432,10 @@ export class MockStsClient implements StsClient {
         this.regionCode = regionCode
         this.getCallerIdentity = getCallerIdentity
     }
+
+    assumeRole(request: STS.AssumeRoleRequest): Promise<STS.AssumeRoleResponse> {
+        throw new Error('Method not implemented.')
+    }
 }
 
 export class MockSsmDocumentClient implements SsmDocumentClient {

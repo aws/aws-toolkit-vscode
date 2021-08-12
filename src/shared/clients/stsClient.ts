@@ -15,6 +15,12 @@ export class DefaultStsClient {
         private readonly credentials?: ServiceConfigurationOptions
     ) {}
 
+    public async assumeRole(request: STS.AssumeRoleRequest): Promise<STS.AssumeRoleResponse> {
+        const sdkClient = await this.createSdkClient()
+        const response = await sdkClient.assumeRole(request).promise()
+        return response
+    }
+
     public async getCallerIdentity(): Promise<STS.GetCallerIdentityResponse> {
         const sdkClient = await this.createSdkClient()
         const response = await sdkClient.getCallerIdentity().promise()
