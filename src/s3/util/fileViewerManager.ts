@@ -73,15 +73,21 @@ export class S3FileViewerManager {
                         overwrite
                     )
                     if (response === cancelUpload) {
+                        //TODO: uncomment when https://github.com/aws/aws-toolkit-common/pull/188 merges
+                        //telemetry.recordS3UploadObject({result: 'Cancelled', kind: viewer})
                         upload = false
                     }
                 }
 
                 if (upload) {
                     if (!(await this.uploadChangesToS3(activeTab))) {
+                        //TODO: uncomment when https://github.com/aws/aws-toolkit-common/pull/188 merges
+                        //telemetry.recordS3UploadObject({result: 'Failed', kind: viewer})
                         this.window.showErrorMessage('Error uploading file to S3.')
                         return
                     }
+                    //TODO: uncomment when https://github.com/aws/aws-toolkit-common/pull/188 merges
+                    //telemetry.recordS3UploadObject({result: 'Success', kind: viewer})
                 }
 
                 const fileNode = await this.refreshNode(activeTab.s3FileNode)
@@ -141,6 +147,8 @@ export class S3FileViewerManager {
 
         const fileLocation = await this.getFile(fileNode)
         if (!fileLocation) {
+            //TODO: uncomment when https://github.com/aws/aws-toolkit-common/pull/188 merges
+            //telemetry.recordS3EditObject({ result: 'Failed' })
             return
         }
         getLogger().verbose(`S3FileViewer: File from s3 or temp to be opened is: ${fileLocation}`)
@@ -165,6 +173,7 @@ export class S3FileViewerManager {
             tab =
                 this.activeTabs.get(pathToPreview) ??
                 ({ fileUri: fileLocation, s3Uri, editor: undefined, s3FileNode: fileNode } as S3Tab)
+
             await this.openTextFile(tab, tab.s3Uri, true)
             this.toPreview = undefined
         } else {
@@ -219,6 +228,8 @@ export class S3FileViewerManager {
                         tab!.editor = await vscode.commands.executeCommand('vscode.open', tab!.fileUri, {
                             preview: false,
                         })
+                        //TODO: uncomment when https://github.com/aws/aws-toolkit-common/pull/188 merges
+                        //telemetry.recordS3EditObject({ result: 'Success' })
                         return
                     }
                 }
@@ -241,6 +252,8 @@ export class S3FileViewerManager {
 
             const fileLocation = await this.getFile(uriOrNode)
             if (!fileLocation) {
+                //TODO: uncomment when https://github.com/aws/aws-toolkit-common/pull/188 merges
+                //telemetry.recordS3EditObject({ result: 'Failed' })
                 return
             }
             const s3Uri = vscode.Uri.parse(fileLocation.fsPath)
@@ -300,10 +313,14 @@ export class S3FileViewerManager {
                 return tab.editor
             }
         } catch (e) {
+            //TODO: uncomment when https://github.com/aws/aws-toolkit-common/pull/188 merges
+            //telemetry.recordS3EditObject({ result: 'Failed' })
             this.window.showErrorMessage(`Error opening file ${e}`)
             tab.editor = undefined
             return tab.editor
         }
+        //TODO: uncomment when https://github.com/aws/aws-toolkit-common/pull/188 merges
+        //telemetry.recordS3EditObject({ result: 'Success' })
     }
 
     /**
@@ -364,6 +381,8 @@ export class S3FileViewerManager {
                     localize('AWS.s3.fileViewer.message.sizeLimitCancellation', 'Download cancelled'),
                     this.outputChannel
                 )
+                //TODO: uncomment when https://github.com/aws/aws-toolkit-common/pull/188 merges
+                //telemetry.recordS3DownloadObject({ result: 'Cancelled', kind: 'Viewer' })
                 return undefined
             }
 
@@ -377,7 +396,11 @@ export class S3FileViewerManager {
 
         try {
             await downloadWithProgress(fileNode, targetLocation, this.window)
+            //TODO: uncomment when https://github.com/aws/aws-toolkit-common/pull/188 merges
+            //telemetry.recordS3DownloadObject({ result: 'Success', kind: 'Viewer' })
         } catch (err) {
+            //TODO: uncomment when https://github.com/aws/aws-toolkit-common/pull/188 merges
+            //telemetry.recordS3DownloadObject({ result: 'Cancelled', kind: 'Viewer' })
             getLogger().error(`FileViewer: error calling downloadWithProgress: ${err.toString()}`)
             showOutputMessage(
                 localize(
