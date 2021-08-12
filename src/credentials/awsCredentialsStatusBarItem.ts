@@ -42,14 +42,22 @@ export async function initializeAwsCredentialsStatusBarItem(
 }
 
 // Resolves when the status bar reaches its final state
-export async function updateCredentialsStatusBarItem(statusBarItem: vscode.StatusBarItem, credentialsId?: string): Promise<void> {
+export async function updateCredentialsStatusBarItem(
+    statusBarItem: vscode.StatusBarItem,
+    credentialsId?: string
+): Promise<void> {
     clearTimeout(timeoutID)
 
     // Shows confirmation text in the status bar message
     let delay = 0
     if (credentialsId) {
         delay = STATUSBAR_CONNECTED_DELAY
-        statusBarItem.text = localize('AWS.credentials.statusbar.text', '{0}: {1}', getIdeProperties().company, STATUSBAR_TEXT_CONNECTED)
+        statusBarItem.text = localize(
+            'AWS.credentials.statusbar.text',
+            '{0}: {1}',
+            getIdeProperties().company,
+            STATUSBAR_TEXT_CONNECTED
+        )
     }
 
     return new Promise<void>(

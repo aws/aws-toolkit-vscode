@@ -11,9 +11,10 @@ export type CloudWatchLogsClient = ClassToInterfaceType<DefaultCloudWatchLogsCli
 export class DefaultCloudWatchLogsClient {
     public constructor(public readonly regionCode: string) {}
 
-    public async *describeLogGroups(): AsyncIterableIterator<CloudWatchLogs.LogGroup> {
+    public async *describeLogGroups(
+        request: CloudWatchLogs.DescribeLogGroupsRequest = {}
+    ): AsyncIterableIterator<CloudWatchLogs.LogGroup> {
         const sdkClient = await this.createSdkClient()
-        const request: CloudWatchLogs.DescribeLogGroupsRequest = {}
         do {
             const response = await this.invokeDescribeLogGroups(request, sdkClient)
             if (response.logGroups) {

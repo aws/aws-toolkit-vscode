@@ -184,7 +184,11 @@ function normalizePath(...paths: string[]): string {
 }
 
 describe('SamDeployWizard', async function () {
-    const extContext = await FakeExtensionContext.getFakeExtContext()
+    let extContext: ExtContext
+    before(async function () {
+        extContext = await FakeExtensionContext.getFakeExtContext()
+    })
+
     describe('TEMPLATE', async function () {
         it('fails gracefully when no templates are found', async function () {
             const wizard = new SamDeployWizard(new MockSamDeployWizardContext(extContext, [[]], [undefined], [], []))
@@ -791,13 +795,10 @@ describe('DefaultSamDeployWizardContext', async function () {
             assert.strictEqual(output, bucketName)
         })
 
-        it('returns undefined if nothing is entered', async function() {
-            sandbox
-                .stub(input, 'promptUser')
-                .onFirstCall()
-                .returns(Promise.resolve(undefined))
+        it('returns undefined if nothing is entered', async function () {
+            sandbox.stub(input, 'promptUser').onFirstCall().returns(Promise.resolve(undefined))
             const output = await context.promptUserForS3BucketName(1, { title: 'asdf' })
-            assert.strictEqual(output, undefined) 
-        })  
+            assert.strictEqual(output, undefined)
+        })
     })
 })

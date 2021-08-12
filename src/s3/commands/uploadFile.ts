@@ -71,7 +71,10 @@ export async function uploadFileCommand(
     if (node) {
         file = await getFile(undefined, window)
         if (!file) {
-            showOutputMessage(localize('AWS.message.error.uploadFileCommand.noFileSelected', 'No file selected, cancelling upload'), outputChannel)
+            showOutputMessage(
+                localize('AWS.message.error.uploadFileCommand.noFileSelected', 'No file selected, cancelling upload'),
+                outputChannel
+            )
             getLogger().info('UploadFile cancelled')
             telemetry.recordS3UploadObject({ result: 'Cancelled' })
             return
@@ -95,7 +98,13 @@ export async function uploadFileCommand(
                     continue
                 }
                 if (bucketResponse == 'cancel') {
-                    showOutputMessage(localize('AWS.message.error.uploadFileCommand.noBucketSelected', 'No bucket selected, cancelling upload'), outputChannel)
+                    showOutputMessage(
+                        localize(
+                            'AWS.message.error.uploadFileCommand.noBucketSelected',
+                            'No bucket selected, cancelling upload'
+                        ),
+                        outputChannel
+                    )
                     getLogger().info('No bucket selected, cancelling upload')
                     telemetry.recordS3UploadObject({ result: 'Cancelled' })
                     return
@@ -110,7 +119,13 @@ export async function uploadFileCommand(
             } else {
                 //if file is undefined, means the back button was pressed(there is no step before) or no file was selected
                 //thus break the loop of the 'wizard'
-                showOutputMessage(localize('AWS.message.error.uploadFileCommand.noFileSelected', 'No file selected, cancelling upload'), outputChannel)
+                showOutputMessage(
+                    localize(
+                        'AWS.message.error.uploadFileCommand.noFileSelected',
+                        'No file selected, cancelling upload'
+                    ),
+                    outputChannel
+                )
                 getLogger().info('UploadFile cancelled')
                 telemetry.recordS3UploadObject({ result: 'Cancelled' })
                 return
@@ -121,12 +136,10 @@ export async function uploadFileCommand(
     const destinationPath = readablePath({ bucket: { name: bucket.Name! }, path: key })
 
     try {
-        showOutputMessage(localize(
-            'AWS.s3.uploadFile.startUpload', 
-            'Uploading file {0} to {1}', 
-            fileName, 
-            destinationPath), 
-        outputChannel)
+        showOutputMessage(
+            localize('AWS.s3.uploadFile.startUpload', 'Uploading file {0} to {1}', fileName, destinationPath),
+            outputChannel
+        )
 
         const request = {
             bucketName: bucket.Name!,
@@ -139,12 +152,10 @@ export async function uploadFileCommand(
 
         await uploadWithProgress(request)
 
-        showOutputMessage(localize(
-            'AWS.s3.uploadFile.success', 
-            'Successfully uploaded file {0} to {1}', 
-            fileName, 
-            bucket.Name), 
-        outputChannel)
+        showOutputMessage(
+            localize('AWS.s3.uploadFile.success', 'Successfully uploaded file {0} to {1}', fileName, bucket.Name),
+            outputChannel
+        )
         telemetry.recordS3UploadObject({ result: 'Succeeded' })
         recordAwsRefreshExplorer()
         commands.execute('aws.refreshAwsExplorer')
@@ -228,13 +239,9 @@ export async function promptUserForBucket(
         allBuckets = await s3client.listAllBuckets()
     } catch (e) {
         getLogger().error('Failed to list buckets from client', e)
-        window
-            .showErrorMessage(
-                localize(
-                    'AWS.message.error.promptUserForBucket.listBuckets',
-                    'Failed to list buckets from client'
-                ),
-            )
+        window.showErrorMessage(
+            localize('AWS.message.error.promptUserForBucket.listBuckets', 'Failed to list buckets from client')
+        )
         telemetry.recordS3UploadObject({ result: 'Failed' })
         throw new Error('Failed to list buckets from client')
     }

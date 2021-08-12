@@ -11,12 +11,23 @@ export type IamClient = ClassToInterfaceType<DefaultIamClient>
 export class DefaultIamClient {
     public constructor(public readonly regionCode: string) {}
 
-    public async listRoles(): Promise<IAM.ListRolesResponse> {
-        const listRolesPageSize = 1000
+    public async listRoles(request: IAM.ListRolesRequest = {}): Promise<IAM.ListRolesResponse> {
         const sdkClient = await this.createSdkClient()
-        const response = await sdkClient.listRoles({ MaxItems: listRolesPageSize }).promise()
+        const response = await sdkClient.listRoles(request).promise()
 
         return response
+    }
+
+    public async createRole(request: IAM.CreateRoleRequest): Promise<IAM.CreateRoleResponse> {
+        const sdkClient = await this.createSdkClient()
+        const response = await sdkClient.createRole(request).promise()
+
+        return response
+    }
+
+    public async attachRolePolicy(request: IAM.AttachRolePolicyRequest): Promise<void> {
+        const sdkClient = await this.createSdkClient()
+        await sdkClient.attachRolePolicy(request).promise()
     }
 
     private async createSdkClient(): Promise<IAM> {

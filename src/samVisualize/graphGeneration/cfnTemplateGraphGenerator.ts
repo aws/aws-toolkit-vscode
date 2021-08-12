@@ -131,7 +131,7 @@ export function generateGraphFromYaml(inputYaml: string): GraphObject | undefine
         // We only want Resources as nodes in the graph
         const resources = templateData['Resources']
 
-        // If the input yaml does not have a 'Resources, no graph can be generated
+        // If the input yaml does not have a 'Resources' key, no graph can be generated
         if (!_.isObjectLike(resources)) {
             return undefined
         }
@@ -141,6 +141,11 @@ export function generateGraphFromYaml(inputYaml: string): GraphObject | undefine
         // Loop over each resource and initialize it in the map.
         // These are the only nodes we want to be working with, links to non-resources will be ignored.
         for (const resourceName of Object.keys(resources)) {
+
+            // If a resource does not contain an object body, it cannot be defined in the graph
+            if (!_.isObjectLike(resources[resourceName])) {
+                return undefined
+            }
             graph.initNode(resourceName, resources[resourceName]['Type'])
         }
         // Now we can traverse each resource, after having defined each possible node in the map
