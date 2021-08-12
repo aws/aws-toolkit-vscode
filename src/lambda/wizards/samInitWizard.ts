@@ -4,7 +4,7 @@
  */
 
 import * as nls from 'vscode-nls'
-import { Credentials } from 'aws-sdk'
+import * as AWS from '@aws-sdk/types'
 import { Runtime } from 'aws-sdk/clients/lambda'
 import { Set as ImmutableSet } from 'immutable'
 import * as path from 'path'
@@ -74,7 +74,7 @@ export interface CreateNewSamAppWizardContext {
 export class DefaultCreateNewSamAppWizardContext extends WizardContext implements CreateNewSamAppWizardContext {
     public readonly lambdaRuntimes = samLambdaCreatableRuntimes()
     private readonly helpButton = createHelpButton()
-    private readonly currentCredentials: Credentials | undefined
+    private readonly currentCredentials: AWS.Credentials | undefined
     private readonly schemasRegions: Region[]
     private readonly samCliVersion: string
 
@@ -92,7 +92,11 @@ export class DefaultCreateNewSamAppWizardContext extends WizardContext implement
         return n
     }
 
-    public constructor(currentCredentials: Credentials | undefined, schemasRegions: Region[], samCliVersion: string) {
+    public constructor(
+        currentCredentials: AWS.Credentials | undefined,
+        schemasRegions: Region[],
+        samCliVersion: string
+    ) {
         super()
         this.currentCredentials = currentCredentials
         this.schemasRegions = schemasRegions

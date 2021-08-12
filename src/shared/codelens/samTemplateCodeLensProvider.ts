@@ -61,12 +61,12 @@ export class SamTemplateCodeLensProvider implements vscode.CodeLensProvider {
         const title =
             resource.kind === 'api'
                 ? `${getIdeProperties().company}: ${localize(
-                    'AWS.command.addSamApiDebugConfiguration',
-                    'Add API Debug Configuration'
+                      'AWS.command.addSamApiDebugConfiguration',
+                      'Add API Debug Configuration'
                   )}`
                 : `${getIdeProperties().company}: ${localize(
-                    'AWS.command.addSamDebugConfiguration',
-                    'Add Debug Configuration'
+                      'AWS.command.addSamDebugConfiguration',
+                      'Add Debug Configuration'
                   )}`
         return new vscode.CodeLens(resource.range, {
             title: title,
