@@ -13,6 +13,7 @@ import com.intellij.execution.executors.DefaultDebugExecutor
 import com.intellij.openapi.module.WebModuleTypeBase
 import com.intellij.openapi.vfs.VirtualFile
 import com.intellij.openapi.vfs.newvfs.impl.VfsRootAccess
+import com.intellij.testFramework.DisposableRule
 import com.intellij.testFramework.PsiTestUtil
 import com.intellij.testFramework.fixtures.CodeInsightTestFixture
 import com.intellij.testFramework.runInEdtAndWait
@@ -36,6 +37,7 @@ import software.aws.toolkits.jetbrains.utils.checkBreakPointHit
 import software.aws.toolkits.jetbrains.utils.executeRunConfigurationAndWait
 import software.aws.toolkits.jetbrains.utils.rules.HeavyGoCodeInsightTestFixtureRule
 import software.aws.toolkits.jetbrains.utils.rules.addGoModFile
+import software.aws.toolkits.jetbrains.utils.rules.ensureCorrectGoVersion
 import software.aws.toolkits.jetbrains.utils.rules.runGoModTidy
 import software.aws.toolkits.jetbrains.utils.samImageRunDebugTest
 import software.aws.toolkits.jetbrains.utils.setSamExecutableFromEnvironment
@@ -57,6 +59,10 @@ class GoLocalRunConfigurationIntegrationTest(private val runtime: LambdaRuntime)
     @Rule
     @JvmField
     val credentialManager = MockCredentialManagerRule()
+
+    @Rule
+    @JvmField
+    val disposableRule = DisposableRule()
 
     private val input = RuleUtils.randomName()
     private val mockId = "MockCredsId"
@@ -109,6 +115,7 @@ class GoLocalRunConfigurationIntegrationTest(private val runtime: LambdaRuntime)
         UltimateTestUtils.ensureBuiltInServerStarted()
 
         val fixture = projectRule.fixture
+        fixture.ensureCorrectGoVersion(disposableRule.disposable)
 
         PsiTestUtil.addModule(projectRule.project, WebModuleTypeBase.getInstance(), "main", fixture.tempDirFixture.findOrCreateDir("."))
         goModFile = projectRule.fixture.addGoModFile("hello-world").virtualFile
@@ -190,6 +197,7 @@ class GoLocalRunConfigurationIntegrationTest(private val runtime: LambdaRuntime)
     @Test
     fun samIsExecutedWithFileInput() {
         projectRule.fixture.addLambdaFile(envVarsFileContents)
+        runGoModTidy(goModFile)
 
         val runConfiguration = createHandlerBasedRunConfiguration(
             project = projectRule.project,
