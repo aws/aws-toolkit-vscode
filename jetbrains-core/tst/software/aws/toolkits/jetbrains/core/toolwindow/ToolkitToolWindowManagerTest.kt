@@ -6,6 +6,7 @@ package software.aws.toolkits.jetbrains.core.toolwindow
 import com.intellij.openapi.wm.ToolWindowManager
 import com.intellij.testFramework.ProjectRule
 import org.assertj.core.api.Assertions.assertThat
+import org.junit.Before
 import org.junit.Rule
 import org.junit.Test
 import java.util.UUID
@@ -17,7 +18,12 @@ class ToolkitToolWindowManagerTest {
     @JvmField
     val projectRule = ProjectRule()
 
-    private val jbToolWindowManager = ToolWindowManager.getInstance(projectRule.project)
+    private lateinit var jbToolWindowManager: ToolWindowManager
+
+    @Before
+    fun setUp() {
+        jbToolWindowManager = ToolWindowManager.getInstance(projectRule.project)
+    }
 
     @Test
     fun canAddAToolWindow() {
