@@ -56,7 +56,10 @@ export class DefaultSettingsConfiguration implements SettingsConfiguration {
             return false
         }
     }
-
+    /**
+     * Adds prompt to list of prompts that have been selected not to display again.
+     * @param promptName Name of prompt to append to list
+     */
     public disable(promptName: string): void {
         try {
             let prompts = this.readSetting<string[]>('doNotShowPrompts', [])
@@ -69,16 +72,20 @@ export class DefaultSettingsConfiguration implements SettingsConfiguration {
                 this.writeSetting('doNotShowPrompts', prompts, vscode.ConfigurationTarget.Global)
             }
         } catch (e) {
-            getLogger().error('Failed to read setting: doNotShowPrompts', e)
+            getLogger().error('Failed to update setting: doNotShowPrompts', e)
         }
     }
-
-    public readPromptSetting(promptName: string): boolean {
+    /**
+     * Verifies if a prompt should be displayed again.
+     * @param promptName Name of the prompt
+     * @returns False when prompt was disabled previously
+     */
+    public shouldDisplayPrompt(promptName: string): boolean {
         const promptSetting = this.readSetting<string[]>('doNotShowPrompts')
         if (typeof promptSetting !== 'object' || !Array.isArray(promptSetting)) {
             getLogger().warn('setting "doNotShowPrompts" has an unexpected type. Falling back to default.')
             return true
         }
-        return promptSetting.includes(promptName)
+        return !promptSetting.includes(promptName)
     }
 }
