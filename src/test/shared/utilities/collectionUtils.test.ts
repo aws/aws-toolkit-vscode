@@ -25,6 +25,7 @@ import {
     getPaginatedAwsCallIter,
     getPaginatedAwsCallIterParams,
     IteratorTransformer,
+    stripUndefined,
 } from '../../../shared/utilities/collectionUtils'
 
 import { asyncGenerator } from '../../utilities/collectionUtils'
@@ -447,6 +448,29 @@ describe('CollectionUtils', async function () {
                 secondI++
                 secondItem = await secondIter.next()
             }
+        })
+    })
+
+    describe('stripUndefined', function () {
+        it('removes undefined from objects', function () {
+            const obj = {
+                prop1: undefined,
+                prop2: 0,
+                prop3: {
+                    prop4: false,
+                    prop5: undefined,
+                    prop6: { prop7: '' },
+                },
+            }
+
+            stripUndefined(obj)
+            assert.deepStrictEqual(obj, {
+                prop2: 0,
+                prop3: {
+                    prop4: false,
+                    prop6: { prop7: '' },
+                },
+            })
         })
     })
 })
