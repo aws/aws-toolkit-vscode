@@ -5,6 +5,7 @@
 
 import * as assert from 'assert'
 import * as vscode from 'vscode'
+import * as sinon from 'sinon'
 import { extensionSettingsPrefix } from '../../shared/constants'
 import { DefaultSettingsConfiguration } from '../../shared/settingsConfiguration'
 
@@ -14,6 +15,7 @@ describe('DefaultSettingsConfiguration', function () {
     // at the end of the tests.
     const SETTING_KEY = 'telemetry'
     let originalSettingValue: any
+    let sandbox: sinon.SinonSandbox
 
     let sut: DefaultSettingsConfiguration
 
@@ -73,6 +75,97 @@ describe('DefaultSettingsConfiguration', function () {
 
                 assert.deepStrictEqual(savedValue, scenario.testValue)
             })
+        })
+    })
+    // Methods 'disable' and 'shouldDisplayPrompt' write to a specific setting and cannot use the same setting as used for testing 'readSetting' and 'writeSetting'
+    describe('disable', function () {
+        const promptToAdd = 'fakePrompt'
+        const testResponeEmpty: string[] = []
+        const testResponseWrongType = { p: 'v' }
+        const testResponseIncluded = ['other', 'fakePrompt']
+        const testResponseUndefined = undefined
+        beforeEach(async function () {
+            sandbox = sinon.createSandbox()
+        })
+
+        afterEach(async function () {
+            sandbox.restore()
+        })
+
+        it('appends to list if not included', async function () {
+            sandbox.stub(sut, 'readSetting').returns(testResponeEmpty)
+            const writeStub = sandbox.stub(sut, 'writeSetting').resolves()
+
+            sut.disable(promptToAdd)
+            const expectedResult = ['fakePrompt']
+            assert.strictEqual(
+                writeStub.calledOnceWith('doNotShowPrompts', expectedResult, vscode.ConfigurationTarget.Global),
+                true
+            )
+        })
+
+        it('does not update if alreay included', async function () {
+            sandbox.stub(sut, 'readSetting').returns(testResponseIncluded)
+            const writeStub = sandbox.stub(sut, 'writeSetting').resolves()
+
+            sut.disable(promptToAdd)
+            assert.strictEqual(writeStub.notCalled, true)
+        })
+
+        it('replaces incorrect type with array and appends', async function () {
+            sandbox.stub(sut, 'readSetting').returns(testResponseWrongType)
+            const writeStub = sandbox.stub(sut, 'writeSetting').resolves()
+
+            sut.disable(promptToAdd)
+            const expectedResult = ['fakePrompt']
+            assert.strictEqual(
+                writeStub.calledOnceWith('doNotShowPrompts', expectedResult, vscode.ConfigurationTarget.Global),
+                true
+            )
+        })
+
+        it('attempts to create new list if undefined is returned', async function () {
+            sandbox.stub(sut, 'readSetting').returns(testResponseUndefined)
+            const writeStub = sandbox.stub(sut, 'writeSetting').resolves()
+
+            sut.disable(promptToAdd)
+            const expectedResult = ['fakePrompt']
+            assert.strictEqual(
+                writeStub.calledOnceWith('doNotShowPrompts', expectedResult, vscode.ConfigurationTarget.Global),
+                true
+            )
+        })
+    })
+
+    describe('shouldDisplayPrompt', async function () {
+        const listOne = ['promptOne', 'promptTwo', 'promptThree']
+        const listTwo = ['promptOne']
+        const wrongType = {}
+        const promptToRead = 'promptTwo'
+        beforeEach(async function () {
+            sandbox = sinon.createSandbox()
+        })
+
+        afterEach(async function () {
+            sandbox.restore()
+        })
+
+        it('returns false when found', async function () {
+            sandbox.stub(sut, 'readSetting').returns(listOne)
+            const actual = sut.shouldDisplayPrompt(promptToRead)
+            assert.strictEqual(actual, false)
+        })
+
+        it('returns true when not found', async function () {
+            sandbox.stub(sut, 'readSetting').returns(listTwo)
+            const actual = sut.shouldDisplayPrompt(promptToRead)
+            assert.strictEqual(actual, true)
+        })
+
+        it('defaults to true when setting has wrong type', async function () {
+            sandbox.stub(sut, 'readSetting').returns(wrongType)
+            const actual = sut.shouldDisplayPrompt(promptToRead)
+            assert.strictEqual(actual, true)
         })
     })
 })
