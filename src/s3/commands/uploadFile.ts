@@ -86,7 +86,7 @@ export async function uploadFileCommand(
                 outputChannel
             )
             getLogger().info('UploadFile cancelled')
-            telemetry.recordS3UploadObject({ result: 'Cancelled' })
+            telemetry.recordS3UploadObjects({ result: 'Cancelled' })
             return
         }
 
@@ -115,7 +115,7 @@ export async function uploadFileCommand(
                 try {
                     bucketResponse = await getBucket(s3Client)
                 } catch (e) {
-                    telemetry.recordS3UploadObject({ result: 'Failed' })
+                    telemetry.recordS3UploadObjects({ result: 'Cancelled' })
                     getLogger().error('getBucket failed', e)
                     return
                 }
@@ -132,7 +132,7 @@ export async function uploadFileCommand(
                         outputChannel
                     )
                     getLogger().info('No bucket selected, cancelling upload')
-                    telemetry.recordS3UploadObject({ result: 'Cancelled' })
+                    telemetry.recordS3UploadObjects({ result: 'Cancelled' })
                     return
                 }
 
@@ -170,7 +170,7 @@ export async function uploadFileCommand(
                     outputChannel
                 )
                 getLogger().info('UploadFile cancelled')
-                telemetry.recordS3UploadObject({ result: 'Cancelled' })
+                telemetry.recordS3UploadObjects({ result: 'Cancelled' })
                 return
             }
         }
@@ -190,6 +190,8 @@ export async function uploadFileCommand(
     )
 
     while (failedRequests.length > 0) {
+        telemetry.recordS3UploadObjects({ result: 'Failed', value: failedRequests.length })
+
         const failedKeys = failedRequests.map(request => request.key)
         getLogger().error(`List of requests failed to upload:\n${failedRequests.toString().split(',').join('\n')}`)
 
@@ -412,7 +414,6 @@ export async function promptUserForBucket(
         window.showErrorMessage(
             localize('AWS.message.error.promptUserForBucket.listBuckets', 'Failed to list buckets from client')
         )
-        telemetry.recordS3UploadObject({ result: 'Failed' })
         throw new Error('Failed to list buckets from client')
     }
 
