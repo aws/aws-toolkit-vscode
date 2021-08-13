@@ -100,19 +100,23 @@ fun runGoModTidy(goModFile: VirtualFile) {
     }
 }
 
+fun compatibleGoForIde() = when (ApplicationInfo.getInstance().build.baselineVersion) {
+    202 -> "1.14.15" // TODO: FIX_WHEN_MIN_IS_202
+    203 -> "1.15.14" // TODO: FIX_WHEN_MIN_IS_203
+    else -> null
+}
+
 fun CodeInsightTestFixture.ensureCorrectGoVersion(disposable: Disposable) {
-    val versionCmd = GeneralCommandLine("goenv").withParameters("--version")
-    if (ExecUtil.execAndGetOutput(versionCmd).exitCode != 0) {
+    val versionCmd = GeneralCommandLine("goenv").withParameters("version")
+    val output = ExecUtil.execAndGetOutput(versionCmd)
+    if (output.exitCode != 0) {
         println("WARNING: goenv not found, can't switch Go SDK!!!!")
         return
+    } else {
+        println("Current Go version: ${output.stdout}")
     }
 
-    val goVersionOverride = when (ApplicationInfo.getInstance().build.baselineVersion) {
-        202 -> "1.14.15" // TODO: FIX_WHEN_MIN_IS_202
-        203 -> "1.15.14" // TODO: FIX_WHEN_MIN_IS_203
-        else -> null
-    }
-
+    val goVersionOverride = compatibleGoForIde()
     goVersionOverride?.let {
         val overrideLocation = this.tempDirPath
 
