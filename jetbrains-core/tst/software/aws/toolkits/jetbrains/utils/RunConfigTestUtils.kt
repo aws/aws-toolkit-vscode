@@ -162,14 +162,23 @@ fun checkBreakPointHit(project: Project, callback: () -> Unit = {}): Ref<Boolean
     return debuggerIsHit
 }
 
-fun readProject(relativePath: String, sourceFileName: String, projectRule: CodeInsightTestFixtureRule): Pair<VirtualFile, VirtualFile> {
+fun readProject(
+    relativePath: String,
+    sourceFileName: String,
+    projectRule: CodeInsightTestFixtureRule,
+    templatePatches: Map<String, String> = emptyMap()
+): Pair<VirtualFile, VirtualFile> {
     val testDataPath = Paths.get(System.getProperty("testDataPath"), relativePath).toFile()
     val (source, template) = testDataPath.walk().fold<File, Pair<VirtualFile?, VirtualFile?>>(Pair(null, null)) { acc, file ->
         // skip directories which are part of the walk
         if (!file.isFile) {
             return@fold acc
         }
-        val virtualFile = projectRule.fixture.addFileToModule(projectRule.module, file.relativeTo(testDataPath).path, file.readText()).virtualFile
+
+        var fileText = file.readText()
+        templatePatches.forEach { (search, replace) -> fileText = fileText.replace(search, replace) }
+
+        val virtualFile = projectRule.fixture.addFileToModule(projectRule.module, file.relativeTo(testDataPath).path, fileText).virtualFile
         when (virtualFile.name) {
             "template.yaml" -> {
                 acc.first to virtualFile
@@ -197,6 +206,7 @@ fun readProject(relativePath: String, sourceFileName: String, projectRule: CodeI
 fun samImageRunDebugTest(
     projectRule: CodeInsightTestFixtureRule,
     relativePath: String,
+    templatePatches: Map<String, String> = emptyMap(),
     sourceFileName: String,
     runtime: LambdaRuntime,
     mockCredentialsId: String,
@@ -205,7 +215,7 @@ fun samImageRunDebugTest(
     addBreakpoint: (() -> Unit)? = null
 ) {
     assumeImageSupport()
-    val (_, template) = readProject(relativePath, sourceFileName, projectRule)
+    val (_, template) = readProject(relativePath, sourceFileName, projectRule, templatePatches)
 
     addBreakpoint?.let { it() }
 
