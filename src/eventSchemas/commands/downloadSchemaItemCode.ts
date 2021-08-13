@@ -362,7 +362,7 @@ export class CodeExtractor {
         const userResponse = await vscode.window.showInformationMessage(
             localize(
                 'AWS.message.info.schemas.downloadCodeBindings.colliding_override',
-                'Downloaded code hierarchy has collisions in the destination directory. Would you like to override?'
+                'Downloaded code hierarchy has collisions in the destination directory. Overwrite it?'
             ),
             { modal: true },
             localizedText.yes,
