@@ -31,6 +31,7 @@ import { createQuickPick, promptUser } from './ui/picker'
 import { SharedCredentialsProvider } from '../credentials/providers/sharedCredentialsProvider'
 import { getIdeProperties } from './extensionUtilities'
 import { credentialHelpUrl } from './constants'
+import { showErrorWithLogs } from './utilities/messages'
 
 export class DefaultAWSContextCommands {
     private readonly _awsContext: AwsContext
@@ -153,7 +154,8 @@ export class DefaultAWSContextCommands {
                 window.showInformationMessage(
                     localize(
                         'AWS.message.prompt.credentials.definition.done',
-                        'Credentials profile {0} created.',
+                        'Created {0} credentials profile: {1}',
+                        getIdeProperties().company,
                         state.profileName
                     )
                 )
@@ -161,14 +163,15 @@ export class DefaultAWSContextCommands {
                 return asString(sharedProviderId)
             }
 
-            const response = await window.showWarningMessage(
+            const response = await showErrorWithLogs(
                 localize(
                     'AWS.message.prompt.credentials.definition.tryAgain',
-                    'The credentials do not appear to be valid. Check the {0} Toolkit Logs for details. Would you like to try again?',
+                    '{0} credentials appear invalid. Try again?',
                     getIdeProperties().company
                 ),
-                localizedText.yes,
-                localizedText.no
+                ext.window,
+                'warn',
+                [localizedText.yes, localizedText.no]
             )
 
             if (!response || response !== localizedText.yes) {
@@ -214,7 +217,7 @@ export class DefaultAWSContextCommands {
         const userResponse = await window.showInformationMessage(
             localize(
                 'AWS.message.prompt.credentials.create',
-                'You do not appear to have any {0} Credentials defined. Would you like to set one up now?',
+                'No {0} credentials found. Create one now?',
                 getIdeProperties().company
             ),
             localizedText.yes,
@@ -254,13 +257,13 @@ export class DefaultAWSContextCommands {
         const response = await window.showInformationMessage(
             localize(
                 'AWS.message.prompt.credentials.definition.help',
-                'Would you like some information related to defining credentials?'
+                'Editing an {0} credentials file.',
+                getIdeProperties().company
             ),
-            localizedText.yes,
-            localizedText.no
+            localizedText.viewDocs
         )
 
-        if (response && response === localizedText.yes) {
+        if (response && response === localizedText.viewDocs) {
             await env.openExternal(Uri.parse(extensionConstants.aboutCredentialsFileUrl))
         }
     }
