@@ -312,7 +312,7 @@ export class DefaultSamDeployWizardContext implements SamDeployWizardContext {
             const prompt = localize(
                 'AWS.samcli.deploy.parameters.optionalPrompt.message',
                 // prettier-ignore
-                'The template {0} contains parameters. Would you like to override the default values for these parameters?',
+                'Template "{0}" contains parameters. Do you want to override their default values?',
                 templateUri.fsPath
             )
             const quickPick = picker.createQuickPick<vscode.QuickPickItem>({

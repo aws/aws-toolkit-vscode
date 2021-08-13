@@ -45,18 +45,41 @@ export function makeFailedWriteMessage(filename: string): string {
 /**
  * Shows a non-modal error message with a button to open the log output channel.
  *
- * @returns	A promise that resolves when the button is clicked or the error is dismissed.
+ * @param message  Message text
+ * @param window  Window
+ * @param kind  Kind of message to show
+ * @param extraItems  Extra buttons shown _before_ the "View Logs" button
+ * @returns	Promise that resolves when a button is clicked or the message is
+ * dismissed, and returns the selected button text.
  */
-export async function showErrorWithLogs(message: string, window: Window = ext.window): Promise<void> {
+export async function showErrorWithLogs(
+    message: string,
+    window: Window = ext.window,
+    kind: 'info' | 'warn' | 'error' = 'error',
+    extraItems: string[] = []
+): Promise<string | undefined> {
     const logsItem = localize('AWS.generic.message.viewLogs', 'View Logs...')
+    const items = [...extraItems, logsItem]
 
-    return window
-        .showErrorMessage(message, localize('AWS.generic.message.viewLogs', 'View Logs...'))
-        .then(selection => {
-            if (selection === logsItem) {
-                showLogOutputChannel()
-            }
-        })
+    let p = undefined
+    switch (kind) {
+        case 'info':
+            p = window.showInformationMessage(message, ...items)
+            break
+        case 'warn':
+            p = window.showWarningMessage(message, ...items)
+            break
+        case 'error':
+        default:
+            p = window.showErrorMessage(message, ...items)
+            break
+    }
+    return p.then<string | undefined>(selection => {
+        if (selection === logsItem) {
+            showLogOutputChannel()
+        }
+        return selection
+    })
 }
 
 /**

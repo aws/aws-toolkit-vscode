@@ -15,3 +15,4 @@ export const invalidNumberWarning: string = localize(
     'AWS.validateTime.error.invalidNumber',
     'Input must be a positive number'
 )
+export const viewDocs: string = localize('AWS.generic.viewDocs', 'View Documentation')
