@@ -130,7 +130,10 @@ export function createRefreshButton(): QuickInputButton<void> {
 /** Creates a '+' button. Usually used to add new resources during a prompt. */
 export function createPlusButton(tooltip?: string): QuickInputButton<void> {
     return {
-        iconPath: new vscode.ThemeIcon('plus'),
+        iconPath: {
+            light: ext.iconPaths.light.plus,
+            dark: ext.iconPaths.dark.plus,
+        },
         tooltip,
     }
 }
