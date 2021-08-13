@@ -3,6 +3,8 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
+import { LinkTypes } from '../samVisualizeTypes'
+
 /**
  * Denotes a Link between two Nodes in the context of a GraphObject
  */
@@ -44,52 +46,84 @@ export class Graph {
 
     /**
      * Stores which nodes exist in the graph
+     *
      * Node names are used as keys.
+     *
      * Exists to avoid iteration over the graph.nodes list to check for duplicates
      */
     private readonly nodeSet: Set<string>
 
     /**
-     * Stores which links exist in the graph
-     * The concatenation of the Link source, target, and type strings are used as keys because
-     * neither source, target, nor type properties are individually unique.
-     * The combination of all three properties determines a unique Link.
+     * Stores which links exist in the graph.
+     *
+     * Uses a Map instead of a Set to store the type of link,
+     * to allow DependsOn links between two nodes to be replaced by an Intrinsic Function link between the same nodes.
+     *
+     * The concatenation of the Link source and target strings are used as keys because
+     * neither source nor target properties are individually unique.
+     * The combination of both properties determines a unique Link.
+     *
      * Exists to avoid iteration over the graph.links list to check for duplicates
      */
-    private readonly linkSet: Set<string>
+    private readonly linkSet: Map<string, string>
 
     constructor() {
         this.graph = { nodes: [], links: [] }
         this.nodeSet = new Set<string>()
-        this.linkSet = new Set<string>()
+        this.linkSet = new Map<string, string>()
     }
 
     /**
-     * Creats a link pointing from nodeName1 to nodeName2. Does nothing if either node does not exist or if there already exists an indentical link.
+     * Creats a link pointing from sourceNode to targetNode.
+     * Will replace an existing link between sourceNode and destNode only if the exisiting link
+     * has a 'DependsOn' type and the new link has a 'Intrinsic Function' type.
+     * Otherwise, does nothing if link already exists.
      * @param sourceNodeName A string representing the name of the source node
-     * @param destNodeName A string representing the name of the destination node
+     * @param targetNodeName A string representing the name of the destination node
      * @param linkType A string representing the type of link
      */
-    public createLink(sourceNodeName: string, destNodeName: string, linkType?: string): void {
+    public createLink(sourceNodeName: string, targetNodeName: string, linkType?: string): void {
+        const generalizedLinkType = [LinkTypes.GetAtt, LinkTypes.Ref, LinkTypes.Sub].find(type => type == linkType)
+            ? LinkTypes.IntrinsicFunction
+            : LinkTypes.DependsOn
+
         const newLink: Link = {
             source: sourceNodeName,
-            target: destNodeName,
-            type: linkType,
+            target: targetNodeName,
+            type: generalizedLinkType,
         }
 
         // Using | as a delimiter between concatenated values to avoid accidental collisions for different links
         // | should not appear in any node name or link type.
-        const newLinkIdentifier = `${sourceNodeName}|${destNodeName}|${linkType}`
+        const newLinkIdentifier = `${sourceNodeName}|${targetNodeName}`
 
-        // If both source and destination nodes exist in the graph, and an identical link does not already exist, create a new link
-        if (
-            this.nodeSet.has(sourceNodeName) &&
-            this.nodeSet.has(destNodeName) &&
-            !this.linkSet.has(newLinkIdentifier)
-        ) {
-            // Register a link as existing in the graph
-            this.linkSet.add(newLinkIdentifier)
-            this.graph.links.push(newLink)
+        // Both nodes must exist in the graph to consider modifying / adding links
+        if (this.nodeSet.has(sourceNodeName) && this.nodeSet.has(targetNodeName)) {
+            // If there is no existing link, add one.
+            if (!this.linkSet.has(newLinkIdentifier)) {
+                this.linkSet.set(newLinkIdentifier, generalizedLinkType)
+                this.graph.links.push(newLink)
+            }
+
+            // ONLY replace an existing link between two nodes if the exisiting link is of type DependsOn and the new link is of type Intrinsic Function.
+            // DependsOn is implied by Intrinsic Function
+            // We check if the exisiting link type was DependsOn instead of just checking if the new link type is IntrinsicFunction
+            // to avoid iteration over `graph.links` unless the type is actually being replaced.
+            else if (
+                this.linkSet.get(newLinkIdentifier) === LinkTypes.DependsOn &&
+                generalizedLinkType === LinkTypes.IntrinsicFunction
+            ) {
+                // Register a link as existing in the graph
+                this.linkSet.set(newLinkIdentifier, LinkTypes.IntrinsicFunction)
+
+                // Find the link whose type we replace.
+                // This iteration should occur very rarely.
+                for (const link of this.graph.links) {
+                    if (link.source === sourceNodeName && link.target === targetNodeName) {
+                        link.type = LinkTypes.IntrinsicFunction
+                    }
+                }
+            }
         }
     }
 

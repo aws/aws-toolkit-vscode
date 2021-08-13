@@ -3,5 +3,5 @@
         { "name": "ApiGatewayApi", "type": "AWS::Serverless::Api" },
         { "name": "ApiFunction", "type": "AWS::Serverless::Function" }
     ],
-    "links": [{ "source": "ApiFunction", "target": "ApiGatewayApi", "type": "Ref" }]
+    "links": [{ "source": "ApiFunction", "target": "ApiGatewayApi", "type": "Intrinsic Function" }]
 }

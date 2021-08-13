@@ -57,294 +57,248 @@
         { "name": "LambdaEmailOutboundPolicySES", "type": "AWS::IAM::Policy" }
     ],
     "links": [
-        { "source": "IAMGroup", "target": "S3Email", "type": "Fn::Sub" },
+        { "source": "IAMGroup", "target": "S3Email", "type": "Intrinsic Function" },
         {
             "source": "SESReceiptRule",
             "target": "SESReceiptRuleSet",
-            "type": "Ref"
+            "type": "Intrinsic Function"
         },
-        { "source": "SESReceiptRule", "target": "S3Email", "type": "Ref" },
-        {
-            "source": "S3Email",
-            "target": "LambdaEmailOutbound",
-            "type": "DependsOn"
-        },
-        {
-            "source": "S3Email",
-            "target": "LambdaEmailConverter",
-            "type": "DependsOn"
-        },
+        { "source": "SESReceiptRule", "target": "S3Email", "type": "Intrinsic Function" },
         {
             "source": "S3Email",
             "target": "LambdaEmailInbound",
-            "type": "DependsOn"
-        },
-        {
-            "source": "S3Email",
-            "target": "LambdaEmailInbound",
-            "type": "Fn::GetAtt"
+            "type": "Intrinsic Function"
         },
         {
             "source": "S3Email",
             "target": "LambdaEmailOutbound",
-            "type": "Fn::GetAtt"
+            "type": "Intrinsic Function"
         },
         {
             "source": "S3Email",
             "target": "LambdaEmailConverter",
-            "type": "Fn::GetAtt"
+            "type": "Intrinsic Function"
         },
-        { "source": "S3EmailPolicy", "target": "S3Email", "type": "Ref" },
-        { "source": "S3EmailPolicy", "target": "S3Email", "type": "Fn::Sub" },
+        { "source": "S3EmailPolicy", "target": "S3Email", "type": "Intrinsic Function" },
         {
             "source": "PipelineConverter",
             "target": "PipelineConverterRole",
-            "type": "Fn::GetAtt"
+            "type": "Intrinsic Function"
         },
         {
             "source": "PipelineConverter",
             "target": "CodeBuildConverter",
-            "type": "Ref"
+            "type": "Intrinsic Function"
         },
         {
             "source": "PipelineConverterPolicy",
             "target": "PipelineConverterRole",
-            "type": "Ref"
+            "type": "Intrinsic Function"
         },
         {
             "source": "PipelineConverterWebhook",
             "target": "PipelineConverter",
-            "type": "Ref"
-        },
-        {
-            "source": "PipelineConverterWebhook",
-            "target": "PipelineConverter",
-            "type": "Fn::GetAtt"
+            "type": "Intrinsic Function"
         },
         {
             "source": "CodeBuildConverter",
             "target": "CodeBuildConverterRole",
-            "type": "Fn::GetAtt"
+            "type": "Intrinsic Function"
         },
         {
             "source": "CodeBuildConverter",
             "target": "LambdaEmailConverter",
-            "type": "Ref"
+            "type": "Intrinsic Function"
         },
         {
             "source": "CodeBuildConverterPolicyCWL",
             "target": "CodeBuildConverterRole",
-            "type": "Ref"
+            "type": "Intrinsic Function"
         },
         {
             "source": "CodeBuildConverterPolicyS3",
             "target": "CodeBuildConverterRole",
-            "type": "Ref"
+            "type": "Intrinsic Function"
         },
         {
             "source": "CodeBuildConverterPolicyLambdaUpdate",
             "target": "CodeBuildConverterRole",
-            "type": "Ref"
+            "type": "Intrinsic Function"
         },
         {
             "source": "CodeBuildConverterPolicyLambdaUpdate",
             "target": "LambdaEmailConverter",
-            "type": "Fn::Sub"
+            "type": "Intrinsic Function"
         },
         {
             "source": "LambdaEmailConverter",
             "target": "LambdaEmailConverterRole",
-            "type": "Fn::GetAtt"
+            "type": "Intrinsic Function"
         },
         {
             "source": "S3ConverterPermission",
             "target": "LambdaEmailConverter",
-            "type": "DependsOn"
-        },
-        {
-            "source": "S3ConverterPermission",
-            "target": "LambdaEmailConverter",
-            "type": "Ref"
+            "type": "Intrinsic Function"
         },
         {
             "source": "LambdaEmailConverterPolicyS3",
             "target": "LambdaEmailConverterRole",
-            "type": "Ref"
+            "type": "Intrinsic Function"
         },
         {
             "source": "LambdaEmailConverterPolicyS3",
             "target": "S3Email",
-            "type": "Fn::Sub"
+            "type": "Intrinsic Function"
         },
         {
             "source": "PipelineInbound",
             "target": "PipelineInboundRole",
-            "type": "Fn::GetAtt"
+            "type": "Intrinsic Function"
         },
         {
             "source": "PipelineInbound",
             "target": "CodeBuildInbound",
-            "type": "Ref"
+            "type": "Intrinsic Function"
         },
         {
             "source": "PipelineInboundPolicy",
             "target": "PipelineInboundRole",
-            "type": "Ref"
+            "type": "Intrinsic Function"
         },
         {
             "source": "PipelineInboundWebhook",
             "target": "PipelineInbound",
-            "type": "Ref"
-        },
-        {
-            "source": "PipelineInboundWebhook",
-            "target": "PipelineInbound",
-            "type": "Fn::GetAtt"
+            "type": "Intrinsic Function"
         },
         {
             "source": "CodeBuildInbound",
             "target": "CodeBuildInboundRole",
-            "type": "Fn::GetAtt"
+            "type": "Intrinsic Function"
         },
         {
             "source": "CodeBuildInbound",
             "target": "LambdaEmailInbound",
-            "type": "Ref"
+            "type": "Intrinsic Function"
         },
         {
             "source": "CodeBuildDeployPolicyCWL",
             "target": "CodeBuildInboundRole",
-            "type": "Ref"
+            "type": "Intrinsic Function"
         },
         {
             "source": "CodeBuildDeployPolicyS3",
             "target": "CodeBuildInboundRole",
-            "type": "Ref"
+            "type": "Intrinsic Function"
         },
         {
             "source": "CodeBuildDeployPolicyLambdaUpdate",
             "target": "CodeBuildInboundRole",
-            "type": "Ref"
+            "type": "Intrinsic Function"
         },
         {
             "source": "CodeBuildDeployPolicyLambdaUpdate",
             "target": "LambdaEmailInbound",
-            "type": "Fn::Sub"
+            "type": "Intrinsic Function"
         },
         {
             "source": "LambdaEmailInbound",
             "target": "LambdaEmailInboundRole",
-            "type": "Fn::GetAtt"
+            "type": "Intrinsic Function"
         },
         {
             "source": "S3InboundPermission",
             "target": "LambdaEmailInbound",
-            "type": "DependsOn"
-        },
-        {
-            "source": "S3InboundPermission",
-            "target": "LambdaEmailInbound",
-            "type": "Ref"
+            "type": "Intrinsic Function"
         },
         {
             "source": "LambdaEmailInboundPolicyS3",
             "target": "LambdaEmailInboundRole",
-            "type": "Ref"
+            "type": "Intrinsic Function"
         },
         {
             "source": "LambdaEmailInboundPolicyS3",
             "target": "S3Email",
-            "type": "Fn::Sub"
+            "type": "Intrinsic Function"
         },
         {
             "source": "LambdaEmailInboundPolicySES",
             "target": "LambdaEmailInboundRole",
-            "type": "Ref"
+            "type": "Intrinsic Function"
         },
         {
             "source": "PipelineOutbound",
             "target": "PipelineOutboundRole",
-            "type": "Fn::GetAtt"
+            "type": "Intrinsic Function"
         },
         {
             "source": "PipelineOutbound",
             "target": "CodeBuildOutbound",
-            "type": "Ref"
+            "type": "Intrinsic Function"
         },
         {
             "source": "PipelineOutboundPolicy",
             "target": "PipelineOutboundRole",
-            "type": "Ref"
+            "type": "Intrinsic Function"
         },
         {
             "source": "PipelineOutboundWebhook",
             "target": "PipelineOutbound",
-            "type": "Ref"
-        },
-        {
-            "source": "PipelineOutboundWebhook",
-            "target": "PipelineOutbound",
-            "type": "Fn::GetAtt"
+            "type": "Intrinsic Function"
         },
         {
             "source": "CodeBuildOutbound",
             "target": "CodeBuildOutboundRole",
-            "type": "Fn::GetAtt"
+            "type": "Intrinsic Function"
         },
         {
             "source": "CodeBuildOutbound",
             "target": "LambdaEmailOutbound",
-            "type": "Ref"
+            "type": "Intrinsic Function"
         },
         {
             "source": "CodeBuildOutboundPolicyCWL",
             "target": "CodeBuildOutboundRole",
-            "type": "Ref"
+            "type": "Intrinsic Function"
         },
         {
             "source": "CodeBuildOutboundPolicyS3",
             "target": "CodeBuildOutboundRole",
-            "type": "Ref"
+            "type": "Intrinsic Function"
         },
         {
             "source": "CodeBuildOutboundPolicyLambdaUpdate",
             "target": "CodeBuildOutboundRole",
-            "type": "Ref"
+            "type": "Intrinsic Function"
         },
         {
             "source": "CodeBuildOutboundPolicyLambdaUpdate",
             "target": "LambdaEmailOutbound",
-            "type": "Fn::Sub"
+            "type": "Intrinsic Function"
         },
         {
             "source": "LambdaEmailOutbound",
             "target": "LambdaEmailOutboundRole",
-            "type": "Fn::GetAtt"
+            "type": "Intrinsic Function"
         },
         {
             "source": "S3OutboundPermission",
             "target": "LambdaEmailOutbound",
-            "type": "DependsOn"
-        },
-        {
-            "source": "S3OutboundPermission",
-            "target": "LambdaEmailOutbound",
-            "type": "Ref"
+            "type": "Intrinsic Function"
         },
         {
             "source": "LambdaEmailOutboundPolicyS3",
             "target": "LambdaEmailOutboundRole",
-            "type": "Ref"
+            "type": "Intrinsic Function"
         },
         {
             "source": "LambdaEmailOutboundPolicyS3",
             "target": "S3Email",
-            "type": "Fn::Sub"
+            "type": "Intrinsic Function"
         },
         {
             "source": "LambdaEmailOutboundPolicySES",
             "target": "LambdaEmailOutboundRole",
-            "type": "Ref"
+            "type": "Intrinsic Function"
         }
     ]
 }

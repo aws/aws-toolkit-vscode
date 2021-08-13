@@ -6,7 +6,7 @@ import * as assert from 'assert'
 import * as vscode from 'vscode'
 import { join } from 'path'
 import { readdirSync } from 'fs'
-import { generateIconsMap, IconURIMap } from '../../../samVisualize/rendering/icons'
+import { generateIconsMap } from '../../../samVisualize/rendering/icons'
 import { getProjectDir } from '../../testUtil'
 import { trimExtension } from '../../../shared/utilities/pathUtils'
 
@@ -20,7 +20,7 @@ describe('generateIconsMap', function () {
     })
 
     it('A IconURIMap is generated containing a valid webviewURI for each icon available', function () {
-        const iconURIMap: IconURIMap = generateIconsMap(iconsDir, testWebview)
+        const iconURIMap: { [resourceType: string]: string } = generateIconsMap(iconsDir, testWebview)
 
         icons = readdirSync(iconsDir)
 

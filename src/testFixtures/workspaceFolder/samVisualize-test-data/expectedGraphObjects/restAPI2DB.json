@@ -18,47 +18,46 @@
             "target": "ApiDeployment",
             "type": "DependsOn"
         },
-        { "source": "ApiUsagePlan", "target": "Api", "type": "Ref" },
+        { "source": "ApiUsagePlan", "target": "Api", "type": "Intrinsic Function" },
         { "source": "ApiKey", "target": "ApiDeployment", "type": "DependsOn" },
-        { "source": "ApiKey", "target": "Api", "type": "Ref" },
+        { "source": "ApiKey", "target": "Api", "type": "Intrinsic Function" },
         {
             "source": "ApiDeployment",
             "target": "MusicArtistMethodGet",
             "type": "DependsOn"
         },
-        { "source": "ApiDeployment", "target": "Api", "type": "Ref" },
+        { "source": "ApiDeployment", "target": "Api", "type": "Intrinsic Function" },
         {
             "source": "MusicArtistMethodGet",
             "target": "APIGatewayRole",
-            "type": "Fn::GetAtt"
+            "type": "Intrinsic Function"
         },
-        { "source": "MusicArtistMethodGet", "target": "Api", "type": "Ref" },
+        { "source": "MusicArtistMethodGet", "target": "Api", "type": "Intrinsic Function" },
         {
             "source": "MusicArtistMethodGet",
             "target": "MusicArtistResource",
-            "type": "Ref"
+            "type": "Intrinsic Function"
         },
         {
             "source": "APIGatewayRole",
             "target": "DynamoDBTable",
-            "type": "Fn::GetAtt"
+            "type": "Intrinsic Function"
         },
-        { "source": "ApiUsagePlanKey", "target": "ApiUsagePlan", "type": "Ref" },
-        { "source": "ApiUsagePlanKey", "target": "ApiKey", "type": "Ref" },
-        { "source": "MusicResource", "target": "Api", "type": "Fn::GetAtt" },
-        { "source": "MusicResource", "target": "Api", "type": "Ref" },
-        { "source": "MusicArtistResource", "target": "Api", "type": "Ref" },
+        { "source": "ApiUsagePlanKey", "target": "ApiUsagePlan", "type": "Intrinsic Function" },
+        { "source": "ApiUsagePlanKey", "target": "ApiKey", "type": "Intrinsic Function" },
+        { "source": "MusicResource", "target": "Api", "type": "Intrinsic Function" },
+        { "source": "MusicArtistResource", "target": "Api", "type": "Intrinsic Function" },
         {
             "source": "MusicArtistResource",
             "target": "MusicResource",
-            "type": "Ref"
+            "type": "Intrinsic Function"
         },
-        { "source": "MusicMethodPost", "target": "Api", "type": "Ref" },
-        { "source": "MusicMethodPost", "target": "MusicResource", "type": "Ref" },
+        { "source": "MusicMethodPost", "target": "Api", "type": "Intrinsic Function" },
+        { "source": "MusicMethodPost", "target": "MusicResource", "type": "Intrinsic Function" },
         {
             "source": "MusicMethodPost",
             "target": "APIGatewayRole",
-            "type": "Fn::GetAtt"
+            "type": "Intrinsic Function"
         }
     ]
 }

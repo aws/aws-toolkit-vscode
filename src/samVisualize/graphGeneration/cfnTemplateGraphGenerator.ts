@@ -133,6 +133,9 @@ export function generateGraphFromYaml(inputYaml: string): GraphObject | undefine
 
         // If the input yaml does not have a 'Resources' key, no graph can be generated
         if (!_.isObjectLike(resources)) {
+            getLogger().error(
+                'SAM Visualize: Error rendering SAM template. Cannot render a template with no `Resources` key.'
+            )
             return undefined
         }
 
@@ -143,6 +146,7 @@ export function generateGraphFromYaml(inputYaml: string): GraphObject | undefine
         for (const resourceName of Object.keys(resources)) {
             // If a resource does not contain an object body, it cannot be defined in the graph
             if (!_.isObjectLike(resources[resourceName])) {
+                getLogger().error('SAM Visualize: Error rendering SAM template. One or more resources is invalid.')
                 return undefined
             }
             graph.initNode(resourceName, resources[resourceName]['Type'])

@@ -5,7 +5,7 @@
         { "name": "AuthStack", "type": "AWS::Serverless::Application" }
     ],
     "links": [
-        { "source": "AppFunction", "target": "AppApi", "type": "Ref" },
-        { "source": "AppApi", "target": "AuthStack", "type": "Fn::GetAtt" }
+        { "source": "AppFunction", "target": "AppApi", "type": "Intrinsic Function" },
+        { "source": "AppApi", "target": "AuthStack", "type": "Intrinsic Function" }
     ]
 }

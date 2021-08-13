@@ -1,5 +1,5 @@
 /*!
- * Copyright 2021 Amazon.com, Inc. or its affiliates. All Rights Reserved.
+ * Copyright 2018-2019 Amazon.com, Inc. or its affiliates. All Rights Reserved.
  * SPDX-License-Identifier: Apache-2.0
  */
 /**
@@ -8,6 +8,8 @@
 export enum LinkTypes {
     GetAtt = 'Fn::GetAtt',
     Sub = 'Fn::Sub',
-    DependsOn = 'DependsOn',
     Ref = 'Ref',
+    DependsOn = 'DependsOn',
+    // A general category to represent any intrinsic function. Includes GetAtt, Sub, and Ref.
+    IntrinsicFunction = 'Intrinsic Function',
 }

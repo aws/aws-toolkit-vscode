@@ -1,7 +1,7 @@
 {
     "nodes": [
-        { "name": "ThisResource", "type": "bar"},
+        { "name": "ThisResource", "type": "bar" },
         { "name": "ThatResource", "type": "foo" }
     ],
-    "links": [{ "source": "ThisResource", "target": "ThatResource", "type": "Ref" }]
+    "links": [{ "source": "ThisResource", "target": "ThatResource", "type": "Intrinsic Function" }]
 }

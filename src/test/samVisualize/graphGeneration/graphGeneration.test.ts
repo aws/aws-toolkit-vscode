@@ -8,6 +8,7 @@ import { Node, Link } from '../../../samVisualize/graphGeneration/graph'
 import { join } from 'path'
 import { readdirSync, readFileSync } from 'fs'
 import { getProjectDir } from '../../testUtil'
+import { trimExtension } from '../../../shared/utilities/pathUtils'
 
 const testInputDirectory = join(
     getProjectDir(),
@@ -38,15 +39,6 @@ let expectedOutputFiles: Array<string>
 let errorFiles: Array<string>
 
 describe('samVisualize Graph Generation from YAML', async function () {
-    /**
-     * Returns the name of a file without an extension
-     * @param file File name from which the extension is removed
-     * @returns A string file name with the extension removed
-     */
-    function withoutExtension(file: string) {
-        return file.replace(/\.[^/.]+$/, '')
-    }
-
     /**
      * Sorts Node objects lexigraphically by name.
      * No two Nodes in a graph will have the same name (no need to compare Node type)
@@ -94,7 +86,7 @@ describe('samVisualize Graph Generation from YAML', async function () {
         // Output files are JSON
         for (const file of inputFiles) {
             const inputFile = join(testInputDirectory, file)
-            const expectedOutputFile = join(testExpectedOutputDirectory, withoutExtension(file) + '.json')
+            const expectedOutputFile = join(testExpectedOutputDirectory, trimExtension(file) + '.json')
 
             const yamlString = readFileSync(inputFile).toString()
             const outputObject = generateGraphFromYaml(yamlString)
@@ -112,8 +104,8 @@ describe('samVisualize Graph Generation from YAML', async function () {
             const expectedNodes = expectedObject.nodes.sort(nodeAlphaCompare)
             const expectedLinks = expectedObject.links.sort(linkAlphaCompare)
 
-            assert.deepStrictEqual(outputNodes, expectedNodes, `with ${file} template`)
-            assert.deepStrictEqual(outputLinks, expectedLinks, `with ${file} template`)
+            assert.deepStrictEqual(outputNodes, expectedNodes, `In ${file}`)
+            assert.deepStrictEqual(outputLinks, expectedLinks, `In ${file}`)
         }
     })
     // Note: A valid CFN template is defined here: https://docs.aws.amazon.com/AWSCloudFormation/latest/UserGuide/template-anatomy.html
