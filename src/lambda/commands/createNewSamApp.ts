@@ -480,6 +480,7 @@ export async function writeToolkitReadme(
             )
 
         await writeFile(readmeLocation, readme)
+        getLogger().debug(`writeToolkitReadme: wrote file: %O`, readmeLocation)
 
         return true
     } catch (e) {
