@@ -37,6 +37,7 @@ import software.aws.toolkits.jetbrains.utils.checkBreakPointHit
 import software.aws.toolkits.jetbrains.utils.executeRunConfigurationAndWait
 import software.aws.toolkits.jetbrains.utils.rules.HeavyGoCodeInsightTestFixtureRule
 import software.aws.toolkits.jetbrains.utils.rules.addGoModFile
+import software.aws.toolkits.jetbrains.utils.rules.compatibleGoForIde
 import software.aws.toolkits.jetbrains.utils.rules.ensureCorrectGoVersion
 import software.aws.toolkits.jetbrains.utils.rules.runGoModTidy
 import software.aws.toolkits.jetbrains.utils.samImageRunDebugTest
@@ -272,6 +273,7 @@ class GoLocalRunConfigurationIntegrationTest(private val runtime: LambdaRuntime)
     fun samIsExecutedImage(): Unit = samImageRunDebugTest(
         projectRule = projectRule,
         relativePath = "samProjects/image/$runtime",
+        templatePatches = mapOf("[GoVersion]" to (compatibleGoForIde() ?: "1")),
         sourceFileName = "main.go",
         runtime = runtime,
         mockCredentialsId = mockId,
@@ -284,6 +286,7 @@ class GoLocalRunConfigurationIntegrationTest(private val runtime: LambdaRuntime)
         samImageRunDebugTest(
             projectRule = projectRule,
             relativePath = "samProjects/image/$runtime",
+            templatePatches = mapOf("[GoVersion]" to (compatibleGoForIde() ?: "1")),
             sourceFileName = "main.go",
             runtime = runtime,
             mockCredentialsId = mockId,
