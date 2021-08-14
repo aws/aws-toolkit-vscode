@@ -36,7 +36,7 @@ import * as semver from 'semver'
 import { MINIMUM_SAM_CLI_VERSION_INCLUSIVE_FOR_IMAGE_SUPPORT } from '../../shared/sam/cli/samCliValidator'
 import { ExtContext } from '../../shared/extensions'
 import { validateBucketName } from '../../s3/util'
-import { showErrorWithLogs } from '../../shared/utilities/messages'
+import { showViewLogsMessage } from '../../shared/utilities/messages'
 import { getIdeProperties, isCloud9 } from '../../shared/extensionUtilities'
 import { SettingsConfiguration } from '../../shared/settingsConfiguration'
 
@@ -857,7 +857,7 @@ export class SamDeployWizard extends MultiStepWizard<SamDeployWizardResponse> {
                 )
                 telemetry.recordS3CreateBucket({ result: 'Succeeded' })
             } catch (e) {
-                showErrorWithLogs(
+                showViewLogsMessage(
                     localize('AWS.s3.createBucket.error.general', 'Failed to create bucket: {0}', newBucketRequest),
                     vscode.window
                 )

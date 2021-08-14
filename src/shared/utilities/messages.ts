@@ -33,7 +33,7 @@ export function makeCheckLogsMessage(): string {
 export function makeFailedWriteMessage(filename: string): string {
     const message = localize(
         'AWS.failedToWrite',
-        '{0}: Failed to write "{1}". Use the "{2}" command to see error details.',
+        '{0}: Failed to write "{1}".',
         getIdeProperties().company,
         filename,
         commandName()
@@ -43,7 +43,7 @@ export function makeFailedWriteMessage(filename: string): string {
 }
 
 /**
- * Shows a non-modal error message with a button to open the log output channel.
+ * Shows a non-modal message with a "View Logs" button.
  *
  * @param message  Message text
  * @param window  Window
@@ -52,7 +52,7 @@ export function makeFailedWriteMessage(filename: string): string {
  * @returns	Promise that resolves when a button is clicked or the message is
  * dismissed, and returns the selected button text.
  */
-export async function showErrorWithLogs(
+export async function showViewLogsMessage(
     message: string,
     window: Window = ext.window,
     kind: 'info' | 'warn' | 'error' = 'error',
