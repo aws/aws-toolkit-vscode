@@ -4,40 +4,15 @@
  */
 
 import * as vscode from 'vscode'
-import { getIdeProperties, isCloud9, isCn } from '../extensionUtilities'
 import { getLogger, showLogOutputChannel } from '../../shared/logger'
 import { localize } from '../../shared/utilities/vsCodeUtils'
 import { Window } from '../../shared/vscode/window'
 import { ext } from '../extensionGlobals'
+import { getIdeProperties, isCloud9 } from '../extensionUtilities'
 import { Timeout } from './timeoutUtils'
 
-// function instead of constant to prevent isCn() from running prior to compute region being determined
-// two localized strings instead of a single one with a parameter since this is also used as a command name
-function commandName(): string {
-    return isCn()
-        ? localize('AWS.command.viewLogs.cn', 'View Amazon Toolkit Logs')
-        : localize('AWS.command.viewLogs', 'View AWS Toolkit Logs')
-}
-
-export function makeCheckLogsMessage(): string {
-    const message = localize(
-        'AWS.error.check.logs',
-        'Check the logs for more information by running the "{0}" command from the {1}.',
-        commandName(),
-        getIdeProperties().commandPalette
-    )
-
-    return message
-}
-
 export function makeFailedWriteMessage(filename: string): string {
-    const message = localize(
-        'AWS.failedToWrite',
-        '{0}: Failed to write "{1}".',
-        getIdeProperties().company,
-        filename,
-        commandName()
-    )
+    const message = localize('AWS.failedToWrite', '{0}: Failed to write "{1}".', getIdeProperties().company, filename)
 
     return message
 }
