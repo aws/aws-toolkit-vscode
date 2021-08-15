@@ -12,12 +12,13 @@ import { AppRunnerNode } from '../../../apprunner/explorer/apprunnerNode'
 import { AppRunnerServiceNode } from '../../../apprunner/explorer/apprunnerServiceNode'
 import { AppRunnerClient } from '../../../shared/clients/apprunnerClient'
 import { PlaceholderNode } from '../../../shared/treeview/nodes/placeholderNode'
-import { ext } from '../../../shared/extensionGlobals'
+import { AWSTreeNodeBase } from '../../../shared/treeview/nodes/awsTreeNodeBase'
 
 describe('AppRunnerNode', function () {
     let mockApprunnerClient: AppRunnerClient
     let node: AppRunnerNode
     let clock: FakeTimers.InstalledClock
+    let refreshStub: sinon.SinonStub<[], void>
 
     const exampleSummaries: AppRunner.ServiceSummaryList = [
         {
@@ -29,16 +30,7 @@ describe('AppRunnerNode', function () {
 
     before(function () {
         clock = FakeTimers.install()
-        // Forces assignment of the property key without affecting its value
-        // eslint-disable-next-line no-self-assign
-        ext.awsExplorer = ext.awsExplorer
-        sinon.stub(ext, 'awsExplorer').value({
-            refresh: (target: AppRunnerNode | AppRunnerServiceNode | undefined) => {
-                if (target === node) {
-                    target.getChildren()
-                }
-            },
-        } as any)
+        refreshStub = sinon.stub(AWSTreeNodeBase.prototype, 'refresh')
     })
 
     beforeEach(function () {
@@ -86,7 +78,9 @@ describe('AppRunnerNode', function () {
         const childNode = (await node.getChildren())[0] as AppRunnerServiceNode
         const pausedService = { ...transientService, Status: 'PAUSED' }
         when(mockApprunnerClient.listServices(anything())).thenResolve({ ServiceSummaryList: [pausedService] })
-
+        await clock.tickAsync(100000)
+        sinon.assert.calledOn(refreshStub, node)
+        node.getChildren()
         await clock.tickAsync(100000)
         verify(mockApprunnerClient.listServices(anything())).times(2)
 

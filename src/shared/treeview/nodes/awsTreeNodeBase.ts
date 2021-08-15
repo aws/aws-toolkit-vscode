@@ -3,8 +3,7 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
-import { TreeItem, TreeItemCollapsibleState } from 'vscode'
-import { ext } from '../../extensionGlobals'
+import { TreeItem, TreeItemCollapsibleState, commands } from 'vscode'
 
 export abstract class AWSTreeNodeBase extends TreeItem {
     protected constructor(label: string, collapsibleState?: TreeItemCollapsibleState) {
@@ -16,6 +15,6 @@ export abstract class AWSTreeNodeBase extends TreeItem {
     }
 
     public refresh(): void {
-        ext.awsExplorer.refresh(this)
+        commands.executeCommand('aws.refreshAwsExplorerNode', this)
     }
 }
