@@ -152,27 +152,32 @@ export class SharedCredentialsProvider implements CredentialsProvider {
 
     /**
      * Patches 'source_profile' credentials as static representations, which the SDK can handle in all cases.
+     * 
+     * XXX: Returns undefined if no `source_profile` property exists. Else we would prevent the SDK from re-reading
+     * the shared credential files if they were to change. #1953
      *
      * The SDK is unable to resolve `source_profile` fields when the source profile uses SSO/MFA/credential_process.
      * We can handle this resolution ourselves, giving the SDK the resolved credentials by 'pre-loading' them.
      */
-    private async patchSourceCredentials(): Promise<ParsedIniData> {
+    private async patchSourceCredentials(): Promise<ParsedIniData | undefined> {
+        if (!hasProfileProperty(this.profile, SHARED_CREDENTIAL_PROPERTIES.SOURCE_PROFILE)) {
+            return undefined
+        }
+
         const loadedCreds: ParsedIniData = {}
 
-        if (hasProfileProperty(this.profile, SHARED_CREDENTIAL_PROPERTIES.SOURCE_PROFILE)) {
-            const source = new SharedCredentialsProvider(
-                this.profile[SHARED_CREDENTIAL_PROPERTIES.SOURCE_PROFILE]!,
-                this.allSharedCredentialProfiles
-            )
-            const creds = await source.getCredentials()
-            loadedCreds[this.profile[SHARED_CREDENTIAL_PROPERTIES.SOURCE_PROFILE]!] = {
-                [SHARED_CREDENTIAL_PROPERTIES.AWS_ACCESS_KEY_ID]: creds.accessKeyId,
-                [SHARED_CREDENTIAL_PROPERTIES.AWS_SECRET_ACCESS_KEY]: creds.secretAccessKey,
-                [SHARED_CREDENTIAL_PROPERTIES.AWS_SESSION_TOKEN]: creds.sessionToken,
-            }
-            loadedCreds[this.profileName] = {
-                [SHARED_CREDENTIAL_PROPERTIES.MFA_SERIAL]: source.profile[SHARED_CREDENTIAL_PROPERTIES.MFA_SERIAL],
-            }
+        const source = new SharedCredentialsProvider(
+            this.profile[SHARED_CREDENTIAL_PROPERTIES.SOURCE_PROFILE]!,
+            this.allSharedCredentialProfiles
+        )
+        const creds = await source.getCredentials()
+        loadedCreds[this.profile[SHARED_CREDENTIAL_PROPERTIES.SOURCE_PROFILE]!] = {
+            [SHARED_CREDENTIAL_PROPERTIES.AWS_ACCESS_KEY_ID]: creds.accessKeyId,
+            [SHARED_CREDENTIAL_PROPERTIES.AWS_SECRET_ACCESS_KEY]: creds.secretAccessKey,
+            [SHARED_CREDENTIAL_PROPERTIES.AWS_SESSION_TOKEN]: creds.sessionToken,
+        }
+        loadedCreds[this.profileName] = {
+            [SHARED_CREDENTIAL_PROPERTIES.MFA_SERIAL]: source.profile[SHARED_CREDENTIAL_PROPERTIES.MFA_SERIAL],
         }
 
         loadedCreds[this.profileName] = {
@@ -189,7 +194,7 @@ export class SharedCredentialsProvider implements CredentialsProvider {
             throw new Error(`Profile ${this.profileName} is not a valid Credential Profile: ${validationMessage}`)
         }
 
-        const loadedCreds: ParsedIniData = await this.patchSourceCredentials()
+        const loadedCreds = await this.patchSourceCredentials()
 
         //  SSO entry point
         if (this.isSsoProfile()) {
@@ -249,7 +254,7 @@ export class SharedCredentialsProvider implements CredentialsProvider {
         }
     }
 
-    private makeCredentialsProvider(loadedCreds: ParsedIniData): AWS.CredentialProvider {
+    private makeCredentialsProvider(loadedCreds?: ParsedIniData): AWS.CredentialProvider {
         const logger = getLogger()
 
         if (hasProfileProperty(this.profile, SHARED_CREDENTIAL_PROPERTIES.CREDENTIAL_SOURCE)) {
@@ -295,7 +300,7 @@ export class SharedCredentialsProvider implements CredentialsProvider {
         throw new Error(`Shared Credentials profile ${this.profileName} is not supported`)
     }
 
-    private makeSharedIniFileCredentialsProvider(loadedCreds: ParsedIniData): AWS.CredentialProvider {
+    private makeSharedIniFileCredentialsProvider(loadedCreds?: ParsedIniData): AWS.CredentialProvider {
         const assumeRole = async (credentials: AWS.Credentials, params: AssumeRoleParams) => {
             const region = this.getDefaultRegion() ?? 'us-east-1'
             const stsClient = ext.toolkitClientBuilder.createStsClient(region, { credentials })
@@ -312,10 +317,12 @@ export class SharedCredentialsProvider implements CredentialsProvider {
             profile: this.profileName,
             mfaCodeProvider: async mfaSerial => await getMfaTokenFromUser(mfaSerial, this.profileName),
             roleAssumer: assumeRole,
-            loadedConfig: Promise.resolve({
-                credentialsFile: loadedCreds,
-                configFile: {},
-            } as SharedConfigFiles),
+            loadedConfig: loadedCreds
+                ? Promise.resolve({
+                      credentialsFile: loadedCreds,
+                      configFile: {},
+                  } as SharedConfigFiles)
+                : undefined,
         })
     }
 
