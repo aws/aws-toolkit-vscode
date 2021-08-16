@@ -6,10 +6,15 @@
 import { AwsContext } from '../shared/awsContext'
 import { getAccountId } from '../shared/credentials/accountId'
 import { getLogger } from '../shared/logger'
-import { recordAwsSetCredentials, recordVscodeActiveRegions } from '../shared/telemetry/telemetry'
+import { recordAwsValidateCredentials, recordVscodeActiveRegions, Result } from '../shared/telemetry/telemetry'
 import { CredentialsStore } from './credentialsStore'
 import { notifyUserInvalidCredentials } from './credentialsUtilities'
-import { asString, CredentialsProvider, CredentialsId } from './providers/credentials'
+import {
+    asString,
+    CredentialsProvider,
+    CredentialsId,
+    credentialsProviderToTelemetryType,
+} from './providers/credentials'
 import { CredentialsProviderManager } from './providers/credentialsProviderManager'
 
 export class LoginManager {
@@ -18,7 +23,7 @@ export class LoginManager {
     public constructor(
         private readonly awsContext: AwsContext,
         private readonly store: CredentialsStore,
-        public readonly recordAwsSetCredentialsFn: typeof recordAwsSetCredentials = recordAwsSetCredentials
+        public readonly recordAwsValidateCredentialsFn = recordAwsValidateCredentials
     ) {}
 
     /**
@@ -32,6 +37,8 @@ export class LoginManager {
 
     public async login(args: { passive: boolean; providerId: CredentialsId }): Promise<boolean> {
         let provider: CredentialsProvider | undefined
+        let telemetryResult: Result = 'Failed'
+
         try {
             provider = await CredentialsProviderManager.getInstance().getCredentialsProvider(args.providerId)
             if (!provider) {
@@ -57,6 +64,7 @@ export class LoginManager {
                 defaultRegion: provider.getDefaultRegion(),
             })
 
+            telemetryResult = 'Succeeded'
             return true
         } catch (err) {
             // TODO: don't hardcode logic using error message, have a 'type' field instead
@@ -77,9 +85,12 @@ export class LoginManager {
             return false
         } finally {
             const credType = provider?.getTelemetryType()
-            this.recordAwsSetCredentialsFn({
+            const sourceType = provider ? credentialsProviderToTelemetryType(provider.getProviderType()) : undefined
+            this.recordAwsValidateCredentialsFn({
+                result: telemetryResult,
                 passive: args.passive,
                 credentialType: credType,
+                credentialSourceId: sourceType,
             })
         }
     }
