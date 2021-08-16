@@ -685,11 +685,13 @@ async function showDebugConsole(): Promise<void> {
  */
 export async function makeJsonFiles(config: SamLaunchRequestArgs): Promise<void> {
     config.eventPayloadFile = path.join(config.baseBuildDir!, 'event.json')
-    config.envFile = path.join(config.baseBuildDir!, 'env-vars.json')
 
     // env-vars.json (NB: effectively ignored for the `target=code` case).
     const env = JSON.stringify(getEnvironmentVariables(makeResourceName(config), config.lambda?.environmentVariables))
-    await writeFile(config.envFile, env)
+    if (Object.keys(env).length !== 0) {
+        config.envFile = path.join(config.baseBuildDir!, 'env-vars.json')
+        await writeFile(config.envFile, env)
+    }
 
     // container-env-vars.json
     if (config.containerEnvVars) {

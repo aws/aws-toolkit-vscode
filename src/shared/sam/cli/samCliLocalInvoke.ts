@@ -166,7 +166,7 @@ export interface SamCliLocalInvokeInvocationArguments {
     /**
      * Location of the file containing the environment variables to invoke the Lambda Function against.
      */
-    environmentVariablePath: string
+    environmentVariablePath?: string
     /**
      * Environment variables set when invoking the SAM process (NOT passed to the Lambda).
      */
@@ -245,10 +245,9 @@ export class SamCliLocalInvokeInvocation {
             this.args.templatePath,
             '--event',
             this.args.eventPath,
-            '--env-vars',
-            this.args.environmentVariablePath,
         ]
 
+        pushIf(invokeArgs, !!this.args.environmentVariablePath, '--env-vars', this.args.environmentVariablePath!)
         pushIf(invokeArgs, !!this.args.debugPort, '-d', this.args.debugPort!)
         pushIf(invokeArgs, !!this.args.dockerNetwork, '--docker-network', this.args.dockerNetwork!)
         pushIf(invokeArgs, !!this.args.skipPullImage, '--skip-pull-image')

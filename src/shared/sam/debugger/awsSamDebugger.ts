@@ -122,7 +122,7 @@ export interface SamLaunchRequestArgs extends AwsSamDebuggerConfiguration {
      * The file contains a JSON map of environment variables to be consumed by
      * SAM, resolved from `template.yaml` and/or `lambda.environmentVariables`.
      */
-    envFile: string
+    envFile?: string
 
     //
     // Debug properties (when user runs with debugging enabled).
