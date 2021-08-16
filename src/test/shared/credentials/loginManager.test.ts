@@ -21,6 +21,7 @@ describe('LoginManager', async function () {
         setCredentials: () => {
             throw new Error('This test was not initialized')
         },
+        getExplorerRegions: () => [],
     } as any as AwsContext
     const sampleCredentials = {} as any as AWS.Credentials
     const sampleCredentialsId: CredentialsId = {
