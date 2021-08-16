@@ -12,7 +12,7 @@ import { Commands } from '../../shared/vscode/commands'
 import { Window } from '../../shared/vscode/window'
 import { localize } from '../../shared/utilities/vsCodeUtils'
 import { readablePath } from '../util'
-import { showErrorWithLogs } from '../../shared/utilities/messages'
+import { showViewLogsMessage } from '../../shared/utilities/messages'
 
 /**
  * Creates a subfolder in the bucket or folder represented by the given node.
@@ -55,7 +55,7 @@ export async function createFolderCommand(
         telemetry.recordS3CreateFolder({ result: 'Succeeded' })
     } catch (e) {
         getLogger().error(`Failed to create folder ${path} in bucket '${node.bucket.name}': %O`, e)
-        showErrorWithLogs(
+        showViewLogsMessage(
             localize('AWS.s3.createFolder.error.general', 'Failed to create folder {0}', folderName),
             window
         )

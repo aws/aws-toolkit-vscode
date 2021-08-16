@@ -9,7 +9,7 @@ import { load } from 'js-yaml'
 const localize = nls.loadMessageBundle()
 import { AwsContext } from '../../shared/awsContext'
 import { StepFunctionsClient } from '../../shared/clients/stepFunctionsClient'
-import { showErrorWithLogs } from '../../shared/utilities/messages'
+import { showViewLogsMessage } from '../../shared/utilities/messages'
 import { ext } from '../../shared/extensionGlobals'
 import { getLogger, Logger } from '../../shared/logger'
 import {
@@ -52,7 +52,7 @@ export async function publishStateMachine(awsContext: AwsContext, outputChannel:
             )
 
             logger.error(error)
-            showErrorWithLogs(localizedMsg)
+            showViewLogsMessage(localizedMsg)
             return
         }
     }
@@ -117,7 +117,7 @@ async function createStateMachine(
             'Failed to create state machine: {0}',
             wizardResponse.name
         )
-        showErrorWithLogs(msg)
+        showViewLogsMessage(msg)
         outputChannel.appendLine(msg)
         outputChannel.appendLine('')
         logger.error(`Failed to create state machine '${wizardResponse.name}': %O`, err as Error)
@@ -162,7 +162,7 @@ async function updateStateMachine(
             'Failed to update state machine: {0}',
             wizardResponse.stateMachineArn
         )
-        showErrorWithLogs(msg)
+        showViewLogsMessage(msg)
         outputChannel.appendLine(msg)
         outputChannel.appendLine('')
         logger.error(`Failed to update state machine '${wizardResponse.stateMachineArn}': %O`, err as Error)
