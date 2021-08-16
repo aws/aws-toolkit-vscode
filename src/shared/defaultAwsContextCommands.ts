@@ -9,7 +9,7 @@ const localize = nls.loadMessageBundle()
 import { Credentials } from 'aws-sdk'
 import { env, QuickPickItem, Uri, ViewColumn, window } from 'vscode'
 import { LoginManager } from '../credentials/loginManager'
-import { CredentialsProviderId, fromString } from '../credentials/providers/credentialsProviderId'
+import { asString, CredentialsId, fromString } from '../credentials/providers/credentials'
 import { CredentialsProviderManager } from '../credentials/providers/credentialsProviderManager'
 import { AwsContext } from './awsContext'
 import { AwsContextTreeCollection } from './awsContextTreeCollection'
@@ -29,20 +29,25 @@ import { RegionProvider } from './regions/regionProvider'
 import { getRegionsForActiveCredentials } from './regions/regionUtilities'
 import { createQuickPick, promptUser } from './ui/picker'
 import { SharedCredentialsProvider } from '../credentials/providers/sharedCredentialsProvider'
-
-const TITLE_HIDE_REGION = localize(
-    'AWS.message.prompt.region.hide.title',
-    'Select a region to hide from the AWS Explorer'
-)
-const TITLE_SHOW_REGION = localize(
-    'AWS.message.prompt.region.show.title',
-    'Select a region to show in the AWS Explorer'
-)
+import { getIdeProperties } from './extensionUtilities'
+import { credentialHelpUrl } from './constants'
+import { showErrorWithLogs } from './utilities/messages'
 
 export class DefaultAWSContextCommands {
     private readonly _awsContext: AwsContext
     private readonly _awsContextTrees: AwsContextTreeCollection
     private readonly _regionProvider: RegionProvider
+
+    private readonly TITLE_HIDE_REGION = localize(
+        'AWS.message.prompt.region.hide.title',
+        'Select a region to hide from the {0} Explorer',
+        getIdeProperties().company
+    )
+    private readonly TITLE_SHOW_REGION = localize(
+        'AWS.message.prompt.region.show.title',
+        'Select a region to show in the {0} Explorer',
+        getIdeProperties().company
+    )
 
     public constructor(
         awsContext: AwsContext,
@@ -73,17 +78,11 @@ export class DefaultAWSContextCommands {
             const profileName: string | undefined = await this.promptAndCreateNewCredentialsFile()
 
             if (profileName) {
-                // TODO: change this once we figure out what profile types we should have
-                const sharedProviderId: CredentialsProviderId = {
-                    credentialType: SharedCredentialsProvider.getCredentialsType(),
-                    credentialTypeId: profileName,
-                }
-
-                await this.loginManager.login({ passive: false, providerId: sharedProviderId })
+                await this.loginManager.login({ passive: false, providerId: fromString(profileName) })
             }
+        } else {
+            await this.editCredentials()
         }
-
-        await this.editCredentials()
     }
 
     public async onCommandLogout() {
@@ -94,7 +93,7 @@ export class DefaultAWSContextCommands {
         const explorerRegions = new Set(await this._awsContext.getExplorerRegions())
         const newRegion = await this.promptForFilteredRegion(
             candidateRegion => !explorerRegions.has(candidateRegion.id),
-            TITLE_SHOW_REGION,
+            this.TITLE_SHOW_REGION,
             { step: 1, totalSteps: 1 }
         )
 
@@ -107,7 +106,7 @@ export class DefaultAWSContextCommands {
     public async onCommandHideRegion(regionCode?: string) {
         const region =
             regionCode ||
-            (await this.promptForRegion(await this._awsContext.getExplorerRegions(), TITLE_HIDE_REGION, {
+            (await this.promptForRegion(await this._awsContext.getExplorerRegions(), this.TITLE_HIDE_REGION, {
                 step: 1,
                 totalSteps: 1,
             }))
@@ -147,16 +146,32 @@ export class DefaultAWSContextCommands {
                     secretKey: state.secretKey,
                 })
 
-                return state.profileName
+                const sharedProviderId: CredentialsId = {
+                    credentialSource: SharedCredentialsProvider.getProviderType(),
+                    credentialTypeId: state.profileName,
+                }
+
+                window.showInformationMessage(
+                    localize(
+                        'AWS.message.prompt.credentials.definition.done',
+                        'Created {0} credentials profile: {1}',
+                        getIdeProperties().company,
+                        state.profileName
+                    )
+                )
+
+                return asString(sharedProviderId)
             }
 
-            const response = await window.showWarningMessage(
+            const response = await showErrorWithLogs(
                 localize(
                     'AWS.message.prompt.credentials.definition.tryAgain',
-                    'The credentials do not appear to be valid. Check the AWS Toolkit Logs for details. Would you like to try again?'
+                    '{0} credentials appear invalid. Try again?',
+                    getIdeProperties().company
                 ),
-                localizedText.yes,
-                localizedText.no
+                ext.window,
+                'warn',
+                [localizedText.yes, localizedText.no]
             )
 
             if (!response || response !== localizedText.yes) {
@@ -175,56 +190,49 @@ export class DefaultAWSContextCommands {
      */
     private async getProfileNameFromUser(): Promise<string | undefined> {
         const credentialsFiles: string[] = await UserCredentialsUtils.findExistingCredentialsFilenames()
-
-        if (credentialsFiles.length === 0) {
-            const userResponse = await window.showInformationMessage(
-                localize(
-                    'AWS.message.prompt.credentials.create',
-                    'You do not appear to have any AWS Credentials defined. Would you like to set one up now?'
-                ),
-                localizedText.yes,
-                localizedText.no
-            )
-
-            if (userResponse !== localizedText.yes) {
-                return undefined
-            }
-
-            return await this.promptAndCreateNewCredentialsFile()
-        } else {
-            const providerMap = await CredentialsProviderManager.getInstance().getCredentialProviderNames()
-            const profileNames = Object.keys(providerMap)
-
-            // If no credentials were found, the user should be
-            // encouraged to define some.
-            if (profileNames.length === 0) {
-                const userResponse = await window.showInformationMessage(
-                    localize(
-                        'AWS.message.prompt.credentials.create',
-                        'You do not appear to have any AWS Credentials defined. Would you like to set one up now?'
-                    ),
-                    localizedText.yes,
-                    localizedText.no
-                )
-
-                if (userResponse === localizedText.yes) {
-                    // Start edit, the user will have to try connecting again
-                    // after they have made their edits.
-                    await this.editCredentials()
-                }
-
-                return undefined
-            }
-
-            // If we get here, there are credentials for the user to choose from
+        const providerMap = await CredentialsProviderManager.getInstance().getCredentialProviderNames()
+        const profileNames = Object.keys(providerMap)
+        if (profileNames.length > 0) {
+            // There are credentials for the user to choose from
             const dataProvider = new DefaultCredentialSelectionDataProvider(profileNames, ext.context)
             const state = await credentialProfileSelector(dataProvider)
             if (state && state.credentialProfile) {
                 return state.credentialProfile.label
             }
-
-            return undefined
+        } else if (credentialsFiles.length === 0) {
+            if (await this.promptCredentialsSetup()) {
+                return await this.promptAndCreateNewCredentialsFile()
+            }
+        } else {
+            if (await this.promptCredentialsSetup()) {
+                await this.editCredentials()
+            }
         }
+        return undefined
+    }
+
+    private async promptCredentialsSetup(): Promise<boolean> {
+        // If no credentials were found, the user should be
+        // encouraged to define some.
+        const userResponse = await window.showInformationMessage(
+            localize(
+                'AWS.message.prompt.credentials.create',
+                'No {0} credentials found. Create one now?',
+                getIdeProperties().company
+            ),
+            localizedText.yes,
+            localizedText.no,
+            localizedText.help
+        )
+
+        if (userResponse === localizedText.yes) {
+            return true
+        } else if (userResponse === localizedText.help) {
+            env.openExternal(Uri.parse(credentialHelpUrl))
+            return await this.promptCredentialsSetup()
+        }
+
+        return false
     }
 
     /**
@@ -249,13 +257,13 @@ export class DefaultAWSContextCommands {
         const response = await window.showInformationMessage(
             localize(
                 'AWS.message.prompt.credentials.definition.help',
-                'Would you like some information related to defining credentials?'
+                'Editing an {0} credentials file.',
+                getIdeProperties().company
             ),
-            localizedText.yes,
-            localizedText.no
+            localizedText.viewDocs
         )
 
-        if (response && response === localizedText.yes) {
+        if (response && response === localizedText.viewDocs) {
             await env.openExternal(Uri.parse(extensionConstants.aboutCredentialsFileUrl))
         }
     }
@@ -307,7 +315,7 @@ export class DefaultAWSContextCommands {
 
         const picker = createQuickPick({
             options: {
-                placeHolder: localize('AWS.message.selectRegion', 'Select an AWS region'),
+                placeHolder: localize('AWS.message.selectRegion', 'Select an {0} region', getIdeProperties().company),
                 title: title,
                 matchOnDetail: true,
                 step: params?.step,

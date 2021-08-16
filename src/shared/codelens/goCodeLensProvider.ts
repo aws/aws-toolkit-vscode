@@ -10,6 +10,7 @@ import { getLogger } from '../logger/logger'
 import { stripNewLinesAndComments } from '../../shared/utilities/textUtilities'
 import { findParentProjectFile } from '../utilities/workspaceUtils'
 import { basename, dirname } from 'path'
+import { activateExtension } from '../utilities/vsCodeUtils'
 
 export const GO_LANGUAGE = 'go'
 export const GO_ALLFILES: vscode.DocumentFilter[] = [
@@ -25,10 +26,10 @@ export const GO_ALLFILES: vscode.DocumentFilter[] = [
 export const GO_BASE_PATTERN = '**/go.mod'
 
 export async function getLambdaHandlerCandidates(document: vscode.TextDocument): Promise<LambdaHandlerCandidate[]> {
-    const modFile: vscode.Uri | undefined = await findParentProjectFile(document.uri, /go\.mod$/)
-    const goIsActive: boolean = await checkForGoExtension()
+    const modFile = await findParentProjectFile(document.uri, /go\.mod$/)
+    const hasGoExtension = !!(await activateExtension(VSCODE_EXTENSION_ID.go))
 
-    if (!modFile || !goIsActive) {
+    if (!modFile || !hasGoExtension) {
         return []
     }
 
@@ -143,32 +144,6 @@ function parseTypes(params: string): string[] {
     })
 
     return types
-}
-
-/**
- * Checks if the Go extension exists and is active.
- */
-async function checkForGoExtension(): Promise<boolean> {
-    const extension = vscode.extensions.getExtension(VSCODE_EXTENSION_ID.go)
-
-    if (extension) {
-        if (extension.isActive) {
-            return true
-        }
-
-        getLogger().debug('Activating extension: %s', VSCODE_EXTENSION_ID.go)
-
-        try {
-            await extension.activate()
-            getLogger().debug('Activated extension: %s', VSCODE_EXTENSION_ID.go)
-
-            return true
-        } catch (err) {
-            getLogger().debug('Failed to activate extension "%s": %O', VSCODE_EXTENSION_ID.go, err as Error)
-        }
-    }
-
-    return false
 }
 
 function validateArgumentTypes(argTypes: string[]): boolean {

@@ -19,6 +19,7 @@ import { EcrTagNode } from './ecrTagNode'
 export class EcrRepositoryNode extends AWSTreeNodeBase implements AWSResourceNode {
     name: string = this.repository.repositoryName
     arn: string = this.repository.repositoryArn
+    public readonly regionCode: string
 
     constructor(
         public readonly parent: EcrNode,
@@ -31,6 +32,7 @@ export class EcrRepositoryNode extends AWSTreeNodeBase implements AWSResourceNod
             light: vscode.Uri.file(ext.iconPaths.light.ecr),
         }
         this.contextValue = 'awsEcrRepositoryNode'
+        this.regionCode = ecr.regionCode
     }
 
     public async getChildren(): Promise<AWSTreeNodeBase[]> {
@@ -40,8 +42,7 @@ export class EcrRepositoryNode extends AWSTreeNodeBase implements AWSResourceNod
 
                 return response.map(item => new EcrTagNode(this, this.ecr, this.repository, item))
             },
-            getErrorNode: async (error: Error, logID: number) =>
-                new ErrorNode(this, error, logID),
+            getErrorNode: async (error: Error, logID: number) => new ErrorNode(this, error, logID),
             getNoChildrenPlaceholderNode: async () =>
                 new PlaceholderNode(this, localize('AWS.explorerNode.ecr.noTags', '[No tags found]')),
             sort: (item1: EcrTagNode, item2: EcrTagNode) => item1.tag.localeCompare(item2.tag),

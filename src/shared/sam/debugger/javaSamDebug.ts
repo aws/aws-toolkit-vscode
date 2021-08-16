@@ -3,24 +3,12 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
-import * as vscode from 'vscode'
 import { getCodeRoot, isImageLambdaConfig } from '../../../lambda/local/debugConfiguration'
 import { RuntimeFamily } from '../../../lambda/models/samLambdaRuntime'
-import { ExtContext, VSCODE_EXTENSION_ID } from '../../extensions'
-import { getLogger } from '../../logger'
+import { ExtContext } from '../../extensions'
 import { DefaultSamLocalInvokeCommand, WAIT_FOR_DEBUGGER_MESSAGES } from '../cli/samCliLocalInvoke'
-import { runLambdaFunction, makeInputTemplate, waitForPort } from '../localLambdaRunner'
+import { makeInputTemplate, runLambdaFunction, waitForPort } from '../localLambdaRunner'
 import { SamLaunchRequestArgs } from './awsSamDebugger'
-
-export async function activateJavaExtensionIfInstalled() {
-    const extension = vscode.extensions.getExtension(VSCODE_EXTENSION_ID.java)
-
-    // If the extension is not installed, it is not a failure. There may be reduced functionality.
-    if (extension && !extension.isActive) {
-        getLogger().info('Java CodeLens Provider is activating the Java extension')
-        await extension.activate()
-    }
-}
 
 export async function makeJavaConfig(config: SamLaunchRequestArgs): Promise<SamLaunchRequestArgs> {
     if (!config.baseBuildDir) {

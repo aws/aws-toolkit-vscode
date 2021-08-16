@@ -34,6 +34,7 @@ import { CodelensRootRegistry } from './codelensRootRegistry'
 import { AWS_SAM_DEBUG_TYPE } from './debugger/awsSamDebugConfiguration'
 import { SamDebugConfigProvider } from './debugger/awsSamDebugger'
 import { addSamDebugConfiguration } from './debugger/commands/addSamDebugConfiguration'
+import { lazyLoadSamTemplateStrings } from '../../lambda/models/samTemplates'
 const localize = nls.loadMessageBundle()
 
 const STATE_NAME_SUPPRESS_YAML_PROMPT = 'aws.sam.suppressYamlPrompt'
@@ -83,6 +84,7 @@ export async function activate(ctx: ExtContext): Promise<void> {
 }
 
 async function registerServerlessCommands(ctx: ExtContext): Promise<void> {
+    lazyLoadSamTemplateStrings()
     ctx.extensionContext.subscriptions.push(
         vscode.commands.registerCommand(
             'aws.samcli.detect',
@@ -97,11 +99,15 @@ async function registerServerlessCommands(ctx: ExtContext): Promise<void> {
         }),
         vscode.commands.registerCommand('aws.addSamDebugConfiguration', addSamDebugConfiguration),
         vscode.commands.registerCommand('aws.pickAddSamDebugConfiguration', codelensUtils.pickAddSamDebugConfiguration),
-        vscode.commands.registerCommand('aws.deploySamApplication', async regionNode => {
+        vscode.commands.registerCommand('aws.deploySamApplication', async arg => {
+            // `arg` is one of :
+            //  - undefined
+            //  - regionNode (selected from AWS Explorer)
+            //  -  Uri to template.yaml (selected from File Explorer)
+
             const samDeployWizardContext = new DefaultSamDeployWizardContext(ctx)
             const samDeployWizard = async (): Promise<SamDeployWizardResponse | undefined> => {
-                const wizard = new SamDeployWizard(samDeployWizardContext, regionNode)
-
+                const wizard = new SamDeployWizard(samDeployWizardContext, arg)
                 return wizard.run()
             }
 
@@ -157,7 +163,7 @@ async function activateCodeLensProviders(
         )
     )
 
-    disposables.push(vscode.languages.registerCodeLensProvider(jsLensProvider.JAVASCRIPT_ALL_FILES, tsCodeLensProvider))
+    disposables.push(vscode.languages.registerCodeLensProvider(jsLensProvider.TYPESCRIPT_ALL_FILES, tsCodeLensProvider))
     disposables.push(vscode.languages.registerCodeLensProvider(pyLensProvider.PYTHON_ALLFILES, pyCodeLensProvider))
     disposables.push(vscode.languages.registerCodeLensProvider(javaLensProvider.JAVA_ALLFILES, javaCodeLensProvider))
     disposables.push(vscode.languages.registerCodeLensProvider(csLensProvider.CSHARP_ALLFILES, csCodeLensProvider))
@@ -230,7 +236,7 @@ async function activateCodeLensProviders(
         getLogger().error('Failed to activate codelens registry', e)
         // This prevents us from breaking for any reason later if it fails to load. Since
         // Noop watcher is always empty, we will get back empty arrays with no issues.
-        ext.codelensRootRegistry = (new NoopWatcher() as unknown) as CodelensRootRegistry
+        ext.codelensRootRegistry = new NoopWatcher() as unknown as CodelensRootRegistry
     }
     context.extensionContext.subscriptions.push(ext.codelensRootRegistry)
 
@@ -246,9 +252,11 @@ async function activateCodeLensProviders(
 function createYamlExtensionPrompt(): void {
     const neverPromptAgain = ext.context.globalState.get<boolean>(STATE_NAME_SUPPRESS_YAML_PROMPT)
 
-    // only pop this up in VS Code and Insiders since other VS Code-like IDEs (e.g. Theia) may not have a marketplace or contain the YAML plugin
+    // Show this only in VSCode since other VSCode-like IDEs (e.g. Theia) may
+    // not have a marketplace or contain the YAML plugin.
     if (!neverPromptAgain && getIdeType() === IDE.vscode && !vscode.extensions.getExtension(VSCODE_EXTENSION_ID.yaml)) {
-        // these will all be disposed immediately after showing one so the user isn't prompted more than once per session
+        // Disposed immediately after showing one, so the user isn't prompted
+        // more than once per session.
         const yamlPromptDisposables: vscode.Disposable[] = []
 
         // user opens a template file
@@ -308,7 +316,11 @@ async function promptInstallYamlPlugin(fileName: string, disposables: vscode.Dis
         const permanentlySuppress = localize('AWS.message.info.yaml.suppressPrompt', "Dismiss, and don't show again")
 
         const response = await vscode.window.showInformationMessage(
-            localize('AWS.message.info.yaml.prompt', 'Install YAML extension for additional AWS features.'),
+            localize(
+                'AWS.message.info.yaml.prompt',
+                'Install YAML extension for additional {0} features.',
+                getIdeProperties().company
+            ),
             goToMarketplace,
             dismiss,
             permanentlySuppress

@@ -4,11 +4,11 @@
  */
 
 import Vue, { VNode } from 'vue'
-import { VsCode } from '../../webviews/main'
 import { AwsSamDebuggerConfiguration } from '../../shared/sam/debugger/awsSamDebugConfiguration'
-import { AwsSamDebuggerConfigurationLoose, SamInvokerRequest, SamInvokerResponse, SamInvokeVueState } from './samInvoke'
+import { AwsSamDebuggerConfigurationLoose, SamInvokerResponse, SamInvokeVueState } from './samInvoke'
+import { WebviewApi } from 'vscode-webview'
 
-declare const vscode: VsCode<SamInvokerRequest, SamInvokeVueState>
+declare const vscode: WebviewApi<SamInvokeVueState>
 
 interface VueDataLaunchPropertyObject {
     value: string
@@ -454,7 +454,7 @@ export const Component = Vue.extend({
                 </div>
             </div>
             <div v-else>Select an Invoke Target</div>
-            <button @click="toggleShowAllFields">{{showAllFields ? "Show Less Fields" : "Show All Fields"}}</button>
+            <button v-on:click.prevent="toggleShowAllFields">{{showAllFields ? "Show Less Fields" : "Show All Fields"}}</button>
             <div v-if="showAllFields">
                 <h3>aws</h3>
                 <div class="config-item">

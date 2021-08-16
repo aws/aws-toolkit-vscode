@@ -18,7 +18,7 @@ describe('DefaultAwsClientBuilder', function () {
             }
         }
 
-        it('includes custom user-agent if no options are specified', async function () {
+        it('includes Toolkit user-agent if no options are specified', async function () {
             const builder = new DefaultAWSClientBuilder(new FakeAwsContext())
             const service = await builder.createAwsService(FakeService)
 
@@ -27,14 +27,6 @@ describe('DefaultAwsClientBuilder', function () {
                 service.config.customUserAgent!.replace('---Insiders', ''),
                 `AWS-Toolkit-For-VSCode/testPluginVersion Visual-Studio-Code/${version}`
             )
-        })
-
-        it('includes custom user-agent if not specified in options', async function () {
-            const builder = new DefaultAWSClientBuilder(new FakeAwsContext())
-            const service = await builder.createAwsService(FakeService, {})
-
-            assert.strictEqual(!!service.config.customUserAgent, true)
-            assert.notStrictEqual(service.config.customUserAgent, undefined)
         })
 
         it('does not override custom user-agent if specified in options', async function () {

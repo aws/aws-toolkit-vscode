@@ -14,6 +14,7 @@ import { MetricDatum } from './clienttelemetry'
 import apiConfig = require('./service-2.json')
 import { TelemetryClient } from './telemetryClient'
 import { TelemetryFeedback } from './telemetryFeedback'
+import { ServiceConfigurationOptions } from 'aws-sdk/lib/service'
 
 export class DefaultTelemetryClient implements TelemetryClient {
     public static readonly DEFAULT_IDENTITY_POOL = 'us-east-1:820fd6d1-95c0-4ca4-bffb-3f01d32da842'
@@ -91,13 +92,14 @@ export class DefaultTelemetryClient implements TelemetryClient {
             (await ext.sdkClientBuilder.createAwsService(
                 Service,
                 {
-                    // @ts-ignore: apiConfig is internal and not in the TS declaration file
+                    // apiConfig is internal and not in the TS declaration file
                     apiConfig: apiConfig,
                     region: region,
                     credentials: credentials,
                     correctClockSkew: true,
                     endpoint: DefaultTelemetryClient.DEFAULT_TELEMETRY_ENDPOINT,
-                },
+                } as ServiceConfigurationOptions,
+                undefined,
                 false
             )) as ClientTelemetry
         )

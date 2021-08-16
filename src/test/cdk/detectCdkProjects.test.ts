@@ -9,7 +9,7 @@ import * as vscode from 'vscode'
 import * as fs from 'fs-extra'
 import { detectCdkProjects } from '../../cdk/explorer/detectCdkProjects'
 import { makeTemporaryToolkitFolder } from '../../shared/filesystemUtilities'
-import { saveCdkJson } from './utilities/treeTestUtils'
+import { saveCdkJson } from './treeTestUtils'
 import { createTestWorkspaceFolder } from '../testUtil'
 import { FakeExtensionContext } from '../fakeExtensionContext'
 

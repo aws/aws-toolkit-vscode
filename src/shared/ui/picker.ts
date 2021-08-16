@@ -22,6 +22,8 @@ export interface AdditionalQuickPickOptions {
 }
 
 /**
+ * @deprecated Use 'pickerPrompter.ts' instead
+ *
  * Creates a QuickPick to let the user pick an item from a list
  * of items of type T.
  *

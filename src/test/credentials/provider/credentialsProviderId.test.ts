@@ -4,21 +4,21 @@
  */
 
 import * as assert from 'assert'
-import { asString, fromString, isEqual } from '../../../credentials/providers/credentialsProviderId'
+import { asString, fromString, isEqual } from '../../../credentials/providers/credentials'
 
 describe('CredentialsProviderId', async function () {
     describe('fromString', async function () {
         it('produces CredentialsProviderId from a string', async function () {
-            const id = fromString('profile:default')
+            const id = fromString('ec2:default')
 
-            assert.strictEqual(id.credentialType, 'profile')
+            assert.strictEqual(id.credentialSource, 'ec2')
             assert.strictEqual(id.credentialTypeId, 'default')
         })
 
         it('supports cases where the separator is in the credentialTypeId', async function () {
-            const id = fromString('profile:default:foo')
+            const id = fromString('ec2:default:foo')
 
-            assert.strictEqual(id.credentialType, 'profile')
+            assert.strictEqual(id.credentialSource, 'ec2')
             assert.strictEqual(id.credentialTypeId, 'default:foo')
         })
 
@@ -27,14 +27,14 @@ describe('CredentialsProviderId', async function () {
         })
 
         it('errs on unexpected format - different separator', async function () {
-            assert.throws(() => fromString('profile$default'))
+            assert.throws(() => fromString('ec2$default'))
         })
     })
 
     describe('asString', async function () {
         it('converts a CredentialsProviderId to a string', async function () {
             const id = asString({
-                credentialType: 'profile',
+                credentialSource: 'profile',
                 credentialTypeId: 'default',
             })
 
@@ -47,11 +47,11 @@ describe('CredentialsProviderId', async function () {
             assert.strictEqual(
                 isEqual(
                     {
-                        credentialType: 'test',
+                        credentialSource: 'profile',
                         credentialTypeId: 'hello',
                     },
                     {
-                        credentialType: 'test',
+                        credentialSource: 'profile',
                         credentialTypeId: 'hello',
                     }
                 ),
@@ -63,11 +63,11 @@ describe('CredentialsProviderId', async function () {
             assert.strictEqual(
                 isEqual(
                     {
-                        credentialType: 'test',
+                        credentialSource: 'profile',
                         credentialTypeId: 'hello',
                     },
                     {
-                        credentialType: 'test2',
+                        credentialSource: 'ec2',
                         credentialTypeId: 'hello',
                     }
                 ),
@@ -79,11 +79,11 @@ describe('CredentialsProviderId', async function () {
             assert.strictEqual(
                 isEqual(
                     {
-                        credentialType: 'test',
+                        credentialSource: 'profile',
                         credentialTypeId: 'hello',
                     },
                     {
-                        credentialType: 'test',
+                        credentialSource: 'profile',
                         credentialTypeId: 'hello2',
                     }
                 ),

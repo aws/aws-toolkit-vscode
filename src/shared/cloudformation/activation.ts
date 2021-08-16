@@ -5,14 +5,16 @@
 
 import * as vscode from 'vscode'
 import { getLogger } from '../logger'
-import { localize } from '../utilities/vsCodeUtils'
+import { activateExtension, localize } from '../utilities/vsCodeUtils'
 
 import { CloudFormationTemplateRegistry } from './templateRegistry'
 import { ext } from '../extensionGlobals'
 import { getIdeProperties } from '../extensionUtilities'
 import { NoopWatcher } from '../watchedFiles'
+import { refreshSchemas } from './cloudformation'
+import { VSCODE_EXTENSION_ID } from '../extensions'
 
-export const TEMPLATE_FILE_GLOB_PATTERN = '**/template.{yaml,yml}'
+export const TEMPLATE_FILE_GLOB_PATTERN = '**/*.{yaml,yml}'
 
 /**
  * Match any file path that contains a .aws-sam folder. The way this works is:
@@ -29,6 +31,10 @@ export const TEMPLATE_FILE_EXCLUDE_PATTERN = /.*[/\\]\.aws-sam([/\\].*|$)/
  * @param extensionContext VS Code extension context
  */
 export async function activate(extensionContext: vscode.ExtensionContext): Promise<void> {
+    refreshSchemas(extensionContext)
+    // Note: redhat.vscode-yaml no longer works on vscode 1.42
+    activateExtension(VSCODE_EXTENSION_ID.yaml).then(addCustomTags)
+
     try {
         const registry = new CloudFormationTemplateRegistry()
         await registry.addExcludedPattern(TEMPLATE_FILE_EXCLUDE_PATTERN)
@@ -45,8 +51,61 @@ export async function activate(extensionContext: vscode.ExtensionContext): Promi
         getLogger().error('Failed to activate template registry', e)
         // This prevents us from breaking for any reason later if it fails to load. Since
         // Noop watcher is always empty, we will get back empty arrays with no issues.
-        ext.templateRegistry = (new NoopWatcher() as unknown) as CloudFormationTemplateRegistry
+        ext.templateRegistry = new NoopWatcher() as unknown as CloudFormationTemplateRegistry
     }
     // If setting it up worked, add it to subscriptions so it is cleaned up at exit
     extensionContext.subscriptions.push(ext.templateRegistry)
+}
+
+/**
+ * Adds custom tags to the YAML extension's settings in order to hide error
+ * notifications for SAM/CFN intrinsic functions if a user has the YAML extension.
+ *
+ * Lifted near-verbatim from the cfn-lint VSCode extension.
+ * https://github.com/aws-cloudformation/cfn-lint-visual-studio-code/blob/629de0bac4f36cfc6534e409a6f6766a2240992f/client/src/extension.ts#L56
+ */
+function addCustomTags(): void {
+    const settingName = 'yaml.customTags'
+    const currentTags = vscode.workspace.getConfiguration().get<string[]>(settingName) ?? []
+    if (!Array.isArray(currentTags)) {
+        getLogger().error(
+            'setting "%s" is not an array. SAM/CFN intrinsic functions will not be recognized.',
+            settingName
+        )
+        return
+    }
+    const cloudFormationTags = [
+        '!And',
+        '!And sequence',
+        '!If',
+        '!If sequence',
+        '!Not',
+        '!Not sequence',
+        '!Equals',
+        '!Equals sequence',
+        '!Or',
+        '!Or sequence',
+        '!FindInMap',
+        '!FindInMap sequence',
+        '!Base64',
+        '!Join',
+        '!Join sequence',
+        '!Cidr',
+        '!Ref',
+        '!Sub',
+        '!Sub sequence',
+        '!GetAtt',
+        '!GetAZs',
+        '!ImportValue',
+        '!ImportValue sequence',
+        '!Select',
+        '!Select sequence',
+        '!Split',
+        '!Split sequence',
+    ]
+    const missingTags = cloudFormationTags.filter(item => !currentTags.includes(item))
+    if (missingTags.length > 0) {
+        const updateTags = currentTags.concat(missingTags)
+        vscode.workspace.getConfiguration().update('yaml.customTags', updateTags, vscode.ConfigurationTarget.Global)
+    }
 }

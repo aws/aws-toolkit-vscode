@@ -34,6 +34,7 @@ import { extensionSettingsPrefix } from '../constants'
 import { DefaultSamCliLocationProvider } from './cli/samCliLocator'
 import { getSamCliContext, getSamCliVersion } from './cli/samCliContext'
 import { CloudFormation } from '../cloudformation/cloudformation'
+import { getIdeProperties } from '../extensionUtilities'
 
 const localize = nls.loadMessageBundle()
 
@@ -349,8 +350,8 @@ export async function runLambdaFunction(
     onAfterBuild: () => Promise<void>
 ): Promise<SamLaunchRequestArgs> {
     // Verify if Docker is running
-    const dockerResponse = await new ChildProcess(true, 'docker', undefined, 'ps').run()
-    if (dockerResponse.exitCode !==0 || dockerResponse.stdout.includes('error during connect')) {
+    const dockerResponse = await new ChildProcess(false, 'docker', undefined, 'ps').run()
+    if (dockerResponse.exitCode !== 0 || dockerResponse.stdout.includes('error during connect')) {
         throw new Error('Running AWS SAM projects locally requires Docker. Is it installed and running?')
     }
     // Switch over to the output channel so the user has feedback that we're getting things ready
@@ -379,7 +380,7 @@ export async function runLambdaFunction(
 
     await onAfterBuild()
     timer.refresh()
-    
+
     if (!(await invokeLambdaHandler(timer, envVars, config))) {
         return config
     }
@@ -596,7 +597,8 @@ export async function attachDebugger({
         getLogger('channel').error(
             localize(
                 'AWS.output.sam.local.attach.failure',
-                'Unable to attach Debugger. Check AWS Toolkit logs. If it took longer than expected to start, you can still attach.'
+                'Unable to attach Debugger. Check {0} Toolkit logs. If it took longer than expected to start, you can still attach.',
+                getIdeProperties().company
             )
         )
     }
@@ -647,10 +649,7 @@ export function shouldAppendRelativePathToFunctionHandler(runtime: string): bool
 }
 
 function createLambdaTimer(configuration: SettingsConfiguration): Timeout {
-    const timelimit = configuration.readSetting<number>(
-        'samcli.lambda.timeout',
-        SAM_LOCAL_TIMEOUT_DEFAULT_MILLIS
-    )
+    const timelimit = configuration.readSetting<number>('samcli.lambda.timeout', SAM_LOCAL_TIMEOUT_DEFAULT_MILLIS)
 
     return new Timeout(timelimit)
 }
