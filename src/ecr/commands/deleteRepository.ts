@@ -8,7 +8,7 @@ import { EcrRepositoryNode } from '../explorer/ecrRepositoryNode'
 import { Commands } from '../../shared/vscode/commands'
 import { Window } from '../../shared/vscode/window'
 import { localize } from '../../shared/utilities/vsCodeUtils'
-import { showErrorWithLogs } from '../../shared/utilities/messages'
+import { showViewLogsMessage } from '../../shared/utilities/messages'
 import { recordEcrDeleteRepository } from '../../shared/telemetry/telemetry'
 
 export async function deleteRepository(
@@ -39,7 +39,7 @@ export async function deleteRepository(
         recordEcrDeleteRepository({ result: 'Succeeded' })
     } catch (e) {
         getLogger().error(`Failed to delete repository ${repositoryName}: %O`, e)
-        showErrorWithLogs(
+        showViewLogsMessage(
             localize('AWS.ecr.deleteRepository.failure', 'Failed to delete repository {0}', repositoryName),
             window
         )
