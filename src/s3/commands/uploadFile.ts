@@ -16,7 +16,7 @@ import * as telemetry from '../../shared/telemetry/telemetry'
 import { readablePath } from '../util'
 import { progressReporter } from '../progressReporter'
 import { localize } from '../../shared/utilities/vsCodeUtils'
-import { showErrorWithLogs, showOutputMessage } from '../../shared/utilities/messages'
+import { showViewLogsMessage, showOutputMessage } from '../../shared/utilities/messages'
 import { createQuickPick, promptUser, verifySinglePickerOutput } from '../../shared/ui/picker'
 import { addCodiconToString } from '../../shared/utilities/textUtilities'
 import { S3Client } from '../../shared/clients/s3Client'
@@ -162,7 +162,7 @@ export async function uploadFileCommand(
         return
     } catch (e) {
         getLogger().error(`Failed to upload file from ${file} to ${destinationPath}: %O`, e)
-        showErrorWithLogs(localize('AWS.s3.uploadFile.error.general', 'Failed to upload file {0}', fileName), window)
+        showViewLogsMessage(localize('AWS.s3.uploadFile.error.general', 'Failed to upload file {0}', fileName), window)
         telemetry.recordS3UploadObject({ result: 'Failed' })
         return
     }
