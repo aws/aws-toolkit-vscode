@@ -6,7 +6,7 @@
 import { AwsContext } from '../shared/awsContext'
 import { getAccountId } from '../shared/credentials/accountId'
 import { getLogger } from '../shared/logger'
-import { recordAwsSetCredentials } from '../shared/telemetry/telemetry'
+import { recordAwsSetCredentials, recordVscodeActiveRegions } from '../shared/telemetry/telemetry'
 import { CredentialsStore } from './credentialsStore'
 import { notifyUserInvalidCredentials } from './credentialsUtilities'
 import { asString, CredentialsProvider, CredentialsId } from './providers/credentials'
@@ -48,6 +48,7 @@ export class LoginManager {
             if (!accountId) {
                 throw new Error('Could not determine Account Id for credentials')
             }
+            recordVscodeActiveRegions({ value: (await this.awsContext.getExplorerRegions()).length })
 
             await this.awsContext.setCredentials({
                 credentials: storedCredentials.credentials,
