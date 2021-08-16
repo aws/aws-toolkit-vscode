@@ -6,7 +6,7 @@
 import { AwsContext } from '../shared/awsContext'
 import { getAccountId } from '../shared/credentials/accountId'
 import { getLogger } from '../shared/logger'
-import { recordAwsSetCredentials } from '../shared/telemetry/telemetry'
+import { recordAwsSetCredentials, recordVscodeActiveRegions } from '../shared/telemetry/telemetry'
 import { CredentialsStore } from './credentialsStore'
 import { notifyUserInvalidCredentials } from './credentialsUtilities'
 import { asString, CredentialsProvider, CredentialsId } from './providers/credentials'
@@ -55,6 +55,7 @@ export class LoginManager {
                 accountId: accountId,
                 defaultRegion: provider.getDefaultRegion(),
             })
+            recordVscodeActiveRegions({ value: (await this.awsContext.getExplorerRegions()).length })
 
             return true
         } catch (err) {
