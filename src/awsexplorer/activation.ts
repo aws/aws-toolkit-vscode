@@ -71,8 +71,6 @@ export async function activate(args: {
         })
     )
 
-    recordVscodeActiveRegions({ value: awsExplorer.getRegionNodesSize() })
-
     args.awsContextTrees.addTree(awsExplorer)
 
     updateAwsExplorerWhenAwsContextCredentialsChange(awsExplorer, args.awsContext, ext.context)
