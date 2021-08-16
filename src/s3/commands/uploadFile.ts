@@ -242,8 +242,7 @@ export async function uploadFileCommand(
 async function promptForFileLocation(window: Window): Promise<vscode.Uri[] | undefined> {
     const fileLocations = await window.showOpenDialog({
         canSelectMany: true,
-        openLabel: localize('AWS.s3.
-                            File.openButton', 'Upload'),
+        openLabel: localize('AWS.s3.uploadFile.openButton', 'Upload'),
     })
 
     return fileLocations
