@@ -2058,7 +2058,7 @@
         "createRelease": "ts-node ./build-scripts/createRelease.ts"
     },
     "devDependencies": {
-        "@aws-toolkits/telemetry": "1.0.9",
+        "@aws-toolkits/telemetry": "1.0.11",
         "@sinonjs/fake-timers": "^7.0.5",
         "@types/adm-zip": "^0.4.34",
         "@types/async-lock": "^1.1.3",
@@ -2083,7 +2083,7 @@
         "@types/vscode-webview": "^1.57.0",
         "@types/xml2js": "^0.4.8",
         "@typescript-eslint/eslint-plugin": "^4.24.0",
-        "@typescript-eslint/parser": "^4.24.0",
+        "@typescript-eslint/parser": "^4.29.2",
         "circular-dependency-plugin": "^5.2.2",
         "decache": "^4.4.0",
         "esbuild-loader": "2.13.1",
