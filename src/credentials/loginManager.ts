@@ -48,6 +48,7 @@ export class LoginManager {
             if (!accountId) {
                 throw new Error('Could not determine Account Id for credentials')
             }
+            recordVscodeActiveRegions({ value: (await this.awsContext.getExplorerRegions()).length })
 
             await this.awsContext.setCredentials({
                 credentials: storedCredentials.credentials,
@@ -55,7 +56,6 @@ export class LoginManager {
                 accountId: accountId,
                 defaultRegion: provider.getDefaultRegion(),
             })
-            recordVscodeActiveRegions({ value: (await this.awsContext.getExplorerRegions()).length })
 
             return true
         } catch (err) {
