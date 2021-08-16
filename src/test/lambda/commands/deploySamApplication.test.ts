@@ -542,7 +542,7 @@ describe('deploySamApplication', async function () {
 
 function assertGeneralErrorLogged() {
     // match string 'AWS.samcli.deploy.general.error'
-    assertLogsContain('An error occurred while deploying a SAM Application.', false, 'error')
+    assertLogsContain('Error deploying a SAM Application.', false, 'error')
 }
 
 function assertErrorLogsSwallowed(text: string, exactMatch: boolean) {
