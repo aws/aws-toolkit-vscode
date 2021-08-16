@@ -687,8 +687,9 @@ export async function makeJsonFiles(config: SamLaunchRequestArgs): Promise<void>
     config.eventPayloadFile = path.join(config.baseBuildDir!, 'event.json')
 
     // env-vars.json (NB: effectively ignored for the `target=code` case).
-    const env = JSON.stringify(getEnvironmentVariables(makeResourceName(config), config.lambda?.environmentVariables))
-    if (Object.keys(env).length !== 0) {
+    const configEnv = config.lambda?.environmentVariables ?? {}
+    if (Object.keys(configEnv).length !== 0) {
+        const env = JSON.stringify(getEnvironmentVariables(makeResourceName(config), configEnv))
         config.envFile = path.join(config.baseBuildDir!, 'env-vars.json')
         await writeFile(config.envFile, env)
     }
