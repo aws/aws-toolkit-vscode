@@ -152,8 +152,9 @@ export class SharedCredentialsProvider implements CredentialsProvider {
 
     /**
      * Patches 'source_profile' credentials as static representations, which the SDK can handle in all cases.
-     * Returns undefined if no `source_profile` property exists. Otherwise we would prevent the SDK from re-reading
-     * the shared credential files if they were to change.
+     * 
+     * XXX: Returns undefined if no `source_profile` property exists. Else we would prevent the SDK from re-reading
+     * the shared credential files if they were to change. #1953
      *
      * The SDK is unable to resolve `source_profile` fields when the source profile uses SSO/MFA/credential_process.
      * We can handle this resolution ourselves, giving the SDK the resolved credentials by 'pre-loading' them.
