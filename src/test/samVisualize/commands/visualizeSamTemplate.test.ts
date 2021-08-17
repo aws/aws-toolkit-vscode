@@ -9,7 +9,6 @@ import { Disposable } from 'vscode-languageclient'
 import { SamVisualization } from '../../../samVisualize/commands/visualizeSamTemplate/samVisualization'
 import { SamVisualizationManager } from '../../../samVisualize/commands/visualizeSamTemplate/samVisualizationManager'
 import * as vscode from 'vscode'
-import * as path from 'path'
 
 let samVisualizationManager: SamVisualizationManager
 let sandbox: sinon.SinonSandbox
