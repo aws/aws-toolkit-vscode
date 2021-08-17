@@ -23,10 +23,12 @@ class PythonRuntimeGroup : SdkBasedRuntimeGroup() {
         LambdaRuntime.PYTHON2_7,
         LambdaRuntime.PYTHON3_6,
         LambdaRuntime.PYTHON3_7,
-        LambdaRuntime.PYTHON3_8
+        LambdaRuntime.PYTHON3_8,
+        LambdaRuntime.PYTHON3_9
     )
 
     override fun runtimeForSdk(sdk: Sdk): LambdaRuntime? = when {
+        sdk.sdkType is PythonSdkType && PythonSdkType.getLanguageLevelForSdk(sdk).isAtLeast(LanguageLevel.PYTHON39) -> LambdaRuntime.PYTHON3_9
         sdk.sdkType is PythonSdkType && PythonSdkType.getLanguageLevelForSdk(sdk).isAtLeast(LanguageLevel.PYTHON38) -> LambdaRuntime.PYTHON3_8
         sdk.sdkType is PythonSdkType && PythonSdkType.getLanguageLevelForSdk(sdk).isAtLeast(LanguageLevel.PYTHON37) -> LambdaRuntime.PYTHON3_7
         sdk.sdkType is PythonSdkType && PythonSdkType.getLanguageLevelForSdk(sdk).isPy3K -> LambdaRuntime.PYTHON3_6
