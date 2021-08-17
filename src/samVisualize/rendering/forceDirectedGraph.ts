@@ -164,6 +164,43 @@ export class ForceDirectedGraph {
             // Display error message
             d3.select('.error-message').style('display', 'block')
         }
+
+        try {
+            window.addEventListener('message', event => {
+                const newGraphObject = event.data.graphObject
+                if (newGraphObject === undefined) {
+                    // Clear the graph
+                    this.g.selectAll('g').remove()
+
+                    // Hide the buttons, don't remove because we want to keep the listeners
+                    this.filterButtonsDiv.style('display', 'none')
+
+                    // Display error message
+                    d3.select('.error-message').style('display', 'block')
+
+                    // Stop ticking
+                    this.simulation.stop()
+                } else {
+                    // Hide error message
+                    d3.select('.error-message').style('display', 'none')
+
+                    // Display the buttons
+                    this.filterButtonsDiv.style('display', 'block')
+
+                    // update the complete graph
+                    this.completeGraphObject = newGraphObject
+
+                    // Re establish the primaryOnly graph
+                    this.primaryOnlyGraphObject = filterPrimaryOnly(newGraphObject, new Set(primaryResourceList))
+
+                    const isPrimaryChecked = d3.select(`#${primaryButtonID}`).property('checked')
+                    // Draw graph
+                    this.update(isPrimaryChecked ? this.primaryOnlyGraphObject : this.completeGraphObject)
+                }
+            })
+        } catch {
+            // No live updates during unit tests
+        }
     }
     /**
      * Appends an `svg` element to the `body` of a given `Document`
