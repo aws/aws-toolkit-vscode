@@ -75,7 +75,7 @@ export class DefaultSettingsConfiguration implements SettingsConfiguration {
      */
     public shouldDisplayPrompt(promptName: string): boolean {
         const promptSetting = this.getSuppressPromptSetting(promptName)
-        if (promptSetting === undefined || promptSetting[promptName]) {
+        if (promptSetting !== undefined && promptSetting[promptName]) {
             return false
         }
         return true
@@ -87,7 +87,7 @@ export class DefaultSettingsConfiguration implements SettingsConfiguration {
      * @param promptName
      * @returns The settings object
      */
-    private getSuppressPromptSetting(promptName: string): { [prompt: string]: boolean } | undefined {
+    public getSuppressPromptSetting(promptName: string): { [prompt: string]: boolean } | undefined {
         try {
             const setting = this.readSetting<{ [prompt: string]: boolean }>('suppressPrompts')
             if (typeof setting !== 'object' || typeof setting[promptName] !== 'boolean') {
