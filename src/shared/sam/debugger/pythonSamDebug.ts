@@ -256,6 +256,8 @@ function getPythonExeAndBootstrap(runtime: Runtime) {
             return { python: '/var/lang/bin/python3.7', boostrap: '/var/runtime/bootstrap' }
         case 'python3.8':
             return { python: '/var/lang/bin/python3.8', boostrap: '/var/runtime/bootstrap.py' }
+        case 'python3.9':
+            return { python: '/var/lang/bin/python3.9', boostrap: '/var/runtime/bootstrap.py' }
         default:
             throw new Error(`Python SAM debug logic ran for invalid Python runtime: ${runtime}`)
     }
