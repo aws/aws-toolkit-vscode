@@ -114,7 +114,10 @@ export function createBackButton(): QuickInputButton<WizardControl> {
 
 export function createExitButton(): QuickInputButton<WizardControl> {
     return {
-        iconPath: new vscode.ThemeIcon('close'),
+        iconPath: {
+            light: ext.iconPaths.light.exit,
+            dark: ext.iconPaths.dark.exit,
+        },
         tooltip: localize('AWS.generic.exit', 'Exit'),
         onClick: () => WIZARD_EXIT,
     }
@@ -122,7 +125,10 @@ export function createExitButton(): QuickInputButton<WizardControl> {
 
 export function createRefreshButton(): QuickInputButton<void> {
     return {
-        iconPath: new vscode.ThemeIcon('refresh'),
+        iconPath: {
+            light: ext.iconPaths.light.refresh,
+            dark: ext.iconPaths.dark.refresh,
+        },
         tooltip: localize('AWS.generic.refresh', 'Refresh'),
     }
 }
