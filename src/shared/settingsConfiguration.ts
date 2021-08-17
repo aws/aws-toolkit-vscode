@@ -61,12 +61,8 @@ export class DefaultSettingsConfiguration implements SettingsConfiguration {
      * @param promptName Name of prompt to append to list
      */
     public disable(promptName: string): void {
-        const settingValue = this.readSuppressPromptSetting(promptName)
-        if (settingValue || settingValue === undefined) {
-            return
-        }
         const setting = this.getSuppressPromptSetting(promptName)
-        if (setting === undefined) {
+        if (setting === undefined || setting[promptName]) {
             return
         }
         setting[promptName] = true
@@ -78,24 +74,11 @@ export class DefaultSettingsConfiguration implements SettingsConfiguration {
      * @returns False when prompt has been suppressed
      */
     public shouldDisplayPrompt(promptName: string): boolean {
-        const promptSetting = this.readSuppressPromptSetting(promptName)
-        if (promptSetting) {
+        const promptSetting = this.getSuppressPromptSetting(promptName)
+        if (promptSetting === undefined || promptSetting[promptName]) {
             return false
         }
         return true
-    }
-
-    /**
-     * Reads the boolean value of the prompt setting.
-     * @param promptName
-     * @returns A boolean if the setting exists, otherwise undefined
-     */
-    private readSuppressPromptSetting(promptName: string): boolean | undefined {
-        const setting = this.getSuppressPromptSetting(promptName)
-        if (setting === undefined) {
-            return undefined
-        }
-        return setting[promptName]
     }
 
     /**
@@ -109,6 +92,7 @@ export class DefaultSettingsConfiguration implements SettingsConfiguration {
             const setting = this.readSetting<{ [prompt: string]: boolean }>('suppressPrompts')
             if (typeof setting !== 'object' || typeof setting[promptName] !== 'boolean') {
                 getLogger().warn('Setting "suppressPrompts" has an unexpected type. Resetting to default.')
+                // writing this setting to an empty object reverts the setting to its default
                 this.writeSetting('suppressPrompts', {}, vscode.ConfigurationTarget.Global)
                 return undefined
             }
