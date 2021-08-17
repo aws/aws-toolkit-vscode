@@ -5,7 +5,7 @@
 
 import * as vscode from 'vscode'
 import * as fs from 'fs-extra'
-import { showErrorWithLogs } from '../../utilities/messages'
+import { showViewLogsMessage } from '../../utilities/messages'
 import { WIZARD_RETRY } from '../../wizards/wizard'
 import { createQuickPick, DataQuickPickItem, QuickPickPrompter } from '../pickerPrompter'
 import * as nls from 'vscode-nls'
@@ -78,7 +78,7 @@ export function createVariablesPrompter(
             .then(contents => parseEnvFile(contents.toString()))
             .catch(err => {
                 if (err.message !== 'Closed dialog') {
-                    showErrorWithLogs(
+                    showViewLogsMessage(
                         localize('AWS.environmentVariables.prompt.failed', 'Failed to read environment variables')
                     )
                 }
