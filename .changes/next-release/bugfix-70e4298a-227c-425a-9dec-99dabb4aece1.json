@@ -1,4 +1,0 @@
-{
-  "type" : "bugfix",
-  "description" : "Fix CloudWatch sorting (#2737)"
-}
