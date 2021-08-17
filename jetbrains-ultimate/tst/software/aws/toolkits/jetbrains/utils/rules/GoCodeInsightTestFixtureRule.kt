@@ -101,8 +101,9 @@ fun runGoModTidy(goModFile: VirtualFile) {
 }
 
 fun compatibleGoForIde() = when (ApplicationInfo.getInstance().build.baselineVersion) {
-    202 -> "1.14.15" // TODO: FIX_WHEN_MIN_IS_202
-    203 -> "1.15.14" // TODO: FIX_WHEN_MIN_IS_203
+    202 -> "1.14.15" // TODO: FIX_WHEN_MIN_IS_203
+    203 -> "1.15.14" // TODO: FIX_WHEN_MIN_IS_211
+    211 -> "1.16.6" // TODO: FIX_WHEN_MIN_IS_212
     else -> null
 }
 
