@@ -181,10 +181,12 @@
                     "description": "%AWS.configuration.enableCodeLenses%",
                     "default": true
                 },
-                "aws.doNotShowPrompts": {
-                    "type": "array",
-                    "description": "%AWS.configuration.description.doNotShowPrompts%",
-                    "default": []
+                "aws.suppressPrompts": {
+                    "type": "object",
+                    "description": "%AWS.configuration.description.suppressPrompts%",
+                    "default": {},
+                    "properties": {},
+                    "additionalProperties": false
                 }
             }
         },

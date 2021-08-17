@@ -57,35 +57,65 @@ export class DefaultSettingsConfiguration implements SettingsConfiguration {
         }
     }
     /**
-     * Adds prompt to list of prompts that have been selected not to display again.
+     * Sets a prompt message as suppressed.
      * @param promptName Name of prompt to append to list
      */
     public disable(promptName: string): void {
-        try {
-            let prompts = this.readSetting<string[]>('doNotShowPrompts', [])
-            if (typeof prompts !== 'object' || !Array.isArray(prompts)) {
-                getLogger().warn('setting "doNotShowPrompts" has an unexpected type. Overwriting.')
-                prompts = []
-            }
-            if (!prompts.includes(promptName)) {
-                prompts.push(promptName)
-                this.writeSetting('doNotShowPrompts', prompts, vscode.ConfigurationTarget.Global)
-            }
-        } catch (e) {
-            getLogger().error('Failed to update setting: doNotShowPrompts', e)
+        const settingValue = this.readSuppressPromptSetting(promptName)
+        if (settingValue || settingValue === undefined) {
+            return
         }
+        const setting = this.getSuppressPromptSetting(promptName)
+        if (setting === undefined) {
+            return
+        }
+        setting[promptName] = true
+        this.writeSetting('suppressPrompts', setting, vscode.ConfigurationTarget.Global)
     }
     /**
      * Verifies if a prompt should be displayed again.
      * @param promptName Name of the prompt
-     * @returns False when prompt was disabled previously
+     * @returns False when prompt has been suppressed
      */
     public shouldDisplayPrompt(promptName: string): boolean {
-        const promptSetting = this.readSetting<string[]>('doNotShowPrompts')
-        if (typeof promptSetting !== 'object' || !Array.isArray(promptSetting)) {
-            getLogger().warn('setting "doNotShowPrompts" has an unexpected type. Falling back to default.')
-            return true
+        const promptSetting = this.readSuppressPromptSetting(promptName)
+        if (promptSetting) {
+            return false
         }
-        return !promptSetting.includes(promptName)
+        return true
+    }
+
+    /**
+     * Reads the boolean value of the prompt setting.
+     * @param promptName
+     * @returns A boolean if the setting exists, otherwise undefined
+     */
+    private readSuppressPromptSetting(promptName: string): boolean | undefined {
+        const setting = this.getSuppressPromptSetting(promptName)
+        if (setting === undefined) {
+            return undefined
+        }
+        return setting[promptName]
+    }
+
+    /**
+     * Gets the 'suppressPrompts' settings object. This will reset the setting to default if it does not
+     * recieve an object or the prompts value is not a boolean.
+     * @param promptName
+     * @returns The settings object
+     */
+    private getSuppressPromptSetting(promptName: string): { [prompt: string]: boolean } | undefined {
+        try {
+            const setting = this.readSetting<{ [prompt: string]: boolean }>('suppressPrompts')
+            if (typeof setting !== 'object' || typeof setting[promptName] !== 'boolean') {
+                getLogger().warn('Setting "suppressPrompts" has an unexpected type. Resetting to default.')
+                this.writeSetting('suppressPrompts', {}, vscode.ConfigurationTarget.Global)
+                return undefined
+            }
+
+            return setting
+        } catch (e) {
+            getLogger().error('Failed to get the setting: suppressPrompts', e)
+        }
     }
 }
