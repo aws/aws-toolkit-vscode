@@ -7,30 +7,35 @@ import * as vscode from 'vscode'
 
 import { AslVisualizationCDK } from './aslVisualizationCDK'
 import { ConstructNode } from '../explorer/nodes/constructNode'
-import { getLogger, Logger } from '../../shared/logger'
+import { getLogger } from '../../shared/logger'
 import { AbstractAslVisualizationManager } from '../../../src/stepFunctions/commands/visualizeStateMachine/abstractAslVisualizationManager'
 import { StateMachineGraphCache } from '../../../src/stepFunctions/utils'
 
 export class AslVisualizationCDKManager extends AbstractAslVisualizationManager {
-    protected readonly managedVisualizations: Map<string, Map<string, AslVisualizationCDK>> = new Map<string, Map<string, AslVisualizationCDK>>()
+    protected readonly name: string = 'AslVisualizationCDKManager'
+    protected readonly managedVisualizations: Map<string, Map<string, AslVisualizationCDK>> = new Map<
+        string,
+        Map<string, AslVisualizationCDK>
+    >()
 
     public constructor(extensionContext: vscode.ExtensionContext) {
         super(extensionContext)
     }
 
+    //vscode.Memento passed in to update StateMachineGraphCache on each visualization
     public async visualizeStateMachine(
         globalStorage: vscode.Memento,
         node: ConstructNode
     ): Promise<vscode.WebviewPanel | undefined> {
-        const logger: Logger = getLogger()
+        const logger = getLogger()
         const cache = new StateMachineGraphCache()
+        const cdkOutPath = node.id.replace(`/tree.json/${node.tooltip}`, ``)
+        const workspaceName = this.getCDKAppWorkspaceName(cdkOutPath)
+        const existingVisualization = this.getExistingVisualization(workspaceName, node.tooltip)
         const stateMachineName = node.label
-        const cdkOutPath = node.id?.replace(`/tree.json/${node.tooltip}`, ``)
-        const appName = node.tooltip?.replace(`/${stateMachineName}`, ``)
+        const appName = node.tooltip.replace(`/${stateMachineName}`, ``)
         const templatePath = String(cdkOutPath) + `/${appName}.template.json`
-        const uri = vscode.Uri.file(templatePath);
-        const workspaceName = this.getCDKAppWorkspaceName(cdkOutPath!)
-        const existingVisualization = this.getExistingVisualization(workspaceName, node.tooltip!)
+        const uri = vscode.Uri.file(templatePath)
         if (existingVisualization) {
             existingVisualization.showPanel()
 
@@ -42,7 +47,7 @@ export class AslVisualizationCDKManager extends AbstractAslVisualizationManager 
             await cache.updateCache(globalStorage)
 
             const textDocument = await vscode.workspace.openTextDocument(uri)
-            const newVisualization = new AslVisualizationCDK(textDocument, templatePath, appName!, stateMachineName)
+            const newVisualization = new AslVisualizationCDK(textDocument, templatePath, appName, stateMachineName)
             if (newVisualization) {
                 this.handleNewVisualization(workspaceName, newVisualization)
                 return newVisualization.getPanel()
@@ -61,8 +66,9 @@ export class AslVisualizationCDKManager extends AbstractAslVisualizationManager 
             map = new Map<string, AslVisualizationCDK>()
             map.set(uniqueIdentifier, newVisualization)
             this.managedVisualizations.set(workspaceName, map)
+        } else {
+            map.set(uniqueIdentifier, newVisualization)
         }
-        else map.set(uniqueIdentifier, newVisualization)
 
         const visualizationDisposable = newVisualization.onVisualizationDisposeEvent(() => {
             this.deleteVisualization(workspaceName, uniqueIdentifier)
@@ -78,17 +84,22 @@ export class AslVisualizationCDKManager extends AbstractAslVisualizationManager 
         this.managedVisualizations.get(workspaceName)?.delete(visualizationToDelete)
     }
 
-    protected getExistingVisualization(workspaceName: string, uniqueIdentifier: string): AslVisualizationCDK | undefined {
+    protected getExistingVisualization(
+        workspaceName: string,
+        uniqueIdentifier: string
+    ): AslVisualizationCDK | undefined {
         return this.managedVisualizations.get(workspaceName)?.get(uniqueIdentifier)
     }
 
     /**
-    * @param {string} cdkOutPath - path to the cdk.out folder
-    * @returns name of the CDK application workspace name
-    */
+     * @param {string} cdkOutPath - path to the cdk.out folder
+     * @returns name of the CDK application workspace name
+     */
     getCDKAppWorkspaceName(cdkOutPath: string) {
-        if (typeof (cdkOutPath) != "string") return cdkOutPath;
+        if (typeof cdkOutPath != 'string') {
+            return cdkOutPath
+        }
         cdkOutPath = cdkOutPath.replace('/cdk.out', '')
-        return cdkOutPath.substring(cdkOutPath.lastIndexOf("/") + 1, cdkOutPath.length)
-    };
+        return cdkOutPath.substring(cdkOutPath.lastIndexOf('/') + 1, cdkOutPath.length)
+    }
 }

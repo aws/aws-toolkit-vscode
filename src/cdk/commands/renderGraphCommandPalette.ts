@@ -5,20 +5,32 @@
 
 import * as vscode from 'vscode'
 
-import PreviewStateMachineCDKWizard from '../wizards/previewStateMachineCDKWizard'
+import { PreviewStateMachineCDKWizard } from '../wizards/previewStateMachineCDKWizard'
 import { AslVisualizationCDKManager } from './aslVisualizationCDKManager'
 import { getLogger, Logger } from '../../shared/logger'
 import { renderStateMachineGraphCommand } from './renderStateMachineGraph'
 
-export async function previewCDKStateMachineFromCommandPalette(context: vscode.Memento, aslVisualizationCDKManager: AslVisualizationCDKManager) {
+export async function previewCDKStateMachineFromCommandPalette(
+    globalStorage: vscode.Memento,
+    aslVisualizationCDKManager: AslVisualizationCDKManager
+) {
     const logger: Logger = getLogger()
 
     const wizardResponse = await new PreviewStateMachineCDKWizard().run()
 
-    if (wizardResponse && wizardResponse.cdkApplication && wizardResponse.stateMachine && wizardResponse.stateMachine.stateMachineNode) {
+    if (
+        wizardResponse &&
+        wizardResponse.cdkApplication &&
+        wizardResponse.stateMachine &&
+        wizardResponse.stateMachine.stateMachineNode
+    ) {
         logger.debug(
             `User selected the ${wizardResponse.stateMachine} state machine of ${wizardResponse.cdkApplication.label} CDK application`
         )
-        renderStateMachineGraphCommand(wizardResponse.stateMachine.stateMachineNode, context, aslVisualizationCDKManager)
+        renderStateMachineGraphCommand(
+            wizardResponse.stateMachine.stateMachineNode,
+            globalStorage,
+            aslVisualizationCDKManager
+        )
     }
 }

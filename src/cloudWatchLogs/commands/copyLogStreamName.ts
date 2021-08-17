@@ -24,7 +24,7 @@ export async function copyLogStreamName(uri?: vscode.Uri): Promise<void> {
     } catch (e) {
         vscode.window.showErrorMessage(
             localize(
-                'aws.cloudWatchLogs.invalidEditor',
+                'AWS.cloudWatchLogs.invalidEditor',
                 'Not a Cloudwatch Log stream: {0}',
                 vscode.window.activeTextEditor?.document.fileName
             )

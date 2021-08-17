@@ -5,21 +5,22 @@
 
 import * as vscode from 'vscode'
 import * as nls from 'vscode-nls'
+import { ConstructNode } from '../../../cdk/explorer/nodes/constructNode'
 
 import { Logger } from '../../../shared/logger'
 
 const localize = nls.loadMessageBundle()
 
 export abstract class AbstractAslVisualizationManager {
-    private readonly extensionContext: vscode.ExtensionContext
+    protected readonly name: string = 'AbstractAslVisualizationManager'
 
-    public constructor(extensionContext: vscode.ExtensionContext) {
+    public constructor(private readonly extensionContext: vscode.ExtensionContext) {
         this.extensionContext = extensionContext
     }
 
     abstract visualizeStateMachine(
         globalStorage: vscode.Memento,
-        input: any
+        input: vscode.TextEditor | ConstructNode | undefined
     ): Promise<vscode.WebviewPanel | undefined>
 
     protected pushToExtensionContextSubscriptions(visualizationDisposable: vscode.Disposable) {
@@ -34,7 +35,7 @@ export abstract class AbstractAslVisualizationManager {
             )
         )
 
-        logger.debug('Unable to setup webview panel.')
+        logger.debug(`${this.name}: Unable to setup webview panel.`)
         logger.error(err as Error)
     }
 }

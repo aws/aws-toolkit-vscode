@@ -1,0 +1,4 @@
+{
+	"type": "Bug Fix",
+	"description": "SAM/CFN JSON schema: write yaml.customTags to user-global settings (instead of workspace-local)"
+}

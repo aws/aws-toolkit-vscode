@@ -8,9 +8,9 @@
  */
 import * as assert from 'assert'
 import { VSCODE_EXTENSION_ID } from '../shared/extensions'
-import { activateExtension } from './integrationTestsUtilities'
 import { getLogger } from '../shared/logger'
 import { WinstonToolkitLogger } from '../shared/logger/winstonToolkitLogger'
+import { activateExtension } from '../shared/utilities/vsCodeUtils'
 
 // ASSUMPTION: Tests are not run concurrently
 
@@ -49,7 +49,7 @@ export function setTestTimeout(testName: string | undefined, ms: number) {
 before(async function () {
     console.log('globalSetup: before()')
     // Needed for getLogger().
-    await activateExtension(VSCODE_EXTENSION_ID.awstoolkit)
+    await activateExtension(VSCODE_EXTENSION_ID.awstoolkit, false)
 
     // Log as much as possible, useful for debugging integration tests.
     getLogger().setLogLevel('debug')

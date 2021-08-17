@@ -11,6 +11,7 @@ import { StateMachineGraphCache } from '../../utils'
 import { getLogger, Logger } from '../../../shared/logger'
 
 export class AslVisualizationManager extends AbstractAslVisualizationManager {
+    protected readonly name: string = 'AslVisualizationManager'
     protected readonly managedVisualizations: Map<string, AslVisualization> = new Map<string, AslVisualization>()
 
     public constructor(extensionContext: vscode.ExtensionContext) {

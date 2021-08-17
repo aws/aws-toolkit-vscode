@@ -1,0 +1,7 @@
+Resources:
+    TypeScriptApplication:
+        Type: AWS::Serverless::Function
+        Properties:
+            CodeUri: src
+            Handler: dist/app.handler
+            Runtime: nodejs12.x

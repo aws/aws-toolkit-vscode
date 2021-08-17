@@ -16,6 +16,8 @@ import { generatePropertyNodes, PropertyNode } from './propertyNode'
 export class ConstructNode extends AWSTreeNodeBase {
     private readonly type: string
     private readonly properties: ConstructProps | undefined
+    public readonly id: string
+    public readonly tooltip: string
 
     public constructor(
         public readonly parent: AWSTreeNodeBase,
@@ -80,18 +82,19 @@ export class ConstructNode extends AWSTreeNodeBase {
     }
 }
 
-/** 
-    * Determines if a CDK construct is of type state machine
-    * 
-    * @param {ConstructTreeEntity} construct - CDK construct
-    */
+/**
+ * Determines if a CDK construct is of type state machine
+ *
+ * @param {ConstructTreeEntity} construct - CDK construct
+ */
 export function isStateMachine(construct: ConstructTreeEntity): boolean {
-
-    if (!construct.children) return false
-
-    const resource = construct.children["Resource"]
-    if (!resource) return false
-
+    if (!construct.children) {
+        return false
+    }
+    const resource = construct.children['Resource']
+    if (!resource) {
+        return false
+    }
     const type: string = treeInspector.getTypeAttributeOrDefault(resource, '')
     return type === 'AWS::StepFunctions::StateMachine'
 }

@@ -72,7 +72,7 @@ Alternatively, you can run and debug just the AWS Lambda function and exclude ot
 
 When you run a debug session, the status and results are shown in the **OUTPUT** panel when the **AWS Toolkit** output channel is selected.
 
-![Configure and Run 2](./resources/marketplace/vscode/sam-configure-and-run-still-2.png)
+![Configure and Run](./resources/marketplace/vscode/sam-configure-and-run-still.png)
 
 ###### After a local run is complete, the output appears in the **OUTPUT** tab.
 
@@ -96,7 +96,7 @@ The Toolkit _local SAM debugging_ feature supports these Lambda runtimes:
 -   C# (.NET Core 2.1, 3.1; .NET 5.0)
 -   Go (1.x)
 -   Java (8, 8.al2, 11)
--   JavaScript (Node.js 10.x, 12.x, 14.x)
+-   JavaScript/TypeScript (Node.js 10.x, 12.x, 14.x)
 -   Python (2.7, 3.6, 3.7, 3.8)
 
 For more information see [Working with AWS Serverless Applications](https://docs.aws.amazon.com/toolkit-for-vscode/latest/userguide/serverless-apps.html) in the user guide. To get setup for local debugging, see [Configuring your toolchain](https://docs.aws.amazon.com/toolkit-for-vscode/latest/userguide/setup-toolchain.html).
@@ -202,11 +202,11 @@ The Toolkit provides commands (prefixed with `AWS:`) to the VS Code _command
 palette_, available by selecting _View > Command Palette_ or by typing
 `CTRL-SHIFT-p` (macOS: `CMD-SHIFT-p`).
 
-![Command Palette](./resources/marketplace/vscode/open-command-palette-codelens.gif)
+![Command Palette](./resources/marketplace/vscode/open-command-palette.gif)
 
 | AWS Command                                          | Description                                                                                                                                                                                                                                                                                                    |
 | :--------------------------------------------------- | :------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `AWS: About AWS Toolkit`                             | Displays information about the AWS Toolkit.                                                                                                                                                                                                                                                                    |
+| `AWS: About Toolkit`                                 | Displays information about the AWS Toolkit.                                                                                                                                                                                                                                                                    |
 | `AWS: Add SAM Debug Configuration`                   | Creates an `aws-sam` Debug Configuration from a function in the current source file                                                                                                                                                                                                                            |
 | `AWS: Connect to AWS`                                | Connects the Toolkit to an AWS account. For more information, see [Connecting to AWS](https://docs.aws.amazon.com/console/toolkit-for-vscode/connect) in the user guide.                                                                                                                                       |
 | `AWS: Copy Log Stream Name`                          | Copies the name of the active CloudWatch Log Stream                                                                                                                                                                                                                                                            |
@@ -228,7 +228,7 @@ palette_, available by selecting _View > Command Palette_ or by typing
 | `AWS: Sign out`                                      | Disconnects the Toolkit from the currently-connected AWS account.                                                                                                                                                                                                                                              |
 | `AWS: Submit Quick Feedback...`                      | Submit a private, one-way message and sentiment to the AWS Toolkit dev team. For larger issues that warrant conversations or bugfixes, please submit an issue in Github with the **AWS: Create a New Issue on Github** command.                                                                                |
 | `AWS: Toggle SAM hints in source files`              | Toggles AWS SAM-related Codelenses in source files                                                                                                                                                                                                                                                             |
-| `AWS: View AWS Toolkit Logs`                         | Displays log files that contain general Toolkit diagnostic information.                                                                                                                                                                                                                                        |
+| `AWS: View Toolkit Logs`                             | Displays log files that contain general Toolkit diagnostic information.                                                                                                                                                                                                                                        |
 | `AWS: View Quick Start`                              | Open this quick-start guide.                                                                                                                                                                                                                                                                                   |
 | `AWS: View CDK Documentation`                        | Opens the [user guide](https://docs.aws.amazon.com/console/toolkit-for-vscode/aws-cdk-apps) for the CDK portion of the Toolkit.                                                                                                                                                                                |
 | `AWS: View Toolkit Documentation`                    | Opens the [user guide](https://docs.aws.amazon.com/console/toolkit-for-vscode/welcome) for the Toolkit.                                                                                                                                                                                                        |

@@ -8,7 +8,7 @@ import * as vscode from 'vscode'
 import { CloudFormation } from '../../shared/cloudformation/cloudformation'
 import { getLogger, Logger } from '../../shared/logger'
 import { getChildrenRange, loadSymbols, LoadSymbolsContext } from '../../shared/utilities/symbolUtilities'
-import { getParameterNames } from '../utilities/parameterUtils'
+import { getParameterNames } from '../config/parameterUtils'
 
 export interface SamParameterCompletionItemProviderContext extends LoadSymbolsContext {
     logger: Pick<Logger, 'warn'>

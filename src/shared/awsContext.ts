@@ -4,6 +4,7 @@
  */
 
 import * as vscode from 'vscode'
+import * as AWS from '@aws-sdk/types'
 
 export interface AwsContextCredentials {
     readonly credentials: AWS.Credentials
@@ -31,7 +32,7 @@ export interface AwsContext {
 
     getCredentialAccountId(): string | undefined
 
-    getCredentialDefaultRegion(): string | undefined
+    getCredentialDefaultRegion(): string
 
     getExplorerRegions(): Promise<string[]>
 

@@ -2,7 +2,7 @@
  * Copyright 2018-2019 Amazon.com, Inc. or its affiliates. All Rights Reserved.
  * SPDX-License-Identifier: Apache-2.0
  */
-
+import { AppRunner, S3 } from 'aws-sdk'
 import { APIGateway, CloudFormation, CloudWatchLogs, IAM, Lambda, Schemas, StepFunctions, STS, SSM } from 'aws-sdk'
 import { ApiGatewayClient } from '../../../shared/clients/apiGatewayClient'
 import { CloudFormationClient } from '../../../shared/clients/cloudFormationClient'
@@ -36,7 +36,9 @@ import {
     CreateFolderResponse,
     ListObjectVersionsResponse,
     DeleteObjectsResponse,
+    SignedUrlRequest,
 } from '../../../shared/clients/s3Client'
+import { AppRunnerClient } from '../../../shared/clients/apprunnerClient'
 
 interface Clients {
     apiGatewayClient: ApiGatewayClient
@@ -51,6 +53,7 @@ interface Clients {
     stsClient: StsClient
     s3Client: S3Client
     ssmDocumentClient: SsmDocumentClient
+    apprunnerClient: AppRunnerClient
 }
 
 export class MockToolkitClientBuilder implements ToolkitClientBuilder {
@@ -69,8 +72,13 @@ export class MockToolkitClientBuilder implements ToolkitClientBuilder {
             stsClient: new MockStsClient({}),
             s3Client: new MockS3Client({}),
             ssmDocumentClient: new MockSsmDocumentClient(),
+            apprunnerClient: new MockAppRunnerClient(),
             ...overrideClients,
         }
+    }
+
+    public createAppRunnerClient(regionCode: string): AppRunnerClient {
+        return this.clients.apprunnerClient
     }
 
     public createApiGatewayClient(regionCode: string): ApiGatewayClient {
@@ -171,8 +179,8 @@ export class MockCloudWatchLogsClient implements CloudWatchLogsClient {
         public readonly regionCode: string = '',
 
         public readonly describeLogGroups: (
-            statusFilter?: string[]
-        ) => AsyncIterableIterator<CloudWatchLogs.LogGroup> = (statusFilter?: string[]) => asyncGenerator([]),
+            request?: CloudWatchLogs.DescribeLogGroupsRequest
+        ) => AsyncIterableIterator<CloudWatchLogs.LogGroup> = () => asyncGenerator([]),
 
         public readonly describeLogStreams: (
             request: CloudWatchLogs.DescribeLogStreamsRequest
@@ -319,10 +327,17 @@ export class MockEcsClient implements EcsClient {
 }
 
 export class MockIamClient implements IamClient {
+    public readonly regionCode = ''
     public readonly listRoles: () => Promise<IAM.ListRolesResponse>
 
     public constructor({ listRoles = async () => ({ Roles: [] }) }: { listRoles?(): Promise<IAM.ListRolesResponse> }) {
         this.listRoles = listRoles
+    }
+    public createRole(request: IAM.CreateRoleRequest): Promise<IAM.CreateRoleResponse> {
+        throw new Error('Method not implemented.')
+    }
+    public attachRolePolicy(request: IAM.AttachRolePolicyRequest): Promise<void> {
+        throw new Error('Method not implemented.')
     }
 }
 
@@ -417,6 +432,10 @@ export class MockStsClient implements StsClient {
         this.regionCode = regionCode
         this.getCallerIdentity = getCallerIdentity
     }
+
+    assumeRole(request: STS.AssumeRoleRequest): Promise<STS.AssumeRoleResponse> {
+        throw new Error('Method not implemented.')
+    }
 }
 
 export class MockSsmDocumentClient implements SsmDocumentClient {
@@ -477,6 +496,7 @@ export class MockS3Client implements S3Client {
     public readonly regionCode: string
 
     public readonly createBucket: (request: CreateBucketRequest) => Promise<CreateBucketResponse>
+    public readonly listAllBuckets: () => Promise<S3.Bucket[]>
     public readonly listBuckets: () => Promise<ListBucketsResponse>
     public readonly listFiles: (request: ListFilesRequest) => Promise<ListFilesResponse>
     public readonly createFolder: (request: CreateFolderRequest) => Promise<CreateFolderResponse>
@@ -489,14 +509,17 @@ export class MockS3Client implements S3Client {
     public readonly deleteObject: (request: DeleteObjectRequest) => Promise<void>
     public readonly deleteObjects: (request: DeleteObjectsRequest) => Promise<DeleteObjectsResponse>
     public readonly deleteBucket: (request: DeleteBucketRequest) => Promise<void>
+    public readonly getSignedUrl: (request: SignedUrlRequest) => Promise<string>
 
     public constructor({
         regionCode = '',
         createBucket = async (request: CreateBucketRequest) => ({ bucket: { name: '', region: '', arn: '' } }),
+        listAllBuckets = async () => [],
         listBuckets = async () => ({ buckets: [] }),
         listFiles = async (request: ListFilesRequest) => ({ files: [], folders: [] }),
         createFolder = async (request: CreateFolderRequest) => ({ folder: { name: '', path: '', arn: '' } }),
         downloadFile = async (request: DownloadFileRequest) => {},
+        getSignedUrl = async (request: SignedUrlRequest) => '',
         uploadFile = async (request: UploadFileRequest) => {},
         listObjectVersions = async (request: ListObjectVersionsRequest) => ({ objects: [] }),
         listObjectVersionsIterable = (request: ListObjectVersionsRequest) => asyncGenerator([]),
@@ -506,10 +529,12 @@ export class MockS3Client implements S3Client {
     }: {
         regionCode?: string
         createBucket?(request: CreateBucketRequest): Promise<CreateBucketResponse>
+        listAllBuckets?(): Promise<S3.Bucket[]>
         listBuckets?(): Promise<ListBucketsResponse>
         listFiles?(request: ListFilesRequest): Promise<ListFilesResponse>
         createFolder?(request: CreateFolderRequest): Promise<CreateFolderResponse>
         downloadFile?(request: DownloadFileRequest): Promise<void>
+        getSignedUrl?(request: SignedUrlRequest): Promise<string>
         uploadFile?(request: UploadFileRequest): Promise<void>
         listObjectVersions?(request: ListObjectVersionsRequest): Promise<ListObjectVersionsResponse>
         listObjectVersionsIterable?(
@@ -521,15 +546,75 @@ export class MockS3Client implements S3Client {
     }) {
         this.regionCode = regionCode
         this.createBucket = createBucket
+        this.listAllBuckets = listAllBuckets
         this.listBuckets = listBuckets
         this.listFiles = listFiles
         this.createFolder = createFolder
         this.downloadFile = downloadFile
+        this.getSignedUrl = getSignedUrl
         this.uploadFile = uploadFile
         this.listObjectVersions = listObjectVersions
         this.listObjectVersionsIterable = listObjectVersionsIterable
         this.deleteObject = deleteObject
         this.deleteObjects = deleteObjects
         this.deleteBucket = deleteBucket
+    }
+}
+
+export class MockAppRunnerClient implements AppRunnerClient {
+    public readonly regionCode: string = ''
+
+    public constructor() {}
+
+    public async createService(request: AppRunner.CreateServiceRequest): Promise<AppRunner.CreateServiceResponse> {
+        throw new Error('Not implemented')
+    }
+
+    public async listServices(request: AppRunner.ListServicesRequest): Promise<AppRunner.ListServicesResponse> {
+        throw new Error('Not implemented')
+    }
+
+    public async pauseService(request: AppRunner.PauseServiceRequest): Promise<AppRunner.PauseServiceResponse> {
+        throw new Error('Not implemented')
+    }
+
+    public async resumeService(request: AppRunner.ResumeServiceRequest): Promise<AppRunner.ResumeServiceResponse> {
+        throw new Error('Not implemented')
+    }
+
+    public async updateService(request: AppRunner.UpdateServiceRequest): Promise<AppRunner.UpdateServiceResponse> {
+        throw new Error('Not implemented')
+    }
+
+    public async createConnection(
+        request: AppRunner.CreateConnectionRequest
+    ): Promise<AppRunner.CreateConnectionResponse> {
+        throw new Error('Not implemented')
+    }
+
+    public async listConnections(
+        request: AppRunner.ListConnectionsRequest
+    ): Promise<AppRunner.ListConnectionsResponse> {
+        throw new Error('Not implemented')
+    }
+
+    public async describeService(
+        request: AppRunner.DescribeServiceRequest
+    ): Promise<AppRunner.DescribeServiceResponse> {
+        throw new Error('Not implemented')
+    }
+
+    public async startDeployment(
+        request: AppRunner.StartDeploymentRequest
+    ): Promise<AppRunner.StartDeploymentResponse> {
+        throw new Error('Not implemented')
+    }
+
+    public async listOperations(request: AppRunner.ListOperationsRequest): Promise<AppRunner.ListOperationsResponse> {
+        throw new Error('Not implemented')
+    }
+
+    public async deleteService(request: AppRunner.DeleteServiceRequest): Promise<AppRunner.DeleteServiceResponse> {
+        throw new Error('Not implemented')
     }
 }

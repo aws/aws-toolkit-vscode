@@ -74,8 +74,8 @@ export const debugNewSamAppUrl: string = isCloud9()
 export const LOCALIZED_DATE_FORMAT = 'll LTS [GMT]ZZ'
 
 // moment().format() matches Insights console timestamp, e.g.: 2019-03-04T11:40:08.781-08:00
-// TODO: Do we want this this verbose? Log stream just shows hh:mm:ss
-export const INSIGHTS_TIMESTAMP_FORMAT = 'YYYY-MM-DDThh:mm:ss.SSSZ'
+// TODO: Do we want this this verbose? Log stream just shows HH:mm:ss
+export const INSIGHTS_TIMESTAMP_FORMAT = 'YYYY-MM-DDTHH:mm:ss.SSSZ'
 
 /**
  * URI scheme for CloudWatch Logs Virtual Documents
@@ -85,3 +85,10 @@ export const CLOUDWATCH_LOGS_SCHEME = 'awsCloudWatchLogs'
 export const COPY_TO_CLIPBOARD_INFO_TIMEOUT_MS = 5000
 
 export const LAMBDA_PACKAGE_TYPE_IMAGE = 'Image'
+
+// URLs for App Runner
+export const APPRUNNER_CONNECTION_HELP_URL =
+    'https://docs.aws.amazon.com/apprunner/latest/dg/manage-create.html#manage-create.create.github'
+export const APPRUNNER_CONFIGURATION_HELP_URL = 'https://docs.aws.amazon.com/apprunner/latest/dg/manage-configure.html'
+export const APPRUNNER_RUNTIME_HELP_URL = 'https://docs.aws.amazon.com/apprunner/latest/dg/service-source-code.html'
+export const APPRUNNER_PRICING_URL = 'https://aws.amazon.com/apprunner/pricing/'

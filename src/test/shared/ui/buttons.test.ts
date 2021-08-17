@@ -1,5 +1,5 @@
 /*!
- * Copyright 2018 Amazon.com, Inc. or its affiliates. All Rights Reserved.
+ * Copyright 2021 Amazon.com, Inc. or its affiliates. All Rights Reserved.
  * SPDX-License-Identifier: Apache-2.0
  */
 
@@ -17,18 +17,19 @@ describe('UI buttons', function () {
         clearTestIconPaths()
     })
 
-    it('creates a help button without a tooltip', function () {
-        const help = buttons.createHelpButton()
+    it('creates a help button with a tooltip', function () {
+        const tooltip = 'you must be truly desperate to come to me for help'
+        const help = buttons.createHelpButton('', tooltip)
 
-        assert.strictEqual(help.tooltip, undefined)
+        assert.strictEqual(help.tooltip, tooltip)
         assertIconPath(help.iconPath as IconPath)
     })
 
-    it('creates a help button with a tooltip', function () {
-        const tooltip = 'you must be truly desperate to come to me for help'
-        const help = buttons.createHelpButton(tooltip)
+    it('creates a help button with a url', function () {
+        const url = 'http://fake.url/'
+        const help = buttons.createHelpButton(url)
 
-        assert.strictEqual(help.tooltip, tooltip)
+        assert.strictEqual(help.uri.toString(), url)
         assertIconPath(help.iconPath as IconPath)
     })
 

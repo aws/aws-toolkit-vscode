@@ -22,27 +22,27 @@ import { AppNode } from '../explorer/nodes/appNode'
 import { ConstructNode } from '../explorer/nodes/constructNode'
 
 export interface CdkAppLocationPickItem {
-    label: string,
+    label: string
     cdkApplocation: CdkAppLocation | undefined
 }
 
 export interface TopLevelNodePickItem {
-    label: string,
+    label: string
     topLevelNode: ConstructNode | undefined
 }
 
 export interface ConstructNodePickItem {
-    label: string,
+    label: string
     stateMachineNode: ConstructNode | undefined
 }
 
 interface PreviewStateMachineCDKWizardResponse {
-    cdkApplication: CdkAppLocationPickItem,
-    topLevelNode: TopLevelNodePickItem,
+    cdkApplication: CdkAppLocationPickItem
+    topLevelNode: TopLevelNodePickItem
     stateMachine: ConstructNodePickItem
 }
 
-export default class PreviewStateMachineCDKWizard extends MultiStepWizard<PreviewStateMachineCDKWizardResponse> {
+export class PreviewStateMachineCDKWizard extends MultiStepWizard<PreviewStateMachineCDKWizardResponse> {
     private cdkApplication?: CdkAppLocationPickItem
     private topLevelNode?: TopLevelNodePickItem
     private stateMachine?: ConstructNodePickItem
@@ -62,26 +62,21 @@ export default class PreviewStateMachineCDKWizard extends MultiStepWizard<Previe
         const cdkAppLocations: CdkAppLocationPickItem[] = cdkAppLocationsHelper.map(obj => {
             return {
                 label: getCDKAppWorkspaceName(obj.cdkJsonPath),
-                cdkApplocation: obj
+                cdkApplocation: obj,
             }
         })
 
         if (cdkAppLocations.length === 0) {
-            cdkAppLocations.push(
-                {
-                    label: '[No workspace found]',
-                    cdkApplocation: undefined
-                }
-            )
+            cdkAppLocations.push({
+                label: localize('Aws.cdk.app.noWorkspace', '[No workspace found]'),
+                cdkApplocation: undefined,
+            })
         }
 
         const quickPick = picker.createQuickPick<CdkAppLocationPickItem>({
             options: {
                 ignoreFocusOut: true,
-                title: localize(
-                    'AWS.message.prompt.selectCDKWorkspace.placeholder',
-                    'Select CDK workspace'
-                ),
+                title: localize('AWS.message.prompt.selectCDKWorkspace.placeholder', 'Select CDK workspace'),
                 step: 1,
                 totalSteps: 3,
             },
@@ -105,31 +100,33 @@ export default class PreviewStateMachineCDKWizard extends MultiStepWizard<Previe
     private readonly SELECT_APPLICATION_ACTION: WizardStep = async () => {
         const appLocation = this.cdkApplication ? this.cdkApplication.cdkApplocation : undefined
 
-        if (!appLocation) return WIZARD_GOBACK
+        if (!appLocation) {
+            return WIZARD_GOBACK
+        }
 
         const appNode = new AppNode(appLocation)
         const constructNodes = await appNode.getChildren()
         const cdkApplications: TopLevelNodePickItem[] = constructNodes.map(node => {
             return {
                 label: node.label || '',
-                topLevelNode: node as ConstructNode
+                topLevelNode: node as ConstructNode,
             }
         })
 
         if (cdkApplications.length === 0) {
             cdkApplications.push({
-                label: `[No cdk application(s) found in workspace '${getCDKAppWorkspaceName(appLocation.cdkJsonPath)}']`,
-                topLevelNode: undefined
+                label: localize(
+                    'AWS.cdk.explorerNode.noApps',
+                    `[No cdk application(s) found in workspace '${getCDKAppWorkspaceName(appLocation.cdkJsonPath)}']`
+                ),
+                topLevelNode: undefined,
             })
         }
 
         const quickPick = picker.createQuickPick({
             options: {
                 ignoreFocusOut: true,
-                title: localize(
-                    'AWS.message.prompt.selectCDKStateMachine.placeholder',
-                    'Select CDK Application'
-                ),
+                title: localize('AWS.message.prompt.selectCDKStateMachine.placeholder', 'Select CDK Application'),
                 step: 2,
                 totalSteps: 3,
             },
@@ -157,31 +154,32 @@ export default class PreviewStateMachineCDKWizard extends MultiStepWizard<Previe
         const topLevelNodes = await topLevelNode?.topLevelNode?.getChildren()
 
         if (topLevelNodes && topLevelNodes.length > 0) {
-            topLevelNodes.filter(function (node) {
-                return node.contextValue === 'awsCdkStateMachineNode'
-            })
+            topLevelNodes
+                .filter(function (node) {
+                    return node.contextValue === 'awsCdkStateMachineNode'
+                })
                 .map(async node => {
                     stateMachines.push({
                         label: node.label ? node.label : '',
-                        stateMachineNode: node as ConstructNode
+                        stateMachineNode: node as ConstructNode,
                     })
                 })
         }
 
         if (stateMachines.length === 0) {
             stateMachines.push({
-                label: `[No state machine(s) found in cdk applciation '${topLevelNode?.label}']`,
-                stateMachineNode: undefined
+                label: localize(
+                    'Aws.cdk.explorerNode.app.noStateMachines',
+                    `[No state machine(s) found in cdk application '${topLevelNode?.label}']`
+                ),
+                stateMachineNode: undefined,
             })
         }
 
         const quickPick = picker.createQuickPick({
             options: {
                 ignoreFocusOut: true,
-                title: localize(
-                    'AWS.message.prompt.selectCDKStateMachine.placeholder',
-                    'Select State Machine'
-                ),
+                title: localize('AWS.message.prompt.selectCDKStateMachine.placeholder', 'Select State Machine'),
                 step: 3,
                 totalSteps: 3,
             },
@@ -202,26 +200,34 @@ export default class PreviewStateMachineCDKWizard extends MultiStepWizard<Previe
         return this.stateMachine ? WIZARD_TERMINATE : WIZARD_GOBACK
     }
 
-    protected getResult() {
+    protected getResult():
+        | {
+              cdkApplication: CdkAppLocationPickItem
+              topLevelNode: TopLevelNodePickItem
+              stateMachine: ConstructNodePickItem
+          }
+        | undefined {
         return (
             (this.cdkApplication &&
                 this.topLevelNode &&
                 this.stateMachine && {
-                cdkApplication: this.cdkApplication,
-                topLevelNode: this.topLevelNode,
-                stateMachine: this.stateMachine,
-            }) ||
+                    cdkApplication: this.cdkApplication,
+                    topLevelNode: this.topLevelNode,
+                    stateMachine: this.stateMachine,
+                }) ||
             undefined
         )
     }
 }
 
 /**
- * @param {string} cdkJsonPath - path to the cdk.json file 
+ * @param {string} cdkJsonPath - path to the cdk.json file
  * @returns name of the workspace of the CDK Application
  */
 export function getCDKAppWorkspaceName(cdkJsonPath: string) {
-    if (typeof (cdkJsonPath) != "string") return cdkJsonPath;
+    if (typeof cdkJsonPath != 'string') {
+        return cdkJsonPath
+    }
     cdkJsonPath = cdkJsonPath.replace('/cdk.json', '')
-    return cdkJsonPath.substring(cdkJsonPath.lastIndexOf("/") + 1, cdkJsonPath.length)
-};
+    return cdkJsonPath.substring(cdkJsonPath.lastIndexOf('/') + 1, cdkJsonPath.length)
+}

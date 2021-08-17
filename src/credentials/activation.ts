@@ -9,9 +9,10 @@ import { profileSettingKey } from '../shared/constants'
 import { CredentialsProfileMru } from '../shared/credentials/credentialsProfileMru'
 import { SettingsConfiguration } from '../shared/settingsConfiguration'
 import { LoginManager } from './loginManager'
-import { asString, CredentialsProviderId, fromString } from './providers/credentialsProviderId'
+import { asString, CredentialsId, fromString } from './providers/credentials'
 import { CredentialsProviderManager } from './providers/credentialsProviderManager'
 import { SharedCredentialsProvider } from './providers/sharedCredentialsProvider'
+import { getIdeProperties } from '../shared/extensionUtilities'
 
 import * as nls from 'vscode-nls'
 import { isCloud9 } from '../shared/extensionUtilities'
@@ -38,11 +39,9 @@ export async function loginWithMostRecentCredentials(
     loginManager: LoginManager
 ): Promise<void> {
     const manager = CredentialsProviderManager.getInstance()
-    const providerMap = await manager.getCredentialProviderNames()
-    const profileNames = Object.keys(providerMap)
     const previousCredentialsId = toolkitSettings.readSetting<string>(profileSettingKey, '')
 
-    async function tryConnect(creds: CredentialsProviderId, popup: boolean): Promise<boolean> {
+    async function tryConnect(creds: CredentialsId, popup: boolean): Promise<boolean> {
         const provider = await manager.getCredentialsProvider(creds)
         // 'provider' may be undefined if the last-used credentials no longer exists.
         if (!provider) {
@@ -55,7 +54,12 @@ export async function loginWithMostRecentCredentials(
             getLogger().info('autoconnect: connected: %O', asString(creds))
             if (popup) {
                 vscode.window.showInformationMessage(
-                    localize('AWS.message.credentials.connected', 'Connected to AWS as {0}', asString(creds))
+                    localize(
+                        'AWS.message.credentials.connected',
+                        'Connected to {0} with {1}',
+                        getIdeProperties().company,
+                        asString(creds)
+                    )
                 )
             }
             return true
@@ -63,22 +67,24 @@ export async function loginWithMostRecentCredentials(
         return false
     }
 
-    if (!previousCredentialsId && !(providerMap && profileNames.length === 1)) {
-        await loginManager.logout()
-        getLogger().info('autoconnect: skipped')
-        return
-    }
-
     if (previousCredentialsId) {
-        // Migrate from older Toolkits - If the last providerId isn't in the new CredentialProviderId format,
-        // treat it like a Shared Crdentials Provider.
+        // Migrate from old Toolkits: default to "shared" provider type.
         const loginCredentialsId = tryMakeCredentialsProviderId(previousCredentialsId) ?? {
-            credentialType: SharedCredentialsProvider.getCredentialsType(),
+            credentialSource: SharedCredentialsProvider.getProviderType(),
             credentialTypeId: previousCredentialsId,
         }
         if (await tryConnect(loginCredentialsId, false)) {
             return
         }
+    }
+
+    const providerMap = await manager.getCredentialProviderNames()
+    const profileNames = Object.keys(providerMap)
+
+    if (!previousCredentialsId && !(providerMap && profileNames.length === 1)) {
+        await loginManager.logout()
+        getLogger().info('autoconnect: skipped')
+        return
     }
 
     if (providerMap && profileNames.length === 1) {
@@ -123,9 +129,9 @@ function updateConfigurationWhenAwsContextChanges(
     )
 }
 
-function tryMakeCredentialsProviderId(credentialsProviderId: string): CredentialsProviderId | undefined {
+function tryMakeCredentialsProviderId(credentials: string): CredentialsId | undefined {
     try {
-        return fromString(credentialsProviderId)
+        return fromString(credentials)
     } catch (err) {
         return undefined
     }

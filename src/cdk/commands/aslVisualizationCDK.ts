@@ -5,14 +5,18 @@
 
 import * as vscode from 'vscode'
 import { AslVisualization } from '../../../src/stepFunctions/commands/visualizeStateMachine/aslVisualization'
-import { getStateMachineDefinitionFromCfnTemplate, toUnescapedAslJsonString } from '../../stepFunctions/commands/visualizeStateMachine/getStateMachineDefinitionFromCfnTemplate'
+import {
+    getStateMachineDefinitionFromCfnTemplate,
+    toUnescapedAslJsonString,
+} from '../../stepFunctions/commands/visualizeStateMachine/getStateMachineDefinitionFromCfnTemplate'
 
 export class AslVisualizationCDK extends AslVisualization {
-    public readonly templatePath: string
-    public readonly cdkAppName: string
-    public readonly stateMachineName: string
-
-    public constructor(textDocument: vscode.TextDocument, templatePath: string, cdkAppName: string, stateMachineName: string) {
+    public constructor(
+        textDocument: vscode.TextDocument,
+        public readonly templatePath: string,
+        public readonly cdkAppName: string,
+        public readonly stateMachineName: string
+    ) {
         super(textDocument)
         this.templatePath = templatePath
         this.cdkAppName = cdkAppName
@@ -25,7 +29,9 @@ export class AslVisualizationCDK extends AslVisualization {
         return toUnescapedAslJsonString(definitionString ? definitionString : '')
     }
 
-    protected updateWebviewTitle() {
-        this.getPanel()!.title = this.stateMachineName
+    protected updateWebviewTitle(): void {
+        if (this.getPanel()) {
+            this.getPanel()!.title = this.stateMachineName
+        }
     }
 }

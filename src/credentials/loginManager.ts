@@ -6,11 +6,15 @@
 import { AwsContext } from '../shared/awsContext'
 import { getAccountId } from '../shared/credentials/accountId'
 import { getLogger } from '../shared/logger'
-import { recordAwsSetCredentials } from '../shared/telemetry/telemetry'
+import { recordAwsValidateCredentials, recordVscodeActiveRegions, Result } from '../shared/telemetry/telemetry'
 import { CredentialsStore } from './credentialsStore'
 import { notifyUserInvalidCredentials } from './credentialsUtilities'
-import { CredentialsProvider } from './providers/credentialsProvider'
-import { asString, CredentialsProviderId } from './providers/credentialsProviderId'
+import {
+    asString,
+    CredentialsProvider,
+    CredentialsId,
+    credentialsProviderToTelemetryType,
+} from './providers/credentials'
 import { CredentialsProviderManager } from './providers/credentialsProviderManager'
 
 export class LoginManager {
@@ -19,7 +23,7 @@ export class LoginManager {
     public constructor(
         private readonly awsContext: AwsContext,
         private readonly store: CredentialsStore,
-        public readonly recordAwsSetCredentialsFn: typeof recordAwsSetCredentials = recordAwsSetCredentials
+        public readonly recordAwsValidateCredentialsFn = recordAwsValidateCredentials
     ) {}
 
     /**
@@ -30,8 +34,11 @@ export class LoginManager {
      * @param provider  Credentials provider id
      * @returns True if the toolkit could connect with the providerId
      */
-    public async login(args: { passive: boolean; providerId: CredentialsProviderId }): Promise<boolean> {
+
+    public async login(args: { passive: boolean; providerId: CredentialsId }): Promise<boolean> {
         let provider: CredentialsProvider | undefined
+        let telemetryResult: Result = 'Failed'
+
         try {
             provider = await CredentialsProviderManager.getInstance().getCredentialsProvider(args.providerId)
             if (!provider) {
@@ -48,6 +55,7 @@ export class LoginManager {
             if (!accountId) {
                 throw new Error('Could not determine Account Id for credentials')
             }
+            recordVscodeActiveRegions({ value: (await this.awsContext.getExplorerRegions()).length })
 
             await this.awsContext.setCredentials({
                 credentials: storedCredentials.credentials,
@@ -56,6 +64,7 @@ export class LoginManager {
                 defaultRegion: provider.getDefaultRegion(),
             })
 
+            telemetryResult = 'Succeeded'
             return true
         } catch (err) {
             // TODO: don't hardcode logic using error message, have a 'type' field instead
@@ -75,12 +84,14 @@ export class LoginManager {
             this.store.invalidateCredentials(args.providerId)
             return false
         } finally {
-            const credType = provider?.getCredentialsType2()
-            if (!args.passive) {
-                this.recordAwsSetCredentialsFn({
-                    credentialType: credType,
-                })
-            }
+            const credType = provider?.getTelemetryType()
+            const sourceType = provider ? credentialsProviderToTelemetryType(provider.getProviderType()) : undefined
+            this.recordAwsValidateCredentialsFn({
+                result: telemetryResult,
+                passive: args.passive,
+                credentialType: credType,
+                credentialSourceId: sourceType,
+            })
         }
     }
 
