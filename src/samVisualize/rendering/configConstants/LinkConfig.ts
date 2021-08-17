@@ -22,15 +22,6 @@ export class LinkConfig {
     public static readonly arrowheadShape = 'M 0,-5 L 10,0 L 0,5'
 
     /**
-     * Determines the light color of links. To be used with a dark background
-     */
-    public static readonly lightLinkColor = '#cfccc4'
-
-    /**
-     * Determines the dark color of links. To be used with a light background
-     */
-    public static readonly darkLinkColor = '#808080'
-    /**
      * Determines the width of default links
      */
     public static readonly linkStrokeWidth = 2

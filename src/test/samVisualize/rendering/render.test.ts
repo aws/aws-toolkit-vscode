@@ -94,11 +94,9 @@ describe('samVisualize d3.js rendering of a GraphObject', async function () {
 
     it('defines a marker to represent an arrowhead', function () {
         const svg = forceDirectedGraph.constructSVG(500, 500, 'svg', doc)
-        forceDirectedGraph.defineArrowHead(svg, '#999', 'test-arrowhead')
+        forceDirectedGraph.defineArrowHead(svg, 'test-arrowhead')
 
         assert.ok(doc.getElementById('test-arrowhead'))
-        assert.strictEqual(doc.querySelector('#test-arrowhead > path')!.getAttribute('fill'), '#999')
-        assert.ifError(doc.querySelector('#test-arrowhead > path')!.getAttribute('stroke'))
 
         assert.strictEqual(
             doc.getElementById('test-arrowhead')?.getElementsByTagName('path')[0]!.style.opacity,

@@ -7,7 +7,6 @@ import { LinkConfig } from '../rendering/configConstants/LinkConfig'
 import { PhysicsConfig } from '../rendering/configConstants/PhysicsConfig'
 import { LinkTypes } from '../samVisualizeTypes'
 import * as d3 from 'd3'
-import * as tinycolor from 'tinycolor2'
 import { WebviewApi } from 'vscode-webview'
 import { GraphObject } from '../graphGeneration/graph'
 import { filterPrimaryOnly } from '../rendering/filter'
@@ -89,20 +88,7 @@ export class ForceDirectedGraph {
         const svg = this.constructSVG(svgWidth, svgHeight, 'svg', doc)
         this.g = this.appendGContainerElement(svg)
 
-        // Arrowhead copies link color
-        let arrowheadColor
-        try {
-            arrowheadColor = tinycolor(
-                window.getComputedStyle(document.body).getPropertyValue('--vscode-editor-background')
-            ).isDark()
-                ? LinkConfig.lightLinkColor
-                : LinkConfig.darkLinkColor
-        } catch {
-            // Test environment - default to light
-            arrowheadColor = LinkConfig.lightLinkColor
-        }
-
-        this.defineArrowHead(svg, arrowheadColor)
+        this.defineArrowHead(svg)
 
         // Define forces
         this.simulation = d3
@@ -215,12 +201,12 @@ export class ForceDirectedGraph {
      */
     public defineArrowHead(
         svg: d3.Selection<SVGSVGElement, unknown, null | HTMLElement, unknown>,
-        color: string,
         id?: string // Used to select and test created elements. No purpose outside test environment.
     ): void {
         // Create marker within defs
         svg.append('defs')
             .append('marker')
+            .attr('class', 'arrowhead')
             .attr('id', id ? id : this.arrowheadID) // Use test id if present
             .attr('viewBox', LinkConfig.arrowheadViewbox)
             // refX = 0 to draw the arrowhead at the end of the path
@@ -233,7 +219,6 @@ export class ForceDirectedGraph {
             .attr('markerUnits', 'userSpaceOnUse')
             .append('path')
             .attr('d', LinkConfig.arrowheadShape)
-            .attr('fill', color)
             .style('stroke', 'none')
             .style('opacity', LinkConfig.LinkOpacity)
     }
@@ -276,7 +261,7 @@ export class ForceDirectedGraph {
         }
 
         const links = linkContainer
-            .selectAll('path')
+            .selectAll<SVGGElement, LinkDatum>('link')
             .data<LinkDatum>(linkList)
             .enter()
             .append<SVGGElement>('g')
@@ -284,6 +269,7 @@ export class ForceDirectedGraph {
 
         links
             .append<SVGPathElement>('path')
+            .attr('class', 'visible-link')
             .attr('marker-end', `url(#${this.arrowheadID})`)
             .style('stroke-dasharray', (d: LinkDatum) => {
                 if (d.type === LinkTypes.DependsOn) {
@@ -291,19 +277,6 @@ export class ForceDirectedGraph {
                 }
                 // eslint-disable-next-line no-null/no-null
                 return null
-            })
-            .style('stroke', () => {
-                // Since this method is tested, and window is not defined in test environment
-                // unless passed in, we default to the light colour during a test.
-                try {
-                    return tinycolor(
-                        window.getComputedStyle(document.body).getPropertyValue('--vscode-editor-background')
-                    ).isDark()
-                        ? LinkConfig.lightLinkColor
-                        : LinkConfig.darkLinkColor
-                } catch {
-                    return LinkConfig.lightLinkColor
-                }
             })
             .style('stroke-width', LinkConfig.linkStrokeWidth)
             .style('fill', 'none')
@@ -486,19 +459,6 @@ export class ForceDirectedGraph {
             .attr('text-anchor', 'middle')
             .attr('dy', NodeConfig.primaryLabelYOffset)
             .text((d: NodeDatum) => d.name)
-            .attr('fill', () => {
-                // Since this method is tested, and window is not defined in test environment
-                // unless passed in, we default to the light colour during a test.
-                try {
-                    return tinycolor(
-                        window.getComputedStyle(document.body).getPropertyValue('--vscode-editor-background')
-                    ).isDark()
-                        ? NodeConfig.lightPrimaryLabelColor
-                        : NodeConfig.darkPrimaryLabelColor
-                } catch {
-                    return NodeConfig.lightPrimaryLabelColor
-                }
-            })
             .attr('font-size', NodeConfig.primaryTextSize)
 
         // Label each Node with it's full resource type identifier
@@ -508,19 +468,6 @@ export class ForceDirectedGraph {
             .attr('text-anchor', 'middle')
             .attr('dy', NodeConfig.secondaryLabelYOffset)
             .text((d: NodeDatum) => (d.type ? d.type : ''))
-            .attr('fill', () => {
-                // Since this method is tested, and window is not defined in test environment
-                // unless passed in, we default to the light colour during a test.
-                try {
-                    return tinycolor(
-                        window.getComputedStyle(document.body).getPropertyValue('--vscode-editor-background')
-                    ).isDark()
-                        ? NodeConfig.lightSecondaryLabelColor
-                        : NodeConfig.darkSecondaryLabelColor
-                } catch {
-                    return NodeConfig.lightSecondaryLabelColor
-                }
-            })
             .attr('font-size', NodeConfig.secondaryTextSize)
 
         return nodes

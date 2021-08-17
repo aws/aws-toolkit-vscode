@@ -20,7 +20,32 @@ form {
     position: absolute;
     z-index: 2;
 }
+body.vscode-dark .primary-text {
+    fill: white;
+}
+body.vscode-light .primary-text {
+    fill: black;
+}
+body.vscode-dark .secondary-text {
+    fill: #cfccc4;
+}
+body.vscode-light .secondary-text {
+    fill: #333;
+}
 
+body.vscode-dark .visible-link {
+    stroke: #cfccc4;
+}
+body.vscode-light .visible-link {
+    stroke: #808080;
+}
+
+body.vscode-dark .arrowhead path {
+    fill: #cfccc4;
+}
+body.vscode-light .arrowhead path {
+    fill: #808080;
+}
 .error-message {
     position: absolute;
     border: 1px solid #da6363;

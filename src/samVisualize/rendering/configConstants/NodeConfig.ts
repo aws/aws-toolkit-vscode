@@ -12,29 +12,9 @@ export class NodeConfig {
     public static readonly radius = 25
 
     /**
-     * Determines the light color of the primary label on Nodes. To be used with a dark background.
-     */
-    public static readonly lightPrimaryLabelColor = '#fff'
-
-    /**
-     * Determines the dark color of the primary label on Nodes. To be used with a light background.
-     */
-    public static readonly darkPrimaryLabelColor = '#000'
-
-    /**
      * Determines the text size of the primary label on Nodes.
      */
     public static readonly primaryTextSize = 16
-
-    /**
-     * Determines the light color of the secondary label on Nodes. To be used with a dark background.
-     */
-    public static readonly lightSecondaryLabelColor = '#cfccc4'
-
-    /**
-     * Determines the light color of the secondary label on Nodes. To be used with a dark background.
-     */
-    public static readonly darkSecondaryLabelColor = '#333'
 
     /**
      * Determines the text size of the secondary label on Nodes.
