@@ -77,7 +77,7 @@ describe('DefaultSettingsConfiguration', function () {
             })
         })
     })
-    // Methods 'disable' and 'shouldDisplayPrompt' write to a specific setting and cannot use the same setting as used for testing 'readSetting' and 'writeSetting'
+
     describe('disable', function () {
         const promptName = 'promptName'
         const fakePromptSetting = { promptName: false }
@@ -95,7 +95,7 @@ describe('DefaultSettingsConfiguration', function () {
             sandbox.stub(sut, 'getSuppressPromptSetting').returns(fakePromptSetting)
             const writeStub = sandbox.stub(sut, 'writeSetting').resolves()
 
-            sut.disable(promptName)
+            sut.disablePrompt(promptName)
             const expectedParam = { promptName: true }
             assert.strictEqual(
                 writeStub.calledOnceWith('suppressPrompts', expectedParam, vscode.ConfigurationTarget.Global),
@@ -107,7 +107,7 @@ describe('DefaultSettingsConfiguration', function () {
             sandbox.stub(sut, 'getSuppressPromptSetting').returns(fakePromptSettingTrue)
             const writeStub = sandbox.stub(sut, 'writeSetting').resolves()
 
-            sut.disable(promptName)
+            sut.disablePrompt(promptName)
             assert.strictEqual(writeStub.notCalled, true)
         })
 
@@ -115,7 +115,7 @@ describe('DefaultSettingsConfiguration', function () {
             sandbox.stub(sut, 'getSuppressPromptSetting').returns(undefined)
             const writeStub = sandbox.stub(sut, 'writeSetting').resolves()
 
-            sut.disable(promptName)
+            sut.disablePrompt(promptName)
             assert.strictEqual(writeStub.notCalled, true)
         })
     })

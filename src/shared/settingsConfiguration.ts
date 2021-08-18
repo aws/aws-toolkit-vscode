@@ -60,7 +60,7 @@ export class DefaultSettingsConfiguration implements SettingsConfiguration {
      * Sets a prompt message as suppressed.
      * @param promptName Name of prompt to append to list
      */
-    public disable(promptName: string): void {
+    public disablePrompt(promptName: string): void {
         const setting = this.getSuppressPromptSetting(promptName)
         if (setting === undefined || setting[promptName]) {
             return
@@ -90,7 +90,7 @@ export class DefaultSettingsConfiguration implements SettingsConfiguration {
     public getSuppressPromptSetting(promptName: string): { [prompt: string]: boolean } | undefined {
         try {
             const setting = this.readSetting<{ [prompt: string]: boolean }>('suppressPrompts')
-            if (typeof setting !== 'object' || typeof setting[promptName] !== 'boolean') {
+            if (setting !== undefined && (typeof setting !== 'object' || typeof setting[promptName] !== 'boolean')) {
                 getLogger().warn('Setting "suppressPrompts" has an unexpected type. Resetting to default.')
                 // writing this setting to an empty object reverts the setting to its default
                 this.writeSetting('suppressPrompts', {}, vscode.ConfigurationTarget.Global)
