@@ -2134,7 +2134,7 @@
         "js-yaml": "^4.1.0",
         "jsonc-parser": "^2.0.2",
         "lodash": "^4.17.21",
-        "mime-types": "^2.1.27",
+        "mime-types": "^2.1.32",
         "moment": "^2.29.1",
         "portfinder": "^1.0.25",
         "request": "^2.88.0",
