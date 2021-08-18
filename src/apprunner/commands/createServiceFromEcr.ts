@@ -34,7 +34,7 @@ export async function createFromEcr(node: EcrTagNode | EcrRepositoryNode): Promi
         }
 
         await client.createService(result)
-        vscode.commands.executeCommand('aws.refreshAwsExplorer')
+        vscode.commands.executeCommand('aws.refreshAwsExplorer', true)
         telemetryResult = 'Succeeded'
     } finally {
         telemetry.recordApprunnerCreateService({
