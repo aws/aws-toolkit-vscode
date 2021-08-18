@@ -27,6 +27,7 @@ import { IamClient } from '../../shared/clients/iamClient'
 import { RolePrompter } from '../../shared/ui/common/rolePrompter'
 import { getLogger } from '../../shared/logger/logger'
 import { BasicExitPrompterProvider } from '../../shared/ui/common/exitPrompter'
+import { isCloud9 } from '../../shared/extensionUtilities'
 
 const localize = nls.loadMessageBundle()
 
@@ -62,7 +63,9 @@ function createEcrRole(client: IamClient): Promise<IAM.Role> {
 
     return client
         .createRole({
-            RoleName: `AppRunnerECRAccessRole${Math.floor(Math.random() * 1000000000) + 1000}`,
+            RoleName: `${isCloud9() ? 'Cloud9-' : ''}AppRunnerECRAccessRole${
+                Math.floor(Math.random() * 1000000000) + 1000
+            }`,
             AssumeRolePolicyDocument: JSON.stringify(policy),
         })
         .then(resp => {
