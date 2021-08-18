@@ -1,0 +1,14 @@
+{
+  "date" : "2021-08-17",
+  "version" : "1.31",
+  "entries" : [ {
+    "type" : "feature",
+    "description" : "Add support for Python 3.9 Lambdas"
+  }, {
+    "type" : "bugfix",
+    "description" : "Fix regression in SAM run configurations using file-based input (#2762)"
+  }, {
+    "type" : "bugfix",
+    "description" : "Fix CloudWatch sorting (#2737)"
+  } ]
+}

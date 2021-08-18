@@ -1,3 +1,8 @@
+# _1.31_ (2021-08-17)
+- **(Feature)** Add support for Python 3.9 Lambdas
+- **(Bug Fix)** Fix regression in SAM run configurations using file-based input ([#2762](https://github.com/aws/aws-toolkit-jetbrains/issues/2762))
+- **(Bug Fix)** Fix CloudWatch sorting ([#2737](https://github.com/aws/aws-toolkit-jetbrains/issues/2737))
+
 # _1.30_ (2021-08-05)
 - **(Feature)** Add ability to view bucket by entering bucket name/URI
 - **(Bug Fix)** Fix CWL last event sorting ([#2737](https://github.com/aws/aws-toolkit-jetbrains/issues/2737))
