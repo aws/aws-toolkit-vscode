@@ -19,6 +19,7 @@ import { getLogger } from '../../shared/logger'
 import { showConfirmationMessage } from '../../shared/utilities/messages'
 import { localize } from '../../shared/utilities/vsCodeUtils'
 import { uploadWithProgress } from '../commands/uploadFile'
+import { normalize } from '../../shared/utilities/pathUtils'
 
 const SIZE_LIMIT = 4 * Math.pow(10, 6)
 export interface S3Tab {
@@ -167,7 +168,7 @@ export class S3FileViewerManager {
         let tab: S3Tab | undefined
         if (fileNode.file.sizeBytes! < SIZE_LIMIT) {
             const pathToPreview = await this.arnToFsPath(this.toPreview!)
-            if (s3Uri.fsPath !== pathToPreview) {
+            if (normalize(s3Uri.fsPath) !== normalize(pathToPreview)) {
                 return
             }
             tab =
@@ -579,7 +580,10 @@ export class S3FileViewerManager {
         const s3Path = arn.split(':::')[1]
         const indexOfFileName = s3Path.lastIndexOf('/')
         const fileName = s3Path.slice(indexOfFileName + 1)
-        const fsPath = `${this.tempLocation!}/${s3Path.slice(undefined, s3Path.lastIndexOf('/') + 1)}[S3]${fileName}`
+        const fsPath = `${this.tempLocation!}${path.sep}${s3Path.slice(
+            undefined,
+            s3Path.lastIndexOf('/') + 1
+        )}[S3]${fileName}`
         return Promise.resolve(fsPath)
     }
 }
