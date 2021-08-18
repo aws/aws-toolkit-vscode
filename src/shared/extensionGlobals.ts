@@ -87,6 +87,10 @@ export interface IconPaths {
     // temporary icons while Cloud9 does not have codicon support
     plus: string
     edit: string
+    exit: string
+    sync: string
+    syncIgnore: string
+    refresh: string
 }
 
 function makeIconPathsObject(): IconPaths {
@@ -108,5 +112,9 @@ function makeIconPathsObject(): IconPaths {
         createBucket: '',
         plus: '',
         edit: '',
+        exit: '',
+        refresh: '',
+        sync: '',
+        syncIgnore: '',
     }
 }

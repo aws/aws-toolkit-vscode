@@ -4,6 +4,7 @@
  */
 
 import { TreeItem, TreeItemCollapsibleState, commands } from 'vscode'
+import { isCloud9 } from '../../extensionUtilities'
 
 export abstract class AWSTreeNodeBase extends TreeItem {
     protected constructor(label: string, collapsibleState?: TreeItemCollapsibleState) {
@@ -15,6 +16,10 @@ export abstract class AWSTreeNodeBase extends TreeItem {
     }
 
     public refresh(): void {
-        commands.executeCommand('aws.refreshAwsExplorerNode', this)
+        if (isCloud9()) {
+            commands.executeCommand('aws.refreshAwsExplorer', true)
+        } else {
+            commands.executeCommand('aws.refreshAwsExplorerNode', this)
+        }
     }
 }
