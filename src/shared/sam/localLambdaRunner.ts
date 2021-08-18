@@ -21,7 +21,7 @@ import { Timeout } from '../utilities/timeoutUtils'
 import { tryGetAbsolutePath } from '../utilities/workspaceUtils'
 import { SamCliBuildInvocation, SamCliBuildInvocationArguments } from './cli/samCliBuild'
 import { SamCliLocalInvokeInvocation, SamCliLocalInvokeInvocationArguments } from './cli/samCliLocalInvoke'
-import { SamLaunchRequestArgs } from './debugger/awsSamDebugger'
+import { NO_FILE, SamLaunchRequestArgs } from './debugger/awsSamDebugger'
 import { asEnvironmentVariables } from '../../credentials/credentialsUtilities'
 import { buildSamCliStartApiArguments } from './cli/samCliStartApi'
 import { DefaultSamCliProcessInvoker } from './cli/samCliInvoker'
@@ -668,6 +668,7 @@ async function showDebugConsole(): Promise<void> {
     }
 }
 
+// TODO: rework this function. The fact that it is mutating the config file AND writing to disk is bizarre.
 /**
  * Common logic shared by `makeCsharpConfig`, `makeTypescriptConfig`, `makePythonDebugConfig`.
  *
@@ -684,7 +685,8 @@ async function showDebugConsole(): Promise<void> {
  * @param config
  */
 export async function makeJsonFiles(config: SamLaunchRequestArgs): Promise<void> {
-    config.eventPayloadFile = path.join(config.baseBuildDir!, 'event.json')
+    config.eventPayloadFile = NO_FILE
+    config.envFile = NO_FILE
 
     // env-vars.json (NB: effectively ignored for the `target=code` case).
     const configEnv = config.lambda?.environmentVariables ?? {}
@@ -704,6 +706,13 @@ export async function makeJsonFiles(config: SamLaunchRequestArgs): Promise<void>
     // event.json
     const payloadObj = config.lambda?.payload?.json ?? config.api?.payload?.json
     const payloadPath = config.lambda?.payload?.path ?? config.api?.payload?.path
+
+    if (Object.keys(payloadObj ?? {}).length === 0 && payloadPath === undefined) {
+        return
+    }
+
+    config.eventPayloadFile = path.join(config.baseBuildDir!, 'event.json')
+
     if (payloadPath) {
         const fullpath = tryGetAbsolutePath(config.workspaceFolder, payloadPath)
         try {

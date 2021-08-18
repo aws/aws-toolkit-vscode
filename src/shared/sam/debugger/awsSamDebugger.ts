@@ -65,6 +65,12 @@ import { getIdeProperties, isCloud9 } from '../../extensionUtilities'
 const localize = nls.loadMessageBundle()
 
 /**
+ * Used to denote that no file exists for any options that expect a file path
+ * TODO: remove this and do it correctly by using undefined
+ */
+export const NO_FILE = 'NO_FILE' as const
+
+/**
  * SAM-specific launch attributes (which are not part of the DAP).
  *
  * Schema for these attributes lives in package.json
@@ -122,7 +128,7 @@ export interface SamLaunchRequestArgs extends AwsSamDebuggerConfiguration {
      * The file contains a JSON map of environment variables to be consumed by
      * SAM, resolved from `template.yaml` and/or `lambda.environmentVariables`.
      */
-    envFile?: string
+    envFile: string
 
     //
     // Debug properties (when user runs with debugging enabled).

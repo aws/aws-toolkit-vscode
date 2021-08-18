@@ -14,6 +14,7 @@ import { removeAnsi } from '../../utilities/textUtilities'
 import { ext } from '../../extensionGlobals'
 import { DefaultSamCliProcessInvokerContext, SamCliProcessInvokerContext } from './samCliProcessInvokerContext'
 import * as vscode from 'vscode'
+import { NO_FILE } from '../debugger/awsSamDebugger'
 
 const localize = nls.loadMessageBundle()
 
@@ -166,7 +167,7 @@ export interface SamCliLocalInvokeInvocationArguments {
     /**
      * Location of the file containing the environment variables to invoke the Lambda Function against.
      */
-    environmentVariablePath?: string
+    environmentVariablePath: string
     /**
      * Environment variables set when invoking the SAM process (NOT passed to the Lambda).
      */
@@ -243,11 +244,15 @@ export class SamCliLocalInvokeInvocation {
             this.args.templateResourceName,
             '--template',
             this.args.templatePath,
-            '--event',
-            this.args.eventPath,
         ]
 
-        pushIf(invokeArgs, !!this.args.environmentVariablePath, '--env-vars', this.args.environmentVariablePath!)
+        pushIf(
+            invokeArgs,
+            this.args.environmentVariablePath !== NO_FILE,
+            '--env-vars',
+            this.args.environmentVariablePath
+        )
+        pushIf(invokeArgs, this.args.eventPath !== NO_FILE, '--env-vars', this.args.eventPath)
         pushIf(invokeArgs, !!this.args.debugPort, '-d', this.args.debugPort!)
         pushIf(invokeArgs, !!this.args.dockerNetwork, '--docker-network', this.args.dockerNetwork!)
         pushIf(invokeArgs, !!this.args.skipPullImage, '--skip-pull-image')
