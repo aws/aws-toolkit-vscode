@@ -246,13 +246,13 @@ export class SamCliLocalInvokeInvocation {
             this.args.templatePath,
         ]
 
+        pushIf(invokeArgs, this.args.eventPath !== NO_FILE, '--event', this.args.eventPath)
         pushIf(
             invokeArgs,
             this.args.environmentVariablePath !== NO_FILE,
             '--env-vars',
             this.args.environmentVariablePath
         )
-        pushIf(invokeArgs, this.args.eventPath !== NO_FILE, '--env-vars', this.args.eventPath)
         pushIf(invokeArgs, !!this.args.debugPort, '-d', this.args.debugPort!)
         pushIf(invokeArgs, !!this.args.dockerNetwork, '--docker-network', this.args.dockerNetwork!)
         pushIf(invokeArgs, !!this.args.skipPullImage, '--skip-pull-image')
