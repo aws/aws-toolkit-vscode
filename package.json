@@ -2118,7 +2118,7 @@
     "dependencies": {
         "@aws-sdk/client-sso": "^3.16.0",
         "@aws-sdk/client-sso-oidc": "^3.16.0",
-        "@aws-sdk/credential-provider-ini": "^3.15.0",
+        "@aws-sdk/credential-provider-ini": "^3.26.0",
         "@aws-sdk/credential-provider-process": "^3.15.0",
         "@aws-sdk/credential-provider-sso": "^3.16.0",
         "adm-zip": "^0.4.13",
@@ -2134,7 +2134,7 @@
         "js-yaml": "^4.1.0",
         "jsonc-parser": "^2.0.2",
         "lodash": "^4.17.21",
-        "mime-types": "^2.1.27",
+        "mime-types": "^2.1.32",
         "moment": "^2.29.1",
         "portfinder": "^1.0.25",
         "request": "^2.88.0",
