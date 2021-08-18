@@ -82,7 +82,7 @@ export class DefaultSettingsConfiguration implements SettingsConfiguration {
     }
 
     /**
-     * Gets the 'suppressPrompts' settings object. This will reset the setting to default if it does not
+     * Gets the 'aws.suppressPrompts' setting. This will reset the setting to default if it does not
      * recieve an object or the prompts value is not a boolean.
      * @param promptName
      * @returns The settings object
