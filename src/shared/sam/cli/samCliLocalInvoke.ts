@@ -14,7 +14,7 @@ import { removeAnsi } from '../../utilities/textUtilities'
 import { ext } from '../../extensionGlobals'
 import { DefaultSamCliProcessInvokerContext, SamCliProcessInvokerContext } from './samCliProcessInvokerContext'
 import * as vscode from 'vscode'
-import { NO_FILE } from '../debugger/awsSamDebugger'
+import { NO_FILE } from '../debugger/awsSamDebugConfiguration'
 
 const localize = nls.loadMessageBundle()
 

@@ -26,8 +26,9 @@ import {
     createApiAwsSamDebugConfig,
     APIGatewayProperties,
     PathMapping,
+    NO_FILE,
 } from '../../../../shared/sam/debugger/awsSamDebugConfiguration'
-import { NO_FILE, SamDebugConfigProvider, SamLaunchRequestArgs } from '../../../../shared/sam/debugger/awsSamDebugger'
+import { SamDebugConfigProvider, SamLaunchRequestArgs } from '../../../../shared/sam/debugger/awsSamDebugger'
 import * as debugConfiguration from '../../../../lambda/local/debugConfiguration'
 import * as pathutil from '../../../../shared/utilities/pathUtils'
 import { FakeExtensionContext } from '../../../fakeExtensionContext'

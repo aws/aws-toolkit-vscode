@@ -6,7 +6,7 @@
 import { fileExists } from '../../filesystemUtilities'
 import { getLogger } from '../../logger'
 import { pushIf } from '../../utilities/collectionUtils'
-import { NO_FILE } from '../debugger/awsSamDebugger'
+import { NO_FILE } from '../debugger/awsSamDebugConfiguration'
 
 export interface SamCliStartApiArguments {
     /**
