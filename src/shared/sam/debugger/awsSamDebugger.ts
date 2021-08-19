@@ -114,7 +114,7 @@ export interface SamLaunchRequestArgs extends AwsSamDebuggerConfiguration {
      *
      * The file contains the event payload JSON to be consumed by SAM.
      */
-    eventPayloadFile: string
+    eventPayloadFile?: string
 
     /**
      * Path to the (generated) `env-vars.json` file placed in `baseBuildDir` for SAM to discover.
@@ -122,7 +122,7 @@ export interface SamLaunchRequestArgs extends AwsSamDebuggerConfiguration {
      * The file contains a JSON map of environment variables to be consumed by
      * SAM, resolved from `template.yaml` and/or `lambda.environmentVariables`.
      */
-    envFile: string
+    envFile?: string
 
     //
     // Debug properties (when user runs with debugging enabled).
