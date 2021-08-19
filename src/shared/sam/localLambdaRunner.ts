@@ -388,7 +388,10 @@ export async function runLambdaFunction(
 
     if (!config.noDebug) {
         if (config.invokeTarget.target === 'api') {
-            const payload = JSON.parse(await readFile(config.eventPayloadFile, { encoding: 'utf-8' }))
+            const payload =
+                config.eventPayloadFile === NO_FILE
+                    ? {}
+                    : JSON.parse(await readFile(config.eventPayloadFile, { encoding: 'utf-8' }))
             // Send the request to the local API server.
             await requestLocalApi(ctx, config.api!, config.apiPort!, payload)
             // Wait for cue messages ("Starting debugger" etc.) before attach.
