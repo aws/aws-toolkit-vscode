@@ -6,6 +6,7 @@
 import * as _path from 'path'
 import * as vscode from 'vscode'
 import { getTabSizeSetting } from './editorUtilities'
+import * as fs from 'fs-extra'
 
 /**
  * If the specified document is currently open, and marked as dirty, it is saved.
@@ -45,4 +46,21 @@ export function getTabSize(editor?: vscode.TextEditor): number {
         default:
             return getTabSizeSetting()
     }
+}
+
+/**
+ * Helper function to create a text file with supplied content and open it with a TextEditor
+ *
+ * @param fileText The supplied text to fill this file with
+ * @param filePath The full path to the file to be created
+ *
+ * @returns TextEditor that was just opened
+ */
+
+export async function openATextEditorWithText(fileText: string, filePath: string): Promise<vscode.TextEditor> {
+    await fs.writeFile(filePath, fileText)
+
+    const textDocument = await vscode.workspace.openTextDocument(filePath)
+
+    return await vscode.window.showTextDocument(textDocument)
 }

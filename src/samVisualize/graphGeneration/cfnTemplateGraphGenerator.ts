@@ -4,7 +4,7 @@
  */
 import { Graph, GraphObject } from './graph'
 import { yamlParse } from 'yaml-cfn'
-import { LinkTypes } from '../samVisualizeTypes'
+import { TemplateLinkTypes } from '../samVisualizeTypes'
 import * as _ from 'lodash'
 import { getLogger } from '../../shared/logger/logger'
 
@@ -65,38 +65,38 @@ function traverse(graph: Graph, currentObj: Record<string, any>, parentNodeName:
         switch (key) {
             //  "DepenedsOn" can point to a single string or a list of strings. Here we wish to capture all resources in a list, or just a single resource.
             //  https://docs.aws.amazon.com/AWSCloudFormation/latest/UserGuide/aws-attribute-dependson.html
-            case LinkTypes.DependsOn:
+            case TemplateLinkTypes.DependsOn:
                 if (Array.isArray(value)) {
                     for (const destNodeName of value) {
-                        graph.createLink(parentNodeName, destNodeName, LinkTypes.DependsOn)
+                        graph.createLink(parentNodeName, destNodeName, TemplateLinkTypes.DependsOn)
                     }
                 } else {
-                    graph.createLink(parentNodeName, value, LinkTypes.DependsOn)
+                    graph.createLink(parentNodeName, value, TemplateLinkTypes.DependsOn)
                 }
                 break
 
             //  Once the YAML is parsed, a "GetAtt" key will point to an array with two elements.
             //  We only want the logicalNameOfResource, which lies in the first element of the tuple.
             //  https://docs.aws.amazon.com/AWSCloudFormation/latest/UserGuide/intrinsic-function-reference-getatt.html
-            case LinkTypes.GetAtt:
-                graph.createLink(parentNodeName, value[0], LinkTypes.GetAtt)
+            case TemplateLinkTypes.GetAtt:
+                graph.createLink(parentNodeName, value[0], TemplateLinkTypes.GetAtt)
                 break
 
             //  Adding a single link, from a "Ref" key
             //  https://docs.aws.amazon.com/AWSCloudFormation/latest/UserGuide/intrinsic-function-reference-ref.html
-            case LinkTypes.Ref:
-                graph.createLink(parentNodeName, value, LinkTypes.Ref)
+            case TemplateLinkTypes.Ref:
+                graph.createLink(parentNodeName, value, TemplateLinkTypes.Ref)
                 break
 
             //  Extracting an link out of a substitution
             //  A sub link can point to an array, or a single string.
             //  We can immediately extract the substituion if it points to a string, otherwise we must continue traversing
             //  https://docs.aws.amazon.com/AWSCloudFormation/latest/UserGuide/intrinsic-function-reference-sub.html
-            case LinkTypes.Sub:
+            case TemplateLinkTypes.Sub:
                 if (_.isString(value)) {
                     const substitutions = extractSubstitution(value)
                     for (const destNodeName of substitutions) {
-                        graph.createLink(parentNodeName, destNodeName, LinkTypes.Sub)
+                        graph.createLink(parentNodeName, destNodeName, TemplateLinkTypes.Sub)
                     }
                 } else {
                     // Key must point to an array

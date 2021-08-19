@@ -15,7 +15,7 @@ const primaryResourceListPath = join(
     'resources',
     'light',
     'samVisualize',
-    'primaryResources.json'
+    'resources.json'
 )
 const graphObjectsDir = join(
     getProjectDir(),
@@ -28,7 +28,8 @@ let primaryResourceList: Array<string>
 let graphObjectFiles: Array<string>
 describe('filterPrimaryOnly', function () {
     before(function () {
-        primaryResourceList = JSON.parse(readFileSync(primaryResourceListPath).toString())
+        const resourceCategories = JSON.parse(readFileSync(primaryResourceListPath).toString())
+        primaryResourceList = resourceCategories.primaryResources
         graphObjectFiles = readdirSync(graphObjectsDir)
     })
 

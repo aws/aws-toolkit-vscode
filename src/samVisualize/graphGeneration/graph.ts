@@ -3,7 +3,7 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
-import { LinkTypes } from '../samVisualizeTypes'
+import { RenderedLinkTypes, TemplateLinkTypes } from '../samVisualizeTypes'
 
 /**
  * Denotes a Link between two Nodes in the context of a GraphObject
@@ -65,12 +65,12 @@ export class Graph {
      *
      * Exists to avoid iteration over the graph.links list to check for duplicates
      */
-    private readonly linkSet: Map<string, string>
+    private readonly linkMap: Map<string, string>
 
     constructor() {
         this.graph = { nodes: [], links: [] }
         this.nodeSet = new Set<string>()
-        this.linkSet = new Map<string, string>()
+        this.linkMap = new Map<string, string>()
     }
 
     /**
@@ -83,9 +83,11 @@ export class Graph {
      * @param linkType A string representing the type of link
      */
     public createLink(sourceNodeName: string, targetNodeName: string, linkType?: string): void {
-        const generalizedLinkType = [LinkTypes.GetAtt, LinkTypes.Ref, LinkTypes.Sub].find(type => type == linkType)
-            ? LinkTypes.IntrinsicFunction
-            : LinkTypes.DependsOn
+        const generalizedLinkType = [TemplateLinkTypes.GetAtt, TemplateLinkTypes.Ref, TemplateLinkTypes.Sub].find(
+            type => type == linkType
+        )
+            ? RenderedLinkTypes.IntrinsicFunction
+            : RenderedLinkTypes.DependsOn
 
         const newLink: Link = {
             source: sourceNodeName,
@@ -100,8 +102,8 @@ export class Graph {
         // Both nodes must exist in the graph to consider modifying / adding links
         if (this.nodeSet.has(sourceNodeName) && this.nodeSet.has(targetNodeName)) {
             // If there is no existing link, add one.
-            if (!this.linkSet.has(newLinkIdentifier)) {
-                this.linkSet.set(newLinkIdentifier, generalizedLinkType)
+            if (!this.linkMap.has(newLinkIdentifier)) {
+                this.linkMap.set(newLinkIdentifier, generalizedLinkType)
                 this.graph.links.push(newLink)
             }
 
@@ -110,17 +112,17 @@ export class Graph {
             // We check if the exisiting link type was DependsOn instead of just checking if the new link type is IntrinsicFunction
             // to avoid iteration over `graph.links` unless the type is actually being replaced.
             else if (
-                this.linkSet.get(newLinkIdentifier) === LinkTypes.DependsOn &&
-                generalizedLinkType === LinkTypes.IntrinsicFunction
+                this.linkMap.get(newLinkIdentifier) === RenderedLinkTypes.DependsOn &&
+                generalizedLinkType === RenderedLinkTypes.IntrinsicFunction
             ) {
                 // Register a link as existing in the graph
-                this.linkSet.set(newLinkIdentifier, LinkTypes.IntrinsicFunction)
+                this.linkMap.set(newLinkIdentifier, RenderedLinkTypes.IntrinsicFunction)
 
                 // Find the link whose type we replace.
                 // This iteration should occur very rarely.
                 for (const link of this.graph.links) {
                     if (link.source === sourceNodeName && link.target === targetNodeName) {
-                        link.type = LinkTypes.IntrinsicFunction
+                        link.type = RenderedLinkTypes.IntrinsicFunction
                     }
                 }
             }

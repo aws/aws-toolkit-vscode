@@ -1,0 +1,18 @@
+{
+    "primaryResources": [
+        "AWS::CodeBuild::Project",
+        "AWS::DynamoDB::Table",
+        "AWS::EC2::Instance",
+        "AWS::Kinesis::Stream",
+        "AWS::Lambda::Function",
+        "AWS::S3::Bucket",
+        "AWS::SNS::Topic",
+        "AWS::SQS::Queue",
+        "AWS::Serverless::Api",
+        "AWS::Serverless::Function",
+        "AWS::Serverless::HttpApi",
+        "AWS::Serverless::SimpleTable",
+        "AWS::Serverless::StateMachine",
+        "AWS::StepFunctions::StateMachine"
+    ]
+}

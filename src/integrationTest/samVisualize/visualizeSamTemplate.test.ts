@@ -10,6 +10,7 @@ import * as vscode from 'vscode'
 import { makeTemporaryToolkitFolder } from '../../shared/filesystemUtilities'
 import { spy } from 'sinon'
 import { closeAllEditors } from '../../shared/utilities/vsCodeUtils'
+import { openATextEditorWithText } from '../../shared/utilities/textDocumentUtilities'
 
 const sampleSamTemplateFileName = 'helloWorld.yaml'
 const sampleSamTemplateYaml = `
@@ -32,24 +33,9 @@ Resources:
                     Properties:
                         Path: /hello
                         Method: get`
-/**
- * Helper function to create a text file with supplied content and open it with a TextEditor
- *
- * @param fileText The supplied text to fill this file with
- * @param fileName The name of the file to save it as. Include the file extension here.
- *
- * @returns TextEditor that was just opened
- */
-async function openATextEditorWithText(fileText: string, fileName: string): Promise<vscode.TextEditor> {
-    const completeFilePath = path.join(tempFolder, fileName)
-    await fs.writeFile(completeFilePath, fileText)
 
-    const textDocument = await vscode.workspace.openTextDocument(completeFilePath)
-
-    return await vscode.window.showTextDocument(textDocument)
-}
-let tempFolder: string
 describe('visualizeSamTemplate', async function () {
+    let tempFolder: string
     beforeEach(async function () {
         // Make a temp folder for all these tests
         tempFolder = await makeTemporaryToolkitFolder()
@@ -57,15 +43,12 @@ describe('visualizeSamTemplate', async function () {
 
     afterEach(async function () {
         await fs.remove(tempFolder)
-    })
-
-    after(async function () {
-        // Test suite cleans up after itself
+        // Ensure no text editor is open before each test
         await closeAllEditors()
     })
 
     it('correctly displays content when given an active editor containing a valid SAM Template', async function () {
-        await openATextEditorWithText(sampleSamTemplateYaml, sampleSamTemplateFileName)
+        await openATextEditorWithText(sampleSamTemplateYaml, path.join(tempFolder, sampleSamTemplateFileName))
         const result = await vscode.commands.executeCommand<vscode.WebviewPanel>('aws.samVisualize.renderTemplate')
 
         assert.ok(result)
@@ -75,7 +58,10 @@ describe('visualizeSamTemplate', async function () {
     })
 
     it('update webview when the editor is changed', async function () {
-        const textEditor = await openATextEditorWithText('Sample Text', sampleSamTemplateFileName)
+        const textEditor = await openATextEditorWithText(
+            'Sample Text',
+            path.join(tempFolder, sampleSamTemplateFileName)
+        )
 
         const result = await vscode.commands.executeCommand<vscode.WebviewPanel>('aws.samVisualize.renderTemplate')
 
@@ -103,16 +89,13 @@ describe('visualizeSamTemplate', async function () {
     })
 
     it('throws an error if no text editor is open', async function () {
-        // Ensure no text editor is open
-        await closeAllEditors()
-
         await assert.rejects(async () => {
             await vscode.commands.executeCommand<vscode.WebviewPanel>('aws.samVisualize.renderTemplate')
         })
     })
 
     it('doesnt update the graph if a seperate file is opened or modified', async function () {
-        await openATextEditorWithText(sampleSamTemplateYaml, sampleSamTemplateFileName)
+        await openATextEditorWithText(sampleSamTemplateYaml, path.join(tempFolder, sampleSamTemplateFileName))
 
         const result = await vscode.commands.executeCommand<vscode.WebviewPanel>('aws.samVisualize.renderTemplate')
         assert.ok(result)
@@ -122,7 +105,7 @@ describe('visualizeSamTemplate', async function () {
         const someOtherFileName = 'other.yaml'
         const someOtherFileText = 'Random contents'
 
-        const textEditor2 = await openATextEditorWithText(someOtherFileText, someOtherFileName)
+        const textEditor2 = await openATextEditorWithText(someOtherFileText, path.join(tempFolder, someOtherFileName))
 
         const updatedText = 'updated text'
 

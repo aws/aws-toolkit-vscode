@@ -2,14 +2,24 @@
  * Copyright 2021 Amazon.com, Inc. or its affiliates. All Rights Reserved.
  * SPDX-License-Identifier: Apache-2.0
  */
+import * as nls from 'vscode-nls'
+const localize = nls.loadMessageBundle()
 import { basename, join } from 'path'
-import { generateGraphFromYaml } from '../../graphGeneration/cfnTemplateGraphGenerator'
-import { generateResourceLineMap, ResourceLineMap } from '../../rendering/navigation'
+import { generateGraphFromYaml } from '../graphGeneration/cfnTemplateGraphGenerator'
+import { generateResourceLineMap, ResourceLineMap } from '../rendering/navigation'
 import { readFileSync } from 'fs-extra'
 import * as vscode from 'vscode'
 import * as _ from 'lodash'
-import { generateIconsMap } from '../../rendering/icons'
+import { generateIconsMap } from '../rendering/icons'
 export class SamVisualization {
+    private textDocument: vscode.TextDocument
+
+    private resourceLineMap: ResourceLineMap | undefined
+    // Used to establish paths to resources that the webview uses
+    private readonly extensionContext: vscode.ExtensionContext
+    // To let the extension know a visualization has been closed
+    private readonly onVisualizationDisposeEmitter = new vscode.EventEmitter<void>()
+
     /**
      * The webviewPanel holding the visualization
      */
@@ -20,23 +30,13 @@ export class SamVisualization {
      */
     public readonly textDocumentUri: vscode.Uri
 
-    private textDocument: vscode.TextDocument
-
-    private resourceLineMap: ResourceLineMap | undefined
-
     public disposables: vscode.Disposable[] = []
 
-    // Used to establish paths to resources that the webview uses
-    private readonly extensionContext: vscode.ExtensionContext
-
-    // To let the extension know a visualization has been closed
-    private readonly onVisualizationDisposeEmitter = new vscode.EventEmitter<void>()
-
-    constructor(textDocument: vscode.TextDocument, extensionContext: vscode.ExtensionContext) {
+    public constructor(textDocument: vscode.TextDocument, extensionContext: vscode.ExtensionContext) {
         this.extensionContext = extensionContext
         this.textDocument = textDocument
         this.textDocumentUri = textDocument.uri
-        this.webviewPanel = this.createWebiewPanel(textDocument)
+        this.webviewPanel = this.setUpWebviewPanel(textDocument)
     }
 
     /**
@@ -46,10 +46,10 @@ export class SamVisualization {
         this.webviewPanel?.reveal()
     }
 
-    private createWebiewPanel(textDocument: vscode.TextDocument): vscode.WebviewPanel | undefined {
+    private createWebviewPanel(textDocument: vscode.TextDocument): vscode.WebviewPanel {
         const panel = vscode.window.createWebviewPanel(
             'samVisualization',
-            `${basename(textDocument.fileName)} (Rendering)`,
+            localize('AWS.samVisualizer.graph.titleSuffix', '{0} (Rendering)', basename(textDocument.fileName)),
             {
                 preserveFocus: true,
                 viewColumn: vscode.ViewColumn.Beside,
@@ -59,7 +59,7 @@ export class SamVisualization {
                 retainContextWhenHidden: true,
             }
         )
-        // During tests, a mock context is used, so the absolute paths will not resolve
+
         try {
             const graphObject = generateGraphFromYaml(textDocument.getText())
 
@@ -68,17 +68,15 @@ export class SamVisualization {
                 this.resourceLineMap = generateResourceLineMap(textDocument.getText())
             }
 
-            const graphObjectString = JSON.stringify(graphObject)
-
-            const primaryResourceListString = readFileSync(
-                this.extensionContext.asAbsolutePath(
-                    join('resources', 'light', 'samVisualize', 'primaryResources.json')
-                )
-            ).toString()
+            const primaryResourceList = JSON.parse(
+                readFileSync(
+                    this.extensionContext.asAbsolutePath(join('resources', 'light', 'samVisualize', 'resources.json'))
+                ).toString()
+            )['primaryResources']
 
             const iconsDir = this.extensionContext.asAbsolutePath(join('resources', 'light', 'samVisualize', 'icons'))
 
-            const iconsDataString = JSON.stringify(generateIconsMap(iconsDir, panel.webview))
+            const iconsData = generateIconsMap(iconsDir, panel.webview)
 
             const webviewStylesheetUri = panel.webview.asWebviewUri(
                 vscode.Uri.file(this.extensionContext.asAbsolutePath(join('media', 'css', 'samVisualize.css')))
@@ -91,14 +89,22 @@ export class SamVisualization {
                 )
             )
             panel.webview.html = this.getWebviewContent(
-                graphObjectString,
-                primaryResourceListString,
-                iconsDataString,
+                JSON.stringify(graphObject),
+                JSON.stringify(primaryResourceList),
+                JSON.stringify(iconsData),
                 webviewStylesheetUri,
                 webviewBodyScriptUri,
                 panel.webview.cspSource
             )
-        } catch {}
+        } catch {
+            // During tests, a mock context is used, so the absolute paths will not resolve.
+            // Skip the fetching of particular resources.
+        }
+
+        return panel
+    }
+    private setUpWebviewPanel(textDocument: vscode.TextDocument): vscode.WebviewPanel | undefined {
+        const panel = this.createWebviewPanel(textDocument)
 
         // To close the visualization if the associated template no longer exists
         this.disposables.push(
@@ -122,10 +128,6 @@ export class SamVisualization {
             })
         )
 
-        const decorationType = vscode.window.createTextEditorDecorationType({
-            backgroundColor: 'rgb(135,206,250,0.3)', // Light sky blue
-        })
-
         // Handle click events from the webview
         this.disposables.push(
             panel.webview.onDidReceiveMessage(message => {
@@ -142,13 +144,14 @@ export class SamVisualization {
                         //resource name for clicked resource stored in message.data
                         const pos = this.resourceLineMap![message.data]
                         if (pos) {
-                            const decorations: vscode.DecorationOptions[] = []
+                            //const decorations: vscode.DecorationOptions[] = []
                             const startPosition = activeEditor.document.positionAt(pos.start).with({ character: 0 })
                             const endPosition = activeEditor.document.positionAt(pos.end)
                             const range = new vscode.Range(startPosition, endPosition)
                             activeEditor.revealRange(range, vscode.TextEditorRevealType.InCenter)
-                            decorations.push({ range })
-                            activeEditor.setDecorations(decorationType, decorations)
+                            //decorations.push({ range })
+                            //activeEditor.setDecorations(decorationType, decorations)
+                            activeEditor.selection = new vscode.Selection(range.start, range.end)
                         }
                     })
             })
@@ -157,7 +160,6 @@ export class SamVisualization {
         panel.onDidDispose(() => {
             this.webviewPanel = undefined
             debouncedUpdate.cancel()
-            decorationType.dispose()
             this.onVisualizationDisposeEmitter.fire()
             this.disposables.forEach(disposable => {
                 disposable.dispose()
@@ -172,6 +174,8 @@ export class SamVisualization {
     private updateVisualization(yamlString: string) {
         const newGraphObject = generateGraphFromYaml(yamlString)
 
+        // We want to post the graphObject even if it is undefined,
+        // as the rendering code will render an error message if it is undefined.
         this.webviewPanel?.webview.postMessage({
             graphObject: newGraphObject,
         })
@@ -217,8 +221,7 @@ export class SamVisualization {
     }
 
     private templateDoesExist(): boolean {
-        const document = vscode.workspace.textDocuments.find(doc => doc.fileName === this.textDocument.uri.fsPath)
-        return document !== undefined
+        return !!vscode.workspace.textDocuments.some(doc => doc.fileName === this.textDocument.uri.fsPath)
     }
 
     public get onVisualizationDisposeEvent(): vscode.Event<void> {

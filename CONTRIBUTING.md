@@ -305,6 +305,24 @@ If you are contribuing visual assets from other open source repos, the source re
 
 [PR #227](https://github.com/aws/aws-toolkit-vscode/pull/227) shows an example.
 
+## SAM Visualizer Maintenance
+
+### Icons:
+
+If you notice an icon is missing from the SAM Visualizer, you can take the following steps to add it:
+
+For example, assuming the service with the missing icon is `AWS::KMS::KEY`
+
+1. Download and unzip the file Asset-Package\_\* from [AWS Architecture Icons](https://aws.amazon.com/architecture/icons/).
+2. Find the category under Architecture-Service-Icons\_\* corresponding to the service. In this case the service is [Key Management Service](https://console.aws.amazon.com/kms/home?region=us-east-1#/kms/home) which is a [security service](https://aws.amazon.com/kms/), so the icon should be located in Arch_Security-Identity-Compliance.
+3. In the 64 subdirectory, locate the icon for the service ending in \_64.svg.
+4. Copy the file to `resources/light/samVisualize/icons`, relative to the root of the VSCode Extension.
+5. Rename the file to `aws-<service>.svg`. In this case, the icon becomes `aws-kms.svg`. If the icon applies to a single data type and not the whole service, specify the data type in the icon name. In this case, if you wanted the icon to only apply to KMS Key, rename to `aws-kms-key.svg`.
+
+### Primary Resource List:
+
+If you want a given resource type to be shown in the Primary view, add the type to the list under the `primaryResources` key located at `resources/light/samVisualize/resources.json`
+
 ## Code of Conduct
 
 This project has adopted the [Amazon Open Source Code of Conduct](https://aws.github.io/code-of-conduct).

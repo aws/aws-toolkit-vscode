@@ -4,11 +4,9 @@
  */
 import * as assert from 'assert'
 import { ForceDirectedGraph } from '../../../samVisualize/rendering/forceDirectedGraph'
-import { NodeConfig } from '../../../samVisualize/rendering/configConstants/NodeConfig'
+import * as RenderConstants from '../../../samVisualize/rendering/renderConstants'
 import { JSDOM } from 'jsdom'
 import { GraphObject } from '../../../samVisualize/graphGeneration/graph'
-import { LinkConfig } from '../../../samVisualize/rendering/configConstants/LinkConfig'
-import { PhysicsConfig } from '../../../samVisualize/rendering/configConstants/PhysicsConfig'
 
 const testGraphData: GraphObject = {
     nodes: [
@@ -100,18 +98,21 @@ describe('samVisualize d3.js rendering of a GraphObject', async function () {
 
         assert.strictEqual(
             doc.getElementById('test-arrowhead')?.getElementsByTagName('path')[0]!.style.opacity,
-            LinkConfig.LinkOpacity.toString()
+            RenderConstants.LinkOpacity.toString()
         )
         // CorrectViewbox
-        assert.strictEqual(doc.getElementById('test-arrowhead')!.getAttribute('viewBox'), LinkConfig.arrowheadViewbox)
+        assert.strictEqual(
+            doc.getElementById('test-arrowhead')!.getAttribute('viewBox'),
+            RenderConstants.arrowheadViewbox
+        )
         // Square viewbox
         assert.strictEqual(
             doc.getElementById('test-arrowhead')!.getAttribute('markerWidth'),
-            LinkConfig.arrowheadSize.toString()
+            RenderConstants.arrowheadSize.toString()
         )
         assert.strictEqual(
             doc.getElementById('test-arrowhead')!.getAttribute('markerHeight'),
-            LinkConfig.arrowheadSize.toString()
+            RenderConstants.arrowheadSize.toString()
         )
 
         // Alignment
@@ -141,7 +142,7 @@ describe('samVisualize d3.js rendering of a GraphObject', async function () {
             // First path is rendered path
             assert.deepStrictEqual(
                 link.getElementsByTagName('path')[0].style.strokeOpacity,
-                LinkConfig.LinkOpacity.toString()
+                RenderConstants.LinkOpacity.toString()
             )
 
             // Second path is invisible tooltip path
@@ -197,10 +198,10 @@ describe('samVisualize d3.js rendering of a GraphObject', async function () {
             assert.ok(secondaryLabel)
 
             // Correct text positioning, primary label matches node name
-            assert.strictEqual(primaryLabel.getAttribute('dy'), NodeConfig.primaryLabelYOffset.toString())
+            assert.strictEqual(primaryLabel.getAttribute('dy'), RenderConstants.primaryLabelYOffset.toString())
             assert.strictEqual(primaryLabel.textContent, nodeName)
 
-            assert.strictEqual(secondaryLabel.getAttribute('dy'), NodeConfig.secondaryLabelYOffset.toString())
+            assert.strictEqual(secondaryLabel.getAttribute('dy'), RenderConstants.secondaryLabelYOffset.toString())
 
             // Secondary label exists and holds a type in the form AWS::<service>::<type>
             const nodeType = secondaryLabel.textContent
@@ -244,20 +245,20 @@ describe('samVisualize d3.js rendering of a GraphObject', async function () {
         assert.ok(s.force('center'))
         assert.ok(s.force('forceX'))
         assert.ok(s.force('forceY'))
-        assert.deepStrictEqual(s.alphaTarget(), PhysicsConfig.reheatAlphaTarget)
-        assert.deepStrictEqual(s.alphaDecay(), PhysicsConfig.alphaDecay)
+        assert.deepStrictEqual(s.alphaTarget(), RenderConstants.reheatAlphaTarget)
+        assert.deepStrictEqual(s.alphaDecay(), RenderConstants.alphaDecay)
         assert.deepStrictEqual(s.alphaMin(), -1)
     })
 
     it('adjusts alphaTarget on tick', function () {
         const s = forceDirectedGraph.simulation
 
-        assert.deepStrictEqual(s.alphaTarget(), PhysicsConfig.reheatAlphaTarget)
+        assert.deepStrictEqual(s.alphaTarget(), RenderConstants.reheatAlphaTarget)
         forceDirectedGraph.ticked()
-        assert.deepStrictEqual(s.alphaTarget(), PhysicsConfig.reheatAlphaTarget)
-        s.alpha(PhysicsConfig.reheatAlphaTarget)
+        assert.deepStrictEqual(s.alphaTarget(), RenderConstants.reheatAlphaTarget)
+        s.alpha(RenderConstants.reheatAlphaTarget)
         forceDirectedGraph.ticked()
         // After hitting reheat goal, target is set to long term value
-        assert.deepStrictEqual(s.alphaTarget(), PhysicsConfig.alphaTarget)
+        assert.deepStrictEqual(s.alphaTarget(), RenderConstants.alphaTarget)
     })
 })

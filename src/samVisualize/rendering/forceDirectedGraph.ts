@@ -2,10 +2,8 @@
  * Copyright 2021 Amazon.com, Inc. or its affiliates. All Rights Reserved.
  * SPDX-License-Identifier: Apache-2.0
  */
-import { NodeConfig } from '../rendering/configConstants/NodeConfig'
-import { LinkConfig } from '../rendering/configConstants/LinkConfig'
-import { PhysicsConfig } from '../rendering/configConstants/PhysicsConfig'
-import { LinkTypes } from '../samVisualizeTypes'
+import * as RenderConstants from '../rendering/renderConstants'
+import { RenderedLinkTypes } from '../samVisualizeTypes'
 import * as d3 from 'd3'
 import { WebviewApi } from 'vscode-webview'
 import { GraphObject } from '../graphGeneration/graph'
@@ -59,7 +57,7 @@ export class ForceDirectedGraph {
     // Visibility is toggled during error renders
     private filterButtonsDiv: d3.Selection<HTMLDivElement, unknown, HTMLElement | null, unknown>
 
-    constructor(
+    public constructor(
         completeGraphObject: GraphObject,
         primaryResourceList: string[],
         iconPaths: { [resourceType: string]: string },
@@ -98,15 +96,15 @@ export class ForceDirectedGraph {
                 d3
                     .forceLink<NodeDatum, LinkDatum>()
                     .id((d: NodeDatum) => d.name)
-                    .distance(PhysicsConfig.linkForceDistance)
+                    .distance(RenderConstants.linkForceDistance)
             )
-            .force('charge', d3.forceManyBody().strength(PhysicsConfig.nodeForce))
+            .force('charge', d3.forceManyBody().strength(RenderConstants.nodeForce))
             .force('center', d3.forceCenter(svgWidth / 2, svgHeight / 2))
-            .force('forceX', d3.forceX(svgWidth / 2).strength(PhysicsConfig.centeringForceStrength))
-            .force('forceY', d3.forceY(svgHeight / 2).strength(PhysicsConfig.centeringForceStrength))
+            .force('forceX', d3.forceX(svgWidth / 2).strength(RenderConstants.centeringForceStrength))
+            .force('forceY', d3.forceY(svgHeight / 2).strength(RenderConstants.centeringForceStrength))
 
-        this.simulation.alphaTarget(PhysicsConfig.alphaTarget)
-        this.simulation.alphaDecay(PhysicsConfig.alphaDecay)
+        this.simulation.alphaTarget(RenderConstants.alphaTarget)
+        this.simulation.alphaDecay(RenderConstants.alphaDecay)
         // Don't stop ticking
         this.simulation.alphaMin(-1)
 
@@ -127,10 +125,10 @@ export class ForceDirectedGraph {
         this.filterButtonsDiv = this.drawFilterRadioButtons(primaryButtonID, allButtonID, doc)
 
         try {
-            document.querySelector(`#${primaryButtonID}`)?.addEventListener('change', () => {
+            document.getElementById(primaryButtonID)?.addEventListener('change', () => {
                 this.update(this.primaryOnlyGraphObject)
             })
-            document.querySelector(`#${allButtonID}`)?.addEventListener('change', () => {
+            document.getElementById(allButtonID)?.addEventListener('change', () => {
                 this.update(this.completeGraphObject)
             })
         } catch {
@@ -144,13 +142,13 @@ export class ForceDirectedGraph {
                 .select('body')
                 .append('span')
                 .attr('class', 'error-message')
-                .text('Errors detected in template.')
+                .text('Errors detected in template. Ensure template is valid YAML and follows Template Anatomy.')
                 .style('display', 'none')
         } else {
             d3.select('body')
                 .append('span')
                 .attr('class', 'error-message')
-                .text('Errors detected in template.')
+                .text('Errors detected in template. Ensure template is valid YAML and follows Template Anatomy.')
                 .style('display', 'none')
         }
 
@@ -218,12 +216,10 @@ export class ForceDirectedGraph {
         doc?: Document
     ): d3.Selection<SVGSVGElement, unknown, null | HTMLElement, unknown> {
         // This document param is necessary only for testing, to give a 'fake' DOM for d3 to manipulate
-        let svg
-        if (doc) {
-            svg = d3.select(doc).select('body').append<SVGSVGElement>('svg').attr('width', width).attr('height', height)
-        } else {
-            svg = d3.select('body').append<SVGSVGElement>('svg').attr('width', width).attr('height', height)
-        }
+        const body: d3.Selection<SVGSVGElement, unknown, null | HTMLElement, unknown> = doc
+            ? d3.select(doc).select('body')
+            : d3.select('body')
+        const svg = body.append<SVGSVGElement>('svg').attr('width', width).attr('height', height)
         if (id) {
             svg.attr('id', id)
         }
@@ -245,19 +241,19 @@ export class ForceDirectedGraph {
             .append('marker')
             .attr('class', 'arrowhead')
             .attr('id', id ? id : this.arrowheadID) // Use test id if present
-            .attr('viewBox', LinkConfig.arrowheadViewbox)
+            .attr('viewBox', RenderConstants.arrowheadViewbox)
             // refX = 0 to draw the arrowhead at the end of the path
             .attr('refX', 0)
             // refY = 0 to draw the arrowhead centered on the path
             .attr('refY', 0)
             .attr('orient', 'auto')
-            .attr('markerWidth', LinkConfig.arrowheadSize)
-            .attr('markerHeight', LinkConfig.arrowheadSize)
+            .attr('markerWidth', RenderConstants.arrowheadSize)
+            .attr('markerHeight', RenderConstants.arrowheadSize)
             .attr('markerUnits', 'userSpaceOnUse')
             .append('path')
-            .attr('d', LinkConfig.arrowheadShape)
+            .attr('d', RenderConstants.arrowheadShape)
             .style('stroke', 'none')
-            .style('opacity', LinkConfig.LinkOpacity)
+            .style('opacity', RenderConstants.LinkOpacity)
     }
 
     /**
@@ -309,15 +305,15 @@ export class ForceDirectedGraph {
             .attr('class', 'visible-link')
             .attr('marker-end', `url(#${this.arrowheadID})`)
             .style('stroke-dasharray', (d: LinkDatum) => {
-                if (d.type === LinkTypes.DependsOn) {
-                    return `${LinkConfig.dependsOnLinkDash} ${LinkConfig.dependsOnLinkSpace}`
+                if (d.type === RenderedLinkTypes.DependsOn) {
+                    return `${RenderConstants.dependsOnLinkDash} ${RenderConstants.dependsOnLinkSpace}`
                 }
                 // eslint-disable-next-line no-null/no-null
                 return null
             })
-            .style('stroke-width', LinkConfig.linkStrokeWidth)
+            .style('stroke-width', RenderConstants.linkStrokeWidth)
             .style('fill', 'none')
-            .style('stroke-opacity', LinkConfig.LinkOpacity)
+            .style('stroke-opacity', RenderConstants.LinkOpacity)
 
         // This draws a thicker line on top of the rendered link
         // to allow for easier mouseover tooltips
@@ -375,31 +371,37 @@ export class ForceDirectedGraph {
                         .select(`#clipCircle-${d.name}`)
                         .select('circle')
                         .transition()
-                        .duration(NodeConfig.mouseOverNodeGrowthTime)
-                        .attr('r', NodeConfig.radius * NodeConfig.mouseOverNodeSizeMultiplier)
+                        .duration(RenderConstants.mouseOverNodeGrowthTime)
+                        .attr('r', RenderConstants.radius * RenderConstants.mouseOverNodeSizeMultiplier)
 
                     d3.select(this)
                         .select('image')
                         .transition()
-                        .duration(NodeConfig.mouseOverNodeGrowthTime)
-                        .attr('width', NodeConfig.radius * 2 * NodeConfig.mouseOverNodeSizeMultiplier)
-                        .attr('height', NodeConfig.radius * 2 * NodeConfig.mouseOverNodeSizeMultiplier)
-                        .attr('x', -NodeConfig.radius * NodeConfig.mouseOverNodeSizeMultiplier)
-                        .attr('y', -NodeConfig.radius * NodeConfig.mouseOverNodeSizeMultiplier)
+                        .duration(RenderConstants.mouseOverNodeGrowthTime)
+                        .attr('width', RenderConstants.radius * 2 * RenderConstants.mouseOverNodeSizeMultiplier)
+                        .attr('height', RenderConstants.radius * 2 * RenderConstants.mouseOverNodeSizeMultiplier)
+                        .attr('x', -RenderConstants.radius * RenderConstants.mouseOverNodeSizeMultiplier)
+                        .attr('y', -RenderConstants.radius * RenderConstants.mouseOverNodeSizeMultiplier)
 
                     d3.select(this)
                         .select('.primary-text')
                         .transition()
-                        .duration(NodeConfig.mouseOverNodeGrowthTime)
-                        .attr('dy', NodeConfig.primaryLabelYOffset * NodeConfig.mouseOverNodeSizeMultiplier)
-                        .attr('font-size', NodeConfig.primaryTextSize * NodeConfig.mouseOverNodeSizeMultiplier)
+                        .duration(RenderConstants.mouseOverNodeGrowthTime)
+                        .attr('dy', RenderConstants.primaryLabelYOffset * RenderConstants.mouseOverNodeSizeMultiplier)
+                        .attr(
+                            'font-size',
+                            RenderConstants.primaryTextSize * RenderConstants.mouseOverNodeSizeMultiplier
+                        )
 
                     d3.select(this)
                         .select('.secondary-text')
                         .transition()
-                        .duration(NodeConfig.mouseOverNodeGrowthTime)
-                        .attr('dy', NodeConfig.secondaryLabelYOffset * NodeConfig.mouseOverNodeSizeMultiplier)
-                        .attr('font-size', NodeConfig.secondaryTextSize * NodeConfig.mouseOverNodeSizeMultiplier)
+                        .duration(RenderConstants.mouseOverNodeGrowthTime)
+                        .attr('dy', RenderConstants.secondaryLabelYOffset * RenderConstants.mouseOverNodeSizeMultiplier)
+                        .attr(
+                            'font-size',
+                            RenderConstants.secondaryTextSize * RenderConstants.mouseOverNodeSizeMultiplier
+                        )
                 }
             )
             .on(
@@ -410,31 +412,31 @@ export class ForceDirectedGraph {
                         .select(`#clipCircle-${d.name}`)
                         .select('circle')
                         .transition()
-                        .duration(NodeConfig.mouseOverNodeGrowthTime)
-                        .attr('r', NodeConfig.radius)
+                        .duration(RenderConstants.mouseOverNodeGrowthTime)
+                        .attr('r', RenderConstants.radius)
 
                     d3.select(this)
                         .select('image')
                         .transition()
-                        .duration(NodeConfig.mouseOverNodeGrowthTime)
-                        .attr('width', NodeConfig.radius * 2)
-                        .attr('height', NodeConfig.radius * 2)
-                        .attr('x', -NodeConfig.radius)
-                        .attr('y', -NodeConfig.radius)
+                        .duration(RenderConstants.mouseOverNodeGrowthTime)
+                        .attr('width', RenderConstants.radius * 2)
+                        .attr('height', RenderConstants.radius * 2)
+                        .attr('x', -RenderConstants.radius)
+                        .attr('y', -RenderConstants.radius)
 
                     d3.select(this)
                         .select('.primary-text')
                         .transition()
-                        .duration(NodeConfig.mouseOverNodeGrowthTime)
-                        .attr('dy', NodeConfig.primaryLabelYOffset)
-                        .attr('font-size', NodeConfig.primaryTextSize)
+                        .duration(RenderConstants.mouseOverNodeGrowthTime)
+                        .attr('dy', RenderConstants.primaryLabelYOffset)
+                        .attr('font-size', RenderConstants.primaryTextSize)
 
                     d3.select(this)
                         .select('.secondary-text')
                         .transition()
-                        .duration(NodeConfig.mouseOverNodeGrowthTime)
-                        .attr('dy', NodeConfig.secondaryLabelYOffset)
-                        .attr('font-size', NodeConfig.secondaryTextSize)
+                        .duration(RenderConstants.mouseOverNodeGrowthTime)
+                        .attr('dy', RenderConstants.secondaryLabelYOffset)
+                        .attr('font-size', RenderConstants.secondaryTextSize)
                 }
             )
         // vscodeApi does not exist outside of a Webview, so it's not used during testing
@@ -456,7 +458,7 @@ export class ForceDirectedGraph {
             .append<SVGClipPathElement>('clipPath')
             .attr('id', (d: NodeDatum) => `clipCircle-${d.name}`)
             .append<SVGCircleElement>('circle')
-            .attr('r', NodeConfig.radius)
+            .attr('r', RenderConstants.radius)
 
         // Draw an image corresponding to the Node type
         nodes
@@ -479,11 +481,11 @@ export class ForceDirectedGraph {
                 return iconPaths['default']
             })
             // Image positioning
-            .attr('x', -NodeConfig.radius)
-            .attr('y', -NodeConfig.radius)
+            .attr('x', -RenderConstants.radius)
+            .attr('y', -RenderConstants.radius)
             // We want the image to be as wide and high as the node itself, before the circle is cut out.
-            .attr('height', 2 * NodeConfig.radius)
-            .attr('width', 2 * NodeConfig.radius)
+            .attr('height', 2 * RenderConstants.radius)
+            .attr('width', 2 * RenderConstants.radius)
             .attr('clip-path', (d: NodeDatum) => `url(#clipCircle-${d.name})`)
 
         // Gives tooltip of Node name when hovered
@@ -494,18 +496,18 @@ export class ForceDirectedGraph {
             .append<SVGTextElement>('text')
             .attr('class', 'primary-text')
             .attr('text-anchor', 'middle')
-            .attr('dy', NodeConfig.primaryLabelYOffset)
+            .attr('dy', RenderConstants.primaryLabelYOffset)
             .text((d: NodeDatum) => d.name)
-            .attr('font-size', NodeConfig.primaryTextSize)
+            .attr('font-size', RenderConstants.primaryTextSize)
 
         // Label each Node with it's full resource type identifier
         nodes
             .append<SVGTextElement>('text')
             .attr('class', 'secondary-text')
             .attr('text-anchor', 'middle')
-            .attr('dy', NodeConfig.secondaryLabelYOffset)
+            .attr('dy', RenderConstants.secondaryLabelYOffset)
             .text((d: NodeDatum) => (d.type ? d.type : ''))
-            .attr('font-size', NodeConfig.secondaryTextSize)
+            .attr('font-size', RenderConstants.secondaryTextSize)
 
         return nodes
     }
@@ -545,7 +547,7 @@ export class ForceDirectedGraph {
         primaryButtonDiv
             .append('label')
             .attr('for', primaryButtonID)
-            .style('font-size', NodeConfig.primaryTextSize)
+            .style('font-size', RenderConstants.primaryTextSize)
             .style('font-weight', 'bold')
             .text('Primary resources')
 
@@ -554,7 +556,7 @@ export class ForceDirectedGraph {
         allButtonDiv
             .append('label')
             .attr('for', allButtonID)
-            .style('font-size', NodeConfig.primaryTextSize)
+            .style('font-size', RenderConstants.primaryTextSize)
             .style('font-weight', 'bold')
             .text('All resources')
 
@@ -588,26 +590,22 @@ export class ForceDirectedGraph {
         this.simulation.force<d3.ForceLink<NodeDatum, LinkDatum>>('link')?.links(newGraphObject.links)
 
         // Give energy to a new render
-        this.simulation.alphaTarget(PhysicsConfig.reheatAlphaTarget).restart()
+        this.simulation.alphaTarget(RenderConstants.reheatAlphaTarget).restart()
     }
-
-    // Arrow function because this function is referenced, and it needs to be bound
     private dragStarted = (event: d3.D3DragEvent<SVGGElement, NodeDatum, unknown>, d: NodeDatum): void => {
         if (!event.active) {
-            this.simulation.alphaTarget(PhysicsConfig.reheatAlphaTarget).restart()
+            this.simulation.alphaTarget(RenderConstants.reheatAlphaTarget).restart()
         }
         d.fx = d.x
         d.fy = d.y
     }
 
-    // Arrow function because this function is referenced, and it needs to be bound
     private dragged = (event: d3.D3DragEvent<SVGGElement, NodeDatum, unknown>, d: NodeDatum): void => {
-        this.simulation.alpha(PhysicsConfig.duringDragAlpha)
+        this.simulation.alpha(RenderConstants.duringDragAlpha)
         d.fx = event.x
         d.fy = event.y
     }
 
-    // Arrow function because this function is referenced, and it needs to be bound
     private dragEnded = (event: d3.D3DragEvent<SVGGElement, NodeDatum, unknown>, d: NodeDatum): void => {
         delete d.fx
         delete d.fy
@@ -622,8 +620,8 @@ export class ForceDirectedGraph {
         // // drawn over existing links (same 'd' value) to make it easier to get a tooltip while hovering over a link.
         this.nodes!.attr('transform', (d: NodeDatum) => `translate(${d.x}, ${d.y})`)
         // Once we hit the target after a reheat, begin decaying to long term alpha target
-        if (Math.abs(this.simulation.alpha() - PhysicsConfig.reheatAlphaTarget) < 0.001) {
-            this.simulation.alphaTarget(PhysicsConfig.alphaTarget).restart()
+        if (Math.abs(this.simulation.alpha() - RenderConstants.reheatAlphaTarget) < 0.001) {
+            this.simulation.alphaTarget(RenderConstants.alphaTarget).restart()
         }
     }
 
@@ -643,7 +641,7 @@ export class ForceDirectedGraph {
         if (dC === 0) {
             return undefined
         }
-        const d = dC - targetNodeRadius - LinkConfig.arrowheadSize
+        const d = dC - targetNodeRadius - RenderConstants.arrowheadSize
         const ratio = d / dC
         dx *= ratio
         dy *= ratio

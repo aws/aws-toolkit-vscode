@@ -26,11 +26,18 @@ body.vscode-dark .primary-text {
 body.vscode-light .primary-text {
     fill: black;
 }
+body.vscode-high-contrast .primary-text {
+    fill: white;
+}
+
 body.vscode-dark .secondary-text {
     fill: #cfccc4;
 }
 body.vscode-light .secondary-text {
     fill: #333;
+}
+body.vscode-high-contrast .secondary-text {
+    fill: white;
 }
 
 body.vscode-dark .visible-link {
@@ -39,6 +46,9 @@ body.vscode-dark .visible-link {
 body.vscode-light .visible-link {
     stroke: #808080;
 }
+body.vscode-high-contrast .visible-link {
+    stroke: var(--vscode-contrastActiveBorder);
+}
 
 body.vscode-dark .arrowhead path {
     fill: #cfccc4;
@@ -46,6 +56,11 @@ body.vscode-dark .arrowhead path {
 body.vscode-light .arrowhead path {
     fill: #808080;
 }
+
+body.vscode-high-contrast .arrowhead path {
+    fill: var(--vscode-contrastActiveBorder);
+}
+
 .error-message {
     position: absolute;
     border: 1px solid #da6363;
