@@ -2100,7 +2100,7 @@
         "mocha-junit-reporter": "^2.0.0",
         "mocha-multi-reporters": "^1.5.1",
         "prettier": "^2.3.2",
-        "prettier-plugin-sh": "^0.6.1",
+        "prettier-plugin-sh": "^0.7.1",
         "pretty-quick": "^3.1.0",
         "readline-sync": "^1.4.9",
         "remap-istanbul": "^0.12.0",
@@ -2118,7 +2118,7 @@
     "dependencies": {
         "@aws-sdk/client-sso": "^3.16.0",
         "@aws-sdk/client-sso-oidc": "^3.16.0",
-        "@aws-sdk/credential-provider-ini": "^3.15.0",
+        "@aws-sdk/credential-provider-ini": "^3.27.0",
         "@aws-sdk/credential-provider-process": "^3.15.0",
         "@aws-sdk/credential-provider-sso": "^3.16.0",
         "adm-zip": "^0.4.13",
