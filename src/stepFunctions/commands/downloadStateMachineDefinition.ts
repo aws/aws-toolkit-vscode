@@ -19,7 +19,7 @@ import { StateMachineNode } from '../explorer/stepFunctionsNodes'
 export async function downloadStateMachineDefinition(params: {
     outputChannel: vscode.OutputChannel
     stateMachineNode: StateMachineNode
-    isDownloadAndRender?: boolean
+    isPreviewAndRender?: boolean
 }) {
     const logger: Logger = getLogger()
     let downloadResult: Result = 'Succeeded'
@@ -32,7 +32,7 @@ export async function downloadStateMachineDefinition(params: {
             params.stateMachineNode.details.stateMachineArn
         )
 
-        if (params.isDownloadAndRender) {
+        if (params.isPreviewAndRender) {
             const doc = await vscode.workspace.openTextDocument({
                 language: 'asl',
                 content: stateMachineDetails.definition,

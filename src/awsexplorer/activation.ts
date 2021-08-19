@@ -171,7 +171,7 @@ async function registerAwsExplorerCommands(
                 await downloadStateMachineDefinition({
                     stateMachineNode: node,
                     outputChannel: toolkitOutputChannel,
-                    isDownloadAndRender: true,
+                    isPreviewAndRender: true,
                 })
         )
     )

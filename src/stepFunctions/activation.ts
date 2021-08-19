@@ -47,6 +47,7 @@ async function registerStepFunctionCommands(
                     textEditor || vscode.window.activeTextEditor
                 )
             } finally {
+                // TODO: Consider making the metric reflect the success/failure of the above call
                 telemetry.recordStepfunctionsPreviewstatemachine()
             }
         })
