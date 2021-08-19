@@ -4,6 +4,7 @@
  */
 
 import * as telemetry from '../../shared/telemetry/telemetry'
+import * as vscode from 'vscode'
 import { EcrRepositoryNode } from '../../ecr/explorer/ecrRepositoryNode'
 import { EcrTagNode } from '../../ecr/explorer/ecrTagNode'
 import { ext } from '../../shared/extensionGlobals'
@@ -33,7 +34,7 @@ export async function createFromEcr(node: EcrTagNode | EcrRepositoryNode): Promi
         }
 
         await client.createService(result)
-        ext.awsExplorer.refresh()
+        vscode.commands.executeCommand('aws.refreshAwsExplorer', true)
         telemetryResult = 'Succeeded'
     } finally {
         telemetry.recordApprunnerCreateService({

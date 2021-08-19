@@ -4,7 +4,6 @@
  */
 
 import { ExtensionContext, OutputChannel, Uri } from 'vscode'
-import { AwsExplorer } from '../awsexplorer/awsExplorer'
 import { AWSClientBuilder } from './awsClientBuilder'
 import { AWSContextCommands } from './awsContextCommands'
 import { ToolkitClientBuilder } from './clients/toolkitClientBuilder'
@@ -22,7 +21,6 @@ export namespace ext {
     export let window: Window
     export let outputChannel: OutputChannel
     export let awsContextCommands: AWSContextCommands
-    export let awsExplorer: AwsExplorer
     export let sdkClientBuilder: AWSClientBuilder
     export let toolkitClientBuilder: ToolkitClientBuilder
     export let telemetry: TelemetryService
