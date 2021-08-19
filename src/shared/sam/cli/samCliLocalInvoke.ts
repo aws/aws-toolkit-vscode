@@ -292,7 +292,7 @@ export class SamCliLocalInvokeInvocation {
             throw new Error(`template path does not exist: ${this.args.templatePath}`)
         }
 
-        if (!(await fileExists(this.args.eventPath))) {
+        if (this.args.eventPath !== NO_FILE && !(await fileExists(this.args.eventPath))) {
             throw new Error(`event path does not exist: ${this.args.eventPath}`)
         }
     }
