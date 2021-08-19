@@ -411,6 +411,8 @@ export async function runLambdaFunction(
         // eslint-disable-next-line @typescript-eslint/unbound-method
         config.onWillAttachDebugger = undefined
         config.samLocalInvokeCommand = undefined
+        // Some extensions will attempt to read the envFile path, which we don't want
+        delete (config as any).envFile
 
         await attachDebugger({
             debugConfig: config,
