@@ -1,0 +1,30 @@
+{
+	"date": "2021-08-19",
+	"version": "1.29.0",
+	"entries": [
+		{
+			"type": "Bug Fix",
+			"description": "SAM: the Toolkit now correctly skips sending '--env-vars' when no environment variables are present in the launch config"
+		},
+		{
+			"type": "Bug Fix",
+			"description": "Credentials: correctly handle different `source_profile` combinations"
+		},
+		{
+			"type": "Bug Fix",
+			"description": "SAM/CFN: fix JSON schema path causing a symlink on some operating systems"
+		},
+		{
+			"type": "Bug Fix",
+			"description": "SAM/CFN JSON schema: schemas now load correctly on first-load"
+		},
+		{
+			"type": "Bug Fix",
+			"description": "SAM/CFN JSON schema: write yaml.customTags to user-global settings (instead of workspace-local)"
+		},
+		{
+			"type": "Feature",
+			"description": "SAM Application support for the python3.9 runtime"
+		}
+	]
+}

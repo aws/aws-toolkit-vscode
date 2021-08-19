@@ -1,4 +1,0 @@
-{
-	"type": "Bug Fix",
-	"description": "SAM: the Toolkit now correctly skips sending '--env-vars' when no environment variables are present in the launch config"
-}
