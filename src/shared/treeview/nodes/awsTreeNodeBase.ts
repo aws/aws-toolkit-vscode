@@ -3,8 +3,7 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
-import { TreeItem, TreeItemCollapsibleState } from 'vscode'
-import { ext } from '../../extensionGlobals'
+import { TreeItem, TreeItemCollapsibleState, commands } from 'vscode'
 import { isCloud9 } from '../../extensionUtilities'
 
 export abstract class AWSTreeNodeBase extends TreeItem {
@@ -18,9 +17,9 @@ export abstract class AWSTreeNodeBase extends TreeItem {
 
     public refresh(): void {
         if (isCloud9()) {
-            ext.awsExplorer.refresh()
+            commands.executeCommand('aws.refreshAwsExplorer', true)
         } else {
-            ext.awsExplorer.refresh(this)
+            commands.executeCommand('aws.refreshAwsExplorerNode', this)
         }
     }
 }

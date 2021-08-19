@@ -50,7 +50,6 @@ export async function activate(args: {
     remoteInvokeOutputChannel: vscode.OutputChannel
 }): Promise<void> {
     const awsExplorer = new AwsExplorer(ext.context, args.awsContext, args.regionProvider)
-    ext.awsExplorer = awsExplorer
 
     const view = vscode.window.createTreeView(awsExplorer.viewProviderId, {
         treeDataProvider: awsExplorer,
