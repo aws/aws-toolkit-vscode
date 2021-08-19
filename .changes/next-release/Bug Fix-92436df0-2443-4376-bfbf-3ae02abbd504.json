@@ -1,4 +1,0 @@
-{
-	"type": "Bug Fix",
-	"description": "SAM/CFN JSON schema: schemas now load correctly on first-load"
-}
