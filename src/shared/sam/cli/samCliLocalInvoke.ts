@@ -14,7 +14,6 @@ import { removeAnsi } from '../../utilities/textUtilities'
 import { ext } from '../../extensionGlobals'
 import { DefaultSamCliProcessInvokerContext, SamCliProcessInvokerContext } from './samCliProcessInvokerContext'
 import * as vscode from 'vscode'
-import { NO_FILE } from '../debugger/awsSamDebugConfiguration'
 
 const localize = nls.loadMessageBundle()
 
@@ -163,11 +162,11 @@ export interface SamCliLocalInvokeInvocationArguments {
     /**
      * Location of the file containing the Lambda Function event payload.
      */
-    eventPath: string
+    eventPath?: string
     /**
      * Location of the file containing the environment variables to invoke the Lambda Function against.
      */
-    environmentVariablePath: string
+    environmentVariablePath?: string
     /**
      * Environment variables set when invoking the SAM process (NOT passed to the Lambda).
      */
@@ -246,13 +245,8 @@ export class SamCliLocalInvokeInvocation {
             this.args.templatePath,
         ]
 
-        pushIf(invokeArgs, this.args.eventPath !== NO_FILE, '--event', this.args.eventPath)
-        pushIf(
-            invokeArgs,
-            this.args.environmentVariablePath !== NO_FILE,
-            '--env-vars',
-            this.args.environmentVariablePath
-        )
+        pushIf(invokeArgs, !!this.args.eventPath, '--event', this.args.eventPath)
+        pushIf(invokeArgs, !!this.args.environmentVariablePath, '--env-vars', this.args.environmentVariablePath)
         pushIf(invokeArgs, !!this.args.debugPort, '-d', this.args.debugPort!)
         pushIf(invokeArgs, !!this.args.dockerNetwork, '--docker-network', this.args.dockerNetwork!)
         pushIf(invokeArgs, !!this.args.skipPullImage, '--skip-pull-image')
@@ -292,7 +286,7 @@ export class SamCliLocalInvokeInvocation {
             throw new Error(`template path does not exist: ${this.args.templatePath}`)
         }
 
-        if (this.args.eventPath !== NO_FILE && !(await fileExists(this.args.eventPath))) {
+        if (this.args.eventPath !== undefined && !(await fileExists(this.args.eventPath))) {
             throw new Error(`event path does not exist: ${this.args.eventPath}`)
         }
     }

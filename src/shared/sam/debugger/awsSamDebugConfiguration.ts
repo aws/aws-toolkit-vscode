@@ -25,11 +25,7 @@ export const CODE_TARGET_TYPE = 'code' as const
 export const API_TARGET_TYPE = 'api' as const
 export const AWS_SAM_DEBUG_REQUEST_TYPES = [DIRECT_INVOKE_TYPE]
 export const AWS_SAM_DEBUG_TARGET_TYPES = [TEMPLATE_TARGET_TYPE, CODE_TARGET_TYPE, API_TARGET_TYPE]
-/**
- * Used to denote that no file exists for any options that expect a file path
- * TODO: remove this and do it correctly by using undefined
- */
-export const NO_FILE = 'NO_FILE' as const
+
 export type AwsSamTargetType = 'api' | 'code' | 'template'
 
 export type TargetProperties = AwsSamDebuggerConfiguration['invokeTarget']

@@ -35,7 +35,6 @@ import { DefaultSamCliLocationProvider } from './cli/samCliLocator'
 import { getSamCliContext, getSamCliVersion } from './cli/samCliContext'
 import { CloudFormation } from '../cloudformation/cloudformation'
 import { getIdeProperties } from '../extensionUtilities'
-import { NO_FILE } from './debugger/awsSamDebugConfiguration'
 
 const localize = nls.loadMessageBundle()
 
@@ -389,7 +388,7 @@ export async function runLambdaFunction(
     if (!config.noDebug) {
         if (config.invokeTarget.target === 'api') {
             const payload =
-                config.eventPayloadFile === NO_FILE
+                config.eventPayloadFile === undefined
                     ? {}
                     : JSON.parse(await readFile(config.eventPayloadFile, { encoding: 'utf-8' }))
             // Send the request to the local API server.
@@ -411,8 +410,6 @@ export async function runLambdaFunction(
         // eslint-disable-next-line @typescript-eslint/unbound-method
         config.onWillAttachDebugger = undefined
         config.samLocalInvokeCommand = undefined
-        // Some extensions will attempt to read the envFile path, which we don't want
-        delete (config as any).envFile
 
         await attachDebugger({
             debugConfig: config,
@@ -691,8 +688,8 @@ async function showDebugConsole(): Promise<void> {
  * @param config
  */
 export async function makeJsonFiles(config: SamLaunchRequestArgs): Promise<void> {
-    config.eventPayloadFile = NO_FILE
-    config.envFile = NO_FILE
+    config.eventPayloadFile = undefined
+    config.envFile = undefined
 
     // env-vars.json (NB: effectively ignored for the `target=code` case).
     const configEnv = config.lambda?.environmentVariables ?? {}

@@ -26,7 +26,6 @@ import {
     createApiAwsSamDebugConfig,
     APIGatewayProperties,
     PathMapping,
-    NO_FILE,
 } from '../../../../shared/sam/debugger/awsSamDebugConfiguration'
 import { SamDebugConfigProvider, SamLaunchRequestArgs } from '../../../../shared/sam/debugger/awsSamDebugger'
 import * as debugConfiguration from '../../../../lambda/local/debugConfiguration'
@@ -86,8 +85,8 @@ function assertEqualLaunchConfigs(actual: SamLaunchRequestArgs, expected: SamLau
     for (const o of [actual, expected]) {
         o.codeRoot = pathutil.normalize(o.codeRoot)
         o.containerEnvFile = o.containerEnvFile ? pathutil.normalize(o.containerEnvFile) : o.containerEnvFile
-        o.envFile = pathutil.normalize(o.envFile)
-        o.eventPayloadFile = pathutil.normalize(o.eventPayloadFile)
+        o.envFile = o.envFile ? pathutil.normalize(o.envFile) : undefined
+        o.eventPayloadFile = o.eventPayloadFile ? pathutil.normalize(o.eventPayloadFile) : undefined
         o.debuggerPath = o.debuggerPath ? pathutil.normalize(o.debuggerPath) : o.debuggerPath
         o.localRoot = o.localRoot ? pathutil.normalize(o.localRoot) : o.localRoot
     }
@@ -114,8 +113,7 @@ async function assertEqualNoDebugTemplateTarget(
     expected: SamLaunchRequestArgs,
     folder: vscode.WorkspaceFolder,
     debugConfigProvider: SamDebugConfigProvider,
-    envFile?: string,
-    eventPayloadFile?: string
+    noFiles?: boolean
 ) {
     ;(input as any).noDebug = true
     const actualNoDebug = (await debugConfigProvider.makeConfig(folder, input))!
@@ -126,8 +124,8 @@ async function assertEqualNoDebugTemplateTarget(
         debugPort: undefined,
         port: -1,
         baseBuildDir: actualNoDebug.baseBuildDir,
-        envFile: envFile ?? `${actualNoDebug.baseBuildDir}/env-vars.json`,
-        eventPayloadFile: eventPayloadFile ?? `${actualNoDebug.baseBuildDir}/event.json`,
+        envFile: noFiles ? undefined : `${actualNoDebug.baseBuildDir}/env-vars.json`,
+        eventPayloadFile: noFiles ? undefined : `${actualNoDebug.baseBuildDir}/event.json`,
     }
     assertEqualLaunchConfigs(actualNoDebug, expectedNoDebug)
 }
@@ -559,9 +557,9 @@ describe('SamDebugConfigurationProvider', async function () {
             }
 
             assertEqualLaunchConfigs(actual, expected)
-            assertFileText(expected.envFile, '{"src":{"test-envvar-1":"test value 1","test-envvar-2":"test value 2"}}')
+            assertFileText(expected.envFile!, '{"src":{"test-envvar-1":"test value 1","test-envvar-2":"test value 2"}}')
             assertFileText(
-                expected.eventPayloadFile,
+                expected.eventPayloadFile!,
                 '{"test-payload-key-1":"test payload value 1","test-payload-key-2":"test payload value 2"}'
             )
             assertFileText(
@@ -709,9 +707,9 @@ describe('SamDebugConfigurationProvider', async function () {
             }
 
             assertEqualLaunchConfigs(actual, expected)
-            assertFileText(expected.envFile, '{"src":{"test-envvar-1":"test value 1","test-envvar-2":"test value 2"}}')
+            assertFileText(expected.envFile!, '{"src":{"test-envvar-1":"test value 1","test-envvar-2":"test value 2"}}')
             assertFileText(
-                expected.eventPayloadFile,
+                expected.eventPayloadFile!,
                 '{"test-payload-key-1":"test payload value 1","test-payload-key-2":"test payload value 2"}'
             )
             assertFileText(
@@ -865,11 +863,11 @@ describe('SamDebugConfigurationProvider', async function () {
 
             assertEqualLaunchConfigs(actual, expected)
             assertFileText(
-                expected.envFile,
+                expected.envFile!,
                 '{"SourceCodeTwoFoldersDeep":{"test-js-template-envvar-1":"test target=template envvar value 1","test-js-template-envvar-2":"test target=template envvar value 2"}}'
             )
             assertFileText(
-                expected.eventPayloadFile,
+                expected.eventPayloadFile!,
                 '{"test-js-template-key-1":"test js target=template value 1","test-js-template-key-2":"test js target=template value 2"}'
             )
             assertFileText(
@@ -979,8 +977,8 @@ describe('SamDebugConfigurationProvider', async function () {
                 containerEnvVars: {
                     NODE_OPTIONS: `--inspect-brk=0.0.0.0:${actual.debugPort} --max-http-header-size 81920`,
                 },
-                envFile: NO_FILE,
-                eventPayloadFile: NO_FILE,
+                envFile: undefined,
+                eventPayloadFile: undefined,
                 codeRoot: appDir,
                 apiPort: undefined,
                 debugPort: actual.debugPort,
@@ -1094,13 +1092,13 @@ Outputs:
                 remoteRoot: 'somethingRemote',
                 baseBuildDir: actualWithPathMapping.baseBuildDir,
                 containerEnvFile: `${actualWithPathMapping.baseBuildDir}/container-env-vars.json`,
-                envFile: NO_FILE,
-                eventPayloadFile: NO_FILE,
+                envFile: undefined,
+                eventPayloadFile: undefined,
             }
             assertEqualLaunchConfigs(actualWithPathMapping, expectedWithPathMapping)
 
             // Test noDebug=true.
-            await assertEqualNoDebugTemplateTarget(input, expected, folder, debugConfigProvider, NO_FILE, NO_FILE)
+            await assertEqualNoDebugTemplateTarget(input, expected, folder, debugConfigProvider, true)
         })
 
         it('target=api: javascript', async function () {
@@ -1194,11 +1192,11 @@ Outputs:
 
             assertEqualLaunchConfigs(actual, expected)
             assertFileText(
-                expected.envFile,
+                expected.envFile!,
                 '{"SourceCodeTwoFoldersDeep":{"test-js-template-envvar-1":"test target=template envvar value 1","test-js-template-envvar-2":"test target=template envvar value 2"}}'
             )
             assertFileText(
-                expected.eventPayloadFile,
+                expected.eventPayloadFile!,
                 '{"test-js-template-key-1":"test js target=template value 1","test-js-template-key-2":"test js target=template value 2"}'
             )
             assertFileText(
@@ -1255,8 +1253,8 @@ Outputs:
                     uri: vscode.Uri.file(appDir),
                 },
                 baseBuildDir: actual.baseBuildDir, // Random, sanity-checked by assertEqualLaunchConfigs().
-                envFile: NO_FILE,
-                eventPayloadFile: NO_FILE,
+                envFile: undefined,
+                eventPayloadFile: undefined,
                 codeRoot: expectedCodeRoot, // Normalized to absolute path.
                 apiPort: undefined,
                 debugPort: actual.debugPort,
@@ -1316,8 +1314,8 @@ Outputs:
                 debuggerPath: undefined,
                 debugPort: undefined,
                 baseBuildDir: actualNoDebug.baseBuildDir,
-                envFile: NO_FILE,
-                eventPayloadFile: NO_FILE,
+                envFile: undefined,
+                eventPayloadFile: undefined,
             }
             delete expectedNoDebug.processName
             delete expectedNoDebug.pipeTransport
@@ -1360,8 +1358,8 @@ Outputs:
                     uri: vscode.Uri.file(appDir),
                 },
                 baseBuildDir: actual.baseBuildDir, // Random, sanity-checked by assertEqualLaunchConfigs().
-                envFile: NO_FILE,
-                eventPayloadFile: NO_FILE,
+                envFile: undefined,
+                eventPayloadFile: undefined,
                 codeRoot: expectedCodeRoot, // Normalized to absolute path.
                 apiPort: undefined,
                 debugPort: actual.debugPort,
@@ -1421,8 +1419,8 @@ Outputs:
                 debuggerPath: undefined,
                 debugPort: undefined,
                 baseBuildDir: actualNoDebug.baseBuildDir,
-                envFile: NO_FILE,
-                eventPayloadFile: NO_FILE,
+                envFile: undefined,
+                eventPayloadFile: undefined,
             }
             delete expectedNoDebug.processName
             delete expectedNoDebug.pipeTransport
@@ -1504,8 +1502,8 @@ Outputs:
             }
 
             assertEqualLaunchConfigs(actual, expectedDebug)
-            assertFileText(expectedDebug.envFile, '{"HelloWorldFunction":{"test-envvar-1":"test value 1"}}')
-            assertFileText(expectedDebug.eventPayloadFile, '{"test-payload-key-1":"test payload value 1"}')
+            assertFileText(expectedDebug.envFile!, '{"HelloWorldFunction":{"test-envvar-1":"test value 1"}}')
+            assertFileText(expectedDebug.eventPayloadFile!, '{"test-payload-key-1":"test payload value 1"}')
 
             assertFileText(
                 expectedDebug.templatePath,
@@ -1655,8 +1653,8 @@ Outputs:
             }
 
             assertEqualLaunchConfigs(actual, expectedDebug)
-            assertFileText(expectedDebug.envFile, '{"HelloWorldFunction":{"test-envvar-1":"test value 1"}}')
-            assertFileText(expectedDebug.eventPayloadFile, '{"test-payload-key-1":"test payload value 1"}')
+            assertFileText(expectedDebug.envFile!, '{"HelloWorldFunction":{"test-envvar-1":"test value 1"}}')
+            assertFileText(expectedDebug.eventPayloadFile!, '{"test-payload-key-1":"test payload value 1"}')
             assertFileText(
                 expectedDebug.containerEnvFile!,
                 `{"_JAVA_OPTIONS":"${expectedDebug.containerEnvVars!._JAVA_OPTIONS}"}`
@@ -1765,8 +1763,8 @@ Outputs:
                     uri: vscode.Uri.file(appDir),
                 },
                 baseBuildDir: actual.baseBuildDir, // Random, sanity-checked by assertEqualLaunchConfigs().
-                envFile: NO_FILE,
-                eventPayloadFile: NO_FILE,
+                envFile: undefined,
+                eventPayloadFile: undefined,
                 codeRoot: expectedCodeRoot, // Normalized to absolute path.
                 apiPort: undefined,
                 debugPort: actual.debugPort,
@@ -1858,8 +1856,8 @@ Outputs:
                     anotherRemote: 'anotherLocal',
                 },
                 baseBuildDir: actualWithPathMapping.baseBuildDir,
-                envFile: NO_FILE,
-                eventPayloadFile: NO_FILE,
+                envFile: undefined,
+                eventPayloadFile: undefined,
             }
             assertEqualLaunchConfigs(actualWithPathMapping, expectedWithPathMapping)
 
@@ -1877,8 +1875,8 @@ Outputs:
                 debuggerPath: undefined,
                 debugPort: undefined,
                 baseBuildDir: actualNoDebug.baseBuildDir,
-                envFile: NO_FILE,
-                eventPayloadFile: NO_FILE,
+                envFile: undefined,
+                eventPayloadFile: undefined,
             }
             delete expectedNoDebug.processName
             delete expectedNoDebug.pipeTransport
@@ -1977,8 +1975,8 @@ Outputs:
             }
 
             assertEqualLaunchConfigs(actual, expected)
-            assertFileText(expected.envFile, '{"HelloWorldFunction":{"test-envvar-1":"test value 1"}}')
-            assertFileText(expected.eventPayloadFile, '{"test-payload-key-1":"test payload value 1"}')
+            assertFileText(expected.envFile!, '{"HelloWorldFunction":{"test-envvar-1":"test value 1"}}')
+            assertFileText(expected.eventPayloadFile!, '{"test-payload-key-1":"test payload value 1"}')
 
             assertFileText(
                 expected.templatePath,
@@ -2186,8 +2184,8 @@ Outputs:
             }
 
             assertEqualLaunchConfigs(actual, expected)
-            assertFileText(expected.envFile, '{"HelloWorldFunction":{"test-envvar-1":"test value 1"}}')
-            assertFileText(expected.eventPayloadFile, '{"test-payload-key-1":"test payload value 1"}')
+            assertFileText(expected.envFile!, '{"HelloWorldFunction":{"test-envvar-1":"test value 1"}}')
+            assertFileText(expected.eventPayloadFile!, '{"test-payload-key-1":"test payload value 1"}')
             assertFileText(expected.containerEnvFile!, '{"_AWS_LAMBDA_DOTNET_DEBUGGING":"1"}')
 
             // Windows: sourceFileMap driveletter must be uppercase.
@@ -2343,7 +2341,7 @@ Outputs:
                     uri: vscode.Uri.file(appDir),
                 },
                 baseBuildDir: actual.baseBuildDir, // Random, sanity-checked by assertEqualLaunchConfigs().
-                envFile: NO_FILE,
+                envFile: undefined,
                 eventPayloadFile: `${actual.baseBuildDir}/event.json`,
                 codeRoot: pathutil.normalize(path.join(appDir, 'hello_world')),
                 debugArgs: [
@@ -2388,7 +2386,7 @@ Outputs:
             }
 
             assertEqualLaunchConfigs(actual, expected)
-            assert.strictEqual(readFileSync(actual.eventPayloadFile, 'utf-8'), readFileSync(absPayloadPath, 'utf-8'))
+            assert.strictEqual(readFileSync(actual.eventPayloadFile!, 'utf-8'), readFileSync(absPayloadPath, 'utf-8'))
             assertFileText(
                 expected.templatePath,
                 `Resources:
@@ -2432,7 +2430,7 @@ Outputs:
                 },
                 pathMappings: inputWithPathMapping.lambda.pathMappings,
                 baseBuildDir: actualWithPathMapping.baseBuildDir,
-                envFile: NO_FILE,
+                envFile: undefined,
                 eventPayloadFile: `${actualWithPathMapping.baseBuildDir}/event.json`,
             }
             assertEqualLaunchConfigs(actualWithPathMapping, expectedWithPathMapping)
@@ -2450,7 +2448,7 @@ Outputs:
                 port: -1,
                 handlerName: 'app.lambda_handler',
                 baseBuildDir: actualNoDebug.baseBuildDir,
-                envFile: NO_FILE,
+                envFile: undefined,
                 eventPayloadFile: `${actualNoDebug.baseBuildDir}/event.json`,
             }
             assertEqualLaunchConfigs(actualNoDebug, expectedNoDebug)
@@ -2490,8 +2488,8 @@ Outputs:
                     uri: vscode.Uri.file(appDir),
                 },
                 baseBuildDir: actual.baseBuildDir, // Random, sanity-checked by assertEqualLaunchConfigs().
-                envFile: NO_FILE,
-                eventPayloadFile: NO_FILE,
+                envFile: undefined,
+                eventPayloadFile: undefined,
                 codeRoot: pathutil.normalize(path.join(appDir, 'python3.7-plain-sam-app/hello_world')),
                 debugArgs: [
                     `/tmp/lambci_debug_files/py_debug_wrapper.py --listen 0.0.0.0:${actual.debugPort} --wait-for-client --log-to-stderr --debug`,
@@ -2630,14 +2628,14 @@ Outputs:
                 },
                 pathMappings: inputWithPathMapping.lambda.pathMappings,
                 baseBuildDir: actualWithPathMapping.baseBuildDir,
-                envFile: NO_FILE,
-                eventPayloadFile: NO_FILE,
+                envFile: undefined,
+                eventPayloadFile: undefined,
             }
             assertEqualLaunchConfigs(actualWithPathMapping, expectedWithPathMapping)
 
             // Test noDebug=true.
             expected.handlerName = 'app.lambda_handler'
-            await assertEqualNoDebugTemplateTarget(input, expected, folder, debugConfigProvider, NO_FILE, NO_FILE)
+            await assertEqualNoDebugTemplateTarget(input, expected, folder, debugConfigProvider, true)
         })
 
         it('target=api: python 3.7 (deep project tree)', async function () {
@@ -2683,8 +2681,8 @@ Outputs:
                     uri: vscode.Uri.file(appDir),
                 },
                 baseBuildDir: actual.baseBuildDir, // Random, sanity-checked by assertEqualLaunchConfigs().
-                envFile: NO_FILE,
-                eventPayloadFile: NO_FILE,
+                envFile: undefined,
+                eventPayloadFile: undefined,
                 codeRoot: pathutil.normalize(path.join(appDir, 'python3.7-plain-sam-app/hello_world')),
                 debugArgs: [
                     `/tmp/lambci_debug_files/py_debug_wrapper.py --listen 0.0.0.0:${actual.debugPort} --wait-for-client --log-to-stderr --debug`,
@@ -2801,7 +2799,7 @@ Outputs:
 
             // Test noDebug=true.
             expected.handlerName = 'app.lambda_handler'
-            await assertEqualNoDebugTemplateTarget(input, expected, folder, debugConfigProvider, NO_FILE, NO_FILE)
+            await assertEqualNoDebugTemplateTarget(input, expected, folder, debugConfigProvider, true)
         })
 
         it('target=template: Image python 3.7', async function () {
@@ -2842,8 +2840,8 @@ Outputs:
                     uri: vscode.Uri.file(appDir),
                 },
                 baseBuildDir: actual.baseBuildDir, // Random, sanity-checked by assertEqualLaunchConfigs().
-                envFile: NO_FILE,
-                eventPayloadFile: NO_FILE,
+                envFile: undefined,
+                eventPayloadFile: undefined,
                 codeRoot: pathutil.normalize(path.join(appDir, 'python3.7-image-sam-app/hello_world')),
                 debugArgs: [
                     `/var/lang/bin/python3.7 /tmp/lambci_debug_files/py_debug_wrapper.py --listen 0.0.0.0:${actual.debugPort} --wait-for-client --log-to-stderr /var/runtime/bootstrap --debug`,
@@ -2964,8 +2962,8 @@ Outputs:
                 },
                 pathMappings: inputWithPathMapping.lambda.pathMappings,
                 baseBuildDir: actualWithPathMapping.baseBuildDir,
-                envFile: NO_FILE,
-                eventPayloadFile: NO_FILE,
+                envFile: undefined,
+                eventPayloadFile: undefined,
             }
             assertEqualLaunchConfigs(actualWithPathMapping, expectedWithPathMapping)
 
@@ -2981,8 +2979,8 @@ Outputs:
                 debugPort: undefined,
                 port: -1,
                 baseBuildDir: actualNoDebug.baseBuildDir,
-                envFile: NO_FILE,
-                eventPayloadFile: NO_FILE,
+                envFile: undefined,
+                eventPayloadFile: undefined,
             }
             assertEqualLaunchConfigs(actualNoDebug, expectedNoDebug)
         })
@@ -3063,7 +3061,7 @@ Outputs:
                     uri: vscode.Uri.file(appDir),
                 },
                 baseBuildDir: actual.baseBuildDir, // Random, sanity-checked by assertEqualLaunchConfigs().
-                envFile: NO_FILE,
+                envFile: undefined,
                 eventPayloadFile: `${actual.baseBuildDir}/event.json`,
                 codeRoot: pathutil.normalize(path.join(appDir, 'hello_world')),
                 debugArgs: [
@@ -3097,7 +3095,7 @@ Outputs:
 
             assertEqualLaunchConfigs(actual, expected)
             assert.strictEqual(
-                readFileSync(actual.eventPayloadFile, 'utf-8'),
+                readFileSync(actual.eventPayloadFile!, 'utf-8'),
                 readFileSync(input.lambda.payload.path, 'utf-8')
             )
             assertFileText(
@@ -3128,7 +3126,7 @@ Outputs:
                 port: -1,
                 handlerName: 'app.lambda_handler',
                 baseBuildDir: actualNoDebug.baseBuildDir,
-                envFile: NO_FILE,
+                envFile: undefined,
                 eventPayloadFile: `${actualNoDebug.baseBuildDir}/event.json`,
             }
             assertEqualLaunchConfigs(actualNoDebug, expectedNoDebug)
@@ -3170,8 +3168,8 @@ Outputs:
                     uri: vscode.Uri.file(appDir),
                 },
                 baseBuildDir: actual.baseBuildDir, // Random, sanity-checked by assertEqualLaunchConfigs().
-                envFile: NO_FILE,
-                eventPayloadFile: NO_FILE,
+                envFile: undefined,
+                eventPayloadFile: undefined,
                 codeRoot: pathutil.normalize(path.join(appDir, 'python3.7-plain-sam-app/hello_world')),
                 apiPort: undefined,
                 debugArgs: [
@@ -3284,8 +3282,8 @@ Outputs:
                 port: -1,
                 handlerName: 'app.lambda_handler',
                 baseBuildDir: actualNoDebug.baseBuildDir,
-                envFile: NO_FILE,
-                eventPayloadFile: NO_FILE,
+                envFile: undefined,
+                eventPayloadFile: undefined,
             }
             assertEqualLaunchConfigs(actualNoDebug, expectedNoDebug)
         })
@@ -3336,7 +3334,7 @@ Outputs:
                 },
                 baseBuildDir: actual.baseBuildDir, // Random, sanity-checked by assertEqualLaunchConfigs().
                 envFile: `${actual.baseBuildDir}/env-vars.json`,
-                eventPayloadFile: NO_FILE,
+                eventPayloadFile: undefined,
                 codeRoot: pathutil.normalize(path.join(tempDir, 'codeuri')), // Normalized to absolute path.
                 apiPort: undefined,
                 debugPort: actual.debugPort,
@@ -3378,7 +3376,7 @@ Outputs:
             }
 
             assertEqualLaunchConfigs(actual, expected)
-            assertFileText(expected.envFile, '{"myResource":{"var1":"2","var2":"1"}}')
+            assertFileText(expected.envFile!, '{"myResource":{"var1":"2","var2":"1"}}')
 
             assertFileText(
                 expected.templatePath,
@@ -3484,7 +3482,7 @@ Resources:
                 },
                 baseBuildDir: actual.baseBuildDir, // Random, sanity-checked by assertEqualLaunchConfigs().
                 envFile: `${actual.baseBuildDir}/env-vars.json`,
-                eventPayloadFile: NO_FILE,
+                eventPayloadFile: undefined,
                 codeRoot: pathutil.normalize(path.join(tempDir, 'codeuri')), // Normalized to absolute path.
                 apiPort: undefined,
                 debugPort: actual.debugPort,
@@ -3601,11 +3599,11 @@ Resources:
 
             assertEqualLaunchConfigs(actual, expected)
             assertFileText(
-                expected.envFile,
+                expected.envFile!,
                 '{"helloworld":{"test-envvar-1":"test value 1","test-envvar-2":"test value 2"}}'
             )
             assertFileText(
-                expected.eventPayloadFile,
+                expected.eventPayloadFile!,
                 '{"test-payload-key-1":"test payload value 1","test-payload-key-2":"test payload value 2"}'
             )
             assertFileText(
