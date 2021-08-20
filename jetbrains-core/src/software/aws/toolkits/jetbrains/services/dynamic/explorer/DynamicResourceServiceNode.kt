@@ -30,7 +30,8 @@ import software.aws.toolkits.telemetry.DynamicresourceTelemetry
 
 class DynamicResourceResourceTypeNode(project: Project, private val resourceType: String) :
     AwsExplorerNode<String>(project, resourceType, null),
-    ResourceParentNode {
+    ResourceParentNode, ResourceActionNode {
+
     override fun displayName(): String = resourceType
     override fun isAlwaysShowPlus(): Boolean = true
 
@@ -47,6 +48,9 @@ class DynamicResourceResourceTypeNode(project: Project, private val resourceType
         DynamicresourceTelemetry.listType(project = nodeProject, success = false, resourceType = resourceType)
         throw e
     }
+
+    override fun actionGroupName(): String = "aws.toolkit.explorer.dynamic.resource"
+
 }
 
 class DynamicResourceNode(project: Project, val resource: DynamicResource) :

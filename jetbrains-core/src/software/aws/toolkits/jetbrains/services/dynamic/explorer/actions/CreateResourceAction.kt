@@ -15,7 +15,7 @@ import software.aws.toolkits.jetbrains.services.dynamic.explorer.OtherResourcesN
 class CreateResourceAction: SingleExplorerNodeAction<DynamicResourceResourceTypeNode>("Create Resource"), DumbAware {
 
     override fun actionPerformed(selected: DynamicResourceResourceTypeNode, e: AnActionEvent) {
-        println("helloooo")
+        CreateResourceDialog(selected.nodeProject).show()
     }
 
 }

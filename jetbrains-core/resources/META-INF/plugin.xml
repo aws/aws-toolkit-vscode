@@ -370,10 +370,10 @@ with what features/services are supported.
 
         <group id="aws.toolkit.explorer.dynamic.resource" popup="true" compact="false">
             <action id="dynamic.resource.create" class="software.aws.toolkits.jetbrains.services.dynamic.explorer.actions.CreateResourceAction"/>
-            <separator/>
         </group>
 
         <group id="aws.toolkit.explorer.dynamic" popup="true" compact="false">
+
             <action id="dynamic.open"
                     class="software.aws.toolkits.jetbrains.services.dynamic.explorer.actions.DynamicResourceOpenAction"/>
             <action id="dynamic.copy.arn"
