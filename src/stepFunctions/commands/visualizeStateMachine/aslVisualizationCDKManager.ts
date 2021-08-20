@@ -95,7 +95,7 @@ export class AslVisualizationCDKManager extends AbstractAslVisualizationManager 
      * @param {string} cdkOutPath - path to the cdk.out folder
      * @returns name of the CDK application workspace name
      */
-    getCDKAppWorkspaceName(cdkOutPath: string) {
+    public getCDKAppWorkspaceName(cdkOutPath: string): string {
         if (typeof cdkOutPath != 'string') {
             return cdkOutPath
         }

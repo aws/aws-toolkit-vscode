@@ -226,7 +226,7 @@ export class PreviewStateMachineCDKWizard extends MultiStepWizard<PreviewStateMa
  * @param {string} cdkJsonPath - path to the cdk.json file
  * @returns name of the workspace of the CDK Application
  */
-export function getCDKAppWorkspaceName(cdkJsonPath: string) {
+export function getCDKAppWorkspaceName(cdkJsonPath: string): string {
     if (typeof cdkJsonPath != 'string') {
         return cdkJsonPath
     }
