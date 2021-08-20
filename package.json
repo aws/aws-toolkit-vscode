@@ -871,27 +871,27 @@
                 {
                     "command": "aws.quickStart",
                     "when": "view == aws.explorer",
-                    "group": "4_quickStart@1"
+                    "group": "y_toolkitMeta@1"
                 },
                 {
                     "command": "aws.help",
                     "when": "view == aws.explorer || !aws.explorer.visible && view =~ /^aws/",
-                    "group": "y_externalLinks@1"
+                    "group": "y_toolkitMeta@2"
                 },
                 {
                     "command": "aws.github",
                     "when": "view == aws.explorer || !aws.explorer.visible && view =~ /^aws/",
-                    "group": "y_externalLinks@2"
+                    "group": "y_toolkitMeta@3"
                 },
                 {
                     "command": "aws.createIssueOnGitHub",
                     "when": "view == aws.explorer || !aws.explorer.visible && view =~ /^aws/",
-                    "group": "y_externalLinks@3"
+                    "group": "y_toolkitMeta@4"
                 },
                 {
                     "command": "aws.submitFeedback",
                     "when": "view == aws.explorer || !aws.explorer.visible && view =~ /^aws/",
-                    "group": "y_externalLinks@4"
+                    "group": "y_toolkitMeta@5"
                 },
                 {
                     "command": "aws.aboutToolkit",
@@ -2066,7 +2066,7 @@
         "@types/cross-spawn": "^6.0.0",
         "@types/fs-extra": "^9.0.11",
         "@types/glob": "^7.1.1",
-        "@types/js-yaml": "^4.0.1",
+        "@types/js-yaml": "^4.0.3",
         "@types/lodash": "^4.14.136",
         "@types/marked": "^0.6.5",
         "@types/mime-types": "^2.1.0",
