@@ -6,10 +6,10 @@
 import * as vscode from 'vscode'
 
 import { AslVisualizationCDK } from './aslVisualizationCDK'
-import { ConstructNode } from '../explorer/nodes/constructNode'
-import { getLogger } from '../../shared/logger'
-import { AbstractAslVisualizationManager } from '../../../src/stepFunctions/commands/visualizeStateMachine/abstractAslVisualizationManager'
-import { StateMachineGraphCache } from '../../../src/stepFunctions/utils'
+import { AbstractAslVisualizationManager } from './abstractAslVisualizationManager'
+import { ConstructNode } from '../../../cdk/explorer/nodes/constructNode'
+import { getLogger } from '../../../shared/logger'
+import { StateMachineGraphCache } from '../../utils'
 
 export class AslVisualizationCDKManager extends AbstractAslVisualizationManager {
     protected readonly name: string = 'AslVisualizationCDKManager'

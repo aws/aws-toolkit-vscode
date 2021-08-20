@@ -5,15 +5,17 @@
 
 import * as vscode from 'vscode'
 
-import { AslVisualizationCDKManager } from './commands/aslVisualizationCDKManager'
-import { renderStateMachineGraphCommand } from './commands/renderStateMachineGraph'
-import { previewCDKStateMachineFromCommandPalette } from './commands/renderGraphCommandPalette'
+import { AslVisualizationCDKManager } from '../stepFunctions/commands/visualizeStateMachine/aslVisualizationCDKManager'
 import { AwsCdkExplorer } from './explorer/awsCdkExplorer'
 import { AppNode } from './explorer/nodes/appNode'
 import { ConstructNode } from './explorer/nodes/constructNode'
 import { cdk } from './globals'
 import { cdkDocumentationUrl } from '../shared/constants'
 import { recordCdkAppExpanded, recordCdkHelp, recordCdkRefreshExplorer } from '../shared/telemetry/telemetry'
+import {
+    renderStateMachineGraphCommand,
+    previewCDKStateMachineFromCommandPalette,
+} from '../stepFunctions/commands/visualizeStateMachine/renderStateMachineGraphCDK'
 
 /**
  * Activate AWS CDK related functionality for the extension.

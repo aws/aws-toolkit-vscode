@@ -17,7 +17,7 @@ import {
     ConstructNodePickItem,
     getCDKAppWorkspaceName,
     TopLevelNodePickItem,
-} from '../../../cdk/wizards/previewStateMachineCDKWizard'
+} from '../../../stepFunctions/wizards/previewStateMachineCDKWizard'
 
 let sandbox: sinon.SinonSandbox
 const workspaceFolderName = 'cdk-test-folder'

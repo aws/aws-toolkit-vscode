@@ -16,10 +16,10 @@ import {
     wizardContinue,
     WizardStep,
 } from '../../shared/wizards/multiStepWizard'
-import { CdkAppLocation } from '../explorer/cdkProject'
-import { detectCdkProjects } from '../explorer/detectCdkProjects'
-import { AppNode } from '../explorer/nodes/appNode'
-import { ConstructNode } from '../explorer/nodes/constructNode'
+import { CdkAppLocation } from '../../cdk/explorer/cdkProject'
+import { detectCdkProjects } from '../../cdk/explorer/detectCdkProjects'
+import { AppNode } from '../../cdk/explorer/nodes/appNode'
+import { ConstructNode } from '../../cdk/explorer/nodes/constructNode'
 
 export interface CdkAppLocationPickItem {
     label: string
@@ -117,7 +117,8 @@ export class PreviewStateMachineCDKWizard extends MultiStepWizard<PreviewStateMa
             cdkApplications.push({
                 label: localize(
                     'AWS.cdk.explorerNode.noApps',
-                    `[No cdk application(s) found in workspace '${getCDKAppWorkspaceName(appLocation.cdkJsonPath)}']`
+                    "[No cdk application(s) found in workspace '{0}']",
+                    getCDKAppWorkspaceName(appLocation.cdkJsonPath)
                 ),
                 topLevelNode: undefined,
             })
@@ -170,7 +171,8 @@ export class PreviewStateMachineCDKWizard extends MultiStepWizard<PreviewStateMa
             stateMachines.push({
                 label: localize(
                     'Aws.cdk.explorerNode.app.noStateMachines',
-                    `[No state machine(s) found in cdk application '${topLevelNode?.label}']`
+                    "[No state machine(s) found in cdk application '{0}']",
+                    topLevelNode?.label
                 ),
                 stateMachineNode: undefined,
             })

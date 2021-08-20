@@ -4,11 +4,11 @@
  */
 
 import * as vscode from 'vscode'
-import { AslVisualization } from '../../../src/stepFunctions/commands/visualizeStateMachine/aslVisualization'
+import { AslVisualization } from './aslVisualization'
 import {
     getStateMachineDefinitionFromCfnTemplate,
     toUnescapedAslJsonString,
-} from '../../stepFunctions/commands/visualizeStateMachine/getStateMachineDefinitionFromCfnTemplate'
+} from './getStateMachineDefinitionFromCfnTemplate'
 
 export class AslVisualizationCDK extends AslVisualization {
     public constructor(
