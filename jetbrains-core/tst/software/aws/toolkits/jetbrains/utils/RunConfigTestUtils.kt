@@ -29,7 +29,9 @@ import org.junit.Assume.assumeTrue
 import software.aws.toolkits.core.lambda.LambdaRuntime
 import software.aws.toolkits.jetbrains.core.executables.ExecutableManager
 import software.aws.toolkits.jetbrains.core.executables.getExecutableIfPresent
+import software.aws.toolkits.jetbrains.services.lambda.execution.TEST_PROCESS_LISTENER
 import software.aws.toolkits.jetbrains.services.lambda.execution.local.createTemplateRunConfiguration
+import software.aws.toolkits.jetbrains.services.lambda.execution.remote.RemoteLambdaRunner
 import software.aws.toolkits.jetbrains.services.lambda.sam.SamCommon.Companion.minImageVersion
 import software.aws.toolkits.jetbrains.services.lambda.sam.SamExecutable
 import software.aws.toolkits.jetbrains.utils.execution.steps.StepExecutor
@@ -48,26 +50,35 @@ fun executeRunConfiguration(runConfiguration: RunConfiguration, executorId: Stri
     // In the real world create and execute runs on EDT
     runInEdt {
         try {
-            val executionEnvironment = ExecutionEnvironmentBuilder.create(executor, runConfiguration).build()
+            val runner = ProgramRunner.getRunner(executorId, runConfiguration)!!
+            val executionEnvironmentBuilder = ExecutionEnvironmentBuilder.create(executor, runConfiguration)
+                .runner(runner)
+
+            val listener = object : OutputListener() {
+                override fun processTerminated(event: ProcessEvent) {
+                    super.processTerminated(event)
+                    // if using the default step executor as the process handle, need to pull text from it or it will be empty
+                    // otherwise, pull the output from the process itself
+                    val output = (event.processHandler as? StepExecutor.StepExecutorProcessHandler)?.getFinalOutput() ?: this.output
+                    executionFuture.complete(output)
+                }
+            }
+
+            // in mocks, this runner returns too quickly for the normal path
+            val executionEnvironment = if (runner is RemoteLambdaRunner) {
+                executionEnvironmentBuilder.build().also {
+                    it.putUserData(TEST_PROCESS_LISTENER, listener)
+                }
+            } else {
+                executionEnvironmentBuilder.build { it.processHandler!!.addProcessListener(listener) }
+            }
+
             // Hack: Normally this is handled through the ProgramRunner and RunContentDescriptor, but since we bypass ProgramRunner we need to do it ourselves
             Disposer.register(executionEnvironment.project, executionEnvironment)
-            // Bypass ProgramRunner since AsyncProgramRunner has no ability for us to wait
-            val execute = executionEnvironment.state!!.execute(executionEnvironment.executor, executionEnvironment.runner)!!
-            execute.processHandler.addProcessListener(
-                object : OutputListener() {
-                    override fun processTerminated(event: ProcessEvent) {
-                        super.processTerminated(event)
-                        // if using the default step executor as the process handle, need to pull text from it or it will be empty
-                        // otherwise, pull the output from the process itself
-                        val output = (execute.processHandler as? StepExecutor.StepExecutorProcessHandler)?.getFinalOutput() ?: this.output
-                        executionFuture.complete(output)
-                    }
-                }
-            )
-            if (!execute.processHandler.isStartNotified) {
-                execute.processHandler.startNotify()
-            }
-        } catch (e: Exception) {
+
+            // TODO: exception isn't propagated out and test is forced to wait to timeout instead of exiting immediately
+            runner.execute(executionEnvironment)
+        } catch (e: Throwable) {
             executionFuture.completeExceptionally(e)
         }
     }
@@ -151,14 +162,23 @@ fun checkBreakPointHit(project: Project, callback: () -> Unit = {}): Ref<Boolean
     return debuggerIsHit
 }
 
-fun readProject(relativePath: String, sourceFileName: String, projectRule: CodeInsightTestFixtureRule): Pair<VirtualFile, VirtualFile> {
+fun readProject(
+    relativePath: String,
+    sourceFileName: String,
+    projectRule: CodeInsightTestFixtureRule,
+    templatePatches: Map<String, String> = emptyMap()
+): Pair<VirtualFile, VirtualFile> {
     val testDataPath = Paths.get(System.getProperty("testDataPath"), relativePath).toFile()
     val (source, template) = testDataPath.walk().fold<File, Pair<VirtualFile?, VirtualFile?>>(Pair(null, null)) { acc, file ->
         // skip directories which are part of the walk
         if (!file.isFile) {
             return@fold acc
         }
-        val virtualFile = projectRule.fixture.addFileToModule(projectRule.module, file.relativeTo(testDataPath).path, file.readText()).virtualFile
+
+        var fileText = file.readText()
+        templatePatches.forEach { (search, replace) -> fileText = fileText.replace(search, replace) }
+
+        val virtualFile = projectRule.fixture.addFileToModule(projectRule.module, file.relativeTo(testDataPath).path, fileText).virtualFile
         when (virtualFile.name) {
             "template.yaml" -> {
                 acc.first to virtualFile
@@ -186,6 +206,7 @@ fun readProject(relativePath: String, sourceFileName: String, projectRule: CodeI
 fun samImageRunDebugTest(
     projectRule: CodeInsightTestFixtureRule,
     relativePath: String,
+    templatePatches: Map<String, String> = emptyMap(),
     sourceFileName: String,
     runtime: LambdaRuntime,
     mockCredentialsId: String,
@@ -194,7 +215,7 @@ fun samImageRunDebugTest(
     addBreakpoint: (() -> Unit)? = null
 ) {
     assumeImageSupport()
-    val (_, template) = readProject(relativePath, sourceFileName, projectRule)
+    val (_, template) = readProject(relativePath, sourceFileName, projectRule, templatePatches)
 
     addBreakpoint?.let { it() }
 

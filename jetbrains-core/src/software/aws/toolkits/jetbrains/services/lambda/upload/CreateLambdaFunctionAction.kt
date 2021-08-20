@@ -6,6 +6,7 @@ package software.aws.toolkits.jetbrains.services.lambda.upload
 import com.intellij.openapi.actionSystem.AnAction
 import com.intellij.openapi.actionSystem.AnActionEvent
 import com.intellij.openapi.actionSystem.LangDataKeys
+import com.intellij.openapi.actionSystem.UpdateInBackground
 import com.intellij.psi.PsiElement
 import com.intellij.psi.SmartPsiElementPointer
 import icons.AwsIcons
@@ -20,7 +21,7 @@ class CreateLambdaFunctionAction(
     private val handlerName: String?,
     private val elementPointer: SmartPsiElementPointer<PsiElement>?,
     private val lambdaHandlerResolver: LambdaHandlerResolver?
-) : AnAction(message("lambda.create_new"), null, AwsIcons.Actions.LAMBDA_FUNCTION_NEW) {
+) : AnAction(message("lambda.create_new"), null, AwsIcons.Actions.LAMBDA_FUNCTION_NEW), UpdateInBackground {
 
     @Suppress("unused") // Used by ActionManager in plugin.xml
     constructor() : this(null, null, null)

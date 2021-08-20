@@ -6,6 +6,8 @@ package software.aws.toolkits.jetbrains.uitests.fixtures
 import com.intellij.remoterobot.RemoteRobot
 import com.intellij.remoterobot.data.RemoteComponent
 import com.intellij.remoterobot.fixtures.FixtureName
+import com.intellij.remoterobot.fixtures.JLabelFixture
+import com.intellij.remoterobot.fixtures.JTextFieldFixture
 import com.intellij.remoterobot.search.locators.byXpath
 import com.intellij.remoterobot.stepsProcessing.step
 import java.time.Duration
@@ -39,7 +41,9 @@ open class NewProjectWizardDialog(
     }
 
     fun setProjectLocation(folder: String) {
-        textField("Project location:").text = folder
+        // Give more time to find the label. The UI can load slow or perform a step like SAM validation
+        val label = jLabel(JLabelFixture.byText("Project location:"), timeout = Duration.ofSeconds(30))
+        textField(JTextFieldFixture.byLabel(label)).text = folder
     }
 
     fun pressNext() {

@@ -110,6 +110,23 @@ class JavaLocalLambdaRunConfigurationIntegrationTest(private val runtime: Lambda
     }
 
     @Test
+    fun samIsExecutedWithFileInput() {
+        val runConfiguration = createHandlerBasedRunConfiguration(
+            project = projectRule.project,
+            runtime = runtime.toSdkRuntime(),
+            input = projectRule.fixture.tempDirFixture.createFile("tmp", "\"Hello World\"").canonicalPath!!,
+            inputIsFile = true,
+            credentialsProviderId = mockId
+        )
+        assertThat(runConfiguration).isNotNull
+
+        val executeLambda = executeRunConfigurationAndWait(runConfiguration)
+
+        assertThat(executeLambda.exitCode).isEqualTo(0)
+        assertThat(executeLambda.stdout).contains("HELLO WORLD")
+    }
+
+    @Test
     fun samIsExecutedWhenRunWithATemplateServerless() {
         val templateFile = projectRule.fixture.addFileToModule(
             projectRule.module,

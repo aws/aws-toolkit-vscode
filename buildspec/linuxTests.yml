@@ -11,11 +11,6 @@ env:
     LOCAL_ENV_RUN: true
 
 phases:
-  install:
-    runtime-versions:
-      java: corretto11
-      dotnet: 3.1
-
   build:
     commands:
       - |
@@ -25,8 +20,8 @@ phases:
         fi
 
       - chmod +x gradlew
-      - ./gradlew check coverageReport --info --full-stacktrace --console plain
-      - ./gradlew buildPlugin
+      - ./gradlew -PideProfileName=$ALTERNATIVE_IDE_PROFILE_NAME check coverageReport --info --full-stacktrace --console plain
+      - ./gradlew -PideProfileName=$ALTERNATIVE_IDE_PROFILE_NAME buildPlugin
       - VCS_COMMIT_ID="${CODEBUILD_RESOLVED_SOURCE_VERSION}"
       - CI_BUILD_URL=$(echo $CODEBUILD_BUILD_URL | sed 's/#/%23/g') # Encode `#` in the URL because otherwise the url is clipped in the Codecov.io site
       - CI_BUILD_ID="${CODEBUILD_BUILD_ID}"

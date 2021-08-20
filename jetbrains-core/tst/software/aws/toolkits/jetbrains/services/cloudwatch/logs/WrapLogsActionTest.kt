@@ -11,6 +11,7 @@ import com.intellij.util.ui.ListTableModel
 import org.assertj.core.api.Assertions.assertThat
 import org.junit.Rule
 import org.junit.Test
+import org.mockito.kotlin.mock
 import software.aws.toolkits.jetbrains.services.cloudwatch.logs.actions.WrapLogsAction
 import software.aws.toolkits.jetbrains.services.cloudwatch.logs.editor.LogStreamDateColumn
 import software.aws.toolkits.jetbrains.services.cloudwatch.logs.editor.LogStreamMessageColumn
@@ -23,7 +24,10 @@ class WrapLogsActionTest {
 
     @Test
     fun wrappingChangesModel() {
-        val model = ListTableModel<LogStreamEntry>(LogStreamDateColumn(), LogStreamMessageColumn())
+        val model = ListTableModel<LogStreamEntry>(
+            arrayOf(LogStreamDateColumn(), LogStreamMessageColumn()),
+            listOf(mock())
+        )
         val table = TableView(model)
         val wrapLogsAction = WrapLogsAction(projectRule.project) { table }
         wrapLogsAction.setSelected(TestActionEvent(), true)

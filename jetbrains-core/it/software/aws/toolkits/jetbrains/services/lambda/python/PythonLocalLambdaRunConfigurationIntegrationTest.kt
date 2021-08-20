@@ -42,7 +42,8 @@ class PythonLocalLambdaRunConfigurationIntegrationTest(private val runtime: Runt
             arrayOf(Runtime.PYTHON2_7),
             arrayOf(Runtime.PYTHON3_6),
             arrayOf(Runtime.PYTHON3_7),
-            arrayOf(Runtime.PYTHON3_8)
+            arrayOf(Runtime.PYTHON3_8),
+            arrayOf(Runtime.PYTHON3_9)
         )
     }
 
@@ -152,6 +153,28 @@ class PythonLocalLambdaRunConfigurationIntegrationTest(private val runtime: Runt
             .containsEntry("AWS_SECRET_ACCESS_KEY", mockCreds.secretAccessKey())
             // An empty AWS_SESSION_TOKEN is inserted by Samcli/the Lambda runtime as of 1.13.1
             .containsEntry("AWS_SESSION_TOKEN", "")
+    }
+
+    @Test
+    fun samIsExecutedWithFileInput() {
+        projectRule.fixture.addFileToProject("requirements.txt", "")
+
+        val envVars = mutableMapOf("Foo" to "Bar", "Bat" to "Baz")
+
+        val runConfiguration = createHandlerBasedRunConfiguration(
+            project = projectRule.project,
+            runtime = runtime,
+            handler = "src/hello_world.app.env_print",
+            input = projectRule.fixture.tempDirFixture.createFile("tmp", "Hello World").canonicalPath!!,
+            inputIsFile = true,
+            credentialsProviderId = mockId,
+            environmentVariables = envVars
+        )
+        assertThat(runConfiguration).isNotNull
+
+        val executeLambda = executeRunConfigurationAndWait(runConfiguration)
+
+        assertThat(executeLambda.exitCode).isEqualTo(0)
     }
 
     @Test

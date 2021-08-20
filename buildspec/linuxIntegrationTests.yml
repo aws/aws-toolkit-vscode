@@ -13,41 +13,19 @@ env:
 
 phases:
   install:
-    runtime-versions:
-      java: corretto11
-      dotnet: 3.1
-
     commands:
-      # Added for Python2 for Ubuntu 20.4
-      - add-apt-repository universe
-      # WORKAROUND for yarn key being out of date, update keys so we can run builds TODO remove dirmngr and apt-key commands
-      - apt-get install dirmngr
-      - apt-key adv --refresh-keys --keyserver keyserver.ubuntu.com
-      - apt-get update
-      - apt-get install -y jq python2.7 python3.6 python3.7 python3.8 python3-pip python3-distutils
-      # As of Ubuntu 20.4, there is no longer pip for Python 2, so we need to install it manually
-      - curl https://bootstrap.pypa.io/pip/2.7/get-pip.py --output get-pip.py
-      - python2 get-pip.py
+      - startDocker.sh
       - aws sts assume-role --role-arn $ASSUME_ROLE_ARN --role-session-name integ-test > creds.json
       - export KEY_ID=`jq -r '.Credentials.AccessKeyId' creds.json`
       - export SECRET=`jq -r '.Credentials.SecretAccessKey' creds.json`
       - export TOKEN=`jq -r '.Credentials.SessionToken' creds.json`
-      - pip3 install --user --upgrade  aws-sam-cli
-      - pip3 install --upgrade awscli
       # login to DockerHub so we don't get throttled
       - export DOCKER_USERNAME=`echo $DOCKER_HUB_TOKEN | jq -r '.username'`
       - export DOCKER_PASSWORD=`echo $DOCKER_HUB_TOKEN | jq -r '.password'`
       - docker login --username $DOCKER_USERNAME --password $DOCKER_PASSWORD || true
-      # Login to AWS Public ECR so we don't get throttled
-      - env AWS_ACCESS_KEY_ID=$KEY_ID AWS_SECRET_ACCESS_KEY=$SECRET AWS_SESSION_TOKEN=$TOKEN aws ecr-public get-login-password --region us-east-1 | docker login --username AWS --password-stdin public.ecr.aws
 
   build:
     commands:
-      - export SAM_CLI_EXEC=`which sam`
-      - export PYTHON_PATH=`which python`
-      - echo "SAM CLI location $SAM_CLI_EXEC"
-      - $SAM_CLI_EXEC --version
-
       - |
         if [ "$CODEARTIFACT_DOMAIN_NAME" ] && [ "$CODEARTIFACT_REPO_NAME" ]; then
           CODEARTIFACT_URL=$(aws codeartifact get-repository-endpoint --domain $CODEARTIFACT_DOMAIN_NAME --repository $CODEARTIFACT_REPO_NAME --format maven --query repositoryEndpoint --output text)
@@ -55,7 +33,7 @@ phases:
         fi
 
       - chmod +x gradlew
-      - env AWS_ACCESS_KEY_ID=$KEY_ID AWS_SECRET_ACCESS_KEY=$SECRET AWS_SESSION_TOKEN=$TOKEN ./gradlew integrationTest coverageReport --info --full-stacktrace --console plain
+      - env AWS_ACCESS_KEY_ID=$KEY_ID AWS_SECRET_ACCESS_KEY=$SECRET AWS_SESSION_TOKEN=$TOKEN ./gradlew -PideProfileName=$ALTERNATIVE_IDE_PROFILE_NAME integrationTest coverageReport --info --full-stacktrace --console plain
       - if [ $(docker ps -q | wc -l) -gt 0 ]; then echo 'Docker containers were not completely cleaned up!'; docker ps; exit 1; fi
       - VCS_COMMIT_ID="${CODEBUILD_RESOLVED_SOURCE_VERSION}"
       - CI_BUILD_URL=$(echo $CODEBUILD_BUILD_URL | sed 's/#/%23/g') # Encode `#` in the URL because otherwise the url is clipped in the Codecov.io site

@@ -39,9 +39,20 @@ class JavaLambdaHandlerResolver : LambdaHandlerResolver {
                     classes.filterIsInstance<NavigatablePsiElement>().toTypedArray()
                 } else {
                     val handlerMethod = classes.asSequence()
-                        .map { it.findMethodsByName(methodName, true) }
+                        .map { psiClass ->
+                            psiClass.findMethodsByName(methodName, true)
+                                .filter { it.body != null } // Filter out interfaces
+                                .filter {
+                                    val file = it.containingFile.virtualFile
+
+                                    return@filter if (psiClass.implementsLambdaHandlerInterface(file)) {
+                                        true
+                                    } else {
+                                        it.isValidHandler(psiClass, file)
+                                    }
+                                }
+                        }
                         .flatMap { it.asSequence() }
-                        .filter { it.body != null } // Filter out interfaces
                         .pickMostSpecificHandler()
                     handlerMethod?.let {
                         arrayOf(it)
@@ -207,7 +218,7 @@ class JavaLambdaHandlerResolver : LambdaHandlerResolver {
         PsiType.getTypeByName(
             classFullName,
             project,
-            GlobalSearchScope.projectScope(project)
+            GlobalSearchScope.allScope(project)
         ).isAssignableFrom(this.type)
 
     private companion object {

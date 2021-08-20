@@ -6,9 +6,12 @@ package software.aws.toolkits.jetbrains.core.execution
 import com.intellij.execution.ExecutorRegistry
 import com.intellij.execution.RunManager
 import com.intellij.execution.executors.DefaultRunExecutor
+import com.intellij.openapi.util.Disposer
+import com.intellij.openapi.util.use
 import com.intellij.openapi.vfs.newvfs.impl.VfsRootAccess
 import com.jetbrains.python.run.PythonConfigurationType
 import com.jetbrains.python.run.PythonRunConfiguration
+import com.jetbrains.python.sdk.detectSystemWideSdks
 import org.assertj.core.api.Assertions.assertThat
 import org.junit.Rule
 import org.junit.Test
@@ -17,6 +20,8 @@ import software.aws.toolkits.jetbrains.core.region.MockRegionProviderRule
 import software.aws.toolkits.jetbrains.utils.executeRunConfigurationAndWait
 import software.aws.toolkits.jetbrains.utils.rules.PythonCodeInsightTestFixtureRule
 import software.aws.toolkits.jetbrains.utils.rules.RegistryRule
+import java.nio.file.FileSystems
+import java.nio.file.Files
 import kotlin.test.assertNotNull
 
 class PythonAwsConnectionExtensionIntegrationTest {
@@ -37,11 +42,8 @@ class PythonAwsConnectionExtensionIntegrationTest {
     @JvmField
     val experiment = RegistryRule(PythonAwsConnectionExtension.FEATURE_ID)
 
-    private val pythonExecutable = System.getenv("PYTHON_PATH")
-
     @Test
     fun happyPathPythonConnectionInjection() {
-        assertThat(pythonExecutable).isNotBlank()
         val file = projectRule.fixture.addFileToProject(
             "hello.py",
             """ 
@@ -54,6 +56,18 @@ class PythonAwsConnectionExtensionIntegrationTest {
         val configuration = runManager.createConfiguration("test", PythonConfigurationType::class.java)
         val runConfiguration = configuration.configuration as PythonRunConfiguration
 
+        lateinit var pythonExecutable: String
+        Disposer.newDisposable().use { disposable ->
+            // Allow us to search system for all pythons
+            FileSystems.getDefault().rootDirectories.forEach { root ->
+                Files.list(root).forEach {
+                    VfsRootAccess.allowRootAccess(disposable, it.toString())
+                }
+            }
+            pythonExecutable = detectSystemWideSdks(null, emptyList()).first().homePath!!
+        }
+
+        assertThat(pythonExecutable).isNotEmpty
         runConfiguration.scriptName = file.virtualFile.path
         runConfiguration.sdkHome = pythonExecutable
         val mockRegion = regionProviderRule.createAwsRegion()

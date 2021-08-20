@@ -10,12 +10,17 @@ import com.intellij.psi.PsiElement
 import org.jetbrains.yaml.psi.YAMLKeyValue
 import software.aws.toolkits.jetbrains.services.cloudformation.Function
 import software.aws.toolkits.jetbrains.services.cloudformation.yaml.YamlCloudFormationTemplate
+import software.aws.toolkits.jetbrains.utils.isTestOrInjectedText
 
 class YamlLambdaRunLineMarkerContributor : RunLineMarkerContributor() {
 
     override fun getInfo(element: PsiElement): Info? {
         // Only leaf element is allowed
         if (element.firstChild != null) {
+            return null
+        }
+
+        if (element.isTestOrInjectedText()) {
             return null
         }
 

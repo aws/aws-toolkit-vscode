@@ -1,0 +1,23 @@
+{
+  "date" : "2021-08-05",
+  "version" : "1.30",
+  "entries" : [ {
+    "type" : "feature",
+    "description" : "Add ability to view bucket by entering bucket name/URI"
+  }, {
+    "type" : "bugfix",
+    "description" : "Fix CWL last event sorting (#2737)"
+  }, {
+    "type" : "bugfix",
+    "description" : "Fix Go Lambda handler resolving into Go standard library (#2730)"
+  }, {
+    "type" : "bugfix",
+    "description" : "Fix `ActionPlaces.isPopupPlace` error after opening the AWS connection settings menu (#2736)"
+  }, {
+    "type" : "bugfix",
+    "description" : "Fix some warnings due to slow operations on EDT (#2735)"
+  }, {
+    "type" : "bugfix",
+    "description" : "Fix Java Lambda run marker issues and disable runmarker processing in tests and language-injected text fragments"
+  } ]
+}

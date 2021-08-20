@@ -8,7 +8,6 @@ import com.github.tomakehurst.wiremock.client.WireMock.aResponse
 import com.github.tomakehurst.wiremock.client.WireMock.any
 import com.github.tomakehurst.wiremock.client.WireMock.anyRequestedFor
 import com.github.tomakehurst.wiremock.client.WireMock.anyUrl
-import com.github.tomakehurst.wiremock.client.WireMock.stubFor
 import com.github.tomakehurst.wiremock.client.WireMock.verify
 import com.github.tomakehurst.wiremock.core.WireMockConfiguration
 import com.github.tomakehurst.wiremock.matching.ContainsPattern
@@ -189,7 +188,7 @@ class AwsClientManagerTest {
         try {
             wireMockServer.start()
 
-            stubFor(any(anyUrl()).willReturn(aResponse().withStatus(200)))
+            wireMockServer.stubFor(any(anyUrl()).willReturn(aResponse().withStatus(200)))
 
             val sut = getClientManager().createNewClient(
                 LambdaClient::class,

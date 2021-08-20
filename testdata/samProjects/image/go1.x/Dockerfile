@@ -1,10 +1,11 @@
-FROM golang:1.14 as build-image
+FROM golang:[GoVersion] as build-image
 
 ENV GOPROXY direct
 
 WORKDIR /go/src
 COPY go.mod main.go ./
 
+RUN go mod tidy
 RUN go build -o ../bin
 
 FROM public.ecr.aws/lambda/go:1
