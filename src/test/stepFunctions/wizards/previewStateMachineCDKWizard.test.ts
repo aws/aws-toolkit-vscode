@@ -8,9 +8,9 @@ import * as assert from 'assert'
 import * as vscode from 'vscode'
 import * as sinon from 'sinon'
 
-import { ConstructNode } from '../../../../src/cdk/explorer/nodes/constructNode'
-import { ConstructTreeEntity } from '../../../../src/cdk/explorer/tree/types'
-import { FakeParentNode } from '../explorer/constructNode.test'
+import { ConstructNode } from '../../../cdk/explorer/nodes/constructNode'
+import { ConstructTreeEntity } from '../../../cdk/explorer/tree/types'
+import { FakeParentNode } from '../../cdk/explorer/constructNode.test'
 import {
     PreviewStateMachineCDKWizard,
     CdkAppLocationPickItem,

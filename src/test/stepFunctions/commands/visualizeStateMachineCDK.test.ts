@@ -7,15 +7,15 @@ import * as assert from 'assert'
 import * as sinon from 'sinon'
 import * as vscode from 'vscode'
 
-import { AslVisualizationCDK } from '../../../../stepFunctions/commands/visualizeStateMachine/aslVisualizationCDK'
-import { AslVisualizationCDKManager } from '../../../../stepFunctions/commands/visualizeStateMachine/aslVisualizationCDKManager'
-import { ConstructNode, isStateMachine } from '../../../../cdk/explorer/nodes/constructNode'
-import { ConstructTreeEntity } from '../../../../cdk/explorer/tree/types'
+import { AslVisualizationCDK } from '../../../stepFunctions/commands/visualizeStateMachine/aslVisualizationCDK'
+import { AslVisualizationCDKManager } from '../../../stepFunctions/commands/visualizeStateMachine/aslVisualizationCDKManager'
+import { ConstructNode, isStateMachine } from '../../../cdk/explorer/nodes/constructNode'
+import { ConstructTreeEntity } from '../../../cdk/explorer/tree/types'
 import { Disposable } from 'vscode-languageclient'
-import { ext } from '../../../../shared/extensionGlobals'
-import { FakeParentNode } from '../constructNode.test'
-import { getLogger, Logger } from '../../../../shared/logger'
-import { StateMachineGraphCache } from '../../../../stepFunctions/utils'
+import { ext } from '../../../shared/extensionGlobals'
+import { FakeParentNode } from '../../cdk/explorer/constructNode.test'
+import { getLogger, Logger } from '../../../shared/logger'
+import { StateMachineGraphCache } from '../../../stepFunctions/utils'
 
 // Top level defintions
 let mockAslVisualizationCDKManager: MockAslVisualizationCDKManager
