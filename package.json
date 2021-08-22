@@ -184,8 +184,20 @@
                 "aws.suppressPrompts": {
                     "type": "object",
                     "description": "%AWS.configuration.description.suppressPrompts%",
-                    "default": {},
-                    "properties": {},
+                    "default": {
+                        "suppressApprunnerNotifyPricing": false,
+                        "suppressYamlExtPrompt": false
+                    },
+                    "properties": {
+                        "suppressApprunnerNotifyPricing": {
+                            "type": "boolean",
+                            "default": false
+                        },
+                        "suppressYamlExtPrompt": {
+                            "type": "boolean",
+                            "default": false
+                        }
+                    },
                     "additionalProperties": false
                 }
             }

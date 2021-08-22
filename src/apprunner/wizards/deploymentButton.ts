@@ -5,9 +5,9 @@
 
 import * as nls from 'vscode-nls'
 import * as vscode from 'vscode'
-import { ext } from '../../shared/extensionGlobals'
 import { QuickInputButton, QuickInputToggleButton } from '../../shared/ui/buttons'
-import { APPRUNNER_PRICING_URL } from '../../shared/constants'
+import { APPRUNNER_PRICING_URL, extensionSettingsPrefix } from '../../shared/constants'
+import { DefaultSettingsConfiguration } from '../../shared/settingsConfiguration'
 
 const localize = nls.loadMessageBundle()
 
@@ -26,9 +26,9 @@ function makeDeployButtons() {
 }
 
 function showDeploymentCostNotification(): void {
-    const shouldShow = ext.context.globalState.get('apprunner.deployments.notifyPricing', true)
+    const settingsConfig = new DefaultSettingsConfiguration(extensionSettingsPrefix)
 
-    if (shouldShow) {
+    if (settingsConfig.shouldDisplayPrompt('suppressApprunnerNotifyPricing')) {
         const notice = localize(
             'aws.apprunner.createService.priceNotice.message',
             'App Runner automatic deployments incur an additional cost.'
@@ -42,7 +42,7 @@ function showDeploymentCostNotification(): void {
                 vscode.env.openExternal(pricingUri)
                 showDeploymentCostNotification()
             } else if (button === dontShow) {
-                ext.context.globalState.update('apprunner.deployments.notifyPricing', false)
+                settingsConfig.disablePrompt('suppressApprunnerNotifyPricing')
             }
         })
     }
