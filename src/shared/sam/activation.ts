@@ -250,13 +250,13 @@ async function activateCodeLensProviders(
  * Will show once per extension activation at most (all prompting triggers are disposed of on first trigger)
  * Will not show if the YAML extension is installed or if a user has permanently dismissed the message.
  */
-function createYamlExtensionPrompt(): void {
+async function createYamlExtensionPrompt(): Promise<void> {
     const settingsConfig = new DefaultSettingsConfiguration(extensionSettingsPrefix)
 
     // Show this only in VSCode since other VSCode-like IDEs (e.g. Theia) may
     // not have a marketplace or contain the YAML plugin.
     if (
-        settingsConfig.shouldDisplayPrompt(STATE_NAME_SUPPRESS_YAML_PROMPT) &&
+        (await settingsConfig.shouldDisplayPrompt(STATE_NAME_SUPPRESS_YAML_PROMPT)) &&
         getIdeType() === IDE.vscode &&
         !vscode.extensions.getExtension(VSCODE_EXTENSION_ID.yaml)
     ) {

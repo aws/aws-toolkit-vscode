@@ -25,10 +25,10 @@ function makeDeployButtons() {
     return [autoDeploymentsDisable, autoDeploymentsEnable]
 }
 
-function showDeploymentCostNotification(): void {
+async function showDeploymentCostNotification(): Promise<void> {
     const settingsConfig = new DefaultSettingsConfiguration(extensionSettingsPrefix)
 
-    if (settingsConfig.shouldDisplayPrompt('suppressApprunnerNotifyPricing')) {
+    if (await settingsConfig.shouldDisplayPrompt('suppressApprunnerNotifyPricing')) {
         const notice = localize(
             'aws.apprunner.createService.priceNotice.message',
             'App Runner automatic deployments incur an additional cost.'
