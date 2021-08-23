@@ -256,7 +256,7 @@ export async function activate(context: vscode.ExtensionContext) {
     } catch (error) {
         const stacktrace = (error as Error).stack?.split('\n')
         // truncate if the stacktrace is unusually long
-        if (stacktrace !== undefined && stacktrace?.length > 40) {
+        if (stacktrace !== undefined && stacktrace.length > 40) {
             stacktrace.length = 40
         }
         getLogger('channel').error(
