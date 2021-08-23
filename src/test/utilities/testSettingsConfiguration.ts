@@ -3,7 +3,7 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
-import { SettingsConfiguration } from '../../shared/settingsConfiguration'
+import { AwsDevSetting, SettingsConfiguration } from '../../shared/settingsConfiguration'
 
 /**
  * Test utility class with an in-memory Settings Configuration key-value storage
@@ -18,5 +18,9 @@ export class TestSettingsConfiguration implements SettingsConfiguration {
     public async writeSetting<T>(settingKey: string, value: T, target?: any): Promise<boolean> {
         this._data[settingKey] = value
         return true
+    }
+
+    public readDevSetting<T>(key: AwsDevSetting, type: string = 'string', silent: boolean = false): T | undefined {
+        return undefined
     }
 }
