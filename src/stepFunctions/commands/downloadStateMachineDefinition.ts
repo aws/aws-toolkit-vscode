@@ -4,6 +4,7 @@
  */
 
 import * as nls from 'vscode-nls'
+import * as os from 'os'
 const localize = nls.loadMessageBundle()
 
 import { StepFunctions } from 'aws-sdk'
@@ -41,11 +42,14 @@ export async function downloadStateMachineDefinition(params: {
             const textEditor = await vscode.window.showTextDocument(doc)
             await vscode.commands.executeCommand('aws.previewStateMachine', textEditor)
         } else {
-            const wsPath = vscode.workspace.workspaceFolders ? vscode.workspace.workspaceFolders[0].uri.fsPath : '/'
-            let filePath = path.join(wsPath, params.stateMachineNode.details.name + '.asl.json')
-            const fileInfo = await vscode.window.showSaveDialog({ defaultUri: vscode.Uri.file(filePath) })
+            const wsPath = vscode.workspace.workspaceFolders
+                ? vscode.workspace.workspaceFolders[0].uri.fsPath
+                : os.homedir()
+            const defaultFilePath = path.join(wsPath, params.stateMachineNode.details.name + '.asl.json')
+            const fileInfo = await vscode.window.showSaveDialog({ defaultUri: vscode.Uri.file(defaultFilePath) })
+
             if (fileInfo) {
-                filePath = fileInfo.fsPath
+                const filePath = fileInfo.fsPath
                 fs.writeFileSync(filePath, stateMachineDetails.definition, 'utf8')
                 const openPath = vscode.Uri.file(filePath)
                 const doc = await vscode.workspace.openTextDocument(openPath)
