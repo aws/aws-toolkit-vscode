@@ -1,8 +1,0 @@
-{
-    "extends": "./tsconfig.json",
-    "compilerOptions": {
-        "outDir": "./samVisualizeRenderJS",
-        "removeComments": true
-    },
-    "include": ["./src/samVisualize/rendering/*.ts"]
-}

@@ -85,7 +85,9 @@ export class SamVisualization {
             const webviewBodyScriptUri = panel.webview.asWebviewUri(
                 // Change those file names
                 vscode.Uri.file(
-                    this.extensionContext.asAbsolutePath(join('samVisualizeRenderJS', 'samVisualizeRenderBundle.js'))
+                    this.extensionContext.asAbsolutePath(
+                        join('dist', 'src', 'samVisualize', 'samVisualizeRenderBundle.js')
+                    )
                 )
             )
             panel.webview.html = this.getWebviewContent(
