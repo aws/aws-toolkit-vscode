@@ -257,9 +257,10 @@ export async function activate(context: vscode.ExtensionContext) {
         getLogger('channel').error(
             localize(
                 'AWS.channel.aws.toolkit.activation.error',
-                'Error Activating {0} Toolkit: {1}',
+                'Error Activating {0} Toolkit: {1} \n{2}',
                 getIdeProperties().company,
-                (error as Error).message
+                (error as Error).message,
+                (error as Error).stack
             )
         )
         throw error
