@@ -103,6 +103,10 @@ describe('PreviewStateMachineCDKWizard', async function () {
         sandbox = sinon.createSandbox()
     })
 
+    afterEach(function () {
+        sandbox.restore()
+    })
+
     it('exits when cancelled', async function () {
         const mockUserPrompt: any = () => Promise.resolve(undefined)
         const wizard = new PreviewStateMachineCDKWizard(mockUserPrompt)

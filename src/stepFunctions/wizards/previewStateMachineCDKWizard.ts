@@ -98,7 +98,7 @@ export class PreviewStateMachineCDKWizard extends MultiStepWizard<PreviewStateMa
     }
 
     private readonly SELECT_APPLICATION_ACTION: WizardStep = async () => {
-        const appLocation = this.cdkApplication ? this.cdkApplication.cdkApplocation : undefined
+        const appLocation = this.cdkApplication?.cdkApplocation
 
         if (!appLocation) {
             return WIZARD_GOBACK
@@ -227,7 +227,7 @@ export class PreviewStateMachineCDKWizard extends MultiStepWizard<PreviewStateMa
  * @returns name of the workspace of the CDK Application
  */
 export function getCDKAppWorkspaceName(cdkJsonPath: string): string {
-    if (typeof cdkJsonPath != 'string') {
+    if (typeof cdkJsonPath !== 'string') {
         return cdkJsonPath
     }
     cdkJsonPath = cdkJsonPath.replace('/cdk.json', '')

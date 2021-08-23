@@ -88,10 +88,7 @@ export class ConstructNode extends AWSTreeNodeBase {
  * @param {ConstructTreeEntity} construct - CDK construct
  */
 export function isStateMachine(construct: ConstructTreeEntity): boolean {
-    if (!construct.children) {
-        return false
-    }
-    const resource = construct.children['Resource']
+    const resource = construct.children?.Resource
     if (!resource) {
         return false
     }

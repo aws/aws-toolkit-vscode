@@ -12,15 +12,15 @@ import { getLogger, Logger } from '../../../shared/logger'
  *
  * @returns the escaped ASL Json definition string of the state machine construct
  */
-export function getStateMachineDefinitionFromCfnTemplate(
-    uniqueIdentifier: string,
-    templatePath: string
-): string | undefined {
+export function getStateMachineDefinitionFromCfnTemplate(uniqueIdentifier: string, templatePath: string): string {
     const logger: Logger = getLogger()
     try {
         const data = fs.readFileSync(templatePath, 'utf8')
         const jsonObj = JSON.parse(data)
-        const resources = jsonObj.Resources
+        const resources = jsonObj?.Resources
+        if (!resources) {
+            return ''
+        }
         let key: string
 
         const matchingKeyList: string[] = []
@@ -35,19 +35,19 @@ export function getStateMachineDefinitionFromCfnTemplate(
             }
         }
         if (matchingKeyList.length === 0) {
-            return
-        } else if (matchingKeyList.length === 1) {
-            key = matchingKeyList[0]
+            return ''
         } else {
             //return minimum length key in matchingKeyList
             key = matchingKeyList.reduce((a, b) => (a.length <= b.length ? a : b))
         }
 
         const definitionString = jsonObj.Resources[key].Properties.DefinitionString
-        return definitionString
+
+        return !definitionString ? '' : definitionString
     } catch (err) {
         logger.debug('Unable to extract state machine definition string from template.json file.')
         logger.error(err as Error)
+        return ''
     }
 }
 

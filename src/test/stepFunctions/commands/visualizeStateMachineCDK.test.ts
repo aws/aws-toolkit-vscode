@@ -182,14 +182,14 @@ describe('StepFunctions VisualizeStateMachine', async function () {
         assert.strictEqual(vis.getDisposables().length, 5)
 
         let panel = vis.getPanel()
-        assert.ok(panel)
         panel = panel as vscode.WebviewPanel
+        assert.ok(panel)
         assert.ok(panel.title.length > 0)
         assert.strictEqual(panel.viewType, 'stateMachineVisualization')
 
         let webview = vis.getWebview()
-        assert.ok(webview)
         webview = webview as vscode.Webview
+        assert.ok(webview)
         assert.ok(webview.html)
     })
 
@@ -321,16 +321,6 @@ describe('StepFunctions VisualizeStateMachine', async function () {
             2
         )
     })
-
-    it('Test AslVisualizationCDKManager managedVisualizationsCDK set removes visualization on removal of template.json file, single visCDK', async function () {
-        assert.strictEqual(mockAslVisualizationCDKManager.getManagedVisualizations().size, 0)
-    })
-
-    it('Test AslVisualizationCDKManager managedVisualizationsCDK set removes correct visualization on removal of template.json file, multiple vis', async function () {
-        assert.strictEqual(mockAslVisualizationCDKManager.getManagedVisualizations().size, 0)
-    })
-
-    it('Test AslVisualisationCDK sendUpdateMessage posts a correct update message for ASL files', async function () {})
 })
 
 class MockAslVisualizationCDK extends AslVisualizationCDK {
@@ -338,7 +328,7 @@ class MockAslVisualizationCDK extends AslVisualizationCDK {
         return mockJsonData
     }
 
-    protected getTemplateJsonDocument(templatePath: string) {
+    protected getTemplateJsonDocument(templatePath: string): vscode.Uri {
         return mockUri
     }
 
@@ -352,7 +342,7 @@ class MockAslVisualizationCDK extends AslVisualizationCDK {
 }
 
 class MockAslVisualizationCDKManager extends AslVisualizationCDKManager {
-    public workspaceName: string
+    protected workspaceName: string
 
     constructor(extensionContext: vscode.ExtensionContext, workspaceName: string) {
         super(extensionContext)
@@ -363,7 +353,7 @@ class MockAslVisualizationCDKManager extends AslVisualizationCDKManager {
         return this.workspaceName
     }
 
-    public setWorkspaceName(workspaceName: string) {
+    public setWorkspaceName(workspaceName: string): void {
         this.workspaceName = workspaceName
     }
 

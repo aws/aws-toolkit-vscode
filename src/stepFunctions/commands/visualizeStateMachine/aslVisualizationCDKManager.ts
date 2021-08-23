@@ -34,7 +34,7 @@ export class AslVisualizationCDKManager extends AbstractAslVisualizationManager 
         const existingVisualization = this.getExistingVisualization(workspaceName, node.tooltip)
         const stateMachineName = node.label
         const appName = node.tooltip.replace(`/${stateMachineName}`, ``)
-        const templatePath = String(cdkOutPath) + `/${appName}.template.json`
+        const templatePath = `${cdkOutPath}/${appName}.template.json`
         const uri = vscode.Uri.file(templatePath)
         if (existingVisualization) {
             existingVisualization.showPanel()
@@ -96,7 +96,7 @@ export class AslVisualizationCDKManager extends AbstractAslVisualizationManager 
      * @returns name of the CDK application workspace name
      */
     public getCDKAppWorkspaceName(cdkOutPath: string): string {
-        if (typeof cdkOutPath != 'string') {
+        if (typeof cdkOutPath !== 'string') {
             return cdkOutPath
         }
         cdkOutPath = cdkOutPath.replace('/cdk.out', '')

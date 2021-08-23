@@ -12,7 +12,7 @@ import { getLogger, Logger } from '../../../shared/logger'
 
 export class AslVisualizationManager extends AbstractAslVisualizationManager {
     protected readonly name: string = 'AslVisualizationManager'
-    protected readonly managedVisualizations: Map<string, AslVisualization> = new Map<string, AslVisualization>()
+    private readonly managedVisualizations: Map<string, AslVisualization> = new Map<string, AslVisualization>()
 
     public constructor(extensionContext: vscode.ExtensionContext) {
         super(extensionContext)
@@ -41,7 +41,7 @@ export class AslVisualizationManager extends AbstractAslVisualizationManager {
         const textDocument: vscode.TextDocument = activeTextEditor.document
 
         // Attempt to retrieve existing visualization if it exists.
-        const existingVisualization = this.getExistingVisualization(textDocument.uri.path)
+        const existingVisualization = this.getExistingVisualization(textDocument.uri.fsPath)
         if (existingVisualization) {
             existingVisualization.showPanel()
 
@@ -63,11 +63,11 @@ export class AslVisualizationManager extends AbstractAslVisualizationManager {
         return
     }
 
-    protected handleNewVisualization(newVisualization: AslVisualization): void {
-        this.managedVisualizations.set(newVisualization.documentUri.path, newVisualization)
+    private handleNewVisualization(newVisualization: AslVisualization): void {
+        this.managedVisualizations.set(newVisualization.documentUri.fsPath, newVisualization)
 
         const visualizationDisposable = newVisualization.onVisualizationDisposeEvent(() => {
-            this.deleteVisualization(newVisualization.documentUri.path)
+            this.deleteVisualization(newVisualization.documentUri.fsPath)
         })
         this.pushToExtensionContextSubscriptions(visualizationDisposable)
     }
@@ -76,11 +76,11 @@ export class AslVisualizationManager extends AbstractAslVisualizationManager {
         return this.managedVisualizations
     }
 
-    protected deleteVisualization(visualizationToDelete: string): void {
+    private deleteVisualization(visualizationToDelete: string): void {
         this.managedVisualizations.delete(visualizationToDelete)
     }
 
-    protected getExistingVisualization(visualization: string): AslVisualization | undefined {
+    private getExistingVisualization(visualization: string): AslVisualization | undefined {
         return this.managedVisualizations.get(visualization)
     }
 }

@@ -12,22 +12,22 @@ import { Logger } from '../../../shared/logger'
 const localize = nls.loadMessageBundle()
 
 export abstract class AbstractAslVisualizationManager {
-    protected readonly name: string = 'AbstractAslVisualizationManager'
+    protected abstract name: string
 
     public constructor(private readonly extensionContext: vscode.ExtensionContext) {
         this.extensionContext = extensionContext
     }
 
-    abstract visualizeStateMachine(
+    public abstract visualizeStateMachine(
         globalStorage: vscode.Memento,
         input: vscode.TextEditor | ConstructNode | undefined
     ): Promise<vscode.WebviewPanel | undefined>
 
-    protected pushToExtensionContextSubscriptions(visualizationDisposable: vscode.Disposable) {
+    protected pushToExtensionContextSubscriptions(visualizationDisposable: vscode.Disposable): void {
         this.extensionContext.subscriptions.push(visualizationDisposable)
     }
 
-    protected handleErr(err: Error, logger: Logger) {
+    protected handleErr(err: Error, logger: Logger): void {
         vscode.window.showInformationMessage(
             localize(
                 'AWS.stepfunctions.visualisation.errors.rendering',
