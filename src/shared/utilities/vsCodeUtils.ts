@@ -111,10 +111,10 @@ export function isExtensionInstalledMsg(extId: string, extName: string, feat?: s
  * @param silent  Return undefined on failure, instead of throwing
  * @returns Extension object, or undefined on failure if `silent`
  */
-export async function activateExtension(
+export async function activateExtension<T = void>(
     extId: string,
     silent: boolean = true
-): Promise<vscode.Extension<void> | undefined> {
+): Promise<vscode.Extension<T> | undefined> {
     let loggerInitialized: boolean
     try {
         getLogger()
@@ -130,7 +130,7 @@ export async function activateExtension(
         }
     }
 
-    const extension = vscode.extensions.getExtension(extId)
+    const extension = vscode.extensions.getExtension<T>(extId)
     if (!extension) {
         if (silent) {
             return undefined

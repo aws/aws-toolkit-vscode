@@ -6,14 +6,17 @@
 import * as vscode from 'vscode'
 import * as caws from '../shared/clients/cawsClient'
 import { ext } from '../shared/extensionGlobals'
-import { ExtContext } from '../shared/extensions'
+import { ExtContext, VSCODE_EXTENSION_ID } from '../shared/extensions'
 import { createHelpButton } from '../shared/ui/buttons'
 import * as pickerLib from '../shared/ui/picker'
 import { IteratorTransformer } from '../shared/utilities/collectionUtils'
-import { localize } from '../shared/utilities/vsCodeUtils'
+import { activateExtension, localize } from '../shared/utilities/vsCodeUtils'
 import * as cawsView from './cawsView'
 import * as msg from '../shared/utilities/messages'
 import { ContextChangeEventsArgs } from '../shared/awsContext'
+import { GitExtension } from '../../types/git'
+import { CawsRemoteSourceProvider } from './repos/remoteSourceProvider'
+import { getLogger } from '../shared/logger/logger'
 
 /**
  * Activate CAWS functionality.
@@ -33,7 +36,48 @@ export async function activate(ctx: ExtContext): Promise<void> {
         })
     )
 
+    // Git Extension handling
+    activateExtension<GitExtension>(VSCODE_EXTENSION_ID.git).then(extension => {
+        if (extension) {
+            handleGitExtension(extension)
+        } else {
+            getLogger().warn('Git Extension could not be activated.')
+        }
+    })
+
     await registerCommands(ctx)
+}
+
+function handleGitExtension(extension: vscode.Extension<GitExtension>): void {
+    let currDisposable: vscode.Disposable | undefined
+
+    // TODO: Add user initialization outside git extension activation
+    let initialUser: string | undefined
+    try {
+        initialUser = ext.caws.user()
+    } catch {
+        // swallow error: no user set
+    }
+    currDisposable = makeNewRemoteSourceProvider(extension, initialUser)
+
+    ext.context.subscriptions.push(
+        ext.awsContext.onDidChangeContext(c => {
+            if (currDisposable) {
+                currDisposable.dispose()
+            }
+            if (c.cawsUsername && c.cawsSecret) {
+                currDisposable = makeNewRemoteSourceProvider(extension, c.cawsUsername)
+            } else {
+                currDisposable = makeNewRemoteSourceProvider(extension)
+            }
+        })
+    )
+}
+
+function makeNewRemoteSourceProvider(extension: vscode.Extension<GitExtension>, uname?: string): vscode.Disposable {
+    const API_VERSION = 1
+    const API = extension.exports.getAPI(API_VERSION)
+    return API.registerRemoteSourceProvider(new CawsRemoteSourceProvider(uname))
 }
 
 async function onCredentialsChanged(
@@ -194,12 +238,6 @@ async function cloneCawsRepo(): Promise<void> {
     if (!r) {
         return
     }
-    const pat = await c.createAccessToken({ name: c.user(), expires: undefined })
-    if (!pat?.secret) {
-        throw Error('CODE.AWS: Failed to create personal access token (PAT)')
-    }
-    vscode.commands.executeCommand(
-        'git.clone',
-        `https://${c.user()}:${pat.secret}@${caws.cawsGitHostname}/v1/${r.org.name}/${r.project.name}/${r.name}`
-    )
+    const cloneLink = await c.toCawsGitCloneLink(r)
+    vscode.commands.executeCommand('git.clone', cloneLink)
 }

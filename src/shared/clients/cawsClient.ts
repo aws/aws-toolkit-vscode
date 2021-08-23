@@ -3,12 +3,12 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
+import * as vscode from 'vscode'
 import * as AWS from 'aws-sdk'
 import { ServiceConfigurationOptions } from 'aws-sdk/lib/service'
 // TEMPORARY: graphql
 import * as gql from 'graphql-request'
 import * as gqltypes from 'graphql-request/dist/types'
-import * as vscode from 'vscode'
 import * as caws from '../../../types/clientcodeaws'
 import { ext } from '../../shared/extensionGlobals'
 import * as logger from '../logger/logger'
@@ -384,6 +384,9 @@ export class CawsClient {
             } else {
                 repos = await this.call(c.listSourceRepositories(args), true)
             }
+
+            // TODO: Yield all as one array instead of individuals?
+            // Maps 1:1 with API calls
             for (const r of repos?.items ?? []) {
                 if (r.name) {
                     yield {
@@ -394,7 +397,49 @@ export class CawsClient {
                 }
             }
         }
+
+        // TODO: Add telemetry
     }
+
+    // TODO: Is this used?
+    // public async *listBranchesForRepo(repo: CawsRepo): AsyncIterableIterator<caws.ListSourceBranchesOutput> {
+    //     let branchesOutput: caws.Types.ListSourceBranchesOutput | undefined
+    //     const args: caws.ListSourceBranchesInput = {
+    //         organizationName: repo.org.name!,
+    //         projectName: repo.projectName!,
+    //         sourceRepositoryName: repo.name!,
+    //     }
+    //     if (useGraphql) {
+    //         branchesOutput = await gqlRequest<caws.Types.ListSourceBranchesOutput>(
+    //             this.gqlClient,
+    //             `query ($input: ListSourceBranchesInput!) {
+    //                 getSourceRListSourceBranchesepository(input: $input) {
+    //                     items {
+    //                         id
+    //                         sourceRepositoryName
+    //                         branchName
+    //                         lastUpdatedTime
+    //                         headCommitId
+    //                         beforeCommitId
+    //                         beforeDocumentCommitId
+    //                         ordinal
+    //                         branches
+    //                     }
+    //                 }
+    //             }`,
+    //             args
+    //         )
+    //     } else {
+    //         const c = this.sdkClient
+    //         branchesOutput = await this.call(c.listSourceBranches(args), true)
+    //     }
+
+    //     if (!branchesOutput) {
+    //         throw new Error(`No ListSourceBranchesOutput found for repository ${repo.name}`)
+    //     }
+
+    //     yield branchesOutput
+    // }
 
     /**
      * Maps CawsFoo objects to `vscode.QuickPickItem` objects.
@@ -405,7 +450,7 @@ export class CawsClient {
         for await (const o of items) {
             let label: string
             if ((o as CawsRepo).project) {
-                label = `${(o as CawsRepo).org.name} / ${(o as CawsRepo).project.name} / ${o.name}`
+                label = this.createRepoLabel(o as CawsRepo)
             } else if ((o as CawsProject).org) {
                 label = `${(o as CawsProject).org.name} / ${(o as CawsProject).name}`
             } else {
@@ -420,6 +465,10 @@ export class CawsClient {
                 val: o,
             } as vscode.QuickPickItem
         }
+    }
+
+    public createRepoLabel(r: CawsRepo): string {
+        return `${r.org.name} / ${r.project.name} / ${r.name}`
     }
 
     /**
@@ -443,5 +492,18 @@ export class CawsClient {
     public openCawsUrl(o: CawsOrg | CawsProject | CawsRepo) {
         const url = this.toCawsUrl(o)
         vscode.env.openExternal(vscode.Uri.parse(url))
+    }
+
+    /**
+     * Creates a link for `git clone` usage
+     * @param r CAWS repo
+     */
+    public async toCawsGitCloneLink(r: CawsRepo): Promise<string> {
+        const pat = await this.createAccessToken({ name: this.user(), expires: undefined })
+        if (!pat?.secret) {
+            throw Error('CODE.AWS: Failed to create personal access token (PAT)')
+        }
+
+        return `https://${this.user()}:${pat.secret}@${cawsGitHostname}/v1/${r.org.name}/${r.project.name}/${r.name}`
     }
 }
