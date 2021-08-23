@@ -205,7 +205,6 @@ export class SamVisualization {
         webviewRenderScriptUri: vscode.Uri,
         cspSource: string
     ) {
-        // Library exported by webpack is GraphRender
         return `<!DOCTYPE html>
     <html lang="en">
     <head>
@@ -223,7 +222,7 @@ export class SamVisualization {
     </head>
     <body>
         <script>
-            new GraphRender.ForceDirectedGraph(${graphObjectString},${primaryResourceListString},${iconDataString})
+            new samVisualize.ForceDirectedGraph(${graphObjectString},${primaryResourceListString},${iconDataString})
         </script>
     </body>
     </html>`

@@ -117,7 +117,7 @@ const samVisualizeConfig = {
     output: {
         filename: 'samVisualizeRenderBundle.js',
         path: path.resolve(__dirname, 'dist', 'src', 'samVisualize'),
-        library: 'GraphRender',
+        library: 'samVisualize',
     },
     plugins: [
         // fix "process is not defined" error:
