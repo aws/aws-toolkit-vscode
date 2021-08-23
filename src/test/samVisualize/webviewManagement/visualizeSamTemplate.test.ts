@@ -139,7 +139,7 @@ const mockExtensionContext: vscode.ExtensionContext = {
 
 class MockSamVisualization extends SamVisualization {
     public getIsPanelDisposed(): boolean {
-        return this.webviewPanel === undefined
+        return this.isPanelDisposed
     }
 
     public getDisposables(): Disposable[] {

@@ -20,10 +20,12 @@ export class SamVisualization {
     // To let the extension know a visualization has been closed
     private readonly onVisualizationDisposeEmitter = new vscode.EventEmitter<void>()
 
+    protected isPanelDisposed = false
+
     /**
      * The webviewPanel holding the visualization
      */
-    public webviewPanel: vscode.WebviewPanel | undefined
+    public webviewPanel: vscode.WebviewPanel
 
     /**
      * The URI associated with the TextDocument containing the template being rendered
@@ -43,7 +45,9 @@ export class SamVisualization {
      * Reveals the webviewPanel for this visualization
      */
     public revealPanel(): void {
-        this.webviewPanel?.reveal()
+        if (!this.isPanelDisposed) {
+            this.webviewPanel.reveal()
+        }
     }
 
     private createWebviewPanel(textDocument: vscode.TextDocument): vscode.WebviewPanel {
@@ -105,13 +109,13 @@ export class SamVisualization {
 
         return panel
     }
-    private setUpWebviewPanel(textDocument: vscode.TextDocument): vscode.WebviewPanel | undefined {
+    private setUpWebviewPanel(textDocument: vscode.TextDocument): vscode.WebviewPanel {
         const panel = this.createWebviewPanel(textDocument)
 
         // To close the visualization if the associated template no longer exists
         this.disposables.push(
             vscode.workspace.onDidCloseTextDocument(e => {
-                if (!this.templateDoesExist() && this.webviewPanel) {
+                if (!this.templateDoesExist() && !this.isPanelDisposed) {
                     panel.dispose()
                     vscode.window.showErrorMessage('Template associated with visualization closed or renamed')
                 }
@@ -136,9 +140,9 @@ export class SamVisualization {
                 // Reveal the template to the left of the webview, unless the webview is in the first column.
                 // In this case, reveal to the right. This way, the template will also reveal beside the webview.
                 const columnToShow =
-                    this.webviewPanel!.viewColumn === vscode.ViewColumn.One
+                    this.webviewPanel.viewColumn === vscode.ViewColumn.One
                         ? vscode.ViewColumn.Two
-                        : this.webviewPanel!.viewColumn!.valueOf() - 1
+                        : this.webviewPanel.viewColumn!.valueOf() - 1
 
                 vscode.window
                     .showTextDocument(this.textDocument, { preserveFocus: true, viewColumn: columnToShow })
@@ -160,7 +164,10 @@ export class SamVisualization {
         )
 
         panel.onDidDispose(() => {
-            this.webviewPanel = undefined
+            if (this.isPanelDisposed) {
+                return
+            }
+            this.isPanelDisposed = true
             debouncedUpdate.cancel()
             this.onVisualizationDisposeEmitter.fire()
             this.disposables.forEach(disposable => {
@@ -178,7 +185,7 @@ export class SamVisualization {
 
         // We want to post the graphObject even if it is undefined,
         // as the rendering code will render an error message if it is undefined.
-        this.webviewPanel?.webview.postMessage({
+        this.webviewPanel.webview.postMessage({
             graphObject: newGraphObject,
         })
 
