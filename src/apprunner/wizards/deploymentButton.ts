@@ -11,20 +11,6 @@ import { DefaultSettingsConfiguration } from '../../shared/settingsConfiguration
 
 const localize = nls.loadMessageBundle()
 
-function makeDeployButtons() {
-    const autoDeploymentsEnable: QuickInputButton<void> = {
-        iconPath: new vscode.ThemeIcon('sync-ignored'),
-        tooltip: localize('AWS.apprunner.buttons.enableAutoDeploy', 'Turn on automatic deployment'),
-    }
-
-    const autoDeploymentsDisable: QuickInputButton<void> = {
-        iconPath: new vscode.ThemeIcon('sync'),
-        tooltip: localize('AWS.apprunner.buttons.disableAutoDeploy', 'Turn off automatic deployment'),
-    }
-
-    return [autoDeploymentsDisable, autoDeploymentsEnable]
-}
-
 async function showDeploymentCostNotification(): Promise<void> {
     const settingsConfig = new DefaultSettingsConfiguration(extensionSettingsPrefix)
 
@@ -46,6 +32,20 @@ async function showDeploymentCostNotification(): Promise<void> {
             }
         })
     }
+}
+
+function makeDeployButtons() {
+    const autoDeploymentsEnable: QuickInputButton<void> = {
+        iconPath: new vscode.ThemeIcon('sync-ignored'),
+        tooltip: localize('AWS.apprunner.buttons.enableAutoDeploy', 'Turn on automatic deployment'),
+    }
+
+    const autoDeploymentsDisable: QuickInputButton<void> = {
+        iconPath: new vscode.ThemeIcon('sync'),
+        tooltip: localize('AWS.apprunner.buttons.disableAutoDeploy', 'Turn off automatic deployment'),
+    }
+
+    return [autoDeploymentsDisable, autoDeploymentsEnable]
 }
 
 export function makeDeploymentButton() {
