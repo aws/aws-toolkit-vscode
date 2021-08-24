@@ -80,7 +80,7 @@ describe('AppRunnerNode', function () {
         await clock.tickAsync(100000)
         when(mockApprunnerClient.listServices(anything())).thenResolve({ ServiceSummaryList: [pausedService] })
         sinon.assert.calledOn(refreshStub, node)
-        node.getChildren()
+        await node.getChildren()
         await clock.tickAsync(100000)
         verify(mockApprunnerClient.listServices(anything())).times(2)
 
