@@ -13,7 +13,6 @@ import { AppNode } from '../../cdk/explorer/nodes/appNode'
 import { CdkAppLocation } from '../../cdk/explorer/cdkProject'
 import { ConstructNode } from '../../cdk/explorer/nodes/constructNode'
 import { detectCdkProjects } from '../../cdk/explorer/detectCdkProjects'
-import { getLogger } from '../../shared/logger'
 import {
     MultiStepWizard,
     WIZARD_GOBACK,
