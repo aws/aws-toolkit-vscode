@@ -77,8 +77,8 @@ describe('AppRunnerNode', function () {
 
         const childNode = (await node.getChildren())[0] as AppRunnerServiceNode
         const pausedService = { ...transientService, Status: 'PAUSED' }
-        when(mockApprunnerClient.listServices(anything())).thenResolve({ ServiceSummaryList: [pausedService] })
         await clock.tickAsync(100000)
+        when(mockApprunnerClient.listServices(anything())).thenResolve({ ServiceSummaryList: [pausedService] })
         sinon.assert.calledOn(refreshStub, node)
         node.getChildren()
         await clock.tickAsync(100000)
