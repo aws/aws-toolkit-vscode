@@ -9,6 +9,11 @@ import * as picker from '../../shared/ui/picker'
 
 const localize = nls.loadMessageBundle()
 
+import { AppNode } from '../../cdk/explorer/nodes/appNode'
+import { CdkAppLocation } from '../../cdk/explorer/cdkProject'
+import { ConstructNode } from '../../cdk/explorer/nodes/constructNode'
+import { detectCdkProjects } from '../../cdk/explorer/detectCdkProjects'
+import { getLogger } from '../../shared/logger'
 import {
     MultiStepWizard,
     WIZARD_GOBACK,
@@ -16,10 +21,6 @@ import {
     wizardContinue,
     WizardStep,
 } from '../../shared/wizards/multiStepWizard'
-import { CdkAppLocation } from '../../cdk/explorer/cdkProject'
-import { detectCdkProjects } from '../../cdk/explorer/detectCdkProjects'
-import { AppNode } from '../../cdk/explorer/nodes/appNode'
-import { ConstructNode } from '../../cdk/explorer/nodes/constructNode'
 
 export interface CdkAppLocationPickItem {
     label: string
@@ -101,6 +102,7 @@ export class PreviewStateMachineCDKWizard extends MultiStepWizard<PreviewStateMa
         const appLocation = this.cdkApplication?.cdkApplocation
 
         if (!appLocation) {
+            localize('AWS.cdk.explorerNode.noAppLocation', '[No CDK App Location]')
             return WIZARD_GOBACK
         }
 

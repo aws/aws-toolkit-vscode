@@ -9,7 +9,7 @@ import { AslVisualizationCDK } from './aslVisualizationCDK'
 import { AbstractAslVisualizationManager } from './abstractAslVisualizationManager'
 import { ConstructNode } from '../../../cdk/explorer/nodes/constructNode'
 import { getLogger } from '../../../shared/logger'
-import { StateMachineGraphCache } from '../../utils'
+import { normalize } from '../../../shared/utilities/pathUtils'
 
 export class AslVisualizationCDKManager extends AbstractAslVisualizationManager {
     protected readonly name: string = 'AslVisualizationCDKManager'
@@ -28,13 +28,13 @@ export class AslVisualizationCDKManager extends AbstractAslVisualizationManager 
         node: ConstructNode
     ): Promise<vscode.WebviewPanel | undefined> {
         const logger = getLogger()
-        const cache = new StateMachineGraphCache()
         const cdkOutPath = node.id.replace(`/tree.json/${node.tooltip}`, ``)
         const workspaceName = this.getCDKAppWorkspaceName(cdkOutPath)
         const existingVisualization = this.getExistingVisualization(workspaceName, node.tooltip)
         const stateMachineName = node.label
         const appName = node.tooltip.replace(`/${stateMachineName}`, ``)
         const templatePath = `${cdkOutPath}/${appName}.template.json`
+        normalize(templatePath)
         const uri = vscode.Uri.file(templatePath)
         if (existingVisualization) {
             existingVisualization.showPanel()
@@ -44,7 +44,7 @@ export class AslVisualizationCDKManager extends AbstractAslVisualizationManager 
 
         // Existing visualization does not exist, construct new visualization
         try {
-            await cache.updateCache(globalStorage)
+            await this.cache.updateCache(globalStorage)
 
             const textDocument = await vscode.workspace.openTextDocument(uri)
             const newVisualization = new AslVisualizationCDK(textDocument, templatePath, appName, stateMachineName)

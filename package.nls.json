@@ -17,6 +17,7 @@
     "AWS.title.selectCredentialProfile": "Select an {0} credential profile",
     "AWS.startup.toastIfAlpha": "{0} Toolkit PREVIEW. (To get the latest STABLE version, uninstall this version.)",
     "AWS.cdk.explorerTitle": "CDK (Preview)",
+    "AWS.cdk.explorerNode.noAppLocation": "[No CDK App Location]",
     "Aws.cdk.app.noWorkspace": "[No Workspace in this App]",
     "AWS.cdk.explorerNode.noApps": "[No CDK Apps found in Workspaces]",
     "AWS.cdk.explorerNode.app.noConstructTree": "[Unable to load construct tree for this App. Run `cdk synth`]",

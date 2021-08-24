@@ -6,6 +6,7 @@
 import * as vscode from 'vscode'
 import * as nls from 'vscode-nls'
 import { ConstructNode } from '../../../cdk/explorer/nodes/constructNode'
+import { StateMachineGraphCache } from '../../utils'
 
 import { Logger } from '../../../shared/logger'
 
@@ -13,10 +14,9 @@ const localize = nls.loadMessageBundle()
 
 export abstract class AbstractAslVisualizationManager {
     protected abstract name: string
+    protected cache: StateMachineGraphCache = new StateMachineGraphCache()
 
-    public constructor(private readonly extensionContext: vscode.ExtensionContext) {
-        this.extensionContext = extensionContext
-    }
+    public constructor(private readonly extensionContext: vscode.ExtensionContext) {}
 
     public abstract visualizeStateMachine(
         globalStorage: vscode.Memento,

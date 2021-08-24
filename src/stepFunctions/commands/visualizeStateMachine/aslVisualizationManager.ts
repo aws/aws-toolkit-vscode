@@ -7,7 +7,6 @@ import * as vscode from 'vscode'
 
 import { AbstractAslVisualizationManager } from './abstractAslVisualizationManager'
 import { AslVisualization } from './aslVisualization'
-import { StateMachineGraphCache } from '../../utils'
 import { getLogger, Logger } from '../../../shared/logger'
 
 export class AslVisualizationManager extends AbstractAslVisualizationManager {
@@ -23,7 +22,6 @@ export class AslVisualizationManager extends AbstractAslVisualizationManager {
         activeTextEditor: vscode.TextEditor | undefined
     ): Promise<vscode.WebviewPanel | undefined> {
         const logger: Logger = getLogger()
-        const cache = new StateMachineGraphCache()
 
         /* TODO: Determine behaviour when command is run against bad input, or
          * non-json files. Determine if we want to limit the command to only a
@@ -50,7 +48,7 @@ export class AslVisualizationManager extends AbstractAslVisualizationManager {
 
         // Existing visualization does not exist, construct new visualization
         try {
-            await cache.updateCache(globalStorage)
+            await this.cache.updateCache(globalStorage)
 
             const newVisualization = new AslVisualization(textDocument)
             this.handleNewVisualization(newVisualization)

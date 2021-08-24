@@ -11,11 +11,9 @@ import { AppNode } from './explorer/nodes/appNode'
 import { ConstructNode } from './explorer/nodes/constructNode'
 import { cdk } from './globals'
 import { cdkDocumentationUrl } from '../shared/constants'
+import { initalizeWebviewPaths } from '../stepFunctions/activation'
 import { recordCdkAppExpanded, recordCdkHelp, recordCdkRefreshExplorer } from '../shared/telemetry/telemetry'
-import {
-    renderStateMachineGraphCommand,
-    previewCDKStateMachineFromCommandPalette,
-} from '../stepFunctions/commands/visualizeStateMachine/renderStateMachineGraphCDK'
+import { renderStateMachineGraphCommand } from '../stepFunctions/commands/visualizeStateMachine/renderStateMachineGraphCDK'
 
 /**
  * Activate AWS CDK related functionality for the extension.
@@ -24,6 +22,7 @@ export async function activate(activateArguments: { extensionContext: vscode.Ext
     const explorer = new AwsCdkExplorer()
 
     initializeIconPaths(activateArguments.extensionContext)
+    initalizeWebviewPaths(activateArguments.extensionContext)
 
     await registerCdkCommands(activateArguments.extensionContext, explorer)
     const view = vscode.window.createTreeView(explorer.viewProviderId, {
@@ -79,13 +78,13 @@ async function registerCdkCommands(context: vscode.ExtensionContext, explorer: A
     const visualizationManager = new AslVisualizationCDKManager(context)
     context.subscriptions.push(
         vscode.commands.registerCommand('aws.cdk.renderStateMachineGraph', async (node: ConstructNode) => {
-            await renderStateMachineGraphCommand(node, context.globalState, visualizationManager)
+            await renderStateMachineGraphCommand(node, context.globalState, visualizationManager, false)
         })
     )
 
     context.subscriptions.push(
         vscode.commands.registerCommand('aws.cdk.renderStateMachineGraphFromCommandPalette', async () => {
-            await previewCDKStateMachineFromCommandPalette(context.globalState, visualizationManager)
+            await renderStateMachineGraphCommand(undefined, context.globalState, visualizationManager, true)
         })
     )
 }
