@@ -26,4 +26,3 @@ Resources:
             DockerTag: dotnetcore2.1-v1
             DockerContext: ./src/HelloWorld
             Dockerfile: Dockerfile
-

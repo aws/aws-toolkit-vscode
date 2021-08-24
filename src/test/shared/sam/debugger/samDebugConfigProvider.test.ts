@@ -879,10 +879,6 @@ describe('SamDebugConfigurationProvider', async function () {
       CodeUri: .
       Handler: src/subfolder/app.handlerTwoFoldersDeep
       Runtime: nodejs10.x
-    Environment:
-      Variables:
-        SAMPLE1: value 1 from template.yaml
-        SAMPLE2: value 2 from template.yaml
 `
             )
 
@@ -1041,24 +1037,6 @@ Resources:
       DockerTag: nodejs12.x-v1
       DockerContext: ./hello-world
       Dockerfile: Dockerfile
-Outputs:
-  HelloWorldApi:
-    Description: API Gateway endpoint URL for Prod stage for Hello World function
-    Value:
-      Fn::Sub: >-
-        https://\${ServerlessRestApi}.execute-api.\${AWS::Region}.amazonaws.com/Prod/hello/
-  HelloWorldFunction:
-    Description: Hello World Lambda Function ARN
-    Value:
-      Fn::GetAtt:
-        - HelloWorldFunction
-        - Arn
-  HelloWorldFunctionIamRole:
-    Description: Implicit IAM Role created for Hello World function
-    Value:
-      Fn::GetAtt:
-        - HelloWorldFunctionRole
-        - Arn
 `
             )
 
@@ -1208,10 +1186,6 @@ Outputs:
       CodeUri: .
       Handler: src/subfolder/app.handlerTwoFoldersDeep
       Runtime: nodejs10.x
-    Environment:
-      Variables:
-        SAMPLE1: value 1 from template.yaml
-        SAMPLE2: value 2 from template.yaml
 `
             )
 
@@ -1522,33 +1496,12 @@ Resources:
       Handler: ${handler}
       Runtime: java11
       MemorySize: 512
-      Environment:
-        Variables:
-          PARAM1: VALUE
       Events:
         HelloWorld:
           Type: Api
           Properties:
             Path: /hello
             Method: get
-Outputs:
-  HelloWorldApi:
-    Description: API Gateway endpoint URL for Prod stage for Hello World function
-    Value:
-      Fn::Sub: >-
-        https://\${ServerlessRestApi}.execute-api.\${AWS::Region}.amazonaws.com/Prod/hello/
-  HelloWorldFunction:
-    Description: Hello World Lambda Function ARN
-    Value:
-      Fn::GetAtt:
-        - HelloWorldFunction
-        - Arn
-  HelloWorldFunctionIamRole:
-    Description: Implicit IAM Role created for Hello World function
-    Value:
-      Fn::GetAtt:
-        - HelloWorldFunctionRole
-        - Arn
 `
             )
 
@@ -1685,24 +1638,6 @@ Resources:
       DockerTag: java11-gradle-v1
       DockerContext: ./HelloWorldFunction
       Dockerfile: Dockerfile
-Outputs:
-  HelloWorldApi:
-    Description: API Gateway endpoint URL for Prod stage for Hello World function
-    Value:
-      Fn::Sub: >-
-        https://\${ServerlessRestApi}.execute-api.\${AWS::Region}.amazonaws.com/Prod/hello/
-  HelloWorldFunction:
-    Description: Hello World Lambda Function ARN
-    Value:
-      Fn::GetAtt:
-        - HelloWorldFunction
-        - Arn
-  HelloWorldFunctionIamRole:
-    Description: Implicit IAM Role created for Hello World function
-    Value:
-      Fn::GetAtt:
-        - HelloWorldFunctionRole
-        - Arn
 `
             )
             //
@@ -1994,33 +1929,12 @@ Resources:
       CodeUri: ./src/HelloWorld/
       Handler: HelloWorld::HelloWorld.Function::FunctionHandler
       Runtime: dotnetcore2.1
-      Environment:
-        Variables:
-          PARAM1: VALUE
       Events:
         HelloWorld:
           Type: Api
           Properties:
             Path: /hello
             Method: get
-Outputs:
-  HelloWorldApi:
-    Description: API Gateway endpoint URL for Prod stage for Hello World function
-    Value:
-      Fn::Sub: >-
-        https://\${ServerlessRestApi}.execute-api.\${AWS::Region}.amazonaws.com/Prod/hello/
-  HelloWorldFunction:
-    Description: Hello World Lambda Function ARN
-    Value:
-      Fn::GetAtt:
-        - HelloWorldFunction
-        - Arn
-  HelloWorldFunctionIamRole:
-    Description: Implicit IAM Role created for Hello World function
-    Value:
-      Fn::GetAtt:
-        - HelloWorldFunctionRole
-        - Arn
 `
             )
 
@@ -2218,24 +2132,6 @@ Resources:
       DockerTag: dotnetcore2.1-v1
       DockerContext: ./src/HelloWorld
       Dockerfile: Dockerfile
-Outputs:
-  HelloWorldApi:
-    Description: API Gateway endpoint URL for Prod stage for Hello World function
-    Value:
-      Fn::Sub: >-
-        https://\${ServerlessRestApi}.execute-api.\${AWS::Region}.amazonaws.com/Prod/hello/
-  HelloWorldFunction:
-    Description: Hello World Lambda Function ARN
-    Value:
-      Fn::GetAtt:
-        - HelloWorldFunction
-        - Arn
-  HelloWorldFunctionIamRole:
-    Description: Implicit IAM Role created for Hello World function
-    Value:
-      Fn::GetAtt:
-        - HelloWorldFunctionRole
-        - Arn
 `
             )
 
@@ -2913,24 +2809,6 @@ Resources:
       DockerTag: python3.7-v1
       DockerContext: ./hello_world
       Dockerfile: Dockerfile
-Outputs:
-  HelloWorldApi:
-    Description: API Gateway endpoint URL for Prod stage for Hello World function
-    Value:
-      Fn::Sub: >-
-        https://\${ServerlessRestApi}.execute-api.\${AWS::Region}.amazonaws.com/Prod/hello/
-  HelloWorldFunction:
-    Description: Hello World Lambda Function ARN
-    Value:
-      Fn::GetAtt:
-        - HelloWorldFunction
-        - Arn
-  HelloWorldFunctionIamRole:
-    Description: Implicit IAM Role created for Hello World function
-    Value:
-      Fn::GetAtt:
-        - HelloWorldFunctionRole
-        - Arn
 `
             )
 
