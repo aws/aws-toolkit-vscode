@@ -2058,7 +2058,7 @@
         "createRelease": "ts-node ./build-scripts/createRelease.ts"
     },
     "devDependencies": {
-        "@aws-toolkits/telemetry": "1.0.9",
+        "@aws-toolkits/telemetry": "1.0.11",
         "@sinonjs/fake-timers": "^7.0.5",
         "@types/adm-zip": "^0.4.34",
         "@types/async-lock": "^1.1.3",

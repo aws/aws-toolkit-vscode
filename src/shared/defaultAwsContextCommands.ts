@@ -31,7 +31,7 @@ import { createQuickPick, promptUser } from './ui/picker'
 import { SharedCredentialsProvider } from '../credentials/providers/sharedCredentialsProvider'
 import { getIdeProperties } from './extensionUtilities'
 import { credentialHelpUrl } from './constants'
-import { showErrorWithLogs } from './utilities/messages'
+import { showViewLogsMessage } from './utilities/messages'
 
 export class DefaultAWSContextCommands {
     private readonly _awsContext: AwsContext
@@ -163,7 +163,7 @@ export class DefaultAWSContextCommands {
                 return asString(sharedProviderId)
             }
 
-            const response = await showErrorWithLogs(
+            const response = await showViewLogsMessage(
                 localize(
                     'AWS.message.prompt.credentials.definition.tryAgain',
                     '{0} credentials appear invalid. Try again?',

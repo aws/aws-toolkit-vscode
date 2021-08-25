@@ -11,6 +11,7 @@ import { asEnvironmentVariables } from '../../credentials/credentialsUtilities'
 import { AwsContext, NoActiveCredentialError } from '../../shared/awsContext'
 import { ext } from '../../shared/extensionGlobals'
 import { makeTemporaryToolkitFolder, tryRemoveFolder } from '../../shared/filesystemUtilities'
+import { checklogs } from '../../shared/localizedText'
 import { getLogger } from '../../shared/logger'
 import { SamCliBuildInvocation } from '../../shared/sam/cli/samCliBuild'
 import { getSamCliContext, SamCliContext, getSamCliVersion } from '../../shared/sam/cli/samCliContext'
@@ -20,7 +21,6 @@ import { runSamCliPackage } from '../../shared/sam/cli/samCliPackage'
 import { throwAndNotifyIfInvalid } from '../../shared/sam/cli/samCliValidationUtils'
 import { SettingsConfiguration } from '../../shared/settingsConfiguration'
 import { recordSamDeploy, Result } from '../../shared/telemetry/telemetry'
-import { makeCheckLogsMessage } from '../../shared/utilities/messages'
 import { addCodiconToString } from '../../shared/utilities/textUtilities'
 import { SamDeployWizardResponse, writeSavedBucket } from '../wizards/samDeployWizard'
 
@@ -307,14 +307,8 @@ function enhanceAwsCloudFormationInstructions(
 function outputDeployError(error: Error) {
     getLogger('channel').error(error)
 
-    const checkLogsMessage = makeCheckLogsMessage()
-
     ext.outputChannel.show(true)
-    getLogger('channel').error(
-        'AWS.samcli.deploy.general.error',
-        'An error occurred while deploying a SAM Application. {0}',
-        checkLogsMessage
-    )
+    getLogger('channel').error('AWS.samcli.deploy.general.error', 'Error deploying a SAM Application. {0}', checklogs())
 }
 
 function getDefaultWindowFunctions(): WindowFunctions {
