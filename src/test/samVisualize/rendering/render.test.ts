@@ -282,14 +282,10 @@ describe('samVisualize d3.js rendering of a GraphObject', async function () {
         assert.deepStrictEqual(s.alphaTarget(), RenderConstants.alphaTarget)
     })
 
-    it('error message and view-logs button are defined, but not displayed by default', function () {
+    it('error message is defined, but not displayed by default', function () {
         const errorMessageElem = testDocument.getElementsByClassName('error-message')[0]
         assert.ok(errorMessageElem)
 
         assert.strictEqual(window.getComputedStyle(errorMessageElem).display, 'none')
-
-        const viewLogsButtonElem = testDocument.getElementById('view-logs-button')
-        assert.ok(viewLogsButtonElem)
-        assert.strictEqual(window.getComputedStyle(viewLogsButtonElem).display, 'none')
     })
 })

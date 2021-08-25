@@ -10,6 +10,7 @@ import { GraphObject } from '../graphGeneration/graph'
 import { filterPrimaryOnly } from '../rendering/filter'
 import { MessageTypes } from '../samVisualizeTypes'
 import * as _ from 'lodash'
+import { MessageObject } from '../webviewManagement/samVisualization'
 
 interface NodeDatum extends d3.SimulationNodeDatum {
     name: string
@@ -137,23 +138,14 @@ export class ForceDirectedGraph {
                 .select('body')
                 .append('span')
                 .attr('class', 'error-message')
-                .text('Errors detected in template. Ensure template is valid YAML and follows Template Anatomy.')
-                .style('display', 'none')
-
-            d3.select(testDocument)
-                .select('body')
-                .append('button')
-                .attr('id', 'view-logs-button')
-                .text('View Logs')
+                .text('Errors detected in template, cannot preview.')
                 .style('display', 'none')
         } else {
             d3.select('body')
                 .append('span')
                 .attr('class', 'error-message')
-                .text('Errors detected in template. Ensure template is valid YAML and follows Template Anatomy.')
+                .text('Errors detected in template, cannot preview.')
                 .style('display', 'none')
-
-            d3.select('body').append('button').attr('id', 'view-logs-button').text('View Logs').style('display', 'none')
         }
 
         // Event listeners cannot be added outside of webview
@@ -163,11 +155,6 @@ export class ForceDirectedGraph {
             })
             document.getElementById(allButtonID)?.addEventListener('change', () => {
                 this.update(this.completeGraphObject)
-            })
-            document.getElementById('view-logs-button')?.addEventListener('click', () => {
-                this.vscodeApi!.postMessage({
-                    command: MessageTypes.ViewLogs,
-                })
             })
         }
 
@@ -179,46 +166,52 @@ export class ForceDirectedGraph {
             // Hide the buttons, don't remove because we want to keep the listeners
             this.filterButtonsDiv.style('display', 'none')
 
-            // Display error message + view logs button
+            // Display error message
             d3.select('.error-message').style('display', 'block')
-            d3.select('#view-logs-button').style('display', 'block')
         }
 
         // No live updates during unit tests
         // Contents are tested individually
         if (!testDocument) {
             window.addEventListener('message', event => {
-                const newGraphObject = event.data.graphObject
-                if (newGraphObject === undefined) {
-                    // Clear the graph
-                    this.g.selectAll('g').remove()
+                const message: MessageObject = event.data
+                switch (message.command) {
+                    case MessageTypes.UpdateVisualization: {
+                        const newGraphObject: GraphObject | undefined = message.data
+                        if (newGraphObject === undefined) {
+                            // Clear the graph
+                            this.g.selectAll('g').remove()
 
-                    // Hide the buttons, don't remove because we want to keep the listeners
-                    this.filterButtonsDiv.style('display', 'none')
+                            // Hide the buttons, don't remove because we want to keep the listeners
+                            this.filterButtonsDiv.style('display', 'none')
 
-                    // Display error message + view logs button
-                    d3.select('.error-message').style('display', 'block')
-                    d3.select('#view-logs-button').style('display', 'block')
+                            // Display error message
+                            d3.select('.error-message').style('display', 'block')
 
-                    // Stop ticking
-                    this.simulation.stop()
-                } else {
-                    // Hide error message + view logs button
-                    d3.select('.error-message').style('display', 'none')
-                    d3.select('#view-logs-button').style('display', 'none')
+                            // Stop ticking
+                            this.simulation.stop()
+                        } else {
+                            // Hide error message
+                            d3.select('.error-message').style('display', 'none')
 
-                    // Display the buttons
-                    this.filterButtonsDiv.style('display', 'block')
+                            // Display the buttons
+                            this.filterButtonsDiv.style('display', 'block')
 
-                    // update the complete graph
-                    this.completeGraphObject = newGraphObject
+                            // update the complete graph
+                            this.completeGraphObject = newGraphObject
 
-                    // Re establish the primaryOnly graph
-                    this.primaryOnlyGraphObject = filterPrimaryOnly(newGraphObject, new Set(primaryResourceList))
+                            // Re establish the primaryOnly graph
+                            this.primaryOnlyGraphObject = filterPrimaryOnly(
+                                newGraphObject,
+                                new Set(primaryResourceList)
+                            )
 
-                    const isPrimaryChecked = d3.select(`#${primaryButtonID}`).property('checked')
-                    // Draw graph
-                    this.update(isPrimaryChecked ? this.primaryOnlyGraphObject : this.completeGraphObject)
+                            const isPrimaryChecked = d3.select(`#${primaryButtonID}`).property('checked')
+                            // Draw graph
+                            this.update(isPrimaryChecked ? this.primaryOnlyGraphObject : this.completeGraphObject)
+                        }
+                        break
+                    }
                 }
             })
         }

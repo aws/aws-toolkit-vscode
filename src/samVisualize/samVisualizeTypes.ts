@@ -26,7 +26,6 @@ export enum RenderedLinkTypes {
  * Possible message types the webview can send to the extension
  */
 export enum MessageTypes {
-    ViewLogs = 'ViewLogs',
     Navigate = 'Navigate',
     UpdateVisualization = 'UpdateVisualization',
 }

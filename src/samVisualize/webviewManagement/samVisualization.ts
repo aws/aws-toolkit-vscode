@@ -12,11 +12,10 @@ import * as vscode from 'vscode'
 import * as _ from 'lodash'
 import { generateIconsMap } from '../rendering/icons'
 import { MessageTypes } from '../samVisualizeTypes'
-import { showLogOutputChannel } from '../../shared/logger'
 
 export interface MessageObject {
     command: MessageTypes
-    data?: unknown
+    data?: any
 }
 
 export class SamVisualization {
@@ -177,10 +176,6 @@ export class SamVisualization {
                             })
                         break
                     }
-                    case MessageTypes.ViewLogs: {
-                        showLogOutputChannel()
-                        break
-                    }
                 }
             })
         )
@@ -208,7 +203,8 @@ export class SamVisualization {
         // We want to post the graphObject even if it is undefined,
         // as the rendering code will render an error message if it is undefined.
         this.webviewPanel.webview.postMessage({
-            graphObject: newGraphObject,
+            command: MessageTypes.UpdateVisualization,
+            data: newGraphObject,
         })
 
         // Only generate a ResourceLineMap if the input has generated a valid GraphObject.
