@@ -22,7 +22,7 @@
     "AWS.cdk.explorerNode.app.noStacks": "[No stacks in this App]",
     "AWS.channel.remoteInvoke": "{0} Remote Invocations",
     "AWS.channel.aws.toolkit": "{0} Toolkit",
-    "AWS.channel.aws.toolkit.activation.error": "Error Activating {0} Toolkit: {1}",
+    "AWS.channel.aws.toolkit.activation.error": "Error Activating {0} Toolkit: {1} \n{2}",
     "AWS.codelens.failToInitialize": "Failed to activate template registry. {0} will not appear on SAM template files.",
     "AWS.codelens.failToInitializeCode": "Failed to activate Lambda handler {0}",
     "AWS.codelens.lambda.configEditor": "Edit Debug Configuration (Beta)",
