@@ -28,9 +28,7 @@ const typescriptDetail = {
     extension: '.ts',
 }
 
-export function getLanguageDetails(
-    language: SchemaCodeLangs
-): {
+export function getLanguageDetails(language: SchemaCodeLangs): {
     apiValue: string
     extension: string
 } {
@@ -47,7 +45,7 @@ export function getLanguageDetails(
 }
 
 export function supportsEventBridgeTemplates(runtime: Runtime): boolean {
-    return runtime === 'python3.7' || runtime === 'python3.6' || runtime === 'python3.8'
+    return ['python3.6', 'python3.7', 'python3.8', 'python3.9'].includes(runtime)
 }
 
 export function getApiValueForSchemasDownload(runtime: Runtime): string {

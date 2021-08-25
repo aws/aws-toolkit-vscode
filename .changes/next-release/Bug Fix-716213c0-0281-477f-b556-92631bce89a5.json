@@ -1,4 +1,0 @@
-{
-	"type": "Bug Fix",
-	"description": "SAM/CFN: fix JSON schema path causing a symlink on some operating systems"
-}

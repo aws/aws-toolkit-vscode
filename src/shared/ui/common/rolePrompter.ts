@@ -19,7 +19,7 @@ import { CachedFunction, Prompter, CachedPrompter } from '../prompter'
 import * as nls from 'vscode-nls'
 import * as vscode from 'vscode'
 import { getLogger } from '../../logger/logger'
-import { showErrorWithLogs } from '../../utilities/messages'
+import { showViewLogsMessage } from '../../utilities/messages'
 
 const localize = nls.loadMessageBundle()
 
@@ -78,7 +78,7 @@ export class RolePrompter extends CachedPrompter<IAM.Role> {
                 .then(role => [...temp, { label: role.RoleName, data: role }])
                 .catch(err => {
                     getLogger().error('role prompter: Failed to create new role: %O', err)
-                    showErrorWithLogs(localize('AWS.rolePrompter.createRole.failed', 'Failed to create new role'))
+                    showViewLogsMessage(localize('AWS.rolePrompter.createRole.failed', 'Failed to create new role'))
                     return [...temp]
                 })
             appendedItems.then(items => loader.supplantLast(items))
@@ -120,6 +120,7 @@ export class RolePrompter extends CachedPrompter<IAM.Role> {
         const prompter = createQuickPick(roles, {
             title: this.options.title,
             buttons: this.buttons,
+            placeholder: localize('AWS.rolePrompter.placeholder', 'Select a role'),
         })
 
         const refresh = () => {

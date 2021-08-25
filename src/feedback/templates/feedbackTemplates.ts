@@ -3,6 +3,8 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
+// vscode theme color reference:
+// https://code.visualstudio.com/api/references/theme-color
 export class FeedbackTemplates {
     public static readonly SUBMIT_TEMPLATE = `
     <div id="app">
@@ -16,21 +18,27 @@ export class FeedbackTemplates {
             <label for="negative-sentiment"></label>
         </div>
 
-        <h3 id="feedback-heading">Please enter your feedback</h3>
+        <h3 id="feedback-heading">Feedback</h3>
+
         <div>
             <textarea
-                rows="20"
+                style="width:100%"
+                rows="10"
                 cols="90"
                 v-model="comment"
             ></textarea>
-            <p id="remaining" :class="comment.length > 2000 ? 'exceeds-max-length' : ''">{{ 2000 - comment.length }} character(s) remaining</p>
+            <div>
+                <div style="float: right; font-size: smaller;" id="remaining" :class="comment.length > 2000 ? 'exceeds-max-length' : ''">{{ 2000 - comment.length }} characters remaining</div>
+                <div>
+                    <em>Feedback is <b>anonymous</b>. If you need a reply, <a href="https://github.com/aws/aws-toolkit-vscode/issues/new/choose">contact us on GitHub</a>.</em>
+                </div>
+            </div>
         </div>
 
-        <p>Have an issue or feature request?
-        <a href="https://github.com/aws/aws-toolkit-vscode/issues/new/choose">Talk to us on GitHub instead!</a></p>
-
-        <input v-if="isSubmitting" type="submit" value="Submitting..." disabled>
-        <input v-else type="submit" @click="submitFeedback" :disabled="comment.length === 0 || comment.length > 2000  || sentiment === ''" value="Submit">
+        <p>
+            <input v-if="isSubmitting" type="submit" value="Submitting..." disabled>
+            <input v-else type="submit" @click="submitFeedback" :disabled="comment.length === 0 || comment.length > 2000  || sentiment === ''" value="Submit">
+        </p>
 
         <div id="error" v-if="error !== ''">
             <strong>{{ error }}</strong>

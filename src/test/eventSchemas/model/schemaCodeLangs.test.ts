@@ -29,7 +29,8 @@ describe('getApiValueForSchemasDownload', function () {
             switch (runtime) {
                 case 'python3.6':
                 case 'python3.7':
-                case 'python3.8': {
+                case 'python3.8':
+                case 'python3.9': {
                     const result = getApiValueForSchemasDownload(runtime)
                     assert.strictEqual(result, 'Python36', 'Api value used by schemas api')
                     break

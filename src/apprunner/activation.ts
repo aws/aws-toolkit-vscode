@@ -6,7 +6,7 @@
 import * as vscode from 'vscode'
 import * as telemetry from '../shared/telemetry/telemetry'
 import * as nls from 'vscode-nls'
-import { showErrorWithLogs } from '../shared/utilities/messages'
+import { showViewLogsMessage } from '../shared/utilities/messages'
 import { AppRunnerServiceNode } from './explorer/apprunnerServiceNode'
 import { getLogger } from '../shared/logger/logger'
 import { createAppRunnerService } from './commands/createService'
@@ -83,7 +83,7 @@ export async function activate(context: ExtContext): Promise<void> {
                     await command(...args)
                 } catch (err) {
                     getLogger().error(`${tuple[1]}: %O`, err)
-                    showErrorWithLogs(tuple[1])
+                    showViewLogsMessage(tuple[1])
                 }
             })
         )

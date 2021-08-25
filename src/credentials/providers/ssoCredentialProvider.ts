@@ -4,7 +4,8 @@
  */
 
 import * as vscode from 'vscode'
-import { Credentials, SSO } from 'aws-sdk'
+import { Credentials } from '@aws-sdk/types'
+import { SSO } from '@aws-sdk/client-sso'
 import { getLogger } from '../../shared/logger'
 import { SsoAccessTokenProvider } from '../sso/ssoAccessTokenProvider'
 import * as nls from 'vscode-nls'
@@ -22,19 +23,17 @@ export class SsoCredentialProvider {
     public async refreshCredentials(): Promise<Credentials> {
         try {
             const accessToken = await this.ssoAccessTokenProvider.accessToken()
-            const roleCredentials = await this.ssoClient
-                .getRoleCredentials({
-                    accountId: this.ssoAccount,
-                    roleName: this.ssoRole,
-                    accessToken: accessToken.accessToken,
-                })
-                .promise()
+            const roleCredentials = await this.ssoClient.getRoleCredentials({
+                accountId: this.ssoAccount,
+                roleName: this.ssoRole,
+                accessToken: accessToken.accessToken,
+            })
 
-            return new Credentials({
+            return {
                 accessKeyId: roleCredentials.roleCredentials!.accessKeyId!,
                 secretAccessKey: roleCredentials.roleCredentials!.secretAccessKey!,
                 sessionToken: roleCredentials.roleCredentials?.sessionToken,
-            })
+            }
         } catch (err) {
             if (err.code === 'UnauthorizedException') {
                 this.ssoAccessTokenProvider.invalidate()

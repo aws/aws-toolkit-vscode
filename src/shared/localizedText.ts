@@ -4,6 +4,7 @@
  */
 
 import * as nls from 'vscode-nls'
+import { getIdeProperties } from './extensionUtilities'
 const localize = nls.loadMessageBundle()
 
 export const yes: string = localize('AWS.generic.response.yes', 'Yes')
@@ -15,3 +16,15 @@ export const invalidNumberWarning: string = localize(
     'AWS.validateTime.error.invalidNumber',
     'Input must be a positive number'
 )
+export const viewDocs: string = localize('AWS.generic.viewDocs', 'View Documentation')
+
+export function checklogs(): string {
+    const message = localize(
+        'AWS.error.check.logs',
+        'Check the logs by running the "View {0} Toolkit Logs" command from the {1}.',
+        getIdeProperties().company,
+        getIdeProperties().commandPalette
+    )
+
+    return message
+}

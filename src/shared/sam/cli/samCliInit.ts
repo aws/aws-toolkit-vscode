@@ -44,6 +44,10 @@ export async function runSamCliInit(initArguments: SamCliInitArgs, context: SamC
         // specifying baseImage implies a packageType of image
         args.push('--package-type', 'Image')
         args.push('--base-image', initArguments.baseImage)
+        // TODO: Allow users to select app template for base image
+        if (!initArguments.baseImage.includes('nodejs10.x')) {
+            args.push('--app-template', 'hello-world-lambda-image')
+        }
     }
 
     if (initArguments.extraContent!) {

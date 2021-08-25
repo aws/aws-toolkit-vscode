@@ -5,7 +5,12 @@
 
 import * as _ from 'lodash'
 
-export enum ControlSignal { Retry, Exit, Back, Continue }
+export enum ControlSignal {
+    Retry,
+    Exit,
+    Back,
+    Continue,
+}
 
 export interface StepResult<TState> {
     /** A mutated form of the present state. This will be passed along to the next step */
@@ -26,7 +31,7 @@ export type Branch<TState> = StepFunction<TState>[]
 
 /**
  * State machine with backtracking and dynamic branching functionality.
- * Transitions are abstracted away as a 'step' function, which return both the new state and any extra 
+ * Transitions are abstracted away as a 'step' function, which return both the new state and any extra
  * steps that the machine should use.
  */
 export class StateMachineController<TState> {
@@ -47,8 +52,12 @@ export class StateMachineController<TState> {
         return step !== undefined && this.steps.indexOf(step) > -1
     }
 
-    public get currentStep(): number { return this.internalStep + 1 }
-    public get totalSteps(): number { return this.steps.length }
+    public get currentStep(): number {
+        return this.internalStep + 1
+    }
+    public get totalSteps(): number {
+        return this.steps.length
+    }
 
     protected rollbackState(): void {
         if (this.internalStep === 0) {
@@ -71,8 +80,10 @@ export class StateMachineController<TState> {
     }
 
     protected detectCycle(step: StepFunction<TState>): TState | undefined {
-        return this.previousStates.find((pastState, index) => index !== this.internalStep && 
-            (this.steps[index] === step && _.isEqual(this.state, pastState)))
+        return this.previousStates.find(
+            (pastState, index) =>
+                index !== this.internalStep && this.steps[index] === step && _.isEqual(this.state, pastState)
+        )
     }
 
     /** Add new steps dynamically at runtime. Only used internally. */
@@ -87,8 +98,10 @@ export class StateMachineController<TState> {
         const result = await this.steps[this.internalStep](_.cloneDeep(this.state))
 
         function isMachineResult(result: any): result is StepResult<TState> {
-            return (result !== undefined && 
-                (result.nextState !== undefined || result.nextSteps !== undefined || result.controlSignal !== undefined))
+            return (
+                result !== undefined &&
+                (result.nextState !== undefined || result.nextSteps !== undefined || result.controlSignal !== undefined)
+            )
         }
 
         if (isMachineResult(result)) {
@@ -104,17 +117,20 @@ export class StateMachineController<TState> {
      */
     public async run(): Promise<TState | undefined> {
         while (this.internalStep < this.steps.length) {
-            const cycle = this.detectCycle(this.steps[this.internalStep]) 
+            const cycle = this.detectCycle(this.steps[this.internalStep])
             if (cycle !== undefined) {
-                throw Error('Cycle detected in state machine controller: '
-                    + `Step ${this.currentStep} -> Step ${this.previousStates.indexOf(cycle)+1}`)
+                throw Error(
+                    'Cycle detected in state machine controller: ' +
+                        `Step ${this.currentStep} -> Step ${this.previousStates.indexOf(cycle) + 1}`
+                )
             }
 
             const { nextState, nextSteps, controlSignal } = await this.processNextStep()
 
             if (controlSignal === ControlSignal.Exit) {
                 return undefined
-            } if (controlSignal === ControlSignal.Retry) {
+            }
+            if (controlSignal === ControlSignal.Retry) {
                 this.state = this.previousStates[this.internalStep]
                 continue
             } else if (nextState === undefined || controlSignal === ControlSignal.Back) {
