@@ -181,8 +181,7 @@ describe('StepFunctions VisualizeStateMachine', async function () {
         assert.strictEqual(vis.getIsPanelDisposed(), false)
         assert.strictEqual(vis.getDisposables().length, 5)
 
-        let panel = vis.getPanel()
-        panel = panel as vscode.WebviewPanel
+        const panel = vis.getPanel() as vscode.WebviewPanel
         assert.ok(panel)
         assert.ok(panel.title.length > 0)
         assert.strictEqual(panel.viewType, 'stateMachineVisualization')
