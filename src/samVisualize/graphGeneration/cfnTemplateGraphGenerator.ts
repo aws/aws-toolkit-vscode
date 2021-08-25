@@ -7,7 +7,6 @@ import { yamlParse } from 'yaml-cfn'
 import { TemplateLinkTypes } from '../samVisualizeTypes'
 import * as _ from 'lodash'
 import { getLogger } from '../../shared/logger/logger'
-import * as vscode from 'vscode'
 
 /**
  * @param inputYaml A string representing a YAML template
@@ -26,7 +25,6 @@ function yamlStringToObject(inputYaml: string): Record<string, any> | undefined 
             )}"... Please ensure the template is valid YAML: 0%`,
             err
         )
-        vscode.window.showErrorMessage(`Error rendering template. ${err}`)
     }
 }
 
@@ -136,10 +134,7 @@ export function generateGraphFromYaml(inputYaml: string): GraphObject | undefine
         // If the input yaml does not have a 'Resources' key, no graph can be generated
         if (!_.isObjectLike(resources)) {
             getLogger().error(
-                'SAM Visualize: Error rendering SAM template. Cannot render a template with no `Resources` key.'
-            )
-            vscode.window.showErrorMessage(
-                'Error rendering template. Cannot render a template with missing or empty Resources key. See https://docs.aws.amazon.com/AWSCloudFormation/latest/UserGuide/template-anatomy.html'
+                'SAM Visualize: Error rendering SAM template. Cannot render a template with a missing or invalid `Resources` key.'
             )
             return undefined
         }
@@ -154,17 +149,11 @@ export function generateGraphFromYaml(inputYaml: string): GraphObject | undefine
                 getLogger().error(
                     `SAM Visualize: Error rendering SAM template. The '${resourceName}' resource definition is invalid.`
                 )
-                vscode.window.showErrorMessage(
-                    `Error rendering template. The '${resourceName}' resource definition is invalid.`
-                )
                 return undefined
             }
             if (!_.isString(resources[resourceName]['Type'])) {
                 getLogger().error(
-                    `SAM Visualize: Error rendering SAM template. The '${resourceName}' has an invalid or missing Type.`
-                )
-                vscode.window.showErrorMessage(
-                    `Error rendering template. The '${resourceName}' resource has an invalid or missing Type.`
+                    `SAM Visualize: Error rendering SAM template. The '${resourceName}' has an missing or invalid Type.`
                 )
                 return undefined
             }

@@ -21,3 +21,12 @@ export enum RenderedLinkTypes {
     // A general category to represent any intrinsic function. Includes GetAtt, Sub, and Ref.
     IntrinsicFunction = 'Intrinsic Function',
 }
+
+/**
+ * Possible message types the webview can send to the extension
+ */
+export enum MessageTypes {
+    ViewLogs = 'ViewLogs',
+    Navigate = 'Navigate',
+    UpdateVisualization = 'UpdateVisualization',
+}

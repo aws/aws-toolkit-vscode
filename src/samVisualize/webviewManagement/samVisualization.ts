@@ -11,6 +11,14 @@ import { readFileSync } from 'fs-extra'
 import * as vscode from 'vscode'
 import * as _ from 'lodash'
 import { generateIconsMap } from '../rendering/icons'
+import { MessageTypes } from '../samVisualizeTypes'
+import { showLogOutputChannel } from '../../shared/logger'
+
+export interface MessageObject {
+    command: MessageTypes
+    data?: unknown
+}
+
 export class SamVisualization {
     private textDocument: vscode.TextDocument
 
@@ -64,14 +72,18 @@ export class SamVisualization {
             }
         )
 
-        try {
-            const graphObject = generateGraphFromYaml(textDocument.getText())
+        const graphObject = generateGraphFromYaml(textDocument.getText())
 
-            // Only generate a ResourceLineMap if the input has generated a valid GraphObject.
-            if (graphObject) {
-                this.resourceLineMap = generateResourceLineMap(textDocument.getText())
-            }
+        // Only generate a ResourceLineMap if the input has generated a valid GraphObject.
+        if (graphObject) {
+            this.resourceLineMap = generateResourceLineMap(textDocument.getText())
+        }
 
+        // A mock extensionContext is used during testing
+        // If the extensionPath is an empty string, extensionContext.asAbsolutePath will not work
+        // Skip resource fetching during tests here, they're tested in the their own suites.
+        // Eg. icons.tests.ts tests the fetching of the icons, navigation.test.ts tests the fetching of primary resources etc.
+        if (this.extensionContext.extensionPath !== '') {
             const primaryResourceList = JSON.parse(
                 readFileSync(
                     this.extensionContext.asAbsolutePath(join('resources', 'light', 'samVisualize', 'resources.json'))
@@ -102,11 +114,7 @@ export class SamVisualization {
                 webviewBodyScriptUri,
                 panel.webview.cspSource
             )
-        } catch {
-            // During tests, a mock context is used, so the absolute paths will not resolve.
-            // Skip the fetching of particular resources.
         }
-
         return panel
     }
     private setUpWebviewPanel(textDocument: vscode.TextDocument): vscode.WebviewPanel {
@@ -136,30 +144,44 @@ export class SamVisualization {
 
         // Handle click events from the webview
         this.disposables.push(
-            panel.webview.onDidReceiveMessage(message => {
-                // Reveal the template to the left of the webview, unless the webview is in the first column.
-                // In this case, reveal to the right. This way, the template will also reveal beside the webview.
-                const columnToShow =
-                    this.webviewPanel.viewColumn === vscode.ViewColumn.One
-                        ? vscode.ViewColumn.Two
-                        : this.webviewPanel.viewColumn!.valueOf() - 1
+            panel.webview.onDidReceiveMessage((message: MessageObject) => {
+                switch (message.command) {
+                    case MessageTypes.Navigate: {
+                        // Reveal the template to the left of the webview, unless the webview is in the first column.
+                        // In this case, reveal to the right. This way, the template will also reveal beside the webview.
+                        const columnToShow =
+                            this.webviewPanel.viewColumn === vscode.ViewColumn.One
+                                ? vscode.ViewColumn.Two
+                                : this.webviewPanel.viewColumn!.valueOf() - 1
 
-                vscode.window
-                    .showTextDocument(this.textDocument, { preserveFocus: true, viewColumn: columnToShow })
-                    .then(activeEditor => {
-                        //resource name for clicked resource stored in message.data
-                        const pos = this.resourceLineMap![message.data]
-                        if (pos) {
-                            //const decorations: vscode.DecorationOptions[] = []
-                            const startPosition = activeEditor.document.positionAt(pos.start).with({ character: 0 })
-                            const endPosition = activeEditor.document.positionAt(pos.end)
-                            const range = new vscode.Range(startPosition, endPosition)
-                            activeEditor.revealRange(range, vscode.TextEditorRevealType.InCenter)
-                            //decorations.push({ range })
-                            //activeEditor.setDecorations(decorationType, decorations)
-                            activeEditor.selection = new vscode.Selection(range.start, range.end)
-                        }
-                    })
+                        vscode.window
+                            .showTextDocument(this.textDocument, { preserveFocus: true, viewColumn: columnToShow })
+                            .then(activeEditor => {
+                                //resource name for clicked resource stored in message.data
+                                let pos
+                                if (_.isString(message.data)) {
+                                    pos = this.resourceLineMap![message.data]
+                                }
+                                if (pos) {
+                                    //const decorations: vscode.DecorationOptions[] = []
+                                    const startPosition = activeEditor.document
+                                        .positionAt(pos.start)
+                                        .with({ character: 0 })
+                                    const endPosition = activeEditor.document.positionAt(pos.end)
+                                    const range = new vscode.Range(startPosition, endPosition)
+                                    activeEditor.revealRange(range, vscode.TextEditorRevealType.InCenter)
+                                    //decorations.push({ range })
+                                    //activeEditor.setDecorations(decorationType, decorations)
+                                    activeEditor.selection = new vscode.Selection(range.start, range.end)
+                                }
+                            })
+                        break
+                    }
+                    case MessageTypes.ViewLogs: {
+                        showLogOutputChannel()
+                        break
+                    }
+                }
             })
         )
 

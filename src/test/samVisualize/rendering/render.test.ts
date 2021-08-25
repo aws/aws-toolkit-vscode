@@ -5,7 +5,7 @@
 import * as assert from 'assert'
 import { ForceDirectedGraph } from '../../../samVisualize/rendering/forceDirectedGraph'
 import * as RenderConstants from '../../../samVisualize/rendering/renderConstants'
-import { JSDOM } from 'jsdom'
+import * as jsdom from 'jsdom'
 import { GraphObject } from '../../../samVisualize/graphGeneration/graph'
 
 const testGraphData: GraphObject = {
@@ -74,80 +74,91 @@ const testGraphData: GraphObject = {
 }
 
 describe('samVisualize d3.js rendering of a GraphObject', async function () {
-    let doc: Document
+    let testDocument: Document
+    let window: jsdom.DOMWindow
     let forceDirectedGraph: ForceDirectedGraph
 
     beforeEach(function () {
-        doc = new JSDOM(`<html><body></body></html>`, { runScripts: 'dangerously', resources: 'usable' }).window
-            .document
-        forceDirectedGraph = new ForceDirectedGraph(testGraphData, [], {}, doc)
+        const dom = new jsdom.JSDOM(`<html><body></body></html>`, { runScripts: 'dangerously', resources: 'usable' })
+        window = dom.window
+        testDocument = window.document
+
+        forceDirectedGraph = new ForceDirectedGraph(testGraphData, [], {}, testDocument)
     })
 
     it('constructs an svg element with specified width and height', function () {
-        forceDirectedGraph.constructSVG(500, 500, 'svg', doc)
-        assert.ok(doc.getElementById('svg'))
-        assert.strictEqual(doc.getElementById('svg')!.getAttribute('width'), '500')
-        assert.strictEqual(doc.getElementById('svg')!.getAttribute('height'), '500')
+        forceDirectedGraph.constructSVG(500, 500, 'svg', testDocument)
+        assert.ok(testDocument.getElementById('svg'))
+        assert.strictEqual(testDocument.getElementById('svg')!.getAttribute('width'), '500')
+        assert.strictEqual(testDocument.getElementById('svg')!.getAttribute('height'), '500')
     })
 
     it('defines a marker to represent an arrowhead', function () {
-        const svg = forceDirectedGraph.constructSVG(500, 500, 'svg', doc)
+        const svg = forceDirectedGraph.constructSVG(500, 500, 'svg', testDocument)
         forceDirectedGraph.defineArrowHead(svg, 'test-arrowhead')
 
-        assert.ok(doc.getElementById('test-arrowhead'))
+        assert.ok(testDocument.getElementById('test-arrowhead'))
 
-        assert.strictEqual(
-            doc.getElementById('test-arrowhead')?.getElementsByTagName('path')[0]!.style.opacity,
-            RenderConstants.LinkOpacity.toString()
-        )
+        const arrowheadPathElem = testDocument.getElementById('test-arrowhead')?.getElementsByTagName('path')[0]
+        assert.ok(arrowheadPathElem)
+
+        assert.strictEqual(window.getComputedStyle(arrowheadPathElem).opacity, RenderConstants.LinkOpacity.toString())
         // CorrectViewbox
         assert.strictEqual(
-            doc.getElementById('test-arrowhead')!.getAttribute('viewBox'),
+            testDocument.getElementById('test-arrowhead')!.getAttribute('viewBox'),
             RenderConstants.arrowheadViewbox
         )
         // Square viewbox
         assert.strictEqual(
-            doc.getElementById('test-arrowhead')!.getAttribute('markerWidth'),
+            testDocument.getElementById('test-arrowhead')!.getAttribute('markerWidth'),
             RenderConstants.arrowheadSize.toString()
         )
         assert.strictEqual(
-            doc.getElementById('test-arrowhead')!.getAttribute('markerHeight'),
+            testDocument.getElementById('test-arrowhead')!.getAttribute('markerHeight'),
             RenderConstants.arrowheadSize.toString()
         )
 
         // Alignment
-        assert.strictEqual(doc.getElementById('test-arrowhead')!.getAttribute('refX'), '0')
-        assert.strictEqual(doc.getElementById('test-arrowhead')!.getAttribute('refY'), '0')
+        assert.strictEqual(testDocument.getElementById('test-arrowhead')!.getAttribute('refX'), '0')
+        assert.strictEqual(testDocument.getElementById('test-arrowhead')!.getAttribute('refY'), '0')
     })
 
     it('appends container g element to svg', function () {
-        const svg = forceDirectedGraph.constructSVG(500, 500, 'svg', doc)
+        const svg = forceDirectedGraph.constructSVG(500, 500, 'svg', testDocument)
         forceDirectedGraph.appendGContainerElement(svg, 'test-container')
 
-        assert.ok(doc.getElementById('test-container'))
+        assert.ok(testDocument.getElementById('test-container'))
     })
 
     it('creates a path element for each link in the graph', function () {
-        const svg = forceDirectedGraph.constructSVG(500, 500, 'svg', doc)
+        const svg = forceDirectedGraph.constructSVG(500, 500, 'svg', testDocument)
         const gContainer = forceDirectedGraph.appendGContainerElement(svg)
 
         forceDirectedGraph.constructLinks(gContainer, testGraphData.links, 'test-linkContainer')
 
-        assert.ok(doc.getElementById('test-linkContainer'))
-        const linkList = doc.getElementById('test-linkContainer')?.querySelectorAll('.link')
+        assert.ok(testDocument.getElementById('test-linkContainer'))
+        const linkList = testDocument.getElementById('test-linkContainer')?.querySelectorAll('.link')
         assert.strictEqual(linkList?.length, testGraphData.links.length)
         linkList.forEach(link => {
             // 2 paths per link
             assert.deepStrictEqual(link.getElementsByTagName('path').length, 2)
+
             // First path is rendered path
+            const renderedPathElem = link.getElementsByTagName('path')[0]
+            assert.ok(renderedPathElem)
+
             assert.deepStrictEqual(
-                link.getElementsByTagName('path')[0].style.strokeOpacity,
+                window.getComputedStyle(renderedPathElem).strokeOpacity,
                 RenderConstants.LinkOpacity.toString()
             )
 
             // Second path is invisible tooltip path
-            assert.ok(link.getElementsByTagName('path')[1].getElementsByTagName('title'))
-            assert.deepStrictEqual(link.getElementsByTagName('path')[1].style.strokeOpacity, '0')
+            const tooltipPathElem = link.getElementsByTagName('path')[1]
+            assert.ok(tooltipPathElem)
+            // Includes tooltip
+            assert.ok(tooltipPathElem.getElementsByTagName('title'))
+            // Invisible
+            assert.deepStrictEqual(window.getComputedStyle(tooltipPathElem).strokeOpacity, '0')
         })
     })
     it('calculates correct vectors for links to surface of node', function () {
@@ -163,22 +174,22 @@ describe('samVisualize d3.js rendering of a GraphObject', async function () {
         assert.ifError(forceDirectedGraph.scaleLinkVector(0, 0, 0))
     })
     it('creates a g element for each node in the graph', function () {
-        const svg = forceDirectedGraph.constructSVG(500, 500, 'svg', doc)
+        const svg = forceDirectedGraph.constructSVG(500, 500, 'svg', testDocument)
         const gContainer = forceDirectedGraph.appendGContainerElement(svg)
 
         forceDirectedGraph.constructNodes(gContainer, testGraphData.nodes, {}, undefined, 'test-nodeContainer')
 
-        const nodeList = doc.getElementById('test-nodeContainer')?.querySelectorAll('.node')
+        const nodeList = testDocument.getElementById('test-nodeContainer')?.querySelectorAll('.node')
         assert.strictEqual(nodeList?.length, testGraphData.nodes.length)
     })
 
     it('creates correctly labeled circular images for each node ', function () {
-        const svg = forceDirectedGraph.constructSVG(500, 500, 'svg', doc)
+        const svg = forceDirectedGraph.constructSVG(500, 500, 'svg', testDocument)
         const gContainer = forceDirectedGraph.appendGContainerElement(svg)
 
         forceDirectedGraph.constructNodes(gContainer, testGraphData.nodes, {}, undefined, 'test-nodeContainer')
 
-        const nodeList = doc.getElementById('test-nodeContainer')?.querySelectorAll('.node')
+        const nodeList = testDocument.getElementById('test-nodeContainer')?.querySelectorAll('.node')
         assert.ok(nodeList)
 
         for (let i = 0; i < nodeList.length; i++) {
@@ -214,27 +225,36 @@ describe('samVisualize d3.js rendering of a GraphObject', async function () {
     })
 
     it('creates two radio buttons to toggle filters', function () {
-        forceDirectedGraph.drawFilterRadioButtons('test-primaryButton', 'test-allButton', doc, 'test-buttonGroup')
+        forceDirectedGraph.drawFilterRadioButtons(
+            'test-primaryButton',
+            'test-allButton',
+            testDocument,
+            'test-buttonGroup'
+        )
 
-        assert.ok(doc.getElementById('test-buttonGroup'))
+        assert.ok(testDocument.getElementById('test-buttonGroup'))
         // Primary button exists and is within div
-        assert.ok(doc.getElementById('test-buttonGroup')?.contains(doc.getElementById('test-primaryButton')))
-        assert.strictEqual(doc.getElementById('test-primaryButton')!.getAttribute('type'), 'radio')
+        assert.ok(
+            testDocument.getElementById('test-buttonGroup')?.contains(testDocument.getElementById('test-primaryButton'))
+        )
+        assert.strictEqual(testDocument.getElementById('test-primaryButton')!.getAttribute('type'), 'radio')
 
         // Default primary is checked
-        assert.ok(doc.getElementById('test-primaryButton')!.getAttribute('checked'))
+        assert.ok(testDocument.getElementById('test-primaryButton')!.getAttribute('checked'))
 
         // All button exists and is within div
-        assert.ok(doc.getElementById('test-buttonGroup')?.contains(doc.getElementById('test-allButton')))
-        assert.strictEqual(doc.getElementById('test-allButton')!.getAttribute('type'), 'radio')
+        assert.ok(
+            testDocument.getElementById('test-buttonGroup')?.contains(testDocument.getElementById('test-allButton'))
+        )
+        assert.strictEqual(testDocument.getElementById('test-allButton')!.getAttribute('type'), 'radio')
 
         // All button is unchecked
-        assert.ifError(doc.getElementById('test-allButton')!.getAttribute('checked'))
+        assert.ifError(testDocument.getElementById('test-allButton')!.getAttribute('checked'))
 
         // Buttons have same name, forming a radio button group
         assert.strictEqual(
-            doc.getElementById('test-primaryButton')!.getAttribute('name'),
-            doc.getElementById('test-allButton')!.getAttribute('name')
+            testDocument.getElementById('test-primaryButton')!.getAttribute('name'),
+            testDocument.getElementById('test-allButton')!.getAttribute('name')
         )
     })
 
@@ -260,5 +280,16 @@ describe('samVisualize d3.js rendering of a GraphObject', async function () {
         forceDirectedGraph.ticked()
         // After hitting reheat goal, target is set to long term value
         assert.deepStrictEqual(s.alphaTarget(), RenderConstants.alphaTarget)
+    })
+
+    it('error message and view-logs button are defined, but not displayed by default', function () {
+        const errorMessageElem = testDocument.getElementsByClassName('error-message')[0]
+        assert.ok(errorMessageElem)
+
+        assert.strictEqual(window.getComputedStyle(errorMessageElem).display, 'none')
+
+        const viewLogsButtonElem = testDocument.getElementById('view-logs-button')
+        assert.ok(viewLogsButtonElem)
+        assert.strictEqual(window.getComputedStyle(viewLogsButtonElem).display, 'none')
     })
 })

@@ -11,7 +11,7 @@ import { RenderedLinkTypes, TemplateLinkTypes } from '../samVisualizeTypes'
 export type Link = {
     source: string
     target: string
-    type?: string
+    type: string
 }
 
 /**
@@ -20,7 +20,7 @@ export type Link = {
 export type Node = {
     name: string
     // Takes the form <a>::<b>::<c> eg. 'AWS::Serverless::Function'
-    type?: string
+    type: string
 }
 
 /**
@@ -65,12 +65,12 @@ export class Graph {
      *
      * Exists to avoid iteration over the graph.links list to check for duplicates
      */
-    private readonly linkMap: Map<string, string>
+    private readonly linkMap: Map<string, string | undefined>
 
     constructor() {
         this.graph = { nodes: [], links: [] }
         this.nodeSet = new Set<string>()
-        this.linkMap = new Map<string, string>()
+        this.linkMap = new Map<string, string | undefined>()
     }
 
     /**
@@ -82,10 +82,12 @@ export class Graph {
      * @param targetNodeName A string representing the name of the destination node
      * @param linkType A string representing the type of link
      */
-    public createLink(sourceNodeName: string, targetNodeName: string, linkType?: string): void {
-        const generalizedLinkType = [TemplateLinkTypes.GetAtt, TemplateLinkTypes.Ref, TemplateLinkTypes.Sub].find(
-            type => type == linkType
-        )
+    public createLink(sourceNodeName: string, targetNodeName: string, linkType: string): void {
+        const generalizedLinkType = [
+            TemplateLinkTypes.GetAtt.toString(),
+            TemplateLinkTypes.Ref.toString(),
+            TemplateLinkTypes.Sub.toString(),
+        ].includes(linkType)
             ? RenderedLinkTypes.IntrinsicFunction
             : RenderedLinkTypes.DependsOn
 
@@ -106,7 +108,6 @@ export class Graph {
                 this.linkMap.set(newLinkIdentifier, generalizedLinkType)
                 this.graph.links.push(newLink)
             }
-
             // ONLY replace an existing link between two nodes if the exisiting link is of type DependsOn and the new link is of type Intrinsic Function.
             // DependsOn is implied by Intrinsic Function
             // We check if the exisiting link type was DependsOn instead of just checking if the new link type is IntrinsicFunction
@@ -134,7 +135,7 @@ export class Graph {
      * @param nodeName A string representing the name of the node to initialize in the graph
      * @param nodeType A string representing the type of the node to initialize in the graph
      */
-    public initNode(nodeName: string, nodeType?: string): void {
+    public initNode(nodeName: string, nodeType: string): void {
         if (!this.nodeSet.has(nodeName)) {
             // Register a node as existing in the graph
             this.nodeSet.add(nodeName)

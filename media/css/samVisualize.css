@@ -70,3 +70,12 @@ body.vscode-high-contrast .arrowhead path {
     left: 50%;
     transform: translate(-50%, 50%);
 }
+
+#view-logs-button {
+    cursor: pointer;
+    font-weight: bold;
+    position: absolute;
+    bottom: 40%;
+    left: 50%;
+    transform: translate(-50%, 50%);
+}
