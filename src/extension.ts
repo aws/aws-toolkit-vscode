@@ -254,12 +254,18 @@ export async function activate(context: vscode.ExtensionContext) {
 
         ext.telemetry.assertPassiveTelemetry(ext.didReload())
     } catch (error) {
+        const stacktrace = (error as Error).stack?.split('\n')
+        // truncate if the stacktrace is unusually long
+        if (stacktrace !== undefined && stacktrace.length > 40) {
+            stacktrace.length = 40
+        }
         getLogger('channel').error(
             localize(
                 'AWS.channel.aws.toolkit.activation.error',
-                'Error Activating {0} Toolkit: {1}',
+                'Error Activating {0} Toolkit: {1} \n{2}',
                 getIdeProperties().company,
-                (error as Error).message
+                (error as Error).message,
+                stacktrace?.join('\n')
             )
         )
         throw error
