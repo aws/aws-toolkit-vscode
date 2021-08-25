@@ -54,6 +54,7 @@
     "AWS.stepFunctions.publishWizard.stateMachineNameToUpdate.noStateMachines.detail": "Create a state machine before proceeding. See documentation for details.",
     "AWS.stepFunctions.publishWizard.stateMachineNameToUpdate.title": "Select state machine to update ({0})",
     "AWS.stepFunctions.render": "Render graph",
+    "AWS.command.samVisualize.renderTemplate": "Render CloudFormation template",
     "AWS.stepfunctions.template.helloWorld.description": "A basic example using a Pass state.",
     "AWS.stepfunctions.template.retryFailure.description": "An example of a Task state using a retry policy to handle Lambda failures.",
     "AWS.stepfunctions.template.waitState.description": "Delays the state machine from continuing for a specified time.",
