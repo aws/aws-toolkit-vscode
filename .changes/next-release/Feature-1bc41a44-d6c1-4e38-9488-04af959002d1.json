@@ -1,0 +1,4 @@
+{
+	"type": "Feature",
+	"description": "Step Functions: Adds ability to render state machine graph from AWS Explorer."
+}

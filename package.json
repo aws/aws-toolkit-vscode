@@ -1033,9 +1033,14 @@
                     "group": "0@1"
                 },
                 {
-                    "command": "aws.executeStateMachine",
+                    "command": "aws.renderStateMachineGraph",
                     "when": "view == aws.explorer && viewItem == awsStateMachineNode && !isCloud9",
                     "group": "0@2"
+                },
+                {
+                    "command": "aws.executeStateMachine",
+                    "when": "view == aws.explorer && viewItem == awsStateMachineNode && !isCloud9",
+                    "group": "0@3"
                 },
                 {
                     "command": "aws.s3.createBucket",
@@ -1542,6 +1547,16 @@
             {
                 "command": "aws.executeStateMachine",
                 "title": "%AWS.command.executeStateMachine%",
+                "category": "%AWS.title%",
+                "cloud9": {
+                    "cn": {
+                        "category": "%AWS.title.cn%"
+                    }
+                }
+            },
+            {
+                "command": "aws.renderStateMachineGraph",
+                "title": "%AWS.command.renderStateMachineGraph%",
                 "category": "%AWS.title%",
                 "cloud9": {
                     "cn": {
