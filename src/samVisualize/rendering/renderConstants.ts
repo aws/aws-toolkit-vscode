@@ -26,13 +26,13 @@ export const secondaryTextSize = 12
  * Determines how far below a Node the primary text sits.
  * Higher value means lower placement.
  */
-export const primaryLabelYOffset = 45
+export const primaryLabelYOffset = 48
 
 /**
  * Determines how far below a Node the secondary text sits.
  * Higher value means lower placement.
  */
-export const secondaryLabelYOffset = 60
+export const secondaryLabelYOffset = 65
 
 /**
  * Determines the relative growth of a node on mouse over.

@@ -88,39 +88,32 @@ describe('samVisualize d3.js rendering of a GraphObject', async function () {
 
     it('constructs an svg element with specified width and height', function () {
         forceDirectedGraph.constructSVG(500, 500, 'svg', testDocument)
-        assert.ok(testDocument.getElementById('svg'))
-        assert.strictEqual(testDocument.getElementById('svg')!.getAttribute('width'), '500')
-        assert.strictEqual(testDocument.getElementById('svg')!.getAttribute('height'), '500')
+        const svgElem = testDocument.getElementById('svg')
+        assert.ok(svgElem)
+        assert.strictEqual(svgElem.getAttribute('width'), '500')
+        assert.strictEqual(svgElem.getAttribute('height'), '500')
     })
 
     it('defines a marker to represent an arrowhead', function () {
         const svg = forceDirectedGraph.constructSVG(500, 500, 'svg', testDocument)
         forceDirectedGraph.defineArrowHead(svg, 'test-arrowhead')
 
-        assert.ok(testDocument.getElementById('test-arrowhead'))
+        const arrowheadDefElem = testDocument.getElementById('test-arrowhead')
+        assert.ok(arrowheadDefElem)
 
-        const arrowheadPathElem = testDocument.getElementById('test-arrowhead')?.getElementsByTagName('path')[0]
+        const arrowheadPathElem = arrowheadDefElem.getElementsByTagName('path')[0]
         assert.ok(arrowheadPathElem)
 
         assert.strictEqual(window.getComputedStyle(arrowheadPathElem).opacity, RenderConstants.LinkOpacity.toString())
         // CorrectViewbox
-        assert.strictEqual(
-            testDocument.getElementById('test-arrowhead')!.getAttribute('viewBox'),
-            RenderConstants.arrowheadViewbox
-        )
+        assert.strictEqual(arrowheadDefElem.getAttribute('viewBox'), RenderConstants.arrowheadViewbox)
         // Square viewbox
-        assert.strictEqual(
-            testDocument.getElementById('test-arrowhead')!.getAttribute('markerWidth'),
-            RenderConstants.arrowheadSize.toString()
-        )
-        assert.strictEqual(
-            testDocument.getElementById('test-arrowhead')!.getAttribute('markerHeight'),
-            RenderConstants.arrowheadSize.toString()
-        )
+        assert.strictEqual(arrowheadDefElem.getAttribute('markerWidth'), RenderConstants.arrowheadSize.toString())
+        assert.strictEqual(arrowheadDefElem.getAttribute('markerHeight'), RenderConstants.arrowheadSize.toString())
 
         // Alignment
-        assert.strictEqual(testDocument.getElementById('test-arrowhead')!.getAttribute('refX'), '0')
-        assert.strictEqual(testDocument.getElementById('test-arrowhead')!.getAttribute('refY'), '0')
+        assert.strictEqual(arrowheadDefElem.getAttribute('refX'), '0')
+        assert.strictEqual(arrowheadDefElem.getAttribute('refY'), '0')
     })
 
     it('appends container g element to svg', function () {
@@ -232,30 +225,30 @@ describe('samVisualize d3.js rendering of a GraphObject', async function () {
             'test-buttonGroup'
         )
 
-        assert.ok(testDocument.getElementById('test-buttonGroup'))
+        const buttonGroupElem = testDocument.getElementById('test-buttonGroup')
+        const primaryButtonElem = testDocument.getElementById('test-primaryButton')
+        const allButtonElem = testDocument.getElementById('test-allButton')
+        assert.ok(buttonGroupElem)
         // Primary button exists and is within div
-        assert.ok(
-            testDocument.getElementById('test-buttonGroup')?.contains(testDocument.getElementById('test-primaryButton'))
-        )
-        assert.strictEqual(testDocument.getElementById('test-primaryButton')!.getAttribute('type'), 'radio')
+        assert.ok(buttonGroupElem.contains(primaryButtonElem))
+
+        assert.ok(primaryButtonElem)
+
+        assert.strictEqual(primaryButtonElem.getAttribute('type'), 'radio')
 
         // Default primary is checked
-        assert.ok(testDocument.getElementById('test-primaryButton')!.getAttribute('checked'))
+        assert.ok(primaryButtonElem.getAttribute('checked'))
 
         // All button exists and is within div
-        assert.ok(
-            testDocument.getElementById('test-buttonGroup')?.contains(testDocument.getElementById('test-allButton'))
-        )
-        assert.strictEqual(testDocument.getElementById('test-allButton')!.getAttribute('type'), 'radio')
+        assert.ok(allButtonElem)
+        assert.ok(buttonGroupElem.contains(allButtonElem))
+        assert.strictEqual(allButtonElem.getAttribute('type'), 'radio')
 
         // All button is unchecked
-        assert.ifError(testDocument.getElementById('test-allButton')!.getAttribute('checked'))
+        assert.ifError(allButtonElem.getAttribute('checked'))
 
         // Buttons have same name, forming a radio button group
-        assert.strictEqual(
-            testDocument.getElementById('test-primaryButton')!.getAttribute('name'),
-            testDocument.getElementById('test-allButton')!.getAttribute('name')
-        )
+        assert.strictEqual(primaryButtonElem.getAttribute('name'), allButtonElem.getAttribute('name'))
     })
 
     it('successfully defines a simulation', function () {

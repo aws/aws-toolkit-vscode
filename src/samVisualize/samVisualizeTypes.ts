@@ -26,6 +26,8 @@ export enum RenderedLinkTypes {
  * Possible message types the webview can send to the extension
  */
 export enum MessageTypes {
-    Navigate = 'Navigate',
+    NavigateFromGraph = 'NavigateFromGraph',
+    NavigateFromTemplate = 'NavigateFromTemplate',
+    ClearNodeFocus = 'ClearNodeFocus',
     UpdateVisualization = 'UpdateVisualization',
 }

@@ -145,7 +145,7 @@ export class SamVisualization {
         this.disposables.push(
             panel.webview.onDidReceiveMessage((message: MessageObject) => {
                 switch (message.command) {
-                    case MessageTypes.Navigate: {
+                    case MessageTypes.NavigateFromGraph: {
                         // Reveal the template to the left of the webview, unless the webview is in the first column.
                         // In this case, reveal to the right. This way, the template will also reveal beside the webview.
                         const columnToShow =
@@ -179,11 +179,43 @@ export class SamVisualization {
                 }
             })
         )
+        let cursorListener: NodeJS.Timeout
+        this.disposables.push(
+            vscode.window.onDidChangeActiveTextEditor(editor => {
+                if (editor?.document.uri.path === this.textDocumentUri.path) {
+                    cursorListener = setInterval(() => {
+                        if (this.resourceLineMap) {
+                            const cursorPosition = editor.document.offsetAt(editor.selection.active)
+                            for (const [key, value] of Object.entries(this.resourceLineMap)) {
+                                if (cursorPosition >= value.start && cursorPosition <= value.end) {
+                                    this.webviewPanel.webview.postMessage({
+                                        command: MessageTypes.NavigateFromTemplate,
+                                        data: key,
+                                    })
+                                    return
+                                }
+                            }
+                            // Cursor not in any resource, send message to de-focus previously selected node in the graph
+                            this.webviewPanel.webview.postMessage({
+                                command: MessageTypes.ClearNodeFocus,
+                            })
+                        }
+                    }, 500)
+                } else {
+                    clearInterval(cursorListener)
+                    // Template no longer has focus, send message to de-focus previously selected node in the graph
+                    this.webviewPanel.webview.postMessage({
+                        command: MessageTypes.ClearNodeFocus,
+                    })
+                }
+            })
+        )
 
         panel.onDidDispose(() => {
             if (this.isPanelDisposed) {
                 return
             }
+            clearInterval(cursorListener)
             this.isPanelDisposed = true
             debouncedUpdate.cancel()
             this.onVisualizationDisposeEmitter.fire()
@@ -212,6 +244,8 @@ export class SamVisualization {
             const newResourceLineMap = generateResourceLineMap(yamlString)
             // Update the resourceLineMap
             this.resourceLineMap = newResourceLineMap
+        } else {
+            this.resourceLineMap = undefined
         }
     }
 

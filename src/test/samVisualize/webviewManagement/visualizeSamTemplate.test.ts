@@ -232,7 +232,7 @@ describe('SAM Visualizer VisualizeSamTemplate', async function () {
 
         assert.deepStrictEqual(samVis.textDocumentUri, mockTextDocumentOne.uri)
         assert.strictEqual(samVis.getIsPanelDisposed(), false)
-        assert.strictEqual(samVis.getDisposables().length, 3)
+        assert.strictEqual(samVis.getDisposables().length, 4)
 
         assert.ok(samVis.webviewPanel)
     })

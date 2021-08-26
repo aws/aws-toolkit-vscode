@@ -62,6 +62,11 @@ export class ForceDirectedGraph {
     // Visibility is toggled during error renders
     private filterButtonsDiv: d3.Selection<HTMLDivElement, unknown, HTMLElement | null, unknown>
 
+    // Represents the name of the node currently 'selected' in the template.
+    // That is, whichever resource definition the cursor is in
+    // Undefined if the editor containing the template does not have focus, or if the cursor is not in any resource definition
+    private nodeSelectedFromTemplate: string | undefined
+
     public constructor(
         completeGraphObject: GraphObject,
         primaryResourceList: string[],
@@ -209,6 +214,29 @@ export class ForceDirectedGraph {
                             const isPrimaryChecked = d3.select(`#${primaryButtonID}`).property('checked')
                             // Draw graph
                             this.update(isPrimaryChecked ? this.primaryOnlyGraphObject : this.completeGraphObject)
+                        }
+                        break
+                    }
+                    case MessageTypes.NavigateFromTemplate: {
+                        const newlySelectedNodeName: string = message.data
+
+                        if (!this.nodeSelectedFromTemplate) {
+                            this.animateNodeEnlarge(newlySelectedNodeName)
+                            this.nodeSelectedFromTemplate = newlySelectedNodeName
+                        }
+                        // Check if node selected is different from the current node
+                        // If so, shrink the old node, and enlarge the newly selected node
+                        else if (newlySelectedNodeName !== this.nodeSelectedFromTemplate) {
+                            this.shrinkNodeToNormal(this.nodeSelectedFromTemplate)
+                            this.animateNodeEnlarge(newlySelectedNodeName)
+                            this.nodeSelectedFromTemplate = newlySelectedNodeName
+                        }
+                        break
+                    }
+                    case MessageTypes.ClearNodeFocus: {
+                        if (this.nodeSelectedFromTemplate) {
+                            this.shrinkNodeToNormal(this.nodeSelectedFromTemplate)
+                            this.nodeSelectedFromTemplate = undefined
                         }
                         break
                     }
@@ -376,83 +404,22 @@ export class ForceDirectedGraph {
             .enter()
             .append<SVGGElement>('g')
             .attr('class', 'node')
+            .attr('id', (d: NodeDatum) => d.name)
             .style('cursor', 'pointer')
-            .on(
-                'mouseover',
-                function (this: SVGGElement, event: d3.D3DragEvent<SVGGElement, NodeDatum, unknown>, d: NodeDatum) {
-                    d3.select(this)
-                        // Select the clipPath for the current node
-                        .select(`#clipCircle-${d.name}`)
-                        .select('circle')
-                        .transition()
-                        .duration(RenderConstants.mouseOverNodeGrowthTime)
-                        .attr('r', RenderConstants.radius * RenderConstants.mouseOverNodeSizeMultiplier)
-
-                    d3.select(this)
-                        .select('image')
-                        .transition()
-                        .duration(RenderConstants.mouseOverNodeGrowthTime)
-                        .attr('width', RenderConstants.radius * 2 * RenderConstants.mouseOverNodeSizeMultiplier)
-                        .attr('height', RenderConstants.radius * 2 * RenderConstants.mouseOverNodeSizeMultiplier)
-                        .attr('x', -RenderConstants.radius * RenderConstants.mouseOverNodeSizeMultiplier)
-                        .attr('y', -RenderConstants.radius * RenderConstants.mouseOverNodeSizeMultiplier)
-
-                    d3.select(this)
-                        .select('.primary-text')
-                        .transition()
-                        .duration(RenderConstants.mouseOverNodeGrowthTime)
-                        .attr('dy', RenderConstants.primaryLabelYOffset * RenderConstants.mouseOverNodeSizeMultiplier)
-                        .attr(
-                            'font-size',
-                            RenderConstants.primaryTextSize * RenderConstants.mouseOverNodeSizeMultiplier
-                        )
-
-                    d3.select(this)
-                        .select('.secondary-text')
-                        .transition()
-                        .duration(RenderConstants.mouseOverNodeGrowthTime)
-                        .attr('dy', RenderConstants.secondaryLabelYOffset * RenderConstants.mouseOverNodeSizeMultiplier)
-                        .attr(
-                            'font-size',
-                            RenderConstants.secondaryTextSize * RenderConstants.mouseOverNodeSizeMultiplier
-                        )
+            .on('mouseover', (event: d3.D3DragEvent<SVGGElement, NodeDatum, unknown>, d: NodeDatum) => {
+                // Don't animate an already enlarged node, as it is selected in the template
+                if (d.name === this.nodeSelectedFromTemplate) {
+                    return
                 }
-            )
-            .on(
-                'mouseout',
-                function (this: SVGGElement, event: d3.D3DragEvent<SVGGElement, NodeDatum, unknown>, d: NodeDatum) {
-                    d3.select(this)
-                        // Select the clipPath for the current node
-                        .select(`#clipCircle-${d.name}`)
-                        .select('circle')
-                        .transition()
-                        .duration(RenderConstants.mouseOverNodeGrowthTime)
-                        .attr('r', RenderConstants.radius)
-
-                    d3.select(this)
-                        .select('image')
-                        .transition()
-                        .duration(RenderConstants.mouseOverNodeGrowthTime)
-                        .attr('width', RenderConstants.radius * 2)
-                        .attr('height', RenderConstants.radius * 2)
-                        .attr('x', -RenderConstants.radius)
-                        .attr('y', -RenderConstants.radius)
-
-                    d3.select(this)
-                        .select('.primary-text')
-                        .transition()
-                        .duration(RenderConstants.mouseOverNodeGrowthTime)
-                        .attr('dy', RenderConstants.primaryLabelYOffset)
-                        .attr('font-size', RenderConstants.primaryTextSize)
-
-                    d3.select(this)
-                        .select('.secondary-text')
-                        .transition()
-                        .duration(RenderConstants.mouseOverNodeGrowthTime)
-                        .attr('dy', RenderConstants.secondaryLabelYOffset)
-                        .attr('font-size', RenderConstants.secondaryTextSize)
+                this.animateNodeEnlarge(d.name)
+            })
+            .on('mouseout', (event: d3.D3DragEvent<SVGGElement, NodeDatum, unknown>, d: NodeDatum) => {
+                // Don't animate an already enlarged node, as it is selected in the template
+                if (d.name === this.nodeSelectedFromTemplate) {
+                    return
                 }
-            )
+                this.shrinkNodeToNormal(d.name)
+            })
         // vscodeApi does not exist outside of a Webview, so it's not used during testing
         if (vscodeApi) {
             nodes.on('click', function (event, d: NodeDatum) {
@@ -461,7 +428,7 @@ export class ForceDirectedGraph {
                     return
                 }
                 vscodeApi.postMessage({
-                    command: MessageTypes.Navigate,
+                    command: MessageTypes.NavigateFromGraph,
                     data: d.name,
                 })
             })
@@ -533,9 +500,15 @@ export class ForceDirectedGraph {
                 .append('div')
                 .style('position', 'relative')
                 .style('z-index', 2)
+                .style('margin', '1em')
         } else {
             // z-index set to 2 to allow the SVG to render underneath the radio buttons
-            buttonDiv = d3.select('body').append('div').style('position', 'relative').style('z-index', 2)
+            buttonDiv = d3
+                .select('body')
+                .append('div')
+                .style('position', 'relative')
+                .style('z-index', 2)
+                .style('margin', '1em')
         }
         if (id) {
             buttonDiv.attr('id', id)
@@ -552,7 +525,6 @@ export class ForceDirectedGraph {
             .append('label')
             .attr('for', primaryButtonID)
             .style('font-size', RenderConstants.primaryTextSize)
-            .style('font-weight', 'bold')
             .text('Primary resources')
 
         const allButtonDiv = buttonDiv.append('div')
@@ -561,14 +533,78 @@ export class ForceDirectedGraph {
             .append('label')
             .attr('for', allButtonID)
             .style('font-size', RenderConstants.primaryTextSize)
-            .style('font-weight', 'bold')
             .text('All resources')
 
         return buttonDiv
     }
 
+    private animateNodeEnlarge(nodeName: string): void {
+        const largeRadius = RenderConstants.radius * RenderConstants.mouseOverNodeSizeMultiplier
+        d3.select(`#${nodeName}`)
+            .select(`#clipCircle-${nodeName}`)
+            .select('circle')
+            .transition()
+            .duration(RenderConstants.mouseOverNodeGrowthTime)
+            .attr('r', largeRadius)
+
+        d3.select(`#${nodeName}`)
+            .select('image')
+            .transition()
+            .duration(RenderConstants.mouseOverNodeGrowthTime)
+            .attr('width', 2 * largeRadius)
+            .attr('height', 2 * largeRadius)
+            .attr('x', -largeRadius)
+            .attr('y', -largeRadius)
+
+        d3.select(`#${nodeName}`)
+            .select('.primary-text')
+            .transition()
+            .duration(RenderConstants.mouseOverNodeGrowthTime)
+            .attr('dy', RenderConstants.primaryLabelYOffset * RenderConstants.mouseOverNodeSizeMultiplier)
+            .attr('font-size', RenderConstants.primaryTextSize * RenderConstants.mouseOverNodeSizeMultiplier)
+
+        d3.select(`#${nodeName}`)
+            .select('.secondary-text')
+            .transition()
+            .duration(RenderConstants.mouseOverNodeGrowthTime)
+            .attr('dy', RenderConstants.secondaryLabelYOffset * RenderConstants.mouseOverNodeSizeMultiplier)
+            .attr('font-size', RenderConstants.secondaryTextSize * RenderConstants.mouseOverNodeSizeMultiplier)
+    }
+
+    private shrinkNodeToNormal(nodeName: string): void {
+        d3.select(`#${nodeName}`)
+            .select(`#clipCircle-${nodeName}`)
+            .select('circle')
+            .transition()
+            .duration(RenderConstants.mouseOverNodeGrowthTime)
+            .attr('r', RenderConstants.radius)
+
+        d3.select(`#${nodeName}`)
+            .select('image')
+            .transition()
+            .duration(RenderConstants.mouseOverNodeGrowthTime)
+            .attr('width', RenderConstants.radius * 2)
+            .attr('height', RenderConstants.radius * 2)
+            .attr('x', -RenderConstants.radius)
+            .attr('y', -RenderConstants.radius)
+
+        d3.select(`#${nodeName}`)
+            .select('.primary-text')
+            .transition()
+            .duration(RenderConstants.mouseOverNodeGrowthTime)
+            .attr('dy', RenderConstants.primaryLabelYOffset)
+            .attr('font-size', RenderConstants.primaryTextSize)
+
+        d3.select(`#${nodeName}`)
+            .select('.secondary-text')
+            .transition()
+            .duration(RenderConstants.mouseOverNodeGrowthTime)
+            .attr('dy', RenderConstants.secondaryLabelYOffset)
+            .attr('font-size', RenderConstants.secondaryTextSize)
+    }
+
     // Render a GraphObject
-    private update(newGraphObject: GraphObject | undefined) {
+    private update(newGraphObject: GraphObject | undefined): void {
         // Never occurs. Possibly undefined args are used in calls within a listener declaration,
         // but those listener events are only fired with verified GraphObjects
         if (newGraphObject === undefined) {
@@ -732,8 +768,9 @@ export class ForceDirectedGraph {
 
         // If a data type specific icon does not exist, look for an icon that applies to the whole service
         // Eg. AWS::S3::Bucket -> Icon for any S3 data type
-        if (iconsMap[`${parts[0]}::${parts[1]}`]) {
-            return iconsMap[`${parts[0]}::${parts[1]}`]
+        const serviceKey = `${parts[0]}::${parts[1]}`
+        if (iconsMap[serviceKey]) {
+            return iconsMap[serviceKey]
         }
 
         // If a particular service icon does not exist, look for an icon that applies to the whole service provider
