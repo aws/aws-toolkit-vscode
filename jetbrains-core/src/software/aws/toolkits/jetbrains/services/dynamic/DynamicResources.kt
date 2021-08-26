@@ -5,13 +5,19 @@ package software.aws.toolkits.jetbrains.services.dynamic
 
 import com.fasterxml.jackson.module.kotlin.jacksonObjectMapper
 import com.intellij.openapi.Disposable
+import com.intellij.openapi.project.Project
 import kotlinx.coroutines.CoroutineStart
 import kotlinx.coroutines.Deferred
 import kotlinx.coroutines.async
+import software.amazon.awssdk.arns.Arn
 import software.amazon.awssdk.services.cloudformation.CloudFormationClient
+import software.amazon.awssdk.services.cloudformation.model.RegistryType
 import software.aws.toolkits.jetbrains.core.ClientBackedCachedResource
 import software.aws.toolkits.jetbrains.core.Resource
+import software.aws.toolkits.jetbrains.core.awsClient
+import software.aws.toolkits.jetbrains.core.credentials.ConnectionSettings
 import software.aws.toolkits.jetbrains.utils.ApplicationThreadPoolScope
+import java.io.File
 
 object DynamicResources : Disposable {
     private val coroutineScope = ApplicationThreadPoolScope("DynamicResources", this)
@@ -36,4 +42,26 @@ object DynamicResources : Disposable {
     fun listResources(resourceType: ResourceType): Resource.Cached<List<DynamicResource>> = listResources(resourceType.fullName)
 
     override fun dispose() {}
+
+    fun getResourceDisplayName(identifier: String) : String =
+        if (identifier.startsWith("arn:")) {
+            Arn.fromString(identifier).resourceAsString()
+        } else {
+            identifier
+        }
+
+    fun getResourceSchema(project: Project, resourceType: String): Resource.Cached<File> = ClientBackedCachedResource(CloudFormationClient::class, "cloudformation.dynamic.resources.schema.$resourceType"){
+        val client = project.awsClient<CloudFormationClient>()
+        val schema = client.describeType{
+            it.type(RegistryType.RESOURCE)
+            it.typeName(resourceType)
+        }.schema()
+        val file = File("$resourceType.json")
+        file.writeText(schema)
+        file
+    }
+
+    val resourceTypesInUse : MutableSet<String> = mutableSetOf()
 }
+
+data class DynamicResourceIdentifier(val connectionSettings: ConnectionSettings, val resourceType: String, val resourceIdentifier: String)

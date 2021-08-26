@@ -189,6 +189,8 @@ with what features/services are supported.
 
         <editorNotificationProvider implementation="software.aws.toolkits.jetbrains.core.credentials.CredentialsFileHelpNotificationProvider"/>
 
+        <editorFloatingToolbarProvider implementation="software.aws.toolkits.jetbrains.services.dynamic.CreateResourceFloatingProvider"/>
+
         <toolWindow id="aws.explorer" anchor="left" secondary="true"
                     factoryClass="software.aws.toolkits.jetbrains.core.explorer.AwsExplorerFactory"
                     icon="AwsIcons.Logos.AWS"/>
@@ -239,6 +241,7 @@ with what features/services are supported.
 
     <extensions defaultExtensionNs="JavaScript.JsonSchema">
         <ProviderFactory implementation="software.aws.toolkits.jetbrains.services.ecs.TaskSchemaProviderFactory"/>
+        <ProviderFactory implementation="software.aws.toolkits.jetbrains.services.dynamic.ResourceSchemaProviderFactory"/>
     </extensions>
 
     <extensions defaultExtensionNs="aws.toolkit">
@@ -369,7 +372,11 @@ with what features/services are supported.
         </group>
 
         <group id="aws.toolkit.explorer.dynamic.resource" popup="true" compact="false">
-            <action id="dynamic.resource.create" class="software.aws.toolkits.jetbrains.services.dynamic.explorer.actions.CreateResourceAction"/>
+            <action id="dynamic.resource.create" class="software.aws.toolkits.jetbrains.services.dynamic.explorer.actions.DynamicResourceCreateResourceAction"/>
+        </group>
+        
+        <group id="aws.toolkit.explorer.dynamic.create.resource.file" class="software.aws.toolkits.jetbrains.services.dynamic.actions.CreateResourceFloatingToolbarGroupAction">
+            <action id="dynamic.resource.create.floating.action.group" class="software.aws.toolkits.jetbrains.services.dynamic.actions.CreateResourceFloatingToolbarAction"/>
         </group>
 
         <group id="aws.toolkit.explorer.dynamic" popup="true" compact="false">

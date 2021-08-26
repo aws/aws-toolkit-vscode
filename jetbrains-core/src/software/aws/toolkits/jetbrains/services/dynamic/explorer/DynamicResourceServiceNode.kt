@@ -18,11 +18,14 @@ import software.amazon.awssdk.services.cloudformation.CloudFormationClient
 import software.aws.toolkits.core.utils.error
 import software.aws.toolkits.core.utils.getLogger
 import software.aws.toolkits.jetbrains.core.awsClient
+import software.aws.toolkits.jetbrains.core.credentials.AwsConnectionManager.Companion.getConnectionSettings
 import software.aws.toolkits.jetbrains.core.explorer.nodes.AwsExplorerNode
 import software.aws.toolkits.jetbrains.core.explorer.nodes.ResourceActionNode
 import software.aws.toolkits.jetbrains.core.explorer.nodes.ResourceParentNode
 import software.aws.toolkits.jetbrains.core.getResourceNow
 import software.aws.toolkits.jetbrains.services.dynamic.DynamicResource
+import software.aws.toolkits.jetbrains.services.dynamic.DynamicResourceIdentifier
+import software.aws.toolkits.jetbrains.services.dynamic.DynamicResourceVirtualFile
 import software.aws.toolkits.jetbrains.services.dynamic.DynamicResources
 import software.aws.toolkits.jetbrains.utils.notifyError
 import software.aws.toolkits.resources.message
@@ -91,13 +94,11 @@ class DynamicResourceNode(project: Project, val resource: DynamicResource) :
                         content = message("dynamic_resources.fetch.fail.content", resource.identifier)
                     )
                     DynamicresourceTelemetry.openModel(nodeProject, success = false, resourceType = resource.type.fullName)
-
                     null
                 } ?: return
 
-                val file = LightVirtualFile(
-                    displayName(),
-                    JsonFileType.INSTANCE,
+                val file = DynamicResourceVirtualFile(
+                    DynamicResourceIdentifier(nodeProject.getConnectionSettings(), resource.type.fullName, resource.identifier),
                     model
                 )
 
