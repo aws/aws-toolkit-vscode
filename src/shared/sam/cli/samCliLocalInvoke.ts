@@ -162,11 +162,11 @@ export interface SamCliLocalInvokeInvocationArguments {
     /**
      * Location of the file containing the Lambda Function event payload.
      */
-    eventPath: string
+    eventPath?: string
     /**
      * Location of the file containing the environment variables to invoke the Lambda Function against.
      */
-    environmentVariablePath: string
+    environmentVariablePath?: string
     /**
      * Environment variables set when invoking the SAM process (NOT passed to the Lambda).
      */
@@ -243,12 +243,10 @@ export class SamCliLocalInvokeInvocation {
             this.args.templateResourceName,
             '--template',
             this.args.templatePath,
-            '--event',
-            this.args.eventPath,
-            '--env-vars',
-            this.args.environmentVariablePath,
         ]
 
+        pushIf(invokeArgs, !!this.args.eventPath, '--event', this.args.eventPath)
+        pushIf(invokeArgs, !!this.args.environmentVariablePath, '--env-vars', this.args.environmentVariablePath)
         pushIf(invokeArgs, !!this.args.debugPort, '-d', this.args.debugPort!)
         pushIf(invokeArgs, !!this.args.dockerNetwork, '--docker-network', this.args.dockerNetwork!)
         pushIf(invokeArgs, !!this.args.skipPullImage, '--skip-pull-image')
@@ -288,7 +286,7 @@ export class SamCliLocalInvokeInvocation {
             throw new Error(`template path does not exist: ${this.args.templatePath}`)
         }
 
-        if (!(await fileExists(this.args.eventPath))) {
+        if (this.args.eventPath !== undefined && !(await fileExists(this.args.eventPath))) {
             throw new Error(`event path does not exist: ${this.args.eventPath}`)
         }
     }

@@ -4,6 +4,7 @@
  */
 
 import * as nls from 'vscode-nls'
+import * as os from 'os'
 const localize = nls.loadMessageBundle()
 
 import { StepFunctions } from 'aws-sdk'
@@ -19,6 +20,7 @@ import { StateMachineNode } from '../explorer/stepFunctionsNodes'
 export async function downloadStateMachineDefinition(params: {
     outputChannel: vscode.OutputChannel
     stateMachineNode: StateMachineNode
+    isPreviewAndRender?: boolean
 }) {
     const logger: Logger = getLogger()
     let downloadResult: Result = 'Succeeded'
@@ -31,15 +33,28 @@ export async function downloadStateMachineDefinition(params: {
             params.stateMachineNode.details.stateMachineArn
         )
 
-        const wsPath = vscode.workspace.workspaceFolders ? vscode.workspace.workspaceFolders[0].uri.fsPath : '/'
-        let filePath = path.join(wsPath, params.stateMachineNode.details.name + '.asl.json')
-        const fileInfo = await vscode.window.showSaveDialog({ defaultUri: vscode.Uri.file(filePath) })
-        if (fileInfo) {
-            filePath = fileInfo.fsPath
-            fs.writeFileSync(filePath, stateMachineDetails.definition, 'utf8')
-            const openPath = vscode.Uri.file(filePath)
-            const doc = await vscode.workspace.openTextDocument(openPath)
-            vscode.window.showTextDocument(doc)
+        if (params.isPreviewAndRender) {
+            const doc = await vscode.workspace.openTextDocument({
+                language: 'asl',
+                content: stateMachineDetails.definition,
+            })
+
+            const textEditor = await vscode.window.showTextDocument(doc)
+            await vscode.commands.executeCommand('aws.previewStateMachine', textEditor)
+        } else {
+            const wsPath = vscode.workspace.workspaceFolders
+                ? vscode.workspace.workspaceFolders[0].uri.fsPath
+                : os.homedir()
+            const defaultFilePath = path.join(wsPath, params.stateMachineNode.details.name + '.asl.json')
+            const fileInfo = await vscode.window.showSaveDialog({ defaultUri: vscode.Uri.file(defaultFilePath) })
+
+            if (fileInfo) {
+                const filePath = fileInfo.fsPath
+                fs.writeFileSync(filePath, stateMachineDetails.definition, 'utf8')
+                const openPath = vscode.Uri.file(filePath)
+                const doc = await vscode.workspace.openTextDocument(openPath)
+                vscode.window.showTextDocument(doc)
+            }
         }
     } catch (err) {
         const error = err as Error
