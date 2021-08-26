@@ -50,7 +50,7 @@ class DynamicResourcesConfigurable : BoundConfigurable(message("aws.settings.dyn
         val allCheckboxes = mutableListOf<JCheckBox>()
         val selected = DynamicResourcesSettings.getInstance().state.selected
         coroutineScope.launch {
-            DynamicResources.SUPPORTED_TYPES.get().forEach {
+            DynamicResources.SUPPORTED_TYPES.forEach {
                 checklist.addItem(it, it, it in selected)
             }
             allCheckboxes.addAll(checklist.map { _, checkbox -> checkbox })

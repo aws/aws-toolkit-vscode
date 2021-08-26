@@ -9,28 +9,21 @@ import com.intellij.openapi.application.ApplicationManager
 import software.amazon.awssdk.services.cloudformation.CloudFormationClient
 import software.amazon.awssdk.services.cloudformation.model.RegistryType
 import software.amazon.awssdk.services.cloudformation.model.Visibility
+import software.aws.toolkits.core.utils.getLogger
 import software.aws.toolkits.jetbrains.core.ClientBackedCachedResource
 import software.aws.toolkits.jetbrains.core.Resource
-import java.util.concurrent.CompletableFuture
 
 object DynamicResources {
-    val SUPPORTED_TYPES = getSupportedTypes()
-
-    private fun getSupportedTypes(): CompletableFuture<List<String>> {
-        val future = CompletableFuture<List<String>>()
-        ApplicationManager.getApplication().executeOnPooledThread {
-            try {
-                val reader = jacksonObjectMapper()
-                future.complete(
-                    DynamicResources.javaClass.getResourceAsStream("/cloudapi/dynamic_resources.json")?.use { resourceStream ->
-                        reader.readValue<Map<String, ResourceDetails>>(resourceStream).filter { it.value.operations.contains(Operation.LIST) }.map { it.key }
-                    } ?: throw RuntimeException("dynamic resource manifest not found")
-                )
-            } catch (e: Throwable) {
-                future.completeExceptionally(e)
-            }
+    val SUPPORTED_TYPES by lazy {
+        if (ApplicationManager.getApplication().isDispatchThread) {
+            LOGGER.warn("Access from Event Dispatch Thread")
+            listOf()
+        } else {
+            val reader = jacksonObjectMapper()
+            DynamicResources.javaClass.getResourceAsStream("/cloudapi/dynamic_resources.json")?.use { resourceStream ->
+                reader.readValue<Map<String, ResourceDetails>>(resourceStream).filter { it.value.operations.contains(Operation.LIST) }.map { it.key }
+            } ?: throw RuntimeException("dynamic resource manifest not found")
         }
-        return future
     }
 
     fun listResources(typeName: String): Resource.Cached<List<DynamicResource>> =
@@ -48,6 +41,8 @@ object DynamicResources {
             it.type(RegistryType.RESOURCE)
         }.flatMap { it.typeSummaries().map { it.typeName() } }
     }
+
+    private val LOGGER = getLogger<DynamicResources>()
 }
 
 data class ResourceDetails(val operations: List<Operation>, val arnRegex: String? = null)

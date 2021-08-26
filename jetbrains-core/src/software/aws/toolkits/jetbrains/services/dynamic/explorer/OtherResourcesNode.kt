@@ -21,7 +21,7 @@ class OtherResourcesNode(project: Project, service: AwsExplorerServiceNode) :
     override fun getChildren(): List<AwsExplorerNode<*>> = super.getChildren()
     override fun getChildrenInternal(): List<AwsExplorerNode<*>> {
         val shouldShow = DynamicResourcesSettings.getInstance().selected
-        return listOf(DynamicResourceSelectorNode(nodeProject)) + DynamicResources.SUPPORTED_TYPES.get()
+        return listOf(DynamicResourceSelectorNode(nodeProject)) + DynamicResources.SUPPORTED_TYPES
             .filter { it in shouldShow }
             .map { DynamicResourceResourceTypeNode(nodeProject, it) }
     }
