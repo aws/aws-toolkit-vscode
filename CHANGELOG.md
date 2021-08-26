@@ -1,3 +1,12 @@
+## 1.29.0 2021-08-19
+
+- **Bug Fix** SAM: the Toolkit now correctly skips sending '--env-vars' when no environment variables are present in the launch config
+- **Bug Fix** Credentials: correctly handle different `source_profile` combinations
+- **Bug Fix** SAM/CFN: fix JSON schema path causing a symlink on some operating systems
+- **Bug Fix** SAM/CFN JSON schema: schemas now load correctly on first-load
+- **Bug Fix** SAM/CFN JSON schema: write yaml.customTags to user-global settings (instead of workspace-local)
+- **Feature** SAM Application support for the python3.9 runtime
+
 ## 1.28.0 2021-08-09
 
 - **Bug Fix** SAM Invoke Webview: fix 'Show All Fields' causing a blank page

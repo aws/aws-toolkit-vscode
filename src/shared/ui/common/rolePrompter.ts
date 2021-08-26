@@ -120,6 +120,7 @@ export class RolePrompter extends CachedPrompter<IAM.Role> {
         const prompter = createQuickPick(roles, {
             title: this.options.title,
             buttons: this.buttons,
+            placeholder: localize('AWS.rolePrompter.placeholder', 'Select a role'),
         })
 
         const refresh = () => {

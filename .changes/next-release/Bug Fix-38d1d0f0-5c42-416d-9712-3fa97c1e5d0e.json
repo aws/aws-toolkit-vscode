@@ -1,4 +1,0 @@
-{
-	"type": "Bug Fix",
-	"description": "Credentials: correctly handle different `source_profile` combinations"
-}
