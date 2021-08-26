@@ -101,7 +101,11 @@ export class PreviewStateMachineCDKWizard extends MultiStepWizard<PreviewStateMa
         const appLocation = this.cdkApplication?.cdkApplocation
 
         if (!appLocation) {
-            localize('AWS.cdk.explorerNode.noAppLocation', '[No CDK App Location]')
+            const cdkApplications: TopLevelNodePickItem[] = []
+            cdkApplications.push({
+                label: localize('AWS.cdk.explorerNode.noApps', '[No CDK App Location]'),
+                topLevelNode: undefined,
+            })
             return WIZARD_GOBACK
         }
 
