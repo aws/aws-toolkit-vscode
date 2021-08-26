@@ -47,7 +47,7 @@ class DynamicResourceTreeStructureProviderTest {
 
     @Test
     fun `dynamic resources settings node is first in subtree`() {
-        DynamicResourcesSettings.getInstance().selected = runBlocking { DynamicResources.SUPPORTED_TYPES.get() }.toSet()
+        DynamicResourcesSettings.getInstance().selected = runBlocking { DynamicResources.SUPPORTED_TYPES }.toSet()
         val countDownLatch = CountDownLatch(1)
 
         val model = Tree(createTreeModel())
