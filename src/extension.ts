@@ -254,12 +254,18 @@ export async function activate(context: vscode.ExtensionContext) {
 
         ext.telemetry.assertPassiveTelemetry(ext.didReload())
     } catch (error) {
+        const stacktrace = (error as Error).stack?.split('\n')
+        // truncate if the stacktrace is unusually long
+        if (stacktrace !== undefined && stacktrace.length > 40) {
+            stacktrace.length = 40
+        }
         getLogger('channel').error(
             localize(
                 'AWS.channel.aws.toolkit.activation.error',
-                'Error Activating {0} Toolkit: {1}',
+                'Error Activating {0} Toolkit: {1} \n{2}',
                 getIdeProperties().company,
-                (error as Error).message
+                (error as Error).message,
+                stacktrace?.join('\n')
             )
         )
         throw error
@@ -326,6 +332,18 @@ function initializeIconPaths(context: vscode.ExtensionContext) {
 
     ext.iconPaths.dark.edit = context.asAbsolutePath('resources/dark/edit.svg')
     ext.iconPaths.light.edit = context.asAbsolutePath('resources/light/edit.svg')
+
+    ext.iconPaths.dark.sync = context.asAbsolutePath('resources/dark/sync.svg')
+    ext.iconPaths.light.sync = context.asAbsolutePath('resources/light/sync.svg')
+
+    ext.iconPaths.dark.syncIgnore = context.asAbsolutePath('resources/dark/sync-ignore.svg')
+    ext.iconPaths.light.syncIgnore = context.asAbsolutePath('resources/light/sync-ignore.svg')
+
+    ext.iconPaths.dark.refresh = context.asAbsolutePath('resources/dark/refresh.svg')
+    ext.iconPaths.light.refresh = context.asAbsolutePath('resources/light/refresh.svg')
+
+    ext.iconPaths.dark.exit = context.asAbsolutePath('resources/dark/exit.svg')
+    ext.iconPaths.light.exit = context.asAbsolutePath('resources/light/exit.svg')
 }
 
 function initializeManifestPaths(extensionContext: vscode.ExtensionContext) {

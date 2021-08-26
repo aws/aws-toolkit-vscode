@@ -114,7 +114,10 @@ export function createBackButton(): QuickInputButton<WizardControl> {
 
 export function createExitButton(): QuickInputButton<WizardControl> {
     return {
-        iconPath: new vscode.ThemeIcon('close'),
+        iconPath: {
+            light: ext.iconPaths.light.exit,
+            dark: ext.iconPaths.dark.exit,
+        },
         tooltip: localize('AWS.generic.exit', 'Exit'),
         onClick: () => WIZARD_EXIT,
     }
@@ -122,7 +125,10 @@ export function createExitButton(): QuickInputButton<WizardControl> {
 
 export function createRefreshButton(): QuickInputButton<void> {
     return {
-        iconPath: new vscode.ThemeIcon('refresh'),
+        iconPath: {
+            light: ext.iconPaths.light.refresh,
+            dark: ext.iconPaths.dark.refresh,
+        },
         tooltip: localize('AWS.generic.refresh', 'Refresh'),
     }
 }
@@ -130,7 +136,10 @@ export function createRefreshButton(): QuickInputButton<void> {
 /** Creates a '+' button. Usually used to add new resources during a prompt. */
 export function createPlusButton(tooltip?: string): QuickInputButton<void> {
     return {
-        iconPath: new vscode.ThemeIcon('plus'),
+        iconPath: {
+            light: ext.iconPaths.light.plus,
+            dark: ext.iconPaths.dark.plus,
+        },
         tooltip,
     }
 }

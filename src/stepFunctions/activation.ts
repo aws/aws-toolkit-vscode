@@ -40,13 +40,14 @@ async function registerStepFunctionCommands(
     const visualizationManager = new AslVisualizationManager(extensionContext)
 
     extensionContext.subscriptions.push(
-        vscode.commands.registerCommand('aws.previewStateMachine', async () => {
+        vscode.commands.registerCommand('aws.previewStateMachine', async (textEditor?: vscode.TextEditor) => {
             try {
                 return await visualizationManager.visualizeStateMachine(
                     extensionContext.globalState,
-                    vscode.window.activeTextEditor
+                    textEditor || vscode.window.activeTextEditor
                 )
             } finally {
+                // TODO: Consider making the metric reflect the success/failure of the above call
                 telemetry.recordStepfunctionsPreviewstatemachine()
             }
         })

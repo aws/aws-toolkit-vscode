@@ -4,7 +4,6 @@
  */
 
 import { ExtensionContext, OutputChannel, Uri } from 'vscode'
-import { AwsExplorer } from '../awsexplorer/awsExplorer'
 import { AWSClientBuilder } from './awsClientBuilder'
 import { AWSContextCommands } from './awsContextCommands'
 import { ToolkitClientBuilder } from './clients/toolkitClientBuilder'
@@ -22,7 +21,6 @@ export namespace ext {
     export let window: Window
     export let outputChannel: OutputChannel
     export let awsContextCommands: AWSContextCommands
-    export let awsExplorer: AwsExplorer
     export let sdkClientBuilder: AWSClientBuilder
     export let toolkitClientBuilder: ToolkitClientBuilder
     export let telemetry: TelemetryService
@@ -89,6 +87,10 @@ export interface IconPaths {
     // temporary icons while Cloud9 does not have codicon support
     plus: string
     edit: string
+    exit: string
+    sync: string
+    syncIgnore: string
+    refresh: string
 }
 
 function makeIconPathsObject(): IconPaths {
@@ -110,5 +112,9 @@ function makeIconPathsObject(): IconPaths {
         createBucket: '',
         plus: '',
         edit: '',
+        exit: '',
+        refresh: '',
+        sync: '',
+        syncIgnore: '',
     }
 }
