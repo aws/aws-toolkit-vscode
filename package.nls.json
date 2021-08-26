@@ -178,6 +178,8 @@
     "AWS.command.submitFeedback": "Send Feedback...",
     "AWS.command.downloadSchemaItemCode": "Download Code Bindings",
     "AWS.command.viewLogs": "View Toolkit Logs",
+    "AWS.command.sam.newTemplate": "Create new SAM Template",
+    "AWS.command.cloudFormation.newTemplate": "Create new CloudFormation Template",
     "AWS.command.quickStart": "View Quick Start",
     "AWS.command.quickStart.title": "AWS Toolkit - Quick Start",
     "AWS.command.quickStart.error": "There was an error retrieving the Quick Start page",
