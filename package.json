@@ -79,7 +79,9 @@
         "onCommand:aws.launchConfigForm",
         "onCommand:aws.toggleSamCodeLenses",
         "onCommand:aws.addSamDebugConfig",
-        "onCommand:aws.s3.uploadFile"
+        "onCommand:aws.s3.uploadFile",
+        "onCommand:aws.cloudFormation.newTemplate",
+        "onCommand:aws.sam.newTemplate"
     ],
     "main": "./extensionMain",
     "contributes": {
@@ -1176,6 +1178,16 @@
                     "command": "aws.apprunner.deleteService",
                     "group": "3@1",
                     "when": "view == aws.explorer && viewItem =~ /awsAppRunnerServiceNode.[RUNNING|PAUSED|CREATE_FAILED]/"
+                },
+                {
+                    "command": "aws.cloudFormation.newTemplate",
+                    "group": "0@1",
+                    "when": "view == aws.explorer && viewItem == awsCloudFormationRootNode"
+                },
+                {
+                    "command": "aws.sam.newTemplate",
+                    "group": "0@2",
+                    "when": "view == aws.explorer && viewItem == awsCloudFormationRootNode"
                 }
             ]
         },
@@ -1909,6 +1921,26 @@
             {
                 "command": "aws.apprunner.startDeployment",
                 "title": "%AWS.command.apprunner.startDeployment%",
+                "category": "%AWS.title%",
+                "cloud9": {
+                    "cn": {
+                        "category": "%AWS.title.cn%"
+                    }
+                }
+            },
+            {
+                "command": "aws.cloudFormation.newTemplate",
+                "title": "%AWS.command.cloudFormation.newTemplate%",
+                "category": "%AWS.title%",
+                "cloud9": {
+                    "cn": {
+                        "category": "%AWS.title.cn%"
+                    }
+                }
+            },
+            {
+                "command": "aws.sam.newTemplate",
+                "title": "%AWS.command.sam.newTemplate%",
                 "category": "%AWS.title%",
                 "cloud9": {
                     "cn": {
