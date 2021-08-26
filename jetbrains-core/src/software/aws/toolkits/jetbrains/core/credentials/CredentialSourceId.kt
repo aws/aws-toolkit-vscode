@@ -10,6 +10,7 @@ fun CredentialSourceId?.toTelemetryCredentialSourceId(): TelemetryCredentialSour
     CredentialSourceId.SharedCredentials -> TelemetryCredentialSourceId.SharedCredentials
     CredentialSourceId.SdkStore -> TelemetryCredentialSourceId.SdkStore
     CredentialSourceId.Ec2 -> TelemetryCredentialSourceId.Ec2
+    CredentialSourceId.Ecs -> TelemetryCredentialSourceId.Ecs
     CredentialSourceId.EnvVars -> TelemetryCredentialSourceId.EnvVars
     else -> TelemetryCredentialSourceId.Other
 }

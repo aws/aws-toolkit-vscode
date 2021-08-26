@@ -8,7 +8,13 @@ import com.goide.project.GoModuleSettings
 import com.goide.psi.GoFile
 import com.goide.sdk.GoSdk
 import com.goide.sdk.GoSdkImpl
+import com.intellij.execution.configurations.GeneralCommandLine
+import com.intellij.execution.util.ExecUtil
+import com.intellij.openapi.Disposable
+import com.intellij.openapi.application.ApplicationInfo
 import com.intellij.openapi.projectRoots.Sdk
+import com.intellij.openapi.util.Disposer
+import com.intellij.openapi.vfs.VirtualFile
 import com.intellij.psi.PsiElement
 import com.intellij.psi.PsiFile
 import com.intellij.testFramework.LightProjectDescriptor
@@ -84,9 +90,64 @@ fun CodeInsightTestFixture.addGoModFile(
         require github.com/aws/aws-lambda-go v1.13.3
 
         module hello-world
-
-        go 1.14
         """.trimIndent()
 ): PsiFile = this.addFileToProject("$subPath/go.mod", content)
+
+fun runGoModTidy(goModFile: VirtualFile) {
+    val output = ExecUtil.execAndGetOutput(GeneralCommandLine("go").withParameters("mod", "tidy").withWorkDirectory(goModFile.parent.path))
+    if (output.exitCode != 0) {
+        throw IllegalStateException("'go mod tidy' did not return 0: ${output.stderr}")
+    }
+}
+
+fun compatibleGoForIde() = when (ApplicationInfo.getInstance().build.baselineVersion) {
+    202 -> "1.14.15" // TODO: FIX_WHEN_MIN_IS_203
+    203 -> "1.15.14" // TODO: FIX_WHEN_MIN_IS_211
+    211 -> "1.16.6" // TODO: FIX_WHEN_MIN_IS_212
+    else -> null
+}
+
+fun CodeInsightTestFixture.ensureCorrectGoVersion(disposable: Disposable) {
+    val versionCmd = GeneralCommandLine("goenv").withParameters("version")
+    val output = ExecUtil.execAndGetOutput(versionCmd)
+    if (output.exitCode != 0) {
+        println("WARNING: goenv not found, can't switch Go SDK!!!!")
+        return
+    } else {
+        println("Current Go version: ${output.stdout}")
+    }
+
+    val goVersionOverride = compatibleGoForIde()
+    goVersionOverride?.let {
+        val overrideLocation = this.tempDirPath
+
+        installGoSdk(overrideLocation, it)
+        switchGoSdk(overrideLocation, it)
+
+        Disposer.register(disposable) {
+            removeGoOverride(overrideLocation)
+        }
+    }
+}
+
+private fun installGoSdk(overrideLocation: String, version: String) {
+    println("Installing Go version $version")
+    GeneralCommandLine("goenv").withParameters("install", version, "--skip-existing").withWorkDirectory(overrideLocation).runAndValidateCommand()
+}
+
+private fun switchGoSdk(overrideLocation: String, version: String) {
+    println("Switching to Go version $version")
+    GeneralCommandLine("goenv").withParameters("local", version).withWorkDirectory(overrideLocation).runAndValidateCommand()
+}
+
+private fun removeGoOverride(overrideLocation: String) {
+    println("Removing Go override")
+    GeneralCommandLine("goenv").withParameters("local", "--unset").withWorkDirectory(overrideLocation).runAndValidateCommand()
+}
+
+private fun GeneralCommandLine.runAndValidateCommand() {
+    val output = ExecUtil.execAndGetOutput(this)
+    check(output.exitCode == 0) { "${this.commandLineString} failed!\n ${output.stderr}" }
+}
 
 fun createMockSdk(root: String, version: String): GoSdk = GoSdkImpl(root, version, null)

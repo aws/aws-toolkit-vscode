@@ -7,7 +7,7 @@ import org.junit.rules.ExternalResource
 import java.util.Properties
 
 /**
- * A utility that can temporarily forcibly set environment variables and
+ * A utility that can temporarily forcibly set system properties and
  * then allows resetting them to the original values.
  */
 class SystemPropertyHelper : ExternalResource() {
