@@ -11,7 +11,7 @@ import { CloudFormationTemplateRegistry } from './templateRegistry'
 import { ext } from '../extensionGlobals'
 import { getIdeProperties } from '../extensionUtilities'
 import { NoopWatcher } from '../watchedFiles'
-import { createStarterTemplateFile, refreshSchemas } from './cloudformation'
+import { createStarterTemplateFile } from './cloudformation'
 import { VSCODE_EXTENSION_ID } from '../extensions'
 
 export const TEMPLATE_FILE_GLOB_PATTERN = '**/*.{yaml,yml}'
@@ -31,7 +31,6 @@ export const TEMPLATE_FILE_EXCLUDE_PATTERN = /.*[/\\]\.aws-sam([/\\].*|$)/
  * @param extensionContext VS Code extension context
  */
 export async function activate(extensionContext: vscode.ExtensionContext): Promise<void> {
-    refreshSchemas(extensionContext)
     // Note: redhat.vscode-yaml no longer works on vscode 1.42
     activateExtension(VSCODE_EXTENSION_ID.yaml).then(addCustomTags)
 
