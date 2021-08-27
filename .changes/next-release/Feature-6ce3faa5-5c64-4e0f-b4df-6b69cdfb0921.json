@@ -1,4 +1,4 @@
 {
 	"type": "Feature",
-	"description": "Improved reliability of JSON schema support for SAM/CFN YAML templates"
+	"description": "SAM/CFN schema support: avoid changes to user settings, improve reliability."
 }
