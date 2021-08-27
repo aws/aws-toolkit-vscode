@@ -145,12 +145,21 @@ export class ForceDirectedGraph {
                 .attr('class', 'error-message')
                 .text('Errors detected in template, cannot preview.')
                 .style('display', 'none')
+
+            d3.select(testDocument)
+                .select('body')
+                .append('button')
+                .attr('id', 'view-logs-button')
+                .text('View Logs')
+                .style('display', 'none')
         } else {
             d3.select('body')
                 .append('span')
                 .attr('class', 'error-message')
                 .text('Errors detected in template, cannot preview.')
                 .style('display', 'none')
+
+            d3.select('body').append('button').attr('id', 'view-logs-button').text('View Logs').style('display', 'none')
         }
 
         // Event listeners cannot be added outside of webview
@@ -160,6 +169,12 @@ export class ForceDirectedGraph {
             })
             document.getElementById(allButtonID)?.addEventListener('change', () => {
                 this.update(this.completeGraphObject)
+            })
+
+            document.getElementById('view-logs-button')?.addEventListener('click', () => {
+                this.vscodeApi!.postMessage({
+                    command: MessageTypes.ViewLogs,
+                })
             })
         }
 
@@ -173,6 +188,8 @@ export class ForceDirectedGraph {
 
             // Display error message
             d3.select('.error-message').style('display', 'block')
+            // Display view-logs button
+            d3.select('#view-logs-button').style('display', 'block')
         }
 
         // No live updates during unit tests
@@ -193,11 +210,17 @@ export class ForceDirectedGraph {
                             // Display error message
                             d3.select('.error-message').style('display', 'block')
 
+                            // Display view-logs button
+                            d3.select('#view-logs-button').style('display', 'block')
+
                             // Stop ticking
                             this.simulation.stop()
                         } else {
                             // Hide error message
                             d3.select('.error-message').style('display', 'none')
+
+                            // Display view-logs button
+                            d3.select('#view-logs-button').style('display', 'none')
 
                             // Display the buttons
                             this.filterButtonsDiv.style('display', 'block')

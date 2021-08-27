@@ -39,7 +39,7 @@ describe('generateResourceLineMap', function () {
     })
 
     // Note that line numbers in vscode are zero based, so the correct value is one less than what appears in the template
-    it('correctly generates a map between a resource name and its (zero based) line in the template', async function () {
+    it('correctly generates a map between a resource name and its start and end positions in the template', async function () {
         for (const file of templateFiles) {
             const templatePath = join(yamlTemplatesDir, file)
 

@@ -12,6 +12,7 @@ import * as vscode from 'vscode'
 import * as _ from 'lodash'
 import { generateIconsMap } from '../rendering/icons'
 import { MessageTypes } from '../samVisualizeTypes'
+import { showLogOutputChannel } from '../../shared/logger'
 
 export interface MessageObject {
     command: MessageTypes
@@ -20,8 +21,8 @@ export interface MessageObject {
 
 export class SamVisualization {
     private textDocument: vscode.TextDocument
-
-    private resourceLineMap: ResourceLineMap | undefined
+    // Used to support navigation between webview and template
+    private resourceLineMap: ResourceLineMap
     // Used to establish paths to resources that the webview uses
     private readonly extensionContext: vscode.ExtensionContext
     // To let the extension know a visualization has been closed
@@ -39,12 +40,16 @@ export class SamVisualization {
      */
     public readonly textDocumentUri: vscode.Uri
 
+    /**
+     * Tracks the listeners attached to the webview, to be disposed when the webview is disposed.
+     */
     public disposables: vscode.Disposable[] = []
 
     public constructor(textDocument: vscode.TextDocument, extensionContext: vscode.ExtensionContext) {
         this.extensionContext = extensionContext
         this.textDocument = textDocument
         this.textDocumentUri = textDocument.uri
+        this.resourceLineMap = generateResourceLineMap(textDocument.getText())
         this.webviewPanel = this.setUpWebviewPanel(textDocument)
     }
 
@@ -72,11 +77,6 @@ export class SamVisualization {
         )
 
         const graphObject = generateGraphFromYaml(textDocument.getText())
-
-        // Only generate a ResourceLineMap if the input has generated a valid GraphObject.
-        if (graphObject) {
-            this.resourceLineMap = generateResourceLineMap(textDocument.getText())
-        }
 
         // A mock extensionContext is used during testing
         // If the extensionPath is an empty string, extensionContext.asAbsolutePath will not work
@@ -157,10 +157,7 @@ export class SamVisualization {
                             .showTextDocument(this.textDocument, { preserveFocus: true, viewColumn: columnToShow })
                             .then(activeEditor => {
                                 //resource name for clicked resource stored in message.data
-                                let pos
-                                if (_.isString(message.data)) {
-                                    pos = this.resourceLineMap![message.data]
-                                }
+                                const pos = this.resourceLineMap[message.data]
                                 if (pos) {
                                     //const decorations: vscode.DecorationOptions[] = []
                                     const startPosition = activeEditor.document
@@ -176,30 +173,34 @@ export class SamVisualization {
                             })
                         break
                     }
+                    case MessageTypes.ViewLogs: {
+                        showLogOutputChannel()
+                        break
+                    }
                 }
             })
         )
         let cursorListener: NodeJS.Timeout
+        // Listens for a change in the active editor
+        // If the text document containing the rendered template gets focus, begin listening for cursor position
         this.disposables.push(
             vscode.window.onDidChangeActiveTextEditor(editor => {
                 if (editor?.document.uri.path === this.textDocumentUri.path) {
                     cursorListener = setInterval(() => {
-                        if (this.resourceLineMap) {
-                            const cursorPosition = editor.document.offsetAt(editor.selection.active)
-                            for (const [key, value] of Object.entries(this.resourceLineMap)) {
-                                if (cursorPosition >= value.start && cursorPosition <= value.end) {
-                                    this.webviewPanel.webview.postMessage({
-                                        command: MessageTypes.NavigateFromTemplate,
-                                        data: key,
-                                    })
-                                    return
-                                }
+                        const cursorPosition = editor.document.offsetAt(editor.selection.active)
+                        for (const [key, value] of Object.entries(this.resourceLineMap)) {
+                            if (cursorPosition >= value.start && cursorPosition <= value.end) {
+                                this.webviewPanel.webview.postMessage({
+                                    command: MessageTypes.NavigateFromTemplate,
+                                    data: key,
+                                })
+                                return
                             }
-                            // Cursor not in any resource, send message to de-focus previously selected node in the graph
-                            this.webviewPanel.webview.postMessage({
-                                command: MessageTypes.ClearNodeFocus,
-                            })
                         }
+                        // Cursor not in any resource, send message to de-focus previously selected node in the graph
+                        this.webviewPanel.webview.postMessage({
+                            command: MessageTypes.ClearNodeFocus,
+                        })
                     }, 500)
                 } else {
                     clearInterval(cursorListener)
@@ -239,14 +240,7 @@ export class SamVisualization {
             data: newGraphObject,
         })
 
-        // Only generate a ResourceLineMap if the input has generated a valid GraphObject.
-        if (newGraphObject) {
-            const newResourceLineMap = generateResourceLineMap(yamlString)
-            // Update the resourceLineMap
-            this.resourceLineMap = newResourceLineMap
-        } else {
-            this.resourceLineMap = undefined
-        }
+        this.resourceLineMap = generateResourceLineMap(yamlString)
     }
 
     private getWebviewContent(
