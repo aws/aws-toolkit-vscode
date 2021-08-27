@@ -11,10 +11,10 @@ import { ext } from '../../shared/extensionGlobals'
 import * as logger from '../logger/logger'
 
 export const MDE_REGION = 'us-east-1'
-export const MDE_ENDPOINT = 'https://REMOVED.execute-api.us-east-1.amazonaws.com/prod/'
+export const MDE_ENDPOINT = 'https://r2g9qfgh3d.execute-api.us-east-1.amazonaws.com/prod'
 
 // eslint-disable-next-line @typescript-eslint/no-empty-interface
-export interface MdeEnvironment extends mde.Environment {}
+export interface MdeEnvironment extends mde.EnvironmentSummary {}
 
 async function createMdeClient(regionCode: string = MDE_REGION, endpoint: string = MDE_ENDPOINT): Promise<mde> {
     const c = (await ext.sdkClientBuilder.createAwsService(AWS.Service, {
@@ -84,7 +84,7 @@ export class MdeClient {
     ): AsyncIterableIterator<MdeEnvironment | undefined> {
         const c = this.sdkClient
         const r = await this.call(c.listEnvironments(args))
-        for (const i of r.environments ?? []) {
+        for (const i of r.environmentSummaries ?? []) {
             yield i
         }
     }
@@ -92,6 +92,6 @@ export class MdeClient {
     public async createEnvironment(args: mde.CreateEnvironmentRequest): Promise<MdeEnvironment | undefined> {
         const c = this.sdkClient
         const r = await this.call(c.createEnvironment(args))
-        return r.environment
+        return r
     }
 }

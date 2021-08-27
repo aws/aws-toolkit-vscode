@@ -39,7 +39,7 @@ export class MdeRootNode extends AWSTreeNodeBase {
             getNoChildrenPlaceholderNode: async () => new PlaceholderNode(this, localize('AWS.empty', '[Empty]')),
             sort: (nodeA: MdeInstanceNode, nodeB: MdeInstanceNode) => {
                 // sort by: userId, envId
-                const compareStatus = (nodeA.env.userId ?? '').localeCompare(nodeB.env.userId ?? '')
+                const compareStatus = (nodeA.env.userArn ?? '').localeCompare(nodeB.env.userArn ?? '')
                 if (compareStatus !== 0) {
                     return compareStatus
                 }
@@ -53,10 +53,10 @@ export class MdeRootNode extends AWSTreeNodeBase {
         const items = this.mdeClient.listEnvironments({})
         const envs = new Map<string, mde.MdeEnvironment>()
         for await (const i of items) {
-            if (!i || !i.environmentId) {
+            if (!i || !i.id) {
                 continue
             }
-            envs.set(i.environmentId, i)
+            envs.set(i.id, i)
         }
         updateInPlace(
             this.nodes,
@@ -67,7 +67,7 @@ export class MdeRootNode extends AWSTreeNodeBase {
                 const env = envs.get(key)
                 if (n && env) {
                     const status = env.status === 'RUNNING' ? '' : env.status
-                    n.label = `${env.environmentId.substring(0, 7)}… ${env.userId} ${status}`
+                    n.label = `${env.id.substring(0, 7)}… ${env.userArn} ${status}`
                 }
             },
             key => {

@@ -23,21 +23,15 @@ export async function mdeConnectCommand(env: mde.MdeEnvironment): Promise<void> 
     }
 
     const vsc = `${vscode.env.appRoot}/bin/code`
-    const cmd = new ChildProcess(
-        true,
-        vsc,
-        undefined,
-        '--folder-uri',
-        `vscode-remote://ssh-remote+${env.environmentId}/home/`
-    )
+    const cmd = new ChildProcess(true, vsc, undefined, '--folder-uri', `vscode-remote://ssh-remote+${env.id}/home/`)
 
     // Note: `await` is intentionally not used.
     cmd.run(
         (stdout: string) => {
-            getLogger().verbose(`MDE connect: ${env.environmentId}: ${stdout}`)
+            getLogger().verbose(`MDE connect: ${env.id}: ${stdout}`)
         },
         (stderr: string) => {
-            getLogger().verbose(`MDE connect: ${env.environmentId}: ${stderr}`)
+            getLogger().verbose(`MDE connect: ${env.id}: ${stderr}`)
         }
     )
 }
@@ -58,12 +52,15 @@ export async function mdeCreateCommand(
 
     try {
         const env = ext.mde.createEnvironment({
-            userId: 'TestRole',
+            instanceType: 'mde.large',
+            // Persistent storage in Gb (0,16,32,64), 0 = no persistence.
+            persistentStorage: { sizeInGiB: 0 },
+            sourceCode: [{ uri: 'https://github.com/neovim/neovim.git', branch: 'master' }],
             // definition: {
             //     shellImage: `"{"\"shellImage\"": "\"mcr.microsoft.com/vscode/devcontainers/go\""}"`,
             // },
             tags: {
-                '': label, // Label = "tag with empty key".
+                label: '', // Label = "tag with no value".
             },
             // instanceType: ...  // TODO?
             // ideRuntimes: ...  // TODO?
