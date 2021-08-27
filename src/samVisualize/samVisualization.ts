@@ -76,7 +76,7 @@ export class SamVisualization {
             }
         )
 
-        const graphObject = generateGraphFromYaml(textDocument.getText())
+        const graphObject = generateGraphFromYaml(textDocument.getText(), textDocument.fileName)
 
         // A mock extensionContext is used during testing
         // If the extensionPath is an empty string, extensionContext.asAbsolutePath will not work
@@ -231,7 +231,7 @@ export class SamVisualization {
 
     // Updates the visualization with the newly edited YAML
     private updateVisualization(yamlString: string) {
-        const newGraphObject = generateGraphFromYaml(yamlString)
+        const newGraphObject = generateGraphFromYaml(yamlString, this.textDocument.fileName)
 
         // We want to post the graphObject even if it is undefined,
         // as the rendering code will render an error message if it is undefined.

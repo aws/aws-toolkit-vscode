@@ -89,7 +89,7 @@ describe('samVisualize Graph Generation from YAML', async function () {
             const expectedOutputFile = join(testExpectedOutputDirectory, trimExtension(file) + '.json')
 
             const yamlString = readFileSync(inputFile).toString()
-            const outputObject = generateGraphFromYaml(yamlString)
+            const outputObject = generateGraphFromYaml(yamlString, './test/path')
             const expectedObject = JSON.parse(readFileSync(expectedOutputFile).toString())
 
             /**
@@ -114,7 +114,7 @@ describe('samVisualize Graph Generation from YAML', async function () {
             const errorFile = join(errorInputDirectory, file)
             const badCFNTemplateString = readFileSync(errorFile).toString()
 
-            assert.strictEqual(generateGraphFromYaml(badCFNTemplateString), undefined)
+            assert.strictEqual(generateGraphFromYaml(badCFNTemplateString, './test/path'), undefined)
         }
     })
 })

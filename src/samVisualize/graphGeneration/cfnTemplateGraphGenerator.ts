@@ -12,11 +12,11 @@ import { getLogger } from '../../shared/logger/logger'
  * @param inputYaml A string representing a YAML template
  * @returns A JavaScript object corresponding to the given YAML string, or undefined if the input is not valid YAML
  */
-function yamlStringToObject(inputYaml: string): Record<string, any> | undefined {
+function yamlStringToObject(inputYaml: string, filePathForErr: string): Record<string, any> | undefined {
     try {
         return yamlParse(inputYaml)
     } catch (err) {
-        getLogger().error('Failed to load CloudFormation template: ', err)
+        getLogger().error(`Failed to load CloudFormation template [${filePathForErr}]: ${err} `)
     }
 }
 
@@ -116,8 +116,8 @@ function traverse(graph: Graph, currentObj: Record<string, any>, parentNodeName:
  * @param inputYaml A string representing a YAML template.
  * @returns A GraphObject representing the graph, or `undefined` if the input does adhere to the `Template Anatomy`
  */
-export function generateGraphFromYaml(inputYaml: string): GraphObject | undefined {
-    const templateData = yamlStringToObject(inputYaml)
+export function generateGraphFromYaml(inputYaml: string, filePathForErr: string): GraphObject | undefined {
+    const templateData = yamlStringToObject(inputYaml, filePathForErr)
     // A graph cannot be generated if the template data is not defined, or not an object
     if (templateData !== undefined && _.isObjectLike(templateData)) {
         // We only want Resources as nodes in the graph
@@ -126,7 +126,7 @@ export function generateGraphFromYaml(inputYaml: string): GraphObject | undefine
         // If the input yaml does not have a 'Resources' key, no graph can be generated
         if (!_.isObjectLike(resources) || _.isArrayLike(resources)) {
             getLogger().error(
-                'Error rendering CloudFormation template. Cannot render a template with a missing or invalid `Resources` key.'
+                `Error rendering CloudFormation template [${filePathForErr}]. Cannot render a template with a missing or invalid 'Resources' key.`
             )
             return undefined
         }
@@ -139,13 +139,13 @@ export function generateGraphFromYaml(inputYaml: string): GraphObject | undefine
             // If a resource does not contain an object body, it cannot be defined in the graph
             if (!_.isObjectLike(resources[resourceName]) || _.isArrayLike(resources[resourceName])) {
                 getLogger().error(
-                    `Error rendering CloudFormation template. The '${resourceName}' resource definition is invalid.`
+                    `Error rendering CloudFormation template [${filePathForErr}]. The '${resourceName}' resource definition is invalid.`
                 )
                 return undefined
             }
             if (!_.isString(resources[resourceName]['Type'])) {
                 getLogger().error(
-                    `Error rendering CloudFormation template. The '${resourceName}' has an missing or invalid Type.`
+                    `Error rendering CloudFormation template [${filePathForErr}]. The '${resourceName}' has an missing or invalid Type.`
                 )
                 return undefined
             }
