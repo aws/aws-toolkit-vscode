@@ -16,15 +16,7 @@ function yamlStringToObject(inputYaml: string): Record<string, any> | undefined 
     try {
         return yamlParse(inputYaml)
     } catch (err) {
-        // The number of characters previewed in an erroneous template string
-        const characterLimit = 25
-        getLogger().error(
-            `SAM Visualize: Failed to load template "${inputYaml.substr(
-                0,
-                characterLimit
-            )}"... Please ensure the template is valid YAML: 0%`,
-            err
-        )
+        getLogger().error('Failed to load CloudFormation template: ', err)
     }
 }
 
@@ -134,7 +126,7 @@ export function generateGraphFromYaml(inputYaml: string): GraphObject | undefine
         // If the input yaml does not have a 'Resources' key, no graph can be generated
         if (!_.isObjectLike(resources) || _.isArrayLike(resources)) {
             getLogger().error(
-                'SAM Visualize: Error rendering SAM template. Cannot render a template with a missing or invalid `Resources` key.'
+                'Error rendering CloudFormation template. Cannot render a template with a missing or invalid `Resources` key.'
             )
             return undefined
         }
@@ -147,13 +139,13 @@ export function generateGraphFromYaml(inputYaml: string): GraphObject | undefine
             // If a resource does not contain an object body, it cannot be defined in the graph
             if (!_.isObjectLike(resources[resourceName]) || _.isArrayLike(resources[resourceName])) {
                 getLogger().error(
-                    `SAM Visualize: Error rendering SAM template. The '${resourceName}' resource definition is invalid.`
+                    `Error rendering CloudFormation template. The '${resourceName}' resource definition is invalid.`
                 )
                 return undefined
             }
             if (!_.isString(resources[resourceName]['Type'])) {
                 getLogger().error(
-                    `SAM Visualize: Error rendering SAM template. The '${resourceName}' has an missing or invalid Type.`
+                    `Error rendering CloudFormation template. The '${resourceName}' has an missing or invalid Type.`
                 )
                 return undefined
             }
