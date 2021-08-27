@@ -7,6 +7,9 @@ import com.fasterxml.jackson.module.kotlin.jacksonObjectMapper
 import com.fasterxml.jackson.module.kotlin.readValue
 import com.intellij.openapi.Disposable
 import com.intellij.openapi.project.Project
+import com.jetbrains.jsonSchema.JsonSchemaMappingsProjectConfiguration
+import com.jetbrains.jsonSchema.ide.JsonSchemaService
+import com.jetbrains.jsonSchema.impl.JsonSchemaServiceImpl
 import kotlinx.coroutines.CoroutineStart
 import kotlinx.coroutines.Deferred
 import kotlinx.coroutines.async
@@ -40,16 +43,16 @@ object DynamicResources : Disposable {
 
     override fun dispose() {}
 
-    fun getResourceDisplayName(identifier: String) : String =
+    fun getResourceDisplayName(identifier: String): String =
         if (identifier.startsWith("arn:")) {
             Arn.fromString(identifier).resourceAsString()
         } else {
             identifier
         }
 
-    fun getResourceSchema(project: Project, resourceType: String): Resource.Cached<File> = ClientBackedCachedResource(CloudFormationClient::class, "cloudformation.dynamic.resources.schema.$resourceType"){
+    fun getResourceSchema(project: Project, resourceType: String): Resource.Cached<File> = ClientBackedCachedResource(CloudFormationClient::class, "cloudformation.dynamic.resources.schema.$resourceType") {
         val client = project.awsClient<CloudFormationClient>()
-        val schema = client.describeType{
+        val schema = client.describeType {
             it.type(RegistryType.RESOURCE)
             it.typeName(resourceType)
         }.schema()
@@ -58,8 +61,18 @@ object DynamicResources : Disposable {
         file
     }
 
-    val resourceTypesInUse : MutableSet<String> = mutableSetOf()
-
+    val resourceTypesInUse: MutableSet<String> = mutableSetOf()
+    fun addResourceSchemaMapping(
+        project: Project,
+        file: DynamicResourceVirtualFile
+    ) {
+        val configuration = JsonSchemaMappingsProjectConfiguration.getInstance(project).findMappingForFile(file)
+        if (configuration == null) {
+            resourceTypesInUse.add(file.getResourceIdentifier().resourceType)
+            JsonSchemaService.Impl.get(project).reset()
+            JsonSchemaServiceImpl(project).reset()
+        }
+    }
 }
 
 data class ResourceDetails(val operations: List<Operation>, val arnRegex: String? = null)

@@ -3,7 +3,6 @@
 
 package software.aws.toolkits.jetbrains.services.dynamic.explorer
 
-import com.intellij.json.JsonFileType
 import com.intellij.openapi.command.WriteCommandAction
 import com.intellij.openapi.fileEditor.FileDocumentManager
 import com.intellij.openapi.fileEditor.FileEditorManager
@@ -12,7 +11,6 @@ import com.intellij.openapi.progress.Task
 import com.intellij.openapi.project.Project
 import com.intellij.psi.codeStyle.CodeStyleManager
 import com.intellij.psi.util.PsiUtilCore
-import com.intellij.testFramework.LightVirtualFile
 import software.amazon.awssdk.arns.Arn
 import software.amazon.awssdk.services.cloudformation.CloudFormationClient
 import software.aws.toolkits.core.utils.error
@@ -33,7 +31,8 @@ import software.aws.toolkits.telemetry.DynamicresourceTelemetry
 
 class DynamicResourceResourceTypeNode(project: Project, private val resourceType: String) :
     AwsExplorerNode<String>(project, resourceType, null),
-    ResourceParentNode, ResourceActionNode {
+    ResourceParentNode,
+    ResourceActionNode {
 
     override fun displayName(): String = resourceType
     override fun isAlwaysShowPlus(): Boolean = true
@@ -53,7 +52,6 @@ class DynamicResourceResourceTypeNode(project: Project, private val resourceType
     }
 
     override fun actionGroupName(): String = "aws.toolkit.explorer.dynamic.resource"
-
 }
 
 class DynamicResourceNode(project: Project, val resource: DynamicResource) :
