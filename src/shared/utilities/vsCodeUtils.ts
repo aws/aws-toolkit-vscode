@@ -8,6 +8,7 @@ import * as nls from 'vscode-nls'
 import { ext } from '../../shared/extensionGlobals'
 import { getLogger } from '../logger/logger'
 import { waitUntil } from './timeoutUtils'
+import * as fs from 'fs-extra'
 
 // TODO: Consider NLS initialization/configuration here & have packages to import localize from here
 export const localize = nls.loadMessageBundle()
@@ -138,4 +139,21 @@ export async function activateExtension(
  */
 export function promisifyThenable<T>(thenable: Thenable<T>): Promise<T> {
     return new Promise((resolve, reject) => thenable.then(resolve, reject))
+}
+
+/**
+ * Helper function to create a text file with supplied content and open it with a TextEditor
+ *
+ * @param fileText The supplied text to fill this file with
+ * @param filePath The full path to the file to be created
+ *
+ * @returns TextEditor that was just opened
+ */
+
+export async function openTextEditorWithText(fileText: string, filePath: string): Promise<vscode.TextEditor> {
+    await fs.writeFile(filePath, fileText)
+
+    const textDocument = await vscode.workspace.openTextDocument(filePath)
+
+    return await vscode.window.showTextDocument(textDocument)
 }

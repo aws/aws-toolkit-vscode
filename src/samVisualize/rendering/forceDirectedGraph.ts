@@ -10,7 +10,7 @@ import { GraphObject } from '../graphGeneration/graph'
 import { filterPrimaryOnly } from '../rendering/filter'
 import { MessageTypes } from '../samVisualizeTypes'
 import * as _ from 'lodash'
-import { MessageObject } from '../webviewManagement/samVisualization'
+import { MessageObject } from '../samVisualization'
 
 interface NodeDatum extends d3.SimulationNodeDatum {
     name: string

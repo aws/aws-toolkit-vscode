@@ -2,7 +2,7 @@
  * Copyright 2021 Amazon.com, Inc. or its affiliates. All Rights Reserved.
  * SPDX-License-Identifier: Apache-2.0
  */
-import { getLogger, Logger } from '../../shared/logger/logger'
+import { getLogger, Logger } from '../shared/logger/logger'
 import * as vscode from 'vscode'
 import { SamVisualization } from './samVisualization'
 export class SamVisualizationManager {

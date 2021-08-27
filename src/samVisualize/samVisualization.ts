@@ -5,14 +5,14 @@
 import * as nls from 'vscode-nls'
 const localize = nls.loadMessageBundle()
 import { basename, join } from 'path'
-import { generateGraphFromYaml } from '../graphGeneration/cfnTemplateGraphGenerator'
-import { generateResourceLineMap, ResourceLineMap } from '../rendering/navigation'
+import { generateGraphFromYaml } from './graphGeneration/cfnTemplateGraphGenerator'
+import { generateResourceLineMap, ResourceLineMap } from './rendering/navigation'
 import { readFileSync } from 'fs-extra'
 import * as vscode from 'vscode'
 import * as _ from 'lodash'
-import { generateIconsMap } from '../rendering/icons'
-import { MessageTypes } from '../samVisualizeTypes'
-import { showLogOutputChannel } from '../../shared/logger'
+import { generateIconsMap } from './rendering/icons'
+import { MessageTypes } from './samVisualizeTypes'
+import { showLogOutputChannel } from '../shared/logger'
 
 export interface MessageObject {
     command: MessageTypes

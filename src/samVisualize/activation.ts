@@ -3,7 +3,7 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 import * as vscode from 'vscode'
-import { SamVisualizationManager } from './webviewManagement/samVisualizationManager'
+import { SamVisualizationManager } from './samVisualizationManager'
 
 export async function activate(extensionContext: vscode.ExtensionContext): Promise<void> {
     const visualizationManger = new SamVisualizationManager(extensionContext)

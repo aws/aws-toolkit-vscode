@@ -10,7 +10,7 @@ import * as vscode from 'vscode'
 import { makeTemporaryToolkitFolder } from '../../shared/filesystemUtilities'
 import { spy } from 'sinon'
 import { closeAllEditors } from '../../shared/utilities/vsCodeUtils'
-import { openATextEditorWithText } from '../../shared/utilities/textDocumentUtilities'
+import { openTextEditorWithText } from '../../shared/utilities/vsCodeUtils'
 
 const sampleSamTemplateFileName = 'helloWorld.yaml'
 const sampleSamTemplateYaml = `
@@ -48,7 +48,7 @@ describe('visualizeSamTemplate', async function () {
     })
 
     it('correctly displays content when given an active editor containing a valid SAM Template', async function () {
-        await openATextEditorWithText(sampleSamTemplateYaml, path.join(tempFolder, sampleSamTemplateFileName))
+        await openTextEditorWithText(sampleSamTemplateYaml, path.join(tempFolder, sampleSamTemplateFileName))
         const result = await vscode.commands.executeCommand<vscode.WebviewPanel>('aws.samVisualize.renderTemplate')
 
         assert.ok(result)
@@ -58,10 +58,7 @@ describe('visualizeSamTemplate', async function () {
     })
 
     it('update webview when the editor is changed', async function () {
-        const textEditor = await openATextEditorWithText(
-            'Sample Text',
-            path.join(tempFolder, sampleSamTemplateFileName)
-        )
+        const textEditor = await openTextEditorWithText('Sample Text', path.join(tempFolder, sampleSamTemplateFileName))
 
         const result = await vscode.commands.executeCommand<vscode.WebviewPanel>('aws.samVisualize.renderTemplate')
 
@@ -95,7 +92,7 @@ describe('visualizeSamTemplate', async function () {
     })
 
     it('doesnt update the graph if a seperate file is opened or modified', async function () {
-        await openATextEditorWithText(sampleSamTemplateYaml, path.join(tempFolder, sampleSamTemplateFileName))
+        await openTextEditorWithText(sampleSamTemplateYaml, path.join(tempFolder, sampleSamTemplateFileName))
 
         const result = await vscode.commands.executeCommand<vscode.WebviewPanel>('aws.samVisualize.renderTemplate')
         assert.ok(result)
@@ -105,7 +102,7 @@ describe('visualizeSamTemplate', async function () {
         const someOtherFileName = 'other.yaml'
         const someOtherFileText = 'Random contents'
 
-        const textEditor2 = await openATextEditorWithText(someOtherFileText, path.join(tempFolder, someOtherFileName))
+        const textEditor2 = await openTextEditorWithText(someOtherFileText, path.join(tempFolder, someOtherFileName))
 
         const updatedText = 'updated text'
 

@@ -6,8 +6,8 @@
 import * as assert from 'assert'
 import * as sinon from 'sinon'
 import { Disposable } from 'vscode-languageclient'
-import { SamVisualization } from '../../../samVisualize/webviewManagement/samVisualization'
-import { SamVisualizationManager } from '../../../samVisualize/webviewManagement/samVisualizationManager'
+import { SamVisualization } from '../../samVisualize/samVisualization'
+import { SamVisualizationManager } from '../../samVisualize/samVisualizationManager'
 import * as vscode from 'vscode'
 
 let samVisualizationManager: SamVisualizationManager
