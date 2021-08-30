@@ -1,0 +1,4 @@
+{
+  "type" : "bugfix",
+  "description" : "Fix IDE error about context.module being null (#2776)"
+}
