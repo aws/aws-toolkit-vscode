@@ -26,6 +26,7 @@ import { ext } from '../shared/extensionGlobals'
 import { AwsSamTargetType } from '../shared/sam/debugger/awsSamDebugConfiguration'
 import { closeAllEditors } from '../shared/utilities/vsCodeUtils'
 import { insertTextIntoFile } from '../shared/utilities/textUtilities'
+import { openSamAppFile } from './integrationTestsUtilities'
 const projectFolder = testUtils.getTestWorkspaceFolder()
 
 /* Test constants go here */
@@ -262,12 +263,6 @@ const scenarios: TestScenario[] = [
     // { runtime: 'dotnetcore2.1', path: 'src/HelloWorld/Function.cs', debugSessionType: 'coreclr', language: 'csharp' },
     // { runtime: 'dotnetcore3.1', path: 'src/HelloWorld/Function.cs', debugSessionType: 'coreclr', language: 'csharp' },
 ]
-
-async function openSamAppFile(applicationPath: string): Promise<vscode.Uri> {
-    const document = await vscode.workspace.openTextDocument(applicationPath)
-
-    return document.uri
-}
 
 function tryRemoveFolder(fullPath: string) {
     try {

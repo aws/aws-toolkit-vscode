@@ -6,6 +6,7 @@
 import * as assert from 'assert'
 import { waitUntil } from '../shared/utilities/timeoutUtils'
 import * as vscode from 'vscode'
+import { focusAndCloseTab } from '../shared/utilities/vsCodeUtils'
 
 const SECOND = 1000
 export const TIMEOUT = 30 * SECOND
@@ -14,8 +15,12 @@ export async function sleep(miliseconds: number): Promise<void> {
     return new Promise(resolve => setTimeout(resolve, miliseconds))
 }
 
-// Retrieves CodeLenses from VS Code
+/**
+ * Retrieves CodeLenses from VS Code
+ * NOTE: File must be open in an editor or else command will fail.
+ */
 export async function getCodeLenses(uri: vscode.Uri): Promise<vscode.CodeLens[] | undefined> {
+    // const editor = vscode.window.visibleTextEditors
     return vscode.commands.executeCommand('vscode.executeCodeLensProvider', uri)
 }
 
@@ -75,6 +80,15 @@ export async function configureGoExtension(): Promise<void> {
     await vscode.commands.executeCommand('go.tools.install', [gopls, dlv])
 }
 
+export async function openSamAppFile(applicationPath: string): Promise<vscode.Uri> {
+    const document = await vscode.workspace.openTextDocument(applicationPath)
+
+    return document.uri
+}
+
+/**
+ * NOTE: File must be open in an editor or else command will fail.
+ */
 export async function getAddConfigCodeLens(
     documentUri: vscode.Uri,
     timeout: number,
@@ -104,6 +118,9 @@ export async function getAddConfigCodeLens(
             } catch (e) {
                 console.log(`sam.test.ts: getAddConfigCodeLens() on "${documentUri.fsPath}" failed, retrying:\n${e}`)
             }
+
+            await focusAndCloseTab(documentUri)
+            await openSamAppFile(documentUri.fsPath)
 
             return undefined
         },

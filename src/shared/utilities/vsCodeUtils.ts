@@ -139,3 +139,17 @@ export async function activateExtension(
 export function promisifyThenable<T>(thenable: Thenable<T>): Promise<T> {
     return new Promise((resolve, reject) => thenable.then(resolve, reject))
 }
+
+export async function focusAndCloseTab(
+    uri: vscode.Uri,
+    editor?: vscode.TextEditor,
+    window = vscode.window,
+    workspace = vscode.workspace
+): Promise<void> {
+    const doc = editor ? editor.document : await workspace.openTextDocument(uri)
+    await window.showTextDocument(doc, {
+        preview: false,
+        viewColumn: editor?.viewColumn,
+    })
+    await vscode.commands.executeCommand('workbench.action.closeActiveEditor')
+}
