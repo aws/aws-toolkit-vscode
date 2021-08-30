@@ -83,13 +83,12 @@ export async function createVueWebview<TRequest, TResponse>(params: WebviewParam
         <meta charset="UTF-8">
         <meta name="viewport" content="width=device-width, initial-scale=1.0">
         
-        <!-- how do we not require unsafe eval? -->
         <meta
             http-equiv="Content-Security-Policy"
             content=
                 "default-src 'none';
                 img-src ${view.webview.cspSource} https:;
-                script-src ${view.webview.cspSource} 'unsafe-eval';
+                script-src ${view.webview.cspSource};
                 style-src ${view.webview.cspSource} 'unsafe-inline';
                 font-src 'self' data:;"
         >
