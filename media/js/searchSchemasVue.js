@@ -1,7 +1,6 @@
 ;(function () {
     const vscode = acquireVsCodeApi()
-    const app = new Vue({
-        el: '#app',
+    const app = Vue.createApp({
         data: () => ({
             searchText: '',
             searchProgressInfo: '',
@@ -120,4 +119,5 @@
             },
         },
     })
+    app.mount('#app')
 })()

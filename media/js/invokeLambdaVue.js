@@ -1,8 +1,7 @@
 console.log('Loaded!')
 ;(function () {
     const vscode = acquireVsCodeApi()
-    const app = new Vue({
-        el: '#app',
+    const app = Vue.createApp({
         data: () => ({
             selectedSampleRequest: {},
             sampleText: '',
@@ -85,4 +84,5 @@ console.log('Loaded!')
             },
         },
     })
+    app.mount('#app')
 })()

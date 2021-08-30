@@ -10,7 +10,7 @@ const _ = require('lodash')
 const JS_DEPS = [
     {
         name: 'vue.min.js',
-        path: 'vue/dist/vue.runtime.global.prod.js',
+        path: 'vue/dist/vue.global.prod.js',
     },
     {
         name: 'lodash.min.js',

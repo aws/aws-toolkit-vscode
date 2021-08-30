@@ -2,8 +2,7 @@ console.log('Loaded!')
 ;(function () {
     const vscode = acquireVsCodeApi()
     const defaultJsonPlaceholder = '{\n\t"key1": "value1",\n\t"key2": "value2",\n\t"key3": "value3"\n}'
-    const app = new Vue({
-        el: '#app',
+    const app = Vue.createApp({
         data: () => ({
             executionInput: '',
             isReadOnly: false,
@@ -69,4 +68,5 @@ console.log('Loaded!')
             },
         },
     })
+    app.mount('#app')
 })()

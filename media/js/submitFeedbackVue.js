@@ -1,8 +1,7 @@
 console.log('Loaded!')
 ;(function () {
     const vscode = acquireVsCodeApi()
-    const app = new Vue({
-        el: '#app',
+    const app = Vue.createApp({
         data: () => ({
             comment: '',
             sentiment: '',
@@ -37,4 +36,5 @@ console.log('Loaded!')
             },
         },
     })
+    app.mount('#app')
 })()
