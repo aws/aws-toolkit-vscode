@@ -68,14 +68,15 @@ async function cloneJsSdk(dir: string): Promise<void> {
         })
         gitCmd.once('close', (code, signal) => {
             gitCmd.stdout?.removeAllListeners()
-            resolve()
-        })
 
         // Only needed for the "update" case, but harmless for "clone".
         const gitCheckout = child_process.spawnSync('git', ['-C', dir, 'checkout', '--force', tag])
         if (gitCheckout.status !== undefined && gitCheckout.status !== 0) {
             console.log(`error: git: status=${gitCheckout.status} output=${gitCheckout.output.toString()}`)
         }
+
+            resolve()
+        })
     })
 }
 
