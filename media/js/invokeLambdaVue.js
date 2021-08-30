@@ -1,9 +1,9 @@
 console.log('Loaded!')
-;(function() {
+;(function () {
     const vscode = acquireVsCodeApi()
     const app = new Vue({
         el: '#app',
-        data: {
+        data: () => ({
             selectedSampleRequest: {},
             sampleText: '',
             error: null,
@@ -11,21 +11,21 @@ console.log('Loaded!')
             statusCode: '',
             logs: '',
             showResponse: false,
-            isLoading: false
-        },
+            isLoading: false,
+        }),
         mounted() {
-            this.$nextTick(function() {
+            this.$nextTick(function () {
                 window.addEventListener('message', this.handleMessageReceived)
             })
         },
         methods: {
-            newSelection: function() {
+            newSelection: function () {
                 vscode.postMessage({
                     command: 'sampleRequestSelected',
-                    value: this.selectedSampleRequest
+                    value: this.selectedSampleRequest,
                 })
             },
-            processFile: function($event) {
+            processFile: function ($event) {
                 console.log($event)
                 console.log($event.target)
                 const inputFile = $event.target
@@ -41,7 +41,7 @@ console.log('Loaded!')
                     reader.readAsText(inputFile.files[0])
                 }
             },
-            handleMessageReceived: function(e) {
+            handleMessageReceived: function (e) {
                 const message = event.data
                 console.log(message.command)
                 console.log(message.sample)
@@ -72,17 +72,17 @@ console.log('Loaded!')
                         break
                 }
             },
-            loadSampleText: function(txt) {
+            loadSampleText: function (txt) {
                 this.sampleText = txt
             },
-            sendInput: function() {
+            sendInput: function () {
                 console.log(this.sampleText)
                 this.isLoading = true
                 vscode.postMessage({
                     command: 'invokeLambda',
-                    value: this.sampleText
+                    value: this.sampleText,
                 })
-            }
-        }
+            },
+        },
     })
 })()

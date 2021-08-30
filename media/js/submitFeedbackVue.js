@@ -1,21 +1,21 @@
 console.log('Loaded!')
-;(function() {
+;(function () {
     const vscode = acquireVsCodeApi()
     const app = new Vue({
         el: '#app',
-        data: {
+        data: () => ({
             comment: '',
             sentiment: '',
             isSubmitting: false,
             error: '',
-        },
+        }),
         mounted() {
-            this.$nextTick(function() {
+            this.$nextTick(function () {
                 window.addEventListener('message', this.handleMessageReceived)
             })
         },
         methods: {
-            handleMessageReceived: function(e) {
+            handleMessageReceived: function (e) {
                 const message = e.data
                 switch (message.statusCode) {
                     case 'Failure':
@@ -25,7 +25,7 @@ console.log('Loaded!')
                         break
                 }
             },
-            submitFeedback: function() {
+            submitFeedback: function () {
                 this.error = ''
                 this.isSubmitting = true
                 console.log('Submitting feedback...')
