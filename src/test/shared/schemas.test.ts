@@ -5,11 +5,11 @@
 
 import * as vscode from 'vscode'
 
-import { FakeExtensionContext } from '../../fakeExtensionContext'
+import { anything, deepEqual, instance, mock, verify } from '../utilities/mockito'
 import { ExtensionContext } from 'vscode'
-import { YamlExtension } from '../../../shared/extensions/yaml'
-import { SchemaService } from '../../../shared/schema/schemaService'
-import { anything, deepEqual, instance, mock, verify } from '../../utilities/mockito'
+import { YamlExtension } from '../../shared/extensions/yaml'
+import { SchemaService } from '../../shared/schemas'
+import { FakeExtensionContext } from '../fakeExtensionContext'
 
 describe('SchemaService', function () {
     let service: SchemaService

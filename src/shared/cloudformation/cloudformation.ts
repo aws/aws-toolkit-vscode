@@ -762,7 +762,7 @@ export namespace CloudFormation {
  * Creates a starter YAML template file.
  * @param isSam: Create a SAM template instead of a CFN template
  */
- export async function createStarterTemplateFile(isSam?: boolean, window: Window = Window.vscode()): Promise<void> {
+export async function createStarterTemplateFile(isSam?: boolean, window: Window = Window.vscode()): Promise<void> {
     const content = createStarterTemplateYaml(isSam)
     const wsFolder = vscode.workspace.workspaceFolders
     const loc = await window.showSaveDialog({

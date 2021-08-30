@@ -21,7 +21,7 @@ import * as fakeTelemetry from './fake/fakeTelemetryService'
 import { TestLogger } from './testLogger'
 import { FakeAwsContext } from './utilities/fakeAwsContext'
 import { initializeComputeRegion } from '../shared/extensionUtilities'
-import { SchemaService } from '../shared/schema/schemaService'
+import { SchemaService } from '../shared/schemas'
 
 const testReportDir = join(__dirname, '../../../.test-reports')
 const testLogOutput = join(testReportDir, 'testLog.log')

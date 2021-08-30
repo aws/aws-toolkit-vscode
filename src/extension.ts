@@ -71,7 +71,7 @@ import * as extWindow from './shared/vscode/window'
 import { Ec2CredentialsProvider } from './credentials/providers/ec2CredentialsProvider'
 import { EnvVarsCredentialsProvider } from './credentials/providers/envVarsCredentialsProvider'
 import { EcsCredentialsProvider } from './credentials/providers/ecsCredentialsProvider'
-import { SchemaService } from './shared/schema/schemaService'
+import { SchemaService } from './shared/schemas'
 
 let localize: nls.LocalizeFunc
 

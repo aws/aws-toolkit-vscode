@@ -4,14 +4,13 @@
  */
 
 import { ExtensionContext, OutputChannel, Uri } from 'vscode'
-import { AwsExplorer } from '../awsexplorer/awsExplorer'
 import { AWSClientBuilder } from './awsClientBuilder'
 import { AwsContext } from './awsContext'
 import { AWSContextCommands } from './awsContextCommands'
 import { ToolkitClientBuilder } from './clients/toolkitClientBuilder'
 import { CloudFormationTemplateRegistry } from './cloudformation/templateRegistry'
 import { CodelensRootRegistry } from './sam/codelensRootRegistry'
-import { SchemaService } from './schema/schemaService'
+import { SchemaService } from './schemas'
 import { TelemetryService } from './telemetry/telemetryService'
 import { Window } from './vscode/window'
 
@@ -24,7 +23,6 @@ export namespace ext {
     export let window: Window
     export let outputChannel: OutputChannel
     export let awsContextCommands: AWSContextCommands
-    export let awsExplorer: AwsExplorer
     export let awsContext: AwsContext
     export let sdkClientBuilder: AWSClientBuilder
     export let toolkitClientBuilder: ToolkitClientBuilder
