@@ -15,7 +15,7 @@ import software.aws.toolkits.jetbrains.core.getResourceNow
 class ResourceSchemaProviderFactory : JsonSchemaProviderFactory {
     override fun getProviders(project: Project): List<JsonSchemaFileProvider> {
         val schemaProviders = mutableListOf<JsonSchemaFileProvider>()
-        DynamicResources.resourceTypesInUse.forEach {
+        DynamicResourceSchemaMapping.getInstance().getCurrentlyActiveResourceTypes().forEach {
             val schemaFile = object : JsonSchemaFileProvider {
                 override fun isAvailable(file: VirtualFile): Boolean =
                     file is DynamicResourceVirtualFile && file.getResourceIdentifier().resourceType == it

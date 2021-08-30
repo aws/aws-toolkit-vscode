@@ -9,9 +9,8 @@ import com.intellij.openapi.actionSystem.DefaultActionGroup
 import com.intellij.openapi.editor.Editor
 import com.intellij.openapi.editor.toolbar.floating.FloatingToolbarComponent
 import com.intellij.openapi.fileEditor.FileDocumentManager
-import com.intellij.testFramework.LightVirtualFileBase
 
-class CreateResourceFloatingToolbarGroupAction : DefaultActionGroup() {
+class CreateResourceFloatingToolbarActionGroup : DefaultActionGroup() {
     override fun update(e: AnActionEvent) {
         val editor = e.getData(CommonDataKeys.EDITOR) ?: return
         if (editor.isFileEditor()) { e.presentation.isVisible = true }
@@ -22,7 +21,6 @@ class CreateResourceFloatingToolbarGroupAction : DefaultActionGroup() {
     private fun Editor.isFileEditor(): Boolean {
         val documentManager = FileDocumentManager.getInstance()
         val virtualFile = documentManager.getFile(document)
-        if (virtualFile is LightVirtualFileBase) return false
         return virtualFile != null && virtualFile.isValid
     }
 

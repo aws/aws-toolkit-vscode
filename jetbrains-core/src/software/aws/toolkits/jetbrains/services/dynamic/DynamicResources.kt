@@ -7,9 +7,6 @@ import com.fasterxml.jackson.module.kotlin.jacksonObjectMapper
 import com.fasterxml.jackson.module.kotlin.readValue
 import com.intellij.openapi.Disposable
 import com.intellij.openapi.project.Project
-import com.jetbrains.jsonSchema.JsonSchemaMappingsProjectConfiguration
-import com.jetbrains.jsonSchema.ide.JsonSchemaService
-import com.jetbrains.jsonSchema.impl.JsonSchemaServiceImpl
 import kotlinx.coroutines.CoroutineStart
 import kotlinx.coroutines.Deferred
 import kotlinx.coroutines.async
@@ -50,29 +47,17 @@ object DynamicResources : Disposable {
             identifier
         }
 
-    fun getResourceSchema(project: Project, resourceType: String): Resource.Cached<File> = ClientBackedCachedResource(CloudFormationClient::class, "cloudformation.dynamic.resources.schema.$resourceType") {
-        val client = project.awsClient<CloudFormationClient>()
-        val schema = client.describeType {
-            it.type(RegistryType.RESOURCE)
-            it.typeName(resourceType)
-        }.schema()
-        val file = File("$resourceType.json")
-        file.writeText(schema)
-        file
-    }
-
-    val resourceTypesInUse: MutableSet<String> = mutableSetOf()
-    fun addResourceSchemaMapping(
-        project: Project,
-        file: DynamicResourceVirtualFile
-    ) {
-        val configuration = JsonSchemaMappingsProjectConfiguration.getInstance(project).findMappingForFile(file)
-        if (configuration == null) {
-            resourceTypesInUse.add(file.getResourceIdentifier().resourceType)
-            JsonSchemaService.Impl.get(project).reset()
-            JsonSchemaServiceImpl(project).reset()
+    fun getResourceSchema(project: Project, resourceType: String): Resource.Cached<File> =
+        ClientBackedCachedResource(CloudFormationClient::class, "cloudformation.dynamic.resources.schema.$resourceType") {
+            val client = project.awsClient<CloudFormationClient>()
+            val schema = client.describeType {
+                it.type(RegistryType.RESOURCE)
+                it.typeName(resourceType)
+            }.schema()
+            val file = File("$resourceType.json")
+            file.writeText(schema)
+            file
         }
-    }
 }
 
 data class ResourceDetails(val operations: List<Operation>, val arnRegex: String? = null)

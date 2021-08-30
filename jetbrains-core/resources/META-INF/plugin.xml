@@ -179,6 +179,7 @@ with what features/services are supported.
         <applicationService serviceInterface="software.aws.toolkits.jetbrains.core.AwsResourceCache"
                             serviceImplementation="software.aws.toolkits.jetbrains.core.DefaultAwsResourceCache"
                             testServiceImplementation="software.aws.toolkits.jetbrains.core.MockResourceCache"/>
+        <applicationService serviceImplementation="software.aws.toolkits.jetbrains.services.dynamic.DynamicResourceSchemaMapping"/>
 
         <projectService serviceImplementation="software.aws.toolkits.jetbrains.core.explorer.ExplorerToolWindow"/>
         <projectService serviceImplementation="software.aws.toolkits.jetbrains.services.cloudformation.stack.StackWindowManager"/>
@@ -189,7 +190,7 @@ with what features/services are supported.
 
         <editorNotificationProvider implementation="software.aws.toolkits.jetbrains.core.credentials.CredentialsFileHelpNotificationProvider"/>
 
-        <editorFloatingToolbarProvider implementation="software.aws.toolkits.jetbrains.services.dynamic.CreateResourceFloatingProvider"/>
+        <editorFloatingToolbarProvider implementation="software.aws.toolkits.jetbrains.services.dynamic.CreateResourceFloatingToolbarProvider"/>
 
         <toolWindow id="aws.explorer" anchor="left" secondary="true"
                     factoryClass="software.aws.toolkits.jetbrains.core.explorer.AwsExplorerFactory"
@@ -377,7 +378,7 @@ with what features/services are supported.
             <action id="dynamic.resource.create" class="software.aws.toolkits.jetbrains.services.dynamic.explorer.actions.DynamicResourceCreateResourceAction"/>
         </group>
         
-        <group id="aws.toolkit.explorer.dynamic.create.resource.file" class="software.aws.toolkits.jetbrains.services.dynamic.actions.CreateResourceFloatingToolbarGroupAction">
+        <group id="aws.toolkit.explorer.dynamic.create.resource.file" class="software.aws.toolkits.jetbrains.services.dynamic.actions.CreateResourceFloatingToolbarActionGroup">
             <action id="dynamic.resource.create.floating.action.group" class="software.aws.toolkits.jetbrains.services.dynamic.actions.CreateResourceFloatingToolbarAction"/>
         </group>
 
