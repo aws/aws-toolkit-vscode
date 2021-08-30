@@ -753,11 +753,11 @@
                 },
                 {
                     "command": "aws.stepfunctions.createStateMachineFromTemplate",
-                    "when": "false"
+                    "when": "true"
                 },
                 {
                     "command": "aws.stepfunctions.publishStateMachine",
-                    "when": "false"
+                    "when": "true"
                 },
                 {
                     "command": "aws.ssmDocument.createLocalDocument",
@@ -769,7 +769,7 @@
                 },
                 {
                     "command": "aws.previewStateMachine",
-                    "when": "false"
+                    "when": "true"
                 },
                 {
                     "command": "aws.cdk.help",
