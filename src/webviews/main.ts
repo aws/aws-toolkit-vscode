@@ -90,12 +90,12 @@ export async function createVueWebview<TRequest, TResponse>(params: WebviewParam
                 "default-src 'none';
                 img-src ${view.webview.cspSource} https:;
                 script-src ${view.webview.cspSource} 'unsafe-eval';
-                style-src ${view.webview.cspSource};
+                style-src ${view.webview.cspSource} 'unsafe-inline';
                 font-src 'self' data:;"
         >
     </head>
     <body>
-        <div id="vueApp"></div>
+        <div id="vue-app"></div>
         <!-- Dependencies -->
         ${scripts}
         ${stylesheets}
