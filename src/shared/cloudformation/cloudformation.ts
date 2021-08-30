@@ -3,6 +3,7 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
+import * as fs from 'fs-extra'
 import * as path from 'path'
 import * as vscode from 'vscode'
 import { mkdirSync, writeFile, writeFileSync } from 'fs-extra'
@@ -20,6 +21,8 @@ import { CompositeResourceFetcher } from '../resourcefetcher/compositeResourceFe
 import { WorkspaceConfiguration } from '../vscode/workspace'
 import { getWorkspaceRelativePath } from '../utilities/workspaceUtils'
 import { VSCODE_EXTENSION_ID } from '../extensions'
+import { Window } from '../vscode/window'
+import { isCloud9 } from '../extensionUtilities'
 
 export namespace CloudFormation {
     export const SERVERLESS_API_TYPE = 'AWS::Serverless::Api'
@@ -955,4 +958,42 @@ export async function getRemoteOrCachedFile(params: {
     const fetcher = new CompositeResourceFetcher(...fetchers)
 
     return fetcher.get()
+}
+
+/**
+ * Creates a starter YAML template file.
+ * @param isSam: Create a SAM template instead of a CFN template
+ */
+export async function createStarterTemplateFile(isSam?: boolean, window: Window = Window.vscode()): Promise<void> {
+    const content = createStarterTemplateYaml(isSam)
+    const wsFolder = vscode.workspace.workspaceFolders
+    const loc = await window.showSaveDialog({
+        filters: { YAML: ['yaml'] },
+        defaultUri: wsFolder && wsFolder[0] ? wsFolder[0].uri : undefined,
+    })
+    if (loc) {
+        fs.writeFileSync(loc.fsPath, content)
+        await vscode.commands.executeCommand('vscode.open', loc)
+    }
+}
+
+/**
+ * Creates a boilerplate CFN or SAM template that is complete enough to be picked up for JSON schema assignment
+ * TODO: Remove `isCloud9` when Cloud9 gets YAML code completion
+ * @param isSam Create a SAM or CFN template
+ */
+function createStarterTemplateYaml(isSam?: boolean): string {
+    return `AWSTemplateFormatVersion: '2010-09-09'
+${isSam ? 'Transform: AWS::Serverless-2016-10-31\n' : ''}
+Description: <your stack description here>
+${isCloud9() ? '' : '\n# Available top-level fields are listed in code completion\n'}
+# Add Resources Here: uncomment the following lines
+# Resources:
+#   <resource name here>:
+#     Type: # resource type here${isCloud9() ? '' : ' - available resources are listed in code completion'}
+#     # <add resource-specific properties underneath this entry ${
+        isCloud9() ? '' : ' - available properties are listed in code completion'
+    }>
+#     Properties:
+`
 }
