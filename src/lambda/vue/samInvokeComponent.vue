@@ -123,7 +123,14 @@
                 </div>
                 <div class="config-item">
                     <label for="query-string">Query String</label>
-                    <input name="query-string" id="query-string" cols="15" rows="2" placeholder="Enter a query" />
+                    <input
+                        name="query-string"
+                        id="query-string"
+                        cols="15"
+                        rows="2"
+                        placeholder="Enter a query"
+                        v-model="launchConfig.api.querystring"
+                    />
                 </div>
                 <div class="config-item">
                     <label for="headers">Headers</label>
