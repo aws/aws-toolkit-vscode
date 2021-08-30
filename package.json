@@ -79,7 +79,9 @@
         "onCommand:aws.launchConfigForm",
         "onCommand:aws.toggleSamCodeLenses",
         "onCommand:aws.addSamDebugConfig",
-        "onCommand:aws.s3.uploadFile"
+        "onCommand:aws.s3.uploadFile",
+        "onCommand:aws.cloudFormation.newTemplate",
+        "onCommand:aws.sam.newTemplate"
     ],
     "main": "./extensionMain",
     "contributes": {
@@ -1038,6 +1040,11 @@
                     "group": "0@2"
                 },
                 {
+                    "command": "aws.executeStateMachine",
+                    "when": "view == aws.explorer && viewItem == awsStateMachineNode && !isCloud9",
+                    "group": "0@3"
+                },
+                {
                     "command": "aws.s3.createBucket",
                     "when": "view == aws.explorer && viewItem == awsS3Node",
                     "group": "0@1"
@@ -1171,6 +1178,16 @@
                     "command": "aws.apprunner.deleteService",
                     "group": "3@1",
                     "when": "view == aws.explorer && viewItem =~ /awsAppRunnerServiceNode.[RUNNING|PAUSED|CREATE_FAILED]/"
+                },
+                {
+                    "command": "aws.cloudFormation.newTemplate",
+                    "group": "0@1",
+                    "when": "view == aws.explorer && viewItem == awsCloudFormationRootNode"
+                },
+                {
+                    "command": "aws.sam.newTemplate",
+                    "group": "0@2",
+                    "when": "view == aws.explorer && viewItem == awsCloudFormationRootNode"
                 }
             ]
         },
@@ -1550,6 +1567,16 @@
                 }
             },
             {
+                "command": "aws.renderStateMachineGraph",
+                "title": "%AWS.command.renderStateMachineGraph%",
+                "category": "%AWS.title%",
+                "cloud9": {
+                    "cn": {
+                        "category": "%AWS.title.cn%"
+                    }
+                }
+            },
+            {
                 "command": "aws.copyArn",
                 "title": "%AWS.command.copyArn%",
                 "category": "%AWS.title%",
@@ -1894,6 +1921,26 @@
             {
                 "command": "aws.apprunner.startDeployment",
                 "title": "%AWS.command.apprunner.startDeployment%",
+                "category": "%AWS.title%",
+                "cloud9": {
+                    "cn": {
+                        "category": "%AWS.title.cn%"
+                    }
+                }
+            },
+            {
+                "command": "aws.cloudFormation.newTemplate",
+                "title": "%AWS.command.cloudFormation.newTemplate%",
+                "category": "%AWS.title%",
+                "cloud9": {
+                    "cn": {
+                        "category": "%AWS.title.cn%"
+                    }
+                }
+            },
+            {
+                "command": "aws.sam.newTemplate",
+                "title": "%AWS.command.sam.newTemplate%",
                 "category": "%AWS.title%",
                 "cloud9": {
                     "cn": {

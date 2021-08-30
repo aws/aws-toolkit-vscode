@@ -162,6 +162,18 @@ async function registerAwsExplorerCommands(
     )
 
     context.subscriptions.push(
+        vscode.commands.registerCommand(
+            'aws.renderStateMachineGraph',
+            async (node: StateMachineNode) =>
+                await downloadStateMachineDefinition({
+                    stateMachineNode: node,
+                    outputChannel: toolkitOutputChannel,
+                    isPreviewAndRender: true,
+                })
+        )
+    )
+
+    context.subscriptions.push(
         vscode.commands.registerCommand('aws.copyArn', async (node: AWSResourceNode) => await copyArnCommand(node))
     )
 
