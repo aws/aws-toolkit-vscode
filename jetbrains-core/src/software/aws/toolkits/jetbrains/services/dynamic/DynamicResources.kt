@@ -16,7 +16,7 @@ import software.aws.toolkits.jetbrains.core.Resource
 object DynamicResources {
     val SUPPORTED_TYPES by lazy {
         if (ApplicationManager.getApplication().isDispatchThread) {
-            LOGGER.warn("Access from Event Dispatch Thread")
+            throw IllegalStateException("Access from Event Dispatch Thread")
             listOf()
         } else {
             val reader = jacksonObjectMapper()
@@ -33,8 +33,8 @@ object DynamicResources {
 
     fun listResources(resourceType: ResourceType): Resource.Cached<List<DynamicResource>> = listResources(resourceType.fullName)
 
-    fun listTypesInCurrentRegion(): Resource.Cached<List<String>> = ClientBackedCachedResource(
-        CloudFormationClient::class, "cloudformation.dynamic.resources.in.current.region"
+    fun listTypes(): Resource.Cached<List<String>> = ClientBackedCachedResource(
+        CloudFormationClient::class, "cloudformation.listTypes"
     ) {
         this.listTypesPaginator {
             it.visibility(Visibility.PUBLIC)

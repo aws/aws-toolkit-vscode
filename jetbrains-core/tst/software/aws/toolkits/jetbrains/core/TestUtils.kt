@@ -57,7 +57,7 @@ fun MockResourceCacheRule.fillResourceCache(project: Project) {
 
     this.addEntry(
         project,
-        DynamicResources.listTypesInCurrentRegion(),
+        DynamicResources.listTypes(),
         CompletableFuture.completedFuture(listOf("Aws::Sample::Resource"))
     )
 

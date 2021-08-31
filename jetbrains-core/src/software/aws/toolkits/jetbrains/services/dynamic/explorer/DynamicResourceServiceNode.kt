@@ -31,9 +31,9 @@ import software.aws.toolkits.telemetry.DynamicresourceTelemetry
 class DynamicResourceResourceTypeNode(project: Project, private val resourceType: String) :
     AwsExplorerNode<String>(project, resourceType, null),
     ResourceParentNode {
-    private val resourceAvailableInCurrentRegion: Boolean = resourceType in nodeProject.getResourceNow(DynamicResources.listTypesInCurrentRegion())
+    private val resourceAvailableInCurrentRegion: Boolean = resourceType in nodeProject.getResourceNow(DynamicResources.listTypes())
     override fun displayName(): String = resourceType
-    override fun isAlwaysShowPlus(): Boolean = true
+    override fun isAlwaysShowPlus(): Boolean = resourceAvailableInCurrentRegion
 
     // calls to CloudAPI time-expensive and likely to throttle
     override fun isAlwaysExpand(): Boolean = false
