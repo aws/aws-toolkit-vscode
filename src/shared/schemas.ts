@@ -11,9 +11,8 @@ import * as filesystemUtilities from './filesystemUtilities'
 import { getLogger } from './logger'
 import { CompositeResourceFetcher } from './resourcefetcher/compositeResourceFetcher'
 import { FileResourceFetcher } from './resourcefetcher/fileResourceFetcher'
-import { HttpResourceFetcher } from './resourcefetcher/httpResourceFetcher'
+import { getPropertyFromJsonUrl, HttpResourceFetcher } from './resourcefetcher/httpResourceFetcher'
 import { ResourceFetcher } from './resourcefetcher/resourcefetcher'
-import { getPropertyFromJsonUrl } from './utilities/jsonUtils'
 import { normalizeSeparator } from './utilities/pathUtils'
 
 const GOFORMATION_MANIFEST_URL = 'https://api.github.com/repos/awslabs/goformation/releases/latest'
@@ -87,6 +86,7 @@ export class SchemaService {
         }
     }
 
+    // TODO: abstract into a common abstraction for background pollers
     private async startTimer(): Promise<void> {
         this.timer = setTimeout(
             // this is async so that we don't have pseudo-concurrent invocations of the callback

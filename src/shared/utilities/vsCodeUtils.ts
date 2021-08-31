@@ -83,14 +83,17 @@ export function isExtensionActive(extId: string): boolean {
 }
 
 /**
- * Activates the given extension, and returns its exported API, or does nothing
+ * Activates the given extension and returns it, or does nothing
  * if the extension is not installed.
  *
  * @param extId Extension id
  * @param silent Return undefined on failure, instead of throwing
- * @returns Extension's exported API, or undefined on failure if `silent`
+ * @returns Extension, or undefined on failure if `silent`
  */
-export async function activateExtension<T>(extId: string, silent: boolean = true): Promise<T | undefined> {
+export async function activateExtension<T>(
+    extId: string,
+    silent: boolean = true
+): Promise<vscode.Extension<T> | undefined> {
     let loggerInitialized: boolean
     try {
         getLogger()
@@ -126,7 +129,7 @@ export async function activateExtension<T>(extId: string, silent: boolean = true
             return undefined
         }
     }
-    return extension.exports
+    return extension
 }
 
 /**

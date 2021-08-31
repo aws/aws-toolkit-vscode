@@ -41,7 +41,7 @@ export async function activateYamlExtension(): Promise<YamlExtension | undefined
     if (!yamlExt) {
         return undefined
     }
-    yamlExt.registerContributor(
+    yamlExt.exports.registerContributor(
         AWS_SCHEME,
         resource => {
             return schemaMap.get(resource)?.toString()

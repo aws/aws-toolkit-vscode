@@ -5,8 +5,7 @@
 
 import * as assert from 'assert'
 import { mock, when, instance } from 'ts-mockito'
-import { HttpResourceFetcher } from '../../../shared/resourcefetcher/httpResourceFetcher'
-import { getPropertyFromJsonUrl } from '../../../shared/utilities/jsonUtils'
+import { HttpResourceFetcher, getPropertyFromJsonUrl } from '../../../shared/resourcefetcher/httpResourceFetcher'
 
 describe('getPropertyFromJsonUrl', function () {
     let mockFetcher: HttpResourceFetcher
