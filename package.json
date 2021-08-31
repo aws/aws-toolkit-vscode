@@ -754,24 +754,12 @@
                     "when": "false"
                 },
                 {
-                    "command": "aws.stepfunctions.createStateMachineFromTemplate",
-                    "when": "true"
-                },
-                {
-                    "command": "aws.stepfunctions.publishStateMachine",
-                    "when": "true"
-                },
-                {
                     "command": "aws.ssmDocument.createLocalDocument",
                     "when": "!isCloud9"
                 },
                 {
                     "command": "aws.ssmDocument.publishDocument",
                     "when": "!isCloud9"
-                },
-                {
-                    "command": "aws.previewStateMachine",
-                    "when": "true"
                 },
                 {
                     "command": "aws.cdk.help",
