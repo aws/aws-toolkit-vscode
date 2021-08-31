@@ -516,36 +516,37 @@ export default defineComponent({
                 return
             }
 
+            // Vue internally stores a Proxy for all object-like fields, so the spread operator can
+            // propagate those through to the `postMessage` command, causing an error. We can stop
+            // this by recursively accessing all primitive fields (which is what this line does)
+            const launchConfig = JSON.parse(JSON.stringify(this.launchConfig))
+
             vscode.postMessage({
                 command: command,
                 data: {
                     launchConfig: {
-                        ...this.launchConfig,
+                        ...launchConfig,
                         lambda: {
-                            ...this.launchConfig.lambda,
+                            ...launchConfig.lambda,
                             payload: {
-                                ...this.launchConfig.payload,
+                                ...launchConfig.payload,
                                 json: payloadJson,
                             },
                             environmentVariables: environmentVariablesJson,
                         },
                         sam: {
-                            ...this.launchConfig.sam,
-                            buildArguments: this.formatFieldToStringArray(
-                                this.launchConfig.sam?.buildArguments?.toString()
-                            ),
-                            localArguments: this.formatFieldToStringArray(
-                                this.launchConfig.sam?.localArguments?.toString()
-                            ),
+                            ...launchConfig.sam,
+                            buildArguments: this.formatFieldToStringArray(launchConfig.sam?.buildArguments?.toString()),
+                            localArguments: this.formatFieldToStringArray(launchConfig.sam?.localArguments?.toString()),
                             containerBuild: this.stringToBoolean(this.containerBuildStr),
                             skipNewImageCheck: this.stringToBoolean(this.skipNewImageCheckStr),
                             template: {
                                 parameters: parametersJson,
                             },
                         },
-                        api: this.launchConfig.api
+                        api: launchConfig.api
                             ? {
-                                  ...this.launchConfig.api,
+                                  ...launchConfig.api,
                                   headers: headersJson,
                                   stageVariables: stageVariablesJson,
                                   payload: {
