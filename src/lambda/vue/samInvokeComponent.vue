@@ -519,7 +519,7 @@ export default defineComponent({
             // Vue internally stores a Proxy for all object-like fields, so the spread operator can
             // propagate those through to the `postMessage` command, causing an error. We can stop
             // this by recursively accessing all primitive fields (which is what this line does)
-            const launchConfig = JSON.parse(JSON.stringify(this.launchConfig))
+            const launchConfig: AwsSamDebuggerConfigurationLoose = JSON.parse(JSON.stringify(this.launchConfig))
 
             vscode.postMessage({
                 command: command,
