@@ -133,6 +133,7 @@ tasks.withType<RunIdeForUiTestTask>().all {
 
     // These are experiments to enable for UI tests
     systemProperty("aws.feature.connectedLocalTerminal", true)
+    systemProperty("aws.feature.dynamoDb", true)
     ciOnly {
         systemProperty("aws.sharedCredentialsFile", "/tmp/.aws/credentials")
     }
@@ -144,6 +145,8 @@ tasks.withType<RunIdeForUiTestTask>().all {
 
     configure<JacocoTaskExtension> {
         includes = listOf("software.aws.toolkits.*")
-        output = Output.TCP_CLIENT // Dump to our jacoco server instead of to a file
+        ciOnly {
+            output = Output.TCP_CLIENT // Dump to our jacoco server instead of to a file
+        }
     }
 }

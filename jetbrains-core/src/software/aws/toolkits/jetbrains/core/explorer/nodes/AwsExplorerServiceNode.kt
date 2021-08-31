@@ -8,4 +8,5 @@ import com.intellij.openapi.project.Project
 interface AwsExplorerServiceNode {
     val serviceId: String
     fun buildServiceRootNode(project: Project): AwsExplorerServiceRootNode
+    fun enabled(): Boolean = true
 }

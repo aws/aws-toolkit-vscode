@@ -235,6 +235,7 @@ with what features/services are supported.
         <registryKey key="aws.debuggerAttach.timeout" description="Time allowed for debuggers to attach before timing out (ms)" restartRequired="false" defaultValue="60000"/>
         <registryKey key="aws.feature.ecsCloudDebug" description="Enables the Cloud Debug for ECS set of features" restartRequired="false" defaultValue="true"/>
         <registryKey key="aws.feature.ecsExec" description="Enables the features and actions associated with ECS Execute Command" restartRequired="false" defaultValue="false"/>
+        <registryKey key="aws.feature.dynamoDb" description="Enables the features and actions associated with DynamoDB" restartRequired="false" defaultValue="false"/>
     </extensions>
 
     <extensions defaultExtensionNs="JavaScript.JsonSchema">
@@ -258,7 +259,7 @@ with what features/services are supported.
         <explorer.serviceNode implementation="software.aws.toolkits.jetbrains.core.explorer.nodes.AppRunnerExplorerRootNode"/>
         <explorer.serviceNode implementation="software.aws.toolkits.jetbrains.core.explorer.nodes.CloudFormationExplorerRootNode"/>
         <explorer.serviceNode implementation="software.aws.toolkits.jetbrains.core.explorer.nodes.CloudWatchRootNode"/>
-        <!-- <explorer.serviceNode implementation="software.aws.toolkits.jetbrains.core.explorer.nodes.DynamoDbExplorerRootNode"/> -->
+        <explorer.serviceNode implementation="software.aws.toolkits.jetbrains.core.explorer.nodes.DynamoDbExplorerRootNode"/>
         <explorer.serviceNode implementation="software.aws.toolkits.jetbrains.core.explorer.nodes.LambdaExplorerRootNode"/>
         <explorer.serviceNode implementation="software.aws.toolkits.jetbrains.core.explorer.nodes.S3ExplorerRootNode"/>
         <explorer.serviceNode implementation="software.aws.toolkits.jetbrains.core.explorer.nodes.EcrExplorerRootNode"/>
