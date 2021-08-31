@@ -105,13 +105,14 @@ export function isExtensionInstalledMsg(extId: string, extName: string, feat?: s
 }
 
 /**
- * Activates an extension, or does nothing if the extension is not installed.
+ * Activates an extension and returns it, or does nothing if the extension is
+ * not installed.
  *
- * @param extId  Extension id
- * @param silent  Return undefined on failure, instead of throwing
- * @returns Extension object, or undefined on failure if `silent`
+ * @param extId Extension id
+ * @param silent Return undefined on failure, instead of throwing
+ * @returns Extension, or undefined on failure if `silent`
  */
-export async function activateExtension<T = void>(
+export async function activateExtension<T>(
     extId: string,
     silent: boolean = true
 ): Promise<vscode.Extension<T> | undefined> {
@@ -150,7 +151,6 @@ export async function activateExtension<T = void>(
             return undefined
         }
     }
-
     return extension
 }
 
