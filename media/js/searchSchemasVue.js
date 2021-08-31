@@ -1,4 +1,5 @@
 ;(function () {
+    const deproxify = obj => JSON.parse(JSON.stringify(obj))
     const vscode = acquireVsCodeApi()
     const app = Vue.createApp({
         data: () => ({
@@ -56,7 +57,7 @@
                 this.schemaContent = this.localizedMessages.loading
                 vscode.postMessage({
                     command: 'fetchSchemaContent',
-                    schemaSummary: this.selectedSchema,
+                    schemaSummary: deproxify(this.selectedSchema),
                 })
             },
 
@@ -64,14 +65,14 @@
                 this.schemaContent = this.localizedMessages.loading
                 vscode.postMessage({
                     command: 'fetchSchemaContent',
-                    schemaSummary: this.selectedSchema,
+                    schemaSummary: deproxify(this.selectedSchema),
                     version: this.selectedVersion,
                 })
             },
             downloadClicked: function () {
                 vscode.postMessage({
                     command: 'downloadCodeBindings',
-                    schemaSummary: this.selectedSchema,
+                    schemaSummary: deproxify(this.selectedSchema),
                 })
             },
             handleMessageReceived: function (e) {
