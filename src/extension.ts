@@ -71,6 +71,7 @@ import * as extWindow from './shared/vscode/window'
 import { Ec2CredentialsProvider } from './credentials/providers/ec2CredentialsProvider'
 import { EnvVarsCredentialsProvider } from './credentials/providers/envVarsCredentialsProvider'
 import { EcsCredentialsProvider } from './credentials/providers/ecsCredentialsProvider'
+import { SchemaService } from './shared/schemas'
 
 let localize: nls.LocalizeFunc
 
@@ -121,6 +122,7 @@ export async function activate(context: vscode.ExtensionContext) {
         )
         ext.sdkClientBuilder = new DefaultAWSClientBuilder(awsContext)
         ext.toolkitClientBuilder = new DefaultToolkitClientBuilder(regionProvider)
+        ext.schemaService = new SchemaService(context)
 
         await initializeCredentials({
             extensionContext: context,
@@ -134,6 +136,7 @@ export async function activate(context: vscode.ExtensionContext) {
             toolkitSettings: toolkitSettings,
         })
         await ext.telemetry.start()
+        await ext.schemaService.start()
 
         const extContext: ExtContext = {
             extensionContext: context,
