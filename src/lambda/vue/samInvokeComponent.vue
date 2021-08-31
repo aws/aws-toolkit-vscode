@@ -399,6 +399,9 @@ export default defineComponent({
                     break
             }
         })
+
+        // Send a message back to let the backend know we're ready for messages
+        vscode.postMessage({ command: 'initialized' })
     },
     data(): SamInvokeVueData {
         return {

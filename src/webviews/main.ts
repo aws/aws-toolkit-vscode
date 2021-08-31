@@ -104,11 +104,12 @@ export async function createVueWebview<TRequest, TResponse>(params: WebviewParam
 </html>`
 
     if (params.initialCalls) {
-        // TODO: workaround for cloud9 webviews, remove after cloud9 issue is fixed.
-        if (isCloud9()) {
-            await new Promise(resolve => setTimeout(resolve, 500))
-        }
-        for (const call of params.initialCalls) view.webview.postMessage(call)
+        const d = view.webview.onDidReceiveMessage((message: any) => {
+            if (message.command === 'initialized') {
+                for (const call of params.initialCalls!) view.webview.postMessage(call)
+                d.dispose()
+            }
+        })
     }
 
     view.webview.onDidReceiveMessage(
