@@ -76,6 +76,7 @@ import { CawsClient } from './shared/clients/cawsClient'
 import { Ec2CredentialsProvider } from './credentials/providers/ec2CredentialsProvider'
 import { EnvVarsCredentialsProvider } from './credentials/providers/envVarsCredentialsProvider'
 import { EcsCredentialsProvider } from './credentials/providers/ecsCredentialsProvider'
+import { SchemaService } from './shared/schemas'
 
 let localize: nls.LocalizeFunc
 
@@ -127,6 +128,7 @@ export async function activate(context: vscode.ExtensionContext) {
         )
         ext.sdkClientBuilder = new DefaultAWSClientBuilder(ext.awsContext)
         ext.toolkitClientBuilder = new DefaultToolkitClientBuilder(regionProvider)
+        ext.schemaService = new SchemaService(context)
         ext.caws = await CawsClient.create(toolkitSettings)
         ext.mde = await MdeClient.create()
 
@@ -142,6 +144,7 @@ export async function activate(context: vscode.ExtensionContext) {
             toolkitSettings: toolkitSettings,
         })
         await ext.telemetry.start()
+        await ext.schemaService.start()
 
         const extContext: ExtContext = {
             extensionContext: context,
