@@ -26,10 +26,10 @@ export class UriHandler implements vscode.UriHandler {
     public async handleUri(uri: vscode.Uri): Promise<void> {
         getLogger().verbose(`UriHandler: received request on path "${uri.path}"`)
 
+        const uriNoQuery = uri.with({ query: undefined }).toString()
+
         if (!this.handlers.has(uri.path)) {
-            ext.window.showErrorMessage(
-                localize('AWS.uriHandler.nohandler', 'No handler found for: {0}', uri.toString())
-            )
+            ext.window.showErrorMessage(localize('AWS.uriHandler.nohandler', 'No handler found for: {0}', uriNoQuery))
             getLogger().verbose(`UriHandler: no valid handler found for "${uri.path}"`)
             return
         }
@@ -41,7 +41,7 @@ export class UriHandler implements vscode.UriHandler {
             const query = querystring.parse(uri.query)
             parsedQuery = parser ? await parser(query) : query
         } catch (err) {
-            showViewLogsMessage(localize('AWS.uriHandler.parser.failed', 'Failed to parse URI query: {0}', uri.query))
+            showViewLogsMessage(localize('AWS.uriHandler.parser.failed', 'Failed to parse URI query: {0}', uriNoQuery))
             getLogger().error(`UriHandler: query parsing failed for path "${uri.path}": %O`, err)
             return
         }
@@ -50,7 +50,7 @@ export class UriHandler implements vscode.UriHandler {
             // This await is needed to catch unhandled rejected Promises
             return await handler(parsedQuery)
         } catch (err) {
-            showViewLogsMessage(localize('AWS.uriHandler.handler.failed', 'Failed to handle URI: {0}', uri.toString()))
+            showViewLogsMessage(localize('AWS.uriHandler.handler.failed', 'Failed to handle URI: {0}', uriNoQuery))
             getLogger().error(`UriHandler: unexpected exception when handling "${uri.path}": %O`, err)
         }
     }
