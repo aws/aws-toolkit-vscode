@@ -42,7 +42,7 @@ export class UriHandler implements vscode.UriHandler {
             parsedQuery = parser ? await parser(query) : query
         } catch (err) {
             showViewLogsMessage(localize('AWS.uriHandler.parser.failed', 'Failed to parse URI query: {0}', uri.query))
-            getLogger().error(`UriHandler: parsing failed for path "${uri.path}": %O`, err)
+            getLogger().error(`UriHandler: query parsing failed for path "${uri.path}": %O`, err)
             return
         }
 
