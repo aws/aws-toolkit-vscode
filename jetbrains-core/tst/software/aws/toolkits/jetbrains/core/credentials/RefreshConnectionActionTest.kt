@@ -15,6 +15,8 @@ import software.aws.toolkits.core.utils.test.aString
 import software.aws.toolkits.jetbrains.core.AwsResourceCacheTest.Companion.dummyResource
 import software.aws.toolkits.jetbrains.core.MockResourceCacheRule
 import java.util.concurrent.ConcurrentHashMap
+import java.util.concurrent.CountDownLatch
+import java.util.concurrent.TimeUnit
 
 class RefreshConnectionActionTest {
     @Rule
@@ -31,6 +33,7 @@ class RefreshConnectionActionTest {
     fun refreshActionClearsCacheAndUpdatesConnectionState() {
         resourceCache.addEntry(projectRule.project, dummyResource(), aString())
 
+        val latch = CountDownLatch(1)
         val states = ConcurrentHashMap.newKeySet<ConnectionState>()
         projectRule.project.messageBus.connect()
             .subscribe(
@@ -38,11 +41,14 @@ class RefreshConnectionActionTest {
                 object : ConnectionSettingsStateChangeNotifier {
                     override fun settingsStateChanged(newState: ConnectionState) {
                         states.add(newState)
+                        latch.countDown()
                     }
                 }
             )
 
         sut.actionPerformed(testAction())
+
+        assertThat(latch.await(5, TimeUnit.SECONDS)).isTrue
 
         assertThat(resourceCache.size()).isZero()
         assertThat(states).hasAtLeastOneElementOfType(ConnectionState.ValidatingConnection::class.java)
