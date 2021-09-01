@@ -398,7 +398,8 @@ export class CodeExtractor {
 }
 
 class UserNotifiedError extends Error {
-    public constructor(message?: string | undefined) {
+    public message!: nls.LocalizedString
+    public constructor(message?: nls.LocalizedString | undefined) {
         super(message)
     }
 }

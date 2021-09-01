@@ -4,15 +4,16 @@
  */
 
 import * as assert from 'assert'
+import { LocalizedString } from 'vscode-nls'
 import { showConfirmationMessage, showViewLogsMessage, showOutputMessage } from '../../../shared/utilities/messages'
 import { MockOutputChannel } from '../../mockOutputChannel'
 import { FakeWindow } from '../../shared/vscode/fakeWindow'
 
 describe('messages', function () {
     describe('showConfirmationMessage', function () {
-        const prompt = 'prompt'
-        const confirm = 'confirm'
-        const cancel = 'cancel'
+        const prompt = 'prompt' as LocalizedString
+        const confirm = 'confirm' as LocalizedString
+        const cancel = 'cancel' as LocalizedString
 
         it('confirms warning message when the user clicks confirm', async function () {
             const window = new FakeWindow({ message: { warningSelection: confirm } })
@@ -45,7 +46,7 @@ describe('messages', function () {
     })
 
     describe('showErrorWithLogs', function () {
-        const message = 'message'
+        const message = 'message' as LocalizedString
 
         it('shows error message with a button to view logs', async function () {
             const window = new FakeWindow({ message: { errorSelection: 'View Logs...' } })

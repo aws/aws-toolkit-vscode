@@ -17,7 +17,7 @@ import { ExtContext } from '../shared/extensions'
 
 const localize = nls.loadMessageBundle()
 
-const commandMap = new Map<[command: string, errorMessage: string], (...args: any) => Promise<any>>()
+const commandMap = new Map<[command: string, errorMessage: nls.LocalizedString], (...args: any) => Promise<any>>()
 
 const CREATE_SERVICE_FAILED = localize('aws.apprunner.createService.failed', 'Failed to create App Runner service')
 const CREATE_SERVICE_ECR_FAILED = localize(

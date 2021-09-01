@@ -31,3 +31,13 @@ type Expand<T> = T extends infer O ? { [K in keyof O]+?: O[K] } : never
  *
  */
 export type ExpandWithObject<T> = Expand<T> extends Record<string, unknown> ? Expand<T> : never
+
+// Special class to embed a hidden 'key' into a type
+abstract class NominalKey<K> {
+    protected abstract __type__: K
+}
+/**
+ * Creates a 'nominal' type given a base type and a key. These types do _not_ exist at runtime and are
+ * meant to be used to constrain primitives.
+ */
+export type NominalType<T, K> = T & NominalKey<K>
