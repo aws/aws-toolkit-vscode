@@ -12,6 +12,7 @@ interface WebviewParams<TRequest, TResponse> {
     name: string
     webviewJs: string
     context: vscode.ExtensionContext
+    /** Initial calls are posted whenever the webview is regenerated (e.g. the webview was moved to another panel) */
     initialCalls?: TResponse[]
     persistSessions?: boolean
     persistWithoutFocus?: boolean
@@ -104,10 +105,9 @@ export async function createVueWebview<TRequest, TResponse>(params: WebviewParam
 </html>`
 
     if (params.initialCalls) {
-        const d = view.webview.onDidReceiveMessage((message: any) => {
+        view.webview.onDidReceiveMessage((message: any) => {
             if (message.command === 'initialized') {
                 for (const call of params.initialCalls!) view.webview.postMessage(call)
-                d.dispose()
             }
         })
     }

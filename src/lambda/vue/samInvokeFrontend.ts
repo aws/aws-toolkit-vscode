@@ -91,11 +91,6 @@ function newLaunchConfig(existingConfig?: AwsSamDebuggerConfiguration): AwsSamDe
 
 export default defineComponent({
     created() {
-        const oldState = vscode.getState()
-        if (oldState) {
-            this.launchConfig = oldState.launchConfig
-            this.payload = oldState.payload
-        }
         window.addEventListener('message', ev => {
             const event = ev.data as SamInvokerResponse
             switch (event.command) {
@@ -147,6 +142,12 @@ export default defineComponent({
 
         // Send a message back to let the backend know we're ready for messages
         vscode.postMessage({ command: 'initialized' })
+
+        const oldState = vscode.getState()
+        if (oldState) {
+            this.launchConfig = oldState.launchConfig
+            this.payload = oldState.payload
+        }
     },
     data(): SamInvokeVueData {
         return {
