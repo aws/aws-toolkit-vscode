@@ -5,10 +5,10 @@ package software.aws.toolkits.jetbrains.services.dynamic
 
 import com.intellij.openapi.editor.toolbar.floating.AbstractFloatingToolbarProvider
 
-class CreateResourceFloatingToolbarProvider : AbstractFloatingToolbarProvider(actionGroup) {
+class ResourceModelFileFloatingToolbarProvider : AbstractFloatingToolbarProvider(actionGroup) {
     override val autoHideable: Boolean = false
     override val priority: Int = 100
     companion object {
-        const val actionGroup = "aws.toolkit.explorer.dynamic.create.resource.file"
+        const val actionGroup = "aws.toolkit.explorer.dynamic.mutate.resource.file"
     }
 }

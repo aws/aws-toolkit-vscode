@@ -10,7 +10,7 @@ import com.intellij.openapi.editor.Editor
 import com.intellij.openapi.editor.toolbar.floating.FloatingToolbarComponent
 import com.intellij.openapi.fileEditor.FileDocumentManager
 
-class CreateResourceFloatingToolbarActionGroup : DefaultActionGroup() {
+class MutateResourceModelFloatingToolbarActionGroup : DefaultActionGroup() {
     override fun update(e: AnActionEvent) {
         val editor = e.getData(CommonDataKeys.EDITOR) ?: return
         if (editor.isFileEditor()) { e.presentation.isVisible = true }
