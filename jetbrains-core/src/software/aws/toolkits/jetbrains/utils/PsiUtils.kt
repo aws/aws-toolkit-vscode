@@ -9,7 +9,7 @@ import com.intellij.psi.PsiElement
 
 fun PsiElement.isTestOrInjectedText(): Boolean {
     val project = this.project
-    val virtualFile = this.containingFile.virtualFile
+    val virtualFile = this.containingFile.virtualFile ?: return false
     if (virtualFile is VirtualFileWindow) {
         return true
     }
