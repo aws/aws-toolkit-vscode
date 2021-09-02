@@ -16,6 +16,7 @@ const CircularDependencyPlugin = require('circular-dependency-plugin')
 const packageJsonFile = path.join(__dirname, 'package.json')
 const packageJson = JSON.parse(fs.readFileSync(packageJsonFile, 'utf8'))
 const packageId = `${packageJson.publisher}.${packageJson.name}`
+const { VueLoaderPlugin } = require('vue-loader')
 
 /**@type {import('webpack').Configuration}*/
 const baseConfig = {
@@ -24,7 +25,6 @@ const baseConfig = {
     entry: {
         extension: './src/extension.ts',
         'src/stepFunctions/asl/aslServer': './src/stepFunctions/asl/aslServer.ts',
-        samInvokeVue: path.resolve(__dirname, 'src', 'lambda', 'vue', 'samInvokeVue.ts'),
     },
     output: {
         path: path.resolve(__dirname, 'dist'),
@@ -35,12 +35,12 @@ const baseConfig = {
     devtool: 'source-map',
     externals: {
         vscode: 'commonjs vscode',
+        vue: 'root Vue',
     },
     resolve: {
         extensions: ['.ts', '.js'],
         alias: {
             handlebars: 'handlebars/dist/handlebars.min.js',
-            vue$: require.resolve('vue/dist/vue.esm.js'),
         },
     },
     node: {
@@ -63,7 +63,7 @@ const baseConfig = {
                     {
                         loader: 'esbuild-loader',
                         options: {
-                            loader: 'ts', // Or 'ts' if you don't need tsx
+                            loader: 'ts',
                             target: 'es2018',
                         },
                     },
@@ -95,4 +95,27 @@ const baseConfig = {
     },
 }
 
-module.exports = [baseConfig]
+// TODO: use webpack merge? probably not worth it if switching over to esbuild
+const vueConfig = {
+    ...baseConfig,
+    name: 'vue',
+    target: 'web',
+    entry: {
+        samInvokeVue: path.resolve(__dirname, 'src', 'lambda', 'vue', 'samInvokeEntry.ts'),
+    },
+    module: {
+        rules: baseConfig.module.rules.concat(
+            {
+                test: /\.vue$/,
+                loader: 'vue-loader',
+            },
+            {
+                test: /\.css$/,
+                use: ['vue-style-loader', 'css-loader'],
+            }
+        ),
+    },
+    plugins: baseConfig.plugins.concat(new VueLoaderPlugin()),
+}
+
+module.exports = [baseConfig, vueConfig]
