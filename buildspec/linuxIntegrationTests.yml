@@ -32,6 +32,8 @@ phases:
             - go version
             # login to DockerHub so we don't get throttled
             - docker login --username $(echo $DOCKER_HUB_TOKEN | jq -r '.username') --password $(echo $DOCKER_HUB_TOKEN | jq -r '.password') || true
+            # increase file watcher count so CodeLens tests do not fail unexpectedly (ENOSPC error)
+            - sysctl fs.inotify.max_user_watches=524288
 
     pre_build:
         commands:
