@@ -49,7 +49,6 @@ export function registerSamInvokeVueCommand(context: ExtContext): vscode.Disposa
                 onDidReceiveMessageFunction: async (message, postMessageFn, destroyWebviewFn) =>
                     handleFrontendToBackendMessage(message, postMessageFn, destroyWebviewFn, context),
                 context: context.extensionContext,
-                cssFiles: ['samInvokeForm.css'],
                 initialCalls: launchConfig
                     ? [
                           {
@@ -442,7 +441,7 @@ function getLaunchConfigQuickPickItems(launchConfig: LaunchConfiguration, uri: v
                 index,
             }
         })
-        .filter(o => samValidator.validate((o.config as any) as AwsSamDebuggerConfiguration, true)?.isValid)
+        .filter(o => samValidator.validate(o.config as any as AwsSamDebuggerConfiguration, true)?.isValid)
         .map(val => {
             return {
                 index: val.index,
