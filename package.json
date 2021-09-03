@@ -1587,7 +1587,7 @@
         "vue-loader": "^15.9.6",
         "vue-template-compiler": "^2.6.12",
         "webpack": "^5.36.2",
-        "webpack-cli": "^3.3.10"
+        "webpack-cli": "^4.8.0"
     },
     "dependencies": {
         "adm-zip": "^0.4.13",
