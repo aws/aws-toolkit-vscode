@@ -11,7 +11,7 @@ describe('CreateNewSamAppWizard', async function () {
     let tester: WizardTester<CreateNewSamAppWizardForm>
 
     beforeEach(function () {
-        tester = createWizardTester(new CreateNewSamAppWizard({ samCliVersion: '', schemasRegions: [] }))
+        tester = createWizardTester(new CreateNewSamAppWizard({ samCliVersion: '' } as any)) // the hard-cast is ok here since we only test control-flow
     })
 
     it('prompts for runtime first', function () {
