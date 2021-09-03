@@ -99,7 +99,7 @@ export function createQuickPick<T>(
     const prompter =
         options.filterBoxInputSettings !== undefined
             ? new FilterBoxQuickPickPrompter<T>(picker, options.filterBoxInputSettings)
-            : new QuickPickPrompter<T>(picker)
+            : new QuickPickPrompter<T>(picker, options)
 
     prompter.loadItems(items)
 
@@ -198,6 +198,8 @@ export class QuickPickPrompter<T> extends Prompter<T> {
     protected _estimator?: StepEstimator<T>
     protected _lastPicked?: DataQuickPickItem<T>
     private onDidShowEmitter: vscode.EventEmitter<void> = new vscode.EventEmitter()
+    private hasPlaceholder?: boolean
+    private pendingPromises: number = 0
     /** Event that is fired immediately after the prompter is shown. */
     public onDidShow: vscode.Event<void> = this.onDidShowEmitter.event
 
@@ -211,7 +213,7 @@ export class QuickPickPrompter<T> extends Prompter<T> {
 
     constructor(
         public readonly quickPick: DataQuickPick<T>,
-        protected readonly compare?: ExtendedQuickPickOptions<T>['compare']
+        protected readonly options?: Pick<ExtendedQuickPickOptions<T>, 'compare' | 'placeholderItem'>
     ) {
         super()
     }
@@ -227,6 +229,7 @@ export class QuickPickPrompter<T> extends Prompter<T> {
 
     public clearItems(): void {
         this.quickPick.items = []
+        this.hasPlaceholder = false
     }
 
     /**
@@ -248,6 +251,21 @@ export class QuickPickPrompter<T> extends Prompter<T> {
         }
     }
 
+    /** Appends items to the current array, keeping track of the previous selection */
+    private appendItems(items: DataQuickPickItem<T>[]): void {
+        const picker = this.quickPick
+        const previousSelected = picker.activeItems
+
+        picker.items = picker.items.concat(items).sort(this.options?.compare)
+
+        if (picker.items.length === 0 && !picker.busy) {
+            this.hasPlaceholder = true
+            picker.items = this.options?.placeholderItem !== undefined ? [this.options?.placeholderItem] : []
+        }
+
+        this.selectItems(...previousSelected)
+    }
+
     // TODO: add options to this to clear items _before_ loading them
     /**
      * Loads items into the QuickPick. Can accept an array or a Promise for items. Promises will cause the
@@ -261,21 +279,23 @@ export class QuickPickPrompter<T> extends Prompter<T> {
     public loadItems(items: Promise<DataQuickPickItem<T>[]> | DataQuickPickItem<T>[]): Promise<void> {
         const picker = this.quickPick
 
+        if (this.hasPlaceholder) {
+            this.clearItems()
+        }
+
         if (items instanceof Promise) {
             picker.busy = true
             picker.enabled = false
+            this.pendingPromises += 1
 
             return items.then(items => {
-                const previousSelected = picker.activeItems
-                picker.items = picker.items.concat(items)
-                this.selectItems(...previousSelected)
-                picker.busy = false
+                this.pendingPromises -= 1
+                picker.busy = this.pendingPromises !== 0
+                this.appendItems(items)
                 picker.enabled = true
             })
         } else {
-            const previousSelected = picker.activeItems
-            picker.items = picker.items.concat(items)
-            this.selectItems(...previousSelected)
+            this.appendItems(items)
             return Promise.resolve()
         }
     }

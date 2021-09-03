@@ -24,7 +24,6 @@ import { ext } from '../../shared/extensionGlobals'
 import { fileExists, isInDirectory, readFileAsString } from '../../shared/filesystemUtilities'
 import { getLogger } from '../../shared/logger'
 import { RegionProvider } from '../../shared/regions/regionProvider'
-import { getRegionsForActiveCredentials } from '../../shared/regions/regionUtilities'
 import { getSamCliVersion, getSamCliContext, SamCliContext } from '../../shared/sam/cli/samCliContext'
 import { runSamCliInit, SamCliInitArgs } from '../../shared/sam/cli/samCliInit'
 import { throwAndNotifyIfInvalid } from '../../shared/sam/cli/samCliValidationUtils'
@@ -33,7 +32,7 @@ import { recordSamInit, Result, Runtime as TelemetryRuntime } from '../../shared
 import { addFolderToWorkspace, tryGetAbsolutePath } from '../../shared/utilities/workspaceUtils'
 import { goRuntimes } from '../models/samLambdaRuntime'
 import { eventBridgeStarterAppTemplate } from '../models/samTemplates'
-import { CreateNewSamAppWizard, CreateNewSamAppWizardResponse } from '../wizards/samInitWizard'
+import { CreateNewSamAppWizard, CreateNewSamAppWizardForm } from '../wizards/samInitWizard'
 import { LaunchConfiguration } from '../../shared/debug/launchConfiguration'
 import { SamDebugConfigProvider } from '../../shared/sam/debugger/awsSamDebugger'
 import { ExtContext } from '../../shared/extensions'
@@ -145,11 +144,14 @@ export async function createNewSamApplication(
         await validateSamCli(samCliContext.validator)
 
         const credentials = await awsContext.getCredentials()
-        const availableRegions = getRegionsForActiveCredentials(awsContext, regionProvider)
-        const schemasRegions = availableRegions.filter(region => regionProvider.isServiceInRegion('schemas', region.id))
         samVersion = await getSamCliVersion(samCliContext)
 
-        const config = await new CreateNewSamAppWizard({ credentials, schemasRegions, samCliVersion: samVersion }).run()
+        const config = await new CreateNewSamAppWizard({
+            credentials,
+            regionProvider,
+            awsContext,
+            samCliVersion: samVersion,
+        }).run()
 
         if (!config) {
             createResult = 'Cancelled'
@@ -345,7 +347,7 @@ async function validateSamCli(samCliValidator: SamCliValidator): Promise<void> {
 }
 
 export async function getProjectUri(
-    config: Pick<CreateNewSamAppWizardResponse, 'location' | 'name'>,
+    config: Pick<CreateNewSamAppWizardForm, 'location' | 'name'>,
     files: string[]
 ): Promise<vscode.Uri | undefined> {
     if (files.length === 0) {

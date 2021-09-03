@@ -9,8 +9,9 @@ const localize = nls.loadMessageBundle()
 import * as vscode from 'vscode'
 import { Runtime } from 'aws-sdk/clients/lambda'
 import { Map as ImmutableMap, Set as ImmutableSet } from 'immutable'
-import * as picker from '../../shared/ui/picker'
 import { isCloud9 } from '../../shared/extensionUtilities'
+import { PrompterButtons } from '../../shared/ui/buttons'
+import { createQuickPick, DataQuickPickItem, QuickPickPrompter } from '../../shared/ui/pickerPrompter'
 
 export enum RuntimeFamily {
     Unknown,
@@ -114,7 +115,7 @@ export function compareSamLambdaRuntime(a: string, b: string): number {
     return a.localeCompare(b, 'en', { numeric: true, ignorePunctuation: true })
 }
 
-function extractAndCompareRuntime(a: RuntimeQuickPickItem, b: RuntimeQuickPickItem): number {
+function extractAndCompareRuntime(a: vscode.QuickPickItem, b: vscode.QuickPickItem): number {
     return compareSamLambdaRuntime(a.label, b.label)
 }
 
@@ -165,12 +166,10 @@ function getRuntimesForFamily(family: RuntimeFamily): ImmutableSet<Runtime> | un
     }
 }
 
-export interface RuntimeQuickPickItem extends vscode.QuickPickItem {
+export interface RuntimeAndPackage {
     packageType: RuntimePackageType
     runtime: Runtime
 }
-
-export type RuntimeTuple = [Runtime, RuntimePackageType]
 
 /**
  * Creates a quick pick for a Runtime with the following parameters (all optional)
@@ -181,12 +180,11 @@ export type RuntimeTuple = [Runtime, RuntimePackageType]
  */
 export function createRuntimeQuickPick(params: {
     showImageRuntimes: boolean
-    buttons?: vscode.QuickInputButton[]
-    currRuntime?: Runtime
+    buttons?: PrompterButtons<RuntimeAndPackage>
     runtimeFamily?: RuntimeFamily
     step?: number
     totalSteps?: number
-}): vscode.QuickPick<RuntimeQuickPickItem> {
+}): QuickPickPrompter<RuntimeAndPackage> {
     const zipRuntimes = params.runtimeFamily
         ? getRuntimesForFamily(params.runtimeFamily) ?? samLambdaCreatableRuntimes()
         : samLambdaCreatableRuntimes()
@@ -195,42 +193,25 @@ export function createRuntimeQuickPick(params: {
         // remove uncreatable runtimes
         .filter(value => samLambdaCreatableRuntimes().has(value))
         .toArray()
-        .map<RuntimeQuickPickItem>(runtime => ({
-            packageType: 'Zip',
-            runtime: runtime,
+        .map(runtime => ({
+            data: { runtime, packageType: 'Zip' } as RuntimeAndPackage,
             label: runtime,
-            alwaysShow: runtime === params.currRuntime,
-            description:
-                runtime === params.currRuntime ? localize('AWS.wizard.selectedPreviously', 'Selected Previously') : '',
         }))
 
     // internally, after init there is essentially no difference between a ZIP and Image runtime;
     // behavior is keyed off of what is specified in the cloudformation template
-    let imageRuntimeItems: RuntimeQuickPickItem[] = []
+    let imageRuntimeItems: DataQuickPickItem<RuntimeAndPackage>[] = []
     if (params.showImageRuntimes) {
         imageRuntimeItems = samImageLambdaRuntimes()
-            .map<RuntimeQuickPickItem>(runtime => ({
-                packageType: 'Image',
-                runtime: runtime,
+            .map(runtime => ({
+                data: { runtime, packageType: 'Image' } as RuntimeAndPackage,
                 label: `${runtime} (Image)`,
-                alwaysShow: runtime === params.currRuntime,
-                description:
-                    runtime === params.currRuntime
-                        ? localize('AWS.wizard.selectedPreviously', 'Selected Previously')
-                        : '',
             }))
             .toArray()
     }
 
-    return picker.createQuickPick({
-        options: {
-            ignoreFocusOut: true,
-            title: localize('AWS.samcli.initWizard.runtime.prompt', 'Select a SAM Application Runtime'),
-            value: params.currRuntime ? params.currRuntime : '',
-            step: params.step,
-            totalSteps: params.totalSteps,
-        },
-        buttons: [...(params.buttons ?? []), vscode.QuickInputButtons.Back],
-        items: [...zipRuntimeItems, ...imageRuntimeItems].sort(extractAndCompareRuntime),
+    return createQuickPick([...zipRuntimeItems, ...imageRuntimeItems].sort(extractAndCompareRuntime), {
+        title: localize('AWS.samcli.initWizard.runtime.prompt', 'Select a SAM Application Runtime'),
+        buttons: params.buttons,
     })
 }

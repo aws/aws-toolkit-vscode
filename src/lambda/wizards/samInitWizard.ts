@@ -12,12 +12,12 @@ import { SchemasDataProvider } from '../../eventSchemas/providers/schemasDataPro
 import { SchemaClient } from '../../shared/clients/schemaClient'
 import { eventBridgeSchemasDocUrl, samInitDocUrl } from '../../shared/constants'
 import { ext } from '../../shared/extensionGlobals'
-import { Region } from '../../shared/regions/endpoints'
 import { createBackButton, createExitButton, createHelpButton } from '../../shared/ui/buttons'
 import {
     createRuntimeQuickPick,
     DependencyManager,
     getDependencyManager,
+    RuntimeAndPackage,
     RuntimePackageType,
 } from '../models/samLambdaRuntime'
 import {
@@ -34,26 +34,12 @@ import { createLocationPrompt } from '../../shared/ui/common/location'
 import { createInputBox, InputBoxPrompter } from '../../shared/ui/inputPrompter'
 import { createLabelQuickPick, createQuickPick, QuickPickPrompter } from '../../shared/ui/pickerPrompter'
 import { createRegionPrompter } from '../../shared/ui/common/region'
+import { RegionProvider } from '../../shared/regions/regionProvider'
+import { AwsContext } from '../../shared/awsContext'
 
 const localize = nls.loadMessageBundle()
-export interface CreateNewSamAppWizardResponse {
-    packageType: RuntimePackageType
-    runtime: Runtime
-    dependencyManager: DependencyManager
-    template: SamTemplate
-    region?: string
-    registryName?: string
-    schemaName?: string
-    location: vscode.Uri
-    name: string
-}
-
-// TODO: split runtime and packageType into separate prompts, then use the above interface directly?
 export interface CreateNewSamAppWizardForm {
-    runtimeAndPackage: {
-        packageType: RuntimePackageType
-        runtime: Runtime
-    }
+    runtimeAndPackage: RuntimeAndPackage
     dependencyManager: DependencyManager
     template: SamTemplate
     region?: string
@@ -61,22 +47,17 @@ export interface CreateNewSamAppWizardForm {
     schemaName?: string
     location: vscode.Uri
     name: string
-}
-
-export interface RuntimePlusPackage {
-    packageType: RuntimePackageType
-    runtime: Runtime
 }
 
 function makeButtons(helpUri?: string | vscode.Uri) {
     return [createHelpButton(helpUri), createBackButton(), createExitButton()]
 }
 
-function createRuntimePrompter(samCliVersion: string): QuickPickPrompter<RuntimePlusPackage> {
+function createRuntimePrompter(samCliVersion: string): QuickPickPrompter<RuntimeAndPackage> {
     return createRuntimeQuickPick({
         showImageRuntimes: semver.gte(samCliVersion, MINIMUM_SAM_CLI_VERSION_INCLUSIVE_FOR_IMAGE_SUPPORT),
         buttons: makeButtons(samInitDocUrl),
-    }).transform(([runtime, packageType]) => ({ runtime, packageType })) as QuickPickPrompter<any>
+    })
 }
 
 function createTemplatePrompter(
@@ -97,10 +78,14 @@ function createTemplatePrompter(
     })
 }
 
-function createSchemaRegionPrompter(schemaRegions: Region[]): QuickPickPrompter<string> {
-    return createRegionPrompter(schemaRegions, {
+function createSchemaRegionPrompter(context: {
+    regionProvider: RegionProvider
+    awsContext: AwsContext
+}): QuickPickPrompter<string> {
+    return createRegionPrompter(context, {
         title: localize('AWS.samcli.initWizard.schemas.region.prompt', 'Select an EventBridge Schemas Region'),
         buttons: makeButtons(eventBridgeSchemasDocUrl),
+        serviceId: 'schemas',
     }).transform(r => r.id)
 }
 
@@ -205,14 +190,19 @@ function createNamePrompter(defaultValue: string): InputBoxPrompter {
 
 export class CreateNewSamAppWizard extends Wizard<CreateNewSamAppWizardForm> {
     public constructor(
-        context: { samCliVersion: string; schemasRegions: Region[]; credentials?: AWS.Credentials },
+        context: {
+            samCliVersion: string
+            regionProvider: RegionProvider
+            awsContext: AwsContext
+            credentials?: AWS.Credentials
+        },
         initState?: CreateNewSamAppWizardForm
     ) {
         super()
 
         this.form.runtimeAndPackage.bindPrompter(() => createRuntimePrompter(context.samCliVersion))
 
-        this.form.dependencyManager.bindPrompter(state => createDependencyPrompter(state.runtimeAndPackage.runtime!), {
+        this.form.dependencyManager.bindPrompter(state => createDependencyPrompter(state.runtimeAndPackage!.runtime!), {
             showWhen: state =>
                 state.runtimeAndPackage?.runtime !== undefined &&
                 getDependencyManager(state.runtimeAndPackage.runtime).length > 1,
@@ -224,8 +214,8 @@ export class CreateNewSamAppWizard extends Wizard<CreateNewSamAppWizardForm> {
 
         this.form.template.bindPrompter(state =>
             createTemplatePrompter(
-                state.runtimeAndPackage.runtime!,
-                state.runtimeAndPackage.packageType!,
+                state.runtimeAndPackage!.runtime!,
+                state.runtimeAndPackage!.packageType!,
                 context.samCliVersion
             )
         )
@@ -234,7 +224,7 @@ export class CreateNewSamAppWizard extends Wizard<CreateNewSamAppWizardForm> {
             return state.template === eventBridgeStarterAppTemplate
         }
 
-        this.form.region.bindPrompter(() => createSchemaRegionPrompter(context.schemasRegions), {
+        this.form.region.bindPrompter(() => createSchemaRegionPrompter(context), {
             showWhen: isStarterTemplate,
         })
 
@@ -257,7 +247,7 @@ export class CreateNewSamAppWizard extends Wizard<CreateNewSamAppWizardForm> {
             createNamePrompter(
                 fsutil.getNonexistentFilename(
                     state.location!.fsPath,
-                    `lambda-${state.runtimeAndPackage.runtime}`,
+                    `lambda-${state.runtimeAndPackage!.runtime}`,
                     '',
                     99
                 )

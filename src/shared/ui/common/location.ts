@@ -30,6 +30,7 @@ class FolderQuickPickItem implements Omit<DataQuickPickItem<vscode.Uri>, 'disabl
 
 class BrowseFolderQuickPickItem implements Omit<DataQuickPickItem<vscode.Uri>, 'disabled'> {
     public alwaysShow: boolean = true
+    public skipEstimate: boolean = true
 
     public constructor(
         public readonly label: string,
