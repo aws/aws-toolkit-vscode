@@ -152,7 +152,7 @@ export class SharedCredentialsProvider implements CredentialsProvider {
 
     /**
      * Patches 'source_profile' credentials as static representations, which the SDK can handle in all cases.
-     * 
+     *
      * XXX: Returns undefined if no `source_profile` property exists. Else we would prevent the SDK from re-reading
      * the shared credential files if they were to change. #1953
      *

@@ -65,7 +65,7 @@ export class AslVisualization {
     public async sendUpdateMessage(updatedTextDocument: vscode.TextDocument) {
         const logger: Logger = getLogger()
         const isYaml = updatedTextDocument.languageId === YAML_ASL
-        const text = updatedTextDocument.getText()
+        const text = this.getText(updatedTextDocument)
         let stateMachineData = text
         let yamlErrors: string[] = []
 
@@ -98,6 +98,10 @@ export class AslVisualization {
             isValid,
             errors: yamlErrors,
         })
+    }
+
+    protected getText(textDocument: vscode.TextDocument): string {
+        return textDocument.getText()
     }
 
     private setupWebviewPanel(textDocument: vscode.TextDocument): vscode.WebviewPanel {
@@ -213,7 +217,7 @@ export class AslVisualization {
     private createVisualizationWebviewPanel(documentUri: vscode.Uri): vscode.WebviewPanel {
         return vscode.window.createWebviewPanel(
             'stateMachineVisualization',
-            this.makeWebviewTitle(documentUri),
+            localize('AWS.stepFunctions.graph.titlePrefix', 'Graph: {0}', path.basename(documentUri.fsPath)),
             {
                 preserveFocus: true,
                 viewColumn: vscode.ViewColumn.Beside,
@@ -228,10 +232,6 @@ export class AslVisualization {
                 retainContextWhenHidden: true,
             }
         )
-    }
-
-    private makeWebviewTitle(sourceDocumentUri: vscode.Uri): string {
-        return localize('AWS.stepFunctions.graph.titlePrefix', 'Graph: {0}', path.basename(sourceDocumentUri.fsPath))
     }
 
     private getWebviewContent(

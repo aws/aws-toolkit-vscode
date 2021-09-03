@@ -23,12 +23,11 @@ export class SsoCredentialProvider {
     public async refreshCredentials(): Promise<Credentials> {
         try {
             const accessToken = await this.ssoAccessTokenProvider.accessToken()
-            const roleCredentials = await this.ssoClient
-                .getRoleCredentials({
-                    accountId: this.ssoAccount,
-                    roleName: this.ssoRole,
-                    accessToken: accessToken.accessToken,
-                })
+            const roleCredentials = await this.ssoClient.getRoleCredentials({
+                accountId: this.ssoAccount,
+                roleName: this.ssoRole,
+                accessToken: accessToken.accessToken,
+            })
 
             return {
                 accessKeyId: roleCredentials.roleCredentials!.accessKeyId!,

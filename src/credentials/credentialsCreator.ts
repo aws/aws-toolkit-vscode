@@ -23,10 +23,7 @@ const ERROR_MESSAGE_USER_CANCELLED = localize(
  * @param profileName Name of Credentials profile we are asking an MFA Token for
  * @param callback tokens/errors are passed through here
  */
-export async function getMfaTokenFromUser(
-    mfaSerial: string,
-    profileName: string
-): Promise<string> {
+export async function getMfaTokenFromUser(mfaSerial: string, profileName: string): Promise<string> {
     try {
         const inputBox = createInputBox({
             options: {

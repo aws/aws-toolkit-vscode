@@ -1,0 +1,518 @@
+{
+    "Resources": {
+      "SubmitJobFB773A16": {
+        "Type": "AWS::StepFunctions::Activity",
+        "Properties": {
+          "Name": "templateJsonTesterSubmitJob293E36D9"
+        },
+        "Metadata": {
+          "aws:cdk:path": "templateJsonTester/SubmitJob/Resource"
+        }
+      },
+      "CheckJob5FFC1D6F": {
+        "Type": "AWS::StepFunctions::Activity",
+        "Properties": {
+          "Name": "templateJsonTesterCheckJobE79CEC2E"
+        },
+        "Metadata": {
+          "aws:cdk:path": "templateJsonTester/CheckJob/Resource"
+        }
+      },
+      "SubmitJob2215322E1": {
+        "Type": "AWS::StepFunctions::Activity",
+        "Properties": {
+          "Name": "templateJsonTesterSubmitJob2F34CA86A"
+        },
+        "Metadata": {
+          "aws:cdk:path": "templateJsonTester/SubmitJob2/Resource"
+        }
+      },
+      "CheckJob25E896F6F": {
+        "Type": "AWS::StepFunctions::Activity",
+        "Properties": {
+          "Name": "templateJsonTesterCheckJob2A285E37A"
+        },
+        "Metadata": {
+          "aws:cdk:path": "templateJsonTester/CheckJob2/Resource"
+        }
+      },
+      "MyStateMachineRoleD59FFEBC": {
+        "Type": "AWS::IAM::Role",
+        "Properties": {
+          "AssumeRolePolicyDocument": {
+            "Statement": [
+              {
+                "Action": "sts:AssumeRole",
+                "Effect": "Allow",
+                "Principal": {
+                  "Service": {
+                    "Fn::Join": [
+                      "",
+                      [
+                        "states.",
+                        {
+                          "Ref": "AWS::Region"
+                        },
+                        ".amazonaws.com"
+                      ]
+                    ]
+                  }
+                }
+              }
+            ],
+            "Version": "2012-10-17"
+          }
+        },
+        "Metadata": {
+          "aws:cdk:path": "templateJsonTester/MyStateMachine/Role/Resource"
+        }
+      },
+      "MyStateMachine6C968CA5": {
+        "Type": "AWS::StepFunctions::StateMachine",
+        "Properties": {
+          "RoleArn": {
+            "Fn::GetAtt": [
+              "MyStateMachineRoleD59FFEBC",
+              "Arn"
+            ]
+          },
+          "DefinitionString": {
+            "Fn::Join": [
+              "",
+              [
+                "{\"StartAt\":\"Submit Job\",\"States\":{\"Submit Job\":{\"Next\":\"Wait X Seconds\",\"Type\":\"Task\",\"Resource\":\"",
+                {
+                  "Ref": "SubmitJobFB773A16"
+                },
+                "\",\"ResultPath\":\"$.guid\"},\"Wait X Seconds\":{\"Type\":\"Wait\",\"SecondsPath\":\"$.wait_time\",\"Next\":\"Get Job Status\"},\"Get Job Status\":{\"Next\":\"Job Complete?\",\"InputPath\":\"$.guid\",\"Type\":\"Task\",\"Resource\":\"",
+                {
+                  "Ref": "CheckJob5FFC1D6F"
+                },
+                "\",\"ResultPath\":\"$.status\"},\"Job Complete?\":{\"Type\":\"Choice\",\"Choices\":[{\"Variable\":\"$.status\",\"StringEquals\":\"FAILED\",\"Next\":\"Job Failed\"},{\"Variable\":\"$.status\",\"StringEquals\":\"SUCCEEDED\",\"Next\":\"Get Final Job Status\"}],\"Default\":\"Wait X Seconds\"},\"Job Failed\":{\"Type\":\"Fail\",\"Error\":\"DescribeJob returned FAILED\",\"Cause\":\"AWS Batch Job Failed\"},\"Get Final Job Status\":{\"End\":true,\"InputPath\":\"$.guid\",\"Type\":\"Task\",\"Resource\":\"",
+                {
+                  "Ref": "CheckJob5FFC1D6F"
+                },
+                "\"}},\"TimeoutSeconds\":30}"
+              ]
+            ]
+          }
+        },
+        "DependsOn": [
+          "MyStateMachineRoleD59FFEBC"
+        ],
+        "Metadata": {
+          "aws:cdk:path": "templateJsonTester/MyStateMachine/Resource"
+        }
+      },
+      "MyStateMachine26C968CA5": {
+        "Type": "AWS::StepFunctions::StateMachine",
+        "Properties": {
+          "RoleArn": {
+            "Fn::GetAtt": [
+              "MyStateMachineRoleD59FFEBC",
+              "Arn"
+            ]
+          },
+          "DefinitionString": {
+            "Fn::Join": [
+              "",
+              [
+                "{\"StartAt\":\"Submit Job2\",\"States\":{\"Submit Job2\":{\"Next\":\"Wait X Seconds\",\"Type\":\"Task\",\"Resource\":\"",
+                {
+                  "Ref": "SubmitJobFB773A16"
+                },
+                "\",\"ResultPath\":\"$.guid\"},\"Wait X Seconds\":{\"Type\":\"Wait\",\"SecondsPath\":\"$.wait_time\",\"Next\":\"Get Job Status\"},\"Get Job Status\":{\"Next\":\"Job Complete?\",\"InputPath\":\"$.guid\",\"Type\":\"Task\",\"Resource\":\"",
+                {
+                  "Ref": "CheckJob5FFC1D6F"
+                },
+                "\",\"ResultPath\":\"$.status\"},\"Job Complete?\":{\"Type\":\"Choice\",\"Choices\":[{\"Variable\":\"$.status\",\"StringEquals\":\"FAILED\",\"Next\":\"Job Failed\"},{\"Variable\":\"$.status\",\"StringEquals\":\"SUCCEEDED\",\"Next\":\"Get Final Job Status\"}],\"Default\":\"Wait X Seconds\"},\"Job Failed\":{\"Type\":\"Fail\",\"Error\":\"DescribeJob returned FAILED\",\"Cause\":\"AWS Batch Job Failed\"},\"Get Final Job Status\":{\"End\":true,\"InputPath\":\"$.guid\",\"Type\":\"Task\",\"Resource\":\"",
+                {
+                  "Ref": "CheckJob5FFC1D6F"
+                },
+                "\"}},\"TimeoutSeconds\":30}"
+              ]
+            ]
+          }
+        },
+        "DependsOn": [
+          "MyStateMachineRoleD59FFEBC"
+        ],
+        "Metadata": {
+          "aws:cdk:path": "templateJsonTester/MyStateMachine/Resource"
+        }
+      },
+      "NoRefNoFnGetStateMachine16DBBC93E": {
+        "Type": "AWS::StepFunctions::StateMachine",
+        "Properties": {
+          "RoleArn": {
+            "Fn::GetAtt": [
+              "MyStateMachine1Role819380C3",
+              "Arn"
+            ]
+          },
+          "DefinitionString": "{\"StartAt\":\"GreetedWorld\",\"States\":{\"GreetedWorld\":{\"Type\":\"Succeed\"}}}"
+        },
+        "DependsOn": [
+          "MyStateMachine1Role819380C3"
+        ],
+        "Metadata": {
+          "aws:cdk:path": "aws-stepfunctions-integ/MyStateMachine1/Resource"
+        }
+      },
+      "RefandFnStateMachine2E01A3A5": {
+        "Type": "AWS::StepFunctions::StateMachine",
+        "Properties": {
+          "RoleArn": {
+            "Fn::GetAtt": [
+              "StateMachineRoleB840431D",
+              "Arn"
+            ]
+          },
+          "DefinitionString": {
+            "Fn::Join": [
+              "",
+              [
+                "{\"StartAt\":\"Convert to seconds\",\"States\":{\"Convert to seconds\":{\"Next\":\"Publish message\",\"Type\":\"Task\",\"ResultPath\":\"$.waitSeconds\",\"Resource\":\"",
+                {
+                  "Fn::GetAtt": [
+                    "Evalda2d1181604e4a4586941a6abd7fe42dF371675D",
+                    "Arn"
+                  ]
+                },
+                "randomString\",\"Parameters\":{\"expression\":\"$.waitMilliseconds / 1000\",\"expressionAttributeValues\":{\"$.waitMilliseconds.$\":\"$.waitMilliseconds\"}}},\"Publish message\":{\"End\":true,\"Type\":\"Task\",\"ResultPath\":\"$.sns\",\"Resource\":\"arn:",
+                {
+                  "Ref": "AWS::Partition"
+                },
+                ":states:::sns:publish\",\"Parameters\":{\"TopicArn\":\"",
+                {
+                  "Ref": "cooltopic4736778A"
+                },
+                "\",\"Message.$\":\"$.message\"}}}}"
+              ]
+            ]
+          }
+        },
+        "DependsOn": [
+          "StateMachineRoleDefaultPolicyDF1E6607",
+          "StateMachineRoleB840431D"
+        ],
+        "Metadata": {
+          "aws:cdk:path": "aws-stepfunctions-integ/StateMachine/Resource"
+        }
+      },
+      "Ref2andFnStateMachine2E01A3A5": {
+        "Type": "AWS::StepFunctions::StateMachine",
+        "Properties": {
+          "RoleArn": {
+            "Fn::GetAtt": [
+              "StateMachineRoleB840431D",
+              "Arn"
+            ]
+          },
+          "DefinitionString": {
+            "Fn::Join": [
+              "",
+              [
+                "{\"StartAt\":\"Convert to seconds\",\"States\":{\"Convert to seconds\":{\"Next\":\"Publish message\",\"Type\":\"Task\",\"ResultPath\":\"$.waitSeconds\",\"Resource\":\"",
+                {
+                  "Fn::GetAtt": [
+                    "Evalda2d1181604e4a4586941a6abd7fe42dF371675D",
+                    "Arn"
+                  ]
+                },
+                "\",\"Parameters\":{\"expression\":\"$.waitMilliseconds / 1000\",\"expressionAttributeValues\":{\"$.waitMilliseconds.$\":\"$.waitMilliseconds\"}}},\"Publish message\":{\"End\":true,\"Type\":\"Task\",\"ResultPath\":\"$.sns\",\"Resource\":\"arn:",
+                {
+                  "Ref": "AWS::Partition"
+                },
+                ":states:::sns:publish\",\"Parameters\":{\"TopicArn\":\"",
+                {
+                  "Ref": "cooltopic4736778A"
+                },
+                "\",\"Message.$\":\"$.message\"}}}}"
+              ]
+            ]
+          }
+        },
+        "DependsOn": [
+          "StateMachineRoleDefaultPolicyDF1E6607",
+          "StateMachineRoleB840431D"
+        ],
+        "Metadata": {
+          "aws:cdk:path": "aws-stepfunctions-integ/StateMachine/Resource"
+        }
+      },
+      
+      "MyStateMachine2Role9449E860": {
+        "Type": "AWS::IAM::Role",
+        "Properties": {
+          "AssumeRolePolicyDocument": {
+            "Statement": [
+              {
+                "Action": "sts:AssumeRole",
+                "Effect": "Allow",
+                "Principal": {
+                  "Service": {
+                    "Fn::Join": [
+                      "",
+                      [
+                        "states.",
+                        {
+                          "Ref": "AWS::Region"
+                        },
+                        ".amazonaws.com"
+                      ]
+                    ]
+                  }
+                }
+              }
+            ],
+            "Version": "2012-10-17"
+          }
+        },
+        "Metadata": {
+          "aws:cdk:path": "templateJsonTester/MyStateMachine2/Role/Resource"
+        }
+      },
+      "MyStateMachine268DAC43E": {
+        "Type": "AWS::StepFunctions::StateMachine",
+        "Properties": {
+          "RoleArn": {
+            "Fn::GetAtt": [
+              "MyStateMachine2Role9449E860",
+              "Arn"
+            ]
+          },
+          "DefinitionString": {
+            "Fn::Join": [
+              "",
+              [
+                "{\"StartAt\":\"Submit Job2\",\"States\":{\"Submit Job2\":{\"Next\":\"Wait X Seconds2\",\"Type\":\"Task\",\"Resource\":\"",
+                {
+                  "Ref": "SubmitJob2215322E1"
+                },
+                "\",\"ResultPath\":\"$.guid\"},\"Wait X Seconds2\":{\"Type\":\"Wait\",\"SecondsPath\":\"$.wait_time\",\"Next\":\"Get Job Status2\"},\"Get Job Status2\":{\"Next\":\"Job Complete?2\",\"InputPath\":\"$.guid\",\"Type\":\"Task\",\"Resource\":\"",
+                {
+                  "Ref": "CheckJob25E896F6F"
+                },
+                "\",\"ResultPath\":\"$.status\"},\"Job Complete?2\":{\"Type\":\"Choice\",\"Choices\":[{\"Variable\":\"$.status\",\"StringEquals\":\"FAILED\",\"Next\":\"Job Failed2\"},{\"Variable\":\"$.status\",\"StringEquals\":\"SUCCEEDED\",\"Next\":\"Get Final Job Status2\"}],\"Default\":\"Wait X Seconds2\"},\"Job Failed2\":{\"Type\":\"Fail\",\"Error\":\"DescribeJob returned FAILED\",\"Cause\":\"AWS Batch Job Failed\"},\"Get Final Job Status2\":{\"End\":true,\"InputPath\":\"$.guid\",\"Type\":\"Task\",\"Resource\":\"",
+                {
+                  "Ref": "CheckJob25E896F6F"
+                },
+                "\"}},\"TimeoutSeconds\":30}"
+              ]
+            ]
+          }
+        },
+        "DependsOn": [
+          "MyStateMachine2Role9449E860"
+        ],
+        "Metadata": {
+          "aws:cdk:path": "templateJsonTester/MyStateMachine2/Resource"
+        }
+      },
+      "CDKMetadata": {
+        "Type": "AWS::CDK::Metadata",
+        "Properties": {
+          "Analytics": "v2:deflate64:H4sIAAAAAAAAE02OTwvCMAzFP4v3LttAEG/KwJuXKXguXceyP6006URKv7vtBPH0XvKSX1JDXR2h2p3kiwrVTWVQ1mkIN5ZqEo01xM4rFk1vWk3WO6WzT0GHjNZEkRcDsX723qjcIgjnZFbkdx79+bukSTwkJthgMXEuEmeRDrG+SjWg2cj/dRQoFwitnbcoa4xRGNtpGKlc6z3Uh/T8SIiF84Zx0dB+9QO3SjCU2QAAAA=="
+        },
+        "Metadata": {
+          "aws:cdk:path": "templateJsonTester/CDKMetadata/Default"
+        },
+        "Condition": "CDKMetadataAvailable"
+      }
+    },
+    "Conditions": {
+      "CDKMetadataAvailable": {
+        "Fn::Or": [
+          {
+            "Fn::Or": [
+              {
+                "Fn::Equals": [
+                  {
+                    "Ref": "AWS::Region"
+                  },
+                  "af-south-1"
+                ]
+              },
+              {
+                "Fn::Equals": [
+                  {
+                    "Ref": "AWS::Region"
+                  },
+                  "ap-east-1"
+                ]
+              },
+              {
+                "Fn::Equals": [
+                  {
+                    "Ref": "AWS::Region"
+                  },
+                  "ap-northeast-1"
+                ]
+              },
+              {
+                "Fn::Equals": [
+                  {
+                    "Ref": "AWS::Region"
+                  },
+                  "ap-northeast-2"
+                ]
+              },
+              {
+                "Fn::Equals": [
+                  {
+                    "Ref": "AWS::Region"
+                  },
+                  "ap-south-1"
+                ]
+              },
+              {
+                "Fn::Equals": [
+                  {
+                    "Ref": "AWS::Region"
+                  },
+                  "ap-southeast-1"
+                ]
+              },
+              {
+                "Fn::Equals": [
+                  {
+                    "Ref": "AWS::Region"
+                  },
+                  "ap-southeast-2"
+                ]
+              },
+              {
+                "Fn::Equals": [
+                  {
+                    "Ref": "AWS::Region"
+                  },
+                  "ca-central-1"
+                ]
+              },
+              {
+                "Fn::Equals": [
+                  {
+                    "Ref": "AWS::Region"
+                  },
+                  "cn-north-1"
+                ]
+              },
+              {
+                "Fn::Equals": [
+                  {
+                    "Ref": "AWS::Region"
+                  },
+                  "cn-northwest-1"
+                ]
+              }
+            ]
+          },
+          {
+            "Fn::Or": [
+              {
+                "Fn::Equals": [
+                  {
+                    "Ref": "AWS::Region"
+                  },
+                  "eu-central-1"
+                ]
+              },
+              {
+                "Fn::Equals": [
+                  {
+                    "Ref": "AWS::Region"
+                  },
+                  "eu-north-1"
+                ]
+              },
+              {
+                "Fn::Equals": [
+                  {
+                    "Ref": "AWS::Region"
+                  },
+                  "eu-south-1"
+                ]
+              },
+              {
+                "Fn::Equals": [
+                  {
+                    "Ref": "AWS::Region"
+                  },
+                  "eu-west-1"
+                ]
+              },
+              {
+                "Fn::Equals": [
+                  {
+                    "Ref": "AWS::Region"
+                  },
+                  "eu-west-2"
+                ]
+              },
+              {
+                "Fn::Equals": [
+                  {
+                    "Ref": "AWS::Region"
+                  },
+                  "eu-west-3"
+                ]
+              },
+              {
+                "Fn::Equals": [
+                  {
+                    "Ref": "AWS::Region"
+                  },
+                  "me-south-1"
+                ]
+              },
+              {
+                "Fn::Equals": [
+                  {
+                    "Ref": "AWS::Region"
+                  },
+                  "sa-east-1"
+                ]
+              },
+              {
+                "Fn::Equals": [
+                  {
+                    "Ref": "AWS::Region"
+                  },
+                  "us-east-1"
+                ]
+              },
+              {
+                "Fn::Equals": [
+                  {
+                    "Ref": "AWS::Region"
+                  },
+                  "us-east-2"
+                ]
+              }
+            ]
+          },
+          {
+            "Fn::Or": [
+              {
+                "Fn::Equals": [
+                  {
+                    "Ref": "AWS::Region"
+                  },
+                  "us-west-1"
+                ]
+              },
+              {
+                "Fn::Equals": [
+                  {
+                    "Ref": "AWS::Region"
+                  },
+                  "us-west-2"
+                ]
+              }
+            ]
+          }
+        ]
+      }
+    }
+  }

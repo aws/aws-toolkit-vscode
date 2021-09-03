@@ -195,14 +195,12 @@ describe('StateMachineController', function () {
             const step3 = sinon.stub()
             // step1 -> branch1 -> step1 -> branch2 -> step3 -> branch2 -> step3 -> terminate
             step1.onFirstCall().returns({ nextState: { branch2: 'no' }, nextSteps: [branch1] })
-            step1
-                .onSecondCall()
-                .callsFake(() =>
-                    assertStepsPassthrough(controller, 1, 2, {
-                        nextState: { branch1: 'no', branch2: 'no' },
-                        nextSteps: [branch2],
-                    })
-                )
+            step1.onSecondCall().callsFake(() =>
+                assertStepsPassthrough(controller, 1, 2, {
+                    nextState: { branch1: 'no', branch2: 'no' },
+                    nextSteps: [branch2],
+                })
+            )
             branch1.returns(undefined)
             branch2.callsFake(state =>
                 assertStepsPassthrough(controller, 2, 3, { nextState: { branch2: 'yes', branch1: state.branch1 } })
