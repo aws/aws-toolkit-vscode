@@ -131,7 +131,6 @@ export class StateMachineController<TState> {
                 return undefined
             }
             if (controlSignal === ControlSignal.Retry) {
-                this.state = this.previousStates[this.internalStep]
                 continue
             } else if (nextState === undefined || controlSignal === ControlSignal.Back) {
                 if (this.internalStep === 0) {
