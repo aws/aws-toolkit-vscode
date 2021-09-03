@@ -28,19 +28,22 @@ export class AslVisualizationCDKManager extends AbstractAslVisualizationManager 
         node: ConstructNode
     ): Promise<vscode.WebviewPanel | undefined> {
         const logger = getLogger()
+
         const cdkOutPath = node.id.replace(`/tree.json/${node.tooltip}`, ``)
         const workspaceName = this.getCDKAppWorkspaceName(cdkOutPath)
+
         const existingVisualization = this.getExistingVisualization(workspaceName, node.tooltip)
-        const stateMachineName = node.label
-        const appName = node.tooltip.replace(`/${stateMachineName}`, ``)
-        const templatePath = `${cdkOutPath}/${appName}.template.json`
-        normalize(templatePath)
-        const uri = vscode.Uri.file(templatePath)
+
         if (existingVisualization) {
             existingVisualization.showPanel()
 
             return existingVisualization.getPanel()
         }
+
+        const stateMachineName = node.label
+        const appName = node.tooltip.replace(`/${stateMachineName}`, ``)
+        const templatePath = normalize(`${cdkOutPath}/${appName}.template.json`)
+        const uri = vscode.Uri.file(templatePath)
 
         // Existing visualization does not exist, construct new visualization
         try {
@@ -53,7 +56,7 @@ export class AslVisualizationCDKManager extends AbstractAslVisualizationManager 
                 return newVisualization.getPanel()
             }
         } catch (err) {
-            this.handleErr(err, logger)
+            this.handleErr(err as Error, logger)
         }
 
         return
