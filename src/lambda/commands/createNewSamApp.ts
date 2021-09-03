@@ -33,11 +33,7 @@ import { recordSamInit, Result, Runtime as TelemetryRuntime } from '../../shared
 import { addFolderToWorkspace, tryGetAbsolutePath } from '../../shared/utilities/workspaceUtils'
 import { goRuntimes } from '../models/samLambdaRuntime'
 import { eventBridgeStarterAppTemplate } from '../models/samTemplates'
-import {
-    CreateNewSamAppWizard,
-    CreateNewSamAppWizardResponse,
-    DefaultCreateNewSamAppWizardContext,
-} from '../wizards/samInitWizard'
+import { CreateNewSamAppWizard, CreateNewSamAppWizardResponse } from '../wizards/samInitWizard'
 import { LaunchConfiguration } from '../../shared/debug/launchConfiguration'
 import { SamDebugConfigProvider } from '../../shared/sam/debugger/awsSamDebugger'
 import { ExtContext } from '../../shared/extensions'
@@ -141,7 +137,6 @@ export async function createNewSamApplication(
     let reason: CreateReason = 'unknown'
     let lambdaPackageType: 'Zip' | 'Image' | undefined
     let createRuntime: Runtime | undefined
-    let config: CreateNewSamAppWizardResponse | undefined
     let samVersion: string | undefined
 
     let initArguments: SamCliInitArgs
@@ -149,13 +144,12 @@ export async function createNewSamApplication(
     try {
         await validateSamCli(samCliContext.validator)
 
-        const currentCredentials = await awsContext.getCredentials()
+        const credentials = await awsContext.getCredentials()
         const availableRegions = getRegionsForActiveCredentials(awsContext, regionProvider)
         const schemasRegions = availableRegions.filter(region => regionProvider.isServiceInRegion('schemas', region.id))
         samVersion = await getSamCliVersion(samCliContext)
 
-        const wizardContext = new DefaultCreateNewSamAppWizardContext(currentCredentials, schemasRegions, samVersion)
-        config = await new CreateNewSamAppWizard(wizardContext).run()
+        const config = await new CreateNewSamAppWizard({ credentials, schemasRegions, samCliVersion: samVersion }).run()
 
         if (!config) {
             createResult = 'Cancelled'
@@ -164,9 +158,7 @@ export async function createNewSamApplication(
             return
         }
 
-        // This cast (and all like it) will always succeed because Runtime (from config.runtime) is the same
-        // section of types as Runtime
-        createRuntime = config.runtime as Runtime
+        createRuntime = config.runtimeAndPackage.runtime
 
         initArguments = {
             name: config.name,
@@ -189,7 +181,7 @@ export async function createNewSamApplication(
             initArguments.extraContent = schemaTemplateParameters.templateExtraContent
         }
 
-        if (config.packageType === 'Image') {
+        if (config.runtimeAndPackage.packageType === 'Image') {
             lambdaPackageType = 'Image'
             initArguments.baseImage = `amazon/${createRuntime}-base`
         } else {
@@ -258,7 +250,7 @@ export async function createNewSamApplication(
             template: templateUri.fsPath,
             readme: readmeUri.fsPath,
             runtime: createRuntime,
-            isImage: config.packageType === 'Image',
+            isImage: config.runtimeAndPackage.packageType === 'Image',
         })
 
         await addFolderToWorkspace(
