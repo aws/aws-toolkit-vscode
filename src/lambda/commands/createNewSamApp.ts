@@ -46,6 +46,7 @@ import { getIdeProperties, isCloud9 } from '../../shared/extensionUtilities'
 import { execSync } from 'child_process'
 import { writeFile } from 'fs-extra'
 import { checklogs } from '../../shared/localizedText'
+import { getRegionsForActiveCredentials } from '../../shared/regions/regionUtilities'
 
 type CreateReason = 'unknown' | 'userCancelled' | 'fileNotFound' | 'complete' | 'error'
 
@@ -145,11 +146,15 @@ export async function createNewSamApplication(
 
         const credentials = await awsContext.getCredentials()
         samVersion = await getSamCliVersion(samCliContext)
+        const schemaRegions = getRegionsForActiveCredentials(awsContext, regionProvider).filter(r =>
+            regionProvider.isServiceInRegion('schemas', r.id)
+        )
+        const defaultRegion = awsContext.getCredentialDefaultRegion()
 
         const config = await new CreateNewSamAppWizard({
             credentials,
-            regionProvider,
-            awsContext,
+            schemaRegions,
+            defaultRegion,
             samCliVersion: samVersion,
         }).run()
 

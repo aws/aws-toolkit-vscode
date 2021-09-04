@@ -45,14 +45,40 @@ describe('createQuickPick', function () {
         const prompter = createQuickPick(itemsPromise)
         prompter.prompt()
         assert.strictEqual(prompter.quickPick.busy, true)
-        assert.strictEqual(prompter.quickPick.enabled, false)
 
         resolveItems(items)
         await itemsPromise
 
         assert.strictEqual(prompter.quickPick.busy, false)
-        assert.strictEqual(prompter.quickPick.enabled, true)
         assert.deepStrictEqual(prompter.quickPick.items, items)
+    })
+
+    it('creates a new prompter when given an AsyncIterable', async function () {
+        let r1!: (v?: any) => void
+        let r2!: (v?: any) => void
+        const p1 = new Promise(r => (r1 = r))
+        const p2 = new Promise(r => (r2 = r))
+
+        async function* generator() {
+            for (const item of items) {
+                if (item === items[0]) {
+                    await p1
+                } else {
+                    await p2
+                }
+                yield [item]
+            }
+        }
+
+        const prompter = createQuickPick(generator(), { title: 'test' })
+        r1()
+        await new Promise(r => setImmediate(r))
+        assert.deepStrictEqual(prompter.quickPick.items, [items[0]])
+        assert.strictEqual(prompter.quickPick.busy, true)
+        r2()
+        await new Promise(r => setImmediate(r))
+        assert.deepStrictEqual(prompter.quickPick.items, items)
+        assert.strictEqual(prompter.quickPick.busy, false)
     })
 })
 
@@ -73,7 +99,6 @@ describe('createLabelQuickPick', function () {
         const prompter = createLabelQuickPick(itemsPromise)
 
         assert.strictEqual(prompter.quickPick.busy, true)
-        assert.strictEqual(prompter.quickPick.enabled, false)
     })
 })
 
@@ -144,6 +169,25 @@ describe('QuickPickPrompter', function () {
     it('shows first item if last response does not exist', async function () {
         testPrompter.setLastResponse({ label: 'item4', data: 3 })
         assert.deepStrictEqual(picker.activeItems, [testItems[0]])
+    })
+
+    it('shows a placeholder if no items are loaded', async function () {
+        const placeholderItem = { label: 'placeholder', data: 0 }
+        testPrompter = new QuickPickPrompter(picker, { placeholderItem })
+        testPrompter.clearAndLoadItems([])
+        assert.deepStrictEqual(picker.items, [placeholderItem])
+    })
+
+    it('does not show a placeholder if busy', async function () {
+        let resolveItems!: (items: DataQuickPickItem<number>[]) => void
+        const itemsPromise = new Promise<DataQuickPickItem<number>[]>(resolve => (resolveItems = resolve))
+        const placeholderItem = { label: 'placeholder', data: 0 }
+
+        testPrompter = new QuickPickPrompter(picker, { placeholderItem })
+        testPrompter.clearAndLoadItems(itemsPromise)
+        assert.strictEqual(picker.items.length, 0)
+        assert.strictEqual(picker.busy, true)
+        resolveItems(testItems)
     })
 })
 

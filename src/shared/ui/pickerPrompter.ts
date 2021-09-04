@@ -8,7 +8,7 @@ import * as vscode from 'vscode'
 import { StepEstimator, WIZARD_BACK, WIZARD_EXIT } from '../wizards/wizard'
 import { QuickInputButton, PrompterButtons } from './buttons'
 import { Prompter, PromptResult, Transform } from './prompter'
-import { applyPrimitives } from '../utilities/collectionUtils'
+import { applyPrimitives, isAsyncIterable } from '../utilities/collectionUtils'
 
 /** Settings applied when using a QuickPickPrompter in 'filter-box input' mode. */
 interface FilterBoxInputSettings<T> {
@@ -79,6 +79,14 @@ function isDataQuickPickItem(obj: any): obj is DataQuickPickItem<any> {
 }
 
 /**
+ * QuickPick prompts currently support loading:
+ * * A plain array of items
+ * * A promise for an array of items
+ * * An AsyncIterable that generates an array of items every iteration
+ */
+type ItemLoadTypes<T> = Promise<DataQuickPickItem<T>[]> | DataQuickPickItem<T>[] | AsyncIterable<DataQuickPickItem<T>[]>
+
+/**
  * Creates a UI element that presents a list of items. Information that should be returned when the user selects an
  * item must be placed in the `data` property of each item. If only the `label` is desired, use
  * {@link createLabelQuickPick} instead.
@@ -88,7 +96,7 @@ function isDataQuickPickItem(obj: any): obj is DataQuickPickItem<any> {
  * @returns A {@link QuickPickPrompter}. This can be used directly with the `prompt` method or can be fed into a Wizard.
  */
 export function createQuickPick<T>(
-    items: DataQuickPickItem<T>[] | Promise<DataQuickPickItem<T>[]>,
+    items: ItemLoadTypes<T>,
     options?: ExtendedQuickPickOptions<T>
 ): QuickPickPrompter<T> {
     const picker = vscode.window.createQuickPick<DataQuickPickItem<T>>() as DataQuickPick<T>
@@ -198,7 +206,7 @@ export class QuickPickPrompter<T> extends Prompter<T> {
     protected _estimator?: StepEstimator<T>
     protected _lastPicked?: DataQuickPickItem<T>
     private onDidShowEmitter: vscode.EventEmitter<void> = new vscode.EventEmitter()
-    private hasPlaceholder?: boolean
+    private isShowingPlaceholder?: boolean
     private pendingPromises: number = 0
     /** Event that is fired immediately after the prompter is shown. */
     public onDidShow: vscode.Event<void> = this.onDidShowEmitter.event
@@ -229,7 +237,7 @@ export class QuickPickPrompter<T> extends Prompter<T> {
 
     public clearItems(): void {
         this.quickPick.items = []
-        this.hasPlaceholder = false
+        this.isShowingPlaceholder = false
     }
 
     /**
@@ -259,7 +267,7 @@ export class QuickPickPrompter<T> extends Prompter<T> {
         picker.items = picker.items.concat(items).sort(this.options?.compare)
 
         if (picker.items.length === 0 && !picker.busy) {
-            this.hasPlaceholder = true
+            this.isShowingPlaceholder = true
             picker.items = this.options?.placeholderItem !== undefined ? [this.options?.placeholderItem] : []
         }
 
@@ -274,29 +282,38 @@ export class QuickPickPrompter<T> extends Prompter<T> {
      * previously selected item will remain selected if it still exists after loading.
      *
      * @param items DataQuickPickItems or a promise for said items
+     * @param disableInput Disables the prompter until the items have been loaded, only relevant for async loads
      * @returns A promise that is resolved when loading has finished
      */
-    public loadItems(items: Promise<DataQuickPickItem<T>[]> | DataQuickPickItem<T>[]): Promise<void> {
+    public async loadItems(items: ItemLoadTypes<T>, disableInput?: boolean): Promise<void> {
         const picker = this.quickPick
 
-        if (this.hasPlaceholder) {
+        if (this.isShowingPlaceholder) {
             this.clearItems()
         }
 
-        if (items instanceof Promise) {
-            picker.busy = true
-            picker.enabled = false
-            this.pendingPromises += 1
+        const updatePending = (val: number) => (
+            (this.pendingPromises += val), (picker.busy = this.pendingPromises !== 0)
+        )
 
-            return items.then(items => {
-                this.pendingPromises -= 1
-                picker.busy = this.pendingPromises !== 0
-                this.appendItems(items)
-                picker.enabled = true
-            })
+        if (isAsyncIterable(items)) {
+            const iterator = items[Symbol.asyncIterator]()
+            updatePending(1)
+            while (true) {
+                const { value, done } = await iterator.next()
+                if (done === true) {
+                    break
+                }
+                this.appendItems(value)
+            }
+            updatePending(-1)
+        } else if (items instanceof Promise) {
+            updatePending(1)
+            const resolved = await items
+            updatePending(-1)
+            this.appendItems(resolved)
         } else {
             this.appendItems(items)
-            return Promise.resolve()
         }
     }
 

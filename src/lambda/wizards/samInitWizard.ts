@@ -34,8 +34,7 @@ import { createLocationPrompt } from '../../shared/ui/common/location'
 import { createInputBox, InputBoxPrompter } from '../../shared/ui/inputPrompter'
 import { createLabelQuickPick, createQuickPick, QuickPickPrompter } from '../../shared/ui/pickerPrompter'
 import { createRegionPrompter } from '../../shared/ui/common/region'
-import { RegionProvider } from '../../shared/regions/regionProvider'
-import { AwsContext } from '../../shared/awsContext'
+import { Region } from '../../shared/regions/endpoints'
 
 const localize = nls.loadMessageBundle()
 export interface CreateNewSamAppWizardForm {
@@ -78,14 +77,11 @@ function createTemplatePrompter(
     })
 }
 
-function createSchemaRegionPrompter(context: {
-    regionProvider: RegionProvider
-    awsContext: AwsContext
-}): QuickPickPrompter<string> {
-    return createRegionPrompter(context, {
+function createSchemaRegionPrompter(regions: Region[], defaultRegion?: string): QuickPickPrompter<string> {
+    return createRegionPrompter(regions, {
         title: localize('AWS.samcli.initWizard.schemas.region.prompt', 'Select an EventBridge Schemas Region'),
         buttons: makeButtons(eventBridgeSchemasDocUrl),
-        serviceId: 'schemas',
+        defaultRegion,
     }).transform(r => r.id)
 }
 
@@ -189,15 +185,12 @@ function createNamePrompter(defaultValue: string): InputBoxPrompter {
 }
 
 export class CreateNewSamAppWizard extends Wizard<CreateNewSamAppWizardForm> {
-    public constructor(
-        context: {
-            samCliVersion: string
-            regionProvider: RegionProvider
-            awsContext: AwsContext
-            credentials?: AWS.Credentials
-        },
-        initState?: CreateNewSamAppWizardForm
-    ) {
+    public constructor(context: {
+        samCliVersion: string
+        schemaRegions: Region[]
+        defaultRegion?: string
+        credentials?: AWS.Credentials
+    }) {
         super()
 
         this.form.runtimeAndPackage.bindPrompter(() => createRuntimePrompter(context.samCliVersion))
@@ -224,7 +217,7 @@ export class CreateNewSamAppWizard extends Wizard<CreateNewSamAppWizardForm> {
             return state.template === eventBridgeStarterAppTemplate
         }
 
-        this.form.region.bindPrompter(() => createSchemaRegionPrompter(context), {
+        this.form.region.bindPrompter(() => createSchemaRegionPrompter(context.schemaRegions, context.defaultRegion), {
             showWhen: isStarterTemplate,
         })
 

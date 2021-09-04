@@ -272,3 +272,7 @@ export function stripUndefined(obj: any): void {
         }
     })
 }
+
+export function isAsyncIterable(obj: any): obj is AsyncIterable<unknown> {
+    return Object.getOwnPropertySymbols(obj).includes(Symbol.asyncIterator)
+}
