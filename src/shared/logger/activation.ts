@@ -8,6 +8,7 @@ import * as path from 'path'
 import * as vscode from 'vscode'
 import * as nls from 'vscode-nls'
 import * as fs from 'fs-extra'
+import * as _ from 'lodash'
 import { Logger, LogLevel, getLogger } from '.'
 import { extensionSettingsPrefix } from '../constants'
 import { DefaultSettingsConfiguration, SettingsConfiguration } from '../settingsConfiguration'
@@ -20,6 +21,11 @@ import globals from '../extensionGlobals'
 const localize = nls.loadMessageBundle()
 
 const DEFAULT_LOG_LEVEL: LogLevel = 'info'
+
+const LOG_MAX_BYTES = 100000000 // 100 MB
+const MAX_LOG_FILES = 100
+const MAX_KEPT_LOG_FILES = 10
+const MIN_KEPT_LOG_FILES = 2
 
 /** One log per session */
 let logPath: string
@@ -74,9 +80,9 @@ export async function activate(
     )
 
     await registerLoggerCommands(extensionContext)
-    logOutputChannel.appendLine(
-        localize('AWS.log.fileLocation', 'Error logs for this session are permanently stored in {0}', logPath)
-    )
+    logOutputChannel.appendLine(localize('AWS.log.fileLocation', 'Log file: {0}', logPath))
+
+    cleanLogFiles(logPath, LOG_MAX_BYTES)
 }
 
 /**
@@ -196,5 +202,75 @@ async function registerLoggerCommands(context: vscode.ExtensionContext): Promise
                 }
             }
         )
+    )
+}
+
+/**
+ * Deletes the older logs when there are too many or are using too much space.
+ */
+async function cleanLogFiles(logPath: string, logMaxBytes: number): Promise<void> {
+    let files = await fs.readdir(logPath)
+
+    if (files.length > MAX_LOG_FILES) {
+        await deleteOldLogFiles(logPath, files, MAX_KEPT_LOG_FILES)
+        files = await fs.readdir(logPath)
+    }
+
+    let dirSize = 0
+    const oversizedFiles = []
+    for (const log of files) {
+        const logFullPath = path.join(logPath, log)
+        let logSize: number = 0
+        try {
+            logSize = (await fs.stat(logFullPath)).size
+        } catch (e) {
+            getLogger().error('cleanLogFiles: fs.stat() failed on file: %0', logFullPath, e)
+        }
+        if (logSize > LOG_MAX_BYTES) {
+            oversizedFiles.push(log)
+        }
+        dirSize += logSize
+    }
+    // remove any single files over 100MB
+    if (oversizedFiles.length) {
+        await deleteOldLogFiles(logPath, oversizedFiles, 0)
+        files = await fs.readdir(logPath)
+    }
+    if (dirSize > logMaxBytes) {
+        await deleteOldLogFiles(logPath, files, MIN_KEPT_LOG_FILES)
+    }
+}
+
+/**
+ * Deletes the oldest created files, leaving the desired quantity of latest files.
+ */
+async function deleteOldLogFiles(logPath: string, files: string[], keepLatest: number): Promise<void> {
+    files.sort()
+    // This removes the latest files, leaving only the files to be deleted
+    files.length = files.length >= keepLatest ? files.length - keepLatest : 0
+    if (files.length) {
+        for (const file of files) {
+            try {
+                await fs.unlink(path.join(logPath, file))
+            } catch (error) {
+                getLogger().error('Failed to delete file: %0', file, error)
+            }
+        }
+        getLogger().info(
+            `Log folder contains more than 100 logs or is over 100MB. Deleted the ${files.length} oldest files`
+        )
+    }
+}
+
+export function watchLogFile(): fs.FSWatcher {
+    return fs.watch(
+        getLogPath(),
+        _.debounce((eventType, filename) => {
+            if (eventType === 'rename') {
+                vscode.window.showWarningMessage(
+                    localize('AWS.log.logFileNotFound', 'The log file for this session has been moved or deleted.')
+                )
+            }
+        }, 100)
     )
 }

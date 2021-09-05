@@ -39,7 +39,7 @@ import {
     showWelcomeMessage,
 } from './shared/extensionUtilities'
 import { getLogger, Logger } from './shared/logger/logger'
-import { activate as activateLogger } from './shared/logger/activation'
+import { activate as activateLogger, watchLogFile } from './shared/logger/activation'
 import { DefaultRegionProvider } from './shared/regions/defaultRegionProvider'
 import { EndpointsProvider } from './shared/regions/endpointsProvider'
 import { FileResourceFetcher } from './shared/resourcefetcher/fileResourceFetcher'
