@@ -21,6 +21,8 @@ const localize = nls.loadMessageBundle()
 
 const DEFAULT_LOG_LEVEL: LogLevel = 'info'
 
+const ONE_HUNDRED_MEGABYTES = 100000000
+
 /** One log per session */
 let logPath: string
 
@@ -75,8 +77,10 @@ export async function activate(
 
     await registerLoggerCommands(extensionContext)
     logOutputChannel.appendLine(
-        localize('AWS.log.fileLocation', 'Error logs for this session are permanently stored in {0}', logPath)
+        localize('AWS.log.fileLocation', 'Error logs for this session are stored in {0}', logPath)
     )
+
+    cleanLogFiles()
 }
 
 /**
@@ -197,4 +201,64 @@ async function registerLoggerCommands(context: vscode.ExtensionContext): Promise
             }
         )
     )
+}
+
+/**
+ * Deletes the older logs when there are too many or are using too much space.
+ */
+async function cleanLogFiles(): Promise<void> {
+    const logsDir = path.join(ext.context.globalStoragePath, 'logs')
+    let files = await fs.readdir(logsDir)
+
+    if (files.length > 100) {
+        sortThenDeleteLogs(logsDir, files, 10)
+        files = await fs.readdir(logsDir)
+    }
+
+    let dirSize = 0
+    const oversizedFiles = []
+    for (const log of files) {
+        const logSize = (await fs.stat(path.join(logsDir, log))).size
+        dirSize += logSize
+        if (logSize > ONE_HUNDRED_MEGABYTES) {
+            oversizedFiles.push(log)
+        }
+    }
+    // remove any single files over 100MB
+    if (oversizedFiles.length) {
+        for (const file of oversizedFiles) {
+            await fs.unlink(path.join(logsDir, file))
+        }
+        files = await fs.readdir(logsDir)
+    }
+    if (dirSize > ONE_HUNDRED_MEGABYTES) {
+        sortThenDeleteLogs(logsDir, files, 2)
+    }
+}
+
+/**
+ * Deletes the oldest created files, leaving the desired quantity of latest files.
+ */
+async function sortThenDeleteLogs(logsDir: string, files: string[], keepLatest: number): Promise<void> {
+    files.sort((a, b) => {
+        return fs.statSync(path.join(logsDir, a)).birthtimeMs - fs.statSync(path.join(logsDir, b)).birthtimeMs
+    })
+    // This removes the latest files, leaving only the files to be deleted
+    files.length = files.length >= keepLatest ? files.length - keepLatest : 0
+    if (files.length) {
+        try {
+            for (const file of files) {
+                await fs.unlink(path.join(logsDir, file))
+            }
+            getLogger().info(
+                localize(
+                    'AWS.log.cleanedLogs',
+                    'Log folder contains more than 100 logs or is over 100MB. Deleted the {0} oldest files',
+                    files.length
+                )
+            )
+        } catch (error) {
+            getLogger().error('Failed to delete old or large log files: %0', error)
+        }
+    }
 }
