@@ -36,6 +36,6 @@ export abstract class AbstractAslVisualizationManager {
         )
 
         logger.debug(`${this.name}: Unable to setup webview panel.`)
-        logger.error(err as Error)
+        logger.error(`${this.name}: unexpected exception: %O`, err)
     }
 }
