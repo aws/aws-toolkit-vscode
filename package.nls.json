@@ -294,7 +294,6 @@
     "AWS.lambda.form.debugConfigName": "Input Name For Debug Configuration",
     "AWS.log.fileLocation": "Error logs for this session are stored in {0}",
     "AWS.log.invalidLevel": "Invalid log level: {0}",
-    "AWS.log.cleanedLogs": "Log folder contains more than 100 logs or is over 100MB. Deleted the {0} oldest files",
     "AWS.message.loading": "Loading...",
     "AWS.message.credentials.error": "There was an issue trying to use credentials profile {0}: {1}",
     "AWS.message.credentials.sso.error": "Failed to load SSO credentials. Try logging in again.",
