@@ -20,7 +20,8 @@ export class LambdaTemplates {
         <h3>
             Select a file to use as payload:
         </h3>
-        <input type="file" @change="processFile($event)">
+        <button v-on:click="promptForFileLocation">Choose File</button>
+        <span>  {{ selectedFile }}</span>
         <br />
         <h3>
             Or, use a sample request payload from a template:
