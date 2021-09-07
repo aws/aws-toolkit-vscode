@@ -3,6 +3,8 @@
 
 package software.aws.toolkits.jetbrains.services.dynamic
 
+import com.fasterxml.jackson.core.type.TypeReference
+import com.fasterxml.jackson.module.kotlin.convertValue
 import com.fasterxml.jackson.module.kotlin.jacksonObjectMapper
 import com.fasterxml.jackson.module.kotlin.readValue
 import com.intellij.openapi.Disposable
@@ -22,6 +24,7 @@ import java.io.File
 
 object DynamicResources : Disposable {
     private val coroutineScope = ApplicationThreadPoolScope("DynamicResources", this)
+    var abc  = mutableListOf<String>()
 
     val SUPPORTED_TYPES: Deferred<List<String>> =
         coroutineScope.async(start = CoroutineStart.LAZY) {

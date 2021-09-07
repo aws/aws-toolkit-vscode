@@ -36,7 +36,7 @@ class CreateResourceFloatingToolbarAction : DumbAwareAction() {
     override fun update(e: AnActionEvent) {
         val file = e.getData(CommonDataKeys.PSI_FILE)?.virtualFile
         e.presentation.isEnabledAndVisible = file is DynamicResourceVirtualFile &&
-            file.name == message("dynamic_resources.create_resource_file_name", file.getResourceIdentifier().resourceType)
+            file.name == message("dynamic_resources.create_resource_file_name", file.getResourceIdentifier().resourceType) && file.isWritable
         e.presentation.icon = AllIcons.Actions.Menu_saveall // TODO: Revisit and review this icon
         if (file is DynamicResourceVirtualFile) {
             e.presentation.text = message("dynamic_resource.create_resource_action", file.getResourceIdentifier().resourceType)

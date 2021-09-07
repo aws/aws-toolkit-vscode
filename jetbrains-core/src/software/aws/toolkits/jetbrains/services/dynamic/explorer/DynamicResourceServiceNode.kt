@@ -23,6 +23,7 @@ import software.aws.toolkits.jetbrains.core.explorer.nodes.ResourceParentNode
 import software.aws.toolkits.jetbrains.core.getResourceNow
 import software.aws.toolkits.jetbrains.services.dynamic.DynamicResource
 import software.aws.toolkits.jetbrains.services.dynamic.DynamicResourceIdentifier
+import software.aws.toolkits.jetbrains.services.dynamic.DynamicResourceSchemaMapping
 import software.aws.toolkits.jetbrains.services.dynamic.DynamicResourceVirtualFile
 import software.aws.toolkits.jetbrains.services.dynamic.DynamicResources
 import software.aws.toolkits.jetbrains.utils.notifyError
@@ -70,9 +71,9 @@ class DynamicResourceNode(project: Project, val resource: DynamicResource) :
     override fun isAlwaysShowPlus(): Boolean = false
     override fun isAlwaysLeaf(): Boolean = true
     override fun getChildren(): List<AwsExplorerNode<*>> = emptyList()
-    override fun onDoubleClick() = openResourceModelInEditor()
+    override fun onDoubleClick() = openResourceModelInEditor(OpenResourceModelSourceAction.READ)
 
-    fun openResourceModelInEditor() {
+    fun openResourceModelInEditor(sourceAction: OpenResourceModelSourceAction) {
         object : Task.Backgroundable(nodeProject, message("dynamic_resources.fetch.indicator_title", resource.identifier), true) {
             override fun run(indicator: ProgressIndicator) {
                 indicator.text = message("dynamic_resources.fetch.fetch")
@@ -102,14 +103,20 @@ class DynamicResourceNode(project: Project, val resource: DynamicResource) :
 
                 indicator.text = message("dynamic_resources.fetch.open")
                 WriteCommandAction.runWriteCommandAction(nodeProject) {
-                    FileEditorManager.getInstance(nodeProject).openFile(file, true)
                     CodeStyleManager.getInstance(nodeProject).reformat(PsiUtilCore.getPsiFile(nodeProject, file))
+                    DynamicResourceSchemaMapping.getInstance().addResourceSchemaMapping(nodeProject, file)
+                    if(sourceAction == OpenResourceModelSourceAction.READ) {
+                        file.isWritable = false
+                        DynamicresourceTelemetry.openModel(nodeProject, success = true, resourceType = resource.type.fullName)
+                    } else if(sourceAction == OpenResourceModelSourceAction.EDIT) {
+                        file.isWritable = true
+                    }
+                    FileEditorManager.getInstance(nodeProject).openFile(file, true)
 
-                    file.isWritable = false
 
                     // editor readonly prop is separate from file prop. this is graceful if the getDocument call returns null
-                    FileDocumentManager.getInstance().getDocument(file)?.setReadOnly(true)
-                    DynamicresourceTelemetry.openModel(nodeProject, success = true, resourceType = resource.type.fullName)
+                    //FileDocumentManager.getInstance().getDocument(file)?.setReadOnly(true)
+
                 }
             }
         }.queue()
@@ -118,4 +125,8 @@ class DynamicResourceNode(project: Project, val resource: DynamicResource) :
     private companion object {
         val LOG = getLogger<DynamicResourceNode>()
     }
+}
+
+enum class OpenResourceModelSourceAction{
+    READ, EDIT
 }

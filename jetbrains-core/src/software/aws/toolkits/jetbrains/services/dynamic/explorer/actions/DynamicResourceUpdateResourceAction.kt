@@ -9,10 +9,9 @@ import software.aws.toolkits.jetbrains.core.explorer.actions.SingleExplorerNodeA
 import software.aws.toolkits.jetbrains.services.dynamic.explorer.DynamicResourceNode
 import software.aws.toolkits.jetbrains.services.dynamic.explorer.OpenResourceModelSourceAction
 
-class DynamicResourceOpenAction :
-    SingleExplorerNodeAction<DynamicResourceNode>(),
+class DynamicResourceUpdateResourceAction : SingleExplorerNodeAction<DynamicResourceNode>("Update Resource"),
     DumbAware {
     override fun actionPerformed(selected: DynamicResourceNode, e: AnActionEvent) {
-        selected.openResourceModelInEditor(OpenResourceModelSourceAction.READ)
+       selected.openResourceModelInEditor(OpenResourceModelSourceAction.EDIT)
     }
 }
