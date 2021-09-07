@@ -1,3 +1,4 @@
+import software.aws.toolkits.gradle.ciOnly
 import software.aws.toolkits.gradle.jacoco.RemoteCoverage.Companion.enableRemoteCoverage
 
 // Copyright 2020 Amazon.com, Inc. or its affiliates. All Rights Reserved.
@@ -67,5 +68,7 @@ tasks.register<Test>("uiTestCore") {
         isEnabled = false
     }
 
-    enableRemoteCoverage(this)
+    ciOnly {
+        enableRemoteCoverage(this)
+    }
 }
