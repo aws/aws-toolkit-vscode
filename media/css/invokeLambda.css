@@ -1,0 +1,23 @@
+h1,
+h3,
+p,
+div {
+    margin: 0px 5px 10px 0px;
+}
+
+h3 {
+    font-weight: bold;
+}
+
+span {
+    white-space: nowrap;
+}
+
+button {
+    width: auto;
+    margin-bottom: 15px;
+}
+
+#submit-button {
+    width: 60px;
+}

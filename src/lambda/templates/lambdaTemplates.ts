@@ -9,11 +9,11 @@ export class LambdaTemplates {
         Invoke function <%= FunctionName %>
     </h1>
     <div id="app">
-        <p style="margin-bottom: 5px; margin-top:0; margin-right:5px;">
+        <p>
             ARN: <%= FunctionArn %> 
         </p>
         
-        <p style="margin-top:0">
+        <p>
             Region: <%= FunctionRegion %>
         </p>
         
@@ -40,7 +40,7 @@ export class LambdaTemplates {
             v-model="sampleText"
         ></textarea>
         <br />
-        <input type="submit" v-on:click="sendInput" value="Invoke">
+        <input id="submit-button" type="submit" v-on:click="sendInput" value="Invoke">
         <br />
     </div>
     <% Libraries.forEach(function(lib) { %>
@@ -48,6 +48,9 @@ export class LambdaTemplates {
     <% }); %>
     <% Scripts.forEach(function(scr) { %>
         <script src="<%= scr %>"></script>
+    <% }); %>
+    <% Stylesheets.forEach(function(ss) { %>
+        <link href="<%= ss %>" rel="stylesheet"></link>
     <% }); %>
     `
 }
