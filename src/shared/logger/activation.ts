@@ -251,12 +251,12 @@ async function deleteOldLogFiles(logPath: string, files: string[], keepLatest: n
         for (const file of files) {
             try {
                 await fs.unlink(path.join(logPath, file))
-                getLogger().info(
-                    `Log folder contains more than 100 logs or is over 100MB. Deleted the ${files.length} oldest files`
-                )
             } catch (error) {
                 getLogger().error('Failed to delete file: %0', file, error)
             }
         }
+        getLogger().info(
+            `Log folder contains more than 100 logs or is over 100MB. Deleted the ${files.length} oldest files`
+        )
     }
 }
