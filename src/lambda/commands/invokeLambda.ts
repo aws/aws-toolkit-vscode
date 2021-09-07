@@ -128,7 +128,7 @@ function createMessageReceivedFunc({
                     openLabel: 'Open',
                 })
 
-                if (!fileLocations || fileLocations.length == 0) {
+                if (!fileLocations || fileLocations.length === 0) {
                     return undefined
                 }
 
