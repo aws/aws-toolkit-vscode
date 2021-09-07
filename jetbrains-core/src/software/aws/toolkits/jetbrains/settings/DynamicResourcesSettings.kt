@@ -19,7 +19,7 @@ class DynamicResourcesSettings : PersistentStateComponent<DynamicResourcesConfig
             state.selected = value
         }
 
-    fun resourcesAvailable() = runBlocking { DynamicResources.SUPPORTED_TYPES.await() }.size - state.selected.size
+    fun resourcesAvailable() = runBlocking { DynamicResources.SUPPORTED_TYPES }.size - state.selected.size
 
     override fun getState() = state
 

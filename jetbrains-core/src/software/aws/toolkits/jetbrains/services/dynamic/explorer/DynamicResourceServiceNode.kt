@@ -41,17 +41,23 @@ class DynamicResourceResourceTypeNode(project: Project, private val resourceType
     override fun isAlwaysExpand(): Boolean = false
 
     override fun getChildren(): List<AwsExplorerNode<*>> = super.getChildren()
+
     override fun getChildrenInternal(): List<AwsExplorerNode<*>> = try {
         nodeProject.getResourceNow(DynamicResources.listResources(resourceType))
-            .map { DynamicResourceNode(nodeProject, it) }.also {
-                DynamicresourceTelemetry.listType(project = nodeProject, success = true, resourceType = resourceType)
-            }
+            .map { DynamicResourceNode(nodeProject, it) }
+            .also { DynamicresourceTelemetry.listType(project = nodeProject, success = true, resourceType = resourceType) }
     } catch (e: Exception) {
         DynamicresourceTelemetry.listType(project = nodeProject, success = false, resourceType = resourceType)
         throw e
     }
 
     override fun actionGroupName(): String = "aws.toolkit.explorer.dynamic.resource"
+}
+
+class UnavailableDynamicResourceTypeNode(project: Project, resourceType: String) : AwsExplorerNode<String>(project, resourceType, null) {
+    override fun statusText(): String = message("dynamic_resources.unavailable_in_region", region.id)
+    override fun getChildren(): List<AwsExplorerNode<*>> = emptyList()
+    override fun isAlwaysLeaf(): Boolean = true
 }
 
 class DynamicResourceNode(project: Project, val resource: DynamicResource) :
