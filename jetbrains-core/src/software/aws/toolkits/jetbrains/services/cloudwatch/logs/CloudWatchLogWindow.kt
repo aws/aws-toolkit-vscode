@@ -18,7 +18,7 @@ import software.aws.toolkits.jetbrains.services.cloudwatch.logs.editor.CloudWatc
 import software.aws.toolkits.jetbrains.services.cloudwatch.logs.editor.CloudWatchLogStream
 import software.aws.toolkits.jetbrains.services.cloudwatch.logs.insights.DetailedLogRecord
 import software.aws.toolkits.jetbrains.services.cloudwatch.logs.insights.QueryDetails
-import software.aws.toolkits.jetbrains.services.cloudwatch.logs.insights.QueryResultList
+import software.aws.toolkits.jetbrains.services.cloudwatch.logs.insights.QueryResultPanel
 import software.aws.toolkits.jetbrains.utils.getCoroutineUiContext
 import software.aws.toolkits.resources.message
 import software.aws.toolkits.telemetry.CloudwatchlogsTelemetry
@@ -91,10 +91,10 @@ class CloudWatchLogWindow(private val project: Project) {
             return
         }
 
-        val queryResult = QueryResultList(project, fields, queryId, queryDetails)
+        val panel = QueryResultPanel(project, fields, queryId, queryDetails)
         val title = message("cloudwatch.logs.query_tab_title", queryId)
         withContext(edtContext) {
-            toolWindow.addTab(title, queryResult.resultsPanel, activate = true, id = queryId, disposable = queryResult)
+            toolWindow.addTab(title, panel, activate = true, id = queryId, disposable = panel)
         }
     }
 
