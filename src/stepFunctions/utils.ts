@@ -123,10 +123,11 @@ export class StateMachineGraphCache {
             this.logger.debug('stepFunctions: creating directory: %O', storageFolder)
             await this.makeDir(storageFolder)
         } catch (err) {
-            this.logger.verbose(err as Error)
+            const error = err as Error & { code?: string }
+            this.logger.verbose(error)
             // EEXIST failure is non-fatal. This function is called as part of
             // a Promise.all() group of tasks wanting to create the same directory.
-            if (err.code && err.code !== 'EEXIST') {
+            if (error.code && error.code !== 'EEXIST') {
                 throw err
             }
         }
