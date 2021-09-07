@@ -16,6 +16,7 @@ import {
 } from '../../shared/constants'
 import { ext } from '../../shared/extensionGlobals'
 import { getIdeProperties } from '../../shared/extensionUtilities'
+import { selectedPreviously } from '../../shared/localizedText'
 import { createHelpButton } from '../../shared/ui/buttons'
 import * as input from '../../shared/ui/input'
 import * as picker from '../../shared/ui/picker'
@@ -114,7 +115,7 @@ export class DefaultPublishStateMachineWizardContext extends WizardContext imple
             },
         ].map((item: PublishActionQuickPickItem) => {
             if (item.action === currPublishAction) {
-                item.description = localize('AWS.wizard.selectedPreviously', 'Selected Previously')
+                item.description = selectedPreviously
             }
 
             return item
@@ -210,10 +211,7 @@ export class DefaultPublishStateMachineWizardContext extends WizardContext imple
                 label: iamRole.RoleName,
                 alwaysShow: iamRole.Arn === currRoleArn,
                 arn: iamRole.Arn,
-                description:
-                    iamRole.Arn === currRoleArn
-                        ? localize('AWS.wizard.selectedPreviously', 'Selected Previously')
-                        : iamRole.Arn,
+                description: iamRole.Arn === currRoleArn ? selectedPreviously : iamRole.Arn,
             }))
         }
 

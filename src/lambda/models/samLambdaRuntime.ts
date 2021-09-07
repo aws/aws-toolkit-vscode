@@ -175,7 +175,6 @@ export interface RuntimeAndPackage {
  * Creates a quick pick for a Runtime with the following parameters (all optional)
  * @param {Object} params Optional parameters for creating a QuickPick for runtimes:
  * @param {vscode.QuickInputButton[]} params.buttons Array of buttons to add to the quick pick;
- * @param {Runtime} params.currRuntime Runtime to set a "Selected Previously" mark to;
  * @param {RuntimeFamily} params.runtimeFamily RuntimeFamily that will define the list of runtimes to show (default: samLambdaCreatableRuntimes)
  */
 export function createRuntimeQuickPick(params: {

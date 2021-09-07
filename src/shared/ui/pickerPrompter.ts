@@ -9,6 +9,7 @@ import { StepEstimator, WIZARD_BACK, WIZARD_EXIT } from '../wizards/wizard'
 import { QuickInputButton, PrompterButtons } from './buttons'
 import { Prompter, PromptResult, Transform } from './prompter'
 import { applyPrimitives, isAsyncIterable } from '../utilities/collectionUtils'
+import { selectedPreviously } from '../localizedText'
 
 /** Settings applied when using a QuickPickPrompter in 'filter-box input' mode. */
 interface FilterBoxInputSettings<T> {
@@ -25,7 +26,7 @@ interface FilterBoxInputSettings<T> {
     validator?: (input: string) => string | undefined
 }
 
-// Note: 'placeHolder' and 'onDidSelectItem' are ommited since they do not make since the context of the Prompter
+// Note: 'placeHolder' and 'onDidSelectItem' are ommited since they do not make since in the context of the Prompter
 // TODO: remove 'canPickMany' from the omitted properties and implement/test functionality with multiple QuickPick items
 /**  Additional options to configure the `QuickPick` beyond the standard API  */
 export type ExtendedQuickPickOptions<T> = Omit<
@@ -49,10 +50,13 @@ export type ExtendedQuickPickOptions<T> = Omit<
     placeholderItem?: DataQuickPickItem<T>
     /** Item to show if there was an error loading items */
     errorItem?: DataQuickPickItem<T>
+    /** Appends 'Selected previously' to the last selected item's detail text (default: true) */
+    showSelectedPreviously?: boolean
 }
 
-export const DEFAULT_QUICKPICK_OPTIONS: vscode.QuickPickOptions = {
+export const DEFAULT_QUICKPICK_OPTIONS: ExtendedQuickPickOptions<any> = {
     ignoreFocusOut: true,
+    showSelectedPreviously: true,
 }
 
 type QuickPickData<T> = PromptResult<T> | (() => Promise<PromptResult<T>>)
@@ -100,14 +104,14 @@ export function createQuickPick<T>(
     options?: ExtendedQuickPickOptions<T>
 ): QuickPickPrompter<T> {
     const picker = vscode.window.createQuickPick<DataQuickPickItem<T>>() as DataQuickPick<T>
-    options = { ...DEFAULT_QUICKPICK_OPTIONS, ...options }
-    applyPrimitives(picker, { ...DEFAULT_QUICKPICK_OPTIONS, ...options })
-    picker.buttons = options.buttons ?? []
+    const mergedOptions = { ...DEFAULT_QUICKPICK_OPTIONS, ...options }
+    applyPrimitives(picker, mergedOptions)
+    picker.buttons = mergedOptions.buttons ?? []
 
     const prompter =
-        options.filterBoxInputSettings !== undefined
-            ? new FilterBoxQuickPickPrompter<T>(picker, options.filterBoxInputSettings)
-            : new QuickPickPrompter<T>(picker, options)
+        mergedOptions.filterBoxInputSettings !== undefined
+            ? new FilterBoxQuickPickPrompter<T>(picker, mergedOptions.filterBoxInputSettings)
+            : new QuickPickPrompter<T>(picker, mergedOptions)
 
     prompter.loadItems(items)
 
@@ -207,7 +211,6 @@ export class QuickPickPrompter<T> extends Prompter<T> {
     protected _lastPicked?: DataQuickPickItem<T>
     private onDidShowEmitter: vscode.EventEmitter<void> = new vscode.EventEmitter()
     private isShowingPlaceholder?: boolean
-    private pendingPromises: number = 0
     /** Event that is fired immediately after the prompter is shown. */
     public onDidShow: vscode.Event<void> = this.onDidShowEmitter.event
 
@@ -221,7 +224,7 @@ export class QuickPickPrompter<T> extends Prompter<T> {
 
     constructor(
         public readonly quickPick: DataQuickPick<T>,
-        protected readonly options?: Pick<ExtendedQuickPickOptions<T>, 'compare' | 'placeholderItem'>
+        protected readonly options: ExtendedQuickPickOptions<T> = {}
     ) {
         super()
     }
@@ -238,6 +241,15 @@ export class QuickPickPrompter<T> extends Prompter<T> {
     public clearItems(): void {
         this.quickPick.items = []
         this.isShowingPlaceholder = false
+    }
+
+    /**
+     * Applies addtional options to the prompter, merging with any options set during construction
+     */
+    public applyOptions(options: Omit<ExtendedQuickPickOptions<T>, 'filterBoxInputSettings'>): void {
+        this.quickPick.buttons = this.quickPick.buttons.concat(options.buttons ?? [])
+        applyPrimitives(this.quickPick, { ...options })
+        Object.assign(this.options, options)
     }
 
     /**
@@ -259,16 +271,18 @@ export class QuickPickPrompter<T> extends Prompter<T> {
         }
     }
 
-    /** Appends items to the current array, keeping track of the previous selection */
+    /**
+     * Appends items to the current array, keeping track of the previous selection
+     */
     private appendItems(items: DataQuickPickItem<T>[]): void {
         const picker = this.quickPick
         const previousSelected = picker.activeItems
 
-        picker.items = picker.items.concat(items).sort(this.options?.compare)
+        picker.items = picker.items.concat(items).sort(this.options.compare)
 
         if (picker.items.length === 0 && !picker.busy) {
             this.isShowingPlaceholder = true
-            picker.items = this.options?.placeholderItem !== undefined ? [this.options?.placeholderItem] : []
+            picker.items = this.options.placeholderItem !== undefined ? [this.options.placeholderItem] : []
         }
 
         this.selectItems(...previousSelected)
@@ -292,29 +306,33 @@ export class QuickPickPrompter<T> extends Prompter<T> {
             this.clearItems()
         }
 
-        const updatePending = (val: number) => (
-            (this.pendingPromises += val), (picker.busy = this.pendingPromises !== 0)
-        )
+        picker.busy = true
+        picker.enabled = !!disableInput
 
         if (isAsyncIterable(items)) {
-            const iterator = items[Symbol.asyncIterator]()
-            updatePending(1)
+            const iterator = items[Symbol.asyncIterator]() as AsyncIterator<
+                DataQuickPickItem<T>[],
+                DataQuickPickItem<T>[] | undefined
+            >
             while (true) {
                 const { value, done } = await iterator.next()
-                if (done === true) {
+                if (value) {
+                    this.appendItems(value)
+                }
+                if (done) {
                     break
                 }
-                this.appendItems(value)
             }
-            updatePending(-1)
         } else if (items instanceof Promise) {
-            updatePending(1)
-            const resolved = await items
-            updatePending(-1)
-            this.appendItems(resolved)
+            this.appendItems(await items)
         } else {
             this.appendItems(items)
         }
+
+        picker.busy = false
+        picker.enabled = true
+
+        this.appendItems([])
     }
 
     /**
@@ -325,10 +343,11 @@ export class QuickPickPrompter<T> extends Prompter<T> {
      * @param items Items to load
      * @returns Promise that is resolved upon completion
      */
-    public clearAndLoadItems(items: Promise<DataQuickPickItem<T>[]> | DataQuickPickItem<T>[]): Promise<void> {
+    public async clearAndLoadItems(items: Promise<DataQuickPickItem<T>[]> | DataQuickPickItem<T>[]): Promise<void> {
         const previousSelected = [...this.quickPick.activeItems]
         this.clearItems()
-        return this.loadItems(items).then(() => this.selectItems(...previousSelected))
+        await this.loadItems(items)
+        this.selectItems(...previousSelected)
     }
 
     protected async promptUser(): Promise<PromptResult<T>> {
@@ -355,6 +374,11 @@ export class QuickPickPrompter<T> extends Prompter<T> {
             this.quickPick.activeItems = this.quickPick.items.filter(item => item.label === recovered?.label)
         } else {
             this.quickPick.activeItems = this.quickPick.items.filter(item => item.label === picked.label)
+        }
+
+        if (this.options.showSelectedPreviously) {
+            this.quickPick.activeItems.forEach(item => (item.detail = `${item.detail ?? ''} (${selectedPreviously})`))
+            this.quickPick.items = [...this.quickPick.items]
         }
 
         if (this.quickPick.activeItems.length === 0) {
@@ -450,12 +474,13 @@ export class FilterBoxQuickPickPrompter<T> extends QuickPickPrompter<T> {
         })
     }
 
-    public loadItems(items: Promise<DataQuickPickItem<T>[]> | DataQuickPickItem<T>[]): Promise<void> {
+    public async loadItems(items: Promise<DataQuickPickItem<T>[]> | DataQuickPickItem<T>[]): Promise<void> {
         if (this.onChangeValue) {
             this.onChangeValue.dispose()
         }
 
-        return super.loadItems(items).then(() => this.addFilterBoxInput())
+        await super.loadItems(items)
+        this.addFilterBoxInput()
     }
 
     private addFilterBoxInput(): void {
