@@ -18,7 +18,6 @@ import software.amazon.awssdk.services.cloudformation.CloudFormationClient
 import software.aws.toolkits.core.utils.error
 import software.aws.toolkits.core.utils.getLogger
 import software.aws.toolkits.jetbrains.core.awsClient
-import software.aws.toolkits.jetbrains.core.credentials.AwsConnectionManager.Companion.getConnectionSettings
 import software.aws.toolkits.jetbrains.core.explorer.nodes.AwsExplorerNode
 import software.aws.toolkits.jetbrains.core.explorer.nodes.ResourceActionNode
 import software.aws.toolkits.jetbrains.core.explorer.nodes.ResourceParentNode
@@ -32,30 +31,28 @@ import software.aws.toolkits.telemetry.DynamicresourceTelemetry
 class DynamicResourceResourceTypeNode(project: Project, private val resourceType: String) :
     AwsExplorerNode<String>(project, resourceType, null),
     ResourceParentNode {
-    private val resourceAvailableInCurrentRegion: Boolean = resourceType in nodeProject.getResourceNow(DynamicResources.listTypes())
     override fun displayName(): String = resourceType
-    override fun isAlwaysShowPlus() = resourceAvailableInCurrentRegion
-    override fun isAlwaysLeaf(): Boolean = !resourceAvailableInCurrentRegion
+    override fun isAlwaysShowPlus(): Boolean = true
 
     // calls to CloudAPI time-expensive and likely to throttle
     override fun isAlwaysExpand(): Boolean = false
-    override fun statusText(): String? = if (!resourceAvailableInCurrentRegion) {
-        message("dynamic_resources.unavailable_in_region", nodeProject.getConnectionSettings().region.id)
-    } else null
+
     override fun getChildren(): List<AwsExplorerNode<*>> = super.getChildren()
 
     override fun getChildrenInternal(): List<AwsExplorerNode<*>> = try {
-        if (resourceAvailableInCurrentRegion) {
-            nodeProject.getResourceNow(DynamicResources.listResources(resourceType))
-                .map { DynamicResourceNode(nodeProject, it) }
-                .also { DynamicresourceTelemetry.listType(project = nodeProject, success = true, resourceType = resourceType) }
-        } else {
-            emptyList()
-        }
+        nodeProject.getResourceNow(DynamicResources.listResources(resourceType))
+            .map { DynamicResourceNode(nodeProject, it) }
+            .also { DynamicresourceTelemetry.listType(project = nodeProject, success = true, resourceType = resourceType) }
     } catch (e: Exception) {
         DynamicresourceTelemetry.listType(project = nodeProject, success = false, resourceType = resourceType)
         throw e
     }
+}
+
+class UnavailableDynamicResourceTypeNode(project: Project, resourceType: String) : AwsExplorerNode<String>(project, resourceType, null) {
+    override fun statusText(): String = message("dynamic_resources.unavailable_in_region", region.id)
+    override fun getChildren(): List<AwsExplorerNode<*>> = emptyList()
+    override fun isAlwaysLeaf(): Boolean = true
 }
 
 class DynamicResourceNode(project: Project, val resource: DynamicResource) :
