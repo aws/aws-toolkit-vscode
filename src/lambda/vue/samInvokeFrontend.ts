@@ -244,7 +244,7 @@ export default defineComponent({
                 try {
                     return JSON.parse(field.value)
                 } catch (e) {
-                    field.errorMsg = e
+                    field.errorMsg = (e as Error).message
                     throw e
                 }
             }
