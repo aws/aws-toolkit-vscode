@@ -9,7 +9,7 @@ import _ = require('lodash')
 import * as vscode from 'vscode'
 import { LambdaClient } from '../../shared/clients/lambdaClient'
 import { ext } from '../../shared/extensionGlobals'
-import { ExtensionUtilities, isCloud9 } from '../../shared/extensionUtilities'
+import { ExtensionUtilities } from '../../shared/extensionUtilities'
 import { getLogger, Logger } from '../../shared/logger'
 import { HttpResourceFetcher } from '../../shared/resourcefetcher/httpResourceFetcher'
 import { recordLambdaInvokeRemote, Result, Runtime } from '../../shared/telemetry/telemetry'
@@ -65,12 +65,6 @@ export async function invokeLambda(params: {
 
             const loadScripts = ExtensionUtilities.getScriptsForHtml(['invokeLambdaVue.js'], view.webview)
             const loadLibs = ExtensionUtilities.getLibrariesForHtml(['vue.min.js'], view.webview)
-            let loadStylesheets: vscode.Uri[] = []
-            if (!isCloud9()) {
-                loadStylesheets.push(
-                    ...ExtensionUtilities.getCssForHtml(['reset.css', 'vscode.css', 'invokeLambda.css'], view.webview)
-                )
-            }
 
             view.webview.html = baseTemplateFn({
                 cspSource: view.webview.cspSource,
@@ -81,7 +75,6 @@ export async function invokeLambda(params: {
                     InputSamples: inputs,
                     Scripts: loadScripts,
                     Libraries: loadLibs,
-                    Stylesheets: loadStylesheets,
                 }),
             })
 
