@@ -6,8 +6,8 @@ import org.jetbrains.intellij.tasks.DownloadRobotServerPluginTask
 import org.jetbrains.intellij.tasks.RunIdeForUiTestTask
 import software.aws.toolkits.gradle.ciOnly
 import software.aws.toolkits.gradle.findFolders
-import software.aws.toolkits.gradle.intellij.IdeVersions
 import software.aws.toolkits.gradle.intellij.IdeFlavor
+import software.aws.toolkits.gradle.intellij.IdeVersions
 import software.aws.toolkits.gradle.intellij.ToolkitIntelliJExtension
 import software.aws.toolkits.gradle.isCi
 
@@ -118,7 +118,9 @@ tasks.withType<DownloadRobotServerPluginTask> {
 }
 
 // Enable coverage for the UI test target IDE
-extensions.getByType<JacocoPluginExtension>().applyTo(tasks.withType<RunIdeForUiTestTask>())
+ciOnly {
+    extensions.getByType<JacocoPluginExtension>().applyTo(tasks.withType<RunIdeForUiTestTask>())
+}
 tasks.withType<RunIdeForUiTestTask>().all {
     systemProperty("robot-server.port", remoteRobotPort)
     systemProperty("ide.mac.file.chooser.native", "false")
@@ -143,9 +145,9 @@ tasks.withType<RunIdeForUiTestTask>().all {
         suspend.set(false)
     }
 
-    configure<JacocoTaskExtension> {
-        includes = listOf("software.aws.toolkits.*")
-        ciOnly {
+    ciOnly {
+        configure<JacocoTaskExtension> {
+            includes = listOf("software.aws.toolkits.*")
             output = Output.TCP_CLIENT // Dump to our jacoco server instead of to a file
         }
     }

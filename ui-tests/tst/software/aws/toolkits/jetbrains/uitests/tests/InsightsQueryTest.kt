@@ -28,6 +28,7 @@ import software.aws.toolkits.jetbrains.uitests.extensions.uiTest
 import software.aws.toolkits.jetbrains.uitests.fixtures.IdeaFrame
 import software.aws.toolkits.jetbrains.uitests.fixtures.JTreeFixture
 import software.aws.toolkits.jetbrains.uitests.fixtures.awsExplorer
+import software.aws.toolkits.jetbrains.uitests.fixtures.dialog
 import software.aws.toolkits.jetbrains.uitests.fixtures.findAndClick
 import software.aws.toolkits.jetbrains.uitests.fixtures.findByXpath
 import software.aws.toolkits.jetbrains.uitests.fixtures.idea
@@ -175,8 +176,12 @@ class InsightsQueryTest {
 
                 step("Verify new query settings have persisted") {
                     openInsightsQueryDialogFromResults()
-                    find<JTextFieldFixture>(byXpath("//div[@class='JFormattedTextField' and @visible_text='$testRelativeTimeAmount']"))
-                    assertThat(find<ComboBoxFixture>(byXpath("//div[@class='ComboBox']")).selectedText()).isEqualTo("Hours")
+
+                    dialog("Query Log Groups") {
+                        find<JTextFieldFixture>(byXpath("//div[@class='JFormattedTextField' and @visible_text='$testRelativeTimeAmount']"))
+                        assertThat(find<ComboBoxFixture>(byXpath("//div[@class='ComboBox']")).selectedText()).isEqualTo("Hours")
+                        close()
+                    }
                 }
             }
             step("Open query from log group") {
@@ -184,7 +189,6 @@ class InsightsQueryTest {
                     awsExplorer {
                         doubleClickExplorer(cloudWatchExplorerLabel, logGroupName)
                     }
-                    find<ComponentFixture>(byXpath("//div[@accessiblename='View Log Streams']")).click()
                 }
                 step("Click query button") {
                     findAndClick("//div[@accessiblename='Query']")
