@@ -29,8 +29,11 @@ describe('createQuickPick', function () {
         const prompter = createQuickPick([])
         const picker = prompter.quickPick
 
-        Object.keys(DEFAULT_QUICKPICK_OPTIONS).forEach(key => {
-            assert.strictEqual(picker[key as keyof vscode.QuickPick<any>], (DEFAULT_QUICKPICK_OPTIONS as any)[key])
+        Object.keys(picker).forEach(key => {
+            const defaultValue = (DEFAULT_QUICKPICK_OPTIONS as Record<string, any>)[key]
+            if (defaultValue !== undefined) {
+                assert.strictEqual(picker[key as keyof vscode.QuickPick<any>], defaultValue)
+            }
         })
     })
 
@@ -45,11 +48,13 @@ describe('createQuickPick', function () {
         const prompter = createQuickPick(itemsPromise)
         prompter.prompt()
         assert.strictEqual(prompter.quickPick.busy, true)
+        assert.strictEqual(prompter.quickPick.enabled, false)
 
         resolveItems(items)
         await itemsPromise
 
         assert.strictEqual(prompter.quickPick.busy, false)
+        assert.strictEqual(prompter.quickPick.enabled, true)
         assert.deepStrictEqual(prompter.quickPick.items, items)
     })
 
@@ -70,7 +75,7 @@ describe('createQuickPick', function () {
             }
         }
 
-        const prompter = createQuickPick(generator(), { title: 'test' })
+        const prompter = createQuickPick(generator())
         r1()
         await new Promise(r => setImmediate(r))
         assert.deepStrictEqual(prompter.quickPick.items, [items[0]])
@@ -140,6 +145,13 @@ describe('QuickPickPrompter', function () {
         assert.strictEqual(await testPrompter.prompt(), 5)
     })
 
+    it('can selectively enable input when loading', async function () {
+        const p = testPrompter.loadItems(new Promise(r => setImmediate(() => r([]))), false)
+        assert.strictEqual(testPrompter.quickPick.enabled, true)
+        await p
+        assert.strictEqual(testPrompter.quickPick.enabled, true)
+    })
+
     it('does not close if button does not return anything', async function () {
         const testButton = { iconPath: vscode.Uri.parse(''), onClick: () => {} }
         testPrompter.onDidShow(() => {
@@ -188,6 +200,19 @@ describe('QuickPickPrompter', function () {
         assert.strictEqual(picker.items.length, 0)
         assert.strictEqual(picker.busy, true)
         resolveItems(testItems)
+    })
+
+    it('handles AsyncIterables that return something', async function () {
+        async function* generator() {
+            for (const item of testItems.slice(0, -1)) {
+                yield [item]
+            }
+
+            return testItems.slice(-1)
+        }
+
+        await testPrompter.clearAndLoadItems(generator())
+        assert.strictEqual(picker.items.length, 3)
     })
 })
 
