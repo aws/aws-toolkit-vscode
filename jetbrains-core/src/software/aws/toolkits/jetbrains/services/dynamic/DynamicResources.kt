@@ -5,18 +5,17 @@ package software.aws.toolkits.jetbrains.services.dynamic
 
 import com.fasterxml.jackson.module.kotlin.jacksonObjectMapper
 import com.fasterxml.jackson.module.kotlin.readValue
+import com.intellij.openapi.application.ApplicationManager
 import com.intellij.openapi.project.Project
 import software.amazon.awssdk.arns.Arn
 import software.amazon.awssdk.services.cloudformation.CloudFormationClient
 import software.amazon.awssdk.services.cloudformation.model.RegistryType
+import software.amazon.awssdk.services.cloudformation.model.Visibility
 import software.aws.toolkits.jetbrains.core.ClientBackedCachedResource
 import software.aws.toolkits.jetbrains.core.Resource
 import software.aws.toolkits.jetbrains.core.awsClient
 import software.aws.toolkits.jetbrains.core.credentials.ConnectionSettings
 import java.io.File
-import com.intellij.openapi.application.ApplicationManager
-import software.amazon.awssdk.services.cloudformation.model.Visibility
-
 
 object DynamicResources {
     val SUPPORTED_TYPES by lazy {
@@ -65,7 +64,6 @@ object DynamicResources {
             it.type(RegistryType.RESOURCE)
         }.flatMap { it.typeSummaries().map { it.typeName() } }
     }
-
 }
 
 data class ResourceDetails(val operations: List<Operation>, val arnRegex: String? = null)
