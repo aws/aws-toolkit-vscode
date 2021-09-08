@@ -9,5 +9,5 @@ import software.aws.toolkits.jetbrains.services.schemas.SchemasServiceNode
 
 class SchemasExplorerRootNode : AwsExplorerServiceNode {
     override val serviceId: String = SchemasClient.SERVICE_NAME
-    override fun buildServiceRootNode(project: Project) = SchemasServiceNode(project, this)
+    override fun buildServiceRootNode(project: Project): AwsExplorerNode<*> = SchemasServiceNode(project, this)
 }

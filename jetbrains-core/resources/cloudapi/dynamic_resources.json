@@ -1,0 +1,1166 @@
+{
+    "AWS::ACMPCA::Certificate" : {
+        "operations" : [ "CREATE", "READ", "DELETE", "UPDATE" ]
+    },
+    "AWS::ACMPCA::CertificateAuthority" : {
+        "operations" : [ "CREATE", "READ", "UPDATE", "DELETE", "LIST" ],
+        "arnRegex" : "arn:(?<Partition>[a-z-]+):acm-pca:(?<Region>[a-z0-9-]+):(?<AccountId>[0-9]{12}):certificate-authority/(?<CertificateAuthorityId>[^/:]+)"
+    },
+    "AWS::ACMPCA::CertificateAuthorityActivation" : {
+        "operations" : [ "CREATE", "READ", "DELETE", "UPDATE" ]
+    },
+    "AWS::AccessAnalyzer::Analyzer" : {
+        "operations" : [ "CREATE", "READ", "UPDATE", "DELETE", "LIST" ],
+        "arnRegex" : "arn:(?<Partition>[a-z-]+):access-analyzer:(?<Region>[a-z0-9-]+):(?<AccountId>[0-9]{12}):analyzer/(?<AnalyzerName>[^/:]+)"
+    },
+    "AWS::Amplify::App" : {
+        "operations" : [ "CREATE", "DELETE", "READ", "UPDATE" ]
+    },
+    "AWS::Amplify::Branch" : {
+        "operations" : [ "CREATE", "DELETE", "READ", "UPDATE" ]
+    },
+    "AWS::ApiGateway::ApiKey" : {
+        "operations" : [ "CREATE", "READ", "UPDATE", "DELETE", "LIST" ],
+        "arnRegex" : "arn:(?<Partition>[a-z-]+):apigateway:(?<Region>[a-z0-9-]+)::/apikeys/(?<ApiKeyId>[^/:]+)"
+    },
+    "AWS::ApiGateway::ClientCertificate" : {
+        "operations" : [ "CREATE", "READ", "UPDATE", "DELETE", "LIST" ],
+        "arnRegex" : "arn:(?<Partition>[a-z-]+):apigateway:(?<Region>[a-z0-9-]+)::/clientcertificates/(?<ClientCertificateId>[^/:]+)/"
+    },
+    "AWS::ApiGateway::DocumentationVersion" : {
+        "operations" : [ "CREATE", "READ", "UPDATE", "DELETE" ],
+        "arnRegex" : "arn:(?<Partition>[a-z-]+):apigateway:(?<Region>[a-z0-9-]+)::/restapis/(?<RestApiId>[^/:]+)/documentation/versions/(?<DocumentationVersionId>[^/:]+)/"
+    },
+    "AWS::ApiGateway::DomainName" : {
+        "operations" : [ "CREATE", "READ", "UPDATE", "DELETE", "LIST" ],
+        "arnRegex" : "arn:(?<Partition>[a-z-]+):apigateway:(?<Region>[a-z0-9-]+)::/domainnames/(?<DomainName>[^/:]+)"
+    },
+    "AWS::ApiGateway::Model" : {
+        "operations" : [ "CREATE", "READ", "UPDATE", "DELETE" ],
+        "arnRegex" : "arn:(?<Partition>[a-z-]+):apigateway:(?<Region>[a-z0-9-]+)::/restapis/(?<RestApiId>[^/:]+)/models/(?<ModelName>[^/:]+)/"
+    },
+    "AWS::ApiGateway::RequestValidator" : {
+        "operations" : [ "CREATE", "UPDATE", "DELETE", "READ" ],
+        "arnRegex" : "arn:(?<Partition>[a-z-]+):apigateway:(?<Region>[a-z0-9-]+)::/restapis/(?<RestApiId>[^/:]+)/requestvalidators/(?<RequestValidatorId>[^/:]+)/"
+    },
+    "AWS::ApiGateway::UsagePlanKey" : {
+        "operations" : [ "CREATE", "READ", "DELETE" ],
+        "arnRegex" : "arn:(?<Partition>[a-z-]+):apigateway:(?<Region>[a-z0-9-]+)::/usageplans/(?<UsagePlanId>[^/:]+)/keys/(?<Id>[^/:]+)/"
+    },
+    "AWS::AppFlow::ConnectorProfile" : {
+        "operations" : [ "CREATE", "DELETE", "LIST", "READ", "UPDATE" ],
+        "arnRegex" : "arn:(?<Partition>[a-z-]+):appflow:(?<Region>[a-z0-9-]+):(?<AccountId>[0-9]{12}):connectorprofile/(?<profileName>[^/:]+)"
+    },
+    "AWS::AppFlow::Flow" : {
+        "operations" : [ "CREATE", "READ", "UPDATE", "DELETE", "LIST" ],
+        "arnRegex" : "arn:(?<Partition>[a-z-]+):appflow:(?<Region>[a-z0-9-]+):(?<AccountId>[0-9]{12}):flow/(?<flowName>[^/:]+)"
+    },
+    "AWS::AppIntegrations::EventIntegration" : {
+        "operations" : [ "CREATE", "READ", "LIST", "UPDATE", "DELETE" ],
+        "arnRegex" : "arn:(?<Partition>[a-z-]+):app-integrations:(?<Region>[a-z0-9-]+):(?<AccountId>[0-9]{12}):event-integration/(?<EventIntegrationName>[^/:]+)"
+    },
+    "AWS::AppRunner::Service" : {
+        "operations" : [ "CREATE", "READ", "UPDATE", "DELETE", "LIST" ]
+    },
+    "AWS::ApplicationInsights::Application" : {
+        "operations" : [ "CREATE", "READ", "UPDATE", "DELETE", "LIST" ]
+    },
+    "AWS::Athena::DataCatalog" : {
+        "operations" : [ "CREATE", "READ", "UPDATE", "DELETE" ],
+        "arnRegex" : "arn:(?<Partition>[a-z-]+):athena:(?<Region>[a-z0-9-]+):(?<AccountId>[0-9]{12}):datacatalog/(?<DataCatalogName>[^/:]+)"
+    },
+    "AWS::Athena::NamedQuery" : {
+        "operations" : [ "CREATE", "READ", "LIST", "DELETE", "UPDATE" ]
+    },
+    "AWS::Athena::WorkGroup" : {
+        "operations" : [ "CREATE", "READ", "LIST", "DELETE", "UPDATE" ],
+        "arnRegex" : "arn:(?<Partition>[a-z-]+):athena:(?<Region>[a-z0-9-]+):(?<AccountId>[0-9]{12}):workgroup/(?<WorkGroupName>[^/:]+)"
+    },
+    "AWS::AuditManager::Assessment" : {
+        "operations" : [ "CREATE", "READ", "UPDATE", "DELETE" ],
+        "arnRegex" : "arn:(?<Partition>[a-z-]+):auditmanager:(?<Region>[a-z0-9-]+):(?<AccountId>[0-9]{12}):assessment/(?<assessmentId>[^/:]+)"
+    },
+    "AWS::AutoScaling::WarmPool" : {
+        "operations" : [ "CREATE", "DELETE", "READ", "UPDATE" ]
+    },
+    "AWS::Backup::BackupPlan" : {
+        "operations" : [ "READ", "CREATE", "DELETE", "UPDATE" ],
+        "arnRegex" : "arn:(?<Partition>[a-z-]+):backup:(?<Region>[a-z0-9-]+):(?<AccountId>[0-9]{12}):backup-plan:(?<BackupPlanId>[^/:]+)"
+    },
+    "AWS::Backup::BackupSelection" : {
+        "operations" : [ "DELETE", "READ", "CREATE" ]
+    },
+    "AWS::Backup::BackupVault" : {
+        "operations" : [ "CREATE", "READ", "UPDATE", "DELETE" ],
+        "arnRegex" : "arn:(?<Partition>[a-z-]+):backup:(?<Region>[a-z0-9-]+):(?<AccountId>[0-9]{12}):backup-vault:(?<BackupVaultName>[^/:]+)"
+    },
+    "AWS::Budgets::BudgetsAction" : {
+        "operations" : [ "CREATE", "READ", "UPDATE", "DELETE", "LIST" ]
+    },
+    "AWS::CE::CostCategory" : {
+        "operations" : [ "CREATE", "READ", "UPDATE", "DELETE", "LIST" ]
+    },
+    "AWS::Cassandra::Keyspace" : {
+        "operations" : [ "CREATE", "READ", "UPDATE", "DELETE", "LIST" ],
+        "arnRegex" : "arn:(?<Partition>[a-z-]+):cassandra:(?<Region>[a-z0-9-]+):(?<AccountId>[0-9]{12}):/keyspace/(?<KeyspaceName>[^/:]+)/"
+    },
+    "AWS::Cassandra::Table" : {
+        "operations" : [ "CREATE", "READ", "UPDATE", "DELETE", "LIST" ],
+        "arnRegex" : "arn:(?<Partition>[a-z-]+):cassandra:(?<Region>[a-z0-9-]+):(?<AccountId>[0-9]{12}):/keyspace/(?<KeyspaceName>[^/:]+)/table/(?<tableName>[^/:]+)"
+    },
+    "AWS::CertificateManager::Account" : {
+        "operations" : [ "CREATE", "READ", "UPDATE", "DELETE" ]
+    },
+    "AWS::Chatbot::SlackChannelConfiguration" : {
+        "operations" : [ "CREATE", "READ", "UPDATE", "DELETE", "LIST" ]
+    },
+    "AWS::CloudFormation::ModuleDefaultVersion" : {
+        "operations" : [ "CREATE", "DELETE", "READ" ]
+    },
+    "AWS::CloudFormation::ModuleVersion" : {
+        "operations" : [ "CREATE", "READ", "DELETE", "LIST" ]
+    },
+    "AWS::CloudFormation::PublicTypeVersion" : {
+        "operations" : [ "CREATE", "DELETE", "READ", "LIST" ]
+    },
+    "AWS::CloudFormation::Publisher" : {
+        "operations" : [ "CREATE", "READ", "DELETE" ]
+    },
+    "AWS::CloudFormation::ResourceDefaultVersion" : {
+        "operations" : [ "CREATE", "READ", "UPDATE", "DELETE" ]
+    },
+    "AWS::CloudFormation::ResourceVersion" : {
+        "operations" : [ "CREATE", "READ", "DELETE" ]
+    },
+    "AWS::CloudFormation::StackSet" : {
+        "operations" : [ "CREATE", "READ", "UPDATE", "DELETE", "LIST" ],
+        "arnRegex" : "arn:(?<Partition>[a-z-]+):cloudformation:(?<Region>[a-z0-9-]+):(?<AccountId>[0-9]{12}):stackset/(?<StackSetName>[^/:]+):(?<Id>[^/:]+)"
+    },
+    "AWS::CloudFormation::TypeActivation" : {
+        "operations" : [ "CREATE", "UPDATE", "READ", "DELETE", "LIST" ]
+    },
+    "AWS::CloudFront::CachePolicy" : {
+        "operations" : [ "CREATE", "DELETE", "LIST", "READ", "UPDATE" ],
+        "arnRegex" : "arn:(?<Partition>[a-z-]+):cloudfront::(?<AccountId>[0-9]{12}):cache-policy/(?<Id>[^/:]+)"
+    },
+    "AWS::CloudFront::CloudFrontOriginAccessIdentity" : {
+        "operations" : [ "CREATE", "DELETE", "LIST", "READ", "UPDATE" ]
+    },
+    "AWS::CloudFront::Distribution" : {
+        "operations" : [ "CREATE", "DELETE", "LIST", "READ", "UPDATE" ],
+        "arnRegex" : "arn:(?<Partition>[a-z-]+):cloudfront::(?<AccountId>[0-9]{12}):distribution/(?<DistributionId>[^/:]+)"
+    },
+    "AWS::CloudFront::Function" : {
+        "operations" : [ "CREATE", "DELETE", "LIST", "READ", "UPDATE" ]
+    },
+    "AWS::CloudFront::KeyGroup" : {
+        "operations" : [ "CREATE", "DELETE", "LIST", "READ", "UPDATE" ]
+    },
+    "AWS::CloudFront::OriginRequestPolicy" : {
+        "operations" : [ "CREATE", "DELETE", "LIST", "READ", "UPDATE" ],
+        "arnRegex" : "arn:(?<Partition>[a-z-]+):cloudfront::(?<AccountId>[0-9]{12}):origin-request-policy/(?<Id>[^/:]+)"
+    },
+    "AWS::CloudFront::PublicKey" : {
+        "operations" : [ "CREATE", "DELETE", "LIST", "READ", "UPDATE" ]
+    },
+    "AWS::CloudFront::RealtimeLogConfig" : {
+        "operations" : [ "CREATE", "DELETE", "LIST", "READ", "UPDATE" ]
+    },
+    "AWS::CloudWatch::CompositeAlarm" : {
+        "operations" : [ "CREATE", "READ", "UPDATE", "DELETE", "LIST" ]
+    },
+    "AWS::CloudWatch::MetricStream" : {
+        "operations" : [ "CREATE", "UPDATE", "DELETE", "LIST", "READ" ]
+    },
+    "AWS::CodeArtifact::Domain" : {
+        "operations" : [ "CREATE", "READ", "UPDATE", "DELETE", "LIST" ],
+        "arnRegex" : "arn:(?<Partition>[a-z-]+):codeartifact:(?<Region>[a-z0-9-]+):(?<AccountId>[0-9]{12}):domain/(?<DomainName>[^/:]+)"
+    },
+    "AWS::CodeArtifact::Repository" : {
+        "operations" : [ "CREATE", "READ", "UPDATE", "DELETE", "LIST" ],
+        "arnRegex" : "arn:(?<Partition>[a-z-]+):codeartifact:(?<Region>[a-z0-9-]+):(?<AccountId>[0-9]{12}):repository/(?<DomainName>[^/:]+)/(?<RepositoryName>[^/:]+)"
+    },
+    "AWS::CodeGuruProfiler::ProfilingGroup" : {
+        "operations" : [ "CREATE", "READ", "UPDATE", "DELETE", "LIST" ],
+        "arnRegex" : "arn:(?<Partition>[a-z-]+):codeguru-profiler:(?<Region>[a-z0-9-]+):(?<AccountId>[0-9]{12}):profilingGroup/(?<profilingGroupName>[^/:]+)"
+    },
+    "AWS::CodeGuruReviewer::RepositoryAssociation" : {
+        "operations" : [ "CREATE", "READ", "DELETE" ],
+        "arnRegex" : "arn:(?<Partition>[a-z-]+):codeguru-reviewer:(?<Region>[a-z0-9-]+):(?<AccountId>[0-9]{12}):association:(?<ResourceId>[^/:]+)"
+    },
+    "AWS::CodeStarConnections::Connection" : {
+        "operations" : [ "CREATE", "READ", "UPDATE", "DELETE", "LIST" ],
+        "arnRegex" : "arn:(?<Partition>[a-z-]+):codestar-connections:(?<Region>[a-z0-9-]+):(?<AccountId>[0-9]{12}):connection/(?<ConnectionId>[^/:]+)"
+    },
+    "AWS::Config::ConfigurationAggregator" : {
+        "operations" : [ "CREATE", "READ", "UPDATE", "DELETE", "LIST" ],
+        "arnRegex" : "arn:(?<Partition>[a-z-]+):config:(?<Region>[a-z0-9-]+):(?<AccountId>[0-9]{12}):config-aggregator/(?<AggregatorId>[^/:]+)"
+    },
+    "AWS::Config::ConformancePack" : {
+        "operations" : [ "CREATE", "READ", "UPDATE", "DELETE", "LIST" ],
+        "arnRegex" : "arn:(?<Partition>[a-z-]+):config:(?<Region>[a-z0-9-]+):(?<AccountId>[0-9]{12}):conformance-pack/(?<ConformancePackName>[^/:]+)/(?<ConformancePackId>[^/:]+)"
+    },
+    "AWS::Config::OrganizationConformancePack" : {
+        "operations" : [ "CREATE", "READ", "DELETE", "UPDATE" ],
+        "arnRegex" : "arn:(?<Partition>[a-z-]+):config:(?<Region>[a-z0-9-]+):(?<AccountId>[0-9]{12}):organization-conformance-pack/(?<OrganizationConformancePackId>[^/:]+)"
+    },
+    "AWS::Config::StoredQuery" : {
+        "operations" : [ "CREATE", "READ", "UPDATE", "DELETE", "LIST" ],
+        "arnRegex" : "arn:(?<Partition>[a-z-]+):config:(?<Region>[a-z0-9-]+):(?<AccountId>[0-9]{12}):stored-query/(?<StoredQueryName>[^/:]+)/(?<StoredQueryId>[^/:]+)"
+    },
+    "AWS::Connect::QuickConnect" : {
+        "operations" : [ "CREATE", "READ", "DELETE", "UPDATE" ]
+    },
+    "AWS::CustomerProfiles::Domain" : {
+        "operations" : [ "CREATE", "READ", "UPDATE", "DELETE", "LIST" ]
+    },
+    "AWS::CustomerProfiles::Integration" : {
+        "operations" : [ "CREATE", "READ", "DELETE", "UPDATE" ]
+    },
+    "AWS::CustomerProfiles::ObjectType" : {
+        "operations" : [ "CREATE", "READ", "UPDATE", "DELETE" ]
+    },
+    "AWS::DataBrew::Dataset" : {
+        "operations" : [ "CREATE", "READ", "UPDATE", "DELETE", "LIST" ],
+        "arnRegex" : "arn:(?<Partition>[a-z-]+):databrew:(?<Region>[a-z0-9-]+):(?<AccountId>[0-9]{12}):dataset/(?<ResourceId>[^/:]+)"
+    },
+    "AWS::DataBrew::Job" : {
+        "operations" : [ "CREATE", "READ", "UPDATE", "DELETE", "LIST" ],
+        "arnRegex" : "arn:(?<Partition>[a-z-]+):databrew:(?<Region>[a-z0-9-]+):(?<AccountId>[0-9]{12}):job/(?<ResourceId>[^/:]+)"
+    },
+    "AWS::DataBrew::Project" : {
+        "operations" : [ "CREATE", "READ", "UPDATE", "DELETE", "LIST" ],
+        "arnRegex" : "arn:(?<Partition>[a-z-]+):databrew:(?<Region>[a-z0-9-]+):(?<AccountId>[0-9]{12}):project/(?<ResourceId>[^/:]+)"
+    },
+    "AWS::DataBrew::Recipe" : {
+        "operations" : [ "CREATE", "READ", "DELETE", "LIST", "UPDATE" ],
+        "arnRegex" : "arn:(?<Partition>[a-z-]+):databrew:(?<Region>[a-z0-9-]+):(?<AccountId>[0-9]{12}):recipe/(?<ResourceId>[^/:]+)"
+    },
+    "AWS::DataBrew::Schedule" : {
+        "operations" : [ "CREATE", "READ", "UPDATE", "DELETE", "LIST" ],
+        "arnRegex" : "arn:(?<Partition>[a-z-]+):databrew:(?<Region>[a-z0-9-]+):(?<AccountId>[0-9]{12}):schedule/(?<ResourceId>[^/:]+)"
+    },
+    "AWS::DataSync::Agent" : {
+        "operations" : [ "CREATE", "READ", "UPDATE", "DELETE", "LIST" ],
+        "arnRegex" : "arn:(?<Partition>[a-z-]+):datasync:(?<Region>[a-z0-9-]+):(?<AccountId>[^/:]+):agent/(?<AgentId>[^/:]+)"
+    },
+    "AWS::DataSync::LocationEFS" : {
+        "operations" : [ "CREATE", "READ", "UPDATE", "DELETE", "LIST" ]
+    },
+    "AWS::DataSync::LocationFSxWindows" : {
+        "operations" : [ "CREATE", "READ", "UPDATE", "DELETE", "LIST" ]
+    },
+    "AWS::DataSync::LocationNFS" : {
+        "operations" : [ "CREATE", "READ", "UPDATE", "DELETE", "LIST" ]
+    },
+    "AWS::DataSync::LocationObjectStorage" : {
+        "operations" : [ "CREATE", "READ", "UPDATE", "DELETE", "LIST" ]
+    },
+    "AWS::DataSync::LocationS3" : {
+        "operations" : [ "CREATE", "READ", "UPDATE", "DELETE", "LIST" ]
+    },
+    "AWS::DataSync::LocationSMB" : {
+        "operations" : [ "CREATE", "READ", "UPDATE", "DELETE", "LIST" ]
+    },
+    "AWS::DataSync::Task" : {
+        "operations" : [ "CREATE", "READ", "UPDATE", "DELETE", "LIST" ],
+        "arnRegex" : "arn:(?<Partition>[a-z-]+):datasync:(?<Region>[a-z0-9-]+):(?<AccountId>[^/:]+):task/(?<TaskId>[^/:]+)"
+    },
+    "AWS::Detective::Graph" : {
+        "operations" : [ "CREATE", "UPDATE", "READ", "DELETE", "LIST" ],
+        "arnRegex" : "arn:(?<Partition>[a-z-]+):detective:(?<Region>[a-z0-9-]+):(?<AccountId>[0-9]{12}):graph:(?<ResourceId>[^/:]+)"
+    },
+    "AWS::Detective::MemberInvitation" : {
+        "operations" : [ "CREATE", "READ", "UPDATE", "DELETE", "LIST" ]
+    },
+    "AWS::DevOpsGuru::NotificationChannel" : {
+        "operations" : [ "CREATE", "LIST", "DELETE", "READ" ]
+    },
+    "AWS::DevOpsGuru::ResourceCollection" : {
+        "operations" : [ "CREATE", "READ", "DELETE", "UPDATE" ]
+    },
+    "AWS::DynamoDB::GlobalTable" : {
+        "operations" : [ "CREATE", "READ", "UPDATE", "DELETE", "LIST" ]
+    },
+    "AWS::EC2::CarrierGateway" : {
+        "operations" : [ "CREATE", "READ", "UPDATE", "DELETE", "LIST" ],
+        "arnRegex" : "arn:(?<Partition>[a-z-]+):ec2:(?<Region>[a-z0-9-]+):(?<AccountId>[0-9]{12}):carrier-gateway/(?<CarrierGatewayId>[^/:]+)"
+    },
+    "AWS::EC2::EC2Fleet" : {
+        "operations" : [ "CREATE", "DELETE", "LIST", "READ", "UPDATE" ]
+    },
+    "AWS::EC2::EnclaveCertificateIamRoleAssociation" : {
+        "operations" : [ "CREATE", "READ", "DELETE" ]
+    },
+    "AWS::EC2::FlowLog" : {
+        "operations" : [ "CREATE", "READ", "UPDATE", "DELETE", "LIST" ]
+    },
+    "AWS::EC2::GatewayRouteTableAssociation" : {
+        "operations" : [ "CREATE", "READ", "UPDATE", "DELETE" ]
+    },
+    "AWS::EC2::LocalGatewayRoute" : {
+        "operations" : [ "CREATE", "READ", "DELETE", "LIST" ]
+    },
+    "AWS::EC2::LocalGatewayRouteTableVPCAssociation" : {
+        "operations" : [ "CREATE", "READ", "UPDATE", "DELETE", "LIST" ],
+        "arnRegex" : "arn:(?<Partition>[a-z-]+):ec2:(?<Region>[a-z0-9-]+):(?<AccountId>[0-9]{12}):local-gateway-route-table-vpc-association/(?<LocalGatewayRouteTableVpcAssociationId>[^/:]+)"
+    },
+    "AWS::EC2::NetworkInsightsAnalysis" : {
+        "operations" : [ "CREATE", "DELETE", "READ", "LIST", "UPDATE" ],
+        "arnRegex" : "arn:(?<Partition>[a-z-]+):ec2:(?<Region>[a-z0-9-]+):(?<AccountId>[0-9]{12}):network-insights-analysis/(?<NetworkInsightsAnalysisId>[^/:]+)"
+    },
+    "AWS::EC2::NetworkInsightsPath" : {
+        "operations" : [ "CREATE", "DELETE", "READ", "LIST", "UPDATE" ],
+        "arnRegex" : "arn:(?<Partition>[a-z-]+):ec2:(?<Region>[a-z0-9-]+):(?<AccountId>[0-9]{12}):network-insights-path/(?<NetworkInsightsPathId>[^/:]+)"
+    },
+    "AWS::EC2::PrefixList" : {
+        "operations" : [ "CREATE", "READ", "UPDATE", "DELETE", "LIST" ],
+        "arnRegex" : "arn:(?<Partition>[a-z-]+):ec2:(?<Region>[a-z0-9-]+):(?<AccountId>[0-9]{12}):prefix-list/(?<PrefixListId>[^/:]+)"
+    },
+    "AWS::EC2::SpotFleet" : {
+        "operations" : [ "CREATE", "DELETE", "LIST", "READ", "UPDATE" ]
+    },
+    "AWS::EC2::TransitGateway" : {
+        "operations" : [ "CREATE", "READ", "DELETE", "LIST" ],
+        "arnRegex" : "arn:(?<Partition>[a-z-]+):ec2:(?<Region>[a-z0-9-]+):(?<AccountId>[0-9]{12}):transit-gateway/(?<TransitGatewayId>[^/:]+)"
+    },
+    "AWS::EC2::TransitGatewayConnect" : {
+        "operations" : [ "CREATE", "READ", "UPDATE", "DELETE", "LIST" ]
+    },
+    "AWS::EC2::TransitGatewayMulticastDomain" : {
+        "operations" : [ "CREATE", "READ", "UPDATE", "DELETE", "LIST" ],
+        "arnRegex" : "arn:(?<Partition>[a-z-]+):ec2:(?<Region>[a-z0-9-]+):(?<AccountId>[0-9]{12}):transit-gateway-multicast-domain/(?<TransitGatewayMulticastDomainId>[^/:]+)"
+    },
+    "AWS::EC2::TransitGatewayMulticastDomainAssociation" : {
+        "operations" : [ "CREATE", "READ", "DELETE" ]
+    },
+    "AWS::EC2::TransitGatewayMulticastGroupMember" : {
+        "operations" : [ "CREATE", "READ", "DELETE" ]
+    },
+    "AWS::EC2::TransitGatewayMulticastGroupSource" : {
+        "operations" : [ "CREATE", "READ", "DELETE" ]
+    },
+    "AWS::EC2::TransitGatewayPeeringAttachment" : {
+        "operations" : [ "CREATE", "READ", "UPDATE", "DELETE", "LIST" ]
+    },
+    "AWS::ECR::RegistryPolicy" : {
+        "operations" : [ "CREATE", "READ", "UPDATE", "DELETE" ]
+    },
+    "AWS::ECR::ReplicationConfiguration" : {
+        "operations" : [ "CREATE", "READ", "UPDATE", "DELETE" ]
+    },
+    "AWS::ECR::Repository" : {
+        "operations" : [ "CREATE", "READ", "UPDATE", "DELETE", "LIST" ],
+        "arnRegex" : "arn:(?<Partition>[a-z-]+):ecr:(?<Region>[a-z0-9-]+):(?<AccountId>[0-9]{12}):repository/(?<RepositoryName>[^:]+)"
+    },
+    "AWS::ECS::CapacityProvider" : {
+        "operations" : [ "CREATE", "DELETE", "READ", "UPDATE", "LIST" ],
+        "arnRegex" : "arn:(?<Partition>[a-z-]+):ecs:(?<Region>[a-z0-9-]+):(?<AccountId>[0-9]{12}):capacity-provider/(?<CapacityProviderName>[^/:]+)"
+    },
+    "AWS::ECS::Cluster" : {
+        "operations" : [ "CREATE", "READ", "UPDATE", "DELETE", "LIST" ],
+        "arnRegex" : "arn:(?<Partition>[a-z-]+):ecs:(?<Region>[a-z0-9-]+):(?<AccountId>[0-9]{12}):cluster/(?<ClusterName>[^/:]+)"
+    },
+    "AWS::ECS::ClusterCapacityProviderAssociations" : {
+        "operations" : [ "CREATE", "READ", "UPDATE", "DELETE" ]
+    },
+    "AWS::ECS::PrimaryTaskSet" : {
+        "operations" : [ "CREATE", "READ", "UPDATE", "DELETE" ]
+    },
+    "AWS::ECS::Service" : {
+        "operations" : [ "CREATE", "READ", "UPDATE", "DELETE", "LIST" ],
+        "arnRegex" : "arn:(?<Partition>[a-z-]+):ecs:(?<Region>[a-z0-9-]+):(?<AccountId>[0-9]{12}):service/(?<ClusterName>[^/:]+)/(?<ServiceName>[^/:]+)"
+    },
+    "AWS::ECS::TaskDefinition" : {
+        "operations" : [ "CREATE", "READ", "UPDATE", "DELETE", "LIST" ],
+        "arnRegex" : "arn:(?<Partition>[a-z-]+):ecs:(?<Region>[a-z0-9-]+):(?<AccountId>[0-9]{12}):task-definition/(?<TaskDefinitionFamilyName>[^/:]+):(?<TaskDefinitionRevisionNumber>[^/:]+)"
+    },
+    "AWS::ECS::TaskSet" : {
+        "operations" : [ "CREATE", "READ", "UPDATE", "DELETE" ],
+        "arnRegex" : "arn:(?<Partition>[a-z-]+):ecs:(?<region>[^/:]+):(?<AccountId>[0-9]{12}):task-set/(?<ClusterName>[^/:]+)/(?<ServiceName>[^/:]+)/(?<TaskSetId>[^/:]+)"
+    },
+    "AWS::EFS::AccessPoint" : {
+        "operations" : [ "CREATE", "READ", "DELETE", "LIST", "UPDATE" ],
+        "arnRegex" : "arn:(?<Partition>[a-z-]+):elasticfilesystem:(?<Region>[a-z0-9-]+):(?<AccountId>[0-9]{12}):access-point/(?<AccessPointId>[^/:]+)"
+    },
+    "AWS::EFS::FileSystem" : {
+        "operations" : [ "CREATE", "READ", "UPDATE", "DELETE", "LIST" ],
+        "arnRegex" : "arn:(?<Partition>[a-z-]+):elasticfilesystem:(?<Region>[a-z0-9-]+):(?<AccountId>[0-9]{12}):file-system/(?<FileSystemId>[^/:]+)"
+    },
+    "AWS::EKS::Addon" : {
+        "operations" : [ "CREATE", "READ", "DELETE", "UPDATE" ],
+        "arnRegex" : "arn:(?<Partition>[a-z-]+):eks:(?<Region>[a-z0-9-]+):(?<AccountId>[0-9]{12}):addon/(?<ClusterName>[^/:]+)/(?<AddonName>[^/:]+)/(?<UUID>[^/:]+)"
+    },
+    "AWS::EKS::FargateProfile" : {
+        "operations" : [ "CREATE", "READ", "DELETE", "UPDATE" ],
+        "arnRegex" : "arn:(?<Partition>[a-z-]+):eks:(?<Region>[a-z0-9-]+):(?<AccountId>[0-9]{12}):fargateprofile/(?<ClusterName>[^/:]+)/(?<FargateProfileName>[^/:]+)/(?<UUID>[^/:]+)"
+    },
+    "AWS::EMR::Studio" : {
+        "operations" : [ "CREATE", "READ", "UPDATE", "DELETE", "LIST" ]
+    },
+    "AWS::EMR::StudioSessionMapping" : {
+        "operations" : [ "CREATE", "READ", "UPDATE", "DELETE", "LIST" ]
+    },
+    "AWS::EMRContainers::VirtualCluster" : {
+        "operations" : [ "CREATE", "READ", "DELETE", "LIST", "UPDATE" ],
+        "arnRegex" : "arn:(?<Partition>[a-z-]+):emr-containers:(?<Region>[a-z0-9-]+):(?<AccountId>[0-9]{12}):/virtualclusters/(?<virtualClusterId>[^/:]+)"
+    },
+    "AWS::ElastiCache::GlobalReplicationGroup" : {
+        "operations" : [ "CREATE", "READ", "UPDATE", "DELETE", "LIST" ],
+        "arnRegex" : "arn:(?<Partition>[a-z-]+):elasticache::(?<AccountId>[0-9]{12}):globalreplicationgroup:(?<GlobalReplicationGroupId>[^/:]+)"
+    },
+    "AWS::ElastiCache::User" : {
+        "operations" : [ "CREATE", "READ", "UPDATE", "DELETE", "LIST" ],
+        "arnRegex" : "arn:(?<Partition>[a-z-]+):elasticache:(?<Region>[a-z0-9-]+):(?<AccountId>[0-9]{12}):user:(?<UserId>[^/:]+)"
+    },
+    "AWS::ElastiCache::UserGroup" : {
+        "operations" : [ "CREATE", "READ", "UPDATE", "DELETE", "LIST" ],
+        "arnRegex" : "arn:(?<Partition>[a-z-]+):elasticache:(?<Region>[a-z0-9-]+):(?<AccountId>[0-9]{12}):usergroup:(?<UserGroupId>[^/:]+)"
+    },
+    "AWS::ElasticLoadBalancingV2::Listener" : {
+        "operations" : [ "CREATE", "DELETE", "READ", "UPDATE" ]
+    },
+    "AWS::ElasticLoadBalancingV2::ListenerRule" : {
+        "operations" : [ "CREATE", "DELETE", "READ", "UPDATE" ]
+    },
+    "AWS::EventSchemas::RegistryPolicy" : {
+        "operations" : [ "CREATE", "DELETE", "UPDATE", "READ" ]
+    },
+    "AWS::Events::ApiDestination" : {
+        "operations" : [ "CREATE", "READ", "UPDATE", "DELETE", "LIST" ],
+        "arnRegex" : "arn:(?<Partition>[a-z-]+):events:(?<Region>[a-z0-9-]+):(?<AccountId>[0-9]{12}):api-destination/(?<ApiDestinationName>[^/:]+)"
+    },
+    "AWS::Events::Archive" : {
+        "operations" : [ "CREATE", "DELETE", "LIST", "UPDATE", "READ" ],
+        "arnRegex" : "arn:(?<Partition>[a-z-]+):events:(?<Region>[a-z0-9-]+):(?<AccountId>[0-9]{12}):archive/(?<ArchiveName>[^/:]+)"
+    },
+    "AWS::Events::Connection" : {
+        "operations" : [ "CREATE", "READ", "UPDATE", "DELETE", "LIST" ],
+        "arnRegex" : "arn:(?<Partition>[a-z-]+):events:(?<Region>[a-z0-9-]+):(?<AccountId>[0-9]{12}):connection/(?<ConnectionName>[^/:]+)"
+    },
+    "AWS::FIS::ExperimentTemplate" : {
+        "operations" : [ "CREATE", "READ", "UPDATE", "DELETE", "LIST" ],
+        "arnRegex" : "arn:(?<Partition>[a-z-]+):fis:(?<Region>[a-z0-9-]+):(?<AccountId>[0-9]{12}):experiment-template/(?<Id>[^/:]+)"
+    },
+    "AWS::FMS::NotificationChannel" : {
+        "operations" : [ "CREATE", "UPDATE", "READ", "DELETE" ]
+    },
+    "AWS::FMS::Policy" : {
+        "operations" : [ "CREATE", "UPDATE", "READ", "DELETE" ],
+        "arnRegex" : "arn:(?<Partition>[a-z-]+):fms:(?<Region>[a-z0-9-]+):(?<AccountId>[0-9]{12}):policy/(?<Id>[^/:]+)"
+    },
+    "AWS::FinSpace::Environment" : {
+        "operations" : [ "CREATE", "READ", "UPDATE", "DELETE", "LIST" ]
+    },
+    "AWS::FraudDetector::Detector" : {
+        "operations" : [ "CREATE", "UPDATE", "DELETE", "READ", "LIST" ],
+        "arnRegex" : "arn:(?<Partition>[a-z-]+):frauddetector:(?<Region>[a-z0-9-]+):(?<AccountId>[0-9]{12}):detector/(?<resourcePath>[^/:]+)"
+    },
+    "AWS::FraudDetector::EntityType" : {
+        "operations" : [ "CREATE", "READ", "UPDATE", "DELETE", "LIST" ],
+        "arnRegex" : "arn:(?<Partition>[a-z-]+):frauddetector:(?<Region>[a-z0-9-]+):(?<AccountId>[0-9]{12}):entity-type/(?<resourcePath>[^/:]+)"
+    },
+    "AWS::FraudDetector::EventType" : {
+        "operations" : [ "CREATE", "UPDATE", "DELETE", "READ", "LIST" ],
+        "arnRegex" : "arn:(?<Partition>[a-z-]+):frauddetector:(?<Region>[a-z0-9-]+):(?<AccountId>[0-9]{12}):event-type/(?<resourcePath>[^/:]+)"
+    },
+    "AWS::FraudDetector::Label" : {
+        "operations" : [ "CREATE", "READ", "UPDATE", "DELETE", "LIST" ],
+        "arnRegex" : "arn:(?<Partition>[a-z-]+):frauddetector:(?<Region>[a-z0-9-]+):(?<AccountId>[0-9]{12}):label/(?<resourcePath>[^/:]+)"
+    },
+    "AWS::FraudDetector::Outcome" : {
+        "operations" : [ "CREATE", "READ", "UPDATE", "DELETE", "LIST" ],
+        "arnRegex" : "arn:(?<Partition>[a-z-]+):frauddetector:(?<Region>[a-z0-9-]+):(?<AccountId>[0-9]{12}):outcome/(?<resourcePath>[^/:]+)"
+    },
+    "AWS::FraudDetector::Variable" : {
+        "operations" : [ "CREATE", "READ", "UPDATE", "DELETE", "LIST" ],
+        "arnRegex" : "arn:(?<Partition>[a-z-]+):frauddetector:(?<Region>[a-z0-9-]+):(?<AccountId>[0-9]{12}):variable/(?<resourcePath>[^/:]+)"
+    },
+    "AWS::GameLift::Alias" : {
+        "operations" : [ "CREATE", "READ", "UPDATE", "DELETE", "LIST" ],
+        "arnRegex" : "arn:(?<Partition>[a-z-]+):gamelift:(?<Region>[a-z0-9-]+)::alias/(?<AliasId>[^/:]+)"
+    },
+    "AWS::GameLift::Fleet" : {
+        "operations" : [ "CREATE", "READ", "UPDATE", "DELETE", "LIST" ],
+        "arnRegex" : "arn:(?<Partition>[a-z-]+):gamelift:(?<Region>[a-z0-9-]+):(?<AccountId>[0-9]{12}):fleet/(?<FleetId>[^/:]+)"
+    },
+    "AWS::GameLift::GameServerGroup" : {
+        "operations" : [ "CREATE", "READ", "UPDATE", "DELETE" ],
+        "arnRegex" : "arn:(?<Partition>[a-z-]+):gamelift:(?<Region>[a-z0-9-]+):(?<AccountId>[0-9]{12}):gameservergroup/(?<GameServerGroupName>[^/:]+)"
+    },
+    "AWS::GlobalAccelerator::Accelerator" : {
+        "operations" : [ "CREATE", "READ", "UPDATE", "DELETE" ],
+        "arnRegex" : "arn:(?<Partition>[a-z-]+):globalaccelerator::(?<AccountId>[0-9]{12}):accelerator/(?<AcceleratorId>[^/:]+)"
+    },
+    "AWS::GlobalAccelerator::EndpointGroup" : {
+        "operations" : [ "CREATE", "READ", "UPDATE", "DELETE" ],
+        "arnRegex" : "arn:(?<Partition>[a-z-]+):globalaccelerator::(?<AccountId>[0-9]{12}):accelerator/(?<AcceleratorId>[^/:]+)/listener/(?<ListenerId>[^/:]+)/endpoint-group/(?<EndpointGroupId>[^/:]+)"
+    },
+    "AWS::GlobalAccelerator::Listener" : {
+        "operations" : [ "CREATE", "READ", "UPDATE", "DELETE" ],
+        "arnRegex" : "arn:(?<Partition>[a-z-]+):globalaccelerator::(?<AccountId>[0-9]{12}):accelerator/(?<AcceleratorId>[^/:]+)/listener/(?<ListenerId>[^/:]+)"
+    },
+    "AWS::Glue::Registry" : {
+        "operations" : [ "CREATE", "READ", "DELETE", "UPDATE", "LIST" ],
+        "arnRegex" : "arn:(?<Partition>[a-z-]+):glue:(?<Region>[a-z0-9-]+):(?<AccountId>[0-9]{12}):registry/(?<RegistryName>[^/:]+)"
+    },
+    "AWS::Glue::Schema" : {
+        "operations" : [ "CREATE", "READ", "DELETE", "UPDATE", "LIST" ],
+        "arnRegex" : "arn:(?<Partition>[a-z-]+):glue:(?<Region>[a-z0-9-]+):(?<AccountId>[0-9]{12}):schema/(?<SchemaName>[^/:]+)"
+    },
+    "AWS::Glue::SchemaVersion" : {
+        "operations" : [ "CREATE", "READ", "DELETE" ]
+    },
+    "AWS::Glue::SchemaVersionMetadata" : {
+        "operations" : [ "CREATE", "READ", "DELETE" ]
+    },
+    "AWS::GreengrassV2::ComponentVersion" : {
+        "operations" : [ "CREATE", "READ", "UPDATE", "DELETE", "LIST" ],
+        "arnRegex" : "arn:(?<Partition>[a-z-]+):greengrass:(?<Region>[a-z0-9-]+):(?<AccountId>[0-9]{12}):components:(?<ComponentName>[^/:]+):versions:(?<ComponentVersion>[^/:]+)"
+    },
+    "AWS::GroundStation::Config" : {
+        "operations" : [ "CREATE", "READ", "UPDATE", "DELETE", "LIST" ],
+        "arnRegex" : "arn:(?<Partition>[a-z-]+):groundstation:(?<Region>[a-z0-9-]+):(?<AccountId>[0-9]{12}):config/(?<configType>[^/:]+)/(?<configId>[^/:]+)"
+    },
+    "AWS::GroundStation::DataflowEndpointGroup" : {
+        "operations" : [ "CREATE", "READ", "DELETE", "LIST" ],
+        "arnRegex" : "arn:(?<Partition>[a-z-]+):groundstation:(?<Region>[a-z0-9-]+):(?<AccountId>[0-9]{12}):dataflow-endpoint-group/(?<dataflowEndpointGroupId>[^/:]+)"
+    },
+    "AWS::GroundStation::MissionProfile" : {
+        "operations" : [ "CREATE", "READ", "UPDATE", "DELETE", "LIST" ],
+        "arnRegex" : "arn:(?<Partition>[a-z-]+):groundstation:(?<Region>[a-z0-9-]+):(?<AccountId>[0-9]{12}):mission-profile/(?<missionProfileId>[^/:]+)"
+    },
+    "AWS::IAM::OIDCProvider" : {
+        "operations" : [ "CREATE", "READ", "UPDATE", "DELETE", "LIST" ]
+    },
+    "AWS::IAM::SAMLProvider" : {
+        "operations" : [ "CREATE", "READ", "UPDATE", "DELETE", "LIST" ],
+        "arnRegex" : "arn:(?<Partition>[a-z-]+):iam::(?<AccountId>[0-9]{12}):saml-provider/(?<SamlProviderName>[^/:]+)"
+    },
+    "AWS::IAM::ServerCertificate" : {
+        "operations" : [ "CREATE", "READ", "UPDATE", "DELETE", "LIST" ],
+        "arnRegex" : "arn:(?<Partition>[a-z-]+):iam::(?<AccountId>[0-9]{12}):server-certificate/(?<CertificateNameWithPath>[^:]+)"
+    },
+    "AWS::IAM::VirtualMFADevice" : {
+        "operations" : [ "CREATE", "READ", "UPDATE", "DELETE", "LIST" ],
+        "arnRegex" : "arn:(?<Partition>[a-z-]+):iam::(?<AccountId>[0-9]{12}):mfa/(?<CertificateNameWithPath>[^:]+)"
+    },
+    "AWS::IVS::Channel" : {
+        "operations" : [ "CREATE", "READ", "UPDATE", "DELETE", "LIST" ],
+        "arnRegex" : "arn:(?<Partition>[a-z-]+):ivs::(?<AccountId>[0-9]{12}):channel/(?<ResourceId>[^/:]+)"
+    },
+    "AWS::IVS::PlaybackKeyPair" : {
+        "operations" : [ "CREATE", "READ", "UPDATE", "DELETE", "LIST" ],
+        "arnRegex" : "arn:(?<Partition>[a-z-]+):ivs::(?<AccountId>[0-9]{12}):playback-key/(?<ResourceId>[^/:]+)"
+    },
+    "AWS::IVS::RecordingConfiguration" : {
+        "operations" : [ "CREATE", "READ", "UPDATE", "DELETE", "LIST" ]
+    },
+    "AWS::IVS::StreamKey" : {
+        "operations" : [ "CREATE", "READ", "UPDATE", "DELETE" ],
+        "arnRegex" : "arn:(?<Partition>[a-z-]+):ivs::(?<AccountId>[0-9]{12}):stream-key/(?<ResourceId>[^/:]+)"
+    },
+    "AWS::ImageBuilder::Component" : {
+        "operations" : [ "CREATE", "READ", "DELETE" ],
+        "arnRegex" : "arn:(?<Partition>[a-z-]+):imagebuilder:(?<Region>[a-z0-9-]+):(?<AccountId>[0-9]{12}):component/(?<ComponentName>[^/:]+)/(?<ComponentVersion>[^/:]+)/(?<ComponentBuildVersion>[^/:]+)"
+    },
+    "AWS::ImageBuilder::ContainerRecipe" : {
+        "operations" : [ "CREATE", "READ", "DELETE", "LIST" ],
+        "arnRegex" : "arn:(?<Partition>[a-z-]+):imagebuilder:(?<Region>[a-z0-9-]+):(?<AccountId>[0-9]{12}):container-recipe/(?<ContainerRecipeName>[^/:]+)/(?<ContainerRecipeVersion>[^/:]+)"
+    },
+    "AWS::ImageBuilder::DistributionConfiguration" : {
+        "operations" : [ "CREATE", "UPDATE", "READ", "DELETE", "LIST" ],
+        "arnRegex" : "arn:(?<Partition>[a-z-]+):imagebuilder:(?<Region>[a-z0-9-]+):(?<AccountId>[0-9]{12}):distribution-configuration/(?<DistributionConfigurationName>[^/:]+)"
+    },
+    "AWS::ImageBuilder::Image" : {
+        "operations" : [ "CREATE", "READ", "DELETE", "LIST", "UPDATE" ],
+        "arnRegex" : "arn:(?<Partition>[a-z-]+):imagebuilder:(?<Region>[a-z0-9-]+):(?<AccountId>[0-9]{12}):image/(?<ImageName>[^/:]+)/(?<ImageVersion>[^/:]+)/(?<ImageBuildVersion>[^/:]+)"
+    },
+    "AWS::ImageBuilder::ImagePipeline" : {
+        "operations" : [ "CREATE", "UPDATE", "READ", "DELETE", "LIST" ],
+        "arnRegex" : "arn:(?<Partition>[a-z-]+):imagebuilder:(?<Region>[a-z0-9-]+):(?<AccountId>[0-9]{12}):image-pipeline/(?<ImagePipelineName>[^/:]+)"
+    },
+    "AWS::ImageBuilder::ImageRecipe" : {
+        "operations" : [ "CREATE", "READ", "DELETE", "LIST" ],
+        "arnRegex" : "arn:(?<Partition>[a-z-]+):imagebuilder:(?<Region>[a-z0-9-]+):(?<AccountId>[0-9]{12}):image-recipe/(?<ImageRecipeName>[^/:]+)/(?<ImageRecipeVersion>[^/:]+)"
+    },
+    "AWS::ImageBuilder::InfrastructureConfiguration" : {
+        "operations" : [ "CREATE", "UPDATE", "READ", "DELETE", "LIST" ],
+        "arnRegex" : "arn:(?<Partition>[a-z-]+):imagebuilder:(?<Region>[a-z0-9-]+):(?<AccountId>[0-9]{12}):infrastructure-configuration/(?<ResourceId>[^/:]+)"
+    },
+    "AWS::IoT::AccountAuditConfiguration" : {
+        "operations" : [ "CREATE", "READ", "UPDATE", "DELETE", "LIST" ]
+    },
+    "AWS::IoT::Authorizer" : {
+        "operations" : [ "CREATE", "READ", "UPDATE", "DELETE", "LIST" ],
+        "arnRegex" : "arn:(?<Partition>[a-z-]+):iot:(?<Region>[a-z0-9-]+):(?<AccountId>[0-9]{12}):authorizer/(?<AuthorizerName>[^/:]+)"
+    },
+    "AWS::IoT::Certificate" : {
+        "operations" : [ "CREATE", "READ", "UPDATE", "DELETE", "LIST" ]
+    },
+    "AWS::IoT::CustomMetric" : {
+        "operations" : [ "CREATE", "READ", "UPDATE", "DELETE", "LIST" ]
+    },
+    "AWS::IoT::Dimension" : {
+        "operations" : [ "CREATE", "READ", "UPDATE", "DELETE", "LIST" ],
+        "arnRegex" : "arn:(?<Partition>[a-z-]+):iot:(?<Region>[a-z0-9-]+):(?<AccountId>[0-9]{12}):dimension/(?<DimensionName>[^/:]+)"
+    },
+    "AWS::IoT::DomainConfiguration" : {
+        "operations" : [ "CREATE", "READ", "UPDATE", "DELETE", "LIST" ],
+        "arnRegex" : "arn:(?<Partition>[a-z-]+):iot:(?<Region>[a-z0-9-]+):(?<AccountId>[0-9]{12}):domainconfiguration/(?<domainConfigurationName>[^/:]+)"
+    },
+    "AWS::IoT::MitigationAction" : {
+        "operations" : [ "CREATE", "READ", "UPDATE", "DELETE", "LIST" ],
+        "arnRegex" : "arn:(?<Partition>[a-z-]+):iot:(?<Region>[a-z0-9-]+):(?<AccountId>[0-9]{12}):mitigationaction/(?<MitigationActionName>[^/:]+)"
+    },
+    "AWS::IoT::ProvisioningTemplate" : {
+        "operations" : [ "CREATE", "READ", "UPDATE", "DELETE", "LIST" ],
+        "arnRegex" : "arn:(?<Partition>[a-z-]+):iot:(?<Region>[a-z0-9-]+):(?<AccountId>[0-9]{12}):provisioningtemplate/(?<provisioningTemplate>[^/:]+)"
+    },
+    "AWS::IoT::ScheduledAudit" : {
+        "operations" : [ "CREATE", "READ", "UPDATE", "DELETE", "LIST" ],
+        "arnRegex" : "arn:(?<Partition>[a-z-]+):iot:(?<Region>[a-z0-9-]+):(?<AccountId>[0-9]{12}):scheduledaudit/(?<ScheduleName>[^/:]+)"
+    },
+    "AWS::IoT::SecurityProfile" : {
+        "operations" : [ "CREATE", "READ", "UPDATE", "DELETE", "LIST" ],
+        "arnRegex" : "arn:(?<Partition>[a-z-]+):iot:(?<Region>[a-z0-9-]+):(?<AccountId>[0-9]{12}):securityprofile/(?<SecurityProfileName>[^/:]+)"
+    },
+    "AWS::IoT::TopicRule" : {
+        "operations" : [ "CREATE", "READ", "UPDATE", "DELETE", "LIST" ],
+        "arnRegex" : "arn:(?<Partition>[a-z-]+):iot:(?<Region>[a-z0-9-]+):(?<AccountId>[0-9]{12}):rule/(?<ruleName>[^/:]+)"
+    },
+    "AWS::IoT::TopicRuleDestination" : {
+        "operations" : [ "CREATE", "READ", "UPDATE", "DELETE", "LIST" ]
+    },
+    "AWS::IoTCoreDeviceAdvisor::SuiteDefinition" : {
+        "operations" : [ "CREATE", "READ", "UPDATE", "DELETE" ]
+    },
+    "AWS::IoTEvents::DetectorModel" : {
+        "operations" : [ "CREATE", "READ", "UPDATE", "DELETE", "LIST" ],
+        "arnRegex" : "arn:(?<Partition>[a-z-]+):iotevents:(?<Region>[a-z0-9-]+):(?<AccountId>[0-9]{12}):detectorModel/(?<DetectorModelName>[^/:]+)"
+    },
+    "AWS::IoTEvents::Input" : {
+        "operations" : [ "CREATE", "READ", "UPDATE", "DELETE", "LIST" ],
+        "arnRegex" : "arn:(?<Partition>[a-z-]+):iotevents:(?<Region>[a-z0-9-]+):(?<AccountId>[0-9]{12}):input/(?<inputName>[^/:]+)"
+    },
+    "AWS::IoTFleetHub::Application" : {
+        "operations" : [ "CREATE", "READ", "UPDATE", "DELETE", "LIST" ]
+    },
+    "AWS::IoTSiteWise::AccessPolicy" : {
+        "operations" : [ "CREATE", "READ", "UPDATE", "DELETE" ],
+        "arnRegex" : "arn:(?<Partition>[a-z-]+):iotsitewise:(?<Region>[a-z0-9-]+):(?<AccountId>[0-9]{12}):access-policy/(?<AccessPolicyId>[^/:]+)"
+    },
+    "AWS::IoTSiteWise::Asset" : {
+        "operations" : [ "CREATE", "READ", "UPDATE", "DELETE", "LIST" ],
+        "arnRegex" : "arn:(?<Partition>[a-z-]+):iotsitewise:(?<Region>[a-z0-9-]+):(?<AccountId>[0-9]{12}):asset/(?<AssetId>[^/:]+)"
+    },
+    "AWS::IoTSiteWise::AssetModel" : {
+        "operations" : [ "CREATE", "READ", "UPDATE", "DELETE", "LIST" ],
+        "arnRegex" : "arn:(?<Partition>[a-z-]+):iotsitewise:(?<Region>[a-z0-9-]+):(?<AccountId>[0-9]{12}):asset-model/(?<AssetModelId>[^/:]+)"
+    },
+    "AWS::IoTSiteWise::Dashboard" : {
+        "operations" : [ "CREATE", "READ", "UPDATE", "DELETE" ],
+        "arnRegex" : "arn:(?<Partition>[a-z-]+):iotsitewise:(?<Region>[a-z0-9-]+):(?<AccountId>[0-9]{12}):dashboard/(?<DashboardId>[^/:]+)"
+    },
+    "AWS::IoTSiteWise::Gateway" : {
+        "operations" : [ "CREATE", "READ", "UPDATE", "DELETE", "LIST" ],
+        "arnRegex" : "arn:(?<Partition>[a-z-]+):iotsitewise:(?<Region>[a-z0-9-]+):(?<AccountId>[0-9]{12}):gateway/(?<GatewayId>[^/:]+)"
+    },
+    "AWS::IoTSiteWise::Portal" : {
+        "operations" : [ "CREATE", "READ", "UPDATE", "DELETE", "LIST" ],
+        "arnRegex" : "arn:(?<Partition>[a-z-]+):iotsitewise:(?<Region>[a-z0-9-]+):(?<AccountId>[0-9]{12}):portal/(?<PortalId>[^/:]+)"
+    },
+    "AWS::IoTSiteWise::Project" : {
+        "operations" : [ "CREATE", "READ", "UPDATE", "DELETE" ],
+        "arnRegex" : "arn:(?<Partition>[a-z-]+):iotsitewise:(?<Region>[a-z0-9-]+):(?<AccountId>[0-9]{12}):project/(?<ProjectId>[^/:]+)"
+    },
+    "AWS::IoTWireless::Destination" : {
+        "operations" : [ "CREATE", "READ", "UPDATE", "DELETE", "LIST" ],
+        "arnRegex" : "arn:(?<Partition>[a-z-]+):iotwireless:(?<Region>[a-z0-9-]+):(?<AccountId>[0-9]{12}):Destination/(?<DestinationName>[^/:]+)"
+    },
+    "AWS::IoTWireless::DeviceProfile" : {
+        "operations" : [ "CREATE", "READ", "DELETE", "LIST" ],
+        "arnRegex" : "arn:(?<Partition>[a-z-]+):iotwireless:(?<Region>[a-z0-9-]+):(?<AccountId>[0-9]{12}):DeviceProfile/(?<DeviceProfileId>[^/:]+)"
+    },
+    "AWS::IoTWireless::ServiceProfile" : {
+        "operations" : [ "CREATE", "READ", "DELETE", "LIST" ],
+        "arnRegex" : "arn:(?<Partition>[a-z-]+):iotwireless:(?<Region>[a-z0-9-]+):(?<AccountId>[0-9]{12}):ServiceProfile/(?<ServiceProfileId>[^/:]+)"
+    },
+    "AWS::IoTWireless::TaskDefinition" : {
+        "operations" : [ "CREATE", "READ", "DELETE" ]
+    },
+    "AWS::IoTWireless::WirelessDevice" : {
+        "operations" : [ "CREATE", "READ", "UPDATE", "DELETE", "LIST" ],
+        "arnRegex" : "arn:(?<Partition>[a-z-]+):iotwireless:(?<Region>[a-z0-9-]+):(?<AccountId>[0-9]{12}):WirelessDevice/(?<WirelessDeviceId>[^/:]+)"
+    },
+    "AWS::IoTWireless::WirelessGateway" : {
+        "operations" : [ "CREATE", "READ", "UPDATE", "DELETE", "LIST" ],
+        "arnRegex" : "arn:(?<Partition>[a-z-]+):iotwireless:(?<Region>[a-z0-9-]+):(?<AccountId>[0-9]{12}):WirelessGateway/(?<WirelessGatewayId>[^/:]+)"
+    },
+    "AWS::KMS::Alias" : {
+        "operations" : [ "CREATE", "READ", "UPDATE", "DELETE", "LIST" ],
+        "arnRegex" : "arn:(?<Partition>[a-z-]+):kms:(?<Region>[a-z0-9-]+):(?<AccountId>[0-9]{12}):alias/(?<Alias>[^/:]+)"
+    },
+    "AWS::KMS::Key" : {
+        "operations" : [ "CREATE", "READ", "UPDATE", "DELETE" ],
+        "arnRegex" : "arn:(?<Partition>[a-z-]+):kms:(?<Region>[a-z0-9-]+):(?<AccountId>[0-9]{12}):key/(?<KeyId>[^/:]+)"
+    },
+    "AWS::KMS::ReplicaKey" : {
+        "operations" : [ "CREATE", "READ", "UPDATE", "DELETE", "LIST" ]
+    },
+    "AWS::Kendra::DataSource" : {
+        "operations" : [ "CREATE", "READ", "DELETE", "UPDATE" ],
+        "arnRegex" : "arn:(?<Partition>[a-z-]+):kendra:(?<Region>[a-z0-9-]+):(?<AccountId>[0-9]{12}):index/(?<IndexId>[^/:]+)/data-source/(?<DataSourceId>[^/:]+)"
+    },
+    "AWS::Kendra::Faq" : {
+        "operations" : [ "CREATE", "UPDATE", "READ", "DELETE" ],
+        "arnRegex" : "arn:(?<Partition>[a-z-]+):kendra:(?<Region>[a-z0-9-]+):(?<AccountId>[0-9]{12}):index/(?<IndexId>[^/:]+)/faq/(?<FaqId>[^/:]+)"
+    },
+    "AWS::Kendra::Index" : {
+        "operations" : [ "CREATE", "READ", "UPDATE", "DELETE", "LIST" ],
+        "arnRegex" : "arn:(?<Partition>[a-z-]+):kendra:(?<Region>[a-z0-9-]+):(?<AccountId>[0-9]{12}):index/(?<IndexId>[^/:]+)"
+    },
+    "AWS::Kinesis::Stream" : {
+        "operations" : [ "CREATE", "READ", "UPDATE", "DELETE", "LIST" ],
+        "arnRegex" : "arn:(?<Partition>[a-z-]+):kinesis:(?<Region>[a-z0-9-]+):(?<AccountId>[0-9]{12}):stream/(?<StreamName>[^/:]+)"
+    },
+    "AWS::KinesisFirehose::DeliveryStream" : {
+        "operations" : [ "CREATE", "READ", "UPDATE", "DELETE", "LIST" ],
+        "arnRegex" : "arn:(?<Partition>[a-z-]+):firehose:(?<Region>[a-z0-9-]+):(?<AccountId>[0-9]{12}):deliverystream/(?<DeliveryStreamName>[^/:]+)"
+    },
+    "AWS::Lambda::CodeSigningConfig" : {
+        "operations" : [ "CREATE", "READ", "UPDATE", "DELETE", "LIST" ]
+    },
+    "AWS::Lambda::EventSourceMapping" : {
+        "operations" : [ "CREATE", "DELETE", "LIST", "READ", "UPDATE" ],
+        "arnRegex" : "arn:(?<Partition>[a-z-]+):lambda:(?<Region>[a-z0-9-]+):(?<AccountId>[0-9]{12}):event-source-mapping:(?<UUID>[^/:]+)"
+    },
+    "AWS::Lambda::Function" : {
+        "operations" : [ "CREATE", "UPDATE", "READ", "DELETE", "LIST" ],
+        "arnRegex" : "arn:(?<Partition>[a-z-]+):lambda:(?<Region>[a-z0-9-]+):(?<AccountId>[0-9]{12}):function:(?<FunctionName>[^/:]+)"
+    },
+    "AWS::LicenseManager::Grant" : {
+        "operations" : [ "CREATE", "READ", "UPDATE", "DELETE" ],
+        "arnRegex" : "arn:(?<Partition>[a-z-]+):license-manager::(?<AccountId>[0-9]{12}):grant:(?<GrantId>[^/:]+)"
+    },
+    "AWS::LicenseManager::License" : {
+        "operations" : [ "CREATE", "READ", "UPDATE", "DELETE" ],
+        "arnRegex" : "arn:(?<Partition>[a-z-]+):license-manager::(?<AccountId>[0-9]{12}):license:(?<LicenseId>[^/:]+)"
+    },
+    "AWS::Location::GeofenceCollection" : {
+        "operations" : [ "CREATE", "READ", "DELETE", "LIST" ]
+    },
+    "AWS::Location::Map" : {
+        "operations" : [ "CREATE", "READ", "DELETE", "LIST" ]
+    },
+    "AWS::Location::PlaceIndex" : {
+        "operations" : [ "CREATE", "READ", "DELETE", "LIST" ]
+    },
+    "AWS::Location::RouteCalculator" : {
+        "operations" : [ "CREATE", "READ", "DELETE", "LIST" ]
+    },
+    "AWS::Location::Tracker" : {
+        "operations" : [ "CREATE", "READ", "DELETE", "LIST" ]
+    },
+    "AWS::Location::TrackerConsumer" : {
+        "operations" : [ "CREATE", "DELETE", "READ" ]
+    },
+    "AWS::Logs::LogGroup" : {
+        "operations" : [ "CREATE", "READ", "UPDATE", "DELETE", "LIST" ],
+        "arnRegex" : "arn:(?<Partition>[a-z-]+):logs:(?<Region>[a-z0-9-]+):(?<AccountId>[0-9]{12}):log-group:(?<LogGroupName>[^:]+)"
+    },
+    "AWS::Logs::QueryDefinition" : {
+        "operations" : [ "CREATE", "READ", "UPDATE", "DELETE", "LIST" ]
+    },
+    "AWS::Logs::ResourcePolicy" : {
+        "operations" : [ "CREATE", "READ", "UPDATE", "DELETE", "LIST" ]
+    },
+    "AWS::LookoutMetrics::Alert" : {
+        "operations" : [ "CREATE", "READ", "DELETE", "LIST" ],
+        "arnRegex" : "arn:(?<Partition>[a-z-]+):lookoutmetrics:(?<Region>[a-z0-9-]+):(?<AccountId>[0-9]{12}):Alert:(?<AlertName>[^/:]+)"
+    },
+    "AWS::LookoutMetrics::AnomalyDetector" : {
+        "operations" : [ "CREATE", "READ", "UPDATE", "DELETE", "LIST" ],
+        "arnRegex" : "arn:(?<Partition>[a-z-]+):lookoutmetrics:(?<Region>[a-z0-9-]+):(?<AccountId>[0-9]{12}):AnomalyDetector:(?<AnomalyDetectorName>[^/:]+)"
+    },
+    "AWS::LookoutVision::Project" : {
+        "operations" : [ "CREATE", "READ", "UPDATE", "DELETE", "LIST" ],
+        "arnRegex" : "arn:(?<Partition>[a-z-]+):lookoutvision:(?<Region>[a-z0-9-]+):(?<AccountId>[0-9]{12}):project/(?<ProjectName>[^/:]+)"
+    },
+    "AWS::MWAA::Environment" : {
+        "operations" : [ "CREATE", "READ", "UPDATE", "DELETE", "LIST" ]
+    },
+    "AWS::Macie::CustomDataIdentifier" : {
+        "operations" : [ "CREATE", "READ", "DELETE", "UPDATE" ],
+        "arnRegex" : "arn:(?<Partition>[a-z-]+):macie2:(?<Region>[a-z0-9-]+):(?<AccountId>[0-9]{12}):custom-data-identifier/(?<ResourceId>[^/:]+)"
+    },
+    "AWS::Macie::FindingsFilter" : {
+        "operations" : [ "CREATE", "READ", "UPDATE", "DELETE" ],
+        "arnRegex" : "arn:(?<Partition>[a-z-]+):macie2:(?<Region>[a-z0-9-]+):(?<AccountId>[0-9]{12}):findings-filter/(?<ResourceId>[^/:]+)"
+    },
+    "AWS::Macie::Session" : {
+        "operations" : [ "CREATE", "READ", "UPDATE", "DELETE" ]
+    },
+    "AWS::MediaConnect::Flow" : {
+        "operations" : [ "CREATE", "READ", "UPDATE", "DELETE", "LIST" ],
+        "arnRegex" : "arn:(?<Partition>[a-z-]+):mediaconnect:(?<Region>[a-z0-9-]+):(?<AccountId>[0-9]{12}):flow:(?<FlowId>[^/:]+):(?<FlowName>[^/:]+)"
+    },
+    "AWS::MediaConnect::FlowEntitlement" : {
+        "operations" : [ "CREATE", "READ", "UPDATE", "DELETE" ]
+    },
+    "AWS::MediaConnect::FlowOutput" : {
+        "operations" : [ "CREATE", "READ", "UPDATE", "DELETE" ]
+    },
+    "AWS::MediaConnect::FlowSource" : {
+        "operations" : [ "CREATE", "READ", "UPDATE", "DELETE" ]
+    },
+    "AWS::MediaConnect::FlowVpcInterface" : {
+        "operations" : [ "CREATE", "READ", "UPDATE", "DELETE" ]
+    },
+    "AWS::MediaPackage::Asset" : {
+        "operations" : [ "CREATE", "READ", "DELETE" ]
+    },
+    "AWS::MediaPackage::Channel" : {
+        "operations" : [ "CREATE", "READ", "UPDATE", "DELETE", "LIST" ]
+    },
+    "AWS::MediaPackage::OriginEndpoint" : {
+        "operations" : [ "CREATE", "READ", "UPDATE", "DELETE", "LIST" ]
+    },
+    "AWS::MediaPackage::PackagingConfiguration" : {
+        "operations" : [ "CREATE", "READ", "DELETE" ]
+    },
+    "AWS::MediaPackage::PackagingGroup" : {
+        "operations" : [ "CREATE", "READ", "UPDATE", "LIST", "DELETE" ]
+    },
+    "AWS::NetworkFirewall::Firewall" : {
+        "operations" : [ "CREATE", "READ", "UPDATE", "DELETE", "LIST" ],
+        "arnRegex" : "arn:(?<Partition>[a-z-]+):network-firewall:(?<Region>[a-z0-9-]+):(?<AccountId>[0-9]{12}):firewall/(?<Name>[^/:]+)"
+    },
+    "AWS::NetworkFirewall::FirewallPolicy" : {
+        "operations" : [ "CREATE", "READ", "UPDATE", "DELETE", "LIST" ],
+        "arnRegex" : "arn:(?<Partition>[a-z-]+):network-firewall:(?<Region>[a-z0-9-]+):(?<AccountId>[0-9]{12}):firewall-policy/(?<Name>[^/:]+)"
+    },
+    "AWS::NetworkFirewall::LoggingConfiguration" : {
+        "operations" : [ "CREATE", "READ", "UPDATE", "DELETE" ]
+    },
+    "AWS::NetworkFirewall::RuleGroup" : {
+        "operations" : [ "CREATE", "READ", "UPDATE", "DELETE", "LIST" ]
+    },
+    "AWS::NetworkManager::CustomerGatewayAssociation" : {
+        "operations" : [ "CREATE", "READ", "DELETE" ]
+    },
+    "AWS::NetworkManager::Device" : {
+        "operations" : [ "CREATE", "READ", "UPDATE", "DELETE" ],
+        "arnRegex" : "arn:(?<Partition>[a-z-]+):networkmanager::(?<AccountId>[0-9]{12}):device/(?<GlobalNetworkId>[^/:]+)/(?<ResourceId>[^/:]+)"
+    },
+    "AWS::NetworkManager::GlobalNetwork" : {
+        "operations" : [ "CREATE", "READ", "UPDATE", "DELETE", "LIST" ],
+        "arnRegex" : "arn:(?<Partition>[a-z-]+):networkmanager::(?<AccountId>[0-9]{12}):global-network/(?<ResourceId>[^/:]+)"
+    },
+    "AWS::NetworkManager::Link" : {
+        "operations" : [ "CREATE", "READ", "UPDATE", "DELETE" ],
+        "arnRegex" : "arn:(?<Partition>[a-z-]+):networkmanager::(?<AccountId>[0-9]{12}):link/(?<GlobalNetworkId>[^/:]+)/(?<ResourceId>[^/:]+)"
+    },
+    "AWS::NetworkManager::LinkAssociation" : {
+        "operations" : [ "CREATE", "READ", "DELETE" ]
+    },
+    "AWS::NetworkManager::Site" : {
+        "operations" : [ "CREATE", "READ", "UPDATE", "DELETE" ],
+        "arnRegex" : "arn:(?<Partition>[a-z-]+):networkmanager::(?<AccountId>[0-9]{12}):site/(?<GlobalNetworkId>[^/:]+)/(?<ResourceId>[^/:]+)"
+    },
+    "AWS::NetworkManager::TransitGatewayRegistration" : {
+        "operations" : [ "CREATE", "READ", "DELETE" ]
+    },
+    "AWS::NimbleStudio::LaunchProfile" : {
+        "operations" : [ "CREATE", "READ", "UPDATE", "DELETE" ]
+    },
+    "AWS::NimbleStudio::StreamingImage" : {
+        "operations" : [ "CREATE", "READ", "UPDATE", "DELETE" ]
+    },
+    "AWS::NimbleStudio::Studio" : {
+        "operations" : [ "CREATE", "READ", "UPDATE", "DELETE", "LIST" ]
+    },
+    "AWS::NimbleStudio::StudioComponent" : {
+        "operations" : [ "CREATE", "READ", "UPDATE", "DELETE" ]
+    },
+    "AWS::OpsWorksCM::Server" : {
+        "operations" : [ "CREATE", "DELETE", "UPDATE", "LIST", "READ" ]
+    },
+    "AWS::QLDB::Stream" : {
+        "operations" : [ "CREATE", "DELETE", "READ", "UPDATE" ],
+        "arnRegex" : "arn:(?<Partition>[a-z-]+):qldb:(?<Region>[a-z0-9-]+):(?<AccountId>[0-9]{12}):stream/(?<LedgerName>[^/:]+)/(?<StreamId>[^/:]+)"
+    },
+    "AWS::QuickSight::Analysis" : {
+        "operations" : [ "READ", "CREATE", "UPDATE", "DELETE" ],
+        "arnRegex" : "arn:(?<Partition>[a-z-]+):quicksight:(?<Region>[a-z0-9-]+):(?<AccountId>[0-9]{12}):analysis/(?<ResourceId>[^/:]+)"
+    },
+    "AWS::QuickSight::Dashboard" : {
+        "operations" : [ "READ", "CREATE", "UPDATE", "DELETE" ],
+        "arnRegex" : "arn:(?<Partition>[a-z-]+):quicksight:(?<Region>[a-z0-9-]+):(?<AccountId>[0-9]{12}):dashboard/(?<ResourceId>[^/:]+)"
+    },
+    "AWS::QuickSight::DataSet" : {
+        "operations" : [ "CREATE", "READ", "UPDATE", "DELETE" ],
+        "arnRegex" : "arn:(?<Partition>[a-z-]+):quicksight:(?<Region>[a-z0-9-]+):(?<AccountId>[0-9]{12}):dataset/(?<ResourceId>[^/:]+)"
+    },
+    "AWS::QuickSight::DataSource" : {
+        "operations" : [ "CREATE", "READ", "UPDATE", "DELETE" ],
+        "arnRegex" : "arn:(?<Partition>[a-z-]+):quicksight:(?<Region>[a-z0-9-]+):(?<AccountId>[0-9]{12}):datasource/(?<ResourceId>[^/:]+)"
+    },
+    "AWS::QuickSight::Template" : {
+        "operations" : [ "READ", "CREATE", "UPDATE", "DELETE" ],
+        "arnRegex" : "arn:(?<Partition>[a-z-]+):quicksight:(?<Region>[a-z0-9-]+):(?<AccountId>[0-9]{12}):template/(?<ResourceId>[^/:]+)"
+    },
+    "AWS::QuickSight::Theme" : {
+        "operations" : [ "READ", "CREATE", "UPDATE", "DELETE" ],
+        "arnRegex" : "arn:(?<Partition>[a-z-]+):quicksight:(?<Region>[a-z0-9-]+):(?<AccountId>[0-9]{12}):theme/(?<ResourceId>[^/:]+)"
+    },
+    "AWS::RDS::DBProxy" : {
+        "operations" : [ "CREATE", "READ", "UPDATE", "DELETE", "LIST" ]
+    },
+    "AWS::RDS::DBProxyEndpoint" : {
+        "operations" : [ "CREATE", "READ", "UPDATE", "DELETE", "LIST" ]
+    },
+    "AWS::RDS::DBProxyTargetGroup" : {
+        "operations" : [ "CREATE", "READ", "UPDATE", "DELETE" ]
+    },
+    "AWS::RDS::GlobalCluster" : {
+        "operations" : [ "CREATE", "READ", "UPDATE", "DELETE", "LIST" ],
+        "arnRegex" : "arn:(?<Partition>[a-z-]+):rds::(?<AccountId>[0-9]{12}):global-cluster:(?<GlobalCluster>[^/:]+)"
+    },
+    "AWS::Redshift::Cluster" : {
+        "operations" : [ "CREATE", "READ", "UPDATE", "DELETE", "LIST" ],
+        "arnRegex" : "arn:(?<Partition>[a-z-]+):redshift:(?<Region>[a-z0-9-]+):(?<AccountId>[0-9]{12}):cluster:(?<ClusterName>[^/:]+)"
+    },
+    "AWS::ResourceGroups::Group" : {
+        "operations" : [ "CREATE", "READ", "UPDATE", "DELETE", "LIST" ],
+        "arnRegex" : "arn:(?<Partition>[a-z-]+):resource-groups(?:-(?<stage>test|beta|gamma))?:(?<Region>[a-z0-9-]+):(?<AccountId>[0-9]{12}):group/(?<GroupName>[^/:]+)"
+    },
+    "AWS::Route53::DNSSEC" : {
+        "operations" : [ "CREATE", "READ", "DELETE" ]
+    },
+    "AWS::Route53::HealthCheck" : {
+        "operations" : [ "CREATE", "READ", "UPDATE", "DELETE", "LIST" ],
+        "arnRegex" : "arn:(?<Partition>[a-z-]+):route53:::healthcheck/(?<Id>[^/:]+)"
+    },
+    "AWS::Route53::HostedZone" : {
+        "operations" : [ "CREATE", "READ", "UPDATE", "DELETE", "LIST" ],
+        "arnRegex" : "arn:(?<Partition>[a-z-]+):route53:::hostedzone/(?<Id>[^/:]+)"
+    },
+    "AWS::Route53::KeySigningKey" : {
+        "operations" : [ "CREATE", "READ", "UPDATE", "DELETE" ]
+    },
+    "AWS::Route53Resolver::FirewallDomainList" : {
+        "operations" : [ "CREATE", "READ", "DELETE", "UPDATE" ]
+    },
+    "AWS::Route53Resolver::FirewallRuleGroup" : {
+        "operations" : [ "CREATE", "READ", "DELETE", "UPDATE" ]
+    },
+    "AWS::Route53Resolver::FirewallRuleGroupAssociation" : {
+        "operations" : [ "CREATE", "READ", "DELETE", "UPDATE" ]
+    },
+    "AWS::Route53Resolver::ResolverDNSSECConfig" : {
+        "operations" : [ "CREATE", "READ", "DELETE", "LIST" ]
+    },
+    "AWS::Route53Resolver::ResolverQueryLoggingConfig" : {
+        "operations" : [ "CREATE", "READ", "DELETE", "LIST" ]
+    },
+    "AWS::Route53Resolver::ResolverQueryLoggingConfigAssociation" : {
+        "operations" : [ "CREATE", "READ", "DELETE", "LIST" ]
+    },
+    "AWS::S3::AccessPoint" : {
+        "operations" : [ "CREATE", "READ", "UPDATE", "DELETE", "LIST" ],
+        "arnRegex" : "arn:(?<Partition>[a-z-]+):s3:(?<Region>[a-z0-9-]+):(?<AccountId>[0-9]{12}):accesspoint/(?<AccessPointName>[^/:]+)"
+    },
+    "AWS::S3::StorageLens" : {
+        "operations" : [ "CREATE", "READ", "UPDATE", "DELETE", "LIST" ]
+    },
+    "AWS::S3ObjectLambda::AccessPoint" : {
+        "operations" : [ "CREATE", "READ", "UPDATE", "DELETE", "LIST" ]
+    },
+    "AWS::S3ObjectLambda::AccessPointPolicy" : {
+        "operations" : [ "CREATE", "READ", "UPDATE", "DELETE" ]
+    },
+    "AWS::S3Outposts::AccessPoint" : {
+        "operations" : [ "CREATE", "READ", "UPDATE", "DELETE" ],
+        "arnRegex" : "arn:(?<Partition>[a-z-]+):s3-outposts:(?<Region>[a-z0-9-]+):(?<AccountId>[0-9]{12}):outpost/(?<OutpostId>[^/:]+)/accesspoint/(?<AccessPointName>[^/:]+)"
+    },
+    "AWS::S3Outposts::Bucket" : {
+        "operations" : [ "CREATE", "READ", "UPDATE", "DELETE" ],
+        "arnRegex" : "arn:(?<Partition>[a-z-]+):s3-outposts:(?<Region>[a-z0-9-]+):(?<AccountId>[0-9]{12}):outpost/(?<OutpostId>[^/:]+)/bucket/(?<BucketName>[^/:]+)"
+    },
+    "AWS::S3Outposts::BucketPolicy" : {
+        "operations" : [ "CREATE", "READ", "UPDATE", "DELETE" ]
+    },
+    "AWS::S3Outposts::Endpoint" : {
+        "operations" : [ "CREATE", "READ", "DELETE", "LIST" ],
+        "arnRegex" : "arn:(?<Partition>[a-z-]+):s3-outposts:(?<Region>[a-z0-9-]+):(?<AccountId>[0-9]{12}):outpost/(?<OutpostId>[^/:]+)/endpoint/(?<EndpointId>[^/:]+)"
+    },
+    "AWS::SES::ConfigurationSet" : {
+        "operations" : [ "CREATE", "READ", "DELETE", "LIST" ],
+        "arnRegex" : "arn:(?<Partition>[a-z-]+):ses:(?<Region>[a-z0-9-]+):(?<AccountId>[0-9]{12}):configuration-set/(?<ConfigurationSetName>[^/:]+)"
+    },
+    "AWS::SES::ContactList" : {
+        "operations" : [ "CREATE", "READ", "UPDATE", "DELETE", "LIST" ]
+    },
+    "AWS::SSM::Association" : {
+        "operations" : [ "CREATE", "DELETE", "UPDATE", "READ" ],
+        "arnRegex" : "arn:(?<Partition>[a-z-]+):ssm:(?<Region>[a-z0-9-]+):(?<AccountId>[0-9]{12}):association/(?<AssociationId>[^/:]+)"
+    },
+    "AWS::SSM::Document" : {
+        "operations" : [ "CREATE", "READ", "UPDATE", "DELETE" ],
+        "arnRegex" : "arn:(?<Partition>[a-z-]+):ssm:(?<Region>[a-z0-9-]+):(?<AccountId>[0-9]{12})?:document/(?<DocumentName>[^/:]+)"
+    },
+    "AWS::SSM::ResourceDataSync" : {
+        "operations" : [ "CREATE", "DELETE", "UPDATE", "LIST", "READ" ],
+        "arnRegex" : "arn:(?<Partition>[a-z-]+):ssm:(?<Region>[a-z0-9-]+):(?<AccountId>[0-9]{12}):resource-data-sync/(?<SyncName>[^/:]+)"
+    },
+    "AWS::SSMContacts::Contact" : {
+        "operations" : [ "CREATE", "READ", "UPDATE", "DELETE" ]
+    },
+    "AWS::SSMContacts::ContactChannel" : {
+        "operations" : [ "CREATE", "READ", "UPDATE", "DELETE" ]
+    },
+    "AWS::SSMIncidents::ReplicationSet" : {
+        "operations" : [ "CREATE", "READ", "UPDATE", "DELETE", "LIST" ]
+    },
+    "AWS::SSMIncidents::ResponsePlan" : {
+        "operations" : [ "CREATE", "READ", "UPDATE", "DELETE", "LIST" ]
+    },
+    "AWS::SSO::Assignment" : {
+        "operations" : [ "CREATE", "READ", "DELETE" ]
+    },
+    "AWS::SSO::InstanceAccessControlAttributeConfiguration" : {
+        "operations" : [ "CREATE", "READ", "UPDATE", "DELETE" ]
+    },
+    "AWS::SSO::PermissionSet" : {
+        "operations" : [ "CREATE", "READ", "UPDATE", "DELETE" ],
+        "arnRegex" : "arn:(?<Partition>[a-z-]+):sso:::permissionSet/(?<InstanceId>[^/:]+)/(?<PermissionSetId>[^/:]+)"
+    },
+    "AWS::SageMaker::App" : {
+        "operations" : [ "CREATE", "READ", "DELETE", "LIST" ],
+        "arnRegex" : "arn:(?<Partition>[a-z-]+):sagemaker:(?<Region>[a-z0-9-]+):(?<AccountId>[0-9]{12}):app/(?<DomainId>[^/:]+)/(?<UserProfileName>[^/:]+)/(?<AppType>[^/:]+)/(?<AppName>[^/:]+)"
+    },
+    "AWS::SageMaker::AppImageConfig" : {
+        "operations" : [ "CREATE", "READ", "UPDATE", "DELETE", "LIST" ]
+    },
+    "AWS::SageMaker::DataQualityJobDefinition" : {
+        "operations" : [ "CREATE", "DELETE", "READ" ]
+    },
+    "AWS::SageMaker::Device" : {
+        "operations" : [ "CREATE", "READ", "UPDATE", "DELETE" ]
+    },
+    "AWS::SageMaker::DeviceFleet" : {
+        "operations" : [ "CREATE", "READ", "UPDATE", "DELETE" ]
+    },
+    "AWS::SageMaker::Domain" : {
+        "operations" : [ "CREATE", "READ", "UPDATE", "DELETE", "LIST" ],
+        "arnRegex" : "arn:(?<Partition>[a-z-]+):sagemaker:(?<Region>[a-z0-9-]+):(?<AccountId>[0-9]{12}):domain/(?<DomainId>[^/:]+)"
+    },
+    "AWS::SageMaker::FeatureGroup" : {
+        "operations" : [ "CREATE", "READ", "DELETE", "LIST" ]
+    },
+    "AWS::SageMaker::Image" : {
+        "operations" : [ "CREATE", "READ", "UPDATE", "DELETE", "LIST" ]
+    },
+    "AWS::SageMaker::ImageVersion" : {
+        "operations" : [ "CREATE", "READ", "DELETE" ]
+    },
+    "AWS::SageMaker::ModelBiasJobDefinition" : {
+        "operations" : [ "CREATE", "DELETE", "READ" ]
+    },
+    "AWS::SageMaker::ModelExplainabilityJobDefinition" : {
+        "operations" : [ "CREATE", "DELETE", "READ" ]
+    },
+    "AWS::SageMaker::ModelPackageGroup" : {
+        "operations" : [ "CREATE", "DELETE", "LIST", "READ", "UPDATE" ]
+    },
+    "AWS::SageMaker::ModelQualityJobDefinition" : {
+        "operations" : [ "CREATE", "DELETE", "READ" ]
+    },
+    "AWS::SageMaker::MonitoringSchedule" : {
+        "operations" : [ "CREATE", "DELETE", "LIST", "READ", "UPDATE" ],
+        "arnRegex" : "arn:(?<Partition>[a-z-]+):sagemaker:(?<Region>[a-z0-9-]+):(?<AccountId>[0-9]{12}):monitoring-schedule/(?<MonitoringScheduleName>[^/:]+)"
+    },
+    "AWS::SageMaker::Pipeline" : {
+        "operations" : [ "CREATE", "READ", "UPDATE", "DELETE", "LIST" ]
+    },
+    "AWS::SageMaker::Project" : {
+        "operations" : [ "CREATE", "READ", "UPDATE", "DELETE", "LIST" ]
+    },
+    "AWS::SageMaker::UserProfile" : {
+        "operations" : [ "CREATE", "READ", "UPDATE", "DELETE", "LIST" ],
+        "arnRegex" : "arn:(?<Partition>[a-z-]+):sagemaker:(?<Region>[a-z0-9-]+):(?<AccountId>[0-9]{12}):user-profile/(?<DomainId>[^/:]+)/(?<UserProfileName>[^/:]+)"
+    },
+    "AWS::ServiceCatalog::CloudFormationProvisionedProduct" : {
+        "operations" : [ "CREATE", "READ", "UPDATE", "DELETE" ]
+    },
+    "AWS::ServiceCatalog::ServiceAction" : {
+        "operations" : [ "CREATE", "READ", "UPDATE", "DELETE", "LIST" ]
+    },
+    "AWS::ServiceCatalog::ServiceActionAssociation" : {
+        "operations" : [ "CREATE", "READ", "DELETE" ]
+    },
+    "AWS::ServiceCatalogAppRegistry::Application" : {
+        "operations" : [ "CREATE", "READ", "UPDATE", "DELETE" ]
+    },
+    "AWS::ServiceCatalogAppRegistry::AttributeGroup" : {
+        "operations" : [ "CREATE", "READ", "UPDATE", "DELETE" ]
+    },
+    "AWS::ServiceCatalogAppRegistry::AttributeGroupAssociation" : {
+        "operations" : [ "CREATE", "READ", "DELETE" ]
+    },
+    "AWS::ServiceCatalogAppRegistry::ResourceAssociation" : {
+        "operations" : [ "CREATE", "READ", "DELETE" ]
+    },
+    "AWS::Signer::ProfilePermission" : {
+        "operations" : [ "CREATE", "READ", "DELETE" ]
+    },
+    "AWS::Signer::SigningProfile" : {
+        "operations" : [ "CREATE", "READ", "DELETE", "LIST", "UPDATE" ],
+        "arnRegex" : "arn:(?<Partition>[a-z-]+):signer:(?<Region>[a-z0-9-]+):(?<AccountId>[0-9]{12}):/signing-profiles/(?<profileName>[^/:]+)"
+    },
+    "AWS::StepFunctions::StateMachine" : {
+        "operations" : [ "CREATE", "READ", "UPDATE", "DELETE" ],
+        "arnRegex" : "arn:(?<Partition>[a-z-]+):states:(?<Region>[a-z0-9-]+):(?<AccountId>[0-9]{12}):stateMachine:(?<StateMachineName>[^/:]+)"
+    },
+    "AWS::Synthetics::Canary" : {
+        "operations" : [ "CREATE", "UPDATE", "READ", "DELETE", "LIST" ],
+        "arnRegex" : "arn:(?<Partition>[a-z-]+):synthetics::(?<AccountId>[0-9]{12}):canary:(?<CanaryName>[^/:]+)"
+    },
+    "AWS::Timestream::Database" : {
+        "operations" : [ "CREATE", "READ", "UPDATE", "DELETE", "LIST" ],
+        "arnRegex" : "arn:(?<Partition>[a-z-]+):timestream:(?<Region>[a-z0-9-]+):(?<AccountId>[0-9]{12}):database/(?<DatabaseName>[^/:]+)"
+    },
+    "AWS::Timestream::Table" : {
+        "operations" : [ "CREATE", "READ", "UPDATE", "DELETE", "LIST" ],
+        "arnRegex" : "arn:(?<Partition>[a-z-]+):timestream:(?<Region>[a-z0-9-]+):(?<AccountId>[0-9]{12}):database/(?<DatabaseName>[^/:]+)/table/(?<TableName>[^/:]+)"
+    },
+    "AWS::WAFv2::IPSet" : {
+        "operations" : [ "CREATE", "DELETE", "READ", "UPDATE" ],
+        "arnRegex" : "arn:(?<Partition>[a-z-]+):wafv2:(?<Region>[a-z0-9-]+):(?<AccountId>[0-9]{12}):(?<Scope>[^/:]+)/ipset/(?<Name>[^/:]+)/(?<Id>[^/:]+)"
+    },
+    "AWS::WAFv2::RegexPatternSet" : {
+        "operations" : [ "CREATE", "DELETE", "READ", "UPDATE" ],
+        "arnRegex" : "arn:(?<Partition>[a-z-]+):wafv2:(?<Region>[a-z0-9-]+):(?<AccountId>[0-9]{12}):(?<Scope>[^/:]+)/regexpatternset/(?<Name>[^/:]+)/(?<Id>[^/:]+)"
+    },
+    "AWS::WAFv2::RuleGroup" : {
+        "operations" : [ "CREATE", "DELETE", "READ", "UPDATE" ],
+        "arnRegex" : "arn:(?<Partition>[a-z-]+):wafv2:(?<Region>[a-z0-9-]+):(?<AccountId>[0-9]{12}):(?<Scope>[^/:]+)/rulegroup/(?<Name>[^/:]+)/(?<Id>[^/:]+)"
+    },
+    "AWS::WAFv2::WebACL" : {
+        "operations" : [ "CREATE", "DELETE", "READ", "UPDATE" ],
+        "arnRegex" : "arn:(?<Partition>[a-z-]+):wafv2:(?<Region>[a-z0-9-]+):(?<AccountId>[0-9]{12}):(?<Scope>[^/:]+)/webacl/(?<Name>[^/:]+)/(?<Id>[^/:]+)"
+    },
+    "AWS::WAFv2::WebACLAssociation" : {
+        "operations" : [ "CREATE", "DELETE", "READ", "UPDATE" ]
+    },
+    "AWS::WorkSpaces::ConnectionAlias" : {
+        "operations" : [ "CREATE", "READ", "DELETE" ]
+    },
+    "AWS::XRay::Group" : {
+        "operations" : [ "CREATE", "READ", "UPDATE", "DELETE" ]
+    },
+    "AWS::XRay::SamplingRule" : {
+        "operations" : [ "CREATE", "READ", "UPDATE", "DELETE" ]
+    }
+}

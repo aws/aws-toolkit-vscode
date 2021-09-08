@@ -9,5 +9,5 @@ import software.aws.toolkits.jetbrains.services.ecr.EcrServiceNode
 
 class EcrExplorerRootNode : AwsExplorerServiceNode {
     override val serviceId: String = EcrClient.SERVICE_NAME
-    override fun buildServiceRootNode(project: Project) = EcrServiceNode(project, this)
+    override fun buildServiceRootNode(project: Project): AwsExplorerNode<*> = EcrServiceNode(project, this)
 }

@@ -9,5 +9,5 @@ import software.aws.toolkits.jetbrains.services.ecs.EcsParentNode
 
 class EcsExplorerRootNode : AwsExplorerServiceNode {
     override val serviceId: String = EcsClient.SERVICE_NAME
-    override fun buildServiceRootNode(project: Project) = EcsParentNode(project, this)
+    override fun buildServiceRootNode(project: Project): AwsExplorerNode<*> = EcsParentNode(project, this)
 }
