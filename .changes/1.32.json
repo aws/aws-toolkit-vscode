@@ -1,0 +1,11 @@
+{
+  "date" : "2021-09-07",
+  "version" : "1.32",
+  "entries" : [ {
+    "type" : "bugfix",
+    "description" : "Fix IDE error about context.module being null (#2776)"
+  }, {
+    "type" : "bugfix",
+    "description" : "Fix NullPointerException calling isInTestSourceContent (#2752)"
+  } ]
+}

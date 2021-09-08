@@ -17,4 +17,6 @@ object AwsToolkit {
     fun isCloudDebugEnabled() = Registry.`is`("aws.feature.ecsCloudDebug")
 
     fun isEcsExecEnabled() = Registry.`is`("aws.feature.ecsExec")
+
+    fun isDynamoDbEnabled() = Registry.`is`("aws.feature.dynamoDb")
 }

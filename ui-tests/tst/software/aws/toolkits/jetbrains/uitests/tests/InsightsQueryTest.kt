@@ -28,7 +28,9 @@ import software.aws.toolkits.jetbrains.uitests.extensions.uiTest
 import software.aws.toolkits.jetbrains.uitests.fixtures.IdeaFrame
 import software.aws.toolkits.jetbrains.uitests.fixtures.JTreeFixture
 import software.aws.toolkits.jetbrains.uitests.fixtures.awsExplorer
+import software.aws.toolkits.jetbrains.uitests.fixtures.dialog
 import software.aws.toolkits.jetbrains.uitests.fixtures.findAndClick
+import software.aws.toolkits.jetbrains.uitests.fixtures.findByXpath
 import software.aws.toolkits.jetbrains.uitests.fixtures.idea
 import software.aws.toolkits.jetbrains.uitests.fixtures.waitUntilLoaded
 import software.aws.toolkits.jetbrains.uitests.fixtures.welcomeFrame
@@ -174,8 +176,26 @@ class InsightsQueryTest {
 
                 step("Verify new query settings have persisted") {
                     openInsightsQueryDialogFromResults()
-                    find<JTextFieldFixture>(byXpath("//div[@class='JFormattedTextField' and @visible_text='$testRelativeTimeAmount']"))
-                    assertThat(find<ComboBoxFixture>(byXpath("//div[@class='ComboBox']")).selectedText()).isEqualTo("Hours")
+
+                    dialog("Query Log Groups") {
+                        find<JTextFieldFixture>(byXpath("//div[@class='JFormattedTextField' and @visible_text='$testRelativeTimeAmount']"))
+                        assertThat(find<ComboBoxFixture>(byXpath("//div[@class='ComboBox']")).selectedText()).isEqualTo("Hours")
+                        close()
+                    }
+                }
+            }
+            step("Open query from log group") {
+                step("Open log group") {
+                    awsExplorer {
+                        doubleClickExplorer(cloudWatchExplorerLabel, logGroupName)
+                    }
+                }
+                step("Click query button") {
+                    findAndClick("//div[@accessiblename='Query']")
+                }
+                step("Verify dialog and close it") {
+                    findByXpath("//div[@accessiblename='Query Log Groups' and @class='MyDialog']")
+                    findAndClick("//div[@text='Cancel']")
                 }
             }
         }
@@ -199,7 +219,7 @@ class InsightsQueryTest {
     }
 
     private fun ContainerFixture.openInsightsQueryDialogFromResults() = step("Open query editor") {
-        findAndClick("//div[@text='Open Query Editor']")
+        findAndClick("//div[@accessiblename='Open Query Editor']")
     }
 
     private fun CloudWatchLogsClient.verifyDeletedLogGroup(logGroup: String) {

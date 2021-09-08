@@ -1,3 +1,4 @@
+import software.aws.toolkits.gradle.ciOnly
 import software.aws.toolkits.gradle.jacoco.RemoteCoverage.Companion.enableRemoteCoverage
 
 // Copyright 2020 Amazon.com, Inc. or its affiliates. All Rights Reserved.
@@ -23,6 +24,7 @@ plugins {
 dependencies {
     testImplementation(gradleApi())
     testImplementation(project(":core"))
+    testImplementation(project(path = ":core", configuration = "testArtifacts"))
     testImplementation("org.jetbrains.kotlinx:kotlinx-coroutines-core:$coroutinesVersion")
     testImplementation(project(":resources"))
     testImplementation("org.junit.jupiter:junit-jupiter-api:$junit5Version")
@@ -32,6 +34,7 @@ dependencies {
 //    testImplementation("software.amazon.awssdk:cloudformation:$awsSdkVersion")
     testImplementation("software.amazon.awssdk:cloudwatchlogs:$awsSdkVersion")
     testImplementation("software.amazon.awssdk:s3:$awsSdkVersion")
+    testImplementation("software.amazon.awssdk:dynamodb:$awsSdkVersion")
     testImplementation("software.amazon.awssdk:sns:$awsSdkVersion")
     testImplementation("software.amazon.awssdk:sqs:$awsSdkVersion")
 
@@ -65,5 +68,7 @@ tasks.register<Test>("uiTestCore") {
         isEnabled = false
     }
 
-    enableRemoteCoverage(this)
+    ciOnly {
+        enableRemoteCoverage(this)
+    }
 }
