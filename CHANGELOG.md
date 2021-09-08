@@ -1,3 +1,7 @@
+# _1.32_ (2021-09-07)
+- **(Bug Fix)** Fix IDE error about context.module being null ([#2776](https://github.com/aws/aws-toolkit-jetbrains/issues/2776))
+- **(Bug Fix)** Fix NullPointerException calling isInTestSourceContent ([#2752](https://github.com/aws/aws-toolkit-jetbrains/issues/2752))
+
 # _1.31_ (2021-08-17)
 - **(Feature)** Add support for Python 3.9 Lambdas
 - **(Bug Fix)** Fix regression in SAM run configurations using file-based input ([#2762](https://github.com/aws/aws-toolkit-jetbrains/issues/2762))
