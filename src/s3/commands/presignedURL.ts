@@ -23,7 +23,7 @@ export async function presignedURLCommand(
     try {
         validTime = await promptTime(node.file.key, window)
     } catch (e) {
-        getLogger().error(e)
+        getLogger().error(e as Error)
         telemetry.recordS3CopyUrl({ result: 'Cancelled', presigned: true })
         return
     }

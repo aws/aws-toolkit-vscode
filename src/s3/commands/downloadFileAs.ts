@@ -47,7 +47,7 @@ export async function downloadFileAsCommand(
         showOutputMessage(`Successfully downloaded file ${saveLocation}`, outputChannel)
         telemetry.recordS3DownloadObject({ result: 'Succeeded' })
     } catch (e) {
-        getLogger().error(`Failed to download file from ${sourcePath} to ${saveLocation}: %O`, e.toString())
+        getLogger().error(`Failed to download file from ${sourcePath} to ${saveLocation}: %O`, (e as Error).toString())
         showViewLogsMessage(
             localize('AWS.s3.downloadFile.error.general', 'Failed to download file {0}', node.file.name),
             window
