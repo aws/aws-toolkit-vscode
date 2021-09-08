@@ -20,8 +20,10 @@ export class LambdaTemplates {
         <h3>
             Select a file to use as payload:
         </h3>
-        <button v-on:click="promptForFileLocation">Choose File</button>
-        <span style="white-space:nowrap">  {{ selectedFile }}</span>
+        <div style="text-overflow: ellipsis;">
+            <button v-on:click="promptForFileLocation">Choose File</button>
+            <span>  {{ selectedFile }}</span>
+        </div>
         <br />
         <h3>
             Or, use a sample request payload from a template:
