@@ -42,7 +42,7 @@ export class SsoCredentialProvider {
                 localize('AWS.message.credentials.sso.error', 'Failed to load SSO credentials. Try logging in again.')
             )
             getLogger().error(err as Error)
-            throw err // TODO: remove throw? we are already handling the error by showing the user a message...
+            throw err
         }
     }
 }
