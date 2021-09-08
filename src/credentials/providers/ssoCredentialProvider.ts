@@ -23,12 +23,11 @@ export class SsoCredentialProvider {
     public async refreshCredentials(): Promise<Credentials> {
         try {
             const accessToken = await this.ssoAccessTokenProvider.accessToken()
-            const roleCredentials = await this.ssoClient
-                .getRoleCredentials({
-                    accountId: this.ssoAccount,
-                    roleName: this.ssoRole,
-                    accessToken: accessToken.accessToken,
-                })
+            const roleCredentials = await this.ssoClient.getRoleCredentials({
+                accountId: this.ssoAccount,
+                roleName: this.ssoRole,
+                accessToken: accessToken.accessToken,
+            })
 
             return {
                 accessKeyId: roleCredentials.roleCredentials!.accessKeyId!,
@@ -36,13 +35,13 @@ export class SsoCredentialProvider {
                 sessionToken: roleCredentials.roleCredentials?.sessionToken,
             }
         } catch (err) {
-            if (err.code === 'UnauthorizedException') {
+            if ((err as { code: string }).code === 'UnauthorizedException') {
                 this.ssoAccessTokenProvider.invalidate()
             }
             vscode.window.showErrorMessage(
                 localize('AWS.message.credentials.sso.error', 'Failed to load SSO credentials. Try logging in again.')
             )
-            getLogger().error(err)
+            getLogger().error(err as Error)
             throw err
         }
     }

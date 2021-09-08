@@ -267,7 +267,7 @@ export class DefaultTelemetryService implements TelemetryService {
 
             return events
         } catch (error) {
-            getLogger().error(error)
+            getLogger().error(error as Error)
 
             return []
         }

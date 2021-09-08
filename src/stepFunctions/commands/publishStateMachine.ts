@@ -51,7 +51,7 @@ export async function publishStateMachine(awsContext: AwsContext, outputChannel:
                 'Cannot publish invalid YAML file'
             )
 
-            logger.error(error)
+            logger.error(error as Error)
             showViewLogsMessage(localizedMsg)
             return
         }

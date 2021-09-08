@@ -584,7 +584,7 @@ export namespace CloudFormation {
                     const forcedProperty = property as Ref
                     return getReffedThing(forcedProperty, template, type)
                 } catch (err) {
-                    getLogger().debug(err)
+                    getLogger().debug(err as Error)
                 }
             }
         }
@@ -735,7 +735,7 @@ export namespace CloudFormation {
                         : undefined
                 }
             } catch (err) {
-                getLogger().debug(err)
+                getLogger().debug(err as Error)
             }
         }
 

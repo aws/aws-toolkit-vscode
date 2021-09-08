@@ -413,7 +413,7 @@ function recordToolkitInitialization(activationStartedOn: number, logger?: Logge
             duration: duration,
         })
     } catch (err) {
-        logger?.error(err)
+        logger?.error(err as Error)
     }
 }
 
