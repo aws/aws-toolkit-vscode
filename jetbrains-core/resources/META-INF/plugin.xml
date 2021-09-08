@@ -374,6 +374,11 @@ with what features/services are supported.
                     class="software.aws.toolkits.jetbrains.services.cloudformation.actions.DeleteStackAction"/>
         </group>
 
+        <group id="aws.toolkit.explorer.dynamic.additional.resources" popup="true" compact="false">
+            <action id="dynamic.add.resources"
+                    class="software.aws.toolkits.jetbrains.services.dynamic.explorer.actions.DynamicResourceAddResourcesToExplorerAction"/>
+        </group>
+
         <group id="aws.toolkit.explorer.dynamic" popup="true" compact="false">
             <action id="dynamic.open"
                     class="software.aws.toolkits.jetbrains.services.dynamic.explorer.actions.DynamicResourceOpenAction"/>

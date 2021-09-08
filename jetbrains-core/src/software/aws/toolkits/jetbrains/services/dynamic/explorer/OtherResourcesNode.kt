@@ -6,6 +6,7 @@ package software.aws.toolkits.jetbrains.services.dynamic.explorer
 import com.intellij.openapi.project.Project
 import software.aws.toolkits.jetbrains.core.explorer.nodes.AwsExplorerNode
 import software.aws.toolkits.jetbrains.core.explorer.nodes.AwsExplorerServiceNode
+import software.aws.toolkits.jetbrains.core.explorer.nodes.ResourceActionNode
 import software.aws.toolkits.jetbrains.core.explorer.nodes.ResourceParentNode
 import software.aws.toolkits.jetbrains.core.getResourceNow
 import software.aws.toolkits.jetbrains.services.dynamic.DynamicResources
@@ -14,7 +15,8 @@ import software.aws.toolkits.resources.message
 
 class OtherResourcesNode(project: Project, service: AwsExplorerServiceNode) :
     AwsExplorerNode<AwsExplorerServiceNode>(project, service, null),
-    ResourceParentNode {
+    ResourceParentNode,
+    ResourceActionNode {
 
     override fun displayName(): String = message("explorer.node.other")
     override fun isAlwaysShowPlus(): Boolean = true
@@ -33,4 +35,6 @@ class OtherResourcesNode(project: Project, service: AwsExplorerServiceNode) :
                 }
             }
     }
+
+    override fun actionGroupName(): String = "aws.toolkit.explorer.dynamic.additional.resources"
 }
