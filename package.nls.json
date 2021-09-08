@@ -169,7 +169,6 @@
     "AWS.command.refreshAwsExplorer": "Refresh Explorer",
     "AWS.command.refreshCdkExplorer": "Refresh CDK Explorer",
     "AWS.command.cdk.help": "View CDK Documentation",
-    "AWS.command.cdk.renderStateMachineGraph": "Render Graph...",
     "AWS.command.ecr.copyTagUri": "Copy Tag URI",
     "AWS.command.ecr.copyRepositoryUri": "Copy Repository URI",
     "AWS.command.ecr.createRepository": "Create Repository...",

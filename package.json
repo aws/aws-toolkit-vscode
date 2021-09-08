@@ -822,11 +822,6 @@
                     "group": "navigation"
                 },
                 {
-                    "command": "aws.cdk.renderStateMachineGraph",
-                    "when": "!isCloud9",
-                    "group": "navigation"
-                },
-                {
                     "command": "aws.saveCurrentLogStreamContent",
                     "when": "resourceScheme == awsCloudWatchLogs",
                     "group": "navigation"
@@ -1584,15 +1579,6 @@
                     "cn": {
                         "category": "%AWS.title.cn%"
                     }
-                }
-            },
-            {
-                "command": "aws.cdk.renderStateMachineGraph",
-                "title": "%AWS.command.cdk.renderStateMachineGraph%",
-                "category": "AWS",
-                "icon": {
-                    "light": "resources/light/stepfunctions/preview.svg",
-                    "dark": "resources/dark/stepfunctions/preview.svg"
                 }
             },
             {
