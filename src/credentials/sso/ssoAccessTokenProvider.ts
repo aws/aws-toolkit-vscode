@@ -48,7 +48,7 @@ export class SsoAccessTokenProvider {
         private ssoRegion: string,
         private ssoUrl: string,
         private ssoOidcClient: SSOOIDC,
-        private cache: DiskCache
+        public cache: DiskCache
     ) {}
 
     public async accessToken(): Promise<SsoAccessToken> {
@@ -135,8 +135,7 @@ export class SsoAccessTokenProvider {
             startUrl: this.ssoUrl,
         }
         try {
-            const authorizationResponse = await this.ssoOidcClient
-                .startDeviceAuthorization(authorizationParams)
+            const authorizationResponse = await this.ssoOidcClient.startDeviceAuthorization(authorizationParams)
             const openedPortalLink = await openSsoPortalLink(authorizationResponse)
             if (!openedPortalLink) {
                 throw Error(`User has canceled SSO login`)
