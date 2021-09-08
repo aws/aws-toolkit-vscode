@@ -139,6 +139,7 @@
     "AWS.command.github": "View Source on GitHub",
     "AWS.command.help": "View Toolkit Documentation",
     "AWS.command.login": "Connect to AWS",
+    "AWS.command.switchProfile": "Switch Profile",
     "AWS.command.login.cn": "Connect to Amazon",
     "AWS.command.logout": "Sign out",
     "AWS.command.createIssueOnGitHub": "Report Toolkit Issue",

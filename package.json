@@ -847,7 +847,12 @@
                 },
                 {
                     "command": "aws.login",
-                    "when": "view == aws.explorer",
+                    "when": "view == aws.explorer && !isConnected",
+                    "group": "1_account@1"
+                },
+                {
+                    "command": "aws.switchProfile",
+                    "when": "view == aws.explorer && isConnected",
                     "group": "1_account@1"
                 },
                 {
@@ -1236,6 +1241,17 @@
             {
                 "command": "aws.login",
                 "title": "%AWS.command.login%",
+                "category": "%AWS.title%",
+                "cloud9": {
+                    "cn": {
+                        "title": "%AWS.command.login.cn%",
+                        "category": "%AWS.title.cn%"
+                    }
+                }
+            },
+            {
+                "command": "aws.switchProfile",
+                "title": "%AWS.command.switchProfile%",
                 "category": "%AWS.title%",
                 "cloud9": {
                     "cn": {
