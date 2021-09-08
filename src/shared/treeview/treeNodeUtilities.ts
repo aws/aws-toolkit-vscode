@@ -29,7 +29,7 @@ export async function makeChildrenNodes(parameters: {
         }
     } catch (err) {
         const error = err as Error
-        const logID: number = getLogger().error(err)
+        const logID: number = getLogger().error(err as Error)
 
         childNodes.push(await parameters.getErrorNode(error, logID))
     }

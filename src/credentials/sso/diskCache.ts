@@ -27,7 +27,7 @@ export class DiskCache implements SsoCache {
                 return registration
             }
         } catch (error) {
-            getLogger().error(error)
+            getLogger().error(error as Error)
         }
 
         return undefined
@@ -56,7 +56,7 @@ export class DiskCache implements SsoCache {
                 return accessToken
             }
         } catch (error) {
-            getLogger().error(error)
+            getLogger().error(error as Error)
         }
         return undefined
     }
