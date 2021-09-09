@@ -48,7 +48,7 @@ export class SsoAccessTokenProvider {
         private ssoRegion: string,
         private ssoUrl: string,
         private ssoOidcClient: SSOOIDC,
-        public cache: DiskCache
+        private cache: DiskCache
     ) {}
 
     public async accessToken(): Promise<SsoAccessToken> {

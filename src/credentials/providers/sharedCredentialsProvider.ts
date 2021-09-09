@@ -106,10 +106,8 @@ export class SharedCredentialsProvider implements CredentialsProvider {
     public canAutoConnect(): boolean {
         // check if SSO token is still valid
         if (this.isSsoProfile()) {
-            const ssoCredentialProvider = this.makeSsoProvider()
-            return ssoCredentialProvider.ssoAccessTokenProvider.cache.loadAccessToken(
-                this.profile[SHARED_CREDENTIAL_PROPERTIES.SSO_START_URL]!
-            ) === undefined
+            return new DiskCache().loadAccessToken(this.profile[SHARED_CREDENTIAL_PROPERTIES.SSO_START_URL]!) ===
+                undefined
                 ? false
                 : true
         }

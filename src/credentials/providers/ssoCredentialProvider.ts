@@ -17,7 +17,7 @@ export class SsoCredentialProvider {
         private ssoAccount: string,
         private ssoRole: string,
         private ssoClient: SSO,
-        public ssoAccessTokenProvider: SsoAccessTokenProvider
+        private ssoAccessTokenProvider: SsoAccessTokenProvider
     ) {}
 
     public async refreshCredentials(): Promise<Credentials> {
