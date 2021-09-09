@@ -55,7 +55,7 @@ export class AslVisualizationManager extends AbstractAslVisualizationManager {
 
             return newVisualization.getPanel()
         } catch (err) {
-            this.handleErr(err, logger)
+            this.handleErr(err as Error, logger)
         }
 
         return

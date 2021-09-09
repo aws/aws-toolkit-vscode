@@ -392,7 +392,7 @@ class MockAslVisualizationCDKManager extends AslVisualizationCDKManager {
                 return newVisualization.getPanel()
             }
         } catch (err) {
-            this.handleErr(err, logger)
+            this.handleErr(err as Error, logger)
         }
 
         return
