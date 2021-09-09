@@ -77,7 +77,7 @@ export class AslVisualization {
             try {
                 json = parsed.toJSON()
             } catch (e) {
-                yamlErrors.push(e.message)
+                yamlErrors.push((e as Error).message)
             }
 
             stateMachineData = JSON.stringify(json)
