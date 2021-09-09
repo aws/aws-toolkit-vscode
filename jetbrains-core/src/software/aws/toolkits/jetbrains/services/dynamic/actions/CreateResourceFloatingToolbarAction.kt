@@ -39,7 +39,7 @@ class CreateResourceFloatingToolbarAction : DumbAwareAction() {
             file.name == message("dynamic_resources.create_resource_file_name", file.getResourceIdentifier().resourceType)
         e.presentation.icon = AllIcons.Actions.Menu_saveall // TODO: Revisit and review this icon
         if (file is DynamicResourceVirtualFile) {
-            e.presentation.text = message("dynamic_resource.create_resource_action", file.getResourceIdentifier().resourceType)
+            e.presentation.text = message("dynamic_resources.create_resource_action", file.getResourceIdentifier().resourceType)
         }
     }
 }

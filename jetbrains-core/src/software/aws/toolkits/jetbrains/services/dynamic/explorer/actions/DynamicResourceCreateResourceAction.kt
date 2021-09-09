@@ -27,7 +27,7 @@ class DynamicResourceCreateResourceAction() :
                 selected.value,
                 message("dynamic_resources.create_resource_file_name", selected.value)
             ),
-            message("dynamic_resource.create_resource_file_initial_content")
+            message("dynamic_resources.create_resource_file_initial_content")
         )
         DynamicResourceSchemaMapping.getInstance().addResourceSchemaMapping(selected.nodeProject, file)
         WriteCommandAction.runWriteCommandAction(selected.nodeProject) {
