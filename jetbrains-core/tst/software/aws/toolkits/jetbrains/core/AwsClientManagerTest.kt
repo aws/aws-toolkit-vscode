@@ -3,13 +3,12 @@
 
 package software.aws.toolkits.jetbrains.core
 
-import com.github.tomakehurst.wiremock.WireMockServer
 import com.github.tomakehurst.wiremock.client.WireMock.aResponse
 import com.github.tomakehurst.wiremock.client.WireMock.any
 import com.github.tomakehurst.wiremock.client.WireMock.anyRequestedFor
 import com.github.tomakehurst.wiremock.client.WireMock.anyUrl
-import com.github.tomakehurst.wiremock.client.WireMock.verify
 import com.github.tomakehurst.wiremock.core.WireMockConfiguration
+import com.github.tomakehurst.wiremock.junit.WireMockRule
 import com.github.tomakehurst.wiremock.matching.ContainsPattern
 import com.intellij.openapi.application.ApplicationManager
 import com.intellij.openapi.util.Disposer
@@ -45,6 +44,10 @@ class AwsClientManagerTest {
     private val regionProvider = MockRegionProviderRule()
     private val credentialManager = MockCredentialManagerRule()
     private val projectSettingsRule = ProjectAccountSettingsManagerRule(projectRule)
+
+    @Rule
+    @JvmField
+    val wireMockRule = WireMockRule(WireMockConfiguration.wireMockConfig().dynamicPort())
 
     @Rule
     @JvmField
@@ -184,25 +187,18 @@ class AwsClientManagerTest {
 
     @Test
     fun userAgentIsPassed() {
-        val wireMockServer = WireMockServer(WireMockConfiguration.wireMockConfig())
-        try {
-            wireMockServer.start()
+        wireMockRule.stubFor(any(anyUrl()).willReturn(aResponse().withStatus(200)))
 
-            wireMockServer.stubFor(any(anyUrl()).willReturn(aResponse().withStatus(200)))
-
-            val sut = getClientManager().createNewClient(
-                LambdaClient::class,
-                regionProvider.createAwsRegion(),
-                credentialManager.createCredentialProvider(),
-                endpointOverride = wireMockServer.baseUrl()
-            )
-
-            sut.listFunctions()
-
-            verify(anyRequestedFor(anyUrl()).withHeader("User-Agent", ContainsPattern("AWS-Toolkit-For-JetBrains/")))
-        } finally {
-            wireMockServer.stop()
+        getClientManager().createNewClient(
+            LambdaClient::class,
+            regionProvider.createAwsRegion(),
+            credentialManager.createCredentialProvider(),
+            endpointOverride = wireMockRule.baseUrl()
+        ).use {
+            it.listFunctions()
         }
+
+        wireMockRule.verify(anyRequestedFor(anyUrl()).withHeader("User-Agent", ContainsPattern("AWS-Toolkit-For-JetBrains/")))
     }
 
     // Test against real version so bypass ServiceManager for the client manager
