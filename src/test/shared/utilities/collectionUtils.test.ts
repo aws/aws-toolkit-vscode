@@ -12,9 +12,7 @@ import {
     difference,
     filter,
     filterAsync,
-    first,
     intersection,
-    take,
     toArrayAsync,
     toMap,
     toMapAsync,
@@ -263,74 +261,6 @@ describe('CollectionUtils', async function () {
         })
     })
 
-    describe('first', async function () {
-        it('returns the first item the sequence is not empty', async function () {
-            const result = await first(asyncGenerator(['first']))
-
-            assert.strictEqual(result, 'first')
-        })
-
-        it('returns undefined if the sequence is empty', async function () {
-            const result = await first(asyncGenerator([]))
-
-            assert.strictEqual(result, undefined)
-        })
-
-        it('lazily iterates the sequence', async function () {
-            async function* generator(): AsyncIterable<string> {
-                yield 'first'
-                assert.fail('generator iterated too far')
-            }
-
-            const result = await first(generator())
-
-            assert.strictEqual(result, 'first')
-        })
-    })
-
-    describe('take', async function () {
-        it('returns the first <count> items if sequence contains at least that many items', async function () {
-            const result = await take(asyncGenerator(['first', 'second', 'third']), 2)
-
-            assert.ok(result)
-            assert.strictEqual(result.length, 2)
-        })
-
-        it('returns the first <sequence.length> items if sequence contains fewer than <count> items', async function () {
-            const result = await take(asyncGenerator(['first', 'second']), 3)
-
-            assert.ok(result)
-            assert.strictEqual(result.length, 2)
-        })
-
-        it('returns an empty array if sequence is empty', async function () {
-            const result = await take(asyncGenerator([]), 1)
-
-            assert.ok(result)
-            assert.strictEqual(result.length, 0)
-        })
-
-        it('returns an empty array if count is 0', async function () {
-            const result = await take(asyncGenerator(['first']), 0)
-
-            assert.ok(result)
-            assert.strictEqual(result.length, 0)
-        })
-
-        it('lazily iterates the sequence', async function () {
-            async function* generator(): AsyncIterable<string> {
-                yield 'first'
-                yield 'second'
-                assert.fail('generator iterated too far')
-            }
-
-            const result = await take(generator(), 2)
-
-            assert.ok(result)
-            assert.strictEqual(result.length, 2)
-        })
-    })
-
     describe('filter', async function () {
         it('returns the original sequence filtered by the predicate', async function () {
             const input: Iterable<number> = [1, 2]
@@ -494,6 +424,13 @@ describe('CollectionUtils', async function () {
         it('can take', async function () {
             const take = toCollection(gen).take(2)
             assert.deepStrictEqual(await take.promise(), [0, 1])
+        })
+
+        it('returns nothing if using non-positive count', async function () {
+            const takeZero = toCollection(gen).take(0)
+            const takeNeg1 = toCollection(gen).take(-1)
+            assert.deepStrictEqual(await takeZero.promise(), [])
+            assert.deepStrictEqual(await takeNeg1.promise(), [])
         })
 
         it('is immutable', async function () {

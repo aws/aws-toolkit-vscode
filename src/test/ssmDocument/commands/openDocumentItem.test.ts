@@ -13,13 +13,15 @@ import { openDocumentItem } from '../../../ssmDocument/commands/openDocumentItem
 import { DocumentItemNode } from '../../../ssmDocument/explorer/documentItemNode'
 
 import * as picker from '../../../shared/ui/picker'
-import { MockSsmDocumentClient } from '../../shared/clients/mockClients'
 import { FakeAwsContext } from '../../utilities/fakeAwsContext'
+import { DefaultSsmDocumentClient } from '../../../shared/clients/ssmDocumentClient'
 
 describe('openDocumentItem', async function () {
     let sandbox: sinon.SinonSandbox
+    let ssmClient: sinon.SinonStubbedInstance<DefaultSsmDocumentClient>
     beforeEach(function () {
         sandbox = sinon.createSandbox()
+        ssmClient = sinon.createStubInstance(DefaultSsmDocumentClient)
     })
 
     afterEach(function () {
@@ -74,9 +76,15 @@ describe('openDocumentItem', async function () {
     })
 
     function generateDocumentItemNode(): DocumentItemNode {
-        const ssmDocumentClient = new MockSsmDocumentClient()
-        sandbox.stub(ssmDocumentClient, 'getDocument').returns(Promise.resolve(rawContent))
+        ssmClient.getDocument.resolves(rawContent)
+        ssmClient.describeDocument.resolves({
+            Document: {
+                Name: '',
+                DocumentType: '',
+                DocumentFormat: '',
+            },
+        })
 
-        return new DocumentItemNode(fakeDoc, ssmDocumentClient, fakeRegion)
+        return new DocumentItemNode(fakeDoc, ssmClient, fakeRegion)
     }
 })

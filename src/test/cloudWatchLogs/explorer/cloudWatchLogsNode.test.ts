@@ -10,11 +10,11 @@ import { CONTEXT_VALUE_CLOUDWATCH_LOG, LogGroupNode } from '../../../cloudWatchL
 import { CloudWatchLogsNode } from '../../../cloudWatchLogs/explorer/cloudWatchLogsNode'
 import { ToolkitClientBuilder } from '../../../shared/clients/toolkitClientBuilder'
 import { ext } from '../../../shared/extensionGlobals'
-import { asyncGenerator } from '../../utilities/collectionUtils'
 import {
     assertNodeListOnlyContainsErrorNode,
     assertNodeListOnlyContainsPlaceholderNode,
 } from '../../utilities/explorerNodeAssertions'
+import { toCollection } from '../../../shared/utilities/collectionUtils'
 
 const FAKE_REGION_CODE = 'someregioncode'
 const UNSORTED_TEXT = ['zebra', 'Antelope', 'aardvark', 'elephant']
@@ -88,22 +88,17 @@ describe('CloudWatchLogsNode', function () {
     })
 
     function initializeClientBuilders() {
+        async function* gen(): AsyncGenerator<CloudWatchLogs.LogGroup[]> {
+            yield logGroupNames.map(logGroupName => ({ logGroupName }))
+        }
         const cloudWatchLogsClient = {
-            describeLogGroups: sandbox.stub().callsFake(() => {
-                return asyncGenerator<CloudWatchLogs.LogGroup>(
-                    logGroupNames.map<CloudWatchLogs.LogGroup>(name => {
-                        return {
-                            logGroupName: name,
-                        }
-                    })
-                )
-            }),
+            describeLogGroups: sandbox.stub().returns(toCollection(gen)),
         }
 
         const clientBuilder = {
             createCloudWatchLogsClient: sandbox.stub().returns(cloudWatchLogsClient),
         }
 
-        ext.toolkitClientBuilder = (clientBuilder as any) as ToolkitClientBuilder
+        ext.toolkitClientBuilder = clientBuilder as any as ToolkitClientBuilder
     }
 })

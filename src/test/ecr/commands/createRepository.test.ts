@@ -7,18 +7,18 @@ import * as sinon from 'sinon'
 import * as assert from 'assert'
 import { FakeWindow } from '../../shared/vscode/fakeWindow'
 import { EcrNode } from '../../../ecr/explorer/ecrNode'
-import { EcrClient } from '../../../shared/clients/ecrClient'
+import { DefaultEcrClient } from '../../../shared/clients/ecrClient'
 import { createRepository } from '../../../ecr/commands/createRepository'
-import { MockEcrClient } from '../../shared/clients/mockClients'
 import { FakeCommands } from '../../shared/vscode/fakeCommands'
 
 describe('createRepositoryCommand', function () {
-    const ecr: EcrClient = new MockEcrClient({})
+    let ecr: sinon.SinonStubbedInstance<DefaultEcrClient>
     let node: EcrNode
     let sandbox: sinon.SinonSandbox
 
     beforeEach(function () {
         sandbox = sinon.createSandbox()
+        ecr = sandbox.createStubInstance(DefaultEcrClient)
         node = new EcrNode(ecr)
     })
 
@@ -29,7 +29,7 @@ describe('createRepositoryCommand', function () {
     it('prompts for repo name, creates repo, shows success, and refreshes node', async function () {
         const repoName = 'amazingecrrepo'
 
-        const stub = sandbox.stub(ecr, 'createRepository').callsFake(async name => {
+        const stub = ecr.createRepository.callsFake(async name => {
             assert.strictEqual(name, repoName)
         })
 
@@ -48,7 +48,7 @@ describe('createRepositoryCommand', function () {
     })
 
     it('does nothing when prompt is cancelled', async function () {
-        const spy = sandbox.spy(ecr, 'createRepository')
+        const spy = ecr.createRepository
 
         await createRepository(node, new FakeWindow(), new FakeCommands())
 
@@ -56,7 +56,7 @@ describe('createRepositoryCommand', function () {
     })
 
     it('Shows an error message and refreshes node when repository creation fails', async function () {
-        sandbox.stub(ecr, 'createRepository').callsFake(async () => {
+        ecr.createRepository.callsFake(async () => {
             throw Error('Network busted')
         })
 

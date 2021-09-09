@@ -9,10 +9,11 @@ import * as os from 'os'
 import { RegistryItemNode } from '../../../eventSchemas/explorer/registryItemNode'
 import { SchemaItemNode } from '../../../eventSchemas/explorer/schemaItemNode'
 import { SchemaClient } from '../../../shared/clients/schemaClient'
+import { ToolkitClientBuilder } from '../../../shared/clients/toolkitClientBuilder'
 import { ext } from '../../../shared/extensionGlobals'
 import { AWSTreeNodeBase } from '../../../shared/treeview/nodes/awsTreeNodeBase'
 import { ErrorNode } from '../../../shared/treeview/nodes/errorNode'
-import { MockSchemaClient, MockToolkitClientBuilder } from '../../shared/clients/mockClients'
+import { MockSchemaClient } from '../../shared/clients/mockSchemaClient'
 import { clearTestIconPaths, IconPath, setupTestIconPaths } from '../../shared/utilities/iconPathUtils'
 import { asyncGenerator } from '../../utilities/collectionUtils'
 
@@ -110,16 +111,18 @@ describe('RegistryItemNode', function () {
         }
     }
 
-    class TestMockToolkitClientBuilder extends MockToolkitClientBuilder {
-        public constructor(schemaClient: SchemaClient) {
-            super({ schemaClient })
+    class TestMockToolkitClientBuilder {
+        public constructor(private readonly schemaClient: SchemaClient) {}
+
+        public createSchemaClient(regionCode: string): SchemaClient {
+            return this.schemaClient
         }
     }
 
     it('Sorts Schema Items By Name', async function () {
         const inputSchemaNames: string[] = ['zebra', 'Antelope', 'aardvark', 'elephant']
         const schemaClient = new SchemaNamesMockSchemaClient(inputSchemaNames)
-        ext.toolkitClientBuilder = new TestMockToolkitClientBuilder(schemaClient)
+        ext.toolkitClientBuilder = new TestMockToolkitClientBuilder(schemaClient) as unknown as ToolkitClientBuilder
 
         const registryItemNode = new RegistryItemNode(fakeRegion, fakeRegistry)
         const children = await registryItemNode.getChildren()

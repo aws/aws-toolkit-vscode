@@ -15,9 +15,10 @@ import { AWSTreeNodeBase } from '../../../shared/treeview/nodes/awsTreeNodeBase'
 import { ErrorNode } from '../../../shared/treeview/nodes/errorNode'
 import { PlaceholderNode } from '../../../shared/treeview/nodes/placeholderNode'
 import { assertNodeListOnlyContainsPlaceholderNode } from '../../utilities/explorerNodeAssertions'
-import { MockSchemaClient, MockToolkitClientBuilder } from '../../shared/clients/mockClients'
 import { clearTestIconPaths, IconPath, setupTestIconPaths } from '../../shared/utilities/iconPathUtils'
 import { asyncGenerator } from '../../utilities/collectionUtils'
+import { ToolkitClientBuilder } from '../../../shared/clients/toolkitClientBuilder'
+import { MockSchemaClient } from '../../shared/clients/mockSchemaClient'
 
 describe('RegistryItemNode', function () {
     const fakeRegion = 'testRegion'
@@ -34,10 +35,11 @@ describe('RegistryItemNode', function () {
     after(async function () {
         clearTestIconPaths()
     })
+    class SchemaMockToolkitClientBuilder {
+        public constructor(private readonly schemaClient: SchemaClient) {}
 
-    class SchemaMockToolkitClientBuilder extends MockToolkitClientBuilder {
-        public constructor(schemaClient: SchemaClient) {
-            super({ schemaClient })
+        public createSchemaClient(regionCode: string): SchemaClient {
+            return this.schemaClient
         }
     }
 
@@ -59,15 +61,15 @@ describe('RegistryItemNode', function () {
     })
 
     it('returns placeholder node if no children are present', async function () {
-        const schemaClient = ({
+        const schemaClient = {
             regionCode: 'code',
 
             async *listSchemas(registryName: string, version: string): AsyncIterableIterator<Schemas.SchemaSummary> {
                 yield* []
             },
-        } as any) as SchemaClient
+        } as any as SchemaClient
 
-        ext.toolkitClientBuilder = new SchemaMockToolkitClientBuilder(schemaClient)
+        ext.toolkitClientBuilder = new SchemaMockToolkitClientBuilder(schemaClient) as unknown as ToolkitClientBuilder
         const testNode = generateTestNode()
 
         const childNodes = await testNode.getChildren()
@@ -113,7 +115,7 @@ describe('RegistryItemNode', function () {
         const schemaItems: Schemas.SchemaSummary[] = [schema1Item, schema2Item, schema3Item]
 
         const schemaClient = new TestMockSchemaClient(schemaItems)
-        ext.toolkitClientBuilder = new SchemaMockToolkitClientBuilder(schemaClient)
+        ext.toolkitClientBuilder = new SchemaMockToolkitClientBuilder(schemaClient) as unknown as ToolkitClientBuilder
         const testNode: RegistryItemNode = generateTestNode()
 
         const childNodes = await testNode.getChildren()
@@ -138,11 +140,14 @@ describe('RegistryItemNode', function () {
 describe('DefaultRegistryNode', function () {
     const fakeRegion: string = 'testRegion'
 
-    class SchemaMockToolkitClientBuilder extends MockToolkitClientBuilder {
-        public constructor(schemaClient: SchemaClient) {
-            super({ schemaClient })
+    class SchemaMockToolkitClientBuilder {
+        public constructor(private readonly schemaClient: SchemaClient) {}
+
+        public createSchemaClient(regionCode: string): SchemaClient {
+            return this.schemaClient
         }
     }
+
     class RegistryNamesMockSchemaClient extends MockSchemaClient {
         public constructor(
             public readonly registryNames: string[] = [],
@@ -163,7 +168,7 @@ describe('DefaultRegistryNode', function () {
     it('Sorts Registries', async function () {
         const inputRegistryNames: string[] = ['zebra', 'Antelope', 'aardvark', 'elephant']
         const schemaClient = new RegistryNamesMockSchemaClient(inputRegistryNames)
-        ext.toolkitClientBuilder = new SchemaMockToolkitClientBuilder(schemaClient)
+        ext.toolkitClientBuilder = new SchemaMockToolkitClientBuilder(schemaClient) as unknown as ToolkitClientBuilder
 
         const schemasNode = new SchemasNode(fakeRegion)
         const children = await schemasNode.getChildren()
@@ -195,7 +200,7 @@ describe('DefaultRegistryNode', function () {
     it('returns placeholder node if no children are present', async function () {
         const inputRegistryNames: string[] = []
         const schemaClient = new RegistryNamesMockSchemaClient(inputRegistryNames)
-        ext.toolkitClientBuilder = new SchemaMockToolkitClientBuilder(schemaClient)
+        ext.toolkitClientBuilder = new SchemaMockToolkitClientBuilder(schemaClient) as unknown as ToolkitClientBuilder
 
         const schemasNode = new SchemasNode(fakeRegion)
         const childNodes = await schemasNode.getChildren()

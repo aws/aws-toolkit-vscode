@@ -5,16 +5,16 @@
 
 import * as assert from 'assert'
 import * as sinon from 'sinon'
-import { RestApi } from 'aws-sdk/clients/apigateway'
 import { ToolkitClientBuilder } from '../../../shared/clients/toolkitClientBuilder'
 import { ext } from '../../../shared/extensionGlobals'
 import {
     assertNodeListOnlyContainsErrorNode,
     assertNodeListOnlyContainsPlaceholderNode,
 } from '../../utilities/explorerNodeAssertions'
-import { asyncGenerator } from '../../utilities/collectionUtils'
 import { ApiGatewayNode } from '../../../apigateway/explorer/apiGatewayNodes'
 import { RestApiNode } from '../../../apigateway/explorer/apiNodes'
+import { toCollection } from '../../../shared/utilities/collectionUtils'
+import { RestApi } from 'aws-sdk/clients/apigateway'
 
 const FAKE_PARTITION_ID = 'aws'
 const FAKE_REGION_CODE = 'someregioncode'
@@ -91,23 +91,17 @@ describe('ApiGatewayNode', function () {
     })
 
     function initializeClientBuilders() {
+        async function* gen(): AsyncGenerator<RestApi[]> {
+            yield apiNames
+        }
         const apiGatewayClient = {
-            listApis: sandbox.stub().callsFake(() => {
-                return asyncGenerator<RestApi>(
-                    apiNames.map<RestApi>(({ name, id }) => {
-                        return {
-                            name,
-                            id,
-                        }
-                    })
-                )
-            }),
+            listApis: sandbox.stub().returns(toCollection(gen)),
         }
 
         const clientBuilder = {
             createApiGatewayClient: sandbox.stub().returns(apiGatewayClient),
         }
 
-        ext.toolkitClientBuilder = (clientBuilder as any) as ToolkitClientBuilder
+        ext.toolkitClientBuilder = clientBuilder as any as ToolkitClientBuilder
     }
 })

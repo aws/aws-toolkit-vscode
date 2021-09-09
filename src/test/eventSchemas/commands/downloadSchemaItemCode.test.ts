@@ -21,10 +21,10 @@ import {
 } from '../../../eventSchemas/commands/downloadSchemaItemCode'
 
 import { MockOutputChannel } from '../../../test/mockOutputChannel'
-import { MockSchemaClient } from '../../shared/clients/mockClients'
 
 import admZip = require('adm-zip')
 import { makeTemporaryToolkitFolder } from '../../../shared/filesystemUtilities'
+import { MockSchemaClient } from '../../shared/clients/mockSchemaClient'
 
 describe('CodeDownloader', function () {
     let tempFolder: string

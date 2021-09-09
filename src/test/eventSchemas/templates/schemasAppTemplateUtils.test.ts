@@ -7,7 +7,7 @@ import * as assert from 'assert'
 import { Schemas } from 'aws-sdk'
 import * as sinon from 'sinon'
 import { buildSchemaTemplateParameters } from '../../../eventSchemas/templates/schemasAppTemplateUtils'
-import { MockSchemaClient } from '../../shared/clients/mockClients'
+import { MockSchemaClient } from '../../shared/clients/mockSchemaClient'
 import {
     AWS_EVENT_SCHEMA_CONTENT,
     CUSTOMER_UPLOADED_SCHEMA,

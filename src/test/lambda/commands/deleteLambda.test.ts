@@ -6,7 +6,7 @@
 import * as assert from 'assert'
 import { deleteLambda } from '../../../lambda/commands/deleteLambda'
 import { MockOutputChannel } from '../../mockOutputChannel'
-import { MockLambdaClient } from '../../shared/clients/mockClients'
+import { MockLambdaClient } from '../../shared/clients/mockLambdaClient'
 
 describe('deleteLambda', async function () {
     it('should do nothing if function name is not provided', async function () {

@@ -138,30 +138,6 @@ export async function* filterAsync<T>(
     }
 }
 
-export async function first<T>(sequence: AsyncIterable<T>): Promise<T | undefined> {
-    const head = await take(sequence, 1)
-
-    return head.length > 0 ? head[0] : undefined
-}
-
-export async function take<T>(sequence: AsyncIterable<T>, count: number): Promise<T[]> {
-    if (count <= 0) {
-        return []
-    }
-
-    const result: T[] = []
-
-    for await (const item of sequence) {
-        result.push(item)
-
-        if (result.length >= count) {
-            break
-        }
-    }
-
-    return result
-}
-
 /**
  * Push if condition is true, useful for adding CLI arguments, and avoiding this kind of situation:
  * if (x && y) {
@@ -307,6 +283,7 @@ function addToMap<T, U extends string>(map: Map<U, T>, selector: KeySelector<T, 
 type KeySelector<T, U extends string> = (item: T) => U | undefined
 type StringProperty<T> = { [P in keyof T]: T[P] extends string ? P : never }[keyof T]
 
+// TODO: apply this to different iterables and replace the old 'map' code
 async function asyncIterableToMap<T, K extends StringProperty<T>, U extends string = never>(
     iterable: AsyncIterable<T>,
     selector: KeySelector<T, U> | K

@@ -19,6 +19,8 @@ import {
 import { EcrRepository } from '../../../shared/clients/ecrClient'
 import { FakeExtensionContext } from '../../fakeExtensionContext'
 import { ExtContext } from '../../../shared/extensions'
+import { ext } from '../../../shared/extensionGlobals'
+import { toCollection } from '../../../shared/utilities/collectionUtils'
 
 interface QuickPickUriResponseItem extends vscode.QuickPickItem {
     uri: vscode.Uri
@@ -770,14 +772,21 @@ describe('DefaultSamDeployWizardContext', async function () {
     })
 
     describe('promptUserForEcrRepo', async function () {
+        const repoName = 'repo'
+        async function* repo() {
+            yield [{ label: repoName, repository: { repositoryUri: 'uri' } }]
+        }
+
         it('returns an ECR Repo', async function () {
-            const repoName = 'repo'
             sandbox
                 .stub(picker, 'promptUser')
                 .onFirstCall()
                 .returns(Promise.resolve([{ label: repoName, repository: { repositoryUri: 'uri' } }]))
+            sandbox.stub(ext.toolkitClientBuilder, 'createEcrClient').returns({
+                describeRepositories: () => toCollection(repo),
+            } as any)
             const output = await context.promptUserForEcrRepo(1, 'us-weast-1')
-            assert.notStrictEqual(output, { repositoryUri: 'uri' })
+            assert.deepStrictEqual(output, { repositoryUri: 'uri' })
         })
 
         it('returns undefined on receiving undefined from the picker (back button)', async function () {

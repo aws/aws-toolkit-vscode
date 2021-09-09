@@ -20,10 +20,10 @@ import { SchemasNode } from '../../../eventSchemas/explorer/schemasNode'
 import { TelemetryService } from '../../../shared/telemetry/telemetryService'
 import { getTabSizeSetting } from '../../../shared/utilities/editorUtilities'
 import { MockOutputChannel } from '../../../test/mockOutputChannel'
-import { MockSchemaClient } from '../../shared/clients/mockClients'
 import { asyncGenerator } from '../../utilities/collectionUtils'
 
 import * as vscode from 'vscode'
+import { MockSchemaClient } from '../../shared/clients/mockSchemaClient'
 
 describe('Search Schemas', function () {
     let sandbox: sinon.SinonSandbox
@@ -176,9 +176,9 @@ describe('Search Schemas', function () {
             postMessageSpy = sandbox.spy(onPostMessage)
         })
 
-        const mockTelemetryService = ({
+        const mockTelemetryService = {
             record: () => {},
-        } as any) as TelemetryService
+        } as any as TelemetryService
 
         const outputChannel = new MockOutputChannel()
         const singleRegistryName = [TEST_REGISTRY]

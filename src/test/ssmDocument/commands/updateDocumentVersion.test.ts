@@ -13,13 +13,15 @@ import { DocumentItemNodeWriteable } from '../../../ssmDocument/explorer/documen
 import * as picker from '../../../shared/ui/picker'
 import { FakeAwsContext } from '../../utilities/fakeAwsContext'
 import { mock } from '../../utilities/mockito'
-import { SsmDocumentClient } from '../../../shared/clients/ssmDocumentClient'
-import { MockSsmDocumentClient } from '../../shared/clients/mockClients'
+import { DefaultSsmDocumentClient } from '../../../shared/clients/ssmDocumentClient'
 
 describe('openDocumentItem', async function () {
     let sandbox: sinon.SinonSandbox
+    let ssmClient: sinon.SinonStubbedInstance<DefaultSsmDocumentClient>
+
     beforeEach(function () {
         sandbox = sinon.createSandbox()
+        ssmClient = sinon.createStubInstance(DefaultSsmDocumentClient)
     })
 
     afterEach(function () {
@@ -57,7 +59,6 @@ describe('openDocumentItem', async function () {
         sandbox.stub(picker, 'promptUser').onFirstCall().returns(Promise.resolve(undefined))
         sandbox.stub(picker, 'verifySinglePickerOutput').onFirstCall().returns(fakeVersionSelectionResult)
         sandbox.stub(fakeAwsContext, 'getCredentialAccountId').returns('Amazon')
-        const ssmClient: SsmDocumentClient = new MockSsmDocumentClient()
         const documentNode = new DocumentItemNodeWriteable(fakeDoc, ssmClient, fakeRegion, mock())
         sandbox.stub(documentNode, 'listSchemaVersion').returns(Promise.resolve(fakeSchemaList))
         const updateVersionStub = sandbox.stub(documentNode, 'updateDocumentVersion')

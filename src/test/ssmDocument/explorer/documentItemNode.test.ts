@@ -6,12 +6,13 @@
 import * as assert from 'assert'
 import { SSM } from 'aws-sdk'
 import * as sinon from 'sinon'
+import { DefaultSsmDocumentClient } from '../../../shared/clients/ssmDocumentClient'
 import { DocumentItemNode } from '../../../ssmDocument/explorer/documentItemNode'
-import { MockSsmDocumentClient } from '../../shared/clients/mockClients'
 
 describe('DocumentItemNode', async function () {
     let sandbox: sinon.SinonSandbox
     let testNode: DocumentItemNode
+    let ssmClient: sinon.SinonStubbedInstance<DefaultSsmDocumentClient>
     const testDoc: SSM.DocumentIdentifier = {
         Name: 'testDoc',
         Owner: 'Amazon',
@@ -20,7 +21,8 @@ describe('DocumentItemNode', async function () {
 
     beforeEach(function () {
         sandbox = sinon.createSandbox()
-        testNode = new DocumentItemNode(testDoc, new MockSsmDocumentClient(), fakeRegion)
+        ssmClient = sinon.createStubInstance(DefaultSsmDocumentClient)
+        testNode = new DocumentItemNode(testDoc, ssmClient, fakeRegion)
     })
 
     afterEach(function () {

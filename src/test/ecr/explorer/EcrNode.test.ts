@@ -5,8 +5,7 @@
 
 import * as sinon from 'sinon'
 import * as assert from 'assert'
-import { EcrClient, EcrRepository } from '../../../shared/clients/ecrClient'
-import { MockEcrClient } from '../../shared/clients/mockClients'
+import { DefaultEcrClient, EcrClient, EcrRepository } from '../../../shared/clients/ecrClient'
 import { EcrNode } from '../../../ecr/explorer/ecrNode'
 import { EcrRepositoryNode } from '../../../ecr/explorer/ecrRepositoryNode'
 import { PlaceholderNode } from '../../../shared/treeview/nodes/placeholderNode'
@@ -14,12 +13,12 @@ import { ErrorNode } from '../../../shared/treeview/nodes/errorNode'
 import { EcrTagNode } from '../../../ecr/explorer/ecrTagNode'
 
 describe('EcrNode', function () {
-    let ecr: EcrClient
+    let ecr: sinon.SinonStubbedInstance<EcrClient>
     let sandbox: sinon.SinonSandbox
 
     beforeEach(function () {
         sandbox = sinon.createSandbox()
-        ecr = new MockEcrClient({})
+        ecr = sinon.createStubInstance(DefaultEcrClient)
     })
 
     afterEach(function () {
@@ -29,10 +28,7 @@ describe('EcrNode', function () {
     it('Gets children and sorts them by repository name', async function () {
         const firstRepo: EcrRepository = { repositoryName: 'name', repositoryArn: 'arn', repositoryUri: 'uri' }
         const secondRepo: EcrRepository = { repositoryName: 'uri', repositoryArn: 'arn', repositoryUri: 'uri' }
-        sinon.stub(ecr, 'describeRepositories').callsFake(async function* () {
-            yield secondRepo
-            yield firstRepo
-        })
+        ecr.describeAllRepositories.resolves([secondRepo, firstRepo])
 
         const [firstNode, secondNode, ...otherNodes] = await new EcrNode(ecr).getChildren()
 
@@ -47,7 +43,7 @@ describe('EcrNode', function () {
     })
 
     it('Shows empty node on no children', async function () {
-        const stub = sinon.stub(ecr, 'describeRepositories').callsFake(async function* () {})
+        const stub = ecr.describeAllRepositories.resolves([])
 
         const [firstNode, ...otherNodes] = await new EcrNode(ecr).getChildren()
 
@@ -58,11 +54,7 @@ describe('EcrNode', function () {
     })
 
     it('Shows error node when getting children fails', async function () {
-        const stub = sinon.stub(ecr, 'describeRepositories').callsFake(async function* () {
-            throw Error('network super busted')
-            // at least one yield is required for async generator even if it is unreachable
-            yield {} as EcrRepository
-        })
+        const stub = ecr.describeAllRepositories.rejects(Error('network super busted'))
 
         const [firstNode, ...otherNodes] = await new EcrNode(ecr).getChildren()
 
@@ -75,12 +67,12 @@ describe('EcrNode', function () {
 
 describe('EcrRepositoryNode', function () {
     const repository: EcrRepository = { repositoryName: 'name', repositoryUri: 'uri', repositoryArn: 'arn' }
-    let ecr: EcrClient
+    let ecr: sinon.SinonStubbedInstance<EcrClient>
     let sandbox: sinon.SinonSandbox
 
     beforeEach(function () {
         sandbox = sinon.createSandbox()
-        ecr = new MockEcrClient({})
+        ecr = sinon.createStubInstance(DefaultEcrClient)
     })
 
     afterEach(function () {
@@ -88,10 +80,7 @@ describe('EcrRepositoryNode', function () {
     })
 
     it('Gets children and sorts them by tag name', async function () {
-        sinon.stub(ecr, 'describeTags').callsFake(async function* () {
-            yield 'ztag'
-            yield 'atag'
-        })
+        ecr.describeAllTags.resolves(['ztag', 'atag'])
 
         const [firstNode, secondNode, ...otherNodes] = await new EcrRepositoryNode(
             {} as EcrNode,
@@ -112,7 +101,7 @@ describe('EcrRepositoryNode', function () {
     })
 
     it('Shows empty node on no children', async function () {
-        const stub = sinon.stub(ecr, 'describeTags').callsFake(async function* () {})
+        const stub = ecr.describeAllTags.resolves([])
 
         const [firstNode, ...otherNodes] = await new EcrRepositoryNode({} as EcrNode, ecr, repository).getChildren()
 
@@ -123,11 +112,7 @@ describe('EcrRepositoryNode', function () {
     })
 
     it('Shows error node when getting children fails', async function () {
-        const stub = sinon.stub(ecr, 'describeTags').callsFake(async function* () {
-            throw Error('network super busted')
-            // at least one yield is required for async generator even if it is unreachable
-            yield 'string'
-        })
+        const stub = ecr.describeAllTags.rejects(Error('network super busted'))
 
         const [firstNode, ...otherNodes] = await new EcrRepositoryNode({} as EcrNode, ecr, repository).getChildren()
 

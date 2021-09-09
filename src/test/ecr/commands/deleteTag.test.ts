@@ -9,20 +9,20 @@ import { EcrTagNode } from '../../../ecr/explorer/ecrTagNode'
 import { FakeCommands } from '../../shared/vscode/fakeCommands'
 import { FakeWindow } from '../../shared/vscode/fakeWindow'
 import { EcrRepositoryNode } from '../../../ecr/explorer/ecrRepositoryNode'
-import { EcrClient, EcrRepository } from '../../../shared/clients/ecrClient'
-import { MockEcrClient } from '../../shared/clients/mockClients'
+import { DefaultEcrClient, EcrRepository } from '../../../shared/clients/ecrClient'
 import { deleteTag } from '../../../ecr/commands/deleteTag'
 
 describe('deleteTag', function () {
     const repositoryName = 'reponame'
     const tagName = 'tag'
     const parentNode = {} as EcrRepositoryNode
-    const ecr: EcrClient = new MockEcrClient({})
+    let ecr: sinon.SinonStubbedInstance<DefaultEcrClient>
     let node: EcrTagNode
     let sandbox: sinon.SinonSandbox
 
     beforeEach(function () {
         sandbox = sinon.createSandbox()
+        ecr = sinon.createStubInstance(DefaultEcrClient)
         node = new EcrTagNode(parentNode, ecr, { repositoryName: repositoryName } as EcrRepository, tagName)
     })
 
@@ -33,7 +33,7 @@ describe('deleteTag', function () {
     it('confirms deletion, deletes file, shows status bar confirmation, and refreshes parent node', async function () {
         const window = new FakeWindow({ message: { warningSelection: 'Delete' } })
         const commands = new FakeCommands()
-        const stub = sandbox.stub(ecr, 'deleteTag').callsFake(async (name, tag) => {
+        const stub = ecr.deleteTag.callsFake(async (name, tag) => {
             assert.strictEqual(name, repositoryName)
             assert.strictEqual(tag, tagName)
         })
@@ -53,7 +53,7 @@ describe('deleteTag', function () {
     it('does nothing when deletion is cancelled', async function () {
         const window = new FakeWindow({ message: { warningSelection: 'Cancel' } })
         const commands = new FakeCommands()
-        const spy = sandbox.spy(ecr, 'deleteTag')
+        const spy = ecr.deleteTag
 
         await deleteTag(node, window, commands)
 
@@ -65,7 +65,7 @@ describe('deleteTag', function () {
     })
 
     it('shows an error message and refreshes node when file deletion fails', async function () {
-        sandbox.stub(ecr, 'deleteTag').callsFake(async () => {
+        ecr.deleteTag.callsFake(async () => {
             throw new Error('network broke')
         })
 

@@ -419,7 +419,7 @@ describe('IteratingQuickPickController', async function () {
         quickPick.dispose()
     })
 
-    async function* iteratorFn(): AsyncIterable<vscode.QuickPickItem[]> {
+    async function* iteratorFn(): AsyncGenerator<vscode.QuickPickItem[]> {
         for (const [i, value] of values.entries()) {
             await new Promise<void>(resolve => {
                 clock.setTimeout(() => {
@@ -427,7 +427,7 @@ describe('IteratingQuickPickController', async function () {
                 }, interval)
             })
             if (i === values.length - 1) {
-                return value
+                return [{ label: value.toUpperCase() }]
             }
             if (value) {
                 yield [{ label: value.toUpperCase() }]
@@ -452,7 +452,9 @@ describe('IteratingQuickPickController', async function () {
     })
 
     it('returns iterated values on start and on reset', async function () {
-        const controller = new picker.IteratingQuickPickController(quickPick, iteratorFn())
+        const controller = new picker.IteratingQuickPickController(quickPick, {
+            [Symbol.asyncIterator]: () => iteratorFn(),
+        })
 
         controller.startRequests()
 
@@ -591,7 +593,9 @@ describe('IteratingQuickPickController', async function () {
     })
 
     it('only appends values from the current refresh cycle', async function () {
-        const controller = new picker.IteratingQuickPickController(quickPick, iteratorFn())
+        const controller = new picker.IteratingQuickPickController(quickPick, {
+            [Symbol.asyncIterator]: () => iteratorFn(),
+        })
 
         controller.startRequests()
         await clock.nextAsync()

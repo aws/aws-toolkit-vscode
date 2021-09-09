@@ -7,8 +7,7 @@ import * as sinon from 'sinon'
 import * as assert from 'assert'
 import { FakeWindow } from '../../shared/vscode/fakeWindow'
 import { EcrNode } from '../../../ecr/explorer/ecrNode'
-import { EcrClient, EcrRepository } from '../../../shared/clients/ecrClient'
-import { MockEcrClient } from '../../shared/clients/mockClients'
+import { DefaultEcrClient, EcrRepository } from '../../../shared/clients/ecrClient'
 import { FakeCommands } from '../../shared/vscode/fakeCommands'
 import { EcrRepositoryNode } from '../../../ecr/explorer/ecrRepositoryNode'
 import { deleteRepository } from '../../../ecr/commands/deleteRepository'
@@ -16,12 +15,13 @@ import { deleteRepository } from '../../../ecr/commands/deleteRepository'
 describe('deleteRepositoryCommand', function () {
     const repositoryName = 'reponame'
     const parentNode: EcrNode = {} as EcrNode
-    const ecr: EcrClient = new MockEcrClient({})
+    let ecr: sinon.SinonStubbedInstance<DefaultEcrClient>
     let node: EcrRepositoryNode
     let sandbox: sinon.SinonSandbox
 
     beforeEach(function () {
         sandbox = sinon.createSandbox()
+        ecr = sinon.createStubInstance(DefaultEcrClient)
         node = new EcrRepositoryNode(parentNode, ecr, { repositoryName: repositoryName } as EcrRepository)
     })
 
@@ -32,7 +32,7 @@ describe('deleteRepositoryCommand', function () {
     it('Confirms deletion, deletes repository, shows progress bar, and refreshes parent node', async function () {
         const window = new FakeWindow({ inputBox: { input: repositoryName } })
         const commands = new FakeCommands()
-        const stub = sandbox.stub(ecr, 'deleteRepository').callsFake(async name => {
+        const stub = ecr.deleteRepository.callsFake(async name => {
             assert.strictEqual(name, repositoryName)
         })
 
@@ -50,7 +50,7 @@ describe('deleteRepositoryCommand', function () {
     })
 
     it('Does nothing when deletion is cancelled', async function () {
-        const spy = sandbox.spy(ecr, 'deleteRepository')
+        const spy = ecr.deleteRepository
 
         await deleteRepository(node, new FakeWindow(), new FakeCommands())
 
@@ -58,7 +58,7 @@ describe('deleteRepositoryCommand', function () {
     })
 
     it('shows an error message and refreshes node when repository deletion fails', async function () {
-        sandbox.stub(ecr, 'deleteRepository').callsFake(async () => {
+        ecr.deleteRepository.callsFake(async () => {
             throw Error('Network busted')
         })
 
