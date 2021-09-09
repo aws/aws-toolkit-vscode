@@ -5,31 +5,43 @@
 
 import { CloudWatchLogs } from 'aws-sdk'
 import { ext } from '../extensionGlobals'
+import { pageableToCollection, AsyncCollection } from '../utilities/collectionUtils'
 import { ClassToInterfaceType } from '../utilities/tsUtils'
 
 export type CloudWatchLogsClient = ClassToInterfaceType<DefaultCloudWatchLogsClient>
 export class DefaultCloudWatchLogsClient {
     public constructor(public readonly regionCode: string) {}
 
-    public async *describeLogGroups(
+    public describeLogGroups(
         request: CloudWatchLogs.DescribeLogGroupsRequest = {}
-    ): AsyncIterableIterator<CloudWatchLogs.LogGroup> {
-        const sdkClient = await this.createSdkClient()
-        do {
-            const response = await this.invokeDescribeLogGroups(request, sdkClient)
-            if (response.logGroups) {
-                yield* response.logGroups
-            }
-            request.nextToken = response.nextToken
-        } while (request.nextToken)
+    ): AsyncCollection<CloudWatchLogs.LogGroup[]> {
+        const sdkClient = this.createSdkClient()
+        const requester = async (request: CloudWatchLogs.DescribeLogGroupsRequest) =>
+            (await sdkClient).describeLogGroups(request).promise()
+
+        return pageableToCollection(requester, request, 'nextToken', 'logGroups').map(g => g ?? [])
     }
 
-    public async describeLogStreams(
-        request: CloudWatchLogs.DescribeLogStreamsRequest
-    ): Promise<CloudWatchLogs.DescribeLogStreamsResponse> {
-        const sdkClient = await this.createSdkClient()
+    public describeAllLogGroups(
+        request: CloudWatchLogs.DescribeLogGroupsRequest = {}
+    ): Promise<CloudWatchLogs.LogGroup[]> {
+        return this.describeLogGroups(request).flatten().promise()
+    }
 
-        return sdkClient.describeLogStreams(request).promise()
+    public describeLogStreams(
+        request: CloudWatchLogs.DescribeLogStreamsRequest
+    ): AsyncCollection<CloudWatchLogs.LogStream[]> {
+        const sdkClient = this.createSdkClient()
+        const requester = async (request: CloudWatchLogs.DescribeLogStreamsRequest) =>
+            (await sdkClient).describeLogStreams(request).promise()
+
+        return pageableToCollection(requester, request, 'nextToken', 'logStreams').map(g => g ?? [])
+    }
+
+    public describeAllLogStreams(
+        request: CloudWatchLogs.DescribeLogStreamsRequest
+    ): Promise<CloudWatchLogs.LogStream[]> {
+        return this.describeLogStreams(request).flatten().promise()
     }
 
     public async getLogEvents(
@@ -38,13 +50,6 @@ export class DefaultCloudWatchLogsClient {
         const sdkClient = await this.createSdkClient()
 
         return sdkClient.getLogEvents(request).promise()
-    }
-
-    protected async invokeDescribeLogGroups(
-        request: CloudWatchLogs.DescribeLogGroupsRequest,
-        sdkClient: CloudWatchLogs
-    ): Promise<CloudWatchLogs.DescribeLogGroupsResponse> {
-        return sdkClient.describeLogGroups(request).promise()
     }
 
     protected async createSdkClient(): Promise<CloudWatchLogs> {

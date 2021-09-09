@@ -5,6 +5,7 @@
 
 import { AppRunner } from 'aws-sdk'
 import { ext } from '../../shared/extensionGlobals'
+import { AsyncCollection, pageableToCollection } from '../utilities/collectionUtils'
 import { ClassToInterfaceType } from '../utilities/tsUtils'
 
 export type AppRunnerClient = ClassToInterfaceType<DefaultAppRunnerClient>
@@ -16,8 +17,16 @@ export class DefaultAppRunnerClient {
         return (await this.createSdkClient()).createService(request).promise()
     }
 
-    public async listServices(request: AppRunner.ListServicesRequest): Promise<AppRunner.ListServicesResponse> {
-        return (await this.createSdkClient()).listServices(request).promise()
+    public listServices(request: AppRunner.ListServicesRequest = {}): AsyncCollection<AppRunner.ServiceSummaryList> {
+        const client = this.createSdkClient()
+        const requester = async (request: AppRunner.ListServicesRequest) =>
+            (await client).listServices(request).promise()
+
+        return pageableToCollection(requester, request, 'NextToken', 'ServiceSummaryList')
+    }
+
+    public listAllServices(request: AppRunner.ListServicesRequest = {}): Promise<AppRunner.ServiceSummaryList> {
+        return this.listServices(request).flatten().promise()
     }
 
     public async pauseService(request: AppRunner.PauseServiceRequest): Promise<AppRunner.PauseServiceResponse> {
@@ -56,8 +65,16 @@ export class DefaultAppRunnerClient {
         return (await this.createSdkClient()).startDeployment(request).promise()
     }
 
-    public async listOperations(request: AppRunner.ListOperationsRequest): Promise<AppRunner.ListOperationsResponse> {
-        return (await this.createSdkClient()).listOperations(request).promise()
+    public listOperations(request: AppRunner.ListOperationsRequest): AsyncCollection<AppRunner.OperationSummaryList> {
+        const client = this.createSdkClient()
+        const requester = async (request: AppRunner.ListOperationsRequest) =>
+            (await client).listOperations(request).promise()
+
+        return pageableToCollection(requester, request, 'NextToken', 'OperationSummaryList').map(i => i ?? [])
+    }
+
+    public listAllOperations(request: AppRunner.ListOperationsRequest): Promise<AppRunner.OperationSummaryList> {
+        return this.listOperations(request).flatten().promise()
     }
 
     public async deleteService(request: AppRunner.DeleteServiceRequest): Promise<AppRunner.DeleteServiceResponse> {

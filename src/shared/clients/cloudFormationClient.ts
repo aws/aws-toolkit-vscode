@@ -6,6 +6,7 @@
 import { CloudFormation } from 'aws-sdk'
 import { ext } from '../extensionGlobals'
 import '../utilities/asyncIteratorShim'
+import { AsyncCollection, pageableToCollection } from '../utilities/collectionUtils'
 import { ClassToInterfaceType } from '../utilities/tsUtils'
 
 export type CloudFormationClient = ClassToInterfaceType<DefaultCloudFormationClient>
@@ -22,24 +23,17 @@ export class DefaultCloudFormationClient {
             .promise()
     }
 
-    public async *listStacks(
-        statusFilter: string[] = ['CREATE_COMPLETE', 'UPDATE_COMPLETE']
-    ): AsyncIterableIterator<CloudFormation.StackSummary> {
-        const client = await this.createSdkClient()
+    public listStacks(request: CloudFormation.ListStacksInput = {}): AsyncCollection<CloudFormation.StackSummary[]> {
+        const client = this.createSdkClient()
+        const requester = async (request: CloudFormation.ListStacksInput) =>
+            (await client).listStacks(request).promise()
+        request.StackStatusFilter = request.StackStatusFilter ?? ['CREATE_COMPLETE', 'UPDATE_COMPLETE']
 
-        const request: CloudFormation.ListStacksInput = {
-            StackStatusFilter: statusFilter,
-        }
+        return pageableToCollection(requester, request, 'NextToken', 'StackSummaries').map(i => i ?? [])
+    }
 
-        do {
-            const response: CloudFormation.ListStacksOutput = await client.listStacks(request).promise()
-
-            if (response.StackSummaries) {
-                yield* response.StackSummaries
-            }
-
-            request.NextToken = response.NextToken
-        } while (request.NextToken)
+    public listAllStacks(request: CloudFormation.ListStacksInput = {}): Promise<CloudFormation.StackSummary[]> {
+        return this.listStacks(request).flatten().promise()
     }
 
     public async describeStackResources(name: string): Promise<CloudFormation.DescribeStackResourcesOutput> {

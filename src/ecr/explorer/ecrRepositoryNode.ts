@@ -10,7 +10,6 @@ import { EcrNode } from './ecrNode'
 import { EcrClient, EcrRepository } from '../../shared/clients/ecrClient'
 import { ext } from '../../shared/extensionGlobals'
 import { makeChildrenNodes } from '../../shared/treeview/treeNodeUtilities'
-import { toArrayAsync } from '../../shared/utilities/collectionUtils'
 import { ErrorNode } from '../../shared/treeview/nodes/errorNode'
 import { PlaceholderNode } from '../../shared/treeview/nodes/placeholderNode'
 import { localize } from '../../shared/utilities/vsCodeUtils'
@@ -38,7 +37,7 @@ export class EcrRepositoryNode extends AWSTreeNodeBase implements AWSResourceNod
     public async getChildren(): Promise<AWSTreeNodeBase[]> {
         return await makeChildrenNodes({
             getChildNodes: async () => {
-                const response = await toArrayAsync(this.ecr.describeTags(this.repository.repositoryName))
+                const response = await this.ecr.describeAllTags({ repositoryName: this.repository.repositoryName })
 
                 return response.map(item => new EcrTagNode(this, this.ecr, this.repository, item))
             },

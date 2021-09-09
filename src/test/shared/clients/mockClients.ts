@@ -39,6 +39,7 @@ import {
     SignedUrlRequest,
 } from '../../../shared/clients/s3Client'
 import { AppRunnerClient } from '../../../shared/clients/apprunnerClient'
+import { AsyncCollection } from '../../../shared/utilities/collectionUtils'
 
 interface Clients {
     apiGatewayClient: ApiGatewayClient
@@ -65,7 +66,7 @@ export class MockToolkitClientBuilder implements ToolkitClientBuilder {
             cloudWatchLogsClient: new MockCloudWatchLogsClient(),
             ecsClient: new MockEcsClient({}),
             ecrClient: new MockEcrClient({}),
-            iamClient: new MockIamClient({}),
+            iamClient: new MockIamClient(),
             lambdaClient: new MockLambdaClient({}),
             schemaClient: new MockSchemaClient(),
             stepFunctionsClient: new MockStepFunctionsClient(),
@@ -175,27 +176,28 @@ export class MockCloudFormationClient implements CloudFormationClient {
 }
 
 export class MockCloudWatchLogsClient implements CloudWatchLogsClient {
-    public constructor(
-        public readonly regionCode: string = '',
-
-        public readonly describeLogGroups: (
-            request?: CloudWatchLogs.DescribeLogGroupsRequest
-        ) => AsyncIterableIterator<CloudWatchLogs.LogGroup> = () => asyncGenerator([]),
-
-        public readonly describeLogStreams: (
-            request: CloudWatchLogs.DescribeLogStreamsRequest
-        ) => Promise<CloudWatchLogs.DescribeLogStreamsResponse> = async (
-            request: CloudWatchLogs.DescribeLogStreamsRequest
-        ) => {
-            return {}
-        },
-
-        public readonly getLogEvents: (
-            request: CloudWatchLogs.GetLogEventsRequest
-        ) => Promise<CloudWatchLogs.GetLogEventsResponse> = async (request: CloudWatchLogs.GetLogEventsRequest) => {
-            return {}
-        }
-    ) {}
+    public constructor(public readonly regionCode: string = '') {}
+    public describeLogStreams(
+        request: CloudWatchLogs.DescribeLogStreamsRequest
+    ): AsyncIterable<CloudWatchLogs.LogStream[]> {
+        throw new Error('Method not implemented.')
+    }
+    public describeAllLogStreams(
+        request: CloudWatchLogs.DescribeLogStreamsRequest
+    ): Promise<CloudWatchLogs.LogStream[]> {
+        throw new Error('Method not implemented.')
+    }
+    public getLogEvents(request: CloudWatchLogs.GetLogEventsRequest): Promise<CloudWatchLogs.GetLogEventsResponse> {
+        throw new Error('Method not implemented.')
+    }
+    public describeLogGroups(
+        request?: CloudWatchLogs.DescribeLogGroupsRequest
+    ): AsyncIterable<CloudWatchLogs.LogGroup[]> {
+        throw new Error('Method not implemented.')
+    }
+    public describeAllLogGroups(request?: CloudWatchLogs.DescribeLogGroupsRequest): Promise<CloudWatchLogs.LogGroup[]> {
+        throw new Error('Method not implemented.')
+    }
 }
 
 export class MockSchemaClient implements SchemaClient {
@@ -328,10 +330,9 @@ export class MockEcsClient implements EcsClient {
 
 export class MockIamClient implements IamClient {
     public readonly regionCode = ''
-    public readonly listRoles: () => Promise<IAM.ListRolesResponse>
-
-    public constructor({ listRoles = async () => ({ Roles: [] }) }: { listRoles?(): Promise<IAM.ListRolesResponse> }) {
-        this.listRoles = listRoles
+    public constructor() {}
+    public listRoles(request?: IAM.ListRolesRequest): AsyncCollection<IAM.Role[]> {
+        throw new Error('Method not implemented.')
     }
     public createRole(request: IAM.CreateRoleRequest): Promise<IAM.CreateRoleResponse> {
         throw new Error('Method not implemented.')

@@ -6,9 +6,7 @@
 import '../../../shared/utilities/asyncIteratorShim'
 
 import * as assert from 'assert'
-import { CloudWatchLogs } from 'aws-sdk'
 import * as sinon from 'sinon'
-import * as vscode from 'vscode'
 import {
     complement,
     difference,
@@ -22,10 +20,9 @@ import {
     toMapAsync,
     union,
     updateInPlace,
-    getPaginatedAwsCallIter,
-    getPaginatedAwsCallIterParams,
-    IteratorTransformer,
     stripUndefined,
+    toCollection,
+    pageableToCollection,
 } from '../../../shared/utilities/collectionUtils'
 
 import { asyncGenerator } from '../../utilities/collectionUtils'
@@ -355,102 +352,6 @@ describe('CollectionUtils', async function () {
         })
     })
 
-    describe('getPaginatedAwsCallIter', async function () {
-        it('iterates as long as results are present', async function () {
-            const fakeCall = sandbox.stub<
-                [CloudWatchLogs.DescribeLogStreamsRequest],
-                CloudWatchLogs.DescribeLogStreamsResponse
-            >()
-            const responses: CloudWatchLogs.LogStreams[] = [
-                [{ logStreamName: 'stream1' }, { logStreamName: 'stream2' }, { logStreamName: 'stream3' }],
-                [{ logStreamName: 'stream4' }, { logStreamName: 'stream5' }, { logStreamName: 'stream6' }],
-                [{ logStreamName: 'stream7' }, { logStreamName: 'stream8' }, { logStreamName: 'stream9' }],
-            ]
-            fakeCall
-                .onCall(0)
-                .returns({
-                    logStreams: responses[0],
-                    nextToken: 'gotAToken',
-                })
-                .onCall(1)
-                .returns({
-                    logStreams: responses[1],
-                    nextToken: 'gotAnotherToken',
-                })
-                .onCall(2)
-                .returns({
-                    logStreams: responses[2],
-                })
-                .onCall(3)
-                .returns({})
-            const params: getPaginatedAwsCallIterParams<
-                CloudWatchLogs.DescribeLogStreamsRequest,
-                CloudWatchLogs.DescribeLogStreamsResponse
-            > = {
-                awsCall: async req => fakeCall(req),
-                nextTokenNames: {
-                    request: 'nextToken',
-                    response: 'nextToken',
-                },
-                request: {
-                    logGroupName: 'imJustHereSoIWontGetFined',
-                },
-            }
-            const iter: AsyncIterator<CloudWatchLogs.DescribeLogStreamsResponse> = getPaginatedAwsCallIter(params)
-            const firstResult = await iter.next()
-            const secondResult = await iter.next()
-            const thirdResult = await iter.next()
-            const fourthResult = await iter.next()
-            assert.deepStrictEqual(firstResult.value.logStreams, responses[0])
-            assert.deepStrictEqual(secondResult.value.logStreams, responses[1])
-            assert.deepStrictEqual(thirdResult.value.logStreams, responses[2])
-            assert.deepStrictEqual(fourthResult, { done: true, value: undefined })
-        })
-    })
-
-    describe('IteratorTransformer', async function () {
-        it('transforms values from the iterator and does not carry state over when creating another iterator', async function () {
-            const values = ['a', 'b', 'c']
-            async function* iteratorFn(): AsyncIterator<string> {
-                for (const val of values) {
-                    yield val
-                }
-            }
-            const populator = new IteratorTransformer<string, vscode.QuickPickItem>(
-                () => iteratorFn(),
-                val => {
-                    if (val) {
-                        return [{ label: val.toUpperCase() }]
-                    }
-
-                    return []
-                }
-            )
-
-            const firstIter = populator.createPickIterator()
-            let firstI = 0
-            let firstItem = await firstIter.next()
-            while (!firstItem.done) {
-                assert.ok(Array.isArray(firstItem.value)),
-                    assert.strictEqual(firstItem.value.length, 1),
-                    assert.deepStrictEqual(firstItem.value[0], { label: values[firstI].toUpperCase() })
-                firstI++
-                firstItem = await firstIter.next()
-            }
-
-            const secondIter = populator.createPickIterator()
-            let secondI = 0
-            let secondItem = await secondIter.next()
-            while (!secondItem.done) {
-                assert.ok(Array.isArray(secondItem.value)),
-                    assert.strictEqual(secondItem.value.length, 1),
-                    assert.deepStrictEqual(secondItem.value[0], { label: values[secondI].toUpperCase() })
-                secondI++
-                secondItem = await secondIter.next()
-            }
-        })
-    })
-
     describe('stripUndefined', function () {
         it('removes undefined from objects', function () {
             const obj = {
@@ -470,6 +371,187 @@ describe('CollectionUtils', async function () {
                     prop4: false,
                     prop6: { prop7: '' },
                 },
+            })
+        })
+    })
+
+    describe('pageableToCollection', function () {
+        const pages: { [page: string]: { data: number[]; next?: string } } = {
+            page1: {
+                data: [0, 1, 2],
+                next: 'page2',
+            },
+            page2: {
+                data: [3, 4],
+                next: 'page3',
+            },
+            page3: {
+                data: [5],
+                next: 'page4',
+            },
+            page4: {
+                data: [],
+            },
+            secretPage: {
+                data: [-1],
+            },
+            falsePage: {
+                data: [],
+                next: '', // some APIs will return empty strings rather than undefined
+            },
+        }
+
+        const requester = async (request: { next?: string }) => pages[request.next ?? 'page1']
+
+        it('creates a new AsyncCollection', async function () {
+            const collection = pageableToCollection(requester, {}, 'next', 'data')
+            assert.deepStrictEqual(await collection.promise(), [[0, 1, 2], [3, 4], [5], []])
+        })
+
+        it('uses initial request', async function () {
+            const collection = pageableToCollection(requester, { next: 'secretPage' }, 'next', 'data')
+            assert.deepStrictEqual(await collection.promise(), [[-1]])
+        })
+
+        it('terminates when `next` is an empty string', async function () {
+            const collection = pageableToCollection(requester, { next: 'falsePage' }, 'next', 'data')
+            assert.deepStrictEqual(await collection.promise(), [[]])
+        })
+    })
+
+    describe('AsyncCollection', function () {
+        const items = [
+            { name: 'item1', data: 0 },
+            { name: 'item2', data: 1 },
+            { name: 'item3', data: 2 },
+        ]
+
+        async function* gen() {
+            yield 0
+            yield 1
+            yield 2
+        }
+
+        async function* genPage() {
+            yield [0, 1, 2]
+            yield [3, 4, 5]
+            yield [6, 7, 8]
+        }
+
+        async function* genItem() {
+            yield items[0]
+            yield items[1]
+            yield items[2]
+        }
+
+        it('can be iterated over', async function () {
+            const collection = toCollection(gen)
+            const expected = [0, 1, 2]
+            for await (const o of collection) {
+                assert.strictEqual(o, expected.shift())
+            }
+        })
+
+        it('can turn into a Promise', async function () {
+            const promise = toCollection(gen).promise()
+            assert.deepStrictEqual(await promise, [0, 1, 2])
+        })
+
+        it('can turn into a map using property key', async function () {
+            const map = await toCollection(genItem).toMap('name')
+            items.forEach(v => assert.strictEqual(map.get(v.name), v))
+        })
+
+        it('can turn into a map using function', async function () {
+            const map = await toCollection(genItem).toMap(i => i.data.toString())
+            items.forEach(v => assert.strictEqual(map.get(v.data.toString()), v))
+        })
+
+        it('can map', async function () {
+            const mapped = toCollection(gen)
+                .map(o => o + 1)
+                .map(o => o.toString())
+                .map(s => `${s}!`)
+            assert.deepStrictEqual(await mapped.promise(), ['1!', '2!', '3!'])
+        })
+
+        it('can flatten', async function () {
+            const flat = toCollection(genPage).flatten()
+            const expected = Array(9)
+                .fill(0)
+                .map((_, i) => i)
+            assert.deepStrictEqual(await flat.promise(), expected)
+        })
+
+        it('can filter', async function () {
+            const filtered = toCollection(genPage)
+                .filter(o => o.includes(5))
+                .flatten()
+            const expected = [3, 4, 5]
+            assert.deepStrictEqual(await filtered.promise(), expected)
+        })
+
+        it('can take', async function () {
+            const take = toCollection(gen).take(2)
+            assert.deepStrictEqual(await take.promise(), [0, 1])
+        })
+
+        it('is immutable', async function () {
+            const x = toCollection(gen)
+            const y = x.map(o => o + 1)
+            const z = y
+                .filter(o => o !== 1)
+                .map(o => [o, o])
+                .flatten()
+
+            assert.deepStrictEqual(await x.promise(), [0, 1, 2])
+            assert.deepStrictEqual(await y.promise(), [1, 2, 3])
+            assert.deepStrictEqual(await z.promise(), [2, 2, 3, 3])
+        })
+
+        it('does not iterate over the generator when applying transformations', async function () {
+            let callCount = 0
+            async function* count() {
+                while (true) {
+                    yield callCount++
+                }
+            }
+
+            const x = toCollection(count)
+                .filter(o => o > 1)
+                .map(o => [o, o * o])
+                .flatten()
+            await new Promise(r => setImmediate(r))
+            assert.strictEqual(callCount, 0)
+            assert.deepStrictEqual(await x.take(6).promise(), [2, 4, 3, 9, 4, 16])
+            assert.strictEqual(callCount, 6)
+        })
+
+        describe('errors', function () {
+            async function* error() {
+                throw new Error()
+                yield 0
+            }
+
+            it('bubbles errors up when using a promise', async function () {
+                const errorPromise = toCollection(error)
+                    .map(o => o)
+                    .filter(_ => true)
+                    .flatten()
+                    .promise()
+                await assert.rejects(errorPromise)
+            })
+
+            it('bubbles errors up when iterating', async function () {
+                const errorIter = toCollection(error)
+                    .map(o => o)
+                    .filter(_ => true)
+                    .flatten()
+                const iterate = async () => {
+                    for await (const _ of errorIter) {
+                    }
+                }
+                await assert.rejects(iterate)
             })
         })
     })

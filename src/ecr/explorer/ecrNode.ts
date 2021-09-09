@@ -9,7 +9,6 @@ import { AWSTreeNodeBase } from '../../shared/treeview/nodes/awsTreeNodeBase'
 import { ErrorNode } from '../../shared/treeview/nodes/errorNode'
 import { PlaceholderNode } from '../../shared/treeview/nodes/placeholderNode'
 import { makeChildrenNodes } from '../../shared/treeview/treeNodeUtilities'
-import { toArrayAsync } from '../../shared/utilities/collectionUtils'
 import { inspect } from 'util'
 import { EcrClient } from '../../shared/clients/ecrClient'
 import { EcrRepositoryNode } from './ecrRepositoryNode'
@@ -28,12 +27,11 @@ export class EcrNode extends AWSTreeNodeBase {
     public async getChildren(): Promise<AWSTreeNodeBase[]> {
         return await makeChildrenNodes({
             getChildNodes: async () => {
-                const response = await toArrayAsync(this.ecr.describeRepositories())
+                const response = await this.ecr.describeAllRepositories()
 
                 return response.map(item => new EcrRepositoryNode(this, this.ecr, item))
             },
-            getErrorNode: async (error: Error, logID: number) =>
-                new ErrorNode(this, error, logID),
+            getErrorNode: async (error: Error, logID: number) => new ErrorNode(this, error, logID),
             getNoChildrenPlaceholderNode: async () =>
                 new PlaceholderNode(this, localize('AWS.explorerNode.ecr.noRepositories', '[No repositories found]')),
             sort: (item1: EcrRepositoryNode, item2: EcrRepositoryNode) =>

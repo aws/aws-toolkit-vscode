@@ -8,7 +8,6 @@ import * as nls from 'vscode-nls'
 const localize = nls.loadMessageBundle()
 
 import { getLogger } from '../logger'
-import { IteratorTransformer } from '../utilities/collectionUtils'
 
 /**
  * Options to configure the behavior of the quick pick UI.
@@ -167,7 +166,7 @@ export function verifySinglePickerOutput<T extends vscode.QuickPickItem>(choices
  *
  * External control is still done via `picker.promptUser` as if it were a normal QuickPick.
  */
-export class IteratingQuickPickController<TResponse> {
+export class IteratingQuickPickController {
     private state: IteratingQuickPickControllerState
 
     // Default constructs are public static so they can be validated aganist by other functions.
@@ -191,7 +190,7 @@ export class IteratingQuickPickController<TResponse> {
      */
     public constructor(
         private readonly quickPick: vscode.QuickPick<vscode.QuickPickItem>,
-        private readonly populator: IteratorTransformer<TResponse, vscode.QuickPickItem>,
+        private readonly populator: AsyncIterable<vscode.QuickPickItem[]>,
         private readonly onDidTriggerButton?: (
             button: vscode.QuickInputButton,
             resolve: (
@@ -209,7 +208,7 @@ export class IteratingQuickPickController<TResponse> {
             this.state.isRunning = false
         })
 
-        this.state = new IteratingQuickPickControllerState(this.populator.createPickIterator())
+        this.state = new IteratingQuickPickControllerState(this.populator[Symbol.asyncIterator]())
     }
 
     /**
@@ -253,7 +252,7 @@ export class IteratingQuickPickController<TResponse> {
 
             this.quickPick.items = []
 
-            this.state = new IteratingQuickPickControllerState(this.populator.createPickIterator())
+            this.state = new IteratingQuickPickControllerState(this.populator[Symbol.asyncIterator]())
 
             resolve()
         })
@@ -298,8 +297,13 @@ export class IteratingQuickPickController<TResponse> {
                         this.state.iterator
                             .next()
                             .then(newItems => {
-                                getLogger().debug(`Returning a payload of size: ${newItems.value.length}`)
-                                resolve(newItems)
+                                if (newItems.value !== undefined) {
+                                    getLogger().debug(`Returning a payload of size: ${newItems.value.length}`)
+                                    resolve(newItems)
+                                }
+                                if (newItems.done) {
+                                    resolve({ value: [], done: true })
+                                }
                             })
                             .catch(e => {
                                 // append error node

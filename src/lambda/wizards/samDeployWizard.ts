@@ -18,7 +18,7 @@ import { createHelpButton } from '../../shared/ui/buttons'
 import * as input from '../../shared/ui/input'
 import * as picker from '../../shared/ui/picker'
 import * as telemetry from '../../shared/telemetry/telemetry'
-import { difference, filter, IteratorTransformer } from '../../shared/utilities/collectionUtils'
+import { difference, filter } from '../../shared/utilities/collectionUtils'
 import {
     MultiStepWizard,
     WIZARD_GOBACK,
@@ -595,10 +595,11 @@ export class DefaultSamDeployWizardContext implements SamDeployWizardContext {
             },
         })
 
-        const populator = new IteratorTransformer<EcrRepository, vscode.QuickPickItem>(
-            () => ext.toolkitClientBuilder.createEcrClient(selectedRegion).describeRepositories(),
-            response => (response === undefined ? [] : [{ label: response.repositoryName, repository: response }])
-        )
+        const populator = ext.toolkitClientBuilder
+            .createEcrClient(selectedRegion)
+            .describeRepositories()
+            .map(response => response.map(repo => ({ label: repo.repositoryName, repository: repo })))
+
         const controller = new picker.IteratingQuickPickController(quickPick, populator)
         controller.startRequests()
         const choices = await picker.promptUser({

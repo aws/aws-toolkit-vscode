@@ -16,7 +16,6 @@ import { ext } from '../../shared/extensionGlobals'
 import { CloudWatchLogsClient } from '../../shared/clients/cloudWatchLogsClient'
 import * as telemetry from '../../shared/telemetry/telemetry'
 import { LOCALIZED_DATE_FORMAT } from '../../shared/constants'
-import { getPaginatedAwsCallIter, IteratorTransformer } from '../../shared/utilities/collectionUtils'
 import { LogStreamRegistry } from '../registry/logStreamRegistry'
 import { convertLogGroupInfoToUri } from '../cloudWatchLogsUtils'
 
@@ -70,18 +69,7 @@ export class DefaultSelectLogStreamWizardContext implements SelectLogStreamWizar
                 totalSteps: this.totalSteps,
             },
         })
-        const populator = new IteratorTransformer(
-            () =>
-                getPaginatedAwsCallIter({
-                    awsCall: request => client.describeLogStreams(request),
-                    nextTokenNames: {
-                        request: 'nextToken',
-                        response: 'nextToken',
-                    },
-                    request,
-                }),
-            response => convertDescribeLogStreamsToQuickPickItems(response)
-        )
+        const populator = client.describeLogStreams(request).map(convertDescribeLogStreamsToQuickPickItems)
 
         const controller = new picker.IteratingQuickPickController(qp, populator)
         controller.startRequests()
@@ -112,9 +100,9 @@ export class DefaultSelectLogStreamWizardContext implements SelectLogStreamWizar
 }
 
 export function convertDescribeLogStreamsToQuickPickItems(
-    response: CloudWatchLogs.DescribeLogStreamsResponse
+    response: NonNullable<CloudWatchLogs.DescribeLogStreamsResponse['logStreams']>
 ): vscode.QuickPickItem[] {
-    return (response.logStreams ?? []).map<vscode.QuickPickItem>(stream => ({
+    return response.map<vscode.QuickPickItem>(stream => ({
         label: stream.logStreamName!,
         detail: stream.lastEventTimestamp
             ? moment(stream.lastEventTimestamp).format(LOCALIZED_DATE_FORMAT)

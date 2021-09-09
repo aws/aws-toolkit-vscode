@@ -4,6 +4,7 @@
  */
 
 import './asyncIteratorShim'
+import { AccumulatableKeys, NeverCoalesce, SharedProp } from './tsUtils'
 
 export function union<T>(a: Iterable<T>, b: Iterable<T>): Set<T> {
     const result = new Set<T>()
@@ -161,76 +162,6 @@ export async function take<T>(sequence: AsyncIterable<T>, count: number): Promis
     return result
 }
 
-export interface getPaginatedAwsCallIterParams<TRequest, TResponse> {
-    awsCall: (request: TRequest) => Promise<TResponse>
-    nextTokenNames: {
-        request: keyof TRequest
-        response: keyof TResponse
-    }
-    request: TRequest
-}
-
-/**
- * Generates an iterator representing a paginated AWS call from a request and an AWS SDK call
- * Each next() call will make a new request with the previous request's nextToken.
- * @param params Iterator params
- */
-export async function* getPaginatedAwsCallIter<TRequest, TResponse>(
-    params: getPaginatedAwsCallIterParams<TRequest, TResponse>
-): AsyncIterator<TResponse> {
-    let nextToken: string | undefined = undefined
-
-    while (true) {
-        const response: TResponse = await params.awsCall({
-            ...params.request,
-            [params.nextTokenNames.request]: nextToken,
-        })
-        if (response[params.nextTokenNames.response]) {
-            nextToken = response[params.nextTokenNames.response] as any as string
-        } else {
-            // done; returns last response with { done: true }
-            return response
-        }
-
-        yield response
-    }
-}
-
-/**
- * Represents an iterator that tranforms another iterator into an array of QuickPickItems.
- * Additionally, has a reset functionality to reset the iterator to its initial state.
- * @template TIteratorOutput Iterator output value type
- * @template TTransformerOutput Transformer output value type
- */
-export class IteratorTransformer<TIteratorOutput, TTransformerOutput> {
-    /**
-     * @param iteratorFactory Function that returns an iterator, with all default state values set. E.g. `collectionUtils.getPaginatedAwsCallIter`
-     * @param transform Function which transforms a response from the iterator into an array of `vscode.QuickPickItem`s.
-     */
-    public constructor(
-        private readonly iteratorFactory: () => AsyncIterator<TIteratorOutput>,
-        private readonly transform: (response: TIteratorOutput) => TTransformerOutput[]
-    ) {}
-
-    /**
-     * Generates an iterator which returns an array of formatted QuickPickItems on `.next()`
-     */
-    public async *createPickIterator(): AsyncIterator<TTransformerOutput[]> {
-        const iterator = this.iteratorFactory()
-        while (true) {
-            const nextResult = await iterator.next()
-            const transformedResult = this.transform(nextResult.value)
-
-            // return (instead of yield) marks final value as done
-            if (nextResult.done) {
-                return transformedResult
-            }
-
-            yield transformedResult
-        }
-    }
-}
-
 /**
  * Push if condition is true, useful for adding CLI arguments, and avoiding this kind of situation:
  * if (x && y) {
@@ -271,4 +202,170 @@ export function stripUndefined(obj: any): void {
             stripUndefined(obj[key])
         }
     })
+}
+
+/** Initial request may be optional, should always return a Promise */
+type OptionalRequestFn<T, U> = ((request: T) => Promise<U>) | ((request?: T) => Promise<U>)
+/** Either 'unbox' an Iterable value or leave it as-is if it's not an Iterable */
+type SafeUnboxIterable<T> = T extends Iterable<infer U> ? U : T
+
+/**
+ * Converts a 'paged' API request to a collection of sequential API requests
+ * based off a 'mark' (the paginated token field) and a `prop` which is an
+ * accumulatable property on the response interface.
+ *
+ * @param requester Asynchronous function to make the API requests with
+ * @param request Initial request to apply to the API calls
+ * @param mark A property name of the paginated token field shared by the input/output shapes
+ * @param prop A property name of an 'accumulatable' field in the output shape
+ * @returns An {@link AsyncCollection} resolving to the type described by the `prop` field
+ */
+export function pageableToCollection<
+    TRequest,
+    TResponse,
+    TTokenProp extends SharedProp<TRequest, TResponse>,
+    TResult extends AccumulatableKeys<TResponse>,
+    TTokenType extends TRequest[TTokenProp] & TResponse[TTokenProp]
+>(
+    requester: OptionalRequestFn<TRequest, TResponse>,
+    request: TRequest,
+    mark: TTokenProp,
+    prop: TResult
+): AsyncCollection<TResponse[TResult]> {
+    async function* gen() {
+        do {
+            const response = await requester(request)
+            yield response[prop]
+            request[mark] = response[mark] as TTokenType
+        } while (request[mark])
+    }
+
+    return toCollection(gen)
+}
+
+async function* mapAsyncIterable<T, U>(iterable: AsyncIterable<T>, mapfn: (item: T) => U) {
+    for await (const item of iterable) {
+        yield mapfn(item)
+    }
+}
+
+function isIterable<T>(obj: any): obj is Iterable<T> {
+    return obj !== undefined && typeof obj[Symbol.iterator] === 'function'
+}
+
+async function* flatten<T, U extends SafeUnboxIterable<T>>(iterable: AsyncIterable<T>) {
+    for await (const item of iterable) {
+        if (isIterable<U>(item)) {
+            yield* item
+        } else {
+            yield item as U
+        }
+    }
+}
+
+async function promise<T>(iterable: AsyncIterable<T>): Promise<T[]> {
+    const result: T[] = []
+
+    for await (const item of iterable) {
+        result.push(item)
+    }
+
+    return result
+}
+
+async function* takeFrom<T>(iterable: AsyncIterable<T>, count: number) {
+    for await (const item of iterable) {
+        if (--count < 0) {
+            return
+        }
+        yield item
+    }
+}
+
+type AsyncPredicate<T, U extends T> = ((item: T) => item is U) | ((item: T) => Promise<boolean> | boolean)
+
+async function* filterAsyncIterable<T, U extends T>(iterable: AsyncIterable<T>, predicate: AsyncPredicate<T, U>) {
+    for await (const item of iterable) {
+        if (predicate(item)) {
+            yield item
+        }
+    }
+}
+
+function addToMap<T, U extends string>(map: Map<U, T>, selector: KeySelector<T, U> | StringProperty<T>, item: T) {
+    const key = typeof selector === 'function' ? selector(item) : item[selector]
+    if (key) {
+        if (map.has(key as keyof typeof map['keys'])) {
+            throw new Error(`Duplicate key found when converting AsyncIterable to map: ${key}`)
+        }
+
+        map.set(key as keyof typeof map['keys'], item)
+    }
+}
+
+// Type 'U' is constrained to be either a key of 'T' or a string returned by a function parsing 'T'
+type KeySelector<T, U extends string> = (item: T) => U | undefined
+type StringProperty<T> = { [P in keyof T]: T[P] extends string ? P : never }[keyof T]
+
+async function asyncIterableToMap<T, K extends StringProperty<T>, U extends string = never>(
+    iterable: AsyncIterable<T>,
+    selector: KeySelector<T, U> | K
+): Promise<Map<NeverCoalesce<U, T[K]>, T>> {
+    const result = new Map<NeverCoalesce<U, T[K]>, T>()
+
+    for await (const item of iterable) {
+        addToMap(result, selector, item)
+    }
+
+    return result
+}
+
+/**
+ * Converts an AsyncGenerator function to an {@link AsyncCollection}
+ *
+ * Uses closures to capture generator functions after each transformation. Generator functions are not called
+ * until a 'final' operation is taken by either:
+ *  * Iterating over them using `for await (...)`
+ *  * Iterating over them using `.next()`
+ *  * Calling one of the conversion functions `toMap` or `promise`
+ *
+ * Collections are *immutable* in the sense that any transformation will not consume the underlying generator
+ * function. That is, any 'final' operation uses its own contextually bound generator function separate from
+ * any predecessor collections.
+ */
+export function toCollection<T>(generator: () => AsyncGenerator<T>): AsyncCollection<T> {
+    const iterable: AsyncIterable<T> = {
+        [Symbol.asyncIterator]: () => generator(),
+    }
+
+    return Object.assign(iterable, {
+        flatten: () => toCollection<SafeUnboxIterable<T>>(() => flatten(iterable)),
+        filter: <U extends T>(predicate: AsyncPredicate<T, U>) =>
+            toCollection<U>(() => filterAsyncIterable(iterable, predicate)),
+        map: <U>(fn: (item: T) => U) => toCollection<U>(() => mapAsyncIterable(iterable, fn)),
+        take: (count: number) => toCollection(() => takeFrom(iterable, count)),
+        promise: () => promise(iterable),
+        toMap: <U extends string = never, K extends StringProperty<T> = never>(selector: KeySelector<T, U> | K) =>
+            asyncIterableToMap(iterable, selector),
+    })
+}
+
+/**
+ * High-level abstraction over async generator functions of the form `async function*` {@link AsyncGenerator}
+ */
+export interface AsyncCollection<T> extends AsyncIterable<T> {
+    /** Flattens the collection 1-level deep */
+    flatten(): AsyncCollection<SafeUnboxIterable<T>>
+    /** Applies a mapping transform to the output generator */
+    map<U>(fn: (obj: T) => U): AsyncCollection<U>
+    /** Filters out results. This changes how many elements will be consumed by `take`. */
+    filter<U extends T>(predicate: AsyncPredicate<T, U>): AsyncCollection<U>
+    /** Uses only the first 'count' number of values returned by the generator. */
+    take(count: number): AsyncCollection<T>
+    /** Converts the collection to a Promise, resolving to an array of all values returned by the generator. */
+    promise(): Promise<T[]>
+    /** Converts the collection to a Map, using either a property of the item or a function to select keys. */
+    toMap<K extends StringProperty<T>, U extends string = never>(
+        selector: KeySelector<T, U> | K
+    ): Promise<Map<NeverCoalesce<U, T[K]>, T>>
 }

@@ -8,7 +8,6 @@ import * as FakeTimers from '@sinonjs/fake-timers'
 import * as sinon from 'sinon'
 import * as vscode from 'vscode'
 import * as picker from '../../../shared/ui/picker'
-import { IteratorTransformer } from '../../../shared/utilities/collectionUtils'
 
 export class TestQuickPick<T extends vscode.QuickPickItem> implements vscode.QuickPick<T> {
     public _value: string = ''
@@ -420,7 +419,7 @@ describe('IteratingQuickPickController', async function () {
         quickPick.dispose()
     })
 
-    async function* iteratorFn(): AsyncIterator<string> {
+    async function* iteratorFn(): AsyncIterable<vscode.QuickPickItem[]> {
         for (const [i, value] of values.entries()) {
             await new Promise<void>(resolve => {
                 clock.setTimeout(() => {
@@ -430,40 +429,30 @@ describe('IteratingQuickPickController', async function () {
             if (i === values.length - 1) {
                 return value
             }
-            yield value
+            if (value) {
+                yield [{ label: value.toUpperCase() }]
+            } else {
+                yield []
+            }
         }
     }
 
-    function converter(val: string): vscode.QuickPickItem[] {
-        if (val) {
-            return [{ label: val.toUpperCase() }]
-        }
-
-        return []
-    }
-
-    async function* errIteratorFn(): AsyncIterator<string> {
+    async function* errIteratorFn(): AsyncIterable<vscode.QuickPickItem[]> {
         throw new Error(errMessage)
-        yield 'nope'
+        yield []
     }
 
-    async function* blankIteratorFn(): AsyncIterator<string> {}
+    async function* blankIteratorFn(): AsyncIterable<vscode.QuickPickItem[]> {}
 
     it('appends a refresh button to the quickPick', function () {
-        new picker.IteratingQuickPickController(
-            quickPick,
-            new IteratorTransformer<string, vscode.QuickPickItem>(() => iteratorFn(), converter)
-        )
+        new picker.IteratingQuickPickController(quickPick, iteratorFn())
 
         assert.strictEqual(quickPick.buttons.length, 1)
         assert.strictEqual(quickPick.buttons[0], picker.IteratingQuickPickController.REFRESH_BUTTON)
     })
 
     it('returns iterated values on start and on reset', async function () {
-        const controller = new picker.IteratingQuickPickController(
-            quickPick,
-            new IteratorTransformer<string, vscode.QuickPickItem>(() => iteratorFn(), converter)
-        )
+        const controller = new picker.IteratingQuickPickController(quickPick, iteratorFn())
 
         controller.startRequests()
 
@@ -505,10 +494,7 @@ describe('IteratingQuickPickController', async function () {
     })
 
     it('does not return additional values if start is called on a finished iterator', async function () {
-        const controller = new picker.IteratingQuickPickController(
-            quickPick,
-            new IteratorTransformer<string, vscode.QuickPickItem>(() => iteratorFn(), converter)
-        )
+        const controller = new picker.IteratingQuickPickController(quickPick, iteratorFn())
 
         controller.startRequests()
 
@@ -537,10 +523,7 @@ describe('IteratingQuickPickController', async function () {
     })
 
     it('pauses and restarts iteration', async function () {
-        const controller = new picker.IteratingQuickPickController(
-            quickPick,
-            new IteratorTransformer<string, vscode.QuickPickItem>(() => iteratorFn(), converter)
-        )
+        const controller = new picker.IteratingQuickPickController(quickPick, iteratorFn())
 
         // pause almost immediately. This should cause this to output a single item.
         controller.startRequests()
@@ -574,10 +557,7 @@ describe('IteratingQuickPickController', async function () {
     })
 
     it('appends an error item', async function () {
-        const controller = new picker.IteratingQuickPickController(
-            quickPick,
-            new IteratorTransformer<string, vscode.QuickPickItem>(() => errIteratorFn(), converter)
-        )
+        const controller = new picker.IteratingQuickPickController(quickPick, errIteratorFn())
 
         controller.startRequests()
         await clock.nextAsync()
@@ -597,10 +577,7 @@ describe('IteratingQuickPickController', async function () {
     })
 
     it('appends a no items item', async function () {
-        const controller = new picker.IteratingQuickPickController(
-            quickPick,
-            new IteratorTransformer<string, vscode.QuickPickItem>(() => blankIteratorFn(), converter)
-        )
+        const controller = new picker.IteratingQuickPickController(quickPick, blankIteratorFn())
 
         controller.startRequests()
         await clock.nextAsync()
@@ -614,10 +591,7 @@ describe('IteratingQuickPickController', async function () {
     })
 
     it('only appends values from the current refresh cycle', async function () {
-        const controller = new picker.IteratingQuickPickController(
-            quickPick,
-            new IteratorTransformer<string, vscode.QuickPickItem>(() => iteratorFn(), converter)
-        )
+        const controller = new picker.IteratingQuickPickController(quickPick, iteratorFn())
 
         controller.startRequests()
         await clock.nextAsync()
@@ -659,25 +633,12 @@ describe('IteratingQuickPickController', async function () {
     })
 
     describe('iteratingOnDidTriggerButton', async function () {
-        class fakeIteratingQuickPickController extends picker.IteratingQuickPickController<undefined> {
+        class fakeIteratingQuickPickController extends picker.IteratingQuickPickController {
             public constructor(
                 private readonly spy: sinon.SinonSpy,
                 callback?: () => Promise<vscode.QuickPickItem[] | undefined>
             ) {
-                super(
-                    picker.createQuickPick({}),
-                    new IteratorTransformer(
-                        () => {
-                            return {
-                                next: async () => {
-                                    return { value: undefined, done: true }
-                                },
-                            }
-                        },
-                        () => []
-                    ),
-                    callback
-                )
+                super(picker.createQuickPick({}), blankIteratorFn(), callback)
             }
             public async reset(): Promise<void> {
                 this.spy()

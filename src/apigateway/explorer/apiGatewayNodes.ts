@@ -13,19 +13,17 @@ import { PlaceholderNode } from '../../shared/treeview/nodes/placeholderNode'
 import { makeChildrenNodes } from '../../shared/treeview/treeNodeUtilities'
 import { ErrorNode } from '../../shared/treeview/nodes/errorNode'
 import { ApiGatewayClient } from '../../shared/clients/apiGatewayClient'
-import { RestApi } from 'aws-sdk/clients/apigateway'
-import { toArrayAsync, toMap, updateInPlace } from '../../shared/utilities/collectionUtils'
+import { updateInPlace } from '../../shared/utilities/collectionUtils'
 import { RestApiNode } from './apiNodes'
 
 /**
  * An AWS Explorer node representing the API Gateway (v1) service.
  */
 export class ApiGatewayNode extends AWSTreeNodeBase {
-    private readonly apiNodes: Map<string, RestApiNode>
+    private readonly apiNodes = new Map<`${string} (${string})`, RestApiNode>()
 
     public constructor(private readonly partitionId: string, private readonly regionCode: string) {
         super('API Gateway', vscode.TreeItemCollapsibleState.Collapsed)
-        this.apiNodes = new Map<string, RestApiNode>()
     }
 
     public async getChildren(): Promise<AWSTreeNodeBase[]> {
@@ -35,8 +33,7 @@ export class ApiGatewayNode extends AWSTreeNodeBase {
 
                 return [...this.apiNodes.values()]
             },
-            getErrorNode: async (error: Error, logID: number) => 
-                new ErrorNode(this, error, logID),
+            getErrorNode: async (error: Error, logID: number) => new ErrorNode(this, error, logID),
             getNoChildrenPlaceholderNode: async () =>
                 new PlaceholderNode(
                     this,
@@ -48,10 +45,10 @@ export class ApiGatewayNode extends AWSTreeNodeBase {
 
     public async updateChildren(): Promise<void> {
         const client: ApiGatewayClient = ext.toolkitClientBuilder.createApiGatewayClient(this.regionCode)
-        const apis: Map<string, RestApi> = toMap(
-            await toArrayAsync(client.listApis()),
-            configuration => `${configuration.name} (${configuration.id})`
-        )
+        const apis = await client
+            .listApis()
+            .flatten()
+            .toMap(c => `${c.name!} (${c.id!})`)
 
         updateInPlace(
             this.apiNodes,

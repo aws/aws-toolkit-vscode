@@ -67,17 +67,15 @@ describe('viewLogStreamWizard', async function () {
 describe('convertDescribeLogStreamsToQuickPickItems', function () {
     it('converts things correctly', function () {
         const time = new Date().getTime()
-        const results = convertDescribeLogStreamsToQuickPickItems({
-            logStreams: [
-                {
-                    logStreamName: 'streamWithoutTimestamp',
-                },
-                {
-                    logStreamName: 'streamWithTimestamp',
-                    lastEventTimestamp: time,
-                },
-            ],
-        })
+        const results = convertDescribeLogStreamsToQuickPickItems([
+            {
+                logStreamName: 'streamWithoutTimestamp',
+            },
+            {
+                logStreamName: 'streamWithTimestamp',
+                lastEventTimestamp: time,
+            },
+        ])
 
         assert.strictEqual(results.length, 2)
         assert.deepStrictEqual(results[0], {
@@ -88,7 +86,7 @@ describe('convertDescribeLogStreamsToQuickPickItems', function () {
             label: 'streamWithTimestamp',
             detail: moment(time).format(LOCALIZED_DATE_FORMAT),
         })
-        const noResults = convertDescribeLogStreamsToQuickPickItems({})
+        const noResults = convertDescribeLogStreamsToQuickPickItems([])
         assert.strictEqual(noResults.length, 0)
     })
 })

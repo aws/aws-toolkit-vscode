@@ -12,7 +12,6 @@ import { AppRunnerServiceNode } from '../../../apprunner/explorer/apprunnerServi
 import { AppRunnerClient } from '../../../shared/clients/apprunnerClient'
 import { ext } from '../../../shared/extensionGlobals'
 import { CloudWatchLogsClient } from '../../../shared/clients/cloudWatchLogsClient'
-import { asyncGenerator } from '../../utilities/collectionUtils'
 import { AWSTreeNodeBase } from '../../../shared/treeview/nodes/awsTreeNodeBase'
 
 describe('AppRunnerServiceNode', function () {
@@ -44,10 +43,8 @@ describe('AppRunnerServiceNode', function () {
         mockApprunnerClient = mock()
         mockParentNode = mock()
         node = new AppRunnerServiceNode(instance(mockParentNode), instance(mockApprunnerClient), exampleInfo)
-        when(mockApprunnerClient.listOperations(anything())).thenResolve({ OperationSummaryList: [] })
-        when(mockCloudWatchLogsClient.describeLogGroups(anything())).thenReturn(
-            asyncGenerator([{ logGroupName: 'logs' }])
-        )
+        when(mockApprunnerClient.listAllOperations(anything())).thenResolve([])
+        when(mockCloudWatchLogsClient.describeAllLogGroups(anything())).thenResolve([{ logGroupName: 'logs' }])
     })
 
     after(function () {

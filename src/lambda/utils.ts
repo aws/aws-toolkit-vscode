@@ -20,20 +20,14 @@ import { FileResourceFetcher } from '../shared/resourcefetcher/fileResourceFetch
 import { ext } from '../shared/extensionGlobals'
 import { sampleRequestManifestPath } from './constants'
 
-export async function* listCloudFormationStacks(
-    client: CloudFormationClient
-): AsyncIterableIterator<CloudFormation.StackSummary> {
+export async function listCloudFormationStacks(client: CloudFormationClient): Promise<CloudFormation.StackSummary[]> {
     // TODO: this 'loading' message needs to go under each regional entry
     // in the explorer, and be removed when that region's query completes
     const status = vscode.window.setStatusBarMessage(
         localize('AWS.message.statusBar.loading.cloudFormation', 'Loading CloudFormation Stacks...')
     )
 
-    try {
-        yield* client.listStacks()
-    } finally {
-        status.dispose()
-    }
+    return client.listAllStacks().finally(() => status.dispose())
 }
 
 export async function* listLambdaFunctions(client: LambdaClient): AsyncIterableIterator<Lambda.FunctionConfiguration> {
@@ -55,9 +49,7 @@ export async function* listLambdaFunctions(client: LambdaClient): AsyncIterableI
  * Only works for supported languages (Python/JS)
  * @param configuration Lambda configuration object from getFunction
  */
-export function getLambdaDetails(
-    configuration: Lambda.FunctionConfiguration
-): {
+export function getLambdaDetails(configuration: Lambda.FunctionConfiguration): {
     fileName: string
     functionName: string
 } {

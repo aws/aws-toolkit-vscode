@@ -10,7 +10,7 @@ import { AppRunner } from 'aws-sdk'
 import { AppRunnerNode } from './apprunnerNode'
 import { CloudWatchLogsClient } from '../../shared/clients/cloudWatchLogsClient'
 import { ext } from '../../shared/extensionGlobals'
-import { toArrayAsync, toMap } from '../../shared/utilities/collectionUtils'
+import { toMap } from '../../shared/utilities/collectionUtils'
 import { CloudWatchLogsBase } from '../../cloudWatchLogs/explorer/cloudWatchLogsNode'
 import { CloudWatchLogs } from 'aws-sdk'
 import { AWSResourceNode } from '../../shared/treeview/nodes/awsResourceNode'
@@ -69,11 +69,9 @@ export class AppRunnerServiceNode extends CloudWatchLogsBase implements AWSResou
 
     protected async getLogGroups(client: CloudWatchLogsClient): Promise<Map<string, CloudWatchLogs.LogGroup>> {
         return toMap(
-            await toArrayAsync(
-                client.describeLogGroups({
-                    logGroupNamePrefix: `/aws/apprunner/${this._info.ServiceName}/${this._info.ServiceId}`,
-                })
-            ),
+            await client.describeAllLogGroups({
+                logGroupNamePrefix: `/aws/apprunner/${this._info.ServiceName}/${this._info.ServiceId}`,
+            }),
             configuration => configuration.logGroupName
         )
     }
@@ -118,9 +116,8 @@ export class AppRunnerServiceNode extends CloudWatchLogsBase implements AWSResou
 
     private async updateOperation(): Promise<void> {
         return this.client
-            .listOperations({ MaxResults: 1, ServiceArn: this._info.ServiceArn })
-            .then(resp => {
-                const operations = resp.OperationSummaryList
+            .listAllOperations({ MaxResults: 1, ServiceArn: this._info.ServiceArn })
+            .then(operations => {
                 const operation = operations && operations[0]?.EndedAt === undefined ? operations[0] : undefined
                 if (operation !== undefined) {
                     this.setOperation(this._info, operation.Id!, operation.Type as any)

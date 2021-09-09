@@ -14,7 +14,7 @@ import { instance, mock, when } from 'ts-mockito'
 import { exposeEmitters, ExposeEmitters } from '../../vscode/testUtils'
 
 describe('RolePrompter', function () {
-    let roleResponse: IAM.ListRolesResponse
+    let roleResponse: IAM.Role[]
     let newRole: IAM.Role
     let mockIamClient: IamClient
     let prompterProvider: RolePrompter
@@ -22,22 +22,19 @@ describe('RolePrompter', function () {
     let picker: ExposeEmitters<vscode.QuickPick<picker.DataQuickPickItem<IAM.Role>>, 'onDidTriggerButton'>
 
     beforeEach(function () {
-        roleResponse = {
-            Roles: [
-                {
-                    RoleName: 'test-role1',
-                    Arn: 'test-arn1',
-                } as any,
-            ],
-        }
-
-        newRole = {
-            RoleName: 'new-role',
-            Arn: 'new-arn',
-        } as any
+        ;(roleResponse = [
+            {
+                RoleName: 'test-role1',
+                Arn: 'test-arn1',
+            } as any,
+        ]),
+            (newRole = {
+                RoleName: 'new-role',
+                Arn: 'new-arn',
+            } as any)
 
         mockIamClient = mock()
-        when(mockIamClient.listRoles()).thenResolve(roleResponse)
+        when(mockIamClient.listAllRoles()).thenResolve(roleResponse)
         prompterProvider = new RolePrompter(instance(mockIamClient), { createRole: () => Promise.resolve(newRole) })
         prompter = prompterProvider({ stepCache: {} } as any) as picker.QuickPickPrompter<IAM.Role>
         picker = exposeEmitters(prompter.quickPick, ['onDidTriggerButton'])
@@ -50,7 +47,7 @@ describe('RolePrompter', function () {
             }
         })
 
-        assert.strictEqual(await prompter.prompt(), roleResponse.Roles[0])
+        assert.strictEqual(await prompter.prompt(), roleResponse[0])
     })
 
     it('can refresh', async function () {
@@ -64,17 +61,17 @@ describe('RolePrompter', function () {
             if (picker.items.length === 0) {
                 picker.onDidChangeActive(() => {
                     if (picker.items.length === 1) {
-                        roleResponse.Roles.push({ RoleName: 'test-role2', Arn: 'test-arn2' } as any)
+                        roleResponse.push({ RoleName: 'test-role2', Arn: 'test-arn2' } as any)
                         picker.fireOnDidTriggerButton(picker.buttons.filter(b => b.tooltip === 'Refresh')[0])
                     }
                 })
             } else {
-                roleResponse.Roles.push({ RoleName: 'test-role2', Arn: 'test-arn2' } as any)
+                roleResponse.push({ RoleName: 'test-role2', Arn: 'test-arn2' } as any)
                 picker.fireOnDidTriggerButton(picker.buttons.filter(b => b.tooltip === 'Refresh')[0])
             }
         })
 
-        assert.strictEqual(await prompter.prompt(), roleResponse.Roles[1])
+        assert.strictEqual(await prompter.prompt(), roleResponse[1])
     })
 
     it('can create a new role', async function () {

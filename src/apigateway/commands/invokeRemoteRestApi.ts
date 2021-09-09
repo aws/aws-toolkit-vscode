@@ -9,7 +9,6 @@ import { getLogger, Logger } from '../../shared/logger'
 import { BaseTemplates } from '../../shared/templates/baseTemplates'
 import { ext } from '../../shared/extensionGlobals'
 import { template } from 'lodash'
-import { toArrayAsync, toMap } from '../../shared/utilities/collectionUtils'
 import { ExtensionUtilities } from '../../shared/extensionUtilities'
 import { Resource } from 'aws-sdk/clients/apigateway'
 import { ApiGatewayClient } from '../../shared/clients/apiGatewayClient'
@@ -67,18 +66,22 @@ export async function invokeRemoteRestApi(params: { outputChannel: vscode.Output
         const client = ext.toolkitClientBuilder.createApiGatewayClient(params.apiNode.regionCode)
         logger.info(`Loading API Resources for API ${apiNode.name} (id: ${apiNode.id})`)
 
-        const resources: Map<string, Resource> = toMap(
-            await toArrayAsync(client.getResourcesForApi(apiNode.id)),
-            resource => resource.id
-        )
+        function isValidResource(obj: any): obj is Resource & { id: string; path: string } {
+            return typeof obj.id === 'string' && typeof obj.path === 'string'
+        }
+
+        const resources = await client
+            .getResourcesForApi({ restApiId: apiNode.id })
+            .flatten()
+            .filter(isValidResource)
+            .toMap('id')
 
         logger.debug(`Loaded: ${resources}`)
 
         const loadScripts = ExtensionUtilities.getScriptsForHtml(['invokeRemoteRestApiVue.js'], view.webview)
         const loadLibs = ExtensionUtilities.getLibrariesForHtml(['vue.min.js'], view.webview)
 
-        // something is wrong if the paths aren't defined...
-        const sortResources = (a: [string, Resource], b: [string, Resource]) => a[1].path!.localeCompare(b[1].path!)
+        const sorted = new Map([...resources].sort((a, b) => a[1].path.localeCompare(b[1].path)))
 
         view.webview.html = baseTemplateFn({
             cspSource: view.webview.cspSource,
@@ -86,7 +89,7 @@ export async function invokeRemoteRestApi(params: { outputChannel: vscode.Output
                 ApiName: apiNode.name,
                 ApiId: apiNode.id,
                 ApiArn: apiNode.arn,
-                Resources: new Map([...resources].sort(sortResources)),
+                Resources: sorted,
                 Scripts: loadScripts,
                 Libraries: loadLibs,
             }),

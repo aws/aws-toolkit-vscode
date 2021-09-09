@@ -36,8 +36,8 @@ describe('AppRunnerNode', function () {
     beforeEach(function () {
         mockApprunnerClient = mock()
         node = new AppRunnerNode('', instance(mockApprunnerClient))
-        when(mockApprunnerClient.listServices(anything())).thenResolve({ ServiceSummaryList: exampleSummaries })
-        when(mockApprunnerClient.listOperations(anything())).thenResolve({ OperationSummaryList: [] })
+        when(mockApprunnerClient.listAllServices(anything())).thenResolve(exampleSummaries)
+        when(mockApprunnerClient.listAllOperations(anything())).thenResolve([])
         clock.reset()
     })
 
@@ -55,7 +55,7 @@ describe('AppRunnerNode', function () {
         const childNode = (await node.getChildren())[0] as AppRunnerServiceNode
 
         const updatedSummary = { ...exampleSummaries[0], Status: 'PAUSED' }
-        when(mockApprunnerClient.listServices(anything())).thenResolve({ ServiceSummaryList: [updatedSummary] })
+        when(mockApprunnerClient.listAllServices(anything())).thenResolve([updatedSummary])
 
         await node.getChildren()
         assert.strictEqual(childNode.info.Status, 'PAUSED')
@@ -63,22 +63,20 @@ describe('AppRunnerNode', function () {
 
     it('deletes AppRunnerServiceNodes', async function () {
         await node.getChildren()
-        when(mockApprunnerClient.listServices(anything())).thenResolve({ ServiceSummaryList: [] })
+        when(mockApprunnerClient.listAllServices(anything())).thenResolve([])
 
         assert.ok((await node.getChildren())[0] instanceof PlaceholderNode)
     })
 
     it('polls children nodes', async function () {
         const transientService = { ...exampleSummaries[0], Status: 'OPERATION_IN_PROGRESS' }
-        when(mockApprunnerClient.listServices(anything())).thenResolve({ ServiceSummaryList: [transientService] })
-        when(mockApprunnerClient.listOperations(anything())).thenResolve({
-            OperationSummaryList: [{ Id: 'test-id', Type: 'PAUSE_SERVICE' }],
-        })
+        when(mockApprunnerClient.listAllServices(anything())).thenResolve([transientService])
+        when(mockApprunnerClient.listAllOperations(anything())).thenResolve([{ Id: 'test-id', Type: 'PAUSE_SERVICE' }])
 
         const childNode = (await node.getChildren())[0] as AppRunnerServiceNode
         const pausedService = { ...transientService, Status: 'PAUSED' }
         await clock.tickAsync(100000)
-        when(mockApprunnerClient.listServices(anything())).thenResolve({ ServiceSummaryList: [pausedService] })
+        when(mockApprunnerClient.listAllServices(anything())).thenResolve([pausedService])
         sinon.assert.calledOn(refreshStub, node)
         await node.getChildren()
         await clock.tickAsync(100000)

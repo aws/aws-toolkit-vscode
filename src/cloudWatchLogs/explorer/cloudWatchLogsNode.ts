@@ -12,7 +12,7 @@ import * as vscode from 'vscode'
 import { CloudWatchLogsClient } from '../../shared/clients/cloudWatchLogsClient'
 import { ext } from '../../shared/extensionGlobals'
 import { AWSTreeNodeBase } from '../../shared/treeview/nodes/awsTreeNodeBase'
-import { toMap, updateInPlace, toArrayAsync } from '../../shared/utilities/collectionUtils'
+import { updateInPlace } from '../../shared/utilities/collectionUtils'
 import { ErrorNode } from '../../shared/treeview/nodes/errorNode'
 import { PlaceholderNode } from '../../shared/treeview/nodes/placeholderNode'
 import { makeChildrenNodes } from '../../shared/treeview/treeNodeUtilities'
@@ -71,6 +71,10 @@ export class CloudWatchLogsNode extends CloudWatchLogsBase {
     }
 
     protected async getLogGroups(client: CloudWatchLogsClient): Promise<Map<string, CloudWatchLogs.LogGroup>> {
-        return toMap(await toArrayAsync(client.describeLogGroups()), configuration => configuration.logGroupName)
+        return client
+            .describeLogGroups()
+            .flatten()
+            .filter<CloudWatchLogs.LogGroup & { logGroupName: string }>(o => o.logGroupName !== undefined)
+            .toMap('logGroupName')
     }
 }

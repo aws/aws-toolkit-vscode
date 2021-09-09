@@ -10,7 +10,6 @@ import { ErrorNode } from '../../shared/treeview/nodes/errorNode'
 import { PlaceholderNode } from '../../shared/treeview/nodes/placeholderNode'
 import * as nls from 'vscode-nls'
 import { AppRunnerClient } from '../../shared/clients/apprunnerClient'
-import { getPaginatedAwsCallIter } from '../../shared/utilities/collectionUtils'
 import { AppRunner } from 'aws-sdk'
 
 const localize = nls.loadMessageBundle()
@@ -44,33 +43,8 @@ export class AppRunnerNode extends AWSTreeNodeBase {
         })
     }
 
-    private async getServiceSummaries(request: AppRunner.ListServicesRequest = {}): Promise<AppRunner.Service[]> {
-        const iterator = getPaginatedAwsCallIter({
-            awsCall: async request => await this.client.listServices(request),
-            nextTokenNames: {
-                request: 'NextToken',
-                response: 'NextToken',
-            },
-            request,
-        })
-
-        const services: AppRunner.Service[] = []
-
-        while (true) {
-            const next = await iterator.next()
-
-            next.value.ServiceSummaryList.forEach((summary: AppRunner.Service) => services.push(summary))
-
-            if (next.done) {
-                break
-            }
-        }
-
-        return services
-    }
-
     public async updateChildren(): Promise<void> {
-        const serviceSummaries = await this.getServiceSummaries()
+        const serviceSummaries = (await this.client.listAllServices()) as AppRunner.Service[]
         const deletedNodeArns = new Set(this.serviceNodes.keys())
 
         await Promise.all(

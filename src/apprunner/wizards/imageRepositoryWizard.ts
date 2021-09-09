@@ -11,7 +11,6 @@ import {
     QuickInputButton,
     QuickInputToggleButton,
 } from '../../shared/ui/buttons'
-import { toArrayAsync } from '../../shared/utilities/collectionUtils'
 import { EcrClient, EcrRepository } from '../../shared/clients/ecrClient'
 import * as input from '../../shared/ui/inputPrompter'
 import * as picker from '../../shared/ui/pickerPrompter'
@@ -82,7 +81,8 @@ function createImagePrompter(
     const last = cache['repos']
     const imageRepos =
         last ??
-        toArrayAsync(ecrClient.describeRepositories())
+        ecrClient
+            .describeAllRepositories()
             .then(resp => {
                 const repos = resp.map(repo => ({ label: repo.repositoryName, detail: repo.repositoryUri, data: repo }))
                 cache['repos'] = repos
@@ -178,7 +178,8 @@ function createTagPrompter(
     const last: picker.DataQuickPickItem<TaggedEcrRepository>[] = cache[imageRepo.repositoryName]
     const tagItems =
         last ??
-        toArrayAsync(ecrClient.describeTags(imageRepo.repositoryName))
+        ecrClient
+            .describeAllTags({ repositoryName: imageRepo.repositoryName })
             .then(tags => {
                 if (tags.length === 0) {
                     return [

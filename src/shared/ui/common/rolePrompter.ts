@@ -54,8 +54,8 @@ export class RolePrompter extends CachedPrompter<IAM.Role> {
     }
 
     protected load(): Promise<DataQuickPickItem<IAM.Role>[]> {
-        return this.client.listRoles().then(resp => {
-            const roles = resp.Roles.filter(this.options.filter ?? (() => true)).map(role => ({
+        return this.client.listAllRoles().then(resp => {
+            const roles = resp.filter(this.options.filter ?? (() => true)).map(role => ({
                 label: role.RoleName,
                 data: role,
             }))
