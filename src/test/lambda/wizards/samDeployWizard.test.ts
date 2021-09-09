@@ -777,14 +777,24 @@ describe('DefaultSamDeployWizardContext', async function () {
             yield [{ label: repoName, repository: { repositoryUri: 'uri' } }]
         }
 
+        beforeEach(function () {
+            sandbox.stub(ext, 'toolkitClientBuilder').value({
+                createEcrClient: () => ({
+                    describeRepositories: () => toCollection(repo),
+                }),
+            })
+        })
+
+        afterEach(function () {
+            sandbox.restore()
+        })
+
         it('returns an ECR Repo', async function () {
             sandbox
                 .stub(picker, 'promptUser')
                 .onFirstCall()
                 .returns(Promise.resolve([{ label: repoName, repository: { repositoryUri: 'uri' } }]))
-            sandbox.stub(ext.toolkitClientBuilder, 'createEcrClient').returns({
-                describeRepositories: () => toCollection(repo),
-            } as any)
+
             const output = await context.promptUserForEcrRepo(1, 'us-weast-1')
             assert.deepStrictEqual(output, { repositoryUri: 'uri' })
         })
