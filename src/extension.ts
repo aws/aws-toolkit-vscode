@@ -71,6 +71,7 @@ import * as extWindow from './shared/vscode/window'
 import { Ec2CredentialsProvider } from './credentials/providers/ec2CredentialsProvider'
 import { EnvVarsCredentialsProvider } from './credentials/providers/envVarsCredentialsProvider'
 import { EcsCredentialsProvider } from './credentials/providers/ecsCredentialsProvider'
+import { SchemaService } from './shared/schemas'
 
 let localize: nls.LocalizeFunc
 
@@ -121,6 +122,7 @@ export async function activate(context: vscode.ExtensionContext) {
         )
         ext.sdkClientBuilder = new DefaultAWSClientBuilder(awsContext)
         ext.toolkitClientBuilder = new DefaultToolkitClientBuilder(regionProvider)
+        ext.schemaService = new SchemaService(context)
 
         await initializeCredentials({
             extensionContext: context,
@@ -134,6 +136,7 @@ export async function activate(context: vscode.ExtensionContext) {
             toolkitSettings: toolkitSettings,
         })
         await ext.telemetry.start()
+        await ext.schemaService.start()
 
         const extContext: ExtContext = {
             extensionContext: context,
@@ -254,12 +257,18 @@ export async function activate(context: vscode.ExtensionContext) {
 
         ext.telemetry.assertPassiveTelemetry(ext.didReload())
     } catch (error) {
+        const stacktrace = (error as Error).stack?.split('\n')
+        // truncate if the stacktrace is unusually long
+        if (stacktrace !== undefined && stacktrace.length > 40) {
+            stacktrace.length = 40
+        }
         getLogger('channel').error(
             localize(
                 'AWS.channel.aws.toolkit.activation.error',
-                'Error Activating {0} Toolkit: {1}',
+                'Error Activating {0} Toolkit: {1} \n{2}',
                 getIdeProperties().company,
-                (error as Error).message
+                (error as Error).message,
+                stacktrace?.join('\n')
             )
         )
         throw error
@@ -393,7 +402,7 @@ function recordToolkitInitialization(activationStartedOn: number, logger?: Logge
             duration: duration,
         })
     } catch (err) {
-        logger?.error(err)
+        logger?.error(err as Error)
     }
 }
 

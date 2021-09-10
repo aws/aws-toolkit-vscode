@@ -1,10 +1,9 @@
 console.log('Loaded!')
-;(function() {
+;(function () {
     const vscode = acquireVsCodeApi()
     const defaultJsonPlaceholder = '{\n\t"key1": "value1",\n\t"key2": "value2",\n\t"key3": "value3"\n}'
-    const app = new Vue({
-        el: '#app',
-        data: {
+    const app = Vue.createApp({
+        data: () => ({
             executionInput: '',
             isReadOnly: false,
             inputChoice: 'textarea',
@@ -12,19 +11,19 @@ console.log('Loaded!')
             selectedFile: '',
             fileInputVisible: false,
             textAreaVisible: true,
-        },
+        }),
         mounted() {
-            this.$nextTick(function() {
+            this.$nextTick(function () {
                 window.addEventListener('message', this.handleMessageReceived)
             })
         },
         watch: {
-            inputChoice: function(newValue, oldValue) {
+            inputChoice: function (newValue, oldValue) {
                 this.handleInputChange(newValue)
             },
         },
         methods: {
-            handleInputChange: function(inputType) {
+            handleInputChange: function (inputType) {
                 const self = this
                 switch (inputType) {
                     case 'file':
@@ -40,7 +39,7 @@ console.log('Loaded!')
                         break
                 }
             },
-            processFile: function($event) {
+            processFile: function ($event) {
                 console.log($event)
                 console.log($event.target)
                 const inputFile = $event.target
@@ -56,10 +55,10 @@ console.log('Loaded!')
                     self.textAreaVisible = true
                 }
             },
-            loadExecutionInput: function(txt) {
+            loadExecutionInput: function (txt) {
                 this.executionInput = txt
             },
-            sendInput: function() {
+            sendInput: function () {
                 console.log(this.executionInput)
                 this.isLoading = true
                 vscode.postMessage({
@@ -69,4 +68,5 @@ console.log('Loaded!')
             },
         },
     })
+    app.mount('#app')
 })()
