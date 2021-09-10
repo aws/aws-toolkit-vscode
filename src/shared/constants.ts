@@ -92,3 +92,6 @@ export const APPRUNNER_CONNECTION_HELP_URL =
 export const APPRUNNER_CONFIGURATION_HELP_URL = 'https://docs.aws.amazon.com/apprunner/latest/dg/manage-configure.html'
 export const APPRUNNER_RUNTIME_HELP_URL = 'https://docs.aws.amazon.com/apprunner/latest/dg/service-source-code.html'
 export const APPRUNNER_PRICING_URL = 'https://aws.amazon.com/apprunner/pricing/'
+
+// Context value for package.json, whether a profile is connected
+export const CONTEXT_KEY_ISCONNECTED = 'aws-toolkit.isConnected'

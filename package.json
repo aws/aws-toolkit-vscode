@@ -847,12 +847,12 @@
                 },
                 {
                     "command": "aws.login",
-                    "when": "view == aws.explorer && !isConnected",
+                    "when": "view == aws.explorer && !aws-toolkit.isConnected",
                     "group": "1_account@1"
                 },
                 {
                     "command": "aws.switchProfile",
-                    "when": "view == aws.explorer && isConnected",
+                    "when": "view == aws.explorer && aws-toolkit.isConnected",
                     "group": "1_account@1"
                 },
                 {

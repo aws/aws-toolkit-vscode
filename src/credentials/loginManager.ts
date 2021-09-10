@@ -5,6 +5,7 @@
 
 import * as vscode from 'vscode'
 import { AwsContext } from '../shared/awsContext'
+import { CONTEXT_KEY_ISCONNECTED } from '../shared/constants'
 import { getAccountId } from '../shared/credentials/accountId'
 import { getLogger } from '../shared/logger'
 import { recordAwsValidateCredentials, recordVscodeActiveRegions, Result } from '../shared/telemetry/telemetry'
@@ -17,8 +18,6 @@ import {
     credentialsProviderToTelemetryType,
 } from './providers/credentials'
 import { CredentialsProviderManager } from './providers/credentialsProviderManager'
-
-const CONTEXT_KEY_ISCONNECTED = 'isConnected'
 
 export class LoginManager {
     private readonly defaultCredentialsRegion = 'us-east-1'
