@@ -49,6 +49,42 @@
             ]
         },
         {
+            "name": "dynamicresource_createResource",
+            "description": "A dynamic resource is created",
+            "metadata": [
+                {
+                    "type": "result"
+                },
+                {
+                    "type": "resourceType"
+                }
+            ]
+        },
+        {
+            "name": "dynamicresource_updateResource",
+            "description": "A dynamic resource is updated",
+            "metadata": [
+                {
+                    "type": "result"
+                },
+                {
+                    "type": "resourceType"
+                }
+            ]
+        },
+        {
+            "name": "dynamicresource_deleteResource",
+            "description": "A dynamic resource is deleted",
+            "metadata": [
+                {
+                    "type": "result"
+                },
+                {
+                    "type": "resourceType"
+                }
+            ]
+        },
+        {
             "name": "aws_openLocalTerminal",
             "description": "Open local terminal with aws connection injected",
             "metadata": [

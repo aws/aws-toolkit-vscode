@@ -88,6 +88,8 @@ with what features/services are supported.
     <projectListeners>
         <listener class="software.aws.toolkits.jetbrains.core.credentials.CredentialStatusNotification"
                   topic="software.aws.toolkits.jetbrains.core.credentials.ConnectionSettingsStateChangeNotifier"/>
+        <listener class="software.aws.toolkits.jetbrains.services.dynamic.DynamicResourceStateChangedNotificationHandler"
+                  topic="software.aws.toolkits.jetbrains.services.dynamic.DynamicResourceStateMutationHandler"/>
     </projectListeners>
     <extensionPoints>
         <extensionPoint name="credentialProviderFactory" interface="software.aws.toolkits.core.credentials.CredentialProviderFactory" dynamic="true"/>
@@ -180,6 +182,8 @@ with what features/services are supported.
                             serviceImplementation="software.aws.toolkits.jetbrains.core.DefaultAwsResourceCache"
                             testServiceImplementation="software.aws.toolkits.jetbrains.core.MockResourceCache"/>
         <applicationService serviceImplementation="software.aws.toolkits.jetbrains.services.dynamic.DynamicResourceSchemaMapping"/>
+
+        <projectService serviceImplementation = "software.aws.toolkits.jetbrains.services.dynamic.DynamicResourceUpdateManager"/>
 
         <projectService serviceImplementation="software.aws.toolkits.jetbrains.core.explorer.ExplorerToolWindow"/>
         <projectService serviceImplementation="software.aws.toolkits.jetbrains.services.cloudformation.stack.StackWindowManager"/>
@@ -398,6 +402,8 @@ with what features/services are supported.
                     class="software.aws.toolkits.jetbrains.services.dynamic.explorer.actions.DynamicResourceOpenAction"/>
             <action id="dynamic.copy.arn"
                     class="software.aws.toolkits.jetbrains.services.dynamic.explorer.actions.DynamicResourceCopyIdentifierAction"/>
+            <action id="dynamic.delete.resource"
+                    class="software.aws.toolkits.jetbrains.services.dynamic.explorer.actions.DynamicResourceDeleteResourceAction"/>
         </group>
 
         <group id="aws.toolkit.explorer.logs.group" popup="true" compact="false">
