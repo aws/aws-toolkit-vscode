@@ -7,10 +7,10 @@ import com.fasterxml.jackson.databind.DeserializationFeature
 import com.fasterxml.jackson.module.kotlin.jacksonObjectMapper
 import com.fasterxml.jackson.module.kotlin.readValue
 import com.intellij.openapi.application.ApplicationManager
+import software.amazon.awssdk.arns.Arn
 import software.amazon.awssdk.services.cloudformation.CloudFormationClient
 import software.amazon.awssdk.services.cloudformation.model.RegistryType
 import software.amazon.awssdk.services.cloudformation.model.Visibility
-import software.aws.toolkits.core.utils.getLogger
 import software.aws.toolkits.jetbrains.core.ClientBackedCachedResource
 import software.aws.toolkits.jetbrains.core.Resource
 
@@ -22,7 +22,7 @@ object DynamicResources {
             listOf()
         } else {
             DynamicResources.javaClass.getResourceAsStream("/cloudapi/dynamic_resources.json")?.use { resourceStream ->
-                mapper.readValue<Map<String, ResourceDetails>>(resourceStream).filter { it.value.operations.contains(Operation.LIST) }.map { it.key }
+                mapper.readValue<Map<String, ResourceDetails>>(resourceStream).filter { it.value.operations.contains(PermittedOperation.LIST) }.map { it.key }
             } ?: throw RuntimeException("dynamic resource manifest not found")
         }
     }
@@ -34,6 +34,13 @@ object DynamicResources {
 
     fun listResources(resourceType: ResourceType): Resource.Cached<List<DynamicResource>> = listResources(resourceType.fullName)
 
+    fun getResourceDisplayName(identifier: String): String =
+        if (identifier.startsWith("arn:")) {
+            Arn.fromString(identifier).resourceAsString()
+        } else {
+            identifier
+        }
+
     fun listTypes(): Resource.Cached<List<String>> = ClientBackedCachedResource(
         CloudFormationClient::class, "cloudformation.listTypes"
     ) {
@@ -42,12 +49,10 @@ object DynamicResources {
             it.type(RegistryType.RESOURCE)
         }.flatMap { it.typeSummaries().map { it.typeName() } }
     }
-
-    private val LOGGER = getLogger<DynamicResources>()
 }
 
-data class ResourceDetails(val operations: List<Operation>, val arnRegex: String?, val documentation: String?)
+data class ResourceDetails(val operations: List<PermittedOperation>, val arnRegex: String?, val documentation: String?)
 
-enum class Operation {
+enum class PermittedOperation {
     CREATE, READ, UPDATE, DELETE, LIST;
 }

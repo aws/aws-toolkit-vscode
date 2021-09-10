@@ -3,7 +3,6 @@
 
 package software.aws.toolkits.jetbrains.services.dynamic.explorer
 
-import com.intellij.json.JsonFileType
 import com.intellij.openapi.command.WriteCommandAction
 import com.intellij.openapi.fileEditor.FileDocumentManager
 import com.intellij.openapi.fileEditor.FileEditorManager
@@ -12,17 +11,19 @@ import com.intellij.openapi.progress.Task
 import com.intellij.openapi.project.Project
 import com.intellij.psi.codeStyle.CodeStyleManager
 import com.intellij.psi.util.PsiUtilCore
-import com.intellij.testFramework.LightVirtualFile
-import software.amazon.awssdk.arns.Arn
 import software.amazon.awssdk.services.cloudformation.CloudFormationClient
 import software.aws.toolkits.core.utils.error
 import software.aws.toolkits.core.utils.getLogger
 import software.aws.toolkits.jetbrains.core.awsClient
+import software.aws.toolkits.jetbrains.core.credentials.AwsConnectionManager.Companion.getConnectionSettings
 import software.aws.toolkits.jetbrains.core.explorer.nodes.AwsExplorerNode
 import software.aws.toolkits.jetbrains.core.explorer.nodes.ResourceActionNode
 import software.aws.toolkits.jetbrains.core.explorer.nodes.ResourceParentNode
 import software.aws.toolkits.jetbrains.core.getResourceNow
 import software.aws.toolkits.jetbrains.services.dynamic.DynamicResource
+import software.aws.toolkits.jetbrains.services.dynamic.DynamicResourceIdentifier
+import software.aws.toolkits.jetbrains.services.dynamic.DynamicResourceUpdateManager
+import software.aws.toolkits.jetbrains.services.dynamic.DynamicResourceVirtualFile
 import software.aws.toolkits.jetbrains.services.dynamic.DynamicResources
 import software.aws.toolkits.jetbrains.utils.notifyError
 import software.aws.toolkits.resources.message
@@ -58,14 +59,16 @@ class UnavailableDynamicResourceTypeNode(project: Project, resourceType: String)
 class DynamicResourceNode(project: Project, val resource: DynamicResource) :
     AwsExplorerNode<DynamicResource>(project, resource, null),
     ResourceActionNode {
+
     override fun actionGroupName() = "aws.toolkit.explorer.dynamic"
-    override fun displayName(): String {
-        val identifier = resource.identifier
-        return if (identifier.startsWith("arn:")) {
-            Arn.fromString(identifier).resourceAsString()
-        } else {
-            identifier
-        }
+    override fun displayName(): String = DynamicResources.getResourceDisplayName(resource.identifier)
+
+    override fun statusText(): String? {
+        val op = DynamicResourceUpdateManager.getInstance(nodeProject)
+            .getUpdateStatus(nodeProject.getConnectionSettings(), resource.type.fullName, resource.identifier)
+        return if (op != null) {
+            "${op.operation} ${op.operationStatus}"
+        } else null
     }
 
     override fun isAlwaysShowPlus(): Boolean = false
@@ -97,9 +100,8 @@ class DynamicResourceNode(project: Project, val resource: DynamicResource) :
                     null
                 } ?: return
 
-                val file = LightVirtualFile(
-                    displayName(),
-                    JsonFileType.INSTANCE,
+                val file = DynamicResourceVirtualFile(
+                    DynamicResourceIdentifier(nodeProject.getConnectionSettings(), resource.type.fullName, resource.identifier),
                     model
                 )
 
