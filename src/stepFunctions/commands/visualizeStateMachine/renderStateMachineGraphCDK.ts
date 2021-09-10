@@ -17,13 +17,12 @@ import { Window } from '../../../shared/vscode/window'
  * Renders a state graph of the state machine represented by the given node
  */
 export async function renderStateMachineGraphCommand(
-    node: ConstructNode | undefined,
     globalStorage: vscode.Memento,
     visualizationManager: AslVisualizationCDKManager,
-    executeWizard: boolean,
+    node?: ConstructNode,
     window = Window.vscode()
 ): Promise<void> {
-    if (executeWizard) {
+    if (!node) {
         const wizardResponse = await new PreviewStateMachineCDKWizard().run()
 
         if (

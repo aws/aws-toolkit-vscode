@@ -7,7 +7,7 @@ import * as vscode from 'vscode'
 
 import { AslVisualizationCDK } from './aslVisualizationCDK'
 import { AbstractAslVisualizationManager } from './abstractAslVisualizationManager'
-import { ConstructNode } from '../../../cdk/explorer/nodes/constructNode'
+import { ConstructNode, isStateMachine } from '../../../cdk/explorer/nodes/constructNode'
 import { getLogger } from '../../../shared/logger'
 import { normalize } from '../../../shared/utilities/pathUtils'
 
@@ -27,6 +27,10 @@ export class AslVisualizationCDKManager extends AbstractAslVisualizationManager 
         globalStorage: vscode.Memento,
         node: ConstructNode
     ): Promise<vscode.WebviewPanel | undefined> {
+        if (!isStateMachine(node.construct)) {
+            return
+        }
+
         const logger = getLogger()
 
         const cdkOutPath = node.id.replace(`/tree.json/${node.tooltip}`, ``)
@@ -50,16 +54,14 @@ export class AslVisualizationCDKManager extends AbstractAslVisualizationManager 
             await this.cache.updateCache(globalStorage)
 
             const textDocument = await vscode.workspace.openTextDocument(uri)
+
             const newVisualization = new AslVisualizationCDK(textDocument, templatePath, appName, stateMachineName)
-            if (newVisualization) {
-                this.handleNewVisualization(workspaceName, newVisualization)
-                return newVisualization.getPanel()
-            }
+            this.handleNewVisualization(workspaceName, newVisualization)
+
+            return newVisualization.getPanel()
         } catch (err) {
             this.handleErr(err as Error, logger)
         }
-
-        return
     }
 
     protected handleNewVisualization(workspaceName: string, newVisualization: AslVisualizationCDK): void {
@@ -99,10 +101,8 @@ export class AslVisualizationCDKManager extends AbstractAslVisualizationManager 
      * @returns name of the CDK application workspace name
      */
     public getCDKAppWorkspaceName(cdkOutPath: string): string {
-        if (typeof cdkOutPath !== 'string') {
-            return cdkOutPath
-        }
-        cdkOutPath = cdkOutPath.replace('/cdk.out', '')
-        return cdkOutPath.substring(cdkOutPath.lastIndexOf('/') + 1, cdkOutPath.length)
+        const path = cdkOutPath.replace('/cdk.out', '')
+
+        return path.substring(path.lastIndexOf('/') + 1, path.length)
     }
 }

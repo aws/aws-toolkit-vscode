@@ -21,7 +21,7 @@ export function getStateMachineDefinitionFromCfnTemplate(uniqueIdentifier: strin
         if (!resources) {
             return ''
         }
-        let key: string
+        let matchingKey: string
 
         const matchingKeyList: string[] = []
         for (const key of Object.keys(resources)) {
@@ -38,10 +38,10 @@ export function getStateMachineDefinitionFromCfnTemplate(uniqueIdentifier: strin
             return ''
         } else {
             //return minimum length key in matchingKeyList
-            key = matchingKeyList.reduce((a, b) => (a.length <= b.length ? a : b))
+            matchingKey = matchingKeyList.reduce((a, b) => (a.length <= b.length ? a : b))
         }
 
-        const definitionString = jsonObj.Resources[key].Properties.DefinitionString
+        const definitionString = jsonObj.Resources[matchingKey].Properties.DefinitionString
 
         return !definitionString ? '' : definitionString
     } catch (err) {
@@ -51,15 +51,17 @@ export function getStateMachineDefinitionFromCfnTemplate(uniqueIdentifier: strin
     }
 }
 
-interface CdkStateMachineWithPlaceholders {
-    'Fn::Join': any[]
-}
-
 /**
  * @param {string} escapedAslJsonStr - json state machine construct definition
  * @returns unescaped json state machine construct definition in asl.json
  */
-export function toUnescapedAslJsonString(escapedAslJsonStr: string | CdkStateMachineWithPlaceholders): string {
+export function toUnescapedAslJsonString(
+    escapedAslJsonStr:
+        | string
+        | {
+              'Fn::Join': any[]
+          }
+): string {
     if (typeof escapedAslJsonStr === 'string') {
         return escapedAslJsonStr
     }
