@@ -31,7 +31,7 @@ class DynamicResourceDeleteResourceAction :
             )
             val fileEditorManager = FileEditorManager.getInstance(selected.nodeProject)
             fileEditorManager.openFiles.forEach {
-                if (it is DynamicResourceVirtualFile && it.getResourceIdentifier() == dynamicResourceIdentifier) {
+                if (it is DynamicResourceVirtualFile && it.dynamicResourceIdentifier == dynamicResourceIdentifier) {
                     ApplicationManager.getApplication().invokeAndWait { fileEditorManager.closeFile(it) }
                 }
             }

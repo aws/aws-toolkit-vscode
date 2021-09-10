@@ -7,14 +7,13 @@ import com.fasterxml.jackson.databind.DeserializationFeature
 import com.fasterxml.jackson.module.kotlin.jacksonObjectMapper
 import com.fasterxml.jackson.module.kotlin.readValue
 import com.intellij.openapi.application.ApplicationManager
-import com.intellij.openapi.project.Project
 import software.amazon.awssdk.arns.Arn
 import software.amazon.awssdk.services.cloudformation.CloudFormationClient
 import software.amazon.awssdk.services.cloudformation.model.RegistryType
 import software.amazon.awssdk.services.cloudformation.model.Visibility
 import software.aws.toolkits.jetbrains.core.ClientBackedCachedResource
 import software.aws.toolkits.jetbrains.core.Resource
-import software.aws.toolkits.jetbrains.core.awsClient
+import software.aws.toolkits.resources.message
 import java.io.File
 
 object DynamicResources {
@@ -36,17 +35,18 @@ object DynamicResources {
 
     fun listResources(resourceType: ResourceType): Resource.Cached<List<DynamicResource>> = listResources(resourceType.fullName)
 
-    fun getResourceDisplayName(identifier: String): String =
-        if (identifier.startsWith("arn:")) {
+    fun getResourceDisplayName(identifier: String, sourceIsCreateResource: Boolean = false): String =
+        if (sourceIsCreateResource) {
+            message("dynamic_resources.create_resource_file_name", identifier)
+        } else if (identifier.startsWith("arn:")) {
             Arn.fromString(identifier).resourceAsString()
         } else {
             identifier
         }
 
-    fun getResourceSchema(project: Project, resourceType: String): Resource.Cached<File> =
+    fun getResourceSchema(resourceType: String): Resource.Cached<File> =
         ClientBackedCachedResource(CloudFormationClient::class, "cloudformation.dynamic.resources.schema.$resourceType") {
-            val client = project.awsClient<CloudFormationClient>()
-            val schema = client.describeType {
+            val schema = this.describeType {
                 it.type(RegistryType.RESOURCE)
                 it.typeName(resourceType)
             }.schema()

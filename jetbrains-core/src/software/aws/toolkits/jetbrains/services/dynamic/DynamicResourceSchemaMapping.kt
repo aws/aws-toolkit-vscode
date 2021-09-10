@@ -7,7 +7,6 @@ import com.intellij.openapi.components.service
 import com.intellij.openapi.project.Project
 import com.jetbrains.jsonSchema.JsonSchemaMappingsProjectConfiguration
 import com.jetbrains.jsonSchema.ide.JsonSchemaService
-import com.jetbrains.jsonSchema.impl.JsonSchemaServiceImpl
 
 class DynamicResourceSchemaMapping {
     private val currentlyActiveResourceTypes: MutableSet<String> = mutableSetOf()
@@ -18,9 +17,9 @@ class DynamicResourceSchemaMapping {
     ) {
         val configuration = JsonSchemaMappingsProjectConfiguration.getInstance(project).findMappingForFile(file)
         if (configuration == null) {
-            currentlyActiveResourceTypes.add(file.getResourceIdentifier().resourceType)
+            currentlyActiveResourceTypes.add(file.dynamicResourceIdentifier.resourceType)
             JsonSchemaService.Impl.get(project).reset()
-            JsonSchemaServiceImpl(project).reset()
+            // JsonSchemaServiceImpl(project).reset()
         }
     }
 

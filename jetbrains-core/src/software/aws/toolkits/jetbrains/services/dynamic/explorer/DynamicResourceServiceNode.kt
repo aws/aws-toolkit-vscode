@@ -22,6 +22,7 @@ import software.aws.toolkits.jetbrains.core.explorer.nodes.ResourceParentNode
 import software.aws.toolkits.jetbrains.core.getResourceNow
 import software.aws.toolkits.jetbrains.services.dynamic.DynamicResource
 import software.aws.toolkits.jetbrains.services.dynamic.DynamicResourceIdentifier
+import software.aws.toolkits.jetbrains.services.dynamic.DynamicResourceSchemaMapping
 import software.aws.toolkits.jetbrains.services.dynamic.DynamicResourceUpdateManager
 import software.aws.toolkits.jetbrains.services.dynamic.DynamicResourceVirtualFile
 import software.aws.toolkits.jetbrains.services.dynamic.DynamicResources
@@ -107,6 +108,7 @@ class DynamicResourceNode(project: Project, val resource: DynamicResource) :
                     DynamicResourceIdentifier(nodeProject.getConnectionSettings(), resource.type.fullName, resource.identifier),
                     model
                 )
+                DynamicResourceSchemaMapping.getInstance().addResourceSchemaMapping(nodeProject, file)
 
                 indicator.text = message("dynamic_resources.fetch.open")
                 WriteCommandAction.runWriteCommandAction(nodeProject) {

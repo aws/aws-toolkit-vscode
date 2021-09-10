@@ -25,9 +25,10 @@ class DynamicResourceCreateResourceAction() :
             DynamicResourceIdentifier(
                 selected.nodeProject.getConnectionSettings(),
                 selected.value,
-                message("dynamic_resources.create_resource_file_name", selected.value)
+                selected.value
             ),
-            message("dynamic_resources.create_resource_file_initial_content")
+            message("dynamic_resources.create_resource_file_initial_content"), // TODO: Generate a schema with the required properties
+            isResourceCreate = true
         )
         DynamicResourceSchemaMapping.getInstance().addResourceSchemaMapping(selected.nodeProject, file)
         WriteCommandAction.runWriteCommandAction(selected.nodeProject) {

@@ -77,7 +77,7 @@ class ResourceSchemaProviderFactoryTest {
         schemaFile.writeText(schema)
 
         resourceCache.addEntry(
-            projectRule.project, DynamicResources.getResourceSchema(projectRule.project, resource.type.fullName),
+            projectRule.project, DynamicResources.getResourceSchema(resource.type.fullName),
             CompletableFuture.completedFuture(schemaFile)
         )
 
