@@ -1,4 +1,0 @@
-{
-  "type" : "bugfix",
-  "description" : "Fix NullPointerException calling isInTestSourceContent (#2752)"
-}

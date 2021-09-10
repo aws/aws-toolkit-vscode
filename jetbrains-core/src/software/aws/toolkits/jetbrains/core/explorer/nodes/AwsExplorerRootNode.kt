@@ -20,7 +20,7 @@ class AwsExplorerRootNode(private val nodeProject: Project) : AbstractTreeNode<A
         val regionProvider = AwsRegionProvider.getInstance()
 
         return EP_NAME.extensionList
-            .filter { regionProvider.isServiceSupported(region, it.serviceId) }
+            .filter { it.enabled() && regionProvider.isServiceSupported(region, it.serviceId) }
             .map { it.buildServiceRootNode(nodeProject) }
     }
 

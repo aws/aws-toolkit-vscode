@@ -23,7 +23,7 @@ import javax.swing.table.DefaultTableCellRenderer
 
 class TableResults : JBTable(TableModel(BidirectionalMap(), emptyList())) {
     init {
-        autoResizeMode = AUTO_RESIZE_OFF
+        autoResizeMode = AUTO_RESIZE_ALL_COLUMNS
         cellSelectionEnabled = true
 
         font = EditorColorsManager.getInstance().globalScheme.getFont(EditorFontType.PLAIN)

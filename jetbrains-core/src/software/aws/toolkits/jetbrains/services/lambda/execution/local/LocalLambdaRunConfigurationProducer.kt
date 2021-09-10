@@ -8,6 +8,7 @@ import com.intellij.execution.RunnerAndConfigurationSettings
 import com.intellij.execution.actions.ConfigurationContext
 import com.intellij.execution.actions.LazyRunConfigurationProducer
 import com.intellij.execution.configurations.ConfigurationFactory
+import com.intellij.openapi.module.ModuleUtilCore
 import com.intellij.openapi.project.Project
 import com.intellij.openapi.util.Ref
 import com.intellij.psi.PsiElement
@@ -56,7 +57,12 @@ class LocalLambdaRunConfigurationProducer : LazyRunConfigurationProducer<LocalLa
         }
         val resolver = LambdaHandlerResolver.getInstance(runtimeGroup)
         val handler = resolver.determineHandler(element) ?: return false
-        val runtime = runtimeGroup.determineRuntime(context.module) ?: runtimeGroup.determineRuntime(context.project)
+
+        // In some scenarios, context lacks the module (bug?). If it can't be found ask for it explicitly from the PSI element
+        val module = context.module ?: ModuleUtilCore.findModuleForPsiElement(element)
+        val runtime = module?.let {
+            runtimeGroup.determineRuntime(it)
+        } ?: runtimeGroup.determineRuntime(element.project)
 
         setAccountOptions(configuration)
         configuration.useHandler(runtime?.toSdkRuntime(), handler)
