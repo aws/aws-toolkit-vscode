@@ -104,7 +104,11 @@ export class SharedCredentialsProvider implements CredentialsProvider {
     }
 
     public canAutoConnect(): boolean {
-        return !hasProfileProperty(this.profile, SHARED_CREDENTIAL_PROPERTIES.MFA_SERIAL) && !this.isSsoProfile()
+        // check if SSO token is still valid
+        if (this.isSsoProfile()) {
+            return !!new DiskCache().loadAccessToken(this.profile[SHARED_CREDENTIAL_PROPERTIES.SSO_START_URL]!)
+        }
+        return !hasProfileProperty(this.profile, SHARED_CREDENTIAL_PROPERTIES.MFA_SERIAL)
     }
 
     public async isAvailable(): Promise<boolean> {
@@ -152,7 +156,7 @@ export class SharedCredentialsProvider implements CredentialsProvider {
 
     /**
      * Patches 'source_profile' credentials as static representations, which the SDK can handle in all cases.
-     * 
+     *
      * XXX: Returns undefined if no `source_profile` property exists. Else we would prevent the SDK from re-reading
      * the shared credential files if they were to change. #1953
      *
