@@ -3,7 +3,8 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
-import { RemoteSource, RemoteSourceProvider } from '../../../types/git'
+import * as vscode from 'vscode'
+import { GitExtension, RemoteSource, RemoteSourceProvider } from '../../../types/git'
 import { CawsRepo } from '../../shared/clients/cawsClient'
 import { ext } from '../../shared/extensionGlobals'
 import { promptCawsNotConnected } from '../utils'
@@ -35,7 +36,7 @@ export class CawsRemoteSourceProvider implements RemoteSourceProvider {
             const repositoryIter = ext.caws.listRepos(ext.caws.user())
 
             for await (const repo of repositoryIter) {
-                const cloneUrl = await ext.caws.toCawsGitCloneLink(repo)
+                const cloneUrl = await ext.caws.toCawsGitUri(repo)
                 const url = ext.caws.toCawsUrl(repo)
                 repos.push({
                     name: ext.caws.createRepoLabel(repo),
@@ -48,24 +49,36 @@ export class CawsRemoteSourceProvider implements RemoteSourceProvider {
 
         return repos
     }
+}
 
-    // TODO: Is this ever used? Not used in the clone workflow.
-    // public async getBranches(url: string): Promise<string[]> {
-    //     const branches: string[] = []
-    //     const repo = this.repoUrls.get(url)
-    //     if (repo) {
-    //         const branchesIter = ext.caws.listBranchesForRepo(repo)
+export function initCurrentRemoteSourceProvider(extension: vscode.Extension<GitExtension>): void {
+    let currDisposable: vscode.Disposable | undefined
 
-    //         for await (const branchOutput of branchesIter) {
-    //             if (!branchOutput) {
-    //                 break
-    //             }
-    //             branchOutput.items!.forEach(branch => {
-    //                 branches.push(branch.branchName || '')
-    //             })
-    //         }
-    //     }
+    // TODO: Add user initialization outside git extension activation
+    let initialUser: string | undefined
+    try {
+        initialUser = ext.caws.user()
+    } catch {
+        // swallow error: no user set
+    }
+    currDisposable = makeNewRemoteSourceProvider(extension, initialUser)
 
-    //     return branches
-    // }
+    ext.context.subscriptions.push(
+        ext.awsContext.onDidChangeContext(c => {
+            if (currDisposable) {
+                currDisposable.dispose()
+            }
+            if (c.cawsUsername && c.cawsSecret) {
+                currDisposable = makeNewRemoteSourceProvider(extension, c.cawsUsername)
+            } else {
+                currDisposable = makeNewRemoteSourceProvider(extension)
+            }
+        })
+    )
+}
+
+function makeNewRemoteSourceProvider(extension: vscode.Extension<GitExtension>, uname?: string): vscode.Disposable {
+    const API_VERSION = 1
+    const API = extension.exports.getAPI(API_VERSION)
+    return API.registerRemoteSourceProvider(new CawsRemoteSourceProvider(uname))
 }

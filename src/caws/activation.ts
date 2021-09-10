@@ -15,7 +15,7 @@ import * as cawsView from './cawsView'
 import * as msg from '../shared/utilities/messages'
 import { ContextChangeEventsArgs } from '../shared/awsContext'
 import { GitExtension } from '../../types/git'
-import { CawsRemoteSourceProvider } from './repos/remoteSourceProvider'
+import { initCurrentRemoteSourceProvider } from './repos/remoteSourceProvider'
 import { getLogger } from '../shared/logger/logger'
 
 /**
@@ -39,45 +39,13 @@ export async function activate(ctx: ExtContext): Promise<void> {
     // Git Extension handling
     activateExtension<GitExtension>(VSCODE_EXTENSION_ID.git).then(extension => {
         if (extension) {
-            handleGitExtension(extension)
+            initCurrentRemoteSourceProvider(extension)
         } else {
             getLogger().warn('Git Extension could not be activated.')
         }
     })
 
     await registerCommands(ctx)
-}
-
-function handleGitExtension(extension: vscode.Extension<GitExtension>): void {
-    let currDisposable: vscode.Disposable | undefined
-
-    // TODO: Add user initialization outside git extension activation
-    let initialUser: string | undefined
-    try {
-        initialUser = ext.caws.user()
-    } catch {
-        // swallow error: no user set
-    }
-    currDisposable = makeNewRemoteSourceProvider(extension, initialUser)
-
-    ext.context.subscriptions.push(
-        ext.awsContext.onDidChangeContext(c => {
-            if (currDisposable) {
-                currDisposable.dispose()
-            }
-            if (c.cawsUsername && c.cawsSecret) {
-                currDisposable = makeNewRemoteSourceProvider(extension, c.cawsUsername)
-            } else {
-                currDisposable = makeNewRemoteSourceProvider(extension)
-            }
-        })
-    )
-}
-
-function makeNewRemoteSourceProvider(extension: vscode.Extension<GitExtension>, uname?: string): vscode.Disposable {
-    const API_VERSION = 1
-    const API = extension.exports.getAPI(API_VERSION)
-    return API.registerRemoteSourceProvider(new CawsRemoteSourceProvider(uname))
 }
 
 async function onCredentialsChanged(
@@ -238,6 +206,6 @@ async function cloneCawsRepo(): Promise<void> {
     if (!r) {
         return
     }
-    const cloneLink = await c.toCawsGitCloneLink(r)
+    const cloneLink = await c.toCawsGitUri(r)
     vscode.commands.executeCommand('git.clone', cloneLink)
 }
