@@ -19,7 +19,6 @@ class DynamicResourceSchemaMapping {
         if (configuration == null) {
             currentlyActiveResourceTypes.add(file.dynamicResourceIdentifier.resourceType)
             JsonSchemaService.Impl.get(project).reset()
-            // JsonSchemaServiceImpl(project).reset()
         }
     }
 
