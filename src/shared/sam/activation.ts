@@ -46,7 +46,7 @@ const STATE_NAME_SUPPRESS_YAML_PROMPT = 'suppressYamlExtPrompt'
 export async function activate(ctx: ExtContext): Promise<void> {
     initializeSamCliContext({ settingsConfiguration: ctx.settings })
 
-    createYamlExtensionPrompt()
+    await createYamlExtensionPrompt()
 
     ctx.extensionContext.subscriptions.push(
         ...(await activateCodeLensProviders(ctx, ctx.settings, ctx.outputChannel, ctx.telemetryService))
