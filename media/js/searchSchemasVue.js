@@ -1,8 +1,8 @@
-;(function() {
+;(function () {
+    const deproxify = obj => JSON.parse(JSON.stringify(obj))
     const vscode = acquireVsCodeApi()
-    const app = new Vue({
-        el: '#app',
-        data: {
+    const app = Vue.createApp({
+        data: () => ({
             searchText: '',
             searchProgressInfo: '',
             searchResults: [],
@@ -15,29 +15,29 @@
                 noSchemasFound: '',
                 searching: '',
                 loading: '',
-                select: ''
-            }
-        },
+                select: '',
+            },
+        }),
         mounted() {
-            this.$nextTick(function() {
+            this.$nextTick(function () {
                 window.addEventListener('message', this.handleMessageReceived)
             })
         },
         watch: {
-            searchText: function(newKeyword, oldKeyword) {
+            searchText: function (newKeyword, oldKeyword) {
                 this.debouncedSearch()
-            }
+            },
         },
         computed: {
             downloadDisabled() {
                 return this.downloadDisabled
-            }
+            },
         },
-        created: function() {
+        created: function () {
             this.debouncedSearch = _.debounce(this.userSearchedText, 300)
         },
         methods: {
-            userSearchedText: function() {
+            userSearchedText: function () {
                 this.resetSearchResults()
                 this.resetSchemaContentAndVersionDropdown()
                 this.downloadDisabled = true
@@ -48,34 +48,34 @@
                 this.searchProgressInfo = this.localizedMessages.searching
                 vscode.postMessage({
                     command: 'searchSchemas',
-                    keyword: this.searchText
+                    keyword: this.searchText,
                 })
             },
-            userSelectedSchema: function() {
+            userSelectedSchema: function () {
                 this.resetSchemaContentAndVersionDropdown()
                 this.downloadDisabled = false
                 this.schemaContent = this.localizedMessages.loading
                 vscode.postMessage({
                     command: 'fetchSchemaContent',
-                    schemaSummary: this.selectedSchema
+                    schemaSummary: deproxify(this.selectedSchema),
                 })
             },
 
-            userSelectedVersion: function() {
+            userSelectedVersion: function () {
                 this.schemaContent = this.localizedMessages.loading
                 vscode.postMessage({
                     command: 'fetchSchemaContent',
-                    schemaSummary: this.selectedSchema,
-                    version: this.selectedVersion
+                    schemaSummary: deproxify(this.selectedSchema),
+                    version: this.selectedVersion,
                 })
             },
-            downloadClicked: function() {
+            downloadClicked: function () {
                 vscode.postMessage({
                     command: 'downloadCodeBindings',
-                    schemaSummary: this.selectedSchema
+                    schemaSummary: deproxify(this.selectedSchema),
                 })
             },
-            handleMessageReceived: function(e) {
+            handleMessageReceived: function (e) {
                 const message = event.data
                 switch (message.command) {
                     case 'showSchemaContent':
@@ -101,23 +101,24 @@
                         break
                 }
             },
-            loadSchemaContent: function(content) {
+            loadSchemaContent: function (content) {
                 this.schemaContent = content
             },
 
-            loadSchemaList: function(results) {
+            loadSchemaList: function (results) {
                 this.searchResults = results
             },
-            resetSearchResults: function() {
+            resetSearchResults: function () {
                 this.selectedSchema = ''
                 this.searchResults = ''
                 this.searchProgressInfo = ''
             },
-            resetSchemaContentAndVersionDropdown: function() {
+            resetSchemaContentAndVersionDropdown: function () {
                 this.selectedVersion = ''
                 this.schemaContent = ''
                 this.schemaVersions = []
-            }
-        }
+            },
+        },
     })
+    app.mount('#app')
 })()

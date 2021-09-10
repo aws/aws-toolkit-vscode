@@ -24,25 +24,21 @@ const ERROR_MESSAGE_USER_CANCELLED = localize(
  * @param callback tokens/errors are passed through here
  */
 export async function getMfaTokenFromUser(mfaSerial: string, profileName: string): Promise<string> {
-    try {
-        const inputBox = createInputBox({
-            options: {
-                ignoreFocusOut: true,
-                placeHolder: localize('AWS.prompt.mfa.enterCode.placeholder', 'Enter Authentication Code Here'),
-                title: localize('AWS.prompt.mfa.enterCode.title', 'MFA Challenge for {0}', profileName),
-                prompt: localize('AWS.prompt.mfa.enterCode.prompt', 'Enter code for MFA device {0}', mfaSerial),
-            },
-        })
+    const inputBox = createInputBox({
+        options: {
+            ignoreFocusOut: true,
+            placeHolder: localize('AWS.prompt.mfa.enterCode.placeholder', 'Enter Authentication Code Here'),
+            title: localize('AWS.prompt.mfa.enterCode.title', 'MFA Challenge for {0}', profileName),
+            prompt: localize('AWS.prompt.mfa.enterCode.prompt', 'Enter code for MFA device {0}', mfaSerial),
+        },
+    })
 
-        const token = await promptUser({ inputBox: inputBox })
+    const token = await promptUser({ inputBox: inputBox })
 
-        // Distinguish user cancel vs code entry issues with the error message
-        if (!token) {
-            throw new Error(ERROR_MESSAGE_USER_CANCELLED)
-        }
-
-        return token
-    } catch (err) {
-        throw err as Error
+    // Distinguish user cancel vs code entry issues with the error message
+    if (!token) {
+        throw new Error(ERROR_MESSAGE_USER_CANCELLED)
     }
+
+    return token
 }

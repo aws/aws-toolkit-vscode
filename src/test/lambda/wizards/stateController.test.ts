@@ -110,6 +110,19 @@ describe('StateMachineController', function () {
             assert.strictEqual(stub.callCount, 2)
         })
 
+        it('preserves last state', async function () {
+            const controller = new StateMachineController<{ answer: boolean }>()
+            const stub1 = sinon.stub()
+            const stub2 = sinon.stub()
+            stub1.returns({ nextState: { answer: true } })
+            stub2.onFirstCall().returns({ controlSignal: ControlSignal.Retry })
+            stub2.onSecondCall().callsFake(state => ({ nextState: state }))
+            controller.addStep(stub1)
+            controller.addStep(stub2)
+
+            assert.strictEqual((await controller.run())?.answer, true)
+        })
+
         it('does not remember state on retry', async function () {
             const controller = new StateMachineController<{ answer: boolean }>()
             const stub = sinon.stub()

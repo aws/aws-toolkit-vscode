@@ -24,6 +24,7 @@ To develop this project, install these dependencies:
     -   NPM version: 7.x or higher
 -   [Typescript](https://www.typescriptlang.org/)
 -   [Git](https://git-scm.com/downloads)
+    -   (optional) Set `git blame` to ignore noise-commits: `git config blame.ignoreRevsFile .git-blame-ignore-revs`
 -   [AWS `git secrets`](https://github.com/awslabs/git-secrets)
 -   (optional) [AWS SAM CLI](https://docs.aws.amazon.com/serverless-application-model/latest/developerguide/serverless-sam-cli-install.html)
 -   (optional) [Docker](https://docs.docker.com/get-docker/)

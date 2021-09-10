@@ -35,13 +35,13 @@ export class SsoCredentialProvider {
                 sessionToken: roleCredentials.roleCredentials?.sessionToken,
             }
         } catch (err) {
-            if (err.code === 'UnauthorizedException') {
+            if ((err as { code: string }).code === 'UnauthorizedException') {
                 this.ssoAccessTokenProvider.invalidate()
             }
             vscode.window.showErrorMessage(
                 localize('AWS.message.credentials.sso.error', 'Failed to load SSO credentials. Try logging in again.')
             )
-            getLogger().error(err)
+            getLogger().error(err as Error)
             throw err
         }
     }
