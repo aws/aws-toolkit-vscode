@@ -77,7 +77,8 @@ async function gqlRequest<T>(
         // There is always one top-level key, we want the child object.
         const r = resp.data[Object.keys(resp.data)[0]]
         return r as T
-    } catch (err) {
+    } catch (e) {
+        const err = e as any
         const reqId = err?.response?.headers?.get ? err.response.headers.get('x-request-id') : undefined
         delete err.request // Redundant, and may contain private info.
         if (err.response) {
