@@ -19,7 +19,6 @@ object DynamicResources {
     val SUPPORTED_TYPES by lazy {
         if (ApplicationManager.getApplication().isDispatchThread) {
             throw IllegalStateException("Access from Event Dispatch Thread")
-            listOf()
         } else {
             DynamicResources.javaClass.getResourceAsStream("/cloudapi/dynamic_resources.json")?.use { resourceStream ->
                 mapper.readValue<Map<String, ResourceDetails>>(resourceStream).filter { it.value.operations.contains(PermittedOperation.LIST) }.map { it.key }
