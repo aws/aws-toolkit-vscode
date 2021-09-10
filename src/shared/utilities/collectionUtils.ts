@@ -335,7 +335,7 @@ export interface AsyncCollection<T> extends AsyncIterable<T> {
     flatten(): AsyncCollection<SafeUnboxIterable<T>>
     /** Applies a mapping transform to the output generator */
     map<U>(fn: (obj: T) => U): AsyncCollection<U>
-    /** Filters out results. This changes how many elements will be consumed by `take`. */
+    /** Filters out results which will _not_ be passed on to further transformations. */
     filter<U extends T>(predicate: AsyncPredicate<T, U>): AsyncCollection<U>
     /** Uses only the first 'count' number of values returned by the generator. */
     take(count: number): AsyncCollection<T>
