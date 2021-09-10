@@ -3,6 +3,7 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
+import * as vscode from 'vscode'
 import { readFileSync } from 'fs'
 import { CloudFormation } from './cloudformation'
 import * as pathutils from '../utilities/pathUtils'
@@ -21,8 +22,43 @@ export interface TemplateDatum {
 
 export class CloudFormationTemplateRegistry extends WatchedFiles<CloudFormation.Template> {
     protected name: string = 'CloudFormationTemplateRegistry'
-    protected async load(path: string): Promise<CloudFormation.Template> {
-        return await CloudFormation.load(path)
+    protected async load(path: string): Promise<CloudFormation.Template | undefined> {
+        // P0: Assume all template.yaml/yml files are CFN templates and assign correct JSON schema.
+        // P1: Alter registry functionality to search ALL YAML files and apply JSON schemas + add to registry based on validity
+
+        let template: CloudFormation.Template | undefined
+        try {
+            template = await CloudFormation.load(path)
+        } catch (e) {
+            ext.schemaService.registerMapping({ path, schema: 'none' })
+            return undefined
+        }
+
+        // same heuristic used by cfn-lint team:
+        // https://github.com/aws-cloudformation/aws-cfn-lint-visual-studio-code/blob/629de0bac4f36cfc6534e409a6f6766a2240992f/client/src/yaml-support/yaml-schema.ts#L39-L51
+        if (template.AWSTemplateFormatVersion || template.Resources) {
+            if (template.Transform && template.Transform.toString().startsWith('AWS::Serverless')) {
+                // apply serverless schema
+                ext.schemaService.registerMapping({ path, schema: 'sam' })
+            } else {
+                // apply cfn schema
+                ext.schemaService.registerMapping({ path, schema: 'cfn' })
+            }
+
+            return template
+        }
+
+        ext.schemaService.registerMapping({ path, schema: 'none' })
+        return undefined
+    }
+
+    // handles delete case
+    public async remove(path: string | vscode.Uri): Promise<void> {
+        ext.schemaService.registerMapping({
+            path: typeof path === 'string' ? path : pathutils.normalize(path.fsPath),
+            schema: 'none',
+        })
+        await super.remove(path)
     }
 }
 

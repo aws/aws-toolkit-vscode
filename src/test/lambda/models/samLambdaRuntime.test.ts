@@ -66,6 +66,7 @@ describe('runtimes', function () {
             'nodejs14.x',
             'python3.7',
             'python3.8',
+            'python3.9',
         ])
         assert.deepStrictEqual(samImageLambdaRuntimes(true).toArray().sort(), [
             'nodejs10.x',
@@ -73,6 +74,7 @@ describe('runtimes', function () {
             'nodejs14.x',
             'python3.7',
             'python3.8',
+            'python3.9',
         ])
     })
     it('vscode', async function () {
@@ -90,6 +92,7 @@ describe('runtimes', function () {
             'python3.6',
             'python3.7',
             'python3.8',
+            'python3.9',
         ])
         assert.deepStrictEqual(samImageLambdaRuntimes(false).toArray().sort(), [
             'dotnet5.0',
@@ -106,6 +109,7 @@ describe('runtimes', function () {
             'python3.6',
             'python3.7',
             'python3.8',
+            'python3.9',
         ])
     })
 })

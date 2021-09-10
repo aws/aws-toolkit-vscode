@@ -1,4 +1,0 @@
-{
-	"type": "Bug Fix",
-	"description": "Add new setting `aws.samcli.lambda.timeout` and remove `aws.samcli.debug.attach.timeout.millis` setting. The new setting sets the maximum time to wait for a local Lambda to start."
-}

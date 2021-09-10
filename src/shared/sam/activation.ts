@@ -34,6 +34,7 @@ import { CodelensRootRegistry } from './codelensRootRegistry'
 import { AWS_SAM_DEBUG_TYPE } from './debugger/awsSamDebugConfiguration'
 import { SamDebugConfigProvider } from './debugger/awsSamDebugger'
 import { addSamDebugConfiguration } from './debugger/commands/addSamDebugConfiguration'
+import { lazyLoadSamTemplateStrings } from '../../lambda/models/samTemplates'
 const localize = nls.loadMessageBundle()
 
 const STATE_NAME_SUPPRESS_YAML_PROMPT = 'aws.sam.suppressYamlPrompt'
@@ -83,6 +84,7 @@ export async function activate(ctx: ExtContext): Promise<void> {
 }
 
 async function registerServerlessCommands(ctx: ExtContext): Promise<void> {
+    lazyLoadSamTemplateStrings()
     ctx.extensionContext.subscriptions.push(
         vscode.commands.registerCommand(
             'aws.samcli.detect',
@@ -161,7 +163,7 @@ async function activateCodeLensProviders(
         )
     )
 
-    disposables.push(vscode.languages.registerCodeLensProvider(jsLensProvider.JAVASCRIPT_ALL_FILES, tsCodeLensProvider))
+    disposables.push(vscode.languages.registerCodeLensProvider(jsLensProvider.TYPESCRIPT_ALL_FILES, tsCodeLensProvider))
     disposables.push(vscode.languages.registerCodeLensProvider(pyLensProvider.PYTHON_ALLFILES, pyCodeLensProvider))
     disposables.push(vscode.languages.registerCodeLensProvider(javaLensProvider.JAVA_ALLFILES, javaCodeLensProvider))
     disposables.push(vscode.languages.registerCodeLensProvider(csLensProvider.CSHARP_ALLFILES, csCodeLensProvider))
@@ -234,7 +236,7 @@ async function activateCodeLensProviders(
         getLogger().error('Failed to activate codelens registry', e)
         // This prevents us from breaking for any reason later if it fails to load. Since
         // Noop watcher is always empty, we will get back empty arrays with no issues.
-        ext.codelensRootRegistry = (new NoopWatcher() as unknown) as CodelensRootRegistry
+        ext.codelensRootRegistry = new NoopWatcher() as unknown as CodelensRootRegistry
     }
     context.extensionContext.subscriptions.push(ext.codelensRootRegistry)
 
@@ -314,7 +316,11 @@ async function promptInstallYamlPlugin(fileName: string, disposables: vscode.Dis
         const permanentlySuppress = localize('AWS.message.info.yaml.suppressPrompt', "Dismiss, and don't show again")
 
         const response = await vscode.window.showInformationMessage(
-            localize('AWS.message.info.yaml.prompt', 'Install YAML extension for additional AWS features.'),
+            localize(
+                'AWS.message.info.yaml.prompt',
+                'Install YAML extension for additional {0} features.',
+                getIdeProperties().company
+            ),
             goToMarketplace,
             dismiss,
             permanentlySuppress

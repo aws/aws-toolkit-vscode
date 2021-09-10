@@ -24,8 +24,9 @@ import * as pythonCodelens from './pythonCodeLensProvider'
 import * as tsCodelens from './typescriptCodeLensProvider'
 import * as goCodelens from './goCodeLensProvider'
 import { VSCODE_EXTENSION_ID } from '../extensions'
+import { getIdeProperties } from '../extensionUtilities'
 
-export type Language = 'python' | 'javascript' | 'csharp' | 'go' | 'java'
+export type Language = 'python' | 'javascript' | 'csharp' | 'go' | 'java' | 'typescript'
 
 export const STATE_NAME_ENABLE_CODELENSES = 'sam.enableCodeLenses'
 
@@ -113,8 +114,14 @@ function makeAddCodeSamDebugCodeLens(
     openWebview: boolean
 ): vscode.CodeLens {
     const title = openWebview
-        ? localize('AWS.codelens.lambda.configEditor', 'Edit Debug Configuration (Beta)')
-        : localize('AWS.command.addSamDebugConfiguration', 'Add Debug Configuration')
+        ? `${getIdeProperties().company}: ${localize(
+              'AWS.codelens.lambda.configEditor',
+              'Edit Debug Configuration (Beta)'
+          )}`
+        : `${getIdeProperties().company}: ${localize(
+              'AWS.command.addSamDebugConfiguration',
+              'Add Debug Configuration'
+          )}`
     const command: vscode.Command = {
         title,
         command: 'aws.pickAddSamDebugConfiguration',

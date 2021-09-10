@@ -8,7 +8,10 @@ import { writeFile } from 'fs-extra'
 import * as os from 'os'
 import * as path from 'path'
 import {
-    isImageLambdaConfig, PythonCloud9DebugConfiguration, PythonDebugConfiguration, PythonPathMapping
+    isImageLambdaConfig,
+    PythonCloud9DebugConfiguration,
+    PythonDebugConfiguration,
+    PythonPathMapping,
 } from '../../../lambda/local/debugConfiguration'
 import { RuntimeFamily } from '../../../lambda/models/samLambdaRuntime'
 import { ext } from '../../extensionGlobals'
@@ -56,7 +59,7 @@ async function makePythonDebugManifest(params: {
         return debugManifestPath
     }
 
-    // TODO: If another module name includes the string "ptvsd", this will be skipped...
+    // TODO: If another module name includes the string "debugpy", this will be skipped...
     if (!params.useIkpdb && !manifestText.includes('debugpy')) {
         manifestText += `${os.EOL}debugpy>=1.0,<2`
         await writeFile(debugManifestPath, manifestText)
@@ -253,6 +256,8 @@ function getPythonExeAndBootstrap(runtime: Runtime) {
             return { python: '/var/lang/bin/python3.7', boostrap: '/var/runtime/bootstrap' }
         case 'python3.8':
             return { python: '/var/lang/bin/python3.8', boostrap: '/var/runtime/bootstrap.py' }
+        case 'python3.9':
+            return { python: '/var/lang/bin/python3.9', boostrap: '/var/runtime/bootstrap.py' }
         default:
             throw new Error(`Python SAM debug logic ran for invalid Python runtime: ${runtime}`)
     }

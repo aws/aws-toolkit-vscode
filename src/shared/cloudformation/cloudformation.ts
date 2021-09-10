@@ -3,13 +3,17 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
-import { schema } from 'yaml-cfn'
+import * as fs from 'fs-extra'
+import * as vscode from 'vscode'
 import { writeFile } from 'fs-extra'
+import { schema } from 'yaml-cfn'
 import * as yaml from 'js-yaml'
 import * as filesystemUtilities from '../filesystemUtilities'
 import { SystemUtilities } from '../systemUtilities'
 import { getLogger } from '../logger'
 import { LAMBDA_PACKAGE_TYPE_IMAGE } from '../constants'
+import { isCloud9 } from '../extensionUtilities'
+import { Window } from '../vscode/window'
 
 export namespace CloudFormation {
     export const SERVERLESS_API_TYPE = 'AWS::Serverless::Api'
@@ -204,6 +208,10 @@ export namespace CloudFormation {
     }
 
     export interface Template {
+        AWSTemplateFormatVersion?: string
+
+        Transform?: { properties: any } | string
+
         Parameters?: {
             [key: string]: Parameter | undefined
         }
@@ -358,7 +366,7 @@ export namespace CloudFormation {
 
         const templateAsYaml: string = await filesystemUtilities.readFileAsString(filename)
         const template = yaml.load(templateAsYaml, {
-            schema: new yaml.Schema(schema),
+            schema: schema as any,
         }) as Template
         validateTemplate(template)
 
@@ -504,7 +512,9 @@ export namespace CloudFormation {
      */
     function isRef(property: unknown): boolean {
         return (
-            typeof property === 'object' && Object.keys(property!).length === 1 && Object.keys(property!).includes('Ref')
+            typeof property === 'object' &&
+            Object.keys(property!).length === 1 &&
+            Object.keys(property!).includes('Ref')
         )
     }
 
@@ -574,7 +584,7 @@ export namespace CloudFormation {
                     const forcedProperty = property as Ref
                     return getReffedThing(forcedProperty, template, type)
                 } catch (err) {
-                    getLogger().debug(err)
+                    getLogger().debug(err as Error)
                 }
             }
         }
@@ -701,7 +711,7 @@ export namespace CloudFormation {
         } = {}
     ): string | number | undefined {
         if (typeof property !== 'object') {
-            return property as string | number | undefined 
+            return property as string | number | undefined
         }
         if (isRef(property)) {
             try {
@@ -725,7 +735,7 @@ export namespace CloudFormation {
                         : undefined
                 }
             } catch (err) {
-                getLogger().debug(err)
+                getLogger().debug(err as Error)
             }
         }
 
@@ -746,4 +756,42 @@ export namespace CloudFormation {
     export function makeResourceId(s: string) {
         return s.replace(/[^A-Za-z0-9]/g, '')
     }
+}
+
+/**
+ * Creates a starter YAML template file.
+ * @param isSam: Create a SAM template instead of a CFN template
+ */
+export async function createStarterTemplateFile(isSam?: boolean, window: Window = Window.vscode()): Promise<void> {
+    const content = createStarterTemplateYaml(isSam)
+    const wsFolder = vscode.workspace.workspaceFolders
+    const loc = await window.showSaveDialog({
+        filters: { YAML: ['yaml'] },
+        defaultUri: wsFolder && wsFolder[0] ? wsFolder[0].uri : undefined,
+    })
+    if (loc) {
+        fs.writeFileSync(loc.fsPath, content)
+        await vscode.commands.executeCommand('vscode.open', loc)
+    }
+}
+
+/**
+ * Creates a boilerplate CFN or SAM template that is complete enough to be picked up for JSON schema assignment
+ * TODO: Remove `isCloud9` when Cloud9 gets YAML code completion
+ * @param isSam Create a SAM or CFN template
+ */
+function createStarterTemplateYaml(isSam?: boolean): string {
+    return `AWSTemplateFormatVersion: '2010-09-09'
+${isSam ? 'Transform: AWS::Serverless-2016-10-31\n' : ''}
+Description: <your stack description here>
+${isCloud9() ? '' : '\n# Available top-level fields are listed in code completion\n'}
+# Add Resources Here: uncomment the following lines
+# Resources:
+#   <resource name here>:
+#     Type: # resource type here${isCloud9() ? '' : ' - available resources are listed in code completion'}
+#     # <add resource-specific properties underneath this entry ${
+        isCloud9() ? '' : ' - available properties are listed in code completion'
+    }>
+#     Properties:
+`
 }

@@ -15,6 +15,7 @@ import {
     sfnUpdateStateMachineUrl,
 } from '../../shared/constants'
 import { ext } from '../../shared/extensionGlobals'
+import { getIdeProperties } from '../../shared/extensionUtilities'
 import { createHelpButton } from '../../shared/ui/buttons'
 import * as input from '../../shared/ui/input'
 import * as picker from '../../shared/ui/picker'
@@ -75,7 +76,7 @@ interface PublishActionQuickPickItem {
     action: PublishStateMachineAction
 }
 export class DefaultPublishStateMachineWizardContext extends WizardContext implements PublishStateMachineWizardContext {
-    private readonly helpButton = createHelpButton(localize('AWS.command.help', 'View Toolkit Documentation'))
+    private readonly helpButton = createHelpButton()
     private iamRoles: IAM.roleListType | undefined
     private stateMachines: StepFunctions.StateMachineList | undefined
     private readonly iamClient: IamClient
@@ -124,7 +125,8 @@ export class DefaultPublishStateMachineWizardContext extends WizardContext imple
                 ignoreFocusOut: true,
                 title: localize(
                     'AWS.stepFunctions.publishWizard.publishAction.title',
-                    'Publish to AWS Step Functions ({0})',
+                    'Publish to {0} Step Functions ({1})',
+                    getIdeProperties().company,
                     this.defaultRegion
                 ),
                 step: 1,

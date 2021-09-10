@@ -70,8 +70,6 @@ export async function activate(args: {
         })
     )
 
-    recordVscodeActiveRegions({ value: awsExplorer.getRegionNodesSize() })
-
     args.awsContextTrees.addTree(awsExplorer)
 
     updateAwsExplorerWhenAwsContextCredentialsChange(awsExplorer, args.awsContext, ext.context)
@@ -124,9 +122,12 @@ async function registerAwsExplorerCommands(
     )
 
     context.subscriptions.push(
-        vscode.commands.registerCommand('aws.refreshAwsExplorer', async () => {
-            recordAwsRefreshExplorer()
+        vscode.commands.registerCommand('aws.refreshAwsExplorer', async (passive: boolean = false) => {
             awsExplorer.refresh()
+
+            if (!passive) {
+                recordAwsRefreshExplorer()
+            }
         })
     )
 
@@ -161,6 +162,18 @@ async function registerAwsExplorerCommands(
     )
 
     context.subscriptions.push(
+        vscode.commands.registerCommand(
+            'aws.renderStateMachineGraph',
+            async (node: StateMachineNode) =>
+                await downloadStateMachineDefinition({
+                    stateMachineNode: node,
+                    outputChannel: toolkitOutputChannel,
+                    isPreviewAndRender: true,
+                })
+        )
+    )
+
+    context.subscriptions.push(
         vscode.commands.registerCommand('aws.copyArn', async (node: AWSResourceNode) => await copyArnCommand(node))
     )
 
@@ -169,12 +182,8 @@ async function registerAwsExplorerCommands(
     )
 
     context.subscriptions.push(
-        vscode.commands.registerCommand('aws.refreshAwsExplorerNode', async (element: AWSTreeNodeBase) => {
-            try {
-                awsExplorer.refresh(element)
-            } finally {
-                recordAwsRefreshExplorer()
-            }
+        vscode.commands.registerCommand('aws.refreshAwsExplorerNode', async (element: AWSTreeNodeBase | undefined) => {
+            awsExplorer.refresh(element)
         })
     )
 

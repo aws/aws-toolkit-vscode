@@ -16,7 +16,7 @@ import { submitFeedbackListener } from './submitFeedbackListener'
 export function submitFeedback(listener?: (message: any) => Promise<void>): vscode.WebviewPanel {
     const panel = vscode.window.createWebviewPanel(
         'html',
-        localize('AWS.submitFeedback.title', 'Submit Quick Feedback'),
+        localize('AWS.submitFeedback.title', 'Send Feedback'),
         vscode.ViewColumn.One,
         {
             retainContextWhenHidden: true,

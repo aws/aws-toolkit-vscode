@@ -5,11 +5,11 @@
 
 import * as assert from 'assert'
 import * as FakeTimers from '@sinonjs/fake-timers'
-import * as SDK from 'aws-sdk'
+import * as SSOOIDC from '@aws-sdk/client-sso-oidc'
 import * as sinon from 'sinon'
 import { DiskCache } from '../../../credentials/sso/diskCache'
 import { SsoAccessTokenProvider } from '../../../credentials/sso/ssoAccessTokenProvider'
-import { CreateTokenResponse, StartDeviceAuthorizationResponse } from 'aws-sdk/clients/ssooidc'
+import { StartDeviceAuthorizationResponse } from 'aws-sdk/clients/ssooidc'
 import { SsoClientRegistration } from '../../../credentials/sso/ssoClientRegistration'
 
 describe('SsoAccessTokenProvider', function () {
@@ -17,7 +17,7 @@ describe('SsoAccessTokenProvider', function () {
 
     const ssoRegion = 'fakeRegion'
     const ssoUrl = 'fakeUrl'
-    const ssoOidcClient = new SDK.SSOOIDC({ region: 'us-west-2' })
+    const ssoOidcClient = new SSOOIDC.SSOOIDC({ region: 'us-west-2' })
     const cache = new DiskCache()
     const sut = new SsoAccessTokenProvider(ssoRegion, ssoUrl, ssoOidcClient, cache)
 
@@ -30,7 +30,7 @@ describe('SsoAccessTokenProvider', function () {
         expiresAt: new Date(Date.now() + HOUR_IN_MS).toISOString(),
     }
 
-    const fakeCreateTokenResponse: SDK.SSOOIDC.CreateTokenResponse = {
+    const fakeCreateTokenResponse: SSOOIDC.CreateTokenResponse = {
         accessToken: 'dummyAccessToken',
         expiresIn: 120,
     }
@@ -90,9 +90,7 @@ describe('SsoAccessTokenProvider', function () {
             setUpStubCache(validRegistation)
             const stubAuthorizeClient = sandbox.stub(sut, 'authorizeClient').resolves(validAuthorization)
 
-            sandbox.stub(ssoOidcClient, 'createToken').returns(({
-                promise: sandbox.stub().resolves(fakeCreateTokenResponse),
-            } as any) as SDK.Request<CreateTokenResponse, SDK.AWSError>)
+            sandbox.stub(ssoOidcClient, 'createToken').resolves(fakeCreateTokenResponse)
 
             const stubSaveAccessToken = sandbox.stub(cache, 'saveAccessToken').returns()
 
@@ -111,9 +109,7 @@ describe('SsoAccessTokenProvider', function () {
             const stubRegisterClient = sandbox.stub(sut, 'registerClient').resolves(validRegistation)
             const stubAuthorizeClient = sandbox.stub(sut, 'authorizeClient').resolves(validAuthorization)
 
-            const stubCreateToken = sandbox.stub(ssoOidcClient, 'createToken').returns(({
-                promise: sandbox.stub().resolves(fakeCreateTokenResponse),
-            } as any) as SDK.Request<CreateTokenResponse, SDK.AWSError>)
+            const stubCreateToken = sandbox.stub(ssoOidcClient, 'createToken').resolves(fakeCreateTokenResponse)
 
             const stubSaveAccessToken = sandbox.stub(cache, 'saveAccessToken').returns()
 
@@ -135,13 +131,9 @@ describe('SsoAccessTokenProvider', function () {
             sandbox.stub(sut, 'authorizeClient').resolves(validAuthorization)
 
             const stubCreateToken = sandbox.stub(ssoOidcClient, 'createToken')
-            stubCreateToken.onFirstCall().returns(({
-                promise: sandbox.stub().throws({ code: 'AuthorizationPendingException' }),
-            } as any) as SDK.Request<CreateTokenResponse, SDK.AWSError>)
+            stubCreateToken.onFirstCall().rejects({ name: 'AuthorizationPendingException' })
 
-            stubCreateToken.onSecondCall().returns(({
-                promise: sandbox.stub().resolves(fakeCreateTokenResponse),
-            } as any) as SDK.Request<CreateTokenResponse, SDK.AWSError>)
+            stubCreateToken.onSecondCall().resolves(fakeCreateTokenResponse)
 
             const stubSaveAccessToken = sandbox.stub(cache, 'saveAccessToken').returns()
 
@@ -166,12 +158,10 @@ describe('SsoAccessTokenProvider', function () {
             setUpStubCache(validRegistation)
             sandbox.stub(sut, 'authorizeClient').resolves(validAuthorization)
 
-            const errToThrow = new Error() as SDK.AWSError
+            const errToThrow = new Error()
 
             const stubCreateToken = sandbox.stub(ssoOidcClient, 'createToken')
-            stubCreateToken.returns(({
-                promise: sandbox.stub().throws(errToThrow),
-            } as any) as SDK.Request<CreateTokenResponse, SDK.AWSError>)
+            stubCreateToken.rejects(errToThrow)
 
             const stubSaveAccessToken = sandbox.stub(cache, 'saveAccessToken').returns()
 
@@ -186,13 +176,9 @@ describe('SsoAccessTokenProvider', function () {
             sandbox.stub(sut, 'authorizeClient').resolves(validAuthorization)
 
             const stubCreateToken = sandbox.stub(ssoOidcClient, 'createToken')
-            stubCreateToken.onFirstCall().returns(({
-                promise: sandbox.stub().throws({ code: 'SlowDownException' }),
-            } as any) as SDK.Request<CreateTokenResponse, SDK.AWSError>)
+            stubCreateToken.onFirstCall().rejects({ name: 'SlowDownException' })
 
-            stubCreateToken.onSecondCall().returns(({
-                promise: sandbox.stub().resolves(fakeCreateTokenResponse),
-            } as any) as SDK.Request<CreateTokenResponse, SDK.AWSError>)
+            stubCreateToken.onSecondCall().resolves(fakeCreateTokenResponse)
 
             const stubSaveAccessToken = sandbox.stub(cache, 'saveAccessToken').returns()
 
@@ -216,13 +202,10 @@ describe('SsoAccessTokenProvider', function () {
 
     describe('authorizeClient', function () {
         it('removes the client registration cache on InvalidClientException', async function () {
-            const errToThrow = new Error() as SDK.AWSError
-            errToThrow.code = 'InvalidClientException'
+            const errToThrow = { code: 'InvalidClientException' }
 
             const stubSsoOidcClient = sandbox.stub(ssoOidcClient, 'startDeviceAuthorization')
-            stubSsoOidcClient.returns(({
-                promise: sandbox.stub().throws(errToThrow),
-            } as any) as SDK.Request<CreateTokenResponse, SDK.AWSError>)
+            stubSsoOidcClient.rejects(errToThrow)
 
             const stubInvalidateCache = sandbox.stub(cache, 'invalidateClientRegistration').returns()
 

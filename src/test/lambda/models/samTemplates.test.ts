@@ -15,19 +15,40 @@ import {
     eventBridgeHelloWorldTemplate,
     eventBridgeStarterAppTemplate,
     stepFunctionsSampleApp,
+    typeScriptBackendTemplate,
+    lazyLoadSamTemplateStrings,
 } from '../../../lambda/models/samTemplates'
 import { Set } from 'immutable'
 
 import { samZipLambdaRuntimes } from '../../../lambda/models/samLambdaRuntime'
 
-const validTemplateOptions: Set<SamTemplate> = Set<SamTemplate>([
-    helloWorldTemplate,
-    eventBridgeHelloWorldTemplate,
-    eventBridgeStarterAppTemplate,
-    stepFunctionsSampleApp,
-])
+let validTemplateOptions: Set<SamTemplate>
+let validPythonTemplateOptions: Set<SamTemplate>
+let validNode12TemplateOptions: Set<SamTemplate>
+let defaultTemplateOptions: Set<SamTemplate>
 
-const defaultTemplateOptions: Set<SamTemplate> = Set<SamTemplate>([helloWorldTemplate, stepFunctionsSampleApp])
+before(function () {
+    lazyLoadSamTemplateStrings()
+
+    validTemplateOptions = Set([
+        helloWorldTemplate,
+        eventBridgeHelloWorldTemplate,
+        eventBridgeStarterAppTemplate,
+        stepFunctionsSampleApp,
+        typeScriptBackendTemplate,
+    ])
+
+    validPythonTemplateOptions = Set([
+        helloWorldTemplate,
+        eventBridgeHelloWorldTemplate,
+        eventBridgeStarterAppTemplate,
+        stepFunctionsSampleApp,
+    ])
+
+    validNode12TemplateOptions = Set([helloWorldTemplate, stepFunctionsSampleApp, typeScriptBackendTemplate])
+
+    defaultTemplateOptions = Set([helloWorldTemplate, stepFunctionsSampleApp])
+})
 
 describe('getSamTemplateWizardOption', function () {
     it('should successfully return available templates for specific runtime', function () {
@@ -37,10 +58,18 @@ describe('getSamTemplateWizardOption', function () {
                 case 'python3.6':
                 case 'python3.7':
                 case 'python3.8':
+                case 'python3.9':
                     assert.deepStrictEqual(
                         result,
-                        validTemplateOptions,
-                        'Event bridge app supports all valid template options'
+                        validPythonTemplateOptions,
+                        'Python 3.x supports additional template options'
+                    )
+                    break
+                case 'nodejs12.x':
+                    assert.deepStrictEqual(
+                        result,
+                        validNode12TemplateOptions,
+                        'Node12.x supports default and TS template options'
                     )
                     break
                 default:

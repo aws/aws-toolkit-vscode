@@ -4,13 +4,55 @@
  */
 
 import { CloudFormation } from 'aws-sdk'
+import { ext } from '../extensionGlobals'
+import '../utilities/asyncIteratorShim'
+import { ClassToInterfaceType } from '../utilities/tsUtils'
 
-export interface CloudFormationClient {
-    readonly regionCode: string
+export type CloudFormationClient = ClassToInterfaceType<DefaultCloudFormationClient>
+export class DefaultCloudFormationClient {
+    public constructor(public readonly regionCode: string) {}
 
-    deleteStack(name: string): Promise<void>
+    public async deleteStack(name: string): Promise<void> {
+        const client = await this.createSdkClient()
 
-    listStacks(statusFilter?: string[]): AsyncIterableIterator<CloudFormation.StackSummary>
+        await client
+            .deleteStack({
+                StackName: name,
+            })
+            .promise()
+    }
 
-    describeStackResources(name: string): Promise<CloudFormation.DescribeStackResourcesOutput>
+    public async *listStacks(
+        statusFilter: string[] = ['CREATE_COMPLETE', 'UPDATE_COMPLETE']
+    ): AsyncIterableIterator<CloudFormation.StackSummary> {
+        const client = await this.createSdkClient()
+
+        const request: CloudFormation.ListStacksInput = {
+            StackStatusFilter: statusFilter,
+        }
+
+        do {
+            const response: CloudFormation.ListStacksOutput = await client.listStacks(request).promise()
+
+            if (response.StackSummaries) {
+                yield* response.StackSummaries
+            }
+
+            request.NextToken = response.NextToken
+        } while (request.NextToken)
+    }
+
+    public async describeStackResources(name: string): Promise<CloudFormation.DescribeStackResourcesOutput> {
+        const client = await this.createSdkClient()
+
+        return await client
+            .describeStackResources({
+                StackName: name,
+            })
+            .promise()
+    }
+
+    private async createSdkClient(): Promise<CloudFormation> {
+        return await ext.sdkClientBuilder.createAwsService(CloudFormation, undefined, this.regionCode)
+    }
 }

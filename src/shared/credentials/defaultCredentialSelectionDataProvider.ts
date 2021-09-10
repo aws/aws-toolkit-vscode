@@ -15,12 +15,15 @@ import * as nls from 'vscode-nls'
 const localize = nls.loadMessageBundle()
 
 import { ExtensionContext, QuickPickItem } from 'vscode'
-import { asString } from '../../credentials/providers/credentialsProviderId'
+import { asString } from '../../credentials/providers/credentials'
 import { SharedCredentialsProvider } from '../../credentials/providers/sharedCredentialsProvider'
 import { MultiStepInputFlowController } from '../multiStepInputFlowController'
 import { CredentialSelectionDataProvider } from './credentialSelectionDataProvider'
 import { CredentialSelectionState } from './credentialSelectionState'
 import { CredentialsProfileMru } from './credentialsProfileMru'
+import { getIdeProperties } from '../extensionUtilities'
+import { credentialHelpUrl } from '../constants'
+import { createHelpButton } from '../ui/buttons'
 
 interface ProfileEntry {
     profileName: string
@@ -29,11 +32,12 @@ interface ProfileEntry {
 
 export class DefaultCredentialSelectionDataProvider implements CredentialSelectionDataProvider {
     private static readonly defaultCredentialsProfileName = asString({
-        credentialType: SharedCredentialsProvider.getCredentialsType(),
+        credentialSource: SharedCredentialsProvider.getProviderType(),
         credentialTypeId: 'default',
     })
 
     private readonly _credentialsMru: CredentialsProfileMru
+    private readonly helpButton = createHelpButton(credentialHelpUrl)
 
     public constructor(public readonly existingProfileNames: string[], protected context: ExtensionContext) {
         this._credentialsMru = new CredentialsProfileMru(context)
@@ -44,7 +48,11 @@ export class DefaultCredentialSelectionDataProvider implements CredentialSelecti
         state: Partial<CredentialSelectionState>
     ): Promise<QuickPickItem> {
         return await input.showQuickPick({
-            title: localize('AWS.title.selectCredentialProfile', 'Select an AWS credential profile'),
+            title: localize(
+                'AWS.title.selectCredentialProfile',
+                'Select an {0} credential profile',
+                getIdeProperties().company
+            ),
             step: 1,
             totalSteps: 1,
             placeholder: localize('AWS.placeHolder.selectProfile', 'Select a credential profile'),
@@ -58,50 +66,73 @@ export class DefaultCredentialSelectionDataProvider implements CredentialSelecti
         input: MultiStepInputFlowController,
         state: Partial<CredentialSelectionState>
     ): Promise<string | undefined> {
-        return await input.showInputBox({
-            title: localize('AWS.title.createCredentialProfile', 'Create a new AWS credential profile'),
+        const result = await input.showInputBox({
+            title: localize(
+                'AWS.title.createCredentialProfile',
+                'Create a new {0} credential profile',
+                getIdeProperties().company
+            ),
             step: 1,
             totalSteps: 3,
             value: '',
             prompt: localize('AWS.placeHolder.newProfileName', 'Choose a unique name for the new profile'),
-            validate: this.validateNameIsUnique.bind(this),
+            validate: this.validateProfileName.bind(this),
+            ignoreFocusOut: true,
             shouldResume: this.shouldResume.bind(this),
+            buttons: [this.helpButton],
         })
+        return typeof result === 'string' ? result : undefined
     }
 
     public async inputAccessKey(
         input: MultiStepInputFlowController,
         state: Partial<CredentialSelectionState>
     ): Promise<string | undefined> {
-        return await input.showInputBox({
-            title: localize('AWS.title.createCredentialProfile', 'Create a new AWS credential profile'),
+        const result = await input.showInputBox({
+            title: localize(
+                'AWS.title.createCredentialProfile',
+                'Create a new {0} credential profile',
+                getIdeProperties().company
+            ),
             step: 2,
             totalSteps: 3,
             value: '',
-            prompt: localize('AWS.placeHolder.inputAccessKey', 'Input the AWS Access Key'),
+            prompt: localize('AWS.placeHolder.inputAccessKey', 'Input the {0} Access Key', getIdeProperties().company),
             validate: this.validateAccessKey.bind(this),
             ignoreFocusOut: true,
             shouldResume: this.shouldResume.bind(this),
+            buttons: [this.helpButton],
         })
+        return typeof result === 'string' ? result : undefined
     }
 
     public async inputSecretKey(
         input: MultiStepInputFlowController,
         state: Partial<CredentialSelectionState>
     ): Promise<string | undefined> {
-        return await input.showInputBox({
-            title: localize('AWS.title.createCredentialProfile', 'Create a new AWS credential profile'),
+        const result = await input.showInputBox({
+            title: localize(
+                'AWS.title.createCredentialProfile',
+                'Create a new {0} credential profile',
+                getIdeProperties().company
+            ),
             step: 3,
             totalSteps: 3,
             value: '',
-            prompt: localize('AWS.placeHolder.inputSecretKey', 'Input the AWS Secret Key'),
+            prompt: localize('AWS.placeHolder.inputSecretKey', 'Input the {0} Secret Key', getIdeProperties().company),
             validate: this.validateSecretKey.bind(this),
             ignoreFocusOut: true,
             shouldResume: this.shouldResume.bind(this),
+            buttons: [this.helpButton],
         })
+        return typeof result === 'string' ? result : undefined
     }
 
-    public async validateNameIsUnique(name: string): Promise<string | undefined> {
+    public async validateProfileName(name: string): Promise<string | undefined> {
+        if (name === '') {
+            return localize('AWS.credentials.error.emptyProfileName', 'Profile name must not be empty')
+        }
+
         const duplicate = this.existingProfileNames.find(k => k === name)
 
         return duplicate ? 'Name not unique' : undefined
@@ -109,11 +140,17 @@ export class DefaultCredentialSelectionDataProvider implements CredentialSelecti
 
     public async validateAccessKey(accessKey: string): Promise<string | undefined> {
         // TODO: is there a regex pattern we could use?
+        if (accessKey === '') {
+            return localize('AWS.credentials.error.emptyAccessKey', 'Access key must not be empty')
+        }
         return undefined
     }
 
-    public async validateSecretKey(accessKey: string): Promise<string | undefined> {
-        // TODO: don't believe there is a regex but at this point we could try a 'safe' call
+    public async validateSecretKey(secretKey: string): Promise<string | undefined> {
+        // TODO: is there a regex pattern we could use?
+        if (secretKey === '') {
+            return localize('AWS.credentials.error.emptySecretKey', 'Secret key must not be empty')
+        }
         return undefined
     }
 

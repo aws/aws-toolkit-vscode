@@ -14,7 +14,7 @@ import { S3FileNode } from '../explorer/s3FileNode'
 import { readablePath } from '../util'
 import { progressReporter } from '../progressReporter'
 import { localize } from '../../shared/utilities/vsCodeUtils'
-import { showErrorWithLogs, showOutputMessage } from '../../shared/utilities/messages'
+import { showViewLogsMessage, showOutputMessage } from '../../shared/utilities/messages'
 
 /**
  * Downloads a file represented by the given node.
@@ -47,8 +47,8 @@ export async function downloadFileAsCommand(
         showOutputMessage(`Successfully downloaded file ${saveLocation}`, outputChannel)
         telemetry.recordS3DownloadObject({ result: 'Succeeded' })
     } catch (e) {
-        getLogger().error(`Failed to download file from ${sourcePath} to ${saveLocation}: %O`, e.toString())
-        showErrorWithLogs(
+        getLogger().error(`Failed to download file from ${sourcePath} to ${saveLocation}: %O`, (e as Error).toString())
+        showViewLogsMessage(
             localize('AWS.s3.downloadFile.error.general', 'Failed to download file {0}', node.file.name),
             window
         )

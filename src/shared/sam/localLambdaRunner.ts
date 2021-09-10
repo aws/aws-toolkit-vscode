@@ -34,6 +34,7 @@ import { extensionSettingsPrefix } from '../constants'
 import { DefaultSamCliLocationProvider } from './cli/samCliLocator'
 import { getSamCliContext, getSamCliVersion } from './cli/samCliContext'
 import { CloudFormation } from '../cloudformation/cloudformation'
+import { getIdeProperties } from '../extensionUtilities'
 
 const localize = nls.loadMessageBundle()
 
@@ -349,8 +350,8 @@ export async function runLambdaFunction(
     onAfterBuild: () => Promise<void>
 ): Promise<SamLaunchRequestArgs> {
     // Verify if Docker is running
-    const dockerResponse = await new ChildProcess(true, 'docker', undefined, 'ps').run()
-    if (dockerResponse.exitCode !==0 || dockerResponse.stdout.includes('error during connect')) {
+    const dockerResponse = await new ChildProcess(false, 'docker', undefined, 'ps').run()
+    if (dockerResponse.exitCode !== 0 || dockerResponse.stdout.includes('error during connect')) {
         throw new Error('Running AWS SAM projects locally requires Docker. Is it installed and running?')
     }
     // Switch over to the output channel so the user has feedback that we're getting things ready
@@ -379,14 +380,17 @@ export async function runLambdaFunction(
 
     await onAfterBuild()
     timer.refresh()
-    
+
     if (!(await invokeLambdaHandler(timer, envVars, config))) {
         return config
     }
 
     if (!config.noDebug) {
         if (config.invokeTarget.target === 'api') {
-            const payload = JSON.parse(await readFile(config.eventPayloadFile, { encoding: 'utf-8' }))
+            const payload =
+                config.eventPayloadFile === undefined
+                    ? {}
+                    : JSON.parse(await readFile(config.eventPayloadFile, { encoding: 'utf-8' }))
             // Send the request to the local API server.
             await requestLocalApi(ctx, config.api!, config.apiPort!, payload)
             // Wait for cue messages ("Starting debugger" etc.) before attach.
@@ -596,7 +600,8 @@ export async function attachDebugger({
         getLogger('channel').error(
             localize(
                 'AWS.output.sam.local.attach.failure',
-                'Unable to attach Debugger. Check AWS Toolkit logs. If it took longer than expected to start, you can still attach.'
+                'Unable to attach Debugger. Check {0} Toolkit logs. If it took longer than expected to start, you can still attach.',
+                getIdeProperties().company
             )
         )
     }
@@ -647,10 +652,7 @@ export function shouldAppendRelativePathToFunctionHandler(runtime: string): bool
 }
 
 function createLambdaTimer(configuration: SettingsConfiguration): Timeout {
-    const timelimit = configuration.readSetting<number>(
-        'samcli.lambda.timeout',
-        SAM_LOCAL_TIMEOUT_DEFAULT_MILLIS
-    )
+    const timelimit = configuration.readSetting<number>('samcli.lambda.timeout', SAM_LOCAL_TIMEOUT_DEFAULT_MILLIS)
 
     return new Timeout(timelimit)
 }
@@ -669,6 +671,7 @@ async function showDebugConsole(): Promise<void> {
     }
 }
 
+// TODO: rework this function. The fact that it is mutating the config file AND writing to disk is bizarre.
 /**
  * Common logic shared by `makeCsharpConfig`, `makeTypescriptConfig`, `makePythonDebugConfig`.
  *
@@ -685,12 +688,16 @@ async function showDebugConsole(): Promise<void> {
  * @param config
  */
 export async function makeJsonFiles(config: SamLaunchRequestArgs): Promise<void> {
-    config.eventPayloadFile = path.join(config.baseBuildDir!, 'event.json')
-    config.envFile = path.join(config.baseBuildDir!, 'env-vars.json')
+    config.eventPayloadFile = undefined
+    config.envFile = undefined
 
     // env-vars.json (NB: effectively ignored for the `target=code` case).
-    const env = JSON.stringify(getEnvironmentVariables(makeResourceName(config), config.lambda?.environmentVariables))
-    await writeFile(config.envFile, env)
+    const configEnv = config.lambda?.environmentVariables ?? {}
+    if (Object.keys(configEnv).length !== 0) {
+        const env = JSON.stringify(getEnvironmentVariables(makeResourceName(config), configEnv))
+        config.envFile = path.join(config.baseBuildDir!, 'env-vars.json')
+        await writeFile(config.envFile, env)
+    }
 
     // container-env-vars.json
     if (config.containerEnvVars) {
@@ -702,6 +709,13 @@ export async function makeJsonFiles(config: SamLaunchRequestArgs): Promise<void>
     // event.json
     const payloadObj = config.lambda?.payload?.json ?? config.api?.payload?.json
     const payloadPath = config.lambda?.payload?.path ?? config.api?.payload?.path
+
+    if (Object.keys(payloadObj ?? {}).length === 0 && payloadPath === undefined) {
+        return
+    }
+
+    config.eventPayloadFile = path.join(config.baseBuildDir!, 'event.json')
+
     if (payloadPath) {
         const fullpath = tryGetAbsolutePath(config.workspaceFolder, payloadPath)
         try {

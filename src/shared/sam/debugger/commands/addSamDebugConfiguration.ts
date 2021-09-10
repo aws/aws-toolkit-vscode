@@ -22,6 +22,7 @@ import {
 import { CloudFormation } from '../../../cloudformation/cloudformation'
 import { ext } from '../../../extensionGlobals'
 import { LaunchConfiguration } from '../../../debug/launchConfiguration'
+import { getIdeProperties } from '../../../extensionUtilities'
 
 /**
  * Holds information required to create a launch config
@@ -84,7 +85,8 @@ export async function addSamDebugConfiguration(
                             const prompt = await vscode.window.showInformationMessage(
                                 localize(
                                     'AWS.sam.debugger.useExistingConfig',
-                                    'AWS Toolkit detected an existing legacy configuration for this function. Create the debug config based on the legacy config?'
+                                    '{0} Toolkit detected an existing legacy configuration for this function. Create the debug config based on the legacy config?',
+                                    getIdeProperties().company
                                 ),
                                 { modal: true },
                                 responseMigrate,

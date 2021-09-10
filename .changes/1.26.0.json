@@ -1,0 +1,42 @@
+{
+	"date": "2021-06-30",
+	"version": "1.26.0",
+	"entries": [
+		{
+			"type": "Bug Fix",
+			"description": "S3: improved performance in private VPC (via getBucketLocation)"
+		},
+		{
+			"type": "Bug Fix",
+			"description": "Add new setting `aws.samcli.lambda.timeout` and remove `aws.samcli.debug.attach.timeout.millis` setting. The new setting sets the maximum time to wait for a local Lambda to start."
+		},
+		{
+			"type": "Bug Fix",
+			"description": "CloudWatch Logs: timestamps were incorrectly shown in 12 hour notation instead of 24 hour notation"
+		},
+		{
+			"type": "Bug Fix",
+			"description": "Settings: write 'recently used buckets' setting as JSON object"
+		},
+		{
+			"type": "Feature",
+			"description": "Renamed \"Import Lambda\" -> \"Download Lambda\" for clarity"
+		},
+		{
+			"type": "Feature",
+			"description": "New command: `AWS: Upload current file to S3`"
+		},
+		{
+			"type": "Feature",
+			"description": "File Explorer: \"Deploy SAM Application\" is available from the context-menu for template.yaml files #263"
+		},
+		{
+			"type": "Feature",
+			"description": "SAM run/debug: support TypeScript SAM Lambda projects #1845"
+		},
+		{
+			"type": "Feature",
+			"description": "credentials: support for credentials provided by EC2 instance metadata and environment variables"
+		}
+	]
+}

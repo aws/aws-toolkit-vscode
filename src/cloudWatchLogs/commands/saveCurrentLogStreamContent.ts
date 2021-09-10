@@ -68,7 +68,7 @@ export async function saveCurrentLogStreamContent(
         result = 'Failed'
         vscode.window.showErrorMessage(
             localize(
-                'aws.cloudWatchLogs.invalidEditor',
+                'AWS.cloudWatchLogs.invalidEditor',
                 'Not a Cloudwatch Log stream: {0}',
                 vscode.window.activeTextEditor?.document.fileName
             )

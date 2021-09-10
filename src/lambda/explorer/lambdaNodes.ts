@@ -20,7 +20,7 @@ import { LambdaFunctionNode } from './lambdaFunctionNode'
 import { samLambdaImportableRuntimes } from '../models/samLambdaRuntime'
 
 export const CONTEXT_VALUE_LAMBDA_FUNCTION = 'awsRegionFunctionNode'
-export const CONTEXT_VALUE_LAMBDA_FUNCTION_IMPORTABLE = 'awsRegionFunctionNodeImportable'
+export const CONTEXT_VALUE_LAMBDA_FUNCTION_IMPORTABLE = 'awsRegionFunctionNodeDownloadable'
 
 /**
  * An AWS Explorer node representing the Lambda Service.
@@ -42,8 +42,7 @@ export class LambdaNode extends AWSTreeNodeBase {
 
                 return [...this.functionNodes.values()]
             },
-            getErrorNode: async (error: Error, logID: number) =>
-                new ErrorNode(this, error, logID),
+            getErrorNode: async (error: Error, logID: number) => new ErrorNode(this, error, logID),
             getNoChildrenPlaceholderNode: async () =>
                 new PlaceholderNode(this, localize('AWS.explorerNode.lambda.noFunctions', '[No Functions found]')),
             sort: (nodeA: LambdaFunctionNode, nodeB: LambdaFunctionNode) =>

@@ -5,7 +5,7 @@
 import * as assert from 'assert'
 
 import { AWSError, ECS } from 'aws-sdk'
-import { DefaultEcsClient } from '../../../shared/clients/defaultEcsClient'
+import { DefaultEcsClient } from '../../../shared/clients/ecsClient'
 
 describe('defaultEcsClient', async function () {
     let testClient: TestEcsClient
@@ -229,7 +229,7 @@ class TestEcsClient extends DefaultEcsClient {
     }
 
     protected async createSdkClient(): Promise<ECS> {
-        return ({} as any) as ECS
+        return {} as any as ECS
     }
 
     private getResponseDatum<T>(responses: T[] | AWSError, nextToken?: string): T | AWSError {
