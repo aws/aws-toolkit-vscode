@@ -6,11 +6,12 @@
 import { join } from 'path'
 import * as vscode from 'vscode'
 import * as nls from 'vscode-nls'
+import * as fs from 'fs'
 
 import { activate as activateAwsExplorer } from './awsexplorer/activation'
 import { activate as activateCdk } from './cdk/activation'
 import { activate as activateCloudWatchLogs } from './cloudWatchLogs/activation'
-import { initialize as initializeCredentials } from './credentials/activation'
+import { initialize as initializeCredentials, loginWithMostRecentCredentials } from './credentials/activation'
 import { initializeAwsCredentialsStatusBarItem } from './credentials/awsCredentialsStatusBarItem'
 import { LoginManager } from './credentials/loginManager'
 import { CredentialsProviderManager } from './credentials/providers/credentialsProviderManager'
@@ -72,6 +73,7 @@ import { Ec2CredentialsProvider } from './credentials/providers/ec2CredentialsPr
 import { EnvVarsCredentialsProvider } from './credentials/providers/envVarsCredentialsProvider'
 import { EcsCredentialsProvider } from './credentials/providers/ecsCredentialsProvider'
 import { SchemaService } from './shared/schemas'
+import { getCredentialsFilename } from './credentials/sharedCredentials'
 
 let localize: nls.LocalizeFunc
 
@@ -254,6 +256,10 @@ export async function activate(context: vscode.ExtensionContext) {
         showWelcomeMessage(context)
 
         recordToolkitInitialization(activationStartedOn, getLogger())
+
+        fs.watchFile(getCredentialsFilename(), async () => {
+            await loginWithMostRecentCredentials(toolkitSettings, loginManager)
+        })
 
         ext.telemetry.assertPassiveTelemetry(ext.didReload())
     } catch (error) {

@@ -120,11 +120,13 @@ function updateConfigurationWhenAwsContextChanges(
 ) {
     extensionContext.subscriptions.push(
         awsContext.onDidChangeContext(async awsContextChangedEvent => {
-            await settingsConfiguration.writeSetting(
-                profileSettingKey,
-                awsContextChangedEvent.profileName,
-                vscode.ConfigurationTarget.Global
-            )
+            if (awsContextChangedEvent.profileName) {
+                await settingsConfiguration.writeSetting(
+                    profileSettingKey,
+                    awsContextChangedEvent.profileName,
+                    vscode.ConfigurationTarget.Global
+                )
+            }
         })
     )
 }
