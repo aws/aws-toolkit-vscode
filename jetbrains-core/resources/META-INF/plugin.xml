@@ -191,8 +191,6 @@ with what features/services are supported.
         <editorNotificationProvider implementation="software.aws.toolkits.jetbrains.core.credentials.CredentialsFileHelpNotificationProvider"/>
 
         <editorFloatingToolbarProvider implementation="software.aws.toolkits.jetbrains.services.dynamic.ResourceModelFileFloatingToolbarProvider"/>
-        <localInspection shortName="UpdateProperties" displayName="updateProperties" language="JSON" groupName="dynamic.resource.update.action" enabledByDefault="true" level="WARNING"
-                         implementationClass="software.aws.toolkits.jetbrains.services.dynamic.HighlightSpecificUpdatableProperties"/>
 
         <toolWindow id="aws.explorer" anchor="left" secondary="true"
                     factoryClass="software.aws.toolkits.jetbrains.core.explorer.AwsExplorerFactory"
