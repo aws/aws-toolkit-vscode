@@ -43,10 +43,10 @@ async function showDeploymentCostNotification(): Promise<void> {
         const dontShow = localize('aws.generic.doNotShowAgain', "Don't Show Again")
         const pricingUri = vscode.Uri.parse(APPRUNNER_PRICING_URL)
 
-        vscode.window.showInformationMessage(notice, viewPricing, dontShow).then(button => {
+        vscode.window.showInformationMessage(notice, viewPricing, dontShow).then(async button => {
             if (button === viewPricing) {
                 vscode.env.openExternal(pricingUri)
-                showDeploymentCostNotification()
+                await showDeploymentCostNotification()
             } else if (button === dontShow) {
                 settingsConfig.disablePrompt('suppressApprunnerNotifyPricing')
             }
