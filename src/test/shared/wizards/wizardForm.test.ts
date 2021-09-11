@@ -76,44 +76,6 @@ describe('WizardForm', function () {
         tester.prop2.assertValue('default: 50')
     })
 
-    describe('requireParent', function () {
-        it('only show prompters when parent is defined', function () {
-            testForm.nestedProp.prop1.bindPrompter(() => new SimplePrompter(''), { requireParent: true })
-            testForm.nestedProp.prop2.bindPrompter(() => new SimplePrompter(''))
-            tester.nestedProp.prop1.assertDoesNotShow()
-            tester.nestedProp.prop2.assertShow()
-            tester.nestedProp.applyInput({})
-            tester.nestedProp.prop1.assertShow()
-            tester.nestedProp.prop2.assertShow()
-        })
-
-        it('works with "showWhen"', function () {
-            testForm.nestedProp.prop1.bindPrompter(() => new SimplePrompter(''), {
-                requireParent: true,
-                showWhen: state => state.prop1 === 99,
-            })
-            tester.nestedProp.prop1.assertDoesNotShow()
-            tester.prop1.applyInput(99)
-            tester.nestedProp.prop1.assertDoesNotShow()
-            tester.nestedProp.applyInput({})
-            tester.nestedProp.prop1.assertShow()
-            tester.prop1.applyInput(0)
-            tester.nestedProp.prop1.assertDoesNotShow()
-        })
-
-        it('works with "setDefault"', function () {
-            testForm.nestedProp.prop1.bindPrompter(() => new SimplePrompter(''), {
-                requireParent: true,
-                setDefault: () => 'default',
-            })
-            tester.nestedProp.prop1.assertValue(undefined)
-            tester.nestedProp.applyInput({})
-            tester.nestedProp.prop1.assertValue('default')
-            tester.nestedProp.prop1.applyInput('not default')
-            tester.nestedProp.prop1.assertValue('not default')
-        })
-    })
-
     describe('addForm', function () {
         let nestedTestForm: WizardForm<NestedTestState>
 
@@ -142,18 +104,6 @@ describe('WizardForm', function () {
             tester.nestedProp.prop1.assertShow()
         })
 
-        it('can apply form with "requireParent"', function () {
-            nestedTestForm.body.prop1.bindPrompter(() => new SimplePrompter(''), {
-                showWhen: state => state.prop2 === 'hello',
-            })
-            nestedTestForm.body.prop2.setDefault(() => 'hello')
-            testForm.nestedProp.applyBoundForm(nestedTestForm, { requireParent: true })
-            tester.nestedProp.prop1.assertDoesNotShow()
-            tester.nestedProp.prop2.assertValue(undefined)
-            tester.nestedProp.applyInput({})
-            tester.nestedProp.prop1.assertShow()
-        })
-
         it('can apply form with "showWhen"', function () {
             nestedTestForm.body.prop1.bindPrompter(() => new SimplePrompter(''), {
                 showWhen: state => state.prop2 === 'hello',
@@ -174,6 +124,55 @@ describe('WizardForm', function () {
             tester.nestedProp.prop1.clearInput()
             tester.nestedProp.prop2.applyInput('hello')
             tester.nestedProp.prop1.assertShow()
+        })
+    })
+
+    describe('dependencies', function () {
+        it('throws if there is a cycle', function () {
+            testForm.prop1.bindPrompter(() => new SimplePrompter(0), { dependencies: [testForm.prop2] })
+            testForm.prop2.bindPrompter(() => new SimplePrompter(''), { dependencies: [testForm.nestedProp.prop1] })
+            testForm.nestedProp.prop1.bindPrompter(() => new SimplePrompter(''), { dependencies: [testForm.prop1] })
+            // TODO: make a better error message, right now it's `Error: Cyclic dependency, node was:"prop1"`
+            assert.throws(() => testWizard.boundForm.properties)
+        })
+
+        it('can resolve dependencies', function () {
+            testForm.prop1.bindPrompter(() => new SimplePrompter(0), { dependencies: [testForm.prop2] })
+            testForm.prop2.bindPrompter(() => new SimplePrompter(''))
+
+            tester.prop2.assertShowFirst()
+            tester.prop1.assertDoesNotShow()
+            tester.prop2.applyInput('')
+            tester.prop1.assertShow()
+        })
+
+        it('can resolve dependencies with `showWhen`', function () {
+            testForm.prop1.bindPrompter(() => new SimplePrompter(0), {
+                dependencies: [testForm.prop2],
+                showWhen: state => state.prop2 === 'xyz',
+            })
+
+            tester.prop1.assertDoesNotShow()
+            tester.prop2.applyInput('')
+            tester.prop1.assertDoesNotShow()
+            tester.prop2.applyInput('xyz')
+            tester.prop1.assertShow()
+        })
+
+        it('`setDefault` can use dependencies', function () {
+            testForm.prop1.setDefault(state => state.prop2.length, { dependencies: [testForm.prop2] })
+            tester.prop1.assertValue(undefined)
+            tester.prop2.applyInput('abc')
+            tester.prop1.assertValue(3)
+        })
+
+        it('can resolve dependencies with `setDefault`', function () {
+            testForm.prop1.bindPrompter(() => new SimplePrompter(0), {
+                dependencies: [testForm.prop2],
+                showWhen: state => state.prop2 === 'xyz',
+            })
+            testForm.prop2.setDefault('xyz')
+            tester.prop1.assertShow()
         })
     })
 })

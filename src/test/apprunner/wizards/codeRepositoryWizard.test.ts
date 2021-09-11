@@ -49,10 +49,10 @@ describe('AppRunnerCodeRepositoryWizard', function () {
 
         codevalues.assertDoesNotShowAny()
         codeconfig.ConfigurationSource.applyInput('API')
-        codevalues.BuildCommand.assertShow()
         codevalues.Runtime.assertShow()
-        codevalues.RuntimeEnvironmentVariables.assertShow()
+        codevalues.BuildCommand.assertShow()
         codevalues.StartCommand.assertShow()
+        codevalues.RuntimeEnvironmentVariables.assertShow()
         codevalues.Port.assertShow()
     })
 

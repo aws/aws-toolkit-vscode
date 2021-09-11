@@ -60,17 +60,18 @@ function failIf(cond: boolean, message?: string): void {
 export function createWizardTester<T extends Partial<T>>(wizard: Wizard<T> | WizardForm<T>): WizardTester<T> {
     const form = wizard instanceof Wizard ? wizard.boundForm : wizard
     const state = {} as T
+    const assigned = new Set<string>()
 
-    function canShowPrompter(prop: string): boolean {
+    function canShowPrompter(prop: string, shown: Set<string> = assigned): boolean {
         const defaultState = form.applyDefaults(state)
 
-        if (!form.canShowProperty(prop, state, defaultState)) {
+        if (!form.canShowProperty(prop, state, shown, defaultState)) {
             return false
         }
 
         const provider = form.getPrompterProvider(prop)
 
-        return provider !== undefined // && provider({ stepCache: {} } as any) !== undefined
+        return provider !== undefined
     }
 
     function showableChildren(parent: string): string[] {
@@ -92,10 +93,13 @@ export function createWizardTester<T extends Partial<T>>(wizard: Wizard<T> | Wiz
     }
 
     function assertShow(prop: string, expected?: number): MockWizardFormElement<T>['assertShow'] {
-        return (order: number | undefined = expected) =>
+        return (order: number | undefined = expected) => {
             order === undefined
-                ? failIf(!form.canShowProperty(prop, state), `Property "${prop}" would not be shown`)
+                ? failIf(!canShowPrompter(prop), `Property "${prop}" would not be shown`)
                 : assertOrder(prop, order)
+            // if we assert show then we just assume that the property is assigned to 'something'
+            assigned.add(prop)
+        }
     }
 
     function assertShowNone(prop: string): MockWizardFormElement<T>['assertDoesNotShowAny'] {
@@ -114,6 +118,22 @@ export function createWizardTester<T extends Partial<T>>(wizard: Wizard<T> | Wiz
             failIf(actual !== expected, `Property "${path}" had unexpected value: ${actual} !== ${expected}`)
     }
 
+    function assertShowCount(): MockWizardFormElement<T>['assertShowCount'] {
+        const tempAssigned = new Set(assigned)
+
+        return (expected: number) => {
+            const total = form.properties.filter(prop => {
+                if (canShowPrompter(prop, tempAssigned)) {
+                    tempAssigned.add(prop)
+                    return true
+                }
+                return false
+            }).length
+
+            assert.strictEqual(total, expected, 'Expected number of prompts were not shown.')
+        }
+    }
+
     function createFormWrapper(path: string[] = []): WizardTester<T> {
         return new Proxy(
             {},
@@ -124,9 +144,9 @@ export function createWizardTester<T extends Partial<T>>(wizard: Wizard<T> | Wiz
                     // Using a switch rather than a map since a generic index signature is not yet possible
                     switch (prop) {
                         case APPLY_INPUT:
-                            return <TProp>(input: TProp) => _.set(state, path, input)
+                            return <TProp>(input: TProp) => (_.set(state, path, input), assigned.add(propPath))
                         case CLEAR_INPUT:
-                            return () => _.set(state, path, undefined)
+                            return () => (_.set(state, path, undefined), assigned.delete(propPath))
                         case ASSERT_SHOW:
                             return assertShow(propPath)
                         case ASSERT_SHOW_FIRST:
@@ -143,14 +163,16 @@ export function createWizardTester<T extends Partial<T>>(wizard: Wizard<T> | Wiz
                                 )
                         case NOT_ASSERT_SHOW:
                             return () =>
-                                failIf(form.canShowProperty(propPath, state), `Property "${propPath}" would be shown`)
+                                failIf(
+                                    form.canShowProperty(propPath, state, assigned),
+                                    `Property "${propPath}" would be shown`
+                                )
                         case NOT_ASSERT_SHOW_ANY:
                             return assertShowNone(propPath)
                         case ASSERT_VALUE:
                             return assertValue(propPath)
                         case SHOW_COUNT:
-                            return (count: number) =>
-                                assert.strictEqual(form.properties.filter(prop => canShowPrompter(prop)).length, count)
+                            return assertShowCount
                         default:
                             return Reflect.get(obj, prop, rec) ?? createFormWrapper([...path, prop.toString()])
                     }

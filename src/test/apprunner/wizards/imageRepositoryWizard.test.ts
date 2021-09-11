@@ -23,6 +23,7 @@ describe('AppRunnerImageRepositoryWizard', function () {
 
     it('prompts for identifier, port, and environment variables', function () {
         repoTester.ImageIdentifier.assertShow()
+        repoTester.ImageIdentifier.applyInput('') // TODO: after we 'assertShow' just have sinon apply a stub
         repoTester.ImageConfiguration.Port.assertShow()
         repoTester.ImageConfiguration.RuntimeEnvironmentVariables.assertShow()
         repoTester.assertShowCount(3)

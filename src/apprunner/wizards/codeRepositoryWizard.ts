@@ -251,18 +251,24 @@ function createCodeRepositorySubForm(git: GitExtension): WizardForm<AppRunner.Co
     const form = subform.body
 
     form.RepositoryUrl.bindPrompter(() => createRepoPrompter(git).transform(r => r.fetchUrl!))
-    form.SourceCodeVersion.Value.bindPrompter(state =>
-        createBranchPrompter(git, state.stepCache, state.RepositoryUrl).transform(resp =>
-            resp.replace(`${state.RepositoryUrl}/`, '')
-        )
+    form.SourceCodeVersion.Value.bindPrompter(
+        state =>
+            createBranchPrompter(git, state.stepCache, state.RepositoryUrl).transform(resp =>
+                resp.replace(`${state.RepositoryUrl}/`, '')
+            ),
+        { dependencies: [form.RepositoryUrl] }
     )
     form.CodeConfiguration.ConfigurationSource.bindPrompter(createSourcePrompter)
     form.SourceCodeVersion.Type.setDefault(() => 'BRANCH')
 
     const codeConfigForm = new WizardForm<AppRunner.CodeConfigurationValues>()
     codeConfigForm.body.Runtime.bindPrompter(createRuntimePrompter)
-    codeConfigForm.body.BuildCommand.bindPrompter(state => createBuildCommandPrompter(state.Runtime!))
-    codeConfigForm.body.StartCommand.bindPrompter(state => createStartCommandPrompter(state.Runtime!))
+    codeConfigForm.body.BuildCommand.bindPrompter(state => createBuildCommandPrompter(state.Runtime), {
+        dependencies: [codeConfigForm.body.Runtime],
+    })
+    codeConfigForm.body.StartCommand.bindPrompter(state => createStartCommandPrompter(state.Runtime), {
+        dependencies: [codeConfigForm.body.Runtime],
+    })
     codeConfigForm.body.Port.bindPrompter(createPortPrompter)
     codeConfigForm.body.RuntimeEnvironmentVariables.bindPrompter(() => createVariablesPrompter(makeButtons()))
     // TODO: ask user if they would like to save their parameters into an App Runner config file

@@ -78,6 +78,7 @@ export class Wizard<TState extends Partial<Record<keyof TState, unknown>>> {
     private readonly boundSteps: Map<string, StepFunction<TState>> = new Map()
     private readonly _form: WizardForm<TState>
     private stateController: StateMachineController<TState>
+    private preAssigned: Set<string>
     private _stepOffset: [number, number] = [0, 0]
     private _exitStep?: StepFunction<TState>
 
@@ -114,6 +115,22 @@ export class Wizard<TState extends Partial<Record<keyof TState, unknown>>> {
         this._form = options.initForm ?? new WizardForm()
         this._exitStep =
             options.exitPrompterProvider !== undefined ? this.createExitStep(options.exitPrompterProvider) : undefined
+        this.preAssigned = options.initState ? this.checkInitial(options.initState) : new Set()
+    }
+
+    private checkInitial(initState: Partial<TState>): Set<string> {
+        const findAssigned = (obj: any, keys: string[] = []) => {
+            const p: string[][] = []
+            Object.keys(obj).forEach(key => {
+                if (typeof obj[key] === 'object') {
+                    p.concat(findAssigned(obj[key], [...keys, key]))
+                }
+                p.push([...keys, key])
+            })
+
+            return p
+        }
+        return new Set(findAssigned(initState ?? {}).map(p => p.join('.')))
     }
 
     private assignSteps(): void {
@@ -145,7 +162,7 @@ export class Wizard<TState extends Partial<Record<keyof TState, unknown>>> {
             }
 
             _.set(state, prop, response)
-            const estimate = this.resolveNextSteps(state).length
+            const estimate = this.resolveNextSteps(state, new Set([...this.preAssigned.keys()].concat(prop))).length
             const parentEstimate = this._estimator !== undefined ? this._estimator(state) : 0
             _.set(state, prop, undefined)
 
@@ -166,13 +183,13 @@ export class Wizard<TState extends Partial<Record<keyof TState, unknown>>> {
         }
     }
 
-    private createBoundStep<TProp>(prop: string, provider: PrompterProvider<TState, TProp>): StepFunction<TState> {
+    private createBoundStep<TProp>(prop: string, provider: PrompterProvider<TState, TProp, any>): StepFunction<TState> {
         const stepCache: StepCache = {}
 
         return async state => {
             const stateWithCache = Object.assign(
                 { stepCache: stepCache, estimator: this.createStepEstimator(state, prop) },
-                this._form.applyDefaults(state)
+                this._form.applyDefaults(state, this.getAssigned())
             )
             const impliedResponse = _.get(this.options.implicitState ?? {}, prop)
             const response = await this.promptUser(stateWithCache, provider, impliedResponse)
@@ -192,15 +209,25 @@ export class Wizard<TState extends Partial<Record<keyof TState, unknown>>> {
         }
     }
 
-    protected resolveNextSteps(state: TState): Branch<TState> {
+    private getAssigned(): Set<string> {
+        return new Set(
+            [...this.boundSteps.keys()]
+                .filter(key => this.stateController.containsStep(this.boundSteps.get(key)!))
+                .concat([...this.preAssigned.keys()])
+        )
+    }
+
+    protected resolveNextSteps(state: TState, assigned: Set<string> = this.getAssigned()): Branch<TState> {
         const nextSteps: Branch<TState> = []
         const defaultState = this._form.applyDefaults(state)
+        const currentlyAssigned = new Set(assigned)
         this.boundSteps.forEach((step, targetProp) => {
             if (
-                this._form.canShowProperty(targetProp, state, defaultState) &&
+                this._form.canShowProperty(targetProp, state, currentlyAssigned, defaultState) &&
                 !this.stateController.containsStep(step)
             ) {
                 nextSteps.push(step)
+                currentlyAssigned.add(targetProp)
             }
         })
         return nextSteps
@@ -208,7 +235,7 @@ export class Wizard<TState extends Partial<Record<keyof TState, unknown>>> {
 
     private async promptUser<TProp>(
         state: StateWithCache<TState, TProp>,
-        provider: PrompterProvider<TState, TProp>,
+        provider: PrompterProvider<TState, TProp, any>,
         impliedResponse?: TProp
     ): Promise<PromptResult<TProp>> {
         const prompter = provider(state as StateWithCache<WizardState<TState>, TProp>)

@@ -220,8 +220,8 @@ export class ImageIdentifierForm extends WizardForm<{ repo: TaggedEcrRepository 
         super()
 
         this.body.repo.bindPrompter(state => createImagePrompter(ecrClient, state.stepCache, options))
-        this.body.repo.tag.bindPrompter(state => createTagPrompter(ecrClient, state.repo!, state.stepCache), {
-            requireParent: true,
+        this.body.repo.tag.bindPrompter(state => createTagPrompter(ecrClient, state.repo, state.stepCache), {
+            dependencies: [this.body.repo],
         })
     }
 }
@@ -247,9 +247,9 @@ function createImageRepositorySubForm(
         return imageRepo.search(/^public.ecr.aws/) !== -1
     }
 
-    form.ImageRepositoryType.setDefault(state =>
-        state.ImageIdentifier !== undefined ? (isPublic(state.ImageIdentifier) ? 'ECR_PUBLIC' : 'ECR') : undefined
-    )
+    form.ImageRepositoryType.setDefault(state => (isPublic(state.ImageIdentifier) ? 'ECR_PUBLIC' : 'ECR'), {
+        dependencies: [form.ImageIdentifier],
+    })
 
     form.ImageConfiguration.Port.bindPrompter(() => createPortPrompter())
     form.ImageConfiguration.RuntimeEnvironmentVariables.bindPrompter(() => createVariablesPrompter(makeButtons()))
@@ -271,7 +271,8 @@ export class AppRunnerImageRepositoryWizard extends Wizard<AppRunner.SourceConfi
         form.AuthenticationConfiguration.AccessRoleArn.bindPrompter(
             rolePrompter.transform(resp => resp.Arn),
             {
-                showWhen: form => form.ImageRepository?.ImageRepositoryType === 'ECR',
+                showWhen: form => form.ImageRepository.ImageRepositoryType === 'ECR',
+                dependencies: [form.ImageRepository],
             }
         )
         form.AutoDeploymentsEnabled.setDefault(() => autoDeployButton.state === 'on')
