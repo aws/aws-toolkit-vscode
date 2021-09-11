@@ -73,7 +73,7 @@ import { Ec2CredentialsProvider } from './credentials/providers/ec2CredentialsPr
 import { EnvVarsCredentialsProvider } from './credentials/providers/envVarsCredentialsProvider'
 import { EcsCredentialsProvider } from './credentials/providers/ecsCredentialsProvider'
 import { SchemaService } from './shared/schemas'
-import { getCredentialsFilename } from './credentials/sharedCredentials'
+import { SystemUtilities } from './shared/systemUtilities'
 
 let localize: nls.LocalizeFunc
 
@@ -257,8 +257,10 @@ export async function activate(context: vscode.ExtensionContext) {
 
         recordToolkitInitialization(activationStartedOn, getLogger())
 
-        fs.watchFile(getCredentialsFilename(), async () => {
-            await loginWithMostRecentCredentials(toolkitSettings, loginManager)
+        fs.watch(join(SystemUtilities.getHomeDirectory(), '.aws'), async (eventType, filename) => {
+            if ((filename === 'credentials' || filename === 'config') && eventType === 'change') {
+                await loginWithMostRecentCredentials(toolkitSettings, loginManager)
+            }
         })
 
         ext.telemetry.assertPassiveTelemetry(ext.didReload())
