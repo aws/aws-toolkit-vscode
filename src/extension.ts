@@ -61,7 +61,6 @@ import {
     recordAwsShowExtensionSource,
     recordToolkitInit,
 } from './shared/telemetry/telemetry'
-import { ExtensionDisposableFiles } from './shared/utilities/disposableFiles'
 import { ExtContext } from './shared/extensions'
 import { MdeClient } from './shared/clients/mdeClient'
 import * as mde from './mde/activation'
@@ -236,8 +235,6 @@ export async function activate(context: vscode.ExtensionContext) {
         await activateLambda(extContext)
 
         await activateSsmDocument(context, ext.awsContext, regionProvider, toolkitOutputChannel)
-
-        await ExtensionDisposableFiles.initialize(context)
 
         await activateSam(extContext)
 
