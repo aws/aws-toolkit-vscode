@@ -58,17 +58,19 @@ export const readFileAsString = async (
  * Best-effort delete a folder recursively. Will not throw if it fails.
  * @param folder The path to the folder to delete
  */
-export async function tryRemoveFolder(folder?: string) {
+export async function tryRemoveFolder(folder?: string): Promise<boolean> {
     try {
         // if null or empty, no issues
         if (!folder) {
-            getLogger().warn(`No folder passed into tryRemoveFolder: ${folder}`)
-            return
+            getLogger().warn('tryRemoveFolder: no folder given')
+            return false
         }
         await remove(folder)
     } catch (err) {
-        getLogger().warn(`tryRemoveFolder: failed to delete directory '%s': %O`, folder, err as Error)
+        getLogger().warn('tryRemoveFolder: failed to delete directory "%s": %O', folder, err as Error)
+        return false
     }
+    return true
 }
 
 export const makeTemporaryToolkitFolder = async (...relativePathParts: string[]) => {

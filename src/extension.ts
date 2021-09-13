@@ -59,7 +59,6 @@ import {
     recordAwsShowExtensionSource,
     recordToolkitInit,
 } from './shared/telemetry/telemetry'
-import { ExtensionDisposableFiles } from './shared/utilities/disposableFiles'
 import { ExtContext } from './shared/extensions'
 import { activate as activateApiGateway } from './apigateway/activation'
 import { activate as activateStepFunctions } from './stepFunctions/activation'
@@ -228,8 +227,6 @@ export async function activate(context: vscode.ExtensionContext) {
         await activateLambda(extContext)
 
         await activateSsmDocument(context, awsContext, regionProvider, toolkitOutputChannel)
-
-        await ExtensionDisposableFiles.initialize(context)
 
         await activateSam(extContext)
 
