@@ -12,7 +12,6 @@ import com.intellij.docker.registry.DockerRegistry
 import com.intellij.docker.registry.DockerRepositoryModel
 import com.intellij.execution.RunManager
 import com.intellij.execution.RunnerAndConfigurationSettings
-import com.intellij.openapi.application.ModalityState
 import com.intellij.openapi.project.Project
 import com.intellij.remoteServer.configuration.RemoteServer
 import com.intellij.remoteServer.configuration.RemoteServersManager
@@ -24,12 +23,10 @@ import com.intellij.remoteServer.runtime.ServerConnectionManager
 import com.intellij.remoteServer.runtime.ServerConnector
 import com.intellij.remoteServer.runtime.deployment.ServerRuntimeInstance
 import com.intellij.util.Base64
-import kotlinx.coroutines.future.await
 import kotlinx.coroutines.withContext
 import org.jetbrains.concurrency.AsyncPromise
 import org.jetbrains.concurrency.await
 import software.amazon.awssdk.services.ecr.model.AuthorizationData
-import software.aws.toolkits.core.utils.debug
 import software.aws.toolkits.core.utils.getLogger
 import software.aws.toolkits.jetbrains.core.docker.ToolkitDockerAdapter
 import software.aws.toolkits.jetbrains.services.ecr.resources.Repository
@@ -89,7 +86,7 @@ object EcrUtils {
     suspend fun getDockerServerRuntimeInstance(server: RemoteServer<DockerCloudConfiguration>? = null): DockerConnection {
         val instancePromise = AsyncPromise<DockerServerRuntimeInstance>()
         val connection = server?.let {
-            withContext(getCoroutineUiContext(ModalityState.any())) {
+            withContext(getCoroutineUiContext()) {
                 ServerConnectionManager.getInstance().getOrCreateConnection(server)
             }
         } ?: getTemporaryDockerConnection()

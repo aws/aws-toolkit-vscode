@@ -3,7 +3,6 @@
 
 package software.aws.toolkits.jetbrains.services.cloudwatch.logs.insights
 
-import com.intellij.openapi.application.ModalityState
 import com.intellij.openapi.project.Project
 import com.intellij.openapi.ui.DialogWrapper
 import com.intellij.openapi.ui.ValidationInfo
@@ -94,7 +93,7 @@ class QueryEditorDialog internal constructor(
             region = initialQueryDetails.connectionSettings.region,
             credentialProvider = initialQueryDetails.connectionSettings.credentials
         ).await().map { it.logGroupName() }
-        withContext(getCoroutineUiContext(ModalityState.stateForComponent(view.logGroupTable))) {
+        withContext(getCoroutineUiContext()) {
             view.logGroupTable.populateLogGroups(initialQueryDetails.logGroups.toSet(), availableLogGroups)
         }
     }

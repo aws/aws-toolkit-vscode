@@ -3,14 +3,18 @@
 
 package software.aws.toolkits.jetbrains.utils
 
-import com.intellij.openapi.application.AppUIExecutor
+import com.intellij.openapi.application.ApplicationManager
 import com.intellij.openapi.application.ModalityState
-import com.intellij.openapi.application.impl.coroutineDispatchingContext
 import com.intellij.util.concurrency.AppExecutorUtil
+import kotlinx.coroutines.CoroutineDispatcher
 import kotlinx.coroutines.asCoroutineDispatcher
 import kotlin.coroutines.CoroutineContext
 
-fun getCoroutineUiContext(modalityState: ModalityState = ModalityState.defaultModalityState()): CoroutineContext =
-    AppUIExecutor.onUiThread(modalityState).coroutineDispatchingContext()
+fun getCoroutineUiContext(): CoroutineContext = EdtCoroutineDispatcher
+private object EdtCoroutineDispatcher : CoroutineDispatcher() {
+    override fun dispatch(context: CoroutineContext, block: Runnable) {
+        ApplicationManager.getApplication().invokeLater(block, ModalityState.any())
+    }
+}
 
 fun getCoroutineBgContext(): CoroutineContext = AppExecutorUtil.getAppExecutorService().asCoroutineDispatcher()

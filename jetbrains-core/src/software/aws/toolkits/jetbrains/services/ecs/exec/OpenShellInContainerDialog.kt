@@ -90,7 +90,7 @@ class OpenShellInContainerDialog(
             if (taskRoleFound) {
                 runExecCommand()
             } else {
-                withContext(getCoroutineUiContext(ModalityState.any())) {
+                withContext(getCoroutineUiContext()) {
                     TaskRoleNotFoundWarningDialog(project).show()
                 }
             }
