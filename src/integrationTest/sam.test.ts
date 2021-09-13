@@ -5,7 +5,7 @@
 
 import * as assert from 'assert'
 import { Runtime } from 'aws-sdk/clients/lambda'
-import { mkdirpSync, mkdtemp, removeSync } from 'fs-extra'
+import { mkdirpSync, mkdtemp } from 'fs-extra'
 import * as path from 'path'
 import * as vscode from 'vscode'
 import * as vscodeUtils from '../../src/shared/utilities/vsCodeUtils'
@@ -15,7 +15,7 @@ import { getSamCliContext } from '../../src/shared/sam/cli/samCliContext'
 import { runSamCliInit, SamCliInitArgs } from '../../src/shared/sam/cli/samCliInit'
 import { Language } from '../shared/codelens/codeLensUtils'
 import { VSCODE_EXTENSION_ID } from '../shared/extensions'
-import { fileExists } from '../shared/filesystemUtilities'
+import { fileExists, tryRemoveFolder } from '../shared/filesystemUtilities'
 import { AddSamDebugConfigurationInput } from '../shared/sam/debugger/commands/addSamDebugConfiguration'
 import { findParentProjectFile } from '../shared/utilities/workspaceUtils'
 import * as testUtils from './integrationTestsUtilities'
@@ -269,14 +269,6 @@ async function openSamAppFile(applicationPath: string): Promise<vscode.Uri> {
     return document.uri
 }
 
-function tryRemoveFolder(fullPath: string) {
-    try {
-        removeSync(fullPath)
-    } catch (e) {
-        console.error(`Failed to remove path ${fullPath}`, e)
-    }
-}
-
 /**
  * Returns a string if there is a validation issue, undefined if there is no issue.
  */
@@ -408,7 +400,7 @@ describe('SAM Integration Tests', async function () {
     })
 
     after(async function () {
-        tryRemoveFolder(testSuiteRoot)
+        await tryRemoveFolder(testSuiteRoot)
         // Print a summary of session that were seen by `onDidStartDebugSession`.
         const sessionReport = sessionLog.map(x => `    ${x}`).join('\n')
         config.update('server.launchMode', javaLanguageSetting)
@@ -430,7 +422,7 @@ describe('SAM Integration Tests', async function () {
             after(async function () {
                 // don't clean up after java tests so the java language server doesn't freak out
                 if (scenario.language !== 'java') {
-                    tryRemoveFolder(runtimeTestRoot)
+                    await tryRemoveFolder(runtimeTestRoot)
                 }
             })
 
@@ -452,7 +444,7 @@ describe('SAM Integration Tests', async function () {
                 afterEach(async function () {
                     // don't clean up after java tests so the java language server doesn't freak out
                     if (scenario.language !== 'java') {
-                        tryRemoveFolder(testDir)
+                        await tryRemoveFolder(testDir)
                     }
                 })
 
@@ -502,7 +494,7 @@ describe('SAM Integration Tests', async function () {
                 after(async function () {
                     // don't clean up after java tests so the java language server doesn't freak out
                     if (scenario.language !== 'java') {
-                        tryRemoveFolder(testDir)
+                        await tryRemoveFolder(testDir)
                     }
                 })
 
