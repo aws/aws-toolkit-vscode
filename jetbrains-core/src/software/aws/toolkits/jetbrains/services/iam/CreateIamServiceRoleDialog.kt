@@ -3,7 +3,6 @@
 
 package software.aws.toolkits.jetbrains.services.iam
 
-import com.intellij.openapi.application.ModalityState
 import com.intellij.openapi.project.Project
 import com.intellij.openapi.ui.DialogWrapper
 import com.intellij.ui.layout.panel
@@ -64,7 +63,7 @@ class CreateIamServiceRoleDialog(
         coroutineScope.launch {
             try {
                 createIamRole()
-                runBlocking(getCoroutineUiContext(ModalityState.stateForComponent(view))) {
+                runBlocking(getCoroutineUiContext()) {
                     close(OK_EXIT_CODE)
                 }
             } catch (e: Exception) {

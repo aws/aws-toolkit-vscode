@@ -8,7 +8,6 @@ import com.intellij.execution.filters.TextConsoleBuilderFactory
 import com.intellij.execution.process.OSProcessHandler
 import com.intellij.execution.process.ProcessHandlerFactory
 import com.intellij.execution.runners.ExecutionEnvironment
-import com.intellij.openapi.application.ModalityState
 import com.intellij.openapi.rd.defineNestedLifetime
 import com.intellij.xdebugger.XDebugProcessStarter
 import com.jetbrains.rd.framework.IdKind
@@ -63,7 +62,7 @@ object DotnetDebugUtils {
         val frontendPort = debugPorts[0]
         val backendPort = debugPorts[1]
         val promise = AsyncPromise<XDebugProcessStarter>()
-        val edtContext = getCoroutineUiContext(ModalityState.any())
+        val edtContext = getCoroutineUiContext()
         val bgContext = getCoroutineBgContext()
 
         // Define a debugger lifetime to be able to dispose the debugger process and all nested component on termination

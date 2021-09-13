@@ -3,7 +3,6 @@
 
 package software.aws.toolkits.jetbrains.services.sqs
 
-import com.intellij.openapi.application.ModalityState
 import com.intellij.openapi.project.Project
 import com.intellij.openapi.ui.DialogWrapper
 import com.intellij.openapi.ui.ValidationInfo
@@ -59,7 +58,7 @@ class CreateQueueDialog(
         coroutineScope.launch {
             try {
                 createQueue()
-                withContext(getCoroutineUiContext(ModalityState.any())) {
+                withContext(getCoroutineUiContext()) {
                     close(OK_EXIT_CODE)
                 }
                 project.refreshAwsTree(SqsResources.LIST_QUEUE_URLS)
