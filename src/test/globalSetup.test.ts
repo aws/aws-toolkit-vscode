@@ -22,6 +22,7 @@ import { TestLogger } from './testLogger'
 import { FakeAwsContext } from './utilities/fakeAwsContext'
 import { initializeComputeRegion } from '../shared/extensionUtilities'
 import { SchemaService } from '../shared/schemas'
+import { deleteTestTempDirs } from './testUtil'
 
 const testReportDir = join(__dirname, '../../../.test-reports')
 const testLogOutput = join(testReportDir, 'testLog.log')
@@ -43,6 +44,10 @@ before(async function () {
     ext.init(fakeContext, extWindow.Window.vscode())
     ext.telemetry = service
     await initializeComputeRegion()
+})
+
+after(async function () {
+    deleteTestTempDirs()
 })
 
 beforeEach(function () {
