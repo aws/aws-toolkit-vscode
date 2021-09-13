@@ -17,7 +17,7 @@ class DynamicResourceSchemaMapping {
     ) {
         val configuration = JsonSchemaMappingsProjectConfiguration.getInstance(project).findMappingForFile(file)
         if (configuration == null) {
-            currentlyActiveResourceTypes.add(file.dynamicResourceIdentifier.resourceType)
+            currentlyActiveResourceTypes.add(file.dynamicResourceType)
             JsonSchemaService.Impl.get(project).reset()
         }
     }

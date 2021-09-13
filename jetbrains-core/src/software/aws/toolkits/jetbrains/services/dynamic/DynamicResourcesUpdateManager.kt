@@ -56,25 +56,26 @@ internal class DynamicResourceUpdateManager(private val project: Project) {
         TODO("Not yet implemented")
     }
 
-    fun createResource(dynamicResourceIdentifier: DynamicResourceIdentifier, desiredState: String) {
+    fun createResource(connectionSettings: ConnectionSettings, dynamicResourceType: String,  desiredState: String) {
         coroutineScope.launch {
             try {
-                val client = dynamicResourceIdentifier.connectionSettings.getClient<CloudFormationClient>()
+                val client = connectionSettings.getClient<CloudFormationClient>()
                 val progress = client.createResource {
-                    it.typeName(dynamicResourceIdentifier.resourceType)
+                    it.typeName(dynamicResourceType)
                     it.desiredState(desiredState)
                 }.progressEvent()
+                val dynamicResourceIdentifier = DynamicResourceIdentifier(connectionSettings, dynamicResourceType, progress.identifier())
                 setInitialResourceState(dynamicResourceIdentifier, progress)
             } catch (e: Exception) {
                 e.notifyError(
                     message(
                         "dynamic_resources.operation_status_notification_title",
-                        dynamicResourceIdentifier.resourceIdentifier,
+                        dynamicResourceType,
                         message("dynamic_resources.create")
                     ),
                     project
                 )
-                addDynamicResourcesTelemetry(Operation.CREATE, dynamicResourceIdentifier.resourceType, Result.Failed)
+                addDynamicResourcesTelemetry(Operation.CREATE, dynamicResourceType, Result.Failed)
             }
         }
     }

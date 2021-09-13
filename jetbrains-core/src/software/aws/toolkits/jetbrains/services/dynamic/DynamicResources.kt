@@ -13,7 +13,6 @@ import software.amazon.awssdk.services.cloudformation.model.RegistryType
 import software.amazon.awssdk.services.cloudformation.model.Visibility
 import software.aws.toolkits.jetbrains.core.ClientBackedCachedResource
 import software.aws.toolkits.jetbrains.core.Resource
-import software.aws.toolkits.resources.message
 import java.io.File
 
 object DynamicResources {
@@ -35,10 +34,8 @@ object DynamicResources {
 
     fun listResources(resourceType: ResourceType): Resource.Cached<List<DynamicResource>> = listResources(resourceType.fullName)
 
-    fun getResourceDisplayName(identifier: String, sourceIsCreateResource: Boolean = false): String =
-        if (sourceIsCreateResource) {
-            message("dynamic_resources.create_resource_file_name", identifier)
-        } else if (identifier.startsWith("arn:")) {
+    fun getResourceDisplayName(identifier: String): String =
+        if (identifier.startsWith("arn:")) {
             Arn.fromString(identifier).resourceAsString()
         } else {
             identifier

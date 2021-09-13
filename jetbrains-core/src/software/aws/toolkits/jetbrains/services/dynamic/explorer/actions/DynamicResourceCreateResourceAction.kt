@@ -11,6 +11,7 @@ import com.intellij.psi.codeStyle.CodeStyleManager
 import com.intellij.psi.util.PsiUtilCore
 import software.aws.toolkits.jetbrains.core.credentials.AwsConnectionManager.Companion.getConnectionSettings
 import software.aws.toolkits.jetbrains.core.explorer.actions.SingleExplorerNodeAction
+import software.aws.toolkits.jetbrains.services.dynamic.CreateDynamicResourceVirtualFile
 import software.aws.toolkits.jetbrains.services.dynamic.DynamicResourceIdentifier
 import software.aws.toolkits.jetbrains.services.dynamic.DynamicResourceSchemaMapping
 import software.aws.toolkits.jetbrains.services.dynamic.DynamicResourceVirtualFile
@@ -21,15 +22,12 @@ class DynamicResourceCreateResourceAction() :
     SingleExplorerNodeAction<DynamicResourceResourceTypeNode>(message("dynamic_resources.create_resource")), DumbAware {
 
     override fun actionPerformed(selected: DynamicResourceResourceTypeNode, e: AnActionEvent) {
-        val file = DynamicResourceVirtualFile(
-            DynamicResourceIdentifier(
-                selected.nodeProject.getConnectionSettings(),
-                selected.value,
-                selected.value
-            ),
-            message("dynamic_resources.create_resource_file_initial_content"), // TODO: Generate a schema with the required properties
-            isResourceCreate = true
+        val file = CreateDynamicResourceVirtualFile(
+            selected.nodeProject.getConnectionSettings(),
+            selected.value
         )
+        //TODO: Populate the file with required properties in the schema
+
         DynamicResourceSchemaMapping.getInstance().addResourceSchemaMapping(selected.nodeProject, file)
         WriteCommandAction.runWriteCommandAction(selected.nodeProject) {
             CodeStyleManager.getInstance(selected.nodeProject).reformat(PsiUtilCore.getPsiFile(selected.nodeProject, file))

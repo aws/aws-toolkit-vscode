@@ -15,7 +15,5 @@ class DynamicResourcesTest {
         val expectedDisplayName = "sampleIdentifier"
         assertThat(DynamicResources.getResourceDisplayName("sampleIdentifier")).isEqualTo(expectedDisplayName)
         assertThat(DynamicResources.getResourceDisplayName("arn:aws:sqs:us-west-2:1234567890:sampleIdentifier")).isEqualTo(expectedDisplayName)
-        assertThat(DynamicResources.getResourceDisplayName("AWS::SampleService::SampleIdentifier", sourceIsCreateResource = true))
-            .isEqualTo(message("dynamic_resources.create_resource_file_name", "AWS::SampleService::SampleIdentifier"))
     }
 }

@@ -388,7 +388,7 @@ with what features/services are supported.
         </group>
         
         <group id="aws.toolkit.explorer.dynamic.mutate.resource.file" class="software.aws.toolkits.jetbrains.services.dynamic.actions.MutateResourceModelFloatingToolbarActionGroup">
-            <action id="dynamic.resource.create.floating.action" class="software.aws.toolkits.jetbrains.services.dynamic.actions.CreateResourceFloatingToolbarAction"/>
+            <action id="dynamic.resource.create.floating.action" class="software.aws.toolkits.jetbrains.services.dynamic.actions.BeginCreateResourceAction"/>
         </group>
 
         <group id="aws.toolkit.explorer.dynamic.additional.resources" popup="true" compact="false">
