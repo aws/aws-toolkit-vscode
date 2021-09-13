@@ -5,7 +5,7 @@
 
 import * as assert from 'assert'
 import { Runtime } from 'aws-sdk/clients/lambda'
-import { mkdirpSync, mkdtemp, removeSync } from 'fs-extra'
+import { mkdirpSync, mkdtemp } from 'fs-extra'
 import * as path from 'path'
 import * as vscode from 'vscode'
 import * as vscodeUtils from '../../src/shared/utilities/vsCodeUtils'
