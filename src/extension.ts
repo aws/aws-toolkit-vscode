@@ -257,11 +257,13 @@ export async function activate(context: vscode.ExtensionContext) {
 
         recordToolkitInitialization(activationStartedOn, getLogger())
 
-        fs.watch(join(SystemUtilities.getHomeDirectory(), '.aws'), async (eventType, filename) => {
+        const credWatcher = fs.watch(join(SystemUtilities.getHomeDirectory(), '.aws'), async (eventType, filename) => {
             if ((filename === 'credentials' || filename === 'config') && eventType === 'change') {
                 await loginWithMostRecentCredentials(toolkitSettings, loginManager)
             }
         })
+
+        context.subscriptions.push({ dispose: () => credWatcher.close() })
 
         ext.telemetry.assertPassiveTelemetry(ext.didReload())
     } catch (error) {
