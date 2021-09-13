@@ -40,7 +40,6 @@ class BeginCreateResourceAction : AnAction() {
             )
             DynamicResourceUpdateManager.getInstance(psiFile.project).createResource(file.connectionSettings, file.dynamicResourceType, contentString)
         }
-
     }
 
     override fun update(e: AnActionEvent) {
@@ -52,7 +51,7 @@ class BeginCreateResourceAction : AnAction() {
 
     private fun removePrettyPrinting(content: String) = mapper.writeValueAsString(mapper.readTree(content))
 
-    companion object{
-        private val mapper =  jacksonObjectMapper()
+    companion object {
+        private val mapper = jacksonObjectMapper()
     }
 }

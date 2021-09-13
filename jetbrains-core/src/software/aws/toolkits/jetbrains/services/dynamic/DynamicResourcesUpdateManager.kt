@@ -56,7 +56,7 @@ internal class DynamicResourceUpdateManager(private val project: Project) {
         TODO("Not yet implemented")
     }
 
-    fun createResource(connectionSettings: ConnectionSettings, dynamicResourceType: String,  desiredState: String) {
+    fun createResource(connectionSettings: ConnectionSettings, dynamicResourceType: String, desiredState: String) {
         coroutineScope.launch {
             try {
                 val client = connectionSettings.getClient<CloudFormationClient>()

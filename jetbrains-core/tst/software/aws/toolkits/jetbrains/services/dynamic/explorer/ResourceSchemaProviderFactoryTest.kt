@@ -17,7 +17,6 @@ import software.aws.toolkits.jetbrains.core.credentials.ConnectionSettings
 import software.aws.toolkits.jetbrains.services.dynamic.DynamicResource
 import software.aws.toolkits.jetbrains.services.dynamic.DynamicResourceIdentifier
 import software.aws.toolkits.jetbrains.services.dynamic.DynamicResourceSchemaMapping
-import software.aws.toolkits.jetbrains.services.dynamic.DynamicResourceVirtualFile
 import software.aws.toolkits.jetbrains.services.dynamic.DynamicResources
 import software.aws.toolkits.jetbrains.services.dynamic.ResourceType
 import software.aws.toolkits.jetbrains.services.dynamic.ViewDynamicResourceVirtualFile

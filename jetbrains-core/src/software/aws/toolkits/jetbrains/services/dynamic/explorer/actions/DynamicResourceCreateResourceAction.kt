@@ -12,9 +12,7 @@ import com.intellij.psi.util.PsiUtilCore
 import software.aws.toolkits.jetbrains.core.credentials.AwsConnectionManager.Companion.getConnectionSettings
 import software.aws.toolkits.jetbrains.core.explorer.actions.SingleExplorerNodeAction
 import software.aws.toolkits.jetbrains.services.dynamic.CreateDynamicResourceVirtualFile
-import software.aws.toolkits.jetbrains.services.dynamic.DynamicResourceIdentifier
 import software.aws.toolkits.jetbrains.services.dynamic.DynamicResourceSchemaMapping
-import software.aws.toolkits.jetbrains.services.dynamic.DynamicResourceVirtualFile
 import software.aws.toolkits.jetbrains.services.dynamic.explorer.DynamicResourceResourceTypeNode
 import software.aws.toolkits.resources.message
 
@@ -26,7 +24,7 @@ class DynamicResourceCreateResourceAction() :
             selected.nodeProject.getConnectionSettings(),
             selected.value
         )
-        //TODO: Populate the file with required properties in the schema
+        // TODO: Populate the file with required properties in the schema
 
         DynamicResourceSchemaMapping.getInstance().addResourceSchemaMapping(selected.nodeProject, file)
         WriteCommandAction.runWriteCommandAction(selected.nodeProject) {

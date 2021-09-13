@@ -6,7 +6,6 @@ package software.aws.toolkits.jetbrains.services.dynamic.explorer
 import org.assertj.core.api.Assertions.assertThat
 import org.junit.Test
 import software.aws.toolkits.jetbrains.services.dynamic.DynamicResources
-import software.aws.toolkits.resources.message
 
 class DynamicResourcesTest {
 

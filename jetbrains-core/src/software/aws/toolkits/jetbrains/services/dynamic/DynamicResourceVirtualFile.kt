@@ -15,11 +15,20 @@ open class DynamicResourceVirtualFile(fileName: String, val dynamicResourceType:
         fileContent
     )
 
-class CreateDynamicResourceVirtualFile(val connectionSettings: ConnectionSettings, dynamicResourceType: String): DynamicResourceVirtualFile(message("dynamic_resources.create_resource_file_name", dynamicResourceType), dynamicResourceType, InitialCreateDynamicResourceContent.initialContent)
+class CreateDynamicResourceVirtualFile(val connectionSettings: ConnectionSettings, dynamicResourceType: String) :
+    DynamicResourceVirtualFile(
+        message("dynamic_resources.create_resource_file_name", dynamicResourceType),
+        dynamicResourceType,
+        InitialCreateDynamicResourceContent.initialContent
+    )
 
-class ViewDynamicResourceVirtualFile(val dynamicResourceIdentifier: DynamicResourceIdentifier, fileContent: String):
-    DynamicResourceVirtualFile(DynamicResources.getResourceDisplayName(dynamicResourceIdentifier.resourceIdentifier), dynamicResourceIdentifier.resourceType, fileContent)
+class ViewDynamicResourceVirtualFile(val dynamicResourceIdentifier: DynamicResourceIdentifier, fileContent: String) :
+    DynamicResourceVirtualFile(
+        DynamicResources.getResourceDisplayName(dynamicResourceIdentifier.resourceIdentifier),
+        dynamicResourceIdentifier.resourceType,
+        fileContent
+    )
 
-object InitialCreateDynamicResourceContent{
+object InitialCreateDynamicResourceContent {
     const val initialContent = "{}"
 }
