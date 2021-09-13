@@ -3,7 +3,6 @@
 
 package software.aws.toolkits.jetbrains.services.sqs
 
-import com.intellij.openapi.application.ModalityState
 import com.intellij.openapi.options.ConfigurationException
 import com.intellij.openapi.project.Project
 import com.intellij.openapi.ui.DialogWrapper
@@ -74,7 +73,7 @@ class EditAttributesDialog(
                     content = message("sqs.edit.attributes.updated", queue.queueName)
                 )
                 SqsTelemetry.editQueueParameters(project, Result.Succeeded, queue.telemetryType())
-                withContext(getCoroutineUiContext(ModalityState.any())) {
+                withContext(getCoroutineUiContext()) {
                     close(OK_EXIT_CODE)
                 }
             } catch (e: SqsException) {
