@@ -39,7 +39,7 @@ type DefaultFunction<TState, TProp, TDep> = (state: BoundState<TState, TDep>) =>
  * }
  * ```
  * `M` is used to describe when there is a matched key. Matched keys should return their type,
- * while non-matches are considered to be unassigned
+ * while non-matches are considered to be unassigned, and thus are potentially undefined.
  */
 type FindPartialTuple<T, K extends string[], M extends boolean = false> = K['length'] extends 0
     ? M extends true
@@ -87,7 +87,10 @@ interface ContextOptions<TState, TProp, TDep extends Pathable[] = []> {
     relativeOrder?: number
     /**
      * Establishes property dependencies. Declaring dependencies means any state-dependent callback
-     * won't be invoked until all dependencies have a defined value.
+     * won't be invoked until all dependencies have a defined value. Keep in mind that a property
+     * can still be queued up to be shown given all of its dependencies have been _assigned_
+     * (but not yet shown) since it's guaranteed that its depedencies will be resolved by the time
+     * it's shown.
      */
     dependencies?: TDep
 }
@@ -265,7 +268,7 @@ export class WizardForm<TState extends Partial<Record<keyof TState, unknown>>> {
             // Ideally we should contextually bind dependencies with their respective
             // clauses.
             ;[...assignedDefault.keys()]
-                .filter(key => isSet(_.get(defaultState, key)))
+                .filter(key => !isSet(_.get(defaultState, key)))
                 .forEach(key => assignedDefault.delete(key))
         }
 
@@ -294,6 +297,9 @@ export class WizardForm<TState extends Partial<Record<keyof TState, unknown>>> {
         //
         // note: this has no effect on 'flat' wizards; only nested wizards will call
         // `convertElement` to lift bound properties up into the new form
+
+        // just use closures?
+        // e.g. make `canShow` and `getDefault` apart of the element
 
         if (element.provider !== undefined) {
             wrappedElement.provider = state => {

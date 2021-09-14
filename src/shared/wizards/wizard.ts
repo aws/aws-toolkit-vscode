@@ -7,6 +7,7 @@ import { Branch, ControlSignal, StateMachineController, StepFunction } from './s
 import * as _ from 'lodash'
 import { Prompter, PromptResult } from '../../shared/ui/prompter'
 import { PrompterProvider, WizardForm } from './wizardForm'
+import { getLogger } from '../logger/logger'
 
 /** Checks if the user response is valid (i.e. not undefined and not a control signal) */
 export function isValidResponse<T>(response: PromptResult<T>): response is T {

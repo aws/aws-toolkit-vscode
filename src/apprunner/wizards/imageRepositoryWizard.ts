@@ -258,7 +258,7 @@ function createImageRepositorySubForm(
 }
 
 export class AppRunnerImageRepositoryWizard extends Wizard<AppRunner.SourceConfiguration> {
-    constructor(ecrClient: EcrClient, iamClient: IamClient, autoDeployButton = makeDeploymentButton()) {
+    constructor(ecrClient: EcrClient, iamClient: IamClient, autoDeployButton?: QuickInputToggleButton) {
         super()
         const form = this.form
         const rolePrompter = new RolePrompter(iamClient, {
@@ -266,6 +266,11 @@ export class AppRunnerImageRepositoryWizard extends Wizard<AppRunner.SourceConfi
             filter: role => (role.AssumeRolePolicyDocument ?? '').includes(APP_RUNNER_ECR_ENTITY),
             createRole: createEcrRole.bind(undefined, iamClient),
         })
+
+        if (autoDeployButton === undefined) {
+            autoDeployButton = makeDeploymentButton()
+            form.AutoDeploymentsEnabled.setDefault(() => autoDeployButton!.state === 'on')
+        }
 
         form.ImageRepository.applyBoundForm(createImageRepositorySubForm(ecrClient, autoDeployButton))
         form.AuthenticationConfiguration.AccessRoleArn.bindPrompter(
@@ -275,10 +280,5 @@ export class AppRunnerImageRepositoryWizard extends Wizard<AppRunner.SourceConfi
                 dependencies: [form.ImageRepository.ImageRepositoryType],
             }
         )
-
-        if (autoDeployButton === undefined) {
-            autoDeployButton = makeDeploymentButton()
-            form.AutoDeploymentsEnabled.setDefault(() => autoDeployButton!.state === 'on')
-        }
     }
 }
