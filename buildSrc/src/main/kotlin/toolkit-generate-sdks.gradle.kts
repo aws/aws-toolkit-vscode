@@ -39,6 +39,10 @@ java {
     targetCompatibility = JavaVersion.VERSION_1_8
 }
 
+tasks.withType<JavaCompile>().configureEach {
+    options.encoding = "UTF-8"
+}
+
 val generateTask = tasks.register<GenerateSdk>("generateSdks")
 tasks.named("compileJava") {
     dependsOn(generateTask)

@@ -4,8 +4,10 @@
 package software.aws.toolkits.jetbrains.core.credentials
 
 import com.intellij.openapi.project.Project
+import software.amazon.awssdk.core.SdkClient
 import software.aws.toolkits.core.credentials.ToolkitCredentialsProvider
 import software.aws.toolkits.core.region.AwsRegion
+import software.aws.toolkits.jetbrains.core.AwsClientManager
 
 data class ConnectionSettings(val credentials: ToolkitCredentialsProvider, val region: AwsRegion)
 
@@ -19,3 +21,5 @@ fun <T> Project.withAwsConnection(block: (ConnectionSettings) -> T): T {
         ?: throw IllegalStateException("Connection settings are not configured")
     return block(connectionSettings)
 }
+
+inline fun <reified T : SdkClient> ConnectionSettings.getClient(): T = AwsClientManager.getInstance().getClient(this.credentials, this.region)
