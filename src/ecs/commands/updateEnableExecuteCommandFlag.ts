@@ -44,7 +44,7 @@ export async function updateEnableExecuteCommandFlag(
         }
         if (configuration.readSetting('ecs.warnBeforeEnablingExcecuteCommand')) {
             const choice = await window.showWarningMessage(enableWarning, yes, yesDontAskAgain, no)
-            if (choice === undefined || choice === 'No') {
+            if (choice === undefined || choice === no) {
                 return
             } else if (choice === yesDontAskAgain) {
                 configuration.writeSetting(
@@ -60,6 +60,7 @@ export async function updateEnableExecuteCommandFlag(
         commands.execute('aws.refreshAwsExplorer', node.parent)
         return
     }
+
     if (!hasExecEnabled) {
         window.showInformationMessage(
             localize('AWS.command.ecs.enableEcsExec.alreadyDisabled', 'ECS Exec is already disabled for this service')
@@ -69,7 +70,7 @@ export async function updateEnableExecuteCommandFlag(
 
     if (configuration.readSetting('ecs.warnBeforeDisablingExecuteCommand')) {
         const choice = await window.showWarningMessage(disableWarning, yes, yesDontAskAgain, no)
-        if (choice === undefined || choice === 'No') {
+        if (choice === undefined || choice === no) {
             return
         } else if (choice === yesDontAskAgain) {
             configuration.writeSetting(
