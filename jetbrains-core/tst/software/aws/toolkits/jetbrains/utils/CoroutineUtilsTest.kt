@@ -4,7 +4,6 @@
 package software.aws.toolkits.jetbrains.utils
 
 import com.intellij.openapi.application.ApplicationManager
-import com.intellij.openapi.application.ModalityState
 import com.intellij.openapi.util.Disposer
 import com.intellij.testFramework.ApplicationRule
 import com.intellij.testFramework.DisposableRule
@@ -36,7 +35,7 @@ class CoroutineUtilsTest {
     fun `getCoroutineUiContext context runs on UI thread`() {
         runBlocking {
             assertThat(ApplicationManager.getApplication().isDispatchThread).isFalse
-            withContext(getCoroutineUiContext(ModalityState.any())) {
+            withContext(getCoroutineUiContext()) {
                 assertThat(ApplicationManager.getApplication().isDispatchThread).isTrue
             }
         }
