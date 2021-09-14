@@ -11,6 +11,9 @@ import * as path from 'path'
 import * as vscode from 'vscode'
 import { getLogger } from './logger'
 import * as pathutils from './utilities/pathUtils'
+import { loginWithMostRecentCredentials } from '../credentials/activation'
+import { SettingsConfiguration } from './settingsConfiguration'
+import { LoginManager } from '../credentials/loginManager'
 
 const DEFAULT_ENCODING: BufferEncoding = 'utf8'
 
@@ -159,4 +162,16 @@ export async function hasFileWithSuffix(dir: string, suffix: string, exclude?: v
     const searchFolder = `${dir}**/*${suffix}`
     const matchedFiles = await vscode.workspace.findFiles(searchFolder, exclude, 1)
     return matchedFiles.length > 0
+}
+
+export function createCredentialsFileWatcher(
+    filePath: fs.PathLike,
+    toolkitSettings: SettingsConfiguration,
+    loginManager: LoginManager
+): fs.FSWatcher {
+    return fs.watch(filePath, async (eventType, filename) => {
+        if ((filename === 'credentials' || filename === 'config') && eventType === 'change') {
+            await loginWithMostRecentCredentials(toolkitSettings, loginManager)
+        }
+    })
 }

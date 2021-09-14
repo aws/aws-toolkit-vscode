@@ -6,12 +6,11 @@
 import { join } from 'path'
 import * as vscode from 'vscode'
 import * as nls from 'vscode-nls'
-import * as fs from 'fs'
 
 import { activate as activateAwsExplorer } from './awsexplorer/activation'
 import { activate as activateCdk } from './cdk/activation'
 import { activate as activateCloudWatchLogs } from './cloudWatchLogs/activation'
-import { initialize as initializeCredentials, loginWithMostRecentCredentials } from './credentials/activation'
+import { initialize as initializeCredentials } from './credentials/activation'
 import { initializeAwsCredentialsStatusBarItem } from './credentials/awsCredentialsStatusBarItem'
 import { LoginManager } from './credentials/loginManager'
 import { CredentialsProviderManager } from './credentials/providers/credentialsProviderManager'
@@ -74,6 +73,7 @@ import { EnvVarsCredentialsProvider } from './credentials/providers/envVarsCrede
 import { EcsCredentialsProvider } from './credentials/providers/ecsCredentialsProvider'
 import { SchemaService } from './shared/schemas'
 import { SystemUtilities } from './shared/systemUtilities'
+import { createCredentialsFileWatcher } from './shared/filesystemUtilities'
 
 let localize: nls.LocalizeFunc
 
@@ -257,11 +257,11 @@ export async function activate(context: vscode.ExtensionContext) {
 
         recordToolkitInitialization(activationStartedOn, getLogger())
 
-        const credWatcher = fs.watch(join(SystemUtilities.getHomeDirectory(), '.aws'), async (eventType, filename) => {
-            if ((filename === 'credentials' || filename === 'config') && eventType === 'change') {
-                await loginWithMostRecentCredentials(toolkitSettings, loginManager)
-            }
-        })
+        const credWatcher = createCredentialsFileWatcher(
+            join(SystemUtilities.getHomeDirectory(), '.aws'),
+            toolkitSettings,
+            loginManager
+        )
 
         context.subscriptions.push({ dispose: () => credWatcher.close() })
 
