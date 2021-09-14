@@ -37,12 +37,22 @@ describe('WizardForm', function () {
         assert.notStrictEqual(testWizard.boundForm.getPrompterProvider('prop1'), undefined)
     })
 
+    it('throws if trying to re-bind', function () {
+        testForm.prop1.bindPrompter(() => new SimplePrompter(0))
+        assert.throws(() => testForm.prop1.bindPrompter(() => new SimplePrompter(0)))
+    })
+
+    it('throws when reassigning defaults', function () {
+        testForm.prop1.setDefault(0)
+        assert.throws(() => testForm.prop1.setDefault(1))
+    })
+
     it('uses relative order', function () {
         testForm.prop1.bindPrompter(() => new SimplePrompter(0), { relativeOrder: 1 })
         testForm.prop2.bindPrompter(() => new SimplePrompter(''), { relativeOrder: 0 })
 
-        tester.prop2.assertShowFirst()
-        tester.prop1.assertShowSecond()
+        tester.prop2.assertShow()
+        tester.prop1.assertShow()
     })
 
     it('shows prompter based on context', function () {
@@ -94,6 +104,14 @@ describe('WizardForm', function () {
             tester.nestedProp.prop1.assertShow()
         })
 
+        it('can apply dependencies', function () {
+            nestedTestForm.body.prop1.bindPrompter(() => new SimplePrompter(''))
+            testForm.nestedProp.applyBoundForm(nestedTestForm, { dependencies: [testForm.prop1] })
+            tester.nestedProp.prop1.assertDoesNotShow()
+            tester.prop1.applyInput(0)
+            tester.nestedProp.prop1.assertShow()
+        })
+
         it('propagates state to local forms', function () {
             nestedTestForm.body.prop1.bindPrompter(() => new SimplePrompter(''), {
                 showWhen: state => state.prop2 === 'hello',
@@ -140,9 +158,8 @@ describe('WizardForm', function () {
             testForm.prop1.bindPrompter(() => new SimplePrompter(0), { dependencies: [testForm.prop2] })
             testForm.prop2.bindPrompter(() => new SimplePrompter(''))
 
-            tester.prop2.assertShowFirst()
             tester.prop1.assertDoesNotShow()
-            tester.prop2.applyInput('')
+            tester.prop2.assertShowFirst()
             tester.prop1.assertShow()
         })
 

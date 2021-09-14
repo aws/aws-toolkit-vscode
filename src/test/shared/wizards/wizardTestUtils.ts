@@ -13,10 +13,8 @@ interface MockWizardFormElement<TProp> {
     applyInput(input: TProp): void
     clearInput(): void
     /**
-     * Verifies the property could be shown.
-     *
-     * Passing in the order argument specifies the relative order (1-indexed) in which prompters
-     * would be shown. Properties that lack a prompter (e.g. forms) have no relative ordering.
+     * Verifies the property would be shown. This is computed imperatively, taking in consideration
+     * any previously asserted properties.
      */
     assertShow(order?: number): void
     assertShowFirst(): void
@@ -36,20 +34,7 @@ type MockForm<T, TState = T> = {
         : MockWizardFormElement<T[Property]>
 }
 
-type FormTesterMethodKey = keyof MockWizardFormElement<any>
-const APPLY_INPUT: FormTesterMethodKey = 'applyInput'
-const CLEAR_INPUT: FormTesterMethodKey = 'clearInput'
-const ASSERT_SHOW: FormTesterMethodKey = 'assertShow'
-const ASSERT_SHOW_FIRST: FormTesterMethodKey = 'assertShowFirst'
-const ASSERT_SHOW_SECOND: FormTesterMethodKey = 'assertShowSecond'
-const ASSERT_SHOW_THIRD: FormTesterMethodKey = 'assertShowThird'
-const ASSERT_SHOW_ANY: FormTesterMethodKey = 'assertShowAny'
-const NOT_ASSERT_SHOW: FormTesterMethodKey = 'assertDoesNotShow'
-const NOT_ASSERT_SHOW_ANY: FormTesterMethodKey = 'assertDoesNotShowAny'
-const ASSERT_VALUE: FormTesterMethodKey = 'assertValue'
-const SHOW_COUNT: FormTesterMethodKey = 'assertShowCount'
-
-export type WizardTester<T> = MockForm<Required<T>> & Pick<MockWizardFormElement<any>, typeof SHOW_COUNT>
+export type WizardTester<T> = MockForm<Required<T>> & Pick<MockWizardFormElement<any>, 'assertShowCount'>
 
 function failIf(cond: boolean, message?: string): void {
     if (cond) {
@@ -61,6 +46,7 @@ export function createWizardTester<T extends Partial<T>>(wizard: Wizard<T> | Wiz
     const form = wizard instanceof Wizard ? wizard.boundForm : wizard
     const state = {} as T
     const assigned = new Set<string>()
+    let showOffset = 0
 
     function canShowPrompter(prop: string, shown: Set<string> = assigned): boolean {
         const defaultState = form.applyDefaults(state)
@@ -83,7 +69,7 @@ export function createWizardTester<T extends Partial<T>>(wizard: Wizard<T> | Wiz
     }
 
     function assertOrder(prop: string, expected: number): void {
-        const order = getRelativeOrder(prop)
+        const order = getRelativeOrder(prop) + showOffset
 
         failIf(order === -1, `Property "${prop}" would not be shown`)
         failIf(
@@ -97,8 +83,8 @@ export function createWizardTester<T extends Partial<T>>(wizard: Wizard<T> | Wiz
             order === undefined
                 ? failIf(!canShowPrompter(prop), `Property "${prop}" would not be shown`)
                 : assertOrder(prop, order)
-            // if we assert show then we just assume that the property is assigned to 'something'
             assigned.add(prop)
+            showOffset += 1
         }
     }
 
@@ -134,48 +120,34 @@ export function createWizardTester<T extends Partial<T>>(wizard: Wizard<T> | Wiz
         }
     }
 
+    const createElement: (prop: string) => MockWizardFormElement<any> = prop => ({
+        applyInput: <TProp>(input: TProp) => (_.set(state, prop, input), assigned.add(prop)),
+        clearInput: () => (_.set(state, prop, undefined), assigned.delete(prop)),
+        assertShow: assertShow(prop),
+        assertShowFirst: assertShow(prop, 1),
+        assertShowSecond: assertShow(prop, 2),
+        assertShowThird: assertShow(prop, 3),
+        assertShowAny: () => failIf(showableChildren(prop).length === 0, `No properties of "${prop}" would be shown`),
+        assertDoesNotShow: () =>
+            failIf(form.canShowProperty(prop, state, assigned), `Property "${prop}" would be shown`),
+        assertDoesNotShowAny: assertShowNone(prop),
+        assertValue: assertValue(prop),
+        assertShowCount: assertShowCount,
+    })
+
     function createFormWrapper(path: string[] = []): WizardTester<T> {
         return new Proxy(
             {},
             {
                 get: (obj, prop, rec) => {
                     const propPath = path.join('.')
+                    const element = createElement(propPath)
 
-                    // Using a switch rather than a map since a generic index signature is not yet possible
-                    switch (prop) {
-                        case APPLY_INPUT:
-                            return <TProp>(input: TProp) => (_.set(state, path, input), assigned.add(propPath))
-                        case CLEAR_INPUT:
-                            return () => (_.set(state, path, undefined), assigned.delete(propPath))
-                        case ASSERT_SHOW:
-                            return assertShow(propPath)
-                        case ASSERT_SHOW_FIRST:
-                            return assertShow(propPath, 1)
-                        case ASSERT_SHOW_SECOND:
-                            return assertShow(propPath, 2)
-                        case ASSERT_SHOW_THIRD:
-                            return assertShow(propPath, 3)
-                        case ASSERT_SHOW_ANY:
-                            return () =>
-                                failIf(
-                                    showableChildren(propPath).length === 0,
-                                    `No properties of "${propPath}" would be shown`
-                                )
-                        case NOT_ASSERT_SHOW:
-                            return () =>
-                                failIf(
-                                    form.canShowProperty(propPath, state, assigned),
-                                    `Property "${propPath}" would be shown`
-                                )
-                        case NOT_ASSERT_SHOW_ANY:
-                            return assertShowNone(propPath)
-                        case ASSERT_VALUE:
-                            return assertValue(propPath)
-                        case SHOW_COUNT:
-                            return assertShowCount
-                        default:
-                            return Reflect.get(obj, prop, rec) ?? createFormWrapper([...path, prop.toString()])
+                    if (prop in element) {
+                        return element[prop as keyof MockWizardFormElement<any>]
                     }
+
+                    return Reflect.get(obj, prop, rec) ?? createFormWrapper([...path, prop.toString()])
                 },
             }
         ) as WizardTester<T>

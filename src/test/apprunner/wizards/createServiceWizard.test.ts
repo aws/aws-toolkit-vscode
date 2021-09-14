@@ -47,8 +47,8 @@ describe('CreateServiceWizard', function () {
         })
 
         it('prompts for name before instance', function () {
-            tester.ServiceName.assertShowSecond() // TODO: write a 'assertShowBefore' that accepts another form element as input
-            tester.InstanceConfiguration.assertShowSecond() // TODO: fix form test ordering so tests don't look like this...
+            tester.ServiceName.assertShowSecond()
+            tester.InstanceConfiguration.assertShowThird()
         })
 
         it('sets auto-deployment to "off" by default', function () {

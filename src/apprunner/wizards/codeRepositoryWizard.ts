@@ -274,18 +274,15 @@ function createCodeRepositorySubForm(git: GitExtension): WizardForm<AppRunner.Co
     // TODO: ask user if they would like to save their parameters into an App Runner config file
 
     form.CodeConfiguration.CodeConfigurationValues.applyBoundForm(codeConfigForm, {
-        showWhen: state => state.CodeConfiguration?.ConfigurationSource === 'API',
+        showWhen: state => state.CodeConfiguration.ConfigurationSource === 'API',
+        dependencies: [form.CodeConfiguration.ConfigurationSource],
     })
 
     return subform
 }
 
 export class AppRunnerCodeRepositoryWizard extends Wizard<AppRunner.SourceConfiguration> {
-    constructor(
-        client: AppRunnerClient,
-        git: GitExtension,
-        autoDeployButton: QuickInputToggleButton = makeDeploymentButton()
-    ) {
+    constructor(client: AppRunnerClient, git: GitExtension, autoDeployButton?: QuickInputToggleButton) {
         super()
         const form = this.form
         const connectionPrompter = new ConnectionPrompter(client)
@@ -294,6 +291,10 @@ export class AppRunnerCodeRepositoryWizard extends Wizard<AppRunner.SourceConfig
             connectionPrompter.transform(conn => conn.ConnectionArn!)
         )
         form.CodeRepository.applyBoundForm(createCodeRepositorySubForm(git))
-        form.AutoDeploymentsEnabled.setDefault(() => autoDeployButton.state === 'on')
+
+        if (autoDeployButton === undefined) {
+            autoDeployButton = makeDeploymentButton()
+            form.AutoDeploymentsEnabled.setDefault(() => autoDeployButton!.state === 'on')
+        }
     }
 }

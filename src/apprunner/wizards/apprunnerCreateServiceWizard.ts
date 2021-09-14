@@ -10,7 +10,7 @@ import { ext } from '../../shared/extensionGlobals'
 import * as input from '../../shared/ui/inputPrompter'
 import * as picker from '../../shared/ui/pickerPrompter'
 import { Prompter } from '../../shared/ui/prompter'
-import { Wizard, WizardState } from '../../shared/wizards/wizard'
+import { Wizard } from '../../shared/wizards/wizard'
 import { AppRunnerImageRepositoryWizard } from './imageRepositoryWizard'
 import { AppRunnerCodeRepositoryWizard } from './codeRepositoryWizard'
 import * as vscode from 'vscode'
@@ -101,8 +101,8 @@ function createSourcePrompter(
 export class CreateAppRunnerServiceWizard extends Wizard<AppRunner.CreateServiceRequest> {
     public constructor(
         region: string,
-        initState: WizardState<AppRunner.CreateServiceRequest> = {},
-        implicitState: WizardState<AppRunner.CreateServiceRequest> = {}
+        initState: Partial<AppRunner.CreateServiceRequest> = {},
+        implicitState: Partial<AppRunner.CreateServiceRequest> = {}
     ) {
         super({
             initState,
@@ -123,10 +123,12 @@ export class CreateAppRunnerServiceWizard extends Wizard<AppRunner.CreateService
         form.SourceConfiguration.bindPrompter(() => createSourcePrompter(autoDeployButton))
 
         form.SourceConfiguration.applyBoundForm(imageRepositoryWizard.boundForm, {
-            showWhen: state => state.SourceConfiguration?.ImageRepository !== undefined,
+            showWhen: state => state.SourceConfiguration.ImageRepository !== undefined,
+            dependencies: [form.SourceConfiguration],
         })
         form.SourceConfiguration.applyBoundForm(codeRepositoryWizard.boundForm, {
-            showWhen: state => state.SourceConfiguration?.CodeRepository !== undefined,
+            showWhen: state => state.SourceConfiguration.CodeRepository !== undefined,
+            dependencies: [form.SourceConfiguration],
         })
 
         form.ServiceName.bindPrompter(() =>

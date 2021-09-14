@@ -50,6 +50,7 @@ describe('AppRunnerCodeRepositoryWizard', function () {
         codevalues.assertDoesNotShowAny()
         codeconfig.ConfigurationSource.applyInput('API')
         codevalues.Runtime.assertShow()
+        codevalues.Runtime.applyInput('')
         codevalues.BuildCommand.assertShow()
         codevalues.StartCommand.assertShow()
         codevalues.RuntimeEnvironmentVariables.assertShow()

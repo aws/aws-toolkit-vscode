@@ -13,27 +13,6 @@ export function isValidResponse<T>(response: PromptResult<T>): response is T {
     return response !== undefined && !isWizardControl(response)
 }
 
-type ObjectKeys<T> = {
-    [Property in keyof T]: T[Property] extends Record<string, unknown> ? Property : never
-}[keyof T]
-
-type NonObjectKeys<T> = {
-    [Property in keyof T]: T[Property] extends Record<string, unknown> ? never : Property
-}[keyof T]
-
-/**
- * Reserved type. Currently makes all object-like fields required and everything else
- * optional.
- */
-export type WizardState<T> = {
-    [Property in ObjectKeys<T>]-?: T[Property] extends Record<string, unknown>
-        ? WizardState<Required<T[Property]>>
-        : never
-} &
-    {
-        [Property in NonObjectKeys<T>]+?: T[Property] extends Record<string, unknown> ? never : T[Property]
-    }
-
 // We use a symbol to safe-guard against collisions (alternatively this can be a class and use 'instanceof')
 const WIZARD_CONTROL = Symbol()
 const makeControlString = (type: string) => `[WIZARD_CONTROL] ${type}`
@@ -78,7 +57,6 @@ export class Wizard<TState extends Partial<Record<keyof TState, unknown>>> {
     private readonly boundSteps: Map<string, StepFunction<TState>> = new Map()
     private readonly _form: WizardForm<TState>
     private stateController: StateMachineController<TState>
-    private preAssigned: Set<string>
     private _stepOffset: [number, number] = [0, 0]
     private _exitStep?: StepFunction<TState>
 
@@ -115,22 +93,6 @@ export class Wizard<TState extends Partial<Record<keyof TState, unknown>>> {
         this._form = options.initForm ?? new WizardForm()
         this._exitStep =
             options.exitPrompterProvider !== undefined ? this.createExitStep(options.exitPrompterProvider) : undefined
-        this.preAssigned = options.initState ? this.checkInitial(options.initState) : new Set()
-    }
-
-    private checkInitial(initState: Partial<TState>): Set<string> {
-        const findAssigned = (obj: any, keys: string[] = []) => {
-            const p: string[][] = []
-            Object.keys(obj).forEach(key => {
-                if (typeof obj[key] === 'object') {
-                    p.concat(findAssigned(obj[key], [...keys, key]))
-                }
-                p.push([...keys, key])
-            })
-
-            return p
-        }
-        return new Set(findAssigned(initState ?? {}).map(p => p.join('.')))
     }
 
     private assignSteps(): void {
@@ -162,7 +124,7 @@ export class Wizard<TState extends Partial<Record<keyof TState, unknown>>> {
             }
 
             _.set(state, prop, response)
-            const estimate = this.resolveNextSteps(state, new Set([...this.preAssigned.keys()].concat(prop))).length
+            const estimate = this.resolveNextSteps(state, new Set([prop])).length
             const parentEstimate = this._estimator !== undefined ? this._estimator(state) : 0
             _.set(state, prop, undefined)
 
@@ -211,9 +173,7 @@ export class Wizard<TState extends Partial<Record<keyof TState, unknown>>> {
 
     private getAssigned(): Set<string> {
         return new Set(
-            [...this.boundSteps.keys()]
-                .filter(key => this.stateController.containsStep(this.boundSteps.get(key)!))
-                .concat([...this.preAssigned.keys()])
+            [...this.boundSteps.keys()].filter(key => this.stateController.containsStep(this.boundSteps.get(key)!))
         )
     }
 
@@ -238,7 +198,7 @@ export class Wizard<TState extends Partial<Record<keyof TState, unknown>>> {
         provider: PrompterProvider<TState, TProp, any>,
         impliedResponse?: TProp
     ): Promise<PromptResult<TProp>> {
-        const prompter = provider(state as StateWithCache<WizardState<TState>, TProp>)
+        const prompter = provider(state as StateWithCache<TState, TProp>)
 
         this._stepOffset = state.stepCache.stepOffset ?? this._stepOffset
         state.stepCache.stepOffset = this._stepOffset

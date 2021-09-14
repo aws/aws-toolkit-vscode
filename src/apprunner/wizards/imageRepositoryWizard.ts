@@ -272,9 +272,13 @@ export class AppRunnerImageRepositoryWizard extends Wizard<AppRunner.SourceConfi
             rolePrompter.transform(resp => resp.Arn),
             {
                 showWhen: form => form.ImageRepository.ImageRepositoryType === 'ECR',
-                dependencies: [form.ImageRepository],
+                dependencies: [form.ImageRepository.ImageRepositoryType],
             }
         )
-        form.AutoDeploymentsEnabled.setDefault(() => autoDeployButton.state === 'on')
+
+        if (autoDeployButton === undefined) {
+            autoDeployButton = makeDeploymentButton()
+            form.AutoDeploymentsEnabled.setDefault(() => autoDeployButton!.state === 'on')
+        }
     }
 }

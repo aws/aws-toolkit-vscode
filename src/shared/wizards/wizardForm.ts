@@ -6,36 +6,62 @@
 import * as _ from 'lodash'
 import * as toposort from 'toposort'
 import { Prompter } from '../ui/prompter'
-import { StateWithCache, WizardState } from './wizard'
-import { ExpandWithObject } from '../utilities/tsUtils'
+import { StateWithCache } from './wizard'
+import { ExpandWithObject, ReduceTuple } from '../utilities/tsUtils'
 
 export type PrompterProvider<TState, TProp, TDep> = (
-    state: StateWithCache<BoundState<WizardState<TState>, TDep>, TProp>
+    state: StateWithCache<BoundState<TState, TDep>, TProp>
 ) => Prompter<TProp>
+export type BoundState<TState, Bindings> = FindPartialTuple<TState, ExtractPaths<Bindings>>
 
-type DefaultFunction<TState, TProp, TDep> = (state: BoundState<WizardState<TState>, TDep>) => TProp | undefined
-type BoundState<TState, Bindings> = Bindings extends [] ? TState : FindPartialTuple<TState, CombineBindings<Bindings>>
+type DefaultFunction<TState, TProp, TDep> = (state: BoundState<TState, TDep>) => TProp | undefined
 
-type ReduceTuple<T> = T extends [any, ...infer P] ? P : T
-// TODO: rework this into wizard state
-type FindPartialTuple<T, K extends string[]> = K['length'] extends 0
-    ? never
+/**
+ * Changes all properties enumerated by `K` to be required while leaving everything else
+ * to be optional. For example, consider `K` as ['foo', 'bar'] for a `T` of:
+ * ```
+ * {
+ *    foo?: {
+ *       bar: string
+ *       qaz: string
+ *    }
+ *    baz: string
+ * }
+ * ```
+ * Would become:
+ * ```
+ * {
+ *    foo: {
+ *       bar: string
+ *       qaz?: string
+ *    }
+ *    baz?: string
+ * }
+ * ```
+ * `M` is used to describe when there is a matched key. Matched keys should return their type,
+ * while non-matches are considered to be unassigned
+ */
+type FindPartialTuple<T, K extends string[], M extends boolean = false> = K['length'] extends 0
+    ? M extends true
+        ? T
+        : RecursivePartial<T>
     : {
-          [P in keyof T as P & K[0]]-?: T[P]
+          [P in keyof T as P & K[0]]-?: FindPartialTuple<T[P], ReduceTuple<K>, true>
       } &
           {
-              [P in keyof T]: P extends K[0]
-                  ? T[P] extends Record<string, unknown>
-                      ? FindPartialTuple<T[P], ReduceTuple<K>>
-                      : T[P]
-                  : T[P]
+              [P in keyof T as Exclude<P, K[0]>]+?: FindPartialTuple<T[P], ReduceTuple<K>, false>
           }
+
+type RecursivePartial<T> = {
+    [P in keyof Required<T>]+?: RecursivePartial<T[P]>
+}
 
 interface Pathable {
     path: string[]
 }
 
-type CombineBindings<B> = B extends { path: infer K }[] ? (K extends string[] ? K : never) : never
+// Extracts the 'paths' of a type relative to the root type
+type ExtractPaths<B> = B extends { path: infer K }[] ? (K extends string[] ? K : never) : never
 
 // *************************************************************************************//
 // TODO: add a 'ContextBuilder' object that just pipes these options to the destination //
@@ -48,7 +74,7 @@ interface ContextOptions<TState, TProp, TDep extends Pathable[] = []> {
      * in a single resolution step then they will be added in the order in which they were
      * bound.
      */
-    showWhen?: (state: BoundState<WizardState<TState>, TDep>) => boolean
+    showWhen?: (state: BoundState<TState, TDep>) => boolean
     /**
      * Sets a default value to the target property. This default is applied to the current state
      * as long as the property has not been set.
@@ -74,7 +100,6 @@ interface FormElement<TProp, TState, TKey extends string[]> {
         provider: PrompterProvider<TState, TProp, TDep>,
         options?: ContextOptions<TState, TProp, TDep>
     ): void
-    // TODO: potentially add options to this, or rethink how defaults should work
     setDefault<TDep extends Pathable[] = []>(
         defaultFunction: DefaultFunction<TState, TProp, TDep> | TProp,
         options?: Pick<ContextOptions<TState, TProp, TDep>, 'dependencies'>
@@ -85,7 +110,10 @@ interface FormElement<TProp, TState, TKey extends string[]> {
 
 // These methods are only applicable to object-like elements
 interface ParentFormElement<TProp extends Record<string, any>, TState> {
-    applyBoundForm(form: WizardForm<TProp>, options?: Pick<ContextOptions<TState, TProp>, 'showWhen'>): void
+    applyBoundForm<TDep extends Pathable[] = []>(
+        form: WizardForm<TProp>,
+        options?: Pick<ContextOptions<TState, TProp, TDep>, 'showWhen' | 'dependencies'>
+    ): void
 }
 
 type PrompterBind<TProp, TState> = FormElement<TProp, TState, any>['bindPrompter']
@@ -104,7 +132,7 @@ type FormDataElement<TState, TProp> = ContextOptions<TState, TProp, any> & {
     provider?: PrompterProvider<TState, TProp, any>
 }
 
-function isAssigned<TProp>(obj: TProp): boolean {
+function isSet<TProp>(obj: TProp): boolean {
     return obj !== undefined || _.isEmpty(obj) === false
 }
 
@@ -141,8 +169,8 @@ export class WizardForm<TState extends Partial<Record<keyof TState, unknown>>> {
         this.formData.forEach((opt, targetProp) => {
             const current = _.get(state, targetProp)
 
-            if (!isAssigned(current) && opt.setDefault !== undefined && !this.isDependent(targetProp, defaultState)) {
-                const defaultValue = opt.setDefault(state as WizardState<TState>)
+            if (!isSet(current) && opt.setDefault !== undefined && !this.isDependent(targetProp, defaultState)) {
+                const defaultValue = opt.setDefault(state)
                 if (defaultValue !== undefined) {
                     _.set(defaultState, targetProp, defaultValue)
                 }
@@ -154,8 +182,9 @@ export class WizardForm<TState extends Partial<Record<keyof TState, unknown>>> {
 
     /**
      * Returns true when the element has unresolved dependencies
-     * 'assigned' are properties that are currently undefined within the state but are guaranteed to be assigned
-     * prior to the current element
+     *
+     * 'assigned' are properties that are currently undefined within the state but are guaranteed to
+     * be assigned prior to the current element
      */
     private isDependent<TState>(prop: string, state: TState, assigned: Set<string> = new Set()) {
         const element = this.formData.get(prop) ?? {}
@@ -165,8 +194,7 @@ export class WizardForm<TState extends Partial<Record<keyof TState, unknown>>> {
 
         if (
             dependencies.some(
-                ({ path }: { path: string[] }) =>
-                    !assigned.has(path.join('.')) && !isAssigned(_.get(state, path.join('.')))
+                ({ path }: { path: string[] }) => !assigned.has(path.join('.')) && !isSet(_.get(state, path.join('.')))
             )
         ) {
             return true
@@ -198,7 +226,14 @@ export class WizardForm<TState extends Partial<Record<keyof TState, unknown>>> {
     }
 
     private applyElement(key: string, element: FormDataElement<TState, any>) {
-        this.formData.set(key, { ...this.formData.get(key), ...element })
+        const oldElement = this.formData.get(key)
+        if (oldElement?.provider !== undefined && element?.provider !== undefined) {
+            throw new Error(`Cannot re-bind property: ${key}`)
+        }
+        if (oldElement?.setDefault !== undefined && element?.setDefault !== undefined) {
+            throw new Error(`Default value has already been set: ${key}`)
+        }
+        this.formData.set(key, { ...oldElement, ...element })
     }
 
     public canShowProperty(
@@ -210,20 +245,35 @@ export class WizardForm<TState extends Partial<Record<keyof TState, unknown>>> {
         const current = _.get(state, prop)
         const options = this.formData.get(prop) ?? {}
 
-        // TODO: use assigned set there instead
-        if (isAssigned(current)) {
+        if (assigned.has(prop) || isSet(current)) {
             return false
         }
 
         const assignedDefault = new Set(
-            [...assigned.keys(), ...this.formData.keys()].filter(key => isAssigned(_.get(defaultState, key)))
+            [...this.formData.keys()].filter(key => isSet(_.get(defaultState, key))).concat([...assigned])
         )
+
+        if (options.showWhen !== undefined) {
+            // This is a special edge-case where a property has both dependencies and
+            // a `showWhen` clause. In this scenario we must always respect the `showWhen`
+            // clause and remove all dependencies that have not been explicitly assigned
+            //
+            // Unfortunately this does mean that we end up deferring assignment to the
+            // last possible moment, even when the clause itself is not dependent on the
+            // remaining inherited dependencies
+            //
+            // Ideally we should contextually bind dependencies with their respective
+            // clauses.
+            ;[...assignedDefault.keys()]
+                .filter(key => isSet(_.get(defaultState, key)))
+                .forEach(key => assignedDefault.delete(key))
+        }
 
         if (this.isDependent(prop, state, assignedDefault)) {
             return false
         }
 
-        if (options.showWhen !== undefined && !options.showWhen(defaultState as WizardState<TState>)) {
+        if (options.showWhen !== undefined && !options.showWhen(defaultState)) {
             return false
         }
 
@@ -236,6 +286,14 @@ export class WizardForm<TState extends Partial<Record<keyof TState, unknown>>> {
         options: ContextOptions<TState, TProp> = {}
     ): FormDataElement<TState, any> {
         const wrappedElement: FormDataElement<TState, any> = {}
+
+        // TODO: contextually bind dependencies within their respective element
+        // this would effectively 'hides' dependencies as they are lifted up
+        // into other forms, which solves the problem of `showWhen` clauses
+        // losing the knowledge of which dependencies they were originally tied to
+        //
+        // note: this has no effect on 'flat' wizards; only nested wizards will call
+        // `convertElement` to lift bound properties up into the new form
 
         if (element.provider !== undefined) {
             wrappedElement.provider = state => {
@@ -268,6 +326,8 @@ export class WizardForm<TState extends Partial<Record<keyof TState, unknown>>> {
                           : undefined
                 : undefined
 
+        wrappedElement.dependencies = (wrappedElement.dependencies ?? []).concat(options.dependencies ?? [])
+
         return wrappedElement
     }
 
@@ -281,9 +341,8 @@ export class WizardForm<TState extends Partial<Record<keyof TState, unknown>>> {
     }
 
     private createApplyFormMethod<TProp>(prop: string): ApplyBoundForm<TProp, TState> {
-        return (form: WizardForm<TProp>, options?: ContextOptions<TState, TProp>) => {
+        return (form: WizardForm<TProp>, options?: ContextOptions<TState, TProp, any>) => {
             form.formData.forEach((element, key) => {
-                // TODO: use an assert here to ensure that no elements are rewritten
                 this.applyElement(`${prop}.${key}`, this.convertElement(prop, element, options))
             })
         }

@@ -23,6 +23,7 @@ export type InterfaceNoSymbol<T> = Pick<T, NoSymbols<T>>
 export type ClassToInterfaceType<T> = Pick<T, keyof T>
 
 type Expand<T> = T extends infer O ? { [K in keyof O]+?: O[K] } : never
+
 /**
  * Forces a type to be resolved into its literal types.
  *
@@ -31,3 +32,8 @@ type Expand<T> = T extends infer O ? { [K in keyof O]+?: O[K] } : never
  *
  */
 export type ExpandWithObject<T> = Expand<T> extends Record<string, unknown> ? Expand<T> : never
+
+/**
+ * This shrinks a tuple by removing a single element from the start.
+ */
+export type ReduceTuple<T> = T extends [any, ...infer P] ? P : T

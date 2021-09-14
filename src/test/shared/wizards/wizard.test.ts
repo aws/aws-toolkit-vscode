@@ -10,10 +10,10 @@ import {
     StateWithCache,
     StepEstimator,
     Wizard,
-    WizardState,
     WIZARD_BACK,
     WIZARD_EXIT,
 } from '../../../shared/wizards/wizard'
+import { BoundState } from '../../../shared/wizards/wizardForm'
 
 interface TestWizardForm {
     prop1: string
@@ -295,7 +295,7 @@ describe('Wizard', function () {
     })
 
     it('does not apply control values to state when going back', async function () {
-        const noWizardControl = (state: StateWithCache<WizardState<TestWizardForm>, string>) => {
+        const noWizardControl = (state: StateWithCache<BoundState<TestWizardForm, []>, string>) => {
             assert.strictEqual(
                 isWizardControl(state.prop2),
                 false,
@@ -340,7 +340,7 @@ describe('Wizard', function () {
         // Execution order:
         // Start -> Path 1 -> End -> Path 1 -> Start -> Path 2 -> Start -> Path 1 -> Start -> Path 2 -> End -> Path 2 -> End
         it('sets total steps correctly when branching', async function () {
-            const helloFunction = (state: WizardState<TestWizardForm>) =>
+            const helloFunction = (state: BoundState<TestWizardForm, []>) =>
                 state.prop1 === 'B' ? `hello ${state.prop3}` : `extra step`
             const testPrompterStart = new TestPrompter('A', 'B', 'A', 'B').setName('Start')
             const testPrompterPath1 = new TestPrompter(99, WIZARD_BACK, WIZARD_BACK, 10).setName('Path 1')
