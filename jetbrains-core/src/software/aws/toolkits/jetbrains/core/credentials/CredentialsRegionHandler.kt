@@ -25,14 +25,14 @@ interface CredentialsRegionHandler {
     }
 }
 
-internal open class DefaultCredentialsRegionHandler(private val project: Project) : CredentialsRegionHandler {
-    private val regionProvider by lazy { AwsRegionProvider.getInstance() }
-    private val settings by lazy { AwsSettings.getInstance() }
-
+internal class DefaultCredentialsRegionHandler(private val project: Project) : CredentialsRegionHandler {
     override fun determineSelectedRegion(identifier: CredentialIdentifier, selectedRegion: AwsRegion?): AwsRegion? {
+        val settings = AwsSettings.getInstance()
         if (settings.useDefaultCredentialRegion == UseAwsCredentialRegion.Never) {
             return selectedRegion
         }
+
+        val regionProvider = AwsRegionProvider.getInstance()
         val defaultCredentialRegion = identifier.defaultRegionId?.let { regionProvider[it] } ?: return selectedRegion
         when {
             selectedRegion == defaultCredentialRegion -> return defaultCredentialRegion
@@ -49,17 +49,15 @@ internal open class DefaultCredentialsRegionHandler(private val project: Project
             message("settings.credentials.prompt_for_default_region_switch", defaultCredentialRegion.id),
             project = project,
             notificationActions = listOf(
-                NotificationAction.create(message("settings.credentials.prompt_for_default_region_switch.yes")) { event, notification ->
-                    ChangeRegionAction(defaultCredentialRegion).actionPerformed(event)
-                    notification.expire()
+                NotificationAction.createSimpleExpiring(message("settings.credentials.prompt_for_default_region_switch.yes")) {
+                    AwsConnectionManager.getInstance(project).changeRegion(defaultCredentialRegion)
                 },
-                NotificationAction.create(message("settings.credentials.prompt_for_default_region_switch.always")) { event, notification ->
-                    settings.useDefaultCredentialRegion = UseAwsCredentialRegion.Always
-                    ChangeRegionAction(defaultCredentialRegion).actionPerformed(event)
-                    notification.expire()
+                NotificationAction.createSimpleExpiring(message("settings.credentials.prompt_for_default_region_switch.always")) {
+                    AwsSettings.getInstance().useDefaultCredentialRegion = UseAwsCredentialRegion.Always
+                    AwsConnectionManager.getInstance(project).changeRegion(defaultCredentialRegion)
                 },
                 NotificationAction.createSimpleExpiring(message("settings.credentials.prompt_for_default_region_switch.never")) {
-                    settings.useDefaultCredentialRegion = UseAwsCredentialRegion.Never
+                    AwsSettings.getInstance().useDefaultCredentialRegion = UseAwsCredentialRegion.Never
                 }
             )
         )
