@@ -64,7 +64,9 @@ internal class DynamicResourceUpdateManager(private val project: Project) {
                     it.typeName(dynamicResourceType)
                     it.desiredState(desiredState)
                 }.progressEvent()
-                val dynamicResourceIdentifier = DynamicResourceIdentifier(connectionSettings, dynamicResourceType, progress.identifier()?: "Create new")
+                val dynamicResourceIdentifier = DynamicResourceIdentifier(
+                    connectionSettings, dynamicResourceType, progress.identifier() ?: progress.requestToken()
+                )
                 setInitialResourceState(dynamicResourceIdentifier, progress)
             } catch (e: Exception) {
                 e.notifyError(
@@ -118,7 +120,6 @@ internal class DynamicResourceUpdateManager(private val project: Project) {
     private fun getProgress() {
         var hasResourceStateChanged = false
         resourceStateMonitor.map { (resourceStateIdentifier, resourceStateTracker) ->
-
             val client = resourceStateIdentifier.connectionSettings.getClient<CloudFormationClient>()
             val progress = try {
                 client.getResourceRequestStatus { it.requestToken(resourceStateTracker.token) }
@@ -135,23 +136,25 @@ internal class DynamicResourceUpdateManager(private val project: Project) {
                 null
             }
             if (progress != null) {
-                if(resourceStateIdentifier.resourceIdentifier == resourceStateTracker.token) {
-                    if(progress.progressEvent().identifier()!= null) {
+                val currentResourceStateIdentifier = if (resourceStateIdentifier.resourceIdentifier == resourceStateTracker.token) {
+                    if (progress.progressEvent().identifier() != null) {
+                        // This condition is required for when identifier is assigned after a createResource call has been made and identifier wasn't preassigned
                         resourceStateMonitor[resourceStateIdentifier.copy(resourceIdentifier = progress.progressEvent().identifier())] = resourceStateTracker
                         resourceStateMonitor.remove(resourceStateIdentifier)
-                        resourceStateIdentifier = resourceStateIdentifier.copy(resourceIdentifier = progress.progressEvent().identifier())
-                    }
-                }
+                        resourceStateIdentifier.copy(resourceIdentifier = progress.progressEvent().identifier())
+                    } else resourceStateIdentifier
+                } else resourceStateIdentifier
+
                 val operationStatus = progress.progressEvent().operationStatus()
                 val operation = progress.progressEvent().operation()
                 val newResourceState = DynamicResourceMutationState(operation, operationStatus)
                 if (operationStatus == OperationStatus.IN_PROGRESS && resourceStateTracker.op.operationStatus != newResourceState.operationStatus) {
                     // This condition is required for when the status switches from PENDING to IN_PROGRESS (currently API doesn't surface PENDING status)
-                    updateResourceState(resourceStateIdentifier, resourceStateTracker, newResourceState, progress.progressEvent().statusMessage())
+                    updateResourceState(currentResourceStateIdentifier, resourceStateTracker, newResourceState, progress.progressEvent().statusMessage())
                     hasResourceStateChanged = true
                 } else if (operationStatus == OperationStatus.SUCCESS || operationStatus == OperationStatus.FAILED) {
-                    updateResourceState(resourceStateIdentifier, resourceStateTracker, newResourceState, progress.progressEvent().statusMessage())
-                    resourceStateMonitor.remove(resourceStateIdentifier)
+                    updateResourceState(currentResourceStateIdentifier, resourceStateTracker, newResourceState, progress.progressEvent().statusMessage())
+                    resourceStateMonitor.remove(currentResourceStateIdentifier)
                     hasResourceStateChanged = true
                 }
             }

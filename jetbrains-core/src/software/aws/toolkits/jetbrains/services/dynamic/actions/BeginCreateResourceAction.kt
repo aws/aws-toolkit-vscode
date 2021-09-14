@@ -24,14 +24,16 @@ class BeginCreateResourceAction : AnAction() {
         val resourceType = file.dynamicResourceType
 
         val contentString = removePrettyPrinting(psiFile.text)
-        if (contentString == InitialCreateDynamicResourceContent.initialContent) {
+        val continueWithContent = if (contentString == InitialCreateDynamicResourceContent.initialContent) {
             // TODO: Custom warning with documentation links
-            Messages.showWarningDialog(
+            Messages.showYesNoDialog(
                 psiFile.project,
                 message("dynamic_resources.create_resource_file_empty"),
                 message("dynamic_resources.create_resource_file_empty_title"),
+                Messages.getWarningIcon()
             )
-        } else {
+        } else 0
+        if (continueWithContent == 0) {
             FileEditorManager.getInstance(psiFile.project).closeFile(file)
             notifyInfo(
                 message("dynamic_resources.resource_creation", resourceType),
