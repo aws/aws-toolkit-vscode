@@ -58,6 +58,7 @@
         "onCommand:aws.stepfunctions.publishStateMachine",
         "onView:aws.cdk.explorer",
         "onCommand:aws.refreshCdkExplorer",
+        "onCommand:aws.cdk.renderStateMachineGraph",
         "onCommand:aws.aboutToolkit",
         "onCommand:aws.cloudWatchLogs.viewLogStream",
         "onLanguage:asl",
@@ -774,6 +775,10 @@
                     "when": "!isCloud9"
                 },
                 {
+                    "command": "aws.cdk.renderStateMachineGraph",
+                    "when": "!isCloud9"
+                },
+                {
                     "command": "aws.cdk.help",
                     "when": "!isCloud9"
                 },
@@ -1038,6 +1043,16 @@
                     "command": "aws.renderStateMachineGraph",
                     "when": "view == aws.explorer && viewItem == awsStateMachineNode && !isCloud9",
                     "group": "0@2"
+                },
+                {
+                    "command": "aws.cdk.renderStateMachineGraph",
+                    "when": "view == aws.cdk.explorer && viewItem == awsCdkStateMachineNode",
+                    "group": "inline@1"
+                },
+                {
+                    "command": "aws.cdk.renderStateMachineGraph",
+                    "when": "view == aws.cdk.explorer && viewItem == awsCdkStateMachineNode",
+                    "group": "0@1"
                 },
                 {
                     "command": "aws.executeStateMachine",
@@ -1717,6 +1732,15 @@
                     "cn": {
                         "category": "%AWS.title.cn%"
                     }
+                }
+            },
+            {
+                "command": "aws.cdk.renderStateMachineGraph",
+                "title": "%AWS.command.cdk.previewStateMachine%",
+                "category": "AWS",
+                "icon": {
+                    "light": "resources/light/stepfunctions/preview.svg",
+                    "dark": "resources/dark/stepfunctions/preview.svg"
                 }
             },
             {

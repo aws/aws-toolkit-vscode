@@ -70,7 +70,7 @@ async function registerStepFunctionCommands(
     )
 }
 
-function initalizeWebviewPaths(context: vscode.ExtensionContext) {
+export function initalizeWebviewPaths(context: vscode.ExtensionContext) {
     // Location for script in body of webview that handles input from user
     // and calls the code to render state machine graph
     ext.visualizationResourcePaths.localWebviewScriptsPath = vscode.Uri.file(
