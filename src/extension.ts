@@ -76,6 +76,7 @@ import { Ec2CredentialsProvider } from './credentials/providers/ec2CredentialsPr
 import { EnvVarsCredentialsProvider } from './credentials/providers/envVarsCredentialsProvider'
 import { EcsCredentialsProvider } from './credentials/providers/ecsCredentialsProvider'
 import { SchemaService } from './shared/schemas'
+import { UriHandler } from './shared/vscode/uriHandler'
 
 let localize: nls.LocalizeFunc
 
@@ -145,6 +146,9 @@ export async function activate(context: vscode.ExtensionContext) {
         await ext.telemetry.start()
         await ext.schemaService.start()
 
+        const uriHandler = new UriHandler()
+        context.subscriptions.push(vscode.window.registerUriHandler(uriHandler))
+
         const extContext: ExtContext = {
             extensionContext: context,
             awsContext: ext.awsContext,
@@ -154,6 +158,7 @@ export async function activate(context: vscode.ExtensionContext) {
             outputChannel: toolkitOutputChannel,
             telemetryService: ext.telemetry,
             credentialsStore,
+            uriHandler,
         }
 
         // Used as a command for decoration-only codelenses.

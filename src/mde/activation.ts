@@ -12,6 +12,7 @@ import { mdeConnectCommand, mdeCreateCommand } from './mdeCommands'
 import { MdeInstanceNode } from './mdeInstanceNode'
 import { MdeRootNode } from './mdeRootNode'
 import * as localizedText from '../shared/localizedText'
+import { activateUriHandlers } from './mdeUriHandlers'
 // import * as mde from '../shared/clients/mdeClient'
 
 /**
@@ -31,8 +32,7 @@ export async function activate(ctx: ExtContext): Promise<void> {
                 pattern: DEVFILE_GLOB_PATTERN,
             },
             new MdeDevfileCodeLensProvider()
-        )
-    ),
+        ),
         vscode.workspace.onDidSaveTextDocument(async (doc: vscode.TextDocument) => {
             if (doc && devfileRegistry.getRegisteredItem(doc.fileName)) {
                 // TODO: placeholder - detect we are in environment and wire up update command
@@ -43,6 +43,9 @@ export async function activate(ctx: ExtContext): Promise<void> {
                 )
             }
         })
+    )
+
+    activateUriHandlers(ctx)
 }
 
 async function registerCommands(ctx: ExtContext): Promise<void> {

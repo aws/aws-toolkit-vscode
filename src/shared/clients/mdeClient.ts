@@ -94,4 +94,20 @@ export class MdeClient {
         const r = await this.call(c.createEnvironment(args))
         return r
     }
+
+    public async getEnvironmentMetadata(
+        args: mde.GetEnvironmentMetadataRequest
+    ): Promise<mde.GetEnvironmentMetadataResponse | undefined> {
+        const c = this.sdkClient
+        const r = await this.call(c.getEnvironmentMetadata(args))
+        return r
+    }
+
+    public async startEnvironment(
+        args: mde.StartEnvironmentRequest
+    ): Promise<mde.StartEnvironmentResponse | undefined> {
+        const c = this.sdkClient
+        const r = await this.call(c.startEnvironment(args))
+        return r
+    }
 }
