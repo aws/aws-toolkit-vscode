@@ -94,7 +94,7 @@ class ResourceSchemaProviderFactoryTest {
                 fixture.openFileInEditor(file)
                 fixture.checkHighlighting()
             }
-        } catch (e: Exception) {} finally {
+        }  finally {
             fixture.disableInspections(jsonSchemaComplianceInspection)
         }
     }

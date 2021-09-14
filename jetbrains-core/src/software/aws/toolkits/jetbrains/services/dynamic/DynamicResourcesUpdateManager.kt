@@ -64,7 +64,7 @@ internal class DynamicResourceUpdateManager(private val project: Project) {
                     it.typeName(dynamicResourceType)
                     it.desiredState(desiredState)
                 }.progressEvent()
-                val dynamicResourceIdentifier = DynamicResourceIdentifier(connectionSettings, dynamicResourceType, progress.identifier())
+                val dynamicResourceIdentifier = DynamicResourceIdentifier(connectionSettings, dynamicResourceType, progress.identifier()?: "Create new")
                 setInitialResourceState(dynamicResourceIdentifier, progress)
             } catch (e: Exception) {
                 e.notifyError(
@@ -135,6 +135,13 @@ internal class DynamicResourceUpdateManager(private val project: Project) {
                 null
             }
             if (progress != null) {
+                if(resourceStateIdentifier.resourceIdentifier == resourceStateTracker.token) {
+                    if(progress.progressEvent().identifier()!= null) {
+                        resourceStateMonitor[resourceStateIdentifier.copy(resourceIdentifier = progress.progressEvent().identifier())] = resourceStateTracker
+                        resourceStateMonitor.remove(resourceStateIdentifier)
+                        resourceStateIdentifier = resourceStateIdentifier.copy(resourceIdentifier = progress.progressEvent().identifier())
+                    }
+                }
                 val operationStatus = progress.progressEvent().operationStatus()
                 val operation = progress.progressEvent().operation()
                 val newResourceState = DynamicResourceMutationState(operation, operationStatus)
