@@ -4,6 +4,7 @@
  */
 
 import { access, mkdtemp, mkdirp, readFile, remove, existsSync } from 'fs-extra'
+import * as _ from 'lodash'
 import * as crypto from 'crypto'
 import * as fs from 'fs'
 import * as os from 'os'
@@ -169,9 +170,13 @@ export function createCredentialsFileWatcher(
     toolkitSettings: SettingsConfiguration,
     loginManager: LoginManager
 ): fs.FSWatcher {
-    return fs.watch(filePath, async (eventType, filename) => {
-        if ((filename === 'credentials' || filename === 'config') && eventType === 'change') {
-            await loginWithMostRecentCredentials(toolkitSettings, loginManager)
-        }
-    })
+    // Debounce needed to handle a known bug with wathcers where multiple events fire from a single change
+    return fs.watch(
+        filePath,
+        _.debounce(async (eventType, filename) => {
+            if ((filename === 'credentials' || filename === 'config') && eventType === 'change') {
+                await loginWithMostRecentCredentials(toolkitSettings, loginManager)
+            }
+        }, 100)
+    )
 }

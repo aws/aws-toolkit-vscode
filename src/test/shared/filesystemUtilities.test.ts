@@ -153,10 +153,12 @@ describe('filesystemUtilities', function () {
             sandbox.restore()
         })
 
-        it('modify credentials file attemps login', function () {
+        it('modify credentials file attemps login', async function () {
             const loginStub = sandbox.stub(credentialsActivation, 'loginWithMostRecentCredentials')
             createCredentialsFileWatcher(tempFolder, fakeToolkitSettings, fakeLoginManager)
             appendFileSync(credPath, 'change added')
+            // timeout to allow change event to fire and this function is debounced because of a known watcher bug
+            await new Promise(resolve => setTimeout(resolve, 150))
             assert.strictEqual(loginStub.callCount, 1)
         })
     })
