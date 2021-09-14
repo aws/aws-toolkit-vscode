@@ -5,7 +5,7 @@
 
 import { _Blob } from 'aws-sdk/clients/lambda'
 import { readFileSync } from 'fs'
-import _ = require('lodash')
+import * as _ from 'lodash'
 import * as vscode from 'vscode'
 import { LambdaClient } from '../../shared/clients/lambdaClient'
 import { ext } from '../../shared/extensionGlobals'
@@ -125,9 +125,15 @@ function createMessageReceivedFunc({
                     return undefined
                 }
 
+                let fileContent: string = ''
+                try {
+                    fileContent = readFileSync(fileLocations[0].fsPath, { encoding: 'utf8' })
+                } catch (e) {
+                    getLogger().error('readFileSync: Failed to read file at path %O', fileLocations[0].fsPath, e)
+                }
                 restParams.onPostMessage({
                     command: 'loadedSample',
-                    sample: readFileSync(fileLocations[0].fsPath, { encoding: 'utf8' }),
+                    sample: fileContent,
                     selectedFile: fileLocations[0].path,
                 })
                 return
