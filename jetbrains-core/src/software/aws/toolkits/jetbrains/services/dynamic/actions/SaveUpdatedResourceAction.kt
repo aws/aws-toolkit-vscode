@@ -9,6 +9,8 @@ import com.intellij.icons.AllIcons
 import com.intellij.openapi.actionSystem.AnAction
 import com.intellij.openapi.actionSystem.AnActionEvent
 import com.intellij.openapi.actionSystem.CommonDataKeys
+import com.intellij.openapi.ui.Messages
+import com.intellij.openapi.ui.Messages.showYesNoDialog
 import software.aws.toolkits.jetbrains.services.dynamic.CreateDynamicResourceVirtualFile
 import software.aws.toolkits.jetbrains.services.dynamic.DynamicResourceUpdateManager
 import software.aws.toolkits.jetbrains.services.dynamic.ViewEditableDynamicResourceVirtualFile
@@ -18,10 +20,17 @@ class SaveUpdatedResourceAction : AnAction() {
     override fun actionPerformed(e: AnActionEvent) {
         val psiFile = e.getData(CommonDataKeys.PSI_FILE)
         val file = psiFile?.virtualFile as? ViewEditableDynamicResourceVirtualFile ?: return
-        file.isWritable = false
+
         val content = psiFile.text
-        val res = JsonDiff.asJson(mapper.readTree(file.inputStream), mapper.readTree(content))
-        DynamicResourceUpdateManager.getInstance(psiFile.project).updateResource(file.dynamicResourceIdentifier, res.toPrettyString())
+        val patchOperations = JsonDiff.asJson(mapper.readTree(file.inputStream), mapper.readTree(content))
+        if(patchOperations.isEmpty) {
+            if(showYesNoDialog(psiFile.project, "No changes made, do you want to continue editing?", "Resource Model unchanged", Messages.getWarningIcon()) == Messages.NO){
+                file.isWritable = false
+            }
+        } else {
+            DynamicResourceUpdateManager.getInstance(psiFile.project).updateResource(file.dynamicResourceIdentifier, patchOperations.toPrettyString())
+        }
+
     }
 
     override fun update(e: AnActionEvent) {
