@@ -142,7 +142,6 @@ export class SamCliBuildInvocation {
         // TODO: add `Timeout` support to `ChildProcess` itself instead of wrapping the promise
         if (timer) {
             childProcessResult = waitTimeout(childProcessResult, timer, {
-                allowUndefined: false,
                 completeTimeout: false,
                 onExpire: () => {
                     this.args.invoker.stop()

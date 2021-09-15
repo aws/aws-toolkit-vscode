@@ -177,21 +177,20 @@ export function waitTimeout<T, R = void, B extends boolean = true>(
         onCancel?: () => R
         completeTimeout?: boolean
     } = {}
-): Promise<T | R | (true extends B ? undefined : never)> {
+): Promise<T | R | (true extends typeof opt.allowUndefined ? undefined : never)> {
     if (typeof promise === 'function') {
         promise = promise()
     }
 
     return Promise.race([promise, timeout.timer])
         .then(obj => {
-            const allowUndefined = (opt.allowUndefined ?? true) as B
             if (obj !== undefined) {
                 return obj
             }
-            if (allowUndefined !== true) {
+            if ((opt.allowUndefined ?? true) !== true) {
                 throw new Error(TIMEOUT_UNEXPECTED_RESOLVE)
             }
-            return undefined as true extends typeof allowUndefined ? undefined : never
+            return undefined as true extends typeof opt.allowUndefined ? undefined : never
         })
         .catch(err => {
             if (opt.onExpire && (err as Error).message === TIMEOUT_EXPIRED_MESSAGE) {
