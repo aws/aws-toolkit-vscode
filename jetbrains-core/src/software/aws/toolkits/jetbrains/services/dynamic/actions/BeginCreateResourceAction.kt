@@ -31,10 +31,11 @@ class BeginCreateResourceAction : AnAction() {
                 message("dynamic_resources.create_resource_file_empty"),
                 message("dynamic_resources.create_resource_file_empty_title"),
                 Messages.getWarningIcon()
-            )
-        } else 0
-        if (continueWithContent == 0) {
+            ) == Messages.YES
+        } else true
+        if (continueWithContent) {
             FileEditorManager.getInstance(psiFile.project).closeFile(file)
+            // TODO: Keep file open so that user can make changes in case creation fails
             notifyInfo(
                 message("dynamic_resources.resource_creation", resourceType),
                 message("dynamic_resources.begin_resource_creation", resourceType),

@@ -14,8 +14,9 @@ import software.aws.toolkits.jetbrains.services.dynamic.DynamicResourceVirtualFi
 class MutateResourceModelFloatingToolbarActionGroup : DefaultActionGroup() {
     override fun update(e: AnActionEvent) {
         val editor = e.getData(CommonDataKeys.EDITOR) ?: return
+        val toolbarComponent = e.getData(FloatingToolbarComponent.KEY)
         e.presentation.isVisible = editor.isFileEditor() && e.getData(CommonDataKeys.PSI_FILE)?.virtualFile is DynamicResourceVirtualFile
-        e.toolbarComponent?.scheduleShow() ?: return
+        toolbarComponent?.scheduleShow() ?: return
     }
 
     private fun Editor.isFileEditor(): Boolean {
@@ -23,7 +24,4 @@ class MutateResourceModelFloatingToolbarActionGroup : DefaultActionGroup() {
         val virtualFile = documentManager.getFile(document)
         return virtualFile != null && virtualFile.isValid
     }
-
-    private val AnActionEvent.toolbarComponent: FloatingToolbarComponent?
-        get() = getData(FloatingToolbarComponent.KEY)
 }
