@@ -10,13 +10,12 @@ import com.intellij.openapi.actionSystem.AnActionEvent
 import com.intellij.openapi.actionSystem.CommonDataKeys
 import com.intellij.openapi.project.DumbAwareAction
 import software.aws.toolkits.jetbrains.services.dynamic.DynamicResourceUpdateManager
-import software.aws.toolkits.jetbrains.services.dynamic.DynamicResourceVirtualFile
-import software.aws.toolkits.jetbrains.services.dynamic.ViewDynamicResourceVirtualFile
+import software.aws.toolkits.jetbrains.services.dynamic.ViewEditableDynamicResourceVirtualFile
 
 class SaveUpdatedResourceFloatingToolbarAction : DumbAwareAction() {
     override fun actionPerformed(e: AnActionEvent) {
         val psiFile = e.getData(CommonDataKeys.PSI_FILE)
-        val file = psiFile?.virtualFile as? ViewDynamicResourceVirtualFile ?: return
+        val file = psiFile?.virtualFile as? ViewEditableDynamicResourceVirtualFile ?: return
         file.isWritable = false
         val content = psiFile.text
         val res = JsonDiff.asJson(mapper.readTree(file.inputStream), mapper.readTree(content))
@@ -24,8 +23,8 @@ class SaveUpdatedResourceFloatingToolbarAction : DumbAwareAction() {
     }
 
     override fun update(e: AnActionEvent) {
-        val file = e.getData(CommonDataKeys.PSI_FILE)?.virtualFile as? ViewDynamicResourceVirtualFile ?: return
-        e.presentation.isEnabledAndVisible = file is ViewDynamicResourceVirtualFile && file.isWritable
+        val file = e.getData(CommonDataKeys.PSI_FILE)?.virtualFile as? ViewEditableDynamicResourceVirtualFile ?: return
+        e.presentation.isEnabledAndVisible = file is ViewEditableDynamicResourceVirtualFile && file.isWritable
         e.presentation.icon = AllIcons.Actions.Menu_saveall
         e.presentation.text = "Update ${file.dynamicResourceIdentifier.resourceIdentifier}"
 

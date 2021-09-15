@@ -3,7 +3,6 @@
 
 package software.aws.toolkits.jetbrains.services.apprunner.ui
 
-import com.intellij.openapi.application.ModalityState
 import com.intellij.openapi.project.Project
 import com.intellij.openapi.ui.DialogWrapper
 import kotlinx.coroutines.launch
@@ -65,7 +64,7 @@ class CreationDialog(private val project: Project, ecrUri: String? = null) :
                     title = message("apprunner.creation.started.title"),
                     content = message("apprunner.creation.started")
                 )
-                withContext(getCoroutineUiContext(ModalityState.any())) {
+                withContext(getCoroutineUiContext()) {
                     close(OK_EXIT_CODE)
                     project.refreshAwsTree(AppRunnerResources.LIST_SERVICES)
                 }

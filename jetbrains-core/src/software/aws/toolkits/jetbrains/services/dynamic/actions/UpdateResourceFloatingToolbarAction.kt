@@ -8,7 +8,7 @@ import com.intellij.openapi.actionSystem.CommonDataKeys
 import com.intellij.openapi.project.DumbAwareAction
 import com.intellij.util.IconUtil
 import software.aws.toolkits.jetbrains.services.dynamic.DynamicResourceVirtualFile
-import software.aws.toolkits.jetbrains.services.dynamic.ViewDynamicResourceVirtualFile
+import software.aws.toolkits.jetbrains.services.dynamic.ViewEditableDynamicResourceVirtualFile
 
 class UpdateResourceFloatingToolbarAction : DumbAwareAction() {
     override fun actionPerformed(e: AnActionEvent) {
@@ -17,7 +17,7 @@ class UpdateResourceFloatingToolbarAction : DumbAwareAction() {
     }
 
     override fun update(e: AnActionEvent) {
-        val file = e.getData(CommonDataKeys.PSI_FILE)?.virtualFile as? ViewDynamicResourceVirtualFile ?: return
+        val file = e.getData(CommonDataKeys.PSI_FILE)?.virtualFile as? ViewEditableDynamicResourceVirtualFile ?: return
         e.presentation.isEnabledAndVisible = file is DynamicResourceVirtualFile && !file.isWritable
         e.presentation.icon = IconUtil.getEditIcon()
         e.presentation.text = "Edit ${file.dynamicResourceIdentifier.resourceIdentifier}"

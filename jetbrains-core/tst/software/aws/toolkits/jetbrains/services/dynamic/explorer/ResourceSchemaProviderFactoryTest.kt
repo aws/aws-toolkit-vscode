@@ -17,10 +17,9 @@ import software.aws.toolkits.jetbrains.core.credentials.ConnectionSettings
 import software.aws.toolkits.jetbrains.services.dynamic.DynamicResource
 import software.aws.toolkits.jetbrains.services.dynamic.DynamicResourceIdentifier
 import software.aws.toolkits.jetbrains.services.dynamic.DynamicResourceSchemaMapping
-import software.aws.toolkits.jetbrains.services.dynamic.DynamicResourceVirtualFile
 import software.aws.toolkits.jetbrains.services.dynamic.DynamicResources
 import software.aws.toolkits.jetbrains.services.dynamic.ResourceType
-import software.aws.toolkits.jetbrains.services.dynamic.ViewDynamicResourceVirtualFile
+import software.aws.toolkits.jetbrains.services.dynamic.ViewEditableDynamicResourceVirtualFile
 import software.aws.toolkits.jetbrains.utils.rules.JavaCodeInsightTestFixtureRule
 import java.io.File
 import java.util.concurrent.CompletableFuture
@@ -74,7 +73,7 @@ class ResourceSchemaProviderFactoryTest {
             "  }\n" +
             "}\n"
 
-        val schemaFile = File.createTempFile("AWS::Logs::LogGroupSchema", ".json")
+        val schemaFile = File.createTempFile("AWSLogsLogGroupSchema", ".json")
         schemaFile.writeText(schema)
 
         resourceCache.addEntry(
@@ -84,7 +83,7 @@ class ResourceSchemaProviderFactoryTest {
 
         try {
             fixture.enableInspections(jsonSchemaComplianceInspection)
-            val file = ViewDynamicResourceVirtualFile(
+            val file = ViewEditableDynamicResourceVirtualFile(
                 DynamicResourceIdentifier(ConnectionSettings(aToolkitCredentialsProvider(), anAwsRegion()), resource.type.fullName, resource.identifier),
                 """
                 {"RetentionInDays":<warning descr="Value should be one of: 1, 3, 5, 7, 14, 30, 60, 90, 120, 150, 180, 365, 400, 545, 731, 1827, 3653">18</warning>}
@@ -95,7 +94,7 @@ class ResourceSchemaProviderFactoryTest {
                 fixture.openFileInEditor(file)
                 fixture.checkHighlighting()
             }
-        } catch (e: Exception) {} finally {
+        } finally {
             fixture.disableInspections(jsonSchemaComplianceInspection)
         }
     }

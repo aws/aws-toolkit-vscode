@@ -10,13 +10,13 @@ import com.intellij.openapi.editor.Editor
 import com.intellij.openapi.editor.toolbar.floating.FloatingToolbarComponent
 import com.intellij.openapi.fileEditor.FileDocumentManager
 import software.aws.toolkits.jetbrains.services.dynamic.DynamicResourceVirtualFile
-import software.aws.toolkits.jetbrains.services.dynamic.ViewDynamicResourceVirtualFile
 
 class MutateResourceModelFloatingToolbarActionGroup : DefaultActionGroup() {
     override fun update(e: AnActionEvent) {
         val editor = e.getData(CommonDataKeys.EDITOR) ?: return
         e.presentation.isEnabledAndVisible = editor.isFileEditor() && e.getData(CommonDataKeys.PSI_FILE)?.virtualFile is DynamicResourceVirtualFile
-        e.toolbarComponent?.scheduleShow() ?: return
+        val toolbarComponent = e.getData(FloatingToolbarComponent.KEY)
+        toolbarComponent?.scheduleShow() ?: return
     }
 
     private fun Editor.isFileEditor(): Boolean {
@@ -24,7 +24,4 @@ class MutateResourceModelFloatingToolbarActionGroup : DefaultActionGroup() {
         val virtualFile = documentManager.getFile(document)
         return virtualFile != null && virtualFile.isValid
     }
-
-    private val AnActionEvent.toolbarComponent: FloatingToolbarComponent?
-        get() = getData(FloatingToolbarComponent.KEY)
 }

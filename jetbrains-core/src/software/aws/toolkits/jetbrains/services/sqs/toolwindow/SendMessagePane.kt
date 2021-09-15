@@ -4,7 +4,6 @@
 package software.aws.toolkits.jetbrains.services.sqs.toolwindow
 
 import com.intellij.openapi.Disposable
-import com.intellij.openapi.application.ModalityState
 import com.intellij.openapi.project.Project
 import com.intellij.openapi.ui.ComponentValidator
 import com.intellij.openapi.ui.ValidationInfo
@@ -122,7 +121,7 @@ class SendMessagePane(
         return if (validationIssues.isEmpty()) {
             true
         } else {
-            withContext(getCoroutineUiContext(ModalityState.any())) {
+            withContext(getCoroutineUiContext()) {
                 validationIssues.forEach { validationIssue ->
                     val errorComponent = validationIssue.component ?: inputText
                     ComponentValidator

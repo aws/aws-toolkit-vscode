@@ -24,9 +24,8 @@ import software.aws.toolkits.jetbrains.services.dynamic.DynamicResource
 import software.aws.toolkits.jetbrains.services.dynamic.DynamicResourceIdentifier
 import software.aws.toolkits.jetbrains.services.dynamic.DynamicResourceSchemaMapping
 import software.aws.toolkits.jetbrains.services.dynamic.DynamicResourceUpdateManager
-import software.aws.toolkits.jetbrains.services.dynamic.DynamicResourceVirtualFile
 import software.aws.toolkits.jetbrains.services.dynamic.DynamicResources
-import software.aws.toolkits.jetbrains.services.dynamic.ViewDynamicResourceVirtualFile
+import software.aws.toolkits.jetbrains.services.dynamic.ViewEditableDynamicResourceVirtualFile
 import software.aws.toolkits.jetbrains.utils.notifyError
 import software.aws.toolkits.resources.message
 import software.aws.toolkits.telemetry.DynamicresourceTelemetry
@@ -105,7 +104,7 @@ class DynamicResourceNode(project: Project, val resource: DynamicResource) :
                     null
                 } ?: return
 
-                val file = ViewDynamicResourceVirtualFile(
+                val file = ViewEditableDynamicResourceVirtualFile(
                     DynamicResourceIdentifier(nodeProject.getConnectionSettings(), resource.type.fullName, resource.identifier),
                     model
                 )
