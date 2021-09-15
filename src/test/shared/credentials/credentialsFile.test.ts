@@ -6,8 +6,8 @@
 import * as sinon from 'sinon'
 import * as assert from 'assert'
 import * as path from 'path'
+import * as fs from 'fs'
 import * as credentialsActivation from '../../../credentials/activation'
-import { appendFileSync } from 'fs'
 import { remove, writeFile } from 'fs-extra'
 import { LoginManager } from '../../../credentials/loginManager'
 import { createCredentialsFileWatcher } from '../../../shared/credentials/credentialsFile'
@@ -19,6 +19,8 @@ describe('createCredentialsFileWatcher', function () {
     let credPath: string
     let configPath: string
     let sandbox: sinon.SinonSandbox
+    let loginStub: sinon.SinonStub
+    let credWatcher: fs.FSWatcher | undefined
     const fakeToolkitSettings = {} as any as SettingsConfiguration
     const fakeLoginManager = {} as any as LoginManager
     before(async function () {
@@ -31,6 +33,7 @@ describe('createCredentialsFileWatcher', function () {
 
     beforeEach(function () {
         sandbox = sinon.createSandbox()
+        loginStub = sandbox.stub(credentialsActivation, 'loginWithMostRecentCredentials')
     })
 
     after(function () {
@@ -39,18 +42,34 @@ describe('createCredentialsFileWatcher', function () {
 
     afterEach(function () {
         sandbox.restore()
+        if (credWatcher) {
+            credWatcher.close()
+            credWatcher = undefined
+        }
     })
 
-    it('modify credentials/config file attemps login', async function () {
-        const loginStub = sandbox.stub(credentialsActivation, 'loginWithMostRecentCredentials')
-        createCredentialsFileWatcher(tempFolder, fakeToolkitSettings, fakeLoginManager)
-        appendFileSync(credPath, 'change added')
+    it('modify credentials file attemps login', async function () {
+        credWatcher = createCredentialsFileWatcher(credPath, fakeToolkitSettings, fakeLoginManager)
+        fs.appendFileSync(credPath, 'change added')
         // timeout to allow change event to fire and this function is debounced because of a known watcher bug
         await new Promise(resolve => setTimeout(resolve, 150))
         assert.strictEqual(loginStub.callCount, 1)
+    })
 
-        appendFileSync(configPath, 'change added')
+    it('modify config file attemps login', async function () {
+        credWatcher = createCredentialsFileWatcher(configPath, fakeToolkitSettings, fakeLoginManager)
+        fs.appendFileSync(configPath, 'change added')
         await new Promise(resolve => setTimeout(resolve, 150))
-        assert.strictEqual(loginStub.callCount, 2)
+        assert.strictEqual(loginStub.callCount, 1)
+    })
+
+    it('ignores multiple events in quick succession', async function () {
+        credWatcher = createCredentialsFileWatcher(configPath, fakeToolkitSettings, fakeLoginManager)
+        // this attempts to simulate a known bug where multiple events fire from a single change to the file being wathced
+        fs.appendFileSync(configPath, 'change added')
+        fs.appendFileSync(configPath, 'more added')
+        fs.appendFileSync(configPath, 'even more added')
+        await new Promise(resolve => setTimeout(resolve, 150))
+        assert.strictEqual(loginStub.callCount, 1, 'Should ignore repeated calls using debounce')
     })
 })
