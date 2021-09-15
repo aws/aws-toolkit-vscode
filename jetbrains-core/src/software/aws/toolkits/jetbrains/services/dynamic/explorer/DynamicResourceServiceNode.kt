@@ -4,7 +4,6 @@
 package software.aws.toolkits.jetbrains.services.dynamic.explorer
 
 import com.intellij.openapi.command.WriteCommandAction
-import com.intellij.openapi.fileEditor.FileDocumentManager
 import com.intellij.openapi.fileEditor.FileEditorManager
 import com.intellij.openapi.progress.ProgressIndicator
 import com.intellij.openapi.progress.Task
@@ -113,19 +112,14 @@ class DynamicResourceNode(project: Project, val resource: DynamicResource) :
                 indicator.text = message("dynamic_resources.fetch.open")
                 WriteCommandAction.runWriteCommandAction(nodeProject) {
                     CodeStyleManager.getInstance(nodeProject).reformat(PsiUtilCore.getPsiFile(nodeProject, file))
-                    
-                    if(sourceAction == OpenResourceModelSourceAction.READ) {
+
+                    if (sourceAction == OpenResourceModelSourceAction.READ) {
                         file.isWritable = false
                         DynamicresourceTelemetry.openModel(nodeProject, success = true, resourceType = resource.type.fullName)
-                    } else if(sourceAction == OpenResourceModelSourceAction.EDIT) {
+                    } else if (sourceAction == OpenResourceModelSourceAction.EDIT) {
                         file.isWritable = true
                     }
                     FileEditorManager.getInstance(nodeProject).openFile(file, true)
-
-
-                    // editor readonly prop is separate from file prop. this is graceful if the getDocument call returns null
-                    //FileDocumentManager.getInstance().getDocument(file)?.setReadOnly(true)
-
                 }
             }
         }.queue()
@@ -136,6 +130,6 @@ class DynamicResourceNode(project: Project, val resource: DynamicResource) :
     }
 }
 
-enum class OpenResourceModelSourceAction{
+enum class OpenResourceModelSourceAction {
     READ, EDIT
 }

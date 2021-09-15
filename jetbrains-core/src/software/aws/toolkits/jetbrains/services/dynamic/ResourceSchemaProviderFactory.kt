@@ -30,7 +30,6 @@ class ResourceSchemaProviderFactory : JsonSchemaProviderFactory {
                 override fun getSchemaVersion(): JsonSchemaVersion = JsonSchemaVersion.SCHEMA_7
 
                 override fun getSchemaType(): SchemaType = SchemaType.embeddedSchema
-
             }
             schemaProviders.add(schemaFile)
         }

@@ -71,7 +71,7 @@ internal class DynamicResourceUpdateManager(private val project: Project) {
                     ),
                     project
                 )
-                //addDynamicResourcesTelemetry(Operation.DELETE, dynamicResourceIdentifier.resourceType, Result.Failed)
+                // addDynamicResourcesTelemetry(Operation.DELETE, dynamicResourceIdentifier.resourceType, Result.Failed)
             }
         }
     }

@@ -8,10 +8,12 @@ import com.intellij.openapi.project.DumbAware
 import software.aws.toolkits.jetbrains.core.explorer.actions.SingleExplorerNodeAction
 import software.aws.toolkits.jetbrains.services.dynamic.explorer.DynamicResourceNode
 import software.aws.toolkits.jetbrains.services.dynamic.explorer.OpenResourceModelSourceAction
+import software.aws.toolkits.resources.message
 
-class DynamicResourceUpdateResourceAction : SingleExplorerNodeAction<DynamicResourceNode>("Update Resource"),
+class DynamicResourceUpdateResourceAction :
+    SingleExplorerNodeAction<DynamicResourceNode>(message("dynamic_resources.update_resource_action")),
     DumbAware {
     override fun actionPerformed(selected: DynamicResourceNode, e: AnActionEvent) {
-       selected.openResourceModelInEditor(OpenResourceModelSourceAction.EDIT)
+        selected.openResourceModelInEditor(OpenResourceModelSourceAction.EDIT)
     }
 }

@@ -389,8 +389,8 @@ with what features/services are supported.
         
         <group id="aws.toolkit.explorer.dynamic.mutate.resource.file" class="software.aws.toolkits.jetbrains.services.dynamic.actions.MutateResourceModelFloatingToolbarActionGroup">
             <action id="dynamic.resource.create.floating.action" class="software.aws.toolkits.jetbrains.services.dynamic.actions.BeginCreateResourceAction"/>
-            <action id="dynamic.resource.update.floating.action" class="software.aws.toolkits.jetbrains.services.dynamic.actions.UpdateResourceFloatingToolbarAction"/>
-            <action id="dynamic.resource.save.update.floating.action" class="software.aws.toolkits.jetbrains.services.dynamic.actions.SaveUpdatedResourceFloatingToolbarAction"/>
+            <action id="dynamic.resource.update.floating.action" class="software.aws.toolkits.jetbrains.services.dynamic.actions.EditResourceAction"/>
+            <action id="dynamic.resource.save.update.floating.action" class="software.aws.toolkits.jetbrains.services.dynamic.actions.SaveUpdatedResourceAction"/>
         </group>
 
         <group id="aws.toolkit.explorer.dynamic.additional.resources" popup="true" compact="false">
