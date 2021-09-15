@@ -9,6 +9,6 @@ class ResourceModelFileFloatingToolbarProvider : AbstractFloatingToolbarProvider
     override val autoHideable: Boolean = false
     override val priority: Int = 100
     companion object {
-        private const val RESOURCE_MODEL_ACTION_GROUP = "aws.toolkit.explorer.dynamic.mutate.resource.file"
+        const val RESOURCE_MODEL_ACTION_GROUP = "aws.toolkit.explorer.dynamic.mutate.resource.file"
     }
 }
