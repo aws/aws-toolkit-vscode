@@ -5,7 +5,6 @@ package software.aws.toolkits.jetbrains.services.ecs.exec
 
 import com.intellij.execution.executors.DefaultRunExecutor
 import com.intellij.execution.runners.ExecutionEnvironmentBuilder
-import com.intellij.openapi.application.ModalityState
 import com.intellij.openapi.project.Project
 import com.intellij.openapi.ui.DialogWrapper
 import com.intellij.ui.CollectionComboBoxModel
@@ -94,7 +93,7 @@ class RunCommandDialog(private val project: Project, private val container: Cont
             if (taskRoleFound) {
                 runCommand()
             } else {
-                withContext(getCoroutineUiContext(ModalityState.any())) {
+                withContext(getCoroutineUiContext()) {
                     TaskRoleNotFoundWarningDialog(project).show()
                 }
             }
@@ -133,7 +132,7 @@ class RunCommandDialog(private val project: Project, private val container: Cont
                 )
                 .build()
 
-            withContext(getCoroutineUiContext(ModalityState.any())) {
+            withContext(getCoroutineUiContext()) {
                 environment.runner.execute(environment)
             }
 

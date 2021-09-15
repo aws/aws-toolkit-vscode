@@ -3,7 +3,6 @@
 
 package software.aws.toolkits.jetbrains.services.sqs
 
-import com.intellij.openapi.application.ModalityState
 import com.intellij.openapi.project.Project
 import com.intellij.openapi.ui.DialogWrapper
 import com.intellij.openapi.ui.ValidationInfo
@@ -77,7 +76,7 @@ class SubscribeSnsDialog(
                 }.attributes()[QueueAttributeName.POLICY]
 
                 if (needToEditPolicy(policy)) {
-                    val continueAdding = withContext(getCoroutineUiContext(ModalityState.any())) {
+                    val continueAdding = withContext(getCoroutineUiContext()) {
                         ConfirmQueuePolicyDialog(project, sqsClient, queue, topicArn, policy, view.component).showAndGet()
                     }
                     if (!continueAdding) {
@@ -87,7 +86,7 @@ class SubscribeSnsDialog(
                     }
                 }
                 subscribe(topicArn)
-                withContext(getCoroutineUiContext(ModalityState.any())) {
+                withContext(getCoroutineUiContext()) {
                     close(OK_EXIT_CODE)
                 }
                 notifyInfo(message("sqs.service_name"), message("sqs.subscribe.sns.success", topicSelected()), project)

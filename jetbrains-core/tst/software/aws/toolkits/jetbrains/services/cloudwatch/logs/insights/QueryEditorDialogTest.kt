@@ -3,9 +3,7 @@
 
 package software.aws.toolkits.jetbrains.services.cloudwatch.logs.insights
 
-import com.intellij.testFramework.EdtRule
-import com.intellij.testFramework.RuleChain
-import com.intellij.testFramework.RunsInEdt
+import com.intellij.testFramework.runInEdtAndGet
 import kotlinx.coroutines.runBlocking
 import org.assertj.core.api.Assertions.assertThat
 import org.assertj.core.api.Assertions.within
@@ -35,13 +33,10 @@ import java.time.temporal.ChronoUnit
 import java.util.Calendar
 import java.util.Date
 
-@RunsInEdt
 class QueryEditorDialogTest {
-    val projectRule = JavaCodeInsightTestFixtureRule()
-
     @Rule
     @JvmField
-    val ruleChain = RuleChain(projectRule, EdtRule())
+    val projectRule = JavaCodeInsightTestFixtureRule()
 
     @JvmField
     @Rule
@@ -76,7 +71,7 @@ class QueryEditorDialogTest {
                 logGroups = listOf()
             )
         )
-        sut = QueryEditorDialog(project, connectionSettings, "log1")
+        sut = runInEdtAndGet { QueryEditorDialog(project, connectionSettings, "log1") }
         runBlocking {
             // annoying race between view initialization and test assertion
             sut.setView(
@@ -126,7 +121,7 @@ class QueryEditorDialogTest {
                 connectionSettings = connectionSettings,
                 logGroups = listOf("log0", "log1")
             )
-            sut = QueryEditorDialog(projectRule.project, queryDetails)
+            sut = runInEdtAndGet { QueryEditorDialog(projectRule.project, queryDetails) }
             sut.setView(queryDetails)
         }
         assertThat(sut.getQueryDetails().logGroups).containsExactly("log0", "log1")
