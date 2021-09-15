@@ -38,4 +38,11 @@ export class SystemUtilities {
             })
         })
     }
+
+    /**
+     * Returns true if the current build is running on CI (build server).
+     */
+    public static isCI(): boolean {
+        return undefined !== process.env['CODEBUILD_BUILD_ID']
+    }
 }
