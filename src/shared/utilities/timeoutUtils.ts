@@ -190,7 +190,7 @@ export function waitTimeout<T, R = void, B extends boolean = true>(
             if ((opt.allowUndefined ?? true) !== true) {
                 throw new Error(TIMEOUT_UNEXPECTED_RESOLVE)
             }
-            return undefined as true extends typeof opt.allowUndefined ? undefined : never
+            return undefined as any
         })
         .catch(err => {
             if (opt.onExpire && (err as Error).message === TIMEOUT_EXPIRED_MESSAGE) {

@@ -120,7 +120,7 @@ export class SamCliBuildInvocation {
             ...this.args.environmentVariables,
         }
 
-        const checkFailure = (text: string): void => {
+        const onOutput = (text: string): void => {
             if (text.match(/(RuntimeError: Container does not exist)/)) {
                 this.args.invoker.stop()
                 this._failure = localize(
@@ -135,8 +135,8 @@ export class SamCliBuildInvocation {
         let childProcessResult: Promise<ChildProcessResult | void> = this.args.invoker.invoke({
             spawnOptions: { env },
             arguments: invokeArgs,
-            onStdout: checkFailure,
-            onStderr: checkFailure,
+            onStdout: onOutput,
+            onStderr: onOutput,
         })
 
         // TODO: add `Timeout` support to `ChildProcess` itself instead of wrapping the promise
