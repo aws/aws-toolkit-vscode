@@ -122,52 +122,52 @@ describe('SamTemplateGenerator', function () {
     })
 
     it('errs if resource name is missing', async function () {
-        assert.rejects(
+        await assert.rejects(
             new SamTemplateGenerator()
                 .withCodeUri(sampleCodeUriValue)
                 .withFunctionHandler(sampleFunctionHandlerValue)
                 .withRuntime(sampleRuntimeValue)
                 .generate(templateFilename),
-            'Missing value: at least one of ResourceName or TemplateResources'
+            new Error('Missing value: at least one of ResourceName or TemplateResources')
         )
 
         assert.strictEqual(await SystemUtilities.fileExists(templateFilename), false)
     })
 
     it('errs if function handler is missing', async function () {
-        assert.rejects(
+        await assert.rejects(
             new SamTemplateGenerator()
                 .withCodeUri(sampleCodeUriValue)
                 .withRuntime(sampleRuntimeValue)
                 .withResourceName(sampleResourceNameValue)
                 .generate(templateFilename),
-            'Missing value: Handler'
+            new Error('Missing value: Handler')
         )
 
         assert.strictEqual(await SystemUtilities.fileExists(templateFilename), false)
     })
 
     it('errs if code uri is missing', async function () {
-        assert.rejects(
+        await assert.rejects(
             new SamTemplateGenerator()
                 .withFunctionHandler(sampleFunctionHandlerValue)
                 .withRuntime(sampleRuntimeValue)
                 .withResourceName(sampleResourceNameValue)
                 .generate(templateFilename),
-            'Missing value: CodeUri'
+            new Error('Missing value: CodeUri')
         )
 
         assert.strictEqual(await SystemUtilities.fileExists(templateFilename), false)
     })
 
     it('errs if runtime is missing', async function () {
-        assert.rejects(
+        await assert.rejects(
             new SamTemplateGenerator()
                 .withCodeUri(sampleCodeUriValue)
                 .withFunctionHandler(sampleFunctionHandlerValue)
                 .withResourceName(sampleResourceNameValue)
                 .generate(templateFilename),
-            'Missing value: Runtime'
+            new Error('Missing value: Runtime')
         )
 
         assert.strictEqual(await SystemUtilities.fileExists(templateFilename), false)

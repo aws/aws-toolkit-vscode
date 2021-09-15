@@ -102,18 +102,19 @@ describe('DefaultSettingsConfiguration', function () {
                 expected: { apprunnerNotifyPricing: true },
                 desc: 'suppresses prompt',
             },
-            { testValue: undefined, expected: undefined, desc: 'writes nothing if undefined' },
         ]
         scenarios.forEach(scenario => {
             it(scenario.desc, async () => {
                 await sut.writeSetting(PROMPT_SETTING_KEY, scenario.testValue, vscode.ConfigurationTarget.Global)
                 await sut.disablePrompt(promptName)
-                assert.deepStrictEqual(sut.readSetting(PROMPT_SETTING_KEY), { ...defaultSetting, ...scenario.expected })
+                const actual = sut.readSetting(PROMPT_SETTING_KEY)
+                const expected = { ...defaultSetting, ...scenario.expected }
+                assert.deepStrictEqual(actual, expected)
             })
         })
 
         it('validates', async function () {
-            assert.rejects(sut.disablePrompt('invalidPrompt'))
+            await assert.rejects(sut.disablePrompt('invalidPrompt'))
         })
     })
 
