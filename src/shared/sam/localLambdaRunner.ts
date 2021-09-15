@@ -179,7 +179,7 @@ async function buildLambdaHandler(
 
     try {
         const samBuild = new SamCliBuildInvocation(samCliArgs)
-        await samBuild.execute()
+        await samBuild.execute(timer)
         if (samBuild.failure()) {
             getLogger('debugConsole').error(samBuild.failure()!)
             throw new Error(samBuild.failure())
