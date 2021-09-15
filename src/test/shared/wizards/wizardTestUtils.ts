@@ -132,7 +132,7 @@ export function createWizardTester<T extends Partial<T>>(wizard: Wizard<T> | Wiz
             failIf(form.canShowProperty(prop, state, assigned), `Property "${prop}" would be shown`),
         assertDoesNotShowAny: assertShowNone(prop),
         assertValue: assertValue(prop),
-        assertShowCount: assertShowCount,
+        assertShowCount: assertShowCount(),
     })
 
     function createFormWrapper(path: string[] = []): WizardTester<T> {

@@ -22,11 +22,11 @@ describe('AppRunnerImageRepositoryWizard', function () {
     })
 
     it('prompts for identifier, port, and environment variables', function () {
-        repoTester.ImageIdentifier.assertShow()
-        repoTester.ImageIdentifier.applyInput('') // TODO: after we 'assertShow' just have sinon apply a stub
-        repoTester.ImageConfiguration.Port.assertShow()
-        repoTester.ImageConfiguration.RuntimeEnvironmentVariables.assertShow()
-        repoTester.assertShowCount(3)
+        repoTester.ImageIdentifier.assertShowFirst()
+        repoTester.ImageConfiguration.Port.assertShowSecond()
+        repoTester.ImageConfiguration.RuntimeEnvironmentVariables.assertShowThird()
+        // Nothing else to be shown since we did not assign a value to `ImageIdentifier`
+        repoTester.assertShowCount(0)
     })
 
     it('sets image repository type', function () {

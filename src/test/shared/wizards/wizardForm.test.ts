@@ -104,11 +104,29 @@ describe('WizardForm', function () {
             tester.nestedProp.prop1.assertShow()
         })
 
+        it('does not apply defaults if the top form cannot be shown', function () {
+            nestedTestForm.body.prop1.setDefault('0')
+            testForm.nestedProp.applyBoundForm(nestedTestForm, { dependencies: [testForm.prop2] })
+            tester.nestedProp.prop1.assertValue(undefined)
+        })
+
         it('can apply dependencies', function () {
             nestedTestForm.body.prop1.bindPrompter(() => new SimplePrompter(''))
             testForm.nestedProp.applyBoundForm(nestedTestForm, { dependencies: [testForm.prop1] })
             tester.nestedProp.prop1.assertDoesNotShow()
             tester.prop1.applyInput(0)
+            tester.nestedProp.prop1.assertShow()
+        })
+
+        it('considers parent form dependencies with child dependencies', function () {
+            nestedTestForm.body.prop1.bindPrompter(() => new SimplePrompter(''), {
+                dependencies: [nestedTestForm.body.prop2],
+            })
+            testForm.nestedProp.applyBoundForm(nestedTestForm, { dependencies: [testForm.prop1] })
+            tester.nestedProp.prop1.assertDoesNotShow()
+            tester.prop1.applyInput(0)
+            tester.nestedProp.prop1.assertDoesNotShow()
+            tester.prop2.applyInput('')
             tester.nestedProp.prop1.assertShow()
         })
 
@@ -160,7 +178,7 @@ describe('WizardForm', function () {
 
             tester.prop1.assertDoesNotShow()
             tester.prop2.assertShowFirst()
-            tester.prop1.assertShow()
+            tester.prop1.assertShowSecond()
         })
 
         it('can resolve dependencies with `showWhen`', function () {

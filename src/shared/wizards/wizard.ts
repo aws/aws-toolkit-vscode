@@ -7,7 +7,6 @@ import { Branch, ControlSignal, StateMachineController, StepFunction } from './s
 import * as _ from 'lodash'
 import { Prompter, PromptResult } from '../../shared/ui/prompter'
 import { PrompterProvider, WizardForm } from './wizardForm'
-import { getLogger } from '../logger/logger'
 
 /** Checks if the user response is valid (i.e. not undefined and not a control signal) */
 export function isValidResponse<T>(response: PromptResult<T>): response is T {
@@ -152,7 +151,7 @@ export class Wizard<TState extends Partial<Record<keyof TState, unknown>>> {
         return async state => {
             const stateWithCache = Object.assign(
                 { stepCache: stepCache, estimator: this.createStepEstimator(state, prop) },
-                this._form.applyDefaults(state, this.getAssigned())
+                this._form.applyDefaults(state)
             )
             const impliedResponse = _.get(this.options.implicitState ?? {}, prop)
             const response = await this.promptUser(stateWithCache, provider, impliedResponse)

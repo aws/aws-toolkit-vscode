@@ -56,6 +56,8 @@ type RecursivePartial<T> = {
     [P in keyof Required<T>]+?: RecursivePartial<T[P]>
 }
 
+// This is basically just a 'type-helper' to retain information about where to find a property
+// relative to a 'root' element
 interface Pathable {
     path: string[]
 }
@@ -103,6 +105,11 @@ interface FormElement<TProp, TState, TKey extends string[]> {
         provider: PrompterProvider<TState, TProp, TDep>,
         options?: ContextOptions<TState, TProp, TDep>
     ): void
+    /**
+     * This is similar to {@link ContextOptions.setDefault setDefault} but without needing to bind a
+     * prompter along with the default value. You can also use a 'state-independent' value instead of
+     * a function (e.g. string, number, etc.)
+     */
     setDefault<TDep extends Pathable[] = []>(
         defaultFunction: DefaultFunction<TState, TProp, TDep> | TProp,
         options?: Pick<ContextOptions<TState, TProp, TDep>, 'dependencies'>
@@ -132,7 +139,12 @@ type Form<T, TState = T, TKeys extends string[] = []> = {
 }
 
 type FormDataElement<TState, TProp> = ContextOptions<TState, TProp, any> & {
+    /** Provides a 'prompt' given the current state */
     provider?: PrompterProvider<TState, TProp, any>
+    /** Gets the default value (if any) of the property */
+    getDefault: (state: TState) => TProp | undefined
+    /**  Checks if the property could be shown given the state and currently queued-up properties */
+    canShow: (state: TState, assigned: Set<string>) => boolean
 }
 
 function isSet<TProp>(obj: TProp): boolean {
@@ -166,44 +178,18 @@ export class WizardForm<TState extends Partial<Record<keyof TState, unknown>>> {
         return this.formData.get(prop)?.provider
     }
 
-    public applyDefaults(state: TState, assigned?: Set<string>): TState {
+    /** Applies 'default' values to a state (see {@link ContextOptions.setDefault setDefault}) */
+    public applyDefaults(state: TState): TState {
         const defaultState = _.cloneDeep(state)
 
         this.formData.forEach((opt, targetProp) => {
-            const current = _.get(state, targetProp)
-
-            if (!isSet(current) && opt.setDefault !== undefined && !this.isDependent(targetProp, defaultState)) {
-                const defaultValue = opt.setDefault(state)
-                if (defaultValue !== undefined) {
-                    _.set(defaultState, targetProp, defaultValue)
-                }
+            const value = opt.getDefault(state)
+            if (value !== undefined) {
+                _.set(defaultState, targetProp, value)
             }
         })
 
         return defaultState
-    }
-
-    /**
-     * Returns true when the element has unresolved dependencies
-     *
-     * 'assigned' are properties that are currently undefined within the state but are guaranteed to
-     * be assigned prior to the current element
-     */
-    private isDependent<TState>(prop: string, state: TState, assigned: Set<string> = new Set()) {
-        const element = this.formData.get(prop) ?? {}
-        const dependencies = ((element.dependencies as Pathable[]) ?? [])
-            //    .concat({ path: prop.split('.').slice(0, -1) }) // requires props to have defined parents
-            .filter(({ path }) => path.length > 0)
-
-        if (
-            dependencies.some(
-                ({ path }: { path: string[] }) => !assigned.has(path.join('.')) && !isSet(_.get(state, path.join('.')))
-            )
-        ) {
-            return true
-        }
-
-        return false
     }
 
     private compareOrder(key1: string, key2: string): number {
@@ -228,27 +214,36 @@ export class WizardForm<TState extends Partial<Record<keyof TState, unknown>>> {
         return toposort.array([...nodes.keys()].reverse(), edges).reverse()
     }
 
-    private applyElement(key: string, element: FormDataElement<TState, any>) {
+    private setElement(key: string, element: FormDataElement<TState, any>) {
         const oldElement = this.formData.get(key)
         if (oldElement?.provider !== undefined && element?.provider !== undefined) {
             throw new Error(`Cannot re-bind property: ${key}`)
         }
         if (oldElement?.setDefault !== undefined && element?.setDefault !== undefined) {
-            throw new Error(`Default value has already been set: ${key}`)
+            throw new Error(`Cannot set another default for property: ${key}`)
         }
-        this.formData.set(key, { ...oldElement, ...element })
+        this.formData.set(key, element)
     }
 
+    /**
+     * Checks if the property can be queued up to be shown in a wizard flow
+     *
+     * @param prop Property to check
+     * @param state Current state of the wizard
+     * @param assigned Properties that are queued up to be shown
+     *
+     * @returns True if the property can be shown (or queued up to be shown)
+     */
     public canShowProperty(
         prop: string,
         state: TState,
         assigned: Set<string> = new Set(),
-        defaultState: TState = this.applyDefaults(state, assigned)
+        defaultState: TState = this.applyDefaults(state)
     ): boolean {
         const current = _.get(state, prop)
-        const options = this.formData.get(prop) ?? {}
+        const options = this.formData.get(prop)
 
-        if (assigned.has(prop) || isSet(current)) {
+        if (options === undefined || assigned.has(prop) || isSet(current)) {
             return false
         }
 
@@ -256,50 +251,58 @@ export class WizardForm<TState extends Partial<Record<keyof TState, unknown>>> {
             [...this.formData.keys()].filter(key => isSet(_.get(defaultState, key))).concat([...assigned])
         )
 
-        if (options.showWhen !== undefined) {
-            // This is a special edge-case where a property has both dependencies and
-            // a `showWhen` clause. In this scenario we must always respect the `showWhen`
-            // clause and remove all dependencies that have not been explicitly assigned
-            //
-            // Unfortunately this does mean that we end up deferring assignment to the
-            // last possible moment, even when the clause itself is not dependent on the
-            // remaining inherited dependencies
-            //
-            // Ideally we should contextually bind dependencies with their respective
-            // clauses.
-            ;[...assignedDefault.keys()]
-                .filter(key => !isSet(_.get(defaultState, key)))
-                .forEach(key => assignedDefault.delete(key))
-        }
-
-        if (this.isDependent(prop, state, assignedDefault)) {
-            return false
-        }
-
-        if (options.showWhen !== undefined && !options.showWhen(defaultState)) {
-            return false
-        }
-
-        return options.provider !== undefined
+        return options.canShow(defaultState, assignedDefault) && options.provider !== undefined
     }
 
+    private createElement<TProp>(
+        prop: string,
+        options: ContextOptions<TState, TProp> = {}
+    ): FormDataElement<TState, any> {
+        const element = Object.assign({}, options) as FormDataElement<TState, any>
+
+        const isDependent = (state: TState, assigned = new Set<string>()) => {
+            const dependencies = ((options.dependencies as Pathable[]) ?? [])
+                //    .concat({ path: prop.split('.').slice(0, -1) }) // requires props to have defined parents
+                .filter(({ path }) => path.length > 0)
+
+            return dependencies.some(
+                ({ path }: { path: string[] }) => !assigned.has(path.join('.')) && !isSet(_.get(state, path.join('.')))
+            )
+        }
+
+        element.canShow = (state, assigned) => {
+            if (options.showWhen !== undefined) {
+                return !isDependent(state) && options.showWhen(state)
+            } else {
+                return !isDependent(state, assigned)
+            }
+        }
+
+        element.getDefault = state => {
+            const current = _.get(state, prop)
+
+            if (!isSet(current) && options.setDefault !== undefined && !isDependent(state)) {
+                return options.setDefault(state)
+            }
+        }
+
+        return element
+    }
+
+    /**
+     * 'Converts' an element by lifting it into a different wizard.
+     *
+     * This creates a new 'layer' element with `options`, then applies a mapping to passed-in values as to
+     * preserve what the element originally expects. For example, consider an element bound to 'foo.bar'
+     * and a new wizard that accepts a 'foo' type at property 'baz'. The lifted element would convert to
+     * 'baz.foo.bar', but the bound methods are still scoped to 'foo', thus we map the paths.
+     */
     private convertElement<TProp>(
         prop: string,
         element: FormDataElement<TProp, any>,
         options: ContextOptions<TState, TProp> = {}
     ): FormDataElement<TState, any> {
-        const wrappedElement: FormDataElement<TState, any> = {}
-
-        // TODO: contextually bind dependencies within their respective element
-        // this would effectively 'hides' dependencies as they are lifted up
-        // into other forms, which solves the problem of `showWhen` clauses
-        // losing the knowledge of which dependencies they were originally tied to
-        //
-        // note: this has no effect on 'flat' wizards; only nested wizards will call
-        // `convertElement` to lift bound properties up into the new form
-
-        // just use closures?
-        // e.g. make `canShow` and `getDefault` apart of the element
+        const wrappedElement = {} as FormDataElement<TState, any>
 
         if (element.provider !== undefined) {
             wrappedElement.provider = state => {
@@ -312,59 +315,63 @@ export class WizardForm<TState extends Partial<Record<keyof TState, unknown>>> {
             }
         }
 
-        if (element.showWhen !== undefined || options.showWhen !== undefined) {
-            wrappedElement.showWhen = state =>
-                (element.showWhen !== undefined ? element.showWhen!(_.get(state, prop, {})) : true) &&
-                (options.showWhen !== undefined ? options.showWhen!(state) : true)
+        const mapAssigned = (assigned: Set<string>) => {
+            return new Set([...assigned.keys()].map(k => k.replace(`${prop}.`, '')))
         }
 
-        if (element.dependencies !== undefined) {
-            wrappedElement.dependencies = element.dependencies.map(({ path }: { path: string[] }) => {
+        const mapState = (state: TState) => {
+            return _.get(state, prop, {})
+        }
+
+        const layer = this.createElement(prop, options)
+
+        wrappedElement.canShow = (state, assigned) => {
+            return layer.canShow(state, assigned) && element.canShow(mapState(state), mapAssigned(assigned))
+        }
+
+        wrappedElement.getDefault = state => {
+            return (
+                layer.getDefault(state) ??
+                (layer.canShow(state, new Set()) ? element.getDefault(mapState(state)) : undefined)
+            )
+        }
+
+        wrappedElement.relativeOrder = options.relativeOrder ?? element.relativeOrder
+        wrappedElement.dependencies = (options.dependencies ?? []).concat(
+            (element.dependencies ?? []).map(({ path }: { path: string[] }) => {
                 return { path: prop.split('.').concat(path) }
             })
-        }
-
-        wrappedElement.setDefault =
-            element.setDefault !== undefined
-                ? state =>
-                      options.showWhen === undefined || options.showWhen(state)
-                          ? element.setDefault!(_.get(state, prop, {}))
-                          : undefined
-                : undefined
-
-        wrappedElement.dependencies = (wrappedElement.dependencies ?? []).concat(options.dependencies ?? [])
+        )
 
         return wrappedElement
     }
 
     private createBindPrompterMethod<TProp>(prop: string): PrompterBind<TProp, TState> {
-        return <TDep extends Pathable[] = []>(
-            provider: PrompterProvider<TState, TProp, TDep>,
-            options: ContextOptions<TState, TProp, TDep> = {}
+        return (
+            provider: PrompterProvider<TState, TProp, any>,
+            options: ContextOptions<TState, TProp, any> = {}
         ): void => {
-            this.applyElement(prop, <ContextOptions<TState, TProp>>{ ...options, provider })
+            this.setElement(prop, Object.assign(this.createElement(prop, options), { provider }))
         }
     }
 
     private createApplyFormMethod<TProp>(prop: string): ApplyBoundForm<TProp, TState> {
         return (form: WizardForm<TProp>, options?: ContextOptions<TState, TProp, any>) => {
             form.formData.forEach((element, key) => {
-                this.applyElement(`${prop}.${key}`, this.convertElement(prop, element, options))
+                this.setElement(`${prop}.${key}`, this.convertElement(prop, element, options))
             })
         }
     }
 
     private createSetDefaultMethod<TProp>(prop: string): SetDefault<TProp, TState> {
         return (
-            defaultFunction: DefaultFunction<TState, TProp, any> | TProp,
-            options?: ContextOptions<TState, TProp, any>
-        ) =>
-            typeof defaultFunction !== 'function' // TODO: fix these types, TProp can technically be a function...
-                ? this.applyElement(prop, { setDefault: () => defaultFunction, ...options })
-                : this.applyElement(prop, {
-                      setDefault: defaultFunction as DefaultFunction<TState, TProp, any>,
-                      ...options,
-                  })
+            defaultValue: DefaultFunction<TState, TProp, any> | TProp,
+            options: ContextOptions<TState, TProp, any> = {}
+        ) => {
+            const defaultFunc = typeof defaultValue !== 'function' ? () => defaultValue : defaultValue
+            options.setDefault = defaultFunc as DefaultFunction<TState, TProp, any>
+            this.setElement(prop, this.createElement(prop, options))
+        }
     }
 
     // Generates a virtualized object with the same shape as the Form interface
