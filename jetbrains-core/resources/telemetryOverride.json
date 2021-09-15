@@ -4,6 +4,11 @@
             "name": "resourceType",
             "type": "string",
             "description": "The dynamic resource type being interacted with"
+        },
+        {
+            "name": "dynamicResourceOperation",
+            "allowedValues": ["Create", "Update", "Delete"],
+            "description": "The dynamic resource operation being executed"
         }
     ],
     "metrics": [
@@ -12,7 +17,7 @@
             "description": "Open the service URL in a browser"
         },
         {
-            "name": "dynamicresource_openModel",
+            "name": "dynamicresource_getResource",
             "description": "Open the dynamic resource model in the IDE",
             "metadata": [
                 {
@@ -24,7 +29,7 @@
             ]
         },
         {
-            "name": "dynamicresource_listType",
+            "name": "dynamicresource_listResource",
             "description": "Expand a Resource Type node",
             "metadata": [
                 {
@@ -49,38 +54,20 @@
             ]
         },
         {
-            "name": "dynamicresource_createResource",
-            "description": "A dynamic resource is created",
+            "name": "dynamicresource_mutateResource",
+            "description": "A dynamic resource mutation request completed",
             "metadata": [
                 {
                     "type": "result"
                 },
                 {
                     "type": "resourceType"
-                }
-            ]
-        },
-        {
-            "name": "dynamicresource_updateResource",
-            "description": "A dynamic resource is updated",
-            "metadata": [
-                {
-                    "type": "result"
                 },
                 {
-                    "type": "resourceType"
-                }
-            ]
-        },
-        {
-            "name": "dynamicresource_deleteResource",
-            "description": "A dynamic resource is deleted",
-            "metadata": [
-                {
-                    "type": "result"
+                    "type": "dynamicResourceOperation"
                 },
                 {
-                    "type": "resourceType"
+                    "type": "duration"
                 }
             ]
         },
