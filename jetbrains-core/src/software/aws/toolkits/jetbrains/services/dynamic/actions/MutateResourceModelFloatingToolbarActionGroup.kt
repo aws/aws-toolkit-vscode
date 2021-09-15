@@ -7,7 +7,6 @@ import com.intellij.openapi.actionSystem.AnActionEvent
 import com.intellij.openapi.actionSystem.CommonDataKeys
 import com.intellij.openapi.actionSystem.DefaultActionGroup
 import com.intellij.openapi.editor.Editor
-import com.intellij.openapi.editor.toolbar.floating.AbstractFloatingToolbarProvider
 import com.intellij.openapi.editor.toolbar.floating.FloatingToolbarComponent
 import com.intellij.openapi.fileEditor.FileDocumentManager
 import software.aws.toolkits.jetbrains.services.dynamic.DynamicResourceVirtualFile
@@ -15,7 +14,7 @@ import software.aws.toolkits.jetbrains.services.dynamic.DynamicResourceVirtualFi
 class MutateResourceModelFloatingToolbarActionGroup : DefaultActionGroup() {
     override fun update(e: AnActionEvent) {
         val editor = e.getData(CommonDataKeys.EDITOR) ?: return
-        val toolbarComponent : FloatingToolbarComponent? = e.getData(FloatingToolbarComponent.KEY)
+        val toolbarComponent: FloatingToolbarComponent? = e.getData(FloatingToolbarComponent.KEY)
         e.presentation.isVisible = editor.isFileEditor() && e.getData(CommonDataKeys.PSI_FILE)?.virtualFile is DynamicResourceVirtualFile
         toolbarComponent?.scheduleShow() ?: return
     }
