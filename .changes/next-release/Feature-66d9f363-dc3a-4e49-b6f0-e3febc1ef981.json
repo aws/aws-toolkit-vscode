@@ -1,0 +1,4 @@
+{
+	"type": "Feature",
+	"description": "Option to render Step Functions ASL file in YAML format that is not marked as asl-yaml."
+}
