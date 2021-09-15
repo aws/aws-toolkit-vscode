@@ -7,8 +7,8 @@ import * as assert from 'assert'
 import { waitUntil } from '../shared/utilities/timeoutUtils'
 import * as vscode from 'vscode'
 
-// This is intentionally set below normal build times to test timeout behavior
-const LAMBDA_SESSION_TIMEOUT = 30000
+// java8.al2 image does a while to pull
+const LAMBDA_SESSION_TIMEOUT = 60000
 
 export async function sleep(miliseconds: number): Promise<void> {
     return new Promise(resolve => setTimeout(resolve, miliseconds))
