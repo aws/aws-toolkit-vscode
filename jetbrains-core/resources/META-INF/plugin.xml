@@ -388,13 +388,9 @@ with what features/services are supported.
         </group>
         
         <group id="aws.toolkit.explorer.dynamic.mutate.resource.file" class="software.aws.toolkits.jetbrains.services.dynamic.actions.MutateResourceModelFloatingToolbarActionGroup">
-<<<<<<< HEAD
             <action id="dynamic.resource.create.floating.action" class="software.aws.toolkits.jetbrains.services.dynamic.actions.BeginCreateResourceAction"/>
-=======
-            <action id="dynamic.resource.create.floating.action" class="software.aws.toolkits.jetbrains.services.dynamic.actions.CreateResourceFloatingToolbarAction"/>
             <action id="dynamic.resource.update.floating.action" class="software.aws.toolkits.jetbrains.services.dynamic.actions.UpdateResourceFloatingToolbarAction"/>
             <action id="dynamic.resource.save.update.floating.action" class="software.aws.toolkits.jetbrains.services.dynamic.actions.SaveUpdatedResourceFloatingToolbarAction"/>
->>>>>>> manodnyb/updateResources
         </group>
 
         <group id="aws.toolkit.explorer.dynamic.additional.resources" popup="true" compact="false">
@@ -408,13 +404,10 @@ with what features/services are supported.
                     class="software.aws.toolkits.jetbrains.services.dynamic.explorer.actions.DynamicResourceOpenAction"/>
             <action id="dynamic.copy.arn"
                     class="software.aws.toolkits.jetbrains.services.dynamic.explorer.actions.DynamicResourceCopyIdentifierAction"/>
-<<<<<<< HEAD
-            <action id="dynamic.delete.resource"
-                    class="software.aws.toolkits.jetbrains.services.dynamic.explorer.actions.DynamicResourceDeleteResourceAction"/>
-=======
             <action id="dynamic.update.resource"
                     class="software.aws.toolkits.jetbrains.services.dynamic.explorer.actions.DynamicResourceUpdateResourceAction"/>
->>>>>>> manodnyb/updateResources
+            <action id="dynamic.delete.resource"
+                    class="software.aws.toolkits.jetbrains.services.dynamic.explorer.actions.DynamicResourceDeleteResourceAction"/>
         </group>
 
         <group id="aws.toolkit.explorer.logs.group" popup="true" compact="false">

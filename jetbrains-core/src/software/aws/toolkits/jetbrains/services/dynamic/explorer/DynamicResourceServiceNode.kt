@@ -114,7 +114,7 @@ class DynamicResourceNode(project: Project, val resource: DynamicResource) :
                 indicator.text = message("dynamic_resources.fetch.open")
                 WriteCommandAction.runWriteCommandAction(nodeProject) {
                     CodeStyleManager.getInstance(nodeProject).reformat(PsiUtilCore.getPsiFile(nodeProject, file))
-                    DynamicResourceSchemaMapping.getInstance().addResourceSchemaMapping(nodeProject, file)
+                    
                     if(sourceAction == OpenResourceModelSourceAction.READ) {
                         file.isWritable = false
                         DynamicresourceTelemetry.openModel(nodeProject, success = true, resourceType = resource.type.fullName)
