@@ -122,70 +122,54 @@ describe('SamTemplateGenerator', function () {
     })
 
     it('errs if resource name is missing', async function () {
-        const error: Error = await assertThrowsError(async () => {
-            await new SamTemplateGenerator()
+        await assert.rejects(
+            new SamTemplateGenerator()
                 .withCodeUri(sampleCodeUriValue)
                 .withFunctionHandler(sampleFunctionHandlerValue)
                 .withRuntime(sampleRuntimeValue)
-                .generate(templateFilename)
-        })
+                .generate(templateFilename),
+            new Error('Missing value: at least one of ResourceName or TemplateResources')
+        )
 
-        assert.ok(error)
-        assert.strictEqual(error.message, 'Missing value: at least one of ResourceName or TemplateResources')
         assert.strictEqual(await SystemUtilities.fileExists(templateFilename), false)
     })
 
     it('errs if function handler is missing', async function () {
-        const error: Error = await assertThrowsError(async () => {
-            await new SamTemplateGenerator()
+        await assert.rejects(
+            new SamTemplateGenerator()
                 .withCodeUri(sampleCodeUriValue)
                 .withRuntime(sampleRuntimeValue)
                 .withResourceName(sampleResourceNameValue)
-                .generate(templateFilename)
-        })
+                .generate(templateFilename),
+            new Error('Missing value: Handler')
+        )
 
-        assert.ok(error)
-        assert.strictEqual(error.message, 'Missing value: Handler')
         assert.strictEqual(await SystemUtilities.fileExists(templateFilename), false)
     })
 
     it('errs if code uri is missing', async function () {
-        const error: Error = await assertThrowsError(async () => {
-            await new SamTemplateGenerator()
+        await assert.rejects(
+            new SamTemplateGenerator()
                 .withFunctionHandler(sampleFunctionHandlerValue)
                 .withRuntime(sampleRuntimeValue)
                 .withResourceName(sampleResourceNameValue)
-                .generate(templateFilename)
-        })
+                .generate(templateFilename),
+            new Error('Missing value: CodeUri')
+        )
 
-        assert.ok(error)
-        assert.strictEqual(error.message, 'Missing value: CodeUri')
         assert.strictEqual(await SystemUtilities.fileExists(templateFilename), false)
     })
 
     it('errs if runtime is missing', async function () {
-        const error: Error = await assertThrowsError(async () => {
-            await new SamTemplateGenerator()
+        await assert.rejects(
+            new SamTemplateGenerator()
                 .withCodeUri(sampleCodeUriValue)
                 .withFunctionHandler(sampleFunctionHandlerValue)
                 .withResourceName(sampleResourceNameValue)
-                .generate(templateFilename)
-        })
+                .generate(templateFilename),
+            new Error('Missing value: Runtime')
+        )
 
-        assert.ok(error)
-        assert.strictEqual(error.message, 'Missing value: Runtime')
         assert.strictEqual(await SystemUtilities.fileExists(templateFilename), false)
     })
-
-    async function assertThrowsError(fn: () => Thenable<any>): Promise<Error> {
-        try {
-            await fn()
-        } catch (err) {
-            if (err instanceof Error) {
-                return err
-            }
-        }
-
-        throw new Error('function did not throw error as expected')
-    }
 })

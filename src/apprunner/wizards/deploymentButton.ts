@@ -34,7 +34,7 @@ function makeDeployButtons() {
 
 async function showDeploymentCostNotification(): Promise<void> {
     const settingsConfig = new DefaultSettingsConfiguration(extensionSettingsPrefix)
-    if (await settingsConfig.shouldDisplayPrompt('suppressApprunnerNotifyPricing')) {
+    if (await settingsConfig.isPromptEnabled('apprunnerNotifyPricing')) {
         const notice = localize(
             'aws.apprunner.createService.priceNotice.message',
             'App Runner automatic deployments incur an additional cost.'
@@ -48,7 +48,7 @@ async function showDeploymentCostNotification(): Promise<void> {
                 vscode.env.openExternal(pricingUri)
                 await showDeploymentCostNotification()
             } else if (button === dontShow) {
-                settingsConfig.disablePrompt('suppressApprunnerNotifyPricing')
+                settingsConfig.disablePrompt('apprunnerNotifyPricing')
             }
         })
     }

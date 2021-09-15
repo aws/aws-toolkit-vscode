@@ -42,7 +42,7 @@
     "AWS.configuration.description.samcli.location": "Location of SAM CLI. SAM CLI is used to create, build, package, and deploy Serverless Applications. [Learn More](https://aws.amazon.com/serverless/sam/)",
     "AWS.configuration.description.telemetry": "Enable AWS Toolkit to send usage data to AWS.",
     "AWS.configuration.description.telemetry.cn": "Enable Amazon Toolkit to send usage data to Amazon.",
-    "AWS.configuration.description.suppressPrompts": "List of prompts to suppress.",
+    "AWS.configuration.description.suppressPrompts": "Optional prompts",
     "AWS.configuration.enableCodeLenses": "Enable SAM hints in source files",
     "AWS.stepFunctions.asl.format.enable.desc": "Enables the default formatter used with Amazon States Language files",
     "AWS.stepFunctions.asl.maxItemsComputed.desc": "The maximum number of outline symbols and folding regions computed (limited for performance reasons).",
