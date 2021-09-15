@@ -125,17 +125,17 @@ function createMessageReceivedFunc({
                     return undefined
                 }
 
-                let fileContent: string = ''
                 try {
-                    fileContent = readFileSync(fileLocations[0].fsPath, { encoding: 'utf8' })
+                    const fileContent = readFileSync(fileLocations[0].fsPath, { encoding: 'utf8' })
+                    restParams.onPostMessage({
+                        command: 'loadedSample',
+                        sample: fileContent,
+                        selectedFile: fileLocations[0].path,
+                    })
                 } catch (e) {
                     getLogger().error('readFileSync: Failed to read file at path %O', fileLocations[0].fsPath, e)
+                    vscode.window.showErrorMessage((e as Error).message)
                 }
-                restParams.onPostMessage({
-                    command: 'loadedSample',
-                    sample: fileContent,
-                    selectedFile: fileLocations[0].path,
-                })
                 return
             }
             case 'sampleRequestSelected': {
