@@ -221,6 +221,7 @@ export class ImageIdentifierForm extends WizardForm<{ repo: TaggedEcrRepository 
 
         this.body.repo.bindPrompter(state => createImagePrompter(ecrClient, state.stepCache, options))
         this.body.repo.tag.bindPrompter(state => createTagPrompter(ecrClient, state.repo, state.stepCache), {
+            showWhen: state => state.repo.tag === undefined,
             dependencies: [this.body.repo],
         })
     }

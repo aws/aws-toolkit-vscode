@@ -261,12 +261,10 @@ export class WizardForm<TState extends Partial<Record<keyof TState, unknown>>> {
         const element = Object.assign({}, options) as FormDataElement<TState, any>
 
         const isDependent = (state: TState, assigned = new Set<string>()) => {
-            const dependencies = ((options.dependencies as Pathable[]) ?? [])
-                //    .concat({ path: prop.split('.').slice(0, -1) }) // requires props to have defined parents
-                .filter(({ path }) => path.length > 0)
+            const dependencies = ((options.dependencies as Pathable[]) ?? []).filter(({ path }) => path.length > 0)
 
             return dependencies.some(
-                ({ path }: { path: string[] }) => !assigned.has(path.join('.')) && !isSet(_.get(state, path.join('.')))
+                ({ path }) => !assigned.has(path.join('.')) && !isSet(_.get(state, path.join('.')))
             )
         }
 

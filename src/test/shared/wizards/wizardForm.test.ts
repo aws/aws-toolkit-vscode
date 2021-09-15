@@ -126,7 +126,7 @@ describe('WizardForm', function () {
             tester.nestedProp.prop1.assertDoesNotShow()
             tester.prop1.applyInput(0)
             tester.nestedProp.prop1.assertDoesNotShow()
-            tester.prop2.applyInput('')
+            tester.nestedProp.prop2.applyInput('')
             tester.nestedProp.prop1.assertShow()
         })
 
@@ -176,7 +176,6 @@ describe('WizardForm', function () {
             testForm.prop1.bindPrompter(() => new SimplePrompter(0), { dependencies: [testForm.prop2] })
             testForm.prop2.bindPrompter(() => new SimplePrompter(''))
 
-            tester.prop1.assertDoesNotShow()
             tester.prop2.assertShowFirst()
             tester.prop1.assertShowSecond()
         })

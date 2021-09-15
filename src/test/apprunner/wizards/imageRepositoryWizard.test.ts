@@ -25,8 +25,7 @@ describe('AppRunnerImageRepositoryWizard', function () {
         repoTester.ImageIdentifier.assertShowFirst()
         repoTester.ImageConfiguration.Port.assertShowSecond()
         repoTester.ImageConfiguration.RuntimeEnvironmentVariables.assertShowThird()
-        // Nothing else to be shown since we did not assign a value to `ImageIdentifier`
-        repoTester.assertShowCount(0)
+        repoTester.assertShowCount(3)
     })
 
     it('sets image repository type', function () {

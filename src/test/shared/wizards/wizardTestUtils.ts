@@ -13,8 +13,7 @@ interface MockWizardFormElement<TProp> {
     applyInput(input: TProp): void
     clearInput(): void
     /**
-     * Verifies the property would be shown. This is computed imperatively, taking in consideration
-     * any previously asserted properties.
+     * Verifies the property would be shown.
      */
     assertShow(order?: number): void
     assertShowFirst(): void
@@ -45,10 +44,10 @@ function failIf(cond: boolean, message?: string): void {
 export function createWizardTester<T extends Partial<T>>(wizard: Wizard<T> | WizardForm<T>): WizardTester<T> {
     const form = wizard instanceof Wizard ? wizard.boundForm : wizard
     const state = {} as T
-    const assigned = new Set<string>()
-    let showOffset = 0
+    let assigned: string[] = []
+    let initialized: boolean = false
 
-    function canShowPrompter(prop: string, shown: Set<string> = assigned): boolean {
+    function canShowPrompter(prop: string, shown: Set<string> = new Set(assigned)): boolean {
         const defaultState = form.applyDefaults(state)
 
         if (!form.canShowProperty(prop, state, shown, defaultState)) {
@@ -60,16 +59,16 @@ export function createWizardTester<T extends Partial<T>>(wizard: Wizard<T> | Wiz
         return provider !== undefined
     }
 
-    function showableChildren(parent: string): string[] {
-        return form.properties.filter(prop => prop !== parent && prop.startsWith(parent) && canShowPrompter(prop))
+    function hasProp(prop: string): boolean {
+        return assigned.indexOf(prop) !== -1
     }
 
-    function getRelativeOrder(prop: string): number {
-        return form.properties.filter(prop => canShowPrompter(prop)).indexOf(prop)
+    function showableChildren(parent: string): string[] {
+        return assigned.filter(prop => prop !== parent && prop.startsWith(parent) && hasProp(prop))
     }
 
     function assertOrder(prop: string, expected: number): void {
-        const order = getRelativeOrder(prop) + showOffset
+        const order = assigned.indexOf(prop)
 
         failIf(order === -1, `Property "${prop}" would not be shown`)
         failIf(
@@ -81,10 +80,8 @@ export function createWizardTester<T extends Partial<T>>(wizard: Wizard<T> | Wiz
     function assertShow(prop: string, expected?: number): MockWizardFormElement<T>['assertShow'] {
         return (order: number | undefined = expected) => {
             order === undefined
-                ? failIf(!canShowPrompter(prop), `Property "${prop}" would not be shown`)
+                ? failIf(!hasProp(prop), `Property "${prop}" would not be shown`)
                 : assertOrder(prop, order)
-            assigned.add(prop)
-            showOffset += 1
         }
     }
 
@@ -105,31 +102,32 @@ export function createWizardTester<T extends Partial<T>>(wizard: Wizard<T> | Wiz
     }
 
     function assertShowCount(): MockWizardFormElement<T>['assertShowCount'] {
-        const tempAssigned = new Set(assigned)
-
         return (expected: number) => {
-            const total = form.properties.filter(prop => {
-                if (canShowPrompter(prop, tempAssigned)) {
-                    tempAssigned.add(prop)
-                    return true
-                }
-                return false
-            }).length
-
+            const total = assigned.length
             assert.strictEqual(total, expected, 'Expected number of prompts were not shown.')
         }
     }
 
+    /** Regenerates the dependency graph after binding elements to the form. */
+    function evaluate(): void {
+        assigned = []
+
+        form.properties.forEach(prop => {
+            if (canShowPrompter(prop)) {
+                assigned.push(prop)
+            }
+        })
+    }
+
     const createElement: (prop: string) => MockWizardFormElement<any> = prop => ({
-        applyInput: <TProp>(input: TProp) => (_.set(state, prop, input), assigned.add(prop)),
-        clearInput: () => (_.set(state, prop, undefined), assigned.delete(prop)),
+        applyInput: <TProp>(input: TProp) => (_.set(state, prop, input), evaluate()),
+        clearInput: () => (_.set(state, prop, undefined), evaluate()),
         assertShow: assertShow(prop),
         assertShowFirst: assertShow(prop, 1),
         assertShowSecond: assertShow(prop, 2),
         assertShowThird: assertShow(prop, 3),
         assertShowAny: () => failIf(showableChildren(prop).length === 0, `No properties of "${prop}" would be shown`),
-        assertDoesNotShow: () =>
-            failIf(form.canShowProperty(prop, state, assigned), `Property "${prop}" would be shown`),
+        assertDoesNotShow: () => failIf(hasProp(prop), `Property "${prop}" would be shown`),
         assertDoesNotShowAny: assertShowNone(prop),
         assertValue: assertValue(prop),
         assertShowCount: assertShowCount(),
@@ -140,6 +138,11 @@ export function createWizardTester<T extends Partial<T>>(wizard: Wizard<T> | Wiz
             {},
             {
                 get: (obj, prop, rec) => {
+                    if (!initialized) {
+                        initialized = true
+                        evaluate()
+                    }
+
                     const propPath = path.join('.')
                     const element = createElement(propPath)
 
@@ -152,6 +155,8 @@ export function createWizardTester<T extends Partial<T>>(wizard: Wizard<T> | Wiz
             }
         ) as WizardTester<T>
     }
+
+    evaluate()
 
     return createFormWrapper()
 }
