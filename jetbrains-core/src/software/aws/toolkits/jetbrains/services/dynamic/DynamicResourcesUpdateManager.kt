@@ -20,14 +20,15 @@ import software.aws.toolkits.jetbrains.utils.notifyError
 import software.aws.toolkits.resources.message
 import software.aws.toolkits.telemetry.DynamicresourceTelemetry
 import software.aws.toolkits.telemetry.Result
-import java.util.concurrent.ConcurrentHashMap
+import java.util.concurrent.ConcurrentLinkedQueue
 
 internal class DynamicResourceUpdateManager(private val project: Project) {
     // TODO: Make DynamicResourceUpdateManager an application-level service
 
-    private val resourceStateMonitor = ConcurrentHashMap<DynamicResourceIdentifier, ResourceStateTracker>()
+    private val pendingMutations = ConcurrentLinkedQueue<ResourceMutationState>()
     private val coroutineScope = project.applicationThreadPoolScope("DynamicResourceUpdateManager")
-    private val alarm: Alarm = AlarmFactory.getInstance().create(Alarm.ThreadToUse.POOLED_THREAD, project)
+    private val alarm: Alarm =
+        AlarmFactory.getInstance().create(Alarm.ThreadToUse.POOLED_THREAD, project)
 
     fun deleteResource(dynamicResourceIdentifier: DynamicResourceIdentifier) {
         coroutineScope.launch {
@@ -37,7 +38,8 @@ internal class DynamicResourceUpdateManager(private val project: Project) {
                     it.typeName(dynamicResourceIdentifier.resourceType)
                     it.identifier(dynamicResourceIdentifier.resourceIdentifier)
                 }.progressEvent()
-                setInitialResourceState(dynamicResourceIdentifier, progress)
+                pendingMutations.add(ResourceMutationState.fromEvent(dynamicResourceIdentifier.connectionSettings, progress))
+                startCheckingProgress()
             } catch (e: Exception) {
                 e.notifyError(
                     message(
@@ -47,7 +49,7 @@ internal class DynamicResourceUpdateManager(private val project: Project) {
                     ),
                     project
                 )
-                addDynamicResourcesTelemetry(Operation.DELETE, dynamicResourceIdentifier.resourceType, Result.Failed)
+                DynamicresourceTelemetry.deleteResource(project, Result.Failed, dynamicResourceIdentifier.resourceType)
             }
         }
     }
@@ -64,143 +66,104 @@ internal class DynamicResourceUpdateManager(private val project: Project) {
                     it.typeName(dynamicResourceType)
                     it.desiredState(desiredState)
                 }.progressEvent()
-                val dynamicResourceIdentifier = DynamicResourceIdentifier(
-                    connectionSettings, dynamicResourceType, progress.identifier() ?: progress.requestToken()
-                )
-                setInitialResourceState(dynamicResourceIdentifier, progress)
+                pendingMutations.add(ResourceMutationState.fromEvent(connectionSettings, progress))
+                startCheckingProgress()
             } catch (e: Exception) {
                 e.notifyError(
-                    message(
-                        "dynamic_resources.operation_status_notification_title",
-                        dynamicResourceType,
-                        message("dynamic_resources.create")
-                    ),
+                    message("dynamic_resources.operation_status_notification_title", dynamicResourceType, message("dynamic_resources.create")),
                     project
                 )
-                addDynamicResourcesTelemetry(Operation.CREATE, dynamicResourceType, Result.Failed)
+                DynamicresourceTelemetry.createResource(project, Result.Failed, dynamicResourceType)
             }
         }
     }
 
-    fun getUpdateStatus(connectionSettings: ConnectionSettings, resourceType: String, resourceIdentifier: String): DynamicResourceMutationState? =
-        resourceStateMonitor[DynamicResourceIdentifier(connectionSettings, resourceType, resourceIdentifier)]?.op
-
-    private fun setInitialResourceState(dynamicResourceIdentifier: DynamicResourceIdentifier, progress: ProgressEvent) {
-        val initialState = DynamicResourceMutationState(progress.operation(), progress.operationStatus())
-        resourceStateMonitor[dynamicResourceIdentifier] = ResourceStateTracker(progress.requestToken(), initialState)
-        project.messageBus.syncPublisher(DYNAMIC_RESOURCE_STATE_CHANGED).statusCheckComplete()
-        if (resourceStateMonitor.size == 1) {
+    private fun startCheckingProgress() {
+        if (pendingMutations.size == 1) {
             getProgress()
         }
     }
 
-    private fun updateResourceState(
-        resourceIdentifier: DynamicResourceIdentifier,
-        currentResourceState: ResourceStateTracker,
-        newState: DynamicResourceMutationState,
-        message: String?
-    ) {
-        resourceStateMonitor[resourceIdentifier] = currentResourceState.copy(op = newState)
-        informResourceStateChangeListener(resourceIdentifier, newState, message)
-    }
-
-    private fun informResourceStateChangeListener(
-        dynamicResourceIdentifier: DynamicResourceIdentifier,
-        newState: DynamicResourceMutationState,
-        message: String?
-    ) {
-        project.messageBus.syncPublisher(DYNAMIC_RESOURCE_STATE_CHANGED)
-            .resourceStateChanged(
-                dynamicResourceIdentifier,
-                newState,
-                message
-            )
-    }
+    fun getUpdateStatus(connectionSettings: ConnectionSettings, resourceType: String, resourceIdentifier: String): ResourceMutationState? =
+        pendingMutations.find { it.connectionSettings == connectionSettings && it.resourceType == resourceType && it.resourceIdentifier == resourceIdentifier }
 
     private fun getProgress() {
-        var hasResourceStateChanged = false
-        resourceStateMonitor.map { (resourceStateIdentifier, resourceStateTracker) ->
-            val client = resourceStateIdentifier.connectionSettings.getClient<CloudFormationClient>()
-            val progress = try {
-                client.getResourceRequestStatus { it.requestToken(resourceStateTracker.token) }
-            } catch (e: Exception) {
-                e.notifyError(
-                    message(
-                        "dynamic_resources.operation_status_notification_title",
-                        resourceStateIdentifier.resourceIdentifier,
-                        resourceStateTracker.op.operation.name.toLowerCase()
-                    ),
-                    project
-                )
-                addDynamicResourcesTelemetry(resourceStateTracker.op.operation, resourceStateIdentifier.resourceType, Result.Failed)
-                null
-            }
-            if (progress != null) {
-                val currentResourceStateIdentifier = if (resourceStateIdentifier.resourceIdentifier == resourceStateTracker.token) {
-                    if (progress.progressEvent().identifier() != null) {
-                        // This condition is required for when identifier is assigned after a createResource call has been made and identifier wasn't preassigned
-                        resourceStateMonitor[resourceStateIdentifier.copy(resourceIdentifier = progress.progressEvent().identifier())] = resourceStateTracker
-                        resourceStateMonitor.remove(resourceStateIdentifier)
-                        resourceStateIdentifier.copy(resourceIdentifier = progress.progressEvent().identifier())
-                    } else resourceStateIdentifier
-                } else resourceStateIdentifier
+        var size = pendingMutations.size
 
-                val operationStatus = progress.progressEvent().operationStatus()
-                val operation = progress.progressEvent().operation()
-                val newResourceState = DynamicResourceMutationState(operation, operationStatus)
-                if (operationStatus == OperationStatus.IN_PROGRESS && resourceStateTracker.op.operationStatus != newResourceState.operationStatus) {
-                    // This condition is required for when the status switches from PENDING to IN_PROGRESS (currently API doesn't surface PENDING status)
-                    updateResourceState(currentResourceStateIdentifier, resourceStateTracker, newResourceState, progress.progressEvent().statusMessage())
-                    hasResourceStateChanged = true
-                } else if (operationStatus == OperationStatus.SUCCESS || operationStatus == OperationStatus.FAILED) {
-                    updateResourceState(currentResourceStateIdentifier, resourceStateTracker, newResourceState, progress.progressEvent().statusMessage())
-                    resourceStateMonitor.remove(currentResourceStateIdentifier)
-                    hasResourceStateChanged = true
+        while (size > 0) {
+            val mutation = pendingMutations.remove()
+            if (!mutation.status.isTerminal()) {
+                val client = mutation.connectionSettings.getClient<CloudFormationClient>()
+                val progress = try {
+                    client.getResourceRequestStatus { it.requestToken(mutation.token) }
+                } catch (e: Exception) {
+                    e.notifyError(
+                        message(
+                            "dynamic_resources.operation_status_notification_title",
+                            mutation.resourceIdentifier ?: mutation.resourceType,
+                            mutation.operation.name.toLowerCase()
+                        ),
+                        project
+                    )
+                    null
                 }
+                val updatedMutation = when (val event = progress?.progressEvent()) {
+                    is ProgressEvent -> mutation.copy(status = event.operationStatus(), resourceIdentifier = event.identifier())
+                    else -> mutation
+                }
+                if (updatedMutation != mutation) {
+                    project.messageBus.syncPublisher(DYNAMIC_RESOURCE_STATE_CHANGED).mutationStatusChanged(updatedMutation)
+                }
+                pendingMutations.add(updatedMutation)
             }
-            if (hasResourceStateChanged) {
-                project.messageBus.syncPublisher(DYNAMIC_RESOURCE_STATE_CHANGED).statusCheckComplete()
-            }
-            if (!resourceStateMonitor.isEmpty()) {
-                alarm.addRequest({ getProgress() }, 500)
-            }
+            size--
         }
-    }
+        project.messageBus.syncPublisher(DYNAMIC_RESOURCE_STATE_CHANGED).statusCheckComplete()
 
-    fun addDynamicResourcesTelemetry(
-        operation: Operation,
-        resourceType: String,
-        successState: Result
-    ) {
-        when (operation) {
-            Operation.CREATE -> DynamicresourceTelemetry.createResource(project, successState, resourceType)
-            Operation.UPDATE -> DynamicresourceTelemetry.updateResource(project, successState, resourceType)
-            Operation.DELETE -> DynamicresourceTelemetry.deleteResource(project, successState, resourceType)
+        if (pendingMutations.size != 0) {
+            alarm.addRequest({ getProgress() }, DEFAULT_DELAY)
         }
     }
 
     companion object {
+        private const val DEFAULT_DELAY = 500
         val DYNAMIC_RESOURCE_STATE_CHANGED: Topic<DynamicResourceStateMutationHandler> = Topic.create(
             "Resource State Changed",
             DynamicResourceStateMutationHandler::class.java
         )
+
+        fun OperationStatus.isTerminal() = this in setOf(OperationStatus.SUCCESS, OperationStatus.CANCEL_COMPLETE, OperationStatus.FAILED)
 
         fun getInstance(project: Project): DynamicResourceUpdateManager = project.service()
     }
 }
 
 interface DynamicResourceStateMutationHandler {
-    fun resourceStateChanged(
-        dynamicResourceIdentifier: DynamicResourceIdentifier,
-        dynamicResourceMutationState: DynamicResourceMutationState,
-        message: String?
-    )
-
-    fun statusCheckComplete()
+    fun mutationStatusChanged(state: ResourceMutationState)
+    fun statusCheckComplete() {}
 }
 
 data class DynamicResourceIdentifier(val connectionSettings: ConnectionSettings, val resourceType: String, val resourceIdentifier: String)
 
-data class DynamicResourceMutationState(val operation: Operation, val operationStatus: OperationStatus)
-
-private data class ResourceStateTracker(val token: String, val op: DynamicResourceMutationState)
+data class ResourceMutationState(
+    val connectionSettings: ConnectionSettings,
+    val token: String,
+    val operation: Operation,
+    val resourceType: String,
+    val status: OperationStatus,
+    val resourceIdentifier: String?,
+    val message: String?
+) {
+    companion object {
+        fun fromEvent(connectionSettings: ConnectionSettings, progress: ProgressEvent) =
+            ResourceMutationState(
+                connectionSettings = connectionSettings,
+                token = progress.requestToken(),
+                operation = progress.operation(),
+                resourceType = progress.typeName(),
+                status = progress.operationStatus(),
+                resourceIdentifier = progress.identifier(),
+                message = progress.statusMessage()
+            )
+    }
+}

@@ -24,6 +24,7 @@ import software.aws.toolkits.jetbrains.services.dynamic.DynamicResource
 import software.aws.toolkits.jetbrains.services.dynamic.DynamicResourceIdentifier
 import software.aws.toolkits.jetbrains.services.dynamic.DynamicResourceSchemaMapping
 import software.aws.toolkits.jetbrains.services.dynamic.DynamicResourceUpdateManager
+import software.aws.toolkits.jetbrains.services.dynamic.DynamicResourceUpdateManager.Companion.isTerminal
 import software.aws.toolkits.jetbrains.services.dynamic.DynamicResources
 import software.aws.toolkits.jetbrains.services.dynamic.ViewDynamicResourceVirtualFile
 import software.aws.toolkits.jetbrains.utils.notifyError
@@ -69,11 +70,10 @@ class DynamicResourceNode(project: Project, val resource: DynamicResource) :
     override fun displayName(): String = DynamicResources.getResourceDisplayName(resource.identifier)
 
     override fun statusText(): String? {
-        val op = DynamicResourceUpdateManager.getInstance(nodeProject)
-            .getUpdateStatus(nodeProject.getConnectionSettings(), resource.type.fullName, resource.identifier)
-        return if (op != null) {
-            "${op.operation} ${op.operationStatus}"
-        } else null
+        val state = DynamicResourceUpdateManager.getInstance(nodeProject)
+            .getUpdateStatus(nodeProject.getConnectionSettings(), resource.type.fullName, resource.identifier)?.takeIf { !it.status.isTerminal() }
+            ?: return null
+        return "${state.operation} ${state.status}"
     }
 
     override fun isAlwaysShowPlus(): Boolean = false
